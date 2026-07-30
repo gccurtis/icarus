@@ -4,7 +4,14 @@
     "rootDir": "src",
     "outDir": "dist",
     "lib": ["ES2022"],
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "#utils/*": ["./src/0-utils/*"],
+      "#init/*": ["./src/1-init/*"],
+      "#transport/*": ["./src/2-transport/*"],
+      "#capabilities/*": ["./src/3-capabilities/*"],
+      "#job-wiring/*": ["./src/4-job-wiring/*"]
+    }
   },
   "include": ["src/**/*.ts"]
 }

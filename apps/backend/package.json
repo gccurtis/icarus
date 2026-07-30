@@ -3,6 +3,28 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "imports": {
+    "#utils/*": {
+      "types": "./src/0-utils/*",
+      "default": "./dist/0-utils/*"
+    },
+    "#init/*": {
+      "types": "./src/1-init/*",
+      "default": "./dist/1-init/*"
+    },
+    "#transport/*": {
+      "types": "./src/2-transport/*",
+      "default": "./dist/2-transport/*"
+    },
+    "#capabilities/*": {
+      "types": "./src/3-capabilities/*",
+      "default": "./dist/3-capabilities/*"
+    },
+    "#job-wiring/*": {
+      "types": "./src/4-job-wiring/*",
+      "default": "./dist/4-job-wiring/*"
+    }
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
@@ -12,7 +34,8 @@
   },
   "dependencies": {
     "@icarus/shared": "workspace:*",
-    "fastify": "^5.0.0"
+    "fastify": "^5.0.0",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",

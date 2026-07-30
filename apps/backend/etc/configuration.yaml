@@ -1,0 +1,18 @@
+# Backend runtime configuration.
+# Keep environment-specific overrides in separate files if needed.
+
+server:
+  # Interface to bind.
+  host: 0.0.0.0
+  # HTTP port for Fastify.
+  port: 4000
+
+workerPool:
+  # Max number of concurrent jobs running at the same time.
+  concurrentWorkers: 4
+
+queue:
+  # Max jobs waiting in the serial queue.
+  serialMaxSize: 1000
+  # Max jobs waiting in the concurrent queue.
+  concurrentMaxSize: 1000

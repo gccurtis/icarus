@@ -10,3 +10,7 @@ This repository uses a monorepo with strict runtime separation:
 ## Why this layout
 
 The backend and frontend are independently runnable and buildable. If the backend language changes later, frontend and shared contracts can remain in place with minimal churn.
+
+## Detailed docs
+
+- Backend request/job architecture: `docs/backend-architecture.md`
