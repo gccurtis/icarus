@@ -13,6 +13,7 @@ import type {
 } from "#platform/intelligence/types.js";
 import type { Provider } from "#platform/intelligence/provider.js";
 import type { ToolCall, ToolResult, ToolSet } from "#platform/intelligence/tools.js";
+import type { Logger } from "#platform/observability/logger.js";
 
 const DEFAULT_PURPOSE = "general";
 const DEFAULT_MAX_TOOL_ROUNDS = 8;
@@ -77,7 +78,8 @@ export class Intelligence {
 
   constructor(
     private readonly config: IntelligenceConfig,
-    private readonly providers: Record<string, Provider>
+    private readonly providers: Record<string, Provider>,
+    private readonly logger: Logger
   ) {
     this.inferenceRoutes = this.createRouteMap(config.inference.routes, "inference");
     this.reasoningRoutes = this.createRouteMap(config.reasoning.routes, "reasoning");
@@ -92,6 +94,7 @@ export class Intelligence {
       effort: route.effort
     });
 
+    this.logger.debug("intelligence.infer", { model: route.model, usage: response.usage });
     return {
       text: response.content,
       usage: response.usage
@@ -112,6 +115,7 @@ export class Intelligence {
       schema
     });
 
+    this.logger.debug("intelligence.inferStructured", { model: route.model, usage: response.usage });
     return {
       structured: extractStructured(response.content),
       usage: response.usage
@@ -131,6 +135,7 @@ export class Intelligence {
       throw new Error("Reason call returned tool calls; use reasonWithTools instead");
     }
 
+    this.logger.debug("intelligence.reason", { model: route.model, usage: response.usage });
     return {
       text: response.content,
       usage: response.usage
@@ -155,6 +160,7 @@ export class Intelligence {
       throw new Error("Reason call returned tool calls; use reasonWithToolsStructured instead");
     }
 
+    this.logger.debug("intelligence.reasonStructured", { model: route.model, usage: response.usage });
     return {
       structured: extractStructured(response.content),
       usage: response.usage
@@ -210,6 +216,11 @@ export class Intelligence {
       inputs: [...req.inputs]
     });
 
+    this.logger.debug("intelligence.embed", {
+      model: this.config.embedding.model,
+      count: req.inputs.length,
+      usage: response.usage
+    });
     return {
       vectors: response.vectors,
       provider: this.config.embedding.provider,
@@ -253,6 +264,7 @@ export class Intelligence {
 
       if (response.toolCalls.length === 0) {
         messages.push({ role: "assistant", content: response.content });
+        this.logger.debug("intelligence.reasonWithTools", { model: route.model, rounds, calls, usage });
         return {
           text: response.content,
           messages,

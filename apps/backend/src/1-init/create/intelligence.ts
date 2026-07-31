@@ -1,11 +1,12 @@
 import type { BackendConfig } from "#utils/config/loadBackendConfig.js";
+import type { Logger } from "#platform/observability/logger.js";
 import { Intelligence } from "#platform/intelligence/intelligence.js";
 import { OpenRouterProvider } from "#platform/intelligence/openrouter/provider.js";
 
-export const createIntelligence = (config: BackendConfig): Intelligence => {
+export const createIntelligence = (config: BackendConfig, logger: Logger): Intelligence => {
   const openRouterProvider = new OpenRouterProvider(config.intelligence.providers.openrouter);
 
   return new Intelligence(config.intelligence, {
     [openRouterProvider.name()]: openRouterProvider
-  });
+  }, logger);
 };

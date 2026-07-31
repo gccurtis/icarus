@@ -15,6 +15,7 @@ import type {
 import type { KnowledgeStore } from "#platform/knowledge/store.js";
 import type { Embedder } from "#platform/knowledge/embedder.js";
 import type { ToolBinding } from "#platform/intelligence/tools.js";
+import type { Logger } from "#platform/observability/logger.js";
 import { windowText, StreamWindower, DEFAULT_WINDOW_OPTIONS } from "#platform/knowledge/windowing/index.js";
 import {
   buildCorpusTier,
@@ -50,6 +51,7 @@ export class Knowledge {
   constructor(
     private readonly store: KnowledgeStore,
     private readonly embedder: Embedder,
+    private readonly logger: Logger,
     opts?: KnowledgeOptions
   ) {
     this.windowOpts = {
@@ -88,6 +90,7 @@ export class Knowledge {
     // Revision check
     const existing = await this.store.getSource(sourceId);
     if (existing && revision !== "" && existing.revision === revision) {
+      this.logger.debug("knowledge.add.skipped", { sourceId, label, revision });
       return { sourceId, skipped: true, windowsAdded: 0, windowsReused: 0, usage: NULL_USAGE };
     }
 
@@ -168,6 +171,14 @@ export class Knowledge {
     };
     await this.store.putSource(sourceRecord);
 
+    this.logger.info("knowledge.add", {
+      sourceId,
+      label,
+      windowsAdded: toEmbed.length,
+      windowsReused: existingSet.size,
+      nodes: allNodes.length,
+      usage: totalUsage
+    });
     return {
       sourceId,
       skipped: false,
@@ -182,6 +193,7 @@ export class Knowledge {
     await this.store.deleteNodesForSource(sourceId);
     await this.store.deleteSource(sourceId);
     await this.rebuildCorpusTier(sourceId, []);
+    this.logger.info("knowledge.remove", { sourceId });
   }
 
   listSources(): Promise<SourceRecord[]> {
@@ -208,6 +220,7 @@ export class Knowledge {
     const windows = await this.store.getWindows(windowIds);
     const regions = assembleRegions(windows, scores, this.charBudget);
 
+    this.logger.debug("knowledge.retrieve", { windowsHit: windowIds.length, regions: regions.length, usage });
     return { regions, usage };
   }
 

@@ -12,8 +12,8 @@ export const startBackend = async (): Promise<void> => {
   // scheduler because queue-status wiring needs to read scheduler state.
   const config = await createConfig();
   const logger = createLogger(config);
-  const intelligence = createIntelligence(config);
-  const knowledge = createKnowledge(config.projectId, intelligence);
+  const intelligence = createIntelligence(config, logger);
+  const knowledge = createKnowledge(config.projectId, intelligence, logger);
   const app = createApp();
   const scheduler = createScheduler(config);
   const registry = createRegistry(scheduler);
