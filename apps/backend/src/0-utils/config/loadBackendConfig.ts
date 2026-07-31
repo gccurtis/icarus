@@ -36,11 +36,6 @@ export interface IntelligenceConfig {
   };
 }
 
-export interface KnowledgeConfig {
-  projectId: string;
-  databasePath: string;
-}
-
 export interface BackendConfig {
   server: {
     host: string;
@@ -59,7 +54,7 @@ export interface BackendConfig {
     directory: string;
   };
   intelligence: IntelligenceConfig;
-  knowledge: KnowledgeConfig;
+  projectId: string;
 }
 
 const INTELLIGENCE_TIERS: IntelligenceTier[] = ["low", "medium", "high"];
@@ -123,10 +118,7 @@ const DEFAULT_CONFIG: BackendConfig = {
       model: "openai/text-embedding-3-large"
     }
   },
-  knowledge: {
-    projectId: "default",
-    databasePath: "./data/knowledge.db"
-  }
+  projectId: "default"
 };
 
 const moduleDir = dirname(fileURLToPath(import.meta.url));
@@ -274,9 +266,6 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     (intelligence.reasoning as Record<string, unknown> | undefined) ?? {};
   const embedding =
     (intelligence.embedding as Record<string, unknown> | undefined) ?? {};
-  const knowledge =
-    (parsed.knowledge as Record<string, unknown> | undefined) ?? {};
-
   const configuredOpenRouterApiKey = parseString(
     openrouter.apiKey,
     DEFAULT_CONFIG.intelligence.providers.openrouter.apiKey,
@@ -367,17 +356,6 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
         )
       }
     },
-    knowledge: {
-      projectId: parseString(
-        knowledge.projectId,
-        DEFAULT_CONFIG.knowledge.projectId,
-        "knowledge.projectId"
-      ),
-      databasePath: parseString(
-        knowledge.databasePath,
-        DEFAULT_CONFIG.knowledge.databasePath,
-        "knowledge.databasePath"
-      )
-    }
+    projectId: parseString(parsed.projectId, DEFAULT_CONFIG.projectId, "projectId")
   };
 };

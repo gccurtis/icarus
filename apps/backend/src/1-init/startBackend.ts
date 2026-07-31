@@ -13,7 +13,7 @@ export const startBackend = async (): Promise<void> => {
   const config = await createConfig();
   const logger = createLogger(config);
   const intelligence = createIntelligence(config);
-  const knowledge = createKnowledge(config, intelligence);
+  const knowledge = createKnowledge(config.projectId, intelligence);
   const app = createApp();
   const scheduler = createScheduler(config);
   const registry = createRegistry(scheduler);
@@ -28,7 +28,7 @@ export const startBackend = async (): Promise<void> => {
     intelligenceProvider: config.intelligence.embedding.provider,
     intelligenceModel: config.intelligence.embedding.model,
     intelligenceReady: Boolean(intelligence),
-    knowledgeProject: config.knowledge.projectId,
+    projectId: config.projectId,
     knowledgeReady: Boolean(knowledge)
   });
 

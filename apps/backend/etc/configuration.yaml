@@ -151,8 +151,5 @@ intelligence:
     provider: openrouter
     model: openai/text-embedding-3-large
 
-knowledge:
-  # Project identifier — all knowledge for one deployment shares one DB.
-  projectId: default
-  # Path to the SQLite database (relative to the backend working directory).
-  databasePath: ./data/knowledge.db
+# Project identifier shared across all platform capabilities.
+projectId: default
