@@ -5,6 +5,7 @@ import { createKnowledge } from "#init/create/knowledge.js";
 import { createFormula } from "#init/create/formula.js";
 import { createStructuredDataInstance } from "#init/create/structured-data.js";
 import { createFormulaNameResolver } from "#init/create/formula-name-resolver.js";
+import { createRichTextInstance } from "#init/create/rich-text.js";
 import { createContextManagerInstance } from "#init/create/context.js";
 import { createLogger } from "#init/create/logger.js";
 import { createScheduler } from "#init/create/scheduler.js";
@@ -26,6 +27,7 @@ export const startBackend = async (): Promise<void> => {
     userId: config.userId,
     projectId: config.projectId
   });
+  const richText = createRichTextInstance(config, logger);
   const app = createApp();
   const scheduler = createScheduler(config);
   const registry = createRegistry(scheduler);
@@ -46,6 +48,7 @@ export const startBackend = async (): Promise<void> => {
     formulaReady: Boolean(formula),
     structuredDataReady: Boolean(structuredData),
     formulaResolverReady: Boolean(formulaResolver),
+    richTextReady: Boolean(richText),
     contextReady: Boolean(contextManager)
   });
 

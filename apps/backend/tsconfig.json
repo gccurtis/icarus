@@ -19,7 +19,9 @@
       "#structured-data": ["./src/3-capabilities/structured-data/index.ts"],
       "#structured-data/*": ["./src/3-capabilities/structured-data/*"],
       "#context": ["./src/3-capabilities/context/index.ts"],
-      "#context/*": ["./src/3-capabilities/context/*"]
+      "#context/*": ["./src/3-capabilities/context/*"],
+      "#rich-text": ["./src/0-platform/rich-text/index.ts"],
+      "#rich-text/*": ["./src/0-platform/rich-text/*"]
     }
   },
   "include": ["src/**/*.ts"]

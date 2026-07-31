@@ -59,6 +59,14 @@
     "#context/*": {
       "types": "./src/3-capabilities/context/*",
       "default": "./dist/3-capabilities/context/*"
+    },
+    "#rich-text": {
+      "types": "./src/0-platform/rich-text/index.ts",
+      "default": "./dist/0-platform/rich-text/index.js"
+    },
+    "#rich-text/*": {
+      "types": "./src/0-platform/rich-text/*",
+      "default": "./dist/0-platform/rich-text/*"
     }
   },
   "scripts": {

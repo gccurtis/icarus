@@ -60,6 +60,12 @@ export interface StructuredDataConfig {
   maxBodyBytes: number;
 }
 
+export interface RichTextLimitsConfig {
+  maxAtomsPerContent: number;
+  maxMarksPerContent: number;
+  maxMarkRangeSpan: number;
+}
+
 export interface ContextManagerConfig {
   maxEntriesPerContext: number;
   maxResolveDepth: number;
@@ -85,6 +91,7 @@ export interface BackendConfig {
   intelligence: IntelligenceConfig;
   formula: FormulaConfig;
   structuredData: StructuredDataConfig;
+  richText: RichTextLimitsConfig;
   context: ContextManagerConfig;
   projectId: string;
   userId: string;
@@ -174,6 +181,11 @@ const DEFAULT_CONFIG: BackendConfig = {
     maxFieldsPerCollection: 256,
     maxRowsPerCollection: 100000,
     maxBodyBytes: 65536
+  },
+  richText: {
+    maxAtomsPerContent: 10000,
+    maxMarksPerContent: 5000,
+    maxMarkRangeSpan: 1000
   },
   context: {
     maxEntriesPerContext: 1000,
@@ -420,6 +432,7 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     userId: parseString(parsed.userId, DEFAULT_CONFIG.userId, "userId"),
     formula: parseFormulaConfig((parsed.formula as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.formula),
     structuredData: parseStructuredDataConfig((parsed.structuredData as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.structuredData),
+    richText: parseRichTextLimitsConfig((parsed.richText as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.richText),
     context: parseContextConfig((parsed.context as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.context)
   };
 };
@@ -456,5 +469,13 @@ function parseContextConfig(raw: Record<string, unknown>, defaults: ContextManag
   return {
     maxEntriesPerContext: parseNumber(raw.maxEntriesPerContext, defaults.maxEntriesPerContext, "context.maxEntriesPerContext"),
     maxResolveDepth: parseNumber(raw.maxResolveDepth, defaults.maxResolveDepth, "context.maxResolveDepth")
+  };
+}
+
+function parseRichTextLimitsConfig(raw: Record<string, unknown>, defaults: RichTextLimitsConfig): RichTextLimitsConfig {
+  return {
+    maxAtomsPerContent: parseNumber(raw.maxAtomsPerContent, defaults.maxAtomsPerContent, "richText.maxAtomsPerContent"),
+    maxMarksPerContent: parseNumber(raw.maxMarksPerContent, defaults.maxMarksPerContent, "richText.maxMarksPerContent"),
+    maxMarkRangeSpan: parseNumber(raw.maxMarkRangeSpan, defaults.maxMarkRangeSpan, "richText.maxMarkRangeSpan")
   };
 }
