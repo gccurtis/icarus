@@ -22,33 +22,27 @@ Everything that touches project state (bindings, cell values, accepted results, 
 
 ```
 apps/backend/src/
-  3-capabilities/
-    built-in/
-      formula/
-        value.ts          # FormulaValue union + FormulaTable carrier
-        rational.ts       # CanonicalRational bigint arithmetic
-        tokens.ts         # Token types + SourceSpan
-        lexer.ts          # UTF-8 → token stream
-        ast.ts            # FormulaNode discriminated union
-        parser.ts         # tokens → AST
-        binder.ts         # AST + resolver snapshot → bound AST
-        resolver.ts       # FormulaResolverSnapshot type + helpers
-        dependencies.ts   # symbolic + bound + observed dependency extraction
-        evaluator.ts      # bound AST + snapshot → FormulaEvaluation
-        builtins.ts       # built-in function registry
-        limits.ts         # FormulaLimits defaults + enforcement
-        diagnostics.ts    # FormulaDiagnostic codes + constructors
-        wire.ts           # FormulaWireValue encoding/decoding
-        engine.ts         # FormulaEngine — the single public in-process interface
-        index.ts          # barrel
-
-  4-job-wiring/
+  0-platform/
     formula/
-      registerFormulaEndpoints.ts
-      createFormulaJobs.ts
+      value.ts          # FormulaValue union + FormulaTable carrier
+      rational.ts       # CanonicalRational bigint arithmetic
+      tokens.ts         # Token types + SourceSpan
+      lexer.ts          # UTF-8 → token stream
+      ast.ts            # FormulaNode discriminated union
+      parser.ts         # tokens → AST
+      binder.ts         # AST + resolver snapshot → bound AST
+      resolver.ts       # FormulaResolverSnapshot type + helpers
+      dependencies.ts   # symbolic + bound + observed dependency extraction
+      evaluator.ts      # bound AST + snapshot → FormulaEvaluation
+      builtins.ts       # built-in function registry
+      limits.ts         # FormulaLimits enforcement (values come from config)
+      diagnostics.ts    # FormulaDiagnostic codes + constructors
+      wire.ts           # FormulaWireValue encoding/decoding
+      engine.ts         # FormulaEngine — the single public in-process interface
+      index.ts          # barrel
 ```
 
-No platform dependency. Formula does not receive a Logger or Intelligence — it is a pure compute library.
+Formula is a **platform capability** — it lives in `0-platform/` alongside Knowledge and Intelligence. It does not receive a Logger or Intelligence. It is a pure, synchronous compute library. There are no HTTP endpoints; callers receive a `FormulaEngine` instance and call its methods directly.
 
 ---
 
@@ -140,8 +134,36 @@ Follow the reference grammar verbatim. Key points:
 | `v[1:3]` | 1-based half-open slice; negative boundaries from end; clamp |
 | `v.{f1, f2}` | Field projection — preserves kind and row order |
 | `v.{field op expr}` | Condition query — filters rows; returns table |
+| `v.{f1, f2 \| cond}` | Projection pipe — project fields, then apply condition query |
 | `v!` | Table → record iff exactly one row; else `cardinality_error` |
 | `v?` | Table → record or null iff 0–1 rows; else `cardinality_error` |
+
+### Condition query chaining
+
+A condition query inside `{...}` may be a single predicate or a chain of predicates connected by logical operators. Parentheses group individual predicates:
+
+```
+cond-query  ::= cond-term (cond-op cond-term)*
+cond-term   ::= "(" field op expr ")" | field op expr
+cond-op     ::= "&&" | "||" | "^"
+```
+
+`^` means XOR inside condition nodes only. In expression position `^` remains arithmetic power.
+
+```
+# simple
+v.{age > 18}
+
+# chained
+v.{(age > 18) && (status = "active")}
+v.{(score > 90) || (override = true)}
+v.{(flagA = true) ^ (flagB = true)}
+
+# projection pipe — select fields, then filter rows
+v.{name, score | (score > 90) && (active = true)}
+```
+
+The `|` separator is only valid inside `{...}`. Left of `|` is a comma-separated field list (projection); right of `|` is a condition query chain (filter). Both sides are optional independently — omitting the left gives pure condition query; omitting the right gives pure projection.
 
 ---
 
@@ -190,21 +212,6 @@ type FormulaResult<T> =
 
 ---
 
-## HTTP jobs — all concurrent inline
-
-Every Formula request is bounded concurrent work. No serial queue use.
-
-| Endpoint | Handler |
-|---|---|
-| `formula.parse.v1` | `handleParse` |
-| `formula.validate.v1` | `handleValidate` |
-| `formula.dependencies.v1` | `handleDependencies` |
-| `formula.evaluate.v1` | `handleEvaluate` |
-| `formula.explain.v1` | `handleExplain` |
-
-Long recalculation loops belong to the owning capability, not Formula.
-
----
 
 ## Diagnostics
 
@@ -224,24 +231,42 @@ Diagnostics live outside the value algebra. A consumer can hold a last-good valu
 
 ## Limits
 
-All enforced during parse, bind, and evaluation:
+All enforced during parse, bind, and evaluation. Every limit value comes from backend configuration — no value is hardcoded in the engine. `FormulaLimits` is constructed by `createFormulaEngine` from a `FormulaConfig` section in `configuration.yaml`.
 
 ```typescript
 interface FormulaLimits {
-  maxSourceBytes: number;   // default 65_536
-  maxTokens: number;        // default 4_096
-  maxNodes: number;         // default 2_048
-  maxDepth: number;         // default 64
-  maxSteps: number;         // default 1_000_000
-  maxCallDepth: number;     // default 32
-  maxFields: number;        // default 256
-  maxRows: number;          // default 100_000
-  maxCells: number;         // default 1_000_000
-  maxOutputBytes: number;   // default 1_048_576
-  maxIntegerBits: number;   // default 4_096
-  maxPowerMagnitude: number; // default 1_000
-  maxRoundingPlaces: number; // default 20
+  maxSourceBytes: number;
+  maxTokens: number;
+  maxNodes: number;
+  maxDepth: number;
+  maxSteps: number;
+  maxCallDepth: number;
+  maxFields: number;
+  maxRows: number;
+  maxCells: number;
+  maxOutputBytes: number;
+  maxIntegerBits: number;
+  maxPowerMagnitude: number;
+  maxRoundingPlaces: number;
 }
+```
+
+```yaml
+# configuration.yaml
+formula:
+  maxSourceBytes: 65536
+  maxTokens: 4096
+  maxNodes: 2048
+  maxDepth: 64
+  maxSteps: 1000000
+  maxCallDepth: 32
+  maxFields: 256
+  maxRows: 100000
+  maxCells: 1000000
+  maxOutputBytes: 1048576
+  maxIntegerBits: 4096
+  maxPowerMagnitude: 1000
+  maxRoundingPlaces: 20
 ```
 
 Identical inputs + limits produce identical results. Limit changes are versioned.
@@ -275,7 +300,6 @@ Settlement is compare-and-swap on owner revision + source revision + dependency 
 8. `diagnostics.ts` — diagnostic constructors
 9. `wire.ts` — JSON encoding / decoding
 10. `engine.ts` — `FormulaEngine` assembly
-11. `4-job-wiring/formula/` — HTTP endpoint registration
 
 ---
 
@@ -289,5 +313,8 @@ Settlement is compare-and-swap on owner revision + source revision + dependency 
 - One-based positive indexes; negative from end; zero always invalid
 - Slices: 1-based, half-open, clamped
 - `^` is power in expressions; XOR only inside condition node composition
+- `|` inside `{...}` is projection pipe; it has no meaning in expression position
 - Cardinality `!`/`?` applied to a record always returns that record unchanged
 - Bound names are stable through display-name renames
+- All limit values come from config — the engine has no hardcoded defaults
+- Formula is not exposed via HTTP; callers use `FormulaEngine` in-process
