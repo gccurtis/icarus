@@ -115,7 +115,7 @@ const DEFAULT_CONFIG: BackendConfig = {
     },
     embedding: {
       provider: "openrouter",
-      model: "openai/text-embedding-3-large"
+      model: "openai/text-embedding-3-small"
     }
   },
   projectId: "default"

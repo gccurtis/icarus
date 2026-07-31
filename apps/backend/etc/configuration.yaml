@@ -149,7 +149,7 @@ intelligence:
 
   embedding:
     provider: openrouter
-    model: openai/text-embedding-3-large
+    model: openai/text-embedding-3-small
 
 # Project identifier shared across all platform capabilities.
 projectId: default
