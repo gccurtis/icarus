@@ -24,3 +24,129 @@ logging:
   level: info
   # Directory to write daily log files into, relative to the process working directory.
   directory: logs
+
+intelligence:
+  providers:
+    openrouter:
+      # Replace with a real key or override via OPENROUTER_API_KEY in runtime env.
+      apiKey: replace-with-openrouter-api-key
+      baseUrl: https://openrouter.ai/api/v1
+      timeoutMs: 30000
+
+  inference:
+    routes:
+      - purpose: general
+        strength: low
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: low
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: low
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: medium
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: medium
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: medium
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: high
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: high
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: high
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+
+  reasoning:
+    routes:
+      - purpose: general
+        strength: low
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: low
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: low
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: medium
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: medium
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: medium
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: high
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: high
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: high
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+
+  embedding:
+    provider: openrouter
+    model: openai/text-embedding-3-large
