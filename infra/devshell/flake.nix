@@ -13,12 +13,27 @@
         in {
           default = pkgs.mkShell {
             packages = with pkgs; [
+              # Node.js runtime + package manager
               nodejs_22
               pnpm
+
+              # Nix tooling
               nil
               nixfmt
+
+              # Native build deps (required for better-sqlite3)
               python3
               pkg-config
+
+              # Log inspection + data wrangling
+              jq
+              fx   # interactive JSON browser
+
+              # General utilities
+              ripgrep
+              bat        # syntax-highlighted cat
+              curl
+              git
             ];
 
             shellHook = ''
