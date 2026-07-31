@@ -71,6 +71,11 @@ export interface ContextManagerConfig {
   maxResolveDepth: number;
 }
 
+export interface DerivedOutputConfig {
+  maxPlanQueries: number;
+  maxToolRounds: number;
+}
+
 export interface BackendConfig {
   server: {
     host: string;
@@ -93,6 +98,7 @@ export interface BackendConfig {
   structuredData: StructuredDataConfig;
   richText: RichTextLimitsConfig;
   context: ContextManagerConfig;
+  derivedOutputs: DerivedOutputConfig;
   projectId: string;
   userId: string;
 }
@@ -190,6 +196,10 @@ const DEFAULT_CONFIG: BackendConfig = {
   context: {
     maxEntriesPerContext: 1000,
     maxResolveDepth: 10
+  },
+  derivedOutputs: {
+    maxPlanQueries: 8,
+    maxToolRounds: 8
   }
 };
 
@@ -338,6 +348,9 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     (intelligence.reasoning as Record<string, unknown> | undefined) ?? {};
   const embedding =
     (intelligence.embedding as Record<string, unknown> | undefined) ?? {};
+  const context = (parsed.context as Record<string, unknown> | undefined) ?? {};
+  const derivedOutputs =
+    (parsed.derivedOutputs as Record<string, unknown> | undefined) ?? {};
   const configuredOpenRouterApiKey = parseString(
     openrouter.apiKey,
     DEFAULT_CONFIG.intelligence.providers.openrouter.apiKey,
@@ -433,7 +446,8 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     formula: parseFormulaConfig((parsed.formula as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.formula),
     structuredData: parseStructuredDataConfig((parsed.structuredData as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.structuredData),
     richText: parseRichTextLimitsConfig((parsed.richText as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.richText),
-    context: parseContextConfig((parsed.context as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.context)
+    context: parseContextConfig(context, DEFAULT_CONFIG.context),
+    derivedOutputs: parseDerivedOutputConfig(derivedOutputs, DEFAULT_CONFIG.derivedOutputs)
   };
 };
 
@@ -469,6 +483,13 @@ function parseContextConfig(raw: Record<string, unknown>, defaults: ContextManag
   return {
     maxEntriesPerContext: parseNumber(raw.maxEntriesPerContext, defaults.maxEntriesPerContext, "context.maxEntriesPerContext"),
     maxResolveDepth: parseNumber(raw.maxResolveDepth, defaults.maxResolveDepth, "context.maxResolveDepth")
+  };
+}
+
+function parseDerivedOutputConfig(raw: Record<string, unknown>, defaults: DerivedOutputConfig): DerivedOutputConfig {
+  return {
+    maxPlanQueries: parseNumber(raw.maxPlanQueries, defaults.maxPlanQueries, "derivedOutputs.maxPlanQueries"),
+    maxToolRounds: parseNumber(raw.maxToolRounds, defaults.maxToolRounds, "derivedOutputs.maxToolRounds")
   };
 }
 

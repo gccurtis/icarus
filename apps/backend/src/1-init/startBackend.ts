@@ -13,6 +13,9 @@ import { createRegistry } from "#init/create/registry.js";
 import { registerHttpTransport } from "#transport/registerHttpTransport.js";
 import { registerStructuredDataEndpoints } from "#job-wiring/structured-data/registerStructuredDataEndpoints.js";
 import { registerContextEndpoints } from "#job-wiring/context/registerContextEndpoints.js";
+import { registerDerivedOutputEndpoints } from "#job-wiring/derived-outputs/registerDerivedOutputEndpoints.js";
+import { createDerivedOutputServiceInstance } from "#init/create/derived-outputs.js";
+import { createResourceReader } from "#init/create/resource-reader.js";
 
 export const startBackend = async (): Promise<void> => {
   const config = await createConfig();
@@ -28,6 +31,8 @@ export const startBackend = async (): Promise<void> => {
     projectId: config.projectId
   });
   const richText = createRichTextInstance(config, logger);
+  const resourceReader = createResourceReader();
+  const derivedOutputs = createDerivedOutputServiceInstance(config, knowledge, intelligence, resourceReader, logger);
   const app = createApp();
   const scheduler = createScheduler(config);
   const registry = createRegistry(scheduler);
@@ -54,6 +59,7 @@ export const startBackend = async (): Promise<void> => {
 
   registerStructuredDataEndpoints(registry, structuredData, formula, formulaResolver, logger);
   registerContextEndpoints(registry, contextManager);
+  registerDerivedOutputEndpoints(registry, derivedOutputs, logger);
   registerHttpTransport(app, { scheduler, registry });
 
   await app.listen({

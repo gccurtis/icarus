@@ -21,7 +21,9 @@
       "#context": ["./src/3-capabilities/context/index.ts"],
       "#context/*": ["./src/3-capabilities/context/*"],
       "#rich-text": ["./src/0-platform/rich-text/index.ts"],
-      "#rich-text/*": ["./src/0-platform/rich-text/*"]
+      "#rich-text/*": ["./src/0-platform/rich-text/*"],
+      "#derived-outputs": ["./src/3-capabilities/derived-outputs/index.ts"],
+      "#derived-outputs/*": ["./src/3-capabilities/derived-outputs/*"]
     }
   },
   "include": ["src/**/*.ts"]

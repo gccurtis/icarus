@@ -67,6 +67,14 @@
     "#rich-text/*": {
       "types": "./src/0-platform/rich-text/*",
       "default": "./dist/0-platform/rich-text/*"
+    },
+    "#derived-outputs": {
+      "types": "./src/3-capabilities/derived-outputs/index.ts",
+      "default": "./dist/3-capabilities/derived-outputs/index.js"
+    },
+    "#derived-outputs/*": {
+      "types": "./src/3-capabilities/derived-outputs/*",
+      "default": "./dist/3-capabilities/derived-outputs/*"
     }
   },
   "scripts": {
