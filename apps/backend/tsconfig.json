@@ -23,7 +23,11 @@
       "#rich-text": ["./src/0-platform/rich-text/index.ts"],
       "#rich-text/*": ["./src/0-platform/rich-text/*"],
       "#derived-outputs": ["./src/3-capabilities/derived-outputs/index.ts"],
-      "#derived-outputs/*": ["./src/3-capabilities/derived-outputs/*"]
+      "#derived-outputs/*": ["./src/3-capabilities/derived-outputs/*"],
+      "#general-files": ["./src/3-capabilities/general-files/index.ts"],
+      "#general-files/*": ["./src/3-capabilities/general-files/*"],
+      "#connector": ["./src/3-capabilities/connector/index.ts"],
+      "#connector/*": ["./src/3-capabilities/connector/*"]
     }
   },
   "include": ["src/**/*.ts"]

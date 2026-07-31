@@ -14,7 +14,12 @@ import { registerHttpTransport } from "#transport/registerHttpTransport.js";
 import { registerStructuredDataEndpoints } from "#job-wiring/structured-data/registerStructuredDataEndpoints.js";
 import { registerContextEndpoints } from "#job-wiring/context/registerContextEndpoints.js";
 import { registerDerivedOutputEndpoints } from "#job-wiring/derived-outputs/registerDerivedOutputEndpoints.js";
+import { registerGeneralFileEndpoints } from "#job-wiring/general-files/registerGeneralFileEndpointMappings.js";
+import { registerConnectorEndpoints } from "#job-wiring/connector/registerConnectorEndpointMappings.js";
 import { createDerivedOutputServiceInstance } from "#init/create/derived-outputs.js";
+import { createGeneralFilesInstance } from "#init/create/generalFiles.js";
+import { createConnectorInstance } from "#init/create/connector.js";
+import { ConnectorSyncScheduler } from "#init/create/connectorSyncScheduler.js";
 import { createResourceReader } from "#init/create/resource-reader.js";
 
 export const startBackend = async (): Promise<void> => {
@@ -33,6 +38,8 @@ export const startBackend = async (): Promise<void> => {
   const richText = createRichTextInstance(config, logger);
   const resourceReader = createResourceReader();
   const derivedOutputs = createDerivedOutputServiceInstance(config, knowledge, intelligence, resourceReader, logger);
+  const generalFiles = createGeneralFilesInstance(config, knowledge, logger);
+  const { service: connector, store: connectorStore } = createConnectorInstance(config, knowledge, logger);
   const app = createApp();
   const scheduler = createScheduler(config);
   const registry = createRegistry(scheduler);
@@ -54,12 +61,20 @@ export const startBackend = async (): Promise<void> => {
     structuredDataReady: Boolean(structuredData),
     formulaResolverReady: Boolean(formulaResolver),
     richTextReady: Boolean(richText),
-    contextReady: Boolean(contextManager)
+    contextReady: Boolean(contextManager),
+    generalFilesReady: Boolean(generalFiles)
   });
 
   registerStructuredDataEndpoints(registry, structuredData, formula, formulaResolver, logger);
   registerContextEndpoints(registry, contextManager);
   registerDerivedOutputEndpoints(registry, derivedOutputs, logger);
+  registerGeneralFileEndpoints(registry, generalFiles, logger);
+  registerConnectorEndpoints(registry, connector, logger);
+
+  // Start the connector sync scheduler
+  const syncScheduler = new ConnectorSyncScheduler(connectorStore, scheduler, connector, logger);
+  syncScheduler.start();
+
   registerHttpTransport(app, { scheduler, registry });
 
   await app.listen({
