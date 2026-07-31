@@ -3,8 +3,12 @@ import type {
   AddItem,
   AddResult,
   ClusterConfig,
+  ContextEntry,
   FrontierEntry,
   KnowledgeOptions,
+  KnowledgeRetrievalOptions,
+  KnowledgeResourceResolver,
+  KnowledgeScopeManifest,
   KnowledgeWindow,
   Region,
   RetrieveResult,
@@ -47,6 +51,7 @@ export class Knowledge {
   private readonly descentThreshold: number;
   private readonly charBudget: number;
   private readonly defaultTopK: number;
+  private readonly resolver?: KnowledgeResourceResolver;
 
   constructor(
     private readonly store: KnowledgeStore,
@@ -67,6 +72,7 @@ export class Knowledge {
     this.descentThreshold = opts?.descentThreshold ?? DEFAULT_THRESHOLD;
     this.charBudget = opts?.charBudget ?? DEFAULT_CHAR_BUDGET;
     this.defaultTopK = opts?.defaultTopK ?? 5;
+    this.resolver = opts?.resolver;
   }
 
   // ── Ingestion ─────────────────────────────────────────────────────────────
@@ -211,10 +217,32 @@ export class Knowledge {
 
   // ── Retrieval ─────────────────────────────────────────────────────────────
 
-  async retrieve(query: string, _topK?: number): Promise<RetrieveResult> {
+  async retrieve(query: string, options?: KnowledgeRetrievalOptions): Promise<RetrieveResult> {
     const t = performance.now();
     const { vectors, usage } = await this.embedder.embed([query]);
     const queryVec = vectors[0];
+
+    // Resolve scope before descent so we have the manifest ready
+    let scopeManifest: KnowledgeScopeManifest | null = null;
+    let admissibleSourceIds: Set<string> | null = null;
+
+    if (options?.scope && options.scope.length > 0) {
+      const inputEntries = options.scope;
+      const resolved: ContextEntry[] = this.resolver
+        ? await this.resolver.resolve(inputEntries)
+        : inputEntries.filter(e => e.kind === "document");
+      const docEntries = resolved.filter(e => e.kind === "document");
+      admissibleSourceIds = new Set(docEntries.map(e => e.id));
+      const sortedIds = [...admissibleSourceIds].sort();
+      scopeManifest = {
+        inputEntries,
+        resolvedEntries: resolved,
+        resolvedSourceIds: sortedIds,
+        contextDigest: createHash("sha256").update(JSON.stringify(inputEntries)).digest("hex"),
+        scopeDigest: createHash("sha256").update(JSON.stringify(sortedIds)).digest("hex"),
+        resolvedAt: new Date().toISOString()
+      };
+    }
 
     const { windowIds, scores } = await descent(
       queryVec,
@@ -224,22 +252,36 @@ export class Knowledge {
     );
 
     if (windowIds.length === 0) {
-      return { regions: [], usage };
+      return { regions: [], scope: scopeManifest, usage };
     }
 
-    const windows = await this.store.getWindows(windowIds);
+    let windows = await this.store.getWindows(windowIds);
+    const windowsBeforeScope = windows.length;
+
+    // Scope filter: drop windows outside the admissible set
+    if (admissibleSourceIds !== null) {
+      const admissible = admissibleSourceIds;
+      windows = windows.filter(w => admissible.has(w.sourceId));
+    }
+
     const regions = assembleRegions(windows, scores, this.charBudget);
 
     this.logger.debug("knowledge", {
       op: "retrieve",
       windowsHit: windowIds.length,
+      ...(admissibleSourceIds !== null ? {
+        scopeInputCount: options!.scope!.length,
+        scopeSourceCount: admissibleSourceIds.size,
+        windowsBeforeScope,
+        windowsAfterScope: windows.length
+      } : {}),
       regionCount: regions.length,
       promptTokens: usage.promptTokens,
       totalTokens: usage.totalTokens,
       ...(usage.costUsd !== undefined ? { costUsd: usage.costUsd } : {}),
       durationMs: Math.round(performance.now() - t)
     });
-    return { regions, usage };
+    return { regions, scope: scopeManifest, usage };
   }
 
   // ── Tool adapter ──────────────────────────────────────────────────────────

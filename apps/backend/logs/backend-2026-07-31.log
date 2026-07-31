@@ -40,3 +40,5 @@
 {"timestamp":"2026-07-31T13:07:49.496Z","level":"info","message":"Backend listening","data":{"port":4000}}
 {"timestamp":"2026-07-31T13:09:17.202Z","level":"info","message":"Backend starting","data":{"host":"0.0.0.0","port":4000,"concurrentWorkers":4,"loggingEnabled":true,"loggingLevel":"debug","loggingDirectory":"logs","intelligenceProvider":"openrouter","intelligenceModel":"openai/text-embedding-3-small","intelligenceReady":true,"projectId":"default","knowledgeReady":true,"formulaReady":true,"nameManagerReady":true}}
 {"timestamp":"2026-07-31T13:09:17.210Z","level":"info","message":"Backend listening","data":{"port":4000}}
+{"timestamp":"2026-07-31T15:48:22.259Z","level":"info","message":"Backend starting","data":{"host":"0.0.0.0","port":4000,"concurrentWorkers":4,"loggingEnabled":true,"loggingLevel":"debug","loggingDirectory":"logs","intelligenceProvider":"openrouter","intelligenceModel":"openai/text-embedding-3-small","intelligenceReady":true,"projectId":"default","knowledgeReady":true,"formulaReady":true,"nameManagerReady":true}}
+{"timestamp":"2026-07-31T15:48:22.265Z","level":"info","message":"Backend listening","data":{"port":4000}}

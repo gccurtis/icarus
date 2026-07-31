@@ -79,8 +79,36 @@ export interface Region {
   density: number;   // how many retrieved windows covered this span
 }
 
+// ─── Context scope ────────────────────────────────────────────────────────────
+
+/** The shared resource-reference atom used by Context and scope-aware retrieval. */
+export interface ContextEntry {
+  id: string;
+  kind: string;  // e.g. "document", "context"
+}
+
+export interface KnowledgeScopeManifest {
+  inputEntries: ContextEntry[];     // as supplied by caller
+  resolvedEntries: ContextEntry[];  // after recursive expand
+  resolvedSourceIds: string[];      // sorted admissible set used to filter windows
+  contextDigest: string;            // SHA-256(JSON(inputEntries))
+  scopeDigest: string;              // SHA-256(JSON(resolvedSourceIds))
+  resolvedAt: string;               // ISO timestamp
+}
+
+export interface KnowledgeRetrievalOptions {
+  topK?: number;
+  scope?: ContextEntry[];  // absent or [] = no restriction, full lattice
+}
+
+/** Injected into Knowledge at construction time to expand kind:"context" entries. */
+export interface KnowledgeResourceResolver {
+  resolve(entries: ContextEntry[]): Promise<ContextEntry[]>;
+}
+
 export interface RetrieveResult {
   regions: Region[];
+  scope: KnowledgeScopeManifest | null;  // null when no scope was applied
   usage: Usage;
 }
 
@@ -146,8 +174,9 @@ export interface StoredEdge {
 export interface KnowledgeOptions {
   window?: Partial<WindowOptions>;
   cluster?: Partial<ClusterConfig>;
-  descentBeam?: number;       // default 3
-  descentThreshold?: number;  // default 0.35
-  charBudget?: number;        // default 4000
-  defaultTopK?: number;       // default 5
+  descentBeam?: number;         // default 3
+  descentThreshold?: number;    // default 0.35
+  charBudget?: number;          // default 4000
+  defaultTopK?: number;         // default 5
+  resolver?: KnowledgeResourceResolver;  // optional scope resolver; injected at wiring time
 }

@@ -174,3 +174,12 @@ formula:
 nameManager:
   maxDisplayNameBytes: 256
   maxNamesPerScope: 10000
+
+# Context capability limits.
+context:
+  maxEntriesPerContext: 1000
+  maxResolveDepth: 10
+
+# Project and user identifiers.
+projectId: default
+userId: default-user

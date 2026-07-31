@@ -4,19 +4,21 @@ import { createIntelligence } from "#init/create/intelligence.js";
 import { createKnowledge } from "#init/create/knowledge.js";
 import { createFormula } from "#init/create/formula.js";
 import { createNameManagerInstance } from "#init/create/name-manager.js";
+import { createContextManagerInstance } from "#init/create/context.js";
 import { createLogger } from "#init/create/logger.js";
 import { createScheduler } from "#init/create/scheduler.js";
 import { createRegistry } from "#init/create/registry.js";
 import { registerHttpTransport } from "#transport/registerHttpTransport.js";
 import { registerNameManagerEndpoints } from "#job-wiring/name-manager/registerNameManagerEndpoints.js";
+import { registerContextEndpoints } from "#job-wiring/context/registerContextEndpoints.js";
 
 export const startBackend = async (): Promise<void> => {
-  // Runtime objects are created in dependency order. The registry receives the
-  // scheduler because queue-status wiring needs to read scheduler state.
   const config = await createConfig();
   const logger = createLogger(config);
   const intelligence = createIntelligence(config, logger);
-  const knowledge = createKnowledge(config.projectId, intelligence, logger);
+  // Context is created before knowledge so it can be injected as the scope resolver.
+  const contextManager = createContextManagerInstance(config, logger);
+  const knowledge = createKnowledge(config.projectId, intelligence, logger, contextManager);
   const formula = createFormula(config, logger);
   const nameManager = createNameManagerInstance(config, logger);
   const app = createApp();
@@ -34,17 +36,17 @@ export const startBackend = async (): Promise<void> => {
     intelligenceModel: config.intelligence.embedding.model,
     intelligenceReady: Boolean(intelligence),
     projectId: config.projectId,
+    userId: config.userId,
     knowledgeReady: Boolean(knowledge),
     formulaReady: Boolean(formula),
-    nameManagerReady: Boolean(nameManager)
+    nameManagerReady: Boolean(nameManager),
+    contextReady: Boolean(contextManager)
   });
 
-  // Register the one HTTP ingress pipeline only after all endpoints are mapped.
   registerNameManagerEndpoints(registry, nameManager);
+  registerContextEndpoints(registry, contextManager);
   registerHttpTransport(app, { scheduler, registry });
 
-  // Listening is the final startup action; requests cannot arrive before all
-  // runtime objects and endpoint mappings are ready.
   await app.listen({
     host: config.server.host,
     port: config.server.port

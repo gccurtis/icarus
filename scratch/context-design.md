@@ -1,11 +1,36 @@
 # Context Capability — Design
 
+
 ## Summary
 
 Context is a **regular capability** (`3-capabilities/context/`) that lets callers
-name and persist ordered sets of resource references (`ContextEntry[]`).  A
+name and persist unordered sets of resource references (`ContextEntry[]`).  A
 context entry is `{ id: string; kind: string }` — the minimal pair that
 identifies a resource without hard-coding what kind that resource is.
+
+Context is scoped by both `userId` and `projectId` from backend config.  The
+runtime keeps two persistence views:
+- a user-level store keyed by `userId`
+- a project-level store keyed by `projectId`
+
+The project store is the authoritative runtime view.  The user store acts as a
+personal/default layer that can be promoted into the project store.  On lookup,
+the project store is checked first; if an entry is missing there but exists in
+the user store, it can be copied into the project store and then treated as
+project-owned.
+
+### Runtime IDs
+
+```ts
+interface BackendConfig {
+  userId: string;
+  projectId: string;
+  // ...other config
+}
+```
+
+These are the built-in scope identifiers the rest of the capability layer
+assumes are already available.
 
 The capability provides:
 - CRUD for named, versioned Context records
@@ -76,6 +101,14 @@ Callers that want a throwaway scope without polluting the named-context
 namespace use `declare("~" + crypto.randomUUID(), entries)`.  A future
 housekeeping job can sweep unreferenced anonymous contexts.
 
+Anonymous contexts may exist at either scope:
+- `~`-named user contexts stay in the user table until promoted
+- `~`-named project contexts stay in the project table
+
+Promotion from user to project is an explicit copy, not a move.  That keeps the
+user copy intact while making the project view stable for retrieval and
+collaboration.
+
 ```ts
 // compose returns a new persisted anonymous context
 async compose(
@@ -99,7 +132,16 @@ interface ContextManagerConfig {
   maxResolveDepth:      number;  // default 10 — cycle guard + sanity cap
 }
 
+interface ContextScope {
+  userId: string;
+  projectId: string;
+}
+
 class ContextManager {
+  // ── Scope ──────────────────────────────────────────────────────────────
+  /** Context can be addressed at user or project scope; project is default. */
+  scope: ContextScope;
+
   // ── CRUD ───────────────────────────────────────────────────────────────
   get(id: string): Promise<ContextRecord | null>;
   getByName(displayName: string): Promise<ContextRecord | null>;
@@ -166,10 +208,16 @@ class StaleContextError      extends Error { readonly id: string; }
 
 ### SQLite schema
 
-Table: `ctx_${prefix}_contexts`  (`prefix` = SHA-256(projectId).slice(0,16))
+Two tables, both keyed by the runtime identity that owns them:
+
+- `ctx_user_${prefix}_contexts` (`prefix` = SHA-256(userId).slice(0,16))
+- `ctx_proj_${prefix}_contexts` (`prefix` = SHA-256(projectId).slice(0,16))
+
+The project table is used for retrieval.  The user table is a secondary source
+during promotion and personal scoping.
 
 ```sql
-CREATE TABLE ctx_${prefix}_contexts (
+CREATE TABLE ctx_proj_${prefix}_contexts (
   id           TEXT    PRIMARY KEY,
   display_name TEXT    NOT NULL,
   entries_json TEXT    NOT NULL,   -- JSON array of {id, kind}
@@ -178,8 +226,21 @@ CREATE TABLE ctx_${prefix}_contexts (
   updated_at   TEXT    NOT NULL,
   deleted_at   TEXT
 );
-CREATE UNIQUE INDEX ctx_${prefix}_contexts_name
-  ON ctx_${prefix}_contexts(display_name)
+CREATE UNIQUE INDEX ctx_proj_${prefix}_contexts_name
+  ON ctx_proj_${prefix}_contexts(display_name)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE ctx_user_${prefix}_contexts (
+  id           TEXT    PRIMARY KEY,
+  display_name TEXT    NOT NULL,
+  entries_json TEXT    NOT NULL,
+  revision     INTEGER NOT NULL DEFAULT 1,
+  created_at   TEXT    NOT NULL,
+  updated_at   TEXT    NOT NULL,
+  deleted_at   TEXT
+);
+CREATE UNIQUE INDEX ctx_user_${prefix}_contexts_name
+  ON ctx_user_${prefix}_contexts(display_name)
   WHERE deleted_at IS NULL;
 ```
 
@@ -188,23 +249,65 @@ CREATE UNIQUE INDEX ctx_${prefix}_contexts_name
 ## HTTP endpoints
 
 All use query/body params (no path params — job registry exact matching).
+Endpoints exist in both scope flavors so callers can manipulate the user view
+or the project view directly.
 
 | Method | Path                  | Params                                           | Notes                                                |
 |--------|-----------------------|--------------------------------------------------|------------------------------------------------------|
-| POST   | `/contexts`           | body: `{displayName, entries}`                   | create; prefix name with `~` for anonymous           |
-| GET    | `/contexts`           | query: `?includeAnonymous=true`                  | list; anonymous hidden by default                    |
-| GET    | `/contexts/entry`     | query: `?id=`                                    | get one by id (anonymous included)                   |
-| GET    | `/contexts/by-name`   | query: `?displayName=`                           | get one by name                                      |
-| PATCH  | `/contexts/entries`   | body: `{id, entries, expectedRevision}`          | replace entries (deduplicates)                       |
-| DELETE | `/contexts`           | body: `{id}`                                     | soft-delete                                          |
-| POST   | `/contexts/resolve`   | body: `{entries}`                                | resolve → flat deduplicated leaf entries             |
-| POST   | `/contexts/combine`   | body: `{a, b}`                                   | pure union, no I/O                                   |
-| POST   | `/contexts/difference`| body: `{a, b}`                                   | pure difference, no I/O                              |
-| POST   | `/contexts/compose`   | body: `{op, a, b}` (`op`: `"combine"`\|`"difference"`) | run op + persist as anonymous context |
+| POST   | `/user/contexts`           | body: `{displayName, entries}`                   | create in user table; prefix name with `~` for anonymous |
+| GET    | `/user/contexts`           | query: `?includeAnonymous=true`                  | list user contexts; anonymous hidden by default      |
+| GET    | `/user/contexts/entry`     | query: `?id=`                                    | get one by id                                        |
+| GET    | `/user/contexts/by-name`   | query: `?displayName=`                           | get one by name                                      |
+| PATCH  | `/user/contexts/entries`   | body: `{id, entries, expectedRevision}`          | replace entries (deduplicates)                       |
+| DELETE | `/user/contexts`           | body: `{id}`                                     | soft-delete                                          |
+| POST   | `/user/contexts/resolve`   | body: `{entries}`                                | resolve in user scope                                |
+| POST   | `/user/contexts/combine`   | body: `{a, b}`                                   | pure union, no I/O                                   |
+| POST   | `/user/contexts/difference`| body: `{a, b}`                                   | pure difference, no I/O                              |
+| POST   | `/user/contexts/compose`   | body: `{op, a, b}` (`op`: `"combine"`\|`"difference"`) | run op + persist as anonymous user context |
+| POST   | `/project/contexts`         | body: `{displayName, entries}`                   | create in project table; prefix name with `~` for anonymous |
+| GET    | `/project/contexts`         | query: `?includeAnonymous=true`                  | list project contexts; anonymous hidden by default   |
+| GET    | `/project/contexts/entry`   | query: `?id=`                                    | get one by id                                        |
+| GET    | `/project/contexts/by-name` | query: `?displayName=`                           | get one by name                                      |
+| PATCH  | `/project/contexts/entries` | body: `{id, entries, expectedRevision}`          | replace entries (deduplicates)                       |
+| DELETE | `/project/contexts`         | body: `{id}`                                     | soft-delete                                          |
+| POST   | `/project/contexts/resolve` | body: `{entries}`                                | resolve in project scope                             |
+| POST   | `/project/contexts/combine` | body: `{a, b}`                                   | pure union, no I/O                                   |
+| POST   | `/project/contexts/difference`| body: `{a, b}`                                  | pure difference, no I/O                              |
+| POST   | `/project/contexts/compose` | body: `{op, a, b}` (`op`: `"combine"`\|`"difference"`) | run op + persist as anonymous project context |
 
 ---
 
-## Knowledge scope integration
+## Logging
+
+`ContextManager` follows the same pattern as every other capability: log all
+mutations at `info` level, all read operations at `debug` level, include
+timing on every call.  Minimum fields:
+
+```
+context.declare   info   { displayName, entryCount, durationMs }
+context.update    info   { id, entryCount, revision, durationMs }
+context.delete    info   { id, durationMs }
+context.compose   info   { op, entryCount, resultId, durationMs }
+context.resolve   debug  { inputCount, resolvedCount, depth, durationMs }
+context.list      debug  { count, includeAnonymous, durationMs }
+context.get       debug  { id, found, durationMs }
+```
+
+Scoped retrieval logs within the existing `knowledge.retrieve` / `knowledge.retrieveMany`
+log line; add fields:
+
+```
+scopeInputCount    — entries passed in by caller
+scopeResolvedCount — entries after recursive expand
+scopeSourceCount   — distinct sourceIds in admissible set
+windowsBeforeScope — windows returned by descent
+windowsAfterScope  — windows remaining after scope filter
+```
+
+This lets you see immediately how much scope filtering is cutting off, and
+whether a stale or empty context is accidentally discarding everything.
+
+---
 
 ### `KnowledgeResourceResolver` interface
 
@@ -261,6 +364,12 @@ The `label` / `kind` field is **not** used as a filter; `sourceId` is the
 authoritative key.  This avoids mismatches if a source was re-indexed with a
 different label.
 
+This is not equivalent to rebuilding the lattice from only the scoped sources
+unless the corpus tier already contains no cross-source nodes.  In the current
+mixed corpus lattice, post-descent filtering is the correct exclusion
+mechanism: it guarantees out-of-scope windows are removed, but it can still
+change ranking because mixed corpus centroids participated in the descent.
+
 ### Exclude semantics
 
 An exclude scope is expressed by the caller using `difference` before passing:
@@ -287,6 +396,10 @@ class Knowledge {
 
 `resolver` is optional.  If scope contains only `kind: "document"` entries,
 the resolver is never called.
+
+For logging, scoped retrieval should always record the input scope, the
+resolved leaf scope, and the before/after window counts so crash reports can
+distinguish an empty result from a bad scope.
 
 ### `retrieveMany`
 

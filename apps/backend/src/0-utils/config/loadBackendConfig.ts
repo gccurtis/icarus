@@ -57,6 +57,11 @@ export interface NameManagerConfig {
   maxNamesPerScope: number;
 }
 
+export interface ContextManagerConfig {
+  maxEntriesPerContext: number;
+  maxResolveDepth: number;
+}
+
 export interface BackendConfig {
   server: {
     host: string;
@@ -77,7 +82,9 @@ export interface BackendConfig {
   intelligence: IntelligenceConfig;
   formula: FormulaConfig;
   nameManager: NameManagerConfig;
+  context: ContextManagerConfig;
   projectId: string;
+  userId: string;
 }
 
 const INTELLIGENCE_TIERS: IntelligenceTier[] = ["low", "medium", "high"];
@@ -142,6 +149,7 @@ const DEFAULT_CONFIG: BackendConfig = {
     }
   },
   projectId: "default",
+  userId: "default-user",
   formula: {
     maxSourceBytes: 65536,
     maxTokens: 4096,
@@ -160,6 +168,10 @@ const DEFAULT_CONFIG: BackendConfig = {
   nameManager: {
     maxDisplayNameBytes: 256,
     maxNamesPerScope: 10000
+  },
+  context: {
+    maxEntriesPerContext: 1000,
+    maxResolveDepth: 10
   }
 };
 
@@ -399,8 +411,10 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
       }
     },
     projectId: parseString(parsed.projectId, DEFAULT_CONFIG.projectId, "projectId"),
+    userId: parseString(parsed.userId, DEFAULT_CONFIG.userId, "userId"),
     formula: parseFormulaConfig((parsed.formula as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.formula),
-    nameManager: parseNameManagerConfig((parsed.nameManager as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.nameManager)
+    nameManager: parseNameManagerConfig((parsed.nameManager as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.nameManager),
+    context: parseContextConfig((parsed.context as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.context)
   };
 };
 
@@ -426,5 +440,12 @@ function parseNameManagerConfig(raw: Record<string, unknown>, defaults: NameMana
   return {
     maxDisplayNameBytes: parseNumber(raw.maxDisplayNameBytes, defaults.maxDisplayNameBytes, "nameManager.maxDisplayNameBytes"),
     maxNamesPerScope: parseNumber(raw.maxNamesPerScope, defaults.maxNamesPerScope, "nameManager.maxNamesPerScope")
+  };
+}
+
+function parseContextConfig(raw: Record<string, unknown>, defaults: ContextManagerConfig): ContextManagerConfig {
+  return {
+    maxEntriesPerContext: parseNumber(raw.maxEntriesPerContext, defaults.maxEntriesPerContext, "context.maxEntriesPerContext"),
+    maxResolveDepth: parseNumber(raw.maxResolveDepth, defaults.maxResolveDepth, "context.maxResolveDepth")
   };
 }
