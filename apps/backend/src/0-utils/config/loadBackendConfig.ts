@@ -15,6 +15,11 @@ export interface BackendConfig {
     serialMaxSize: number;
     concurrentMaxSize: number;
   };
+  logging: {
+    enabled: boolean;
+    level: string;
+    directory: string;
+  };
 }
 
 const DEFAULT_CONFIG: BackendConfig = {
@@ -28,6 +33,11 @@ const DEFAULT_CONFIG: BackendConfig = {
   queue: {
     serialMaxSize: 1000,
     concurrentMaxSize: 1000
+  },
+  logging: {
+    enabled: true,
+    level: "info",
+    directory: "logs"
   }
 };
 
@@ -65,6 +75,7 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
   const server = (parsed.server as Record<string, unknown> | undefined) ?? {};
   const workerPool = (parsed.workerPool as Record<string, unknown> | undefined) ?? {};
   const queue = (parsed.queue as Record<string, unknown> | undefined) ?? {};
+  const logging = (parsed.logging as Record<string, unknown> | undefined) ?? {};
 
   return {
     server: {
@@ -88,6 +99,18 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
         queue.concurrentMaxSize,
         DEFAULT_CONFIG.queue.concurrentMaxSize,
         "queue.concurrentMaxSize"
+      )
+    },
+    logging: {
+      enabled:
+        logging.enabled === undefined
+          ? DEFAULT_CONFIG.logging.enabled
+          : Boolean(logging.enabled),
+      level: parseString(logging.level, DEFAULT_CONFIG.logging.level, "logging.level"),
+      directory: parseString(
+        logging.directory,
+        DEFAULT_CONFIG.logging.directory,
+        "logging.directory"
       )
     }
   };

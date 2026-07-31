@@ -10,7 +10,8 @@
       "#init/*": ["./src/1-init/*"],
       "#transport/*": ["./src/2-transport/*"],
       "#capabilities/*": ["./src/3-capabilities/*"],
-      "#job-wiring/*": ["./src/4-job-wiring/*"]
+      "#job-wiring/*": ["./src/4-job-wiring/*"],
+      "#platform/*": ["./src/0-platform/*"]
     }
   },
   "include": ["src/**/*.ts"]

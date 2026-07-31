@@ -23,6 +23,10 @@
     "#job-wiring/*": {
       "types": "./src/4-job-wiring/*",
       "default": "./dist/4-job-wiring/*"
+    },
+    "#platform/*": {
+      "types": "./src/0-platform/*",
+      "default": "./dist/0-platform/*"
     }
   },
   "scripts": {
