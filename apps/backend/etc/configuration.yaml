@@ -167,10 +167,13 @@ formula:
   maxPowerMagnitude: 1000
   maxRoundingPlaces: 20
 
-# Name Manager limits.
-nameManager:
+# Structured Data limits.
+structuredData:
   maxDisplayNameBytes: 256
-  maxNamesPerScope: 10000
+  maxEntries: 10000
+  maxFieldsPerCollection: 256
+  maxRowsPerCollection: 100000
+  maxBodyBytes: 65536
 
 # Context capability limits.
 context:

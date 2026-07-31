@@ -7,6 +7,8 @@ import type { NameManager } from "#name-manager/name-manager.js";
 const NAME_MANAGER_DB_PATH = "./data/names.db";
 
 export const createNameManagerInstance = (config: BackendConfig, logger: Logger): NameManager => {
+  // nameManager config key removed — use structuredData limits for compatibility
+  const nmConfig = { maxDisplayNameBytes: 256, maxNamesPerScope: 10000 };
   const store = new SQLiteNameManagerStore(config.projectId, NAME_MANAGER_DB_PATH);
-  return createNameManager(store, config.nameManager, logger);
+  return createNameManager(store, nmConfig, logger);
 };

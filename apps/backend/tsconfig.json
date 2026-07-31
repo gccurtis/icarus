@@ -16,6 +16,8 @@
       "#formula/*": ["./src/0-platform/formula/*"],
       "#name-manager": ["./src/3-capabilities/name-manager/index.ts"],
       "#name-manager/*": ["./src/3-capabilities/name-manager/*"],
+      "#structured-data": ["./src/3-capabilities/structured-data/index.ts"],
+      "#structured-data/*": ["./src/3-capabilities/structured-data/*"],
       "#context": ["./src/3-capabilities/context/index.ts"],
       "#context/*": ["./src/3-capabilities/context/*"]
     }

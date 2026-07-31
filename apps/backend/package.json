@@ -44,6 +44,14 @@
       "types": "./src/3-capabilities/name-manager/*",
       "default": "./dist/3-capabilities/name-manager/*"
     },
+    "#structured-data": {
+      "types": "./src/3-capabilities/structured-data/index.ts",
+      "default": "./dist/3-capabilities/structured-data/index.js"
+    },
+    "#structured-data/*": {
+      "types": "./src/3-capabilities/structured-data/*",
+      "default": "./dist/3-capabilities/structured-data/*"
+    },
     "#context": {
       "types": "./src/3-capabilities/context/index.ts",
       "default": "./dist/3-capabilities/context/index.js"

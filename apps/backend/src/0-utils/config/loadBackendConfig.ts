@@ -52,9 +52,12 @@ export interface FormulaConfig {
   maxRoundingPlaces: number;
 }
 
-export interface NameManagerConfig {
+export interface StructuredDataConfig {
   maxDisplayNameBytes: number;
-  maxNamesPerScope: number;
+  maxEntries: number;
+  maxFieldsPerCollection: number;
+  maxRowsPerCollection: number;
+  maxBodyBytes: number;
 }
 
 export interface ContextManagerConfig {
@@ -81,7 +84,7 @@ export interface BackendConfig {
   };
   intelligence: IntelligenceConfig;
   formula: FormulaConfig;
-  nameManager: NameManagerConfig;
+  structuredData: StructuredDataConfig;
   context: ContextManagerConfig;
   projectId: string;
   userId: string;
@@ -165,9 +168,12 @@ const DEFAULT_CONFIG: BackendConfig = {
     maxPowerMagnitude: 1000,
     maxRoundingPlaces: 20
   },
-  nameManager: {
+  structuredData: {
     maxDisplayNameBytes: 256,
-    maxNamesPerScope: 10000
+    maxEntries: 10000,
+    maxFieldsPerCollection: 256,
+    maxRowsPerCollection: 100000,
+    maxBodyBytes: 65536
   },
   context: {
     maxEntriesPerContext: 1000,
@@ -413,7 +419,7 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     projectId: parseString(parsed.projectId, DEFAULT_CONFIG.projectId, "projectId"),
     userId: parseString(parsed.userId, DEFAULT_CONFIG.userId, "userId"),
     formula: parseFormulaConfig((parsed.formula as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.formula),
-    nameManager: parseNameManagerConfig((parsed.nameManager as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.nameManager),
+    structuredData: parseStructuredDataConfig((parsed.structuredData as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.structuredData),
     context: parseContextConfig((parsed.context as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.context)
   };
 };
@@ -436,10 +442,13 @@ function parseFormulaConfig(raw: Record<string, unknown>, defaults: FormulaConfi
   };
 }
 
-function parseNameManagerConfig(raw: Record<string, unknown>, defaults: NameManagerConfig): NameManagerConfig {
+function parseStructuredDataConfig(raw: Record<string, unknown>, defaults: StructuredDataConfig): StructuredDataConfig {
   return {
-    maxDisplayNameBytes: parseNumber(raw.maxDisplayNameBytes, defaults.maxDisplayNameBytes, "nameManager.maxDisplayNameBytes"),
-    maxNamesPerScope: parseNumber(raw.maxNamesPerScope, defaults.maxNamesPerScope, "nameManager.maxNamesPerScope")
+    maxDisplayNameBytes: parseNumber(raw.maxDisplayNameBytes, defaults.maxDisplayNameBytes, "structuredData.maxDisplayNameBytes"),
+    maxEntries: parseNumber(raw.maxEntries, defaults.maxEntries, "structuredData.maxEntries"),
+    maxFieldsPerCollection: parseNumber(raw.maxFieldsPerCollection, defaults.maxFieldsPerCollection, "structuredData.maxFieldsPerCollection"),
+    maxRowsPerCollection: parseNumber(raw.maxRowsPerCollection, defaults.maxRowsPerCollection, "structuredData.maxRowsPerCollection"),
+    maxBodyBytes: parseNumber(raw.maxBodyBytes, defaults.maxBodyBytes, "structuredData.maxBodyBytes")
   };
 }
 

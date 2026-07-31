@@ -9,3 +9,9 @@ coverage/
 .DS_Store
 *.tsbuildinfo
 logs/*.log
+
+# Backend runtime artifacts
+apps/backend/data/*.db
+apps/backend/data/*.db-shm
+apps/backend/data/*.db-wal
+apps/backend/logs/*.log
