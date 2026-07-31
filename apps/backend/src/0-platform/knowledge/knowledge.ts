@@ -72,6 +72,7 @@ export class Knowledge {
   // ── Ingestion ─────────────────────────────────────────────────────────────
 
   async add(item: AddItem): Promise<AddResult> {
+    const t = performance.now();
     const { sourceId, label } = item;
     const revision = item.revision ?? "";
 
@@ -171,13 +172,20 @@ export class Knowledge {
     };
     await this.store.putSource(sourceRecord);
 
-    this.logger.info("knowledge.add", {
+    this.logger.info("knowledge", {
+      op: "add",
       sourceId,
       label,
+      sizeBytes,
+      windowCount: windows.length,
       windowsAdded: toEmbed.length,
       windowsReused: existingSet.size,
-      nodes: allNodes.length,
-      usage: totalUsage
+      nodeCount: allNodes.length,
+      promptTokens: totalUsage.promptTokens,
+      completionTokens: totalUsage.completionTokens,
+      totalTokens: totalUsage.totalTokens,
+      ...(totalUsage.costUsd !== undefined ? { costUsd: totalUsage.costUsd } : {}),
+      durationMs: Math.round(performance.now() - t)
     });
     return {
       sourceId,
@@ -189,11 +197,12 @@ export class Knowledge {
   }
 
   async remove(sourceId: string): Promise<void> {
+    const t = performance.now();
     await this.store.deleteWindowsForSource(sourceId);
     await this.store.deleteNodesForSource(sourceId);
     await this.store.deleteSource(sourceId);
     await this.rebuildCorpusTier(sourceId, []);
-    this.logger.info("knowledge.remove", { sourceId });
+    this.logger.info("knowledge", { op: "remove", sourceId, durationMs: Math.round(performance.now() - t) });
   }
 
   listSources(): Promise<SourceRecord[]> {
@@ -203,6 +212,7 @@ export class Knowledge {
   // ── Retrieval ─────────────────────────────────────────────────────────────
 
   async retrieve(query: string, _topK?: number): Promise<RetrieveResult> {
+    const t = performance.now();
     const { vectors, usage } = await this.embedder.embed([query]);
     const queryVec = vectors[0];
 
@@ -220,7 +230,15 @@ export class Knowledge {
     const windows = await this.store.getWindows(windowIds);
     const regions = assembleRegions(windows, scores, this.charBudget);
 
-    this.logger.debug("knowledge.retrieve", { windowsHit: windowIds.length, regions: regions.length, usage });
+    this.logger.debug("knowledge", {
+      op: "retrieve",
+      windowsHit: windowIds.length,
+      regionCount: regions.length,
+      promptTokens: usage.promptTokens,
+      totalTokens: usage.totalTokens,
+      ...(usage.costUsd !== undefined ? { costUsd: usage.costUsd } : {}),
+      durationMs: Math.round(performance.now() - t)
+    });
     return { regions, usage };
   }
 

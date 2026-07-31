@@ -55,6 +55,7 @@ export interface Usage {
   completionTokens: number;
   totalTokens: number;
   reasoningTokens: number;
+  costUsd?: number; // populated when the provider returns pricing data
 }
 
 export interface InferRequest {

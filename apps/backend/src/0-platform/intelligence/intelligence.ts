@@ -31,7 +31,46 @@ const addUsage = (left: Usage, right: Usage): Usage => ({
   promptTokens: left.promptTokens + right.promptTokens,
   completionTokens: left.completionTokens + right.completionTokens,
   totalTokens: left.totalTokens + right.totalTokens,
-  reasoningTokens: left.reasoningTokens + right.reasoningTokens
+  reasoningTokens: left.reasoningTokens + right.reasoningTokens,
+  costUsd:
+    left.costUsd !== undefined || right.costUsd !== undefined
+      ? (left.costUsd ?? 0) + (right.costUsd ?? 0)
+      : undefined
+});
+
+const now = (): number => performance.now();
+
+interface IntelligenceTelemetry {
+  op: string;
+  provider: string;
+  model: string;
+  durationMs: number;
+  promptTokens: number;
+  completionTokens: number;
+  reasoningTokens: number;
+  totalTokens: number;
+  costUsd?: number;
+  [key: string]: unknown;
+}
+
+const telemetry = (
+  op: string,
+  provider: string,
+  model: string,
+  startMs: number,
+  usage: Usage,
+  extra?: Record<string, unknown>
+): IntelligenceTelemetry => ({
+  op,
+  provider,
+  model,
+  durationMs: Math.round(performance.now() - startMs),
+  promptTokens: usage.promptTokens,
+  completionTokens: usage.completionTokens,
+  reasoningTokens: usage.reasoningTokens,
+  totalTokens: usage.totalTokens,
+  ...(usage.costUsd !== undefined ? { costUsd: usage.costUsd } : {}),
+  ...extra
 });
 
 const normalizeCast = (cast: Cast): Cast => ({
@@ -86,6 +125,7 @@ export class Intelligence {
   }
 
   async infer(signal: AbortSignal | undefined, req: InferRequest): Promise<TextResult> {
+    const t = now();
     const route = this.resolveRoute("inference", req.cast);
     const provider = this.getProvider(route.provider);
     const response = await provider.infer(signal, {
@@ -94,7 +134,7 @@ export class Intelligence {
       effort: route.effort
     });
 
-    this.logger.debug("intelligence.infer", { model: route.model, usage: response.usage });
+    this.logger.debug("intelligence", telemetry("infer", route.provider, route.model, t, response.usage));
     return {
       text: response.content,
       usage: response.usage
@@ -106,6 +146,7 @@ export class Intelligence {
     req: InferRequest,
     schema: Record<string, unknown>
   ): Promise<StructuredResult> {
+    const t = now();
     const route = this.resolveRoute("inference", req.cast);
     const provider = this.getProvider(route.provider);
     const response = await provider.infer(signal, {
@@ -115,7 +156,7 @@ export class Intelligence {
       schema
     });
 
-    this.logger.debug("intelligence.inferStructured", { model: route.model, usage: response.usage });
+    this.logger.debug("intelligence", telemetry("inferStructured", route.provider, route.model, t, response.usage));
     return {
       structured: extractStructured(response.content),
       usage: response.usage
@@ -123,6 +164,7 @@ export class Intelligence {
   }
 
   async reason(signal: AbortSignal | undefined, req: ReasonRequest): Promise<TextResult> {
+    const t = now();
     const route = this.resolveRoute("reasoning", req.cast);
     const provider = this.getProvider(route.provider);
     const response = await provider.reason(signal, {
@@ -135,7 +177,7 @@ export class Intelligence {
       throw new Error("Reason call returned tool calls; use reasonWithTools instead");
     }
 
-    this.logger.debug("intelligence.reason", { model: route.model, usage: response.usage });
+    this.logger.debug("intelligence", telemetry("reason", route.provider, route.model, t, response.usage));
     return {
       text: response.content,
       usage: response.usage
@@ -147,6 +189,7 @@ export class Intelligence {
     req: ReasonRequest,
     schema: Record<string, unknown>
   ): Promise<StructuredResult> {
+    const t = now();
     const route = this.resolveRoute("reasoning", req.cast);
     const provider = this.getProvider(route.provider);
     const response = await provider.reason(signal, {
@@ -160,7 +203,7 @@ export class Intelligence {
       throw new Error("Reason call returned tool calls; use reasonWithToolsStructured instead");
     }
 
-    this.logger.debug("intelligence.reasonStructured", { model: route.model, usage: response.usage });
+    this.logger.debug("intelligence", telemetry("reasonStructured", route.provider, route.model, t, response.usage));
     return {
       structured: extractStructured(response.content),
       usage: response.usage
@@ -210,17 +253,14 @@ export class Intelligence {
   }
 
   async embed(signal: AbortSignal | undefined, req: EmbedRequest): Promise<EmbedResult> {
+    const t = now();
     const provider = this.getProvider(this.config.embedding.provider);
     const response = await provider.embed(signal, {
       model: this.config.embedding.model,
       inputs: [...req.inputs]
     });
 
-    this.logger.debug("intelligence.embed", {
-      model: this.config.embedding.model,
-      count: req.inputs.length,
-      usage: response.usage
-    });
+    this.logger.debug("intelligence", telemetry("embed", this.config.embedding.provider, this.config.embedding.model, t, response.usage, { inputCount: req.inputs.length }));
     return {
       vectors: response.vectors,
       provider: this.config.embedding.provider,
@@ -243,6 +283,7 @@ export class Intelligence {
     calls: number;
     usage: Usage;
   }> {
+    const t = now();
     const route = this.resolveRoute("reasoning", req.cast);
     const provider = this.getProvider(route.provider);
     const messages = cloneMessages(req.messages);
@@ -264,7 +305,7 @@ export class Intelligence {
 
       if (response.toolCalls.length === 0) {
         messages.push({ role: "assistant", content: response.content });
-        this.logger.debug("intelligence.reasonWithTools", { model: route.model, rounds, calls, usage });
+        this.logger.debug("intelligence", telemetry("reasonWithTools", route.provider, route.model, t, usage, { rounds, toolCalls: calls }));
         return {
           text: response.content,
           messages,

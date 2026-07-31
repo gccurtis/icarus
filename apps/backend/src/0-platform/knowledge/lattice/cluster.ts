@@ -147,8 +147,8 @@ function clusterLevel(
       centroid: centroid(memberVecs),
       count: memberIds.length,
       cohesion: minPairwiseSim(
-        clique,
-        useExact ? buildSimilarityMatrix(memberVecs) : buildSimilarityMatrix(memberVecs)
+        Array.from({ length: memberVecs.length }, (_, i) => i),
+        buildSimilarityMatrix(memberVecs)
       ),
       memberIds
     });

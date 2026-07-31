@@ -34,7 +34,8 @@ const parseUsage = (value: unknown): Usage => {
     reasoningTokens:
       typeof value.reasoning_tokens === "number"
         ? value.reasoning_tokens
-        : DEFAULT_REASONING_USAGE
+        : DEFAULT_REASONING_USAGE,
+    costUsd: typeof value.cost === "number" ? value.cost : undefined
   };
 };
 
