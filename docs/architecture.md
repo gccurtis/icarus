@@ -13,4 +13,6 @@ The backend and frontend are independently runnable and buildable. If the backen
 
 ## Detailed docs
 
-- Backend request/job architecture: `docs/backend-architecture.md`
+- [Backend request and Job architecture](backend-architecture.md)
+- [Capability reference](capabilities/README.md)
+- [Intelligence platform reference](platform/intelligence.md)
