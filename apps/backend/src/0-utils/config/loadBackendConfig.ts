@@ -36,6 +36,27 @@ export interface IntelligenceConfig {
   };
 }
 
+export interface FormulaConfig {
+  maxSourceBytes: number;
+  maxTokens: number;
+  maxNodes: number;
+  maxDepth: number;
+  maxSteps: number;
+  maxCallDepth: number;
+  maxFields: number;
+  maxRows: number;
+  maxCells: number;
+  maxOutputBytes: number;
+  maxIntegerBits: number;
+  maxPowerMagnitude: number;
+  maxRoundingPlaces: number;
+}
+
+export interface NameManagerConfig {
+  maxDisplayNameBytes: number;
+  maxNamesPerScope: number;
+}
+
 export interface BackendConfig {
   server: {
     host: string;
@@ -54,6 +75,8 @@ export interface BackendConfig {
     directory: string;
   };
   intelligence: IntelligenceConfig;
+  formula: FormulaConfig;
+  nameManager: NameManagerConfig;
   projectId: string;
 }
 
@@ -118,7 +141,26 @@ const DEFAULT_CONFIG: BackendConfig = {
       model: "openai/text-embedding-3-small"
     }
   },
-  projectId: "default"
+  projectId: "default",
+  formula: {
+    maxSourceBytes: 65536,
+    maxTokens: 4096,
+    maxNodes: 2048,
+    maxDepth: 64,
+    maxSteps: 1000000,
+    maxCallDepth: 32,
+    maxFields: 256,
+    maxRows: 100000,
+    maxCells: 1000000,
+    maxOutputBytes: 1048576,
+    maxIntegerBits: 4096,
+    maxPowerMagnitude: 1000,
+    maxRoundingPlaces: 20
+  },
+  nameManager: {
+    maxDisplayNameBytes: 256,
+    maxNamesPerScope: 10000
+  }
 };
 
 const moduleDir = dirname(fileURLToPath(import.meta.url));
@@ -356,6 +398,33 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
         )
       }
     },
-    projectId: parseString(parsed.projectId, DEFAULT_CONFIG.projectId, "projectId")
+    projectId: parseString(parsed.projectId, DEFAULT_CONFIG.projectId, "projectId"),
+    formula: parseFormulaConfig((parsed.formula as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.formula),
+    nameManager: parseNameManagerConfig((parsed.nameManager as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.nameManager)
   };
 };
+
+function parseFormulaConfig(raw: Record<string, unknown>, defaults: FormulaConfig): FormulaConfig {
+  return {
+    maxSourceBytes: parseNumber(raw.maxSourceBytes, defaults.maxSourceBytes, "formula.maxSourceBytes"),
+    maxTokens: parseNumber(raw.maxTokens, defaults.maxTokens, "formula.maxTokens"),
+    maxNodes: parseNumber(raw.maxNodes, defaults.maxNodes, "formula.maxNodes"),
+    maxDepth: parseNumber(raw.maxDepth, defaults.maxDepth, "formula.maxDepth"),
+    maxSteps: parseNumber(raw.maxSteps, defaults.maxSteps, "formula.maxSteps"),
+    maxCallDepth: parseNumber(raw.maxCallDepth, defaults.maxCallDepth, "formula.maxCallDepth"),
+    maxFields: parseNumber(raw.maxFields, defaults.maxFields, "formula.maxFields"),
+    maxRows: parseNumber(raw.maxRows, defaults.maxRows, "formula.maxRows"),
+    maxCells: parseNumber(raw.maxCells, defaults.maxCells, "formula.maxCells"),
+    maxOutputBytes: parseNumber(raw.maxOutputBytes, defaults.maxOutputBytes, "formula.maxOutputBytes"),
+    maxIntegerBits: parseNumber(raw.maxIntegerBits, defaults.maxIntegerBits, "formula.maxIntegerBits"),
+    maxPowerMagnitude: parseNumber(raw.maxPowerMagnitude, defaults.maxPowerMagnitude, "formula.maxPowerMagnitude"),
+    maxRoundingPlaces: parseNumber(raw.maxRoundingPlaces, defaults.maxRoundingPlaces, "formula.maxRoundingPlaces")
+  };
+}
+
+function parseNameManagerConfig(raw: Record<string, unknown>, defaults: NameManagerConfig): NameManagerConfig {
+  return {
+    maxDisplayNameBytes: parseNumber(raw.maxDisplayNameBytes, defaults.maxDisplayNameBytes, "nameManager.maxDisplayNameBytes"),
+    maxNamesPerScope: parseNumber(raw.maxNamesPerScope, defaults.maxNamesPerScope, "nameManager.maxNamesPerScope")
+  };
+}

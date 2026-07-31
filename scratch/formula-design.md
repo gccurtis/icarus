@@ -6,15 +6,22 @@ Source reference: `docs/capabilities/formula.md`
 
 ## What it is
 
-Formula is a pure, deterministic expression evaluator. It is a capability — it owns grammar, AST, values, evaluation, and diagnostics. It owns no project state. No migrations.
+Formula is a deterministic expression capability. It owns grammar, AST,
+values, name recognition, binding, evaluation, and diagnostics. It owns no
+project state and has no migrations. Name state remains owned by Name Manager,
+which Formula receives as a construction dependency.
 
 A Formula evaluation is completely determined by:
 
 ```
-language version + normalized expression + resolver snapshot + limits = typed value | diagnostics
+language version + normalized expression + frozen Name Manager snapshot + limits
+  = typed value | diagnostics
 ```
 
-Everything that touches project state (bindings, cell values, accepted results, ChangeSets) belongs to the capability that calls Formula — Structured Data, Spreadsheet, Analysis, Document, Slides.
+Formula obtains the frozen name environment and resolves names. Everything that
+persists an authored expression, accepted result, or ChangeSet belongs to the
+capability that calls Formula—Structured Data, Spreadsheet, Analysis, Document,
+or Slides.
 
 ---
 
@@ -38,11 +45,15 @@ apps/backend/src/
       limits.ts         # FormulaLimits enforcement (values come from config)
       diagnostics.ts    # FormulaDiagnostic codes + constructors
       wire.ts           # FormulaWireValue encoding/decoding
-      engine.ts         # FormulaEngine — the single public in-process interface
+      engine.ts         # pure parse/bind/evaluate implementation
+      formula.ts        # Formula — public interface, Name Manager orchestration
       index.ts          # barrel
 ```
 
-Formula is a **platform capability** — it lives in `0-platform/` alongside Knowledge and Intelligence. It receives a Logger (for timing, crash diagnostics, and unexpected code paths) but not Intelligence. It has no HTTP endpoints; callers receive a `FormulaEngine` instance and call its methods directly.
+Formula is a **platform capability**—it lives in `0-platform/` alongside
+Knowledge and Intelligence. `createFormula` receives Name Manager,
+configuration, and Logger, but not Intelligence. It has no HTTP endpoints;
+callers receive a `Formula` instance and call its methods directly.
 
 ---
 
@@ -167,7 +178,7 @@ The `|` separator is only valid inside `{...}`. Left of `|` is a comma-separated
 
 ---
 
-## Name resolution
+## Name recognition and resolution
 
 Resolution order inside an expression:
 
@@ -176,7 +187,11 @@ Resolution order inside an expression:
 3. Resolver snapshot
 4. Built-in names in call position
 
-The resolver snapshot is immutable. Resolution may do I/O to gather values before evaluation, but evaluation itself is pure.
+Formula recognizes external names after parsing. At the start of a validate,
+dependency, evaluate, or explain call, Formula asks its injected Name Manager
+for the applicable immutable snapshot. Formula evaluates referenced name
+bodies, detects cycles, and constructs its internal resolver snapshot. The pure
+engine then receives that frozen value and performs no I/O.
 
 ```typescript
 interface FormulaResolverSnapshot {
@@ -192,15 +207,15 @@ Bound `NameNode` instances carry a stable `BoundFormulaReference` so renames nev
 
 ---
 
-## Public engine interface
+## Public Formula interface
 
 ```typescript
-export interface FormulaEngine {
+export interface Formula {
   parse(req: ParseFormulaRequest): FormulaResult<FormulaExpression>;
-  validate(req: ValidateFormulaRequest): FormulaResult<FormulaValidation>;
-  dependencies(req: FormulaDependencyRequest): FormulaResult<FormulaDependencyResult>;
-  evaluate(req: EvaluateFormulaRequest): FormulaResult<FormulaEvaluation>;
-  explain(req: ExplainFormulaRequest): FormulaResult<FormulaExplanation>;
+  validate(req: ValidateFormulaRequest): Promise<FormulaResult<FormulaValidation>>;
+  dependencies(req: FormulaDependencyRequest): Promise<FormulaResult<FormulaDependencyResult>>;
+  evaluate(req: EvaluateFormulaRequest): Promise<FormulaResult<FormulaEvaluation>>;
+  explain(req: ExplainFormulaRequest): Promise<FormulaResult<FormulaExplanation>>;
 }
 
 type FormulaResult<T> =
@@ -208,7 +223,12 @@ type FormulaResult<T> =
   | { ok: false; diagnostics: FormulaDiagnostic[] };
 ```
 
-`createFormulaEngine(config: FormulaConfig, logger: Logger): FormulaEngine` — Logger is used for timing, limit violations, unexpected branches, and any internal error conditions.
+Requests that can recognize names carry the applicable `scopeId`; they do not
+accept a caller-built resolver snapshot.
+
+`createFormula(nameManager: NameManager, config: FormulaConfig, logger: Logger):
+Formula`—Name Manager supplies frozen name state. Logger is used for timing,
+limit violations, unexpected branches, and internal errors.
 
 ---
 
@@ -231,7 +251,10 @@ Diagnostics live outside the value algebra. A consumer can hold a last-good valu
 
 ## Limits
 
-All enforced during parse, bind, and evaluation. Every limit value comes from backend configuration — no value is hardcoded in the engine. `FormulaLimits` is constructed by `createFormulaEngine` from a `FormulaConfig` section in `configuration.yaml`.
+All enforced during parse, bind, and evaluation. Every limit value comes from
+backend configuration—no value is hardcoded in the engine. `FormulaLimits` is
+constructed by `createFormula` from a `FormulaConfig` section in
+`configuration.yaml`.
 
 ```typescript
 interface FormulaLimits {
@@ -278,8 +301,8 @@ Identical inputs + limits produce identical results. Limit changes are versioned
 Formula has no database tables. Consumers own:
 
 - Authored source + source digest
-- Resolver snapshot construction
-- Bound references + dependency manifest
+- The `scopeId` used for name recognition
+- Bound references + dependency manifest returned by Formula
 - Accepted result values + evaluation digests
 - ChangeSet append for result settlement
 - Cache keyed on `languageVersion + sourceDigest + resolverSnapshotDigest + limitsVersion + evaluatorVersion`
@@ -299,7 +322,8 @@ Settlement is compare-and-swap on owner revision + source revision + dependency 
 7. `evaluator.ts` + `builtins.ts` + `limits.ts` — core evaluation
 8. `diagnostics.ts` — diagnostic constructors
 9. `wire.ts` — JSON encoding / decoding
-10. `engine.ts` — `FormulaEngine` assembly
+10. `engine.ts` — pure engine assembly
+11. `formula.ts` — public `Formula` assembly with Name Manager and Logger
 
 ---
 
@@ -317,4 +341,6 @@ Settlement is compare-and-swap on owner revision + source revision + dependency 
 - Cardinality `!`/`?` applied to a record always returns that record unchanged
 - Bound names are stable through display-name renames
 - All limit values come from config — the engine has no hardcoded defaults
-- Formula is not exposed via HTTP; callers use `FormulaEngine` in-process
+- Formula receives Name Manager and owns name recognition; callers never build
+  resolver snapshots
+- Formula is not exposed via HTTP; callers use `Formula` in-process

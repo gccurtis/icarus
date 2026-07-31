@@ -153,3 +153,24 @@ intelligence:
 
 # Project identifier shared across all platform capabilities.
 projectId: default
+
+# Formula engine limits — all values are required; none are hardcoded in the engine.
+formula:
+  maxSourceBytes: 65536
+  maxTokens: 4096
+  maxNodes: 2048
+  maxDepth: 64
+  maxSteps: 1000000
+  maxCallDepth: 32
+  maxFields: 256
+  maxRows: 100000
+  maxCells: 1000000
+  maxOutputBytes: 1048576
+  maxIntegerBits: 4096
+  maxPowerMagnitude: 1000
+  maxRoundingPlaces: 20
+
+# Name Manager limits.
+nameManager:
+  maxDisplayNameBytes: 256
+  maxNamesPerScope: 10000

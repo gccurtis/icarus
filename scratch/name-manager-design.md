@@ -75,9 +75,14 @@ interface BoundFormulaReference {
 
 ## Name resolution
 
-Formula resolves built-in names itself. Only names it cannot resolve locally are looked up via the resolver snapshot, which is assembled from a `NameManagerSnapshot`. The Name Manager is never called during evaluation — only during snapshot construction before evaluation begins.
+Formula resolves built-in names itself. For external names, Formula asks Name
+Manager for a frozen `NameManagerSnapshot` before the pure evaluation phase.
+Name Manager is never called from the evaluator.
 
-Resolution is the act of converting a display name (as it appears in formula source) into a `BoundFormulaReference`. The Name Manager produces a `NameManagerSnapshot` that the caller uses to construct the `FormulaResolverSnapshot`.
+Resolution converts a display name—as it appears in formula source—into a
+`BoundFormulaReference` and exact value. Name Manager produces
+`NameManagerSnapshot`; Formula consumes that snapshot, evaluates referenced name
+bodies, and constructs its internal `FormulaResolverSnapshot`.
 
 ```typescript
 interface NameManagerSnapshot {
@@ -89,7 +94,9 @@ interface NameManagerSnapshot {
 }
 ```
 
-Resolution order is defined by the **caller** (Formula engine, binder). The Name Manager does not impose an order — it provides the snapshot, and the binder applies the language's scoping rules on top.
+Resolution order is defined by Formula. Name Manager does not impose an
+order—it provides the snapshot, and Formula's binder applies the language's
+scoping rules.
 
 ### Ambiguous names
 
@@ -99,15 +106,16 @@ If two entries in the same snapshot share a display name (possible during a rena
 
 ## HTTP endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/names` | Create a name (declare) |
-| `DELETE` | `/names/:id` | Delete a name (soft delete) |
-| `PATCH` | `/names/:id` | Rename or update body |
-| `GET` | `/names` | List all names in a scope |
-| `GET` | `/names/:id` | Get a single name entry |
+The job registry uses exact path matching (no path-param routing), so IDs are passed as body or query params.
 
-All endpoints are scoped to `projectId` from the request context. `scopeId` is a query/body parameter.
+| Method | Path | Transport |
+|---|---|---|
+| `POST` | `/names` | Body: `{ scopeId, kind, displayName, body }` |
+| `GET` | `/names` | Query: `?scopeId=x[&kind=variable\|function]` |
+| `GET` | `/names/entry` | Query: `?id=xxx` |
+| `PATCH` | `/names/rename` | Body: `{ id, newDisplayName, expectedRevision }` |
+| `PATCH` | `/names/body` | Body: `{ id, body, expectedRevision }` |
+| `DELETE` | `/names` | Body: `{ id }` |
 
 ---
 
@@ -229,18 +237,21 @@ nameManager:
 
 ## Relationship to Formula
 
-The Name Manager produces `NameManagerSnapshot` → caller constructs `FormulaResolverSnapshot` → Formula binder maps display names to `BoundFormulaReference` → Formula evaluator is pure from that point forward.
+Name Manager is injected into Formula. Formula obtains `NameManagerSnapshot`,
+resolves and evaluates referenced name bodies, constructs
+`FormulaResolverSnapshot`, and then invokes its pure binder/evaluator.
 
 ```
 NameManager.snapshot()
-  → FormulaResolverSnapshot (caller-assembled)
-    → FormulaEngine.parse() → AST
-    → FormulaEngine.validate() → diagnostics
-    → FormulaEngine.dependencies() → manifest
-    → FormulaEngine.evaluate() → FormulaValue | diagnostics
+  → Formula recognizes names and evaluates referenced bodies
+    → FormulaResolverSnapshot (Formula-owned)
+      → parse / bind / evaluate
+        → FormulaValue | diagnostics
 ```
 
-Formula never calls Name Manager directly. The snapshot handoff is the coupling point.
+Formula is the only consumer-side component that performs this name-resolution
+orchestration. Capabilities such as Document pass formula source and `scopeId`
+to Formula; they do not call Name Manager or assemble resolver snapshots.
 
 ---
 
@@ -261,8 +272,10 @@ Formula never calls Name Manager directly. The snapshot handoff is the coupling 
 - Revision increments monotonically on every rename or body update; compare-and-swap enforced
 - No live duplicate display names within a scope
 - Soft delete only; no hard delete
-- Name Manager does not know about Formula; Formula does not know about Name Manager
-- Formula resolves built-ins itself; Name Manager snapshot is only consulted for user-declared names
+- Name Manager does not know about Formula; Formula receives Name Manager
+  through its construction boundary
+- Formula resolves built-ins itself and consults Name Manager snapshots for
+  user-declared names
 - Bodies are formula source text — the Name Manager never evaluates them or caches values
 - Type/kind of a name's value is always resolved on demand by the consumer via Formula
 - `projectId` is not stored in request types — it is implicit in the runtime object and the underlying store table
