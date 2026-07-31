@@ -6,7 +6,7 @@
 
 The Name Manager is a **regular capability** that owns the stable identity of every user-facing name in a project. Users create and delete names directly. It provides the mapping layer between **display names** (mutable, user-editable) and **stable identifiers** (immutable, UUID-keyed) that Formula binder, dependency tracking, and ChangeSet history all rely on.
 
-A name is a declaration: "this stable ID is currently surfaced to users as this display name, and it maps to either a value or a lambda." Formula's `BoundFormulaReference` is stable across renames because the Name Manager is the single source of truth for what a stable ID means right now.
+A name is a declaration: "this stable ID is currently surfaced to users as this display name, and its body is formula source text." Formula's `BoundFormulaReference` is stable across renames because the Name Manager is the single source of truth for what a stable ID means right now.
 
 ---
 
@@ -34,20 +34,24 @@ The Name Manager is a **regular capability**. It receives a Logger. It does not 
 
 ## Core types
 
-A name maps to exactly one of two things: a **value binding** (any `FormulaValue`) or a **lambda** (formula source text that the resolver substitutes at bind time). User-defined functions are just lambdas.
+Both kinds store **formula source text** as their body. The distinction is structural:
+
+- `"variable"` — body is any formula expression; may reference other names and therefore has dependencies. The type/kind of its value is determined on demand by resolving the body at the point it's needed.
+- `"function"` — body is a lambda expression (starts with a parameter list). Structurally a lambda is already a `FormulaValue`; the distinction is user intent.
+
+The Name Manager does not eagerly evaluate bodies or cache values. Any consumer that needs the type or kind of a name's value resolves it on demand via Formula.
 
 ```typescript
 type NameKind =
-  | "variable"    // named value binding (any FormulaValue)
-  | "function";   // user-defined function — stored as lambda source text
+  | "variable"    // formula expression — resolved on demand
+  | "function";   // lambda expression — resolved on demand
 
 interface NameEntry {
   id: string;              // stable UUID — never changes
   kind: NameKind;
-  projectId: string;
   scopeId: string;         // logical container: project-global, document id, sheet id, etc.
   displayName: string;     // current user-visible name
-  body: string;            // for "variable": serialized FormulaWireValue; for "function": lambda source text
+  body: string;            // formula source text (expression or lambda)
   revision: number;        // increments on every rename or body update; starts at 1
   createdAt: string;       // ISO-8601
   updatedAt: string;       // ISO-8601
@@ -78,7 +82,6 @@ Resolution is the act of converting a display name (as it appears in formula sou
 ```typescript
 interface NameManagerSnapshot {
   id: string;                                // snapshot UUID
-  projectId: string;
   scopeId: string;
   entries: ReadonlyMap<string, NameEntry>;   // keyed by displayName
   snapshotRevision: number;                  // max revision across all entries
@@ -126,12 +129,10 @@ export interface NameManager {
 }
 
 interface SnapshotRequest {
-  projectId: string;
   scopeId: string;
 }
 
 interface ResolveRequest {
-  projectId: string;
   scopeId: string;
   displayName: string;
 }
@@ -144,11 +145,10 @@ interface NameResolution {
 }
 
 interface DeclareNameRequest {
-  projectId: string;
   scopeId: string;
   kind: NameKind;
   displayName: string;
-  body: string;   // serialized FormulaWireValue for "variable"; lambda source for "function"
+  body: string;   // formula source text — expression for "variable", lambda for "function"
 }
 
 interface UpdateBodyRequest {
@@ -158,7 +158,6 @@ interface UpdateBodyRequest {
 }
 
 interface ListRequest {
-  projectId: string;
   scopeId: string;
   kind?: NameKind;  // optional filter
 }
@@ -179,8 +178,8 @@ interface RenameRequest {
 ```typescript
 export interface NameManagerStore {
   getEntry(id: string): NameEntry | undefined;
-  getByDisplayName(projectId: string, scopeId: string, displayName: string): NameEntry[];
-  listScope(projectId: string, scopeId: string): NameEntry[];
+  getByDisplayName(scopeId: string, displayName: string): NameEntry[];
+  listScope(scopeId: string): NameEntry[];
   insert(entry: NameEntry): void;
   update(entry: NameEntry): void;
   softDelete(id: string, deletedAt: string): void;
@@ -264,6 +263,9 @@ Formula never calls Name Manager directly. The snapshot handoff is the coupling 
 - Soft delete only; no hard delete
 - Name Manager does not know about Formula; Formula does not know about Name Manager
 - Formula resolves built-ins itself; Name Manager snapshot is only consulted for user-declared names
+- Bodies are formula source text — the Name Manager never evaluates them or caches values
+- Type/kind of a name's value is always resolved on demand by the consumer via Formula
+- `projectId` is not stored in request types — it is implicit in the runtime object and the underlying store table
 - All limits come from config
 - Logger present throughout — all mutations, timing, and error paths are logged
 - HTTP endpoints exist for user-facing create, delete, rename, update, and list operations
