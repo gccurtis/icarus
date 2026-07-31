@@ -42,7 +42,7 @@ apps/backend/src/
       index.ts          # barrel
 ```
 
-Formula is a **platform capability** — it lives in `0-platform/` alongside Knowledge and Intelligence. It does not receive a Logger or Intelligence. It is a pure, synchronous compute library. There are no HTTP endpoints; callers receive a `FormulaEngine` instance and call its methods directly.
+Formula is a **platform capability** — it lives in `0-platform/` alongside Knowledge and Intelligence. It receives a Logger (for timing, crash diagnostics, and unexpected code paths) but not Intelligence. It has no HTTP endpoints; callers receive a `FormulaEngine` instance and call its methods directly.
 
 ---
 
@@ -208,7 +208,7 @@ type FormulaResult<T> =
   | { ok: false; diagnostics: FormulaDiagnostic[] };
 ```
 
-`createFormulaEngine(): FormulaEngine` — a plain factory, no Logger, no Intelligence.
+`createFormulaEngine(config: FormulaConfig, logger: Logger): FormulaEngine` — Logger is used for timing, limit violations, unexpected branches, and any internal error conditions.
 
 ---
 
@@ -305,7 +305,7 @@ Settlement is compare-and-swap on owner revision + source revision + dependency 
 
 ## Key invariants
 
-- Pure: same inputs → byte-equivalent outputs
+- Pure: same inputs → byte-equivalent outputs (logger calls are side-effects only and do not affect output)
 - No floating point in canonical values
 - Exact: `0.1 + 0.2 = 0.3`
 - No migrations: Formula owns no project state

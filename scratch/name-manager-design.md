@@ -4,9 +4,9 @@
 
 ## What it is
 
-The Name Manager is a platform capability that owns the stable identity of every user-facing name in a project. It provides the mapping layer between **display names** (mutable, user-editable) and **stable identifiers** (immutable, UUID-keyed) that Formula binder, dependency tracking, and ChangeSet history all rely on.
+The Name Manager is a **regular capability** that owns the stable identity of every user-facing name in a project. Users create and delete names directly. It provides the mapping layer between **display names** (mutable, user-editable) and **stable identifiers** (immutable, UUID-keyed) that Formula binder, dependency tracking, and ChangeSet history all rely on.
 
-A name in the Name Manager is a declaration: "this stable ID is currently surfaced to users as this display name." Formula's `BoundFormulaReference` is stable across renames because the Name Manager is the single source of truth for what a stable ID means right now.
+A name is a declaration: "this stable ID is currently surfaced to users as this display name, and it maps to either a value or a lambda." Formula's `BoundFormulaReference` is stable across renames because the Name Manager is the single source of truth for what a stable ID means right now.
 
 ---
 
@@ -14,39 +14,44 @@ A name in the Name Manager is a declaration: "this stable ID is currently surfac
 
 ```
 apps/backend/src/
-  0-platform/
+  3-capabilities/
+    built-in/
+      name-manager/
+        types.ts              # NameEntry, NameKind, NameResolution, NameManagerSnapshot
+        store.ts              # NameManagerStore interface (read + write)
+        sqlite-store.ts       # SQLite implementation
+        name-manager.ts       # NameManager class — in-process interface
+        index.ts              # barrel
+
+  4-job-wiring/
     name-manager/
-      types.ts        # NameEntry, NameScope, NameResolution, NameManagerSnapshot
-      store.ts        # NameManagerStore interface (read + write)
-      sqlite-store.ts # SQLite implementation
-      name-manager.ts # NameManager class — the public in-process interface
-      index.ts        # barrel
+      registerNameManagerEndpoints.ts
 ```
 
-The Name Manager is a **platform capability**. It receives a Logger. It does not receive Intelligence or Formula. It has no HTTP endpoints; callers use `NameManager` in-process.
+The Name Manager is a **regular capability**. It receives a Logger. It does not receive Intelligence or Formula. HTTP endpoints exist for user-facing operations (create, delete, list, rename).
 
 ---
 
 ## Core types
 
+A name maps to exactly one of two things: a **value binding** (any `FormulaValue`) or a **lambda** (formula source text that the resolver substitutes at bind time). User-defined functions are just lambdas.
+
 ```typescript
 type NameKind =
-  | "field"       // column in a table or record schema
-  | "variable"    // named binding in a capability (cell, binding, node)
-  | "formula"     // a named formula definition
-  | "type"        // a named type alias or schema
-  | "function";   // a user-defined function
+  | "variable"    // named value binding (any FormulaValue)
+  | "function";   // user-defined function — stored as lambda source text
 
 interface NameEntry {
-  id: string;           // stable UUID — never changes
+  id: string;              // stable UUID — never changes
   kind: NameKind;
   projectId: string;
-  scopeId: string;      // logical container: table id, document id, sheet id, etc.
-  displayName: string;  // current user-visible name
-  revision: number;     // increments on every rename; starts at 1
-  createdAt: string;    // ISO-8601
-  updatedAt: string;    // ISO-8601
-  deletedAt?: string;   // soft delete
+  scopeId: string;         // logical container: project-global, document id, sheet id, etc.
+  displayName: string;     // current user-visible name
+  body: string;            // for "variable": serialized FormulaWireValue; for "function": lambda source text
+  revision: number;        // increments on every rename or body update; starts at 1
+  createdAt: string;       // ISO-8601
+  updatedAt: string;       // ISO-8601
+  deletedAt?: string;      // soft delete
 }
 ```
 
@@ -66,7 +71,9 @@ interface BoundFormulaReference {
 
 ## Name resolution
 
-Resolution is the act of converting a display name (as it appears in formula source) into a `BoundFormulaReference`. The Name Manager produces a `NameManagerSnapshot` that Formula's resolver snapshot is built from.
+Formula resolves built-in names itself. Only names it cannot resolve locally are looked up via the resolver snapshot, which is assembled from a `NameManagerSnapshot`. The Name Manager is never called during evaluation — only during snapshot construction before evaluation begins.
+
+Resolution is the act of converting a display name (as it appears in formula source) into a `BoundFormulaReference`. The Name Manager produces a `NameManagerSnapshot` that the caller uses to construct the `FormulaResolverSnapshot`.
 
 ```typescript
 interface NameManagerSnapshot {
@@ -87,7 +94,21 @@ If two entries in the same snapshot share a display name (possible during a rena
 
 ---
 
-## Public interface
+## HTTP endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/names` | Create a name (declare) |
+| `DELETE` | `/names/:id` | Delete a name (soft delete) |
+| `PATCH` | `/names/:id` | Rename or update body |
+| `GET` | `/names` | List all names in a scope |
+| `GET` | `/names/:id` | Get a single name entry |
+
+All endpoints are scoped to `projectId` from the request context. `scopeId` is a query/body parameter.
+
+---
+
+## In-process interface
 
 ```typescript
 export interface NameManager {
@@ -95,10 +116,12 @@ export interface NameManager {
   snapshot(req: SnapshotRequest): Promise<NameManagerSnapshot>;
   resolve(req: ResolveRequest): Promise<NameResolution>;
   get(id: string): Promise<NameEntry | undefined>;
+  list(req: ListRequest): Promise<NameEntry[]>;
 
   // Write
   declare(req: DeclareNameRequest): Promise<NameEntry>;
   rename(req: RenameRequest): Promise<NameEntry>;
+  update(req: UpdateBodyRequest): Promise<NameEntry>;
   delete(id: string): Promise<void>;
 }
 
@@ -125,6 +148,19 @@ interface DeclareNameRequest {
   scopeId: string;
   kind: NameKind;
   displayName: string;
+  body: string;   // serialized FormulaWireValue for "variable"; lambda source for "function"
+}
+
+interface UpdateBodyRequest {
+  id: string;
+  body: string;
+  expectedRevision: number;
+}
+
+interface ListRequest {
+  projectId: string;
+  scopeId: string;
+  kind?: NameKind;  // optional filter
 }
 
 interface RenameRequest {
@@ -134,7 +170,7 @@ interface RenameRequest {
 }
 ```
 
-`createNameManager(store, logger): NameManager` — plain factory.
+`createNameManager(store: NameManagerStore, config: NameManagerConfig, logger: Logger): NameManager` — Logger used for all mutations, timing, and error conditions.
 
 ---
 
@@ -216,15 +252,18 @@ Formula never calls Name Manager directly. The snapshot handoff is the coupling 
 3. `sqlite-store.ts` — SQLite implementation
 4. `name-manager.ts` — NameManager class
 5. `index.ts` — barrel
+6. `4-job-wiring/name-manager/registerNameManagerEndpoints.ts` — HTTP wiring
 
 ---
 
 ## Key invariants
 
-- Stable IDs never change; display names may change
-- Revision increments monotonically; compare-and-swap on rename
+- Stable IDs never change; display names and body may change
+- Revision increments monotonically on every rename or body update; compare-and-swap enforced
 - No live duplicate display names within a scope
 - Soft delete only; no hard delete
 - Name Manager does not know about Formula; Formula does not know about Name Manager
+- Formula resolves built-ins itself; Name Manager snapshot is only consulted for user-declared names
 - All limits come from config
-- Name Manager has no HTTP endpoints; callers use it in-process
+- Logger present throughout — all mutations, timing, and error paths are logged
+- HTTP endpoints exist for user-facing create, delete, rename, update, and list operations
