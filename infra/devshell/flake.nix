@@ -17,6 +17,8 @@
               pnpm
               nil
               nixfmt
+              python3
+              pkg-config
             ];
 
             shellHook = ''

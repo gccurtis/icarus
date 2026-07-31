@@ -5,6 +5,8 @@ import { parse } from "yaml";
 
 type IntelligenceTier = "low" | "medium" | "high";
 
+const OPENROUTER_API_KEY_PLACEHOLDER = "replace-with-openrouter-api-key";
+
 export interface IntelligenceCastRouteConfig {
   purpose: string;
   strength: IntelligenceTier;
@@ -34,6 +36,11 @@ export interface IntelligenceConfig {
   };
 }
 
+export interface KnowledgeConfig {
+  projectId: string;
+  databasePath: string;
+}
+
 export interface BackendConfig {
   server: {
     host: string;
@@ -52,6 +59,7 @@ export interface BackendConfig {
     directory: string;
   };
   intelligence: IntelligenceConfig;
+  knowledge: KnowledgeConfig;
 }
 
 const INTELLIGENCE_TIERS: IntelligenceTier[] = ["low", "medium", "high"];
@@ -99,9 +107,7 @@ const DEFAULT_CONFIG: BackendConfig = {
   intelligence: {
     providers: {
       openrouter: {
-        apiKey:
-          process.env.OPENROUTER_API_KEY ??
-          "replace-with-openrouter-api-key",
+        apiKey: OPENROUTER_API_KEY_PLACEHOLDER,
         baseUrl: "https://openrouter.ai/api/v1",
         timeoutMs: 30000
       }
@@ -116,6 +122,10 @@ const DEFAULT_CONFIG: BackendConfig = {
       provider: "openrouter",
       model: "openai/text-embedding-3-large"
     }
+  },
+  knowledge: {
+    projectId: "default",
+    databasePath: "./data/knowledge.db"
   }
 };
 
@@ -264,6 +274,22 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     (intelligence.reasoning as Record<string, unknown> | undefined) ?? {};
   const embedding =
     (intelligence.embedding as Record<string, unknown> | undefined) ?? {};
+  const knowledge =
+    (parsed.knowledge as Record<string, unknown> | undefined) ?? {};
+
+  const configuredOpenRouterApiKey = parseString(
+    openrouter.apiKey,
+    DEFAULT_CONFIG.intelligence.providers.openrouter.apiKey,
+    "intelligence.providers.openrouter.apiKey"
+  );
+
+  const openRouterApiKeyFromEnv = process.env.OPENROUTER_API_KEY;
+  const effectiveOpenRouterApiKey =
+    configuredOpenRouterApiKey === OPENROUTER_API_KEY_PLACEHOLDER &&
+    typeof openRouterApiKeyFromEnv === "string" &&
+    openRouterApiKeyFromEnv.length > 0
+      ? openRouterApiKeyFromEnv
+      : configuredOpenRouterApiKey;
 
   return {
     server: {
@@ -301,11 +327,7 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     intelligence: {
       providers: {
         openrouter: {
-          apiKey: parseString(
-            openrouter.apiKey,
-            DEFAULT_CONFIG.intelligence.providers.openrouter.apiKey,
-            "intelligence.providers.openrouter.apiKey"
-          ),
+          apiKey: effectiveOpenRouterApiKey,
           baseUrl: parseString(
             openrouter.baseUrl,
             DEFAULT_CONFIG.intelligence.providers.openrouter.baseUrl,
@@ -344,6 +366,18 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
           "intelligence.embedding.model"
         )
       }
+    },
+    knowledge: {
+      projectId: parseString(
+        knowledge.projectId,
+        DEFAULT_CONFIG.knowledge.projectId,
+        "knowledge.projectId"
+      ),
+      databasePath: parseString(
+        knowledge.databasePath,
+        DEFAULT_CONFIG.knowledge.databasePath,
+        "knowledge.databasePath"
+      )
     }
   };
 };

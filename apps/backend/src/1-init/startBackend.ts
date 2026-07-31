@@ -1,6 +1,7 @@
 import { createConfig } from "#init/create/config.js";
 import { createApp } from "#init/create/app.js";
 import { createIntelligence } from "#init/create/intelligence.js";
+import { createKnowledge } from "#init/create/knowledge.js";
 import { createLogger } from "#init/create/logger.js";
 import { createScheduler } from "#init/create/scheduler.js";
 import { createRegistry } from "#init/create/registry.js";
@@ -12,6 +13,7 @@ export const startBackend = async (): Promise<void> => {
   const config = await createConfig();
   const logger = createLogger(config);
   const intelligence = createIntelligence(config);
+  const knowledge = createKnowledge(config, intelligence);
   const app = createApp();
   const scheduler = createScheduler(config);
   const registry = createRegistry(scheduler);
@@ -25,7 +27,9 @@ export const startBackend = async (): Promise<void> => {
     loggingDirectory: config.logging.directory,
     intelligenceProvider: config.intelligence.embedding.provider,
     intelligenceModel: config.intelligence.embedding.model,
-    intelligenceReady: Boolean(intelligence)
+    intelligenceReady: Boolean(intelligence),
+    knowledgeProject: config.knowledge.projectId,
+    knowledgeReady: Boolean(knowledge)
   });
 
   // Register the one HTTP ingress pipeline only after all endpoints are mapped.
