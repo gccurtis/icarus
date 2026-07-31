@@ -27,6 +27,22 @@
     "#platform/*": {
       "types": "./src/0-platform/*",
       "default": "./dist/0-platform/*"
+    },
+    "#formula": {
+      "types": "./src/0-platform/formula/index.ts",
+      "default": "./dist/0-platform/formula/index.js"
+    },
+    "#formula/*": {
+      "types": "./src/0-platform/formula/*",
+      "default": "./dist/0-platform/formula/*"
+    },
+    "#name-manager": {
+      "types": "./src/3-capabilities/name-manager/index.ts",
+      "default": "./dist/3-capabilities/name-manager/index.js"
+    },
+    "#name-manager/*": {
+      "types": "./src/3-capabilities/name-manager/*",
+      "default": "./dist/3-capabilities/name-manager/*"
     }
   },
   "scripts": {

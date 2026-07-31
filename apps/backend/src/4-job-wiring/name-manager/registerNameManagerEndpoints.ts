@@ -1,6 +1,6 @@
 import type { JobRegistry } from "#utils/jobs/registry.js";
-import type { NameManager } from "#capabilities/built-in/name-manager/index.js";
-import { NameConflictError, NameNotFoundError, StaleRevisionError } from "#capabilities/built-in/name-manager/index.js";
+import type { NameManager } from "#name-manager";
+import { NameConflictError, NameNotFoundError, StaleRevisionError } from "#name-manager";
 
 function nameManagerErrorResponse(e: unknown): { statusCode: number; body: unknown } {
   if (e instanceof NameNotFoundError) return { statusCode: 404, body: { error: "not_found", message: e.message } };

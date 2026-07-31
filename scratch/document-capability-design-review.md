@@ -19,6 +19,7 @@ one ordered body flow of Rows.
   evaluation snapshots and display text, Formula integration, and history.
 - [File architecture](document/file-architecture.md) — module boundaries,
   implementation functions, dependency direction, and job wiring.
+- [Knowledge Context-scoping TODO](knowledge-context-scoping-todo.md) — the
+  cross-capability retrieval work required by Prompt Block contexts.
 
-The prior review has been superseded by these implementation decisions; no
-application code has been changed.
+The prior review has been superseded by these implementation decisions.

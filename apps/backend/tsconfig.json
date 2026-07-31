@@ -11,7 +11,11 @@
       "#transport/*": ["./src/2-transport/*"],
       "#capabilities/*": ["./src/3-capabilities/*"],
       "#job-wiring/*": ["./src/4-job-wiring/*"],
-      "#platform/*": ["./src/0-platform/*"]
+      "#platform/*": ["./src/0-platform/*"],
+      "#formula": ["./src/0-platform/formula/index.ts"],
+      "#formula/*": ["./src/0-platform/formula/*"],
+      "#name-manager": ["./src/3-capabilities/name-manager/index.ts"],
+      "#name-manager/*": ["./src/3-capabilities/name-manager/*"]
     }
   },
   "include": ["src/**/*.ts"]

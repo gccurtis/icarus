@@ -15,13 +15,12 @@ A name is a declaration: "this stable ID is currently surfaced to users as this 
 ```
 apps/backend/src/
   3-capabilities/
-    built-in/
-      name-manager/
-        types.ts              # NameEntry, NameKind, NameResolution, NameManagerSnapshot
-        store.ts              # NameManagerStore interface (read + write)
-        sqlite-store.ts       # SQLite implementation
-        name-manager.ts       # NameManager class — in-process interface
-        index.ts              # barrel
+    name-manager/
+      types.ts              # NameEntry, NameKind, NameResolution, NameManagerSnapshot
+      store.ts              # NameManagerStore interface (read + write)
+      sqlite-store.ts       # SQLite implementation
+      name-manager.ts       # NameManager class — in-process interface
+      index.ts              # barrel
 
   4-job-wiring/
     name-manager/
@@ -61,15 +60,22 @@ interface NameEntry {
 
 ### Stable references
 
-Formula binder emits a `BoundFormulaReference` that contains only `id` + `revision`. Renames bump `revision` but keep `id`. An expression bound at revision 3 retains a `stale_binding` diagnostic if the name is now at revision 5 — the caller decides whether to rebind or reject.
+Name Manager exposes the stable `NameEntry.id`, its `revision`, and its formula
+body. It does not define Formula's bound-reference type. Formula evaluates the
+body and emits its own `BoundFormulaReference`:
 
 ```typescript
 interface BoundFormulaReference {
-  id: string;        // stable UUID from NameEntry
-  revision: number;  // revision at bind time
-  kind: NameKind;
+  kind: "binding";
+  bindingId: string;                 // NameEntry.id
+  ownerRevision: number | string;    // NameEntry.revision at bind time
+  valueDigest: string;               // exact evaluated name value
 }
 ```
+
+Renames keep `bindingId` stable while advancing `ownerRevision`. Formula decides
+whether a previously bound expression must be rebound or receives a
+`stale_binding` diagnostic.
 
 ---
 
@@ -100,7 +106,10 @@ scoping rules.
 
 ### Ambiguous names
 
-If two entries in the same snapshot share a display name (possible during a rename transition), the snapshot is marked `ambiguous: true` on those entries. The binder emits an `unknown_identifier` diagnostic with a hint listing the candidates.
+The store rejects two live entries with the same display name in one scope, and
+rename commits atomically, so a valid snapshot is never ambiguous. Formula
+fails closed with an `unknown_identifier` diagnostic if a malformed or imported
+snapshot violates that invariant.
 
 ---
 
@@ -257,7 +266,7 @@ to Formula; they do not call Name Manager or assemble resolver snapshots.
 
 ## Build order
 
-1. `types.ts` — NameEntry, NameKind, NameManagerSnapshot, BoundFormulaReference
+1. `types.ts` — NameEntry, NameKind, and NameManagerSnapshot
 2. `store.ts` — NameManagerStore interface
 3. `sqlite-store.ts` — SQLite implementation
 4. `name-manager.ts` — NameManager class

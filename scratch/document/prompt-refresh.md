@@ -10,8 +10,8 @@ This design uses deliberately separate terms:
   It contains exact text, an origin/version, and a locator. It is the only
   factual input to Prompt resolution.
 
-`DocumentContext` is a Document-owned `{ id, kind }` value. A Prompt Block may
-store a list of them and passes that list unchanged to Knowledge. The initial
+`DocumentContext` is a Document-owned `{ id, kind }` value. Every Prompt Block
+stores a list of them and passes that list unchanged to Knowledge. The initial
 use is direct Resource scoping, for example
 `{ id: "<document-id>", kind: "document" }`. Document does not read those
 Resources. Knowledge translates the list into retrieval scope and ignores
@@ -29,17 +29,17 @@ Prompt Block
   ├─ editable content
   └─ PromptDefinition
        ├─ instruction
-       ├─ optional DocumentContext[]
+       ├─ DocumentContext[]
        ├─ optional persona
        ├─ definition/content revisions
        └─ last accepted lattice-grounding result
 ```
 
-The configured input is an instruction plus an optional
-`DocumentContext[]`. Each entry has only `id` and `kind`; there is no subkind.
-Absence of the list searches the whole project lattice. A present empty list is
-an explicitly empty scope. The shape is expected to move into a shared Context
-library later without changing stored Prompt definitions.
+The configured input is an instruction plus `DocumentContext[]`. Each entry has
+only `id` and `kind`; there is no subkind. An empty list adds no restriction and
+therefore searches the whole already project-scoped lattice. The shape is
+expected to move into a shared Context library later without changing stored
+Prompt definitions.
 
 The required Knowledge API and descent changes are tracked in
 [Knowledge Context-scoping TODO](../knowledge-context-scoping-todo.md).
@@ -51,13 +51,15 @@ when its content is initially empty.
 
 ## Initial generation versus refresh
 
-Planning and retrieval are the same in both cases. Synthesis uses one of two
+Both cases use the same retrieval and settlement machinery. The refresh planner
+also receives the frozen editable text so it can retrieve updates for the
+specific entities already present in the Block. Synthesis uses one of two
 prompts:
 
-| Kind | Selection rule | Synthesis input |
-| --- | --- | --- |
-| `initial` | No `lastResolution` and current editable text is empty | instruction + lattice grounding |
-| `refresh` | A prior resolution or any current editable text exists | instruction + lattice grounding + current text as an editorial baseline |
+| Kind | Selection rule | Planning input | Synthesis input |
+| --- | --- | --- | --- |
+| `initial` | No `lastResolution` and current editable text is empty | instruction | instruction + lattice grounding |
+| `refresh` | A prior resolution or any current editable text exists | instruction + current text as retrieval context | instruction + lattice grounding + current text as an editorial baseline |
 
 The initial prompt writes the first grounded answer. The refresh prompt asks the
 reasoning model to retain the baseline's structure, tone, and user additions
@@ -81,7 +83,7 @@ serial request
   → persist idempotent attempt
 
 concurrent resolution
-  → Intelligence.reasonStructured(plan messages, plan schema)
+  → Intelligence.reasonStructured(plan messages with frozen content, plan schema)
   → Knowledge.retrieveMany(queries, { contexts: frozenContexts })
   → Intelligence.reasonStructured(initial or refresh messages, synthesis schema)
   → validate the structured value
@@ -220,6 +222,10 @@ Write concise, keyword-rich search queries that would retrieve the material
 needed to answer CURRENT INSTRUCTION. Cover distinct facts or subquestions
 rather than writing near-duplicate queries.
 
+When an EDITORIAL BASELINE is present, use its named entities, dates, measures,
+and other specific claims to plan queries for the current version of those
+facts. The baseline is retrieval context only, not factual authority.
+
 Do not answer the instruction. Do not infer facts. Your sole job is to plan
 retrieval queries.
 ```
@@ -229,7 +235,12 @@ User message:
 ```text
 CURRENT INSTRUCTION:
 {{instruction}}
+
+EDITORIAL BASELINE:
+{{editorialBaseline.text}}
 ```
+
+For initial generation, `{{editorialBaseline.text}}` is `(none)`.
 
 ### Initial grounded generation
 
@@ -330,7 +341,7 @@ interface PromptRefreshAttempt {
   frozenDefinitionRevision: number;
   frozenContentRevision: number;
   frozenDefinitionDigest: string;
-  frozenContexts?: DocumentContext[];
+  frozenContexts: DocumentContext[];
   frozenContent: InlineContent;
   promptDigest: string;
   schemaDigest: string;

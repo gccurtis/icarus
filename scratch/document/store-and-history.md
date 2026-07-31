@@ -178,7 +178,7 @@ the global activity order.
 | `document_change_sets` | append-only forward/inverse operations, request receipts, and touched-ID sets |
 | `document_activity_outbox` | durable references to accepted creation and ChangeSet events for Activity |
 | `document_refresh_attempts` | frozen Prompt Block/target, grounding manifest, patches/proposal/failure, settlement |
-| `document_formula_attempts` | frozen Formula item/expression, resolved input manifest, evaluation/failure, settlement |
+| `document_formula_attempts` | frozen Formula item/expression, observed dependency manifest, evaluation/failure, settlement |
 | `document_resolution_stages` | idempotent prompt/formula accept, resolve, and settle receipts |
 
 All data is isolated by the scoped store; records use Document ID, revision, and
@@ -303,17 +303,20 @@ request, and Formula request identical retry behavior.
 The reducer creates inverse operations; the client does not supply them. Stable
 IDs mean an operation batch whose touched IDs are disjoint can be applied
 unchanged to the current head. The touched set includes direct mutation targets,
-their required parent containers, and any sibling insertion/move anchors. A
-delete or wholesale replacement also touches every ID in the affected subtree.
-A Document-wide operation touches a reserved Document ID. There is no arbitrary
-revision-distance limit: all intervening ChangeSets must simply remain retained.
-A CAS race while admitting retries the same intersection check against the newer
-head. Every accepted create, duplicate, submission, Prompt settlement, Formula
-settlement, and compensation writes a durable `DocumentActivityContribution`
-with the same transaction. It contains the Document ID, ChangeSet ID when one
-exists, revision, resulting semantic digest, normalized semantic operation,
-origin, timestamp, summary, and compensation reference. It contains no project
-or user scope fields.
+structural insertion/move anchors, and a parent ID only when the operation
+changes that parent's child membership, order, or layout. Merely resolving a
+target through a parent does not touch that parent, so edits to distinct Atoms
+in sibling Blocks remain independent. A delete or wholesale replacement also
+touches every ID in the affected subtree. A Document-wide operation touches a
+reserved Document ID. There is no arbitrary revision-distance limit: all
+intervening ChangeSets must simply remain retained. A CAS race while admitting
+retries the same intersection check against the newer head. Every accepted
+create, duplicate, submission, Prompt settlement, Formula settlement, and
+compensation writes a durable `DocumentActivityContribution` with the same
+transaction. It contains the Document ID, ChangeSet ID when one exists,
+revision, resulting semantic digest, normalized semantic operation, origin,
+timestamp, summary, and compensation reference. It contains no project or user
+scope fields.
 
 Activity consumes those contributions to build the one chronological history
 across editable Resources. It owns the user-facing undo and redo selection.

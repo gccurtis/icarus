@@ -56,7 +56,7 @@ apps/backend/src/
 
   4-job-wiring/
     document/
-      registerDocumentEndpointMappings.ts
+      registerDocumentEndpoints.ts
       createDocumentJobs.ts
       documentJobPayloads.ts
 ```
@@ -151,7 +151,8 @@ into the returned capability.
 - Prompt refresh resolution and settlement;
 - Formula evaluation and settlement.
 
-Endpoint mapping belongs in `registerDocumentEndpointMappings.ts`. It resolves
-the project runtime first, then calls a method on the already-constructed
-Document capability. Domain and application files do not know HTTP, queue names,
-or request envelopes.
+Endpoint mapping belongs in `registerDocumentEndpoints.ts`, following the
+existing capability convention. It registers `POST
+/documents/command` and `POST /documents/query`, resolves the project runtime,
+then calls the already-constructed Document capability. Domain and application
+files do not know HTTP, queue names, or request envelopes.

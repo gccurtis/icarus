@@ -226,10 +226,10 @@ matching `query.type`.
 
 This leaves two public endpoints rather than one endpoint per method:
 
-| Request type | Queue / response | Purpose |
-| --- | --- | --- |
-| `documents.command.v1` | Serial / inline | all public mutations and deferred-work requests |
-| `documents.query.v1` | Concurrent / inline | all bounded reads and status checks |
+| Method and path | Request type | Queue / response | Purpose |
+| --- | --- | --- | --- |
+| `POST /documents/command` | `documents.command.v1` | Serial / inline | all public mutations and deferred-work requests |
+| `POST /documents/query` | `documents.query.v1` | Concurrent / inline | all bounded reads and status checks |
 
 Queue selection remains static at endpoint registration. We do not put commands
 and queries behind one mixed endpoint because the dispatcher could not choose

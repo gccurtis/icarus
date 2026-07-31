@@ -1,9 +1,5 @@
 # Formula Capability Design
 
-Source reference: `docs/capabilities/formula.md`
-
----
-
 ## What it is
 
 Formula is a deterministic expression capability. It owns grammar, AST,
@@ -196,7 +192,7 @@ engine then receives that frozen value and performs no I/O.
 ```typescript
 interface FormulaResolverSnapshot {
   id: string;
-  scope: { userId: string; projectId: string };
+  scopeId: string;
   bindings: ReadonlyMap<string, ResolvedFormulaBinding>;
   snapshotDigest: string;
   createdFrom: readonly ResolverSourceRevision[];
@@ -221,6 +217,23 @@ export interface Formula {
 type FormulaResult<T> =
   | { ok: true; value: T }
   | { ok: false; diagnostics: FormulaDiagnostic[] };
+
+interface ParseFormulaRequest {
+  source: string;
+  languageVersion: FormulaLanguageVersion;
+  limits?: Partial<FormulaLimits>;
+}
+
+interface ScopedFormulaRequest {
+  expression: FormulaExpression;
+  scopeId: string;
+  limits?: Partial<FormulaLimits>;
+}
+
+type ValidateFormulaRequest = ScopedFormulaRequest;
+type FormulaDependencyRequest = ScopedFormulaRequest;
+type EvaluateFormulaRequest = ScopedFormulaRequest;
+type ExplainFormulaRequest = ScopedFormulaRequest;
 ```
 
 Requests that can recognize names carry the applicable `scopeId`; they do not

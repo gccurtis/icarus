@@ -7,7 +7,8 @@ context entries. Knowledge resolves that list into an admissible lattice scope
 and excludes out-of-scope artifacts during descent.
 
 Document does not resolve the entries and does not depend on a Context service.
-A Prompt Block stores `DocumentContext[]` and passes it to Knowledge unchanged.
+A Prompt Block always stores `DocumentContext[]` and passes it to Knowledge
+unchanged.
 
 ## Context contract
 
@@ -39,8 +40,9 @@ When a shared Context library is implemented, move this type there and have
 Document and Knowledge import it. Do not create a second Knowledge-specific
 shape.
 
-An omitted context list means the whole project lattice. A present empty list
-means an empty scope.
+An omitted context option or an empty list means no additional restriction:
+search the whole already project-scoped lattice. Document always supplies its
+stored list, including when that list is empty.
 
 ## Retrieval surface
 
@@ -61,7 +63,7 @@ The result should record the exact resolved scope used:
 
 ```ts
 interface KnowledgeScopeManifest {
-  contextDigest?: string;
+  contextDigest: string;
   scopeDigest: string;
   resolvedContexts: DocumentContext[];
   resolvedResources: DocumentContext[];
@@ -115,8 +117,7 @@ when its descendant Resource set intersects the resolved scope.
 
 ## Invariants
 
-- An omitted context list searches the whole scoped Knowledge store.
-- A present empty context list returns no regions.
+- An omitted or empty context list searches the whole scoped Knowledge store.
 - No returned Region may belong to a source outside the resolved scope.
 - Out-of-scope artifacts never consume beam width or result budget.
 - Equivalent context lists resolve to the same `scopeDigest`.

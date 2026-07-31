@@ -51,8 +51,8 @@ const documents = createDocumentCapability(
 
 Formula owns Name Manager integration and name recognition. Document has no
 Formula resolver or Context reader dependency. It passes formula source to
-`formula`, and passes the Prompt Block's optional `DocumentContext[]` directly
-to `knowledge`.
+`formula`, and passes the Prompt Block's `DocumentContext[]` directly to
+`knowledge`.
 
 The request/runtime layer resolves the project before it calls this object. The
 Document capability sees only document IDs and values that belong to its scoped
@@ -83,7 +83,7 @@ operations.
    Each accepted Document change is reversible and contributes to the future
    cross-resource Activity timeline, which owns user-facing undo and redo.
 8. Prompt Blocks retain editable canonical text alongside their instruction and
-   optional `{ id, kind }` context list. Refresh takes that current text as
+   `{ id, kind }` context list. Refresh takes that current text as
    stabilization input, passes the context list to Knowledge, and lets the
    reasoning model make stable, grounding-directed updates through its explicit
    refresh prompts.
@@ -140,9 +140,10 @@ context-aware lattice descent is isolated in the
 
 - A stale submission is independent when none of the stable IDs touched by its
   operations were touched by intervening ChangeSets. The touched set includes
-  direct targets plus required parent and insertion-anchor IDs. Any intersection
-  returns `revision_conflict`; otherwise the operations apply unchanged at the
-  current head.
+  direct mutation targets, structural anchors, and parent IDs only when the
+  operation changes that parent's child membership, order, or layout. Any
+  intersection returns `revision_conflict`; otherwise the operations apply
+  unchanged at the current head.
 - Each Document retains 5 Bases and 1,000 ChangeSets by default. Both counts are
   runtime configuration values and can be changed without altering the domain
   model.

@@ -35,7 +35,8 @@ interface FormulaItem {
 }
 
 interface FormulaEvaluationSnapshot {
-  inputManifest?: FormulaInputManifest; // absent only when parsing failed before resolution
+  observedDependencies?: FormulaObservedDependency[];
+  dependencyDigest?: string;
   value?: FormulaWireValue;
   displayText: string;
   diagnostics: FormulaDiagnosticSummary[];
@@ -44,23 +45,16 @@ interface FormulaEvaluationSnapshot {
   evaluatedAt: string;
 }
 
-interface FormulaInputManifest {
-  digest: string;
-  dependencies: FormulaDependency[];
-}
-
-interface FormulaDependency {
-  kind: "structured-name" | "structured-cell" | "spreadsheet-cell" | "analysis-output";
-  id: string;
-  version: string;
-}
+type FormulaWireValue = import("#formula").FormulaWireValue;
+type FormulaObservedDependency = import("#formula").ObservedDependency;
 ```
 
 `FormulaWireValue` is imported from Formula's public wire contract, not copied
 into Document. It remains a tagged, lossless Formula value. `Formula` returns a
 typed `FormulaEvaluation`; Document encodes that value and applies its
 deterministic `formulaValueToDisplayText` function. The resulting `displayText`
-is accepted into the Document snapshot alongside the value and input manifest.
+is accepted into the Document snapshot alongside the value, observed
+dependencies, and dependency digest.
 
 Formula items are atomic for ordinary text editing: `text.splice` does not enter
 their expression or evaluated display. A user edits the expression with
@@ -74,7 +68,8 @@ formula.set-expression / inline.insert(formula)
   → append ChangeSet with Formula item in pending state
   → queue an evaluation attempt
   → freeze atom ID + language version + expression digest
-  → Formula.evaluate(expression, scopeId = documentId)
+  → Formula.parse({ source: expression, languageVersion })
+  → Formula.evaluate({ expression: parsedExpression, scopeId: documentId })
        Formula obtains Name Manager state and resolves names internally
   → encode FormulaValue and derive displayText
   → serially check that the Formula item has not changed
@@ -82,13 +77,13 @@ formula.set-expression / inline.insert(formula)
        changed: retain stale attempt, make no Document mutation
 ```
 
-Successful evaluation state is paired with the exact expression,
-`FormulaInputManifest`, Formula evaluation digest, and evaluator version. It can
-therefore be loaded from an exact historical snapshot without re-evaluating
-against a newer project state. A parse failure occurs before resolver
-construction and has no input manifest. In either state, `displayText` is the
-string used by text positions, marks, styles, search indexing, and Prompt
-protected-token serialization.
+Successful evaluation state is paired with the exact expression, observed
+Formula dependencies, dependency digest, Formula evaluation digest, and
+evaluator version. It can therefore be loaded from an exact historical snapshot
+without re-evaluating against newer name state. A parse failure occurs before
+dependency resolution and has no dependency fields. In either state,
+`displayText` is the string used by text positions, marks, styles, search
+indexing, and Prompt protected-token serialization.
 
 On a parse, binding, or evaluation failure, Document accepts an `error`
 evaluation snapshot containing the Formula diagnostics and a stable diagnostic
@@ -136,11 +131,11 @@ returns the exact dependency and evaluation manifests. Document never calls
 Name Manager and never constructs or receives a resolver snapshot.
 
 `formulaValueToDisplayText` is Document-owned and deterministic. Its formatting
-version participates in the evaluation-attempt digest. A successful engine
-result supplies the typed value and Formula evaluation/dependency digests;
-Document supplies the display string and `evaluatedAt`. A failed engine result
-supplies Formula diagnostics and a stable diagnostic display string without
-converting the atom into ordinary text.
+version participates in the evaluation-attempt digest. A successful Formula
+result supplies the typed value, observed dependencies, and
+evaluation/dependency digests; Document supplies the display string and
+`evaluatedAt`. A failed Formula result supplies diagnostics and a stable
+diagnostic display string without converting the atom into ordinary text.
 
 `formula.apply-evaluation` is internal: it can be emitted only after Formula
 returns a normalized result. The reducer verifies that the expression

@@ -110,7 +110,7 @@ type CalloutTone = "info" | "success" | "warning" | "danger" | "neutral";
 
 interface PromptDefinition {
   instruction: string;
-  contexts?: DocumentContext[];
+  contexts: DocumentContext[];
   persona?: PromptPersonaRef;
   refreshPolicy: "manual" | "automatic";
   definitionRevision: number;
@@ -141,7 +141,7 @@ interface PromptResolution {
 }
 
 interface KnowledgeScopeManifest {
-  contextDigest?: string;
+  contextDigest: string;
   scopeDigest: string;
   resolvedContexts: DocumentContext[];
   resolvedResources: DocumentContext[];
@@ -188,10 +188,11 @@ interface ProvenanceLink {
 
 `prompt.content` is the editable canonical text. Styling projects it into the
 display text; there is no separate display-content field. A prompt stores an
-instruction and an optional list of `DocumentContext` values. Initially these
-are direct Resource identities such as `{ id: documentId, kind: "document" }`.
-Document passes the list unchanged to Knowledge, which scopes retrieval and
-returns the exact `KnowledgeScopeManifest` recorded in `lastResolution`.
+instruction and a list of `DocumentContext` values. Initially these are direct
+Resource identities such as `{ id: documentId, kind: "document" }`. Document
+passes the list unchanged to Knowledge, which scopes retrieval and returns the
+exact `KnowledgeScopeManifest` recorded in `lastResolution`. An empty list adds
+no restriction and therefore searches the whole already project-scoped lattice.
 
 The two-field `DocumentContext` is deliberately Document-owned for now. When a
 shared Context library exists, this shape can move there without changing
@@ -297,7 +298,7 @@ interface ImageBlockData {
 }
 
 interface ChartBlockData {
-  source: "literal" | "analysis-result" | "structured-binding";
+  source: "literal" | "analysis-result" | "structured-data";
   specification: Record<string, unknown>;
   snapshotDigest?: string;
 }
@@ -342,7 +343,8 @@ interface FormulaItem {
 }
 
 interface FormulaEvaluationSnapshot {
-  inputManifest?: FormulaInputManifest; // absent only when parsing failed before resolution
+  observedDependencies?: FormulaObservedDependency[];
+  dependencyDigest?: string;
   value?: FormulaWireValue;
   displayText: string;
   diagnostics: FormulaDiagnosticSummary[];
@@ -351,18 +353,8 @@ interface FormulaEvaluationSnapshot {
   evaluatedAt: string;
 }
 
-interface FormulaInputManifest {
-  digest: string;
-  dependencies: FormulaDependency[];
-}
-
-interface FormulaDependency {
-  kind: "structured-name" | "structured-cell" | "spreadsheet-cell" | "analysis-output";
-  id: string;
-  version: string;
-}
-
-type FormulaWireValue = import("#platform/formula").FormulaWireValue;
+type FormulaWireValue = import("#formula").FormulaWireValue;
+type FormulaObservedDependency = import("#formula").ObservedDependency;
 
 interface FormulaDiagnosticSummary {
   code: string;
