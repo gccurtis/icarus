@@ -151,9 +151,6 @@ intelligence:
     provider: openrouter
     model: openai/text-embedding-3-small
 
-# Project identifier shared across all platform capabilities.
-projectId: default
-
 # Formula engine limits — all values are required; none are hardcoded in the engine.
 formula:
   maxSourceBytes: 65536

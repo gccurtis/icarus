@@ -42,3 +42,11 @@
 {"timestamp":"2026-07-31T13:09:17.210Z","level":"info","message":"Backend listening","data":{"port":4000}}
 {"timestamp":"2026-07-31T15:48:22.259Z","level":"info","message":"Backend starting","data":{"host":"0.0.0.0","port":4000,"concurrentWorkers":4,"loggingEnabled":true,"loggingLevel":"debug","loggingDirectory":"logs","intelligenceProvider":"openrouter","intelligenceModel":"openai/text-embedding-3-small","intelligenceReady":true,"projectId":"default","knowledgeReady":true,"formulaReady":true,"nameManagerReady":true}}
 {"timestamp":"2026-07-31T15:48:22.265Z","level":"info","message":"Backend listening","data":{"port":4000}}
+{"timestamp":"2026-07-31T16:05:32.112Z","level":"info","message":"Backend starting","data":{"host":"0.0.0.0","port":4000,"concurrentWorkers":4,"loggingEnabled":true,"loggingLevel":"debug","loggingDirectory":"logs","intelligenceProvider":"openrouter","intelligenceModel":"openai/text-embedding-3-small","intelligenceReady":true,"projectId":"default","userId":"default-user","knowledgeReady":true,"formulaReady":true,"nameManagerReady":true,"contextReady":true}}
+{"timestamp":"2026-07-31T16:05:32.120Z","level":"info","message":"Backend listening","data":{"port":4000}}
+{"timestamp":"2026-07-31T16:06:15.161Z","level":"info","message":"context.declare","data":{"id":"95925c12-befc-42f8-b167-931c0e26a896","displayName":"ctx-test","scope":"user","entryCount":2,"durationMs":1}}
+{"timestamp":"2026-07-31T16:06:15.170Z","level":"debug","message":"context.list","data":{"scope":"user","includeAnonymous":true,"count":1,"durationMs":1}}
+{"timestamp":"2026-07-31T16:06:15.178Z","level":"debug","message":"context.resolve","data":{"inputCount":1,"resolvedCount":0,"durationMs":0}}
+{"timestamp":"2026-07-31T16:06:15.186Z","level":"info","message":"context.compose","data":{"op":"combine","scope":"user","entryCount":2,"resultId":"3ec78959-2f08-4c30-bcac-c47619108378","durationMs":0}}
+{"timestamp":"2026-07-31T16:06:41.877Z","level":"debug","message":"context.resolve","data":{"inputCount":1,"resolvedCount":2,"durationMs":1}}
+{"timestamp":"2026-07-31T16:06:41.885Z","level":"info","message":"context.promote","data":{"fromScope":"user","toScope":"project","sourceId":"95925c12-befc-42f8-b167-931c0e26a896","resultId":"d3ca5d6d-8c1d-4890-b442-40bf0d18a9b3","durationMs":0}}
