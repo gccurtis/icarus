@@ -76,6 +76,9 @@ Table cells, chart titles, axis titles, category labels, series names, and
 Slide notes have their own stable addresses. Every address resolves to exactly one
 `RichContent`, or the operation fails. Prompt Content is not a Rich Content
 target: it is the exact plain-text revision of a dedicated Derived Output.
+Deck title, optional Slide title, and image alt text are deliberately plain
+metadata/accessibility strings, not presentational Rich Content or Formula
+targets.
 
 ## Canonical operation vocabulary
 
@@ -127,7 +130,7 @@ type SlideOperation =
   | { type: "slide.delete"; slideId: SlideId }
   | { type: "slide.set-title"; slideId: SlideId; title?: string }
   | { type: "slide.set-background"; slideId: SlideId; background?: SlideBackground }
-  | { type: "slide.set-layout"; slideId: SlideId; layoutId: SlideLayoutId | null }
+  | { type: "slide.set-layout"; slideId: SlideId; layoutId: SlideLayoutId }
 
   // Heterogeneous positioned elements in a Master, Layout, or Slide
   | { type: "element.insert"; owner: ElementOwner; element: SlideElement }
@@ -322,14 +325,14 @@ Theme tokens + protected Normal Text Style
   -> Slide elements and slot bindings
 ```
 
-Every Layout names one Master. A Slide selects one Layout or explicitly selects
-`null`. `slide.set-layout` changes that live selection; it does not copy Master
-or Layout Elements into the Slide. A Slide-owned Element may use one stable
+Every Layout names one Master and every Slide selects one Layout.
+`slide.set-layout` changes that live selection; it does not copy Master or
+Layout Elements into the Slide. A Slide-owned Element may use one stable
 slot in its selected Layout, and each slot accepts at most one live Slide
 Element. Slot compatibility is validated against the Element kind.
 
-A Layout slot is metadata with a frame, accepted Element kinds, and an optional
-default Normal Text Style selection. It is not an
+A Layout slot is metadata with a frame, accepted Element kinds, and a required
+flag. It is not an
 Element, has no `zIndex`, and never paints by itself. Geometry has exactly one
 authority:
 
@@ -537,7 +540,7 @@ type SlideCommand =
       deckId: string;
       title: string;
       initialSlideId: string;
-      initialLayoutId?: string;
+      initialLayoutId: string;
       canvas?: SlideCanvas;
       design?: DeckDesignSystem;
     }
@@ -596,9 +599,9 @@ type SlideCommandResult =
   | { type: "formula.evaluate-requested"; attemptId: string };
 ```
 
-Creation must produce one valid Theme and the protected Normal Text Style.
-Defaults may also create a Master and Layout; `initialLayoutId` may be omitted
-for a first Slide that intentionally selects no Layout. IDs are explicit so replay never invents
+Creation must produce one valid Theme, the protected Normal Text Style, at
+least one Master, at least one Layout, and a first Slide selecting a Layout.
+IDs are explicit so replay never invents
 canonical identity. Defaults may be filled by the trusted create helper before
 the revision-zero Base is committed.
 

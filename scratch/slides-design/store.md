@@ -192,7 +192,7 @@ back. Initial attempt dispatch occurs only after commit.
 ```sql
 UPDATE decks
 SET revision = :nextRevision,
-    title_projection = :titleProjection,
+    title = :title,
     lifecycle = :lifecycle,
     semantic_digest = :digest,
     updated_at = :updatedAt
@@ -509,7 +509,7 @@ identifier below.
 ```sql
 CREATE TABLE decks (
   id                TEXT PRIMARY KEY,
-  title_projection  TEXT NOT NULL,
+  title             TEXT NOT NULL,
   lifecycle         TEXT NOT NULL
     CHECK (lifecycle IN ('active', 'archived', 'trashed')),
   revision          INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0),
