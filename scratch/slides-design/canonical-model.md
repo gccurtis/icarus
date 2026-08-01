@@ -24,7 +24,7 @@ type DerivedOutputRef = import("#derived-outputs").DerivedOutputRef;
 
 interface DeckHead {
   id: DeckId;
-  /** Plain-text projection of DeckSnapshot.title for list queries. */
+  /** Denormalized copy of DeckSnapshot.title for list queries. */
   title: string;
   lifecycle: SlideLifecycle;
   revision: number;
@@ -67,6 +67,9 @@ labels—Style, token, Master, Layout, and slot names, font-family names, MIME
 types, and resource keys—are also plain strings because they identify
 configuration rather than presented Slide content. Prompt Content owns no text
 copy; it owns an immutable Derived Output reference.
+
+A Deck retains at least one Master and one Layout in addition to at least one
+Slide. Every Layout and Slide therefore has a live inheritance target.
 
 ## Embedded Theme and typed design tokens
 
@@ -149,10 +152,10 @@ length values used for visible dimensions or stroke widths must be positive.
 
 ## Text Style Registry
 
-Slides has reusable text styles only. It does not have a generic Shape Style or
-an element-kind default Style map. Geometry, line, image, table, and chart
-appearance is typed directly on the owning element and may reference Theme
-tokens.
+Slides has one reusable Normal text Style. It does not have a generic Shape
+Style or an element-kind default Style map. Geometry, line, image, table, and
+chart appearance is typed directly on the owning element and may reference
+Theme tokens.
 
 ```ts
 interface SlideTextStyleRegistry {
@@ -263,13 +266,18 @@ template. Deleting a referenced Master or Layout requires a replacement and
 rewrites all live references in the same ChangeSet.
 
 A Layout slot is a stable, non-painting metadata placement anchor. It owns one
-frame but no content, text-Style selection, or `zIndex`. A Slide-owned framed root element
-may follow it through a discriminated placement (defined below). The element
-then has no duplicate frame and follows slot edits live. At most one live
-element binds a given slot, the element kind must be accepted, and a slot-bound
-element cannot also be inside a Group. Moving or resizing it explicitly
-detaches it to a free placement initialized with the slot's currently resolved
-frame.
+frame but no content, text-Style selection, or `zIndex`. A Slide-owned framed
+root element may follow it through a discriminated placement (defined below).
+The element then has no duplicate frame and follows slot edits live. At most
+one live element binds a given slot, the element kind must be accepted, and a
+slot-bound element cannot also be inside a Group. Moving or resizing it
+explicitly detaches it to a free placement initialized with the slot's
+currently resolved frame.
+
+`LayoutSlot.required` is completeness metadata, not an aggregate-validity
+rule. A required slot may be empty during authoring or while Prompt Content is
+pending; semantic projections report the gap to editors and presentation
+checks.
 
 Representation v1 treats Layouts as the Deck's reusable Slide templates; there
 is no third copied-template registry.
@@ -438,8 +446,18 @@ interface TextBoxPresentation {
   horizontalAlign: "left" | "center" | "right" | "justify";
   verticalAlign: "top" | "middle" | "bottom";
   overflow: "clip" | "shrink";
+  appearance?: BoxAppearance;
+}
+
+interface BoxAppearance {
+  opacity?: number;
+  fill?: FillStyle;
+  border?: StrokeStyle;
 }
 ```
+
+Box opacity is in `[0, 1]`; fill and border values obey the same typed token and
+finite-width validation as Geometry appearance.
 
 Rich Text owns authored atoms, marks, links, references, Formula atoms,
 positions, ranges, validation, normalization, and exact inverses. Slides wraps
@@ -448,8 +466,10 @@ ordinary Rich Text operation batches in a Deck ChangeSet.
 Prompt Content is not alternate Text content. It stores only an exact
 `DerivedOutputRef` and text-box presentation; Normal supplies the text Style.
 Every Prompt Content element owns a new dedicated Derived Output;
-no two live elements share an `outputId`, and generic element insert/replace
-operations cannot introduce one or attach a caller-supplied output. Derived
+no two live elements share an `outputId`, and generic element operations cannot
+introduce one or attach a caller-supplied output. Prompt Content may exist only
+in a Slide element store; Master and Layout templates may carry authored Text
+but cannot start or share generated output state. Derived
 Outputs owns the definition, instruction, Context scope, stabilization text,
 evidence, freshness, generation, and immutable content revisions. Updating
 those values does not revise the Deck; adopting a new exact output revision
@@ -461,6 +481,8 @@ Document. A serial freeze persists an attempt, concurrent work declares or
 refreshes the dedicated output, and serial settlement conditionally writes the
 exact accepted reference through an ordinary ChangeSet. Accepted mutations
 also write the Slides activity outbox fact in the same store transaction.
+Removing Prompt Content marks Slides' local ownership record historical. Slides
+never asks Derived Outputs to delete or garbage-collect an output.
 
 ### Geometry and Straight Line
 
@@ -531,6 +553,7 @@ interface ImageElementData {
   fit: "contain" | "cover" | "stretch";
   alt: string;
   decorative: boolean;
+  appearance?: BoxAppearance;
 }
 
 interface NormalizedCrop {
@@ -555,6 +578,7 @@ type TableCellId = string;
 type TableMergeId = string;
 
 interface SlideTable {
+  appearance?: BoxAppearance;
   rowOrder: TableRowId[];
   rows: Record<TableRowId, SlideTableRow>;
   columnOrder: TableColumnId[];
@@ -603,10 +627,11 @@ interface SlideTableMerge {
 Row and column order arrays are the only order authorities inside a Table.
 Every row/column cross-product has exactly one stable Cell identity. Every cell
 owns independent Rich Content plus optional fill, four borders, padding, and
-alignment; Normal supplies its text Style. Merge regions are rectangular, disjoint, contain at
-least two cells, and keep all covered Cell identities; the anchor's Rich
-Content is presented while covered content remains canonical for exact
-unmerge/undo. Table merge IDs are permanent identities and merge/unmerge are
+alignment; Normal supplies its text Style. Merge regions are rectangular,
+disjoint, contain at least two cells, and keep all covered Cell identities; the
+anchor's Rich Content is presented while covered content remains canonical
+for exact unmerge/undo. Table merge IDs are permanent identities and
+merge/unmerge are
 first-class operations.
 
 ### Chart
@@ -615,15 +640,25 @@ first-class operations.
 type ChartCategoryId = string;
 type ChartSeriesId = string;
 
-interface SlideChart {
-  kind: "bar" | "line" | "pie" | "scatter" | "area";
+type SlideChart = CartesianSlideChart | PieSlideChart;
+
+interface SlideChartBase {
+  appearance?: BoxAppearance;
   title?: RichContent;
   categories: SlideChartCategory[];
   series: SlideChartSeries[];
-  xAxis: SlideChartAxis;
-  yAxis: SlideChartAxis;
   legend: { position: "top" | "bottom" | "left" | "right" | "none" };
   colors?: ThemeColorValue[];
+}
+
+interface CartesianSlideChart extends SlideChartBase {
+  kind: "bar" | "line" | "area";
+  xAxis: SlideChartAxis;
+  yAxis: SlideChartAxis;
+}
+
+interface PieSlideChart extends SlideChartBase {
+  kind: "pie";
 }
 
 interface SlideChartCategory {
@@ -646,11 +681,16 @@ interface SlideChartAxis {
 ```
 
 Chart numeric series are bounded literal canonical values in v1. Series values
-align with categories and all values and axis bounds are finite. Formula atoms
-may occur in Chart titles, axis titles, category labels, and series names
-because those fields are Rich Content; Formula- or Structured-Data-backed
-numeric series require a separate frozen-source settlement contract and are
-not part of v1.
+align with categories and all values and axis bounds are finite. Pie Charts do
+not carry axes; an axis Rich Content target therefore resolves only for a
+Cartesian Chart, and a Pie Chart has exactly one series. Explicit Cartesian
+colors align one-to-one with series order; explicit Pie colors align one-to-one
+with category order. When colors are omitted, semantic projection cycles the
+Theme accent palette deterministically. Formula atoms may occur in Chart
+titles, axis titles, category
+labels, and series names because those fields are Rich Content; Formula- or
+Structured-Data-backed numeric series require a separate frozen-source
+settlement contract and are not part of v1.
 
 ## Rich Content targets and Formula workflow
 
@@ -727,8 +767,8 @@ Formula or Structured Data.
 8. Every Theme token reference resolves with the required kind, and the fixed
    Normal Style is present exactly once.
 9. Every Rich Content value passes Rich Text validation and normalization.
-10. Every live Prompt Content element has one distinct dedicated Derived Output
-    at a positive immutable revision.
+10. Every live Prompt Content element is Slide-owned and has one distinct
+    dedicated Derived Output at a positive immutable revision.
 11. Slide, Master, Layout, slot, element, token, table, merge, chart,
     Rich Text atom, and Rich Text mark IDs are never reused within retained Deck
     history. Exact same-kind compensation may reactivate only the same ID.
@@ -752,6 +792,7 @@ as representation-v1 deferrals.
 - Stored Group rotation/scale and arbitrary transformed coordinate systems.
 - Custom paths, arbitrary SVG, gradients, curved lines, and elbow routing.
 - Formula- or Structured-Data-backed Chart numeric series.
+- Scatter Charts until a typed X/Y point-series contract is defined.
 - Generic embeds, video, and audio element kinds.
 - Activity publishing/management beyond the durable accepted-fact outbox.
 
@@ -780,5 +821,5 @@ implicit gap:
    current plain-text Derived Output contract, and Slides projects it using the
    Normal Style without copying it into Rich Content. Slides detaches references
    when content is removed but never deletes or garbage-collects Derived Outputs.
-   If Derived Outputs
-   later exposes Rich Content, that should be a versioned interface change.
+   If Derived Outputs later exposes Rich Content, that should be a versioned
+   interface change.

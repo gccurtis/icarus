@@ -167,14 +167,14 @@ interface SlideMutationCommit {
   identityTransitions: SlideIdentityTransitions;
   identityReactivation: "forbid" | "same-kind-compensation";
   /** Formula attempts discovered by this accepted mutation. */
-  attempts?: SlideAttempt[];
+  attempts?: FormulaEvaluationAttempt[];
   /** Prompt/Formula attempt settled by this mutation. */
   attemptUpdates?: SlideAttempt[];
   promptOwnershipTransitions?: PromptOwnershipTransition[];
 }
 
 interface SlideCompactionCommit {
-  deckId: string;
+  deckId: DeckId;
   expectedHeadRevision: number;
   cutoffBase: SlideBase;
   headBase?: SlideBase;
@@ -228,7 +228,7 @@ invalid attempt subtypes, and non-canonical Rich Content fail closed.
 
 ```ts
 interface SlideSubmissionReceipt {
-  deckId: string;
+  deckId: DeckId;
   requestId: string;
   requestDigest: string;
   result: SlideCommandResult;
@@ -236,7 +236,7 @@ interface SlideSubmissionReceipt {
 }
 
 interface SlideDelegatedCommandClaim {
-  deckId: string;
+  deckId: DeckId;
   requestId: string;
   requestDigest: string;
   kind: "prompt-content.update-definition";
@@ -266,7 +266,6 @@ represented by a durable Slide attempt and a staged internal Job.
 ```ts
 type SlideIdentityKind =
   | "theme-token"
-  | "text-style"
   | "master"
   | "layout"
   | "layout-slot"
@@ -282,7 +281,7 @@ type SlideIdentityKind =
   | "rich-text-mark";
 
 interface SlideIdentityLedgerEntry {
-  deckId: string;
+  deckId: DeckId;
   id: string;
   kind: SlideIdentityKind;
   state: "active" | "tombstoned";
@@ -307,9 +306,10 @@ not replace identity.
 The ledger is never pruned with history. External Derived Output IDs and image
 snapshot IDs are references, not Deck identities.
 
-The Deck design's protected Normal Text Style is an ordinary ledger identity
-with a system role. Domain validation prevents deletion or role reassignment;
-the persistence layer does not special-case its presentation properties.
+The protected Normal Text Style is a singleton field, not an ID-bearing
+registry entry, so it does not enter the identity ledger. Domain validation
+prevents deletion or role reassignment while allowing its name and text
+properties to change.
 
 ## Durable attempts
 
@@ -325,7 +325,7 @@ type SlideAttemptState =
 
 interface SlideAttemptBase {
   id: string;
-  deckId: string;
+  deckId: DeckId;
   clientRequestId: string;
   requestDigest: string;
   frozenDeckRevision: number;
@@ -338,8 +338,8 @@ interface SlideAttemptBase {
 
 interface PromptContentCreationAttempt extends SlideAttemptBase {
   kind: "prompt-content-create";
-  slideId: string;
-  elementId: string;
+  slideId: SlideId;
+  elementId: SlideElementId;
   /** Complete frozen positioned shell except its eventual DerivedOutputRef. */
   element: PromptContentElementShell;
   definition: {
@@ -353,8 +353,8 @@ interface PromptContentCreationAttempt extends SlideAttemptBase {
 
 interface PromptContentRefreshAttempt extends SlideAttemptBase {
   kind: "prompt-content-refresh";
-  slideId: string;
-  elementId: string;
+  slideId: SlideId;
+  elementId: SlideElementId;
   outputId: string;
   frozenAppliedRevision: number;
   candidateHeadRevision?: number;
@@ -434,9 +434,9 @@ failure recording, and completion.
 ```ts
 interface PromptContentOutputOwnership {
   outputId: string;
-  deckId: string;
-  slideId: string;
-  elementId: string;
+  deckId: DeckId;
+  slideId: SlideId;
+  elementId: SlideElementId;
   creationAttemptId?: string;
   state: "pending" | "attached" | "historical";
   attachedRevision?: number;
@@ -458,6 +458,9 @@ dedicated output per Prompt Content Element and prevents output sharing.
 Historical ownership is local reachability/audit state only. Slide never asks
 Derived Outputs to delete an output and exposes no output-maintenance Job or
 intent. This is an ownership boundary, not a deferred Slide subsystem.
+`historicalSinceRevision` is the Deck head at which local ownership became
+known not to be live. It may be `0` when initial Prompt generation fails before
+the Element ever settles into a ChangeSet.
 
 The injected `SlideDerivedOutputs` port contains declaration, exact revision
 read, definition update, and refresh only. It intentionally omits the Derived
@@ -486,7 +489,7 @@ Deck history. It does not persist or reconstruct a live Formula resolver.
 interface SlideCommittedFact {
   factId: string;
   kind: "slide.created" | "slide.changed" | "slide.compensated";
-  deckId: string;
+  deckId: DeckId;
   revision: number;
   changeSetId?: string;
   actorId?: string;
@@ -562,7 +565,7 @@ CREATE TABLE identity_ledger (
   identity_id               TEXT NOT NULL,
   identity_kind             TEXT NOT NULL
     CHECK (identity_kind IN (
-      'theme-token', 'text-style', 'master', 'layout', 'layout-slot',
+      'theme-token', 'master', 'layout', 'layout-slot',
       'slide', 'element', 'table-row', 'table-column', 'table-cell',
       'table-merge', 'chart-category', 'chart-series',
       'rich-text-atom', 'rich-text-mark'
@@ -697,7 +700,7 @@ CREATE TABLE prompt_outputs (
   creation_attempt_id  TEXT UNIQUE,
   state                TEXT NOT NULL CHECK (state IN ('pending', 'attached', 'historical')),
   attached_revision    INTEGER CHECK (attached_revision > 0),
-  historical_since_revision INTEGER CHECK (historical_since_revision > 0),
+  historical_since_revision INTEGER CHECK (historical_since_revision >= 0),
   created_at           TEXT NOT NULL,
   updated_at           TEXT NOT NULL,
   UNIQUE (deck_id, element_id),

@@ -5,8 +5,8 @@
 Slide is a regular project-scoped capability under `3-capabilities/slide/`.
 It owns versioned Deck editing: the embedded design system, live Master/Layout
 inheritance, ordered Slides, flat heterogeneous elements, Rich Content,
-dedicated Prompt Content outputs, revisions, exact inverses, retained history,
-and accepted-activity facts.
+dedicated Prompt Content output references, revisions, exact inverses, retained
+history, and accepted-activity facts.
 
 Its aggregate is:
 
@@ -101,6 +101,12 @@ selected by ID. Every text surface implicitly uses Normal. There is no generic
 visual Style: Geometry, Straight Line, Table cell, and Chart appearance is
 typed on those kinds and may use Theme tokens.
 
+Text/Prompt text boxes, Images, Tables, and Charts each expose the same small
+typed `BoxAppearance` vocabulary—opacity, fill/background, and border/stroke—
+at a kind-specific field. Geometry and Straight Line retain their specialized
+appearance contracts. This provides useful starting styling without reviving a
+universal Shape wrapper or generic element Style.
+
 Master → Layout → Slide inheritance is live within one Deck revision. Layouts
 reference Masters, Slides reference Layouts, and no layer copies another.
 Layouts are the reusable Slide templates in v1. The composition planes are
@@ -112,7 +118,8 @@ A Slide-owned framed root element can bind it through
 `{ kind: "layout-slot", slotId }`; it then has no duplicate frame and follows
 slot edits live. At most one compatible element binds a slot. Moving/resizing a
 bound element detaches it to `{ kind: "free", frame }` using the then-current
-resolved slot frame.
+resolved slot frame. `required` is a completeness hint reported by projections,
+not a validity rule that blocks an in-progress Slide.
 
 ## Element model
 
@@ -143,10 +150,12 @@ the affected sibling sets; an empty Group is pruned in the same ChangeSet.
 
 Tables have stable row, column, cell, and merge identities. Each cell owns
 `RichContent`, fill, four borders, padding, and alignment and implicitly uses
-Normal.
+Normal. The Table also owns an outer box appearance independently of per-cell
+fill and borders.
 Merge regions preserve covered cells for exact unmerge and undo.
 
-Charts own bounded literal numeric categories/series. All chart titles, axis
+Charts own bounded literal numeric categories/series. Cartesian Charts own
+axes; Pie Charts do not carry meaningless axis state. All chart titles, axis
 titles, category labels, and series names are Rich Content. Formula-backed
 numeric series are not silently approximated as a JSON blob; they wait for a
 defined frozen-source settlement contract.
@@ -180,8 +189,10 @@ different source. It stores only an exact `DerivedOutputRef`, text-box
 presentation, and ordinary element placement; it implicitly uses Normal.
 
 Every Prompt Content element has its own dedicated Derived Output. Generic
-element insertion/replacement cannot create Prompt Content or attach an
-existing output. Creation uses the same three-stage pattern as Document:
+element operations cannot create Prompt Content or attach an existing output.
+Prompt Content is Slide-owned; Master/Layout templates may contain authored
+Text but not generated output state. Creation uses the same three-stage pattern
+as Document:
 
 ```text
 serial freeze
@@ -201,9 +212,10 @@ serial settlement
 Refresh similarly freezes the exact current reference, computes outside the
 Slides transaction, and conditionally adopts a newer immutable revision.
 Definition and stabilization-text updates mutate Derived Outputs through its
-narrow runtime. Deleting Prompt Content detaches the reference because retained
-Deck history may still use it. Slides never deletes or garbage-collects Derived
-Outputs; their lifecycle remains wholly outside this capability.
+narrow runtime. Deleting Prompt Content marks local ownership historical
+because retained Deck history may still use it. Slides never deletes or
+garbage-collects Derived Outputs; their lifecycle remains wholly outside this
+capability.
 
 ## Revisions, ordering, and activity
 
@@ -268,7 +280,7 @@ Representation v1 deliberately defers Deck/Slide/Prompt duplication, external
 Theme sharing and token aliases, a third template resource beyond Layouts,
 cross-plane z interleaving, stored Group transforms, custom paths/gradients/
 curved lines, Formula-backed Chart numeric series, generic embeds/video/audio,
-and Activity publishing/management.
+Scatter Charts pending a typed X/Y dataset, and Activity publishing/management.
 
 The most important assumptions to validate before implementation hardens are:
 

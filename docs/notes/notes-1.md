@@ -11,21 +11,22 @@
 
 **Resources**
 - [X] Knowledge
-    - [ ] Document
+    - [X] Document
     - [ ] Slides
     - [ ] Spreadsheet
     - [X] Connector
     - [X] General File
+- [ ] Templates
 
 **Research**
 - [ ] Analysis
-- [ ] Findings
+- [ ] Investigation (Findings, Questions, Hypotheses)
 - [ ] Research
 
 **Project**
-- [ ] Project (Question)
+- [X] Activity (Presence)
+- [ ] Comments
 - [ ] Workspace
-- [ ] Collaboration (activity, presence, comments)
 
 **Agentic**
 - [ ] Persona

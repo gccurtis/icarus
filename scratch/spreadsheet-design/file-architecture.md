@@ -1,561 +1,471 @@
-# Spreadsheet capability — operations
+# Spreadsheet capability — file architecture
 
-## Operation vocabulary
+## Placement and removal boundary
 
-Every operation is reversible. The reducer produces exact inverse operations
-from before/after state.
+Spreadsheet is a regular, project-scoped capability. Its implementation is
+self-contained under `3-capabilities/spreadsheet/`, with one concrete factory,
+one Job-wiring directory, and composition in `1-init/startBackend.ts`.
 
-```ts
-type SpreadsheetOperation =
-  // ── Workbook metadata ────────────────────────────────────────────────
-  | { type: "workbook.rename"; title: string }
-  | { type: "workbook.set-lifecycle"; lifecycle: "active" | "archived" | "trashed" }
-  | { type: "workbook.set-metadata"; metadata: WorkbookMetadata }
-  | { type: "workbook.set-calculation"; calculation: CalculationSettings }
-
-  // ── Sheets ───────────────────────────────────────────────────────────
-  | { type: "sheet.insert"; sheet: SpreadsheetSheet; afterSheetId?: string }
-  | { type: "sheet.move"; sheetId: SheetId; afterSheetId?: string }
-  | { type: "sheet.delete"; sheetId: SheetId }
-  | { type: "sheet.rename"; sheetId: SheetId; title: string }
-  | { type: "sheet.set-freeze"; sheetId: SheetId; freeze: FreezeState }
-  | { type: "sheet.set-defaults"; sheetId: SheetId; defaults: SheetDefaults }
-
-  // ── Axes (rows and columns) ──────────────────────────────────────────
-  | { type: "row.insert"; sheetId: SheetId; row: SheetRow; afterRowId?: string }
-  | { type: "row.move"; sheetId: SheetId; rowId: RowId; afterRowId?: string }
-  | { type: "row.delete"; sheetId: SheetId; rowId: RowId }
-  | { type: "row.resize"; sheetId: SheetId; rowId: RowId; height?: number }
-  | { type: "row.set-hidden"; sheetId: SheetId; rowId: RowId; hidden: boolean }
-  | { type: "column.insert"; sheetId: SheetId; column: SheetColumn; afterColumnId?: string }
-  | { type: "column.move"; sheetId: SheetId; columnId: ColumnId; afterColumnId?: string }
-  | { type: "column.delete"; sheetId: SheetId; columnId: ColumnId }
-  | { type: "column.resize"; sheetId: SheetId; columnId: ColumnId; width?: number }
-  | { type: "column.set-hidden"; sheetId: SheetId; columnId: ColumnId; hidden: boolean }
-
-  // ── Cells ────────────────────────────────────────────────────────────
-  | { type: "cell.create"; sheetId: SheetId; cell: SpreadsheetCell }
-  | { type: "cell.delete"; sheetId: SheetId; cellId: CellId }
-  | { type: "cell.set-source"; sheetId: SheetId; cellId: CellId; source: CellSource }
-  | { type: "cell.set-style"; sheetId: SheetId; cellId: CellId; style: CellStyle }
-  | { type: "cell.set-validation"; sheetId: SheetId; cellId: CellId; validation?: CellValidation }
-
-  // ── Rich text (text-valued cells) ────────────────────────────────────
-  | { type: "rich-text.apply"; sheetId: SheetId; cellId: CellId; operations: RichTextOperation[] }
-
-  // ── Merge / unmerge ──────────────────────────────────────────────────
-  | { type: "cell.merge"; sheetId: SheetId; cellId: CellId; span: CellSpan; coveredCellPolicy: "require-empty" | "discard" | "preserve-as-reference" }
-  | { type: "cell.unmerge"; sheetId: SheetId; cellId: CellId }
-
-  // ── Accepted content (calculation settlement) ────────────────────────
-  | { type: "cell.accept-content"; sheetId: SheetId; cellId: CellId; accepted: AcceptedCellContent; expectedSource: CellSourceFingerprint }
-  | { type: "cell.accept-error"; sheetId: SheetId; cellId: CellId; error: CellError; expectedSource: CellSourceFingerprint }
-
-  // ── Derived Output ──────────────────────────────────────────────────
-  | { type: "derived-output.set"; sheetId: SheetId; cellId: CellId; output: DerivedOutputRef }
-  | { type: "derived-output.apply"; sheetId: SheetId; cellId: CellId; output: DerivedOutputRef; accepted: AcceptedCellContent }
-
-  // ── Projection management ────────────────────────────────────────────
-  | { type: "projection.materialize"; sheetId: SheetId; anchorCellId: CellId; cells: SpreadsheetCell[] }
-
-  // ── Sheet rules ──────────────────────────────────────────────────────
-  | { type: "rule.create"; sheetId: SheetId; rule: SheetRule }
-  | { type: "rule.update"; sheetId: SheetId; ruleId: string; rule: SheetRule }
-  | { type: "rule.delete"; sheetId: SheetId; ruleId: string }
-
-  // ── Overlays ─────────────────────────────────────────────────────────
-  | { type: "overlay.create"; sheetId: SheetId; overlay: SheetOverlay }
-  | { type: "overlay.update"; sheetId: SheetId; overlayId: string; overlay: SheetOverlay }
-  | { type: "overlay.delete"; sheetId: SheetId; overlayId: string };
-
-type CellSourceFingerprint = {
-  kind: CellSource["kind"];
-  digest: string;   // hash of the source content at the time evaluation was requested
-};
-```
-
-### Key points
-
-- **Axis operations**: `row.insert` / `column.insert` use `afterRowId` /
-  `afterColumnId`; absence appends. Deleting a row or column validates and
-  rewrites affected cell spans, ranges, and formula references.
-- **Cell operations**: `cell.create` places a Cell at its anchor. `cell.delete`
-  removes it and releases its span coordinates. `cell.set-source` changes what
-  produces the cell's value and clears `accepted` to pending.
-- **Merge**: `cell.merge` extends an existing Cell's span. The
-  `coveredCellPolicy` determines what happens to Cells already occupying those
-  coordinates.
-- **Unmerge**: preserves the anchor Cell with `1×1` span. Remaining coordinates
-  become empty.
-- **Accepted content**: `cell.accept-content` and `cell.accept-error` carry
-  `expectedSource` — a fingerprint of the source at the time evaluation was
-  requested. This prevents a stale result from overwriting a newer edit.
-- **Derived Output**: `derived-output.set` directly sets the reference.
-  `derived-output.apply` is used after a refresh cycle.
-- **Materialize**: converts a range projection into ordinary literal Cells.
-  The anchor Cell may become a literal or be deleted.
-
-## Pure domain functions
-
-```ts
-applyOperations(snapshot: WorkbookSnapshot, operations: SpreadsheetOperation[]): ApplyResult
-invertOperations(before: WorkbookSnapshot, operations: SpreadsheetOperation[], after: WorkbookSnapshot): SpreadsheetOperation[]
-validateWorkbook(snapshot: WorkbookSnapshot): ValidationResult
-computeTouchedIds(snapshot: WorkbookSnapshot, operations: SpreadsheetOperation[]): string[]
-canRebase(touchedIds: string[], interveningChangeSets: SpreadsheetChangeSet[]): RebaseDecision
-canonicalizeWorkbook(snapshot: WorkbookSnapshot): Uint8Array
-digestWorkbook(snapshot: WorkbookSnapshot): string
-buildRangeProjection(snapshot: WorkbookSnapshot, cell: SpreadsheetCell): RangeProjection
-resolveCoordinate(snapshot: WorkbookSnapshot, sheetId: SheetId, rowId: RowId, columnId: ColumnId): ResolvedCoordinate
-```
-
-```ts
-interface ApplyResult {
-  snapshot: WorkbookSnapshot;         // normalized
-  forward: SpreadsheetOperation[];    // canonical forward
-  inverse: SpreadsheetOperation[];    // exact inverse
-  touchedIds: string[];               // sorted, deduplicated
-  semanticDigest: string;
-}
-
-type ResolvedCoordinate =
-  | { kind: "empty"; coordinate: StableCellRef }
-  | { kind: "cell"; coordinate: StableCellRef; cellId: CellId; anchor: StableCellRef }
-  | { kind: "projected"; coordinate: StableCellRef; anchorCellId: CellId; valuePath: Array<string | number> };
-```
-
-## Command and query contracts
-
-```ts
-interface SpreadsheetCommandRequest {
-  requestId: string;
-  origin: "interactive" | "agent" | "automation";
-  command: SpreadsheetCommand;
-}
-
-type SpreadsheetCommand =
-  | { type: "workbook.create"; workbookId: string; title: string }
-  | { type: "workbook.submit"; workbookId: string; expectedRevision: number; operations: SpreadsheetOperation[] }
-  | { type: "workbook.duplicate"; sourceWorkbookId: string; sourceRevision?: number }
-  | { type: "workbook.compensate"; workbookId: string; targetChangeSetId: string; intent: "undo" | "redo"; expectedRevision: number }
-  | { type: "workbook.calculate"; workbookId: string; expectedRevision: number }
-  | { type: "derived-output.refresh"; workbookId: string; cellId: string; expectedRevision: number }
-  | { type: "data.attach"; workbookId: string; anchor: StableCellRef; entryId: string; orientation: ProjectionOrientation; expectedRevision: number }
-  | { type: "data.promote"; workbookId: string; range: StableRangeRef; displayName: string; description: string; kind: "table" | "record" | "list"; orientation: ProjectionOrientation; expectedRevision: number }
-  | { type: "projection.materialize"; workbookId: string; anchorCellId: string; expectedRevision: number };
-
-type SpreadsheetCommandResult =
-  | { type: "workbook.created"; head: WorkbookHead }
-  | { type: "workbook.changed"; changeSet: SpreadsheetChangeSet }
-  | { type: "calculation.started"; planId: string }
-  | { type: "derived-output.refreshed"; changed: boolean; output: DerivedOutputRef }
-  | { type: "data.attached"; cell: SpreadsheetCell }
-  | { type: "data.promoted"; entryId: string; cell: SpreadsheetCell }
-  | { type: "projection.materialized"; cells: SpreadsheetCell[] };
-```
-
-### Queries
-
-```ts
-interface SpreadsheetQueryRequest {
-  requestId: string;
-  query: SpreadsheetQuery;
-}
-
-type SpreadsheetQuery =
-  | { type: "workbook.list"; cursor?: string; lifecycle?: WorkbookHead["lifecycle"] }
-  | { type: "workbook.load"; workbookId: string; revision?: number }
-  | { type: "workbook.history"; workbookId: string; cursor?: string; limit: number }
-  | { type: "sheet.grid"; workbookId: string; sheetId: string; topLeft: StableCellRef; bottomRight: StableCellRef }
-  | { type: "coordinate.resolve"; workbookId: string; sheetId: string; rowId: RowId; columnId: ColumnId };
-```
-
-## Endpoints
-
-| Method | Path | Purpose |
-|---|---|---|
-| `POST` | `/spreadsheet/command` | All mutating commands. |
-| `POST` | `/spreadsheet/query` | All read queries. |
-
-Two endpoints. All commands go through a serial queue; all queries through a
-concurrent queue.
-
-## Jobs
-
-| Job | Queue | Effect |
-|---|---|---|
-| `spreadsheet.command.v1` | serial | Dispatch command, validate, reduce, persist ChangeSet, publish activity. |
-| `spreadsheet.query.v1` | concurrent | Dispatch query, read from store, return result. |
-| `spreadsheet.calculate` | concurrent → serial | Plan dependencies, evaluate concurrently, settle accepted values serially. |
-| `spreadsheet.refresh-derived-output` | concurrent → serial | Call DerivedOutputs.refresh(), then conditionally adopt newer revision. |
-| `spreadsheet.compact` | serial | Append a Base, prune retained history. |
-
-## Semantic rebase
-
-Same pattern as Document and Slides:
-
-1. Reconstruct authored snapshot at `expectedRevision`.
-2. Read intervening ChangeSets from `expectedRevision+1` to head.
-3. Compute union of touched IDs from submitted operations.
-4. Compute union of touched IDs from intervening ChangeSets.
-5. If intersection → `revision_conflict`.
-6. Otherwise, apply to current head and append new ChangeSet.
-
-## Touched IDs for spreadsheet
-
-| Operation type | Touched IDs |
-|---|---|
-| `workbook.*` | workbook identity (reserved ID) |
-| `sheet.insert/move/delete` | the sheet ID + sibling sheet IDs whose ordering changes |
-| `sheet.rename/set-freeze/set-defaults` | the sheet ID |
-| `row.insert/move/delete` | the row ID + all cells whose span includes or crosses this row |
-| `column.insert/move/delete` | the column ID + all cells whose span includes or crosses this column |
-| `cell.create` | the cell ID |
-| `cell.delete` | the cell ID + any projections that were blocked by/from this cell |
-| `cell.set-source` | the cell ID + any cell whose projection extent changed |
-| `cell.set-style/set-validation` | the cell ID |
-| `rich-text.apply` | the cell ID |
-| `cell.merge` | the cell ID + all covered cell IDs affected by policy |
-| `cell.unmerge` | the cell ID |
-| `cell.accept-*` | the cell ID + any cell whose projection extent changed |
-| `derived-output.*` | the cell ID |
-| `projection.materialize` | the anchor cell ID + all newly created cell IDs |
-| `rule.*` | the rule ID |
-| `overlay.*` | the overlay ID |
-
-A parent (sheet, row, column) is touched only when its child membership changes.
-
-## Calculation flow
-
-```
-1. Client sends workbook.calculate { workbookId, expectedRevision }
-2. Serial job freezes the workbook at current revision
-3. Concurrent phase:
-   a. Build dependency graph: every formula cell → its dependencies
-   b. Topological sort, detect cycles
-   c. For each independent component: call Formula.evaluate(expression, dataBindingView)
-   d. Formula resolves names via Data binding view
-   e. Returns FormulaWireValue (scalar, table, record, list, or error)
-4. Serial settlement phase:
-   a. Check expectedSource fingerprint for each cell — has the source changed?
-   b. If unchanged: append cell.accept-content or cell.accept-error
-   c. If changed: skip this cell (another edit landed)
-   d. Rebuild affected range projections
-   e. Append ChangeSet and advance revision
-```
-
-## Derived Output refresh flow
-
-```
-1. Client sends derived-output.refresh { workbookId, cellId, expectedRevision }
-2. Spreadsheet reads the Cell's current DerivedOutputRef
-3. Spreadsheet calls DerivedOutputs.refresh(outputId)
-   → Returns new head revision (or same if unchanged)
-4. If head revision changed:
-   a. Resolve the new output content (RichContent or structured value)
-   b. Construct derived-output.apply with new ref + accepted content
-   c. Submit through normal admission
-   d. Returns { changed: true, output: newRef }
-5. If unchanged:
-   a. Returns { changed: false, output: currentRef }
-```
-
-## Idempotency
-
-The dispatcher canonicalizes the complete command and computes `requestDigest`.
-An identical retry returns the original typed result. Reusing a request ID with
-a different digest returns `idempotency_mismatch`.
-
-## Compensation (undo/redo)
-
-```ts
-interface SpreadsheetChangeSet {
-  id: string;
-  workbookId: string;
-  clientRequestId: string;
-  requestDigest: string;
-  authoredRevision: number;
-  priorRevision: number;
-  revision: number;
-  seq: number;
-  origin: "interactive" | "agent" | "automation";
-  operations: SpreadsheetOperation[];
-  inverseOperations: SpreadsheetOperation[];
-  touchedIds: string[];
-  compensation?: { intent: "undo" | "redo"; targetChangeSetId: string };
-  semanticDigest: string;
-  createdAt: string;
-}
-```
-
-Same compensation model as Document and Slides: the reducer creates inverse
-operations from exact before/after state. Activity selects undo/redo and
-Spreadsheet validates and appends stored inverse operations.</think>
-
-<｜DSML｜tool_calls>
-<｜DSML｜invoke name="create_file">
-<｜DSML｜parameter name="content" string="true"># Spreadsheet capability — file architecture
-
-## Placement
-
-Spreadsheet is a project-scoped capability. `createSpreadsheetCapability`
-receives an already-scoped store; no file below places a project or user ID
-in a Spreadsheet domain value or request DTO.
+The store is bound to `config.projectId` during construction. Project and user
+scope never enter a Workbook domain value, command/query DTO, or store method.
+Actor attribution is optional fact metadata only.
 
 ```text
 apps/backend/src/
   3-capabilities/
     spreadsheet/
-      domain/
-        model.ts              # all types: Workbook, Sheet, Cell, Range, Projection, operations
-        errors.ts             # NotFound, RevisionConflict, ValidationError, etc.
-        reducer.ts            # applyOperations (pure), computeTouchedIds, canRebase
-        inverses.ts           # invertOperations (pure)
-        validation.ts         # validateWorkbook, validateSheet, validateCell, validateSpan
-        projection.ts         # buildRangeProjection, resolveCoordinate (pure)
       application/
-        spreadsheetService.ts # createSpreadsheetCapability factory
-        commands.ts           # command dispatch: create, submit, duplicate, compensate
-        queries.ts            # query dispatch: load, list, grid, history
-        admission.ts          # CAS submit, idempotency, semantic rebase, ChangeSet append
-        createService.ts      # create blank workbook with one sheet
-        readService.ts        # load snapshot, list workbooks, grid projection
-        historyService.ts     # history listing, revision load
-        calculation.ts        # plan → evaluate (concurrent) → settle (serial)
-        derivedOutputRefresh.ts  # refresh derived output cell
-        dataCoordination.ts   # attach data entry, promote range to data, materialize projection
-        compensation.ts       # undo/redo via inverse operations
-        activity.ts           # activity outbox contributions
-        callLogging.ts        # structured logging wrapper
-      ports/
-        spreadsheetStore.ts   # SpreadsheetStore interface
+        createService.ts             # deterministic revision-zero Workbook
+        spreadsheetService.ts        # command/query admission and durable stages
+      domain/
+        calculation.ts               # pure dependency planning and local bindings
+        canonical.ts                 # canonical bytes and semantic digest
+        errors.ts                    # typed domain/application errors
+        grid.ts                      # ordered-axis coordinate and span lookup
+        identities.ts                # permanent identity transitions
+        inverses.ts                  # exact compensation operations
+        model.ts                     # canonical, operation, history, attempt, intent types
+        projection.ts                # pure structured range projection
+        rebase.ts                    # touched-ID semantic rebase
+        reducer.ts                   # pure normalized operation application
+        validation.ts                # aggregate and operation invariants/limits
       persistence/
-        migrations/
-          001-spreadsheet.ts
-        sqliteSpreadsheetStore.ts
-        sqliteMappers.ts
+        sqliteMappers.ts             # validated canonical JSON ↔ domain mapping
+        sqliteSchema.ts              # project-hashed table names and DDL
+        sqliteSpreadsheetStore.ts    # SQLite SpreadsheetStore adapter
+      ports/
+        derivedOutputs.ts            # narrow exact-revision Prompt operations
+        formulaResolver.ts           # immutable project Formula snapshot reader
+        spreadsheetStore.ts          # project-bound persistence contract
+      projections/
+        dependencies.ts              # Cell/range, Formula, Data, and Prompt refs
+        grid.ts                      # bounded viewport and coordinate projection
+        plainText.ts                 # text/search projection
+        styling.ts                   # effective cell/rule style projection
+      wire/
+        commandSchemas.ts            # strict public command decoding
+        operationSchemas.ts          # strict operation decoding
+        querySchemas.ts              # strict public query decoding
+        valueSchemas.ts              # shared bounded value decoders
+      docs/
+        README.md
+        concepts.md
+        flows.md
+        invariants.md
+        runtime.md
+        types.md
       index.ts
 
-  1-init/create/
-    spreadsheet.ts
+  1-init/
+    create/
+      spreadsheet.ts                 # concrete project-scoped construction
+    startBackend.ts                  # existing composition root
 
   4-job-wiring/
     spreadsheet/
+      createSpreadsheetJobs.ts       # public command/query Job definitions
       registerSpreadsheetEndpoints.ts
-      createSpreadsheetJobs.ts
+      registerSpreadsheetInternalJobs.ts
+      spreadsheetJobPayloads.ts      # strict transport payload helpers
 ```
+
+This mirrors the established Document and Slide capability shape. It avoids a
+second service hierarchy, capability-specific scheduler, repository-wide path
+alias, migration framework, or global Spreadsheet configuration surface.
 
 ## Module responsibilities
 
-| File | Main contents |
+| File | Main responsibility |
 |---|---|
-| `domain/model.ts` | `WorkbookHead`, `WorkbookSnapshot`, `WorkbookMetadata`, `CalculationSettings`, `SpreadsheetSheet`, `SheetRow`, `SheetColumn`, `FreezeState`, `SheetDefaults`, `SpreadsheetCell`, `StableCellRef`, `CellSpan`, `CellSource`, `CellLiteral`, `ProjectionOrientation`, `AcceptedCellContent`, `FormulaScalar`, `CellError`, `CellDependency`, `StableRangeRef`, `RangeProjection`, `ProjectedCell`, `ProjectionDiagnostic`, `CellStyle`, `CellValidation`, `ValidationRule`, `SheetRule`, `ConditionalFormatRule`, `SheetOverlay`, `SpreadsheetOperation` union, `SpreadsheetChangeSet`, `SpreadsheetBase`. |
-| `domain/errors.ts` | `WorkbookNotFoundError`, `SheetNotFoundError`, `CellNotFoundError`, `RevisionConflictError`, `IdempotencyMismatchError`, `ValidationError`, `HistoryPrunedError`, `CompensationConflictError`, `SpanOverlapError`, `ProjectionBlockedError`, `AxisNotFoundError`. |
-| `domain/reducer.ts` | `applyOperations(snapshot, ops)` → `ApplyResult`. Pure: copies snapshot, applies each operation, handles span overlap detection, rebuilds projections, normalizes, returns result. `computeTouchedIds`, `canRebase`. |
-| `domain/inverses.ts` | `invertOperations(before, ops, after)` → `SpreadsheetOperation[]`. Produces compensation operations from exact before/after state. |
-| `domain/validation.ts` | `validateWorkbook(snapshot)`, `validateSheet(sheet)`, `validateCellSpan(cell, sheet)`, per-operation validators, limits (max sheets, max rows/columns, max cells per sheet, max span size). |
-| `domain/projection.ts` | `buildRangeProjection(snapshot, cell)` → `RangeProjection`. `resolveCoordinate(snapshot, sheetId, rowId, columnId)` → `ResolvedCoordinate`. Pure, deterministic. |
-| `application/spreadsheetService.ts` | `createSpreadsheetCapability(store, deps, options)` → `SpreadsheetCapability`. Factory. Exposes `command(request)` and `query(request)`. |
-| `application/commands.ts` | Dispatches `SpreadsheetCommand` variants. Handles create, submit, duplicate, compensate, calculate, derived-output-refresh, data-attach, data-promote, projection-materialize. |
-| `application/queries.ts` | Dispatches `SpreadsheetQuery` variants. Handles list, load, history, grid, coordinate-resolve. |
-| `application/admission.ts` | CAS submit: validate expectedRevision, attempt rebase, apply operations, persist ChangeSet + receipt in one transaction. |
-| `application/createService.ts` | Creates a blank `WorkbookSnapshot` with one default sheet and default row/column axes, persists revision 0 Base. |
-| `application/readService.ts` | Loads current or historical snapshot, lists workbooks, projects grid views. |
-| `application/historyService.ts` | Lists retained ChangeSets, loads exact historical revision. |
-| `application/calculation.ts` | Plans calculation (dependency graph, topological sort, cycle detection), evaluates concurrently via Formula, settles accepted values serially with `expectedSource` fingerprint check. |
-| `application/derivedOutputRefresh.ts` | Reads Cell ref → calls DerivedOutputs.refresh() → conditionally applies new ref + accepted content through normal admission. |
-| `application/dataCoordination.ts` | `attachDataEntry`: resolves Data entry, creates/updates Data-backed anchor Cell. `promoteRangeToData`: creates Data entry idempotently, replaces range with Data-backed anchor Cell. `materializeProjection`: converts projected range into ordinary Cells. |
-| `application/compensation.ts` | Validates target ChangeSet is retained, appends stored inverse operations. |
-| `application/activity.ts` | Prepares activity-outbox row for accepted mutations. |
-| `application/callLogging.ts` | Structured logging wrapper. |
-| `ports/spreadsheetStore.ts` | `SpreadsheetStore` interface: listHeads, getHead, load, getChangeSets, getSubmission, commitMutation, appendBase, pruneBases, pruneChangeSets. |
-| `persistence/sqliteSpreadsheetStore.ts` | SQLite implementation. Owns table creation, migrations, transactions. |
-| `persistence/sqliteMappers.ts` | JSON ↔ domain type mappers. Canonical JSON with deterministic key ordering. |
+| `domain/model.ts` | Defines Workbook heads/snapshots, stable Sheets/axes/Cells/spans, the closed `CellContent` union and exact computed settlements, styles/rules/overlays, operations, ChangeSets/Bases/receipts, identity transitions, durable attempts/stages, committed facts, internal intents, limits, and options. |
+| `domain/grid.ts` | Resolves `rowOrder`/`columnOrder` stable identities, enforces sparse occupancy, and validates rectangular contiguous non-overlapping spans. A1 labels are derived display addresses only. |
+| `domain/projection.ts` | Projects structured accepted values from an anchor Cell and returns deterministic blocked/ready diagnostics. Projected coordinates never become hidden canonical Cells. |
+| `domain/calculation.ts` | Builds a dependency graph from a frozen Workbook, records stable Cell/range and project-binding-ID manifests from normalized `spreadsheet-formula/v1` bindings, detects cycles, produces a deterministic plan, and composes frozen Workbook-local bindings with an immutable project Formula snapshot. It performs no I/O. |
+| `domain/reducer.ts` | Applies canonical operations and emits normalized forward operations, exact inverses, touched IDs, and semantic digest. It does not call Formula or other capabilities. |
+| `domain/inverses.ts` | Produces exact compensation from before/after state, including deleted Sheet/axis/Cell subtrees, merge coverage, rules, and overlay state. |
+| `domain/identities.ts` | Claims, tombstones, and narrowly reactivates Workbook-owned stable identities. Ordinary commands cannot reuse tombstones. |
+| `domain/rebase.ts` | Replays the authored revision, compares touched identities with intervening ChangeSets, and permits only disjoint semantic rebase. |
+| `domain/validation.ts` | Enforces identity/order/span/projection/content/style/rule invariants; `spreadsheet-formula/v1`, ordinary Formula/v1, and RichContent target validity; one dedicated output per Prompt Content Cell; immutable Data/Prompt/File references; and configured size/depth/byte limits. |
+| `domain/canonical.ts` | Produces deterministic canonical JSON and SHA-256 semantic digests. Operational timestamps, attempts, retry state, and outbox publication do not affect Workbook semantics. |
+| `application/createService.ts` | Creates the initial Workbook with stable caller-provided identities, one default Sheet/axes, a revision-zero Base, receipt, identity claims, and creation fact in one transaction. |
+| `application/spreadsheetService.ts` | Exposes command/query, reconstructs historical snapshots, performs idempotency/CAS/rebase/compensation, orchestrates Prompt/Data/Formula stages, dispatches internal intents after durable commit, recovers attempts, and performs head-guarded compaction. |
+| `ports/spreadsheetStore.ts` | Defines head/Base/ChangeSet/receipt, identity, attempt/stage, Prompt ownership, compaction, and accepted-fact outbox persistence. |
+| `ports/derivedOutputs.ts` | Exposes only keyed declaration, refresh, definition update, and exact output/revision reads. It exposes no deletion authority or persistence implementation. |
+| `ports/formulaResolver.ts` | Exposes only `buildSnapshot()`, returning the immutable project Formula resolver view. Data attach/refresh selects a binding by stable binding ID from this snapshot; Spreadsheet never imports Structured Data. |
+| `persistence/sqliteSchema.ts` | Owns trusted project-hashed names and Workbook/Base/ChangeSet/receipt/identity/attempt/stage/Prompt-ownership/outbox DDL. |
+| `persistence/sqliteSpreadsheetStore.ts` | Opens `./data/spreadsheets.db`, enables pragmas, executes CAS transactions, replays retained history, and prunes only through a head-guarded compaction commit. |
+| `wire/*` | Rejects unknown fields/discriminants, cyclic or non-JSON input, non-finite numbers, malformed stable refs/Formula/RichContent, and excessive counts/depth/bytes before application admission. |
+| `projections/*` | Builds deterministic, discardable reads from one immutable Workbook revision. No projection becomes an alternative write authority. |
+| `index.ts` | Exports the public runtime, domain contracts/errors, pure helpers, store adapter/port, wire decoders, and projections. Internal SQL helpers remain private. |
 
 ## Dependency direction
 
 ```text
-transport / jobs / initialization
-              ↓
-        application services
-          ├─ domain logic (pure, no side effects)
-          ├─ SpreadsheetStore ── persistence (SQLite)
-          ├─ DerivedOutputs (for derived output refresh)
-          ├─ StructuredData (for data attach/promote/materialize)
-          ├─ platform Formula (for calculation)
-          ├─ platform RichText (for text cell operation validation)
-          └─ platform Logger (for structured logging)
+2-transport / 4-job-wiring / 1-init
+                    |
+                    v
+       Spreadsheet application runtime
+          |        |        |        |
+          |        |        |        +--> injected Logger
+          |        |        +-----------> injected InternalJobsRuntime
+          |        +--------------------> narrow Derived Outputs port
+          +-----------------------------> injected Formula engine
+          |
+          +------------------------------> narrow FormulaResolver port
+          +------------------------------> SpreadsheetStore port
+          |                                      ^
+          v                                      |
+       pure Spreadsheet domain              SQLite adapter
+          |
+          +------------------------------> injected Rich Text interface
 ```
 
-Domain files are pure and deterministic. They never query SQLite or call any
-external capability. Application services own sequencing, idempotency, and
-transactions. Persistence only implements the scoped `SpreadsheetStore` contract.
+The dependency laws are:
 
-## Construction
+- Domain code is pure and deterministic. It never imports SQLite, transport,
+  the scheduler, Derived Outputs implementation, Structured Data, Activity, a
+  model provider, or frontend rendering code.
+- Application code sequences pure functions and injected ports. It owns retry
+  and crash boundaries but does not choose queue types or parse HTTP bodies.
+- Persistence implements only the Spreadsheet-owned store contract.
+- Job wiring maps endpoint/internal intents to queues and status codes. It does
+  not perform reduction or SQL.
+- Initialization is the only place that chooses the database path, binds
+  project scope, adapts shared runtimes, and supplies actor attribution.
+- Spreadsheet receives Formula's project name-resolution view through a narrow
+  immutable resolver port. It never reaches through Formula to Structured Data.
+- Spreadsheet owns grid semantics, dependency planning, accepted results, and
+  exact revision adoption. Formula owns parsing/evaluation and Rich Text owns
+  RichContent operations, marks, references, and FormulaAtoms.
+
+Within `spreadsheet/`, relative imports keep the capability self-contained.
+Outside it, existing generic aliases are sufficient:
+
+```ts
+import { createSpreadsheetInstance } from "#init/create/spreadsheet.js";
+import { registerSpreadsheetEndpoints } from "#job-wiring/spreadsheet/registerSpreadsheetEndpoints.js";
+import type { SpreadsheetInternalJobIntent } from "#capabilities/spreadsheet/index.js";
+```
+
+No `#spreadsheet` TypeScript/package alias is required.
+
+## Runtime contracts
+
+```ts
+interface SpreadsheetDependencies {
+  richText: RichText;
+  formula: FormulaEngine;
+  formulaResolver: SpreadsheetFormulaResolver;
+  derivedOutputs: SpreadsheetDerivedOutputs;
+  jobs: InternalJobsRuntime<SpreadsheetInternalJobIntent>;
+  logger: Logger;
+  attribution?: { actorId: string };
+}
+
+interface SpreadsheetCapability {
+  command(request: SpreadsheetCommandRequest): Promise<SpreadsheetCommandResult>;
+  query(request: SpreadsheetQueryRequest): Promise<SpreadsheetQueryResult>;
+
+  computeCalculation(attemptId: string): Promise<void>;
+  settleCalculation(attemptId: string): Promise<void>;
+  computeRichFormulaEvaluation(attemptId: string): Promise<void>;
+  settleRichFormulaEvaluation(attemptId: string): Promise<void>;
+
+  computePromptCreation(attemptId: string): Promise<void>;
+  settlePromptCreation(attemptId: string): Promise<void>;
+  computePromptRefresh(attemptId: string): Promise<void>;
+  settlePromptRefresh(attemptId: string): Promise<void>;
+  computeDataCellAttach(attemptId: string): Promise<void>;
+  settleDataCellAttach(attemptId: string): Promise<void>;
+  computeDataCellRefresh(attemptId: string): Promise<void>;
+  settleDataCellRefresh(attemptId: string): Promise<void>;
+
+  recoverPendingAttempts(): Promise<number>;
+  compact(workbookId: WorkbookId): Promise<boolean>;
+}
+
+interface SpreadsheetFormulaResolver {
+  buildSnapshot(): Promise<FormulaResolverSnapshot>;
+}
+
+function createSpreadsheetCapability(
+  store: SpreadsheetStore,
+  dependencies: SpreadsheetDependencies,
+  options: SpreadsheetOptions = DEFAULT_SPREADSHEET_OPTIONS,
+): SpreadsheetCapability;
+```
+
+Formula is required for whole-Cell Formula source and FormulaAtoms embedded in
+RichContent. The resolver supplies project bindings for both Formula evaluation
+and direct Data Cell attach/refresh. Derived Outputs supplies one dedicated
+output per Prompt Content Cell. There is no concrete Structured Data,
+General Files, Activity, renderer, or export constructor dependency.
+
+## Concrete construction
 
 ```ts
 // 1-init/create/spreadsheet.ts
+const SPREADSHEET_DB_PATH = "./data/spreadsheets.db";
 
-interface SpreadsheetDependencies {
-  richText: RichText;              // platform
-  formula: FormulaEngine;          // platform
-  structuredData: StructuredData;  // capability
-  derivedOutputs: DerivedOutputs;  // capability
-  logger: Logger;                  // platform
-}
+export const createSpreadsheetInstance = (
+  config: BackendConfig,
+  richText: RichText,
+  formula: FormulaEngine,
+  formulaResolver: FormulaNameResolver,
+  derivedOutputs: SpreadsheetDerivedOutputs,
+  jobs: InternalJobsRuntime<SpreadsheetInternalJobIntent>,
+  logger: Logger,
+): SpreadsheetCapability => {
+  const store = new SQLiteSpreadsheetStore(
+    config.projectId,
+    SPREADSHEET_DB_PATH,
+  );
 
-interface SpreadsheetOptions {
-  history: {
-    retainedBaseCount: number;       // default: 5
-    retainedChangeSetCount: number;  // default: 1000
-  };
-  limits: {
-    maxSheetsPerWorkbook: number;    // default: 256
-    maxRowsPerSheet: number;         // default: 1_048_576
-    maxColumnsPerSheet: number;      // default: 16_384
-    maxCellsPerSheet: number;        // default: 500_000 (sparse)
-    maxSpanRows: number;             // default: 1_000
-    maxSpanColumns: number;          // default: 100
-    maxProjectionExtentRows: number; // default: 10_000
-    maxProjectionExtentColumns: number; // default: 256
-  };
-}
-
-export function createSpreadsheetCapability(
-  store: SpreadsheetStore,
-  deps: SpreadsheetDependencies,
-  options: SpreadsheetOptions,
-): SpreadsheetCapability {
-  // construct domain, application, return public interface
-}
-
-// Project-scoped factory:
-export function createProjectSpreadsheetCapability(
-  projectId: string,
-  db: Database,
-  deps: SpreadsheetDependencies,
-  options: SpreadsheetOptions,
-): SpreadsheetCapability {
-  const store = new SQLiteSpreadsheetStore(projectId, db);
-  return createSpreadsheetCapability(store, deps, options);
-}
-```
-
-Note: Spreadsheet depends on Formula and Structured Data at construction time
-(unlike Slides). Formula is needed for cell calculation. Structured Data is
-needed for data attach, promote, and materialize commands.
-
-## Job wiring
-
-```ts
-// 4-job-wiring/spreadsheet/registerSpreadsheetEndpoints.ts
-
-export function registerSpreadsheetEndpoints(
-  registry: JobRegistry,
-  spreadsheet: SpreadsheetCapability,
-  logger: Logger
-): void {
-  // POST /spreadsheet/command — serial, inline
-  registry.register({ method: "POST", path: "/spreadsheet/command" }, (request) => ({
-    name: "spreadsheet.command.v1",
-    queueType: "serial",
-    responseMode: "inline",
-    work: async () => {
-      try {
-        const result = await spreadsheet.command(request.body);
-        return { statusCode: 200, body: result };
-      } catch (e) {
-        return spreadsheetError(e);
-      }
-    }
-  }));
-
-  // POST /spreadsheet/query — concurrent, inline
-  registry.register({ method: "POST", path: "/spreadsheet/query" }, (request) => ({
-    name: "spreadsheet.query.v1",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      const result = await spreadsheet.query(request.body);
-      return { statusCode: 200, body: result };
-    }
-  }));
-}
-```
-
-Error mapping:
-
-```ts
-function spreadsheetError(e: unknown): { statusCode: number; body: unknown } {
-  if (e instanceof WorkbookNotFoundError) return { statusCode: 404, body: { error: "not_found", message: e.message } };
-  if (e instanceof SheetNotFoundError) return { statusCode: 404, body: { error: "not_found", message: e.message } };
-  if (e instanceof CellNotFoundError) return { statusCode: 404, body: { error: "not_found", message: e.message } };
-  if (e instanceof RevisionConflictError) return { statusCode: 409, body: { error: "revision_conflict", message: e.message } };
-  if (e instanceof IdempotencyMismatchError) return { statusCode: 409, body: { error: "idempotency_mismatch", message: e.message } };
-  if (e instanceof ValidationError) return { statusCode: 400, body: { error: "validation_error", message: e.message } };
-  if (e instanceof HistoryPrunedError) return { statusCode: 410, body: { error: "history_pruned", message: e.message } };
-  if (e instanceof SpanOverlapError) return { statusCode: 409, body: { error: "span_overlap", message: e.message } };
-  if (e instanceof ProjectionBlockedError) return { statusCode: 409, body: { error: "projection_blocked", message: e.message } };
-  const msg = e instanceof Error ? e.message : String(e);
-  return { statusCode: 400, body: { error: "bad_request", message: msg } };
-}
-```
-
-## Startup wiring
-
-In `1-init/startBackend.ts`, after RichText, Formula, Structured Data, and
-DerivedOutputs are constructed:
-
-```ts
-const spreadsheet = createProjectSpreadsheetCapability(
-  config.projectId,
-  db,
-  {
+  return createSpreadsheetCapability(store, {
     richText,
     formula,
-    structuredData,
+    formulaResolver,
     derivedOutputs,
+    jobs,
     logger,
-  },
-  {
-    history: config.spreadsheet?.history ?? { retainedBaseCount: 5, retainedChangeSetCount: 1000 },
-    limits: config.spreadsheet?.limits ?? {
-      maxSheetsPerWorkbook: 256,
-      maxRowsPerSheet: 1_048_576,
-      maxColumnsPerSheet: 16_384,
-      maxCellsPerSheet: 500_000,
-      maxSpanRows: 1_000,
-      maxSpanColumns: 100,
-      maxProjectionExtentRows: 10_000,
-      maxProjectionExtentColumns: 256,
-    },
-  },
+    attribution: { actorId: config.userId },
+  }, DEFAULT_SPREADSHEET_OPTIONS);
+};
+```
+
+`SpreadsheetOptions` owns local history/terminal-attempt retention and bounded
+limits for Sheets, sparse Cells, axes, spans, projections, Formula source,
+RichContent, styles, rules, and overlays. Defaults are an immutable exported
+value. They do not require additions to global backend configuration.
+
+## Public endpoint wiring
+
+`registerSpreadsheetEndpoints.ts` owns exactly two mappings:
+
+| Method and path | Job name | Queue | Response mode |
+|---|---|---|---|
+| `POST /spreadsheets/command` | `spreadsheet.command.v1` | serial | inline |
+| `POST /spreadsheets/query` | `spreadsheet.query.v1` | concurrent | inline |
+
+The command Job decodes the body before calling `spreadsheet.command`.
+Creation returns `201`; durable Formula, Prompt, and Data attempt admission
+returns `202`; ordinary accepted commands return `200`. Query returns `200`.
+
+Typed failures map consistently with Document and Slide:
+
+| Status | Error families |
+|---|---|
+| `400` | wire, validation, Formula source/binding, RichContent, stable coordinate, span, projection, operation, identity-reuse, and stale-attempt errors |
+| `404` | missing Workbook/Sheet/axis/Cell/attempt, unavailable exact Prompt output, or missing project binding |
+| `409` | Workbook already exists, revision conflict, idempotency mismatch, compensation conflict, span overlap, projection blocked, or external definition conflict |
+| `410` | requested revision or retained compensation target has been pruned |
+| `500` | unexpected failures; response is generic and shared logging records safe diagnostics |
+
+Handlers never expose SQL messages, provider bodies, Prompt text, Formula
+binding values, or internal stack traces.
+
+## Internal Jobs and durable workflows
+
+`registerSpreadsheetInternalJobs.ts` registers the closed intent vocabulary on
+one `SchedulerInternalJobsRuntime<SpreadsheetInternalJobIntent>`:
+
+| Intent | Queue | Capability method |
+|---|---|---|
+| `spreadsheet.compact` | serial | `compact(workbookId)` |
+| `spreadsheet.calculation.compute` | concurrent | `computeCalculation(attemptId)` |
+| `spreadsheet.calculation.settle` | serial | `settleCalculation(attemptId)` |
+| `spreadsheet.rich-formula.evaluate.compute` | concurrent | `computeRichFormulaEvaluation(attemptId)` |
+| `spreadsheet.rich-formula.evaluate.settle` | serial | `settleRichFormulaEvaluation(attemptId)` |
+| `spreadsheet.prompt-content.create.compute` | concurrent | `computePromptCreation(attemptId)` |
+| `spreadsheet.prompt-content.create.settle` | serial | `settlePromptCreation(attemptId)` |
+| `spreadsheet.prompt-content.refresh.compute` | concurrent | `computePromptRefresh(attemptId)` |
+| `spreadsheet.prompt-content.refresh.settle` | serial | `settlePromptRefresh(attemptId)` |
+| `spreadsheet.data.attach.compute` | concurrent | `computeDataCellAttach(attemptId)` |
+| `spreadsheet.data.attach.settle` | serial | `settleDataCellAttach(attemptId)` |
+| `spreadsheet.data.refresh.compute` | concurrent | `computeDataCellRefresh(attemptId)` |
+| `spreadsheet.data.refresh.settle` | serial | `settleDataCellRefresh(attemptId)` |
+
+Every intent carries a caller-namespaced stable idempotency key. Dispatch
+returns after scheduler admission. Durable attempt/stage state remains the
+authority if the process stops. Queue-capacity failures receive bounded
+in-process redrive; persistent workflow failure is recorded on the attempt.
+
+### Grid calculation
+
+Serial admission freezes the exact Workbook revision, normalized
+`spreadsheet-formula/v1`
+source, content fingerprints, stable Cell/range manifests, and stable project
+binding IDs. Concurrent compute builds one project resolver snapshot, resolves
+project dependencies by `binding.reference.bindingId` without falling back to
+a display name, composes frozen Workbook-local
+bindings, creates a deterministic dependency plan, evaluates independent
+components, and durably proposes bounded settlement operations. Serial settle
+rechecks each source/dependency fingerprint and adopts only candidates that are
+still valid through one ordinary ChangeSet. Partial staleness does not permit a
+candidate to overwrite newer authoring.
+
+Automatic mode creates calculation attempts atomically with an accepted source
+mutation. Manual mode creates the same attempt through an explicit command.
+There is one calculation engine and one settlement path.
+
+### RichContent FormulaAtoms
+
+An accepted RichContent edit that introduces a FormulaAtom or changes its
+expression creates a per-atom attempt in the same transaction as its ChangeSet.
+Compute evaluates the frozen expression against one immutable project resolver
+snapshot. Settlement reloads the exact Sheet/Cell/atom target and uses Rich
+Text's Formula settlement operation only if the expression digest still
+matches. RichContent FormulaAtoms retain ordinary Formula/v1 semantics: they
+receive project bindings only and cannot use A1, range, or sheet-qualified grid
+references. Spreadsheet does not parse `{{ ... }}` itself; Rich Text owns the
+delimiter-to-FormulaAtom operation.
+
+### Prompt Content
+
+A Prompt Content Cell cannot be inserted by a generic Cell operation and cannot
+attach a caller-supplied output. Its creation command freezes the Cell shell and
+definition, then concurrent compute declares and initially refreshes one
+dedicated Derived Output. Serial settlement inserts the exact output ref and
+changes local ownership from pending to attached in the same transaction.
+
+Refresh freezes output identity and applied revision, computes through Derived
+Outputs, and conditionally adopts the exact newer revision.
+Definition/stabilization updates first persist a delegated-command claim, call
+Derived Outputs with the claim's stable idempotency key, and atomically retain
+the completed receipt. They append no Workbook ChangeSet because canonical
+Workbook state did not change. Cell/axis/Sheet deletion marks ownership
+historical; Spreadsheet never deletes the output.
+
+### Direct Data Cells
+
+Data attach/refresh also use compute/settle because the resolver snapshot is
+external to Workbook persistence. Attach freezes the selected stable binding
+ID and target Cell shell. Compute selects exactly one binding from an immutable
+project Formula snapshot and persists its owner revision, value digest, and
+exact Formula-wire-serializable non-function candidate value. A scalar has no
+orientation and does not spill; a table, record, or list requires an orientation
+and produces a rebuildable, noncanonical range projection. Settle inserts the
+Data Cell and exact settlement only if the target remains available. Refresh
+freezes the existing reference and conditionally adopts a newer exact binding
+revision.
+
+Spreadsheet never calls Structured Data directly for these reads. A historical
+Workbook displays its embedded accepted value; it never follows a binding to
+“latest” during load.
+
+## Startup and recovery
+
+After Formula, the shared project Formula resolver, Rich Text, Derived Outputs,
+scheduler, and registry have been constructed, `startBackend.ts` adds:
+
+```ts
+const spreadsheetJobs =
+  new SchedulerInternalJobsRuntime<SpreadsheetInternalJobIntent>(scheduler);
+
+const spreadsheet = createSpreadsheetInstance(
+  config,
+  richText,
+  formula,
+  formulaResolver,
+  derivedOutputs,
+  spreadsheetJobs,
+  logger,
 );
 
+registerSpreadsheetInternalJobs(spreadsheetJobs, spreadsheet);
 registerSpreadsheetEndpoints(registry, spreadsheet, logger);
+
+const recoveredSpreadsheetAttempts = await spreadsheet.recoverPendingAttempts();
+logger.info("spreadsheet.attempts.recovered", {
+  count: recoveredSpreadsheetAttempts,
+});
 ```
+
+The readiness log adds `spreadsheetReady`. Recovery runs after internal intent
+factories and endpoint mappings are registered and before the HTTP listener
+binds. It makes interrupted running stages retryable, lists non-terminal
+attempts, and redispatches compute or settle according to durable state.
+
+This order avoids a capability/scheduler construction cycle: the dispatch-only
+Jobs runtime exists before Spreadsheet; factories that call Spreadsheet are
+registered immediately after Spreadsheet construction.
 
 ## Rebuildable projections
 
-| Projection | Key | What it provides |
+| Projection | Frozen key | Purpose |
 |---|---|---|
-| Grid view | sheetId + viewport | Cells and projected values in a coordinate rectangle |
-| Dependency graph | workbookId + revision | Which cells depend on which other cells/entries |
-| Calculation plan | workbookId + revision | Topological evaluation order, strongly connected components |
-| Range projection | anchorCellId + revision | Extent and status of a structured value projection |
+| viewport grid | Workbook revision + Sheet + stable rectangle | sparse Cells, merged coverage, and projected values |
+| coordinate lookup | Workbook revision + Sheet | stable axis intersection → empty/Cell/projected target |
+| dependency graph | Workbook revision | Formula Cell/atom dependencies and cycles |
+| calculation plan | Workbook revision + resolver digest | deterministic evaluation components/order |
+| range projection | Workbook revision + anchor Cell | structured accepted value extent/status |
+| effective style | Workbook revision + Cell/rules | base Cell style plus conditional formatting |
+| external dependencies | Workbook revision | exact Data, Prompt, and immutable File refs |
 
-## Key differences from Document and Slides
+These may be cached by revision but are always discardable. Spreadsheet
+persists no viewport cache, dependency-index authority, rendered Chart, image
+thumbnail, or calculated duplicate Cell table.
 
-| Aspect | Document | Slides | Spreadsheet |
-|---|---|---|---|
-| Ordering | Row/Block arrays | SlideOrder + element ranks | SheetOrder + row/column ranks |
-| Layout | Row with width proportions | Absolute frame (x, y, w, h) | Grid: row/column intersection |
-| Nesting | Callout rows only | Groups to configured depth | No structural nesting |
-| Text content | `RichContent` in TextBlock | `RichContent` in TextShape | `RichContent` in Cell (rich-text source) |
-| Derived output | `DerivedOutputRef` in PromptBlock | `DerivedOutputRef` in TextShape | `DerivedOutputRef` in Cell |
-| Data references | Via formula atoms | `SlideValueSource` on table/chart | `CellSource.data` with entryId |
-| Formula | Inline formula atoms in RichContent | No direct formula support | `CellSource.formula` with source text |
-| Merging | No merge concept | No merge concept | Cell span merge/unmerge |
-| Projections | Pagination from font metrics | N/A | Range projections from structured values |
-| Calculation | Formula evaluation per atom | N/A | Workbook-level dependency-aware calculation |
-| Construction deps | `richText`, `formula`, `derivedOutputs` | `richText`, `derivedOutputs` | `richText`, `formula`, `structuredData`, `derivedOutputs` |
+## Permanent backend boundary
+
+Spreadsheet owns the semantic facts required to describe and calculate a
+Workbook: stable axes and ordering, sparse Cell occupancy, merged spans, exact
+sources/accepted values, Formula dependency manifests, structured projection
+semantics, style/rule/overlay definitions, and revision history.
+
+The following are permanently outside the Spreadsheet backend capability:
+
+- grid painting, canvas/DOM layout, pixels, DPI, and viewport virtualization;
+- font shaping, glyph measurement, row auto-fit pixel measurement, and text
+  clipping/wrapping layout;
+- hit testing, selection handles, drag/fill interaction, edit cursors, and
+  formula-autocomplete UI;
+- Chart, Image, and sparkline rasterization, thumbnails, render caches, and
+  renderer artifact persistence; and
+- Activity feeds, Presence, realtime cursors, and collaboration transport.
+
+Frontend or export integrations consume immutable semantic projections. Their
+rendering artifacts do not become Workbook state.
+
+Spreadsheet also does not own Formula's language/evaluator, Rich Text's content
+algebra, project named-value storage, Derived Output definitions/revisions, or
+General Files bytes. It owns only exact references and accepted/adopted values.
+
+## Explicitly blocked or deferred integrations
+
+The initial capability contains no placeholder services for authority it does
+not have:
+
+- `data.promote` is blocked until Structured Data exposes keyed idempotent
+  declaration (or caller-supplied stable IDs). Its current unkeyed declaration
+  cannot be made crash-safe across the two SQLite files.
+- XLSX/CSV import, export, and format-loss policies belong to explicit adapter
+  integrations. They may emit or consume public Spreadsheet commands.
+- server-side Chart/Image rendering and document embedding belong to renderer
+  or composition integrations, not this capability.
+- external-data subscriptions and automatic freshness triggers may dispatch
+  existing Data refresh/calculation commands later; they do not change the
+  canonical model.
+- Activity publication and undo routing are integration wiring. Spreadsheet
+  already writes accepted facts to its own transactional outbox.
+- Comments, Presence, and realtime multi-user editing require separate
+  capability decisions.
+
+## Removal instructions
+
+The capability remains easy to remove:
+
+1. Delete `apps/backend/src/3-capabilities/spreadsheet/`.
+2. Delete `apps/backend/src/4-job-wiring/spreadsheet/`.
+3. Delete `apps/backend/src/1-init/create/spreadsheet.ts`.
+4. Delete Spreadsheet-specific tests.
+5. Revert only the Spreadsheet imports, Jobs runtime construction, capability
+   construction, registrations, recovery call, and readiness field in
+   `apps/backend/src/1-init/startBackend.ts`.
+6. Delete `./data/spreadsheets.db` only when its persisted Workbooks are
+   intentionally being discarded; otherwise retain it as recoverable data.
+
+No Spreadsheet-specific edit is required in Formula, Rich Text, Derived
+Outputs, Structured Data, the shared scheduler, TypeScript aliases, package
+imports, or global configuration. If keyed Structured Data declaration is
+added later for `data.promote`, that enhancement is independently removable.

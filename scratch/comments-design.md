@@ -20,7 +20,7 @@ the configured project ID only; no user ID participates in table partitioning.
 Actor identity is attribution on accepted changes, not a storage scope.
 
 This document is the current Comments design. The older
-[`docs/capabilities/comments.md`](../docs/capabilities/comments.md) describes
+[`docs/capabilities-old/comments.md`](../docs/capabilities-old/comments.md) describes
 the deliberately deferred threaded/revisioned/anchor-scanning system and must
 not be used as the implementation contract for this version.
 

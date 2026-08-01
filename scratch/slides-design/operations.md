@@ -90,23 +90,28 @@ type SlideOperation =
   | { type: "deck.set-canvas"; canvas: SlideCanvas }
 
   // The single embedded Theme and its typed registries
-  | { type: "theme.update"; metadata: SlideThemeMetadata }
-  | { type: "theme.token.create"; token: ThemeToken }
-  | { type: "theme.token.update"; tokenId: ThemeTokenId; token: ThemeToken }
+  | {
+      type: "theme.update";
+      name: string;
+      palette: DeckThemePalette;
+      typography: DeckThemeTypography;
+    }
+  | { type: "theme.token.create"; token: DeckDesignToken }
+  | { type: "theme.token.update"; tokenId: DesignTokenId; token: DeckDesignToken }
   | {
       type: "theme.token.delete";
-      tokenId: ThemeTokenId;
-      replacementTokenId?: ThemeTokenId;
+      tokenId: DesignTokenId;
+      replacementTokenId?: DesignTokenId;
     }
-  | { type: "text-style.update-normal"; style: SlideTextStyle }
+  | { type: "text-style.update-normal"; style: NormalSlideTextStyle }
 
   // Deck-owned Master registry
   | { type: "master.create"; master: MasterSlide }
   | {
       type: "master.update";
       masterSlideId: MasterSlideId;
-      metadata: MasterSlideMetadata;
-      background: SlideBackground;
+      name: string;
+      background?: SlideBackground;
     }
   | { type: "master.delete"; masterSlideId: MasterSlideId }
 
@@ -115,7 +120,7 @@ type SlideOperation =
   | {
       type: "layout.update";
       layoutId: SlideLayoutId;
-      metadata: SlideLayoutMetadata;
+      name: string;
       masterSlideId: MasterSlideId;
       background?: SlideBackground;
     }
@@ -181,17 +186,35 @@ type SlideOperation =
       elementId: SlideElementId;
       textBox: TextBoxPresentation;
     }
-  | { type: "geometry.set"; owner: ElementOwner; elementId: SlideElementId; geometry: GeometryDefinition }
-  | { type: "line.set"; owner: ElementOwner; elementId: SlideElementId; line: LineDefinition }
+  | { type: "geometry.set"; owner: ElementOwner; elementId: SlideElementId; geometry: GeometryPrimitive }
+  | { type: "geometry.set-appearance"; owner: ElementOwner; elementId: SlideElementId; appearance: GeometryAppearance }
+  | {
+      type: "straight-line.set";
+      owner: ElementOwner;
+      elementId: SlideElementId;
+      placement: FreePointPlacement;
+      deltaXPt: number;
+      deltaYPt: number;
+      appearance: LineAppearance;
+      startDecoration: LineDecoration;
+      endDecoration: LineDecoration;
+    }
   | { type: "image.set"; owner: ElementOwner; elementId: SlideElementId; image: ImageElementData }
 
   // Table structure and cell presentation; cell content uses rich-content.apply
-  | { type: "table.set-presentation"; owner: ElementOwner; elementId: SlideElementId; presentation: TablePresentation }
+  | {
+      type: "table.set-appearance";
+      owner: ElementOwner;
+      elementId: SlideElementId;
+      appearance?: BoxAppearance;
+    }
   | {
       type: "table.row.insert";
       owner: ElementOwner;
       elementId: SlideElementId;
-      row: TableRow;
+      row: SlideTableRow;
+      /** Exactly one new Cell for every existing column. */
+      cells: SlideTableCell[];
       afterRowId?: TableRowId;
     }
   | { type: "table.row.move"; owner: ElementOwner; elementId: SlideElementId; rowId: TableRowId; afterRowId?: TableRowId }
@@ -200,7 +223,9 @@ type SlideOperation =
       type: "table.column.insert";
       owner: ElementOwner;
       elementId: SlideElementId;
-      column: TableColumn;
+      column: SlideTableColumn;
+      /** Exactly one new Cell for every existing row. */
+      cells: SlideTableCell[];
       afterColumnId?: TableColumnId;
     }
   | {
@@ -216,13 +241,16 @@ type SlideOperation =
       owner: ElementOwner;
       elementId: SlideElementId;
       cellId: TableCellId;
-      presentation?: TableCellPresentation;
+      presentation: Omit<
+        SlideTableCell,
+        "id" | "rowId" | "columnId" | "content"
+      >;
     }
   | {
       type: "table.cells.merge";
       owner: ElementOwner;
       elementId: SlideElementId;
-      merge: TableCellMerge;
+      merge: SlideTableMerge;
     }
   | {
       type: "table.cells.unmerge";
@@ -231,25 +259,8 @@ type SlideOperation =
       mergeId: TableMergeId;
     }
 
-  // Chart data/specification; label text uses rich-content.apply
-  | { type: "chart.set-data"; owner: ElementOwner; elementId: SlideElementId; data: ChartData }
-  | {
-      type: "chart.set-specification";
-      owner: ElementOwner;
-      elementId: SlideElementId;
-      specification: ChartSpecification;
-    }
-  | {
-      type: "chart.label.set-presentation";
-      owner: ElementOwner;
-      elementId: SlideElementId;
-      target:
-        | { kind: "title" }
-        | { kind: "axis-title"; axis: "x" | "y" }
-        | { kind: "category-label"; categoryId: ChartCategoryId }
-        | { kind: "series-name"; seriesId: ChartSeriesId };
-      presentation: ChartLabelPresentation;
-    };
+  // Literal numeric series and label records; label text uses rich-content.apply
+  | { type: "chart.set"; owner: ElementOwner; elementId: SlideElementId; chart: SlideChart };
 ```
 
 The vocabulary is intentionally heterogeneous at the payload layer and uniform
@@ -342,6 +353,10 @@ authority:
 - Master/Layout Elements and child Elements inside Groups must be free;
 - only a root Slide Element may use a Layout slot.
 
+`required` is a completeness hint rather than an aggregate-validity rule.
+Empty required slots remain valid during authoring and staged Prompt creation;
+semantic projections report them to editor and presentation checks.
+
 Moving or resizing a slot-placed Element first changes its placement to
 `free` with an explicit frame. Returning it to a slot removes the Element-owned
 frame. `zIndex` remains on the Slide Element in either case.
@@ -360,11 +375,11 @@ composition does not merge or rewrite Rich Content identities.
 
 Theme tokens are typed canonical values. References are also typed: a color
 property cannot name a length token, and a font-family property cannot name a
-color token. Token aliases must remain type-compatible and acyclic.
+color token. Tokens do not alias other tokens in representation v1.
 
 `theme.token.update` preserves identity and type. Changing type is delete plus
 create with a new token ID. Deleting a referenced token requires a compatible
-replacement and atomically rewrites aliases, kind-specific Master/Layout/Slide
+replacement and atomically rewrites kind-specific Master/Layout/Slide
 appearance, Table cell presentation, and Chart presentation references before
 removal.
 
@@ -387,7 +402,9 @@ references named by it.
 A Table owns stable row IDs, stable column IDs, explicit row/column order,
 every addressed cell's `RichContent`, optional cell presentation, and a merge
 registry. Row/column order is Table structure and is unrelated to Element
-z-order.
+z-order. Row insertion supplies one explicit Cell for every existing column,
+and column insertion supplies one for every existing row, so the reducer never
+invents canonical Cell IDs.
 
 `table.cells.merge` creates one stable `TableMergeId` for a rectangular region
 whose row and column members are contiguous. One designated anchor cell is
@@ -397,11 +414,22 @@ unmerge and exact compensation are lossless. Merge regions cannot overlap.
 not strand a partial merge: the same operation batch must first unmerge it, or
 the reducer rejects the deletion. Inverses restore the merge ID and region.
 
-Chart v1 stores bounded literal numeric series. Series, category, and datum
-names plus title and axis labels are authored `RichContent` targets. A Formula
+Chart v1 stores bounded literal numeric series. Series and category names plus
+title and axis labels are authored `RichContent` targets. A Formula
 atom can therefore generate label text, but it is not a live numeric-series
 source. Formula-backed chart series require a separate freeze/compute/settle
 model and are outside this representation.
+
+`SlideChart` is discriminated: Cartesian `bar`, `line`, and `area` Charts own
+X/Y axes; `pie` Charts do not. `chart-axis-title` addressing and validation
+therefore reject Pie elements rather than manufacturing an inapplicable axis.
+A Pie Chart has exactly one series. Explicit Cartesian colors align one-to-one
+with series order; explicit Pie colors align one-to-one with category order.
+Absent colors deterministically cycle the Theme accent palette.
+
+`chart.set` is the bulk structural/numeric operation. It validates every
+introduced Rich Content value and discovers changed Formula atoms; ordinary
+edits to an existing label use `rich-content.apply`.
 
 ## Rich Content and Formula discovery
 
@@ -534,34 +562,36 @@ interface SlideCommandRequest {
   command: SlideCommand;
 }
 
+type PromptContentElementShell = Omit<PromptContentElement, "output">;
+
 type SlideCommand =
   | {
       type: "deck.create";
-      deckId: string;
+      deckId: DeckId;
       title: string;
-      initialSlideId: string;
-      initialLayoutId: string;
+      initialSlideId: SlideId;
+      initialLayoutId: SlideLayoutId;
       canvas?: SlideCanvas;
       design?: DeckDesignSystem;
     }
   | {
       type: "deck.submit";
-      deckId: string;
+      deckId: DeckId;
       expectedRevision: number;
       operations: SlideOperation[];
     }
   | {
       type: "deck.compensate";
-      deckId: string;
+      deckId: DeckId;
       targetChangeSetId: string;
       intent: "undo" | "redo";
       expectedRevision: number;
     }
   | {
       type: "prompt-content.create.request";
-      deckId: string;
+      deckId: DeckId;
       expectedRevision: number;
-      slideId: string;
+      slideId: SlideId;
       /** Full positioned shell except the DerivedOutputRef, which Slide owns. */
       element: PromptContentElementShell;
       prompt: string;
@@ -570,8 +600,8 @@ type SlideCommand =
     }
   | {
       type: "prompt-content.update-definition";
-      deckId: string;
-      promptContentElementId: string;
+      deckId: DeckId;
+      promptContentElementId: SlideElementId;
       expectedDefinitionRevision: number;
       prompt: string;
       contextEntries: ContextEntry[];
@@ -579,13 +609,13 @@ type SlideCommand =
     }
   | {
       type: "prompt-content.refresh.request";
-      deckId: string;
-      promptContentElementId: string;
+      deckId: DeckId;
+      promptContentElementId: SlideElementId;
       expectedRevision: number;
     }
   | {
       type: "formula.evaluate.request";
-      deckId: string;
+      deckId: DeckId;
       target: RichContentTarget;
       formulaAtomId: string;
     };
@@ -614,9 +644,9 @@ construction.
 ```ts
 type SlideQuery =
   | { type: "deck.list"; cursor?: string; lifecycle?: SlideLifecycle }
-  | { type: "deck.load"; deckId: string; revision?: number }
-  | { type: "deck.history"; deckId: string; cursor?: string; limit: number }
-  | { type: "deck.attempt"; deckId: string; attemptId: string };
+  | { type: "deck.load"; deckId: DeckId; revision?: number }
+  | { type: "deck.history"; deckId: DeckId; cursor?: string; limit: number }
+  | { type: "deck.attempt"; deckId: DeckId; attemptId: string };
 
 type SlideQueryResult =
   | { type: "deck.listed"; items: DeckHead[]; nextCursor?: string }
@@ -664,8 +694,8 @@ its canonical owner is one positioned Slide Element.
 ```text
 serial public command
   -> validate expected Deck revision, Slide, selected Layout/slot, parent Group,
-     x/y/z, full Prompt Element shell, Normal Text Style, and definition
-  -> check current tree, permanent identity ledger, prior creation reservation,
+     discriminated placement, zIndex, full Prompt Element shell, and definition
+  -> check the flat owner store/parent graph, permanent identity ledger, prior creation reservation,
      and ownership for the requested Element ID
   -> atomically store prompt-content-create attempt + command receipt
   -> return 202 and dispatch slide.prompt-content.create.compute
@@ -683,7 +713,7 @@ serial settlement
   -> reload Deck and revalidate frozen parent, z position, slot, and Element ID
   -> internally insert PromptContentElement(outputId@revision)
   -> atomically append ChangeSet, settle attempt, and attach ownership
-  -> or mark stale/failed and detach local ownership
+  -> or mark stale/failed and make local ownership historical
 ```
 
 Declaration and refresh use keyed Derived Outputs calls. Crash replay reuses

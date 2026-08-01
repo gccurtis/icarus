@@ -54,7 +54,7 @@ apps/backend/
           formulaDependencies.ts    # Formula atom IDs, targets, and expression digests
           outline.ts                # Slides in canonical Deck order
           plainText.ts              # titles, authored text, notes, labels, and accessibility text
-          presentation.ts           # resolved semantic Slide plan, never pixels
+          presentation.ts           # resolved semantic Slide plan + slot completeness, never pixels
           styling.ts                # Theme tokens, embedded appearance, Normal text style, and marks
         wire/
           commandSchemas.ts         # exact command-envelope decoding
@@ -94,14 +94,14 @@ workflow across many modules.
 |---|---|
 | `application/createService.ts` | Exports `DEFAULT_SLIDE_OPTIONS`, the default canvas and `DeckDesignSystem` (Theme defaults/tokens, protected editable Normal text style, one Master, and one Layout), and `createBlankDeckSnapshot`. Creation starts at revision 0 with one blank Slide selecting the default Layout and no ChangeSet. |
 | `application/slideService.ts` | Implements `SlideCapability`; dispatches commands and queries; reconstructs revisions; performs CAS admission, semantic rebase, compensation, compaction, Prompt Content and Formula stages, capacity redrive, and startup recovery. |
-| `domain/model.ts` | Defines the Deck aggregate and `DeckSnapshot.design: DeckDesignSystem { theme, textStyles, masters, layouts }`; Theme defaults and typed tokens; exactly one protected editable Normal text style; Master and Layout registries; stable Layout-slot metadata; ordered Slides; Master/Layout/Slide element scopes; discriminated free-versus-slot placement; the direct `SlideElement` kinds (`group`, `text`, `prompt-content`, `geometry`, `straight-line`, `image`, `table`, and `chart`); Rich Content Formula attempts; operations; history; receipts; intents; limits; and options. |
+| `domain/model.ts` | Defines the Deck aggregate and `DeckSnapshot.design: DeckDesignSystem { theme, textStyles, masters, layouts }`; Theme defaults and typed tokens; exactly one protected editable Normal text style; Master and Layout registries; stable Layout-slot metadata; ordered Slides; Master/Layout/Slide element scopes; discriminated free-versus-slot placement; the direct `SlideElement` kinds (`group`, `text`, `prompt-content`, `geometry`, `straight-line`, `image`, `table`, and `chart`); shared `BoxAppearance` on the applicable framed kinds; Rich Content Formula attempts; operations; history; receipts; intents; limits; and options. |
 | `domain/elements.ts` | Locates flat elements within their Master, Layout, or Slide owner scope, derives Group ancestry from `parentGroupId`, derives ordered siblings from canonical `zIndex`, and rejects cross-scope parents, missing parents, cycles, or ambiguous ordering. No root/child arrays duplicate those authorities. |
 | `domain/geometry.ts` | Validates free-element frames/transforms and derives slot-bound frames from the selected Layout in canonical Slide point coordinates. It performs no I/O, font measurement, pixel conversion, or rendering. |
 | `domain/presentation.ts` | Resolves the selected Layout to its Master, Theme defaults/tokens, the Normal text style, kind-specific embedded appearance, Master/Layout-scoped elements, and Slide-scoped elements/bindings to stable Layout slot IDs, then emits deterministic canonical presentation semantics in point coordinates. It does not shape fonts, calculate pixels, or paint. |
 | `domain/reducer.ts` | Clones a snapshot, applies operations to flat elements and presentation resources, validates the result, and returns canonical forward operations, exact inverses, touched IDs, and the new snapshot. |
 | `domain/inverses.ts` | Exposes inverse calculation through the same reducer used by admission; callers never synthesize compensation operations independently. |
 | `domain/identities.ts` | Collects every Deck-owned stable identity, including Theme tokens, Masters, Layouts, Layout slots, Slides, elements, Rich Text atoms, and marks, and computes additions/removals for the permanent identity ledger. External output and General Files IDs are references and are excluded. |
-| `domain/validation.ts` | Enforces identity uniqueness, valid owner scopes, flat membership and unique sibling `zIndex`, bounded acyclic Groups, valid Master/Layout/slot references, exactly one frame authority per placement, valid slot bindings, typed token/appearance/content limits, immutable General Files image refs, Rich Text validity, one protected Normal text style, and one dedicated Derived Output per live Slide-scoped `prompt-content` element. Tokens hold literal values and cannot alias in v1. |
+| `domain/validation.ts` | Enforces identity uniqueness, valid owner scopes, flat membership and unique sibling `zIndex`, bounded acyclic Groups, valid Master/Layout/slot references, exactly one frame authority per placement, valid slot bindings, typed token/appearance/content limits, immutable General Files image refs, Rich Text validity, Cartesian-versus-Pie Chart rules (including exactly one Pie series), one protected Normal text style, and one dedicated Derived Output per live Slide-scoped `prompt-content` element. Tokens hold literal values and cannot alias in v1. |
 | `domain/canonical.ts` | Produces deterministic bytes and SHA-256 digests for requests, snapshots, stages, and facts. |
 | `domain/rebase.ts` | Allows stale submission only when its touched-ID footprint is disjoint from every continuous intervening ChangeSet. |
 | `ports/derivedOutputs.ts` | Defines the keyed `declare`, `refresh`, and `updateDefinition` calls plus exact output/revision reads that Slide needs. It imports no Derived Outputs persistence and exposes no deletion authority. |
@@ -110,7 +110,7 @@ workflow across many modules.
 | `persistence/sqliteSchema.ts` | Creates project-hashed Deck, Base, ChangeSet, receipt, identity-ledger, delegated-claim, attempt, stage, Prompt-output ownership, and activity-outbox tables. The generic attempt/stage tables distinguish Prompt and Formula attempt kinds. |
 | `persistence/sqliteSlideStore.ts` | Opens `./data/slides.db`, applies DDL, performs compare-and-swap transactions, preserves exact receipts, and implements history pruning without breaking the retained replay tail. |
 | `wire/*` | Rejects unknown fields, invalid discriminants, non-finite numbers, non-JSON/cyclic input, excessive depth/counts/bytes, malformed Rich Text, and structurally invalid element content before the capability is called. |
-| `projections/*` | Builds deterministic, discardable outline, plain-text, dependency, Formula-dependency, resolved-style, and semantic-presentation reads from a loaded snapshot. Presentation projection resolves `DeckDesignSystem`—Theme, the Normal text style, Master/Layout scoped elements, slots, and Slide bindings/elements—in point coordinates; it never persists a render cache or resolves viewport/font/device pixels. |
+| `projections/*` | Builds deterministic, discardable outline, plain-text, dependency, Formula-dependency, resolved-style, and semantic-presentation reads from a loaded snapshot. Presentation projection resolves `DeckDesignSystem`—Theme, the Normal text style, Master/Layout scoped elements, slots, and Slide bindings/elements—in point coordinates and reports unfilled required slots; it never persists a render cache or resolves viewport/font/device pixels. |
 | `index.ts` | Exports the public runtime, domain contracts/errors, pure helpers, store port/adapter, wire decoders, and projections. Internal persistence helpers remain private. |
 
 ## Dependency direction
@@ -313,6 +313,15 @@ renamed to another semantic role, inherited, or selected from a registry.
 There is no generic element `styleId` or visual Style registry: every direct
 element kind embeds its own bounded appearance fields, whose values may use
 typed Theme-token references.
+`BoxAppearance { opacity?, fill?, border? }` supplies the common framed-box
+surface for Text, Prompt Content, Image, Table, and Chart without creating a
+named visual Style. Its canonical owners remain kind-specific:
+`TextBoxPresentation.appearance?`, `ImageElementData.appearance?`,
+`SlideTable.appearance?`, and `SlideChart.appearance?`. Operations therefore
+update it through `text-box.set-presentation`, `image.set`,
+`table.set-appearance`, and `chart.set`; there is no invalid generic
+box-appearance setter. Geometry and Straight Line retain their specialized
+appearance contracts.
 Master and Layout registries are sibling deck-owned resources, not children of
 Theme. Ordinary operations provide Theme metadata/default updates, typed-token
 CRUD, `text-style.update-normal`, Master CRUD, and Layout CRUD.
@@ -333,7 +342,7 @@ References are live within a Deck revision:
   semantic presentation plan without becoming Slide-owned state;
 - a Layout defines stable `LayoutSlot` metadata—ID, name, canonical point frame,
   accepted element kinds, and required flag. A slot has no selectable text
-  style, Rich Content, `zIndex`, paint content, or `ElementId` and is not a
+  style, Rich Content, `zIndex`, paint content, or `SlideElementId` and is not a
   `SlideElement`; the protected Normal style is universal;
 - slide-specific content and overrides remain slide-owned elements that may
   select `layout-slot` placement; Master/Layout elements and slots are never
@@ -358,6 +367,12 @@ A move or resize of a slot-bound element is an explicit detach: the normalized
 operation changes placement to `free` and supplies the resulting point frame.
 Binding/rebinding similarly removes any element-owned frame. No reducer or
 projection guesses which geometry should win.
+
+`LayoutSlot.required` is semantic completeness metadata, not an aggregate
+validity rule. Empty required slots are allowed while authoring and while an
+asynchronous Prompt Content attempt is pending. The semantic presentation
+projection reports unfilled required slots so an editor or presenter can show
+the incomplete state; admission never invents placeholder content to fill one.
 
 The presentation projection resolves that graph into a deterministic semantic
 plan: canonical point-coordinate frames/transforms, back-to-front ordering,
@@ -413,10 +428,11 @@ delegated-command claim that freezes the output ID. Completing that command
 stores its Slide receipt atomically with the local claim transition.
 
 Deleting a `prompt-content` element transactionally changes its output
-ownership to `detached`. Slide never deletes the output: Derived Outputs alone
+ownership to `historical`. Slide never deletes the output: Derived Outputs alone
 owns retention, including for outputs referenced only by historical Deck
-revisions. Creation failures and stale settlements also detach any candidate
-output. No two live `prompt-content` elements may own the same output.
+revisions. Creation failures and stale settlements also mark any candidate
+ownership `historical`. No two live `prompt-content` elements may own the same
+output.
 
 Formula evaluation applies to Formula atoms in the closed authored
 `RichContentTarget` union: Slide notes; an `element-text` value in a Master,
@@ -431,6 +447,9 @@ Formula attempt. Concurrent compute obtains one immutable resolver snapshot
 from `SlideFormulaResolver`, then asks the injected `FormulaEngine` to parse,
 bind, and evaluate the frozen expression and persists the candidate or typed
 failure before dispatching settlement.
+
+`chart-axis-title` resolves only for a Cartesian `bar`, `line`, or `area`
+Chart; a Pie Chart has no axes and is rejected for that target.
 
 The target discriminants are exact and shared by command, operation, attempt,
 store, and wire contracts:

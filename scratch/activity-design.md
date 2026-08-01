@@ -55,7 +55,7 @@ interface ActivityTransaction {
   revision?: number;
   changeSetId?: string;
   actorId?: string;
-  origin: "interactive" | "agent" | "automation" | "system";
+  origin: "user" | "agent" | "automation" | "system";
   occurredAt: string;
 
   /** Small, safe display data. Never a copied resource body or prompt. */
@@ -162,11 +162,14 @@ publish Activity transactions.
 
 ## Endpoints
 
-The public surface can start with two endpoints:
+The public surface has two endpoint slots:
 
 - `POST /activity/query` — project feed, a transaction by ID, history for a
   kind/resource pair, and current Presence.
-- `POST /activity/command` — `presence.heartbeat` and `presence.leave`.
+- `POST /activity/command` — reserved for `presence.heartbeat` and
+  `presence.leave` once the transport can supply a trusted persistent session
+  and actor. The current HTTP route rejects these commands rather than trusting
+  caller-supplied identities.
 
 There is intentionally no public endpoint for appending arbitrary Activity
 transactions. Only trusted resource publishers call `Activity.publish`.
@@ -212,9 +215,10 @@ transactions needed to support it.
 4. **Connect Slides using the same adapter shape.** Apply the same outbox and
    publisher pattern without changing the Activity core.
 
-5. **Expose query and Presence.** Add the two public endpoints, bounded
-   Presence validation, trusted transport context, expiry cleanup, and simple
-   feed results.
+5. **Expose query and Presence.** Add the query endpoint and simple feed
+   results now. Add the command endpoint's bounded Presence validation,
+   trusted transport context, and expiry cleanup when a session-aware transport
+   exists; until then its HTTP route must reject caller-supplied identities.
 
 6. **Add Activity-mediated undo/redo separately.** Only after the source
    transaction/publisher path is stable, add the coordinator and trusted
