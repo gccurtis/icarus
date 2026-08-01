@@ -85,7 +85,7 @@ alias, migration framework, or global Spreadsheet configuration surface.
 | `domain/inverses.ts` | Produces exact compensation from before/after state, including deleted Sheet/axis/Cell subtrees, merge coverage, Format Regions, rules, and overlay state. |
 | `domain/identities.ts` | Claims, tombstones, and narrowly reactivates Workbook-owned stable identities. Ordinary commands cannot reuse tombstones. |
 | `domain/rebase.ts` | Replays the authored revision, compares touched identities with intervening ChangeSets, and permits only disjoint semantic rebase. |
-| `domain/validation.ts` | Enforces identity/order/span/projection/content invariants; typed token refs, one protected Normal Style, acyclic Style inheritance, and Style/Format-Region/rule/overlay validity; `spreadsheet-formula/v1`, ordinary Formula/v1, and closed RichContent target validity; dedicated Prompt output ownership; immutable Data/Prompt/File references; and configured size/depth/byte limits. |
+| `domain/validation.ts` | Enforces identity/order/span/projection/content invariants; typed token refs, one protected Normal Style, acyclic Style inheritance, and Style/Format-Region/rule/overlay validity; `spreadsheet-formula/v1` resolved/broken target evidence, ordinary Formula/v1, and closed RichContent target validity; dedicated Prompt output ownership; immutable Data/Prompt/File references; and configured size/depth/byte limits. |
 | `domain/canonical.ts` | Produces deterministic canonical JSON and SHA-256 semantic digests. Operational timestamps, attempts, retry state, and outbox publication do not affect Workbook semantics. |
 | `application/createService.ts` | Creates the initial Workbook with stable caller-provided identities, one default Sheet/axes, a revision-zero Base, receipt, identity claims, and creation fact in one transaction. |
 | `application/spreadsheetService.ts` | Exposes command/query, reconstructs historical snapshots, performs idempotency/CAS/rebase/compensation, orchestrates Prompt/Data/Formula stages, dispatches internal intents after durable commit, recovers attempts, and performs head-guarded compaction. |
@@ -335,9 +335,12 @@ type SpreadsheetRichContentTarget =
   | { kind: "validation-message"; sheetId: SheetId; cellId: CellId }
   | { kind: "validation-list-option"; sheetId: SheetId; cellId: CellId; optionId: string }
   | { kind: "chart-title"; sheetId: SheetId; overlayId: SheetOverlayId }
-  | { kind: "chart-axis-title"; sheetId: SheetId; overlayId: SheetOverlayId; axis: "category" | "value" }
+  | { kind: "chart-axis-title"; sheetId: SheetId; overlayId: SheetOverlayId; axis: "category" | "value" | "x" | "y" }
   | { kind: "chart-series-name"; sheetId: SheetId; overlayId: SheetOverlayId; seriesId: string };
 ```
+
+Axis-title targets resolve only when the addressed Chart owns that exact axis;
+Pie Charts reject every axis-title target.
 
 Compute evaluates the frozen expression against one immutable project resolver
 snapshot. Settlement reloads the exact target/atom and uses Rich Text's Formula

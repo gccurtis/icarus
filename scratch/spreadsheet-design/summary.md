@@ -25,6 +25,7 @@ WorkbookSnapshot
   │    │    ├─ admitted whole-Cell Formula + exact settlement
   │    │    ├─ project Data binding + exact settlement
   │    │    └─ dedicated Prompt Content DerivedOutputRef
+  │    ├─ ordered range Format Regions
   │    ├─ ordered Conditional Formatting rules
   │    └─ typed Chart, Image, and Sparkline overlays
   ├─ metadata
@@ -97,10 +98,12 @@ Spreadsheet therefore admits whole-Cell formulas before reducer entry:
 6. Ask Formula to parse/validate and later evaluate the normalized source.
 
 Axis moves re-render the visible A1 text without retargeting. Deleted axes
-produce a broken-reference diagnostic. Copy/fill translates only references
-whose authored row/column mode is relative. Project binding identity also
-remains stable across rename; a new declaration under an old name cannot
-capture an existing formula.
+turn affected manifest targets into typed broken references that retain their
+prior IDs; they never fall through to a new coordinate occupant. Project
+binding identity likewise remains stable across rename, so a new declaration
+under an old name cannot capture an existing formula. Relative/absolute modes
+retain the user's `$` intent, but copy/fill itself is a future authoring command
+and is not falsely implied by v1 operations.
 
 Formula-based validation and Conditional Formatting use the same admitted
 authoring family but a narrower grid-rule variant. Rule formulas reject project

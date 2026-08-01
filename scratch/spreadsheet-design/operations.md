@@ -148,7 +148,10 @@ type SpreadsheetOperation =
 
   // Formula source and calculation settlement — internal normalized values
   | { type: "formula-source.apply"; target: SpreadsheetFormulaTarget;
-      formula: SpreadsheetFormulaSource }
+      formula: SpreadsheetFormulaSource;
+      projectionOrientation?: ProjectionOrientation }
+  | { type: "computed-cell.set-projection-orientation"; sheetId: SheetId;
+      cellId: CellId; orientation?: ProjectionOrientation }
   | { type: "formula-cell.apply-settlement"; sheetId: SheetId;
       cellId: CellId;
       settlement: ComputedCellSettlement<AcceptedFormulaCellValue>;
@@ -166,7 +169,7 @@ type SpreadsheetOperation =
   // Exact Formula-resolver binding adoption — internal only
   | { type: "data-cell.apply-content"; sheetId: SheetId;
       cellId: CellId; content: DataCellContent;
-      expectedContent?: CellContentFingerprint }
+      expectedContent: CellContentFingerprint }
 
   // Convert one rebuildable projection into explicit ordinary Cells
   | { type: "projection.materialize"; sheetId: SheetId;
@@ -206,6 +209,25 @@ type PublicSpreadsheetOperation = Exclude<
       | "data-cell.apply-content"
       | "projection.materialize" }
 >;
+
+interface CellContentFingerprint {
+  kind: CellContent["kind"];
+  digest: string;
+}
+
+interface FormulaSettlementGuard {
+  sourceDigest: string;
+  /** Digest of the complete frozen Workbook-local dependency closure. */
+  localDependencyDigest: string;
+  /** Immutable project view used to compute this candidate. */
+  resolverSnapshotDigest: string;
+  promptOutputs: Array<{
+    cellId: CellId;
+    outputId: string;
+    appliedRevision: number;
+    valueDigest: string;
+  }>;
+}
 ```
 
 `cell.set-content` replaces the complete discriminated content value. Formula
@@ -282,17 +304,22 @@ type SpreadsheetEdit =
       type: "formula-source.admit";
       target: SpreadsheetFormulaTarget;
       authoredSource: string;
+      /** Cell targets only; rule/validation targets reject this field. */
+      projectionOrientation?: ProjectionOrientation;
     };
 
 type SpreadsheetFormulaTarget =
   | { kind: "cell"; sheetId: SheetId; cellId: CellId }
   | { kind: "cell-validation"; sheetId: SheetId; cellId: CellId }
-  | { kind: "conditional-format"; sheetId: SheetId; ruleId: string };
+  | { kind: "conditional-format"; sheetId: SheetId;
+      ruleId: SheetRuleId };
 ```
 
 Admission processes an edit batch in order against one working authored
 snapshot. A batch may therefore create an empty Cell or a non-formula rule and
-then admit its formula source atomically.
+then admit its formula source atomically. When one or more whole-Cell formulas
+need project-name resolution, admission lazily builds one project resolver
+snapshot and reuses that same view for every project binding in the batch.
 
 For each `formula-source.admit`, Spreadsheet:
 
@@ -325,6 +352,13 @@ source digest form a discriminated `SpreadsheetFormulaSource` under
 `authoredText` is retained for editor round-tripping, but is never rebound as
 authority. `normalizedFormulaSource` is the actual Formula/v1 input. Sheet
 rename or axis movement therefore cannot silently retarget a formula.
+
+For a Cell target, admission also installs the requested optional projection
+orientation and canonical `pending` settlement. Omitting it means no spill
+orientation. `computed-cell.set-projection-orientation` later changes only the
+Formula/Data Cell's projection intent and rebuildable projection; it neither
+re-evaluates nor changes the exact accepted wire value. Any supplied
+orientation must be shape-compatible; scalar content never spills.
 
 The resolver snapshot digest used during admission is stored with operational
 admission evidence, not in canonical formula source or `sourceDigest`.
@@ -390,13 +424,14 @@ type SpreadsheetRichContentTarget =
       optionId: string }
   | { kind: "chart-title"; sheetId: SheetId; overlayId: string }
   | { kind: "chart-axis-title"; sheetId: SheetId; overlayId: string;
-      axis: "category" | "value" }
+      axis: "category" | "value" | "x" | "y" }
   | { kind: "chart-series-name"; sheetId: SheetId; overlayId: string;
       seriesId: string };
 ```
 
 Image alternative text remains a plain bounded accessibility string, not Rich
-Content.
+Content. Axis targets are valid only when the discriminated Chart kind owns
+that axis; Pie Charts reject every axis-title target.
 
 The `{{ ... }}` shortcut follows the Document and Slide contract:
 
@@ -680,10 +715,10 @@ type ResolvedCoordinate =
   | { kind: "unmaterialized"; coordinate: StableCellRef }
   | { kind: "cell"; coordinate: StableCellRef; cell: SpreadsheetCell;
       projectedDisplay?: { valuePath: Array<string | number>;
-        value: FormulaWireValue } }
+        value: FormulaScalarWireValue } }
   | { kind: "projected"; coordinate: StableCellRef;
       anchorCellId: CellId; valuePath: Array<string | number>;
-      value: FormulaWireValue };
+      value: FormulaScalarWireValue };
 ```
 
 ## Whole-Cell calculation workflow
@@ -701,6 +736,12 @@ the current Workbook produces a rebuildable `dirty` freshness projection.
 Editors may display that last value as stale. Manual calculation selects the
 requested dirty/pending transitive closure; automatic mode schedules the same
 closure after the input mutation commits.
+
+Automatic mode initially reacts to accepted Workbook mutations. A project
+binding change in another database is adopted only by explicit calculation or
+Data refresh until integration wiring supplies an idempotent project-binding
+change signal. Historical/query reads never consult live project state merely
+to change freshness.
 
 The frozen Workbook-local resolver projects Cell content deterministically:
 
@@ -771,6 +812,10 @@ calculation mode.
 ## Rich Formula evaluation workflow
 
 Rich Content Formula atoms use one durable attempt per atom:
+
+Workbook calculation mode governs whole-Cell dependency calculation only.
+Rich Formula atoms follow the shared Document/Slide behavior and schedule on
+expression creation/change; callers may also request reevaluation explicitly.
 
 ```text
 serial freeze
@@ -953,6 +998,12 @@ intent key. Startup recovery resets interrupted stage claims, lists
 non-terminal attempts, and redispatches the correct compute or settle stage.
 Stage receipts make repeated execution harmless. A dispatch failure never
 turns an already accepted mutation into an unaccepted one.
+
+Once a compute stage records its resolver snapshot digest and candidate, a
+retry cannot replace that evidence with a different project view. If a crash
+requires rebuilding a now-unavailable/different view before a candidate was
+durably stored, the attempt becomes stale and automatic mode may request a
+fresh attempt; it does not silently reuse the attempt ID for different inputs.
 
 ## Idempotency and compensation
 

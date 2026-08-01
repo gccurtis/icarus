@@ -391,7 +391,9 @@ interface FrozenGridFormula {
   /** Operational admission evidence; not a field of canonical formula source. */
   admissionResolverSnapshotDigest?: string;
   contentFingerprint: CellContentFingerprint;
-  gridDependencyManifest: Array<StableCellRef | StableRangeRef>;
+  gridDependencyManifest: Array<
+    SpreadsheetCellFormulaBinding | SpreadsheetRangeFormulaBinding
+  >;
   projectBindingIds: string[];
 }
 
@@ -489,6 +491,10 @@ settlement operations. Serial settle
 reloads the current head and adopts only candidates whose content fingerprints
 and required dependencies remain valid.
 
+The frozen grid manifest retains each binding's exact resolved-or-broken target.
+A broken target produces a typed candidate diagnostic and never falls back to a
+new axis occupant; exact compensation may restore its prior stable identities.
+
 Workbook-local formula bindings may include Prompt Content Cells. Compute reads
 only the frozen `outputId@appliedRevision`, and the candidate dependency record
 retains that exact ref. It never asks Derived Outputs for the current head while
@@ -511,9 +517,12 @@ type SpreadsheetRichContentTarget =
   | { kind: "validation-message"; sheetId: SheetId; cellId: CellId }
   | { kind: "validation-list-option"; sheetId: SheetId; cellId: CellId; optionId: string }
   | { kind: "chart-title"; sheetId: SheetId; overlayId: SheetOverlayId }
-  | { kind: "chart-axis-title"; sheetId: SheetId; overlayId: SheetOverlayId; axis: "category" | "value" }
+  | { kind: "chart-axis-title"; sheetId: SheetId; overlayId: SheetOverlayId; axis: "category" | "value" | "x" | "y" }
   | { kind: "chart-series-name"; sheetId: SheetId; overlayId: SheetOverlayId; seriesId: string };
 ```
+
+An axis-title target is valid only when the addressed Chart owns that exact
+axis; Pie Charts reject every axis-title target.
 
 Prompt creation freezes the Cell identity, coordinate/span, style, and Prompt
 definition before declaring one dedicated Derived Output. Refresh freezes the
