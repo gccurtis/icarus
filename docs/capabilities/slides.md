@@ -1,728 +1,879 @@
-# Capability — Icarus Slides Runtime Model
+# Slides
 
-> Mirrored from [Notion](https://app.notion.com/p/3aeb6410e502818da1ccd93c096fe243).
+## Summary
 
-## Summary / Concept
-<callout icon="🧭" color="blue_bg">
-	**Build position:** Resources 3 of 4. Slides follows Document so it can reuse the established rich-content, Formula-value, source-snapshot, and revision conventions while retaining a presentation-specific aggregate.
-</callout>
-### Prerequisites
-#### Required before implementation
-- Request-to-job mapping, the serial queue, the bounded concurrent worker pool, database transactions, logging, and internal-stage dispatch.
-- Platform Formula: value algebra, parsing, binding, evaluation, dependency manifests, limits, and diagnostics.
-- The Data resolver adapter that freezes declarations and exact values into immutable Formula resolver snapshots.
-- The native-editor rich-content contract: stable Block and Atom IDs, text atoms, Formula atoms, reference atoms, and typed marks. Slides owns the content stored in a Deck and does not call another editor capability to mutate it.
-- Stable file and Media references for image Shapes.
-- Stores are configuration-scoped. Scope is not carried in domain objects, requests, operations, or tables. ChangeSets receive configured attribution.
-#### Downstream seams
-Slides provides Workspace summaries; stable Deck, Section, Slide, Shape, Notes, and rich-content anchors; exact-revision snapshots for Sources, Knowledge, Templates, and Import/Export; public command ports for Agents and Automation; and PPTX/PDF snapshot and recipe ports.
-Knowledge, Context, Questions, Evidence, Data, Analysis, Spreadsheet, Media, and Intelligence are consumed through narrow injected ports. Their concrete services are not imported into the Slides domain.
-### Concept and authority
-Slides owns one closed presentation aggregate:
-```plain text
-Deck
-├── canvas, theme, and layouts
-├── Sections keyed by stable ID
-└── Slides keyed by stable ID
-    ├── Notes
-    └── Shapes keyed by stable ID
+Slides owns editable presentation structure: decks, ordered slides, structural groups, visual shapes, slide notes, themes, revisions, and deterministic rendering. It does not own the process that generates prompt-driven content.
+
+A slide contains ordered `SlideElement` values. A `SlideElement` is either a `Shape`, which paints or presents content, or a `SlideGroup`, which structurally transforms a set of elements.
+
+```mermaid
+flowchart LR
+    Deck --> Slide
+    Slide --> Element[SlideElement]
+    Element --> Shape
+    Element --> Group[SlideGroup]
+    Shape --> Text[Text Shape]
+    Shape --> Geometry[Geometry Shape]
+    Shape --> Line[Line Shape]
+    Shape --> Image[Image Shape]
+    Shape --> Table[Table Shape]
+    Shape --> Chart[Chart Shape]
 ```
-Slides is authoritative for Deck identity and lifecycle, rank-based ordering, sections, slide backgrounds, integer EMU geometry, Notes, Shapes, rich content, authored presentation, bindings, accepted generated content, provenance, Base state, ChangeSets, undo/redo, and exact snapshots.
-A Slide is addressed by stable ID. Its displayed ordinal is a projection of rank at one Deck revision. A Shape belongs to exactly one Slide. Notes belong directly to their Slide and are not represented as hidden Shapes.
-### Repository placement
-```plain text
-apps/backend/src/
-  3-capabilities/
-    slides/
-      domain/
-        model.ts
-        geometry.ts
-        richContent.ts
-        shapes.ts
-        operations.ts
-        apply.ts
-        invariants.ts
-        errors.ts
-      application/
-        slidesService.ts
-        renderScene.ts
-        refresh.ts
-        snapshots.ts
-      ports/
-        slidesRepository.ts
-        contentReaders.ts
-        generationPort.ts
-      persistence/
-        migrations.ts
-        sqliteSlidesRepository.ts
-      index.ts
-      tests/
 
-  1-init/
-    create/
-      slides.ts
+## Concept and authority
 
-  4-job-wiring/
-    slides/
-      registerSlidesEndpointMappings.ts
-      createSlidesJobs.ts
-    internal/
-      InternalJobDispatcher.ts
+Slides is authoritative for:
+
+- deck and slide identity, ordering, metadata, and lifecycle;
+- element identity, stacking order, position, dimensions, rotation, visibility, and lock state;
+- group membership and structural transforms;
+- authored slide text and notes;
+- presentation-specific styling and theme tokens;
+- references attached to slide elements;
+- accepted references to Knowledge-derived content;
+- revision history, ChangeSets, projections, and render artifacts.
+
+Rich Text defines the shared rich-content tree, link marks, reference attachments, and rich-text operations used by text shapes and notes.
+
+Knowledge Derived Output defines prompts, scoped retrieval, generated content, grounding, immutable output revisions, freshness, and refresh. A text shape that displays generated content stores only a `DerivedOutputRef` and resolves the selected output revision through Knowledge.
+
+Data and Formula are authoritative for structured values and evaluated expressions. Slides may reference those results for tables and charts, but presentation layout remains Slides-owned.
+
+### Group and Shape are different abstractions
+
+A `Shape` has a frame, visual style, and content payload. A `SlideGroup` is structural: it supplies identity, membership, ordering, lock/visibility behavior, and group transforms. It has no fill, stroke, background, or content payload.
+
+Group bounds are derived from descendants. Moving, resizing, or rotating a group applies a deterministic transform to its descendant Shapes and nested Groups. If a visible background is required, it is represented by a geometry Shape inside the group.
+
+Groups are explicit. An ungrouped Shape is a top-level slide element; it is not wrapped in an implicit group of one. This differs from a Document Row, which is a universal layout node even when it contains one Block.
+
+## Prerequisites
+
+1. Platform runtime, configuration, logging, jobs, queues, and SQLite.
+2. Rich Text.
+3. Formula and Data for formula- and data-backed visual values.
+4. Knowledge and Derived Output for generated content.
+5. Media storage for image and render artifacts.
+
+## Repository placement
+
 ```
-`3-capabilities/slides` owns domain behavior, persistence, and the application service. `1-init/create/slides.ts` constructs the configuration-scoped store and injects ports. `4-job-wiring/slides` maps normalized HTTP requests to jobs, queue choice, response mode, and follow-on stages.
-## Types & Interfaces
-### Canonical aggregate
-```typescript
-type Emu = number;
+apps/backend/src/3-capabilities/slides/
+  api/
+    routes.ts
+    schemas.ts
+  changes/
+    apply-change.ts
+    operations.ts
+    validate-change.ts
+  domain/
+    deck.ts
+    element.ts
+    group.ts
+    shape.ts
+    theme.ts
+  jobs/
+    create-job.ts
+    handlers.ts
+  projections/
+    deck-outline.ts
+    slide-render.ts
+  runtime/
+    create-slides-runtime.ts
+    ports.ts
+  store/
+    migrations/
+    slides-store.ts
+  index.ts
+```
 
+The capability exports its contracts and runtime from `index.ts`. Platform owns the HTTP server, job registry, queues, persistence connection, configuration, logging, and Intelligence interface.
+
+# Types and Interfaces
+
+## Shared identifiers and revisions
+
+```tsx
+type DeckId = string;
+type SlideId = string;
+type SlideElementId = string;
+type SlideGroupId = SlideElementId;
+type ShapeId = SlideElementId;
+type ThemeId = string;
+type ChangeSetId = string;
+type RevisionNumber = number;
+type Rank = string;
+
+interface RevisionRef {
+  deckId: DeckId;
+  revision: RevisionNumber;
+}
+
+interface Attribution {
+  actorId: string;
+  occurredAt: string;
+}
+```
+
+`actorId` is supplied by top-level configuration when a request does not carry a more specific attribution value.
+
+## Deck aggregate
+
+```tsx
 interface Deck {
-  id: string;
+  id: DeckId;
   title: string;
-  lifecycle: "active" | "archived" | "trashed";
-  revision: number;
-  baseSeq: number;
-  createdAt: string;
-  updatedAt: string;
-  base: DeckBase;
+  themeId: ThemeId | null;
+  slideOrder: SlideId[];
+  slides: Record<SlideId, Slide>;
+  metadata: DeckMetadata;
 }
 
-interface DeckBase {
-  canvas: { widthEmu: Emu; heightEmu: Emu };
-  theme: DeckTheme;
-  layouts: Record<string, SlideLayout>;
-  sections: Record<string, DeckSection>;
-  slides: Record<string, Slide>;
-}
-
-interface DeckSection {
-  id: string;
-  name: string;
-  rank: string;
+interface DeckMetadata {
+  description?: string;
+  tags: string[];
+  custom: Record<string, unknown>;
 }
 
 interface Slide {
-  id: string;
-  sectionId?: string;
-  rank: string;
-  layoutId?: string;
-  hidden: boolean;
-  background?: SlideBackground;
-  shapes: Record<string, Shape>;
+  id: SlideId;
+  title?: string;
+  rank: Rank;
+  size: SlideSize;
+  background: SlideBackground;
+  elements: Record<SlideElementId, SlideElement>;
   notes: SlideNotes;
 }
 
+interface SlideSize {
+  width: number;
+  height: number;
+  unit: "pt";
+}
+
+interface SlideBackground {
+  color?: ColorValue;
+  imageMediaId?: string;
+}
+
 interface SlideNotes {
-  blocks: Record<string, RichTextBlock>;
+  content: RichContent;
 }
 ```
-Rank is the only canonical ordering scheme. Sections order by `(rank, id)`; Slides order by `(sectionId, rank, id)`; Shapes order by `(parentGroupId, rank, id)`; rich-content Blocks and Atoms follow the same rule. Maps and normalized rows provide identity membership. Array position never carries canonical order.
-The default 16:9 canvas is `12_192_000 × 6_858_000` EMU. Coordinates, dimensions, rotation, crop, line width, and padding use bounded integers. Floating-point screen coordinates are editor projections.
-`Unsectioned` is a read projection for Slides without `sectionId`. Deleting a non-empty Section requires an explicit destination Section or an explicit move to the unsectioned projection.
-### Closed Shape union
-```typescript
-interface ShapeBase {
-  id: string;
-  rank: string;
-  parentGroupId?: string;
-  frame: {
-    xEmu: Emu;
-    yEmu: Emu;
-    widthEmu: Emu;
-    heightEmu: Emu;
-  };
-  transform: {
-    rotationMicroDegrees: number;
-    flipHorizontal: boolean;
-    flipVertical: boolean;
-  };
+
+The slide background is slide-level presentation state. A group does not receive a background property; a grouped background is a geometry Shape.
+
+## Shared slide-element base
+
+```tsx
+interface SlideElementBase {
+  id: SlideElementId;
+  rank: Rank;
+  parentGroupId?: SlideGroupId;
   locked: boolean;
   hidden: boolean;
+}
+
+type SlideElement = SlideGroup | Shape;
+
+interface SlideGroup extends SlideElementBase {
+  elementKind: "group";
+}
+```
+
+`parentGroupId` is the canonical membership edge. Top-level elements omit it. The ordered children of a group are the elements whose `parentGroupId` equals that group ID, sorted by `(rank, id)`.
+
+A Group may contain Shapes or nested Groups. The membership graph must be acyclic, every referenced parent must exist on the same slide, and a configured nesting limit is enforced during validation.
+
+## Shape base and geometry
+
+```tsx
+interface ShapeBase extends SlideElementBase {
+  elementKind: "shape";
+  frame: ShapeFrame;
+  transform: ShapeTransform;
   style: ShapeStyle;
-  binding?: SlidesContentBinding;
+  references: ReferenceAttachment[];
+}
+
+interface ShapeFrame {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  unit: "pt";
+}
+
+interface ShapeTransform {
+  rotationDegrees: number;
+  flipHorizontal: boolean;
+  flipVertical: boolean;
+}
+
+interface ShapeStyle {
+  opacity: number;
+  fill?: FillStyle;
+  stroke?: StrokeStyle;
+  shadow?: ShadowStyle;
 }
 
 type Shape =
-  | (ShapeBase & { kind: "text"; data: TextShapeData })
-  | (ShapeBase & { kind: "geometry"; data: GeometryShapeData })
-  | (ShapeBase & { kind: "line"; data: LineShapeData })
-  | (ShapeBase & { kind: "image"; data: ImageShapeData })
-  | (ShapeBase & { kind: "table"; data: TableShapeData })
-  | (ShapeBase & { kind: "chart"; data: ChartShapeData })
-  | (ShapeBase & { kind: "group"; data: GroupShapeData });
+  | TextShape
+  | GeometryShape
+  | LineShape
+  | ImageShape
+  | TableShape
+  | ChartShape;
+```
+
+Only a Shape has a frame and visual style. A Group's effective bounds and transform handles are calculated from its visible descendants.
+
+## Text shapes and derived content
+
+```tsx
+type RichContent = import("#platform/rich-text").RichContent;
+type ReferenceAttachment =
+  import("#platform/rich-text").ReferenceAttachment;
+type DerivedOutputRef =
+  import("#capabilities/knowledge").DerivedOutputRef;
+
+type SlideTextSource =
+  | {
+      kind: "authored";
+      content: RichContent;
+    }
+  | {
+      kind: "derived-output";
+      output: DerivedOutputRef;
+    };
+
+interface TextShape extends ShapeBase {
+  shapeKind: "text";
+  data: TextShapeData;
+}
 
 interface TextShapeData {
-  blocks: Record<string, RichTextBlock>;
-  verticalAlignment: "top" | "middle" | "bottom";
-  overflow: "clip" | "shrink-text" | "expand-height";
+  source: SlideTextSource;
+  verticalAlign: "top" | "middle" | "bottom";
+  overflow: "clip" | "shrink" | "expand";
+  columns: number;
+  padding: Insets;
 }
+```
 
-interface ImageShapeData {
-  fileId: string;
-  crop?: {
-    leftMillionths: number;
-    topMillionths: number;
-    rightMillionths: number;
-    bottomMillionths: number;
+For `kind: "derived-output"`, Slides resolves the accepted Knowledge output revision and projects its `rich-text` payload into the text shape. The resource stores only `outputId` and `appliedRevision`; generation metadata stays in Knowledge.
+
+Links embedded in text are Rich Text link marks. Citations and other non-inline references use `ReferenceAttachment` on the Shape or on a Rich Text range.
+
+## Other shape payloads
+
+```tsx
+interface GeometryShape extends ShapeBase {
+  shapeKind: "geometry";
+  data: {
+    geometry:
+      | "rectangle"
+      | "rounded-rectangle"
+      | "ellipse"
+      | "triangle"
+      | "diamond"
+      | "arrow"
+      | "custom-path";
+    path?: string;
   };
-  altText?: string;
 }
 
-interface GroupShapeData {
-  style?: GroupStyle;
+interface LineShape extends ShapeBase {
+  shapeKind: "line";
+  data: {
+    start: Point;
+    end: Point;
+    startDecoration?: LineDecoration;
+    endDecoration?: LineDecoration;
+    routing: "straight" | "elbow" | "curve";
+  };
 }
+
+interface ImageShape extends ShapeBase {
+  shapeKind: "image";
+  data: {
+    mediaId: string;
+    crop?: CropRect;
+    fit: "contain" | "cover" | "stretch";
+    altText?: string;
+  };
+}
+
+interface TableShape extends ShapeBase {
+  shapeKind: "table";
+  data: {
+    source: SlideValueSource;
+    presentation: TablePresentation;
+  };
+}
+
+interface ChartShape extends ShapeBase {
+  shapeKind: "chart";
+  data: {
+    source: SlideValueSource;
+    specification: ChartSpecification;
+  };
+}
+
+type SlideValueSource =
+  | { kind: "literal"; value: FormulaWireValue }
+  | { kind: "formula"; source: string }
+  | { kind: "data"; entryId: string; revision?: number }
+  | { kind: "analysis-result"; resultId: string; revision?: number };
 ```
-The union is closed: `kind` matches exactly one payload. Group membership is represented by each child's `parentGroupId`; children are ordered by rank, not by a child array. Groups cannot cross Slides, each Shape has at most one parent, and the group graph is acyclic. Frames remain Slide-relative, so grouping never rewrites visible child geometry.
-Tables use stable row, column, and cell IDs. Charts store a typed chart specification, local presentation, and either literal data or an exact upstream binding. Browser selection, guides, handles, drag state, zoom, and viewport state are not canonical Deck data.
-### Rich content, Formula atoms, and Notes
-```typescript
-type FormulaWireValue = import("#formula").FormulaWireValue;
 
-interface RichTextBlock {
+Table and chart sources are explicit typed references. They are resolved through their owning capabilities and remain explicit in the Shape payload.
+
+## Themes
+
+```tsx
+interface SlidesTheme {
+  id: ThemeId;
+  name: string;
+  tokens: ThemeTokens;
+  layouts: Record<string, SlideLayout>;
+}
+
+interface ThemeTokens {
+  colors: Record<string, ColorValue>;
+  fonts: Record<string, FontToken>;
+  spacing: Record<string, number>;
+}
+
+interface SlideLayout {
   id: string;
-  kind: "paragraph" | "heading" | "list-item";
-  rank: string;
-  atoms: Record<string, RichTextAtom>;
-  style: BlockStyle;
+  name: string;
+  placeholders: LayoutPlaceholder[];
 }
+```
 
-type RichTextAtom =
-  | {
-      id: string;
-      rank: string;
-      kind: "text";
-      text: string;
-      marks: Record<string, TextMark>;
-    }
-  | {
-      id: string;
-      rank: string;
-      kind: "formula";
-      source: string;
-      acceptedValue?: FormulaWireValue;
-      lastGoodValue?: FormulaWireValue;
-      sourceRevision: number;
-      dependencyDigest?: string;
-      diagnostic?: FormulaDiagnostic;
-      marks: Record<string, TextMark>;
-    }
-  | {
-      id: string;
-      rank: string;
-      kind: "reference";
-      reference: SlidesSourceRef;
-      displayText: string;
-      marks: Record<string, TextMark>;
-    };
-```
-Text Shapes and Notes use the same vocabulary. Notes remain independently addressable and can change without rewriting unrelated Shapes.
-Formula supplies expression semantics and the shared persistent wire codec. Slides owns authored source, stable bindings, accepted and last-good display values, diagnostics, provenance, and the ChangeSets that alter them. A function-valued result at any depth becomes Formula's typed `NON_SERIALIZABLE_VALUE` diagnostic and is never written into a Shape or Notes payload.
-### Bindings and provenance
-```typescript
-type SlidesSourceRef =
-  | { kind: "knowledge-query"; queryId: string; contextIds: string[] }
-  | { kind: "evidence"; evidenceId: string; evidenceRevision: number }
-  | { kind: "question-answer"; questionId: string; answerRevision: number }
-  | { kind: "name"; nameId: string; bindingRevision: number }
-  | { kind: "analysis-result"; analysisId: string; resultId: string }
-  | {
-      kind: "spreadsheet-range";
-      spreadsheetId: string;
-      range: StableSpreadsheetRange;
-      spreadsheetRevision: number;
-    }
-  | {
-      kind: "resource-target";
-      resourceKind: "document" | "slides" | "spreadsheet";
-      resourceId: string;
-      targetId: string;
-      resourceRevision: number;
-    };
+A layout creates ordinary Shapes with stable IDs. Once inserted, those Shapes participate in the same ChangeSet and revision model as manually created content.
 
-interface SlidesContentBinding {
-  id: string;
-  source: SlidesSourceRef;
-  updatePolicy: "pinned" | "manual-refresh" | "auto-refresh";
-  acceptedSourceRevision?: string;
-  sourceDigest?: string;
-  displayRevision: number;
-  generationToken?: string;
-  state: "current" | "stale" | "refreshing" | "failed";
-  lastGoodData?: Shape["data"];
-  provenance: ProvenanceLink[];
-}
-```
-A binding belongs to its target Shape or Atom. Refresh freezes Deck revision, target display revision, source manifest, and generation token. A result can replace canonical content only when every frozen precondition still matches. Otherwise it is retained as a proposal or marked stale.
-### Capability ports
-```typescript
-interface SlidesRepository {
-  list(): Promise<DeckSummary[]>;
-  create(input: CreateDeck): Promise<Deck>;
-  load(deckId: string, revision?: number): Promise<Deck>;
-  append(input: AppendSlidesChangeSet): Promise<SlidesChangeSet>;
-  listHistory(deckId: string, cursor?: string): Promise<SlidesChangeSetSummary[]>;
-  createStageRequest(input: CreateSlidesStageRequest): Promise<SlidesStageRequest>;
-  settleStage(input: SettleSlidesStage): Promise<SlidesChangeSet | SlidesProposal>;
-  compact(input: CompactSlidesBase): Promise<void>;
-}
+## Base, revisions, and ChangeSets
 
-interface SlidesCommands {
-  create(input: CreateDeckRequest): Promise<Deck>;
-  submit(deckId: string, submission: SlidesSubmission): Promise<SlidesChangeSet>;
-  undo(deckId: string, input: UndoSlidesRequest): Promise<SlidesChangeSet>;
-  redo(deckId: string, input: RedoSlidesRequest): Promise<SlidesChangeSet>;
-  requestRefresh(input: RequestSlidesRefresh): Promise<SlidesStageIntent>;
-}
-
-interface SlidesSnapshots {
-  readDeck(deckId: string, revision?: number): Promise<DeckSnapshot>;
-  readTarget(
-    deckId: string,
-    targetId: string,
-    revision?: number,
-  ): Promise<SlidesTargetSnapshot>;
-  renderScene(deckId: string, revision?: number): Promise<SlidesRenderScene>;
-}
-```
-## Runtime Objects
-### Construction
-```typescript
-const repository = createSlidesRepositoryFromRuntimeConfig(config, database);
-const slides = createSlidesCapability({
-  repository,
-  formula,
-  dataResolver,
-  knowledge,
-  context,
-  analysis,
-  spreadsheet,
-  media,
-  intelligence,
-  logger,
-  attribution: createRuntimeAttribution(config),
-});
-```
-Project scope and attribution are bound from top-level configuration during initialization. They do not enter Deck values, request payloads, operations, or SQL rows.
-### Aggregate runtime
-A loaded Deck is reconstructed from its compacted Base plus the contiguous ChangeSet tail. The application service exposes commands and exact snapshot readers; the pure reducer applies operations and validates the complete aggregate. Formula results cross the persistence boundary only as `FormulaWireValue`.
-## Change Operations
-### Operations
-```typescript
-type SlidesOperation =
-  | { type: "rename-deck"; title: string }
-  | { type: "set-lifecycle"; lifecycle: Deck["lifecycle"] }
-  | { type: "set-canvas"; widthEmu: Emu; heightEmu: Emu }
-  | { type: "set-theme"; theme: DeckTheme }
-  | { type: "create-section"; section: DeckSection }
-  | { type: "rename-section"; sectionId: string; name: string }
-  | { type: "move-section"; sectionId: string; rank: string }
-  | {
-      type: "delete-section";
-      sectionId: string;
-      destinationSectionId?: string;
-    }
-  | { type: "create-slide"; slide: Slide }
-  | { type: "duplicate-slide"; slideId: string; newSlideId: string; rank: string }
-  | {
-      type: "move-slide";
-      slideId: string;
-      sectionId?: string;
-      rank: string;
-    }
-  | { type: "set-slide-layout"; slideId: string; layoutId?: string }
-  | { type: "set-slide-background"; slideId: string; background?: SlideBackground }
-  | { type: "set-slide-hidden"; slideId: string; hidden: boolean }
-  | { type: "delete-slide"; slideId: string }
-  | { type: "create-shape"; slideId: string; shape: Shape }
-  | { type: "update-shape"; slideId: string; shapeId: string; patch: ShapePatch }
-  | {
-      type: "move-shape";
-      slideId: string;
-      shapeId: string;
-      rank: string;
-      parentGroupId?: string;
-    }
-  | {
-      type: "set-shape-frame";
-      slideId: string;
-      shapeId: string;
-      frame: ShapeBase["frame"];
-    }
-  | { type: "delete-shape"; slideId: string; shapeId: string }
-  | { type: "apply-rich-text"; target: RichTextTarget; edits: RichTextEdit[] }
-  | { type: "replace-notes"; slideId: string; notes: SlideNotes }
-  | { type: "set-binding"; target: SlidesBindingTarget; binding?: SlidesContentBinding }
-  | { type: "apply-refresh-result"; requestId: string; result: SlidesRefreshResult };
-```
-Creation, duplication, grouping, table edits, and template materialization supply every new stable ID and rank in their operation recipes. The reducer validates the complete resulting Deck before accepting any operation.
-### Base, revisions, and ChangeSets
-```typescript
-interface SlidesSubmission {
-  requestId: string;
-  requestDigest: string;
-  expectedRevision: number;
-  operations: SlidesOperation[];
+```tsx
+interface DeckBaseRow {
+  deckId: DeckId;
+  baseRevision: RevisionNumber;
+  base: Deck;
+  updatedAt: string;
 }
 
 interface SlidesChangeSet {
-  id: string;
-  deckId: string;
-  requestId: string;
-  requestDigest: string;
-  priorRevision: number;
-  revision: number;
-  seq: number;
-  attributionId: string;
+  id: ChangeSetId;
+  deckId: DeckId;
+  baseRevision: RevisionNumber;
+  actorId: string;
+  changes: SlidesChange[];
   createdAt: string;
-  operations: SlidesOperation[];
-  inverseOperations: SlidesOperation[];
-  footprint: {
-    sectionIds: string[];
-    slideIds: string[];
-    shapeIds: string[];
-    noteSlideIds: string[];
-    structural: boolean;
-  };
-  undoOf?: string;
-  redoOf?: string;
+}
+
+interface SlidesSubmission {
+  id: string;
+  deckId: DeckId;
+  baseRevision: RevisionNumber;
+  status: "pending" | "applied" | "rejected";
+  changeSet: SlidesChangeSet;
+  resultRevision?: RevisionNumber;
+  diagnostics: SlidesDiagnostic[];
+}
+
+type SlidesChange =
+  | DeckChange
+  | SlideChange
+  | ElementChange
+  | TextChange
+  | ThemeChange;
+```
+
+Accepted ChangeSets advance the deck revision atomically. A stale base revision is rebased when all operations can be addressed by stable IDs; otherwise the submission is rejected with structured diagnostics.
+
+# Runtime Objects
+
+## Construction
+
+```tsx
+interface SlidesRuntimeDependencies {
+  repository: SlidesRepository;
+  richText: RichTextEngine;
+  formula: FormulaEvaluator;
+  data: StructuredDataReader;
+  derivedOutputs: DerivedOutputReader;
+  media: MediaReader;
+  logger: Logger;
+  attribution: AttributionProvider;
+}
+
+interface SlidesRuntime {
+  commands: SlidesCommands;
+  queries: SlidesQueries;
+  snapshots: SlidesSnapshots;
+  changes: SlidesChangeEngine;
+  renderer: SlidesRenderer;
+}
+
+function createSlidesRuntime(
+  dependencies: SlidesRuntimeDependencies,
+): SlidesRuntime;
+```
+
+## Repository
+
+```tsx
+interface SlidesRepository {
+  createDeck(deck: Deck, attribution: Attribution): Promise<RevisionRef>;
+  getDeck(deckId: DeckId, revision?: number): Promise<DeckSnapshot | null>;
+  appendSubmission(submission: SlidesSubmission): Promise<void>;
+  acceptSubmission(
+    submissionId: string,
+    result: AcceptedSlidesSubmission,
+  ): Promise<RevisionRef>;
+  rejectSubmission(
+    submissionId: string,
+    diagnostics: SlidesDiagnostic[],
+  ): Promise<void>;
+  saveRender(artifact: SlideRenderArtifact): Promise<void>;
+}
+
+interface DeckSnapshot {
+  deck: Deck;
+  revision: RevisionNumber;
+  acceptedAt: string;
 }
 ```
-Head state is normalized Base through `baseSeq` plus the ordered ChangeSet tail. Submission is atomic:
-1. Load the Deck and tail in a transaction.
-2. Return the recorded ChangeSet for an identical `(deckId, requestId, requestDigest)` retry.
-3. Reject request-ID reuse with a different digest.
-4. Require `expectedRevision`, except where retained footprints prove semantic disjointness.
-5. Apply operations in memory.
-6. Validate the complete Deck.
-7. Derive inverse operations and the mutation footprint.
-8. Append one ChangeSet and advance revision with compare-and-swap.
-Undo and redo append compensating ChangeSets. Accepted ChangeSets are never disabled or rewritten. Compaction folds a contiguous prefix into Base tables and advances `baseSeq` without changing logical revision.
-## Endpoints
-<table fit-page-width="true" header-row="true">
-<tr>
-<td>Method and path</td>
-<td>Job</td>
-<td>Queue</td>
-<td>Response</td>
-</tr>
-<tr>
-<td>`GET /slides`</td>
-<td>`slides.list`</td>
-<td>Concurrent</td>
-<td>Inline summaries</td>
-</tr>
-<tr>
-<td>`POST /slides`</td>
-<td>`slides.create`</td>
-<td>Serial</td>
-<td>Created Deck</td>
-</tr>
-<tr>
-<td>`GET /slides/:deckId`</td>
-<td>`slides.get`</td>
-<td>Concurrent</td>
-<td>Exact projection</td>
-</tr>
-<tr>
-<td>`GET /slides/:deckId/history`</td>
-<td>`slides.history.list`</td>
-<td>Concurrent</td>
-<td>Bounded history</td>
-</tr>
-<tr>
-<td>`POST /slides/:deckId/changes`</td>
-<td>`slides.submit`</td>
-<td>Serial</td>
-<td>ChangeSet or conflict</td>
-</tr>
-<tr>
-<td>`POST /slides/:deckId/undo`</td>
-<td>`slides.undo`</td>
-<td>Serial</td>
-<td>Compensating ChangeSet</td>
-</tr>
-<tr>
-<td>`POST /slides/:deckId/redo`</td>
-<td>`slides.redo`</td>
-<td>Serial</td>
-<td>Compensating ChangeSet</td>
-</tr>
-<tr>
-<td>`POST /slides/:deckId/refreshes`</td>
-<td>`slides.refresh.request`</td>
-<td>Serial</td>
-<td>Durable receipt</td>
-</tr>
-<tr>
-<td>`POST /slides/:deckId/renders`</td>
-<td>`slides.render.request`</td>
-<td>Serial</td>
-<td>Durable receipt</td>
-</tr>
-<tr>
-<td>`GET /slides/:deckId/snapshot`</td>
-<td>`slides.snapshot.get`</td>
-<td>Concurrent</td>
-<td>Exact snapshot</td>
-</tr>
-</table>
-Queue selection is fixed by endpoint mapping before the capability-specific payload is decoded.
-## Jobs
-<table fit-page-width="true" header-row="true">
-<tr>
-<td>Endpoint or intent</td>
-<td>Job</td>
-<td>Queue</td>
-<td>Response mode</td>
-<td>Change operations emitted</td>
-<td>Calls or durable writes</td>
-</tr>
-<tr>
-<td>Create Deck</td>
-<td>`slides.create`</td>
-<td>Serial</td>
-<td>Inline Deck</td>
-<td>Creates Base revision 0</td>
-<td>Slides repository and Activity contribution</td>
-</tr>
-<tr>
-<td>Submit authored edits</td>
-<td>`slides.submit`</td>
-<td>Serial</td>
-<td>Inline ChangeSet</td>
-<td>Submitted `SlidesOperation[]`</td>
-<td>Reducer, invariant validation, inverse derivation, repository CAS</td>
-</tr>
-<tr>
-<td>Undo or redo</td>
-<td>`slides.undo` / `slides.redo`</td>
-<td>Serial</td>
-<td>Inline compensating ChangeSet</td>
-<td>Stored inverse or forward compensation</td>
-<td>Retained history and repository CAS</td>
-</tr>
-<tr>
-<td>List, get, history, or snapshot</td>
-<td>Read jobs</td>
-<td>Concurrent</td>
-<td>Inline read result</td>
-<td>None</td>
-<td>Slides repository and rebuildable projections</td>
-</tr>
-<tr>
-<td>Refresh admission</td>
-<td>`slides.refresh.request`</td>
-<td>Serial</td>
-<td>Durable receipt</td>
-<td>None</td>
-<td>Freezes Deck, target, source manifest, and generation token; emits compute intent</td>
-</tr>
-<tr>
-<td>Refresh compute</td>
-<td>`slides.refresh.compute`</td>
-<td>Concurrent</td>
-<td>Persisted result plus settle intent</td>
-<td>None</td>
-<td>Injected Knowledge, Context, Data, Analysis, Spreadsheet, Media, or Intelligence ports</td>
-</tr>
-<tr>
-<td>Refresh settlement</td>
-<td>`slides.refresh.settle`</td>
-<td>Serial</td>
-<td>ChangeSet or retained proposal</td>
-<td>`apply-refresh-result` when all frozen preconditions match</td>
-<td>Slides repository CAS and Activity contribution</td>
-</tr>
-<tr>
-<td>Render admission and compute</td>
-<td>`slides.render.request` → `slides.render.compute`</td>
-<td>Serial → concurrent</td>
-<td>Receipt, then persisted render result</td>
-<td>None</td>
-<td>Exact Deck snapshot and render provider</td>
-</tr>
-<tr>
-<td>Render settlement</td>
-<td>`slides.render.settle`</td>
-<td>Serial</td>
-<td>Settled render status</td>
-<td>None unless an accepted rendered artifact is explicitly bound through a Slides operation</td>
-<td>Stage request store</td>
-</tr>
-<tr>
-<td>Compaction</td>
-<td>`slides.compact`</td>
-<td>Serial</td>
-<td>Inline completion</td>
-<td>None</td>
-<td>Base replacement and retained-tail pruning</td>
-</tr>
-</table>
-Refresh, generation, chart rendering, and thumbnails use explicit stages:
-```mermaid
-flowchart LR
-  A["Serial request"] --> B["Freeze Deck and source preconditions"]
-  B --> C["Concurrent compute or render"]
-  C --> D["Persist stage result"]
-  D --> E["Dispatch serial settlement"]
-  E --> F{"Preconditions current?"}
-  F -->|Yes| G["Append ChangeSet"]
-  F -->|No| H["Retain proposal or stale result"]
-```
-```typescript
-interface SlidesStageIntent {
-  type:
-    | "slides.refresh.compute"
-    | "slides.refresh.settle"
-    | "slides.render.compute"
-    | "slides.render.settle"
-    | "slides.compact";
-  requestId: string;
-  deckId: string;
-  idempotencyKey: string;
+
+## Commands and queries
+
+```tsx
+interface SlidesCommands {
+  createDeck(input: CreateDeckInput): Promise<RevisionRef>;
+  submit(input: SubmitSlidesChangeSetInput): Promise<SubmissionReceipt>;
+  refreshDerivedOutput(
+    input: RefreshSlideDerivedOutputInput,
+  ): Promise<JobReceipt>;
+  render(input: RenderSlidesInput): Promise<JobReceipt>;
+}
+
+interface SlidesQueries {
+  getDeck(input: GetDeckInput): Promise<DeckSnapshot>;
+  getSlide(input: GetSlideInput): Promise<SlideProjection>;
+  getOutline(input: GetDeckInput): Promise<DeckOutline>;
+  getRender(input: GetSlideRenderInput): Promise<SlideRenderArtifact | null>;
+}
+
+interface SlidesSnapshots {
+  capture(deckId: DeckId, revision?: number): Promise<SlidesSnapshot>;
+}
+
+interface SlidesSnapshot {
+  deckId: DeckId;
+  revision: RevisionNumber;
+  deck: Deck;
+  resolvedData: Record<string, FormulaWireValue>;
+  resolvedDerivedOutputs: Record<string, ResolvedDerivedOutput>;
 }
 ```
-The capability returns plain intents. `InternalJobDispatcher` enqueues them. A running job never changes queues.
-## SQL Tables
-### Logical schema and indexes
+
+A snapshot pins all external revisions used for calculation and rendering so one operation sees a coherent deck.
+
+## Change engine
+
+```tsx
+interface SlidesChangeEngine {
+  validate(
+    deck: Deck,
+    changeSet: SlidesChangeSet,
+  ): SlidesDiagnostic[];
+
+  rebase(
+    current: DeckSnapshot,
+    changeSet: SlidesChangeSet,
+  ): RebaseSlidesResult;
+
+  apply(
+    deck: Deck,
+    changeSet: SlidesChangeSet,
+  ): AppliedSlidesChangeSet;
+}
+```
+
+The engine owns group-graph validation, stable-ID addressing, rank ordering, shape geometry constraints, Rich Text delegation, and deterministic application.
+
+## Renderer
+
+```tsx
+interface SlidesRenderer {
+  renderSlide(
+    snapshot: SlidesSnapshot,
+    slideId: SlideId,
+    options: SlideRenderOptions,
+  ): Promise<SlideRenderArtifact>;
+
+  renderDeck(
+    snapshot: SlidesSnapshot,
+    options: DeckRenderOptions,
+  ): Promise<DeckRenderArtifact>;
+}
+```
+
+Rendering resolves authored or derived text, Data and Formula inputs, media assets, theme tokens, group transforms, and z-order from the same pinned snapshot.
+
+# Change Operations
+
+## Deck and slide operations
+
+```tsx
+type DeckChange =
+  | { op: "deck.set-title"; title: string }
+  | { op: "deck.set-theme"; themeId: ThemeId | null }
+  | { op: "deck.set-metadata"; metadata: DeckMetadata };
+
+type SlideChange =
+  | { op: "slide.create"; slide: Slide }
+  | { op: "slide.delete"; slideId: SlideId }
+  | { op: "slide.move"; slideId: SlideId; rank: Rank }
+  | { op: "slide.set-title"; slideId: SlideId; title?: string }
+  | {
+      op: "slide.set-background";
+      slideId: SlideId;
+      background: SlideBackground;
+    }
+  | {
+      op: "slide.apply-notes";
+      slideId: SlideId;
+      richTextChanges: RichTextChange[];
+    };
+```
+
+## Shape operations
+
+```tsx
+type ShapeChange =
+  | {
+      op: "shape.create";
+      slideId: SlideId;
+      shape: Shape;
+    }
+  | {
+      op: "shape.delete";
+      slideId: SlideId;
+      shapeId: ShapeId;
+    }
+  | {
+      op: "shape.set-frame";
+      slideId: SlideId;
+      shapeId: ShapeId;
+      frame: ShapeFrame;
+    }
+  | {
+      op: "shape.set-transform";
+      slideId: SlideId;
+      shapeId: ShapeId;
+      transform: ShapeTransform;
+    }
+  | {
+      op: "shape.set-style";
+      slideId: SlideId;
+      shapeId: ShapeId;
+      style: ShapeStyle;
+    }
+  | {
+      op: "shape.set-references";
+      slideId: SlideId;
+      shapeId: ShapeId;
+      references: ReferenceAttachment[];
+    }
+  | {
+      op: "shape.set-payload";
+      slideId: SlideId;
+      shapeId: ShapeId;
+      data: Shape["data"];
+    };
+```
+
+## Group operations
+
+```tsx
+type GroupChange =
+  | {
+      op: "group.create";
+      slideId: SlideId;
+      group: SlideGroup;
+    }
+  | {
+      op: "group.delete";
+      slideId: SlideId;
+      groupId: SlideGroupId;
+    }
+  | {
+      op: "group.group-elements";
+      slideId: SlideId;
+      groupId: SlideGroupId;
+      elementIds: SlideElementId[];
+    }
+  | {
+      op: "group.ungroup";
+      slideId: SlideId;
+      groupId: SlideGroupId;
+    }
+  | {
+      op: "group.transform";
+      slideId: SlideId;
+      groupId: SlideGroupId;
+      transform: GroupTransform;
+    }
+  | {
+      op: "element.move";
+      slideId: SlideId;
+      elementId: SlideElementId;
+      parentGroupId?: SlideGroupId;
+      rank: Rank;
+    }
+  | {
+      op: "element.set-state";
+      slideId: SlideId;
+      elementId: SlideElementId;
+      locked?: boolean;
+      hidden?: boolean;
+    };
+```
+
+`group.delete` requires the caller to choose either ungrouping descendants or deleting the whole subtree. `group.ungroup` reparents direct children to the deleted Group's parent and assigns ranks that preserve their visual order.
+
+`group.transform` expands into stable, deterministic descendant frame and transform changes before the ChangeSet is accepted. Concurrent edits can therefore conflict at the affected Shape IDs rather than at an opaque group transform.
+
+## Rich Text and Derived Output operations
+
+```tsx
+type TextChange =
+  | {
+      op: "text.apply";
+      slideId: SlideId;
+      shapeId: ShapeId;
+      richTextChanges: RichTextChange[];
+    }
+  | {
+      op: "text.set-source";
+      slideId: SlideId;
+      shapeId: ShapeId;
+      source: SlideTextSource;
+    }
+  | {
+      op: "text.apply-derived-output";
+      slideId: SlideId;
+      shapeId: ShapeId;
+      output: DerivedOutputRef;
+    };
+```
+
+`text.apply` applies only to authored text. Editing content resolved from a Derived Output first materializes that content as authored Rich Text or creates a new Derived Output revision through Knowledge.
+
+`text.apply-derived-output` advances the accepted `appliedRevision` after Knowledge refresh has completed and the caller has selected or accepted the new revision.
+
+# Endpoints
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/slides/decks` | Create a deck. |
+| GET | `/slides/decks/:deckId` | Read a deck at the current or requested revision. |
+| POST | `/slides/decks/:deckId/changes` | Submit a Slides ChangeSet. |
+| GET | `/slides/decks/:deckId/submissions/:submissionId` | Read submission status and diagnostics. |
+| GET | `/slides/decks/:deckId/outline` | Read the deck outline projection. |
+| GET | `/slides/decks/:deckId/slides/:slideId` | Read a slide projection. |
+| POST | `/slides/decks/:deckId/slides/:slideId/elements/:elementId/refresh` | Refresh and optionally adopt a referenced Derived Output. |
+| POST | `/slides/decks/:deckId/render` | Render the deck. |
+| POST | `/slides/decks/:deckId/slides/:slideId/render` | Render one slide. |
+| GET | `/slides/renders/:renderId` | Read render state or artifact metadata. |
+
+Route handlers validate transport input and create jobs. They do not apply Changes or render inside the request handler.
+
+# Jobs
+
+| Job type | Queue | Handler |
+| --- | --- | --- |
+| `slides.create-deck` | serial | Creates the base aggregate and initial revision. |
+| `slides.submit-changes` | serial | Validates, rebases, applies, and commits a ChangeSet. |
+| `slides.refresh-derived-output` | concurrent → serial | Asks Knowledge to refresh an output, then submits a small Slides ChangeSet to advance the accepted revision. |
+| `slides.render-slide` | concurrent | Captures a pinned snapshot and renders one slide. |
+| `slides.render-deck` | concurrent | Captures a pinned snapshot and renders the deck. |
+
+The concurrent refresh phase may retrieve context and invoke Intelligence through Knowledge. The serial settlement phase only advances the slide resource reference after a valid output revision exists.
+
+```tsx
+interface SlidesJobFactory {
+  matches(request: RequestEnvelope): boolean;
+  create(request: RequestEnvelope): SlidesJob;
+}
+
+type SlidesJob =
+  | CreateDeckJob
+  | SubmitSlidesChangesJob
+  | RefreshSlideDerivedOutputJob
+  | RenderSlideJob
+  | RenderDeckJob;
+```
+
+# SQL Tables
+
+## Deck base and revisions
+
 ```sql
 CREATE TABLE slides_decks (
-  id          TEXT PRIMARY KEY,
-  title       TEXT NOT NULL,
-  lifecycle   TEXT NOT NULL,
-  revision    INTEGER NOT NULL,
-  base_seq    INTEGER NOT NULL,
-  base_meta   BLOB NOT NULL,
-  created_at  TEXT NOT NULL,
-  updated_at  TEXT NOT NULL
+  deck_id TEXT PRIMARY KEY,
+  current_revision INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  theme_id TEXT,
+  metadata BLOB NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
 );
 
-CREATE TABLE slides_base_sections (
-  deck_id     TEXT NOT NULL,
-  section_id  TEXT NOT NULL,
-  rank        TEXT NOT NULL,
-  name        TEXT NOT NULL,
-  PRIMARY KEY (deck_id, section_id),
-  FOREIGN KEY (deck_id) REFERENCES slides_decks(id) ON DELETE CASCADE
+CREATE TABLE slides_revisions (
+  deck_id TEXT NOT NULL,
+  revision INTEGER NOT NULL,
+  base_blob BLOB NOT NULL,
+  accepted_change_set_id TEXT,
+  actor_id TEXT NOT NULL,
+  accepted_at TEXT NOT NULL,
+  PRIMARY KEY (deck_id, revision)
 );
+```
 
+## Normalized current-base projections
+
+```sql
 CREATE TABLE slides_base_slides (
-  deck_id       TEXT NOT NULL,
-  slide_id      TEXT NOT NULL,
-  section_id    TEXT,
-  rank          TEXT NOT NULL,
-  layout_id     TEXT,
-  hidden        INTEGER NOT NULL,
-  background    BLOB,
-  PRIMARY KEY (deck_id, slide_id),
-  FOREIGN KEY (deck_id) REFERENCES slides_decks(id) ON DELETE CASCADE
+  deck_id TEXT NOT NULL,
+  slide_id TEXT NOT NULL,
+  rank TEXT NOT NULL,
+  title TEXT,
+  size BLOB NOT NULL,
+  background BLOB NOT NULL,
+  notes BLOB NOT NULL,
+  PRIMARY KEY (deck_id, slide_id)
+);
+
+CREATE TABLE slides_base_groups (
+  deck_id TEXT NOT NULL,
+  slide_id TEXT NOT NULL,
+  group_id TEXT NOT NULL,
+  rank TEXT NOT NULL,
+  parent_group_id TEXT,
+  locked INTEGER NOT NULL,
+  hidden INTEGER NOT NULL,
+  PRIMARY KEY (deck_id, slide_id, group_id)
 );
 
 CREATE TABLE slides_base_shapes (
-  deck_id         TEXT NOT NULL,
-  slide_id        TEXT NOT NULL,
-  shape_id        TEXT NOT NULL,
-  parent_shape_id TEXT,
-  rank            TEXT NOT NULL,
-  kind            TEXT NOT NULL,
-  frame           BLOB NOT NULL,
-  transform       BLOB NOT NULL,
-  style           BLOB NOT NULL,
-  payload         BLOB NOT NULL,
-  binding         BLOB,
-  PRIMARY KEY (deck_id, shape_id),
-  FOREIGN KEY (deck_id, slide_id)
-    REFERENCES slides_base_slides(deck_id, slide_id) ON DELETE CASCADE
+  deck_id TEXT NOT NULL,
+  slide_id TEXT NOT NULL,
+  shape_id TEXT NOT NULL,
+  shape_kind TEXT NOT NULL,
+  rank TEXT NOT NULL,
+  parent_group_id TEXT,
+  locked INTEGER NOT NULL,
+  hidden INTEGER NOT NULL,
+  frame BLOB NOT NULL,
+  transform BLOB NOT NULL,
+  style BLOB NOT NULL,
+  payload BLOB NOT NULL,
+  references_blob BLOB NOT NULL,
+  PRIMARY KEY (deck_id, slide_id, shape_id)
 );
 
-CREATE TABLE slides_base_notes (
-  deck_id     TEXT NOT NULL,
-  slide_id    TEXT NOT NULL,
-  notes       BLOB NOT NULL,
-  PRIMARY KEY (deck_id, slide_id),
-  FOREIGN KEY (deck_id, slide_id)
-    REFERENCES slides_base_slides(deck_id, slide_id) ON DELETE CASCADE
-);
+CREATE INDEX slides_groups_by_parent
+  ON slides_base_groups (deck_id, slide_id, parent_group_id, rank);
 
-CREATE TABLE slides_change_sets (
-  id                 TEXT PRIMARY KEY,
-  deck_id            TEXT NOT NULL,
-  request_id         TEXT NOT NULL,
-  request_digest     TEXT NOT NULL,
-  prior_revision     INTEGER NOT NULL,
-  revision           INTEGER NOT NULL,
-  seq                INTEGER NOT NULL,
-  attribution_id     TEXT NOT NULL,
-  operations         BLOB NOT NULL,
-  inverse_operations BLOB NOT NULL,
-  footprint          BLOB NOT NULL,
-  undo_of             TEXT,
-  redo_of             TEXT,
-  created_at          TEXT NOT NULL,
-  UNIQUE (deck_id, seq),
-  UNIQUE (deck_id, request_id),
-  FOREIGN KEY (deck_id) REFERENCES slides_decks(id) ON DELETE CASCADE
-);
-
-CREATE TABLE slides_stage_requests (
-  id                       TEXT PRIMARY KEY,
-  deck_id                  TEXT NOT NULL,
-  target_id                TEXT,
-  kind                     TEXT NOT NULL,
-  request_digest           TEXT NOT NULL,
-  deck_revision            INTEGER NOT NULL,
-  target_display_revision  INTEGER,
-  source_manifest          BLOB,
-  generation_token         TEXT,
-  state                    TEXT NOT NULL,
-  result                   BLOB,
-  failure                  BLOB,
-  created_at               TEXT NOT NULL,
-  updated_at               TEXT NOT NULL,
-  UNIQUE (deck_id, kind, request_digest),
-  FOREIGN KEY (deck_id) REFERENCES slides_decks(id) ON DELETE CASCADE
-);
+CREATE INDEX slides_shapes_by_parent
+  ON slides_base_shapes (deck_id, slide_id, parent_group_id, rank);
 ```
-Required indexes:
+
+The normalized tables are current-base read projections. The immutable revision blob remains the authority for historical reconstruction.
+
+## Change submissions
+
 ```sql
-CREATE INDEX slides_decks_updated
-  ON slides_decks(lifecycle, updated_at DESC, id);
-CREATE INDEX slides_sections_order
-  ON slides_base_sections(deck_id, rank, section_id);
-CREATE INDEX slides_slides_order
-  ON slides_base_slides(deck_id, section_id, rank, slide_id);
-CREATE INDEX slides_shapes_order
-  ON slides_base_shapes(deck_id, slide_id, parent_shape_id, rank, shape_id);
-CREATE INDEX slides_changes_replay
-  ON slides_change_sets(deck_id, seq);
-CREATE INDEX slides_changes_recent
-  ON slides_change_sets(deck_id, created_at DESC, id);
-CREATE INDEX slides_stages_pending
-  ON slides_stage_requests(state, updated_at, id);
+CREATE TABLE slides_change_sets (
+  change_set_id TEXT PRIMARY KEY,
+  deck_id TEXT NOT NULL,
+  base_revision INTEGER NOT NULL,
+  actor_id TEXT NOT NULL,
+  changes_blob BLOB NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE slides_submissions (
+  submission_id TEXT PRIMARY KEY,
+  change_set_id TEXT NOT NULL,
+  deck_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  result_revision INTEGER,
+  diagnostics_blob BLOB NOT NULL,
+  created_at TEXT NOT NULL,
+  settled_at TEXT
+);
+
+CREATE INDEX slides_submissions_by_deck
+  ON slides_submissions (deck_id, created_at);
 ```
-`base_meta` contains canvas, theme, layouts, and Base bookkeeping. Base component tables represent the same compacted sequence and are replaced atomically.
-Rebuildable projections include ID lookup maps, reverse binding dependencies, resolved theme/layout styles, spatial hit-test indexes, extracted text, render scenes, thumbnails, and Source snapshot hashes. Authored content, accepted `FormulaWireValue` values, bindings, provenance, Base, and ChangeSets are canonical.
-## Appendices
-### Governing invariants
-1. Deck is the aggregate root and owns its Sections, Slides, Shapes, Notes, layouts, bindings, and authored presentation.
-2. Deck, Section, Slide, Shape, Block, and Atom IDs are stable.
-3. Rank plus ID is the only ordering rule.
-4. Every Shape belongs to exactly one Slide and matches one closed payload.
-5. Geometry is bounded integer EMU.
-6. Group graphs are acyclic and cannot cross Slides.
-7. Notes are Slide-owned rich content.
-8. Every mutation appends one atomic ChangeSet of typed operations.
-9. Undo and redo append compensation.
-10. Concurrent results settle through a new serial job and cannot overwrite newer authored content.
-11. Upstream capabilities own their facts; Slides owns accepted presentation.
-12. Derived indexes and renderings are disposable.
-13. Slides SQL and migrations stay inside the capability.
-14. The domain imports neither the web server nor provider SDKs.
-### Acceptance criteria
-- Moving or reordering Sections, Slides, Shapes, Blocks, and Atoms preserves IDs and changes only rank or membership.
-- Invalid geometry, payload tags, group cycles, table structure, bindings, or references reject the whole submission.
-- Notes can change without rewriting unrelated Shapes.
-- Formula and generated content retain last-good display after failure.
-- A stale asynchronous result cannot replace a newer target.
-- Replay, retry idempotency, conflict detection, undo, redo, and compaction are deterministic.
-- Exact Deck snapshots can be rendered, indexed, exported, templated, and addressed by stable target ID.
-- Deleting every rebuildable projection leaves the Deck and history intact.
+
+## Render artifacts
+
+```sql
+CREATE TABLE slides_render_artifacts (
+  render_id TEXT PRIMARY KEY,
+  deck_id TEXT NOT NULL,
+  deck_revision INTEGER NOT NULL,
+  slide_id TEXT,
+  status TEXT NOT NULL,
+  media_id TEXT,
+  diagnostics_blob BLOB NOT NULL,
+  created_at TEXT NOT NULL,
+  completed_at TEXT
+);
+```
+
+# Invariants
+
+1. Every Slide Element ID is unique within its slide.
+2. Rank plus ID produces deterministic order within each parent.
+3. A `parentGroupId` references a Group on the same slide.
+4. Group membership is acyclic and respects the configured nesting limit.
+5. A Group is structural and carries no Shape style or content.
+6. Group bounds are derived from visible descendants.
+7. Group transforms resolve to deterministic descendant changes before commit.
+8. A Text Shape is either authored Rich Text or a reference to one accepted Derived Output revision.
+9. Rich Text changes are validated and applied by the shared Rich Text engine.
+10. Knowledge owns generation, grounding, freshness, and Derived Output revision history.
+11. Chart and table inputs resolve against a pinned Formula/Data/Analysis snapshot.
+12. Rendering the same snapshot and options produces the same artifact bytes or the same normalized render tree.
+13. Accepted ChangeSets are immutable, attributed, and revision-scoped.
+
+# Acceptance Criteria
+
+- A deck can be created, revised, queried, and rendered through jobs.
+- Slides and elements maintain deterministic order with stable IDs.
+- Shapes can exist at the slide root without an implicit Group.
+- Groups can contain Shapes and nested Groups without becoming visual Shapes.
+- Moving, resizing, rotating, locking, hiding, ungrouping, and deleting Groups have explicit deterministic semantics.
+- Text Shapes and notes use the shared Rich Text contract.
+- Link marks and reference attachments remain available without a Slides-specific reference model.
+- A Text Shape can adopt and refresh a Knowledge Derived Output by revision.
+- Table and Chart Shapes can resolve Formula, Data, and Analysis values from a pinned snapshot.
+- ChangeSets support validation, rebase, atomic acceptance, immutable history, and structured rejection diagnostics.
+- Resource routes remain thin job-producing adapters.
+
+# Related Pages
+
+- Capability Index
+- Rich Text
+- Knowledge
+- Knowledge Derived Output
+- Document
+- Spreadsheet
+- Data
