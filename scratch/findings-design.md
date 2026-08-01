@@ -10,6 +10,9 @@ retrieval (Knowledge lattice windows) and synthesized outputs (Derived Outputs)
 by giving the user — or an agent — a durable place to capture an extracted
 fact, observation, or inference that deserves to stand alone.
 
+Findings are **project-scoped** — the store is constructed with the project ID
+and table names derive from it. There is no user-scoped findings store.
+
 ### What it is
 
 - A **claim** expressed as free text — the user's or model's statement of what
@@ -17,10 +20,14 @@ fact, observation, or inference that deserves to stand alone.
 - **Source grounding**: one or more `SourceReference` values that identify
   exactly where in a source the claim is supported, with optional byte/line
   spans and commentary.
-- A **lifecycle**: `proposed` → `accepted` (or `rejected`/`superseded`).
+- A **lifecycle**: `proposed` → `accepted` (or `rejected`). Findings can move
+  back from `accepted` to `proposed` if the claim needs reworking.
 - **Knowledge lattice admission on acceptance**: when `accepted`, the claim
   text is added to the Knowledge lattice as a source with `label: "finding"`,
-  making it retrievable alongside original sources.
+  making it retrievable alongside original sources. If edited while accepted,
+  the lattice source is removed and re-added with the updated claim.
+- **Tags** for classification, and optional links to **questions** and
+  **hypotheses** that this finding bears on.
 
 ### What it is not
 
@@ -31,6 +38,9 @@ fact, observation, or inference that deserves to stand alone.
   authority; a Finding is an extracted interpretation.
 - It is **not** a chat or conversational artifact. Findings are durable project
   objects.
+- It does **not** have its own attachment mechanism. If a finding needs an
+  attached file (e.g., a screenshot), upload it as a General File and
+  reference the file ID in the finding's `sources`.
 
 ### Relationship to Evidence
 
@@ -45,9 +55,9 @@ evidence, but it carries the user's own language and judgment.
 
 | Prerequisite | Finding dependency |
 |---|---|
-| Platform — Knowledge | `knowledge.add()` for lattice admission on acceptance; `knowledge.remove()` on rejection/deletion. |
+| Platform — Knowledge | `knowledge.add()` for lattice admission on acceptance; `knowledge.remove()` on status change or deletion. |
 | Platform — Intelligence | Not a direct dependency; findings are human-authored (or agent-authored via Reasoning). |
-| Capability — Context | `ContextEntry` is the grouping mechanism. Findings have `{ id, kind: "finding" }`. |
+| Capability — Context | `ContextEntry` is the grouping mechanism. Findings are referenced as `{ id, kind: "finding" }`. |
 | Runtime config, Logger | Standard factory injection. |
 
 ### Build position
@@ -85,14 +95,11 @@ Follows the **simple flat structure** pattern (same as Context, Structured Data)
 ### Finding
 
 ```ts
-type FindingStatus = "proposed" | "accepted" | "rejected" | "superseded";
+type FindingStatus = "proposed" | "accepted" | "rejected";
 
 interface Finding {
   /** Random 16-byte hex UUID. Stable identity — never changes. */
   readonly id: string;
-
-  /** Resource kind for ContextEntry usage. Always "finding". */
-  readonly kind: "finding";
 
   /** The claim text — the extracted fact, observation, or implication. */
   readonly claim: string;
@@ -111,10 +118,23 @@ interface Finding {
   readonly status: FindingStatus;
 
   /**
-   * When status is "superseded", the ID of the Finding that replaced this one.
-   * A Finding may be superseded by a more precise or corrected claim.
+   * Free-form tags for classification. No predefined vocabulary — callers
+   * supply whatever strings are meaningful (e.g. "revenue", "risk", "Q3").
    */
-  readonly supersededById?: string;
+  readonly tags: readonly string[];
+
+  /**
+   * IDs of Questions this finding bears on.
+   * Typically one (the question that drove the research that produced this
+   * finding), but callers may attach multiple.
+   */
+  readonly questionIds: readonly string[];
+
+  /**
+   * IDs of Hypotheses this finding bears on.
+   * Typically one, but callers may attach multiple.
+   */
+  readonly hypothesisIds: readonly string[];
 
   /**
    * The knowledge sourceId assigned when this finding was accepted into the
@@ -123,8 +143,11 @@ interface Finding {
    */
   readonly knowledgeSourceId?: string;
 
-  /** Monotone revision counter starting at 1. */
-  readonly revision: number;
+  /** ID of the user or agent who created this finding. */
+  readonly createdBy: string;
+
+  /** ID of the user or agent who last updated this finding. */
+  readonly updatedBy: string;
 
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -133,6 +156,13 @@ interface Finding {
   readonly deletedAt?: string;
 }
 ```
+
+No `kind` field — the type itself is the kind. In `ContextEntry` usage it is
+referenced as `{ id, kind: "finding" }`; the `"finding"` string is a Context
+kind constant, not a field on the Finding model.
+
+No `revision` field — findings are simple mutable records. There is no
+optimistic concurrency. The last write wins.
 
 ### SourceReference
 
@@ -195,17 +225,14 @@ interface FindingStore {
 
   /**
    * Atomically insert a new finding. Fails if ID already exists.
-   * The finding must have revision === 1.
    */
   insert(finding: Finding): void;
 
   /**
-   * Atomically update an existing finding. The stored revision must match
-   * the incoming revision (optimistic concurrency); the store increments it.
-   * Returns the new revision number.
-   * Throws StaleFindingError if revisions do not match.
+   * Atomically update an existing finding. Last write wins — no optimistic
+   * concurrency.
    */
-  update(finding: Finding): number;
+  update(finding: Finding): void;
 
   /** Soft-delete a finding. Sets deletedAt. */
   softDelete(id: string, deletedAt: string): void;
@@ -228,25 +255,31 @@ interface FindingService {
   propose(request: ProposeFindingRequest): Promise<Finding>;
 
   /**
-   * Accept a proposed finding. Transitions status to "accepted" and admits
-   * the claim text into the Knowledge lattice as a source with label "finding".
+   * Accept a finding. Transitions status to "accepted" and admits the claim
+   * text into the Knowledge lattice as a source with label "finding".
    * Returns the updated Finding with knowledgeSourceId populated.
    *
-   * Idempotent: if already accepted, returns the existing record.
+   * Works from any status. If already accepted, this is idempotent (no
+   * duplicate lattice admission).
    */
   accept(id: string): Promise<Finding>;
 
-  /** Reject a proposed finding. Transitions status to "rejected". */
+  /**
+   * Move an accepted finding back to proposed. Removes the claim from the
+   * Knowledge lattice. The finding can then be edited and re-accepted.
+   */
+  unaccept(id: string): Promise<Finding>;
+
+  /** Reject a finding. Transitions status to "rejected". Works from any status. */
   reject(id: string): Promise<Finding>;
 
   /**
-   * Mark a finding as superseded by another finding.
-   * The superseding finding must already be accepted.
-   * If the superseded finding was in the knowledge lattice, removes it.
+   * Update a finding's claim, sources, commentary, tags, questionIds, or
+   * hypothesisIds. Works regardless of status.
+   *
+   * If the finding is "accepted" and the claim text changes, the old lattice
+   * source is removed and the new claim is re-admitted.
    */
-  supersede(id: string, supersededById: string): Promise<Finding>;
-
-  /** Update the claim text and/or sources of a proposed finding. */
   update(id: string, request: UpdateFindingRequest): Promise<Finding>;
 
   /** List findings, optionally filtered by status. */
@@ -263,14 +296,18 @@ interface ProposeFindingRequest {
   readonly claim: string;
   readonly sources: readonly SourceReference[];
   readonly commentary?: string;
+  readonly tags?: readonly string[];
+  readonly questionIds?: readonly string[];
+  readonly hypothesisIds?: readonly string[];
 }
 
 interface UpdateFindingRequest {
   readonly claim?: string;
   readonly sources?: readonly SourceReference[];
   readonly commentary?: string;
-  /** Optional: null to keep current, string to replace. */
-  readonly expectedRevision: number;
+  readonly tags?: readonly string[];
+  readonly questionIds?: readonly string[];
+  readonly hypothesisIds?: readonly string[];
 }
 ```
 
@@ -302,11 +339,18 @@ When a Finding is **accepted**:
    ```
 3. The Finding record is updated with `knowledgeSourceId = "finding:{findingId}"`.
 
-When a Finding is **superseded** or **deleted**:
+When a Finding is **unaccepted** or **deleted**:
 
 1. If `knowledgeSourceId` is present, `knowledge.remove(knowledgeSourceId)` is
    called to delete the source, its windows, and its lattice nodes.
 2. The Finding record is updated accordingly.
+
+When an accepted Finding is **updated** and the claim text changes:
+
+1. The old lattice source is removed (`knowledge.remove(oldSourceId)`).
+2. The new claim text is admitted (`knowledge.add({ sourceId: sameFindingId, label: "finding", text: newClaim })`).
+3. The `knowledgeSourceId` remains the same — it is keyed to the finding ID,
+   not the claim content.
 
 ### Why add accepted findings to the lattice
 
@@ -394,7 +438,20 @@ Mode:    inline
 ```
 
 Transitions to `"accepted"` and admits to Knowledge lattice. Serial because it
-mutates the lattice.
+mutates the lattice. Works from any status (idempotent if already accepted).
+
+### `POST /findings/unaccept`
+
+```
+Method:  POST
+Path:    /findings/unaccept
+Body:    { id: string }
+Queue:   serial
+Mode:    inline
+```
+
+Moves from `"accepted"` back to `"proposed"`. Removes claim from Knowledge
+lattice. Serial (lattice mutation).
 
 ### `POST /findings/reject`
 
@@ -406,19 +463,7 @@ Queue:   concurrent
 Mode:    inline
 ```
 
-Transitions to `"rejected"`.
-
-### `POST /findings/supersede`
-
-```
-Method:  POST
-Path:    /findings/supersede
-Body:    { id: string; supersededById: string }
-Queue:   serial
-Mode:    inline
-```
-
-Marks superseded; removes old claim from lattice. Serial (lattice mutation).
+Transitions to `"rejected"`. Works from any status.
 
 ### `POST /findings/update`
 
@@ -426,12 +471,14 @@ Marks superseded; removes old claim from lattice. Serial (lattice mutation).
 Method:  POST
 Path:    /findings/update
 Body:    { id: string } & UpdateFindingRequest
-Queue:   concurrent
+Queue:   concurrent (or serial if claim changes while accepted)
 Mode:    inline
 ```
 
-Updates claim/sources/commentary of a `"proposed"` finding. Cannot update an
-accepted finding (must supersede + create new).
+Updates claim, sources, commentary, tags, questionIds, or hypothesisIds.
+Works regardless of status. If the finding is `"accepted"` and the claim text
+changes, the service removes the old lattice source and re-admits the new
+claim (this case requires a serial queue).
 
 ### `GET /findings/list`
 
@@ -475,24 +522,6 @@ class FindingNotFoundError extends Error {
   constructor(id: string) { super(`Finding not found: ${id}`); }
 }
 
-class StaleFindingError extends Error {
-  constructor(id: string, expected: number, actual: number) {
-    super(`Stale revision for finding ${id}: expected ${expected}, got ${actual}`);
-  }
-}
-
-class FindingNotProposedError extends Error {
-  constructor(id: string, status: FindingStatus) {
-    super(`Finding ${id} cannot be modified in status "${status}"`);
-  }
-}
-
-class SupersedingFindingNotAcceptedError extends Error {
-  constructor(supersededById: string) {
-    super(`Superseding finding ${supersededById} must be accepted`);
-  }
-}
-
 class InvalidFindingOperationError extends Error {
   constructor(message: string) { super(message); }
 }
@@ -503,16 +532,13 @@ HTTP mapping:
 | Error | Status |
 |---|---|
 | `FindingNotFoundError` | 404 |
-| `StaleFindingError` | 409 |
-| `FindingNotProposedError` | 409 |
-| `SupersedingFindingNotAcceptedError` | 400 |
 | `InvalidFindingOperationError` | 400 |
 
 ---
 
 ## SQL tables
 
-Following the table-prefix pattern (SHA-256 of owner ID, first 16 hex chars):
+Following the table-prefix pattern (SHA-256 of project ID, first 16 hex chars):
 
 ```sql
 CREATE TABLE IF NOT EXISTS fnd_${prefix}_findings (
@@ -520,10 +546,13 @@ CREATE TABLE IF NOT EXISTS fnd_${prefix}_findings (
   claim                TEXT NOT NULL,
   sources_json         TEXT NOT NULL,   -- JSON array of SourceReference
   commentary           TEXT,
-  status               TEXT NOT NULL CHECK (status IN ('proposed','accepted','rejected','superseded')),
-  superseded_by_id     TEXT,
+  status               TEXT NOT NULL CHECK (status IN ('proposed','accepted','rejected')),
+  tags_json            TEXT NOT NULL DEFAULT '[]',   -- JSON array of strings
+  question_ids_json    TEXT NOT NULL DEFAULT '[]',   -- JSON array of strings
+  hypothesis_ids_json  TEXT NOT NULL DEFAULT '[]',   -- JSON array of strings
   knowledge_source_id  TEXT,
-  revision             INTEGER NOT NULL DEFAULT 1,
+  created_by           TEXT NOT NULL,
+  updated_by           TEXT NOT NULL,
   created_at           TEXT NOT NULL,
   updated_at           TEXT NOT NULL,
   deleted_at           TEXT
@@ -535,10 +564,8 @@ CREATE INDEX IF NOT EXISTS fnd_${prefix}_findings_knowledge_source
   WHERE deleted_at IS NULL AND status = 'accepted';
 ```
 
-One table (not dual user/project). Findings are project-scoped — the store is
-constructed with the project ID and the table prefix derives from it.
-User-level findings are not a use case (unlike Context, where personal
-contexts can be promoted to project scope).
+Single project-scoped table — no dual user/project tables. The store is
+constructed with the project ID.
 
 ---
 
@@ -549,18 +576,24 @@ stateDiagram-v2
     [*] --> proposed: propose()
     proposed --> accepted: accept()
     proposed --> rejected: reject()
-    accepted --> superseded: supersede(byId)
+    accepted --> proposed: unaccept()
+    accepted --> rejected: reject()
+    rejected --> proposed: accept() or update()
     proposed --> [*]: delete()
+    accepted --> [*]: delete()
     rejected --> [*]: delete()
-    superseded --> [*]: delete()
 ```
 
-- Only `proposed` findings can be updated.
-- An `accepted` finding can only be superseded, not edited directly.
-- Superseding creates a chain: Finding A (superseded) → Finding B (accepted).
-  This preserves provenance even when a claim is corrected.
+- Findings can be edited in any status via `update()`.
+- `accept()` moves a finding to accepted (adds to lattice). Works from any
+  status — you can accept a rejected finding.
+- `unaccept()` moves an accepted finding back to proposed (removes from
+  lattice).
+- `reject()` works from any status.
 - Deletion is soft (sets `deletedAt`). If accepted, the lattice source is
   removed.
+- When an accepted finding is updated and the claim text changes, the lattice
+  source is atomically removed and re-added with the new text.
 
 ---
 
@@ -589,28 +622,46 @@ findings, and findings enrich the lattice that Research queries.
 3. `sources[].sourceId` must reference an existing Knowledge source at proposal
    time (validated synchronously against the source registry).
 4. An `accepted` Finding always has a non-null `knowledgeSourceId`.
-5. A `superseded` Finding always has a non-null `supersededById`.
-6. A Finding cannot supersede itself.
-7. Only `proposed` findings can be updated.
-8. `propose()` and `update()` are concurrent; `accept()`, `reject()`,
-   `supersede()`, and `delete()` that mutate the lattice are serial.
-
----
+5. Editing an accepted finding's claim text atomically replaces its lattice
+   source (remove old source, add new source with same `knowledgeSourceId`).
+6. `propose()` and `update()` are concurrent; `accept()`, `unaccept()`,
+   and `delete()` that mutate the lattice are serial.
 
 ## Open questions
 
-1. **Should findings support attachments?** E.g., a screenshot or image that
-   the claim is based on. If yes, this would require a Media reference field
-   or a generalized attachment mechanism. Defer to v2.
+1. **Should tags be validated against a project taxonomy?** The current
+   position is no: tags remain free-form strings. A project-level vocabulary
+   would add complexity without a clear use case. Callers supply whatever
+   strings are meaningful.
 
-2. **Should accepted findings be editable?** Current design says no — you must
-   supersede. This preserves provenance but may be cumbersome for typo fixes.
-   Consider a lightweight `correct()` operation for non-semantic edits.
+2. **Does a Finding need to express how it bears on a Hypothesis?**
+   `hypothesisIds` currently means only “related to.” It cannot distinguish
+   supports, refutes, qualifies, or provides context. Keep the simple ID list
+   unless the product needs that distinction; if it does, introduce a small
+   relationship value rather than trying to infer polarity from claim text.
 
-3. **Tagging/taxonomy.** Should findings have tags or a user-defined
-   classification? Context groups handle grouping; tags would be orthogonal.
-   Defer until the need is clear from Research usage.
+3. **What should happen when a referenced source is later unavailable or
+   replaced?** `SourceReference` currently records a stable Knowledge source
+   ID, a display kind, and an optional span. It does not pin an immutable source
+   revision. The initial implementation can display an unavailable reference,
+   but immutable source-version references should be considered before Findings
+   is used for audit-grade conclusions.
 
-4. **Confidence/strength.** Should a finding carry a confidence level (e.g.,
-   "tentative", "confirmed", "disputed")? The product definition mentions
-   confidence on answers, not findings. Defer.
+4. **How is an accepted update serialized?** The endpoint description says an
+   ordinary update is concurrent but an accepted claim update mutates Knowledge
+   and must serialize. Job queue selection is normally fixed when the endpoint
+   is registered, so implementation should either make all updates serial or
+   use one small internal critical section for the store-plus-Knowledge update.
+   This is a coordination choice, not a reason to add a larger workflow.
+
+5. **Should timestamps and actor IDs receive named primitive aliases?** The
+   persisted boundary should remain JSON/SQLite-friendly strings, but aliases
+   such as `IsoTimestamp` and `ActorId` could prevent a display date or an
+   arbitrary string from being passed where an event time or actor identity is
+   required. This is a type-safety refinement only; it does not require storing
+   JavaScript `Date` objects.
+
+6. **Is last-write-wins sufficient for interactive editing?** It is the
+   simplest model and fits a small curated record. If two people are expected
+   to edit the same claim regularly, add an optional update token or revision at
+   that time; do not introduce ChangeSets or history merely in anticipation.
