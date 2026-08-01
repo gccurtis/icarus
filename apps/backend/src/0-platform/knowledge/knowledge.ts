@@ -7,8 +7,11 @@ import type {
   FrontierEntry,
   KnowledgeOptions,
   KnowledgeRetrievalOptions,
+  KnowledgeResourceDescriptor,
   KnowledgeResourceResolver,
   KnowledgeScopeManifest,
+  KnowledgeSourceMutation,
+  KnowledgeSourceMutationListener,
   KnowledgeWindow,
   Region,
   RetrieveResult,
@@ -35,6 +38,15 @@ import { repairCorpus } from "#platform/knowledge/lattice/repair.js";
 const EMBED_BATCH = 32;
 const NULL_USAGE: Usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0, reasoningTokens: 0 };
 
+const canonicalEntries = (entries: ContextEntry[]): ContextEntry[] =>
+  [...entries]
+    .map((entry) => ({ id: entry.id, kind: entry.kind }))
+    .sort((left, right) =>
+      left.kind === right.kind
+        ? left.id.localeCompare(right.id)
+        : left.kind.localeCompare(right.kind)
+    );
+
 function addUsage(a: Usage, b: Usage): Usage {
   return {
     promptTokens: a.promptTokens + b.promptTokens,
@@ -52,6 +64,8 @@ export class Knowledge {
   private readonly charBudget: number;
   private readonly defaultTopK: number;
   private readonly resolver?: KnowledgeResourceResolver;
+  private readonly sourceMutationListeners =
+    new Set<KnowledgeSourceMutationListener>();
 
   constructor(
     private readonly store: KnowledgeStore,
@@ -73,6 +87,12 @@ export class Knowledge {
     this.charBudget = opts?.charBudget ?? DEFAULT_CHAR_BUDGET;
     this.defaultTopK = opts?.defaultTopK ?? 5;
     this.resolver = opts?.resolver;
+  }
+
+  /** Register after composition; notifications run synchronously and in order. */
+  onSourceMutation(listener: KnowledgeSourceMutationListener): () => void {
+    this.sourceMutationListeners.add(listener);
+    return () => this.sourceMutationListeners.delete(listener);
   }
 
   // ── Ingestion ─────────────────────────────────────────────────────────────
@@ -177,6 +197,7 @@ export class Knowledge {
       syncedAt: now
     };
     await this.store.putSource(sourceRecord);
+    this.emitSourceMutation({ operation: "add", sourceId });
 
     this.logger.info("knowledge", {
       op: "add",
@@ -208,6 +229,7 @@ export class Knowledge {
     await this.store.deleteNodesForSource(sourceId);
     await this.store.deleteSource(sourceId);
     await this.rebuildCorpusTier(sourceId, []);
+    this.emitSourceMutation({ operation: "remove", sourceId });
     this.logger.info("knowledge", { op: "remove", sourceId, durationMs: Math.round(performance.now() - t) });
   }
 
@@ -216,6 +238,72 @@ export class Knowledge {
   }
 
   // ── Retrieval ─────────────────────────────────────────────────────────────
+
+  /**
+   * Resolve a Context/resource scope once so a multi-query caller can reuse an
+   * immutable membership snapshot for its whole operation. An explicit empty
+   * scope snapshots the full project lattice; `undefined` remains unscoped.
+   */
+  async resolveScope(scope?: ContextEntry[]): Promise<KnowledgeScopeManifest | null> {
+    if (scope === undefined) return null;
+    const inputEntries = canonicalEntries(scope);
+    const resolved = inputEntries.length === 0
+      ? (await this.store.listSources()).map((source) => ({
+          id: source.sourceId,
+          kind: "document"
+        }))
+      : this.resolver
+        ? await this.resolver.resolve(inputEntries)
+        : inputEntries.filter((entry) => entry.kind === "document");
+    const resolvedEntries = canonicalEntries(resolved);
+    const resolvedSourceIds = [
+      ...new Set(
+        resolvedEntries
+          .filter((entry) => entry.kind === "document")
+          .map((entry) => entry.id)
+      )
+    ].sort();
+
+    const resources = (
+      await Promise.all(
+        resolvedSourceIds.map(async (sourceId): Promise<KnowledgeResourceDescriptor> =>
+          (await this.resolver?.describeSource?.(sourceId)) ?? {
+            sourceId,
+            resourceId: sourceId,
+            resourceKind: "document"
+          }
+        )
+      )
+    ).sort((left, right) => left.sourceId.localeCompare(right.sourceId));
+
+    // Freeze the composed execution scope, including nested entries, public
+    // resource identities, and revisions. Every query/tool in one refresh
+    // receives this exact object rather than resolving Context again.
+    const frozenInputEntries = Object.freeze(
+      inputEntries.map((entry) => Object.freeze({ ...entry }))
+    );
+    const frozenResolvedEntries = Object.freeze(
+      resolvedEntries.map((entry) => Object.freeze({ ...entry }))
+    );
+    const frozenResources = Object.freeze(
+      resources.map((resource) => Object.freeze({ ...resource }))
+    );
+    const frozenSourceIds = Object.freeze([...resolvedSourceIds]);
+
+    return Object.freeze({
+      inputEntries: frozenInputEntries,
+      resolvedEntries: frozenResolvedEntries,
+      resources: frozenResources,
+      resolvedSourceIds: frozenSourceIds,
+      contextDigest: createHash("sha256")
+        .update(JSON.stringify(frozenInputEntries))
+        .digest("hex"),
+      scopeDigest: createHash("sha256")
+        .update(JSON.stringify(frozenResources))
+        .digest("hex"),
+      resolvedAt: new Date().toISOString()
+    });
+  }
 
   async retrieve(query: string, options?: KnowledgeRetrievalOptions): Promise<RetrieveResult> {
     const t = performance.now();
@@ -226,22 +314,14 @@ export class Knowledge {
     let scopeManifest: KnowledgeScopeManifest | null = null;
     let admissibleSourceIds: Set<string> | null = null;
 
-    if (options?.scope && options.scope.length > 0) {
-      const inputEntries = options.scope;
-      const resolved: ContextEntry[] = this.resolver
-        ? await this.resolver.resolve(inputEntries)
-        : inputEntries.filter(e => e.kind === "document");
-      const docEntries = resolved.filter(e => e.kind === "document");
-      admissibleSourceIds = new Set(docEntries.map(e => e.id));
-      const sortedIds = [...admissibleSourceIds].sort();
-      scopeManifest = {
-        inputEntries,
-        resolvedEntries: resolved,
-        resolvedSourceIds: sortedIds,
-        contextDigest: createHash("sha256").update(JSON.stringify(inputEntries)).digest("hex"),
-        scopeDigest: createHash("sha256").update(JSON.stringify(sortedIds)).digest("hex"),
-        resolvedAt: new Date().toISOString()
-      };
+    if (options && Object.prototype.hasOwnProperty.call(options, "scopeManifest")) {
+      scopeManifest = options.scopeManifest ?? null;
+    } else {
+      scopeManifest = await this.resolveScope(options?.scope);
+    }
+
+    if (scopeManifest) {
+      admissibleSourceIds = new Set(scopeManifest.resolvedSourceIds);
     }
 
     const { windowIds, scores } = await descent(
@@ -270,7 +350,7 @@ export class Knowledge {
       op: "retrieve",
       windowsHit: windowIds.length,
       ...(admissibleSourceIds !== null ? {
-        scopeInputCount: options!.scope!.length,
+        scopeInputCount: scopeManifest!.inputEntries.length,
         scopeSourceCount: admissibleSourceIds.size,
         windowsBeforeScope,
         windowsAfterScope: windows.length
@@ -369,6 +449,24 @@ export class Knowledge {
     );
     if (corpusNodes.length > 0) await this.store.putNodes(corpusNodes);
     await this.store.putFrontier(corpusFrontier);
+  }
+
+  private emitSourceMutation(mutation: KnowledgeSourceMutation): void {
+    let firstError: unknown;
+    for (const listener of this.sourceMutationListeners) {
+      try {
+        listener(mutation);
+      } catch (error) {
+        firstError ??= error;
+      }
+    }
+    if (firstError !== undefined) {
+      this.logger.error("knowledge.source-mutation.listener.failed", {
+        operation: mutation.operation,
+        errorKind: firstError instanceof Error ? firstError.name : "UnknownError"
+      });
+      throw firstError;
+    }
   }
 }
 

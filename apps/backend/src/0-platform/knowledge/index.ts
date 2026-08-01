@@ -12,6 +12,8 @@ export type {
   KnowledgeRetrievalOptions,
   KnowledgeResourceResolver,
   KnowledgeScopeManifest,
+  KnowledgeSourceMutation,
+  KnowledgeSourceMutationListener,
   KnowledgeWindow,
   KNNConfig,
   Region,

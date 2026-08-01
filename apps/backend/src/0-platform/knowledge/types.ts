@@ -87,23 +87,39 @@ export interface ContextEntry {
   kind: string;  // e.g. "document", "context"
 }
 
+/** Trusted resource identity captured when a Context is resolved. */
+export interface KnowledgeResourceDescriptor {
+  readonly sourceId: string;
+  readonly resourceId: string;
+  readonly resourceKind: string;
+  readonly resourceRevision?: number;
+}
+
 export interface KnowledgeScopeManifest {
-  inputEntries: ContextEntry[];     // as supplied by caller
-  resolvedEntries: ContextEntry[];  // after recursive expand
-  resolvedSourceIds: string[];      // sorted admissible set used to filter windows
-  contextDigest: string;            // SHA-256(JSON(inputEntries))
-  scopeDigest: string;              // SHA-256(JSON(resolvedSourceIds))
-  resolvedAt: string;               // ISO timestamp
+  readonly inputEntries: readonly ContextEntry[];     // canonical caller entries
+  readonly resolvedEntries: readonly ContextEntry[];  // recursive expansion/resource mapping
+  readonly resources: readonly KnowledgeResourceDescriptor[]; // trusted read/list identities
+  readonly resolvedSourceIds: readonly string[];      // sorted admissible set used to filter windows
+  readonly contextDigest: string;            // SHA-256(canonical input entries)
+  readonly scopeDigest: string;              // SHA-256(canonical resource descriptors)
+  readonly resolvedAt: string;               // ISO timestamp
 }
 
 export interface KnowledgeRetrievalOptions {
   topK?: number;
   scope?: ContextEntry[];  // absent or [] = no restriction, full lattice
+  /**
+   * A scope resolved once by `Knowledge.resolveScope`. Supplying this prevents
+   * Context/resource membership from changing between queries in one run.
+   */
+  scopeManifest?: KnowledgeScopeManifest | null;
 }
 
 /** Injected into Knowledge at construction time to expand kind:"context" entries. */
 export interface KnowledgeResourceResolver {
   resolve(entries: ContextEntry[]): Promise<ContextEntry[]>;
+  /** Map an indexed source to the public identity used by scoped tools. */
+  describeSource?(sourceId: string): Promise<KnowledgeResourceDescriptor | null>;
 }
 
 export interface RetrieveResult {
@@ -129,6 +145,16 @@ export interface AddResult {
   windowsReused: number;  // unchanged windows whose stored embedding was reused
   usage: Usage;           // embedding tokens spent (0 when skipped)
 }
+
+/** Emitted synchronously after a Knowledge source mutation fully succeeds. */
+export interface KnowledgeSourceMutation {
+  readonly operation: "add" | "remove";
+  readonly sourceId: string;
+}
+
+export type KnowledgeSourceMutationListener = (
+  mutation: KnowledgeSourceMutation
+) => void;
 
 // ─── Clustering configuration ─────────────────────────────────────────────────
 

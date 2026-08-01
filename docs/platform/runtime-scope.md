@@ -23,7 +23,7 @@ interface BackendConfig {
   logging: LoggingConfig;
   intelligence: IntelligenceConfig;
   formula: FormulaConfig;
-  nameManager: NameManagerConfig;
+  structuredData: StructuredDataConfig;
   context: ContextManagerConfig;
 }
 ```
@@ -36,12 +36,12 @@ flowchart TD
   L --> A["config.userId"]
   P --> S["project-scoped store factories"]
   S --> K["Knowledge"]
-  S --> N["Name Manager"]
+  S --> D["Structured Data"]
   S --> X["Context"]
   S --> R["Resource capabilities"]
   A --> W["Change attribution"]
   K --> G["initialized runtime graph"]
-  N --> G
+  D --> G
   X --> G
   R --> G
   W --> G
@@ -56,8 +56,14 @@ export function createBackend(config: BackendConfig, logger: Logger) {
   const attribution: RuntimeAttribution = { actorId: config.userId };
 
   const intelligence = createIntelligence(config.intelligence, logger);
-  const nameManager = createNameManagerInstance(config, logger);
   const formula = createFormula(config, logger);
+  const structuredData = createStructuredDataInstance(config, logger);
+  const formulaResolver = createFormulaNameResolver(
+    formula,
+    structuredData,
+    logger,
+    { userId: config.userId, projectId: config.projectId },
+  );
   const context = createContextInstance(config, logger);
   const knowledge = createKnowledge(config.projectId, intelligence, logger, {
     resolver: context,
@@ -65,8 +71,9 @@ export function createBackend(config: BackendConfig, logger: Logger) {
 
   return createRuntime({
     intelligence,
-    nameManager,
     formula,
+    structuredData,
+    formulaResolver,
     context,
     knowledge,
     attribution,
@@ -86,10 +93,10 @@ const documents = createDocumentCapability(store, dependencies, attribution, opt
 ```
 Domain values, capability methods, endpoint payloads, job payloads, and ChangeSets contain resource identities and revisions, not scope-routing fields. The configured actor is copied only into accepted authorship or activity records.
 ## Logical and physical table names
-Capability pages specify stable **logical** table names so their DDL can be read and tested directly. A SQLite adapter may map those logical names to trusted physical names derived from top-level configuration. The current Knowledge and Name Manager stores use a short hexadecimal digest:
+Capability pages specify stable **logical** table names so their DDL can be read and tested directly. A SQLite adapter may map those logical names to trusted physical names derived from top-level configuration. The current Knowledge and Structured Data stores use a short hexadecimal digest:
 ```typescript
 const prefix = sha256(config.projectId).slice(0, 16);
-const namesTable = `nm_${prefix}_names`;
+const dataEntriesTable = `sd_${prefix}_entries`;
 ```
 A store backed by an isolated database may keep the logical names unchanged. A store sharing a database applies its mapping consistently to migrations, queries, constraints, and indexes. Only construction code selects this strategy; callers cannot supply a table name or prefix.
 ## Request and job boundary
@@ -123,7 +130,8 @@ apps/backend/
       startBackend.ts
       create/
         knowledge.ts
-        name-manager.ts
+        structured-data.ts
+        formula-name-resolver.ts
         context.ts
         document.ts
         slides.ts
