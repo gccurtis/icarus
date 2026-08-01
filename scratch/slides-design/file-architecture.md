@@ -101,7 +101,7 @@ workflow across many modules.
 | `domain/reducer.ts` | Clones a snapshot, applies operations to flat elements and presentation resources, validates the result, and returns canonical forward operations, exact inverses, touched IDs, and the new snapshot. |
 | `domain/inverses.ts` | Exposes inverse calculation through the same reducer used by admission; callers never synthesize compensation operations independently. |
 | `domain/identities.ts` | Collects every Deck-owned stable identity, including Theme tokens, Masters, Layouts, Layout slots, Slides, elements, Rich Text atoms, and marks, and computes additions/removals for the permanent identity ledger. External output and General Files IDs are references and are excluded. |
-| `domain/validation.ts` | Enforces identity uniqueness, valid owner scopes, flat membership and unique sibling `zIndex`, acyclic bounded Group/token aliases, valid Master/Layout/slot references, exactly one frame authority per placement, valid slot bindings, typed token/appearance/content limits, immutable General Files image refs, Rich Text validity, one protected Normal text style, and one dedicated Derived Output per live Slide-scoped `prompt-content` element. |
+| `domain/validation.ts` | Enforces identity uniqueness, valid owner scopes, flat membership and unique sibling `zIndex`, bounded acyclic Groups, valid Master/Layout/slot references, exactly one frame authority per placement, valid slot bindings, typed token/appearance/content limits, immutable General Files image refs, Rich Text validity, one protected Normal text style, and one dedicated Derived Output per live Slide-scoped `prompt-content` element. Tokens hold literal values and cannot alias in v1. |
 | `domain/canonical.ts` | Produces deterministic bytes and SHA-256 digests for requests, snapshots, stages, and facts. |
 | `domain/rebase.ts` | Allows stale submission only when its touched-ID footprint is disjoint from every continuous intervening ChangeSet. |
 | `ports/derivedOutputs.ts` | Defines the keyed `declare`, `refresh`, and `updateDefinition` calls plus exact output/revision reads that Slide needs. It imports no Derived Outputs persistence and exposes no deletion authority. |
@@ -240,7 +240,7 @@ function createSlideInstance(
 ```
 
 `SlideOptions` contains history and terminal-attempt retention; maximum Slides,
-Theme tokens, Masters, Layouts, slots, and elements; Group/token-alias depth;
+Theme tokens, Masters, Layouts, slots, and elements; Group depth;
 geometry and appearance bounds; and Rich Content limits. The implementation
 exports an immutable local default value. These initial limits deliberately do
 not become global backend configuration; making them configurable later is an
@@ -272,7 +272,7 @@ Typed error mapping follows the Document boundary:
 
 | Status | Error families |
 |---|---|
-| `400` | wire, validation, placement, Group/token-alias cycle or depth, invalid Normal style, invalid Master/Layout/slot binding, Formula source/binding, operation, identity-reuse, and stale-attempt errors |
+| `400` | wire, validation, placement, Group cycle/depth, invalid token kind, invalid Normal style, invalid Master/Layout/slot binding, Formula source/binding, operation, identity-reuse, and stale-attempt errors |
 | `404` | missing Deck, attempt, or Derived Output |
 | `409` | Deck already exists, revision conflict, idempotency mismatch, definition-revision conflict, or compensation conflict |
 | `410` | requested revision or retained target history has been pruned |
@@ -298,6 +298,11 @@ type ElementOwner =
   | { kind: "master"; masterSlideId: MasterSlideId }
   | { kind: "layout"; layoutId: SlideLayoutId }
   | { kind: "slide"; slideId: SlideId };
+
+type DeckDesignToken =
+  | ThemeColorToken
+  | ThemeFontToken
+  | ThemeLengthToken;
 ```
 
 It is stored at `DeckSnapshot.design`, not in external resources or separately
@@ -305,12 +310,20 @@ versioned aggregates. `design.theme` owns editable Theme metadata, typed tokens,
 and presentation defaults. `design.textStyles` contains exactly one protected
 Normal style: its properties are editable, but it cannot be created, deleted,
 renamed to another semantic role, inherited, or selected from a registry.
+There is no generic element `styleId` or visual Style registry: every direct
+element kind embeds its own bounded appearance fields, whose values may use
+typed Theme-token references.
 Master and Layout registries are sibling deck-owned resources, not children of
 Theme. Ordinary operations provide Theme metadata/default updates, typed-token
 CRUD, `text-style.update-normal`, Master CRUD, and Layout CRUD.
 Whole-design-system replacement/import is only a possible future
 administrative convenience composed from those ordinary operations; it is not
 a privileged reducer path.
+
+Color, font, and length properties use their corresponding discriminated
+literal-or-token reference types. Tokens hold literal values and cannot alias
+other tokens in representation v1, so resolution never cycles or guesses
+across token kinds.
 
 References are live within a Deck revision:
 
@@ -332,7 +345,7 @@ References are live within a Deck revision:
 Element placement has one, and only one, canonical frame authority:
 
 ```ts
-type ElementPlacement =
+type FramedElementPlacement =
   | { kind: "free"; frame: ElementFrame }
   | { kind: "layout-slot"; slotId: LayoutSlotId };
 ```
@@ -418,6 +431,20 @@ Formula attempt. Concurrent compute obtains one immutable resolver snapshot
 from `SlideFormulaResolver`, then asks the injected `FormulaEngine` to parse,
 bind, and evaluate the frozen expression and persists the candidate or typed
 failure before dispatching settlement.
+
+The target discriminants are exact and shared by command, operation, attempt,
+store, and wire contracts:
+
+```ts
+type RichContentTarget =
+  | { kind: "slide-notes"; slideId: SlideId }
+  | { kind: "element-text"; owner: ElementOwner; elementId: SlideElementId }
+  | { kind: "table-cell"; owner: ElementOwner; elementId: SlideElementId; cellId: TableCellId }
+  | { kind: "chart-title"; owner: ElementOwner; elementId: SlideElementId }
+  | { kind: "chart-axis-title"; owner: ElementOwner; elementId: SlideElementId; axis: "x" | "y" }
+  | { kind: "chart-category-label"; owner: ElementOwner; elementId: SlideElementId; categoryId: ChartCategoryId }
+  | { kind: "chart-series-name"; owner: ElementOwner; elementId: SlideElementId; seriesId: ChartSeriesId };
+```
 
 Serial settlement reloads the target through the current Deck head. It adopts
 the candidate through Rich Text's Formula-settlement operation only when the

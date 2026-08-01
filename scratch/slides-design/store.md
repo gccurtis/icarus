@@ -274,8 +274,10 @@ type SlideIdentityKind =
   | "element"
   | "table-row"
   | "table-column"
+  | "table-cell"
   | "table-merge"
-  | "chart-label"
+  | "chart-category"
+  | "chart-series"
   | "rich-text-atom"
   | "rich-text-mark";
 
@@ -291,10 +293,10 @@ interface SlideIdentityLedgerEntry {
 ```
 
 Deck-owned stable IDs are unique at Deck scope, including IDs inside Masters,
-Layouts, Slides, Tables, Charts, and every Rich Content target. A cell is
-addressed by stable row and column IDs and does not need an additional identity.
-Every merged-cell region does have a stable merge ID so merge/unmerge and
-compensation cannot strand or accidentally reuse merge identity.
+Layouts, Slides, Tables, Charts, and every Rich Content target. Table cells,
+merged regions, Chart categories, and Chart series have stable IDs so
+structure edits, Rich Content targeting, and compensation cannot strand or
+accidentally reuse identity.
 
 Mutation recursively computes additions and removals between the before/after
 snapshots. New insertion may claim only an unseen ID. Deletion tombstones its
@@ -453,9 +455,13 @@ Element identity.
 `outputId` is unique, and `(deckId, elementId)` is unique. This enforces one
 dedicated output per Prompt Content Element and prevents output sharing.
 
-Historical ownership is local reachability/audit state only. Slide never asks Derived
-Outputs to delete an output and exposes no output-maintenance Job or intent.
-This is an ownership boundary, not a deferred Slide subsystem.
+Historical ownership is local reachability/audit state only. Slide never asks
+Derived Outputs to delete an output and exposes no output-maintenance Job or
+intent. This is an ownership boundary, not a deferred Slide subsystem.
+
+The injected `SlideDerivedOutputs` port contains declaration, exact revision
+read, definition update, and refresh only. It intentionally omits the Derived
+Outputs `delete` method.
 
 ## Formula runtime boundary
 
@@ -557,7 +563,8 @@ CREATE TABLE identity_ledger (
   identity_kind             TEXT NOT NULL
     CHECK (identity_kind IN (
       'theme-token', 'text-style', 'master', 'layout', 'layout-slot',
-      'slide', 'element', 'table-row', 'table-column', 'table-merge', 'chart-label',
+      'slide', 'element', 'table-row', 'table-column', 'table-cell',
+      'table-merge', 'chart-category', 'chart-series',
       'rich-text-atom', 'rich-text-mark'
     )),
   state                     TEXT NOT NULL

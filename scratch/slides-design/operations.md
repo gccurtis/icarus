@@ -39,34 +39,34 @@ type ElementOwner =
 
 type RichContentTarget =
   | { kind: "slide-notes"; slideId: SlideId }
-  | { kind: "element-text"; owner: ElementOwner; elementId: ElementId }
+  | { kind: "element-text"; owner: ElementOwner; elementId: SlideElementId }
   | {
       kind: "table-cell";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       cellId: TableCellId;
     }
   | {
       kind: "chart-title";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
     }
   | {
       kind: "chart-axis-title";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       axis: "x" | "y";
     }
   | {
       kind: "chart-category-label";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       categoryId: ChartCategoryId;
     }
   | {
       kind: "chart-series-name";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       seriesId: ChartSeriesId;
     };
 ```
@@ -137,13 +137,13 @@ type SlideOperation =
   | {
       type: "element.move";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       parentGroupId: SlideGroupId | null;
       zIndex: number;
       /** Destination placement; free geometry is explicit, slot geometry is live. */
       placement: SlideElementPlacement;
     }
-  | { type: "element.delete"; owner: ElementOwner; elementId: ElementId }
+  | { type: "element.delete"; owner: ElementOwner; elementId: SlideElementId }
   | {
       /** Exact inverse primitive; rejected by public deck.submit. */
       type: "element.restore-subtree";
@@ -153,11 +153,11 @@ type SlideOperation =
   | {
       type: "element.set-placement";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       placement: SlideElementPlacement;
     }
-  | { type: "element.set-locked"; owner: ElementOwner; elementId: ElementId; locked: boolean }
-  | { type: "element.set-hidden"; owner: ElementOwner; elementId: ElementId; hidden: boolean }
+  | { type: "element.set-locked"; owner: ElementOwner; elementId: SlideElementId; locked: boolean }
+  | { type: "element.set-hidden"; owner: ElementOwner; elementId: SlideElementId; hidden: boolean }
 
   // Every authored Rich Content surface uses one operation boundary
   | {
@@ -170,7 +170,7 @@ type SlideOperation =
   | {
       type: "prompt-content.apply-derived-output";
       slideId: SlideId;
-      elementId: ElementId;
+      elementId: SlideElementId;
       output: DerivedOutputRef;
     }
 
@@ -178,71 +178,71 @@ type SlideOperation =
   | {
       type: "text-box.set-presentation";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       textBox: TextBoxPresentation;
     }
-  | { type: "geometry.set"; owner: ElementOwner; elementId: ElementId; geometry: GeometryDefinition }
-  | { type: "line.set"; owner: ElementOwner; elementId: ElementId; line: LineDefinition }
-  | { type: "image.set"; owner: ElementOwner; elementId: ElementId; image: ImageElementData }
+  | { type: "geometry.set"; owner: ElementOwner; elementId: SlideElementId; geometry: GeometryDefinition }
+  | { type: "line.set"; owner: ElementOwner; elementId: SlideElementId; line: LineDefinition }
+  | { type: "image.set"; owner: ElementOwner; elementId: SlideElementId; image: ImageElementData }
 
   // Table structure and cell presentation; cell content uses rich-content.apply
-  | { type: "table.set-presentation"; owner: ElementOwner; elementId: ElementId; presentation: TablePresentation }
+  | { type: "table.set-presentation"; owner: ElementOwner; elementId: SlideElementId; presentation: TablePresentation }
   | {
       type: "table.row.insert";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       row: TableRow;
       afterRowId?: TableRowId;
     }
-  | { type: "table.row.move"; owner: ElementOwner; elementId: ElementId; rowId: TableRowId; afterRowId?: TableRowId }
-  | { type: "table.row.delete"; owner: ElementOwner; elementId: ElementId; rowId: TableRowId }
+  | { type: "table.row.move"; owner: ElementOwner; elementId: SlideElementId; rowId: TableRowId; afterRowId?: TableRowId }
+  | { type: "table.row.delete"; owner: ElementOwner; elementId: SlideElementId; rowId: TableRowId }
   | {
       type: "table.column.insert";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       column: TableColumn;
       afterColumnId?: TableColumnId;
     }
   | {
       type: "table.column.move";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       columnId: TableColumnId;
       afterColumnId?: TableColumnId;
     }
-  | { type: "table.column.delete"; owner: ElementOwner; elementId: ElementId; columnId: TableColumnId }
+  | { type: "table.column.delete"; owner: ElementOwner; elementId: SlideElementId; columnId: TableColumnId }
   | {
       type: "table.cell.set-presentation";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       cellId: TableCellId;
       presentation?: TableCellPresentation;
     }
   | {
       type: "table.cells.merge";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       merge: TableCellMerge;
     }
   | {
       type: "table.cells.unmerge";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       mergeId: TableMergeId;
     }
 
   // Chart data/specification; label text uses rich-content.apply
-  | { type: "chart.set-data"; owner: ElementOwner; elementId: ElementId; data: ChartData }
+  | { type: "chart.set-data"; owner: ElementOwner; elementId: SlideElementId; data: ChartData }
   | {
       type: "chart.set-specification";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       specification: ChartSpecification;
     }
   | {
       type: "chart.label.set-presentation";
       owner: ElementOwner;
-      elementId: ElementId;
+      elementId: SlideElementId;
       target:
         | { kind: "title" }
         | { kind: "axis-title"; axis: "x" | "y" }
@@ -269,7 +269,7 @@ Masters, Layouts, and Slides each own a flat Element record. Every Element has:
 
 ```ts
 interface SlideElementBase {
-  id: ElementId;
+  id: SlideElementId;
   kind: SlideElement["kind"];
   parentGroupId: SlideGroupId | null;
   /** Sole sibling paint-order authority. */

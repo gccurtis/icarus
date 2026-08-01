@@ -16,7 +16,6 @@ type SlideLayoutId = string;
 type LayoutSlotId = string;
 type SlideElementId = string;
 type SlideGroupId = SlideElementId;
-type SlideTextStyleId = string;
 type DesignTokenId = string;
 
 type SlideLifecycle = "active" | "archived" | "trashed";
@@ -38,7 +37,7 @@ interface DeckHead {
 interface DeckSnapshot {
   representationVersion: 1;
   revision: number;
-  title: RichContent;
+  title: string;
   lifecycle: SlideLifecycle;
   canvas: SlideCanvas;
   design: DeckDesignSystem;
@@ -61,19 +60,13 @@ interface DeckDesignSystem {
 }
 ```
 
-`DeckSnapshot.title` is authored Rich Content. The head's plain `title` is a
-derived, normalized text projection updated in the same transaction; it is not
-a second authoring surface. A Deck has one positive canvas and at least one
-Slide. `slideOrder` contains every key in `slides` exactly once and is the sole
-Slide-order authority.
-
-All user-presented or accessibility text owned by Slides is `RichContent`:
-Deck and Slide titles, notes, Text elements, image alternatives, Table cells,
-and Chart titles and labels. Administrative labels—Style, token, Master,
-Layout, and slot names, font-family names, MIME types, and resource keys—are
-plain strings because they identify configuration rather than presented Slide
-content. Prompt Content owns no text copy; it owns an immutable Derived Output
-reference.
+Deck title, optional Slide title, and image alternative text are plain metadata
+or accessibility strings. Visual authored content—Slide notes, Text elements,
+Table cells, and Chart titles and labels—is `RichContent`. Administrative
+labels—Style, token, Master, Layout, and slot names, font-family names, MIME
+types, and resource keys—are also plain strings because they identify
+configuration rather than presented Slide content. Prompt Content owns no text
+copy; it owns an immutable Derived Output reference.
 
 ## Embedded Theme and typed design tokens
 
@@ -163,17 +156,13 @@ tokens.
 
 ```ts
 interface SlideTextStyleRegistry {
-  normalStyleId: SlideTextStyleId;
-  styles: Record<SlideTextStyleId, SlideTextStyle>;
+  normal: NormalSlideTextStyle;
 }
 
-interface SlideTextStyle {
-  id: SlideTextStyleId;
+interface NormalSlideTextStyle {
   name: string;
-  basedOnStyleId?: SlideTextStyleId;
   text: SlideTextStyleProperties;
-  /** Exactly one Style has this protected role. */
-  systemRole?: "normal";
+  systemRole: "normal";
 }
 
 interface SlideTextStyleProperties {
@@ -191,28 +180,23 @@ interface SlideTextStyleProperties {
 }
 ```
 
-A new Deck starts with only the protected Normal Style. Callers may add other
-styles later. Exactly one Style carries `systemRole: "normal"`, its ID equals
-`normalStyleId`, and neither the Style nor its role may be deleted or
-reassigned. Its name, text properties, and inheritance may be edited. Style
-inheritance is acyclic and every referenced Style exists in the same Deck.
+A Deck contains exactly one protected Normal Style. It is a fixed singleton,
+not an entry selected by ID: callers cannot add, delete, replace, or reassign
+text Styles, and text-bearing surfaces carry no Style selection field. Normal's
+display name and text properties may be edited.
 
 For any text-bearing element or Table cell, text styling resolves in this
 order:
 
 1. Rich Text global fallbacks.
-2. The selected text Style, including its oldest-to-newest inheritance chain;
-   when no explicit ID is stored, the live Layout slot default and then Normal
-   are the fallbacks.
+2. The Deck's Normal Style, which is the universal full-range overlay.
 3. The element's typed text-box or cell presentation properties.
 4. Stored inline Rich Text marks as supplementary formatting.
 
-The resolved Style becomes an ephemeral full-range Rich Text overlay and is
-never written into `RichContent`. Applying a saved Style to a selected range is
-a preset operation that copies its currently resolved concrete properties into
-an ordinary Rich Text Style Mark; it is not a live Style reference. Rich Text's
-Link Mark remains the navigation/link facility and is unrelated to saved Style
-reuse.
+The resolved Normal Style becomes an ephemeral full-range Rich Text overlay and
+is never written into `RichContent`. One-off range formatting remains an
+ordinary Rich Text Style Mark. Rich Text's Link Mark remains the navigation/
+link facility and is unrelated to the Deck's Normal Style.
 
 ## Master Slides, Layouts, and live inheritance
 
@@ -240,13 +224,12 @@ interface LayoutSlot {
   name: string;
   frame: ElementFrame;
   acceptedKinds: FramedElementKind[];
-  defaultTextStyleId?: SlideTextStyleId;
   required: boolean;
 }
 
 interface Slide {
   id: SlideId;
-  title: RichContent;
+  title?: string;
   layoutId: SlideLayoutId;
   background?: SlideBackground;
   notes: RichContent;
@@ -279,8 +262,8 @@ from the same Deck revision, so history never depends on a mutable external
 template. Deleting a referenced Master or Layout requires a replacement and
 rewrites all live references in the same ChangeSet.
 
-A Layout slot is a stable, non-painting placement anchor. It owns one frame and
-optional text-Style default but no `zIndex`. A Slide-owned framed root element
+A Layout slot is a stable, non-painting metadata placement anchor. It owns one
+frame but no content, text-Style selection, or `zIndex`. A Slide-owned framed root element
 may follow it through a discriminated placement (defined below). The element
 then has no duplicate frame and follows slot edits live. At most one live
 element binds a given slot, the element kind must be accepted, and a slot-bound
@@ -392,7 +375,6 @@ interface SlideGroupElement extends SlideElementBase {
 interface SlideTextElement extends FramedSlideElementBase {
   kind: "text";
   content: RichContent;
-  textStyleId?: SlideTextStyleId;
   textBox: TextBoxPresentation;
 }
 
@@ -400,7 +382,6 @@ interface PromptContentElement extends FramedSlideElementBase {
   kind: "prompt-content";
   /** Exact immutable revision of this element's dedicated Derived Output. */
   output: DerivedOutputRef;
-  textStyleId?: SlideTextStyleId;
   textBox: TextBoxPresentation;
 }
 
@@ -465,8 +446,8 @@ positions, ranges, validation, normalization, and exact inverses. Slides wraps
 ordinary Rich Text operation batches in a Deck ChangeSet.
 
 Prompt Content is not alternate Text content. It stores only an exact
-`DerivedOutputRef`, its optional text Style selection, and text-box
-presentation. Every Prompt Content element owns a new dedicated Derived Output;
+`DerivedOutputRef` and text-box presentation; Normal supplies the text Style.
+Every Prompt Content element owns a new dedicated Derived Output;
 no two live elements share an `outputId`, and generic element insert/replace
 operations cannot introduce one or attach a caller-supplied output. Derived
 Outputs owns the definition, instruction, Context scope, stabilization text,
@@ -548,7 +529,7 @@ interface ImageElementData {
   source: ImageSnapshotRef;
   crop?: NormalizedCrop;
   fit: "contain" | "cover" | "stretch";
-  alt: RichContent;
+  alt: string;
   decorative: boolean;
 }
 
@@ -562,8 +543,8 @@ interface NormalizedCrop {
 
 Slides stores an immutable General Files snapshot reference, not file bytes or
 a mutable file identity. Crop edges are fractions in `[0, 1)`, and opposing
-edges sum to less than one. A decorative image still carries normalized empty
-Rich Content rather than switching the field to a plain string.
+edges sum to less than one. Image alternative text is a plain accessibility
+string; a decorative image carries an empty `alt` string.
 
 ### Table
 
@@ -597,7 +578,6 @@ interface SlideTableCell {
   rowId: TableRowId;
   columnId: TableColumnId;
   content: RichContent;
-  textStyleId?: SlideTextStyleId;
   fill?: FillStyle;
   borders?: TableCellBorders;
   paddingPt: { top: number; right: number; bottom: number; left: number };
@@ -622,8 +602,8 @@ interface SlideTableMerge {
 
 Row and column order arrays are the only order authorities inside a Table.
 Every row/column cross-product has exactly one stable Cell identity. Every cell
-owns independent Rich Content plus optional fill, four borders, text Style,
-padding, and alignment. Merge regions are rectangular, disjoint, contain at
+owns independent Rich Content plus optional fill, four borders, padding, and
+alignment; Normal supplies its text Style. Merge regions are rectangular, disjoint, contain at
 least two cells, and keep all covered Cell identities; the anchor's Rich
 Content is presented while covered content remains canonical for exact
 unmerge/undo. Table merge IDs are permanent identities and merge/unmerge are
@@ -678,11 +658,8 @@ Every Rich Text operation addresses one closed target union:
 
 ```ts
 type RichContentTarget =
-  | { kind: "deck-title" }
-  | { kind: "slide-title"; slideId: SlideId }
   | { kind: "slide-notes"; slideId: SlideId }
   | { kind: "element-text"; owner: ElementOwner; elementId: SlideElementId }
-  | { kind: "image-alt"; owner: ElementOwner; elementId: SlideElementId }
   | {
       kind: "table-cell";
       owner: ElementOwner;
@@ -737,7 +714,8 @@ Formula or Structured Data.
 ## Identity and representation-v1 invariants
 
 1. A Deck has one positive canvas, one embedded Theme, exactly one protected
-   Normal text Style, and at least one Slide.
+   Normal text Style, at least one Master, at least one Layout, and at least one
+   Slide.
 2. `slideOrder` contains every Slide exactly once.
 3. Every Layout references a live Master; every Slide references a live Layout.
 4. Each Master/Layout/Slide element store is flat. Each element is either at
@@ -746,12 +724,12 @@ Formula or Structured Data.
 6. Groups are non-empty, acyclic, bounded in depth, and own no child arrays.
 7. Slot bindings are slide-root-only, kind-compatible, one-to-one, and carry no
    duplicate frame.
-8. Every Theme token and text Style reference resolves with the required kind;
-   Style inheritance is acyclic.
+8. Every Theme token reference resolves with the required kind, and the fixed
+   Normal Style is present exactly once.
 9. Every Rich Content value passes Rich Text validation and normalization.
 10. Every live Prompt Content element has one distinct dedicated Derived Output
     at a positive immutable revision.
-11. Slide, Master, Layout, slot, element, Style, token, table, merge, chart,
+11. Slide, Master, Layout, slot, element, token, table, merge, chart,
     Rich Text atom, and Rich Text mark IDs are never reused within retained Deck
     history. Exact same-kind compensation may reactivate only the same ID.
 12. Historical behavior depends only on the Deck revision and exact immutable
@@ -759,9 +737,10 @@ Formula or Structured Data.
 
 ## Outside the Slides backend domain
 
-Rendering, animation, and transition behavior are explicitly outside this
-backend capability's domain. They are not unfinished canonical-model features
-and are therefore not listed as representation-v1 deferrals.
+Rendering, thumbnails, exports, render caches, pixel geometry, animation, and
+transition behavior are explicitly outside this backend capability's domain.
+They are not unfinished canonical-model features and are therefore not listed
+as representation-v1 deferrals.
 
 ## Deferred from representation version 1
 
@@ -774,8 +753,7 @@ and are therefore not listed as representation-v1 deferrals.
 - Custom paths, arbitrary SVG, gradients, curved lines, and elbow routing.
 - Formula- or Structured-Data-backed Chart numeric series.
 - Generic embeds, video, and audio element kinds.
-- Activity publishing/management beyond the durable accepted-fact outbox, and
-  detached-output garbage collection.
+- Activity publishing/management beyond the durable accepted-fact outbox.
 
 ## Explicit assumptions and open questions
 
@@ -800,5 +778,7 @@ implicit gap:
    eventual expected result shape before adding that staged workflow.
 6. **Prompt output text remains external.** `DerivedOutputRef` points to the
    current plain-text Derived Output contract, and Slides projects it using the
-   element's text Style without copying it into Rich Content. If Derived Outputs
+   Normal Style without copying it into Rich Content. Slides detaches references
+   when content is removed but never deletes or garbage-collects Derived Outputs.
+   If Derived Outputs
    later exposes Rich Content, that should be a versioned interface change.
