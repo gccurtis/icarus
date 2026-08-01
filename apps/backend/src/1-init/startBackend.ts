@@ -21,67 +21,143 @@ import { createGeneralFilesInstance } from "#init/create/generalFiles.js";
 import { createConnectorInstance } from "#init/create/connector.js";
 import { ConnectorSyncScheduler } from "#init/create/connectorSyncScheduler.js";
 import { createResourceReader } from "#init/create/resource-reader.js";
+import { createDocumentInstance } from "#init/create/document.js";
+import { createSlideInstance } from "#init/create/slide.js";
+import { SchedulerInternalJobsRuntime } from "#utils/jobs/internalRuntime.js";
+import type { DocumentInternalJobIntent } from "#document";
+import type { SlideInternalJobIntent } from "#capabilities/slide/index.js";
+import { registerDocumentEndpoints } from "#job-wiring/document/registerDocumentEndpoints.js";
+import { registerDocumentInternalJobs } from "#job-wiring/document/registerDocumentInternalJobs.js";
+import { registerSlideEndpoints } from "#job-wiring/slide/registerSlideEndpoints.js";
+import { registerSlideInternalJobs } from "#job-wiring/slide/registerSlideInternalJobs.js";
 
 export const startBackend = async (): Promise<void> => {
   const config = await createConfig();
   const logger = createLogger(config);
-  const intelligence = createIntelligence(config, logger);
-  // Context is created before knowledge so it can be injected as the scope resolver.
-  const contextManager = createContextManagerInstance(config, logger);
-  const knowledge = createKnowledge(config.projectId, intelligence, logger, contextManager);
-  const formula = createFormula(config, logger);
-  const structuredData = createStructuredDataInstance(config, logger);
-  const formulaResolver = createFormulaNameResolver(formula, structuredData, logger, {
-    userId: config.userId,
-    projectId: config.projectId
-  });
-  const richText = createRichTextInstance(config, logger);
-  const resourceReader = createResourceReader();
-  const derivedOutputs = createDerivedOutputServiceInstance(config, knowledge, intelligence, resourceReader, logger);
-  const generalFiles = createGeneralFilesInstance(config, knowledge, logger);
-  const { service: connector, store: connectorStore } = createConnectorInstance(config, knowledge, logger);
-  const app = createApp();
-  const scheduler = createScheduler(config);
-  const registry = createRegistry(scheduler);
+  const startedAt = performance.now();
+  try {
+    const intelligence = createIntelligence(config, logger);
+    // The registry is composed before Knowledge and populated once concrete
+    // resource capabilities exist. It resolves Context leaves to source IDs and
+    // supplies the same trusted identities to Derived Output tools.
+    const contextManager = createContextManagerInstance(config, logger);
+    const resourceRegistry = createResourceReader(contextManager, logger);
+    const knowledge = createKnowledge(
+      config.projectId,
+      intelligence,
+      logger,
+      resourceRegistry
+    );
+    const formula = createFormula(config, logger);
+    const structuredData = createStructuredDataInstance(config, logger);
+    const formulaResolver = createFormulaNameResolver(formula, structuredData, logger, {
+      userId: config.userId,
+      projectId: config.projectId
+    });
+    const richText = createRichTextInstance(config, logger);
+    const generalFiles = createGeneralFilesInstance(config, knowledge, logger);
+    const { service: connector, store: connectorStore } = createConnectorInstance(
+      config,
+      knowledge,
+      logger
+    );
+    resourceRegistry.registerGeneralFiles(generalFiles);
+    resourceRegistry.registerConnector(connector);
+    const derivedOutputs = createDerivedOutputServiceInstance(
+      config,
+      knowledge,
+      intelligence,
+      resourceRegistry,
+      logger
+    );
+    knowledge.onSourceMutation((mutation) => {
+      derivedOutputs.recordKnowledgeSourceMutation(mutation);
+    });
+    const app = createApp();
+    const scheduler = createScheduler(config, logger);
+    const registry = createRegistry(scheduler);
+    const documentJobs = new SchedulerInternalJobsRuntime<DocumentInternalJobIntent>(scheduler);
+    const slideJobs = new SchedulerInternalJobsRuntime<SlideInternalJobIntent>(scheduler);
+    const document = createDocumentInstance(
+      config,
+      richText,
+      formula,
+      formulaResolver,
+      derivedOutputs,
+      documentJobs,
+      logger
+    );
+    registerDocumentInternalJobs(documentJobs, document);
+    const slide = createSlideInstance(
+      config,
+      richText,
+      derivedOutputs,
+      slideJobs,
+      logger
+    );
+    registerSlideInternalJobs(slideJobs, slide);
 
-  logger.info("Backend starting", {
-    host: config.server.host,
-    port: config.server.port,
-    concurrentWorkers: config.workerPool.concurrentWorkers,
-    loggingEnabled: config.logging.enabled,
-    loggingLevel: config.logging.level,
-    loggingDirectory: config.logging.directory,
-    intelligenceProvider: config.intelligence.embedding.provider,
-    intelligenceModel: config.intelligence.embedding.model,
-    intelligenceReady: Boolean(intelligence),
-    projectId: config.projectId,
-    userId: config.userId,
-    knowledgeReady: Boolean(knowledge),
-    formulaReady: Boolean(formula),
-    structuredDataReady: Boolean(structuredData),
-    formulaResolverReady: Boolean(formulaResolver),
-    richTextReady: Boolean(richText),
-    contextReady: Boolean(contextManager),
-    generalFilesReady: Boolean(generalFiles)
-  });
+    logger.info("Backend starting", {
+      host: config.server.host,
+      port: config.server.port,
+      concurrentWorkers: config.workerPool.concurrentWorkers,
+      loggingEnabled: config.logging.enabled,
+      loggingLevel: config.logging.level,
+      intelligenceProvider: config.intelligence.embedding.provider,
+      intelligenceModel: config.intelligence.embedding.model,
+      intelligenceReady: Boolean(intelligence),
+      knowledgeReady: Boolean(knowledge),
+      formulaReady: Boolean(formula),
+      structuredDataReady: Boolean(structuredData),
+      formulaResolverReady: Boolean(formulaResolver),
+      richTextReady: Boolean(richText),
+      contextReady: Boolean(contextManager),
+      generalFilesReady: Boolean(generalFiles),
+      connectorReady: Boolean(connector),
+      resourceRegistryReady: Boolean(resourceRegistry),
+      derivedOutputsReady: Boolean(derivedOutputs),
+      documentReady: Boolean(document),
+      slideReady: Boolean(slide)
+    });
 
-  registerStructuredDataEndpoints(registry, structuredData, formula, formulaResolver, logger);
-  registerContextEndpoints(registry, contextManager);
-  registerDerivedOutputEndpoints(registry, derivedOutputs, logger);
-  registerGeneralFileEndpoints(registry, generalFiles, logger);
-  registerConnectorEndpoints(registry, connector, logger);
+    registerStructuredDataEndpoints(registry, structuredData, formula, formulaResolver, logger);
+    registerContextEndpoints(registry, contextManager);
+    registerDerivedOutputEndpoints(registry, derivedOutputs, logger);
+    registerGeneralFileEndpoints(registry, generalFiles, logger);
+    registerConnectorEndpoints(registry, connector, logger);
+    registerDocumentEndpoints(registry, document, logger);
+    registerSlideEndpoints(registry, slide, logger);
 
-  // Start the connector sync scheduler
-  const syncScheduler = new ConnectorSyncScheduler(connectorStore, scheduler, connector, logger);
-  syncScheduler.start();
+    const recoveredDocumentAttempts = await document.recoverPendingAttempts();
+    logger.info("document.attempts.recovered", { count: recoveredDocumentAttempts });
+    const recoveredSlideAttempts = await slide.recoverPendingAttempts();
+    logger.info("slide.attempts.recovered", { count: recoveredSlideAttempts });
 
-  registerHttpTransport(app, { scheduler, registry });
+    const syncScheduler = new ConnectorSyncScheduler(
+      connectorStore,
+      scheduler,
+      connector,
+      logger
+    );
 
-  await app.listen({
-    host: config.server.host,
-    port: config.server.port
-  });
+    registerHttpTransport(app, { scheduler, registry, logger });
 
-  app.log.info(`Backend listening on http://localhost:${config.server.port}`);
-  logger.info("Backend listening", { port: config.server.port });
+    await app.listen({
+      host: config.server.host,
+      port: config.server.port
+    });
+    // Start recurring work only after the transport has bound successfully.
+    // Otherwise a listen failure would leave interval timers keeping the
+    // failed startup process alive.
+    syncScheduler.start();
+
+    logger.info("Backend listening", { port: config.server.port });
+  } catch (error) {
+    logger.error("backend.start.failed", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      errorMessage: error instanceof Error ? error.message : "Unknown startup failure",
+      durationMs: Math.round(performance.now() - startedAt)
+    });
+    throw error;
+  }
 };

@@ -5,80 +5,120 @@
   "type": "module",
   "imports": {
     "#utils/*": {
+      "development": "./src/0-utils/*",
       "types": "./src/0-utils/*",
       "default": "./dist/0-utils/*"
     },
     "#init/*": {
+      "development": "./src/1-init/*",
       "types": "./src/1-init/*",
       "default": "./dist/1-init/*"
     },
     "#transport/*": {
+      "development": "./src/2-transport/*",
       "types": "./src/2-transport/*",
       "default": "./dist/2-transport/*"
     },
     "#capabilities/*": {
+      "development": "./src/3-capabilities/*",
       "types": "./src/3-capabilities/*",
       "default": "./dist/3-capabilities/*"
     },
     "#job-wiring/*": {
+      "development": "./src/4-job-wiring/*",
       "types": "./src/4-job-wiring/*",
       "default": "./dist/4-job-wiring/*"
     },
     "#platform/*": {
+      "development": "./src/0-platform/*",
       "types": "./src/0-platform/*",
       "default": "./dist/0-platform/*"
     },
     "#formula": {
+      "development": "./src/0-platform/formula/index.ts",
       "types": "./src/0-platform/formula/index.ts",
       "default": "./dist/0-platform/formula/index.js"
     },
     "#formula/*": {
+      "development": "./src/0-platform/formula/*",
       "types": "./src/0-platform/formula/*",
       "default": "./dist/0-platform/formula/*"
     },
-    "#name-manager": {
-      "types": "./src/3-capabilities/name-manager/index.ts",
-      "default": "./dist/3-capabilities/name-manager/index.js"
-    },
-    "#name-manager/*": {
-      "types": "./src/3-capabilities/name-manager/*",
-      "default": "./dist/3-capabilities/name-manager/*"
-    },
     "#structured-data": {
+      "development": "./src/3-capabilities/structured-data/index.ts",
       "types": "./src/3-capabilities/structured-data/index.ts",
       "default": "./dist/3-capabilities/structured-data/index.js"
     },
     "#structured-data/*": {
+      "development": "./src/3-capabilities/structured-data/*",
       "types": "./src/3-capabilities/structured-data/*",
       "default": "./dist/3-capabilities/structured-data/*"
     },
     "#context": {
+      "development": "./src/3-capabilities/context/index.ts",
       "types": "./src/3-capabilities/context/index.ts",
       "default": "./dist/3-capabilities/context/index.js"
     },
     "#context/*": {
+      "development": "./src/3-capabilities/context/*",
       "types": "./src/3-capabilities/context/*",
       "default": "./dist/3-capabilities/context/*"
     },
     "#rich-text": {
+      "development": "./src/0-platform/rich-text/index.ts",
       "types": "./src/0-platform/rich-text/index.ts",
       "default": "./dist/0-platform/rich-text/index.js"
     },
     "#rich-text/*": {
+      "development": "./src/0-platform/rich-text/*",
       "types": "./src/0-platform/rich-text/*",
       "default": "./dist/0-platform/rich-text/*"
     },
     "#derived-outputs": {
+      "development": "./src/3-capabilities/derived-outputs/index.ts",
       "types": "./src/3-capabilities/derived-outputs/index.ts",
       "default": "./dist/3-capabilities/derived-outputs/index.js"
     },
     "#derived-outputs/*": {
+      "development": "./src/3-capabilities/derived-outputs/*",
       "types": "./src/3-capabilities/derived-outputs/*",
       "default": "./dist/3-capabilities/derived-outputs/*"
+    },
+    "#document": {
+      "development": "./src/3-capabilities/document/index.ts",
+      "types": "./src/3-capabilities/document/index.ts",
+      "default": "./dist/3-capabilities/document/index.js"
+    },
+    "#document/*": {
+      "development": "./src/3-capabilities/document/*",
+      "types": "./src/3-capabilities/document/*",
+      "default": "./dist/3-capabilities/document/*"
+    },
+    "#general-files": {
+      "development": "./src/3-capabilities/general-files/index.ts",
+      "types": "./src/3-capabilities/general-files/index.ts",
+      "default": "./dist/3-capabilities/general-files/index.js"
+    },
+    "#general-files/*": {
+      "development": "./src/3-capabilities/general-files/*",
+      "types": "./src/3-capabilities/general-files/*",
+      "default": "./dist/3-capabilities/general-files/*"
+    },
+    "#connector": {
+      "development": "./src/3-capabilities/connector/index.ts",
+      "types": "./src/3-capabilities/connector/index.ts",
+      "default": "./dist/3-capabilities/connector/index.js"
+    },
+    "#connector/*": {
+      "development": "./src/3-capabilities/connector/*",
+      "types": "./src/3-capabilities/connector/*",
+      "default": "./dist/3-capabilities/connector/*"
     }
   },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx --conditions=development watch src/index.ts",
+    "test": "tsx --conditions=development --test --test-concurrency=1 test/capabilities/*.test.ts",
+    "test:smoke": "node test/smoke/http-smoke.mjs",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
