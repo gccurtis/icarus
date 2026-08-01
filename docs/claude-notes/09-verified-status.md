@@ -88,8 +88,8 @@ five of Document's seven stage methods.
 `3-capabilities/built-in/` and there are now nine capabilities. Its description of the
 request→job flow and queue semantics is still accurate.
 
-**`docs/architecture.md` — two broken links.** It links to `capabilities/README.md`, but that
-directory is now `docs/capabilities-old/`.
+**`docs/architecture.md` — one broken link.** It links to `capabilities/README.md`; that
+directory is now `docs/capabilities-old/`. Its other seven links resolve.
 
 **`apps/backend/etc/README.md` — incomplete.** Documents only `server`, `workerPool`, and
 `queue`. The YAML has ten more sections (`logging`, `intelligence`, `formula`,
@@ -137,10 +137,12 @@ Collected from source reading and the modules' own `invariants.md` pages:
 3. **Connector `filesystemProvider` is not an authorization boundary.** It accepts any path
    readable by the backend process. Fine for local development; a containment boundary is
    needed before any multi-user deployment.
-4. **Weak wire validation in older capabilities.** Connector passes `request.body as any`
-   straight into `service.register()`; Context/Structured Data cast to
-   `Record<string, unknown>` and coerce with `String(...)`. The Document/Slide `wire/` decoder
-   pattern is the intended standard.
+4. **Weak wire validation in older capabilities.** Connector and General Files pass
+   `request.body as any` into their services (which *do* runtime-validate, so this is a
+   type-safety rather than a security gap); Context/Structured Data/Derived Outputs cast to
+   `Record<string, unknown>` and coerce with `String(...)`, which does admit malformed input.
+   The Document/Slide `wire/` decoder pattern is the intended standard. Full analysis in
+   [review/001-consistency-and-doc-drift.md](review/001-consistency-and-doc-drift.md).
 5. **No Knowledge test file.** Windowing, clustering, SQLite persistence, end-to-end
    retrieval, and the concrete embedder are uncovered; Knowledge behaviour is only exercised
    indirectly through Derived Outputs' in-memory double.

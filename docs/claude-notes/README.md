@@ -35,6 +35,12 @@ code, and reaches other capabilities only through narrow structural interfaces.
 | 8 | [08-conventions.md](08-conventions.md) | Idioms to imitate when adding code |
 | 9 | [09-verified-status.md](09-verified-status.md) | Build/test/boot status as measured, and stale docs |
 
+Reviews — findings with recommended fixes — live in [review/](review/):
+
+| Review | Covers |
+| --- | --- |
+| [001-consistency-and-doc-drift.md](review/001-consistency-and-doc-drift.md) | Capability shape, wire validation, stale architecture docs |
+
 If you only read one: [01](01-layers-and-boundaries.md) explains the directory structure,
 [03](03-capability-anatomy.md) explains how to add to it, and
 [09](09-verified-status.md) tells you what is currently broken.
