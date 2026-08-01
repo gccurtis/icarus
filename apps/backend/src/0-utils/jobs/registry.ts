@@ -34,7 +34,8 @@ export class JobRegistry {
 
     return {
       ...job,
-      id: `${this.toIdPrefix(key)}-${this.sequence}`
+      id: `${this.toIdPrefix(key)}-${this.sequence}`,
+      ...(request.requestId ? { requestId: request.requestId } : {})
     };
   }
 

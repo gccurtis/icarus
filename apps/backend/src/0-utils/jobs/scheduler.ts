@@ -1,5 +1,6 @@
 import type {
   Job,
+  JobAdmission,
   JobExecutionResult,
   JobResponse,
   JobSchedulerState,
@@ -11,7 +12,25 @@ interface QueueItem {
   job: Job;
   resolve: (value: JobExecutionResult) => void;
   reject: (reason: unknown) => void;
+  enqueuedAt: number;
 }
+
+export interface JobSchedulerLogger {
+  debug(message: string, data?: unknown): void;
+  warn(message: string, data?: unknown): void;
+  error(message: string, data?: unknown): void;
+}
+
+const NOOP_LOGGER: JobSchedulerLogger = {
+  debug: () => undefined,
+  warn: () => undefined,
+  error: () => undefined
+};
+
+const errorFields = (error: unknown): Record<string, unknown> =>
+  error instanceof Error
+    ? { errorName: error.name, errorMessage: error.message }
+    : { errorName: "UnknownError", errorMessage: String(error) };
 
 export interface JobSchedulerConfig {
   concurrentWorkers: number;
@@ -40,34 +59,76 @@ export class JobScheduler {
   private serialActive = false;
   private concurrentActive = 0;
 
-  constructor(config: JobSchedulerConfig) {
+  constructor(
+    config: JobSchedulerConfig,
+    private readonly logger: JobSchedulerLogger = NOOP_LOGGER
+  ) {
     this.config = config;
   }
 
-  enqueue(job: Job): Promise<JobExecutionResult> {
-    return new Promise<JobExecutionResult>((resolve, reject) => {
-      const item: QueueItem = { job, resolve, reject };
+  async enqueue(job: Job): Promise<JobExecutionResult> {
+    return this.admit(job).completion;
+  }
 
-      // queueType is the single mapping from a concrete job to its queue.
-      if (job.queueType === "serial") {
-        if (this.serialQueue.length >= this.config.serialQueueMaxSize) {
-          reject(new QueueCapacityError("serial", "Serial queue is full"));
-          return;
-        }
+  /**
+   * Admit a Job without coupling the caller to its eventual completion.
+   *
+   * Capacity is decided synchronously. This lets internal continuation
+   * dispatch report queue admission while durable capability state remains
+   * the authority for retry and recovery.
+   */
+  admit(job: Job): JobAdmission {
+    const queue = job.queueType === "serial"
+      ? this.serialQueue
+      : this.concurrentQueue;
+    const queueMaxSize = job.queueType === "serial"
+      ? this.config.serialQueueMaxSize
+      : this.config.concurrentQueueMaxSize;
 
-        this.serialQueue.push(item);
-        this.tryRunSerial();
-        return;
-      }
+    if (queue.length >= queueMaxSize) {
+      this.logger.warn("job.queue.capacity", {
+        jobId: job.id,
+        jobName: job.name,
+        queueType: job.queueType,
+        queueDepth: queue.length,
+        queueMaxSize
+      });
+      throw new QueueCapacityError(
+        job.queueType,
+        job.queueType === "serial"
+          ? "Serial queue is full"
+          : "Concurrent queue is full"
+      );
+    }
 
-      if (this.concurrentQueue.length >= this.config.concurrentQueueMaxSize) {
-        reject(new QueueCapacityError("concurrent", "Concurrent queue is full"));
-        return;
-      }
-
-      this.concurrentQueue.push(item);
-      this.tryRunConcurrent();
+    let resolveCompletion!: (value: JobExecutionResult) => void;
+    let rejectCompletion!: (reason: unknown) => void;
+    const completion = new Promise<JobExecutionResult>((resolve, reject) => {
+      resolveCompletion = resolve;
+      rejectCompletion = reject;
     });
+    const item: QueueItem = {
+      job,
+      resolve: resolveCompletion,
+      reject: rejectCompletion,
+      enqueuedAt: performance.now()
+    };
+
+    queue.push(item);
+    this.logEnqueued(item);
+    if (job.queueType === "serial") {
+      this.tryRunSerial();
+    } else {
+      this.tryRunConcurrent();
+    }
+
+    return {
+      receipt: {
+        jobId: job.id,
+        acceptedAt: new Date().toISOString()
+      },
+      completion
+    };
   }
 
   getState(): JobSchedulerState {
@@ -125,28 +186,81 @@ export class JobScheduler {
   }
 
   private async execute(item: QueueItem): Promise<void> {
-    if (item.job.responseMode === "inline") {
-      const response = await item.job.work();
-      item.resolve(this.createExecutionResult(item.job, response));
-      return;
-    }
-
-    // A deferred response is not created at enqueue time. It is created only
-    // after this job reaches the front of its selected queue and starts.
-    const response = await item.job.deferredWork();
-    item.resolve(this.createExecutionResult(item.job, response));
-
-    // Give transport's awaiting handler a turn to send the response before
-    // beginning follow-up work. The queue slot intentionally remains active.
-    await yieldToEventLoop();
+    const startedAt = performance.now();
+    const common = {
+      jobId: item.job.id,
+      ...(item.job.requestId ? { requestId: item.job.requestId } : {}),
+      jobName: item.job.name,
+      queueType: item.job.queueType,
+      responseMode: item.job.responseMode,
+      queueWaitMs: Math.round(startedAt - item.enqueuedAt)
+    };
+    this.logger.debug("job.started", common);
 
     try {
-      await item.job.work();
+      if (item.job.responseMode === "inline") {
+        const response = await item.job.work();
+        item.resolve(this.createExecutionResult(item.job, response));
+        this.logger.debug("job.completed", {
+          ...common,
+          statusCode: response.statusCode,
+          durationMs: Math.round(performance.now() - startedAt)
+        });
+        return;
+      }
+
+      // A deferred response is not created at enqueue time. It is created only
+      // after this job reaches the front of its selected queue and starts.
+      const response = await item.job.deferredWork();
+      item.resolve(this.createExecutionResult(item.job, response));
+      this.logger.debug("job.responded", {
+        ...common,
+        statusCode: response.statusCode,
+        responseDurationMs: Math.round(performance.now() - startedAt)
+      });
+
+      // Give transport's awaiting handler a turn to send the response before
+      // beginning follow-up work. The queue slot intentionally remains active.
+      await yieldToEventLoop();
+
+      try {
+        await item.job.work();
+        this.logger.debug("job.completed", {
+          ...common,
+          statusCode: response.statusCode,
+          durationMs: Math.round(performance.now() - startedAt)
+        });
+      } catch (error) {
+        // The HTTP response has already been produced, so this failure cannot
+        // change it. Record it through the shared logger while allowing the
+        // queue to drain.
+        this.logger.error("job.deferred.failed", {
+          ...common,
+          durationMs: Math.round(performance.now() - startedAt),
+          ...errorFields(error)
+        });
+      }
     } catch (error) {
-      // The HTTP response has already been produced, so this failure cannot
-      // change it. Keep the failure visible while allowing the queue to drain.
-      console.error(`Deferred work failed for job '${item.job.id}'`, error);
+      this.logger.error("job.failed", {
+        ...common,
+        durationMs: Math.round(performance.now() - startedAt),
+        ...errorFields(error)
+      });
+      throw error;
     }
+  }
+
+  private logEnqueued(item: QueueItem): void {
+    this.logger.debug("job.enqueued", {
+      jobId: item.job.id,
+      jobName: item.job.name,
+      queueType: item.job.queueType,
+      responseMode: item.job.responseMode,
+      serialDepth: this.serialQueue.length,
+      concurrentDepth: this.concurrentQueue.length,
+      serialActive: this.serialActive,
+      concurrentActive: this.concurrentActive
+    });
   }
 
   private createExecutionResult(
@@ -155,6 +269,7 @@ export class JobScheduler {
   ): JobExecutionResult {
     return {
       jobId: job.id,
+      ...(job.requestId ? { requestId: job.requestId } : {}),
       jobName: job.name,
       queueType: job.queueType,
       respondedAt: new Date().toISOString(),

@@ -32,14 +32,31 @@ export interface DeferredJobDefinition extends BaseJobDefinition {
 }
 
 export type JobDefinition = InlineJobDefinition | DeferredJobDefinition;
-export type Job = JobDefinition & { id: string };
+export type Job = JobDefinition & {
+  id: string;
+  /** Transport correlation ID when the job originated from a request. */
+  requestId?: string;
+};
 
 export interface JobExecutionResult {
   jobId: string;
+  requestId?: string;
   jobName: string;
   queueType: QueueType;
   respondedAt: string;
   response: JobResponse;
+}
+
+/** A Job has entered its selected in-memory queue. */
+export interface JobAdmissionReceipt {
+  jobId: string;
+  acceptedAt: string;
+}
+
+/** Queue admission is immediate; execution completes independently. */
+export interface JobAdmission {
+  receipt: JobAdmissionReceipt;
+  completion: Promise<JobExecutionResult>;
 }
 
 export interface JobSchedulerState {
