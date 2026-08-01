@@ -54,7 +54,7 @@ flowchart LR
 <td>Stable names plus typed tables, columns, rows, cells, variables, snapshots, resolver adapter, endpoints, and Jobs.</td>
 </tr>
 </table>
-Data is the provisional combined home for the current Name Manager and Structured Data models. Its internal module boundary keeps naming, table/value storage, and Formula resolution separable while one capability owns the public surface.
+Data is the provisional combined home for the declaration catalog and Structured Data value model. Its internal module boundary keeps naming, table/value storage, and Formula resolution separable while one capability owns the public surface.
 ### 2 · Resources
 <table fit-page-width="true" header-row="true">
 <tr>

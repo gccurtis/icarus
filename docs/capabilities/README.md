@@ -67,9 +67,7 @@ These pages remain active while their final build-group placement is assigned:
 - [Library Kernel](library-kernel.md) — generic asset identity, immutable versions, lineage, and materialization receipts.
 - [Templates](templates.md) — reusable native-resource recipes and typed materialization.
 - [Import & Export](import-export.md) — typed format translation, diagnostics, artifacts, and target admission.
-Data's component references remain available for implementation comparison:
-- [Name Manager component model](https://app.notion.com/p/3aeb6410e502810eb5e9f934994e730d)
-- [Structured Data component model](https://app.notion.com/p/3aeb6410e502814ea854f1990496b5e4)
+Data's [Structured Data component model](https://app.notion.com/p/3aeb6410e502814ea854f1990496b5e4) remains available for implementation comparison.
 ## Standard Capability Anatomy
 Every capability page uses these primary sections in order:
 1. Summary / Concept.
