@@ -341,9 +341,10 @@ and refresh state specific to one placement.
 Deleting a Prompt Block does not immediately hard-delete its Derived Output.
 Retained Document history may still need the immutable output revision. The
 output becomes detached and is eligible for garbage collection only after no
-retained Base or ChangeSet can reference it. Any future Document-duplication
-workflow must create a new dedicated output for every copied Prompt Block
-rather than preserving source output IDs.
+retained Base or ChangeSet can reference it. Representation version 2's
+[template-copy workflow](templates-and-context-variables.md) creates a new
+dedicated output for every copied Prompt Block rather than preserving source
+output IDs.
 
 ## Lists
 
@@ -479,5 +480,6 @@ and dimensions.
 - Mid-document page-layout sections.
 - Generic embeds.
 - Browser selection state and rendered pixel geometry.
-- Document duplication; Prompt-bearing copies require an explicit Derived
-  Outputs clone contract rather than shared output IDs.
+- Document duplication in representation version 1. The
+  [Templates and Context Variables addendum](templates-and-context-variables.md)
+  defines the version 2 model and explicit Derived Outputs clone contract.

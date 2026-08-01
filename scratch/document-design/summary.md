@@ -169,9 +169,10 @@ to resume after a crash.
 Deleting a Prompt Block detaches rather than immediately destroys the output,
 because retained Document history may still reference it. Garbage collection
 is allowed only after retained Bases and ChangeSets can no longer reach any of
-its revisions. Any later Document-duplication workflow must create new
-dedicated outputs for copied Prompt Blocks. Duplication is deferred from
-representation version 1 until Derived Outputs has an explicit clone contract.
+its revisions. Representation version 1 defers duplication. The
+[Templates and Context Variables addendum](templates-and-context-variables.md)
+defines the version 2 copy workflow and the required Derived Outputs clone
+contract; copied Prompt Blocks always receive new dedicated outputs.
 
 ### Formula delimiter handling
 
@@ -286,4 +287,6 @@ Read [operations](operations.md) for placement, styles, commands, endpoints,
 and internal Jobs. Read [store](store.md) for SQLite persistence and
 history retention. Read [file architecture](file-architecture.md) for module
 responsibilities. Read [pagination](pagination.md) for the deliberately narrow
-layout boundary retained in the initial implementation.
+layout boundary retained in the initial implementation. Read
+[Templates and Context Variables](templates-and-context-variables.md) for the
+representation version 2 template-copy and Prompt-context extension.
