@@ -76,6 +76,23 @@ export interface DerivedOutputConfig {
   maxToolRounds: number;
 }
 
+export interface DocumentConfig {
+  history: {
+    retainedBaseCount: number;
+    retainedChangeSetCount: number;
+    retainedTerminalAttemptCount: number;
+  };
+  limits: {
+    maxRowsPerDocument: number;
+    maxBlocksPerRow: number;
+    maxStylesPerDocument: number;
+    maxNestingDepth: number;
+    maxAtomsPerBlockContent: number;
+    maxTableRows: number;
+    maxTableColumns: number;
+  };
+}
+
 export interface BackendConfig {
   server: {
     host: string;
@@ -99,6 +116,7 @@ export interface BackendConfig {
   richText: RichTextLimitsConfig;
   context: ContextManagerConfig;
   derivedOutputs: DerivedOutputConfig;
+  document: DocumentConfig;
   projectId: string;
   userId: string;
 }
@@ -200,6 +218,22 @@ const DEFAULT_CONFIG: BackendConfig = {
   derivedOutputs: {
     maxPlanQueries: 8,
     maxToolRounds: 8
+  },
+  document: {
+    history: {
+      retainedBaseCount: 5,
+      retainedChangeSetCount: 1000,
+      retainedTerminalAttemptCount: 1000
+    },
+    limits: {
+      maxRowsPerDocument: 10000,
+      maxBlocksPerRow: 32,
+      maxStylesPerDocument: 256,
+      maxNestingDepth: 16,
+      maxAtomsPerBlockContent: 10000,
+      maxTableRows: 1000,
+      maxTableColumns: 256
+    }
   }
 };
 
@@ -351,6 +385,8 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
   const context = (parsed.context as Record<string, unknown> | undefined) ?? {};
   const derivedOutputs =
     (parsed.derivedOutputs as Record<string, unknown> | undefined) ?? {};
+  const document =
+    (parsed.document as Record<string, unknown> | undefined) ?? {};
   const configuredOpenRouterApiKey = parseString(
     openrouter.apiKey,
     DEFAULT_CONFIG.intelligence.providers.openrouter.apiKey,
@@ -447,7 +483,8 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     structuredData: parseStructuredDataConfig((parsed.structuredData as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.structuredData),
     richText: parseRichTextLimitsConfig((parsed.richText as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.richText),
     context: parseContextConfig(context, DEFAULT_CONFIG.context),
-    derivedOutputs: parseDerivedOutputConfig(derivedOutputs, DEFAULT_CONFIG.derivedOutputs)
+    derivedOutputs: parseDerivedOutputConfig(derivedOutputs, DEFAULT_CONFIG.derivedOutputs),
+    document: parseDocumentConfig(document, DEFAULT_CONFIG.document)
   };
 };
 
@@ -490,6 +527,71 @@ function parseDerivedOutputConfig(raw: Record<string, unknown>, defaults: Derive
   return {
     maxPlanQueries: parseNumber(raw.maxPlanQueries, defaults.maxPlanQueries, "derivedOutputs.maxPlanQueries"),
     maxToolRounds: parseNumber(raw.maxToolRounds, defaults.maxToolRounds, "derivedOutputs.maxToolRounds")
+  };
+}
+
+function parseDocumentConfig(
+  raw: Record<string, unknown>,
+  defaults: DocumentConfig
+): DocumentConfig {
+  const history = (raw.history as Record<string, unknown> | undefined) ?? {};
+  const limits = (raw.limits as Record<string, unknown> | undefined) ?? {};
+
+  return {
+    history: {
+      retainedBaseCount: parseNumber(
+        history.retainedBaseCount,
+        defaults.history.retainedBaseCount,
+        "document.history.retainedBaseCount"
+      ),
+      retainedChangeSetCount: parseNumber(
+        history.retainedChangeSetCount,
+        defaults.history.retainedChangeSetCount,
+        "document.history.retainedChangeSetCount"
+      ),
+      retainedTerminalAttemptCount: parseNumber(
+        history.retainedTerminalAttemptCount,
+        defaults.history.retainedTerminalAttemptCount,
+        "document.history.retainedTerminalAttemptCount"
+      )
+    },
+    limits: {
+      maxRowsPerDocument: parseNumber(
+        limits.maxRowsPerDocument,
+        defaults.limits.maxRowsPerDocument,
+        "document.limits.maxRowsPerDocument"
+      ),
+      maxBlocksPerRow: parseNumber(
+        limits.maxBlocksPerRow,
+        defaults.limits.maxBlocksPerRow,
+        "document.limits.maxBlocksPerRow"
+      ),
+      maxStylesPerDocument: parseNumber(
+        limits.maxStylesPerDocument,
+        defaults.limits.maxStylesPerDocument,
+        "document.limits.maxStylesPerDocument"
+      ),
+      maxNestingDepth: parseNumber(
+        limits.maxNestingDepth,
+        defaults.limits.maxNestingDepth,
+        "document.limits.maxNestingDepth"
+      ),
+      maxAtomsPerBlockContent: parseNumber(
+        limits.maxAtomsPerBlockContent,
+        defaults.limits.maxAtomsPerBlockContent,
+        "document.limits.maxAtomsPerBlockContent"
+      ),
+      maxTableRows: parseNumber(
+        limits.maxTableRows,
+        defaults.limits.maxTableRows,
+        "document.limits.maxTableRows"
+      ),
+      maxTableColumns: parseNumber(
+        limits.maxTableColumns,
+        defaults.limits.maxTableColumns,
+        "document.limits.maxTableColumns"
+      )
+    }
   };
 }
 
