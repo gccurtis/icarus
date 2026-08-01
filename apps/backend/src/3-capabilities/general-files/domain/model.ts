@@ -9,8 +9,6 @@ export const PROSE_TEXT_EXTENSIONS = new Set([
   "txt", "md", "markdown", "rst", "org", "tex",
   "html", "htm",
   "log",
-  "docx",
-  "pdf",
 ]);
 
 export type GeneralFileKind = "general::file::text" | "general::file::other";
@@ -27,9 +25,12 @@ export interface GeneralFile {
   readonly fileName: string;
   /** Detected extension, lowercased. */
   readonly extension: string;
-  /** Full content. Text-kind: UTF-8. Other-kind: raw bytes as base64. */
+  /**
+   * Full UTF-8 transport string. Text-kind content is prose; other-kind
+   * content is opaque and may, by caller convention, contain base64.
+   */
   readonly content: string;
-  /** Byte length of content. */
+  /** UTF-8 byte length of the stored transport string. */
   readonly byteSize: number;
   /** SHA-256 of content. Matches id. */
   readonly contentHash: string;
@@ -48,7 +49,8 @@ export interface GeneralFile {
 
 export interface GeneralFileUploadRequest {
   fileName: string;
-  content: string; // text-kind: UTF-8; other-kind: base64
+  /** UTF-8 transport string; opaque for other-kind files. */
+  content: string;
 }
 
 export interface GeneralFileUpdateRequest {

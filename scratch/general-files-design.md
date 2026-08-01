@@ -82,9 +82,10 @@ const PROSE_TEXT_EXTENSIONS = new Set([
   "txt", "md", "markdown", "rst", "org", "tex",
   "html", "htm",
   "log",
-  "docx",
-  "pdf",
 ]);
+
+// PDF and DOCX are binary containers, so they remain `other` until a text
+// extractor is introduced.
 
 /** Everything not in PROSE_TEXT_EXTENSIONS defaults to "general::file::other". */
 type GeneralFileKind = "general::file::text" | "general::file::other";
@@ -94,7 +95,7 @@ function kindFromExtension(ext: string): GeneralFileKind {
 }
 
 interface GeneralFile {
-  /** Content-addressed: SHA-256(utf8 or raw bytes), hex-encoded. */
+  /** Content-addressed: SHA-256 of the UTF-8 transport string, hex-encoded. */
   readonly id: string;
   readonly kind: GeneralFileKind;
   /** Original filename at upload time. */
@@ -102,12 +103,12 @@ interface GeneralFile {
   /** Detected extension, lowercased. */
   readonly extension: string;
   /**
-   * Full content. For text-kind files this is UTF-8 text. For other-kind
-   * files this is the raw bytes stored as a base64-encoded string (or a
-   * blob reference — see SQL schema).
+   * Full UTF-8 transport string. For text-kind files this is prose. For
+   * other-kind files the string is opaque and may contain base64 by caller
+   * convention; this capability does not decode it.
    */
   readonly content: string;
-  /** Byte length of content. */
+  /** UTF-8 byte length of the stored transport string. */
   readonly byteSize: number;
   /** SHA-256 of content. Matches id. */
   readonly contentHash: string;
@@ -129,7 +130,7 @@ interface GeneralFile {
 
 interface GeneralFileUploadRequest {
   fileName: string;
-  content: string; // text-kind: UTF-8; other-kind: base64
+  content: string; // UTF-8 transport string; opaque for other-kind files
 }
 
 interface GeneralFileUpdateRequest {
@@ -180,8 +181,8 @@ When a file is uploaded:
 2. If the extension is in `PROSE_TEXT_EXTENSIONS` → kind is
    `"general::file::text"`. Validate content as valid UTF-8 and admit to
    Knowledge lattice.
-3. Otherwise → kind is `"general::file::other"`. Store content as-is (raw
-   bytes, no UTF-8 validation) and **do not** admit to Knowledge. The file is
+3. Otherwise → kind is `"general::file::other"`. Store the transport string
+   as-is (opaque content, no prose validation) and **do not** admit to Knowledge. The file is
    still retrievable by ID and appears in list/search results.
 
 No extension is rejected. Users can upload any file — only prose documents
@@ -193,8 +194,6 @@ const PROSE_TEXT_EXTENSIONS = new Set([
   "txt", "md", "markdown", "rst", "org", "tex",
   "html", "htm",
   "log",
-  "docx",
-  "pdf",
 ]);
 
 function classifyExtension(ext: string): GeneralFileKind {
@@ -281,7 +280,7 @@ flowchart TD
     User -->|"get(id) / list(filters?)"| GF
 
     GF -->|"classify extension"| Ext["PROSE_TEXT_EXTENSIONS check"]
-    Ext -->|"prose (txt, md, pdf, docx, …)"| TextKind["general::file::text"]
+    Ext -->|"prose (txt, md, html, …)"| TextKind["general::file::text"]
     Ext -->|"other (code, data, config, …)"| OtherKind["general::file::other"]
 
     TextKind --> Hash["SHA-256(content)"]
@@ -338,8 +337,7 @@ CREATE TABLE general_files (
     CHECK (kind IN ('general::file::text', 'general::file::other')),
   file_name TEXT NOT NULL
     CHECK (length(trim(file_name)) > 0),
-  extension TEXT NOT NULL
-    CHECK (length(extension) > 0),
+  extension TEXT NOT NULL,
   content TEXT NOT NULL,
   byte_size INTEGER NOT NULL
     CHECK (byte_size >= 0),
@@ -353,7 +351,7 @@ CREATE TABLE general_files (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   deleted_at TEXT,
-  CHECK (byte_size = length(content)),
+  CHECK (byte_size = length(CAST(content AS BLOB))),
   CHECK (content_hash = id),
   FOREIGN KEY (replaces_id)
     REFERENCES general_files(id)

@@ -15,6 +15,13 @@ function errorResponse(e: unknown): { statusCode: number; body: unknown } {
   return { statusCode: 500, body: { error: "internal_error", message } };
 }
 
+function logError(logger: Logger, operation: string, error: unknown): void {
+  logger.error(`general-files.${operation}.error`, {
+    errorName: error instanceof Error ? error.name : "UnknownError",
+    error: error instanceof Error ? error.message : String(error),
+  });
+}
+
 export function registerGeneralFileEndpoints(
   registry: JobRegistry,
   service: GeneralFileService,
@@ -23,14 +30,14 @@ export function registerGeneralFileEndpoints(
   // --- Upload ---
   registry.register({ method: "POST", path: "/general-files/upload" }, (request) => ({
     name: "general-files.upload",
-    queueType: "concurrent",
+    queueType: "serial",
     responseMode: "inline",
     work: async () => {
       try {
         const result = await service.upload(request.body as any);
         return { statusCode: 200, body: result };
       } catch (e) {
-        logger.error("general-files.upload.error", { error: String(e) });
+        logError(logger, "upload", e);
         return errorResponse(e);
       }
     },
@@ -39,15 +46,15 @@ export function registerGeneralFileEndpoints(
   // --- Update ---
   registry.register({ method: "POST", path: "/general-files/update" }, (request) => ({
     name: "general-files.update",
-    queueType: "concurrent",
+    queueType: "serial",
     responseMode: "inline",
     work: async () => {
       try {
-        const { id, content } = request.body as { id: string; content: string };
+        const { id, content } = (request.body ?? {}) as { id: string; content: string };
         const result = await service.update(id, { content });
         return { statusCode: 200, body: result };
       } catch (e) {
-        logger.error("general-files.update.error", { error: String(e) });
+        logError(logger, "update", e);
         return errorResponse(e);
       }
     },
@@ -60,11 +67,11 @@ export function registerGeneralFileEndpoints(
     responseMode: "inline",
     work: async () => {
       try {
-        const { id } = request.body as { id: string };
+        const { id } = (request.body ?? {}) as { id: string };
         const file = service.get(id);
         return { statusCode: 200, body: file };
       } catch (e) {
-        logger.error("general-files.get.error", { error: String(e) });
+        logError(logger, "get", e);
         return errorResponse(e);
       }
     },
@@ -81,7 +88,7 @@ export function registerGeneralFileEndpoints(
         const files = service.list(filters);
         return { statusCode: 200, body: files };
       } catch (e) {
-        logger.error("general-files.list.error", { error: String(e) });
+        logError(logger, "list", e);
         return errorResponse(e);
       }
     },
@@ -94,11 +101,11 @@ export function registerGeneralFileEndpoints(
     responseMode: "inline",
     work: async () => {
       try {
-        const { id } = request.body as { id: string };
-        service.delete(id);
+        const { id } = (request.body ?? {}) as { id: string };
+        await service.delete(id);
         return { statusCode: 200, body: { status: "deleted", id } };
       } catch (e) {
-        logger.error("general-files.delete.error", { error: String(e) });
+        logError(logger, "delete", e);
         return errorResponse(e);
       }
     },

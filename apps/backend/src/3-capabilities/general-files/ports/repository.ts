@@ -21,6 +21,15 @@ export interface GeneralFileStore {
   /** Update an existing file record. */
   update(file: GeneralFile): void;
 
+  /**
+   * Atomically activate a replacement and retire the previous version.
+   * The replacement may be a previously soft-deleted content-addressed row.
+   */
+  replace(previous: GeneralFile, replacement: GeneralFile, replacedAt: string): void;
+
+  /** Atomically retire a file in favour of an already-active target. */
+  linkReplacement(previous: GeneralFile, replacementId: string, replacedAt: string): void;
+
   /** Soft-delete a file. */
   softDelete(id: string, deletedAt: string): void;
 }

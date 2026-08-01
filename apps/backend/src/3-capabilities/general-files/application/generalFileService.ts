@@ -43,7 +43,7 @@ export interface GeneralFileService {
   update(id: string, request: GeneralFileUpdateRequest): Promise<GeneralFileUpdateResult>;
   get(id: string): GeneralFile;
   list(filters?: GeneralFileFilter[]): Omit<GeneralFile, "content">[];
-  delete(id: string): void;
+  delete(id: string): Promise<void>;
 }
 
 export function createGeneralFileService(
@@ -81,8 +81,55 @@ export function createGeneralFileService(
 
   const now = (): string => new Date().toISOString();
 
+  async function compensateKnowledge(file: GeneralFile, operation: "add" | "remove"): Promise<void> {
+    try {
+      if (operation === "add") {
+        await admitToKnowledge(file);
+      } else {
+        await removeFromKnowledge(file);
+      }
+    } catch (error) {
+      logger.error("general-files.knowledge.compensation-failed", {
+        id: file.id,
+        operation,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  async function restoreKnowledgeIfStillActive(file: GeneralFile): Promise<void> {
+    const current = store.getById(file.id);
+    if (
+      !current ||
+      current.deletedAt ||
+      current.revision !== file.revision ||
+      current.contentHash !== file.contentHash
+    ) {
+      logger.debug("general-files.knowledge.compensation-skipped", {
+        id: file.id,
+        reason: "source-no-longer-active",
+      });
+      return;
+    }
+    await compensateKnowledge(current, "add");
+  }
+
+  async function removeKnowledgeIfNotActive(file: GeneralFile): Promise<void> {
+    const current = store.getById(file.id);
+    if (current && !current.deletedAt) return;
+    await compensateKnowledge(file, "remove");
+  }
+
   return {
     async upload(request: GeneralFileUploadRequest): Promise<GeneralFileUploadResult> {
+      const startedAt = performance.now();
+      if (!request || typeof request.fileName !== "string" || request.fileName.trim().length === 0) {
+        throw new GeneralFileEncodingError("fileName must be a non-empty string");
+      }
+      if (typeof request.content !== "string") {
+        throw new GeneralFileEncodingError("content must be a string");
+      }
       const { fileName, content } = request;
 
       // Extract extension
@@ -104,12 +151,23 @@ export function createGeneralFileService(
       // Check for existing
       const existing = store.getByHash(contentHash);
       if (existing && !existing.deletedAt) {
+        // Upsert into Knowledge as a cheap self-heal for records left behind by
+        // an earlier failed ingestion. Matching revisions are skipped.
+        await admitToKnowledge(existing);
+        logger.info("general-files.upload.reused", {
+          id,
+          kind: existing.kind,
+          fileName: existing.fileName,
+          byteSize: existing.byteSize,
+          durationMs: Math.round(performance.now() - startedAt),
+        });
         return { kind: "reused", file: existing, message: "identical content already exists" };
       }
 
       const createdAt = now();
       const byteSize = Buffer.byteLength(content, "utf8");
 
+      const deleted = store.getById(id);
       const file: GeneralFile = {
         id,
         kind,
@@ -118,24 +176,48 @@ export function createGeneralFileService(
         content,
         byteSize,
         contentHash,
-        revision: 1,
+        revision: deleted ? deleted.revision + 1 : 1,
         knowledgeSourceId: kind === "general::file::text" ? `general-file:${id}` : null,
+        replacesId: deleted?.replacesId,
         createdAt,
         updatedAt: createdAt,
       };
 
-      // Persist
-      store.insert(file);
-
-      // Admit to Knowledge (text-kind only)
+      // Admit first, then make the row active. If persistence fails, remove
+      // the newly admitted source so a retry starts from a coherent state.
       const knowledgeResult = await admitToKnowledge(file);
+      try {
+        if (deleted) {
+          store.update(file);
+        } else {
+          store.insert(file);
+        }
+      } catch (error) {
+        const concurrent = store.getById(id);
+        if (concurrent && !concurrent.deletedAt) {
+          return { kind: "reused", file: concurrent, message: "identical content already exists" };
+        }
+        await compensateKnowledge(file, "remove");
+        throw error;
+      }
 
-      logger.info("general-files.upload", { id, kind, fileName, byteSize });
+      logger.info("general-files.upload", {
+        id,
+        kind,
+        fileName,
+        byteSize,
+        resurrected: Boolean(deleted),
+        durationMs: Math.round(performance.now() - startedAt),
+      });
 
       return { kind: "created", file, knowledge: knowledgeResult };
     },
 
     async update(id: string, request: GeneralFileUpdateRequest): Promise<GeneralFileUpdateResult> {
+      const startedAt = performance.now();
+      if (!request || typeof request.content !== "string") {
+        throw new GeneralFileEncodingError("content must be a string");
+      }
       const existing = store.getById(id);
       if (!existing || existing.deletedAt) {
         throw new GeneralFileNotFoundError(id);
@@ -145,6 +227,12 @@ export function createGeneralFileService(
 
       // If content is identical, nothing to do
       if (newContentHash === existing.contentHash) {
+        await admitToKnowledge(existing);
+        logger.info("general-files.update.unchanged", {
+          id,
+          revision: existing.revision,
+          durationMs: Math.round(performance.now() - startedAt),
+        });
         return { kind: "unchanged", file: existing, message: "new content identical to current" };
       }
 
@@ -164,17 +252,27 @@ export function createGeneralFileService(
       // Check if the new hash already exists — if so, reuse that file
       const existingByHash = store.getByHash(newContentHash);
       if (existingByHash && !existingByHash.deletedAt && existingByHash.id !== id) {
-        // Soft-delete old, link to new
-        store.softDelete(id, createdAt);
-        // Update the old record's replacedById
-        store.update({ ...existing, replacedById: newId, deletedAt: createdAt, updatedAt: createdAt });
+        const knowledgeResult = await admitToKnowledge(existingByHash);
+        await removeFromKnowledge(existing);
+        try {
+          store.linkReplacement(existing, existingByHash.id, createdAt);
+        } catch (error) {
+          await restoreKnowledgeIfStillActive(existing);
+          throw error;
+        }
+
+        logger.info("general-files.update", {
+          oldId: id,
+          newId,
+          kind,
+          reused: true,
+          durationMs: Math.round(performance.now() - startedAt),
+        });
 
         return {
           kind: "updated",
           file: existingByHash,
-          knowledge: existingByHash.knowledgeSourceId
-            ? { sourceId: existingByHash.knowledgeSourceId, skipped: true, windowsAdded: 0, windowsReused: 0, usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, reasoningTokens: 0 } }
-            : undefined,
+          knowledge: knowledgeResult,
         };
       }
 
@@ -186,42 +284,67 @@ export function createGeneralFileService(
         content: request.content,
         byteSize,
         contentHash: newContentHash,
-        revision: 1,
+        revision: existing.revision + 1,
         knowledgeSourceId: kind === "general::file::text" ? `general-file:${newId}` : null,
         replacesId: id,
         createdAt,
         updatedAt: createdAt,
       };
 
-      // Soft-delete the old file
-      store.softDelete(id, createdAt);
-      store.update({ ...existing, replacedById: newId, deletedAt: createdAt, updatedAt: createdAt });
-
-      // Insert new file
-      store.insert(newFile);
-
-      // Remove old Knowledge source, admit new one
-      await removeFromKnowledge(existing);
       const knowledgeResult = await admitToKnowledge(newFile);
+      try {
+        await removeFromKnowledge(existing);
+      } catch (error) {
+        await compensateKnowledge(newFile, "remove");
+        throw error;
+      }
 
-      logger.info("general-files.update", { oldId: id, newId, kind });
+      try {
+        store.replace(existing, newFile, createdAt);
+      } catch (error) {
+        await removeKnowledgeIfNotActive(newFile);
+        await restoreKnowledgeIfStillActive(existing);
+        throw error;
+      }
+
+      logger.info("general-files.update", {
+        oldId: id,
+        newId,
+        kind,
+        reused: false,
+        durationMs: Math.round(performance.now() - startedAt),
+      });
 
       return { kind: "updated", file: newFile, knowledge: knowledgeResult };
     },
 
     get(id: string): GeneralFile {
+      const startedAt = performance.now();
       const file = store.getById(id);
       if (!file || file.deletedAt) {
         throw new GeneralFileNotFoundError(id);
       }
+      logger.debug("general-files.get", {
+        id,
+        byteSize: file.byteSize,
+        durationMs: Math.round(performance.now() - startedAt),
+      });
       return file;
     },
 
     list(filters?: GeneralFileFilter[]): Omit<GeneralFile, "content">[] {
-      return store.list(filters);
+      const startedAt = performance.now();
+      const files = store.list(filters);
+      logger.debug("general-files.list", {
+        count: files.length,
+        filterCount: filters?.length ?? 0,
+        durationMs: Math.round(performance.now() - startedAt),
+      });
+      return files;
     },
 
-    delete(id: string): void {
+    async delete(id: string): Promise<void> {
+      const startedAt = performance.now();
       const file = store.getById(id);
       if (!file || file.deletedAt) {
         throw new GeneralFileNotFoundError(id);
@@ -229,15 +352,18 @@ export function createGeneralFileService(
 
       const deletedAt = now();
 
-      // Remove from Knowledge
-      removeFromKnowledge(file).catch(err => {
-        logger.warn("general-files.delete-knowledge-failed", { id, error: String(err) });
+      await removeFromKnowledge(file);
+      try {
+        store.softDelete(id, deletedAt);
+      } catch (error) {
+        await restoreKnowledgeIfStillActive(file);
+        throw error;
+      }
+
+      logger.info("general-files.delete", {
+        id,
+        durationMs: Math.round(performance.now() - startedAt),
       });
-
-      store.softDelete(id, deletedAt);
-      store.update({ ...file, deletedAt, updatedAt: deletedAt });
-
-      logger.info("general-files.delete", { id });
     },
   };
 }
