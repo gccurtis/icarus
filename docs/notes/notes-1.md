@@ -3,31 +3,34 @@
 ## Build Order
 
 **Foundations**
-- Intelligence
-- Context
-- Formula
-- Data (Name Manager)
+- [X] Intelligence
+- [X] Context
+- [X] Formula
+- [X] Data (Structured Data)
+- [X] Rich Text
 
 **Resources**
-- Knowledge
-    - Document
-    - Slides
-    - Spreadsheet
+- [X] Knowledge
+    - [ ] Document
+    - [ ] Slides
+    - [ ] Spreadsheet
+    - [X] Connector
+    - [X] General File
 
 **Research**
-- Analysis
-- Evidence
-- Research
+- [ ] Analysis
+- [ ] Findings
+- [ ] Research
 
 **Project**
-- Project (Question)
-- Workspace
-- Collaboration (activity, presence, comments)
+- [ ] Project (Question)
+- [ ] Workspace
+- [ ] Collaboration (activity, presence, comments)
 
 **Agentic**
-- Persona
-- Agents
-- Automation
+- [ ] Persona
+- [ ] Agents
+- [ ] Automation
 
 ## Structure
 - Summary
