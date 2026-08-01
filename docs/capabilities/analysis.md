@@ -76,12 +76,11 @@ A rerun creates a new result identity. Cards point to an accepted result; they n
 </table>
 Analysis stores stable references to external objects and exact manifests for completed work. It does not duplicate mutable Data values or Data name registry declarations.
 ### Repository placement
-```plain text
+```text
 apps/backend/src/
   1-init/
     create/
       analysis.ts
-
   3-capabilities/
     analysis/
       domain/
@@ -113,13 +112,13 @@ apps/backend/src/
         projections.ts
       index.ts
       tests/
-
   4-job-wiring/
     analysis/
       registerAnalysisEndpointMappings.ts
       createAnalysisJobs.ts
       createAnalysisStageJobs.ts
 ```
+
 Analysis SQL and migrations remain with the capability. Initialization supplies bound ports. Job wiring translates normalized endpoint requests into serial or concurrent jobs and coordinates internal stages.
 ## Types & Interfaces
 ### Analysis aggregate
