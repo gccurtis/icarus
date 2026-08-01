@@ -187,9 +187,9 @@ export interface FormulaResolverSnapshot {
 Evaluation performs no I/O after receiving the frozen snapshot. Lookup order is:
 1. lambda parameters and captured lexical bindings;
 2. current set-operation row fields;
-3. resolver snapshot bindings;
-4. built-ins in call position.
-Bound references retain stable IDs, owner revisions, and value digests, so a display-name change cannot silently retarget an already bound expression.
+3. built-ins in call position;
+4. resolver snapshot bindings.
+Bound references retain stable IDs, owner revisions, and value digests, so a display-name change cannot silently retarget an already bound expression. An already-bound node whose owner revision or value digest changes returns `stale_binding`; it is never rebound by display name to a different owner.
 ### Public engine
 ```typescript
 export interface FormulaEngine {
@@ -353,7 +353,7 @@ The adapter:
 8. constructs bound references from stable IDs and revisions;
 9. computes canonical value and snapshot digests;
 10. returns a frozen `FormulaResolverSnapshot`.
-The current Name Manager resolver adapter remains the implementation reference for this seam. Consolidating names, tables, and variables under Data does not change Formula’s dependency direction.
+The current Structured Data resolver adapter is the implementation reference for this seam. Consolidating names, tables, and variables under Data does not change Formula’s dependency direction.
 ## Change Operations
 Formula is pure and persistence-free. Parse, validate, dependency extraction, evaluate, explain, encode, and decode return values or diagnostics without mutating a Base or emitting a ChangeSet. Calling capabilities own source edits, accepted results, revisions, undo, redo, recomputation state, and caches.
 ## Endpoints

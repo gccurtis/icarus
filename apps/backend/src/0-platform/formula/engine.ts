@@ -7,6 +7,7 @@ import type { FormulaLimits } from "./limits.js";
 import type { FormulaValue } from "./value.js";
 import type { FormulaNode } from "./ast.js";
 import type { FormulaDiagnostic } from "./diagnostics.js";
+import { limitExceeded } from "./diagnostics.js";
 import type { FormulaResolverSnapshot } from "./resolver.js";
 import type { FormulaDependencyResult, ObservedDependency } from "./dependencies.js";
 import { lex } from "./lexer.js";
@@ -14,7 +15,7 @@ import { parse } from "./parser.js";
 import { bind } from "./binder.js";
 import { extractDependencies } from "./dependencies.js";
 import { evaluate, EVALUATOR_VERSION } from "./evaluator.js";
-import { toWire } from "./wire.js";
+import { formulaValueIdentityPayload } from "./value-identity.js";
 
 export type FormulaLanguageVersion = "formula/v1";
 
@@ -131,8 +132,24 @@ function digestSource(source: string): string {
 }
 
 function digestEvaluation(value: FormulaValue, dependencyDigest: string): string {
-  const payload = JSON.stringify(toWire(value)) + "|" + dependencyDigest;
+  const payload = JSON.stringify(formulaValueIdentityPayload(value)) + "|" + dependencyDigest;
   return createHash("sha256").update(payload).digest("hex").slice(0, 32);
+}
+
+function countValueCells(value: FormulaValue): number {
+  if (value.kind !== "list" && value.kind !== "record" && value.kind !== "table") {
+    return 0;
+  }
+  let count = 0;
+  for (const row of value.table.rows) {
+    count += row.length;
+    for (const cell of row) count += countValueCells(cell);
+  }
+  return count;
+}
+
+function wireSizeBytes(value: FormulaValue): number {
+  return Buffer.byteLength(JSON.stringify(formulaValueIdentityPayload(value)), "utf8");
 }
 
 class FormulaEngineImpl implements FormulaEngine {
@@ -156,7 +173,7 @@ class FormulaEngineImpl implements FormulaEngine {
       const durationMs = Math.round(performance.now() - start);
 
       if (!result.ok) {
-        this.logger.debug("formula.parse failed", { durationMs, source: request.source.slice(0, 200), diagnostics: result.diagnostics.length });
+        this.logger.debug("formula.parse failed", { durationMs, diagnostics: result.diagnostics.length });
         return failResult(result.diagnostics);
       }
 
@@ -240,10 +257,42 @@ class FormulaEngineImpl implements FormulaEngine {
         return failResult(output.diagnostics);
       }
 
+      const outputCells = countValueCells(output.value);
+      if (outputCells > limits.maxCells) {
+        const diagnostic = limitExceeded("maxCells", outputCells, limits.maxCells);
+        this.logger.debug("formula.evaluate failed", {
+          durationMs,
+          steps: output.steps,
+          diagnostics: 1,
+          limit: "maxCells",
+          actual: outputCells
+        });
+        return failResult([diagnostic]);
+      }
+
+      const outputBytes = wireSizeBytes(output.value);
+      if (outputBytes > limits.maxOutputBytes) {
+        const diagnostic = limitExceeded("maxOutputBytes", outputBytes, limits.maxOutputBytes);
+        this.logger.debug("formula.evaluate failed", {
+          durationMs,
+          steps: output.steps,
+          diagnostics: 1,
+          limit: "maxOutputBytes",
+          actual: outputBytes
+        });
+        return failResult([diagnostic]);
+      }
+
       const deps = extractDependencies(bindResult.root);
       const evalDigest = digestEvaluation(output.value, deps.dependencyDigest);
 
-      this.logger.debug("formula.evaluate ok", { durationMs, steps: output.steps, valueKind: output.value.kind });
+      this.logger.debug("formula.evaluate ok", {
+        durationMs,
+        steps: output.steps,
+        valueKind: output.value.kind,
+        outputCells,
+        outputBytes
+      });
 
       return okResult({
         value: output.value,

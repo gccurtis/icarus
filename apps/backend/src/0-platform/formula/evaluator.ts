@@ -6,7 +6,7 @@ import type { FormulaValue, FormulaFunction, LambdaFunction, FormulaTable } from
 import type { FormulaResolverSnapshot } from "./resolver.js";
 import type { FormulaDiagnostic } from "./diagnostics.js";
 import type { FormulaLimits } from "./limits.js";
-import type { ObservedDependency } from "./dependencies.js";
+import { extractDependencies, type ObservedDependency } from "./dependencies.js";
 import {
   NULL_VALUE, TRUE_VALUE, FALSE_VALUE,
   makeNumber, makeText, makeLogic, makeList, makeRecord, makeTable, EMPTY_TABLE,
@@ -24,6 +24,7 @@ import {
 import { callBuiltin, BUILTIN_IMPLEMENTATION_VERSION, isBuiltinName } from "./builtins.js";
 import { normalizeKey } from "./resolver.js";
 import { createHash } from "node:crypto";
+import { formulaValueDigest } from "./value-identity.js";
 
 export const EVALUATOR_VERSION = "formula/v1/evaluator@1";
 
@@ -313,7 +314,11 @@ function fnEqual(a: FormulaFunction, b: FormulaFunction): boolean {
 
 function evalCall(node: import("./ast.js").CallNode, ctx: EvalContext): EvalResult {
   // Special case: IF is lazy
-  if (node.callee.type === "name" && node.callee.name.toUpperCase() === "IF") {
+  if (
+    node.callee.type === "name" &&
+    !ctx.env.has(normalizeKey(node.callee.name)) &&
+    node.callee.name.toUpperCase() === "IF"
+  ) {
     if (node.args.length !== 3) return fail({ code: "wrong_arity", message: "IF requires 3 arguments", span: node.span });
     const condR = evalNode(node.args[0], ctx);
     if (condR.diagnostics.length > 0) return condR;
@@ -324,7 +329,7 @@ function evalCall(node: import("./ast.js").CallNode, ctx: EvalContext): EvalResu
   // Builtin by name — check before evaluating the callee to avoid unknownIdentifier
   if (node.callee.type === "name") {
     const nameUpper = node.callee.name.toUpperCase();
-    if (isBuiltinName(nameUpper)) {
+    if (!ctx.env.has(normalizeKey(node.callee.name)) && isBuiltinName(nameUpper)) {
       const args: FormulaValue[] = [];
       for (const arg of node.args) {
         const r = evalNode(arg, ctx);
@@ -402,13 +407,43 @@ function applyFunction(
 function evalLambda(node: import("./ast.js").LambdaNode, ctx: EvalContext): EvalResult {
   // Capture current env for lexical scoping
   const captured: import("./value.js").CapturedLexicalBinding[] = [];
+  const parameterNames = new Set(node.parameters.map(normalizeKey));
   for (const [name, value] of ctx.env) {
-    if (!node.parameters.map(p => normalizeKey(p)).includes(name)) {
+    if (!parameterNames.has(name)) {
       captured.push({ name, value });
     }
   }
+  captured.sort((left, right) => {
+    const leftName = normalizeKey(left.name);
+    const rightName = normalizeKey(right.name);
+    return leftName < rightName ? -1 : leftName > rightName ? 1 : 0;
+  });
+  const capturedIdentity = captured.map(binding => ({
+    normalizedName: normalizeKey(binding.name),
+    reference: binding.reference
+      ? {
+          bindingId: binding.reference.bindingId,
+          ownerRevision: binding.reference.ownerRevision,
+          valueDigest: binding.reference.valueDigest
+        }
+      : null,
+    valueDigest: formulaValueDigest(binding.value)
+  }));
+  const boundIdentity = extractDependencies(node.body).bound
+    .map(reference => ({
+      bindingId: reference.bindingId,
+      ownerRevision: reference.ownerRevision,
+      valueDigest: reference.valueDigest
+    }))
+    .sort((left, right) =>
+      left.bindingId < right.bindingId ? -1 : left.bindingId > right.bindingId ? 1 : 0
+    );
   const identityDigest = createHash("sha256")
-    .update(node.normalizedSource || node.id)
+    .update(JSON.stringify({
+      normalizedSource: node.normalizedSource || node.id,
+      capturedBindings: capturedIdentity,
+      boundBindings: boundIdentity
+    }))
     .digest("hex")
     .slice(0, 32);
   const fn: LambdaFunction = {

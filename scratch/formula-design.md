@@ -4,13 +4,13 @@
 
 Formula is a deterministic expression capability. It owns grammar, AST,
 values, name recognition, binding, evaluation, and diagnostics. It owns no
-project state and has no migrations. Name state remains owned by Name Manager,
-which Formula receives as a construction dependency.
+project state and has no migrations. Named project state remains owned by
+Structured Data, whose wiring adapter constructs immutable resolver snapshots.
 
 A Formula evaluation is completely determined by:
 
 ```
-language version + normalized expression + frozen Name Manager snapshot + limits
+language version + normalized expression + frozen resolver snapshot + limits
   = typed value | diagnostics
 ```
 
@@ -42,14 +42,13 @@ apps/backend/src/
       diagnostics.ts    # FormulaDiagnostic codes + constructors
       wire.ts           # FormulaWireValue encoding/decoding
       engine.ts         # pure parse/bind/evaluate implementation
-      formula.ts        # Formula — public interface, Name Manager orchestration
       index.ts          # barrel
 ```
 
 Formula is a **platform capability**—it lives in `0-platform/` alongside
-Knowledge and Intelligence. `createFormula` receives Name Manager,
-configuration, and Logger, but not Intelligence. It has no HTTP endpoints;
-callers receive a `Formula` instance and call its methods directly.
+Knowledge and Intelligence. `createFormula` receives configuration and Logger,
+but not Structured Data or Intelligence. Callers supply a frozen resolver
+snapshot produced by the Structured Data wiring adapter.
 
 ---
 
@@ -180,14 +179,13 @@ Resolution order inside an expression:
 
 1. Lambda parameters / captured lexical bindings
 2. Current set-operation row fields (field-first)
-3. Resolver snapshot
-4. Built-in names in call position
+3. Built-in names in call position
+4. Resolver snapshot
 
-Formula recognizes external names after parsing. At the start of a validate,
-dependency, evaluate, or explain call, Formula asks its injected Name Manager
-for the applicable immutable snapshot. Formula evaluates referenced name
-bodies, detects cycles, and constructs its internal resolver snapshot. The pure
-engine then receives that frozen value and performs no I/O.
+Formula recognizes external names after parsing. Before a validate, dependency,
+evaluate, or explain call, the Structured Data wiring adapter freezes current
+declarations, evaluates their dependency graph, and constructs an immutable
+resolver snapshot. The pure engine receives that snapshot and performs no I/O.
 
 ```typescript
 interface FormulaResolverSnapshot {
@@ -199,7 +197,7 @@ interface FormulaResolverSnapshot {
 }
 ```
 
-Bound `NameNode` instances carry a stable `BoundFormulaReference` so renames never silently retarget an expression.
+Bound `NameNode` instances carry a stable `BoundFormulaReference` so renames never silently retarget an expression. When the referenced owner revision or value digest changes, binding returns a `stale_binding` diagnostic. It never falls back to a new declaration that has claimed the old display name.
 
 ---
 
@@ -224,24 +222,23 @@ interface ParseFormulaRequest {
   limits?: Partial<FormulaLimits>;
 }
 
-interface ScopedFormulaRequest {
+interface ResolvedFormulaRequest {
   expression: FormulaExpression;
-  scopeId: string;
+  resolver: FormulaResolverSnapshot;
   limits?: Partial<FormulaLimits>;
 }
 
-type ValidateFormulaRequest = ScopedFormulaRequest;
-type FormulaDependencyRequest = ScopedFormulaRequest;
-type EvaluateFormulaRequest = ScopedFormulaRequest;
-type ExplainFormulaRequest = ScopedFormulaRequest;
+type ValidateFormulaRequest = ResolvedFormulaRequest;
+type FormulaDependencyRequest = ResolvedFormulaRequest;
+type EvaluateFormulaRequest = ResolvedFormulaRequest;
+type ExplainFormulaRequest = ResolvedFormulaRequest;
 ```
 
-Requests that can recognize names carry the applicable `scopeId`; they do not
-accept a caller-built resolver snapshot.
+Requests that can recognize names carry the immutable resolver snapshot built
+at the wiring boundary.
 
-`createFormula(nameManager: NameManager, config: FormulaConfig, logger: Logger):
-Formula`—Name Manager supplies frozen name state. Logger is used for timing,
-limit violations, unexpected branches, and internal errors.
+`createFormula(config: FormulaConfig, logger: Logger): Formula`—Logger is used
+for timing, limit violations, unexpected branches, and internal errors.
 
 ---
 
@@ -336,7 +333,6 @@ Settlement is compare-and-swap on owner revision + source revision + dependency 
 8. `diagnostics.ts` — diagnostic constructors
 9. `wire.ts` — JSON encoding / decoding
 10. `engine.ts` — pure engine assembly
-11. `formula.ts` — public `Formula` assembly with Name Manager and Logger
 
 ---
 
@@ -354,6 +350,6 @@ Settlement is compare-and-swap on owner revision + source revision + dependency 
 - Cardinality `!`/`?` applied to a record always returns that record unchanged
 - Bound names are stable through display-name renames
 - All limit values come from config — the engine has no hardcoded defaults
-- Formula receives Name Manager and owns name recognition; callers never build
-  resolver snapshots
+- Formula receives immutable resolver snapshots; the Structured Data wiring
+  adapter owns snapshot construction and dependency resolution
 - Formula is not exposed via HTTP; callers use `Formula` in-process

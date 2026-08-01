@@ -28,7 +28,32 @@ function bindNode(
       const key = normalizeKey(node.name);
       // 1. Lambda parameter
       if (lambdaEnv.has(key)) return node;
-      // 2. Resolver snapshot
+
+      // 2. Formula built-ins are language names and cannot be shadowed by
+      // project data. Structured Data rejects them at ingress as well, while
+      // this ordering also protects snapshots created from older databases.
+      if (isBuiltinName(node.name)) return node;
+
+      // 3. A previously-bound node is identity-bound, not name-bound. Looking
+      // it up by display name here would allow a rename followed by a new
+      // declaration under the old name to silently retarget the expression.
+      if (node.binding) {
+        const binding = [...snapshot.bindings.values()].find(
+          candidate => candidate.reference.bindingId === node.binding!.bindingId
+        );
+        if (
+          !binding ||
+          binding.ownerRevision !== node.binding.ownerRevision ||
+          binding.valueDigest !== node.binding.valueDigest
+        ) {
+          diagnostics.push(staleBinding(node.binding.bindingId, node.span));
+          return node;
+        }
+        boundIds.push(node.binding.bindingId);
+        return node;
+      }
+
+      // 4. Resolver snapshot
       const binding = snapshot.bindings.get(key);
       if (binding) {
         const ref: BoundFormulaReference = {
@@ -40,8 +65,6 @@ function bindNode(
         boundIds.push(binding.reference.bindingId);
         return { ...node, binding: ref } satisfies NameNode;
       }
-      // 3. Built-in names are resolved at evaluation time
-      if (isBuiltinName(node.name)) return node;
       // Unknown identifier
       diagnostics.push(unknownIdentifier(node.name, node.span));
       return node;

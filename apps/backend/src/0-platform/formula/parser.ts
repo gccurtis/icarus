@@ -129,7 +129,7 @@ function parseLambdaOrLogicalOr(ctx: ParseContext): FormulaNode {
       span: span(kw, endSpan),
       parameters: params,
       body: bodyExpr,
-      normalizedSource: ""
+      normalizedSource: ctx.source.slice(kw.span.startByte, endSpan.span.endByte)
     };
   }
   return parseLogicalOr(ctx);

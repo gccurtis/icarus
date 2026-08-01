@@ -3,6 +3,8 @@
 import type { FormulaNode, FormulaConditionNode, BoundFormulaReference } from "./ast.js";
 import type { SourceSpan } from "./tokens.js";
 import { createHash } from "node:crypto";
+import { isBuiltinName } from "./builtins.js";
+import { normalizeKey } from "./resolver.js";
 
 export interface SymbolicDependency {
   readonly name: string;
@@ -28,45 +30,70 @@ export interface FormulaDependencyResult {
   readonly dependencyDigest: string;
 }
 
-function collectSymbolic(node: FormulaNode, results: SymbolicDependency[]): void {
+type LexicalEnvironment = ReadonlySet<string>;
+
+function collectSymbolic(
+  node: FormulaNode,
+  results: SymbolicDependency[],
+  lexicalEnvironment: LexicalEnvironment
+): void {
   switch (node.type) {
     case "name":
-      if (!node.binding) results.push({ name: node.name, span: node.span });
-      return;
-    case "unary": collectSymbolic(node.operand, results); return;
-    case "binary":
-      collectSymbolic(node.left, results);
-      collectSymbolic(node.right, results);
-      return;
-    case "call":
-      collectSymbolic(node.callee, results);
-      node.args.forEach(a => collectSymbolic(a, results));
-      return;
-    case "lambda": collectSymbolic(node.body, results); return;
-    case "field-access": collectSymbolic(node.target, results); return;
-    case "index":
-      collectSymbolic(node.target, results);
-      collectSymbolic(node.index, results);
-      return;
-    case "slice": collectSymbolic(node.target, results); return;
-    case "set-operation":
-      collectSymbolic(node.target, results);
-      if (node.body.kind === "condition-query") {
-        collectSymbolicFromCondition(node.body.condition, results);
+      if (!node.binding && !lexicalEnvironment.has(normalizeKey(node.name))) {
+        results.push({ name: node.name, span: node.span });
       }
       return;
-    case "cardinality-promotion": collectSymbolic(node.target, results); return;
-    case "list-literal": node.elements.forEach(e => collectSymbolic(e, results)); return;
-    case "record-literal": node.fields.forEach(f => collectSymbolic(f.value, results)); return;
+    case "unary": collectSymbolic(node.operand, results, lexicalEnvironment); return;
+    case "binary":
+      collectSymbolic(node.left, results, lexicalEnvironment);
+      collectSymbolic(node.right, results, lexicalEnvironment);
+      return;
+    case "call": {
+      const builtinCallee =
+        node.callee.type === "name" &&
+        !node.callee.binding &&
+        !lexicalEnvironment.has(normalizeKey(node.callee.name)) &&
+        isBuiltinName(node.callee.name);
+      if (!builtinCallee) {
+        collectSymbolic(node.callee, results, lexicalEnvironment);
+      }
+      node.args.forEach(a => collectSymbolic(a, results, lexicalEnvironment));
+      return;
+    }
+    case "lambda": {
+      const lambdaEnvironment = new Set(lexicalEnvironment);
+      node.parameters.forEach(parameter => lambdaEnvironment.add(normalizeKey(parameter)));
+      collectSymbolic(node.body, results, lambdaEnvironment);
+      return;
+    }
+    case "field-access": collectSymbolic(node.target, results, lexicalEnvironment); return;
+    case "index":
+      collectSymbolic(node.target, results, lexicalEnvironment);
+      collectSymbolic(node.index, results, lexicalEnvironment);
+      return;
+    case "slice": collectSymbolic(node.target, results, lexicalEnvironment); return;
+    case "set-operation":
+      collectSymbolic(node.target, results, lexicalEnvironment);
+      if (node.body.kind === "condition-query") {
+        collectSymbolicFromCondition(node.body.condition, results, lexicalEnvironment);
+      }
+      return;
+    case "cardinality-promotion": collectSymbolic(node.target, results, lexicalEnvironment); return;
+    case "list-literal": node.elements.forEach(e => collectSymbolic(e, results, lexicalEnvironment)); return;
+    case "record-literal": node.fields.forEach(f => collectSymbolic(f.value, results, lexicalEnvironment)); return;
     default: return;
   }
 }
 
-function collectSymbolicFromCondition(cond: FormulaConditionNode, results: SymbolicDependency[]): void {
+function collectSymbolicFromCondition(
+  cond: FormulaConditionNode,
+  results: SymbolicDependency[],
+  lexicalEnvironment: LexicalEnvironment
+): void {
   switch (cond.type) {
-    case "field-condition": collectSymbolic(cond.value, results); return;
-    case "condition-not": collectSymbolicFromCondition(cond.condition, results); return;
-    case "condition-composition": cond.conditions.forEach(c => collectSymbolicFromCondition(c, results)); return;
+    case "field-condition": collectSymbolic(cond.value, results, lexicalEnvironment); return;
+    case "condition-not": collectSymbolicFromCondition(cond.condition, results, lexicalEnvironment); return;
+    case "condition-composition": cond.conditions.forEach(c => collectSymbolicFromCondition(c, results, lexicalEnvironment)); return;
   }
 }
 
@@ -121,7 +148,7 @@ function digestDependencies(bound: BoundFormulaReference[]): string {
 export function extractDependencies(root: FormulaNode): FormulaDependencyResult {
   const symbolic: SymbolicDependency[] = [];
   const bound: BoundFormulaReference[] = [];
-  collectSymbolic(root, symbolic);
+  collectSymbolic(root, symbolic, new Set());
   collectBound(root, bound);
   // Deduplicate bound by bindingId
   const seen = new Set<string>();

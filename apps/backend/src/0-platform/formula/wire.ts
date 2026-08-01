@@ -15,6 +15,14 @@ export type FormulaWireValue =
   | { readonly kind: "logic"; readonly value: boolean }
   | { readonly kind: "list" | "record" | "table"; readonly fields: readonly string[]; readonly rows: FormulaWireValue[][] };
 
+export function isWireSerializable(v: FormulaValue): boolean {
+  if (v.kind === "function") return false;
+  if (v.kind === "list" || v.kind === "record" || v.kind === "table") {
+    return v.table.rows.every(row => row.every(isWireSerializable));
+  }
+  return true;
+}
+
 export function toWire(v: FormulaValue): FormulaWireValue {
   switch (v.kind) {
     case "null": return { kind: "null" };
@@ -33,8 +41,7 @@ export function toWire(v: FormulaValue): FormulaWireValue {
         rows: v.table.rows.map(row => row.map(cell => toWire(cell)))
       };
     case "function":
-      // Functions are not representable as wire values — return null as fallback
-      return { kind: "null" };
+      throw new TypeError("Formula function values are not wire-serializable");
   }
 }
 
