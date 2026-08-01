@@ -4,13 +4,22 @@
 import { randomUUID, createHash } from "node:crypto";
 import type { Logger } from "#platform/observability/logger.js";
 import type { Knowledge } from "#platform/knowledge/knowledge.js";
-import type { Region, ContextEntry } from "#platform/knowledge/types.js";
+import type {
+  Region,
+  ContextEntry,
+  KnowledgeSourceMutation,
+  KnowledgeResourceDescriptor,
+  KnowledgeScopeManifest
+} from "#platform/knowledge/types.js";
 import type { Intelligence } from "#platform/intelligence/intelligence.js";
 import type { ToolBinding } from "#platform/intelligence/tools.js";
 import { ToolSet } from "#platform/intelligence/tools.js";
-import type { Message } from "#platform/intelligence/types.js";
+import type { Message, Usage } from "#platform/intelligence/types.js";
 import type { DerivedOutputStore } from "./store.js";
 import {
+  DerivedOutputIdempotencyConflictError,
+  DerivedOutputDefinitionUpdateIdempotencyConflictError,
+  DerivedOutputRefreshIdempotencyConflictError,
   DerivedOutputNotFoundError,
   StaleDefinitionRevisionError,
   type DerivedOutput,
@@ -19,8 +28,11 @@ import {
   type DerivedEvidence,
   type DerivedEvidenceSpan,
   type DeclareDerivedOutputRequest,
+  type DeclareDerivedOutputOptions,
   type UpdateDefinitionRequest,
+  type UpdateDerivedOutputDefinitionOptions,
   type DerivedRefreshResult,
+  type RefreshDerivedOutputOptions,
   type RefreshAttempt
 } from "./domain/model.js";
 
@@ -34,13 +46,18 @@ export interface DerivedOutputConfig {
 // ─── Resource Reader Port ───────────────────────────────────────────────────
 
 export interface ResourceReader {
+  describeSource(sourceId: string): Promise<ResourceDescriptor | null>;
+  list(scope: KnowledgeScopeManifest): Promise<readonly ResourceDescriptor[]>;
   read(
     resourceId: string,
     resourceKind: string,
     startLine: number,
-    endLine: number
+    endLine: number,
+    scope: KnowledgeScopeManifest
   ): Promise<ResourceContent | null>;
 }
+
+export type ResourceDescriptor = KnowledgeResourceDescriptor;
 
 export interface ResourceContent {
   readonly resourceId: string;
@@ -53,7 +70,10 @@ export interface ResourceContent {
 // ─── Service Interface ─────────────────────────────────────────────────────
 
 export interface DerivedOutputService {
-  declare(request: DeclareDerivedOutputRequest): Promise<DerivedOutput>;
+  declare(
+    request: DeclareDerivedOutputRequest,
+    options?: DeclareDerivedOutputOptions
+  ): Promise<DerivedOutput>;
   get(id: string): Promise<DerivedOutput | null>;
   getRevision(
     id: string,
@@ -61,9 +81,14 @@ export interface DerivedOutputService {
   ): Promise<DerivedOutputRevision | null>;
   updateDefinition(
     id: string,
-    request: UpdateDefinitionRequest
+    request: UpdateDefinitionRequest,
+    options?: UpdateDerivedOutputDefinitionOptions
   ): Promise<DerivedOutput>;
-  refresh(id: string): Promise<DerivedRefreshResult>;
+  refresh(
+    id: string,
+    options?: RefreshDerivedOutputOptions
+  ): Promise<DerivedRefreshResult>;
+  recordKnowledgeSourceMutation(mutation: KnowledgeSourceMutation): void;
   delete(id: string): Promise<void>;
 }
 
@@ -76,7 +101,7 @@ The retrieval system searches a knowledge lattice — a hierarchical clustering
 of embedded text windows from all admitted project sources. Each source is
 chunked into overlapping windows, embedded, and clustered by semantic
 similarity. Retrieval finds the windows most similar to your query and returns
-verbatim text regions with exact byte offsets.
+verbatim text regions with exact UTF-16 character offsets.
 
 Write concise, keyword-rich queries. Cover distinct facts or sub-questions
 rather than writing near-duplicate queries. A good query is specific enough to
@@ -95,20 +120,22 @@ Your answer must be supported entirely by the grounding — never invent a fact
 or use outside knowledge.
 
 GROUNDING REGIONS are verbatim text spans retrieved from the project knowledge
-lattice. Each region includes its source identity, exact byte offsets, and
+lattice. Each region includes its resource identity, exact UTF-16 character offsets, and
 text. These are your primary factual input.
 
-You have three tools:
+You have four tools:
 - retrieve(query): Search the knowledge lattice for additional text. The
   lattice contains embedded windows from all admitted sources (documents,
   uploaded files, connected external files, web captures). Returns verbatim
-  text regions ranked by relevance with source identity and byte offsets.
+  text regions ranked by relevance with source identity and character offsets.
   Use this when the initial grounding is missing a fact you need, or when a
   grounding region suggests a follow-up you should verify.
 - read(resourceId, resourceKind, startLine, endLine): Read a range of lines
   from a specific resource. Lines are 1-based. Use this when you need the
   full text of a section rather than a retrieval snippet.
-- list_evidence(): Return the evidence you have accumulated so far. Use this
+- list_resources(): List the immutable resources admitted by this refresh's
+  resolved Context. Use its exact resourceId and resourceKind values for read.
+- list_evidence(): Return the trusted evidence candidates available so far. Use this
   to review what you already have before doing more retrieval or reading.
 
 When a PRIOR OUTPUT is present, it shows the answer from the last refresh.
@@ -129,7 +156,7 @@ EVIDENCE RULES:
 - Include every resource you retrieved from or read that meaningfully informed
   the answer, even if indirectly.
 - Do not include resources you looked at but did not use.
-- For knowledge lattice spans: record the byte range exactly as returned.
+- For knowledge lattice spans: record the character range exactly as returned.
 - For read calls: record the line range you requested.
 - relevanceRank: 1 is most informative. Ties are allowed; the array is ordered.
 - contribution: One sentence. "Provided the Q3 2025 revenue figure of $1.3M."
@@ -201,31 +228,33 @@ function createSynthesisSchema() {
               description: "The resource revision at read time, if known. Use null when unknown."
             },
             sourceId: {
-              type: ["string", "null"],
+              type: "string",
               description:
-                "The Knowledge source ID when this evidence came from lattice " +
-                "retrieval. Use null when not from lattice retrieval."
+                "The exact Knowledge source ID returned with the trusted evidence candidate."
             },
             span: {
-              type: "object",
-              additionalProperties: false,
-              required: ["kind", "start", "end", "startLine", "endLine"],
-              properties: {
-                kind: {
-                  type: "string",
-                  enum: ["bytes", "lines"],
-                  description:
-                    '"bytes" for lattice retrieval spans, ' +
-                    '"lines" for read-tool spans.'
+              anyOf: [
+                {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["kind", "start", "end"],
+                  properties: {
+                    kind: { type: "string", enum: ["characters"] },
+                    start: { type: "integer", minimum: 0 },
+                    end: { type: "integer", minimum: 0 }
+                  }
                 },
-                start: { type: "integer", minimum: 0 },
-                end: { type: "integer", minimum: 0 },
-                startLine: { type: "integer", minimum: 1 },
-                endLine: { type: "integer", minimum: 1 }
-              },
-              description:
-                "For bytes kind: set start/end, and set startLine=0/endLine=0." +
-                "For lines kind: set startLine/endLine, and set start=0/end=0."
+                {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["kind", "startLine", "endLine"],
+                  properties: {
+                    kind: { type: "string", enum: ["lines"] },
+                    startLine: { type: "integer", minimum: 1 },
+                    endLine: { type: "integer", minimum: 1 }
+                  }
+                }
+              ]
             },
             relevanceRank: {
               type: "integer",
@@ -251,75 +280,294 @@ function now(): string {
   return new Date().toISOString();
 }
 
-function regionToGroundingText(regions: Region[]): string {
+function declarationRequestDigest(request: DeclareDerivedOutputRequest): string {
+  const normalized = {
+    prompt: request.prompt,
+    contextEntries: request.contextEntries ?? [],
+    stabilisationText: request.stabilisationText ?? ""
+  };
+  return createHash("sha256")
+    .update(JSON.stringify(normalized), "utf8")
+    .digest("hex");
+}
+
+function refreshRequestDigest(outputId: string): string {
+  return createHash("sha256")
+    .update(JSON.stringify({ outputId }), "utf8")
+    .digest("hex");
+}
+
+function definitionUpdateRequestDigest(
+  outputId: string,
+  request: UpdateDefinitionRequest
+): string {
+  const normalized = {
+    outputId,
+    prompt: request.prompt,
+    contextEntries: request.contextEntries,
+    stabilisationText: request.stabilisationText,
+    expectedDefinitionRevision: request.expectedDefinitionRevision
+  };
+  return createHash("sha256")
+    .update(JSON.stringify(normalized), "utf8")
+    .digest("hex");
+}
+
+function validateIdempotencyKey(key: string): void {
+  if (key.trim().length === 0) {
+    throw new Error("Derived output idempotency key must not be blank");
+  }
+  if (Buffer.byteLength(key, "utf8") > 512) {
+    throw new Error("Derived output idempotency key exceeds 512 bytes");
+  }
+}
+
+interface EvidenceCandidate {
+  readonly resourceId: string;
+  readonly resourceKind: string;
+  readonly resourceRevision?: number;
+  readonly sourceId?: string;
+  readonly span: DerivedEvidenceSpan;
+}
+
+function spanKey(span: DerivedEvidenceSpan): string {
+  return span.kind === "characters"
+    ? `characters:${span.start}:${span.end}`
+    : `lines:${span.startLine}:${span.endLine}`;
+}
+
+function candidateKey(candidate: EvidenceCandidate): string {
+  return `${candidate.resourceKind}:${candidate.resourceId}:${spanKey(candidate.span)}`;
+}
+
+function addCandidate(
+  candidates: EvidenceCandidate[],
+  candidate: EvidenceCandidate
+): void {
+  if (!candidates.some((current) => candidateKey(current) === candidateKey(candidate))) {
+    candidates.push(candidate);
+  }
+}
+
+function regionToGroundingText(
+  regions: Region[],
+  candidates: EvidenceCandidate[]
+): string {
   return regions
-    .map(
-      (r) =>
-        `[sourceId: ${r.sourceId}, label: ${r.label}, bytes: ${r.start}-${r.end}]\n${r.text}`
-    )
+    .map((region) => {
+      const candidate = candidates.find(
+        (current) =>
+          current.sourceId === region.sourceId &&
+          current.span.kind === "characters" &&
+          current.span.start === region.start &&
+          current.span.end === region.end
+      );
+      const identity = candidate
+        ? `resourceId: ${candidate.resourceId}, resourceKind: ${candidate.resourceKind}, `
+        : "";
+      return `[${identity}sourceId: ${region.sourceId}, characters: ${region.start}-${region.end}]\n${region.text}`;
+    })
     .join("\n\n");
 }
 
-function validateQueries(queries: string[], max: number): string[] {
+function validateQueries(queries: unknown, max: number): string[] {
+  if (!Array.isArray(queries) || queries.some((query) => typeof query !== "string")) {
+    throw new Error("Invalid retrieval plan queries");
+  }
   const trimmed = queries
     .map((q) => q.trim())
     .filter((q) => q.length > 0);
   const deduped = [...new Set(trimmed)];
-  return deduped.slice(0, max);
+  const selected = deduped.slice(0, max);
+  if (selected.length === 0) throw new Error("Retrieval plan contained no usable queries");
+  return selected;
 }
 
-function validateEvidence(raw: unknown): DerivedEvidence[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .filter(
-      (e): e is Record<string, unknown> =>
-        typeof e === "object" && e !== null
-    )
-    .filter(
-      (e) =>
-        typeof e.resourceId === "string" &&
-        e.resourceId.length > 0 &&
-        typeof e.resourceKind === "string" &&
-        e.resourceKind.length > 0 &&
-        typeof e.span === "object" &&
-        e.span !== null &&
-        typeof (e.span as Record<string, unknown>).kind === "string" &&
-        typeof e.relevanceRank === "number" &&
-        e.relevanceRank >= 1 &&
-        typeof e.contribution === "string"
-    )
-    .map((e) => {
-      const span = e.span as Record<string, unknown>;
-      let evidenceSpan: DerivedEvidenceSpan;
-      if (span.kind === "bytes") {
-        evidenceSpan = {
-          kind: "bytes",
-          start: Number(span.start ?? 0),
-          end: Number(span.end ?? 0)
-        };
-      } else {
-        evidenceSpan = {
-          kind: "lines",
-          startLine: Number(span.startLine ?? 1),
-          endLine: Number(span.endLine ?? 1)
-        };
-      }
-      return {
-        resourceId: e.resourceId as string,
-        resourceKind: e.resourceKind as string,
-        resourceRevision:
-          typeof e.resourceRevision === "number"
-            ? (e.resourceRevision as number)
-            : undefined,
-        span: evidenceSpan,
-        sourceId:
-          typeof e.sourceId === "string"
-            ? (e.sourceId as string)
-            : undefined,
-        relevanceRank: e.relevanceRank as number,
-        contribution: e.contribution as string
-      } satisfies DerivedEvidence;
+function candidateForRegion(
+  region: Region,
+  scope: KnowledgeScopeManifest
+): EvidenceCandidate {
+  const resource = scope.resources.find(
+    (candidate) => candidate.sourceId === region.sourceId
+  );
+  if (!resource) {
+    throw new Error("Knowledge returned a source outside the frozen scope");
+  }
+  return {
+    ...resource,
+    span: {
+      kind: "characters",
+      start: region.start,
+      end: region.end
+    }
+  };
+}
+
+function parseEvidenceSpan(raw: unknown): DerivedEvidenceSpan {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("Invalid evidence span");
+  }
+  const span = raw as Record<string, unknown>;
+  if (span.kind === "characters") {
+    if (
+      !Number.isSafeInteger(span.start) ||
+      !Number.isSafeInteger(span.end) ||
+      (span.start as number) < 0 ||
+      (span.end as number) <= (span.start as number)
+    ) {
+      throw new Error("Invalid character evidence span");
+    }
+    return {
+      kind: "characters",
+      start: span.start as number,
+      end: span.end as number
+    };
+  }
+  if (span.kind === "lines") {
+    if (
+      !Number.isSafeInteger(span.startLine) ||
+      !Number.isSafeInteger(span.endLine) ||
+      (span.startLine as number) < 1 ||
+      (span.endLine as number) < (span.startLine as number)
+    ) {
+      throw new Error("Invalid line evidence span");
+    }
+    return {
+      kind: "lines",
+      startLine: span.startLine as number,
+      endLine: span.endLine as number
+    };
+  }
+  throw new Error("Unknown evidence span kind");
+}
+
+function validateEvidence(
+  raw: unknown,
+  candidates: EvidenceCandidate[]
+): DerivedEvidence[] {
+  if (!Array.isArray(raw)) throw new Error("Evidence must be an array");
+
+  const validated: DerivedEvidence[] = [];
+  const usedCandidates = new Set<string>();
+  let previousRank = 0;
+
+  for (const item of raw) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error("Invalid evidence item");
+    }
+    const evidence = item as Record<string, unknown>;
+    if (
+      typeof evidence.resourceId !== "string" ||
+      evidence.resourceId.length === 0 ||
+      typeof evidence.resourceKind !== "string" ||
+      evidence.resourceKind.length === 0 ||
+      !Number.isSafeInteger(evidence.relevanceRank) ||
+      (evidence.relevanceRank as number) < 1 ||
+      typeof evidence.contribution !== "string" ||
+      evidence.contribution.trim().length === 0
+    ) {
+      throw new Error("Invalid evidence fields");
+    }
+    if (
+      evidence.resourceRevision !== null &&
+      evidence.resourceRevision !== undefined &&
+      (!Number.isSafeInteger(evidence.resourceRevision) ||
+        (evidence.resourceRevision as number) < 1)
+    ) {
+      throw new Error("Invalid evidence resource revision");
+    }
+    if (
+      evidence.sourceId !== null &&
+      evidence.sourceId !== undefined &&
+      (typeof evidence.sourceId !== "string" || evidence.sourceId.length === 0)
+    ) {
+      throw new Error("Invalid evidence source ID");
+    }
+
+    const span = parseEvidenceSpan(evidence.span);
+    const requested: EvidenceCandidate = {
+      resourceId: evidence.resourceId,
+      resourceKind: evidence.resourceKind,
+      span
+    };
+    const key = candidateKey(requested);
+    const candidate = candidates.find((current) => candidateKey(current) === key);
+    if (!candidate) throw new Error("Evidence did not originate from grounding or a tool result");
+    if (usedCandidates.has(key)) throw new Error("Duplicate evidence item");
+    usedCandidates.add(key);
+
+    const suppliedRevision = evidence.resourceRevision ?? undefined;
+    if (suppliedRevision !== candidate.resourceRevision) {
+      throw new Error("Evidence revision did not match the trusted candidate");
+    }
+    if (evidence.sourceId !== candidate.sourceId) {
+      throw new Error("Evidence source ID did not match the trusted candidate");
+    }
+    const rank = evidence.relevanceRank as number;
+    if (rank < previousRank) throw new Error("Evidence must be ordered by relevance rank");
+    previousRank = rank;
+
+    validated.push({
+      resourceId: candidate.resourceId,
+      resourceKind: candidate.resourceKind,
+      resourceRevision: candidate.resourceRevision,
+      span: candidate.span,
+      sourceId: candidate.sourceId,
+      relevanceRank: rank,
+      contribution: evidence.contribution.trim()
     });
+  }
+
+  return validated;
+}
+
+function validateSynthesis(
+  raw: unknown,
+  candidates: EvidenceCandidate[]
+): {
+  status: DerivedOutputStatus;
+  content: string;
+  evidence: DerivedEvidence[];
+} {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("Invalid synthesis result");
+  }
+  const result = raw as Record<string, unknown>;
+  if (
+    result.status !== "ok" &&
+    result.status !== "insufficient" &&
+    result.status !== "contradiction"
+  ) {
+    throw new Error("Invalid synthesis status");
+  }
+  if (typeof result.text !== "string" || result.text.trim().length === 0) {
+    throw new Error("Synthesis text must be non-empty");
+  }
+  const evidence = validateEvidence(result.evidence, candidates);
+  if (result.status === "ok" && evidence.length === 0) {
+    throw new Error("A successful synthesis must cite trusted evidence");
+  }
+  return { status: result.status, content: result.text, evidence };
+}
+
+const zeroUsage = (): Usage => ({
+  promptTokens: 0,
+  completionTokens: 0,
+  totalTokens: 0,
+  reasoningTokens: 0
+});
+
+function addUsage(left: Usage, right: Usage): Usage {
+  return {
+    promptTokens: left.promptTokens + right.promptTokens,
+    completionTokens: left.completionTokens + right.completionTokens,
+    totalTokens: left.totalTokens + right.totalTokens,
+    reasoningTokens: left.reasoningTokens + right.reasoningTokens,
+    costUsd:
+      left.costUsd !== undefined || right.costUsd !== undefined
+        ? (left.costUsd ?? 0) + (right.costUsd ?? 0)
+        : undefined
+  };
 }
 
 // ─── Implementation ─────────────────────────────────────────────────────────
@@ -337,7 +585,8 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
   // ── Public API ─────────────────────────────────────────────────────────
 
   async declare(
-    request: DeclareDerivedOutputRequest
+    request: DeclareDerivedOutputRequest,
+    options?: DeclareDerivedOutputOptions
   ): Promise<DerivedOutput> {
     const start = performance.now();
     const id = randomUUID().replace(/-/g, "").slice(0, 32);
@@ -361,18 +610,38 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
       updatedAt: ts
     };
 
-    this.store.insertOutput(output);
+    let declared = output;
+    let created = true;
+    if (options) {
+      validateIdempotencyKey(options.idempotencyKey);
+      const requestDigest = declarationRequestDigest(request);
+      const claim = this.store.claimDeclaration(
+        output,
+        options.idempotencyKey,
+        requestDigest
+      );
+      if (claim.requestDigest !== requestDigest) {
+        throw new DerivedOutputIdempotencyConflictError(
+          options.idempotencyKey
+        );
+      }
+      declared = claim.output;
+      created = claim.created;
+    } else {
+      this.store.insertOutput(output);
+    }
 
     const durationMs = Math.round(performance.now() - start);
     this.logger.info("derived-outputs.declare", {
-      id,
+      id: declared.id,
+      created,
       promptLength: request.prompt.length,
       durationMs
     });
 
     // First refresh is triggered by the caller (endpoint) — or we run it
     // synchronously here. For now the endpoint will call refresh separately.
-    return output;
+    return declared;
   }
 
   async get(id: string): Promise<DerivedOutput | null> {
@@ -392,70 +661,115 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
 
   async updateDefinition(
     id: string,
-    request: UpdateDefinitionRequest
+    request: UpdateDefinitionRequest,
+    options?: UpdateDerivedOutputDefinitionOptions
   ): Promise<DerivedOutput> {
     const start = performance.now();
-    const output = this.store.getOutput(id);
-    if (!output) throw new DerivedOutputNotFoundError(id);
-
-    if (output.definition.definitionRevision !== request.expectedDefinitionRevision) {
+    const ts = now();
+    if (options) {
+      validateIdempotencyKey(options.idempotencyKey);
+      if (!this.store.getOutput(id)) throw new DerivedOutputNotFoundError(id);
+      const requestDigest = definitionUpdateRequestDigest(id, request);
+      const claim = this.store.claimDefinitionUpdate(
+        id,
+        options.idempotencyKey,
+        requestDigest,
+        ts
+      );
+      if (claim.requestDigest !== requestDigest) {
+        throw new DerivedOutputDefinitionUpdateIdempotencyConflictError(
+          options.idempotencyKey
+        );
+      }
+      if (claim.result) {
+        this.logger.info("derived-outputs.update-definition.replayed", {
+          id,
+          idempotencyKey: options.idempotencyKey,
+          definitionRevision: claim.result.definition.definitionRevision,
+          durationMs: Math.round(performance.now() - start)
+        });
+        return claim.result;
+      }
+    }
+    const result = this.store.updateOutputDefinition({
+      outputId: id,
+      expectedDefinitionRevision: request.expectedDefinitionRevision,
+      prompt: request.prompt,
+      contextEntriesJson: JSON.stringify(request.contextEntries),
+      stabilisationText: request.stabilisationText,
+      updatedAt: ts,
+      ...(options ? { idempotencyKey: options.idempotencyKey } : {})
+    });
+    if (result.state === "not_found") {
+      throw new DerivedOutputNotFoundError(id);
+    }
+    if (result.state === "stale") {
       throw new StaleDefinitionRevisionError(
         id,
         request.expectedDefinitionRevision,
-        output.definition.definitionRevision
+        result.actualDefinitionRevision
       );
     }
-
-    const newRevision = output.definition.definitionRevision + 1;
-    const ts = now();
-
-    this.store.updateOutputDefinition(
-      id,
-      request.prompt,
-      JSON.stringify(request.contextEntries),
-      request.stabilisationText,
-      newRevision
-    );
-
-    this.store.updateOutputFreshness(
-      id,
-      "stale",
-      ts,
-      ts,
-      null,
-      null
-    );
-
-    const updated = this.store.getOutput(id)!;
 
     const durationMs = Math.round(performance.now() - start);
     this.logger.info("derived-outputs.update-definition", {
       id,
-      definitionRevision: newRevision,
+      definitionRevision: result.output.definition.definitionRevision,
       durationMs
     });
 
-    return updated;
+    return result.output;
   }
 
-  async refresh(id: string): Promise<DerivedRefreshResult> {
+  async refresh(
+    id: string,
+    options?: RefreshDerivedOutputOptions
+  ): Promise<DerivedRefreshResult> {
     const start = performance.now();
     const output = this.store.getOutput(id);
     if (!output) throw new DerivedOutputNotFoundError(id);
 
+    if (options) {
+      validateIdempotencyKey(options.idempotencyKey);
+      const requestDigest = refreshRequestDigest(id);
+      const claim = this.store.claimRefresh(
+        id,
+        options.idempotencyKey,
+        requestDigest,
+        now()
+      );
+      if (claim.requestDigest !== requestDigest) {
+        throw new DerivedOutputRefreshIdempotencyConflictError(
+          options.idempotencyKey
+        );
+      }
+      if (claim.result) {
+        this.logger.info("derived-outputs.refresh.replayed", {
+          outputId: id,
+          idempotencyKey: options.idempotencyKey,
+          headRevision: claim.result.output.headRevision,
+          skipped: claim.result.skipped,
+          durationMs: Math.round(performance.now() - start)
+        });
+        return claim.result;
+      }
+    }
+
     const frozenDefRev = output.definition.definitionRevision;
     const frozenHeadRev = output.headRevision;
-
-    // Mark refreshing
+    const frozenKnowledgeGeneration = this.store.getKnowledgeGeneration();
     const ts = now();
-    this.store.updateOutputFreshness(id, "refreshing", ts, null, null, null);
-
-    // Persist attempt
     const attemptId = randomUUID().replace(/-/g, "");
+    const canonicalContextEntries = [...output.definition.contextEntries]
+      .map((entry) => ({ id: entry.id, kind: entry.kind }))
+      .sort((left, right) =>
+        left.kind === right.kind
+          ? left.id.localeCompare(right.id)
+          : left.kind.localeCompare(right.kind)
+      );
     const contextDigest = createHash("sha256")
-      .update(JSON.stringify(output.definition.contextEntries))
+      .update(JSON.stringify(canonicalContextEntries))
       .digest("hex");
-
     const attempt: RefreshAttempt = {
       id: attemptId,
       outputId: id,
@@ -470,8 +784,21 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
     };
     this.store.insertAttempt(attempt);
 
+    let usage = zeroUsage();
+    let stage = "resolve_scope";
+    let scopeDigest: string | undefined;
+
     try {
+      // Resolve nested Context and every resource kind exactly once. Passing an
+      // explicit empty array snapshots the current full-project source set.
+      const frozenScope = await this.knowledge.resolveScope(
+        output.definition.contextEntries
+      );
+      if (!frozenScope) throw new Error("Derived refresh requires a frozen scope");
+      scopeDigest = frozenScope.scopeDigest;
+
       // Stage: Plan
+      stage = "plan";
       const planMessages: Message[] = [
         {
           role: "system",
@@ -488,39 +815,52 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
         { cast: { purpose: "general", strength: "medium", speed: "high" }, messages: planMessages },
         planSchema as unknown as Record<string, unknown>
       );
+      usage = addUsage(usage, planResult.usage);
 
-      const planData = planResult.structured as { queries: string[] };
+      const planData = planResult.structured as { queries?: unknown } | null;
       const queries = validateQueries(
-        planData?.queries ?? [],
+        planData?.queries,
         this.config.maxPlanQueries
       );
 
       this.logger.debug("derived-outputs.plan", {
-        id,
+        outputId: id,
+        attemptId,
         queryCount: queries.length,
-        planTokens: planResult.usage.totalTokens
+        totalTokens: planResult.usage.totalTokens
       });
 
       // Stage: Retrieve
+      stage = "retrieve";
       const allRegions: Region[] = [];
-      let totalRetrievalTokens = planResult.usage.totalTokens;
 
       for (const query of queries) {
         const result = await this.knowledge.retrieve(query, {
-          scope: output.definition.contextEntries.length > 0
-            ? output.definition.contextEntries
-            : undefined
+          scopeManifest: frozenScope
         });
         allRegions.push(...result.regions);
-        totalRetrievalTokens += result.usage.totalTokens;
+        usage = addUsage(usage, result.usage);
       }
 
-      const groundingText = regionToGroundingText(allRegions);
+      const evidenceCandidates: EvidenceCandidate[] = [];
+      for (const region of allRegions) {
+        addCandidate(
+          evidenceCandidates,
+          candidateForRegion(region, frozenScope)
+        );
+      }
+      const groundingText = regionToGroundingText(
+        allRegions,
+        evidenceCandidates
+      );
 
       this.logger.debug("derived-outputs.retrieve", {
-        id,
+        outputId: id,
+        attemptId,
         queryCount: queries.length,
-        regionCount: allRegions.length
+        regionCount: allRegions.length,
+        evidenceCandidateCount: evidenceCandidates.length,
+        scopeResourceCount: frozenScope.resources.length
       });
 
       // Short-circuit: if no regions were found, skip synthesis.
@@ -537,41 +877,40 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
           status: "insufficient",
           createdAt: now()
         };
-
-        this.store.insertRevision(noEvidenceRevision);
-        this.store.updateOutputHead(id, frozenHeadRev + 1);
-        this.store.updateOutputFreshness(id, "current", now(), null, null, null);
-
-        if (!output.definition.stabilisationText) {
-          this.store.updateOutputDefinition(
-            id,
-            output.definition.prompt,
-            JSON.stringify(output.definition.contextEntries),
-            noEvidenceContent,
-            output.definition.definitionRevision
-          );
-        }
-
-        this.store.updateAttemptResult(
+        stage = "settle";
+        const settled = this.store.settleRefresh({
           attemptId,
-          frozenHeadRev + 1, "insufficient", true, null,
-          planResult.usage.promptTokens,
-          planResult.usage.completionTokens,
-          totalRetrievalTokens,
-          planResult.usage.reasoningTokens,
-          now()
-        );
-
-        const refreshed = this.store.getOutput(id)!;
+          outputId: id,
+          expectedDefinitionRevision: frozenDefRev,
+          expectedHeadRevision: frozenHeadRev,
+          expectedKnowledgeGeneration: frozenKnowledgeGeneration,
+          revision: noEvidenceRevision,
+          usage,
+          completedAt: now(),
+          fallbackOutput: output,
+          ...(options ? { idempotencyKey: options.idempotencyKey } : {})
+        });
         const durationMs = Math.round(performance.now() - start);
-        this.logger.info("derived-outputs.refresh.no-evidence", {
-          id,
-          revision: frozenHeadRev + 1,
+        this.logger.info("derived-outputs.refresh.completed", {
+          outputId: id,
+          attemptId,
+          path: "no_evidence",
+          outcome: settled.state,
+          ...(settled.state === "published"
+            ? { revision: noEvidenceRevision.revision }
+            : {}),
+          status: noEvidenceRevision.status,
           queryCount: queries.length,
+          scopeDigest: frozenScope.scopeDigest,
+          knowledgeGeneration: frozenKnowledgeGeneration,
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.totalTokens,
+          reasoningTokens: usage.reasoningTokens,
+          ...(usage.costUsd !== undefined ? { costUsd: usage.costUsd } : {}),
           durationMs
         });
-
-        return { output: refreshed, revision: noEvidenceRevision, skipped: false };
+        return settled.result;
       }
 
       // Stage: Synthesise
@@ -583,9 +922,15 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
         }
       ];
 
-      // Build tool set for this synthesis run
-      const evidenceAccumulator: DerivedEvidence[] = [];
-      const toolSet = this.buildToolSet(evidenceAccumulator);
+      // Every tool closes over this exact manifest and trusted-candidate set.
+      stage = "synthesise";
+      const toolSet = this.buildToolSet(
+        evidenceCandidates,
+        frozenScope,
+        (toolUsage) => {
+          usage = addUsage(usage, toolUsage);
+        }
+      );
 
       const synthesisResult = await this.intelligence.reasonWithToolsStructured(
         undefined,
@@ -601,135 +946,114 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
         createSynthesisSchema() as unknown as Record<string, unknown>,
         this.config.maxToolRounds
       );
-
-      const synthData = synthesisResult.structured as {
-        status: string;
-        text: string;
-        evidence: unknown;
-      };
-
-      const status = synthData?.status as DerivedOutputStatus ?? "insufficient";
-      const content = (synthData?.text ?? "") as string;
-      // Merge model-produced evidence with any tool-accumulated evidence
-      const modelEvidence = validateEvidence(synthData?.evidence);
-      const mergedEvidence = [...evidenceAccumulator];
-      for (const me of modelEvidence) {
-        if (!mergedEvidence.some(e => e.resourceId === me.resourceId && e.resourceKind === me.resourceKind)) {
-          mergedEvidence.push(me);
-        }
-      }
+      usage = addUsage(usage, synthesisResult.usage);
+      const { status, content, evidence } = validateSynthesis(
+        synthesisResult.structured,
+        evidenceCandidates
+      );
 
       this.logger.debug("derived-outputs.synthesise", {
-        id,
+        outputId: id,
+        attemptId,
         status,
         contentLength: content.length,
-        evidenceCount: mergedEvidence.length,
+        evidenceCount: evidence.length,
+        evidenceCandidateCount: evidenceCandidates.length,
         toolRounds: synthesisResult.rounds,
         toolCalls: synthesisResult.calls,
-        synthesisTokens: synthesisResult.usage.totalTokens
+        totalTokens: synthesisResult.usage.totalTokens
       });
 
-      // Stage: Settle — reload and compare-and-swap
-      const currentOutput = this.store.getOutput(id);
-      if (!currentOutput) {
-        // Deleted during refresh
-        this.store.updateAttemptResult(
-          attemptId,
-          null, null, false,
-          "output_deleted",
-          0, 0, totalRetrievalTokens + synthesisResult.usage.totalTokens, synthesisResult.usage.reasoningTokens,
-          now()
-        );
-        this.store.updateOutputFreshness(id, "failed", now(), null, "output_deleted", "Output was deleted during refresh");
-        return { output: output, skipped: false };
-      }
-
-      if (currentOutput.definition.definitionRevision !== frozenDefRev) {
-        // Definition changed — discard
-        this.store.updateAttemptResult(
-          attemptId,
-          null, null, false,
-          "definition_changed",
-          synthesisResult.usage.promptTokens,
-          synthesisResult.usage.completionTokens,
-          synthesisResult.usage.totalTokens + totalRetrievalTokens,
-          synthesisResult.usage.reasoningTokens,
-          now()
-        );
-        this.store.updateOutputFreshness(id, "stale", now(), now(), null, null);
-        return { output: currentOutput, skipped: false };
-      }
-
-      // Publish revision
       const newRev = frozenHeadRev + 1;
       const revision: DerivedOutputRevision = {
         outputId: id,
         revision: newRev,
         definitionRevision: frozenDefRev,
         content,
-        evidence: mergedEvidence,
+        evidence,
         status,
         createdAt: now()
       };
-
-      this.store.insertRevision(revision);
-      this.store.updateOutputHead(id, newRev);
-      this.store.updateOutputFreshness(id, "current", now(), null, null, null);
-
-      // Set stabilisation text from first successful revision
-      if (!output.definition.stabilisationText && content) {
-        this.store.updateOutputDefinition(
-          id,
-          currentOutput.definition.prompt,
-          JSON.stringify(currentOutput.definition.contextEntries),
-          content,
-          currentOutput.definition.definitionRevision
-        );
-      }
-
-      this.store.updateAttemptResult(
+      stage = "settle";
+      const settled = this.store.settleRefresh({
         attemptId,
-        newRev, status, true, null,
-        synthesisResult.usage.promptTokens,
-        synthesisResult.usage.completionTokens,
-        synthesisResult.usage.totalTokens + totalRetrievalTokens,
-        synthesisResult.usage.reasoningTokens,
-        now()
-      );
-
-      const refreshed = this.store.getOutput(id)!;
-
+        outputId: id,
+        expectedDefinitionRevision: frozenDefRev,
+        expectedHeadRevision: frozenHeadRev,
+        expectedKnowledgeGeneration: frozenKnowledgeGeneration,
+        revision,
+        usage,
+        completedAt: now(),
+        fallbackOutput: output,
+        ...(options ? { idempotencyKey: options.idempotencyKey } : {})
+      });
       const durationMs = Math.round(performance.now() - start);
-      this.logger.info("derived-outputs.refresh", {
-        id,
-        revision: newRev,
+      this.logger.info("derived-outputs.refresh.completed", {
+        outputId: id,
+        attemptId,
+        path: "synthesis",
+        outcome: settled.state,
+        ...(settled.state === "published" ? { revision: newRev } : {}),
         status,
-        evidenceCount: mergedEvidence.length,
+        evidenceCount: evidence.length,
+        scopeDigest: frozenScope.scopeDigest,
+        knowledgeGeneration: frozenKnowledgeGeneration,
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+        totalTokens: usage.totalTokens,
+        reasoningTokens: usage.reasoningTokens,
+        ...(usage.costUsd !== undefined ? { costUsd: usage.costUsd } : {}),
         durationMs
       });
-
-      return { output: refreshed, revision, skipped: false };
+      return settled.result;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.error("derived-outputs.refresh.failed", { id, error: msg });
-      this.store.updateAttemptResult(
+      const completedAt = now();
+      const diagnosticMessage = `Refresh failed during ${stage}.`;
+      const failed = this.store.failRefresh({
         attemptId,
-        null, null, false,
-        `error: ${msg}`,
-        0, 0, 0, 0,
-        now()
-      );
-      this.store.updateOutputFreshness(id, "failed", now(), null, "refresh_failed", msg);
-      const failed = this.store.getOutput(id)!;
-      return { output: failed, skipped: false };
+        outputId: id,
+        expectedDefinitionRevision: frozenDefRev,
+        expectedHeadRevision: frozenHeadRev,
+        expectedKnowledgeGeneration: frozenKnowledgeGeneration,
+        diagnosticCode: "refresh_failed",
+        diagnosticMessage,
+        usage,
+        completedAt,
+        fallbackOutput: output,
+        ...(options ? { idempotencyKey: options.idempotencyKey } : {})
+      });
+      this.logger.error("derived-outputs.refresh.failed", {
+        outputId: id,
+        attemptId,
+        stage,
+        outcome: failed.state,
+        errorKind: err instanceof Error ? err.name : "UnknownError",
+        ...(scopeDigest ? { scopeDigest } : {}),
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+        totalTokens: usage.totalTokens,
+        reasoningTokens: usage.reasoningTokens,
+        ...(usage.costUsd !== undefined ? { costUsd: usage.costUsd } : {}),
+        durationMs: Math.round(performance.now() - start)
+      });
+      return failed.result;
     }
+  }
+
+  recordKnowledgeSourceMutation(mutation: KnowledgeSourceMutation): void {
+    const start = performance.now();
+    const invalidated = this.store.markAllOutputsStaleForKnowledgeChange(now());
+    this.logger.info("derived-outputs.knowledge.invalidated", {
+      operation: mutation.operation,
+      generation: invalidated.generation,
+      outputsMarkedStale: invalidated.outputsMarkedStale,
+      durationMs: Math.round(performance.now() - start)
+    });
   }
 
   async delete(id: string): Promise<void> {
     const start = performance.now();
-    const output = this.store.getOutput(id);
-    if (!output) throw new DerivedOutputNotFoundError(id);
-    this.store.deleteOutput(id);
+    if (!this.store.deleteOutput(id)) throw new DerivedOutputNotFoundError(id);
     const durationMs = Math.round(performance.now() - start);
     this.logger.info("derived-outputs.delete", { id, durationMs });
   }
@@ -737,19 +1061,24 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
   // ── Tool Builders ──────────────────────────────────────────────────────
 
   private buildToolSet(
-    evidenceAccumulator: DerivedEvidence[]
+    candidates: EvidenceCandidate[],
+    scope: KnowledgeScopeManifest,
+    recordUsage: (usage: Usage) => void
   ): ToolSet {
     const bindings: ToolBinding[] = [
-      this.createRetrieveTool(evidenceAccumulator),
-      this.createReadTool(evidenceAccumulator),
-      this.createListEvidenceTool(evidenceAccumulator)
+      this.createRetrieveTool(candidates, scope, recordUsage),
+      this.createReadTool(candidates, scope),
+      this.createListResourcesTool(scope),
+      this.createListEvidenceTool(candidates)
     ];
 
     return new ToolSet(bindings);
   }
 
   private createRetrieveTool(
-    evidenceAccumulator: DerivedEvidence[]
+    candidates: EvidenceCandidate[],
+    scope: KnowledgeScopeManifest,
+    recordUsage: (usage: Usage) => void
   ): ToolBinding {
     return {
       definition: {
@@ -773,38 +1102,43 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
         }
       },
       handler: async (args: Record<string, unknown>) => {
-        const query = String(args.query ?? "");
-        this.logger.debug("derived-outputs.tool.retrieve", { query });
-        const result = await this.knowledge.retrieve(query);
-        // Accumulate evidence from retrieval results
-        for (const region of result.regions) {
-          evidenceAccumulator.push({
-            resourceId: region.sourceId,
-            resourceKind: region.label,
-            span: {
-              kind: "bytes",
-              start: region.start,
-              end: region.end
-            },
-            sourceId: region.sourceId,
-            relevanceRank: evidenceAccumulator.length + 1,
-            contribution: `Retrieved from ${region.label} during synthesis.`
-          });
+        if (typeof args.query !== "string" || args.query.trim().length === 0) {
+          throw new Error("Invalid retrieval query");
         }
-        return result.regions.map((r) => ({
-          sourceId: r.sourceId,
-          label: r.label,
-          start: r.start,
-          end: r.end,
-          text: r.text,
-          relevance: r.relevance
-        }));
+        const query = args.query.trim();
+        const start = performance.now();
+        const result = await this.knowledge.retrieve(query, {
+          scopeManifest: scope
+        });
+        recordUsage(result.usage);
+        for (const region of result.regions) {
+          addCandidate(candidates, candidateForRegion(region, scope));
+        }
+        this.logger.debug("derived-outputs.tool.retrieve", {
+          queryLength: query.length,
+          regionCount: result.regions.length,
+          totalTokens: result.usage.totalTokens,
+          durationMs: Math.round(performance.now() - start)
+        });
+        return result.regions.map((region) => {
+          const candidate = candidateForRegion(region, scope);
+          return {
+            resourceId: candidate.resourceId,
+            resourceKind: candidate.resourceKind,
+            resourceRevision: candidate.resourceRevision ?? null,
+            sourceId: region.sourceId,
+            span: candidate.span,
+            text: region.text,
+            relevance: region.relevance
+          };
+        });
       }
     };
   }
 
   private createReadTool(
-    evidenceAccumulator: DerivedEvidence[]
+    candidates: EvidenceCandidate[],
+    scope: KnowledgeScopeManifest
   ): ToolBinding {
     return {
       definition: {
@@ -839,48 +1173,116 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
         }
       },
       handler: async (args: Record<string, unknown>) => {
-        const resourceId = String(args.resourceId ?? "");
-        const resourceKind = String(args.resourceKind ?? "");
-        const startLine = Number(args.startLine ?? 1);
-        const endLine = Number(args.endLine ?? 1);
-        this.logger.debug("derived-outputs.tool.read", { resourceId, resourceKind, startLine, endLine });
+        if (
+          typeof args.resourceId !== "string" ||
+          args.resourceId.length === 0 ||
+          typeof args.resourceKind !== "string" ||
+          args.resourceKind.length === 0 ||
+          !Number.isSafeInteger(args.startLine) ||
+          !Number.isSafeInteger(args.endLine) ||
+          (args.startLine as number) < 1 ||
+          (args.endLine as number) < (args.startLine as number)
+        ) {
+          throw new Error("Invalid resource read request");
+        }
+        const resourceId = args.resourceId;
+        const resourceKind = args.resourceKind;
+        const startLine = args.startLine as number;
+        const endLine = args.endLine as number;
+        const descriptor = scope.resources.find(
+          (resource) =>
+            resource.resourceId === resourceId &&
+            resource.resourceKind === resourceKind
+        );
+        if (!descriptor) throw new Error("Resource is outside the frozen scope");
+
+        const start = performance.now();
         const content = await this.resourceReader.read(
           resourceId,
           resourceKind,
           startLine,
-          endLine
+          endLine,
+          scope
         );
-        if (!content) {
-          return { error: `Resource not found: ${resourceId}` };
-        }
-        // Accumulate evidence
-        evidenceAccumulator.push({
+        if (!content) throw new Error("Scoped resource could not be read");
+        const candidate: EvidenceCandidate = {
           resourceId: content.resourceId,
           resourceKind: content.resourceKind,
           resourceRevision: content.revision,
+          sourceId: descriptor.sourceId,
           span: {
             kind: "lines",
             startLine,
             endLine
-          },
-          relevanceRank: evidenceAccumulator.length + 1,
-          contribution: `Read lines ${startLine}-${endLine} during synthesis.`
+          }
+        };
+        addCandidate(candidates, candidate);
+        this.logger.debug("derived-outputs.tool.read", {
+          resourceId,
+          resourceKind,
+          startLine,
+          endLine,
+          returnedLength: content.text.length,
+          durationMs: Math.round(performance.now() - start)
         });
-        return { resourceId, resourceKind, text: content.text };
+        return {
+          resourceId: candidate.resourceId,
+          resourceKind: candidate.resourceKind,
+          resourceRevision: candidate.resourceRevision ?? null,
+          sourceId: candidate.sourceId,
+          span: candidate.span,
+          text: content.text
+        };
+      }
+    };
+  }
+
+  private createListResourcesTool(scope: KnowledgeScopeManifest): ToolBinding {
+    return {
+      definition: {
+        name: "list_resources",
+        description:
+          "List the immutable resources admitted by this refresh's resolved " +
+          "Context. Only these exact resource IDs and kinds may be read.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: []
+        }
+      },
+      handler: async () => {
+        const resources = await this.resourceReader.list(scope);
+        const trusted = resources.filter((resource) =>
+          scope.resources.some(
+            (allowed) =>
+              allowed.sourceId === resource.sourceId &&
+              allowed.resourceId === resource.resourceId &&
+              allowed.resourceKind === resource.resourceKind &&
+              allowed.resourceRevision === resource.resourceRevision
+          )
+        );
+        if (trusted.length !== resources.length) {
+          throw new Error("Resource reader returned an item outside the frozen scope");
+        }
+        this.logger.debug("derived-outputs.tool.list-resources", {
+          count: trusted.length,
+          scopeDigest: scope.scopeDigest
+        });
+        return trusted.map((resource) => ({ ...resource }));
       }
     };
   }
 
   private createListEvidenceTool(
-    evidenceAccumulator: DerivedEvidence[]
+    candidates: EvidenceCandidate[]
   ): ToolBinding {
     return {
       definition: {
         name: "list_evidence",
         description:
-          "Return the current list of evidence items accumulated during this " +
-          "synthesis. Each item includes the resource identity, span, relevance " +
-          "rank, and contribution. Use this to review what you already have " +
+          "Return the trusted evidence candidates observed during this " +
+          "synthesis. Each item includes an exact resource identity and span. " +
+          "Use this to review what you already have " +
           "before doing additional retrieval or reading.",
         inputSchema: {
           type: "object",
@@ -889,13 +1291,13 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
         }
       },
       handler: async () => {
-        this.logger.debug("derived-outputs.tool.list-evidence", { count: evidenceAccumulator.length });
-        return evidenceAccumulator.map((e) => ({
-          resourceId: e.resourceId,
-          resourceKind: e.resourceKind,
-          span: e.span,
-          relevanceRank: e.relevanceRank,
-          contribution: e.contribution
+        this.logger.debug("derived-outputs.tool.list-evidence", { count: candidates.length });
+        return candidates.map((candidate) => ({
+          resourceId: candidate.resourceId,
+          resourceKind: candidate.resourceKind,
+          resourceRevision: candidate.resourceRevision ?? null,
+          sourceId: candidate.sourceId ?? null,
+          span: candidate.span
         }));
       }
     };

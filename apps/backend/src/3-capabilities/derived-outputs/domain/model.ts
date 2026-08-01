@@ -76,7 +76,8 @@ export interface DerivedEvidence {
   /**
    * The exact span of the resource that was informative.
    *
-   * For Knowledge lattice retrieval, this is a byte-range span.
+   * For Knowledge lattice retrieval, this is a UTF-16 code-unit range, which
+   * is the coordinate system used by JavaScript string slicing in Knowledge.
    * For `read` tool calls, this is a line-range span.
    */
   readonly span: DerivedEvidenceSpan;
@@ -97,14 +98,17 @@ export interface DerivedEvidence {
 }
 
 export type DerivedEvidenceSpan =
-  | DerivedByteSpan    // from Knowledge lattice retrieval
+  | DerivedTextSpan    // from Knowledge lattice retrieval
   | DerivedLineSpan;   // from read tool calls
 
-export interface DerivedByteSpan {
-  readonly kind: "bytes";
-  readonly start: number;  // byte offset, inclusive
-  readonly end: number;    // byte offset, exclusive
+export interface DerivedTextSpan {
+  readonly kind: "characters";
+  readonly start: number;  // UTF-16 code-unit offset, inclusive
+  readonly end: number;    // UTF-16 code-unit offset, exclusive
 }
+
+/** @deprecated Use DerivedTextSpan; Knowledge has never emitted byte offsets. */
+export type DerivedByteSpan = DerivedTextSpan;
 
 export interface DerivedLineSpan {
   readonly kind: "lines";
@@ -146,11 +150,26 @@ export interface DeclareDerivedOutputRequest {
   readonly stabilisationText?: string;
 }
 
+export interface DeclareDerivedOutputOptions {
+  /** Project-scoped, caller-namespaced identity for retry-safe declaration. */
+  readonly idempotencyKey: string;
+}
+
+export interface RefreshDerivedOutputOptions {
+  /** Project-scoped, caller-namespaced identity for retry-safe refresh. */
+  readonly idempotencyKey: string;
+}
+
 export interface UpdateDefinitionRequest {
   readonly prompt: string;
   readonly contextEntries: ContextEntry[];
   readonly stabilisationText: string;
   readonly expectedDefinitionRevision: number;
+}
+
+export interface UpdateDerivedOutputDefinitionOptions {
+  /** Project-scoped, caller-namespaced identity for retry-safe definition updates. */
+  readonly idempotencyKey: string;
 }
 
 export interface DerivedRefreshResult {
@@ -202,6 +221,27 @@ export class DerivedOutputConflictError extends Error {
   constructor(public readonly outputId: string) {
     super(`Derived output conflict: ${outputId}`);
     this.name = "DerivedOutputConflictError";
+  }
+}
+
+export class DerivedOutputIdempotencyConflictError extends Error {
+  constructor(public readonly idempotencyKey: string) {
+    super("Derived output declaration key was reused with different input");
+    this.name = "DerivedOutputIdempotencyConflictError";
+  }
+}
+
+export class DerivedOutputRefreshIdempotencyConflictError extends Error {
+  constructor(public readonly idempotencyKey: string) {
+    super("Derived output refresh key was reused with different input");
+    this.name = "DerivedOutputRefreshIdempotencyConflictError";
+  }
+}
+
+export class DerivedOutputDefinitionUpdateIdempotencyConflictError extends Error {
+  constructor(public readonly idempotencyKey: string) {
+    super("Derived output definition-update key was reused with different input");
+    this.name = "DerivedOutputDefinitionUpdateIdempotencyConflictError";
   }
 }
 

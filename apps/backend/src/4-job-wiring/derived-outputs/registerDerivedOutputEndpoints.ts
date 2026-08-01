@@ -4,6 +4,7 @@ import type { DerivedOutputService } from "#derived-outputs";
 import {
   DerivedOutputNotFoundError,
   DerivedOutputConflictError,
+  DerivedOutputIdempotencyConflictError,
   StaleDefinitionRevisionError
 } from "#derived-outputs";
 
@@ -12,6 +13,8 @@ function deError(e: unknown): { statusCode: number; body: unknown } {
     return { statusCode: 404, body: { error: "not_found", message: e.message } };
   if (e instanceof DerivedOutputConflictError)
     return { statusCode: 409, body: { error: "conflict", message: e.message } };
+  if (e instanceof DerivedOutputIdempotencyConflictError)
+    return { statusCode: 409, body: { error: "idempotency_mismatch", message: e.message } };
   if (e instanceof StaleDefinitionRevisionError)
     return { statusCode: 409, body: { error: "stale_revision", message: e.message } };
   const msg = e instanceof Error ? e.message : String(e);
