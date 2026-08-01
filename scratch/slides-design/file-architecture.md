@@ -248,8 +248,8 @@ additive composition change.
 
 Formula is a constructor dependency because Formula atoms are ordinary Rich
 Content atoms across the closed authored-content targets: Slide notes,
-owner-scoped text elements and table cells, Chart labels, and Layout-slot
-defaults. Structured Data and Analysis are reached only through the Formula
+owner-scoped text elements and table cells, and Chart titles/axis titles/
+category labels/series names. Structured Data and Analysis are reached only through the Formula
 resolver when a Formula needs them. General Files, rendering, export, and
 Activity are not constructor dependencies in representation version 1; Image
 elements retain immutable General Files references.
@@ -319,9 +319,9 @@ References are live within a Deck revision:
 - Masters and Layouts may own flat, scoped elements that participate in the
   semantic presentation plan without becoming Slide-owned state;
 - a Layout defines stable `LayoutSlot` metadata—ID, name, canonical point frame,
-  accepted element kinds, optional Normal text-style reference, and required
-  flag. A slot has no `zIndex`, paint content, or `ElementId` and is not a
-  `SlideElement`;
+  accepted element kinds, and required flag. A slot has no selectable text
+  style, Rich Content, `zIndex`, paint content, or `ElementId` and is not a
+  `SlideElement`; the protected Normal style is universal;
 - slide-specific content and overrides remain slide-owned elements that may
   select `layout-slot` placement; Master/Layout elements and slots are never
   copied into a Slide;
@@ -408,10 +408,11 @@ output. No two live `prompt-content` elements may own the same output.
 Formula evaluation applies to Formula atoms in the closed authored
 `RichContentTarget` union: Slide notes; an `element-text` value in a Master,
 Layout, or Slide owner scope; an owner-scoped table cell; an owner-scoped Chart
-label; or Layout-slot default content. The public `formula.evaluate.request`
-command identifies one of those exact owner targets plus a `formulaAtomId`; it
-cannot target Prompt Content, generated output text, a Deck/Slide title, Image
-alt text, or Chart numeric data. Serial admission freezes the Deck revision,
+title, X/Y-axis title, category label, or series name. The public
+`formula.evaluate.request` command identifies one of those exact owner targets
+plus a `formulaAtomId`; it cannot target Prompt Content, generated output text,
+a Deck/Slide metadata title, Image alt text, Layout-slot metadata, or Chart
+numeric data. Serial admission freezes the Deck revision,
 target owner/address, atom identity, source-expression digest, and a retryable
 Formula attempt. Concurrent compute obtains one immutable resolver snapshot
 from `SlideFormulaResolver`, then asks the injected `FormulaEngine` to parse,
@@ -546,6 +547,6 @@ behavior or schema.
 | Authored text | Rich Content in text-bearing Blocks | Rich Content in authored `text` elements and Slide notes |
 | Prompt content | `PromptBlock` | distinct `prompt-content` element kind |
 | Async adoption | dedicated Derived Output per Prompt Block | dedicated Derived Output per `prompt-content` element |
-| Formula atoms | Rich Content target inside text-bearing Blocks | closed `RichContentTarget` for Slide notes, owner-scoped text/table/Chart-label content, and Layout-slot defaults |
+| Formula atoms | Rich Content target inside text-bearing Blocks | closed `RichContentTarget` for Slide notes and owner-scoped text, table-cell, and Chart-label content |
 | Reusable presentation | embedded document Styles | embedded `DeckDesignSystem` with Theme tokens/defaults, one protected Normal text style, and sibling Master/Layout registries |
 | Rendering boundary | pagination is a future document layout concern | semantic point presentation is canonical; pixel rendering is permanently external |

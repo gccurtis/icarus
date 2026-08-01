@@ -2,22 +2,30 @@
 
 ## Aggregate boundary
 
-Slides owns one versioned Deck aggregate. A Deck owns its canvas size, embedded
-Style Registry, ordered Slides, and every structural Group and visual Shape on
-those Slides. The project is selected when the runtime is constructed; neither
-project nor user identity appears in canonical Slides values.
+Slides owns one versioned `DeckSnapshot`. The complete design system, reusable
+master/layout resources, Slides, elements, and authored Rich Content required
+to reconstruct a historical revision live inside that snapshot. Project ID
+selects the runtime and store at construction; neither project nor user identity
+appears in canonical Slides values.
 
 ```ts
 type DeckId = string;
 type SlideId = string;
+type MasterSlideId = string;
+type SlideLayoutId = string;
+type LayoutSlotId = string;
 type SlideElementId = string;
 type SlideGroupId = SlideElementId;
-type ShapeId = SlideElementId;
+type SlideTextStyleId = string;
+type DesignTokenId = string;
 
 type SlideLifecycle = "active" | "archived" | "trashed";
+type RichContent = import("#rich-text").RichContent;
+type DerivedOutputRef = import("#derived-outputs").DerivedOutputRef;
 
 interface DeckHead {
   id: DeckId;
+  /** Plain-text projection of DeckSnapshot.title for list queries. */
   title: string;
   lifecycle: SlideLifecycle;
   revision: number;
@@ -30,10 +38,10 @@ interface DeckHead {
 interface DeckSnapshot {
   representationVersion: 1;
   revision: number;
-  title: string;
+  title: RichContent;
   lifecycle: SlideLifecycle;
   canvas: SlideCanvas;
-  styles: SlideStyleRegistry;
+  design: DeckDesignSystem;
   slideOrder: SlideId[];
   slides: Record<SlideId, Slide>;
 }
@@ -42,47 +50,449 @@ interface SlideCanvas {
   widthPt: number;
   heightPt: number;
 }
+
+interface DeckDesignSystem {
+  /** One embedded, revisioned Theme value—not an external Theme aggregate. */
+  theme: DeckTheme;
+  textStyles: SlideTextStyleRegistry;
+  masters: Record<MasterSlideId, MasterSlide>;
+  /** Layouts are the Deck's reusable Slide templates in representation v1. */
+  layouts: Record<SlideLayoutId, SlideLayout>;
+}
 ```
 
-The canvas belongs to the Deck, not to individual Slides. Width and height are
-finite positive point values. A Deck always contains at least one Slide.
-`slideOrder` is the only Slide-order authority: it contains every key in
-`slides` exactly once.
+`DeckSnapshot.title` is authored Rich Content. The head's plain `title` is a
+derived, normalized text projection updated in the same transaction; it is not
+a second authoring surface. A Deck has one positive canvas and at least one
+Slide. `slideOrder` contains every key in `slides` exactly once and is the sole
+Slide-order authority.
 
-There is no separately persisted Theme aggregate in representation version 1.
-A template may initialize a Deck's canvas, styles, Slides, and Shapes, but the
-copied values become ordinary canonical Deck state.
+All user-presented or accessibility text owned by Slides is `RichContent`:
+Deck and Slide titles, notes, Text elements, image alternatives, Table cells,
+and Chart titles and labels. Administrative labels—Style, token, Master,
+Layout, and slot names, font-family names, MIME types, and resource keys—are
+plain strings because they identify configuration rather than presented Slide
+content. Prompt Content owns no text copy; it owns an immutable Derived Output
+reference.
 
-## Embedded Style Registry
+## Embedded Theme and typed design tokens
 
-Slides uses the same reusable-style semantics as Document. Style identity and
-inheritance live inside the Deck snapshot, so historical revisions never
-depend on a mutable external Theme row.
+The singleton Deck Theme owns the token registry plus the Deck's palette and
+typography defaults. Master and Layout registries are sibling design resources
+under `DeckDesignSystem`; they are not Theme children.
 
 ```ts
-type SlideShapeKind =
-  | "text"
-  | "prompt-content"
-  | "geometry"
-  | "line"
-  | "image"
-  | "table"
-  | "chart";
-
-interface SlideStyleRegistry {
-  defaultStyleIdByShapeKind: Record<SlideShapeKind, string>;
-  styles: SlideStyle[];
-}
-
-interface SlideStyle {
-  id: string;
+interface DeckTheme {
   name: string;
-  basedOnStyleId?: string;
-  visual: SlideVisualStyleProperties;
-  text: TextStyleProperties;
+  tokens: Record<DesignTokenId, DeckDesignToken>;
+  palette: DeckThemePalette;
+  typography: DeckThemeTypography;
 }
 
-interface SlideVisualStyleProperties {
+type DeckDesignToken =
+  | ThemeColorToken
+  | ThemeFontToken
+  | ThemeLengthToken;
+
+interface ThemeColorToken {
+  id: DesignTokenId;
+  kind: "color";
+  name: string;
+  value: SlideColor;
+}
+
+interface ThemeFontToken {
+  id: DesignTokenId;
+  kind: "font";
+  name: string;
+  family: string;
+}
+
+interface ThemeLengthToken {
+  id: DesignTokenId;
+  kind: "length";
+  name: string;
+  valuePt: number;
+}
+
+type ThemeColorValue =
+  | { kind: "literal"; value: SlideColor }
+  | { kind: "token"; tokenId: DesignTokenId };
+
+type ThemeFontValue =
+  | { kind: "literal"; family: string }
+  | { kind: "token"; tokenId: DesignTokenId };
+
+type ThemeLengthValue =
+  | { kind: "literal"; valuePt: number }
+  | { kind: "token"; tokenId: DesignTokenId };
+
+interface DeckThemePalette {
+  canvas: ThemeColorValue;
+  background: ThemeColorValue;
+  surface: ThemeColorValue;
+  text: ThemeColorValue;
+  mutedText: ThemeColorValue;
+  accents: ThemeColorValue[];
+}
+
+interface DeckThemeTypography {
+  bodyFont: ThemeFontValue;
+  displayFont: ThemeFontValue;
+  bodySize: ThemeLengthValue;
+  displaySize: ThemeLengthValue;
+}
+
+/** Canonical lowercase #rrggbbaa. */
+type SlideColor = string;
+```
+
+A token reference must resolve to a token of the matching kind. Token identity,
+not name, is stable. Literal values and token references are both intentional:
+token references update live when a token changes, while literals pin a local
+choice. Tokens do not alias other tokens in representation v1, so resolution
+cannot cycle. Colors, point values, opacity, and other numbers must be finite;
+length values used for visible dimensions or stroke widths must be positive.
+
+## Text Style Registry
+
+Slides has reusable text styles only. It does not have a generic Shape Style or
+an element-kind default Style map. Geometry, line, image, table, and chart
+appearance is typed directly on the owning element and may reference Theme
+tokens.
+
+```ts
+interface SlideTextStyleRegistry {
+  normalStyleId: SlideTextStyleId;
+  styles: Record<SlideTextStyleId, SlideTextStyle>;
+}
+
+interface SlideTextStyle {
+  id: SlideTextStyleId;
+  name: string;
+  basedOnStyleId?: SlideTextStyleId;
+  text: SlideTextStyleProperties;
+  /** Exactly one Style has this protected role. */
+  systemRole?: "normal";
+}
+
+interface SlideTextStyleProperties {
+  fontFamily?: ThemeFontValue;
+  fontSize?: ThemeLengthValue;
+  fontWeight?: number;
+  italic?: boolean;
+  underline?: boolean;
+  strike?: boolean;
+  code?: boolean;
+  color?: ThemeColorValue;
+  background?: ThemeColorValue;
+  letterSpacing?: ThemeLengthValue;
+  lineHeight?: number;
+}
+```
+
+A new Deck starts with only the protected Normal Style. Callers may add other
+styles later. Exactly one Style carries `systemRole: "normal"`, its ID equals
+`normalStyleId`, and neither the Style nor its role may be deleted or
+reassigned. Its name, text properties, and inheritance may be edited. Style
+inheritance is acyclic and every referenced Style exists in the same Deck.
+
+For any text-bearing element or Table cell, text styling resolves in this
+order:
+
+1. Rich Text global fallbacks.
+2. The selected text Style, including its oldest-to-newest inheritance chain;
+   when no explicit ID is stored, the live Layout slot default and then Normal
+   are the fallbacks.
+3. The element's typed text-box or cell presentation properties.
+4. Stored inline Rich Text marks as supplementary formatting.
+
+The resolved Style becomes an ephemeral full-range Rich Text overlay and is
+never written into `RichContent`. Applying a saved Style to a selected range is
+a preset operation that copies its currently resolved concrete properties into
+an ordinary Rich Text Style Mark; it is not a live Style reference. Rich Text's
+Link Mark remains the navigation/link facility and is unrelated to saved Style
+reuse.
+
+## Master Slides, Layouts, and live inheritance
+
+```ts
+type SlideElementStore = Record<SlideElementId, SlideElement>;
+
+interface MasterSlide {
+  id: MasterSlideId;
+  name: string;
+  background?: SlideBackground;
+  elements: SlideElementStore;
+}
+
+interface SlideLayout {
+  id: SlideLayoutId;
+  name: string;
+  masterSlideId: MasterSlideId;
+  background?: SlideBackground;
+  elements: SlideElementStore;
+  slots: Record<LayoutSlotId, LayoutSlot>;
+}
+
+interface LayoutSlot {
+  id: LayoutSlotId;
+  name: string;
+  frame: ElementFrame;
+  acceptedKinds: FramedElementKind[];
+  defaultTextStyleId?: SlideTextStyleId;
+  required: boolean;
+}
+
+interface Slide {
+  id: SlideId;
+  title: RichContent;
+  layoutId: SlideLayoutId;
+  background?: SlideBackground;
+  notes: RichContent;
+  elements: SlideElementStore;
+}
+
+type SlideBackground =
+  | { kind: "transparent" }
+  | { kind: "solid"; color: ThemeColorValue }
+  | {
+      kind: "image";
+      source: ImageSnapshotRef;
+      fit: "contain" | "cover" | "stretch";
+    };
+```
+
+A Layout references one Master, and a Slide references one Layout. These are
+live links: the Master is not copied into the Layout, and neither resource is
+copied into the Slide. At revision `r`, effective composition is:
+
+```text
+Theme background
+  → Master background and elements
+  → Layout background and elements
+  → Slide background and elements
+```
+
+The most-derived present background wins. Inherited resources are evaluated
+from the same Deck revision, so history never depends on a mutable external
+template. Deleting a referenced Master or Layout requires a replacement and
+rewrites all live references in the same ChangeSet.
+
+A Layout slot is a stable, non-painting placement anchor. It owns one frame and
+optional text-Style default but no `zIndex`. A Slide-owned framed root element
+may follow it through a discriminated placement (defined below). The element
+then has no duplicate frame and follows slot edits live. At most one live
+element binds a given slot, the element kind must be accepted, and a slot-bound
+element cannot also be inside a Group. Moving or resizing it explicitly
+detaches it to a free placement initialized with the slot's currently resolved
+frame.
+
+Representation v1 treats Layouts as the Deck's reusable Slide templates; there
+is no third copied-template registry.
+
+## Flat element stores and placement
+
+Master, Layout, and Slide element stores use the same heterogeneous union. Each
+store is one flat record. Groups do not carry child arrays and owners do not
+carry root-element arrays.
+
+```ts
+type ElementOwner =
+  | { kind: "master"; masterSlideId: MasterSlideId }
+  | { kind: "layout"; layoutId: SlideLayoutId }
+  | { kind: "slide"; slideId: SlideId };
+
+type SlideElementKind = SlideElement["kind"];
+type FramedElementKind = Exclude<SlideElementKind, "group" | "straight-line">;
+
+interface SlideElementBase {
+  id: SlideElementId;
+  kind: SlideElementKind;
+  /** Null identifies the owner's root; otherwise membership is in this Group. */
+  parentGroupId: SlideGroupId | null;
+  /** Unique contiguous sibling index, back-to-front. */
+  zIndex: number;
+  locked: boolean;
+  hidden: boolean;
+}
+
+interface ElementFrame {
+  xPt: number;
+  yPt: number;
+  widthPt: number;
+  heightPt: number;
+}
+
+type FramedElementPlacement =
+  | { kind: "free"; frame: ElementFrame }
+  | { kind: "layout-slot"; slotId: LayoutSlotId };
+
+interface FreePointPlacement {
+  kind: "free";
+  xPt: number;
+  yPt: number;
+}
+
+interface FramedSlideElementBase extends SlideElementBase {
+  placement: FramedElementPlacement;
+  transform: ElementTransform;
+}
+
+interface ElementTransform {
+  /** Canonical range [0, 360), clockwise around the resolved frame center. */
+  rotationDegrees: number;
+  flipHorizontal: boolean;
+  flipVertical: boolean;
+}
+```
+
+For free root elements, coordinates are relative to the owner canvas. For
+Group children, coordinates are relative to their parent Group's local origin.
+For slot-bound framed elements, the effective frame is the live slot frame.
+All coordinates are finite, all frames have positive dimensions, and free
+placements are mandatory for Master/Layout elements and Group children.
+
+`zIndex` is the sole element-order authority. For every owner root and every
+Group, sibling z-indices are unique and contiguous `0..n-1`; zero is backmost.
+Insertion, move, deletion, grouping, and ungrouping renumber the affected
+sibling set deterministically. There are no fractional ranks, root order
+arrays, child order arrays, or duplicated parent indexes.
+
+An element can reference a parent only in its own flat store. Parent graphs are
+acyclic and bounded. A Group is non-empty in committed state; deleting or
+moving its last child prunes the empty Group in the same ChangeSet. `hidden`
+and `locked` project through ancestors. Element IDs are unique across all
+Master, Layout, and Slide stores in one Deck, so operation targets never need a
+fragile recursive path even though `ElementOwner` identifies the store.
+
+The three inheritance planes have a fixed back-to-front order: Master, Layout,
+then Slide. `zIndex` orders siblings inside one plane; it does not interleave
+elements across planes. This is an explicit representation-v1 assumption and
+is called out under open questions.
+
+## Heterogeneous `SlideElement` union
+
+```ts
+type SlideElement =
+  | SlideGroupElement
+  | SlideTextElement
+  | PromptContentElement
+  | GeometryElement
+  | StraightLineElement
+  | ImageElement
+  | TableElement
+  | ChartElement;
+
+interface SlideGroupElement extends SlideElementBase {
+  kind: "group";
+  placement: FreePointPlacement;
+}
+
+interface SlideTextElement extends FramedSlideElementBase {
+  kind: "text";
+  content: RichContent;
+  textStyleId?: SlideTextStyleId;
+  textBox: TextBoxPresentation;
+}
+
+interface PromptContentElement extends FramedSlideElementBase {
+  kind: "prompt-content";
+  /** Exact immutable revision of this element's dedicated Derived Output. */
+  output: DerivedOutputRef;
+  textStyleId?: SlideTextStyleId;
+  textBox: TextBoxPresentation;
+}
+
+interface GeometryElement extends FramedSlideElementBase {
+  kind: "geometry";
+  geometry: GeometryPrimitive;
+  appearance: GeometryAppearance;
+}
+
+interface StraightLineElement extends SlideElementBase {
+  kind: "straight-line";
+  placement: FreePointPlacement;
+  deltaXPt: number;
+  deltaYPt: number;
+  appearance: LineAppearance;
+  startDecoration: LineDecoration;
+  endDecoration: LineDecoration;
+}
+
+interface ImageElement extends FramedSlideElementBase {
+  kind: "image";
+  image: ImageElementData;
+}
+
+interface TableElement extends FramedSlideElementBase {
+  kind: "table";
+  table: SlideTable;
+}
+
+interface ChartElement extends FramedSlideElementBase {
+  kind: "chart";
+  chart: SlideChart;
+}
+```
+
+The union is direct: Text, Prompt Content, Geometry, Straight Line, Image,
+Table, and Chart are elements, not payload subtypes hidden inside a universal
+Shape. Group is structural and the other kinds carry only their own typed
+appearance/content contracts.
+
+### Group
+
+A Group's free point is a local translation; it has no fill, stroke, content,
+frame, rotation, scale, or child array. Its effective bounds are projected from
+all descendants, including hidden ones. Moving a Group changes its point.
+Resizing, rotating, or flipping a Group gesture is expanded into explicit
+descendant operations before admission.
+
+### Text and Prompt Content
+
+```ts
+interface TextBoxPresentation {
+  paddingPt: { top: number; right: number; bottom: number; left: number };
+  horizontalAlign: "left" | "center" | "right" | "justify";
+  verticalAlign: "top" | "middle" | "bottom";
+  overflow: "clip" | "shrink";
+}
+```
+
+Rich Text owns authored atoms, marks, links, references, Formula atoms,
+positions, ranges, validation, normalization, and exact inverses. Slides wraps
+ordinary Rich Text operation batches in a Deck ChangeSet.
+
+Prompt Content is not alternate Text content. It stores only an exact
+`DerivedOutputRef`, its optional text Style selection, and text-box
+presentation. Every Prompt Content element owns a new dedicated Derived Output;
+no two live elements share an `outputId`, and generic element insert/replace
+operations cannot introduce one or attach a caller-supplied output. Derived
+Outputs owns the definition, instruction, Context scope, stabilization text,
+evidence, freshness, generation, and immutable content revisions. Updating
+those values does not revise the Deck; adopting a new exact output revision
+does.
+
+Prompt creation, refresh, definition update, stabilization update, detachment,
+and retained-history ownership use the same staged Derived Outputs boundary as
+Document. A serial freeze persists an attempt, concurrent work declares or
+refreshes the dedicated output, and serial settlement conditionally writes the
+exact accepted reference through an ordinary ChangeSet. Accepted mutations
+also write the Slides activity outbox fact in the same store transaction.
+
+### Geometry and Straight Line
+
+```ts
+type GeometryPrimitive =
+  | { kind: "rectangle" }
+  | { kind: "rounded-rectangle"; cornerRadiusPt: number }
+  | { kind: "ellipse" }
+  | { kind: "triangle" }
+  | { kind: "diamond" }
+  | { kind: "arrow" };
+
+interface GeometryAppearance {
   opacity?: number;
   fill?: FillStyle;
   stroke?: StrokeStyle;
@@ -91,14 +501,14 @@ interface SlideVisualStyleProperties {
 
 type FillStyle =
   | { kind: "none" }
-  | { kind: "solid"; color: SlideColor };
+  | { kind: "solid"; color: ThemeColorValue };
 
 type StrokeStyle =
   | { kind: "none" }
   | {
       kind: "stroke";
-      color: SlideColor;
-      widthPt: number;
+      color: ThemeColorValue;
+      width: ThemeLengthValue;
       dash: "solid" | "dashed" | "dotted";
     };
 
@@ -106,236 +516,25 @@ type ShadowStyle =
   | { kind: "none" }
   | {
       kind: "drop";
-      color: SlideColor;
-      offsetXPt: number;
-      offsetYPt: number;
-      blurPt: number;
+      color: ThemeColorValue;
+      offsetX: ThemeLengthValue;
+      offsetY: ThemeLengthValue;
+      blur: ThemeLengthValue;
     };
 
-/** Canonical lowercase #rrggbbaa. */
-type SlideColor = string;
-
-interface ShapePresentationOverride {
-  visual?: SlideVisualStyleProperties;
-  text?: TextStyleProperties;
-}
-```
-
-Style IDs, rather than names, are stable. Names and properties are editable.
-Every Style reference resolves, inheritance is acyclic, and every Shape kind
-has a valid default Style. Deleting a Style requires a replacement and rewrites
-all references in the same ChangeSet.
-
-For a Shape, style projection proceeds in this order:
-
-1. Resolve the Shape-kind default Style, including inheritance.
-2. Overlay the Shape's selected `styleId`, including inheritance.
-3. Overlay the Shape's local `presentation` properties.
-4. For authored text only, apply inline Rich Text marks as supplementary
-   properties: a mark fills properties not fixed by the resolved Shape overlay.
-
-The first three layers form the authoritative full-range Shape overlay. Prompt
-Content has no persisted inline marks; its selected Style and presentation
-format the exact Derived Output revision's plain text.
-
-## Slides and element ordering
-
-```ts
-interface Slide {
-  id: SlideId;
-  title?: string;
-  background: SlideBackground;
-  notes: RichContent;
-  rootElementIds: SlideElementId[];
-  elements: Record<SlideElementId, SlideElement>;
-}
-
-type SlideBackground =
-  | { kind: "transparent" }
-  | { kind: "solid"; color: SlideColor }
-  | {
-      kind: "image";
-      source: ImageSnapshotRef;
-      fit: "contain" | "cover" | "stretch";
-    };
-
-type SlideElement = SlideGroup | SlideShape;
-
-interface SlideElementBase {
-  id: SlideElementId;
-  locked: boolean;
-  hidden: boolean;
-}
-
-interface SlideGroup extends SlideElementBase {
-  elementKind: "group";
-  childElementIds: SlideElementId[];
-}
-```
-
-`rootElementIds` and each Group's `childElementIds` are ordered back-to-front:
-the first element paints first and the last paints last. Arrays are the only
-ordering representation; there are no fractional ranks.
-
-Every element in `elements` occurs exactly once in either `rootElementIds` or
-one Group's `childElementIds`. A Group cannot contain itself or an ancestor,
-all children belong to the same Slide, and nesting is bounded. Parent identity
-is derived from the containing array and is not duplicated on the child.
-
-A Group is structural. It has no frame, fill, stroke, content, or stored
-transform. Its bounds are projected as the union of every descendant Shape's
-bounds, including hidden descendants. Group movement, resize, rotation, and
-flip gestures become explicit descendant Shape frame/transform operations
-before admission; only those Shape operations enter history.
-
-`hidden` is inherited for presentation and `locked` is inherited for editing:
-a descendant is effectively hidden or locked when it or any ancestor has that
-flag. An unlock operation remains permitted on the element that owns the lock.
-
-## Shapes
-
-```ts
-interface ShapeBase extends SlideElementBase {
-  elementKind: "shape";
-  frame: ShapeFrame;
-  transform: ShapeTransform;
-  styleId: string;
-  presentation?: ShapePresentationOverride;
-}
-
-interface ShapeFrame {
-  xPt: number;
-  yPt: number;
-  widthPt: number;
-  heightPt: number;
-}
-
-interface ShapeTransform {
-  /** Canonical range [0, 360), clockwise around the frame center. */
-  rotationDegrees: number;
-  flipHorizontal: boolean;
-  flipVertical: boolean;
-}
-
-type SlideShape =
-  | TextShape
-  | PromptContentShape
-  | GeometryShape
-  | LineShape
-  | ImageShape
-  | TableShape
-  | ChartShape;
-```
-
-Coordinates use a top-left origin, with positive X to the right and positive Y
-down. Every coordinate is finite and every frame dimension is positive.
-
-### Authored Text Shape
-
-```ts
-interface TextShape extends ShapeBase {
-  shapeKind: "text";
-  content: RichContent;
-  textBox: TextBoxPresentation;
-}
-
-interface TextBoxPresentation {
-  paddingPt: {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-  };
-  horizontalAlign: "left" | "center" | "right" | "justify";
-  verticalAlign: "top" | "middle" | "bottom";
-  overflow: "clip" | "shrink";
-}
-```
-
-Rich Text owns authored atoms, marks, links, references, formulas, positions,
-ranges, validation, normalization, and exact Rich Text inverses. Slides wraps
-Rich Text operation batches in a Deck ChangeSet. Text-box padding is finite and
-non-negative. `shrink` is a presentation rule and never changes canonical
-frame geometry.
-
-### Prompt Content Shape
-
-```ts
-interface PromptContentShape extends ShapeBase {
-  shapeKind: "prompt-content";
-  /** Exact immutable revision of this Shape's dedicated Derived Output. */
-  output: DerivedOutputRef;
-  textBox: TextBoxPresentation;
-}
-
-interface DerivedOutputRef {
-  outputId: string;
-  appliedRevision: number;
-}
-```
-
-Prompt Content is a distinct Shape kind, not an alternate source for authored
-Text. It stores only an exact positive Derived Output reference plus normal
-text-box presentation. Derived Outputs owns the prompt, Context scope,
-stabilization text, definition revision, generation, evidence, freshness, and
-immutable output revisions.
-
-Every live Prompt Content Shape has its own dedicated output. Generic Shape
-insertion, replacement, or source-switch operations cannot introduce a Prompt
-Content Shape or caller-supplied output ID. It enters canonical state only
-through the staged Prompt Content creation command. Definition changes mutate
-Derived Outputs; a Deck revision changes only when Slides adopts a different
-exact output revision.
-
-Deleting Prompt Content detaches its output rather than immediately deleting
-it because retained Deck history may still reference an immutable revision.
-Duplication must declare a new dedicated output for every copied Prompt Content
-Shape and is therefore deferred from representation version 1.
-
-### Geometry Shape
-
-```ts
-interface GeometryShape extends ShapeBase {
-  shapeKind: "geometry";
-  geometry:
-    | { kind: "rectangle" }
-    | { kind: "rounded-rectangle"; cornerRadiusPt: number }
-    | { kind: "ellipse" }
-    | { kind: "triangle" }
-    | { kind: "diamond" }
-    | { kind: "arrow" };
-}
-```
-
-Custom paths and arbitrary SVG are not part of v1.
-
-### Straight Line Shape
-
-```ts
-interface LineShape extends ShapeBase {
-  shapeKind: "line";
-  line: {
-    start: UnitPoint;
-    end: UnitPoint;
-    startDecoration: LineDecoration;
-    endDecoration: LineDecoration;
-  };
-}
-
-interface UnitPoint {
-  /** Local frame coordinate in the inclusive range [0, 1]. */
-  x: number;
-  y: number;
+interface LineAppearance {
+  opacity?: number;
+  stroke: Exclude<StrokeStyle, { kind: "none" }>;
 }
 
 type LineDecoration = "none" | "arrow" | "circle" | "diamond";
 ```
 
-Lines are straight in v1. Local unit coordinates allow horizontal and vertical
-lines while retaining a positive canonical frame. Elbow and curved routing are
-deferred until their geometry is specified precisely.
+A Straight Line starts at its free point and ends at point plus `(deltaXPt,
+deltaYPt)`. The deltas are finite and cannot both be zero. Only straight lines
+and the bounded Geometry primitive set are canonical in v1.
 
-### Image Shape
+### Image
 
 ```ts
 interface ImageSnapshotRef {
@@ -345,15 +544,12 @@ interface ImageSnapshotRef {
   mimeType: string;
 }
 
-interface ImageShape extends ShapeBase {
-  shapeKind: "image";
-  image: {
-    source: ImageSnapshotRef;
-    crop?: NormalizedCrop;
-    fit: "contain" | "cover" | "stretch";
-    alt: string;
-    decorative: boolean;
-  };
+interface ImageElementData {
+  source: ImageSnapshotRef;
+  crop?: NormalizedCrop;
+  fit: "contain" | "cover" | "stretch";
+  alt: RichContent;
+  decorative: boolean;
 }
 
 interface NormalizedCrop {
@@ -364,100 +560,245 @@ interface NormalizedCrop {
 }
 ```
 
-Crop edges are fractions in `[0, 1)` and opposing edges must sum to less than
-one. Slides persists an immutable source reference, not image bytes and not a
-mutable Media identity. No Media runtime is needed for canonical editing.
+Slides stores an immutable General Files snapshot reference, not file bytes or
+a mutable file identity. Crop edges are fractions in `[0, 1)`, and opposing
+edges sum to less than one. A decorative image still carries normalized empty
+Rich Content rather than switching the field to a plain string.
 
-### Literal Table and Chart Shapes
+### Table
 
 ```ts
-type FormulaWireValue = import("#formula").FormulaWireValue;
+type TableRowId = string;
+type TableColumnId = string;
+type TableCellId = string;
+type TableMergeId = string;
 
-interface AcceptedSlideValue {
-  /** Bounded, JSON-safe value copied into the Deck revision. */
-  value: FormulaWireValue;
+interface SlideTable {
+  rowOrder: TableRowId[];
+  rows: Record<TableRowId, SlideTableRow>;
+  columnOrder: TableColumnId[];
+  columns: Record<TableColumnId, SlideTableColumn>;
+  cells: Record<TableCellId, SlideTableCell>;
+  merges: Record<TableMergeId, SlideTableMerge>;
 }
 
-interface TableShape extends ShapeBase {
-  shapeKind: "table";
-  table: {
-    accepted: AcceptedSlideValue;
-    presentation: {
-      headerRow: boolean;
-      bandedRows: boolean;
-      firstColumnHeader: boolean;
-      lastColumnFooter: boolean;
-      columnWidthsPt?: number[];
-    };
-  };
+interface SlideTableRow {
+  id: TableRowId;
+  height?: ThemeLengthValue;
 }
 
-interface ChartShape extends ShapeBase {
-  shapeKind: "chart";
-  chart: {
-    accepted: AcceptedSlideValue;
-    specification: {
-      kind: "bar" | "line" | "pie" | "scatter" | "area";
-      title?: string;
-      xAxis?: { label?: string; min?: number; max?: number };
-      yAxis?: { label?: string; min?: number; max?: number };
-      legend: { position: "top" | "bottom" | "left" | "right" | "none" };
-      colors?: SlideColor[];
-    };
-  };
+interface SlideTableColumn {
+  id: TableColumnId;
+  width: ThemeLengthValue;
+}
+
+interface SlideTableCell {
+  id: TableCellId;
+  rowId: TableRowId;
+  columnId: TableColumnId;
+  content: RichContent;
+  textStyleId?: SlideTextStyleId;
+  fill?: FillStyle;
+  borders?: TableCellBorders;
+  paddingPt: { top: number; right: number; bottom: number; left: number };
+  horizontalAlign: "left" | "center" | "right" | "justify";
+  verticalAlign: "top" | "middle" | "bottom";
+}
+
+interface TableCellBorders {
+  top?: StrokeStyle;
+  right?: StrokeStyle;
+  bottom?: StrokeStyle;
+  left?: StrokeStyle;
+}
+
+interface SlideTableMerge {
+  id: TableMergeId;
+  anchorCellId: TableCellId;
+  /** Row-major rectangular region, including the anchor. */
+  cellIds: TableCellId[];
 }
 ```
 
-Table values must be tabular; chart values must be a bounded list, record, or
-table. The accepted value is canonical
-and historical: Slides does not resolve Formula, Structured Data, analysis, or
-other mutable sources while reading a Deck. A future linked-source feature must
-freeze a source, compute outside the serial transaction, and conditionally
-settle a copied accepted value through an ordinary ChangeSet.
+Row and column order arrays are the only order authorities inside a Table.
+Every row/column cross-product has exactly one stable Cell identity. Every cell
+owns independent Rich Content plus optional fill, four borders, text Style,
+padding, and alignment. Merge regions are rectangular, disjoint, contain at
+least two cells, and keep all covered Cell identities; the anchor's Rich
+Content is presented while covered content remains canonical for exact
+unmerge/undo. Table merge IDs are permanent identities and merge/unmerge are
+first-class operations.
 
-## Placement
+### Chart
 
 ```ts
-interface ElementPlacement {
-  /** Omitted means the Slide root. */
-  parentGroupId?: SlideGroupId;
-  /** Omitted means first/backmost in the selected container. */
-  afterElementId?: SlideElementId;
+type ChartCategoryId = string;
+type ChartSeriesId = string;
+
+interface SlideChart {
+  kind: "bar" | "line" | "pie" | "scatter" | "area";
+  title?: RichContent;
+  categories: SlideChartCategory[];
+  series: SlideChartSeries[];
+  xAxis: SlideChartAxis;
+  yAxis: SlideChartAxis;
+  legend: { position: "top" | "bottom" | "left" | "right" | "none" };
+  colors?: ThemeColorValue[];
+}
+
+interface SlideChartCategory {
+  id: ChartCategoryId;
+  label: RichContent;
+}
+
+interface SlideChartSeries {
+  id: ChartSeriesId;
+  name: RichContent;
+  /** Finite literal values aligned one-to-one with categories. */
+  values: number[];
+}
+
+interface SlideChartAxis {
+  title?: RichContent;
+  min?: number;
+  max?: number;
 }
 ```
 
-The anchor must be an immediate child of the exact target container. Moving an
-element removes it from its old container and inserts it once in the new one.
-Grouping requires contiguous siblings, preserves their order, and replaces
-them with the new Group at the first selected position. Ungrouping replaces the
-Group with its ordered children.
+Chart numeric series are bounded literal canonical values in v1. Series values
+align with categories and all values and axis bounds are finite. Formula atoms
+may occur in Chart titles, axis titles, category labels, and series names
+because those fields are Rich Content; Formula- or Structured-Data-backed
+numeric series require a separate frozen-source settlement contract and are
+not part of v1.
 
-## Identity and structural invariants
+## Rich Content targets and Formula workflow
 
-1. Slide, Group, Shape, Style, Rich Text atom, and Rich Text mark IDs are
-   stable and cannot be reused within retained Deck history.
-2. A durable identity ledger tombstones deleted IDs. Exact compensation may
-   reactivate an ID only with its original identity kind.
-3. `slideOrder` contains every Slide exactly once and a Deck is never empty.
-4. Every Slide element is reachable exactly once from its root ordering tree;
-   there are no missing elements, duplicate memberships, or cycles.
-5. Groups are structural, non-empty in a committed snapshot, and nesting does
-   not exceed the configured limit.
-6. Every Shape frame and kind-specific payload is finite, bounded, and valid.
-7. Every Style reference resolves and Style inheritance is acyclic.
-8. Every Rich Content value passes Rich Text validation and normalization.
-9. Every Prompt Content reference selects a positive immutable revision, and
-   no two live Prompt Content Shapes share an output ID.
-10. Locked and hidden inheritance, ordering, and group bounds are projections
-    of canonical element state; they do not create additional stored geometry.
+Every Rich Text operation addresses one closed target union:
+
+```ts
+type RichContentTarget =
+  | { kind: "deck-title" }
+  | { kind: "slide-title"; slideId: SlideId }
+  | { kind: "slide-notes"; slideId: SlideId }
+  | { kind: "element-text"; owner: ElementOwner; elementId: SlideElementId }
+  | { kind: "image-alt"; owner: ElementOwner; elementId: SlideElementId }
+  | {
+      kind: "table-cell";
+      owner: ElementOwner;
+      elementId: SlideElementId;
+      cellId: TableCellId;
+    }
+  | { kind: "chart-title"; owner: ElementOwner; elementId: SlideElementId }
+  | {
+      kind: "chart-axis-title";
+      owner: ElementOwner;
+      elementId: SlideElementId;
+      axis: "x" | "y";
+    }
+  | {
+      kind: "chart-category-label";
+      owner: ElementOwner;
+      elementId: SlideElementId;
+      categoryId: ChartCategoryId;
+    }
+  | {
+      kind: "chart-series-name";
+      owner: ElementOwner;
+      elementId: SlideElementId;
+      seriesId: ChartSeriesId;
+    };
+```
+
+The target must resolve to the exact compatible field; a discriminant cannot
+be used to reinterpret another element kind. Prompt Content is absent because
+its text is owned by Derived Outputs.
+
+Slides uses Document's Rich Text/Formula workflow rather than defining a Slide
+Formula type:
+
+1. Rich Text applies authored operations. Its deterministic
+   `formulaFromDelimitedRange` helper converts `{{ source }}` into one Formula
+   atom operation; Slides never parses the braces or expression.
+2. Serial admission observes every created or changed Formula atom and persists
+   a durable evaluation attempt beside the Deck ChangeSet and activity fact.
+3. Concurrent compute uses the injected Formula engine and one immutable
+   project resolver snapshot. Structured Data is reached through that existing
+   resolver chain, not imported as Slide state.
+4. Serial settlement rechecks the target, Formula atom ID, and frozen
+   expression digest, then applies Rich Text's normal Formula-result or
+   diagnostic operation through another Deck ChangeSet.
+
+Formula errors live in the Rich Text Formula atom diagnostic contract.
+Evaluation attempts and internal compute/settle Jobs persist enough frozen
+state for idempotent retries and do not hold a Slides transaction while calling
+Formula or Structured Data.
+
+## Identity and representation-v1 invariants
+
+1. A Deck has one positive canvas, one embedded Theme, exactly one protected
+   Normal text Style, and at least one Slide.
+2. `slideOrder` contains every Slide exactly once.
+3. Every Layout references a live Master; every Slide references a live Layout.
+4. Each Master/Layout/Slide element store is flat. Each element is either at
+   the owner root or names one same-store Group through `parentGroupId`.
+5. For every element sibling set, `zIndex` is unique and contiguous `0..n-1`.
+6. Groups are non-empty, acyclic, bounded in depth, and own no child arrays.
+7. Slot bindings are slide-root-only, kind-compatible, one-to-one, and carry no
+   duplicate frame.
+8. Every Theme token and text Style reference resolves with the required kind;
+   Style inheritance is acyclic.
+9. Every Rich Content value passes Rich Text validation and normalization.
+10. Every live Prompt Content element has one distinct dedicated Derived Output
+    at a positive immutable revision.
+11. Slide, Master, Layout, slot, element, Style, token, table, merge, chart,
+    Rich Text atom, and Rich Text mark IDs are never reused within retained Deck
+    history. Exact same-kind compensation may reactivate only the same ID.
+12. Historical behavior depends only on the Deck revision and exact immutable
+    resource/output references stored by that revision.
+
+## Outside the Slides backend domain
+
+Rendering, animation, and transition behavior are explicitly outside this
+backend capability's domain. They are not unfinished canonical-model features
+and are therefore not listed as representation-v1 deferrals.
 
 ## Deferred from representation version 1
 
-- Mutable external Themes, token registries, master Slides, and layout placeholders.
-- Deck, Slide, Group, or Prompt Content duplication.
-- Stored group transforms.
+- Deck/Slide/Group/Prompt duplication; Prompt copies require new dedicated
+  Derived Outputs.
+- External/shared Theme resources and token alias chains.
+- A separate template resource beyond live deck-owned Layouts.
+- Cross-inheritance-plane element interleaving.
+- Stored Group rotation/scale and arbitrary transformed coordinate systems.
 - Custom paths, arbitrary SVG, gradients, curved lines, and elbow routing.
-- Live Formula, Structured Data, analysis, or Media runtime integration.
-- Renderers, thumbnails, export files, render caches, and pixel geometry.
-- Animations, transitions, video, audio, and generic embeds.
-- Real-time presence and Activity publishing beyond a durable accepted-fact outbox.
+- Formula- or Structured-Data-backed Chart numeric series.
+- Generic embeds, video, and audio element kinds.
+- Activity publishing/management beyond the durable accepted-fact outbox, and
+  detached-output garbage collection.
+
+## Explicit assumptions and open questions
+
+The model above makes these decisions so implementation can begin without an
+implicit gap:
+
+1. **Layouts are templates.** Representation v1 has Master and Layout
+   registries but no third template registry. Confirm whether a separate named
+   template concept is needed later.
+2. **Inheritance planes do not interleave.** Master is always behind Layout,
+   which is always behind Slide; `zIndex` is local to an element sibling set.
+   Confirm whether a Slide element must ever appear behind a Master/Layout
+   element. Supporting that would require a cross-plane stacking contract.
+3. **One element per slot.** A slot binds at most one framed Slide root element
+   and owns the entire live frame. Confirm whether multi-element slot contents
+   are required.
+4. **Groups translate only.** A Group stores a local origin; compound resize or
+   rotation is expanded over descendants. Confirm whether retained Group
+   transforms are required for fidelity with imported decks.
+5. **Chart values are literal.** Rich Content labels can contain Formula atoms,
+   but numeric series do not yet bind Formula/Structured Data. Confirm the
+   eventual expected result shape before adding that staged workflow.
+6. **Prompt output text remains external.** `DerivedOutputRef` points to the
+   current plain-text Derived Output contract, and Slides projects it using the
+   element's text Style without copying it into Rich Content. If Derived Outputs
+   later exposes Rich Content, that should be a versioned interface change.
