@@ -34,6 +34,7 @@
               bat        # syntax-highlighted cat
               curl
               git
+              gh
             ];
 
             shellHook = ''

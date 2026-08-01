@@ -29,12 +29,13 @@ One Base contains the complete canonical Workbook at one revision:
 ```text
 WorkbookSnapshot
   ├─ title, lifecycle, metadata, calculation settings
+  ├─ embedded Theme tokens, palette/typography, and Cell Style registry
   ├─ sheetOrder
   └─ sheets
        ├─ stable row and column axes
        ├─ sparse canonical Cells and merged spans
        ├─ closed CellContent values and exact computed settlements
-       ├─ rules and typed overlays
+       ├─ ordered Format Regions, rules, and typed overlays
        └─ RichContent values and their stable atom/mark identities
 ```
 
@@ -145,7 +146,11 @@ interface SpreadsheetStore {
   getPromptOutputOwnership(
     outputId: string,
   ): Promise<PromptCellOutputOwnership | undefined>;
-  getLivePromptOutputOwnershipByCell(
+  getAttachedPromptOutputOwnershipByCell(
+    workbookId: WorkbookId,
+    cellId: CellId,
+  ): Promise<PromptCellOutputOwnership | undefined>;
+  getPendingPromptOutputOwnershipByCell(
     workbookId: WorkbookId,
     cellId: CellId,
   ): Promise<PromptCellOutputOwnership | undefined>;
@@ -281,6 +286,15 @@ interface SpreadsheetSubmissionReceipt {
   requestId: string;
   requestDigest: string;
   result: SpreadsheetCommandResult;
+  /** Operational evidence only; excluded from Workbook source identity. */
+  formulaAdmissions?: Array<{
+    scope: "whole-cell";
+    target: { sheetId: SheetId; cellId: CellId };
+    sourceDigest: string;
+    bindingIds: string[];
+    resolverSnapshotDigest: string;
+    changeSetId: string;
+  }>;
   createdAt: string;
 }
 
@@ -304,6 +318,14 @@ Receipts are keyed by `(workbookId, requestId)`. An identical retry returns the
 stored typed result. Reuse with a different canonical command digest returns
 `idempotency_mismatch`.
 
+The request digest covers the strict decoded public command, including authored
+formula text before normalization. For each admitted whole-Cell formula, the
+receipt additionally retains target, canonical source digest, stable project
+binding IDs, admission resolver digest, and originating ChangeSet ID as
+operational evidence. Grid-rule formulas do not consult project bindings and
+produce no resolver evidence. None of this evidence enters formula source
+identity or the Workbook semantic digest.
+
 Cross-database mutations cannot share Spreadsheet's SQLite transaction. Prompt
 definition/stabilization updates therefore first persist a delegated-command
 claim containing the frozen output ID and definition revision, canonical
@@ -323,7 +345,10 @@ SQLite files.
 All Workbook-owned stable IDs are unique for the lifetime of a Workbook:
 
 - Sheet, row, column, and Cell IDs;
-- rule and overlay IDs, including overlay-owned semantic child IDs;
+- Workbook design-token and reusable Cell-Style IDs;
+- validation-list-option, Format-Region, rule, overlay, and Chart-series IDs,
+  including other overlay-owned semantic child IDs;
+- Spreadsheet Formula binding-manifest IDs;
 - RichContent atom and mark IDs; and
 - any future stable projection/materialization IDs.
 
@@ -362,9 +387,11 @@ interface SpreadsheetAttemptBase {
 interface FrozenGridFormula {
   sheetId: SheetId;
   cellId: CellId;
-  source: SpreadsheetFormulaSource;
+  source: WholeCellFormulaSource;
+  /** Operational admission evidence; not a field of canonical formula source. */
+  admissionResolverSnapshotDigest?: string;
   contentFingerprint: CellContentFingerprint;
-  gridDependencyManifest: StableCellOrRangeRef[];
+  gridDependencyManifest: Array<StableCellRef | StableRangeRef>;
   projectBindingIds: string[];
 }
 
@@ -378,7 +405,7 @@ interface GridCalculationAttempt extends SpreadsheetAttemptBase {
 
 interface RichContentFormulaEvaluationAttempt extends SpreadsheetAttemptBase {
   kind: "rich-formula-evaluation";
-  target: { kind: "cell-rich-content"; sheetId: SheetId; cellId: CellId };
+  target: SpreadsheetRichContentTarget;
   formulaAtomId: string;
   frozenExpression: string;
   frozenExpressionDigest: string;
@@ -388,11 +415,11 @@ interface RichContentFormulaEvaluationAttempt extends SpreadsheetAttemptBase {
 
 interface PromptCellCreationAttempt extends SpreadsheetAttemptBase {
   kind: "prompt-content-create";
-  sheetId: SheetId;
-  cellId: CellId;
-  /** Complete frozen Cell shell except the eventual exact output ref. */
-  cell: PromptContentCellShell;
+  target: CellTarget;
+  targetPreconditionDigest: string;
   definition: PromptDefinition;
+  /** Present when this workflow directly replaces attached Prompt Content. */
+  displacedAttachedOutputId?: string;
   candidateOutputId?: string;
   candidateHeadRevision?: number;
 }
@@ -408,15 +435,11 @@ interface PromptCellRefreshAttempt extends SpreadsheetAttemptBase {
 
 interface DataCellAttachAttempt extends SpreadsheetAttemptBase {
   kind: "data-cell-attach";
-  sheetId: SheetId;
-  cellId: CellId;
-  cell: DataCellShell;
-  bindingId: string;
-  /** Optional caller constraint; function values are always rejected. */
-  expectedValueKind?: NonFunctionFormulaWireKind;
+  target: CellTarget;
+  targetPreconditionDigest: string;
+  source: DataCellSource;
   /** Required for structured values and absent for scalar values. */
   orientation?: ProjectionOrientation;
-  tracking: "pinned" | "follow-head";
   resolverSnapshotDigest?: string;
   candidate?: DataCellSettlementCandidate;
 }
@@ -426,7 +449,7 @@ interface DataCellRefreshAttempt extends SpreadsheetAttemptBase {
   sheetId: SheetId;
   cellId: CellId;
   bindingId: string;
-  frozenOwnerRevision: number;
+  frozenOwnerRevision: number | string;
   frozenValueDigest: string;
   resolverSnapshotDigest?: string;
   candidate?: DataCellSettlementCandidate;
@@ -466,10 +489,31 @@ settlement operations. Serial settle
 reloads the current head and adopts only candidates whose content fingerprints
 and required dependencies remain valid.
 
-A RichContent Formula attempt freezes the exact Cell target, FormulaAtom ID,
-expression, and digest. Its candidate is only Rich Text's bounded
-Formula-settlement operation. Settlement requires that the same Cell, atom, and
-expression still exist; stale work never overwrites later authoring.
+Workbook-local formula bindings may include Prompt Content Cells. Compute reads
+only the frozen `outputId@appliedRevision`, and the candidate dependency record
+retains that exact ref. It never asks Derived Outputs for the current head while
+calculating. The Prompt Cell content fingerprint guards settlement.
+
+A grid reference to RichContent resolves the deterministic plain-text
+projection of the frozen RichContent value. Its complete content fingerprint
+and projected-value digest are retained with the candidate dependency; compute
+never reads a later RichContent revision.
+
+A RichContent Formula attempt freezes the complete closed
+`SpreadsheetRichContentTarget`, FormulaAtom ID, expression, and digest. Its
+candidate is only Rich Text's bounded Formula-settlement operation. Settlement
+requires that the same target, atom, and expression still exist; stale work
+never overwrites later authoring.
+
+```ts
+type SpreadsheetRichContentTarget =
+  | { kind: "cell-content"; sheetId: SheetId; cellId: CellId }
+  | { kind: "validation-message"; sheetId: SheetId; cellId: CellId }
+  | { kind: "validation-list-option"; sheetId: SheetId; cellId: CellId; optionId: string }
+  | { kind: "chart-title"; sheetId: SheetId; overlayId: SheetOverlayId }
+  | { kind: "chart-axis-title"; sheetId: SheetId; overlayId: SheetOverlayId; axis: "category" | "value" }
+  | { kind: "chart-series-name"; sheetId: SheetId; overlayId: SheetOverlayId; seriesId: string };
+```
 
 Prompt creation freezes the Cell identity, coordinate/span, style, and Prompt
 definition before declaring one dedicated Derived Output. Refresh freezes the
@@ -477,8 +521,8 @@ currently applied output revision. Definition/stabilization update uses the
 delegated claim described above. No generic operation may introduce
 `prompt-content` or attach an arbitrary `DerivedOutputRef`.
 
-Data attach freezes the Cell shell, stable project binding ID, optional value
-kind constraint, and structured-value orientation. Scalar bindings do not have
+Data attach freezes the exact target/precondition, canonical `DataCellSource`,
+and optional structured-value orientation. Scalar bindings do not have
 an orientation or spill. Function bindings are rejected. Data refresh freezes
 the Cell's exact binding owner revision
 and value digest. Compute selects that binding from one immutable project
@@ -549,11 +593,13 @@ column, or Sheet, changes affected records to `historical` in the same Workbook
 mutation.
 
 `outputId` is globally unique in the local ledger. A Cell may have multiple
-historical ownership rows across separate Prompt lifetimes, but at most one
-`pending` or `attached` row. Dedicated Prompt creation always declares a fresh
-output; refresh and definition update retain the same output. This prevents
-sharing while allowing a Cell to leave Prompt Content and later become new
-Prompt Content.
+historical ownership rows across separate Prompt lifetimes. It may have one
+attached output and, while a replacement computes, one pending candidate.
+Dedicated Prompt creation always declares a fresh output; refresh and definition
+update retain the attached output. Settlement atomically makes the old attached
+row historical and promotes the pending row. Stale/failure handling makes only
+the pending row historical and preserves the old attachment. This prevents
+sharing while allowing a Cell to leave Prompt Content or replace it directly.
 
 Exact compensation may reattach an older historical output only when the Cell
 has no different live Prompt ownership. Otherwise compensation conflicts rather
@@ -594,7 +640,7 @@ interface SpreadsheetCommittedFact {
   actorId?: string;
   origin: "interactive" | "agent" | "automation";
   operationTypes: string[];
-  sourceSemanticDigest: string;
+  semanticDigest: string;
   occurredAt: string;
 }
 ```
@@ -636,6 +682,7 @@ CREATE TABLE command_receipts (
   request_id      TEXT NOT NULL,
   request_digest  TEXT NOT NULL,
   result_json     BLOB NOT NULL,
+  formula_admissions_json BLOB,
   created_at      TEXT NOT NULL,
   PRIMARY KEY (workbook_id, request_id),
   FOREIGN KEY (workbook_id) REFERENCES workbooks(id) ON DELETE CASCADE
@@ -655,13 +702,18 @@ CREATE TABLE delegated_command_claims (
   created_at           TEXT NOT NULL,
   updated_at           TEXT NOT NULL,
   PRIMARY KEY (workbook_id, request_id),
+  UNIQUE (external_key),
   FOREIGN KEY (workbook_id) REFERENCES workbooks(id) ON DELETE CASCADE
 );
 
 CREATE TABLE identity_ledger (
   workbook_id               TEXT NOT NULL,
   identity_id               TEXT NOT NULL,
-  identity_kind             TEXT NOT NULL,
+  identity_kind             TEXT NOT NULL CHECK (identity_kind IN (
+    'design-token', 'cell-style', 'sheet', 'row', 'column', 'cell',
+    'formula-binding', 'validation-option', 'format-region', 'sheet-rule',
+    'sheet-overlay', 'chart-series', 'rich-text-atom', 'rich-text-mark'
+  )),
   state                     TEXT NOT NULL
     CHECK (state IN ('active', 'tombstoned')),
   first_revision            INTEGER NOT NULL CHECK (first_revision >= 0),
@@ -726,7 +778,9 @@ CREATE INDEX change_sets_recent ON change_sets(workbook_id, seq DESC);
 
 CREATE TABLE activity_outbox (
   fact_id                 TEXT PRIMARY KEY,
-  kind                    TEXT NOT NULL,
+  kind                    TEXT NOT NULL CHECK (kind IN (
+    'spreadsheet.created', 'spreadsheet.changed', 'spreadsheet.compensated'
+  )),
   workbook_id             TEXT NOT NULL,
   revision                INTEGER NOT NULL CHECK (revision >= 0),
   change_set_id           TEXT,
@@ -734,7 +788,7 @@ CREATE TABLE activity_outbox (
   origin                  TEXT NOT NULL
     CHECK (origin IN ('interactive', 'agent', 'automation')),
   operation_types_json    BLOB NOT NULL,
-  source_semantic_digest  TEXT NOT NULL,
+  semantic_digest         TEXT NOT NULL,
   occurred_at             TEXT NOT NULL,
   published_at            TEXT,
   UNIQUE (workbook_id, revision),
@@ -803,9 +857,13 @@ CREATE TABLE prompt_output_ownership (
 CREATE INDEX prompt_ownership_state
   ON prompt_output_ownership(workbook_id, state, cell_id);
 
-CREATE UNIQUE INDEX prompt_ownership_live_cell
+CREATE UNIQUE INDEX prompt_ownership_attached_cell
   ON prompt_output_ownership(workbook_id, cell_id)
-  WHERE state IN ('pending', 'attached');
+  WHERE state = 'attached';
+
+CREATE UNIQUE INDEX prompt_ownership_pending_cell
+  ON prompt_output_ownership(workbook_id, cell_id)
+  WHERE state = 'pending';
 
 CREATE TABLE stage_receipts (
   attempt_id       TEXT NOT NULL,
@@ -842,6 +900,8 @@ The application validates the target while it is retained and returns
 The canonical snapshot contains only occupied Cells. Empty coordinates do not
 become SQL rows or placeholder objects. Row and column axes still describe the
 available grid, while the sparse Cell record describes authored content.
+“Occupied” means semantically materialized: a styled, validated, referenced, or
+merged Cell may carry `blank` content and still be canonical.
 
 Merged spans remain part of their canonical Cell objects. The adapter does not
 create a mutable span table. On decode, Spreadsheet validates rectangularity,
@@ -870,7 +930,10 @@ Compaction runs through the serial queue:
 3. construct a Base at that cutoff and, when different, at the head;
 4. atomically verify the head, store the Bases, advance `baseSeq`, and prune;
 5. retain a continuous ChangeSet tail from the cutoff Base through the head;
-6. retain permanent identities, command/delegated claims, Prompt ownership,
+6. extend Base/ChangeSet coverage back to every active attempt's
+   `frozenWorkbookRevision` unless the attempt already contains a complete
+   equivalent frozen dependency snapshot;
+7. retain permanent identities, command/delegated claims, Prompt ownership,
    active attempts, configured recent terminal attempts, and outbox facts.
 
 Compaction changes neither logical revision nor semantic digest. Active
@@ -886,5 +949,5 @@ queue and is not removed merely because Workbook history was compacted.
 | RichContent Formula atoms and accepted atom values | per-atom attempts | RichContent dependency lookup |
 | exact Data binding revision/digest and accepted value | Data attach/refresh attempts | freshness comparison |
 | exact Prompt output ref | Prompt attempts and output ownership | current freshness display |
-| styles, validation, rules, overlays | identity ledger | resolved conditional style |
+| Theme/tokens, Styles, Format Regions, validation, rules, overlays | identity ledger | resolved effective/conditional style |
 | exact inverse operations | accepted-fact outbox | Activity feed rows |

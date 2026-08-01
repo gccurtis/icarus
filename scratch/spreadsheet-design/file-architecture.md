@@ -77,15 +77,15 @@ alias, migration framework, or global Spreadsheet configuration surface.
 
 | File | Main responsibility |
 |---|---|
-| `domain/model.ts` | Defines Workbook heads/snapshots, stable Sheets/axes/Cells/spans, the closed `CellContent` union and exact computed settlements, styles/rules/overlays, operations, ChangeSets/Bases/receipts, identity transitions, durable attempts/stages, committed facts, internal intents, limits, and options. |
+| `domain/model.ts` | Defines Workbook heads/snapshots, embedded Theme/tokens and reusable Cell Styles, stable Sheets/axes/Cells/spans, ordered range Format Regions, the closed `CellContent` union and exact computed settlements, the closed RichContent target union, validation/rules/typed overlays, operations, ChangeSets/Bases/receipts, identity transitions, durable attempts/stages, committed facts, internal intents, limits, and options. |
 | `domain/grid.ts` | Resolves `rowOrder`/`columnOrder` stable identities, enforces sparse occupancy, and validates rectangular contiguous non-overlapping spans. A1 labels are derived display addresses only. |
 | `domain/projection.ts` | Projects structured accepted values from an anchor Cell and returns deterministic blocked/ready diagnostics. Projected coordinates never become hidden canonical Cells. |
 | `domain/calculation.ts` | Builds a dependency graph from a frozen Workbook, records stable Cell/range and project-binding-ID manifests from normalized `spreadsheet-formula/v1` bindings, detects cycles, produces a deterministic plan, and composes frozen Workbook-local bindings with an immutable project Formula snapshot. It performs no I/O. |
 | `domain/reducer.ts` | Applies canonical operations and emits normalized forward operations, exact inverses, touched IDs, and semantic digest. It does not call Formula or other capabilities. |
-| `domain/inverses.ts` | Produces exact compensation from before/after state, including deleted Sheet/axis/Cell subtrees, merge coverage, rules, and overlay state. |
+| `domain/inverses.ts` | Produces exact compensation from before/after state, including deleted Sheet/axis/Cell subtrees, merge coverage, Format Regions, rules, and overlay state. |
 | `domain/identities.ts` | Claims, tombstones, and narrowly reactivates Workbook-owned stable identities. Ordinary commands cannot reuse tombstones. |
 | `domain/rebase.ts` | Replays the authored revision, compares touched identities with intervening ChangeSets, and permits only disjoint semantic rebase. |
-| `domain/validation.ts` | Enforces identity/order/span/projection/content/style/rule invariants; `spreadsheet-formula/v1`, ordinary Formula/v1, and RichContent target validity; one dedicated output per Prompt Content Cell; immutable Data/Prompt/File references; and configured size/depth/byte limits. |
+| `domain/validation.ts` | Enforces identity/order/span/projection/content invariants; typed token refs, one protected Normal Style, acyclic Style inheritance, and Style/Format-Region/rule/overlay validity; `spreadsheet-formula/v1`, ordinary Formula/v1, and closed RichContent target validity; dedicated Prompt output ownership; immutable Data/Prompt/File references; and configured size/depth/byte limits. |
 | `domain/canonical.ts` | Produces deterministic canonical JSON and SHA-256 semantic digests. Operational timestamps, attempts, retry state, and outbox publication do not affect Workbook semantics. |
 | `application/createService.ts` | Creates the initial Workbook with stable caller-provided identities, one default Sheet/axes, a revision-zero Base, receipt, identity claims, and creation fact in one transaction. |
 | `application/spreadsheetService.ts` | Exposes command/query, reconstructs historical snapshots, performs idempotency/CAS/rebase/compensation, orchestrates Prompt/Data/Formula stages, dispatches internal intents after durable commit, recovers attempts, and performs head-guarded compaction. |
@@ -244,8 +244,8 @@ value. They do not require additions to global backend configuration.
 
 | Method and path | Job name | Queue | Response mode |
 |---|---|---|---|
-| `POST /spreadsheets/command` | `spreadsheet.command.v1` | serial | inline |
-| `POST /spreadsheets/query` | `spreadsheet.query.v1` | concurrent | inline |
+| `POST /spreadsheets/command` | `spreadsheets.command.v1` | serial | inline |
+| `POST /spreadsheets/query` | `spreadsheets.query.v1` | concurrent | inline |
 
 The command Job decodes the body before calling `spreadsheet.command`.
 Creation returns `201`; durable Formula, Prompt, and Data attempt admission
@@ -304,6 +304,21 @@ rechecks each source/dependency fingerprint and adopts only candidates that are
 still valid through one ordinary ChangeSet. Partial staleness does not permit a
 candidate to overwrite newer authoring.
 
+The resolver snapshot used to admit symbolic names is retained only as
+operational receipt/attempt evidence. Canonical Formula source identity depends
+on the captured stable binding IDs, not on a whole-project resolver digest;
+accepted settlement records the evaluation resolver digest separately.
+
+A whole-Cell formula may bind a Prompt Content Cell. In that case compute uses
+the frozen exact `outputId@appliedRevision`; the candidate dependency identity
+records that exact ref and the local Cell content fingerprint guards settlement.
+Calculation never substitutes the Derived Output's current head.
+
+A grid binding to RichContent uses its deterministic plain-text projection from
+the same frozen Workbook revision. The candidate retains the full content
+fingerprint and projected-value digest, so retry or settlement cannot observe a
+later RichContent value.
+
 Automatic mode creates calculation attempts atomically with an accepted source
 mutation. Manual mode creates the same attempt through an explicit command.
 There is one calculation engine and one settlement path.
@@ -312,22 +327,38 @@ There is one calculation engine and one settlement path.
 
 An accepted RichContent edit that introduces a FormulaAtom or changes its
 expression creates a per-atom attempt in the same transaction as its ChangeSet.
+The attempt persists the complete closed locator plus atom identity:
+
+```ts
+type SpreadsheetRichContentTarget =
+  | { kind: "cell-content"; sheetId: SheetId; cellId: CellId }
+  | { kind: "validation-message"; sheetId: SheetId; cellId: CellId }
+  | { kind: "validation-list-option"; sheetId: SheetId; cellId: CellId; optionId: string }
+  | { kind: "chart-title"; sheetId: SheetId; overlayId: SheetOverlayId }
+  | { kind: "chart-axis-title"; sheetId: SheetId; overlayId: SheetOverlayId; axis: "category" | "value" }
+  | { kind: "chart-series-name"; sheetId: SheetId; overlayId: SheetOverlayId; seriesId: string };
+```
+
 Compute evaluates the frozen expression against one immutable project resolver
-snapshot. Settlement reloads the exact Sheet/Cell/atom target and uses Rich
-Text's Formula settlement operation only if the expression digest still
-matches. RichContent FormulaAtoms retain ordinary Formula/v1 semantics: they
-receive project bindings only and cannot use A1, range, or sheet-qualified grid
-references. Spreadsheet does not parse `{{ ... }}` itself; Rich Text owns the
+snapshot. Settlement reloads the exact target/atom and uses Rich Text's Formula
+settlement operation only if the expression digest still matches. RichContent
+FormulaAtoms retain ordinary Formula/v1 semantics: they receive project
+bindings only and cannot use A1, range, or sheet-qualified grid references.
+Spreadsheet does not parse `{{ ... }}` itself; Rich Text owns the
 delimiter-to-FormulaAtom operation.
 
 ### Prompt Content
 
 A Prompt Content Cell cannot be introduced by a generic Cell operation and
 cannot attach a caller-supplied output. Its creation command may target a new or
-existing Cell; it freezes the resulting Cell shell and definition, then
+existing Cell; it freezes the exact target/precondition and definition, then
 concurrent compute declares and initially refreshes one fresh dedicated Derived
 Output. Serial settlement creates/replaces the content with the exact output ref
 and changes local ownership from pending to attached in the same transaction.
+When replacing existing Prompt Content, its attached output remains attached
+while the one new candidate is pending. Settlement atomically makes the old row
+historical and promotes the candidate; stale/failure handling makes only the
+candidate historical and preserves the existing attachment.
 
 Refresh freezes output identity and applied revision, computes through Derived
 Outputs, and conditionally adopts the exact newer revision.
@@ -342,7 +373,7 @@ output.
 
 Data attach/refresh also use compute/settle because the resolver snapshot is
 external to Workbook persistence. Attach freezes the selected stable binding
-ID and target Cell shell. Compute selects exactly one binding from an immutable
+ID and exact target/precondition. Compute selects exactly one binding from an immutable
 project Formula snapshot and persists its owner revision, value digest, and
 exact Formula-wire-serializable non-function candidate value. A scalar has no
 orientation and does not spill; a table, record, or list requires an orientation
@@ -402,7 +433,7 @@ registered immediately after Spreadsheet construction.
 | dependency graph | Workbook revision | Formula Cell/atom dependencies and cycles |
 | calculation plan | Workbook revision + resolver digest | deterministic evaluation components/order |
 | range projection | Workbook revision + anchor Cell | structured accepted value extent/status |
-| effective style | Workbook revision + Cell/rules | base Cell style plus conditional formatting |
+| effective style | Workbook revision + coordinate | Theme/Normal → Sheet → Column → Row → Format Regions → Cell → conditional rules |
 | external dependencies | Workbook revision | exact Data, Prompt, and immutable File refs |
 
 These may be cached by revision but are always discardable. Spreadsheet
@@ -413,8 +444,9 @@ thumbnail, or calculated duplicate Cell table.
 
 Spreadsheet owns the semantic facts required to describe and calculate a
 Workbook: stable axes and ordering, sparse Cell occupancy, merged spans, exact
-sources/accepted values, Formula dependency manifests, structured projection
-semantics, style/rule/overlay definitions, and revision history.
+Cell content/settlements, Formula dependency manifests, structured projection
+semantics, embedded Theme/tokens and reusable Styles, ordered Format Regions,
+rule/overlay definitions, and revision history.
 
 The following are permanently outside the Spreadsheet backend capability:
 

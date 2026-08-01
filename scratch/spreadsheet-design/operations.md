@@ -38,15 +38,32 @@ Ordering has one authority per collection:
 - `sheetOrder` is the sole Sheet-order authority;
 - `SpreadsheetSheet.rowOrder` is the sole Row-order authority;
 - `SpreadsheetSheet.columnOrder` is the sole Column-order authority; and
-- kind-specific order arrays are authoritative inside ordered overlay payloads.
+- `formatRegions` and `rules` array order is priority authority;
+- overlay `zIndex` is paint-order authority; and
+- kind-specific arrays are authoritative inside ordered overlay payloads.
 
 A1 notation is never canonical identity. A coordinate resolves through stable
 `sheetId`, `rowId`, and `columnId`. Canonical formula bindings use those stable
 IDs even when the author typed A1, a Sheet-qualified address, or a range.
 
 Row and Column placement uses stable `after*Id` anchors. Absence means the
-front of the corresponding order. Rows and Columns contain no rank, index, or
+end of the corresponding order. Rows and Columns contain no rank, index, or
 second ordering field.
+
+Stable range endpoint roles survive axis movement. Membership is the rectangle
+between the current min/max positions of the two stored stable endpoints, even
+when a move reverses their displayed order; Formula `$` modes and authored
+endpoint roles are not rewritten. A merged `CellSpan` is stricter: its anchor
+must remain the top-left coordinate. An axis move that would invert a merged
+span is rejected unless an earlier operation in the same batch unmerges or
+rewrites that Cell.
+
+Deleting an axis endpoint is explicit. Ordinary rule, format, validation,
+overlay, freeze, and span refs must be removed or rewritten in the same batch.
+Formula grid bindings instead normalize from a `resolved` target to a `broken`
+target that retains the prior stable IDs and missing-ID evidence. Calculation
+settles a typed broken-reference diagnostic; it never rebinds the alias to a
+neighbor or future reused coordinate. Exact undo restores the resolved target.
 
 ## Canonical operation vocabulary
 
@@ -63,6 +80,21 @@ type SpreadsheetOperation =
   | { type: "workbook.set-metadata"; metadata: WorkbookMetadata }
   | { type: "workbook.set-calculation";
       calculation: CalculationSettings }
+
+  // Embedded Theme and reusable Cell Styles
+  | { type: "theme.rename"; name: string }
+  | { type: "theme.set-palette"; palette: WorkbookThemePalette }
+  | { type: "theme.set-typography"; typography: WorkbookThemeTypography }
+  | { type: "theme.token.create"; token: WorkbookDesignToken }
+  | { type: "theme.token.update"; tokenId: WorkbookDesignTokenId;
+      token: WorkbookDesignToken }
+  | { type: "theme.token.delete"; tokenId: WorkbookDesignTokenId;
+      replacementTokenId?: WorkbookDesignTokenId }
+  | { type: "cell-style.create"; style: WorkbookCellStyle }
+  | { type: "cell-style.update"; styleId: CellStyleId;
+      style: WorkbookCellStyle }
+  | { type: "cell-style.delete"; styleId: CellStyleId;
+      replacementStyleId?: CellStyleId }
 
   // Sheets — sheetOrder remains authoritative
   | { type: "sheet.insert"; sheet: SpreadsheetSheet;
@@ -86,6 +118,8 @@ type SpreadsheetOperation =
       heightPt?: number }
   | { type: "row.set-hidden"; sheetId: SheetId; rowId: RowId;
       hidden: boolean }
+  | { type: "row.set-style"; sheetId: SheetId; rowId: RowId;
+      styleId?: CellStyleId; styleOverrides?: CellStyleProperties }
   | { type: "column.insert"; sheetId: SheetId; column: SheetColumn;
       afterColumnId?: ColumnId }
   | { type: "column.move"; sheetId: SheetId;
@@ -95,6 +129,8 @@ type SpreadsheetOperation =
       columnId: ColumnId; widthPt?: number }
   | { type: "column.set-hidden"; sheetId: SheetId;
       columnId: ColumnId; hidden: boolean }
+  | { type: "column.set-style"; sheetId: SheetId; columnId: ColumnId;
+      styleId?: CellStyleId; styleOverrides?: CellStyleProperties }
 
   // Sparse Cells. Public create/set-content is limited below.
   | { type: "cell.create"; sheetId: SheetId; cell: SpreadsheetCell }
@@ -102,19 +138,20 @@ type SpreadsheetOperation =
   | { type: "cell.set-content"; sheetId: SheetId; cellId: CellId;
       content: CellContent }
   | { type: "cell.set-style"; sheetId: SheetId; cellId: CellId;
-      style: CellStyle }
+      styleId: CellStyleId; styleOverrides?: CellStyleProperties }
   | { type: "cell.set-validation"; sheetId: SheetId; cellId: CellId;
       validation?: CellValidation }
 
   // Rich Content, including Formula atoms
-  | { type: "rich-content.apply"; sheetId: SheetId; cellId: CellId;
+  | { type: "rich-content.apply"; target: SpreadsheetRichContentTarget;
       operations: RichTextOperation[] }
 
   // Formula source and calculation settlement — internal normalized values
   | { type: "formula-source.apply"; target: SpreadsheetFormulaTarget;
       formula: SpreadsheetFormulaSource }
   | { type: "formula-cell.apply-settlement"; sheetId: SheetId;
-      cellId: CellId; settlement: ComputedCellSettlement;
+      cellId: CellId;
+      settlement: ComputedCellSettlement<AcceptedFormulaCellValue>;
       guard: FormulaSettlementGuard }
 
   // Merges
@@ -133,23 +170,32 @@ type SpreadsheetOperation =
 
   // Convert one rebuildable projection into explicit ordinary Cells
   | { type: "projection.materialize"; sheetId: SheetId;
-      anchorCellId: CellId; replacement?: SpreadsheetCell;
+      anchorCellId: CellId; anchorReplacement: SpreadsheetCell;
       cells: SpreadsheetCell[] }
 
   // Sheet presentation and rules
-  | { type: "format-region.create"; sheetId: SheetId;
-      region: SheetFormatRegion }
+  | { type: "format-region.insert"; sheetId: SheetId;
+      region: SheetFormatRegion; afterRegionId?: SheetFormatRegionId }
+  | { type: "format-region.move"; sheetId: SheetId;
+      regionId: SheetFormatRegionId; afterRegionId?: SheetFormatRegionId }
   | { type: "format-region.update"; sheetId: SheetId;
-      regionId: string; region: SheetFormatRegion }
-  | { type: "format-region.delete"; sheetId: SheetId; regionId: string }
-  | { type: "rule.create"; sheetId: SheetId; rule: SheetRule }
+      regionId: SheetFormatRegionId; region: SheetFormatRegion }
+  | { type: "format-region.delete"; sheetId: SheetId;
+      regionId: SheetFormatRegionId }
+  | { type: "rule.insert"; sheetId: SheetId; rule: SheetRule;
+      afterRuleId?: SheetRuleId }
+  | { type: "rule.move"; sheetId: SheetId; ruleId: SheetRuleId;
+      afterRuleId?: SheetRuleId }
   | { type: "rule.update"; sheetId: SheetId;
-      ruleId: string; rule: SheetRule }
-  | { type: "rule.delete"; sheetId: SheetId; ruleId: string }
-  | { type: "overlay.create"; sheetId: SheetId; overlay: SheetOverlay }
+      ruleId: SheetRuleId; rule: SheetRule }
+  | { type: "rule.delete"; sheetId: SheetId; ruleId: SheetRuleId }
+  | { type: "overlay.insert"; sheetId: SheetId; overlay: SheetOverlay }
+  | { type: "overlay.move"; sheetId: SheetId;
+      overlayId: SheetOverlayId; zIndex: number }
   | { type: "overlay.update"; sheetId: SheetId;
-      overlayId: string; overlay: SheetOverlay }
-  | { type: "overlay.delete"; sheetId: SheetId; overlayId: string };
+      overlayId: SheetOverlayId; overlay: SheetOverlay }
+  | { type: "overlay.delete"; sheetId: SheetId;
+      overlayId: SheetOverlayId };
 
 type PublicSpreadsheetOperation = Exclude<
   SpreadsheetOperation,
@@ -157,7 +203,8 @@ type PublicSpreadsheetOperation = Exclude<
       | "formula-source.apply"
       | "formula-cell.apply-settlement"
       | "prompt-content.apply-derived-output"
-      | "data-cell.apply-content" }
+      | "data-cell.apply-content"
+      | "projection.materialize" }
 >;
 ```
 
@@ -174,12 +221,49 @@ the same transaction. Row, Column, and Sheet deletion apply the same rule.
 Spreadsheet never deletes the external Derived Output.
 
 `projection.materialize` carries every resulting stable Cell ID and exact
-value. The reducer invents nothing. Admission verifies that the supplied
-materialized values equal the current projection.
+value. `anchorReplacement` retains the anchor Cell ID and coordinate while
+replacing its computed content with the first projected value; `cells` covers
+every remaining projected coordinate in row-major order with explicit new
+Cell and Rich Text atom IDs. The reducer invents nothing. Admission requires a
+`ready` current projection and verifies the one-to-one coordinates, paths, and
+values before reduction.
+
+Materialization is total over supported scalar leaves: Formula null becomes
+`blank`, number/logic becomes canonical literal content, and Formula text
+becomes plain `RichContent` with an explicit caller-supplied Text atom ID.
+Nested structured values at a projected leaf are `shape-invalid` in v1 rather
+than being silently stringified. The anchor preserves its Style, overrides,
+and validation; new Cells use the Sheet default Style with no local override or
+validation. Every resulting span is 1×1.
 
 No settlement operation stores `RangeProjection`. Projection extent, blocked
 status, and diagnostics are rebuilt from the settled structured value, anchor,
 orientation, and current axes. They are never a second canonical copy.
+
+## Design, ordered regions, and overlay semantics
+
+Theme and Cell Style registries live inside the Workbook revision. Token
+updates preserve ID and kind. Deleting a referenced token requires a
+same-kind replacement and atomically rewrites every Theme, Style, Sheet, Cell,
+rule, and overlay reference; an unreferenced token may omit the replacement.
+
+`cell-style.update` replaces the complete Style with the same ID and validates
+the resulting acyclic inheritance graph. The protected Normal Style may change
+name and presentation but cannot lose `systemRole: "normal"` or be deleted.
+Deleting another referenced Style requires a replacement and rewrites every
+selected Style/default/inheritance reference exactly; an unreferenced Style
+may omit the replacement.
+
+Format regions and Conditional Formatting rules are low-to-high priority
+arrays. Insert/move use stable after-ID anchors; absence appends. No array index
+is a wire identity. Deletion/inversion restores the exact prior priority.
+
+Overlay `zIndex` is the sole overlay paint-order authority and is contiguous
+`0..n-1`, back-to-front. Insert, move, and delete renumber the affected sibling
+set atomically. `overlay.update` requires the same ID, kind, and z-index;
+kind change is delete plus insert with a new ID, and reordering uses
+`overlay.move`. Chart text introduced by insert/update participates in Rich
+Formula discovery.
 
 ## Formula-source admission
 
@@ -215,24 +299,38 @@ For each `formula-source.admit`, Spreadsheet:
 1. tokenizes Spreadsheet address syntax without treating strings as refs;
 2. resolves every address against the authored revision to stable Sheet/Row/
    Column identities;
-3. replaces address tokens with collision-proof Formula/v1 aliases;
-4. parses symbolic non-builtin project names and resolves them against one
-   immutable project Formula-resolver snapshot;
-5. stores each grid alias, authored UTF-16 span, stable target,
+3. replaces address tokens with collision-proof Formula/v1 aliases and stores
+   each alias, authored UTF-16 span, stable target,
    absolute/relative Row and Column modes, and explicit-Sheet intent in the
    binding manifest;
-6. stores each project's authored/normalized lookup key and stable binding ID,
-   together with the admission resolver identity; and
-7. asks Formula to parse the normalized Formula/v1 source and emits one
-   canonical `formula-source.apply` forward operation.
+4. asks Formula to parse the normalized Formula/v1 source, then uses Formula's
+   dependency extraction to identify non-builtin, non-lexical symbolic names;
+5. for a whole-Cell formula only, resolves those project names against one immutable
+   project Formula-resolver snapshot and stores each authored/normalized lookup
+   key and stable binding ID, while recording the resolver digest as
+   operational admission evidence;
+6. for validation/rule targets, rejects every remaining symbol except the
+   reserved `__spreadsheet_cell_value` local; and
+7. emits one canonical `formula-source.apply` forward operation.
 
 The normalized expression, stable binding manifest, language version, and
-source digest form `SpreadsheetFormulaSource` under
-`spreadsheet-formula/v1`. `authoredText` is retained for editor round-tripping,
-but is never rebound as authority. `normalizedFormulaSource` is the actual
-Formula/v1 input. Sheet rename or axis movement therefore cannot silently
-retarget a formula. One `admissionResolverSnapshotDigest` identifies the
-project resolver snapshot used to admit all project-binding manifest entries.
+source digest form a discriminated `SpreadsheetFormulaSource` under
+`spreadsheet-formula/v1`:
+
+- `WholeCellFormulaSource` has `scope: "whole-cell"`, permits stable grid and
+  project-binding entries; and
+- `GridRuleFormulaSource` has `scope: "grid-rule"`, permits only stable Cell
+  and range bindings, and has no project resolver identity.
+
+`authoredText` is retained for editor round-tripping, but is never rebound as
+authority. `normalizedFormulaSource` is the actual Formula/v1 input. Sheet
+rename or axis movement therefore cannot silently retarget a formula.
+
+The resolver snapshot digest used during admission is stored with operational
+admission evidence, not in canonical formula source or `sourceDigest`.
+Unrelated project changes therefore do not change formula identity. The later
+accepted settlement separately records the resolver snapshot actually used to
+evaluate the formula.
 
 Project names are bind-once identities too. At calculation time Spreadsheet
 finds the current resolver binding by the stored `bindingId` and exposes that
@@ -241,18 +339,36 @@ and a new declaration that later claims the old display name cannot retarget
 the formula. A missing stored binding ID produces `stale_binding`; evaluation
 never falls back to name lookup. The binding may advance to a newer revision
 under the same stable ID, and the accepted settlement records that observed
-revision and value digest.
+revision and value digest. An unresolved nonlocal name is rejected at source
+admission rather than left to bind to a future declaration.
 
-Structural operations update or invalidate stable range manifests through
-explicit normalized forward operations. A deleted target becomes a typed
-reference diagnostic; it never falls through to whatever later occupies the
-old A1 coordinate.
+Project bindings are deliberately unavailable to validation and
+conditional-format formulas in v1. Those formulas are evaluated as rebuildable
+projections of one immutable Workbook revision using stable grid references,
+builtins, and the exact reserved `__spreadsheet_cell_value` local only. For
+validation it is the proposed content after deterministic grid-to-Formula
+conversion; for Conditional Formatting it is the current resolved coordinate
+value. Spreadsheet reserves the complete `__spreadsheet_` identifier prefix,
+so the local cannot resolve to or be shadowed by a project declaration. Rules
+never query a live project resolver while loading historical state.
+Per-target relative rule rebinding remains outside v1 as described below.
+
+Structural deletion expands to explicit normalized Formula-source rewrites.
+Each affected binding preserves its alias/authored span and changes from
+`resolved` to `broken`; the source digest changes accordingly. A deleted target
+therefore becomes a typed reference diagnostic and never falls through to
+whatever later occupies the old A1 coordinate.
 
 Validation and conditional-format formulas also bind once at admission. Their
 relative/absolute flags preserve authoring and future copy intent, but v1 does
 not re-evaluate a relative token separately for every Cell in a target range.
 Excel-style per-target relative rule evaluation would require a distinct rule
 template plus target-anchor manifest; it is not implied by this model.
+
+Representation v1 also has no copy/fill command. Relative/absolute modes are
+retained as authoring intent for a future copy operation that re-admits a new
+manifest; the reducer does not currently translate Formula references behind
+an ordinary Cell operation.
 
 Raw `FormulaCellContent`, raw custom-validation formulas, raw formula rules,
 and caller-authored `formula-source.apply` are rejected at the public boundary.
@@ -261,19 +377,42 @@ manifest.
 
 ## Rich Content and `{{ ... }}` formulas
 
-Rich Content is a separate formula surface. A text-valued Cell owns ordinary
-`RichContent`, and `rich-content.apply` delegates the complete edit batch to
-the injected Rich Text runtime.
+Rich Content is a separate formula surface. Text-valued Cells, validation
+messages/options, and authored Chart labels own ordinary `RichContent`.
+`rich-content.apply` uses one closed target union and delegates the complete
+edit batch to the injected Rich Text runtime:
+
+```ts
+type SpreadsheetRichContentTarget =
+  | { kind: "cell-content"; sheetId: SheetId; cellId: CellId }
+  | { kind: "validation-message"; sheetId: SheetId; cellId: CellId }
+  | { kind: "validation-list-option"; sheetId: SheetId; cellId: CellId;
+      optionId: string }
+  | { kind: "chart-title"; sheetId: SheetId; overlayId: string }
+  | { kind: "chart-axis-title"; sheetId: SheetId; overlayId: string;
+      axis: "category" | "value" }
+  | { kind: "chart-series-name"; sheetId: SheetId; overlayId: string;
+      seriesId: string };
+```
+
+Image alternative text remains a plain bounded accessibility string, not Rich
+Content.
 
 The `{{ ... }}` shortcut follows the Document and Slide contract:
 
 1. the editor identifies the completed delimited range;
 2. Rich Text returns operations replacing it with one Formula atom;
 3. the client submits those operations through `rich-content.apply`;
-4. admission stores Rich Text's normalized forward and exact inverse edits;
+4. admission resolves the closed target and stores Rich Text's normalized
+   forward and exact inverse edits;
 5. Spreadsheet discovers each new or expression-changed Formula atom; and
 6. the same mutation transaction creates one durable Rich Formula attempt per
    changed atom.
+
+Cell/validation/overlay create or replacement operations scan every complete
+Rich Content value they introduce and report the same changes. Applying a
+Formula settlement changes accepted atom fields only and does not recursively
+schedule another evaluation.
 
 Spreadsheet never parses the braces and never stores a second accepted copy of
 the atom value. Formula evaluates the expression, while Rich Text owns its
@@ -329,8 +468,7 @@ interface SpreadsheetApplyResult {
   semanticDigest: string;
   dirtyFormulaCellIds: CellId[];
   richFormulaChanges: Array<{
-    sheetId: SheetId;
-    cellId: CellId;
+    target: SpreadsheetRichContentTarget;
     atomId: string;
     expression: string;
   }>;
@@ -344,6 +482,7 @@ order.
 Exact inversion includes:
 
 - prior optional values rather than guessed defaults;
+- complete prior Theme/Style records and every reference rewritten by delete;
 - complete deleted Sheets, axes, Cells, rules, regions, and overlays;
 - exact prior Sheet/Row/Column positions;
 - every Cell removed or rewritten by axis, merge, or projection operations;
@@ -367,6 +506,9 @@ The public edit decoder rejects:
 - `data-cell.apply-content`;
 - `cell.create` or `cell.set-content` that introduces Formula, Prompt Content,
   or Data-backed content directly;
+- `sheet.insert` that smuggles any such restricted Cell content;
+- `cell.set-validation`, `rule.insert`, `rule.update`, or `sheet.insert` that
+  carries a caller-built `GridRuleFormulaSource`;
 - a caller-selected Derived Output reference or Data binding snapshot;
 - an identity previously present in the permanent identity ledger; and
 - reserved internal request IDs.
@@ -387,6 +529,8 @@ Touched footprints combine stable IDs with semantic sentinels:
 | Change | Minimum footprint |
 |---|---|
 | Workbook metadata/calculation | corresponding `$workbook:*` sentinel |
+| Theme/token | Theme/token ID and every rewritten reference |
+| Cell Style CRUD | Style registry sentinel, Style ID, inheritance/ref rewrites |
 | Sheet insert/move/delete | `$workbook:sheets`, Sheet ID, complete deleted subtree |
 | Sheet metadata | Sheet ID and property sentinel |
 | Row insert/move/delete | `$sheet:{id}:rows`, Row ID, rewritten spans/ranges/formula owners |
@@ -395,13 +539,13 @@ Touched footprints combine stable IDs with semantic sentinels:
 | Cell create/delete/content | Cell ID, coordinate sentinel, affected projection anchors |
 | Cell style/validation | Cell ID and property sentinel |
 | Formula source | owner target, source digest, every stable reference target |
-| Rich Content | Cell ID plus Rich Text atom/mark footprint |
+| Rich Content | exact target sentinel plus Rich Text atom/mark footprint |
 | Merge/unmerge | anchor, every covered coordinate and affected Cell ID |
 | Formula settlement | Cell ID and accepted-value sentinel |
 | Prompt/Data adoption | Cell ID, source sentinel, affected projection extent |
 | Projection materialization | anchor plus every introduced/replaced Cell and coordinate |
-| Format region/rule | record ID, its stable range members, Sheet registry sentinel |
-| Overlay | overlay ID, anchor/extent members, Sheet overlay sentinel |
+| Format region/rule | record ID, stable range members, ordered registry sentinel |
+| Overlay | overlay ID, anchor/extent members, `$sheet:{id}:overlays` |
 
 All ordering changes on one axis share the axis sentinel, so concurrent
 insert/move/delete decisions conflict. Independent Cell edits can rebase when neither
@@ -449,7 +593,7 @@ type SpreadsheetCommand =
   | { type: "workbook.calculate.request"; workbookId: string;
       expectedRevision: number; cellIds?: CellId[] }
   | { type: "rich-formula.evaluate.request"; workbookId: string;
-      sheetId: SheetId; cellId: CellId; formulaAtomId: string }
+      target: SpreadsheetRichContentTarget; formulaAtomId: string }
   | { type: "prompt-content.create.request"; workbookId: string;
       expectedRevision: number; target: CellTarget;
       prompt: string; contextEntries: ContextEntry[];
@@ -468,7 +612,8 @@ type SpreadsheetCommand =
       cellId: CellId; expectedRevision: number }
   | { type: "projection.materialize"; workbookId: string;
       sheetId: SheetId; anchorCellId: CellId;
-      materializedCellIds: CellId[]; expectedRevision: number };
+      anchorReplacement: SpreadsheetCell; cells: SpreadsheetCell[];
+      expectedRevision: number };
 
 type SpreadsheetCommandResult =
   | { type: "workbook.created"; head: WorkbookHead }
@@ -523,6 +668,23 @@ not require a live Structured Data read during replay.
 
 Grid reads return canonical Cells plus rebuildable projected coordinates. They
 do not persist or mint Cell identities for empty/projected coordinates.
+`sheet.grid`, `coordinate.resolve`, formula grid binding, and materialization
+all call the same projection helper. An anchor remains a canonical Cell but,
+when its structured projection is ready, its display includes the first
+projected `(valuePath, value)`. Every non-anchor projected coordinate returns
+the same anchor ID plus its exact path and value. A blocked projection returns
+diagnostics rather than a partial winner.
+
+```ts
+type ResolvedCoordinate =
+  | { kind: "unmaterialized"; coordinate: StableCellRef }
+  | { kind: "cell"; coordinate: StableCellRef; cell: SpreadsheetCell;
+      projectedDisplay?: { valuePath: Array<string | number>;
+        value: FormulaWireValue } }
+  | { kind: "projected"; coordinate: StableCellRef;
+      anchorCellId: CellId; valuePath: Array<string | number>;
+      value: FormulaWireValue };
+```
 
 ## Whole-Cell calculation workflow
 
@@ -530,6 +692,33 @@ Formula Cells settle through one dependency-closed durable calculation
 attempt. Automatic mode creates an attempt whenever an accepted mutation
 dirties a Formula source or one of its stable local inputs. Manual mode creates
 one only through `workbook.calculate.request`.
+
+`pending` and `dirty` are different. Applying a new Formula source replaces
+the incompatible old settlement with canonical `pending`. A later input change
+does not rewrite every dependent Cell: its last accepted/error settlement
+remains canonical, while comparison of recorded dependency fingerprints with
+the current Workbook produces a rebuildable `dirty` freshness projection.
+Editors may display that last value as stale. Manual calculation selects the
+requested dirty/pending transitive closure; automatic mode schedules the same
+closure after the input mutation commits.
+
+The frozen Workbook-local resolver projects Cell content deterministically:
+
+- blank is Formula null and literal content is its exact scalar;
+- Rich Content is Rich Text's deterministic plain-text projection and carries
+  the Rich Content semantic digest;
+- accepted Formula/Data content is its exact accepted wire value;
+- a ready projected coordinate resolves its exact `valuePath`, while a blocked
+  projection produces a typed dependency diagnostic;
+- pending computed content produces `pending_dependency`, and rejected content
+  propagates a typed dependency diagnostic rather than exposing an older
+  value; and
+- Prompt Content resolves only `outputId@appliedRevision`, records that ref and
+  the immutable string digest, and never substitutes the current output head.
+
+Those identities participate in the attempt's guards and accepted observed
+dependencies. A Formula/range that reads Prompt or Rich Content is therefore
+just as stale-safe as one that reads a numeric Cell.
 
 ```text
 serial freeze
@@ -549,9 +738,10 @@ concurrent compute
      that formula's stored normalized lookup key; never fall back by name
   -> compose it with collision-proof aliases for frozen Workbook-local
      Cell/range bindings
-  -> construct the dependency graph and topologically evaluate acyclic components
-  -> for a cyclic component, either produce a deterministic cycle diagnostic
-     or run the configured bounded iteration/convergence policy
+  -> resolve any frozen Prompt Content input at its exact immutable
+     outputId@appliedRevision; never substitute the Derived Output head
+  -> construct the dependency graph, topologically evaluate acyclic components,
+     and produce deterministic cycle diagnostics for cyclic components
   -> persist exact Formula wire candidates, diagnostics, observed project
      binding revisions/value digests, and evaluation digests
   -> dispatch spreadsheet.calculation.settle
@@ -574,8 +764,9 @@ atomically lock another capability's database.
 
 The candidate batch settles atomically so a downstream Formula cannot expose a
 new result calculated from an upstream result that was not adopted. Formula
-errors, disabled iteration cycles, and non-convergence are ordinary accepted
-diagnostics, while infrastructure failure fails the attempt.
+errors and dependency cycles are ordinary accepted diagnostics, while
+infrastructure failure fails the attempt. Representation v1 has no iterative
+calculation mode.
 
 ## Rich Formula evaluation workflow
 
@@ -584,7 +775,8 @@ Rich Content Formula atoms use one durable attempt per atom:
 ```text
 serial freeze
   -> automatic discovery in accepted Rich Content, or explicit request
-  -> freeze Workbook revision, Cell ID, atom ID, expression and digest
+  -> freeze Workbook revision, exact Rich Content target, atom ID, expression
+     and digest
   -> atomically persist attempt (with the authoring ChangeSet when automatic)
   -> dispatch spreadsheet.rich-formula.evaluate.compute
 
@@ -595,8 +787,8 @@ concurrent compute
   -> dispatch spreadsheet.rich-formula.evaluate.settle
 
 serial settlement
-  -> require the same Cell still has a Rich Content source
-  -> require the same Formula atom and expression digest
+  -> require the same target still resolves to Rich Content
+  -> require the same Formula atom and expression digest at that target
   -> internally apply Rich Text's formula-settlement operation
   -> append a normal Workbook ChangeSet and settle the attempt, or mark stale
 ```
@@ -612,9 +804,12 @@ exact plain-text output revision and does not duplicate that output as
 Dedicated creation may fill an empty coordinate or replace an existing Cell's
 content. Every creation gets a fresh output, even when that Cell previously
 held Prompt Content. Local ownership can therefore retain multiple historical
-outputs for one Cell ID, while enforcing at most one `pending` or `attached`
-output at a time. Definition update and refresh retain the currently attached
-output ID.
+outputs for one Cell ID. It permits at most one `attached` and at most one
+`pending` output per Cell; one of each may coexist while a replacement
+computes, so the current Prompt remains live. Settlement atomically makes the
+old attachment historical and promotes the pending output. Failure makes only
+the pending output historical. Definition update and refresh retain the
+currently attached output ID.
 
 ### Dedicated creation
 

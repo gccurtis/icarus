@@ -17,10 +17,15 @@ type CellId = string;
 type CellStyleId = string;
 type SheetRuleId = string;
 type SheetOverlayId = string;
+type SheetFormatRegionId = string;
 
 type WorkbookLifecycle = "active" | "archived" | "trashed";
 type RichContent = import("#rich-text").RichContent;
 type FormulaWireValue = import("#formula").FormulaWireValue;
+type FormulaScalarWireValue = Extract<
+  FormulaWireValue,
+  { kind: "null" | "number" | "text" | "logic" }
+>;
 type DerivedOutputRef = import("#derived-outputs").DerivedOutputRef;
 
 interface WorkbookHead {
@@ -62,8 +67,10 @@ The keys of `sheets` must exactly equal the IDs in `sheetOrder`, with each ID
 appearing once. A Workbook always has at least one Sheet. Representation v1
 does not perform iterative calculation: dependency cycles settle as typed
 errors. Automatic mode schedules affected formula work after an accepted
-mutation; manual mode keeps affected formulas pending until an explicit
-calculation request.
+mutation; manual mode leaves their last accepted value visible but derives a
+`dirty` status until an explicit calculation request. `pending` is reserved for
+a current source that has no accepted settlement, not for every dependency
+change.
 
 ## Embedded workbook design system
 
@@ -222,9 +229,10 @@ For a coordinate, presentation resolves in this order:
 2. The Sheet default Style and local overrides.
 3. Column Style and local overrides.
 4. Row Style and local overrides.
-5. Materialized Cell Style and local overrides.
-6. Matching Conditional Formatting rules, in rule order.
-7. For `RichContent`, stored Rich Text marks as supplementary inline styling.
+5. Matching range Format Regions, in region order.
+6. Materialized Cell Style and local overrides.
+7. Matching Conditional Formatting rules, in rule order.
+8. For `RichContent`, stored Rich Text marks as supplementary inline styling.
 
 Each Style reference is resolved with its complete inheritance chain before it
 is overlaid. A Rich Text full-range base mark is an ephemeral projection and
@@ -243,6 +251,7 @@ interface SpreadsheetSheet {
   columnOrder: ColumnId[];
   columns: Record<ColumnId, SheetColumn>;
   cells: Record<CellId, SpreadsheetCell>;
+  formatRegions: SheetFormatRegion[]; // low-to-high overlay priority
   rules: SheetRule[]; // array order is Conditional Formatting priority
   overlays: Record<SheetOverlayId, SheetOverlay>;
   freeze: FreezeState;
@@ -278,6 +287,13 @@ interface SheetDefaults {
   styleId: CellStyleId;
   styleOverrides?: CellStyleProperties;
 }
+
+interface SheetFormatRegion {
+  id: SheetFormatRegionId;
+  range: StableRangeRef;
+  styleId?: CellStyleId;
+  styleOverrides?: CellStyleProperties;
+}
 ```
 
 The keys of each axis record must exactly equal its order array. A1 notation is
@@ -288,8 +304,11 @@ prefix, while deleting the boundary must clear or replace it in the same
 ChangeSet.
 
 Workbook-wide identity ledgers prevent reuse of retired Sheet, Row, Column,
-Cell, Style, rule, and overlay IDs. IDs are unique within their resource kind,
-including across Sheets where an operation otherwise could become ambiguous.
+Cell, Style, Format Region, rule, and overlay IDs. IDs are unique within their
+resource kind, including across Sheets where an operation otherwise could
+become ambiguous. Format Region array order is low-to-high priority; later
+matching properties win. Regions compactly style large blank ranges and do not
+materialize Cells.
 
 ## Stable coordinates, ranges, and Cell spans
 
@@ -328,10 +347,11 @@ Two canonical Cell spans cannot overlap.
 
 ## Sparse Cells and closed content variants
 
-An entirely default blank coordinate has no Cell record. A styled, validated,
-referenced, or merged blank is materialized as a Cell with `blank` content.
-Sparse therefore means “only semantically materialized coordinates,” not “only
-coordinates with a visible value.”
+An entirely default blank coordinate has no Cell record. Row, Column, and range
+Format Region styling can apply without materializing it. A blank with a local
+Cell Style/override, validation, reference, or merged span is materialized as a
+Cell with `blank` content. Sparse therefore means “only semantically
+materialized coordinates,” not “only coordinates with a visible value.”
 
 ```ts
 interface SpreadsheetCell {
@@ -367,10 +387,15 @@ interface RichContentCellContent {
 }
 
 type CellLiteral =
-  | { kind: "number"; decimal: string }
+  | { kind: "number"; value: ExactCellNumber }
   | { kind: "logic"; value: boolean }
   | { kind: "date"; isoDate: string }
   | { kind: "date-time"; isoDateTime: string };
+
+interface ExactCellNumber {
+  numerator: string;
+  denominator: string;
+}
 ```
 
 Authored prose is always `RichContent`, even when it currently has no marks.
@@ -378,9 +403,10 @@ This gives every authored text Cell the same marks, links, references, Formula
 atoms, `{{ ... }}` conversion, normalization, and exact-inverse behavior as
 Document and Slides. Plain strings remain appropriate for administrative
 labels and immutable externally generated Prompt Content. Literal numbers use
-a canonical decimal string so admission does not lose precision through a
-JavaScript floating-point round trip. Blank is distinct from an empty text
-value, zero, and Formula null.
+Formula's canonical rational wire shape, so admission converts authored
+decimal text without a JavaScript floating-point round trip and can also
+represent non-terminating results exactly. Blank is distinct from an empty
+text value, zero, and Formula null.
 
 Using a closed content union prevents invalid combinations such as a literal
 source paired with an unrelated accepted Formula value. Formula and Data Cells
@@ -397,13 +423,13 @@ owned authoring layer before it reaches the reducer.
 ```ts
 interface FormulaCellContent {
   kind: "formula";
-  formula: SpreadsheetFormulaSource;
+  formula: WholeCellFormulaSource;
   /** Required only when an accepted list/record/table should spill. */
   projectionOrientation?: ProjectionOrientation;
-  settlement: ComputedCellSettlement;
+  settlement: ComputedCellSettlement<AcceptedFormulaCellValue>;
 }
 
-interface SpreadsheetFormulaSource {
+interface SpreadsheetFormulaSourceBase {
   languageVersion: "spreadsheet-formula/v1";
   /** Stable coordinate at which relative/absolute authoring was admitted. */
   anchor: StableCellRef;
@@ -411,11 +437,27 @@ interface SpreadsheetFormulaSource {
   authoredText: string;
   /** Formula/v1 source with grid references replaced by reserved aliases. */
   normalizedFormulaSource: string;
-  /** All non-local, non-builtin dependencies captured at admission. */
-  bindings: SpreadsheetFormulaBinding[];
-  /** Digest of all preceding semantic fields, not of authoredText alone. */
+  /** Digest of every semantic field in the concrete source except itself. */
   sourceDigest: string;
 }
+
+interface WholeCellFormulaSource extends SpreadsheetFormulaSourceBase {
+  scope: "whole-cell";
+  /** All non-local, non-builtin dependencies captured at admission. */
+  bindings: SpreadsheetFormulaBinding[];
+}
+
+interface GridRuleFormulaSource extends SpreadsheetFormulaSourceBase {
+  scope: "grid-rule";
+  /** Rules cannot depend on project bindings in representation v1. */
+  bindings: Array<
+    SpreadsheetCellFormulaBinding | SpreadsheetRangeFormulaBinding
+  >;
+}
+
+type SpreadsheetFormulaSource =
+  | WholeCellFormulaSource
+  | GridRuleFormulaSource;
 
 type SpreadsheetFormulaBinding =
   | SpreadsheetCellFormulaBinding
@@ -484,25 +526,63 @@ At evaluation, Spreadsheet builds one immutable composite
   coordinate resolves to its exact accepted value;
 - range aliases resolve to a Formula table/list value in current axis order.
 
+### Exact grid-to-Formula value projection
+
+Workbook-local bindings use one deterministic conversion at a frozen Workbook
+revision:
+
+- an unmaterialized coordinate or `blank` Cell becomes Formula null;
+- a numeric literal becomes Formula's exact canonical rational number;
+- a logic literal becomes Formula logic;
+- date and date-time literals become ISO Formula text in representation v1;
+- Rich Content becomes Rich Text's deterministic plain-text projection,
+  including each Formula atom's stored display text;
+- an accepted Formula or Data Cell contributes its exact stored wire value;
+- a pending computed Cell produces `dependency_pending`, and an error
+  settlement produces `dependency_error`, rather than inventing a value;
+- UI coordinate lookup for a merged non-anchor resolves the owning anchor Cell,
+  but Formula value projection emits null there so a range does not count one
+  merged value repeatedly;
+- a projected coordinate contributes the exact wire value at its `valuePath`;
+- Prompt Content resolves the exact referenced Derived Output revision to
+  Formula text. Missing output/revision data is a typed dependency error.
+
+Range aliases apply that conversion row-major and expose current column A1
+labels as deterministic Formula table fields. A Prompt read records both the
+coordinate value digest and the exact output ID/applied revision dependency.
+The application freezes that output revision before evaluation; it never reads
+the mutable Derived Output head.
+
 Moving or inserting axes changes the rendered A1 text but never the stable
 targets. Deleting a referenced axis yields a typed broken-reference diagnostic
 rather than retargeting. Copy/fill translates only axes marked `relative` and
 creates a newly admitted manifest; `$`-absolute axes keep their stable target.
 
-The same admitted `SpreadsheetFormulaSource` type is used by custom Cell
-validation and Formula-based Conditional Formatting. In representation v1,
-their external references bind once to stable coordinates at rule admission;
-they are not rebound relative to every target coordinate. Evaluation may
-expose the target's candidate/current scalar through one reserved local. Full
-Excel-style relative-per-target rule templates are a future authoring-layer
-extension, not an implied behavior.
+Custom Cell validation and Formula-based Conditional Formatting use the
+`GridRuleFormulaSource` variant of the same admitted authoring family. It
+rejects project symbolic dependencies: those rules may use stable grid
+references, builtins, and one reserved target candidate/current-value local
+only. They therefore remain deterministic projections of one immutable
+Workbook revision and never consult today's project resolver while rendering.
+Their grid references bind once at rule admission and are not rebound relative
+to every target coordinate. Full Excel-style relative-per-target rule
+templates are a future authoring-layer extension, not an implied behavior.
+
+The reserved local is the exact ASCII identifier `__spreadsheet_cell_value`.
+For validation it is the candidate content after the grid-to-Formula conversion
+above; for Conditional Formatting it is the current resolved coordinate value.
+The Spreadsheet authoring layer reserves the `__spreadsheet_` prefix for this
+local and generated grid aliases, rejects authored project identifiers using
+that prefix, and injects the local before binding. It therefore cannot collide
+with or be shadowed by a project name. A pending/error current value makes the
+rule evaluation diagnostic rather than substituting null.
 
 ### Formula settlement
 
 ```ts
-type ComputedCellSettlement =
+type ComputedCellSettlement<TAccepted extends AcceptedComputedCellValue> =
   | { state: "pending"; sourceDigest: string }
-  | { state: "accepted"; accepted: AcceptedComputedCellValue }
+  | { state: "accepted"; accepted: TAccepted }
   | { state: "error"; rejected: RejectedComputedCellValue };
 
 interface AcceptedComputedCellValue {
@@ -511,8 +591,15 @@ interface AcceptedComputedCellValue {
   dependencies: SpreadsheetObservedDependency[];
   resolverSnapshotDigest: string;
   evaluationDigest: string;
-  /** Present for a Data Cell settled from one project binding. */
-  externalBinding?: AcceptedProjectBinding;
+}
+
+interface AcceptedFormulaCellValue extends AcceptedComputedCellValue {
+  sourceKind: "formula";
+}
+
+interface AcceptedDataCellValue extends AcceptedComputedCellValue {
+  sourceKind: "data";
+  externalBinding: AcceptedProjectBinding;
 }
 
 interface RejectedComputedCellValue {
@@ -546,6 +633,12 @@ type SpreadsheetObservedDependency =
       bindingId: string;
       ownerRevision: number | string;
       valueDigest: string;
+    }
+  | {
+      kind: "prompt-output";
+      outputId: string;
+      appliedRevision: number;
+      valueDigest: string;
     };
 
 interface SpreadsheetFormulaDiagnostic {
@@ -559,7 +652,10 @@ There is no wall-clock `acceptedAt` in semantic Workbook state. Operational
 attempt rows own timing. Settlement is serial and conditional on the same Cell,
 source digest, and formula owner still existing. Accepted `FormulaWireValue`
 and observed identities are canonical; dependency graphs and calculation plans
-are rebuildable.
+are rebuildable. Comparing accepted dependency digests with the current frozen
+inputs derives `clean`, `dirty`, or `blocked` calculation status without
+rewriting every downstream Cell when an input changes. A dirty Cell continues
+to display and project its last accepted value until a newer settlement lands.
 
 ### Rich Content Formula atoms are a distinct path
 
@@ -567,7 +663,7 @@ A `RichContentCellContent` may contain any number of Rich Text Formula atoms.
 Their expression, accepted `FormulaWireValue`, display text, and diagnostic live
 inside the atom. Spreadsheet evaluates them through the same durable
 compute/settle pattern used by Document and Slides, then applies Rich Text's
-`apply-formula-result` operation conditionally to the same Cell and atom.
+`apply-formula-settlement` operation conditionally to the same target and atom.
 
 Representation v1 Rich Content Formula atoms use ordinary Formula/v1 project
 bindings only. They do **not** support A1 or range syntax because shared Rich
@@ -588,7 +684,7 @@ interface DataCellContent {
   source: DataCellSource;
   /** Required for accepted list/record/table values; absent for scalars. */
   projectionOrientation?: ProjectionOrientation;
-  settlement: ComputedCellSettlement;
+  settlement: ComputedCellSettlement<AcceptedDataCellValue>;
 }
 
 interface DataCellSource {
@@ -628,11 +724,21 @@ definition update, stabilization update, and refresh use the same freeze →
 concurrent Derived Outputs call → serial conditional settlement pattern as
 Document and Slides.
 
+Prompt creation may replace an existing Cell's ordinary content. Every such
+creation declares a fresh output, even if the same Cell ID held Prompt Content
+earlier. The operational ownership ledger therefore retains multiple
+historical output rows for one Cell lifetime while allowing at most one
+`pending` row and at most one `attached` row. One of each may coexist while a
+replacement computes. Successful settlement atomically makes the old attached
+row historical and the pending row attached; failure makes only the pending row
+historical and preserves the previous attachment. Replacing Prompt Content
+with ordinary content makes the attached row historical.
+
 Derived Outputs owns the prompt definition, Context scope, stabilization text,
 evidence, freshness, generation, and immutable string revisions. Spreadsheet
 stores only the exact reference and displays the referenced plain text through
 the Cell's resolved Style. Prompt Content never spills. Deleting the Cell marks
-Spreadsheet's local ownership record detached for history/idempotency;
+Spreadsheet's local ownership record historical for history/idempotency;
 Spreadsheet never deletes or garbage-collects the output.
 
 ## Merged Cells
@@ -662,7 +768,9 @@ type ProjectionOrientation =
 
 interface RangeProjection {
   anchorCellId: CellId;
-  extent: StableRangeRef;
+  requiredShape: { rowCount: number; columnCount: number };
+  /** Absent only when axis capacity cannot resolve the bottom-right endpoint. */
+  resolvedExtent?: StableRangeRef;
   orientation: ProjectionOrientation;
   status: "ready" | "blocked";
   diagnostics: ProjectionDiagnostic[];
@@ -672,7 +780,7 @@ interface ProjectedCell {
   coordinate: StableCellRef;
   anchorCellId: CellId;
   valuePath: Array<string | number>;
-  value: FormulaWireValue;
+  value: FormulaScalarWireValue;
 }
 
 interface ProjectionDiagnostic {
@@ -692,6 +800,28 @@ interface ProjectionDiagnostic {
 accepted wire value, anchor, orientation, and current axes. They are never
 embedded in `ComputedCellSettlement` or persisted as canonical Cells.
 
+The derived rectangular value matrix is exact:
+
+- A `table` or `list` with `rows` orientation emits one header row containing
+  Formula text values for `fields`, followed by the stored value rows.
+- A `table` or `list` with `columns` orientation emits the transpose of that
+  header-plus-value matrix, so field names occupy the first column.
+- A `record` with `record-horizontal` emits its field names in the first row
+  and its single value row in the second.
+- A `record` with `record-vertical` emits one `[fieldName, value]` row per
+  field.
+- Table/list values reject record orientations, and record values reject
+  table/list orientations. Empty, ragged, or nested structured cells produce
+  `shape-invalid`; representation v1 projections require scalar leaf cells.
+
+Header `valuePath`s are `["fields", fieldIndex]`. Stored values use
+`["rows", rowIndex, fieldIndex]`; transposition changes coordinates, never the
+path into the accepted value. The top-left matrix value is displayed at the
+canonical anchor Cell. The anchor remains the projection owner and coordinate
+lookup returns its Cell ID plus that display value; only the remaining matrix
+coordinates resolve as `projected`. Collision detection ignores exactly this
+first anchor placement, not any other coordinate in the Cell span.
+
 Projection rules are deterministic:
 
 1. The anchor coordinate itself is not considered a collision.
@@ -699,10 +829,19 @@ Projection rules are deterministic:
 3. Overlapping projections block **all** participating projections; iteration
    order never selects a winner.
 4. Projection never creates Row or Column IDs. Insufficient materialized axis
-   capacity blocks it with `axis-capacity`.
+   capacity blocks it with `axis-capacity`; `requiredShape` remains available
+   while `resolvedExtent` is absent.
 5. A projected coordinate resolves to `(anchorCellId, valuePath)` and cannot be
-   edited independently. Materialization is an explicit operation that creates
-   ordinary Cells with supplied permanent IDs.
+   edited independently. Materialization uses the exact matrix mapping above,
+   converts the anchor to the ordinary value represented at its first path,
+   and creates ordinary Cells with caller-supplied permanent IDs for every
+   remaining coordinate in one ChangeSet.
+
+Materialization maps Formula null to `BlankCellContent`, number/logic to the
+corresponding exact `LiteralCellContent`, and Formula text to a
+`RichContentCellContent` whose complete fresh atom/mark IDs are supplied in the
+operation. Because nested structured leaves are rejected before projection,
+this mapping is total and never needs a generic payload Cell.
 
 ## Validation and Conditional Formatting
 
@@ -716,13 +855,18 @@ type ValidationRule =
   | {
       kind: "list";
       source:
-        | { kind: "values"; values: RichContent[] }
+        | { kind: "values"; options: ValidationListOption[] }
         | { kind: "range"; range: StableRangeRef };
     }
-  | { kind: "number-range"; minDecimal?: string; maxDecimal?: string }
+  | { kind: "number-range"; min?: ExactCellNumber; max?: ExactCellNumber }
   | { kind: "date-range"; minIsoDate?: string; maxIsoDate?: string }
   | { kind: "text-length"; min?: number; max?: number }
-  | { kind: "custom"; formula: SpreadsheetFormulaSource };
+  | { kind: "custom"; formula: GridRuleFormulaSource };
+
+interface ValidationListOption {
+  id: string;
+  content: RichContent;
+}
 
 interface SheetRule {
   id: SheetRuleId;
@@ -732,7 +876,7 @@ interface SheetRule {
 }
 
 type ConditionalFormatCondition =
-  | { kind: "formula"; formula: SpreadsheetFormulaSource }
+  | { kind: "formula"; formula: GridRuleFormulaSource }
   | {
       kind: "value";
       operator:
@@ -744,7 +888,30 @@ type ConditionalFormatCondition =
         | "lte"
         | "contains"
         | "not-contains";
-      value: FormulaWireValue;
+      value: FormulaScalarWireValue;
+    };
+
+type SpreadsheetRichContentTarget =
+  | { kind: "cell-content"; sheetId: SheetId; cellId: CellId }
+  | { kind: "validation-message"; sheetId: SheetId; cellId: CellId }
+  | {
+      kind: "validation-list-option";
+      sheetId: SheetId;
+      cellId: CellId;
+      optionId: string;
+    }
+  | { kind: "chart-title"; sheetId: SheetId; overlayId: SheetOverlayId }
+  | {
+      kind: "chart-axis-title";
+      sheetId: SheetId;
+      overlayId: SheetOverlayId;
+      axis: "category" | "value";
+    }
+  | {
+      kind: "chart-series-name";
+      sheetId: SheetId;
+      overlayId: SheetOverlayId;
+      seriesId: string;
     };
 ```
 
@@ -753,6 +920,9 @@ Conditional formatting is a presentation overlay and never mutates the Cell's
 selected Style, local overrides, or Rich Content marks. Formula-bearing
 validation and rule conditions must pass the same stable-reference admission
 path as Formula Cells; a generic operation cannot persist raw formula text.
+`SpreadsheetRichContentTarget` is the closed locator used by Rich Text
+operations and Formula-atom attempts; no generic string path or array index is
+accepted.
 
 ## Typed Sheet overlays
 
@@ -767,9 +937,11 @@ type SheetOverlay =
   | SpreadsheetImageOverlay
   | SpreadsheetSparklineOverlay;
 
-interface SheetOverlayBase {
+type SheetOverlayKind = "chart" | "image" | "sparkline";
+
+interface SheetOverlayBase<TKind extends SheetOverlayKind> {
   id: SheetOverlayId;
-  kind: SheetOverlay["kind"];
+  kind: TKind;
   /** Sole overlay layering authority; unique contiguous back-to-front. */
   zIndex: number;
   placement: SheetOverlayPlacement;
@@ -785,7 +957,7 @@ interface SheetOverlayPlacement {
   heightPt: number;
 }
 
-interface SpreadsheetChartOverlay extends SheetOverlayBase {
+interface SpreadsheetChartOverlay extends SheetOverlayBase<"chart"> {
   kind: "chart";
   chart: SpreadsheetChart;
 }
@@ -793,9 +965,20 @@ interface SpreadsheetChartOverlay extends SheetOverlayBase {
 interface SpreadsheetChart {
   kind: "column" | "bar" | "line" | "area" | "pie" | "scatter";
   title?: RichContent;
+  axes?: {
+    category?: SpreadsheetChartAxis;
+    value?: SpreadsheetChartAxis;
+  };
   series: SpreadsheetChartSeries[];
   showLegend: boolean;
   palette?: WorkbookColorValue[];
+}
+
+interface SpreadsheetChartAxis {
+  title?: RichContent;
+  minimum?: ExactCellNumber;
+  maximum?: ExactCellNumber;
+  showGridLines: boolean;
 }
 
 interface SpreadsheetChartSeries {
@@ -813,7 +996,7 @@ interface ImageSnapshotRef {
   mimeType: string;
 }
 
-interface SpreadsheetImageOverlay extends SheetOverlayBase {
+interface SpreadsheetImageOverlay extends SheetOverlayBase<"image"> {
   kind: "image";
   source: ImageSnapshotRef;
   fit: "contain" | "cover" | "stretch";
@@ -822,7 +1005,7 @@ interface SpreadsheetImageOverlay extends SheetOverlayBase {
   border?: CellBorderStyle;
 }
 
-interface SpreadsheetSparklineOverlay extends SheetOverlayBase {
+interface SpreadsheetSparklineOverlay extends SheetOverlayBase<"sparkline"> {
   kind: "sparkline";
   source: StableRangeRef;
   sparklineKind: "line" | "column" | "win-loss";
