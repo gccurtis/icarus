@@ -27,6 +27,8 @@ export type {
   RichTextDiagnostic,
   ApplyResult,
   Footprint,
+  FormulaAuthoringResult,
+  FormulaAtomSettlement,
   RichTextIdFactory,
 } from "./types.js";
 export { DEFAULT_CONFIG, DEFAULT_STYLE, DEFAULT_LIMITS } from "./types.js";

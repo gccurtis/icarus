@@ -7,6 +7,7 @@ import type {
   RichTextMark,
   RichTextOperation,
   ApplyResult,
+  FormulaAtomSettlement,
   TextPosition,
   TextRange,
 } from "./types.js";
@@ -58,6 +59,16 @@ function applyOne(
       return applyInsertAtom(content, op.at, op.atom);
     case "delete-atom":
       return applyDeleteAtom(content, op.atomId);
+    case "replace-range-with-atom":
+      return applyReplaceRangeWithAtom(
+        content,
+        op.range,
+        op.expectedText,
+        op.atom,
+        op.trailingTextAtomId,
+      );
+    case "replace-content":
+      return applyReplaceContent(content, op.content);
     case "add-mark":
       return applyAddMark(content, op.mark);
     case "remove-mark":
@@ -66,23 +77,20 @@ function applyOne(
       return applySetLinkTargets(content, op.markId, op.targets);
     case "set-formula-expression":
       return applySetFormulaExpression(content, op.atomId, op.expression);
+    case "apply-formula-settlement":
+      return applyFormulaSettlement(content, op.atomId, op.settlement);
     case "apply-formula-result":
-      return applyApplyFormulaResult(
-        content,
-        op.atomId,
-        op.value,
-        op.displayText,
-      );
+      return applyFormulaSettlement(content, op.atomId, {
+        acceptedValue: op.value,
+        displayText: op.displayText,
+      });
   }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function deepCopyContent(content: RichContent): RichContent {
-  return {
-    atoms: content.atoms.map((a) => ({ ...a } as RichTextAtom)),
-    marks: content.marks.map((m) => ({ ...m } as RichTextMark)),
-  };
+  return structuredClone(content);
 }
 
 function findAtomIndex(
@@ -341,6 +349,199 @@ function applyDeleteAtom(
   };
 }
 
+/**
+ * Atomically replace a range in one TextAtom. Keeping this atomic is
+ * important: composing delete-range and insert-atom cannot assign the split
+ * suffix a stable ID or remap marks without exposing an invalid midpoint.
+ */
+function applyReplaceRangeWithAtom(
+  content: RichContent,
+  range: TextRange,
+  expectedText: string,
+  replacement: RichTextAtom,
+  trailingTextAtomId?: string,
+): {
+  content: RichContent;
+  inverse: RichTextOperation;
+  affected: string[];
+  dirty?: TextRange;
+} {
+  if (range.start.atomId !== range.end.atomId) {
+    throw new Error("replace-range-with-atom requires a range within one text atom");
+  }
+
+  const sourceIndex = findAtomIndex(content.atoms, range.start.atomId);
+  if (sourceIndex === -1) throw new Error(`Atom not found: ${range.start.atomId}`);
+
+  const source = content.atoms[sourceIndex];
+  if (source.kind !== "text") {
+    throw new Error(`replace-range-with-atom requires a text atom, got: ${source.kind}`);
+  }
+
+  const startOffset = range.start.offset;
+  const endOffset = range.end.offset;
+  if (
+    !Number.isInteger(startOffset) ||
+    !Number.isInteger(endOffset) ||
+    startOffset < 0 ||
+    endOffset <= startOffset ||
+    endOffset > source.text.length
+  ) {
+    throw new Error("replace-range-with-atom range is out of bounds or empty");
+  }
+
+  const actualText = source.text.slice(startOffset, endOffset);
+  if (actualText !== expectedText) {
+    throw new Error("replace-range-with-atom expected text does not match current content");
+  }
+
+  const existingIds = new Set(content.atoms.map((atom) => atom.id));
+  if (existingIds.has(replacement.id)) {
+    throw new Error(`Duplicate replacement atom ID: ${replacement.id}`);
+  }
+
+  const leadingText = source.text.slice(0, startOffset);
+  const trailingText = source.text.slice(endOffset);
+  const needsTrailingId = leadingText.length > 0 && trailingText.length > 0;
+  if (needsTrailingId && !trailingTextAtomId) {
+    throw new Error("replace-range-with-atom requires a trailing text atom ID");
+  }
+  if (!needsTrailingId && trailingTextAtomId) {
+    throw new Error("replace-range-with-atom has an unnecessary trailing text atom ID");
+  }
+  if (
+    trailingTextAtomId &&
+    (existingIds.has(trailingTextAtomId) || trailingTextAtomId === replacement.id)
+  ) {
+    throw new Error(`Duplicate trailing text atom ID: ${trailingTextAtomId}`);
+  }
+
+  const before = deepCopyContent(content);
+  const replacementAtoms: RichTextAtom[] = [];
+  let leadingAtomId: string | undefined;
+  let trailingAtomId: string | undefined;
+
+  if (leadingText.length > 0) {
+    leadingAtomId = source.id;
+    replacementAtoms.push({ ...source, text: leadingText });
+  }
+
+  replacementAtoms.push(structuredClone(replacement));
+
+  if (trailingText.length > 0) {
+    trailingAtomId = leadingText.length > 0
+      ? trailingTextAtomId
+      : source.id;
+    replacementAtoms.push({
+      ...source,
+      id: trailingAtomId as string,
+      text: trailingText,
+    });
+  }
+
+  const replacementLength = getAtomLength(replacement);
+  const mappedMarks = content.marks.map((mark) => ({
+    ...mark,
+    range: {
+      start: mapReplacedTextPosition(
+        mark.range.start,
+        "start",
+        source.id,
+        startOffset,
+        endOffset,
+        leadingAtomId,
+        replacement.id,
+        replacementLength,
+        trailingAtomId,
+      ),
+      end: mapReplacedTextPosition(
+        mark.range.end,
+        "end",
+        source.id,
+        startOffset,
+        endOffset,
+        leadingAtomId,
+        replacement.id,
+        replacementLength,
+        trailingAtomId,
+      ),
+    },
+  } as RichTextMark));
+
+  content.atoms.splice(sourceIndex, 1, ...replacementAtoms);
+  content.marks.splice(0, content.marks.length, ...mappedMarks);
+
+  return {
+    content,
+    inverse: { type: "replace-content", content: before },
+    affected: [
+      source.id,
+      replacement.id,
+      ...(trailingAtomId && trailingAtomId !== source.id ? [trailingAtomId] : []),
+    ],
+    dirty: {
+      start: { atomId: replacement.id, offset: 0 },
+      end: { atomId: replacement.id, offset: replacementLength },
+    },
+  };
+}
+
+function mapReplacedTextPosition(
+  position: TextPosition,
+  edge: "start" | "end",
+  sourceAtomId: string,
+  startOffset: number,
+  endOffset: number,
+  leadingAtomId: string | undefined,
+  replacementAtomId: string,
+  replacementLength: number,
+  trailingAtomId: string | undefined,
+): TextPosition {
+  if (position.atomId !== sourceAtomId) return position;
+
+  if (position.offset < startOffset) {
+    return { atomId: leadingAtomId as string, offset: position.offset };
+  }
+  if (position.offset > endOffset) {
+    return {
+      atomId: trailingAtomId as string,
+      offset: position.offset - endOffset,
+    };
+  }
+
+  if (position.offset === startOffset && edge === "end" && leadingAtomId) {
+    return { atomId: leadingAtomId, offset: startOffset };
+  }
+  if (position.offset === endOffset && edge === "start" && trailingAtomId) {
+    return { atomId: trailingAtomId, offset: 0 };
+  }
+
+  return {
+    atomId: replacementAtomId,
+    offset: edge === "start" ? 0 : replacementLength,
+  };
+}
+
+function applyReplaceContent(
+  content: RichContent,
+  replacement: RichContent,
+): {
+  content: RichContent;
+  inverse: RichTextOperation;
+  affected: string[];
+} {
+  const before = deepCopyContent(content);
+  const next = deepCopyContent(replacement);
+  return {
+    content: next,
+    inverse: { type: "replace-content", content: before },
+    affected: [...new Set([
+      ...content.atoms.map((atom) => atom.id),
+      ...next.atoms.map((atom) => atom.id),
+    ])],
+  };
+}
+
 // ── Mark operations ──────────────────────────────────────────────────────
 
 function applyAddMark(
@@ -442,11 +643,10 @@ function applySetFormulaExpression(
   };
 }
 
-function applyApplyFormulaResult(
+function applyFormulaSettlement(
   content: RichContent,
   atomId: string,
-  value: unknown,
-  displayText: string,
+  settlement: FormulaAtomSettlement,
 ): {
   content: RichContent;
   inverse: RichTextOperation;
@@ -458,26 +658,37 @@ function applyApplyFormulaResult(
 
   const atom = content.atoms[idx];
   if (atom.kind !== "formula") {
-    throw new Error(`apply-formula-result requires a formula atom, got: ${atom.kind}`);
+    throw new Error(`apply-formula-settlement requires a formula atom, got: ${atom.kind}`);
   }
 
-  const oldValue = atom.acceptedValue;
-  const oldDisplayText = atom.displayText;
+  const previous: FormulaAtomSettlement = {
+    ...(atom.acceptedValue !== undefined ? { acceptedValue: atom.acceptedValue } : {}),
+    displayText: atom.displayText,
+    ...(atom.diagnostic !== undefined ? { diagnostic: atom.diagnostic } : {}),
+  };
+  const { acceptedValue: _oldValue, diagnostic: _oldDiagnostic, ...stable } = atom;
   content.atoms[idx] = {
-    ...atom,
-    acceptedValue: value as typeof atom.acceptedValue,
-    displayText,
+    ...stable,
+    displayText: settlement.displayText,
+    ...(settlement.acceptedValue !== undefined
+      ? { acceptedValue: structuredClone(settlement.acceptedValue) }
+      : {}),
+    ...(settlement.diagnostic !== undefined
+      ? { diagnostic: structuredClone(settlement.diagnostic) }
+      : {}),
   };
 
   return {
     content,
     inverse: {
-      type: "apply-formula-result",
+      type: "apply-formula-settlement",
       atomId,
-      value: oldValue ?? { kind: "null" } as NonNullable<typeof oldValue>,
-      displayText: oldDisplayText,
+      settlement: previous,
     },
     affected: [atomId],
-    dirty: { start: { atomId, offset: 0 }, end: { atomId, offset: displayText.length } },
+    dirty: {
+      start: { atomId, offset: 0 },
+      end: { atomId, offset: settlement.displayText.length },
+    },
   };
 }

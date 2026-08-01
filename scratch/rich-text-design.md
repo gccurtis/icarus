@@ -20,7 +20,8 @@ const rt = createRichText(config);
 
 All functionality flows through this object. Style factories are methods on
 it — `rt.bold(range)`, `rt.italic(range)`. Validation is `rt.validate(content)`.
-Mark overlay is `rt.overlayMarks(auth, supp)`.
+Mark overlay is `rt.overlayMarks(auth, supp, atoms)`; the atom list supplies
+canonical position order because atom IDs are opaque.
 
 If we change how bold works, we change it in one place: the `RichText`
 implementation. Every caller that uses `rt.bold(...)` gets the new behaviour
@@ -32,13 +33,14 @@ automatically. The method signatures stay the same.
 Resource has RichContent { atoms, marks }
   → resource translates its block-level intent into marks covering all atoms:
     e.g. heading → rt.fullRangeMark("bold", atoms) + rt.fullRangeStyle({ fontSize: 1.75 }, atoms)
-  → rt.overlayMarks(blockMarks, content.marks) → combined marks
+  → rt.overlayMarks(blockMarks, content.marks, content.atoms) → combined marks
   → resource combines atoms + combined marks → final RichContent
   → frontend renders via rt.resolveStyling(finalContent)
 ```
 
 The resource translates block-level intent into marks. Rich Text doesn't
-know about blocks — it just sees two mark lists and overlays them.
+know about blocks — it just sees two mark lists plus their atom-order context
+and overlays them.
 
 ### What Rich Text does NOT own
 
@@ -287,12 +289,16 @@ interface RichText {
    * Returns a merged, non-overlapping mark list ready to be combined
    * with atoms into final RichContent.
    */
-  overlayMarks(authoritative: RichTextMark[], supplementary: RichTextMark[]): RichTextMark[];
+  overlayMarks(
+    authoritative: RichTextMark[],
+    supplementary: RichTextMark[],
+    atoms: RichTextAtom[],
+  ): RichTextMark[];
 
   // ── Style resolution ─────────────────────────────────────────────────
   /**
    * Given RichContent, produce resolved per-range styling by overlaying
-   * all marks (in ID order) on top of config.defaults.
+   * all marks in explicit input-array order on top of config.defaults.
    */
   resolveStyling(content: RichContent): ResolvedStyling;
 
@@ -341,7 +347,11 @@ end as `(lastAtom.id, lastAtom.text.length)` (or whole-atom for non-text).
 ## Mark overlay — the core styling operation
 
 ```ts
-rt.overlayMarks(authoritative: RichTextMark[], supplementary: RichTextMark[]): RichTextMark[]
+rt.overlayMarks(
+  authoritative: RichTextMark[],
+  supplementary: RichTextMark[],
+  atoms: RichTextAtom[],
+): RichTextMark[]
 ```
 
 ### The model
@@ -385,14 +395,15 @@ Result: bold(0..50), italic(0..100), style({ color:"red" }, 20..80),
 ### Algorithm sketch
 
 ```
-function overlayMarks(auth, supp):
-  // 1. Collect all range boundaries from both lists
+function overlayMarks(auth, supp, atoms):
+  // 1. Collect all range boundaries from both lists in atom-array order
   // 2. For each segment between boundaries:
   //    a. Gather all auth marks covering this segment
   //    b. Gather all supp marks covering this segment
   //    c. Per property: if auth sets it, use auth; else if supp sets it, use supp; else blank
   //    d. Build merged marks from the resolved properties
-  //       - Non-style marks (bold, italic, etc.) carry forward from whichever list set them
+  //       - A non-style mark carries forward only when its properties match
+  //         the winning merged properties for that segment
   //       - Style marks are merged into one style({ ...resolved... }) per segment
   // 3. Merge adjacent identical marks, deduplicate, sort
 ```
@@ -402,7 +413,8 @@ function overlayMarks(auth, supp):
 Splitting mark overlay from text keeps the model clean:
 - Atoms are what the text **is**.
 - Marks are what the styling **says**.
-- `overlayMarks` operates purely on marks — two lists in, one merged list out.
+- `overlayMarks` combines two mark lists using the atom list only as canonical
+  position order; it never compares opaque atom IDs.
 - The caller combines the result with atoms: `{ atoms, marks: mergedMarks }`.
 
 No mixing of `TextStyleProperties` base with `RichContent`.
@@ -415,8 +427,9 @@ No mixing of `TextStyleProperties` base with `RichContent`.
 rt.resolveStyling(content: RichContent): ResolvedStyling
 ```
 
-Overlay all marks in ID order on top of `config.defaults`. Produces final
-per-range styling for the frontend.
+Overlay all marks in explicit input-array order on top of `config.defaults`.
+Later marks are later rendering layers; opaque mark IDs never choose style
+precedence. Produces final per-range styling for the frontend.
 
 ```ts
 interface ResolvedStyleRange {
@@ -532,8 +545,8 @@ interface Footprint {
 3. **Non-text atoms are atomic for styling**: Formula, reference, and
    hard-break atoms cannot be partially styled. Mark ranges are snapped to
    whole-atom during normalization and during `overlayMarks` / `resolveStyling`.
-4. **`overlayMarks` is pure and deterministic**: Same two lists → same merged
-   list. Authoritative wins at the property level.
+4. **`overlayMarks` is pure and deterministic**: Same two lists plus the same
+   atom order → same merged list. Authoritative wins at the property level.
 5. **`resolveStyling` is pure and deterministic**: Same content + same config →
    same resolved output.
 6. **Config is the single source of defaults**: `config.defaults` provides all
@@ -551,7 +564,7 @@ interface Footprint {
 flowchart TD
     subgraph RT["0-platform/rich-text"]
         direction TB
-        Engine["RichText runtime object\ncreateRichText(config)\n\n• mark factories (bold, italic, ...)\n• overlayMarks(auth, supp)\n• resolveStyling(content)\n• validate, normalize, apply\n• clone, plainText\n• encode, decode"]
+        Engine["RichText runtime object\ncreateRichText(config)\n\n• mark factories (bold, italic, ...)\n• overlayMarks(auth, supp, atoms)\n• resolveStyling(content)\n• validate, normalize, apply\n• clone, plainText\n• encode, decode"]
         Config["RichTextConfig\ndefaults + limits"]
         Types["Types\nRichContent, RichTextAtom,\nRichTextMark, TextStyleProperties,\nTextRange, LinkTarget, ..."]
     end
@@ -609,7 +622,7 @@ const blockMarks: RichTextMark[] = [
 ];
 
 // Overlay: block marks (authoritative) over content marks (supplementary):
-const mergedMarks = rt.overlayMarks(blockMarks, content.marks);
+const mergedMarks = rt.overlayMarks(blockMarks, content.marks, content.atoms);
 const finalContent: RichContent = { atoms: content.atoms, marks: mergedMarks };
 
 // Validate:

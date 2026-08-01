@@ -190,6 +190,20 @@ export interface Footprint {
   readonly dirtyRange?: TextRange;
 }
 
+export interface FormulaAuthoringResult {
+  readonly atomId: string;
+  readonly expression: string;
+  readonly operations: RichTextOperation[];
+}
+
+export interface FormulaAtomSettlement {
+  /** Omitted means that the atom has no accepted value. */
+  readonly acceptedValue?: FormulaWireValue;
+  readonly displayText: string;
+  /** Omitted means that the atom has no diagnostic. */
+  readonly diagnostic?: RichTextFormulaDiagnostic;
+}
+
 // ── Resolved Styling ─────────────────────────────────────────────────────
 
 export interface ResolvedStyleRange {
@@ -215,12 +229,24 @@ export type RichTextOperation =
   // Atoms
   | { readonly type: "insert-atom"; readonly at: TextPosition; readonly atom: RichTextAtom }
   | { readonly type: "delete-atom"; readonly atomId: string }
+  | {
+      readonly type: "replace-range-with-atom";
+      readonly range: TextRange;
+      readonly expectedText: string;
+      readonly atom: RichTextAtom;
+      /** Required only when replacing the middle of one TextAtom. */
+      readonly trailingTextAtomId?: string;
+    }
+  /** Exact inverse primitive used by atomic Rich Text operations. */
+  | { readonly type: "replace-content"; readonly content: RichContent }
   // Marks
   | { readonly type: "add-mark"; readonly mark: RichTextMark }
   | { readonly type: "remove-mark"; readonly markId: string }
   | { readonly type: "set-link-targets"; readonly markId: string; readonly targets: LinkTarget[] }
   // Formula
   | { readonly type: "set-formula-expression"; readonly atomId: string; readonly expression: string }
+  | { readonly type: "apply-formula-settlement"; readonly atomId: string; readonly settlement: FormulaAtomSettlement }
+  /** Compatibility form. New code should use apply-formula-settlement. */
   | { readonly type: "apply-formula-result"; readonly atomId: string; readonly value: FormulaWireValue; readonly displayText: string };
 
 // ── RichText Interface ───────────────────────────────────────────────────
@@ -240,7 +266,11 @@ export interface RichText {
   fullRangeStyle(props: TextStyleProperties, atoms: RichTextAtom[], id?: string): StyleMark;
 
   // Mark overlay
-  overlayMarks(authoritative: RichTextMark[], supplementary: RichTextMark[]): RichTextMark[];
+  overlayMarks(
+    authoritative: RichTextMark[],
+    supplementary: RichTextMark[],
+    atoms: RichTextAtom[],
+  ): RichTextMark[];
 
   // Style resolution
   resolveStyling(content: RichContent): ResolvedStyling;
@@ -249,6 +279,11 @@ export interface RichText {
   validate(content: RichContent): ValidationResult;
   normalize(content: RichContent): RichContent;
   apply(content: RichContent, operations: RichTextOperation[]): ApplyResult;
+  formulaFromDelimitedRange(
+    content: RichContent,
+    range: TextRange,
+    ids: RichTextIdFactory,
+  ): FormulaAuthoringResult;
   clone(content: RichContent, ids: RichTextIdFactory): RichContent;
   plainText(atoms: RichTextAtom[]): string;
 

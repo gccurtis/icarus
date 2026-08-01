@@ -19,6 +19,7 @@ import type {
   LinkTarget,
   ValidationResult,
   ApplyResult,
+  FormulaAuthoringResult,
   ResolvedStyling,
   ResolvedStyleRange,
   RichTextIdFactory,
@@ -30,6 +31,7 @@ import { markToProperties } from "./styles.js";
 import { validate as validateContent } from "./validate.js";
 import { normalize as normalizeContent } from "./normalize.js";
 import { applyOperations } from "./operations.js";
+import { formulaFromDelimitedRange } from "./formula-authoring.js";
 import { clone as cloneContent } from "./clone.js";
 import { plainText as extractPlainText } from "./plain-text.js";
 import { encode as encodeContent } from "./codec.js";
@@ -99,11 +101,20 @@ class RichTextImpl implements RichText {
   overlayMarks(
     authoritative: RichTextMark[],
     supplementary: RichTextMark[],
+    atoms: RichTextAtom[],
   ): RichTextMark[] {
     const start = performance.now();
 
+    const snappedAuthoritative = snapMarksToAtoms(authoritative, atoms);
+    const snappedSupplementary = snapMarksToAtoms(supplementary, atoms);
+    const atomOrder = createAtomOrder(atoms);
+
     // Collect all range boundaries from both lists
-    const boundaries = collectRangeBoundaries(authoritative, supplementary);
+    const boundaries = collectRangeBoundaries(
+      snappedAuthoritative,
+      snappedSupplementary,
+      atoms,
+    );
 
     // If no boundaries, return empty
     if (boundaries.length < 2) {
@@ -131,8 +142,12 @@ class RichTextImpl implements RichText {
       ) continue;
 
       // Gather marks covering this segment from each list
-      const authCovering = authoritative.filter((m) => rangeCovers(m.range, segment));
-      const suppCovering = supplementary.filter((m) => rangeCovers(m.range, segment));
+      const authCovering = snappedAuthoritative.filter((mark) =>
+        rangeCovers(mark.range, segment, atomOrder)
+      );
+      const suppCovering = snappedSupplementary.filter((mark) =>
+        rangeCovers(mark.range, segment, atomOrder)
+      );
 
       // Build merged properties: start from supplementary, overlay authoritative
       let merged: TextStyleProperties = {};
@@ -143,21 +158,28 @@ class RichTextImpl implements RichText {
         merged = overlayStyles(merged, markToProperties(mark));
       }
 
-      // If merged properties are non-empty, create a style mark
+      // Carry forward non-style marks from authoritative (auth wins)
+      // and supplementary (only where auth doesn't have one of the same kind)
+      const carriedMarks = carryForwardMarks(
+        authCovering,
+        suppCovering,
+        segment,
+        i,
+        merged,
+      );
+      for (const cm of carriedMarks) {
+        resultMarks.push(cm);
+      }
+
+      // The flattened style is last so it remains the resolved value even
+      // when a semantic mark (for example bold) expresses the same property.
       if (hasAnyProperty(merged)) {
         resultMarks.push({
-          id: randomUUID(),
+          id: `$rich-text-overlay:${i}:style`,
           kind: "style",
           range: segment,
           properties: merged,
         } satisfies StyleMark);
-      }
-
-      // Carry forward non-style marks from authoritative (auth wins)
-      // and supplementary (only where auth doesn't have one of the same kind)
-      const carriedMarks = carryForwardMarks(authCovering, suppCovering, segment, this);
-      for (const cm of carriedMarks) {
-        resultMarks.push(cm);
       }
     }
 
@@ -181,7 +203,8 @@ class RichTextImpl implements RichText {
     const snappedMarks = snapMarksToAtoms(content.marks, atoms);
 
     // Collect all range boundaries from snapped marks
-    const boundaries = collectRangeBoundaries(snappedMarks, []);
+    const atomOrder = createAtomOrder(atoms);
+    const boundaries = collectRangeBoundaries(snappedMarks, [], atoms);
 
     if (boundaries.length < 2) {
       this.logger.debug("rich-text.resolveStyling", {
@@ -210,10 +233,11 @@ class RichTextImpl implements RichText {
       // Start from config defaults
       let resolved: TextStyleProperties = { ...this.config.defaults };
 
-      // Overlay marks in ID order
-      const covering = snappedMarks
-        .filter((m) => rangeCovers(m.range, segment))
-        .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      // Mark array order is the explicit rendering order. Callers and overlay
+      // results control precedence without allowing opaque IDs to affect it.
+      const covering = snappedMarks.filter((mark) =>
+        rangeCovers(mark.range, segment, atomOrder)
+      );
 
       const activeMarks: string[] = [];
       const links: LinkTarget[] = [];
@@ -283,6 +307,14 @@ class RichTextImpl implements RichText {
     return result;
   }
 
+  formulaFromDelimitedRange(
+    content: RichContent,
+    range: TextRange,
+    ids: RichTextIdFactory,
+  ): FormulaAuthoringResult {
+    return formulaFromDelimitedRange(content, range, ids);
+  }
+
   clone(content: RichContent, ids: RichTextIdFactory): RichContent {
     return cloneContent(content, ids);
   }
@@ -334,6 +366,7 @@ function fullAtomRange(atoms: RichTextAtom[]): TextRange {
 function collectRangeBoundaries(
   marksA: RichTextMark[],
   marksB: RichTextMark[],
+  atoms: RichTextAtom[],
 ): { atomId: string; offset: number }[] {
   const points = new Map<string, Set<number>>();
 
@@ -351,28 +384,58 @@ function collectRangeBoundaries(
     addPoint(mark.range.end.atomId, mark.range.end.offset);
   }
 
-  // Flatten into sorted array
+  // Flatten in canonical atom order. Atom IDs are opaque identifiers and
+  // therefore cannot be used to determine document position.
   const result: { atomId: string; offset: number }[] = [];
-  for (const [atomId, offsets] of points) {
+  for (const atom of atoms) {
+    const offsets = points.get(atom.id);
+    if (!offsets) continue;
     for (const offset of [...offsets].sort((a, b) => a - b)) {
-      result.push({ atomId, offset });
+      result.push({ atomId: atom.id, offset });
     }
+    points.delete(atom.id);
+  }
+
+  const unknownAtomId = points.keys().next().value as string | undefined;
+  if (unknownAtomId !== undefined) {
+    throw new Error(`Mark range references unknown atom: ${unknownAtomId}`);
   }
 
   return result;
 }
 
-function rangeCovers(markRange: TextRange, segment: TextRange): boolean {
-  // A mark covers a segment if the segment is fully contained within the mark's range.
-  // Simplified: compare atom positions.
-  // For proper implementation, need atom ordering context.
+type AtomOrder = ReadonlyMap<string, number>;
+
+function createAtomOrder(atoms: RichTextAtom[]): AtomOrder {
+  return new Map(atoms.map((atom, index) => [atom.id, index]));
+}
+
+function comparePositions(
+  left: TextRange["start"],
+  right: TextRange["start"],
+  atomOrder: AtomOrder,
+): number {
+  const leftIndex = atomOrder.get(left.atomId);
+  const rightIndex = atomOrder.get(right.atomId);
+  if (leftIndex === undefined) {
+    throw new Error(`Text position references unknown atom: ${left.atomId}`);
+  }
+  if (rightIndex === undefined) {
+    throw new Error(`Text position references unknown atom: ${right.atomId}`);
+  }
+  return leftIndex === rightIndex
+    ? left.offset - right.offset
+    : leftIndex - rightIndex;
+}
+
+function rangeCovers(
+  markRange: TextRange,
+  segment: TextRange,
+  atomOrder: AtomOrder,
+): boolean {
   return (
-    (markRange.start.atomId < segment.start.atomId ||
-      (markRange.start.atomId === segment.start.atomId &&
-        markRange.start.offset <= segment.start.offset)) &&
-    (markRange.end.atomId > segment.end.atomId ||
-      (markRange.end.atomId === segment.end.atomId &&
-        markRange.end.offset >= segment.end.offset))
+    comparePositions(markRange.start, segment.start, atomOrder) <= 0 &&
+    comparePositions(markRange.end, segment.end, atomOrder) >= 0
   );
 }
 
@@ -384,20 +447,31 @@ function carryForwardMarks(
   authCovering: RichTextMark[],
   suppCovering: RichTextMark[],
   segment: TextRange,
-  rt: RichTextImpl,
+  segmentIndex: number,
+  merged: TextStyleProperties,
 ): RichTextMark[] {
   const result: RichTextMark[] = [];
   const nonStyleKinds = new Set<string>();
+  let markIndex = 0;
+
+  const nextId = (kind: string): string =>
+    `$rich-text-overlay:${segmentIndex}:${markIndex++}:${kind}`;
 
   // Auth non-style marks carry forward (they win)
   for (const mark of authCovering) {
     if (mark.kind !== "style" && mark.kind !== "link") {
       nonStyleKinds.add(mark.kind);
-      result.push(rt[mark.kind as "bold"](segment, randomUUID()));
+      if (markMatchesMergedProperties(mark, merged)) {
+        result.push({
+          id: nextId(mark.kind),
+          kind: mark.kind,
+          range: segment,
+        } as RichTextMark);
+      }
     }
     if (mark.kind === "link") {
       result.push({
-        id: randomUUID(),
+        id: nextId(mark.kind),
         kind: "link",
         range: segment,
         targets: (mark as LinkMark).targets,
@@ -408,13 +482,30 @@ function carryForwardMarks(
   // Supplementary non-style marks only where auth doesn't have the same kind
   for (const mark of suppCovering) {
     if (mark.kind !== "style" && mark.kind !== "link") {
-      if (!nonStyleKinds.has(mark.kind)) {
-        result.push(rt[mark.kind as "bold"](segment, randomUUID()));
+      if (
+        !nonStyleKinds.has(mark.kind) &&
+        markMatchesMergedProperties(mark, merged)
+      ) {
+        result.push({
+          id: nextId(mark.kind),
+          kind: mark.kind,
+          range: segment,
+        } as RichTextMark);
       }
     }
   }
 
   return result;
+}
+
+function markMatchesMergedProperties(
+  mark: RichTextMark,
+  merged: TextStyleProperties,
+): boolean {
+  const properties = markToProperties(mark);
+  return (Object.keys(properties) as (keyof TextStyleProperties)[]).every(
+    (key) => properties[key] === merged[key],
+  );
 }
 
 function snapMarksToAtoms(
