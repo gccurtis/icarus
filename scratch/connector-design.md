@@ -23,8 +23,9 @@ The capability supports four sub-kinds:
 - `"connector::directory::other"` — a collection with only non-prose items
 
 Items are classified by extension using a standalone copy of the same
-prose-text extension list (txt, md, markdown, rst, org, tex, html, htm, log,
-docx, pdf). Each capability owns its own list — they may diverge over time.
+prose-text extension list (txt, md, markdown, rst, org, tex, html, htm, log).
+Binary containers such as PDF and DOCX remain `other` until an extractor is
+available. Each capability owns its own list — they may diverge over time.
 
 The filesystem provider **is a sync-type provider**. On each sync interval it
 stats every item and compares `mtime` against the stored `lastModifiedAt`.
@@ -149,17 +150,19 @@ interface ConnectorItem {
 }
 ```
 
-### Local filesystem provider (initial implementation — sync-type)
+### Local filesystem provider (initial implementation — development only)
 
-The filesystem provider implements `SyncConnectorProvider`. On each sync it
-stats every file and compares `mtime` against the stored `lastModifiedAt`.
-Only changed files are re-read and their content re-admitted to Knowledge
-(prose) or their revision token updated (other).
+The filesystem provider opts into scheduled sync with the `syncType` marker.
+On each sync, the Connector service asks it for a fresh item snapshot and
+compares revision tokens with the persisted index. Only changed files are
+re-read and re-admitted to Knowledge (prose); unchanged files are not read.
+This provider intentionally permits arbitrary local paths and must not be
+exposed as a production trust boundary.
 
 ```ts
-const filesystemProvider: SyncConnectorProvider = {
+const filesystemProvider: ConnectorProvider = {
   kind: "filesystem",
-  label: "Local Filesystem",
+  label: "Local Filesystem (development only)",
   syncType: "scheduled",
 
   async listItems(locator: string): Promise<ConnectorItem[]> {
@@ -180,18 +183,11 @@ const filesystemProvider: SyncConnectorProvider = {
   async getReader(locator: string, itemKey: string): Promise<ConnectorReader> {
     return createFileReader(itemKey); // itemKey is the absolute path
   },
-
-  async sync(locator: string): Promise<SyncIntent[]> {
-    // Resolve the locator, stat every known item.
-    // Compare mtimeMs against each item's stored lastModifiedAt.
-    // Return intents only for items that changed, were added, or were removed.
-    // Unchanged items produce no intent — no I/O beyond the stat.
-  },
 };
 ```
 
-Each `ConnectorItemEntry` records the last known modification time so the
-provider can do selective sync:
+Each `ConnectorItemEntry` records the last observed revision and modification
+time so the service can do selective sync:
 
 ```ts
 interface ConnectorItemEntry {
@@ -206,12 +202,10 @@ interface ConnectorItemEntry {
 }
 ```
 
-The `lastModifiedAt` field is the key enabler for selective sync: at each
-interval the provider stats the file, and if `mtime` hasn't changed since
-`lastModifiedAt`, the item is skipped entirely. If it has changed, the
-provider returns a `SyncIntent` of kind `"update"` with the new
-`revisionToken`. The Connector capability then re-reads the content and
-updates Knowledge (prose) or the index (other).
+At each interval, `listItems()` returns the current revision token for every
+item. The Connector service compares that snapshot with persisted
+`revisionToken` values. It re-reads changed prose content, updates metadata for
+changed other items, adds new items, and removes missing items.
 
 ---
 
@@ -240,6 +234,8 @@ interface ConnectorEntry {
   readonly syncConfig: ConnectorSyncConfig | null;
   /** True while a sync Job is actively running for this entry. */
   readonly syncing: boolean;
+  /** Whether the persisted snapshot and Knowledge are known to agree. */
+  readonly ingestionState: "active" | "pending" | "failed";
   /** For directory connectors: index of all items (prose + other). */
   readonly itemIndex: ConnectorItemEntry[];
   /** Knowledge source IDs, one per prose item. */
@@ -380,9 +376,9 @@ interface DirectoryReader {
    - Multiple items, at least one prose → `"connector::directory::text"`
    - Multiple items, none prose → `"connector::directory::other"`
 5. The connector ID is computed: `SHA-256("filesystem::/absolute/path")`.
-6. If the provider implements `SyncConnectorProvider` and `syncInterval` is
-   provided, the connector is registered with `syncConfig`. The scheduler is
-   notified.
+6. If the provider exposes `syncType: "scheduled"` and `syncInterval` is
+   provided, the connector is registered with `syncConfig`. The scheduler
+   discovers persisted configurations on startup and on subsequent ticks.
 7. For **prose items**: a reader is obtained, content is streamed into
    Knowledge, `lastModifiedAt` is recorded from `stat.mtime`.
 8. For **other items**: the item is registered with `status: "other"` and
@@ -401,9 +397,9 @@ const entryKind: ConnectorKind = isSingle
   ? (hasProse ? "connector::file::text" : "connector::file::other")
   : (hasProse ? "connector::directory::text" : "connector::directory::other");
 
-// If provider is sync-type and interval given, set up sync config
+// If the provider supports scheduling and an interval is given, persist it.
 const syncConfig: ConnectorSyncConfig | null =
-  "syncType" in provider && request.syncInterval
+  provider.syncType === "scheduled" && request.syncInterval
     ? { syncType: "scheduled", interval: request.syncInterval }
     : null;
 
@@ -434,85 +430,80 @@ for (const item of items) {
 
 ## Refresh / Sync
 
-Both manual refresh and scheduled sync go through the same path: a **sync
-Job** on the **concurrent** queue. The scheduler doesn't call the provider
-directly — it enqueues a `SYNC_CONNECTOR` Job. `#connector/refresh` does the
-same thing.
+Manual refresh and scheduled sync share `ConnectorService.sync()`, but enter
+it differently. `#connector/refresh` runs the sync inline and returns its
+success or validation error. The scheduler acquires the connector's sync lock
+before enqueueing work on the concurrent `JobScheduler`.
 
-Overlap is prevented by a **`syncing` state** on the connector entry. The
-key rule: `syncing` is set to `true` **at enqueue time** — the moment a sync
-Job enters the queue. It is reset to `false` when the Job completes (or
-fails). This way the scheduler and the endpoint both see `syncing = true` and
-skip enqueuing, so the queue is never over-populated with duplicate syncs for
-the same connector.
+Overlap is prevented by the persisted **`syncing` state**. A manual sync
+acquires it inside `ConnectorService.sync()`; the scheduler acquires it before
+enqueueing and tells the service that the lock is already held. The service
+clears it in `finally`, and enqueue failures clear it as well.
 
 - **Bounded concurrency:** the concurrent worker pool limits how many syncs
   run at once across different connectors.
-- **Per-connector exclusion:** `syncing` set at enqueue time, reset on
-  completion. The scheduler checks it before enqueuing. `#connector/refresh`
-  checks it before enqueuing. No atomic guard needed in the handler — the
-  enqueue-time check ensures at most one sync Job per connector exists.
+- **Per-connector exclusion:** the atomic `setSyncing()` update permits only
+  one manual or scheduled sync for a connector at a time.
 - **Unified observability:** sync Jobs appear in the same Job logs, command
   receipts, and diagnostics as every other operation. `syncing` is visible
   in the connector metadata.
 
-### Sync Job definition
-
-```ts
-// In 4-job-wiring/connector/
-interface SyncConnectorJob {
-  jobType: "SYNC_CONNECTOR";
-  connectorId: string;
-  source: "scheduled" | "manual";  // for diagnostics
-}
-```
+Before changing Knowledge, sync persists `ingestionState: "pending"` and the
+union of source IDs from the last active and current provider snapshots. Only
+after every Knowledge operation and the metadata update succeed does it write
+`"active"` with the exact current source set. A failure writes `"failed"`
+(or safely remains `"pending"` if that write also fails) while retaining the
+last active item snapshot and the source-ID union. The next sync re-admits all
+current prose and removes every tracked source no longer present. It never
+pretends to restore old content by reading new bytes from the provider. Public
+Connector projections expose an empty `knowledgeSourceIds` list while pending
+or failed, so uncertain partial ingestion cannot enter a Knowledge/resource
+scope; the persisted union remains private recovery metadata.
 
 **Enqueue-time contract.** Before a sync Job is placed in the queue, the
-caller (scheduler or endpoint) atomically sets `syncing = true WHERE id = ?
+scheduled caller atomically sets `syncing = true WHERE id = ?
 AND syncing = false`. If zero rows updated, the connector is already syncing
 and the Job is never enqueued.
 
-**Job handler.** The handler never sets `syncing = true` — that already
-happened. It only:
+**Sync operation.** Once the lock is held, the service:
 
 1. Loads the `ConnectorEntry` and its `itemIndex`.
-2. Calls `provider.sync(locator)` — the provider stats every item, compares
-   `mtime` against stored `lastModifiedAt`, returns only changed/added/removed
-   intents.
-3. Applies the intents: new prose items stream into Knowledge, changed prose
-   items re-stream, removed items are cleaned up, other items get token
+2. Calls `provider.listItems(locator)` for the current snapshot and compares
+   item keys and revision tokens with the persisted snapshot.
+3. Applies the diff: new prose items stream into Knowledge, changed prose
+   items re-stream, removed items are cleaned up, and other items get metadata
    updates.
 4. Updates `revision`, `lastSyncedAt`, and sets `syncing = false`.
-5. Emits a command receipt.
+5. Emits structured duration and item-count logs.
 
 ### Manual refresh
 
-`#connector/refresh` attempts the enqueue-time `syncing = true` update. If it
-succeeds, the Job is enqueued. If zero rows updated (already syncing), the
-endpoint returns a response indicating sync is already in progress.
+`#connector/refresh` executes the sync inline. It returns `200` only after the
+sync completes, `409` when a sync is already in progress, `404` for a missing
+connector, and a mapped validation or server error otherwise.
 
 ### Scheduled sync
 
-The scheduler (see Sync model below) doesn't call `sync()` itself. It
-enqueues a `SYNC_CONNECTOR` Job with `source: "scheduled"` at each interval.
-The Job system's concurrent pool picks it up when a worker is free.
+At each interval the scheduler refreshes the set of persisted sync-enabled
+entries, acquires each due connector's lock, and enqueues a concurrent Job.
+The Job calls `ConnectorService.sync()` with the lock-already-acquired flag.
 
 ```
 Scheduler timer fires
-  → scheduler enqueues SyncConnectorJob
-  → JobRegistry creates fresh JobDefinition
-  → concurrent FIFO → worker pool
-  → Job handler calls provider.sync() + applies results
-  → command receipt logged
+  → scheduler discovers persisted sync configurations
+  → scheduler atomically acquires the connector lock
+  → JobScheduler concurrent FIFO → worker pool
+  → ConnectorService snapshots, diffs, and applies results
+  → structured outcome logged
 ```
 
 ---
 
 ## Sync model
 
-Some providers are **sync-type** — they support automatic periodic refresh on a
-fixed schedule. A sync-type provider implements an extended interface beyond
-`ConnectorProvider`:
+Some providers support automatic periodic refresh on a fixed schedule. Such a
+provider sets an optional marker on `ConnectorProvider`; snapshot comparison
+and persistence remain owned by the Connector service:
 
 ```ts
 /**
@@ -530,30 +521,17 @@ const SYNC_INTERVALS = {
 
 type SyncInterval = keyof typeof SYNC_INTERVALS;
 
-interface SyncConnectorProvider extends ConnectorProvider {
-  /** Whether this provider supports automatic sync. */
-  readonly syncType: "scheduled";
-
-  /**
-   * Called by the sync Job handler at each scheduled or manual sync.
-   * The provider is responsible for stat-ing every known item, comparing
-   * mtime against stored lastModifiedAt, and returning intents only for
-   * items that changed, were added, or were removed.
-   *
-   * Returns a list of sync intents. The Connector capability owns the
-   * actual Knowledge calls and persistence — the provider only describes
-   * what changed.
-   */
-  sync(locator: string): Promise<SyncIntent[]>;
+interface ConnectorProvider {
+  readonly kind: string;
+  readonly label: string;
+  readonly syncType?: "scheduled";
+  listItems(locator: string): Promise<ConnectorItem[]>;
+  getReader(locator: string, itemKey: string): Promise<ConnectorReader>;
 }
-
-type SyncIntent =
-  | { kind: "add"; item: ConnectorItem }
-  | { kind: "update"; itemKey: string; revisionToken: string }
-  | { kind: "remove"; itemKey: string };
 ```
 
-The connector entry records sync configuration when the provider is sync-type:
+The connector entry records sync configuration only when the provider supports
+scheduling and the caller supplied an interval:
 
 ```ts
 interface ConnectorSyncConfig {
@@ -562,25 +540,26 @@ interface ConnectorSyncConfig {
   readonly lastSyncedAt?: string;
 }
 
-/** Runtime-only — not persisted separately. Lives on ConnectorEntry. */
-// syncing: boolean — true while a sync Job is actively running
+// ConnectorEntry.syncing is persisted while a sync is queued or running.
 ```
 
 The sync config is persisted alongside the connector entry in a JSON column
-(see SQL schema below). When a sync-type connector is registered, the scheduler
-is notified.
+(see SQL schema below). A provider can still be refreshed manually when no
+interval is supplied.
 
 ### Scheduler
 
-The scheduler is thin. It doesn't call `sync()` or touch provider code — it
-just enqueues Jobs through the same `JobRegistry` used by HTTP endpoints.
+The scheduler is thin. It does not touch provider content directly; it
+enqueues work through `JobScheduler`, and that work calls
+`ConnectorService.sync()`.
 
 On startup (`1-init/startBackend.ts`):
 
-1. Query all connector entries with `syncType = "scheduled"`.
-2. Group them by `interval`.
-3. For each interval, spawn a `setInterval`. When it fires, for each
-   connector with that interval, enqueue a `SYNC_CONNECTOR` Job.
+1. Clear stale persisted `syncing` flags left by a prior process exit and log
+   the recovery count.
+2. Query all active entries with `syncType = "scheduled"`.
+3. Spawn one timer per allowed interval. Each tick re-queries persistence so
+   registrations created after startup are discovered automatically.
 
 ```
 1-init/
@@ -601,12 +580,11 @@ interface ConnectorSyncScheduler {
 }
 ```
 
-The scheduler's only dependency is the `JobRegistry` and the connector
-repository. At each interval tick it queries for entries where `syncType =
-"scheduled"` AND `syncing = false`. For each, it attempts the enqueue-time
-`syncing = true` update. If successful, it enqueues a `SYNC_CONNECTOR` Job.
-If not (already syncing), that connector is skipped — its next tick will
-catch it.
+The scheduler depends on `JobScheduler`, `ConnectorStore`,
+`ConnectorService`, and the shared logger. At each tick it queries active,
+non-syncing scheduled entries. For each, it attempts the enqueue-time
+`syncing = true` update. If successful, it enqueues a concurrent Job. If not,
+that connector is skipped and its next tick can retry.
 
 Each interval tick is fire-and-forget. The Job handler never sets `syncing =
 true` — that was done at enqueue time. The handler only resets it to `false`
@@ -698,10 +676,10 @@ flowchart TD
 
     User -->|"refresh(id)"| CONN
 
-    Scheduler["ConnectorSyncScheduler"] -->|"enqueues SYNC_CONNECTOR Job"| JobQueue["JobRegistry"]
+    Scheduler["ConnectorSyncScheduler"] -->|"enqueues scheduled work"| JobQueue["JobScheduler"]
     JobQueue -->|"concurrent FIFO"| WorkerPool["bounded worker pool"]
-    WorkerPool -->|"handler calls provider.sync()"| SyncProv["SyncConnectorProvider"]
-    SyncProv -->|"SyncIntent[]"| CONN
+    WorkerPool -->|"calls ConnectorService.sync()"| CONN
+    CONN -->|"listItems() current snapshot"| Prov
 
     Context["Context entries"] -.->|"kind: connector::file::text / connector::file::other / connector::directory::text / connector::directory::other"| CONN
 ```
@@ -712,8 +690,8 @@ flowchart TD
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `#connector/register` | POST | Register an external resource. Body: `{ providerKind, locator, syncInterval? }`. `syncInterval` is required for sync-type providers and must be one of `"5min"`, `"30min"`, `"2hr"`, `"12hr"`. |
-| `#connector/refresh` | POST | Manually re-index a connector entry. Body: `{ id }`. |
+| `#connector/register` | POST | Register an external resource. Body: `{ providerKind, locator, syncInterval? }`. Supplying one of `"5min"`, `"30min"`, `"2hr"`, or `"12hr"` opts a scheduling-capable provider into periodic sync. |
+| `#connector/refresh` | POST | Manually re-index a connector entry inline. Body: `{ id }`; returns after completion or with a mapped error. |
 | `#connector/get` | POST | Get connector metadata. Body: `{ id }`. Returns `ConnectorEntry`. |
 | `#connector/list` | POST | List all connector entries. Returns `ConnectorEntry[]`. |
 | `#connector/read-all` | POST | Read full text of an item. Body: `{ id, itemKey? }`. |
@@ -729,9 +707,9 @@ flowchart TD
 | Operation | Queue | Response | Reason |
 |-----------|-------|----------|--------|
 | `register` (file) | `concurrent` | `inline` | External I/O + Knowledge embed. Concurrent-safe (path-based IDs). |
-| `register` (directory) | `concurrent` | `deferred` | Directory walk + N Knowledge embeds can be slow. Freeze inputs, return deferred. |
-| `SYNC_CONNECTOR` (scheduled) | `concurrent` | `none` | Internal Job, no HTTP response. Enqueued by scheduler, picked up by worker pool. |
-| `SYNC_CONNECTOR` (manual via `#connector/refresh`) | `concurrent` | `deferred` | Same Job type, enqueued by endpoint. Blocking for caller. |
+| `register` (directory) | `concurrent` | `inline` | Directory walk + Knowledge admission completes before success is returned. |
+| scheduled sync | `concurrent` | internal | Enqueued by the scheduler and picked up by the worker pool. |
+| manual sync via `#connector/refresh` | `concurrent` | `inline` | Runs through the endpoint Job and returns the completed result. |
 | `get` / `list` | `concurrent` | `inline` | Read-only. |
 | `read-all` / `read-range` / `read-lines` | `concurrent` | `inline` | Bounded file I/O. |
 | `delete` | `serial` | `inline` | Ordered canonical mutation. |
@@ -760,6 +738,8 @@ CREATE TABLE connector_entries (
     )),
   syncing INTEGER NOT NULL DEFAULT 0
     CHECK (syncing IN (0, 1)),
+  ingestion_state TEXT NOT NULL DEFAULT 'active'
+    CHECK (ingestion_state IN ('active', 'pending', 'failed')),
   knowledge_source_ids_json TEXT NOT NULL
     CHECK (json_valid(knowledge_source_ids_json) AND json_type(knowledge_source_ids_json) = 'array'),
   created_at TEXT NOT NULL,
@@ -772,8 +752,7 @@ CREATE TABLE connector_items (
   item_key TEXT NOT NULL,
   name TEXT NOT NULL
     CHECK (length(trim(name)) > 0),
-  extension TEXT NOT NULL
-    CHECK (length(extension) > 0),
+  extension TEXT NOT NULL,
   byte_size INTEGER NOT NULL
     CHECK (byte_size >= 0),
   status TEXT NOT NULL
@@ -836,7 +815,7 @@ whether Knowledge admission happens.
 
 | Dimension | General Files | Connector |
 |-----------|--------------|-----------|
-| Content storage | Persisted in DB (full content) | On-demand via provider (never buffered) |
+| Content storage | Persisted in DB (full content) | On-demand via provider; `readAll()` is bounded and sync buffers only changed prose items |
 | ID strategy | `SHA-256(content)` | `SHA-256(providerKind + "::" + locator)` |
 | Kinds | `file::text`, `file::other` | `file::text`, `file::other`, `directory::text`, `directory::other` |
 | Prose classification | `PROSE_TEXT_EXTENSIONS` (standalone) | Own copy of same list; no import between capabilities |
@@ -845,7 +824,7 @@ whether Knowledge admission happens.
 | Line reads | N/A (always full content) | `readLines(startLine, endLine)` |
 | Directory support | No (single files) | Yes (per-item readers, all four kinds) |
 | Update | Replaces content → new ID | Sync checks mtime → same ID, selective re-read |
-| Sync | N/A | `SyncConnectorProvider` with fixed-interval scheduler; filesystem is sync-type |
+| Sync | N/A | Optional `syncType` marker with service-owned snapshot diff and fixed-interval scheduler |
 | Transport | N/A (content owned by Icarus) | Provider interface (filesystem, SharePoint, Google Drive, DB, …) |
 | Use case | User-uploaded files (own the content) | External resources (reference the content) |
 
@@ -856,18 +835,17 @@ whether Knowledge admission happens.
 1. **Provider-agnostic identity:** Connector ID is always derived from
    `providerKind + locator`. The same provider+locator always maps to the same
    ID.
-2. **Lazy reads only:** Connector never buffers full item content beyond what
-   the reader is asked to deliver. `readAll()` is documented as unsafe for
-   large items.
+2. **Bounded reads:** Range, line, stream-chunk, and full-read requests are
+   validated against explicit limits. Sync reads the full content only for
+   prose items that are new or whose revision token changed.
 3. **Standalone prose classification:** Connector owns its own copy of the
    `PROSE_TEXT_EXTENSIONS` list. Capabilities do not import from each other —
    the lists may intentionally diverge.
 4. **Prose → Knowledge, other → stored:** Prose items enter the Knowledge
    lattice. Other items are registered and readable but not indexed.
-5. **Selective sync via mtime:** The filesystem provider stats every item at
-   each sync interval. Only items whose `mtime` differs from stored
-   `lastModifiedAt` trigger a re-read. No hashing, no streaming for unchanged
-   items.
+5. **Selective sync via mtime:** During normal active operation, only items
+   whose revision token changed trigger a re-read. A pending/failed retry
+   deliberately re-reads all current prose to reconcile uncertain Knowledge.
 6. **Hashed Knowledge source IDs:** All external identifiers are SHA-256
    hashed before appearing in Knowledge source IDs.
 7. **Knowledge sync on register and sync:** Every prose item is admitted on
@@ -882,3 +860,6 @@ whether Knowledge admission happens.
     each other, declared at registration, no arbitrary values.
 12. **Filesystem is sync-type:** From day one the filesystem provider uses
     `mtime`-based selective sync. There is no manual-only provider.
+13. **Explicit reconciliation state:** Metadata is authoritative only while
+    ingestion is `active`; pending/failed states retain every source ID needed
+    for an idempotent retry and never synthesize unavailable historical bytes.

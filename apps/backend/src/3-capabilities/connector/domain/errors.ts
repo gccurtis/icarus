@@ -33,3 +33,12 @@ export class SyncInProgressError extends Error {
     this.name = "SyncInProgressError";
   }
 }
+
+export class ConnectorValidationError extends Error {
+  public readonly code = "bad_request" as const;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ConnectorValidationError";
+  }
+}

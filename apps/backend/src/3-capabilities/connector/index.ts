@@ -3,6 +3,7 @@ export type { ConnectorService } from "./application/connectorService.js";
 
 export {
   type ConnectorEntry,
+  type ConnectorIngestionState,
   type ConnectorItemEntry,
   type ConnectorKind,
   type ConnectorSyncConfig,
@@ -14,7 +15,7 @@ export {
   PROSE_TEXT_EXTENSIONS,
 } from "./domain/model.js";
 
-export type { ConnectorProvider, SyncConnectorProvider, SyncIntent } from "./domain/provider.js";
+export type { ConnectorProvider } from "./domain/provider.js";
 export type { ConnectorItem } from "./domain/provider.js";
 export type { ConnectorReader, ByteRange, DirectoryReader } from "./domain/reader.js";
 
@@ -23,6 +24,7 @@ export {
   ConnectorAlreadyExistsError,
   UnsupportedLocatorError,
   SyncInProgressError,
+  ConnectorValidationError,
 } from "./domain/errors.js";
 
 export type { ConnectorStore } from "./ports/repository.js";

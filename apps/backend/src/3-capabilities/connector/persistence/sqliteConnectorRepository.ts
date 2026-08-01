@@ -5,7 +5,12 @@ import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database, { type Database as DB } from "better-sqlite3";
-import type { ConnectorEntry, ConnectorItemEntry, ConnectorSyncConfig } from "../domain/model.js";
+import type {
+  ConnectorEntry,
+  ConnectorIngestionState,
+  ConnectorItemEntry,
+  ConnectorSyncConfig,
+} from "../domain/model.js";
 import type { ConnectorStore } from "../ports/repository.js";
 
 const tablePrefix = (projectId: string): string =>
@@ -32,6 +37,8 @@ function createSchema(db: DB, p: string): void {
         )),
       syncing             INTEGER NOT NULL DEFAULT 0
         CHECK (syncing IN (0, 1)),
+      ingestion_state     TEXT NOT NULL DEFAULT 'active'
+        CHECK (ingestion_state IN ('active', 'pending', 'failed')),
       knowledge_source_ids_json TEXT NOT NULL
         CHECK (json_valid(knowledge_source_ids_json) AND json_type(knowledge_source_ids_json) = 'array'),
       created_at          TEXT NOT NULL,
@@ -55,8 +62,7 @@ function createSchema(db: DB, p: string): void {
       item_key            TEXT NOT NULL,
       name                TEXT NOT NULL
         CHECK (length(trim(name)) > 0),
-      extension           TEXT NOT NULL
-        CHECK (length(extension) > 0),
+      extension           TEXT NOT NULL,
       byte_size           INTEGER NOT NULL
         CHECK (byte_size >= 0),
       status              TEXT NOT NULL
@@ -77,6 +83,56 @@ function createSchema(db: DB, p: string): void {
   `);
 }
 
+/** Relax the early schema's extension check without discarding indexed items. */
+function ensureCurrentSchema(db: DB, p: string): void {
+  const itemsTable = `conn_${p}_items`;
+  const existing = db.prepare(
+    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?"
+  ).get(itemsTable) as { sql: string } | undefined;
+
+  if (!existing) {
+    createSchema(db, p);
+    return;
+  }
+
+  if (!existing.sql.includes("length(extension) > 0")) {
+    createSchema(db, p);
+    return;
+  }
+
+  const legacy = `${itemsTable}_legacy_schema`;
+  db.pragma("foreign_keys = OFF");
+  try {
+    db.transaction(() => {
+      db.exec(`ALTER TABLE ${itemsTable} RENAME TO ${legacy}`);
+      db.exec(`DROP INDEX IF EXISTS conn_${p}_items_status`);
+      createSchema(db, p);
+      db.exec(`
+        INSERT INTO ${itemsTable}
+          (entry_id, item_key, name, extension, byte_size, status,
+           revision_token, last_modified_at, knowledge_source_id)
+        SELECT
+          entry_id, item_key, name, extension, byte_size, status,
+          revision_token, last_modified_at, knowledge_source_id
+        FROM ${legacy};
+        DROP TABLE ${legacy};
+      `);
+    })();
+  } finally {
+    db.pragma("foreign_keys = ON");
+  }
+}
+
+function ensureIngestionStateColumn(db: DB, p: string): void {
+  const columns = db.prepare(`PRAGMA table_info(conn_${p}_entries)`).all() as Array<{ name: string }>;
+  if (columns.some(column => column.name === "ingestion_state")) return;
+  db.exec(`
+    ALTER TABLE conn_${p}_entries
+    ADD COLUMN ingestion_state TEXT NOT NULL DEFAULT 'active'
+      CHECK (ingestion_state IN ('active', 'pending', 'failed'))
+  `);
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rowToEntry(row: Record<string, any>): ConnectorEntry {
   return {
@@ -90,10 +146,11 @@ function rowToEntry(row: Record<string, any>): ConnectorEntry {
       ? (JSON.parse(row.sync_config_json as string) as ConnectorSyncConfig)
       : null,
     syncing: (row.syncing as number) === 1,
+    ingestionState: (row.ingestion_state as ConnectorIngestionState | undefined) ?? "active",
     knowledgeSourceIds: JSON.parse(row.knowledge_source_ids_json as string) as readonly string[],
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
-    deletedAt: row.deleted_at as string | undefined,
+    deletedAt: (row.deleted_at as string | null) ?? undefined,
   };
 }
 
@@ -120,9 +177,10 @@ export class SQLiteConnectorStore implements ConnectorStore {
     this.db = new Database(dbPath);
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("synchronous = NORMAL");
-    this.db.pragma("foreign_keys = ON");
     this.p = tablePrefix(projectId);
-    createSchema(this.db, this.p);
+    ensureCurrentSchema(this.db, this.p);
+    ensureIngestionStateColumn(this.db, this.p);
+    this.db.pragma("foreign_keys = ON");
   }
 
   getById(id: string): ConnectorEntry | undefined {
@@ -153,9 +211,9 @@ export class SQLiteConnectorStore implements ConnectorStore {
     const insertEntry = this.db.prepare(`
       INSERT INTO conn_${this.p}_entries
         (id, kind, provider_kind, locator, label, revision,
-         sync_config_json, syncing, knowledge_source_ids_json,
+         sync_config_json, syncing, ingestion_state, knowledge_source_ids_json,
          created_at, updated_at, deleted_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const insertItem = this.db.prepare(`
@@ -171,6 +229,7 @@ export class SQLiteConnectorStore implements ConnectorStore {
         entry.revision,
         entry.syncConfig ? JSON.stringify(entry.syncConfig) : null,
         entry.syncing ? 1 : 0,
+        entry.ingestionState ?? "active",
         JSON.stringify(entry.knowledgeSourceIds),
         entry.createdAt, entry.updatedAt, entry.deletedAt ?? null,
       );
@@ -187,13 +246,29 @@ export class SQLiteConnectorStore implements ConnectorStore {
     tx();
   }
 
+  restore(entry: ConnectorEntry, items: ConnectorItemEntry[]): void {
+    this.replaceEntry(entry, items, true);
+  }
+
   update(entry: ConnectorEntry, items: ConnectorItemEntry[]): void {
+    this.replaceEntry(entry, items, false);
+  }
+
+  private replaceEntry(
+    entry: ConnectorEntry,
+    items: ConnectorItemEntry[],
+    restoring: boolean,
+  ): void {
+    const deletedAssignment = restoring ? ", deleted_at = NULL" : "";
+    const stateGuard = restoring
+      ? "deleted_at IS NOT NULL"
+      : "deleted_at IS NULL AND syncing = 1";
     const updateEntry = this.db.prepare(`
       UPDATE conn_${this.p}_entries
       SET kind = ?, provider_kind = ?, locator = ?, label = ?, revision = ?,
-          sync_config_json = ?, syncing = ?, knowledge_source_ids_json = ?,
-          updated_at = ?, deleted_at = ?
-      WHERE id = ?
+          sync_config_json = ?, syncing = ?, ingestion_state = ?, knowledge_source_ids_json = ?,
+          updated_at = ?${deletedAssignment}
+      WHERE id = ? AND ${stateGuard}
     `);
 
     const deleteItems = this.db.prepare(
@@ -208,15 +283,21 @@ export class SQLiteConnectorStore implements ConnectorStore {
     `);
 
     const tx = this.db.transaction(() => {
-      updateEntry.run(
+      const result = updateEntry.run(
         entry.kind, entry.providerKind, entry.locator, entry.label,
         entry.revision,
         entry.syncConfig ? JSON.stringify(entry.syncConfig) : null,
         entry.syncing ? 1 : 0,
+        entry.ingestionState ?? "active",
         JSON.stringify(entry.knowledgeSourceIds),
-        entry.updatedAt, entry.deletedAt ?? null,
+        entry.updatedAt,
         entry.id,
       );
+      if (result.changes !== 1) {
+        throw new Error(
+          `Connector entry lost its ${restoring ? "deleted" : "active sync"} state: ${entry.id}`
+        );
+      }
 
       deleteItems.run(entry.id);
 
@@ -232,10 +313,33 @@ export class SQLiteConnectorStore implements ConnectorStore {
     tx();
   }
 
+  markIngestionState(
+    id: string,
+    state: Exclude<ConnectorIngestionState, "active">,
+    trackedKnowledgeSourceIds: readonly string[],
+    updatedAt: string,
+  ): void {
+    const result = this.db.prepare(`
+      UPDATE conn_${this.p}_entries
+      SET ingestion_state = ?, knowledge_source_ids_json = ?, updated_at = ?
+      WHERE id = ? AND deleted_at IS NULL AND syncing = 1
+    `).run(state, JSON.stringify(trackedKnowledgeSourceIds), updatedAt, id);
+    if (result.changes !== 1) {
+      throw new Error(`Connector ingestion state lost its active sync claim: ${id}`);
+    }
+  }
+
   softDelete(id: string, deletedAt: string): void {
-    this.db
-      .prepare(`UPDATE conn_${this.p}_entries SET deleted_at = ?, updated_at = ? WHERE id = ?`)
+    const result = this.db
+      .prepare(`
+        UPDATE conn_${this.p}_entries
+        SET deleted_at = ?, updated_at = ?
+        WHERE id = ? AND deleted_at IS NULL AND syncing = 1
+      `)
       .run(deletedAt, deletedAt, id);
+    if (result.changes !== 1) {
+      throw new Error(`Connector delete lost its active claim: ${id}`);
+    }
   }
 
   getItems(entryId: string): ConnectorItemEntry[] {
@@ -249,7 +353,7 @@ export class SQLiteConnectorStore implements ConnectorStore {
     const result = this.db
       .prepare(
         `UPDATE conn_${this.p}_entries SET syncing = 1
-         WHERE id = ? AND syncing = 0`
+         WHERE id = ? AND syncing = 0 AND deleted_at IS NULL`
       )
       .run(id);
     return result.changes > 0;
@@ -259,6 +363,13 @@ export class SQLiteConnectorStore implements ConnectorStore {
     this.db
       .prepare(`UPDATE conn_${this.p}_entries SET syncing = 0 WHERE id = ?`)
       .run(id);
+  }
+
+  resetSyncing(): number {
+    const result = this.db
+      .prepare(`UPDATE conn_${this.p}_entries SET syncing = 0 WHERE syncing = 1 AND deleted_at IS NULL`)
+      .run();
+    return result.changes;
   }
 
   listSyncableEntries(): ConnectorEntry[] {

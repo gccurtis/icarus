@@ -6,8 +6,6 @@ export const PROSE_TEXT_EXTENSIONS = new Set([
   "txt", "md", "markdown", "rst", "org", "tex",
   "html", "htm",
   "log",
-  "docx",
-  "pdf",
 ]);
 
 export type ConnectorKind =
@@ -35,6 +33,8 @@ export interface ConnectorSyncConfig {
   readonly lastSyncedAt?: string;
 }
 
+export type ConnectorIngestionState = "active" | "pending" | "failed";
+
 export interface ConnectorEntry {
   /** Stable ID: SHA-256(providerKind + "::" + locator), hex-encoded. */
   readonly id: string;
@@ -51,6 +51,12 @@ export interface ConnectorEntry {
   readonly syncConfig: ConnectorSyncConfig | null;
   /** True while a sync Job is in the queue or actively running. */
   readonly syncing: boolean;
+  /**
+   * Whether persisted item metadata and Knowledge are known to agree.
+   * Missing is treated as "active" for legacy callers; persisted rows always
+   * expose an explicit state.
+   */
+  readonly ingestionState?: ConnectorIngestionState;
   /** Knowledge source IDs, one per prose item. */
   readonly knowledgeSourceIds: readonly string[];
   readonly createdAt: string;

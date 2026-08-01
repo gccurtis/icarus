@@ -4,6 +4,9 @@ import type { Logger } from "#platform/observability/logger.js";
 import {
   ConnectorAlreadyExistsError,
   ConnectorNotFoundError,
+  ConnectorValidationError,
+  SyncInProgressError,
+  UnsupportedLocatorError,
   type ConnectorService,
 } from "#connector";
 import type { JobRegistry } from "#utils/jobs/registry.js";
@@ -15,8 +18,21 @@ function errorResponse(e: unknown): { statusCode: number; body: unknown } {
   if (e instanceof ConnectorAlreadyExistsError) {
     return { statusCode: 409, body: { error: "already_exists", message: e.message } };
   }
+  if (e instanceof SyncInProgressError) {
+    return { statusCode: 409, body: { error: "sync_in_progress", message: e.message } };
+  }
+  if (e instanceof ConnectorValidationError || e instanceof UnsupportedLocatorError || e instanceof RangeError) {
+    return { statusCode: 400, body: { error: "bad_request", message: e.message } };
+  }
   const message = e instanceof Error ? e.message : String(e);
   return { statusCode: 500, body: { error: "internal_error", message } };
+}
+
+function logError(logger: Logger, operation: string, error: unknown): void {
+  logger.error(`connector.${operation}.error`, {
+    errorName: error instanceof Error ? error.name : "UnknownError",
+    error: error instanceof Error ? error.message : String(error),
+  });
 }
 
 export function registerConnectorEndpoints(
@@ -34,7 +50,7 @@ export function registerConnectorEndpoints(
         const result = await service.register(request.body as any);
         return { statusCode: 200, body: result };
       } catch (e) {
-        logger.error("connector.register.error", { error: String(e) });
+        logError(logger, "register", e);
         return errorResponse(e);
       }
     },
@@ -44,18 +60,14 @@ export function registerConnectorEndpoints(
   registry.register({ method: "POST", path: "/connector/refresh" }, (request) => ({
     name: "connector.refresh",
     queueType: "concurrent",
-    responseMode: "deferred",
-    deferredWork: async () => ({
-      statusCode: 202,
-      body: { status: "accepted" },
-    }),
+    responseMode: "inline",
     work: async () => {
       try {
-        const { id } = request.body as { id: string };
+        const { id } = (request.body ?? {}) as { id: string };
         await service.sync(id);
         return { statusCode: 200, body: { status: "synced" } };
       } catch (e) {
-        logger.error("connector.refresh.error", { error: String(e) });
+        logError(logger, "refresh", e);
         return errorResponse(e);
       }
     },
@@ -68,23 +80,29 @@ export function registerConnectorEndpoints(
     responseMode: "inline",
     work: async () => {
       try {
-        const { id } = request.body as { id: string };
+        const { id } = (request.body ?? {}) as { id: string };
         const entry = service.get(id);
         return { statusCode: 200, body: entry };
       } catch (e) {
+        logError(logger, "get", e);
         return errorResponse(e);
       }
     },
   }));
 
   // --- List ---
-  registry.register({ method: "POST", path: "connector/list" }, () => ({
+  registry.register({ method: "POST", path: "/connector/list" }, () => ({
     name: "connector.list",
     queueType: "concurrent",
     responseMode: "inline",
     work: async () => {
-      const entries = service.list();
-      return { statusCode: 200, body: entries };
+      try {
+        const entries = service.list();
+        return { statusCode: 200, body: entries };
+      } catch (e) {
+        logError(logger, "list", e);
+        return errorResponse(e);
+      }
     },
   }));
 
@@ -95,7 +113,8 @@ export function registerConnectorEndpoints(
     responseMode: "inline",
     work: async () => {
       try {
-        const { id, itemKey } = request.body as { id: string; itemKey?: string };
+        const startedAt = performance.now();
+        const { id, itemKey } = (request.body ?? {}) as { id: string; itemKey?: string };
         let reader;
         if (itemKey) {
           const entry = service.get(id);
@@ -105,8 +124,15 @@ export function registerConnectorEndpoints(
           reader = await service.getReader(id);
         }
         const text = await reader.readAll();
+        logger.info("connector.read-all", {
+          id,
+          itemKey,
+          byteSize: Buffer.byteLength(text, "utf8"),
+          durationMs: Math.round(performance.now() - startedAt),
+        });
         return { statusCode: 200, body: { text } };
       } catch (e) {
+        logError(logger, "read-all", e);
         return errorResponse(e);
       }
     },
@@ -119,7 +145,8 @@ export function registerConnectorEndpoints(
     responseMode: "inline",
     work: async () => {
       try {
-        const { id, itemKey, start, end } = request.body as {
+        const startedAt = performance.now();
+        const { id, itemKey, start, end } = (request.body ?? {}) as {
           id: string; itemKey?: string; start: number; end: number;
         };
         let reader;
@@ -130,8 +157,17 @@ export function registerConnectorEndpoints(
           reader = await service.getReader(id);
         }
         const text = await reader.read({ start, end });
+        logger.info("connector.read-range", {
+          id,
+          itemKey,
+          start,
+          end,
+          byteSize: Buffer.byteLength(text, "utf8"),
+          durationMs: Math.round(performance.now() - startedAt),
+        });
         return { statusCode: 200, body: { text } };
       } catch (e) {
+        logError(logger, "read-range", e);
         return errorResponse(e);
       }
     },
@@ -144,7 +180,8 @@ export function registerConnectorEndpoints(
     responseMode: "inline",
     work: async () => {
       try {
-        const { id, itemKey, startLine, endLine } = request.body as {
+        const startedAt = performance.now();
+        const { id, itemKey, startLine, endLine } = (request.body ?? {}) as {
           id: string; itemKey?: string; startLine: number; endLine: number;
         };
         let reader;
@@ -155,8 +192,17 @@ export function registerConnectorEndpoints(
           reader = await service.getReader(id);
         }
         const lines = await reader.readLines(startLine, endLine);
+        logger.info("connector.read-lines", {
+          id,
+          itemKey,
+          startLine,
+          endLine,
+          lineCount: lines.length,
+          durationMs: Math.round(performance.now() - startedAt),
+        });
         return { statusCode: 200, body: { lines } };
       } catch (e) {
+        logError(logger, "read-lines", e);
         return errorResponse(e);
       }
     },
@@ -169,10 +215,11 @@ export function registerConnectorEndpoints(
     responseMode: "inline",
     work: async () => {
       try {
-        const { id } = request.body as { id: string };
+        const { id } = (request.body ?? {}) as { id: string };
         const reader = service.getDirectoryReader(id);
         return { statusCode: 200, body: reader.listItems() };
       } catch (e) {
+        logError(logger, "list-items", e);
         return errorResponse(e);
       }
     },
@@ -185,10 +232,11 @@ export function registerConnectorEndpoints(
     responseMode: "inline",
     work: async () => {
       try {
-        const { id } = request.body as { id: string };
-        service.delete(id);
+        const { id } = (request.body ?? {}) as { id: string };
+        await service.delete(id);
         return { statusCode: 200, body: { status: "deleted", id } };
       } catch (e) {
+        logError(logger, "delete", e);
         return errorResponse(e);
       }
     },

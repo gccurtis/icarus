@@ -22,32 +22,54 @@ export class ConnectorSyncScheduler {
 
   register(entryId: string, config: ConnectorSyncConfig): void {
     this.entries.set(entryId, { id: entryId, interval: config.interval });
+    this.logger.info("connector.sync.scheduler.registered", {
+      connectorId: entryId,
+      interval: config.interval,
+    });
   }
 
   unregister(entryId: string): void {
     this.entries.delete(entryId);
+    this.logger.info("connector.sync.scheduler.unregistered", { connectorId: entryId });
   }
 
   start(): void {
-    // Group entries by interval
-    const byInterval = new Map<SyncInterval, string[]>();
-    for (const e of this.entries.values()) {
-      const ids = byInterval.get(e.interval) ?? [];
-      ids.push(e.id);
-      byInterval.set(e.interval, ids);
-    }
+    if (this.intervals.size > 0) return;
 
-    for (const [interval, connectorIds] of byInterval) {
-      const ms = SYNC_INTERVALS[interval as SyncInterval];
+    // Load persisted registrations immediately. Every tick refreshes this
+    // snapshot so connectors registered after startup join without requiring a
+    // composition-layer callback.
+    const recovered = this.store.resetSyncing();
+    this.logger.info("connector.sync.scheduler.recovered", { connectors: recovered });
+    this.refreshEntries();
+
+    for (const interval of Object.keys(SYNC_INTERVALS) as SyncInterval[]) {
+      const ms = SYNC_INTERVALS[interval];
       const timer = setInterval(() => {
-        for (const connectorId of connectorIds) {
-          this.enqueueSyncJob(connectorId);
+        this.refreshEntries();
+        for (const entry of this.entries.values()) {
+          if (entry.interval === interval) this.enqueueSyncJob(entry.id);
         }
       }, ms);
 
-      this.intervals.set(interval as SyncInterval, timer);
-      this.logger.info("connector.sync.scheduler.started", { interval, connectors: connectorIds.length });
+      this.intervals.set(interval, timer);
+      this.logger.info("connector.sync.scheduler.started", {
+        interval,
+        intervalMs: ms,
+        connectors: [...this.entries.values()].filter(entry => entry.interval === interval).length,
+      });
     }
+  }
+
+  private refreshEntries(): void {
+    const entries = this.store.listSyncableEntries();
+    this.entries.clear();
+    for (const entry of entries) {
+      if (entry.syncConfig?.syncType === "scheduled") {
+        this.entries.set(entry.id, { id: entry.id, interval: entry.syncConfig.interval });
+      }
+    }
+    this.logger.debug("connector.sync.scheduler.discovered", { connectors: entries.length });
   }
 
   private enqueueSyncJob(connectorId: string): void {
@@ -66,7 +88,7 @@ export class ConnectorSyncScheduler {
       responseMode: "inline",
       work: async () => {
         try {
-          await this.connectorService.sync(connectorId);
+          await this.connectorService.sync(connectorId, true);
           return { statusCode: 200, body: { status: "synced" } };
         } catch (e) {
           this.logger.error("connector.sync.scheduled.error", { connectorId, error: String(e) });
@@ -75,8 +97,13 @@ export class ConnectorSyncScheduler {
       },
     };
 
-    this.scheduler.enqueue({ ...job, id: `sync-${connectorId}-${Date.now()}` }).catch(() => {
+    this.scheduler.enqueue({ ...job, id: `sync-${connectorId}-${Date.now()}` }).catch((error) => {
       this.store.clearSyncing(connectorId);
+      this.logger.error("connector.sync.scheduler.enqueue-failed", {
+        connectorId,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        error: error instanceof Error ? error.message : String(error),
+      });
     });
   }
 
