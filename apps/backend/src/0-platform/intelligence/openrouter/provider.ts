@@ -264,8 +264,17 @@ export class OpenRouterProvider implements Provider {
       });
 
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`OpenRouter request failed (${response.status}): ${text}`);
+        // Drain the response without carrying provider payloads into service
+        // diagnostics or logs. Provider bodies may echo prompts, tool input,
+        // account metadata, or other user-controlled content.
+        await response.arrayBuffer();
+        const requestId =
+          response.headers.get("x-request-id") ??
+          response.headers.get("x-openrouter-request-id");
+        throw new Error(
+          `OpenRouter request failed (${response.status})` +
+            (requestId ? ` [requestId=${requestId}]` : "")
+        );
       }
 
       return (await response.json()) as unknown;
