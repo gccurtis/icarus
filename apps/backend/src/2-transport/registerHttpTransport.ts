@@ -5,11 +5,18 @@ import type {
   IncomingRequest,
   RequestEnvelope
 } from "#utils/types/request.js";
+import type { Logger } from "#platform/observability/logger.js";
 
 export interface RegisterHttpTransportDeps {
   scheduler: JobScheduler;
   registry: JobRegistry;
+  logger: Logger;
 }
+
+const errorFields = (error: unknown): Record<string, unknown> =>
+  error instanceof Error
+    ? { errorName: error.name, errorMessage: error.message }
+    : { errorName: "UnknownError", errorMessage: String(error) };
 
 // Convert Fastify-shaped request data into the framework-neutral request used
 // as input to the endpoint registry and its job factories.
@@ -32,6 +39,7 @@ export const registerHttpTransport = (
   app.all(
     "/*",
     async (request, reply) => {
+      const startedAt = performance.now();
       const envelope = buildEnvelope({
         id: request.id,
         method: request.method,
@@ -44,6 +52,13 @@ export const registerHttpTransport = (
 
       // Registry lookup maps the received method/path to a fresh concrete job.
       if (!deps.registry.has(envelope)) {
+        deps.logger.warn("http.route.not-found", {
+          requestId: envelope.requestId,
+          method: envelope.method,
+          path: envelope.path,
+          statusCode: 404,
+          durationMs: Math.round(performance.now() - startedAt)
+        });
         reply.code(404);
         return {
           error: `No job registered for endpoint '${envelope.method} ${envelope.path}'`,
@@ -64,11 +79,30 @@ export const registerHttpTransport = (
           reply.headers(headers);
         }
 
+        deps.logger.info("http.request.completed", {
+          requestId: envelope.requestId,
+          jobId: execution.jobId,
+          jobName: execution.jobName,
+          queueType: execution.queueType,
+          method: envelope.method,
+          path: envelope.path,
+          statusCode,
+          durationMs: Math.round(performance.now() - startedAt)
+        });
         return reply.code(statusCode).send(body);
       } catch (error) {
         // Infrastructure errors choose their status here. Successful endpoint
         // status codes and bodies are always chosen by the job work function.
         if (error instanceof QueueCapacityError) {
+          deps.logger.warn("http.request.rejected", {
+            requestId: envelope.requestId,
+            method: envelope.method,
+            path: envelope.path,
+            statusCode: 429,
+            queueType: error.queueType,
+            durationMs: Math.round(performance.now() - startedAt),
+            ...errorFields(error)
+          });
           reply.code(429);
           return {
             error: error.message,
@@ -76,6 +110,14 @@ export const registerHttpTransport = (
           };
         }
 
+        deps.logger.error("http.request.failed", {
+          requestId: envelope.requestId,
+          method: envelope.method,
+          path: envelope.path,
+          statusCode: 500,
+          durationMs: Math.round(performance.now() - startedAt),
+          ...errorFields(error)
+        });
         throw error;
       }
     }

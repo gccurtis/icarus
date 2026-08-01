@@ -9,7 +9,6 @@ loadEnv();
 const moduleDir = dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: resolve(moduleDir, "../../../.env") });
 
-void startBackend().catch((error) => {
-  console.error(error);
-  process.exit(1);
+void startBackend().catch(() => {
+  process.exitCode = 1;
 });
