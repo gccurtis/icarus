@@ -2,28 +2,31 @@
 
 ## Summary
 
-Hypotheses is a small regular capability that owns explicit, testable proposed
-explanations. A Hypothesis belongs to exactly one Question and records the
-current state of that proposition. It does not collect evidence, run tests, or
-derive support automatically; Findings remains the source-grounded claim
-capability and Research remains the investigation capability.
+Hypotheses is a small, project-scoped capability for proposed explanations or
+claims that can be evaluated over time. A Hypothesis may address one Question,
+several Questions, part of an answer, or connect Findings across related
+Questions. It is not a one-to-one candidate answer nested under a Question.
 
-This is intentionally a separate, flat resource rather than a nested
-Question-history aggregate. It has one job: manage a statement that can be
-tested against a specific Question.
+The persisted model remains deliberately small. It records the proposition,
+its rationale and assumptions, related Question IDs, its current assessment,
+and an optional categorical confidence level. Findings owns the evidence
+relationships; a runtime projection queries those relationships when needed.
 
-## What it owns
+## Outcomes
 
-- A stable identity and one required parent `questionId`.
-- A concise testable statement and optional rationale.
-- A current assessment status and optional bounded confidence.
-- Creation/update attribution, timestamps, and soft deletion.
+Given valid project and actor context, Hypotheses can:
 
-It does not own Findings, Evidence, Assumptions, Research runs, Answer
-revisions, or a reverse list of related Finding IDs. Those would either
-duplicate another capability’s authority or introduce a larger workflow.
+- create and edit a durable proposed explanation;
+- associate it with zero, one, or many Questions without nesting it under any
+  one Question;
+- record a simple current assessment and evidentiary direction;
+- assemble related Questions and Findings for research or evaluation; and
+- soft-delete it so it is absent from ordinary reads.
 
-## Core types
+It does not test itself, calculate confidence, require evidence before a status
+change, or enter the Knowledge lattice directly.
+
+## Persisted model
 
 ```ts
 type IsoTimestamp = string;
@@ -31,28 +34,37 @@ type ActorId = string;
 
 type HypothesisStatus =
   | "proposed"
-  | "testing"
-  | "supported"
+  | "accepted"
   | "refuted"
   | "inconclusive";
 
+type HypothesisConfidenceLevel =
+  | "strongly_refuted"
+  | "weakly_refuted"
+  | "uncertain"
+  | "weakly_supported"
+  | "strongly_supported";
+
 interface Hypothesis {
-  /** Stable random identity. */
+  /** Stable project-local identity. */
   readonly id: string;
 
-  /** The one Question this proposition is intended to answer. */
-  readonly questionId: string;
+  /** Zero or more Questions to which this proposition is relevant. */
+  readonly questionIds: readonly string[];
 
-  /** A specific proposition that could be supported, refuted, or qualified. */
+  /** The proposed explanation or claim. */
   readonly statement: string;
 
   /** Optional explanation of why the proposition is plausible or useful. */
   readonly rationale?: string;
 
+  /** Plain-text assumptions. An empty list means none were recorded. */
+  readonly assumptions: readonly string[];
+
   readonly status: HypothesisStatus;
 
-  /** Current assessment on a 0..1 scale; absent when not estimated. */
-  readonly confidence?: number;
+  /** Optional categorical assessment; absent means not yet assessed. */
+  readonly confidenceLevel?: HypothesisConfidenceLevel;
 
   readonly createdBy: ActorId;
   readonly updatedBy: ActorId;
@@ -62,28 +74,118 @@ interface Hypothesis {
 }
 ```
 
-`confidence` is a current assessment, not a probability calculation, evidence
-weight, or prediction-market value. It is optional so callers do not invent a
-number when the available material does not justify one.
+`questionIds` replaces the earlier mandatory singular `questionId`. It may be
+empty while a Hypothesis is being framed, and it supports one or many IDs
+without a separate join entity.
 
-Findings carries `hypothesisIds` for all claims that bear on a Hypothesis. The
-Hypothesis record does not store `findingIds`; a reader asks Findings for those
-links when it needs a detail projection. The initial relationship is neutral:
-it says a Finding bears on the Hypothesis but does not assert support or
-refutation semantics.
+Assumptions are plain strings. They do not have IDs, statuses, approval,
+individual confidence, or their own lifecycle.
 
-## Dependencies
+There is no numeric confidence field in this settled design because no current
+implementation requires one. If a later concrete use needs a numeric
+assessment, it should be optional, named `confidenceScore`, and documented as
+an uncalibrated score rather than a probability. It must not replace
+`confidenceLevel`.
+
+## Status semantics
+
+| Status | Meaning |
+|---|---|
+| `proposed` | Under consideration and not yet resolved. |
+| `accepted` | Currently treated as the best-supported explanation. |
+| `refuted` | Available evidence is considered sufficient to reject it. |
+| `inconclusive` | It was evaluated, but evidence supports neither acceptance nor refutation. |
+
+The service may set any of these values explicitly. It does not infer status
+from Finding counts, force a transition sequence, or require an accepted
+Finding before a Hypothesis can be created or reassessed.
+
+`confidenceLevel` describes evidentiary direction; `status` records the current
+conclusion. The capability does not automatically force one from the other.
+
+Deletion is not a Hypothesis status. It sets `deletedAt`; deleted Hypotheses are
+treated as absent by ordinary getters, lists, and runtime assemblers.
+
+## Relationship ownership
+
+Hypotheses persists `questionIds` because it owns which Questions a Hypothesis
+addresses. Questions exposes the reverse list by querying Hypotheses.
+
+Hypotheses does not persist `findingIds`. Findings owns every
+Finding-to-Hypothesis relationship:
 
 ```ts
-interface QuestionReader {
-  get(id: string): Promise<{ id: string; status: string } | null>;
+type FindingRelationship =
+  | "supports"
+  | "refutes"
+  | "qualifies"
+  | "contextualizes";
+
+interface FindingHypothesisLink {
+  readonly hypothesisId: string;
+  readonly relationship?: FindingRelationship;
+}
+
+interface RelatedFindingRef {
+  readonly findingId: string;
+  readonly relationship?: FindingRelationship;
 }
 ```
 
-Hypotheses uses this narrow reader only when creating a Hypothesis to confirm
-that its Question exists and is not deleted. It does not mutate
-Questions. No direct Knowledge dependency is needed: a Hypothesis is a proposed
-explanation, not a source-grounded statement admitted to retrieval.
+The optional value always reads from the Finding toward the Hypothesis. A
+reverse `supports` item therefore means “the Finding supports the Hypothesis,”
+not the reverse. Omission means the Finding is relevant but unclassified.
+
+The four values have the same meaning used for Finding-to-Question links:
+
+- `supports`: the Finding favors the claim;
+- `refutes`: the Finding weighs against the claim;
+- `qualifies`: the Finding narrows, conditions, or limits the claim; and
+- `contextualizes`: the Finding supplies background or explains why the claim
+  is worth considering without supporting or refuting it.
+
+No larger relationship taxonomy is introduced.
+
+## Runtime representation
+
+The persisted Hypothesis is the editable source of truth. Evaluation and
+Research receive a non-persisted projection assembled from live records:
+
+```ts
+interface RuntimeHypothesis {
+  /** Includes questionIds, statement, rationale, assumptions, and assessment. */
+  readonly hypothesis: Hypothesis;
+
+  /** Live Questions resolved from Hypothesis.questionIds. */
+  readonly questions: readonly Question[];
+
+  /** Findings queried by FindingHypothesisLink.hypothesisId. */
+  readonly findings: readonly {
+    readonly finding: Finding;
+    readonly relationship?: FindingRelationship;
+  }[];
+}
+```
+
+The runtime projection is assembled on demand and is not persisted. It uses
+narrow readers:
+
+```ts
+interface HypothesisQuestionReader {
+  get(id: string): Promise<Question | null>;
+}
+
+interface HypothesisFindingReader {
+  listForHypothesis(hypothesisId: string): Promise<readonly {
+    finding: Finding;
+    relationship?: FindingRelationship;
+  }[]>;
+}
+```
+
+Deleted or unavailable Questions and Findings are omitted from ordinary
+runtime projections. Their IDs may remain in the owning persisted record; no
+cascade or bidirectional synchronization is required.
 
 ## Store interface
 
@@ -100,9 +202,10 @@ interface HypothesisStore {
 }
 ```
 
-The store is project-bound and returns non-deleted rows ordered by `updatedAt`
-descending. It has no database foreign key to Questions: the read-port check
-preserves capability construction and migration independence.
+The SQLite adapter is project-bound and synchronous. `get` and `list` return
+only non-deleted rows ordered by `updatedAt` descending. Initial Question-ID
+filtering may inspect the bounded JSON list in application/store code; a join
+table or JSON index is not required until measurements justify it.
 
 ## Service layer
 
@@ -118,114 +221,105 @@ interface HypothesisService {
   delete(id: string): Promise<void>;
 }
 
+interface HypothesisRuntimeAssembler {
+  get(id: string): Promise<RuntimeHypothesis>;
+}
+
 interface CreateHypothesisRequest {
-  readonly questionId: string;
+  readonly questionIds?: readonly string[];
   readonly statement: string;
   readonly rationale?: string;
-  readonly confidence?: number;
+  readonly assumptions?: readonly string[];
+  readonly confidenceLevel?: HypothesisConfidenceLevel;
 }
 
 interface UpdateHypothesisRequest {
+  readonly questionIds?: readonly string[];
   readonly statement?: string;
   readonly rationale?: string | null;
+  readonly assumptions?: readonly string[];
   readonly status?: HypothesisStatus;
-  readonly confidence?: number | null;
+  readonly confidenceLevel?: HypothesisConfidenceLevel | null;
 }
 ```
 
-Creation starts in `proposed`. `update` is intentionally last-write-wins and
-can change the current assessment directly. The service does not calculate a
-status or confidence from linked Findings; that judgment belongs to the user
-or to an explicit Research/Analysis result that proposes an update.
+Creation starts in `proposed`. `update` is a direct, deterministic
+last-write-wins mutation; it does not calculate status or confidence from
+related Findings. Unsupported status or confidence values are rejected at
+ingress, but the capability adds no evidence-count gate or transition engine.
+
+Authored mutations use the project's serial queue. Reads and runtime assembly
+are concurrent.
+
+The core service is constructed first. Composition creates
+`HypothesisRuntimeAssembler` only after Questions and Findings are available,
+using their narrow readers. This avoids cyclic service construction and does
+not create another persistence owner.
 
 ## Endpoints
 
 | Method | Path | Queue | Purpose |
 |---|---|---|---|
-| `POST` | `/hypotheses/create` | concurrent | Create a proposed Hypothesis for one Question. |
-| `POST` | `/hypotheses/update` | concurrent | Patch its statement, rationale, assessment, or confidence. |
-| `GET` | `/hypotheses/get?id=...` | concurrent | Read one Hypothesis. |
-| `GET` | `/hypotheses/list?questionId=...&status=...` | concurrent | List Hypotheses. |
-| `DELETE` | `/hypotheses/delete?id=...` | concurrent | Soft-delete a Hypothesis. |
-
-Mutations log IDs, operation names, status transitions, whether confidence is
-present, actor IDs, and duration. They do not log the statement or rationale.
+| `POST` | `/hypotheses/create` | serial | Create a proposed Hypothesis. |
+| `POST` | `/hypotheses/update` | serial | Edit content, Question links, status, or confidence. |
+| `GET` | `/hypotheses/get?id=...` | concurrent | Read one persisted Hypothesis. |
+| `GET` | `/hypotheses/list?questionId=...&status=...` | concurrent | List persisted Hypotheses. |
+| `GET` | `/hypotheses/runtime?id=...` | concurrent | Assemble Questions and related Findings. |
+| `DELETE` | `/hypotheses/delete?id=...` | serial | Soft-delete a Hypothesis. |
 
 ## Persistence
 
 ```sql
 CREATE TABLE IF NOT EXISTS hyp_${prefix}_hypotheses (
-  id           TEXT PRIMARY KEY,
-  question_id  TEXT NOT NULL,
-  statement    TEXT NOT NULL,
-  rationale    TEXT,
-  status       TEXT NOT NULL CHECK (
-    status IN ('proposed', 'testing', 'supported', 'refuted', 'inconclusive')
-  ),
-  confidence   REAL CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1)),
-  created_by   TEXT NOT NULL,
-  updated_by   TEXT NOT NULL,
-  created_at   TEXT NOT NULL,
-  updated_at   TEXT NOT NULL,
-  deleted_at   TEXT
+  id                   TEXT PRIMARY KEY,
+  question_ids_json    TEXT NOT NULL DEFAULT '[]',
+  statement            TEXT NOT NULL,
+  rationale            TEXT,
+  assumptions_json     TEXT NOT NULL DEFAULT '[]',
+  status               TEXT NOT NULL CHECK (
+                         status IN (
+                           'proposed', 'accepted', 'refuted', 'inconclusive'
+                         )
+                       ),
+  confidence_level     TEXT CHECK (
+                         confidence_level IS NULL OR confidence_level IN (
+                           'strongly_refuted',
+                           'weakly_refuted',
+                           'uncertain',
+                           'weakly_supported',
+                           'strongly_supported'
+                         )
+                       ),
+  created_by           TEXT NOT NULL,
+  updated_by           TEXT NOT NULL,
+  created_at           TEXT NOT NULL,
+  updated_at           TEXT NOT NULL,
+  deleted_at           TEXT
 );
 
-CREATE INDEX IF NOT EXISTS hyp_${prefix}_hypotheses_by_question
-  ON hyp_${prefix}_hypotheses(question_id, status, updated_at DESC)
+CREATE INDEX IF NOT EXISTS hyp_${prefix}_hypotheses_recent
+  ON hyp_${prefix}_hypotheses(status, updated_at DESC)
   WHERE deleted_at IS NULL;
 ```
 
-## Lifecycle and invariants
+## Logging
 
-```mermaid
-stateDiagram-v2
-    [*] --> proposed: create()
-    proposed --> testing: update status
-    proposed --> supported: update status
-    proposed --> refuted: update status
-    proposed --> inconclusive: update status
-    testing --> supported: update status
-    testing --> refuted: update status
-    testing --> inconclusive: update status
-    supported --> proposed: revise assessment
-    refuted --> proposed: revise assessment
-    inconclusive --> proposed: revise assessment
-    supported --> testing: new material
-    refuted --> testing: new material
-    inconclusive --> testing: new material
-    proposed --> [*]: delete()
-    testing --> [*]: delete()
-    supported --> [*]: delete()
-    refuted --> [*]: delete()
-    inconclusive --> [*]: delete()
-```
+Every operation uses the injected Logger. Mutation logs include operation,
+Hypothesis ID, actor ID, prior and next status, confidence level, Question and
+assumption counts, outcome, and duration. Runtime logs include resolved
+Question and Finding counts. Logs do not contain the statement, rationale, or
+assumption text, and the capability never calls `console`.
 
-1. `questionId` identifies one live, project-local Question when created.
-2. `statement` is trimmed and non-empty.
-3. `confidence`, when present, is finite and in the inclusive range `0..1`.
-4. Status is an assessment label, not an automatically inferred result.
-5. Soft deletion never deletes the parent Question or related Findings.
-6. The capability never adds a Hypothesis to Knowledge; only accepted,
-   source-grounded Findings are Knowledge-admissible in this design.
+## Invariants
 
-## Integration boundaries
-
-Research may start from a Hypothesis ID by reading its Question and statement
-snapshot. A Research completion can propose an explicit Hypothesis update, but
-does not silently mutate the record. Findings links its claims to the relevant
-Hypothesis and Questions through their IDs. A future detail projection may join
-these read-only views without creating a new owner for the relationship.
-
-## Open questions
-
-1. Should a Hypothesis retain an optional ordered list of plain-text
-   assumptions? Keep it out initially. If assumptions require their own status,
-   evidence links, or lifecycle, they deserve a separate small capability
-   rather than a nested collection here.
-2. Should the Finding-to-Hypothesis relationship have explicit polarity
-   (`supports`, `refutes`, `qualifies`, `context`)? The Findings document keeps
-   a neutral link for now and records this as a shared open question.
-3. Should a supported/refuted Hypothesis require at least one related accepted
-   Finding? That rule would improve discipline but introduces a Findings read
-   dependency on every status change; defer it until the review workflow needs
-   enforcement.
+1. `statement` is non-empty.
+2. `questionIds` contains zero or more project-local IDs and is stored once on
+   the Hypothesis.
+3. Assumptions are plain text and have no nested lifecycle.
+4. Status is one of `proposed`, `accepted`, `refuted`, or `inconclusive`.
+5. `confidenceLevel`, when present, uses exactly the five settled values.
+6. No status or confidence value requires an accepted Finding.
+7. Finding reverse relationships are derived from Findings and preserve the
+   Finding-to-Hypothesis direction.
+8. Soft-deleted Hypotheses are absent from normal reads and runtime assembly.
+9. The runtime projection is assembled, not persisted.
