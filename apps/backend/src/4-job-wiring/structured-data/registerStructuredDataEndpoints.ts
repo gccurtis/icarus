@@ -3,7 +3,7 @@ import type { Logger } from "#platform/observability/logger.js";
 import type { StructuredData } from "#structured-data";
 import { DataEntryNotFoundError, DataEntryConflictError, StaleDataRevisionError } from "#structured-data";
 import type { FormulaEngine } from "#formula";
-import { toWire } from "#formula";
+import { isWireSerializable, toWire } from "#formula";
 import { normalizeKey } from "#formula/resolver.js";
 import type { FormulaNameResolver } from "#init/create/formula-name-resolver.js";
 
@@ -148,7 +148,10 @@ export function registerStructuredDataEndpoints(
     work: async () => {
       try {
         const body = request.body as Record<string, unknown>;
-        await sd.delete(String(body.id ?? ""));
+        await sd.delete({
+          id: String(body.id ?? ""),
+          expectedRevision: Number(body.expectedRevision)
+        });
         return { statusCode: 204, body: null };
       } catch (e) {
         return sdError(e);
@@ -269,8 +272,17 @@ export function registerStructuredDataEndpoints(
       const snapshot = await resolver.buildSnapshot();
       const binding = snapshot.bindings.get(normalizeKey(entry.displayName));
       if (!binding) {
-        logger.warn("structured-data.value.entry.unresolved", { id: entry.id, displayName: entry.displayName });
-        return { statusCode: 409, body: { error: "unresolved", message: `Entry not resolved: ${entry.displayName}` } };
+        const issue = resolver.getIssue(entry.id);
+        logger.warn("structured-data.value.entry.unresolved", { id: entry.id, displayName: entry.displayName, issue });
+        return issue
+          ? { statusCode: 422, body: { error: "resolution_error", issue } }
+          : { statusCode: 409, body: { error: "unresolved", message: `Entry not resolved: ${entry.displayName}` } };
+      }
+      if (!isWireSerializable(binding.value)) {
+        return {
+          statusCode: 422,
+          body: { error: "non_serializable_value", message: "Function values cannot be encoded on the wire" }
+        };
       }
       logger.info("structured-data.value.entry", {
         id: entry.id,
@@ -312,8 +324,17 @@ export function registerStructuredDataEndpoints(
       const snapshot = await resolver.buildSnapshot();
       const binding = snapshot.bindings.get(normalizeKey(entry.displayName));
       if (!binding) {
-        logger.warn("structured-data.value.by-name.unresolved", { id: entry.id, displayName: entry.displayName });
-        return { statusCode: 409, body: { error: "unresolved", message: `Entry not resolved: ${entry.displayName}` } };
+        const issue = resolver.getIssue(entry.id);
+        logger.warn("structured-data.value.by-name.unresolved", { id: entry.id, displayName: entry.displayName, issue });
+        return issue
+          ? { statusCode: 422, body: { error: "resolution_error", issue } }
+          : { statusCode: 409, body: { error: "unresolved", message: `Entry not resolved: ${entry.displayName}` } };
+      }
+      if (!isWireSerializable(binding.value)) {
+        return {
+          statusCode: 422,
+          body: { error: "non_serializable_value", message: "Function values cannot be encoded on the wire" }
+        };
       }
       logger.info("structured-data.value.by-name", {
         id: entry.id,
@@ -350,17 +371,22 @@ export function registerStructuredDataEndpoints(
         const source = String(body.source ?? "");
         const parsed = formula.parse({ source, languageVersion: "formula/v1" });
         if (!parsed.ok || !parsed.value) {
-          logger.warn("structured-data.evaluate.parse-error", { sourcePreview: source.slice(0, 120), diagnostics: parsed.diagnostics ?? [] });
+          logger.warn("structured-data.evaluate.parse-error", { diagnostics: parsed.diagnostics ?? [] });
           return { statusCode: 400, body: { error: "parse_error", diagnostics: parsed.diagnostics ?? [] } };
         }
         const snapshot = await resolver.buildSnapshot();
         const evaluated = formula.evaluate({ expression: parsed.value, resolver: snapshot });
         if (!evaluated.ok || !evaluated.value) {
-          logger.warn("structured-data.evaluate.eval-error", { sourcePreview: source.slice(0, 120), diagnostics: evaluated.diagnostics ?? [] });
+          logger.warn("structured-data.evaluate.eval-error", { diagnostics: evaluated.diagnostics ?? [] });
           return { statusCode: 400, body: { error: "evaluation_error", diagnostics: evaluated.diagnostics ?? [] } };
         }
+        if (!isWireSerializable(evaluated.value.value)) {
+          return {
+            statusCode: 422,
+            body: { error: "non_serializable_value", message: "Function values cannot be encoded on the wire" }
+          };
+        }
         logger.info("structured-data.evaluate", {
-          sourcePreview: source.slice(0, 120),
           valueKind: evaluated.value.value.kind,
           steps: evaluated.value.steps,
           bindingCount: snapshot.bindings.size,

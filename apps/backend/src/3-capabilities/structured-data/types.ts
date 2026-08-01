@@ -1,5 +1,5 @@
 // Structured Data types.
-// Supersedes name-manager. All named values in a project live here.
+// All named values in a project live here.
 
 import type { ContextEntry } from "#context/types.js";
 
@@ -63,7 +63,7 @@ export type DataEntry = FormulaEntry | CollectionEntry;
 // A point-in-time view of all named entries — used by Formula to bind names.
 export interface DataBindingView {
   readonly id: string;
-  readonly entries: ReadonlyMap<string, DataEntry>; // keyed by displayName
+  readonly entries: ReadonlyMap<string, DataEntry>; // keyed by normalized displayName
   readonly viewRevision: number;                    // max revision across included entries
   readonly createdAt: string;
 }

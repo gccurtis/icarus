@@ -448,5 +448,5 @@ gets its own `RetrieveResult` with the same `scope` manifest.
   fewer leaves.
 - **No per-entry subkind** — if you need to distinguish `document/v1` from
   `document/v2` use a different `kind` string; don't layer subkinds.
-- **Formula/Name Manager scoping** — out of scope here; formula has no
+- **Formula/Structured Data scoping** — out of scope here; formula has no
   retrieval step.

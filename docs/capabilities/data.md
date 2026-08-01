@@ -5,7 +5,7 @@
 ## Summary / Concept
 > **Build position — Foundations 4.** Data follows Intelligence, Context, and Formula. It gives later resource and research capabilities one authority for stable names, typed variables, typed tables, exact value snapshots, and set-based queries.
 <callout icon="🧭" color="blue_bg">
-	**Provisional consolidation boundary.** Data combines the proven Name Manager and Structured Data responsibilities behind one capability. The internal split between the declaration catalog and structured-value aggregate is deliberate: one folder and public port do not require unrelated mutations to share a revision clock. Endpoint naming and internal file granularity can be tightened after the remaining Data commentary without changing the stable identity, Formula, snapshot, ChangeSet, or SQL invariants below.
+	**Provisional consolidation boundary.** Data combines the declaration catalog and Structured Data responsibilities behind one capability. The internal split between the declaration catalog and structured-value aggregate is deliberate: one folder and public port do not require unrelated mutations to share a revision clock. Endpoint naming and internal file granularity can be tightened after the remaining Data commentary without changing the stable identity, Formula, snapshot, ChangeSet, or SQL invariants below.
 </callout>
 ### Concept and authority
 Data has two cooperating runtime aggregates:

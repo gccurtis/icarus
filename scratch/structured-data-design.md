@@ -2,8 +2,8 @@
 
 ## Summary
 
-Structured Data is a **regular capability** that supersedes the Name Manager.
-It owns every explicitly-declared, named value in a project under one unified
+Structured Data is the **regular capability** that owns every explicitly-declared,
+named value in a project under one unified
 identity model. Every entry is a named value; the `kind` describes the storage
 shape of the body:
 
@@ -81,13 +81,10 @@ These fall out naturally from Formula's existing `[n]` (index) and `.field`
 
 ---
 
-## Supersedes Name Manager
+## Single name authority
 
-`3-capabilities/name-manager/` → `3-capabilities/structured-data/`.
-Formula's `BoundFormulaReference` continues to use `DataEntry.id` as the stable
-binding key. Alias changes:
-
-- `#name-manager` / `#name-manager/*` → `#structured-data` / `#structured-data/*`
+Formula's `BoundFormulaReference` uses `DataEntry.id` as the stable binding key.
+Structured Data is the only runtime source for project Formula names.
 
 ---
 
@@ -265,7 +262,7 @@ CREATE INDEX sd_proj_${prefix}_entries_kind
 | GET    | `/[scope]/structured-data/by-name`         | get by name; query: `?displayName=`                              |
 | PATCH  | `/[scope]/structured-data/rename`          | body: `{id, newDisplayName, expectedRevision}`                   |
 | PATCH  | `/[scope]/structured-data/description`     | body: `{id, description, contextEntries, expectedRevision}`      |
-| DELETE | `/[scope]/structured-data`                 | soft-delete; body: `{id}`                                        |
+| DELETE | `/[scope]/structured-data`                 | soft-delete; body: `{id, expectedRevision}`                      |
 | POST   | `/[scope]/structured-data/query`           | body: `{kind?, text?, scope?}`                                   |
 
 **Variable/function specific:**
@@ -295,6 +292,20 @@ interface StructuredDataConfig {
   maxBodyBytes: number;           // default 65536
 }
 ```
+
+---
+
+## Validation boundary
+
+Structured Data canonicalizes display names once at ingress and rejects names
+that Formula cannot lex or that collide with Formula built-ins. Collection
+schema shape is validated once on declare or schema replacement. Declare scans
+only its submitted rows, and append validates only the newly submitted rows;
+existing table values are not rescanned on every mutation. Formula cells remain
+lazy semantic work for the resolver, which validates their resolved kind when
+the collection value is requested. Unsupported object cells, non-finite or
+unsafe integer literals, invalid record/list shapes, and undeclared row fields
+are rejected before persistence.
 
 ---
 

@@ -10,6 +10,16 @@ import type {
 import {
   DataEntryNotFoundError, DataEntryConflictError, StaleDataRevisionError
 } from "./types.js";
+import {
+  canonicalizeDisplayName,
+  normalizeDisplayNameKey,
+  validateAppendRows,
+  validateCollectionRows,
+  validateCollectionSchema,
+  validateDeleteIndices,
+  validateDisplayName,
+  validateFormulaBody
+} from "./validation.js";
 
 export interface StructuredDataConfig {
   readonly maxDisplayNameBytes: number;    // default 256
@@ -54,6 +64,11 @@ export interface UpdateDescriptionRequest {
   readonly expectedRevision: number;
 }
 
+export interface DeleteEntryRequest {
+  readonly id: string;
+  readonly expectedRevision: number;
+}
+
 export interface ReplaceSchemaRequest {
   readonly id: string;
   readonly schema: FieldDef[];
@@ -83,7 +98,7 @@ export interface StructuredData {
   declare(req: DeclareEntryRequest): Promise<DataEntry>;
   rename(req: RenameEntryRequest): Promise<DataEntry>;
   updateDescription(req: UpdateDescriptionRequest): Promise<DataEntry>;
-  delete(id: string): Promise<void>;
+  delete(req: DeleteEntryRequest): Promise<void>;
   // Write — formula/function only
   updateBody(req: UpdateBodyRequest): Promise<DataEntry>;
   // Write — collection only
@@ -99,13 +114,20 @@ class StructuredDataImpl implements StructuredData {
     private readonly logger: Logger
   ) {}
 
+  private persistUpdate(entry: DataEntry, expectedRevision: number): void {
+    if (this.store.update(entry, expectedRevision)) return;
+    const current = this.store.getEntry(entry.id);
+    if (!current) throw new DataEntryNotFoundError(entry.id);
+    throw new StaleDataRevisionError(entry.id, current.revision, expectedRevision);
+  }
+
   async bindingView(): Promise<DataBindingView> {
     const start = performance.now();
     const all = this.store.listAll();
     const map = new Map<string, DataEntry>();
     let maxRevision = 0;
     for (const entry of all) {
-      map.set(entry.displayName, entry);
+      map.set(normalizeDisplayNameKey(entry.displayName), entry);
       if (entry.revision > maxRevision) maxRevision = entry.revision;
     }
     const durationMs = Math.round(performance.now() - start);
@@ -118,7 +140,7 @@ class StructuredDataImpl implements StructuredData {
   }
 
   async getByName(displayName: string): Promise<DataEntry | undefined> {
-    return this.store.getByDisplayName(displayName);
+    return this.store.getByDisplayName(canonicalizeDisplayName(displayName));
   }
 
   async list(kind?: DataKind): Promise<DataEntry[]> {
@@ -157,13 +179,10 @@ class StructuredDataImpl implements StructuredData {
   async declare(req: DeclareEntryRequest): Promise<DataEntry> {
     const start = performance.now();
 
-    const nameBytes = Buffer.byteLength(req.displayName, "utf8");
-    if (nameBytes > this.config.maxDisplayNameBytes) {
-      throw new Error(`displayName exceeds maxDisplayNameBytes (${this.config.maxDisplayNameBytes})`);
-    }
+    const displayName = validateDisplayName(req.displayName, this.config.maxDisplayNameBytes);
 
-    const existing = this.store.getByDisplayName(req.displayName);
-    if (existing) throw new DataEntryConflictError(req.displayName);
+    const existing = this.store.getByDisplayName(displayName);
+    if (existing) throw new DataEntryConflictError(displayName);
 
     const all = this.store.listAll();
     if (all.length >= this.config.maxEntries) {
@@ -174,37 +193,39 @@ class StructuredDataImpl implements StructuredData {
     let entry: DataEntry;
 
     if (req.kind === "variable" || req.kind === "function") {
-      const bodyBytes = Buffer.byteLength(req.body, "utf8");
-      if (bodyBytes > this.config.maxBodyBytes) {
-        throw new Error(`body exceeds maxBodyBytes (${this.config.maxBodyBytes})`);
-      }
+      const body = validateFormulaBody(req.body, this.config.maxBodyBytes);
       entry = {
         id: randomUUID(),
         kind: req.kind,
-        displayName: req.displayName,
+        displayName,
         description: req.description ?? "",
         contextEntries: [],
-        body: req.body,
+        body,
         revision: 1,
         createdAt: now,
         updatedAt: now
       } satisfies FormulaEntry;
     } else {
       const collReq = req as DeclareCollectionEntryRequest;
-      if (collReq.schema.length > this.config.maxFieldsPerCollection) {
-        throw new Error(`schema exceeds maxFieldsPerCollection (${this.config.maxFieldsPerCollection})`);
-      }
-      const rows = collReq.rows ?? [];
-      if (rows.length > this.config.maxRowsPerCollection) {
-        throw new Error(`rows exceed maxRowsPerCollection (${this.config.maxRowsPerCollection})`);
-      }
+      const schema = validateCollectionSchema(
+        collReq.kind,
+        collReq.schema,
+        this.config.maxFieldsPerCollection
+      );
+      const rows = validateCollectionRows(
+        collReq.kind,
+        schema,
+        collReq.rows ?? [],
+        this.config.maxRowsPerCollection,
+        this.config.maxBodyBytes
+      );
       entry = {
         id: randomUUID(),
         kind: collReq.kind,
-        displayName: collReq.displayName,
+        displayName,
         description: collReq.description ?? "",
         contextEntries: [],
-        schema: collReq.schema,
+        schema,
         rows,
         rowCount: rows.length,
         revision: 1,
@@ -226,19 +247,19 @@ class StructuredDataImpl implements StructuredData {
     if (entry.revision !== req.expectedRevision) {
       throw new StaleDataRevisionError(req.id, entry.revision, req.expectedRevision);
     }
-    if (entry.displayName !== req.newDisplayName) {
-      const conflict = this.store.getByDisplayName(req.newDisplayName);
-      if (conflict) throw new DataEntryConflictError(req.newDisplayName);
-    }
-    const nameBytes = Buffer.byteLength(req.newDisplayName, "utf8");
-    if (nameBytes > this.config.maxDisplayNameBytes) {
-      throw new Error(`displayName exceeds maxDisplayNameBytes (${this.config.maxDisplayNameBytes})`);
+    const newDisplayName = validateDisplayName(
+      req.newDisplayName,
+      this.config.maxDisplayNameBytes
+    );
+    if (normalizeDisplayNameKey(entry.displayName) !== normalizeDisplayNameKey(newDisplayName)) {
+      const conflict = this.store.getByDisplayName(newDisplayName);
+      if (conflict) throw new DataEntryConflictError(newDisplayName);
     }
     const now = new Date().toISOString();
-    const updated: DataEntry = { ...entry, displayName: req.newDisplayName, revision: entry.revision + 1, updatedAt: now };
-    this.store.update(updated);
+    const updated: DataEntry = { ...entry, displayName: newDisplayName, revision: entry.revision + 1, updatedAt: now };
+    this.persistUpdate(updated, req.expectedRevision);
     const durationMs = Math.round(performance.now() - start);
-    this.logger.info("data.rename", { id: req.id, newDisplayName: req.newDisplayName, revision: updated.revision, durationMs });
+    this.logger.info("data.rename", { id: req.id, newDisplayName, revision: updated.revision, durationMs });
     return updated;
   }
 
@@ -251,20 +272,27 @@ class StructuredDataImpl implements StructuredData {
     }
     const now = new Date().toISOString();
     const updated: DataEntry = { ...entry, description: req.description, revision: entry.revision + 1, updatedAt: now };
-    this.store.update(updated);
+    this.persistUpdate(updated, req.expectedRevision);
     const durationMs = Math.round(performance.now() - start);
     this.logger.info("data.update.desc", { id: req.id, revision: updated.revision, durationMs });
     return updated;
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(req: DeleteEntryRequest): Promise<void> {
     const start = performance.now();
-    const entry = this.store.getEntry(id);
-    if (!entry) throw new DataEntryNotFoundError(id);
+    const entry = this.store.getEntry(req.id);
+    if (!entry) throw new DataEntryNotFoundError(req.id);
+    if (entry.revision !== req.expectedRevision) {
+      throw new StaleDataRevisionError(req.id, entry.revision, req.expectedRevision);
+    }
     const now = new Date().toISOString();
-    this.store.softDelete(id, now);
+    if (!this.store.softDelete(req.id, req.expectedRevision, now)) {
+      const current = this.store.getEntry(req.id);
+      if (!current) throw new DataEntryNotFoundError(req.id);
+      throw new StaleDataRevisionError(req.id, current.revision, req.expectedRevision);
+    }
     const durationMs = Math.round(performance.now() - start);
-    this.logger.info("data.delete", { id, durationMs });
+    this.logger.info("data.delete", { id: req.id, revision: req.expectedRevision, durationMs });
   }
 
   async updateBody(req: UpdateBodyRequest): Promise<DataEntry> {
@@ -277,13 +305,10 @@ class StructuredDataImpl implements StructuredData {
     if (entry.revision !== req.expectedRevision) {
       throw new StaleDataRevisionError(req.id, entry.revision, req.expectedRevision);
     }
-    const bodyBytes = Buffer.byteLength(req.body, "utf8");
-    if (bodyBytes > this.config.maxBodyBytes) {
-      throw new Error(`body exceeds maxBodyBytes (${this.config.maxBodyBytes})`);
-    }
+    const body = validateFormulaBody(req.body, this.config.maxBodyBytes);
     const now = new Date().toISOString();
-    const updated: FormulaEntry = { ...entry as FormulaEntry, body: req.body, revision: entry.revision + 1, updatedAt: now };
-    this.store.update(updated);
+    const updated: FormulaEntry = { ...entry as FormulaEntry, body, revision: entry.revision + 1, updatedAt: now };
+    this.persistUpdate(updated, req.expectedRevision);
     const durationMs = Math.round(performance.now() - start);
     this.logger.info("data.update.body", { id: req.id, revision: updated.revision, durationMs });
     return updated;
@@ -299,14 +324,30 @@ class StructuredDataImpl implements StructuredData {
     if (entry.revision !== req.expectedRevision) {
       throw new StaleDataRevisionError(req.id, entry.revision, req.expectedRevision);
     }
-    if (req.schema.length > this.config.maxFieldsPerCollection) {
-      throw new Error(`schema exceeds maxFieldsPerCollection (${this.config.maxFieldsPerCollection})`);
-    }
+    const schema = validateCollectionSchema(
+      entry.kind,
+      req.schema,
+      this.config.maxFieldsPerCollection
+    );
+    const rows = validateCollectionRows(
+      entry.kind,
+      schema,
+      entry.rows,
+      this.config.maxRowsPerCollection,
+      this.config.maxBodyBytes
+    );
     const now = new Date().toISOString();
-    const updated: CollectionEntry = { ...entry as CollectionEntry, schema: req.schema, revision: entry.revision + 1, updatedAt: now };
-    this.store.update(updated);
+    const updated: CollectionEntry = {
+      ...entry as CollectionEntry,
+      schema,
+      rows,
+      rowCount: rows.length,
+      revision: entry.revision + 1,
+      updatedAt: now
+    };
+    this.persistUpdate(updated, req.expectedRevision);
     const durationMs = Math.round(performance.now() - start);
-    this.logger.info("data.schema.replace", { id: req.id, fieldCount: req.schema.length, revision: updated.revision, durationMs });
+    this.logger.info("data.schema.replace", { id: req.id, fieldCount: schema.length, revision: updated.revision, durationMs });
     return updated;
   }
 
@@ -321,15 +362,18 @@ class StructuredDataImpl implements StructuredData {
       throw new StaleDataRevisionError(req.id, entry.revision, req.expectedRevision);
     }
     const coll = entry as CollectionEntry;
-    const newRows = [...coll.rows, ...req.rows];
-    if (newRows.length > this.config.maxRowsPerCollection) {
-      throw new Error(`rows would exceed maxRowsPerCollection (${this.config.maxRowsPerCollection})`);
-    }
+    const appendedRows = validateAppendRows(
+      coll,
+      req.rows,
+      this.config.maxRowsPerCollection,
+      this.config.maxBodyBytes
+    );
+    const newRows = [...coll.rows, ...appendedRows];
     const now = new Date().toISOString();
     const updated: CollectionEntry = { ...coll, rows: newRows, rowCount: newRows.length, revision: entry.revision + 1, updatedAt: now };
-    this.store.update(updated);
+    this.persistUpdate(updated, req.expectedRevision);
     const durationMs = Math.round(performance.now() - start);
-    this.logger.info("data.rows.append", { id: req.id, rowsAdded: req.rows.length, rowCount: updated.rowCount, durationMs });
+    this.logger.info("data.rows.append", { id: req.id, rowsAdded: appendedRows.length, rowCount: updated.rowCount, durationMs });
     return updated;
   }
 
@@ -344,13 +388,14 @@ class StructuredDataImpl implements StructuredData {
       throw new StaleDataRevisionError(req.id, entry.revision, req.expectedRevision);
     }
     const coll = entry as CollectionEntry;
-    const toRemove = new Set(req.indices);
+    const indices = validateDeleteIndices(coll, req.indices);
+    const toRemove = new Set(indices);
     const newRows = coll.rows.filter((_, i) => !toRemove.has(i));
     const now = new Date().toISOString();
     const updated: CollectionEntry = { ...coll, rows: newRows, rowCount: newRows.length, revision: entry.revision + 1, updatedAt: now };
-    this.store.update(updated);
+    this.persistUpdate(updated, req.expectedRevision);
     const durationMs = Math.round(performance.now() - start);
-    this.logger.info("data.rows.delete", { id: req.id, removed: req.indices.length, rowCount: updated.rowCount, durationMs });
+    this.logger.info("data.rows.delete", { id: req.id, removed: indices.length, rowCount: updated.rowCount, durationMs });
     return updated;
   }
 }

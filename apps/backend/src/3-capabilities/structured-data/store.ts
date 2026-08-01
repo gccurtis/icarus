@@ -8,6 +8,6 @@ export interface DataStore {
   getByDisplayName(displayName: string): DataEntry | undefined;
   listAll(kind?: DataKind): DataEntry[];
   insert(entry: DataEntry): void;
-  update(entry: DataEntry): void;
-  softDelete(id: string, deletedAt: string): void;
+  update(entry: DataEntry, expectedRevision: number): boolean;
+  softDelete(id: string, expectedRevision: number, deletedAt: string): boolean;
 }

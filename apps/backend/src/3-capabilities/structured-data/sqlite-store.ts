@@ -30,8 +30,10 @@ function createSchema(db: DB, prefix: string): void {
       deleted_at      TEXT
     );
 
-    CREATE UNIQUE INDEX IF NOT EXISTS sd_${prefix}_entries_name_live
-      ON sd_${prefix}_entries(display_name)
+    DROP INDEX IF EXISTS sd_${prefix}_entries_name_live;
+
+    CREATE UNIQUE INDEX IF NOT EXISTS sd_${prefix}_entries_name_live_nocase
+      ON sd_${prefix}_entries(display_name COLLATE NOCASE)
       WHERE deleted_at IS NULL;
 
     CREATE INDEX IF NOT EXISTS sd_${prefix}_entries_kind
@@ -80,14 +82,14 @@ export class SQLiteDataStore implements DataStore {
 
   getEntry(id: string): DataEntry | undefined {
     const row = this.db
-      .prepare(`SELECT * FROM sd_${this.prefix}_entries WHERE id = ?`)
+      .prepare(`SELECT * FROM sd_${this.prefix}_entries WHERE id = ? AND deleted_at IS NULL`)
       .get(id) as Record<string, unknown> | undefined;
     return row ? rowToEntry(row) : undefined;
   }
 
   getByDisplayName(displayName: string): DataEntry | undefined {
     const row = this.db
-      .prepare(`SELECT * FROM sd_${this.prefix}_entries WHERE display_name = ? AND deleted_at IS NULL`)
+      .prepare(`SELECT * FROM sd_${this.prefix}_entries WHERE display_name = ? COLLATE NOCASE AND deleted_at IS NULL`)
       .get(displayName) as Record<string, unknown> | undefined;
     return row ? rowToEntry(row) : undefined;
   }
@@ -95,12 +97,12 @@ export class SQLiteDataStore implements DataStore {
   listAll(kind?: DataKind): DataEntry[] {
     if (kind) {
       const rows = this.db
-        .prepare(`SELECT * FROM sd_${this.prefix}_entries WHERE kind = ? AND deleted_at IS NULL ORDER BY display_name`)
+        .prepare(`SELECT * FROM sd_${this.prefix}_entries WHERE kind = ? AND deleted_at IS NULL ORDER BY display_name COLLATE NOCASE, id`)
         .all(kind) as Record<string, unknown>[];
       return rows.map(rowToEntry);
     }
     const rows = this.db
-      .prepare(`SELECT * FROM sd_${this.prefix}_entries WHERE deleted_at IS NULL ORDER BY display_name`)
+      .prepare(`SELECT * FROM sd_${this.prefix}_entries WHERE deleted_at IS NULL ORDER BY display_name COLLATE NOCASE, id`)
       .all() as Record<string, unknown>[];
     return rows.map(rowToEntry);
   }
@@ -130,15 +132,15 @@ export class SQLiteDataStore implements DataStore {
       );
   }
 
-  update(entry: DataEntry): void {
+  update(entry: DataEntry, expectedRevision: number): boolean {
     const isCollection = entry.kind === "table" || entry.kind === "record" || entry.kind === "list";
-    this.db
+    const result = this.db
       .prepare(`
         UPDATE sd_${this.prefix}_entries
         SET kind = ?, display_name = ?, description = ?, context_entries = ?,
             body = ?, schema_json = ?, rows_json = ?, row_count = ?,
             revision = ?, updated_at = ?, deleted_at = ?
-        WHERE id = ?
+        WHERE id = ? AND revision = ? AND deleted_at IS NULL
       `)
       .run(
         entry.kind,
@@ -152,13 +154,16 @@ export class SQLiteDataStore implements DataStore {
         entry.revision,
         entry.updatedAt,
         entry.deletedAt ?? null,
-        entry.id
+        entry.id,
+        expectedRevision
       );
+    return result.changes === 1;
   }
 
-  softDelete(id: string, deletedAt: string): void {
-    this.db
-      .prepare(`UPDATE sd_${this.prefix}_entries SET deleted_at = ?, updated_at = ? WHERE id = ?`)
-      .run(deletedAt, deletedAt, id);
+  softDelete(id: string, expectedRevision: number, deletedAt: string): boolean {
+    const result = this.db
+      .prepare(`UPDATE sd_${this.prefix}_entries SET deleted_at = ?, updated_at = ? WHERE id = ? AND revision = ? AND deleted_at IS NULL`)
+      .run(deletedAt, deletedAt, id, expectedRevision);
+    return result.changes === 1;
   }
 }
