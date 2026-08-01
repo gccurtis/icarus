@@ -22,6 +22,8 @@
       "#rich-text/*": ["./src/0-platform/rich-text/*"],
       "#derived-outputs": ["./src/3-capabilities/derived-outputs/index.ts"],
       "#derived-outputs/*": ["./src/3-capabilities/derived-outputs/*"],
+      "#activity": ["./src/3-capabilities/activity/index.ts"],
+      "#activity/*": ["./src/3-capabilities/activity/*"],
       "#document": ["./src/3-capabilities/document/index.ts"],
       "#document/*": ["./src/3-capabilities/document/*"],
       "#general-files": ["./src/3-capabilities/general-files/index.ts"],

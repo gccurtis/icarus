@@ -84,6 +84,16 @@
       "types": "./src/3-capabilities/derived-outputs/*",
       "default": "./dist/3-capabilities/derived-outputs/*"
     },
+    "#activity": {
+      "development": "./src/3-capabilities/activity/index.ts",
+      "types": "./src/3-capabilities/activity/index.ts",
+      "default": "./dist/3-capabilities/activity/index.js"
+    },
+    "#activity/*": {
+      "development": "./src/3-capabilities/activity/*",
+      "types": "./src/3-capabilities/activity/*",
+      "default": "./dist/3-capabilities/activity/*"
+    },
     "#document": {
       "development": "./src/3-capabilities/document/index.ts",
       "types": "./src/3-capabilities/document/index.ts",
