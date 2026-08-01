@@ -125,8 +125,22 @@ bounded exponential delay. There is no durable queue record; redispatch is safe
 because attempts, submission receipts, external idempotency keys, and stage
 receipts fence duplicate effects.
 
-## Outbox and cleanup flows not wired
+## Activity outbox delivery and recovery
 
-The store can list and mark accepted facts and list detached prompt outputs,
-but this capability does not register an Activity publisher or detached-output
-garbage-collection job. Those methods are maintenance seams, not active flows.
+Creation and every accepted mutation write a self-contained source transaction
+to the Document outbox in the same SQLite transaction as the canonical
+Document change. After that transaction commits, the injected publisher maps
+the source transaction to Activity and calls its trusted `publish` method. The
+outbox row is marked published only after Activity accepts the stable
+transaction ID. A delivery failure is logged but does not turn an accepted
+Document command into a failure.
+
+At startup, `document.publishPendingActivity()` retries every unpublished row.
+The same source transaction ID reaches Activity on every retry, so a crash
+after Activity accepts it but before Document marks the row published is safe:
+Activity returns the original transaction and Document can finish marking its
+outbox row. An exact Document request replay creates no second source
+transaction.
+
+Detached Derived Output garbage collection remains an unwired maintenance
+seam; it is separate from Activity outbox delivery.

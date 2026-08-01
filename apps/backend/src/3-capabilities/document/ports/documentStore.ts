@@ -151,6 +151,14 @@ export interface DocumentStore {
   listDetachedPromptOutputs(limit?: number): Promise<PromptOutputOwnership[]>;
 
   getCommittedFact(factId: string): Promise<DocumentCommittedFact | undefined>;
+  getCommittedFactByRequest(
+    documentId: string,
+    sourceRequestId: string
+  ): Promise<DocumentCommittedFact | undefined>;
+  getCommittedFactByChangeSet(
+    documentId: string,
+    sourceChangeSetId: string
+  ): Promise<DocumentCommittedFact | undefined>;
   listUnpublishedFacts(limit?: number): Promise<DocumentCommittedFact[]>;
   markFactPublished(factId: string, publishedAt: string): Promise<void>;
 }

@@ -23,6 +23,7 @@ import { ConnectorSyncScheduler } from "#init/create/connectorSyncScheduler.js";
 import { createResourceReader } from "#init/create/resource-reader.js";
 import { createDocumentInstance } from "#init/create/document.js";
 import { createSlideInstance } from "#init/create/slide.js";
+import { createActivityInstance } from "#init/create/activity.js";
 import { SchedulerInternalJobsRuntime } from "#utils/jobs/internalRuntime.js";
 import type { DocumentInternalJobIntent } from "#document";
 import type { SlideInternalJobIntent } from "#capabilities/slide/index.js";
@@ -30,12 +31,16 @@ import { registerDocumentEndpoints } from "#job-wiring/document/registerDocument
 import { registerDocumentInternalJobs } from "#job-wiring/document/registerDocumentInternalJobs.js";
 import { registerSlideEndpoints } from "#job-wiring/slide/registerSlideEndpoints.js";
 import { registerSlideInternalJobs } from "#job-wiring/slide/registerSlideInternalJobs.js";
+import { registerActivityEndpoints } from "#job-wiring/activity/registerActivityEndpoints.js";
 
 export const startBackend = async (): Promise<void> => {
   const config = await createConfig();
   const logger = createLogger(config);
   const startedAt = performance.now();
   try {
+    // Activity has no resource dependency and is created before resource
+    // integrations eventually publish their accepted transactions into it.
+    const activity = createActivityInstance(config);
     const intelligence = createIntelligence(config, logger);
     // The registry is composed before Knowledge and populated once concrete
     // resource capabilities exist. It resolves Context leaves to source IDs and
@@ -84,6 +89,7 @@ export const startBackend = async (): Promise<void> => {
       formula,
       formulaResolver,
       derivedOutputs,
+      activity,
       documentJobs,
       logger
     );
@@ -116,6 +122,7 @@ export const startBackend = async (): Promise<void> => {
       connectorReady: Boolean(connector),
       resourceRegistryReady: Boolean(resourceRegistry),
       derivedOutputsReady: Boolean(derivedOutputs),
+      activityReady: Boolean(activity),
       documentReady: Boolean(document),
       slideReady: Boolean(slide)
     });
@@ -125,11 +132,14 @@ export const startBackend = async (): Promise<void> => {
     registerDerivedOutputEndpoints(registry, derivedOutputs, logger);
     registerGeneralFileEndpoints(registry, generalFiles, logger);
     registerConnectorEndpoints(registry, connector, logger);
+    registerActivityEndpoints(registry, activity, logger);
     registerDocumentEndpoints(registry, document, logger);
     registerSlideEndpoints(registry, slide, logger);
 
     const recoveredDocumentAttempts = await document.recoverPendingAttempts();
     logger.info("document.attempts.recovered", { count: recoveredDocumentAttempts });
+    const recoveredDocumentActivity = await document.publishPendingActivity();
+    logger.info("document.activity.recovered", { count: recoveredDocumentActivity });
     const recoveredSlideAttempts = await slide.recoverPendingAttempts();
     logger.info("slide.attempts.recovered", { count: recoveredSlideAttempts });
 

@@ -41,6 +41,7 @@ import type {
   DocumentBlock,
   DocumentCommandRequest,
   DocumentCommandResult,
+  DocumentCommittedFact,
   DocumentDelegatedCommandClaim,
   DocumentInternalJobIntent,
   DocumentOperation,
@@ -50,6 +51,7 @@ import type {
   TextBlock
 } from "../../src/3-capabilities/document/domain/model.js";
 import type { DocumentDerivedOutputs } from "../../src/3-capabilities/document/ports/derivedOutputs.js";
+import type { DocumentActivityPublisher } from "../../src/3-capabilities/document/ports/activityPublisher.js";
 import type { PromptCreationFailureCommit } from "../../src/3-capabilities/document/ports/documentStore.js";
 import { SQLiteDocumentStore } from "../../src/3-capabilities/document/persistence/sqliteDocumentStore.js";
 import { createDocumentInternalJob } from "../../src/4-job-wiring/document/createDocumentJobs.js";
@@ -102,6 +104,19 @@ class CapacityOnceJobs extends CapturingJobs {
       throw new QueueCapacityError("concurrent", "Simulated full queue");
     }
     return super.dispatch(intent);
+  }
+}
+
+class CapturingActivityPublisher implements DocumentActivityPublisher {
+  readonly facts: DocumentCommittedFact[] = [];
+  failuresRemaining = 0;
+
+  async publish(fact: DocumentCommittedFact): Promise<void> {
+    this.facts.push(clone(fact));
+    if (this.failuresRemaining > 0) {
+      this.failuresRemaining -= 1;
+      throw new Error("Simulated Activity publisher failure");
+    }
   }
 }
 
@@ -293,6 +308,7 @@ interface Harness {
 interface HarnessOverrides {
   jobs?: CapturingJobs;
   derivedOutputs?: FakeDerivedOutputs;
+  activityPublisher?: CapturingActivityPublisher;
   dbPath?: string;
   storeFactory?: (dbPath: string) => SQLiteDocumentStore;
   options?: DocumentOptions;
@@ -326,7 +342,10 @@ const createHarness = (
     },
     derivedOutputs,
     jobs,
-    logger
+    logger,
+    ...(overrides.activityPublisher
+      ? { activityPublisher: overrides.activityPublisher }
+      : {})
   };
   return {
     document: createDocumentCapability(
@@ -466,6 +485,40 @@ test("Document creation replays identical requests and rejects divergent request
     assert.deepEqual(listed.items.map((head) => head.id), ["document-idempotency"]);
   }
   assert.equal((await harness.store.listUnpublishedFacts()).length, 1);
+
+  harness.store.close();
+});
+
+test("Document Activity publication is post-commit, best-effort, and recoverable", async () => {
+  const publisher = new CapturingActivityPublisher();
+  publisher.failuresRemaining = 1;
+  const harness = createHarness({ activityPublisher: publisher });
+  const create = command("activity-create", {
+    type: "document.create",
+    documentId: "document-activity-publication",
+    title: "Activity publication"
+  });
+
+  const result = await harness.document.command(create);
+  assert.equal(result.type, "document.created");
+  assert.equal((await load(harness.document, "document-activity-publication")).head.revision, 0);
+  assert.equal(publisher.facts.length, 1);
+
+  const [pending] = await harness.store.listUnpublishedFacts();
+  assert.ok(pending);
+  assert.equal(pending.factId, publisher.facts[0]?.factId);
+  assert.equal(pending.sourceRequestId, "activity-create");
+  assert.equal(pending.origin, "interactive");
+  assert.equal(pending.sourceSemanticDigest, result.head.semanticDigest);
+
+  // An exact request replay does not create or publish a second transaction.
+  assert.deepEqual(await harness.document.command(clone(create)), result);
+  assert.equal(publisher.facts.length, 1);
+
+  assert.equal(await harness.document.publishPendingActivity(), 1);
+  assert.equal(publisher.facts.length, 2);
+  assert.deepEqual(publisher.facts[1], pending);
+  assert.deepEqual(await harness.store.listUnpublishedFacts(), []);
 
   harness.store.close();
 });

@@ -5,13 +5,13 @@
 [`createDocumentInstance`](../../../1-init/create/document.ts) opens a
 `SQLiteDocumentStore(config.projectId, "./data/documents.db")` and calls
 `createDocumentCapability` with Rich Text, Formula, the Formula resolver,
-Derived Outputs, internal jobs, Logger, configured Document options, and
-trusted `config.userId` attribution.
+Derived Outputs, an Activity publisher adapter, internal jobs, Logger,
+configured Document options, and trusted `config.userId` attribution.
 
 [`createDocumentCapability`](../application/documentService.ts) returns the
 private `DocumentService` behind the public `DocumentCapability` interface.
 Startup registers internal intents and public endpoints, then invokes
-`recoverPendingAttempts()` before listening.
+`recoverPendingAttempts()` and `publishPendingActivity()` before listening.
 
 ## Public `DocumentCapability` methods
 
@@ -57,6 +57,9 @@ request ID, and duration.
 - `recoverPendingAttempts`: changes interrupted running stage receipts to
   failed, lists requested/computing/proposed attempts, and redispatches compute
   or settle according to current state.
+- `publishPendingActivity`: retries each locally committed, unpublished source
+  transaction through the optional publisher and marks it published only after
+  successful delivery. Publisher failures do not change accepted Document work.
 - `compact(documentId)`: reconstructs a configured cutoff and current head,
   appends Bases only if the head revision still matches, then prunes retained
   history/terminal attempts.
@@ -68,7 +71,7 @@ request ID, and duration.
 - `submit`: requires operations, rejects caller-created Prompt content and
   internal output adoption, then calls `mutate`.
 - `mutate`: replay check; load head; optional conservative disjoint rebase;
-  reduce/validate; assign revision; create ChangeSet/head/fact/formula attempts;
+  reduce/validate; assign revision; create ChangeSet/head/source transaction/formula attempts;
   compute identity and prompt-ownership transitions; atomic store CAS; dispatch
   Formula/compaction intents.
 - `compensate`: requires exact current expected revision, retained target and
@@ -86,7 +89,7 @@ request ID, and duration.
 Auxiliary service families include prompt-reference collection, request and
 snapshot digests, attempt/compaction intent construction, actor attribution,
 receipt replay validation, prompt ownership transition derivation, diagnostic
-settlement creation, snapshot replay, accepted-fact construction, and stale
+settlement creation, snapshot replay, accepted-source-transaction construction, and stale
 attempt marking.
 
 `runStage` owns stage receipts and terminal-state no-op behavior. It retries
@@ -141,7 +144,8 @@ families are:
 - stages: claim, complete, fail, atomic prompt-creation failure, recover running;
 - prompt ownership: get by output/Block, register pending, transition, list
   detached;
-- outbox: get/list unpublished/mark published.
+- outbox: direct get by transaction/request/copied ChangeSet, list unpublished,
+  and mark published.
 
 `SQLiteDocumentStore.close()` additionally closes the adapter, although close
 is not part of the `DocumentStore` port and the current Document capability

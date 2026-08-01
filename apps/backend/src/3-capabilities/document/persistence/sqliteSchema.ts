@@ -17,6 +17,103 @@ export interface DocumentTableNames {
 const projectPrefix = (projectId: string): string =>
   createHash("sha256").update(projectId).digest("hex").slice(0, 16);
 
+interface SQLiteColumn {
+  name: string;
+}
+
+const hasColumn = (
+  db: DatabaseConnection,
+  table: string,
+  column: string
+): boolean =>
+  (db.prepare(`PRAGMA table_info(${table})`).all() as SQLiteColumn[]).some(
+    (entry) => entry.name === column
+  );
+
+const addColumnIfMissing = (
+  db: DatabaseConnection,
+  table: string,
+  column: string,
+  definition: string
+): void => {
+  if (!hasColumn(db, table, column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
+  }
+};
+
+/**
+ * Older Document stores linked activity rows directly to historical ChangeSets.
+ * That link is intentionally nullable when history is compacted, so migrate
+ * the durable source fields separately and backfill everything recoverable.
+ */
+const migrateActivityOutbox = (
+  db: DatabaseConnection,
+  tables: DocumentTableNames
+): void => {
+  const outbox = tables.activityOutbox;
+  addColumnIfMissing(db, outbox, "source_request_id", "source_request_id TEXT");
+  addColumnIfMissing(
+    db,
+    outbox,
+    "source_change_set_id",
+    "source_change_set_id TEXT"
+  );
+  addColumnIfMissing(
+    db,
+    outbox,
+    "compensation_intent",
+    "compensation_intent TEXT CHECK (compensation_intent IN ('undo', 'redo'))"
+  );
+  addColumnIfMissing(
+    db,
+    outbox,
+    "compensation_target_change_set_id",
+    "compensation_target_change_set_id TEXT"
+  );
+
+  db.exec(`
+    UPDATE ${outbox}
+    SET source_change_set_id = change_set_id
+    WHERE source_change_set_id IS NULL AND change_set_id IS NOT NULL;
+
+    UPDATE ${outbox}
+    SET source_request_id = COALESCE(
+      (
+        SELECT client_request_id
+        FROM ${tables.changeSets}
+        WHERE id = ${outbox}.source_change_set_id
+      ),
+      'legacy:' || fact_id
+    )
+    WHERE source_request_id IS NULL OR source_request_id = '';
+
+    UPDATE ${outbox}
+    SET compensation_intent = (
+      SELECT compensation_intent
+      FROM ${tables.changeSets}
+      WHERE id = ${outbox}.source_change_set_id
+    )
+    WHERE compensation_intent IS NULL
+      AND source_change_set_id IS NOT NULL;
+
+    UPDATE ${outbox}
+    SET compensation_target_change_set_id = (
+      SELECT compensation_target_change_set_id
+      FROM ${tables.changeSets}
+      WHERE id = ${outbox}.source_change_set_id
+    )
+    WHERE compensation_target_change_set_id IS NULL
+      AND source_change_set_id IS NOT NULL;
+
+    CREATE INDEX IF NOT EXISTS ${outbox}_source_request
+      ON ${outbox}(document_id, source_request_id);
+
+    CREATE INDEX IF NOT EXISTS ${outbox}_source_change_set
+      ON ${outbox}(document_id, source_change_set_id)
+      WHERE source_change_set_id IS NOT NULL;
+  `);
+};
+
 export const createDocumentTableNames = (
   projectId: string
 ): DocumentTableNames => {
@@ -172,16 +269,24 @@ export const initializeDocumentSchema = (
 
     CREATE TABLE IF NOT EXISTS ${tables.activityOutbox} (
       fact_id           TEXT PRIMARY KEY,
+      source_request_id TEXT NOT NULL,
       fact_kind         TEXT NOT NULL
         CHECK (fact_kind IN ('document.created', 'document.changed', 'document.compensated')),
       document_id       TEXT NOT NULL,
       revision          INTEGER NOT NULL CHECK (revision >= 0),
+      -- This historical link may be cleared by ChangeSet compaction.
       change_set_id     TEXT,
+      -- This copied source value must survive history compaction.
+      source_change_set_id TEXT,
       actor_id          TEXT,
       origin            TEXT NOT NULL
         CHECK (origin IN ('interactive', 'agent', 'automation')),
       operation_types   BLOB NOT NULL,
+      -- This is the Document source digest, never an Activity ledger digest.
       semantic_digest   TEXT NOT NULL,
+      compensation_intent TEXT
+        CHECK (compensation_intent IN ('undo', 'redo')),
+      compensation_target_change_set_id TEXT,
       occurred_at       TEXT NOT NULL,
       published_at      TEXT,
       UNIQUE (document_id, revision),
@@ -274,4 +379,6 @@ export const initializeDocumentSchema = (
     CREATE INDEX IF NOT EXISTS ${tables.stageReceipts}_state
       ON ${tables.stageReceipts}(state, updated_at, attempt_id);
   `);
+
+  migrateActivityOutbox(db, tables);
 };

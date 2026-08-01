@@ -397,15 +397,33 @@ export interface DocumentChangeSet {
 }
 
 export interface DocumentCommittedFact {
+  /**
+   * The stable Activity transaction ID. It is allocated with the accepted
+   * Document mutation and is reused for every outbox delivery attempt.
+   */
   factId: string;
+  /** The accepted Document command that produced this outbox record. */
+  sourceRequestId: string;
   kind: "document.created" | "document.changed" | "document.compensated";
   documentId: string;
   revision: number;
-  changeSetId?: string;
+  /**
+   * A copied source ChangeSet ID, deliberately independent of the historical
+   * ChangeSet foreign key. Document compaction must not make an outbox row
+   * incomplete before Activity has consumed it.
+   */
+  sourceChangeSetId?: string;
   actorId?: string;
+  /** Document keeps its own origin vocabulary; the integration adapter maps it. */
   origin: DocumentOrigin;
   operationTypes: string[];
-  semanticDigest: string;
+  /** The Document snapshot digest, not the Activity transaction digest. */
+  sourceSemanticDigest: string;
+  /** Immutable compensation information needed by future Activity undo/redo. */
+  compensation?: {
+    intent: "undo" | "redo";
+    targetChangeSetId: string;
+  };
   occurredAt: string;
 }
 

@@ -125,18 +125,28 @@ export const rowToDelegatedCommandClaim = (
 
 export const rowToCommittedFact = (row: SQLiteRow): DocumentCommittedFact => ({
   factId: row.fact_id as string,
+  sourceRequestId: row.source_request_id as string,
   kind: row.fact_kind as DocumentCommittedFact["kind"],
   documentId: row.document_id as string,
   revision: Number(row.revision),
-  ...((row.change_set_id as string | null) !== null
-    ? { changeSetId: row.change_set_id as string }
+  ...((row.source_change_set_id as string | null) !== null
+    ? { sourceChangeSetId: row.source_change_set_id as string }
     : {}),
   ...((row.actor_id as string | null) !== null
     ? { actorId: row.actor_id as string }
     : {}),
   origin: row.origin as DocumentCommittedFact["origin"],
   operationTypes: decodeJson<string[]>(row.operation_types),
-  semanticDigest: row.semantic_digest as string,
+  sourceSemanticDigest: row.semantic_digest as string,
+  ...((row.compensation_intent as string | null) !== null &&
+  (row.compensation_target_change_set_id as string | null) !== null
+    ? {
+        compensation: {
+          intent: row.compensation_intent as "undo" | "redo",
+          targetChangeSetId: row.compensation_target_change_set_id as string
+        }
+      }
+    : {}),
   occurredAt: row.occurred_at as string
 });
 

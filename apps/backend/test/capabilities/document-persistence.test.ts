@@ -13,6 +13,7 @@ import { collectDocumentIdentities } from "../../src/3-capabilities/document/dom
 import type {
   DocumentAttempt,
   DocumentBase,
+  DocumentCommittedFact,
   DocumentHead,
   DocumentSnapshot,
   DocumentStageReceipt,
@@ -24,6 +25,7 @@ import type {
   DocumentMutationCommit
 } from "../../src/3-capabilities/document/ports/documentStore.js";
 import { SQLiteDocumentStore } from "../../src/3-capabilities/document/persistence/sqliteDocumentStore.js";
+import { createDocumentTableNames } from "../../src/3-capabilities/document/persistence/sqliteSchema.js";
 
 const timestamp = (offset: number): string =>
   new Date(Date.UTC(2026, 0, 1, 0, 0, offset)).toISOString();
@@ -69,12 +71,13 @@ const creationCommit = (
     },
     fact: {
       factId: `fact-${requestId}`,
+      sourceRequestId: requestId,
       kind: "document.created",
       documentId,
       revision: 0,
       origin: "interactive",
       operationTypes: ["document.create"],
-      semanticDigest: head.semanticDigest,
+      sourceSemanticDigest: head.semanticDigest,
       occurredAt: timestamp(0)
     }
   };
@@ -127,14 +130,15 @@ const mutationCommit = (
     },
     fact: {
       factId: `fact-${changeSet.id}`,
+      sourceRequestId: changeSet.clientRequestId,
       kind: "document.changed",
       documentId: prior.id,
       revision,
-      changeSetId: changeSet.id,
+      sourceChangeSetId: changeSet.id,
       actorId: "test-actor",
       origin: "interactive",
       operationTypes: ["document.rename"],
-      semanticDigest: head.semanticDigest,
+      sourceSemanticDigest: head.semanticDigest,
       occurredAt: updatedAt
     }
   };
@@ -279,6 +283,115 @@ test("Document stores use isolated project-hashed tables and persist creation at
 
   alpha.close();
   beta.close();
+});
+
+test("Document outbox records retain self-contained Activity source data across history compaction", async () => {
+  const store = new SQLiteDocumentStore("activity-source-project", createStorePath());
+  const created = creationCommit("activity-source-document");
+  await store.commitCreation(created);
+  const first = mutationCommit(created.head, 1);
+  await store.commitMutation(first);
+  const second = mutationCommit(first.head, 2);
+  await store.commitMutation(second);
+
+  const byRequest = await store.getCommittedFactByRequest(
+    first.head.id,
+    first.changeSet.clientRequestId
+  );
+  assert.deepEqual(byRequest, first.fact);
+  assert.equal(byRequest?.sourceSemanticDigest, first.head.semanticDigest);
+  assert.equal(byRequest?.origin, "interactive");
+
+  await store.markFactPublished(first.fact.factId, timestamp(3));
+  assert.deepEqual(await store.listUnpublishedFacts(), [created.fact, second.fact]);
+  assert.deepEqual(
+    await store.getCommittedFactByChangeSet(first.head.id, first.changeSet.id),
+    first.fact
+  );
+
+  assert.equal(
+    await store.appendBaseIfHead(
+      second.head.id,
+      second.head.revision,
+      baseForHead(created.base.snapshot, second.head)
+    ),
+    true
+  );
+  await store.pruneHistory(second.head.id, 1, 1, 1);
+  assert.equal(await store.getChangeSet(second.head.id, first.changeSet.id), undefined);
+
+  // The relational change_set_id was cleared by compaction, but the copied
+  // source value still supports Activity publication/lookup.
+  assert.deepEqual(
+    await store.getCommittedFactByChangeSet(second.head.id, first.changeSet.id),
+    first.fact
+  );
+  store.close();
+});
+
+test("Document store migrates legacy Activity outbox rows into publishable source records", async () => {
+  const projectId = "document-outbox-migration";
+  const dbPath = createStorePath();
+  const tables = createDocumentTableNames(projectId);
+  const legacy = new Database(dbPath);
+  legacy.exec(`
+    CREATE TABLE ${tables.activityOutbox} (
+      fact_id TEXT PRIMARY KEY,
+      fact_kind TEXT NOT NULL,
+      document_id TEXT NOT NULL,
+      revision INTEGER NOT NULL,
+      change_set_id TEXT,
+      actor_id TEXT,
+      origin TEXT NOT NULL,
+      operation_types BLOB NOT NULL,
+      semantic_digest TEXT NOT NULL,
+      occurred_at TEXT NOT NULL,
+      published_at TEXT
+    );
+  `);
+  legacy
+    .prepare(`
+      INSERT INTO ${tables.activityOutbox}
+        (fact_id, fact_kind, document_id, revision, change_set_id, actor_id,
+         origin, operation_types, semantic_digest, occurred_at, published_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    .run(
+      "legacy-activity-transaction",
+      "document.changed",
+      "legacy-document",
+      7,
+      null,
+      null,
+      "automation",
+      JSON.stringify(["document.rename"]),
+      "legacy-document-digest",
+      timestamp(7),
+      null
+    );
+  legacy.close();
+
+  const store = new SQLiteDocumentStore(projectId, dbPath);
+  const expected: DocumentCommittedFact = {
+    factId: "legacy-activity-transaction",
+    sourceRequestId: "legacy:legacy-activity-transaction",
+    kind: "document.changed",
+    documentId: "legacy-document",
+    revision: 7,
+    origin: "automation",
+    operationTypes: ["document.rename"],
+    sourceSemanticDigest: "legacy-document-digest",
+    occurredAt: timestamp(7)
+  };
+  assert.deepEqual(
+    await store.getCommittedFactByRequest(
+      "legacy-document",
+      expected.sourceRequestId
+    ),
+    expected
+  );
+  assert.deepEqual(await store.listUnpublishedFacts(), [expected]);
+  store.close();
 });
 
 test("identity ledger tombstones removals, rejects reuse atomically, and permits exact same-kind compensation", async () => {

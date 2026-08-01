@@ -61,6 +61,7 @@ import {
 import { findBlock, forEachBlock } from "../domain/tree.js";
 import { validateSnapshot } from "../domain/validation.js";
 import type { DocumentDerivedOutputs } from "../ports/derivedOutputs.js";
+import type { DocumentActivityPublisher } from "../ports/activityPublisher.js";
 import type { DocumentFormulaResolver } from "../ports/formulaResolver.js";
 import type {
   DocumentMutationCommit,
@@ -77,6 +78,8 @@ export interface DocumentDependencies {
   jobs: InternalJobsRuntime<DocumentInternalJobIntent>;
   logger: Logger;
   attribution?: { actorId: string };
+  /** Optional post-commit delivery path for the local Activity outbox. */
+  activityPublisher?: DocumentActivityPublisher;
 }
 
 export interface DocumentCapability {
@@ -89,6 +92,8 @@ export interface DocumentCapability {
   computeFormulaEvaluation(attemptId: string): Promise<void>;
   settleFormulaEvaluation(attemptId: string): Promise<void>;
   recoverPendingAttempts(): Promise<number>;
+  /** Retry delivery for source rows left unpublished after a failure or restart. */
+  publishPendingActivity(limit?: number): Promise<number>;
   compact(documentId: string): Promise<boolean>;
 }
 
@@ -285,6 +290,16 @@ class DocumentService implements DocumentCapability {
     }
   }
 
+  async publishPendingActivity(limit?: number): Promise<number> {
+    if (!this.deps.activityPublisher) return 0;
+    const facts = await this.store.listUnpublishedFacts(limit);
+    let published = 0;
+    for (const fact of facts) {
+      if (await this.publishActivityFact(fact)) published += 1;
+    }
+    return published;
+  }
+
   private async create(request: DocumentCommandRequest): Promise<DocumentCommandResult> {
     if (request.command.type !== "document.create") throw new DocumentOperationError("Invalid create command");
     const command = request.command;
@@ -313,6 +328,17 @@ class DocumentService implements DocumentCapability {
       updatedAt: timestamp
     };
     const result: DocumentCommandResult = { type: "document.created", head };
+    const fact = this.fact({
+      kind: "document.created",
+      sourceRequestId: request.requestId,
+      documentId: command.documentId,
+      revision: 0,
+      actorId: this.attributedActor(request.actorId),
+      origin: request.origin,
+      operationTypes: ["document.create"],
+      sourceSemanticDigest: semanticDigest,
+      occurredAt: timestamp
+    });
     await this.store.commitCreation({
       head,
       identities: collectDocumentIdentities(snapshot),
@@ -331,17 +357,9 @@ class DocumentService implements DocumentCapability {
         result,
         createdAt: timestamp
       },
-      fact: this.fact({
-        kind: "document.created",
-        documentId: command.documentId,
-        revision: 0,
-        actorId: this.attributedActor(request.actorId),
-        origin: request.origin,
-        operationTypes: ["document.create"],
-        semanticDigest,
-        occurredAt: timestamp
-      })
+      fact
     });
+    await this.publishActivityFact(fact);
     return result;
   }
 
@@ -491,13 +509,15 @@ class DocumentService implements DocumentCapability {
       },
       fact: this.fact({
         kind: input.compensation ? "document.compensated" : "document.changed",
+        sourceRequestId: input.requestId,
         documentId: input.documentId,
         revision,
-        changeSetId,
+        sourceChangeSetId: changeSetId,
         actorId: input.actorId,
         origin: input.origin,
         operationTypes: input.operations.map((operation) => operation.type),
-        semanticDigest,
+        sourceSemanticDigest: semanticDigest,
+        ...(input.compensation ? { compensation: input.compensation } : {}),
         occurredAt: timestamp
       }),
       attempts: formulaAttempts,
@@ -514,6 +534,7 @@ class DocumentService implements DocumentCapability {
     if (!await this.store.commitMutation(commit)) {
       throw new RevisionConflictError(input.documentId, current.head.revision, (await this.store.getHead(input.documentId))?.revision ?? -1);
     }
+    await this.publishActivityFact(commit.fact);
     for (const attempt of formulaAttempts) await this.dispatch(attemptIntent(attempt, "compute"));
     if (
       head.revision - head.baseSeq >=
@@ -1389,6 +1410,30 @@ class DocumentService implements DocumentCapability {
     input: Omit<DocumentCommittedFact, "factId">
   ): DocumentCommittedFact {
     return { ...input, factId: randomUUID() };
+  }
+
+  /**
+   * Source state is already committed when this runs. Delivery failures stay in
+   * the local outbox for `publishPendingActivity()` rather than changing the
+   * accepted Document command result.
+   */
+  private async publishActivityFact(fact: DocumentCommittedFact): Promise<boolean> {
+    const publisher = this.deps.activityPublisher;
+    if (!publisher) return false;
+    try {
+      await publisher.publish(fact);
+      await this.store.markFactPublished(fact.factId, now());
+      return true;
+    } catch (error) {
+      this.deps.logger.warn("document.activity.publish-failed", {
+        factId: fact.factId,
+        documentId: fact.documentId,
+        sourceRequestId: fact.sourceRequestId,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+      return false;
+    }
   }
 
   private async dispatch(intent: DocumentInternalJobIntent): Promise<void> {

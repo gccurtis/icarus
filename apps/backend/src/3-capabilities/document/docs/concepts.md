@@ -20,7 +20,7 @@ flowchart TB
   Compute --> Formula[Formula + resolver snapshot]
   Compute --> Derived[Derived Outputs]
   Settle --> Reducer
-  Store --> Outbox[Accepted-fact outbox]
+  Store --> Outbox[Accepted Activity-transaction outbox]
 ```
 
 ## Vocabulary
@@ -107,7 +107,10 @@ intervening changes.
 
 Plain text, outline, dependency lists, and resolved styling are rebuildable
 projections. They perform no I/O and are not stored as canonical state.
-Activity outbox facts describe accepted commits, but no publisher/Activity
-consumer is implemented in this capability. Exact pagination/render layout is
-also intentionally absent; page layout only establishes authored dimensions
-and usable-width validation.
+Activity source transactions describe accepted commits. An optional publisher port
+delivers a committed row after the Document transaction completes; failures
+leave that row unpublished for startup recovery. The publisher maps into
+Activity outside this capability, so Document does not depend on Activity's
+runtime or storage. Exact pagination/render layout is also intentionally
+absent; page layout only establishes authored dimensions and usable-width
+validation.

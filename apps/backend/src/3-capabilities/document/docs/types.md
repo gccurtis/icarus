@@ -73,13 +73,13 @@ The exact payload for each discriminant is in
 [`model.ts`](../domain/model.ts) and admitted by
 [`operationSchemas.ts`](../wire/operationSchemas.ts).
 
-## History, fact, and idempotency family
+## History, Activity transaction, and idempotency family
 
 | Type | Purpose |
 | --- | --- |
 | `DocumentBase` | Full canonical snapshot/digest at `baseSeq`. |
 | `DocumentChangeSet` | Forward/inverse operations, request/revision metadata, touched IDs, compensation, digest. |
-| `DocumentCommittedFact` | Accepted create/change/compensate fact for outbox publication. |
+| `DocumentCommittedFact` | Accepted create/change/compensate source transaction for outbox publication; its `factId` is the stable Activity transaction ID and it retains request/ChangeSet/compensation data independently of compactable history. |
 | `DocumentSubmissionReceipt` | Durable request digest/result replay. |
 | `DocumentDelegatedCommandClaim` | Frozen target output and pending/completed definition-update claim. |
 | `DocumentIdentity*` | Identity kind, active/tombstoned ledger state, transition set, and allowed compensation reactivation. |

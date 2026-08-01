@@ -4,9 +4,10 @@
 
 Document is implemented end to end in the current tree. Its canonical model,
 reducer, strict wire decoders, SQLite store, application service, two public
-endpoint mappings, seven internal-job mappings, startup construction, and
-startup attempt recovery are present. The tests cover domain behavior, wire
-admission, persistence, application workflows, and job wiring.
+endpoint mappings, seven internal-job mappings, startup construction, attempt
+recovery, and post-commit Activity outbox publication are present. The tests
+cover domain behavior, wire admission, persistence, application workflows, and
+job wiring.
 
 Document owns canonical authored document state and retained change history.
 Rich Text owns authored text atoms/marks and text-operation semantics. Derived
@@ -38,7 +39,7 @@ queue admission, while Document persists the durable attempt/stage authority.
 | Application runtime | [`documentService.ts`](../application/documentService.ts) |
 | Default creation | [`createService.ts`](../application/createService.ts) |
 | Store contract/adapter/schema/mappers | [`documentStore.ts`](../ports/documentStore.ts), [`sqliteDocumentStore.ts`](../persistence/sqliteDocumentStore.ts), [`sqliteSchema.ts`](../persistence/sqliteSchema.ts), [`sqliteMappers.ts`](../persistence/sqliteMappers.ts) |
-| External runtime ports | [`derivedOutputs.ts`](../ports/derivedOutputs.ts), [`formulaResolver.ts`](../ports/formulaResolver.ts) |
+| External runtime ports | [`activityPublisher.ts`](../ports/activityPublisher.ts), [`derivedOutputs.ts`](../ports/derivedOutputs.ts), [`formulaResolver.ts`](../ports/formulaResolver.ts) |
 | Wire admission | [`commandSchemas.ts`](../wire/commandSchemas.ts), [`querySchemas.ts`](../wire/querySchemas.ts), [`operationSchemas.ts`](../wire/operationSchemas.ts), [`valueSchemas.ts`](../wire/valueSchemas.ts) |
 | Rebuildable projections | [`dependencies.ts`](../projections/dependencies.ts), [`outline.ts`](../projections/outline.ts), [`plainText.ts`](../projections/plainText.ts), [`styling.ts`](../projections/styling.ts) |
 | Instance factory | [`create/document.ts`](../../../1-init/create/document.ts) |

@@ -1020,6 +1020,36 @@ export class SQLiteDocumentStore implements DocumentStore {
     return row ? rowToCommittedFact(row) : undefined;
   }
 
+  async getCommittedFactByRequest(
+    documentId: string,
+    sourceRequestId: string
+  ): Promise<DocumentCommittedFact | undefined> {
+    const row = this.db
+      .prepare(`
+        SELECT * FROM ${this.tables.activityOutbox}
+        WHERE document_id = ? AND source_request_id = ?
+        ORDER BY occurred_at ASC, fact_id ASC
+        LIMIT 1
+      `)
+      .get(documentId, sourceRequestId) as SQLiteRow | undefined;
+    return row ? rowToCommittedFact(row) : undefined;
+  }
+
+  async getCommittedFactByChangeSet(
+    documentId: string,
+    sourceChangeSetId: string
+  ): Promise<DocumentCommittedFact | undefined> {
+    const row = this.db
+      .prepare(`
+        SELECT * FROM ${this.tables.activityOutbox}
+        WHERE document_id = ? AND source_change_set_id = ?
+        ORDER BY occurred_at ASC, fact_id ASC
+        LIMIT 1
+      `)
+      .get(documentId, sourceChangeSetId) as SQLiteRow | undefined;
+    return row ? rowToCommittedFact(row) : undefined;
+  }
+
   async listUnpublishedFacts(limit?: number): Promise<DocumentCommittedFact[]> {
     const size = boundedLimit(
       limit,
@@ -1293,21 +1323,27 @@ export class SQLiteDocumentStore implements DocumentStore {
     this.db
       .prepare(`
         INSERT INTO ${this.tables.activityOutbox}
-          (fact_id, fact_kind, document_id, revision, change_set_id,
-           actor_id, origin, operation_types, semantic_digest, occurred_at,
+          (fact_id, source_request_id, fact_kind, document_id, revision,
+           change_set_id, source_change_set_id, actor_id, origin,
+           operation_types, semantic_digest,
+           compensation_intent, compensation_target_change_set_id, occurred_at,
            published_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
       `)
       .run(
         fact.factId,
+        fact.sourceRequestId,
         fact.kind,
         fact.documentId,
         fact.revision,
-        fact.changeSetId ?? null,
+        fact.sourceChangeSetId ?? null,
+        fact.sourceChangeSetId ?? null,
         fact.actorId ?? null,
         fact.origin,
         encodeJson(fact.operationTypes),
-        fact.semanticDigest,
+        fact.sourceSemanticDigest,
+        fact.compensation?.intent ?? null,
+        fact.compensation?.targetChangeSetId ?? null,
         fact.occurredAt
       );
   }

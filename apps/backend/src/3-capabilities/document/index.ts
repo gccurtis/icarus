@@ -46,6 +46,7 @@ export type {
   DocumentIdentityTransitions
 } from "./domain/identities.js";
 export type { DocumentStore } from "./ports/documentStore.js";
+export type { DocumentActivityPublisher } from "./ports/activityPublisher.js";
 export type { DocumentDerivedOutputs } from "./ports/derivedOutputs.js";
 export type { DocumentFormulaResolver } from "./ports/formulaResolver.js";
 export { SQLiteDocumentStore } from "./persistence/sqliteDocumentStore.js";

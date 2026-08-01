@@ -52,10 +52,13 @@ For a wire-valid command whose domain preconditions hold:
 
 ## History and digest invariants
 
-- Creation co-commits head, initial identities, Base, receipt, and fact.
+- Creation co-commits head, initial identities, Base, receipt, and source
+  transaction. The source transaction's stable Activity ID and source request
+  ID are allocated before that commit.
 - Mutation CAS updates only the expected current revision and co-commits head,
   identity transitions, ChangeSet, attempts/settlements, ownership, receipt,
-  and outbox fact.
+  and source transaction. Its copied ChangeSet and compensation fields are not
+  foreign keys and remain usable after history compaction.
 - `ChangeSet.seq === ChangeSet.revision === priorRevision + 1`.
 - Canonical digests recursively sort record keys and omit undefined fields.
 - Rebase is allowed only when incoming touched IDs are disjoint from every
@@ -101,8 +104,9 @@ For a wire-valid command whose domain preconditions hold:
   receipt failure when ownership already exists.
 - A stage effect whose completion receipt fails remains non-terminal/running so
   startup can retry safely.
-- Outbox publication and detached-output deletion are not currently scheduled;
-  the records/methods exist but require a future owner.
+- Startup retries unpublished Activity source transactions through the optional
+  publisher. A failed publisher leaves the source transaction durable and
+  unpublished; Activity's idempotent transaction ID makes retry safe.
 
 ## Limits
 
@@ -150,7 +154,7 @@ but not a proof against every SQLite/process-failure interleaving.
 
 - exact pagination, page count, font-manifest rendering, or export;
 - a Document hard-delete command;
-- Activity feed publication/undo endpoint;
+- an Activity-mediated undo/redo coordinator or a Document Activity endpoint;
 - automatic deletion of detached Derived Outputs;
 - collaboration/Presence or distributed multi-process serialization;
 - live media resolution or chart execution;
