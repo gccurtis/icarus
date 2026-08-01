@@ -21,6 +21,7 @@ apps/backend/src/
         calculation.ts               # pure dependency planning and local bindings
         canonical.ts                 # canonical bytes and semantic digest
         errors.ts                    # typed domain/application errors
+        formulaAuthoring.ts          # A1 tokenizer, stable manifests, aliases, display source
         grid.ts                      # ordered-axis coordinate and span lookup
         identities.ts                # permanent identity transitions
         inverses.ts                  # exact compensation operations
@@ -79,15 +80,16 @@ alias, migration framework, or global Spreadsheet configuration surface.
 |---|---|
 | `domain/model.ts` | Defines Workbook heads/snapshots, embedded Theme/tokens and reusable Cell Styles, stable Sheets/axes/Cells/spans, ordered range Format Regions, the closed `CellContent` union and exact computed settlements, the closed RichContent target union, validation/rules/typed overlays, operations, ChangeSets/Bases/receipts, identity transitions, durable attempts/stages, committed facts, internal intents, limits, and options. |
 | `domain/grid.ts` | Resolves `rowOrder`/`columnOrder` stable identities, enforces sparse occupancy, and validates rectangular contiguous non-overlapping spans. A1 labels are derived display addresses only. |
+| `domain/formulaAuthoring.ts` | Owns the pure Spreadsheet formula-authoring layer: tokenizes A1/absolute/range/sheet-qualified syntax without treating string contents as references; resolves grid tokens to stable identities; emits collision-proof Formula/v1 aliases and resolved/broken binding manifests; finalizes normalized `spreadsheet-formula/v1` sources from application-supplied Formula dependency results and project binding identities; re-renders display source from current axis order while preserving authored endpoint and `$` roles; and canonicalizes bindings after axis deletion. It performs no Formula evaluation, resolver I/O, or persistence. |
 | `domain/projection.ts` | Projects structured accepted values from an anchor Cell and returns deterministic blocked/ready diagnostics. Projected coordinates never become hidden canonical Cells. |
-| `domain/calculation.ts` | Builds a dependency graph from a frozen Workbook, records stable Cell/range and project-binding-ID manifests from normalized `spreadsheet-formula/v1` bindings, detects cycles, produces a deterministic plan, and composes frozen Workbook-local bindings with an immutable project Formula snapshot. It performs no I/O. |
+| `domain/calculation.ts` | Consumes already-admitted `spreadsheet-formula/v1` sources, builds a dependency graph from a frozen Workbook, records stable Cell/range and project-binding-ID manifests, detects cycles, produces a deterministic plan, and composes frozen Workbook-local bindings with an immutable project Formula snapshot. It performs no authoring-token recognition or I/O. |
 | `domain/reducer.ts` | Applies canonical operations and emits normalized forward operations, exact inverses, touched IDs, and semantic digest. It does not call Formula or other capabilities. |
 | `domain/inverses.ts` | Produces exact compensation from before/after state, including deleted Sheet/axis/Cell subtrees, merge coverage, Format Regions, rules, and overlay state. |
 | `domain/identities.ts` | Claims, tombstones, and narrowly reactivates Workbook-owned stable identities. Ordinary commands cannot reuse tombstones. |
 | `domain/rebase.ts` | Replays the authored revision, compares touched identities with intervening ChangeSets, and permits only disjoint semantic rebase. |
 | `domain/validation.ts` | Enforces identity/order/span/projection/content invariants; typed token refs, one protected Normal Style, acyclic Style inheritance, and Style/Format-Region/rule/overlay validity; `spreadsheet-formula/v1` resolved/broken target evidence, ordinary Formula/v1, and closed RichContent target validity; dedicated Prompt output ownership; immutable Data/Prompt/File references; and configured size/depth/byte limits. |
 | `domain/canonical.ts` | Produces deterministic canonical JSON and SHA-256 semantic digests. Operational timestamps, attempts, retry state, and outbox publication do not affect Workbook semantics. |
-| `application/createService.ts` | Creates the initial Workbook with stable caller-provided identities, one default Sheet/axes, a revision-zero Base, receipt, identity claims, and creation fact in one transaction. |
+| `application/createService.ts` | Creates the initial Workbook from request-provided Sheet/axis IDs plus deterministic create-helper design IDs, with one default Sheet/axes, a revision-zero Base, receipt, identity claims, and creation fact in one transaction. |
 | `application/spreadsheetService.ts` | Exposes command/query, reconstructs historical snapshots, performs idempotency/CAS/rebase/compensation, orchestrates Prompt/Data/Formula stages, dispatches internal intents after durable commit, recovers attempts, and performs head-guarded compaction. |
 | `ports/spreadsheetStore.ts` | Defines head/Base/ChangeSet/receipt, identity, attempt/stage, Prompt ownership, compaction, and accepted-fact outbox persistence. |
 | `ports/derivedOutputs.ts` | Exposes only keyed declaration, refresh, definition update, and exact output/revision reads. It exposes no deletion authority or persistence implementation. |
@@ -134,6 +136,12 @@ The dependency laws are:
   project scope, adapts shared runtimes, and supplies actor attribution.
 - Spreadsheet receives Formula's project name-resolution view through a narrow
   immutable resolver port. It never reaches through Formula to Structured Data.
+- `domain/formulaAuthoring.ts` owns Spreadsheet address recognition, stable
+  manifest normalization, alias emission, broken-target preservation, and
+  display-source reconstruction. The application supplies it only pure inputs
+  obtained from the frozen Workbook, Formula dependency extraction, and an
+  immutable resolver snapshot; the module imports no Formula or resolver
+  implementation.
 - Spreadsheet owns grid semantics, dependency planning, accepted results, and
   exact revision adoption. Formula owns parsing/evaluation and Rich Text owns
   RichContent operations, marks, references, and FormulaAtoms.
@@ -264,6 +272,28 @@ Typed failures map consistently with Document and Slide:
 Handlers never expose SQL messages, provider bodies, Prompt text, Formula
 binding values, or internal stack traces.
 
+## Formula-authoring admission
+
+Formula authoring is synchronous admission, not calculation work and not an
+internal Job. For each decoded `formula-source.admit` edit, the application:
+
+1. asks `domain/formulaAuthoring.ts` to tokenize Spreadsheet address syntax and
+   resolve grid tokens against the working authored snapshot;
+2. asks the injected Formula runtime to parse the emitted Formula/v1 alias
+   source and extract non-builtin symbolic dependencies;
+3. for a whole-Cell source, resolves those symbols once through one immutable
+   project resolver snapshot and supplies stable binding IDs back to the pure
+   authoring module; grid-rule sources reject project symbols;
+4. receives the finalized normalized source, stable resolved/broken manifest,
+   display-source projection, and source digest; and
+5. applies only that admitted canonical source through the reducer.
+
+The resolver digest used at admission is retained as operational receipt
+evidence, not canonical source identity. Axis moves later call only the pure
+display-source renderer. Axis deletion calls the pure binding normalizer to
+preserve broken targets and exact inverse evidence; neither path reparses
+authored text or rebinds by display name.
+
 ## Internal Jobs and durable workflows
 
 `registerSpreadsheetInternalJobs.ts` registers the closed intent vocabulary on
@@ -299,7 +329,10 @@ binding IDs. Concurrent compute builds one project resolver snapshot, resolves
 project dependencies by `binding.reference.bindingId` without falling back to
 a display name, composes frozen Workbook-local
 bindings, creates a deterministic dependency plan, evaluates independent
-components, and durably proposes bounded settlement operations. Serial settle
+components, and durably proposes bounded settlement operations plus the exact
+`FormulaSettlementGuard` (`sourceDigest`, `localDependencyDigest`, evaluation
+`resolverSnapshotDigest`, and frozen Prompt output identities/revisions).
+Serial settle
 rechecks each source/dependency fingerprint and adopts only candidates that are
 still valid through one ordinary ChangeSet. Partial staleness does not permit a
 candidate to overwrite newer authoring.
@@ -477,6 +510,10 @@ not have:
 - `data.promote` is blocked until Structured Data exposes keyed idempotent
   declaration (or caller-supplied stable IDs). Its current unkeyed declaration
   cannot be made crash-safe across the two SQLite files.
+- Workbook duplication is absent from v1. A future workflow must re-key every
+  Workbook-owned identity and Formula grid binding and create a fresh dedicated
+  Derived Output for each copied Prompt Content Cell; copying a Base or sharing
+  the source output IDs is invalid.
 - XLSX/CSV import, export, and format-loss policies belong to explicit adapter
   integrations. They may emit or consume public Spreadsheet commands.
 - server-side Chart/Image rendering and document embedding belong to renderer

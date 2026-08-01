@@ -58,12 +58,13 @@ must remain the top-left coordinate. An axis move that would invert a merged
 span is rejected unless an earlier operation in the same batch unmerges or
 rewrites that Cell.
 
-Deleting an axis endpoint is explicit. Ordinary rule, format, validation,
-overlay, freeze, and span refs must be removed or rewritten in the same batch.
-Formula grid bindings instead normalize from a `resolved` target to a `broken`
-target that retains the prior stable IDs and missing-ID evidence. Calculation
-settles a typed broken-reference diagnostic; it never rebinds the alias to a
-neighbor or future reused coordinate. Exact undo restores the resolved target.
+Deleting a referenced Sheet or axis endpoint is explicit. Ordinary rule,
+format, validation, overlay, freeze, and span refs must be removed or rewritten
+in the same batch. Formula grid bindings instead normalize from a `resolved`
+target to a `broken` target that retains the prior stable IDs and missing-ID
+evidence. Calculation settles a typed broken-reference diagnostic; it never
+rebinds the alias to a neighbor or future reused coordinate. Exact undo
+restores the resolved target.
 
 ## Canonical operation vocabulary
 
@@ -325,7 +326,8 @@ For each `formula-source.admit`, Spreadsheet:
 
 1. tokenizes Spreadsheet address syntax without treating strings as refs;
 2. resolves every address against the authored revision to stable Sheet/Row/
-   Column identities;
+   Column identities, using the canonical unique Sheet-title normalization for
+   qualified references;
 3. replaces address tokens with collision-proof Formula/v1 aliases and stores
    each alias, authored UTF-16 span, stable target,
    absolute/relative Row and Column modes, and explicit-Sheet intent in the
@@ -422,10 +424,12 @@ type SpreadsheetRichContentTarget =
   | { kind: "validation-message"; sheetId: SheetId; cellId: CellId }
   | { kind: "validation-list-option"; sheetId: SheetId; cellId: CellId;
       optionId: string }
-  | { kind: "chart-title"; sheetId: SheetId; overlayId: string }
-  | { kind: "chart-axis-title"; sheetId: SheetId; overlayId: string;
+  | { kind: "chart-title"; sheetId: SheetId; overlayId: SheetOverlayId }
+  | { kind: "chart-axis-title"; sheetId: SheetId;
+      overlayId: SheetOverlayId;
       axis: "category" | "value" | "x" | "y" }
-  | { kind: "chart-series-name"; sheetId: SheetId; overlayId: string;
+  | { kind: "chart-series-name"; sheetId: SheetId;
+      overlayId: SheetOverlayId;
       seriesId: string };
 ```
 

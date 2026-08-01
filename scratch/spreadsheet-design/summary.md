@@ -10,9 +10,9 @@ Conditional Formatting, typed Chart/Image/Sparkline overlays, history, and
 calculation state.
 
 Its canonical unit is one `WorkbookSnapshot`. The snapshot embeds every design
-resource and accepted external/computed value needed to replay that exact
-revision. Project ID selects the runtime and database at construction; no
-Workbook value or command is user-scoped.
+resource and every accepted external/computed value or exact immutable
+reference needed to replay that revision. Project ID selects the runtime and
+database at construction; no Workbook value or command is user-scoped.
 
 ```text
 WorkbookSnapshot
@@ -176,6 +176,11 @@ An accepted Formula/Data list, record, or table may spill from its anchor Cell.
 The `RangeProjection` is rebuilt from the accepted wire value, projection
 orientation, anchor, and current axes; it is not embedded in settlement and
 its projected coordinates are not canonical Cells.
+
+A structured Formula without an orientation remains non-spilling and shows a
+deterministic structured summary at its anchor. Assigning a compatible
+orientation later derives the matrix from the stored accepted value without
+reevaluation; a pending Formula may carry a dormant requested orientation.
 
 Projection never invents Row/Column IDs. Insufficient axis capacity blocks it.
 The anchor itself is not a collision, but another canonical Cell, merged span,

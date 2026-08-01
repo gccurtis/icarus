@@ -3,8 +3,9 @@
 ## Aggregate and authority boundary
 
 Spreadsheet owns one versioned `WorkbookSnapshot`. The snapshot contains the
-complete authored workbook structure and every accepted value needed to replay
-a historical revision. Project ID selects the runtime and store at
+complete authored workbook structure and every accepted value or exact
+immutable external reference needed to replay a historical revision. Project
+ID selects the runtime and store at
 construction; neither project nor user identity appears in canonical
 Spreadsheet values.
 
@@ -303,10 +304,17 @@ IDs rather than fragile counts; inserting before a boundary joins the frozen
 prefix, while deleting the boundary must clear or replace it in the same
 ChangeSet.
 
+Sheet titles are nonempty, bounded, and unique after trimming, Unicode NFKC
+normalization, and ECMAScript locale-independent lowercase conversion. This
+makes quoted or unquoted sheet-qualified authoring unambiguous. A formula
+manifest stores the resolved Sheet ID, so a later Sheet rename only changes
+rendered source and never retargets the reference.
+
 Workbook-wide identity ledgers prevent reuse of every operation/target
 identity: Sheet, Row, Column, Cell, design token, Style, Format Region, rule,
-overlay, Chart series, validation list option, and hosted Rich Content atom and
-mark IDs. IDs are unique within their resource kind, including across Sheets
+overlay, Chart series, validation list option, Formula binding-manifest, and
+hosted Rich Content atom and mark IDs. IDs are unique within their resource
+kind, including across Sheets
 where an operation otherwise could become ambiguous. Exact compensation may
 restore a retired identity; unrelated new authoring may not reuse it. Format
 Region array order is low-to-high priority; later matching properties win.
@@ -417,6 +425,11 @@ decimal text without a JavaScript floating-point round trip and can also
 represent non-terminating results exactly. Blank is distinct from an empty
 text value, zero, and Formula null.
 
+An `ExactCellNumber` is reduced to coprime canonical integer strings with a
+strictly positive denominator. Date and date-time literals must be valid
+calendar/instant ISO strings; their Formula projection remains ISO text until
+Formula gains a temporal value kind.
+
 Using a closed content union prevents invalid combinations such as a literal
 source paired with an unrelated accepted Formula value. Formula and Data Cells
 are the only whole-Cell computed variants and carry settlement compatible with
@@ -433,7 +446,7 @@ owned authoring layer before it reaches the reducer.
 interface FormulaCellContent {
   kind: "formula";
   formula: WholeCellFormulaSource;
-  /** Required only when an accepted list/record/table should spill. */
+  /** Optional requested spill orientation; dormant for pending/scalar values. */
   projectionOrientation?: ProjectionOrientation;
   settlement: ComputedCellSettlement<AcceptedFormulaCellValue>;
 }
@@ -763,6 +776,11 @@ reattached; `follow-head` is eligible for refresh when the project binding
 changes. In both modes, an old Workbook revision displays its embedded exact
 accepted value without consulting today's project state.
 
+An accepted Data settlement's `externalBinding.bindingId` and `sourceDigest`
+must match its `DataCellSource`. Scalar values forbid
+`projectionOrientation`; list/record/table values require an orientation valid
+for their accepted kind.
+
 Representation v1 deliberately has no “promote range to Data” workflow and no
 direct Structured Data runtime dependency. If cross-capability Data mutation
 is later desired, it needs its own durable delegated claim rather than being
@@ -819,6 +837,17 @@ its span to 1×1; released coordinates become unmaterialized blank coordinates.
 Only an accepted structured Formula or Data value can project beyond its
 anchor. Literal, Rich Content, Prompt Content, scalar Formula, and scalar Data
 Cells never spill.
+
+A Formula may accept a list/record/table without a `projectionOrientation`.
+That Cell does not spill; its anchor exposes the exact accepted value plus
+Formula's deterministic structured summary/indicator in the grid projection.
+Setting a compatible orientation later derives the matrix from that same
+accepted value without reevaluation. A pending Formula may retain a requested
+orientation because its result kind is not known yet; scalar settlement simply
+leaves it dormant, while structured settlement or a later orientation change
+validates it against the exact kind and reports `shape-invalid` when
+incompatible. Data attach already knows its accepted kind, so its scalar/
+structured orientation invariant is enforced during attach.
 
 ```ts
 type ProjectionOrientation =
@@ -1151,6 +1180,11 @@ backend capability boundary, not deferred Spreadsheet subsystems.
 - Rich Content Formula atoms cannot address A1/range references.
 - Conditional/validation Formula references bind once rather than rebinding
   relative to every target coordinate.
+- Copy/fill Formula translation is not an initial command; authored `$` modes
+  are retained for that later authoring workflow.
+- Workbook duplication is not a raw snapshot copy and is absent from v1;
+  copied Prompt Content would require newly dedicated Derived Outputs and all
+  Workbook-owned identities and grid bindings would require re-keying.
 - Gradients and arbitrary drawing paths are absent from overlay appearance.
 - Data Cells adopt project resolver bindings but do not write back to or create
   Structured Data entries.
