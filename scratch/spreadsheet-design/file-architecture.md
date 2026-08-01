@@ -322,19 +322,21 @@ delimiter-to-FormulaAtom operation.
 
 ### Prompt Content
 
-A Prompt Content Cell cannot be inserted by a generic Cell operation and cannot
-attach a caller-supplied output. Its creation command freezes the Cell shell and
-definition, then concurrent compute declares and initially refreshes one
-dedicated Derived Output. Serial settlement inserts the exact output ref and
-changes local ownership from pending to attached in the same transaction.
+A Prompt Content Cell cannot be introduced by a generic Cell operation and
+cannot attach a caller-supplied output. Its creation command may target a new or
+existing Cell; it freezes the resulting Cell shell and definition, then
+concurrent compute declares and initially refreshes one fresh dedicated Derived
+Output. Serial settlement creates/replaces the content with the exact output ref
+and changes local ownership from pending to attached in the same transaction.
 
 Refresh freezes output identity and applied revision, computes through Derived
 Outputs, and conditionally adopts the exact newer revision.
 Definition/stabilization updates first persist a delegated-command claim, call
 Derived Outputs with the claim's stable idempotency key, and atomically retain
 the completed receipt. They append no Workbook ChangeSet because canonical
-Workbook state did not change. Cell/axis/Sheet deletion marks ownership
-historical; Spreadsheet never deletes the output.
+Workbook state did not change. Replacing Prompt Content or deleting its
+Cell/axis/Sheet marks ownership historical; Spreadsheet never deletes the
+output.
 
 ### Direct Data Cells
 
@@ -344,8 +346,9 @@ ID and target Cell shell. Compute selects exactly one binding from an immutable
 project Formula snapshot and persists its owner revision, value digest, and
 exact Formula-wire-serializable non-function candidate value. A scalar has no
 orientation and does not spill; a table, record, or list requires an orientation
-and produces a rebuildable, noncanonical range projection. Settle inserts the
-Data Cell and exact settlement only if the target remains available. Refresh
+and produces a rebuildable, noncanonical range projection. Settle creates or
+replaces the Data Cell content and exact settlement only if the target remains
+valid. Refresh
 freezes the existing reference and conditionally adopts a newer exact binding
 revision.
 
