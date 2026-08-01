@@ -33,41 +33,47 @@ and Layout registries.
 
 ```ts
 type ElementOwner =
-  | { scope: "master"; masterSlideId: MasterSlideId }
-  | { scope: "layout"; layoutId: SlideLayoutId }
-  | { scope: "slide"; slideId: SlideId };
+  | { kind: "master"; masterSlideId: MasterSlideId }
+  | { kind: "layout"; layoutId: SlideLayoutId }
+  | { kind: "slide"; slideId: SlideId };
 
 type RichContentTarget =
-  | { kind: "deck-title" }
-  | { kind: "slide-title"; slideId: SlideId }
   | { kind: "slide-notes"; slideId: SlideId }
   | { kind: "element-text"; owner: ElementOwner; elementId: ElementId }
-  | { kind: "image-alt"; owner: ElementOwner; elementId: ElementId }
   | {
       kind: "table-cell";
       owner: ElementOwner;
       elementId: ElementId;
-      rowId: TableRowId;
-      columnId: TableColumnId;
+      cellId: TableCellId;
     }
   | {
-      kind: "chart-title" | "chart-x-axis-label" | "chart-y-axis-label";
+      kind: "chart-title";
       owner: ElementOwner;
       elementId: ElementId;
     }
   | {
-      /** Series/category/datum label only; numeric data is not Rich Content. */
-      kind: "chart-data-label";
+      kind: "chart-axis-title";
       owner: ElementOwner;
       elementId: ElementId;
-      labelId: ChartLabelId;
+      axis: "x" | "y";
     }
-  | { kind: "layout-slot-default"; layoutId: LayoutId; slotId: LayoutSlotId };
+  | {
+      kind: "chart-category-label";
+      owner: ElementOwner;
+      elementId: ElementId;
+      categoryId: ChartCategoryId;
+    }
+  | {
+      kind: "chart-series-name";
+      owner: ElementOwner;
+      elementId: ElementId;
+      seriesId: ChartSeriesId;
+    };
 ```
 
 `element-text` covers authored Text elements on Masters, Layouts, and Slides.
-Table cells, chart labels, Slide notes, and Layout-slot default content have
-their own stable addresses. Every address resolves to exactly one
+Table cells, chart titles, axis titles, category labels, series names, and
+Slide notes have their own stable addresses. Every address resolves to exactly one
 `RichContent`, or the operation fails. Prompt Content is not a Rich Content
 target: it is the exact plain-text revision of a dedicated Derived Output.
 
@@ -75,7 +81,8 @@ target: it is the exact plain-text revision of a dedicated Derived Output.
 
 ```ts
 type SlideOperation =
-  // Deck metadata and canvas; Deck title is a RichContent target
+  // Plain metadata and canvas
+  | { type: "deck.rename"; title: string }
   | { type: "deck.set-lifecycle"; lifecycle: SlideLifecycle }
   | { type: "deck.set-canvas"; canvas: SlideCanvas }
 
@@ -91,36 +98,36 @@ type SlideOperation =
   | { type: "text-style.update-normal"; style: SlideTextStyle }
 
   // Deck-owned Master registry
-  | { type: "master.create"; master: SlideMaster }
+  | { type: "master.create"; master: MasterSlide }
   | {
       type: "master.update";
-      masterId: MasterId;
-      metadata: SlideMasterMetadata;
+      masterSlideId: MasterSlideId;
+      metadata: MasterSlideMetadata;
       background: SlideBackground;
     }
-  | { type: "master.delete"; masterId: MasterId }
+  | { type: "master.delete"; masterSlideId: MasterSlideId }
 
   // Deck-owned Layout and slot registries
   | { type: "layout.create"; layout: SlideLayout }
   | {
       type: "layout.update";
-      layoutId: LayoutId;
+      layoutId: SlideLayoutId;
       metadata: SlideLayoutMetadata;
-      masterId: MasterId;
+      masterSlideId: MasterSlideId;
       background?: SlideBackground;
     }
-  | { type: "layout.delete"; layoutId: LayoutId; replacementLayoutId?: LayoutId }
-  | { type: "layout.slot.create"; layoutId: LayoutId; slot: LayoutSlot }
-  | { type: "layout.slot.update"; layoutId: LayoutId; slotId: LayoutSlotId; slot: LayoutSlot }
-  | { type: "layout.slot.delete"; layoutId: LayoutId; slotId: LayoutSlotId }
+  | { type: "layout.delete"; layoutId: SlideLayoutId; replacementLayoutId?: SlideLayoutId }
+  | { type: "layout.slot.create"; layoutId: SlideLayoutId; slot: LayoutSlot }
+  | { type: "layout.slot.update"; layoutId: SlideLayoutId; slotId: LayoutSlotId; slot: LayoutSlot }
+  | { type: "layout.slot.delete"; layoutId: SlideLayoutId; slotId: LayoutSlotId }
 
   // Ordered Slides and live Layout selection
   | { type: "slide.insert"; slide: Slide; afterSlideId?: SlideId }
   | { type: "slide.move"; slideId: SlideId; afterSlideId?: SlideId }
   | { type: "slide.delete"; slideId: SlideId }
-  // Slide title is a RichContent target
+  | { type: "slide.set-title"; slideId: SlideId; title?: string }
   | { type: "slide.set-background"; slideId: SlideId; background?: SlideBackground }
-  | { type: "slide.set-layout"; slideId: SlideId; layoutId: LayoutId | null }
+  | { type: "slide.set-layout"; slideId: SlideId; layoutId: SlideLayoutId | null }
 
   // Heterogeneous positioned elements in a Master, Layout, or Slide
   | { type: "element.insert"; owner: ElementOwner; element: SlideElement }
@@ -128,10 +135,10 @@ type SlideOperation =
       type: "element.move";
       owner: ElementOwner;
       elementId: ElementId;
-      parentGroupId?: GroupElementId;
+      parentGroupId: SlideGroupId | null;
       zIndex: number;
       /** Destination placement; free geometry is explicit, slot geometry is live. */
-      placement: ElementPlacement;
+      placement: SlideElementPlacement;
     }
   | { type: "element.delete"; owner: ElementOwner; elementId: ElementId }
   | {
@@ -144,13 +151,7 @@ type SlideOperation =
       type: "element.set-placement";
       owner: ElementOwner;
       elementId: ElementId;
-      placement: ElementPlacement;
-    }
-  | {
-      type: "element.set-transform";
-      owner: ElementOwner;
-      elementId: ElementId;
-      transform: ElementTransform;
+      placement: SlideElementPlacement;
     }
   | { type: "element.set-locked"; owner: ElementOwner; elementId: ElementId; locked: boolean }
   | { type: "element.set-hidden"; owner: ElementOwner; elementId: ElementId; hidden: boolean }
@@ -211,8 +212,7 @@ type SlideOperation =
       type: "table.cell.set-presentation";
       owner: ElementOwner;
       elementId: ElementId;
-      rowId: TableRowId;
-      columnId: TableColumnId;
+      cellId: TableCellId;
       presentation?: TableCellPresentation;
     }
   | {
@@ -240,7 +240,11 @@ type SlideOperation =
       type: "chart.label.set-presentation";
       owner: ElementOwner;
       elementId: ElementId;
-      labelId: ChartLabelId;
+      target:
+        | { kind: "title" }
+        | { kind: "axis-title"; axis: "x" | "y" }
+        | { kind: "category-label"; categoryId: ChartCategoryId }
+        | { kind: "series-name"; seriesId: ChartSeriesId };
       presentation: ChartLabelPresentation;
     };
 ```
@@ -263,18 +267,20 @@ Masters, Layouts, and Slides each own a flat Element record. Every Element has:
 ```ts
 interface SlideElementBase {
   id: ElementId;
-  parentGroupId?: GroupElementId;
+  kind: SlideElement["kind"];
+  parentGroupId: SlideGroupId | null;
   /** Sole sibling paint-order authority. */
   zIndex: number;
-  placement: ElementPlacement;
-  transform: ElementTransform;
   locked: boolean;
   hidden: boolean;
 }
 
-type ElementPlacement =
+type FramedElementPlacement =
   | { kind: "free"; frame: ElementFrame }
   | { kind: "layout-slot"; slotId: LayoutSlotId };
+
+/** The complete kind-specific placement union; Group/straight-line are free. */
+type SlideElementPlacement = SlideElement["placement"];
 
 interface ElementFrame {
   xPt: number;
@@ -322,7 +328,8 @@ or Layout Elements into the Slide. A Slide-owned Element may use one stable
 slot in its selected Layout, and each slot accepts at most one live Slide
 Element. Slot compatibility is validated against the Element kind.
 
-A Layout slot is metadata with a frame and default Rich Content. It is not an
+A Layout slot is metadata with a frame, accepted Element kinds, and an optional
+default Normal Text Style selection. It is not an
 Element, has no `zIndex`, and never paints by itself. Geometry has exactly one
 authority:
 
@@ -342,8 +349,8 @@ replacement Layout; replacement rewrites those selections atomically. Deleting
 a slot is rejected while a Slide Element binds it. Exact inverse operations
 restore every rewritten selection and binding.
 
-Master/Layout authored Text, Layout-slot default content, Slide text, notes,
-Table cells, and Chart labels remain ordinary `RichContent` values. Live
+Master/Layout authored Text, Slide text, notes, Table cells, and Chart labels
+remain ordinary `RichContent` values. Live
 composition does not merge or rewrite Rich Content identities.
 
 ## Theme tokens and the protected Normal Text Style
@@ -398,7 +405,7 @@ model and are outside this representation.
 `rich-content.apply` resolves the target, delegates to Rich Text, and stores
 Rich Text's normalized forward and exact inverse batches inside the Deck
 ChangeSet. Formula atoms may occur in every `RichContentTarget`, including
-Master/Layout text, Layout-slot defaults, Table cells, and Chart labels.
+Master/Layout text, Table cells, and Chart labels.
 
 The reducer returns formula changes alongside the ordinary apply result:
 
@@ -528,11 +535,11 @@ type SlideCommand =
   | {
       type: "deck.create";
       deckId: string;
-      title: RichContent;
+      title: string;
       initialSlideId: string;
       initialLayoutId?: string;
       canvas?: SlideCanvas;
-      design?: DeckDesign;
+      design?: DeckDesignSystem;
     }
   | {
       type: "deck.submit";

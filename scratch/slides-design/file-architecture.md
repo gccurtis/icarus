@@ -53,7 +53,7 @@ apps/backend/
           dependencies.ts           # Prompt, immutable General Files, Formula, token, Layout, and Master refs
           formulaDependencies.ts    # Formula atom IDs, targets, and expression digests
           outline.ts                # Slides in canonical Deck order
-          plainText.ts              # authored text, notes, and accessibility text
+          plainText.ts              # titles, authored text, notes, labels, and accessibility text
           presentation.ts           # resolved semantic Slide plan, never pixels
           styling.ts                # Theme tokens, embedded appearance, Normal text style, and marks
         wire/
@@ -94,7 +94,7 @@ workflow across many modules.
 |---|---|
 | `application/createService.ts` | Exports `DEFAULT_SLIDE_OPTIONS`, the default canvas and `DeckDesignSystem` (Theme defaults/tokens, protected editable Normal text style, one Master, and one Layout), and `createBlankDeckSnapshot`. Creation starts at revision 0 with one blank Slide selecting the default Layout and no ChangeSet. |
 | `application/slideService.ts` | Implements `SlideCapability`; dispatches commands and queries; reconstructs revisions; performs CAS admission, semantic rebase, compensation, compaction, Prompt Content and Formula stages, capacity redrive, and startup recovery. |
-| `domain/model.ts` | Defines the Deck aggregate and `DeckSnapshot.design: DeckDesignSystem { theme, textStyles, masters, layouts }`; Theme defaults and typed tokens; exactly one protected editable Normal text style; Master and Layout registries; stable Layout-slot metadata; ordered Slides; Master/Layout/Slide element scopes; discriminated free-versus-slot placement; the direct `SlideElement` kinds (`group`, `text`, `prompt-content`, `shape`, `straight-line`, `image`, `table`, and `chart`); Rich Content Formula attempts; operations; history; receipts; intents; limits; and options. |
+| `domain/model.ts` | Defines the Deck aggregate and `DeckSnapshot.design: DeckDesignSystem { theme, textStyles, masters, layouts }`; Theme defaults and typed tokens; exactly one protected editable Normal text style; Master and Layout registries; stable Layout-slot metadata; ordered Slides; Master/Layout/Slide element scopes; discriminated free-versus-slot placement; the direct `SlideElement` kinds (`group`, `text`, `prompt-content`, `geometry`, `straight-line`, `image`, `table`, and `chart`); Rich Content Formula attempts; operations; history; receipts; intents; limits; and options. |
 | `domain/elements.ts` | Locates flat elements within their Master, Layout, or Slide owner scope, derives Group ancestry from `parentGroupId`, derives ordered siblings from canonical `zIndex`, and rejects cross-scope parents, missing parents, cycles, or ambiguous ordering. No root/child arrays duplicate those authorities. |
 | `domain/geometry.ts` | Validates free-element frames/transforms and derives slot-bound frames from the selected Layout in canonical Slide point coordinates. It performs no I/O, font measurement, pixel conversion, or rendering. |
 | `domain/presentation.ts` | Resolves the selected Layout to its Master, Theme defaults/tokens, the Normal text style, kind-specific embedded appearance, Master/Layout-scoped elements, and Slide-scoped elements/bindings to stable Layout slot IDs, then emits deterministic canonical presentation semantics in point coordinates. It does not shape fonts, calculate pixels, or paint. |
@@ -288,11 +288,16 @@ Every Deck revision owns exactly one canonical design system:
 
 ```ts
 interface DeckDesignSystem {
-  theme: SlideTheme;
-  textStyles: SlideTextStyles;
-  masters: SlideMasterRegistry;
-  layouts: SlideLayoutRegistry;
+  theme: DeckTheme;
+  textStyles: SlideTextStyleRegistry;
+  masters: Record<MasterSlideId, MasterSlide>;
+  layouts: Record<SlideLayoutId, SlideLayout>;
 }
+
+type ElementOwner =
+  | { kind: "master"; masterSlideId: MasterSlideId }
+  | { kind: "layout"; layoutId: SlideLayoutId }
+  | { kind: "slide"; slideId: SlideId };
 ```
 
 It is stored at `DeckSnapshot.design`, not in external resources or separately
@@ -309,13 +314,13 @@ a privileged reducer path.
 
 References are live within a Deck revision:
 
-- a Slide selects a deck-owned Layout by stable ID;
-- a Layout selects a deck-owned Master by stable ID;
+- a Slide selects a deck-owned `SlideLayout` by stable `SlideLayoutId`;
+- a Layout selects a deck-owned `MasterSlide` by stable `MasterSlideId`;
 - Masters and Layouts may own flat, scoped elements that participate in the
   semantic presentation plan without becoming Slide-owned state;
-- a Layout defines stable semantic slot metadata—IDs, canonical point frames,
-  permitted content roles, default Rich Content, and token-backed appearance.
-  A slot is not a
+- a Layout defines stable `LayoutSlot` metadata—ID, name, canonical point frame,
+  accepted element kinds, optional Normal text-style reference, and required
+  flag. A slot has no `zIndex`, paint content, or `ElementId` and is not a
   `SlideElement`;
 - slide-specific content and overrides remain slide-owned elements that may
   select `layout-slot` placement; Master/Layout elements and slots are never
@@ -332,13 +337,14 @@ type ElementPlacement =
   | { kind: "layout-slot"; slotId: LayoutSlotId };
 ```
 
-A free element owns its point frame. A Slide element placed in a Layout slot
-stores no competing frame and inherits the selected Layout's current slot
-frame during semantic projection. Binding therefore remains live when a slot
-is edited. A move or resize of a slot-bound element is an explicit detach: the
-normalized operation changes placement to `free` and supplies the resulting
-point frame. Binding/rebinding similarly removes any element-owned frame. No
-reducer or projection guesses which geometry should win.
+A free element owns its point frame. Only a framed Slide-root element may use
+`layout-slot` placement. It stores no competing frame and inherits the selected
+Layout's current slot frame during semantic projection; each slot has at most
+one live Slide binding. Binding therefore remains live when a slot is edited.
+A move or resize of a slot-bound element is an explicit detach: the normalized
+operation changes placement to `free` and supplies the resulting point frame.
+Binding/rebinding similarly removes any element-owned frame. No reducer or
+projection guesses which geometry should win.
 
 The presentation projection resolves that graph into a deterministic semantic
 plan: canonical point-coordinate frames/transforms, back-to-front ordering,
