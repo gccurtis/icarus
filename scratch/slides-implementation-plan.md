@@ -141,6 +141,18 @@ Gate: `slides-application.test.ts` + smoke.
 revalidate + insert). Plus `prompt.refresh.*` and `prompt.update-definition`.
 Needs `ports/derivedOutputs.ts` and `recoverPendingAttempts()` from startup.
 
+The element holds only a `DerivedOutputRef`; generated text never enters the
+snapshot, and `deck.load` resolves it per prompt element on read, as
+`document.load` does.
+
+**The Slides-specific part is placement.** The attempt freezes the whole
+positioned `PromptElementShell` — free frame or slot binding, `zIndex`, styling
+— and the freeze stage dry-runs that placement before spending an LLM call, the
+way Document proves a block placement with a throwaway divider. Settlement then
+revalidates it, because a bound Layout slot may have been deleted while the
+model was running. A failed revalidation is **stale, not an error**: detach the
+ownership row and stop.
+
 ## Phase 6 — Formula atoms
 
 Follows Document exactly: the reducer reports changed atoms, the service creates

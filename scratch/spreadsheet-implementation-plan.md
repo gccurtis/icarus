@@ -18,7 +18,6 @@ document, and most of it is **gone**:
 | Calculation planning — dependency graph, dirty derivation, cycle detection | Same reason. Formula evaluates one expression at a time, as it does for Document |
 | Range projection subsystem — spill matrices, collision arbitration | Rendering concern. A structured value settles and a client displays it |
 | Multi-sheet workbooks, sheet-qualified references | One sheet per resource |
-| Named cell styles with inheritance | A sheet default plus format regions covers the same ground with far less machinery |
 | Data cells with pinned/follow-head tracking | A `formula` cell over a project binding already is this |
 
 **Styling is retained.** An intermediate revision also cut format regions,
@@ -29,8 +28,9 @@ Cell records solely to hold a fill colour, which defeats sparseness and creates
 data that is painful to migrate later.
 
 What survives is a sheet, sparse typed cells, stable axes, merges, a print
-layout, layered styling (sheet default → axis → format regions → cell →
-conditional formats), advisory validation, and an overlay canvas.
+layout, a style registry with layered resolution (default style → axis → format
+regions → cell → conditional formats), live-computed validation, and an overlay
+canvas.
 
 **Cell kinds mirror Formula's value kinds**, and the literal-or-formula split is
 the one Structured Data already uses. That is the reuse: no new value system, no
@@ -79,15 +79,21 @@ Gone from the old file architecture: `formulaAuthoring.ts`, `calculation.ts`,
 ## Phase 1 — Pure domain
 
 `domain/model.ts`: `SpreadsheetHead`, `SpreadsheetSnapshot` (sheetLayout,
-cellStyle, rowOrder, columnOrder, rows, columns, cells, formatRegions,
+styles, rowOrder, columnOrder, rows, columns, cells, formatRegions,
 conditionalFormats, validations, overlay), the closed `CellContent` union,
-`FormatRegion`, `ConditionalFormatRule`, `ValidationRule`, `OverlayObject`,
-operations, history, attempts, intents.
+`CellRange`, `SpreadsheetStyleRegistry`, `CellStyleProperties`, `FormatRegion`,
+`ConditionalFormatRule`, `PredicateSubject`, `ValidationRule`, `AllowedValues`,
+`OverlayObject`, operations, history, attempts, intents.
 
 Then:
 
 - `grid.ts` — coordinate and span lookup over ordered axes; spans stored as
-  start/end Row and Column IDs, never positions or copied membership.
+  start/end Row and Column IDs, never positions or copied membership. Also owns
+  **range-set normalization**: merge overlapping and edge-adjacent ranges into
+  the minimal cover and sort them, so two authorings of the same selection
+  produce byte-identical canonical state and the same semantic digest. Every
+  rule type runs its `ranges` through this on write, which is also what
+  guarantees a cell never matches one rule twice.
 - `canonical.ts`, `identities.ts`, `inverses.ts`, `rebase.ts`.
 - `reducer.ts` and `validation.ts` covering the whole cell union except
   `prompt`, plus axis structure and merges.
@@ -103,20 +109,44 @@ Kept separate because the overlay order is the part most likely to need
 iteration, and it is self-contained:
 
 ```text
-sheet cellStyle → column → row → format regions (in order)
-               → cell.style → conditional formats (in order)
+default style → column → row → format regions (in order)
+              → cell style + overrides → conditional formats (in order)
 ```
 
-Format regions and conditional-format rules are both ordered lists of
-stable-ID ranges; later entries win. CF predicates are a closed comparison
-union over literal operands — no evaluation pass, so a rule is deterministic
-from an immutable revision. Validation rules share the same ranged shape and
-are **advisory**: stored and reported, never enforced against a write.
+Two pieces: the **style registry**, then the three **range-rule** types.
 
-Doing these three together is much cheaper than separately — they are one
-range-rule shape used three ways.
+The registry mirrors Document's and Slides' — named styles, `basedOnStyleId`
+inheritance, `Normal` protected — with one difference: a spreadsheet style
+bundles both text and cell properties (fill, borders, alignment, wrap, number
+format), because that is how cell formatting is chosen. There is one styleable
+kind, so it carries a single `defaultStyleId` rather than a per-kind map. Cells,
+axes, and format regions may reference a style by ID or carry local overrides.
 
-Gate: styling resolution tests in `spreadsheet-domain.test.ts`.
+All three rule types carry `ranges: CellRange[]` over stable axis IDs and run
+through `grid.ts` normalization on write — one shape used three ways, which is
+why building them together is much cheaper than separately. Later entries win.
+
+- **Format regions** are pure data: ranges + `CellStyleProperties`.
+- **Conditional formats** are ranges + a Formula **lambda** of exactly one
+  argument returning logic, plus a style, plus an optional `PredicateSubject`
+  saying what that argument is: the cell's value (default), or a list of values
+  along one axis around it. No fixed predicate vocabulary to grow, and no cell
+  references in formulas — the window is declared structurally and materialised
+  by the projection.
+- **Validations** are ranges + a `one-of` constraint whose `allowed` is either a
+  Formula **expression** yielding a list, record, or table, or a set of **cell
+  ranges** on this sheet. Not a lambda: a client must render a dropdown, and a
+  predicate cannot be reversed into the permitted values.
+
+Conditional formats and validations are **not** resolved in the reducer. This
+phase stores and validates the rules and resolves only the static layers —
+default style → column → row → format regions → cell. Keeping lambda evaluation
+out of the reducer is what keeps reduction pure and replay exact; the live half
+is phase 8.
+
+Gate: static styling resolution and range-set normalization tests in
+`spreadsheet-domain.test.ts`, including that two different authorings of one
+selection produce the same digest.
 
 ## Phase 3 — Persistence and wire
 
@@ -172,12 +202,54 @@ independent because nothing references another cell.
 ## Phase 7 — Prompt cells
 
 Freeze → compute → settle, mirroring Document. One dedicated Derived Output per
-Prompt cell. Enables the `prompt` cell kind in validation. Needs
+Prompt cell; the cell stores only the `DerivedOutputRef` and `sheet.load`
+resolves the text on read. Enables the `prompt` cell kind in validation. Needs
 `ports/derivedOutputs.ts`.
+
+**The one divergence from Document is the sparse target.** Document inserts a
+Block into an existing Row; here the target coordinate may hold no Cell record.
+So `prompt.create.request` carries a stable `{ rowId, columnId }` rather than a
+cell ID, the attempt freezes that coordinate plus the CellId to materialise, and
+settlement treats a deleted axis, a coordinate materialised in the meantime with
+non-blank content, or a coordinate newly covered by a merged span as **stale**
+rather than as an error — detaching the ownership row and leaving the cell
+untouched. Refresh reuses Document's staleness test unchanged.
+
+Worth writing the stale paths as tests first; they are the part most likely to
+be got wrong and the hardest to notice when they are.
 
 ## Phase 8 — Projections, docs, hardening
 
-`dependencies.ts`, `plainText.ts`, `styling.ts`, the six-file `docs/` package,
+`styling.ts` is the substantial one and is where conditional formats and
+validations finally resolve. It backs a new query:
+
+```ts
+| { type: "sheet.formatting"; spreadsheetId: SpreadsheetId;
+    revision?: number; viewport: CellRange[] }
+```
+
+**Defining a rule is a command; asking for formatting is a query.** The viewport
+is itself a set of ranges — a client showing a frozen header plus a scrolled
+body is looking at two discontiguous regions and should ask once — normalized
+the same way rule ranges are.
+
+For each cell in the viewport the projection layers matching conditional formats
+over the static result from phase 2, evaluating each rule's lambda as
+with one argument, resolved from the rule's `PredicateSubject`: the cell's value
+for `{ kind: "cell" }`, or a list built along `axis` from current axis order for
+`{ kind: "range" }`, clipped at the sheet edge. Validation runs the same walk:
+resolve each `allowed` source — expression or cell ranges — and emit violations.
+
+Work is proportional to the viewport, not to the rules' ranges, which is what
+makes a lambda over a 10,000-cell range affordable. A lambda that fails to parse
+or returns a non-logic value marks the rule broken and styles nothing; it never
+fails the read.
+
+Validity is computed here and **never stored**, so there is no invalidation
+pass: if a source column changes, the next read simply reports different
+violations.
+
+Then `dependencies.ts`, `plainText.ts`, the six-file `docs/` package,
 the `#spreadsheet` alias assertion.
 
 ## Verification
@@ -191,8 +263,8 @@ Extend `http-smoke.mjs` from phase 4 onward.
 
 ## Deferred
 
-Named reusable cell styles with inheritance, charts and sparklines as overlay
-kinds, formula-valued conditional predicates, hard validation enforcement,
+Charts and sparklines as overlay kinds, further validation constraint kinds
+(number range, date range, text length), write-time validation rejection,
 multi-sheet resources, cross-resource references, copy/fill authoring, promoting
 a range into Structured Data, and write-back through a bound cell.
 

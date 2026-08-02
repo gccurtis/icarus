@@ -126,10 +126,25 @@ interface SlideStyle {
   id: string;
   name: string;
   basedOnStyleId?: string;
+  /** Only "normal" exists for now, and only it is protected. */
+  systemRole?: SlideSystemStyleRole;
   text?: SlideTextStyleProperties;
   box?: BoxAppearance;
 }
+
+type SlideSystemStyleRole = "normal";
 ```
+
+This is `DocumentStyleRegistry` with the element-kind default in place of the
+block-kind default: named, reusable, `basedOnStyleId` inheritance, live
+references from elements, and a per-kind default for newly inserted elements.
+
+**`Normal` is the only protected style** — it cannot be deleted or have its
+role reassigned, though its name and visual properties stay editable. Document
+additionally protects `heading-1`…`heading-6` because outline level is derived
+from those roles; Slides has no outline, so it protects nothing else yet. The
+role is a union rather than a boolean precisely so more can be added without a
+representation change.
 
 Tokens do not alias other tokens, so resolution cannot cycle. A token reference
 must resolve to a token of the matching kind.
