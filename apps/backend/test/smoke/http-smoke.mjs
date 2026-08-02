@@ -357,4 +357,40 @@ await request(
 
 await request("derived-not-found", "/derived-outputs?id=smoke-missing", undefined, 404);
 
+// Templates: the catalog queries are live, but no resource adapter is
+// registered yet, so registration is expected to answer unsupported_kind.
+const templateList = await request(
+  "templates-list",
+  "/templates/query",
+  { method: "POST", body: json({ query: { type: "template.list" } }) },
+  200
+);
+assert.equal(templateList.type, "template.records");
+
+await request(
+  "templates-register-unsupported-kind",
+  "/templates/command",
+  {
+    method: "POST",
+    body: json({
+      requestId: "smoke-template-1",
+      command: {
+        type: "template.register",
+        source: { kind: "document", resourceId: "smoke-doc" }
+      }
+    })
+  },
+  400
+);
+
+await request(
+  "templates-get-missing",
+  "/templates/query",
+  {
+    method: "POST",
+    body: json({ query: { type: "template.get", templateId: "smoke-missing" } })
+  },
+  404
+);
+
 process.stdout.write(`${JSON.stringify({ baseUrl, samples }, null, 2)}\n`);

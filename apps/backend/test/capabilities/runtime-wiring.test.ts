@@ -22,7 +22,9 @@ test("General Files and Connector aliases are available to the built runtime", (
     "#general-files",
     "#general-files/*",
     "#connector",
-    "#connector/*"
+    "#connector/*",
+    "#templates",
+    "#templates/*"
   ]) {
     assert.ok(alias in imports, `missing package import alias: ${alias}`);
   }
@@ -32,6 +34,32 @@ test("the backend dev command selects TypeScript source imports instead of stale
   assert.match(
     backendPackage.scripts?.dev ?? "",
     /--conditions=(?:types|development)/
+  );
+});
+
+// Every other test in the suite imports concrete modules directly, so a broken
+// composition root is invisible to them: the tree can fail `tsc` and fail to boot
+// while the suite stays green. That is exactly what happened while Slide carried a
+// barrel re-exporting a service file that was never written.
+//
+// The import is dynamic rather than top-level on purpose. A static import that
+// failed would take the whole file down with it, hiding the other assertions here
+// behind a module-load error; this way a broken graph is one failing test with a
+// readable message.
+//
+// Known limit, verified by deliberately breaking startBackend both ways: this
+// catches an unresolvable import whose binding is *used* at runtime, but not one
+// that is unused or type-only — esbuild elides those before Node ever resolves
+// them. `tsc` is what covers that case, which is the argument for running
+// `pnpm typecheck` alongside `pnpm test` rather than treating this as a
+// substitute for it.
+test("the composition root's module graph resolves", async () => {
+  const composition = await import("#init/startBackend.js");
+
+  assert.equal(
+    typeof composition.startBackend,
+    "function",
+    "startBackend must be exported as a function"
   );
 });
 
