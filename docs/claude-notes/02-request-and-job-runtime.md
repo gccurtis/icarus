@@ -1,8 +1,9 @@
 # 02 · Request and Job Runtime
 
-Everything that happens in this backend happens inside a **Job**. There is no other execution
-path — no direct route handlers, no ad-hoc `setInterval` work outside the one Connector sync
-scheduler, and even internal continuations become Jobs.
+Every HTTP request and capability-owned continuation in this backend happens inside a
+**Job**. There are no direct route handlers. Process maintenance is the deliberate exception:
+Connector sync uses timers to enqueue Jobs, while resource retention invokes narrow
+capability maintenance ports directly after startup and on its configured cadence.
 
 ## The single HTTP handler
 
@@ -66,14 +67,14 @@ counts only *waiting* entries; an executing job has already left the array.
 Every `registry.register` call hard-codes `queueType`. The rule in practice:
 
 - **serial** — anything that mutates canonical revisioned state or must not interleave:
-  `POST /documents/command`, `POST /slides/command`, `POST /general-files/upload|update|delete`,
-  `POST /connector/delete`, `PATCH /derived-output-definition`, `DELETE /derived-outputs`,
+  `POST /documents/command`, General File upload/update/delete/purge, Connector delete/purge,
+  Derived Output definition updates/delete/purge, every irreversible purge route, and
   `POST /audit`.
 - **concurrent** — reads, and mutations whose store already does its own compare-and-swap:
-  all queries, all Context endpoints (9 of them), all Structured Data endpoints (15),
-  Connector reads, `POST /derived-output-refresh`.
+  all queries, Context and Structured Data non-purge endpoints, Connector reads,
+  `POST /derived-output-refresh`.
 
-Note the asymmetry that reveals the reasoning: Document/Slide commands are serial because the
+Note the asymmetry that reveals the reasoning: Document commands are serial because the
 service reads-then-writes across several store calls, but Structured Data mutations are
 concurrent because `DataStore.update(entry, expectedRevision)` is a single CAS statement that
 returns `false` on conflict. **Serialisation is used where the store cannot enforce the
@@ -184,10 +185,10 @@ consumes this predicate to run an exponential-backoff retry loop (25 ms → 2 s 
 `intent.idempotencyKey` so a duplicate dispatch is a no-op. Unknown intent types are *not*
 retried — they are a wiring bug.
 
-## The recurring-work exception
+## Recurring process work
 
-`ConnectorSyncScheduler` (`1-init/create/connectorSyncScheduler.ts`) is the only `setInterval`
-in the backend. It runs four timers (5min / 30min / 2hr / 12hr — the `SYNC_INTERVALS` are
+`ConnectorSyncScheduler` (`1-init/create/connectorSyncScheduler.ts`) runs four timers
+(5min / 30min / 2hr / 12hr — the `SYNC_INTERVALS` are
 deliberately integer multiples of each other so cadences batch), re-reads its connector list
 from the store on every tick (so connectors registered after startup join without a
 composition callback), and **enqueues normal `JobDefinition`s** rather than doing work
@@ -198,25 +199,43 @@ It acquires a persisted `syncing` flag via `store.setSyncing(id)` (an atomic
 false→true CAS) *before* enqueueing, and `store.resetSyncing()` on start recovers flags left
 set by a crashed process.
 
+`ResourceRetentionScheduler`
+(`0-utils/persistence/resourceRetentionScheduler.ts`) is different by design: it is
+process-level storage maintenance, not a user command. It computes one ISO cutoff from
+`retention.revisionRetentionDays`, then visits bound capabilities sequentially. For each
+capability it first invokes `purgeExpired(cutoff)` and then `pruneHistory(cutoff)`. Each
+operation has its own error boundary, so a failed purge does not prevent that capability's
+prune or any later capability from running. Overlapping ticks share the active sweep rather
+than running concurrently.
+
+Both schedulers start only after `await app.listen(...)` succeeds. Retention runs one awaited
+sweep immediately before arming its `retention.sweepIntervalHours` timer; Connector sync then
+starts its recurring timers. Shutdown stops Connector sync, clears the retention timer, and
+waits for an active retention sweep before closing the application and logger.
+
 ## Endpoint inventory
 
-66 `registry.register` calls across 9 wiring files:
+85 `registry.register` calls across 12 wiring groups:
 
 | Wiring file | Count |
 | --- | --- |
-| `structured-data/registerStructuredDataEndpoints.ts` | 15 |
-| `context/registerContextEndpoints.ts` | 9 |
-| `connector/registerConnectorEndpointMappings.ts` | 9 |
-| `derived-outputs/registerDerivedOutputEndpoints.ts` | 6 |
-| `general-files/registerGeneralFileEndpointMappings.ts` | 5 |
+| `investigation/registerInvestigationEndpoints.ts` | 22 |
+| `structured-data/registerStructuredDataEndpoints.ts` | 16 |
+| `context/registerContextEndpoints.ts` | 10 |
+| `connector/registerConnectorEndpointMappings.ts` | 10 |
+| `derived-outputs/registerDerivedOutputEndpoints.ts` | 7 |
+| `general-files/registerGeneralFileEndpointMappings.ts` | 6 |
 | `registerBuiltInEndpointMappings.ts` | 4 |
+| `comments/registerCommentEndpoints.ts` | 2 |
 | `document/registerDocumentEndpoints.ts` | 2 |
-| `slide/registerSlideEndpoints.ts` | 2 |
 | `activity/registerActivityEndpoints.ts` | 2 |
+| `persona/registerPersonaEndpoints.ts` | 2 |
+| `templates/registerTemplateEndpoints.ts` | 2 |
 
 Note the inverse relationship between endpoint count and capability complexity. Structured
-Data exposes 15 fine-grained REST-ish routes; Document — by far the largest capability —
+Data exposes 16 fine-grained REST-ish routes; Document — by far the largest capability —
 exposes **two**: `POST /documents/command` and `POST /documents/query`, with a
 discriminated-union body. The command/query pair is the newer, preferred shape (Document,
-Slide, Activity all use it); the fine-grained style in Context/Structured Data/Connector is
+Activity, Comments, Persona, and Templates use it); the fine-grained style in
+Context/Structured Data/Connector is
 the earlier one.

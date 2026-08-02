@@ -87,6 +87,21 @@ The file-naming split is a genuine inconsistency correlated with capability age
   mutations, `warn` for expected-but-notable (capacity, unresolved bindings, retries),
   `error` for unexpected.
 
+## Resource deletion and revision history
+
+- Typed current tables contain live rows only. Normal reads must not join history or add a
+  deleted-row predicate.
+- Updating revision *N* archives its complete current snapshot before writing *N+1*.
+- Logical deletion archives *N*, appends terminal deletion *N+1*, and removes current in one
+  SQLite transaction. Public resource models do not expose `deletedAt`.
+- Purge is the only irreversible removal interface. It rejects a live resource, requires a
+  terminal deletion record, removes owned retained state, and produces no Activity transaction.
+- Do not add restore/reactivation APIs. A deterministic ID appearing again before purge is a
+  new current row whose revision advances from history.
+- Capability stores own current schemas and deletion side effects; reuse
+  `0-utils/persistence/resourceHistory.ts` for history encoding, revision lookup, pruning,
+  and purge guards.
+
 ## Comments
 
 The codebase comments **why**, not what, and the ratio is high in exactly the places where it

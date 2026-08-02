@@ -84,9 +84,9 @@ request→job flow and queue semantics is still accurate.
 **`docs/architecture.md` — one broken link.** It links to `capabilities/README.md`; that
 directory is now `docs/capabilities-old/`. Its other seven links resolve.
 
-**`apps/backend/etc/README.md` — incomplete.** Documents only `server`, `workerPool`, and
-`queue`. The YAML has ten more sections (`logging`, `intelligence`, `formula`,
-`structuredData`, `richText`, `context`, `document`, `projectId`, `userId`).
+**`apps/backend/etc/README.md` — intentionally concise.** It documents `server`,
+`workerPool`, `queue`, and the process-wide `retention` policy. The remaining configuration
+sections are listed there and defer to the typed defaults in `loadBackendConfig.ts`.
 
 **`docs/runtime/backend-map.md` and `docs/runtime/repository-boundaries.md` — accurate on
 structure, aspirational on scope.** Their layer definitions, placement laws, and revision-model
@@ -111,8 +111,8 @@ design page, they say so and are right.
 | --- | --- | --- | --- |
 | Foundations | Intelligence, Context, Formula, Structured Data, Rich Text | ✅ | ✅ confirmed |
 | Resources | Knowledge, Document, Connector, General File | ✅ | ✅ confirmed |
-| Resources | Slides | ☐ | **Deleted 2026-08-01** — was partially built and never runnable |
-| Resources | Spreadsheet | ☐ | Absent (design in `scratch/spreadsheet-design/`) |
+| Resources | Slides | ☐ | **Deleted 2026-08-01** — was partially built and never runnable; rescoped design in `scratch/slides-design.md` |
+| Resources | Spreadsheet | ☐ | Absent (rescoped design in `scratch/spreadsheet-design.md`) |
 | Resources | Templates | ☐ | **Built** since this snapshot |
 | Research | Analysis, Research | ☐ | Absent |
 | Research | Investigation | ☐ | **Built** since this snapshot |

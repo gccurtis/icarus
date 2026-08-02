@@ -104,8 +104,9 @@ rather than crashing.
 
 Config sections: `server`, `workerPool`, `queue`, `logging`, `intelligence`
 (providers/inference routes/reasoning routes/embedding), `formula` (13 limits),
-`structuredData`, `richText`, `context`, `document` (history retention + 7 content limits),
-plus top-level `projectId` and `userId`.
+`structuredData`, `richText`, `context`, `derivedOutputs`, `document` (structural history
+limits + 7 content limits), `retention` (revision age + sweep cadence), plus top-level
+`projectId` and `userId`.
 
 Two notable rules:
 

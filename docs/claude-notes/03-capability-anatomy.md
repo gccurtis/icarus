@@ -29,7 +29,7 @@ these files at the capability root. Large editor capabilities separate `domain`,
     <name>Store.ts           the persistence contract this capability owns
     <dependency>.ts          one narrow interface per external dependency
   persistence/
-    sqliteSchema.ts          table-name derivation + DDL + migrations
+    sqliteSchema.ts          table-name derivation + fresh-schema DDL
     sqlite<Name>Store.ts     the adapter
     sqliteMappers.ts         row ⇄ domain conversion
   projections/               rebuildable, never canonical

@@ -8,11 +8,11 @@ Nine directories under `3-capabilities`. Status column reflects what was measure
 | `document` | Layered | 2 | `documents.db` | Base + ChangeSets | Complete, well tested |
 | ~~`slide`~~ | — | — | — | — | **Deleted 2026-08-01** — see below |
 | `activity` | Layered | 2 | `activity.db` | Append-only + TTL leases | Ledger complete; Presence writes 501 |
-| `connector` | Layered | 9 | `connector.db` | Atomic revisioned | Complete; filesystem provider only |
-| `general-files` | Layered | 5 | `general-files.db` | Content-addressed | Complete |
-| `context` | Flat | 9 | `contexts.db` | Atomic revisioned | Complete |
-| `structured-data` | Flat | 15 | `structured-data.db` | Atomic revisioned | Complete |
-| `derived-outputs` | Hybrid | 6 | `derived-outputs.db` | Attempt + settlement | Complete |
+| `connector` | Layered | 10 | `connector.db` | Current + history | Complete; filesystem provider only |
+| `general-files` | Layered | 6 | `general-files.db` | Content-addressed current + history | Complete |
+| `context` | Flat | 10 | `contexts.db` | Current + history | Complete |
+| `structured-data` | Flat | 16 | `structured-data.db` | Current + history | Complete |
+| `derived-outputs` | Hybrid | 7 | `derived-outputs.db` | Current/history + attempt settlement | Complete |
 | `built-in` | Functions | 4 | — | Stateless | Complete |
 
 ---
@@ -45,16 +45,21 @@ matching entry for each, so the two cannot drift). Two are internal-only and rej
 operation that `introducesPrompt()` ("Prompt Blocks must be created through
 prompt.create.request").
 
-**Commands** (7): `document.create`, `document.submit`, `document.compensate`,
+`DocumentLifecycle` is `active | archived`; deletion removes the current head and is not a
+third lifecycle state.
+
+**Commands** (9): `document.create`, `document.submit`, `document.compensate`,
+`document.delete`, `document.purge`,
 `prompt.create.request`, `prompt.update-definition`, `prompt.refresh.request`,
 `formula.evaluate.request`.
 **Queries** (4): `document.list`, `document.load`, `document.history`, `document.attempt`.
 **Internal job intents** (7): compact, prompt.create.{compute,settle},
 prompt.refresh.{compute,settle}, formula.evaluate.{compute,settle}.
 
-**Tables** (10): `documents`, `command_receipts`, `delegated_command_claims`,
-`identity_ledger`, `bases`, `change_sets`, `activity_outbox`, `attempts`, `prompt_outputs`,
-`stage_receipts`.
+**Tables** (13): `resources`, `documents`, `history`, `command_receipts`, `create_receipts`,
+`identity_ledger`, `bases`, `change_sets`, `transaction_outbox`, `retained_outputs`,
+`attempts`, `prompt_outputs`, `stage_receipts`. `documents` contains live heads only;
+`resources` anchors retained bodies and history after logical deletion.
 
 **Tests**: `document-domain` (991), `document-application` (1490), `document-persistence`
 (878), `document-wire` (491).
@@ -102,7 +107,8 @@ explicitly *not* history.
 That is a security decision recorded in code rather than a TODO — a transport that can supply
 a trusted session can replace the handler.
 
-Document is currently the only wired producer, via the outbox described in
+Document, Comments, and Templates are wired producers, via local transaction outboxes as
+described in
 [05](05-async-attempt-pipeline.md). Tests: `activity.test.ts`, `activity-wiring.test.ts`.
 
 ---
@@ -110,8 +116,11 @@ Document is currently the only wired producer, via the outbox described in
 ## connector
 
 Ingests external resources. `ConnectorEntry.id = sha256(providerKind + "::" + locator)` —
-deterministic, so re-registering the same locator is idempotent and a soft-deleted connector
-can be `restore()`d.
+deterministic. Logical delete removes the Connector and its items from current storage and
+removes every owned Knowledge source; retained history is not a readable Connector. Before
+purge, registering the same provider/locator creates the same ID at the next historical
+revision. After purge removes allocation history, that identity starts again at revision 1.
+There is no `restore()` operation.
 
 Kinds: `connector::{file,directory}::{text,other}`. Prose-text extensions (`txt md markdown
 rst org tex html htm log`) are admitted to Knowledge; everything else is registered but not
@@ -139,8 +148,11 @@ Stores caller-supplied file transport strings. **Identity is `sha256(content)`**
 identical content returns `{ kind: "reused" }` without a new row.
 
 Update is wholesale replacement: `replace(previous, replacement, replacedAt)` atomically
-activates the new content-addressed row (possibly reactivating a soft-deleted one) and retires
-the old, linking them with `replacesId` / `replacedById`.
+archives and removes the previous current row, inserts the replacement current row, and links
+them with `replacesId` / `replacedById`. Re-uploading identical bytes after deletion reuses
+the content hash ID and advances from retained history until purge; this inserts a new
+current row. Delete also removes the file's Knowledge source before committing storage
+deletion.
 
 Same prose-extension list as Connector — and *deliberately duplicated*, with a comment in
 both files: *"Standalone copy owned by this capability. Not imported from any other
@@ -168,7 +180,8 @@ Named sets of typed resource references (`ContextEntry { id, kind }`), scoped on
 `ContextManager` **structurally satisfies `KnowledgeResourceResolver`**, which is why it can
 be injected into Knowledge without either knowing about the other.
 
-9 endpoints under `/contexts/*`: declare, list, get, get-by-name, update, delete, resolve, plus
+10 endpoints under `/contexts/*`: declare, list, get, get-by-name, update, delete, purge,
+resolve, plus
 the two persisted composition endpoints `POST /contexts/union` and `POST /contexts/difference`,
 which return only `{contextId}`.
 
@@ -192,7 +205,8 @@ Display names are matched **case-insensitively** (`normalizeKey` = lowercase), s
 `Revenue` and `revenue` collide — there is a test for it, and another asserting Formula
 built-ins cannot be shadowed by casing.
 
-15 endpoints, including three that go through Formula: `GET /structured-data/value/entry`,
+16 endpoints (including purge), with three that go through Formula:
+`GET /structured-data/value/entry`,
 `GET /structured-data/value/by-name`, and `POST /structured-data/evaluate` (ad-hoc source
 against the current bindings). Unresolvable entries return **422 with a typed
 `FormulaResolutionIssue`** rather than null.
@@ -217,6 +231,9 @@ Turns *prompt + Context scope* into an immutable, evidence-backed answer revisio
   Knowledge mutation events.
 - Three idempotency claim tables (declare / refresh / definition-update) and the three-way CAS
   settle described in [05](05-async-attempt-pipeline.md).
+- A stable resource root retains answer revisions after logical deletion while the live
+  definition and operational refresh state leave current storage. Purge cascades the root,
+  retained answers/evidence/attempts, and capability history.
 
 `DerivedOutputRef { outputId, appliedRevision }` is the reference other capabilities embed —
 Document's `PromptBlock` holds one.

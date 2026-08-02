@@ -147,7 +147,8 @@ optimistically marking it done.
 ```ts
 await document.recoverPendingAttempts();   // → logs document.attempts.recovered
 await document.publishPendingActivity();   // → logs document.activity.recovered
-await slide.recoverPendingAttempts();
+await comments.publishPendingActivity();   // → logs comments.activity.recovered
+await templates.publishPendingActivity();  // → logs templates.activity.recovered
 ```
 
 ```ts
@@ -174,12 +175,12 @@ idempotency claim or re-run, and settlement re-checks staleness against current 
 
 Document publishes to Activity via an outbox, not a direct call. The sequence:
 
-1. `mutate()` builds a `DocumentCommittedFact` with a `factId` allocated **with** the
-   mutation.
-2. `commitMutation` writes head + changeSet + receipt + **fact** in one SQLite transaction.
-   The fact cannot exist without the mutation, or vice versa.
-3. *After* commit, `publishActivityFact(fact)` calls the injected publisher and, on success,
-   `store.markFactPublished(factId, now())`.
+1. `mutate()` builds a `DocumentCommittedTransaction` with a
+   `sourceTransactionId` allocated **with** the mutation.
+2. `commitMutation` writes head + changeSet + receipt + source **transaction** in one SQLite
+   transaction. The outbox transaction cannot exist without the mutation, or vice versa.
+3. *After* commit, `publishActivityTransaction(transaction)` calls the injected publisher
+   and, on success, `store.markTransactionPublished(sourceTransactionId, now())`.
 4. On failure it logs `document.activity.publish-failed` and **returns false** — the accepted
    command result is unchanged.
 
@@ -191,10 +192,11 @@ Document publishes to Activity via an outbox, not a direct call. The sequence:
  */
 ```
 
-The `factId` is stable across retries, so Activity's `publish()` is naturally idempotent —
-Activity's transaction table has `id TEXT PRIMARY KEY` plus a stored `transaction_digest`, and
-re-publishing the same ID with different content raises
-`ActivityTransactionConflictError`. That is the reason the fact carries Document's
+The `sourceTransactionId` is stable across retries and is passed as Activity's
+`idempotencyKey`. Activity derives the ledger ID as
+`act_<sha256(sourceTransactionId)>`; an equal retry returns that ledger row, while changed
+content under the same source key raises `ActivityTransactionConflictError`. That is the
+reason the source transaction carries Document's
 `sourceSemanticDigest` explicitly labelled *"The Document snapshot digest, not the Activity
 transaction digest"* — Activity computes its own.
 
@@ -256,5 +258,5 @@ answer would be grounded in evidence that no longer exists.
 | Stage orchestration | `document/application/documentService.ts` → `runStage`, `retryStageAction`, `markStale` |
 | Intent → queue mapping | `4-job-wiring/document/createDocumentJobs.ts` |
 | Store claim primitives | `document/ports/documentStore.ts` → `claimStage`, `completeStage`, `failStage`, `recoverInterruptedStages` |
-| Outbox schema + migration | `document/persistence/sqliteSchema.ts` → `activityOutbox`, `migrateActivityOutbox` |
+| Source transaction outbox schema | `document/persistence/sqliteSchema.ts` → `transactionOutbox` |
 | Derived Outputs refresh | `derived-outputs/derived-outputs.ts` → `refresh` (line ~724) and `store.ts` → `SettleRefreshInput` |

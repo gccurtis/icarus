@@ -17,8 +17,11 @@ queue, cache, or database server.
 
 The architecture's organising idea is a **numbered layer system** where the digit prefix on
 each directory encodes dependency direction, combined with **capability-owned everything** —
-each capability owns its domain types, its ports, its SQLite tables, and its own migration
-code, and reaches other capabilities only through narrow structural interfaces.
+each capability owns its domain types, its ports, and its typed current SQLite tables, and
+reaches other capabilities only through narrow structural interfaces. Revision-history DDL
+and maintenance helpers are shared utilities; capabilities still own their schemas and side
+effects. The current backend intentionally initializes only fresh schemas and carries no
+legacy-data migration path.
 
 ## Reading order
 
@@ -59,6 +62,12 @@ What has changed since:
   all.
 - **Context** collapsed to project-only scope, gained `union`/`difference` composition
   endpoints and a `private` flag.
+- **Resource deletion was standardised.** User-facing resources now keep live rows only in
+  typed current tables, archive superseded/deleted revisions in capability history tables,
+  and expose irreversible purge separately from logical delete. Document no longer has a
+  `trashed` lifecycle.
+- **Time-based revision retention was added.** A process-wide scheduler runs after HTTP bind,
+  purges expired deleted resources, and prunes old live-resource history.
 
 Treat the structural material — layers, queues, the attempt pipeline, conventions — as
 current; it still matches. Treat capability inventories, counts, and status claims as stale.

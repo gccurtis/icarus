@@ -109,13 +109,13 @@ Document is the clearest example. It declares four external ports:
 | `ports/documentStore.ts` | The full store contract Document owns | `SQLiteDocumentStore` |
 | `ports/derivedOutputs.ts` | 6 methods of `DerivedOutputService` | The real Derived Outputs service, passed as-is |
 | `ports/formulaResolver.ts` | **One** method: `buildSnapshot()` | `FormulaNameResolver` (which has 2 methods) |
-| `ports/activityPublisher.ts` | **One** method: `publish(fact)` | An adapter built in `1-init/create/document.ts` |
+| `ports/activityPublisher.ts` | **One** method: `publish(transaction)` | An adapter built in `1-init/create/document.ts` |
 
 `DocumentFormulaResolver` narrowing a 2-method interface to 1 is the pattern in miniature:
 Document states exactly what it consumes, and can be tested with a one-method double.
 
 The Activity port goes further — it is a *translation* seam. Document publishes its own
-`DocumentCommittedFact` (with Document's origin vocabulary: `interactive | agent |
+`DocumentCommittedTransaction` (with Document's origin vocabulary: `interactive | agent |
 automation`); the adapter in `1-init` maps that to Activity's `ActivityTransaction` (origin
 `user | agent | automation | system`, with `interactive → user`). Neither capability knows
 the other's vocabulary. Activity's own docs state this plainly: *"The Activity package
@@ -141,15 +141,16 @@ config → logger
   → derivedOutputs(knowledge, intelligence, resourceRegistry)
   → knowledge.onSourceMutation(→ derivedOutputs.recordKnowledgeSourceMutation)
   → app, scheduler, registry
-  → documentJobs / slideJobs (SchedulerInternalJobsRuntime)
+  → documentJobs (SchedulerInternalJobsRuntime)
   → document(…, documentJobs) → registerDocumentInternalJobs
-  → slide(…, slideJobs)       → registerSlideInternalJobs
-  → register*Endpoints × 8
-  → document.recoverPendingAttempts() / publishPendingActivity() / slide.recoverPendingAttempts()
+  → templates; bind every resource capability into ResourceRetentionScheduler
+  → register*Endpoints
+  → recover pending Document attempts and pending Document/Comment/Template transactions
   → syncScheduler = new ConnectorSyncScheduler(...)
   → registerHttpTransport(app, …)
   → await app.listen(...)
-  → syncScheduler.start()        ← only AFTER listen succeeds
+  → await retentionScheduler.start()   ← immediate sweep, then recurring timer
+  → syncScheduler.start()              ← only AFTER listen succeeds
 ```
 
 Two comments in that file explain non-obvious ordering decisions, and both are worth
@@ -157,10 +158,13 @@ preserving:
 
 - Activity is built first *"before resource integrations eventually publish their accepted
   transactions into it"*.
-- `syncScheduler.start()` is deliberately after `app.listen`: *"Otherwise a listen failure
-  would leave interval timers keeping the failed startup process alive."* There is a
-  source-scanning regression test asserting the `syncScheduler.start()` call appears after
+- Both recurring schedulers are deliberately after `app.listen`: *"Otherwise a listen
+  failure would leave interval timers keeping the failed startup process alive."* Retention
+  performs its first sweep there, before it arms the next interval. There is a source-scanning
+  regression test asserting the Connector `syncScheduler.start()` call appears after
   `await app.listen` in the file text.
+- Shutdown stops Connector sync and awaits `retentionScheduler.stop()` before closing the
+  application and logger, so no maintenance timer survives teardown.
 
 ### The mutable-during-composition escape hatch
 
