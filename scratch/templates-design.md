@@ -185,7 +185,27 @@ A Template has no independent content revision. The backing resource's
 revision is authoritative. Editing the backing resource does not create a new
 Template record or change its ID.
 
-## Resource adapter registry
+## Resource runtime registry
+
+> **Reworked 2026-08-02 — the relationship is inverted.** Templates no longer
+> receives a hand-written translation adapter per kind. It receives the
+> **resource capability's own runtime object**, and drives it. See
+> [`templates-rework-plan.md`](templates-rework-plan.md) for the migration.
+>
+> The four changes:
+>
+> 1. **Templates owns the whole procedure.** A caller gives it `{ kind,
+>    resourceId }`; Templates maps the kind to a runtime and takes it from there.
+> 2. **`duplicate` replaces `createTemplateCopy`/`instantiateTemplate`.** It is a
+>    pure copy with no template awareness and no bindings applied — new ID, same
+>    content, new Derived Outputs with the same prompts, Context Variables copied
+>    exactly as the source holds them.
+> 3. **The resource allocates the new ID and returns it.** Templates stores it.
+> 4. **Templates passes commands through** to the sealed resource. That is how
+>    bindings get applied and how a template is edited.
+>
+> The old `TemplateResourceAdapter`, its `void` returns, and the
+> caller-supplied `templateId`/`destinationResourceId` below are superseded.
 
 Templates is generic because startup injects one adapter per supported kind:
 
