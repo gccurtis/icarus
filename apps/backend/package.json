@@ -94,6 +94,36 @@
       "types": "./src/3-capabilities/activity/*",
       "default": "./dist/3-capabilities/activity/*"
     },
+    "#persona": {
+      "development": "./src/3-capabilities/persona/index.ts",
+      "types": "./src/3-capabilities/persona/index.ts",
+      "default": "./dist/3-capabilities/persona/index.js"
+    },
+    "#persona/*": {
+      "development": "./src/3-capabilities/persona/*",
+      "types": "./src/3-capabilities/persona/*",
+      "default": "./dist/3-capabilities/persona/*"
+    },
+    "#comments": {
+      "development": "./src/3-capabilities/comments/index.ts",
+      "types": "./src/3-capabilities/comments/index.ts",
+      "default": "./dist/3-capabilities/comments/index.js"
+    },
+    "#comments/*": {
+      "development": "./src/3-capabilities/comments/*",
+      "types": "./src/3-capabilities/comments/*",
+      "default": "./dist/3-capabilities/comments/*"
+    },
+    "#templates": {
+      "development": "./src/3-capabilities/templates/index.ts",
+      "types": "./src/3-capabilities/templates/index.ts",
+      "default": "./dist/3-capabilities/templates/index.js"
+    },
+    "#templates/*": {
+      "development": "./src/3-capabilities/templates/*",
+      "types": "./src/3-capabilities/templates/*",
+      "default": "./dist/3-capabilities/templates/*"
+    },
     "#document": {
       "development": "./src/3-capabilities/document/index.ts",
       "types": "./src/3-capabilities/document/index.ts",

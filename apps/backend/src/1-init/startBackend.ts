@@ -7,6 +7,7 @@ import { createStructuredDataInstance } from "#init/create/structured-data.js";
 import { createFormulaNameResolver } from "#init/create/formula-name-resolver.js";
 import { createRichTextInstance } from "#init/create/rich-text.js";
 import { createContextManagerInstance } from "#init/create/context.js";
+import { createPersonaInstance } from "#init/create/persona.js";
 import { createLogger } from "#init/create/logger.js";
 import { createScheduler } from "#init/create/scheduler.js";
 import { createRegistry } from "#init/create/registry.js";
@@ -22,18 +23,22 @@ import { createConnectorInstance } from "#init/create/connector.js";
 import { ConnectorSyncScheduler } from "#init/create/connectorSyncScheduler.js";
 import { createResourceReader } from "#init/create/resource-reader.js";
 import { createDocumentInstance } from "#init/create/document.js";
-import { createSlideInstance } from "#init/create/slide.js";
 import { createActivityInstance } from "#init/create/activity.js";
+import { createCommentsInstance } from "#init/create/comments.js";
 import { createInvestigationRuntimeInstance } from "#init/create/investigation.js";
+import {
+  createTemplateAdapterRegistry,
+  createTemplatesInstance
+} from "#init/create/templates.js";
 import { SchedulerInternalJobsRuntime } from "#utils/jobs/internalRuntime.js";
 import type { DocumentInternalJobIntent } from "#document";
-import type { SlideInternalJobIntent } from "#capabilities/slide/index.js";
 import { registerDocumentEndpoints } from "#job-wiring/document/registerDocumentEndpoints.js";
 import { registerDocumentInternalJobs } from "#job-wiring/document/registerDocumentInternalJobs.js";
-import { registerSlideEndpoints } from "#job-wiring/slide/registerSlideEndpoints.js";
-import { registerSlideInternalJobs } from "#job-wiring/slide/registerSlideInternalJobs.js";
 import { registerActivityEndpoints } from "#job-wiring/activity/registerActivityEndpoints.js";
+import { registerCommentEndpoints } from "#job-wiring/comments/registerCommentEndpoints.js";
+import { registerPersonaEndpoints } from "#job-wiring/persona/registerPersonaEndpoints.js";
 import { registerInvestigationEndpoints } from "#job-wiring/investigation/registerInvestigationEndpoints.js";
+import { registerTemplateEndpoints } from "#job-wiring/templates/registerTemplateEndpoints.js";
 
 export const startBackend = async (): Promise<void> => {
   const config = await createConfig();
@@ -42,13 +47,17 @@ export const startBackend = async (): Promise<void> => {
   try {
     // Activity has no resource dependency and is created before resource
     // integrations eventually publish their accepted transactions into it.
-    const activity = createActivityInstance(config);
+    const activity = createActivityInstance(config, logger);
+    const comments = createCommentsInstance(config, activity, logger);
     const intelligence = createIntelligence(config, logger);
     // The registry is composed before Knowledge and populated once concrete
     // resource capabilities exist. It resolves Context leaves to source IDs and
     // supplies the same trusted identities to Derived Output tools.
     const contextManager = createContextManagerInstance(config, logger);
     const resourceRegistry = createResourceReader(contextManager, logger);
+    // Persona's only dependency is Context, which it uses to manage the private
+    // wrapper record it owns per persona.
+    const personas = createPersonaInstance(config, contextManager, logger);
     const knowledge = createKnowledge(
       config.projectId,
       intelligence,
@@ -86,7 +95,6 @@ export const startBackend = async (): Promise<void> => {
     const scheduler = createScheduler(config, logger);
     const registry = createRegistry(scheduler);
     const documentJobs = new SchedulerInternalJobsRuntime<DocumentInternalJobIntent>(scheduler);
-    const slideJobs = new SchedulerInternalJobsRuntime<SlideInternalJobIntent>(scheduler);
     const document = createDocumentInstance(
       config,
       richText,
@@ -98,14 +106,12 @@ export const startBackend = async (): Promise<void> => {
       logger
     );
     registerDocumentInternalJobs(documentJobs, document);
-    const slide = createSlideInstance(
-      config,
-      richText,
-      derivedOutputs,
-      slideJobs,
-      logger
-    );
-    registerSlideInternalJobs(slideJobs, slide);
+    // Templates is constructed after the resource capabilities so adapters can
+    // be registered into it without a constructor cycle. The registry is empty
+    // until a resource kind supplies an adapter; until then the three mutating
+    // commands answer unsupported_kind and the catalog queries still work.
+    const templateAdapters = createTemplateAdapterRegistry();
+    const templates = createTemplatesInstance(config, templateAdapters, activity, logger);
 
     logger.info("Backend starting", {
       host: config.server.host,
@@ -128,8 +134,10 @@ export const startBackend = async (): Promise<void> => {
       resourceRegistryReady: Boolean(resourceRegistry),
       derivedOutputsReady: Boolean(derivedOutputs),
       activityReady: Boolean(activity),
+      commentsReady: Boolean(comments),
+      personaReady: Boolean(personas),
       documentReady: Boolean(document),
-      slideReady: Boolean(slide)
+      templatesReady: Boolean(templates)
     });
 
     registerStructuredDataEndpoints(registry, structuredData, formula, formulaResolver, logger);
@@ -138,16 +146,20 @@ export const startBackend = async (): Promise<void> => {
     registerGeneralFileEndpoints(registry, generalFiles, logger);
     registerConnectorEndpoints(registry, connector, logger);
     registerActivityEndpoints(registry, activity, logger);
+    registerCommentEndpoints(registry, comments, logger);
+    registerPersonaEndpoints(registry, personas, logger);
     registerInvestigationEndpoints(registry, investigation, logger);
     registerDocumentEndpoints(registry, document, logger);
-    registerSlideEndpoints(registry, slide, logger);
+    registerTemplateEndpoints(registry, templates, logger);
 
     const recoveredDocumentAttempts = await document.recoverPendingAttempts();
     logger.info("document.attempts.recovered", { count: recoveredDocumentAttempts });
     const recoveredDocumentActivity = await document.publishPendingActivity();
     logger.info("document.activity.recovered", { count: recoveredDocumentActivity });
-    const recoveredSlideAttempts = await slide.recoverPendingAttempts();
-    logger.info("slide.attempts.recovered", { count: recoveredSlideAttempts });
+    const recoveredCommentActivity = await comments.publishPendingActivity();
+    logger.info("comments.activity.recovered", { count: recoveredCommentActivity });
+    const recoveredTemplateActivity = await templates.publishPendingActivity();
+    logger.info("templates.activity.recovered", { count: recoveredTemplateActivity });
 
     const syncScheduler = new ConnectorSyncScheduler(
       connectorStore,
