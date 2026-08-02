@@ -22,6 +22,9 @@ Consolidates and replaces `resource-id-allocation.md`, `delegated-command-claims
 | 12 | [Activity ID allocation — doc drift](#12--activity-id-allocation--doc-drift) | ✅ **DONE 2026-08-02** |
 | 13 | [Deletion as a revision, not a flag](#13--deletion-as-a-revision-not-a-flag) | ✅ **DONE 2026-08-02** |
 | 14 | [Document deletion](#14--document-deletion) | ✅ **DONE 2026-08-02** |
+| 15 | [Live project-scoped Context](#15--live-project-scoped-context) | agreed — needed for exclusions |
+| 16 | [Garbage collection for orphaned resources](#16--garbage-collection-for-orphaned-resources) | agreed — explore |
+| ~~17~~ | Remove command claims from Templates | **moved** → [`templates-rework-plan.md`](templates-rework-plan.md) step 1 |
 | R | [Reference: delegated command claims](#reference--delegated-command-claims-removed-2026-08-02) | ✅ **REMOVED 2026-08-02** |
 
 Items 7–10 correct Templates, which is **already implemented and green** (254 tests). They
@@ -828,6 +831,78 @@ ledger deduplication are not subject to resource-retention policy.
 The retention sweep anchors a Base at the earliest retained Document revision before pruning
 older Bases, Change Sets, and head envelopes. This preserves reconstruction for every retained
 revision of both live and logically deleted Documents.
+
+---
+
+## 15 · Live project-scoped Context
+
+**Needed, not yet possible.** A caller must be able to express *"the whole project, less
+these five resources"* and have it stay correct as the project changes. Today
+`composeNamed("difference", …)` materialises a static entry set at compose time, so such a
+context is stale the moment anything is added to the project.
+
+The blocker is that a `ContextRecord` holds a **set**, not a **rule**. Both halves have to
+become resolve-time:
+
+```ts
+interface ContextRecord {
+  // …existing fields…
+  entries: ContextEntry[];      // may include { kind: "project" }
+  excludes?: ContextEntry[];    // new
+}
+```
+
+- whole project → `entries: [{ kind: "project", id: "*" }]`
+- whole project less five → the same plus `excludes: [ …five… ]`
+- three sources less one → `entries: [ …three… ], excludes: [ …one… ]`
+
+`resolve()` expands `entries` (recursing into contexts, expanding `project` to every current
+source), then subtracts the expanded `excludes`. Live by construction, because neither side
+is materialised at write time.
+
+Knock-on effects worth deciding with it:
+
+- **Knowledge's implicit rule.** `resolveScope` already treats a zero-length entry array as
+  whole-project retrieval. A `{ kind: "project" }` sentinel gives that an explicit spelling,
+  and the implicit rule could then be retired rather than kept as a second way to say the
+  same thing.
+- **Blast radius.** Store, wire, `resolve`, `composeNamed`, and every consumer of `entries`
+  — Knowledge, Derived Outputs, Persona, and Document's context variables.
+- **Cycle safety.** `project` cannot contain itself, but a context excluded from another
+  context still needs the existing `seen` guard and depth bound.
+
+Needed by Document's context variables (see
+[`document-changes-design.md`](document-changes-design.md)) only for exclusions; direct and
+single-context bindings work without it.
+
+---
+
+## 16 · Garbage collection for orphaned resources
+
+**Explore.** Two known leaks, both of the same shape: a resource that was created for an
+owner that never came into existence, or that outlived it. Neither is reachable by any
+query, so neither is currently recoverable.
+
+**16a · Template-mode Documents with no catalog row.** Registration creates the backing
+Document first and writes the Templates catalog row second. A crash in between leaves an
+`isTemplate` Document that no `TemplateRecord.resourceId` points at. It is invisible —
+`document.list` excludes template-mode rows and `document.listTemplates` would show it with
+no way to act on it.
+
+**16b · Derived Outputs with no Prompt Block.** An output declared for a Prompt Block whose
+creation then failed, or whose Document was copied and the copy abandoned. Document already
+tracks `prompt_outputs` ownership with a `detached` state and has a partial index for it, so
+this is partly modelled already — what is missing is the sweep that acts on it, and the
+cross-check against outputs that were never registered as owned at all.
+
+Shape, if pursued: an interval job in the style of `ConnectorSyncScheduler` — the one
+existing recurring-work precedent — enqueuing an ordinary Job rather than doing work on the
+timer. It must be **conservative**: only reap rows older than a grace period, and only when
+the owner's absence is positive rather than merely unobserved, since a sweep racing a
+half-finished create would delete live state.
+
+Both leaks are benign today (invisible rows, no correctness impact), which is why this is
+exploration rather than a fix.
 
 ---
 
