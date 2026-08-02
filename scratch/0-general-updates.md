@@ -9,21 +9,22 @@ Consolidates and replaces `resource-id-allocation.md`, `delegated-command-claims
 | # | Item | Status |
 |---|---|---|
 | 1 | [Delete Slide](#1--delete-slide) | ✅ **DONE 2026-08-01** |
-| 2 | [Resource IDs should be allocated, not caller-supplied](#2--resource-ids-should-be-allocated-not-caller-supplied) | agreed, not scheduled |
-| 3 | [Logging architecture doc](#3--logging-architecture-doc) | agreed |
-| 4 | [Logging coverage — measured](#4--logging-coverage--measured) | agreed |
-| 5 | [Persona ↔ Context partial-write gap](#5--persona--context-partial-write-gap) | documenting only, not fixing |
-| 6 | [`ContextValidationError`](#6--contextvalidationerror) | minor |
-| 7 | [Context bindings belong on the Template record](#7--context-bindings-belong-on-the-template-record) | agreed — corrects shipped code |
-| 8 | [Remove `maxTemplatesPerProject`](#8--remove-maxtemplatesperproject) | agreed — corrects shipped code |
-| 9 | [Per-command `origin`](#9--per-command-origin) | agreed for Templates; open for the rest |
-| 10 | [Templates dead code and naming](#10--templates-dead-code-and-naming) | agreed — corrects shipped code |
-| 11 | [Context tombstones reach callers](#11--context-tombstones-reach-callers) | agreed |
-| 12 | [Activity ID allocation — doc drift](#12--activity-id-allocation--doc-drift) | agreed, docs only |
-| 13 | [Deletion as a revision, not a flag](#13--deletion-as-a-revision-not-a-flag) | open question |
-| R | [Reference: delegated command claims](#reference--delegated-command-claims) | research, no action |
+| 2 | [Resource IDs should be allocated, not caller-supplied](#2--resource-ids-should-be-allocated-not-caller-supplied) | ✅ **DONE 2026-08-02** |
+| 3 | [Logging architecture doc](#3--logging-architecture-doc) | ✅ **DONE 2026-08-02** |
+| 4 | [Logging coverage — measured](#4--logging-coverage--measured) | ✅ **DONE 2026-08-02** |
+| 5 | [Persona ↔ Context partial-write gap](#5--persona--context-partial-write-gap) | ✅ **DONE 2026-08-02** |
+| 6 | [`ContextValidationError`](#6--contextvalidationerror) | ✅ **DONE 2026-08-02** |
+| 7 | [Context bindings belong on the Template record](#7--context-bindings-belong-on-the-template-record) | ✅ **DONE 2026-08-02** |
+| 8 | [Remove `maxTemplatesPerProject`](#8--remove-maxtemplatesperproject) | ✅ **DONE 2026-08-02** |
+| 9 | [Per-command `origin`](#9--per-command-origin) | ✅ **DONE 2026-08-02** |
+| 10 | [Templates dead code and naming](#10--templates-dead-code-and-naming) | ✅ **DONE 2026-08-02** |
+| 11 | [Context tombstones reach callers](#11--context-tombstones-reach-callers) | ✅ **DONE 2026-08-02** |
+| 12 | [Activity ID allocation — doc drift](#12--activity-id-allocation--doc-drift) | ✅ **DONE 2026-08-02** |
+| 13 | [Deletion as a revision, not a flag](#13--deletion-as-a-revision-not-a-flag) | ✅ **DONE 2026-08-02** |
+| 14 | [Document deletion](#14--document-deletion) | ✅ **DONE 2026-08-02** |
+| R | [Reference: delegated command claims](#reference--delegated-command-claims-removed-2026-08-02) | ✅ **REMOVED 2026-08-02** |
 
-Items 7–10 correct Templates, which is **already implemented and green** (258 tests). They
+Items 7–10 correct Templates, which is **already implemented and green** (254 tests). They
 are fixes to shipped code, not new build-out.
 
 ---
@@ -85,7 +86,58 @@ gate runs `pnpm test` is still worth doing**, and is now the more valuable half.
 
 ## 2 · Resource IDs should be allocated, not caller-supplied
 
-*Raised 2026-08-01 while designing Templates. Audit re-confirmed 2026-08-01.*
+✅ **DONE 2026-08-02.** `document.create` now allocates its id. Kept for the record and for
+the open items at the end, which remain genuinely open.
+
+**The rule, as settled:** when we create something, the caller does not supply the id for the
+thing being created. The backend allocates it and returns it. This does **not** apply to
+commands that take an id to *address* something that already exists.
+
+**Full review, verified against source.** Every capability's create path:
+
+| Capability | ID origin | Verdict |
+|---|---|---|
+| ~~document~~ | ~~caller-supplied~~ → **allocated** | **fixed** |
+| comments, persona, context, structured-data, derived-outputs, investigation, templates | allocated (`randomUUID`) | already correct |
+| general-files | `sha256(content)` | derived — deliberate |
+| connector | `sha256(kind::locator)` | derived — deliberate |
+| activity | `act_<sha256(idempotencyKey)>` | derived — deliberate |
+
+The derived cases are principled, not violations: identity *is* the input, which is what
+makes re-uploading the same bytes or re-registering the same locator idempotent.
+
+**What landed:**
+
+- `document.create` drops `documentId`; the service allocates `randomUUID()`.
+  `document.created` already carried `head.id`, so no result-shape change.
+- New `doc_<prefix>_create_receipts` table keyed on `request_id` alone, written in the same
+  transaction as the document-keyed receipt. The former makes create replayable; the latter
+  keeps the request-id reuse guard working for later commands on that document.
+
+  **Corrected while implementing deletion (item 14).** This table originally had no foreign
+  key, on the reasoning that a create receipt "must outlive its document, or deleting one
+  would let an old request id recreate it." That was backwards. If the receipt survives,
+  replaying the original create returns a head for a document that no longer exists and
+  every subsequent load 404s — the caller is handed a dangling reference. Recreating is the
+  coherent outcome. It now carries `document_id` purely so it can `ON DELETE CASCADE`;
+  lookup is still by `request_id` (the primary key), so replay is unaffected.
+- `DocumentAlreadyExistsError`, its single throw site, and its `409 already_exists` branch
+  were removed — unreachable once the id is a fresh UUID.
+- `assertDelegatedRequestReuse` now short-circuits for creates, which name no document.
+- 4 new tests; 236 pass, typecheck clean.
+
+**No external consumers.** The smoke script does not exercise documents, and
+`apps/frontend`'s only `document` reference is `document.querySelector`. The earlier claim
+here that "the smoke script hand-picks document IDs" was wrong.
+
+**Receipt, not claim.** Templates uses a claim that reserves the id *before* the write,
+because it then calls an external adapter and a crash mid-call must resume with the same id.
+`document.create` has no external side effect — one `commitCreation` — so a crash before
+commit writes nothing and a retry allocating a fresh id is harmless. The open item below
+asked which shape was right; this is the answer for Document specifically.
+
+<details>
+<summary>Original write-up, retained for the reasoning</summary>
 
 ### The decision
 
@@ -208,33 +260,46 @@ Reasonable order:
 item #1** — Slide was deleted rather than finished, so that half of the work disappeared
 instead of waiting.
 
-### Open items
+</details>
 
-- **Claim or receipt?** The two candidate shapes are not equivalent and the choice is
-  unmade. A `template_command_claims`-style **claim** reserves the allocated ID *before* the
-  write, so a crash between allocation and commit is resumable with the same ID. A
-  Comments-style `request_id PRIMARY KEY` **receipt** only helps once the write committed —
-  a crash before it means the retry allocates a fresh ID and orphans nothing, which may be
-  perfectly fine for a create. Decide which failure actually matters here before building.
-- **Structural IDs — genuinely unanswered.** See the complication above. It may well end at
-  "leave them caller-supplied", which is defensible, but nobody has decided.
-- **Existing documents keep their caller-supplied IDs.** IDs are opaque, so no migration is
-  needed — but confirm nothing assumes a format.
-- **Check the frontend.** `apps/frontend` was never read during this audit. If it generates
-  document IDs, this is a breaking client change, not just a backend one.
+### Open items — still open after the Document fix
+
+- **Structural IDs stay caller-supplied, by decision.** `block.insert` carries the block's
+  own `id`, plus style, row, list, table, atom, and mark ids. These name content *within* an
+  aggregate, are scoped by `(documentId, id)`, and the identity ledger already forbids
+  reuse. They also enable a real capability: a client composes a batch offline that inserts
+  a block and then references it in the same submission. Server allocation breaks that
+  without a placeholder-rewriting scheme nobody has designed.
+
+  **This boundary should move into `08-conventions.md`** — "resource/aggregate-root ids are
+  allocated; structural ids inside an aggregate are not" — or it will be re-litigated.
+
+- **`template.instantiate`'s `destinationResourceId` — deferred, not resolved.** Excluded
+  from this change by decision. Worth confirming when the first `TemplateResourceAdapter` is
+  written: the port is documented as *"copies a template-mode resource into a normal
+  resource"* and *"can only have produced the resource it was told to produce"*, which reads
+  as the adapter **creating** the destination. If it does, the rule applies to it.
+
+  Timing matters. `TemplateResourceAdapter` has **zero implementations today** — nothing
+  calls `registry.register()` — and its `Promise<void>` return is justified *by* the
+  caller-supplied id. Changing it to return the allocated id is free right now and becomes a
+  breaking change the moment an adapter exists.
+
+- **Existing documents keep their caller-supplied ids.** Ids are opaque, so no migration was
+  needed. Nothing was found that assumes a format, but that was not exhaustively proven.
 
 ---
 
 ## 3 · Logging architecture doc
 
-New page, `docs/runtime/logging.md`, alongside `dual-queue.md` and
-`repository-boundaries.md`; link from `docs/architecture.md`.
+✅ **DONE 2026-08-02.** Kept for the record; nothing left to do.
 
-Distinct from `docs/platform/observability.md`, which documents the Logger *component*. This
-page states the *practice* — and should say so in a line, to avoid becoming a fourth place
-for the same content to drift.
+Landed as a new "Logging practice" section in **`docs/platform/observability.md`**, not a
+separate `docs/runtime/logging.md` — decided during implementation that one page beats a
+fourth place for this content to drift, since the existing doc already covers the Logger
+*component*. The section says so explicitly, to head off any future split.
 
-Content, drawn from what the codebase already does:
+Content, matching what is proposed below and what the codebase already does:
 
 - **The expectation.** Every capability logs every accepted mutation, every rejected command,
   every query, its construction, and its endpoint registration. Observability is not optional
@@ -253,29 +318,34 @@ Content, drawn from what the codebase already does:
 - **Never `console.*`** — there is a test enforcing it.
 - Point at `CapturingLogger` and the `runtime-wiring.test.ts` greps as the way to
   regression-test a logging rule.
+- The buffered-writer change (below) is documented in the same section, so "log as much as
+  this asks for" and "logging is cheap" are no longer in tension in the reader's mind.
 
-### Open items
+**The checklist is advisory, not enforced.** Decided during implementation: no
+source-scanning test gates on these events existing. New capabilities are expected to follow
+the practice deliberately rather than because CI demands it.
 
-- **The writer is synchronous, and this doc tells everyone to write more.**
-  `1-init/create/logger.ts` does `appendFileSync` per entry — one blocking write per event,
-  on the request path. "Log as much as possible" and "every log line is a synchronous disk
-  write" are in direct tension, and the doc should not pretend otherwise. Either it says
-  buffering is a prerequisite for the denser logging in item 4, or it states the cost
-  explicitly. This is already listed as known gap #10 in `09-verified-status.md`; item 4 is
-  what turns it from theoretical into load-bearing.
-- **Where it lives.** `docs/runtime/logging.md` is proposed on the grounds that it is a
-  cross-capability rule, like `dual-queue.md`. The counter-argument is that it belongs beside
-  `docs/platform/observability.md`. Pick one and link the other.
-- **Enforceable or advisory?** A required-events checklist (`.runtime.created`,
-  `.command.completed`, `.command.failed`, …) could be a source-scanning test in the
-  `runtime-wiring.test.ts` style. That turns the doc into a gate rather than a suggestion —
-  but it also makes every new capability fail CI until it logs. Worth deciding deliberately.
+**The synchronous-writer question is resolved, not just documented.** The original open item
+asked whether the doc should merely acknowledge the `appendFileSync`-per-entry cost or whether
+buffering was a prerequisite for item 4's denser logging. The decision was to fix it:
+`1-init/create/logger.ts` now writes through a per-day `fs.createWriteStream` instead of one
+blocking write per entry, `Logger` gained an optional `close(): Promise<void>` for shutdown
+draining, and `startBackend.ts` gained a `SIGTERM`/`SIGINT` handler that calls it — none of
+which existed before. See `apps/backend/test/capabilities/observability.test.ts` for the
+regression coverage (buffered writes still produce one-JSON-object-per-line output; level
+filtering; `close()` drains pending writes; a disabled logger's `close()` is a safe no-op).
 
 ---
 
 ## 4 · Logging coverage — measured
 
-Distinct log events vs. source lines, excluding `docs/`:
+✅ **DONE 2026-08-02.** Persona, Templates, and Document all received the missing events
+identified below, in that order (cheapest/safest first, per the original suggested
+sequencing). Document's attempt-lifecycle events log at `info` for every state — no
+debug/info split — a deliberate simplification decided during implementation over the
+original "debug intermediate, info terminal" suggestion.
+
+**Before** (unchanged from the original measurement):
 
 | Capability | Events | Lines | Per 1k lines | |
 |---|---:|---:|---:|---|
@@ -292,98 +362,163 @@ Distinct log events vs. source lines, excluding `docs/`:
 | **document** | **7** | **8,416** | **0.8** | **worst** |
 | slide | 0 | 7,017 | — | being deleted |
 
-**Activity needs no work** — it was flagged as a candidate, but the numbers say it is one of
-the two best-logged capabilities in the tree, with full lifecycle coverage
-(`transaction.accepted`, `.read`, `.listed`, `.publish.failed`, the whole presence lifecycle,
-`runtime.created`).
+**After** (whole-capability-directory counts, same methodology, re-measured 2026-08-02):
 
-### 4a · Document — the real gap
+| Capability | Events | Lines | Per 1k lines |
+|---|---:|---:|---:|
+| **persona** | **15** | **1,424** | **10.5** |
+| **templates** | **7** | **1,305** | **5.4** |
+| **document** | **23** | **8,594** | **2.7** |
 
-7 events across 8,416 lines, and **6 of the 7 are failure paths**:
+Persona moved from the thinnest tier to comfortably mid-pack. Templates more than caught up
+with its own prior baseline. Document is still the smallest ratio of the three — expected,
+since it is by far the largest and most domain-heavy file — but it went from "invisible
+unless failing" (6 of 7 events were failure paths) to a full lifecycle: every query now logs,
+and every attempt now logs `requested`, `computing`, `proposed`, `settled`, `unchanged`,
+`stale`, and `failed`, plus compaction and recovery counts.
 
-```text
-document.command                              ← the only happy-path event
-document.activity.publish-failed
-document.internal-job.dispatch-pending
-document.internal-job.dispatch-recovered
-document.internal-stage.completion-pending
-document.internal-stage.failure-record-pending
-document.internal-stage.retrying
-```
+**Activity needed no work**, confirmed again — still one of the best-logged capabilities in
+the tree.
 
-So the most complex runtime in the codebase — the freeze → compute → settle attempt pipeline
-— **is invisible unless it is failing.** Missing: any query logging, the attempt lifecycle
-(`requested → computing → proposed → settled`, and the `stale`/`unchanged`/`failed` terminal
-branches), compaction, and per-capability recovery counts.
+### 4a · Document — closed
 
-### 4b · Persona
+All previously-missing events now exist in `documentService.ts`:
 
-4 events (`create`, `update`, `delete`, `resolve`). Missing: queries (`get`, `getByName`,
-`list`, `render`), command/query dispatch, `runtime.created`, built-in-vs-named resolution,
-and — most importantly — **`persona.wrapper.declared` / `.updated` / `.deleted`**. Those are
-the cross-capability Context writes at the centre of item #5's failure mode, and they are
-currently completely invisible.
+- `document.query.completed` — wraps all four query branches (`document.list`,
+  `document.load`, `document.history`, `document.attempt`).
+- `document.attempt.requested` — logged after the attempt row commits, in each of
+  `requestPromptCreation`, `requestPromptRefresh`, `requestFormulaEvaluation`.
+- `document.attempt.computing` — logged once, at the single "start" transition inside the
+  shared `runStage()` helper, covering all three attempt kinds.
+- `document.attempt.proposed` — logged in each `compute*` method at its `state: "proposed"`
+  transition.
+- `document.attempt.unchanged` — logged in `computePromptRefresh`'s no-op branch.
+- `document.attempt.settled` — logged once, inside `mutate()`, when a `settleAttempt` commits.
+- `document.attempt.stale` — logged once, inside the shared `markStale()` helper.
+- `document.attempt.failed` — logged both at `computePromptCreation`'s
+  `initial_refresh_failed` branch and at `runStage()`'s generic catch block.
+- `document.compaction.completed` / `.skipped` — added to `compact()`.
+- `document.recovery.completed` — added to `recoverPendingAttempts()`, in addition to the
+  aggregate count `startBackend.ts` already logged at the call site.
 
-Also update `persona/docs/runtime.md` (says "Reads are not logged at all") and
-`scratch/persona-design.md` (flags three events as NOT implemented) once this lands.
+Verified end-to-end in `document-application.test.ts` → "the attempt lifecycle is logged
+end-to-end for prompt creation and refresh", which asserts the exact event sequence for one
+attempt (`requested → computing → proposed → settled`) and confirms query logging fires.
 
-### 4c · Templates
+### 4b · Persona — closed, including the wrapper gap
 
-4 events, 3 of them happy-path mutations. No query logging, no failure logging beyond
-`activity.publish-failed`.
+All four previously-missing pieces now exist in `personaService.ts`:
 
-### Open items
+- `persona.runtime.created` — logged once, in the `createPersonaCapability` factory.
+- `persona.command` / `persona.query.completed` — dispatch-level logging for every command
+  and every query (`get`, `getByName`, `list`, `render`), replacing the prior silence on
+  reads.
+- `isBuiltIn` field added to the existing `persona.resolve` log, covering
+  built-in-vs-named resolution.
+- **`persona.wrapper.declared` / `.updated` / `.deleted`** — logged at all three call sites
+  (`create`'s initial declare, and `reconcileWrapper`'s declare/update/delete branches, plus
+  `delete`'s wrapper teardown). These are the cross-capability Context writes at the centre
+  of item #5's failure mode; item #5's actual gap is unchanged, but a partial write is now at
+  least observable in the log, which item #5's own open items flagged as the cheapest real
+  mitigation available.
 
-- **Events-per-1k-lines is a crude proxy and Document is the case where it misleads most.**
-  Of Document's 8,416 lines, a large share is pure domain — reducer, validation, rebase,
-  identities — which *should not* log at all. Re-measuring against application-layer lines
-  only would give a fairer picture and might move Document out of last place. The
-  qualitative finding stands regardless: 6 of its 7 events are failure paths, so the happy
-  path really is invisible.
-- **Depends on item 3's synchronous-writer question.** Adding attempt-lifecycle logging to
-  Document means several events per attempt, each a blocking `appendFileSync`. Densifying
-  the busiest capability is exactly where that cost lands. Sequence accordingly.
-- **Order of work.** Persona is smallest and safest and is the one with a known blind spot
-  (`wrapper.*`). Document is worst but biggest and riskiest. Templates is small. Suggest
-  Persona → Templates → Document, so the pattern is settled on cheap capabilities before
-  touching the attempt pipeline.
-- **Does the attempt lifecycle need level gating?** `requested → computing → proposed →
-  settled` per attempt at `info` could flood the log under load. `debug` may be right for
-  the intermediate states with `info` only at terminal ones.
+`persona/docs/runtime.md` and `scratch/persona-design.md` are both updated to match — the
+former's "Reads are not logged at all" line is gone, the latter's three "NOT implemented"
+lines are replaced with the shipped shape.
+
+### 4c · Templates — closed
+
+`templateService.ts` gained:
+
+- `templates.query.completed` — both `template.get` and the list branch.
+- `templates.command.failed` — wraps the `execute()` call inside `command()`; a thrown error
+  is logged with `commandType`/`requestId`/`errorName`/`errorMessage` and rethrown unchanged.
+
+### Resolved open items
+
+- **Events-per-1k-lines as a crude proxy for Document.** Not re-derived against
+  application-layer-only line counts — the whole-directory number is reported above for
+  consistency with the other two capabilities and with the original table. The qualitative
+  finding (happy path was invisible) is what changed, not the ratio's precision.
+- **The synchronous-writer dependency** is resolved — see item 3. Document's dense
+  attempt-lifecycle logging now writes through the buffered stream, not a blocking
+  `appendFileSync` per event.
+- **Order of work** — followed as suggested: Persona → Templates → Document.
+- **Level gating for the attempt lifecycle** — decided against. Every state logs at `info`.
+  The original concern (flooding under load) was judged less important than having a
+  uniform, greppable level for the entire lifecycle; revisit if volume becomes a real
+  problem.
 
 ---
 
 ## 5 · Persona ↔ Context partial-write gap
 
-**Agreed approach: leave it, document it in comments.** Not scheduled as a fix.
+✅ **DONE 2026-08-02.** Solved structurally, not by self-heal-after-the-fact.
 
 Persona writes to `contexts.db` (the private wrapper) and then to `personas.db`, with no
 transaction spanning the two. If the first commits and the second does not, the two disagree.
 Crash-only today, since all Persona commands run on the serial queue and no in-process caller
 mutates Persona.
 
-Action: comments at the three call sites in `personaService.ts`, and correct the
-"Non-guarantees" section of `persona/docs/invariants.md`, which currently describes only the
-`create` case.
+**What shipped.** An initial `getByName`-based self-heal design was implemented and then
+discarded: it detected a stale wrapper pointer after the fact, but didn't actually prevent
+`update()`'s CAS race from being lost in the first place. The shipped design instead reorders
+each method so a lost race can, at worst, leave one harmless orphaned private wrapper — never a
+persona record whose wrapper pointer is stale or missing:
 
-### Open items
+- **`create`** is unchanged: it declares the wrapper, then inserts the row. A failed insert
+  orphans the wrapper; there is no row yet to reconcile against, so the caller just retries.
+  This gap remains accepted as unfixable at this point in the sequence.
+- **`update`** never mutates an existing wrapper in place. When the context reference changes,
+  it always `declare()`s a **brand-new** wrapper first — which always starts at revision 1, so
+  it can never itself go stale — then CAS-writes the persona row to point at it. If that CAS is
+  lost, the freshly declared wrapper is simply abandoned (logged, never repaired); if the CAS
+  succeeds, any *previous* wrapper is deleted afterward as best-effort cleanup, whose own
+  failure just orphans it without undoing the already-committed update. A new
+  `sameContextEntry()` check skips Context entirely when the context is resubmitted unchanged.
+- **`delete`** was reordered to CAS soft-delete the persona row **first**, and delete the
+  wrapper **after**, as best-effort cleanup — mirroring `update`'s ordering.
 
-- **The self-heal option was not taken, and should be recorded as such.** The wrapper's name
-  is deterministic (`persona:<personaId>`), so a wrapper is always re-derivable — `update`
-  could verify it matches the record and repair on read, making any inconsistency transient
-  rather than permanent. Cheaper than a durable claim. Declined for now in favour of leaving
-  it alone; noted so the option is not rediscovered from scratch.
-- **What should trigger revisiting.** A mutating in-process caller that bypasses the serial
-  queue. Today the queue is what makes this crash-only, and that is an ambient property of
-  the wiring rather than something Persona enforces. The comments should name that trigger
-  explicitly, so the next person understands what protection they would be removing.
-- **Item 4b overlaps.** `persona.wrapper.declared/.updated/.deleted` would make these writes
-  visible for the first time, which is the cheapest real mitigation available — you would at
-  least be able to *see* a partial write in the log. Worth doing regardless of this item.
+`PersonaContextPort` was pared down to exactly `declare()` and `delete()` — no `update()` or
+`getByName()`, since nothing reads or mutates a wrapper in place anymore.
+
+Every orphan-on-failure path is logged as `persona.wrapper.orphaned` (`warn`), replacing the
+old `persona.wrapper.updated`/`.repaired` events, which no longer apply.
+
+Docs updated: `persona/docs/invariants.md` ("Non-guarantees" section rewritten around the
+declare-before/delete-after ordering, including why it's safe under genuine concurrency, not
+just crash-only), `persona/docs/runtime.md` (method table, wrapper-reconciliation table, a
+renamed "Ordering: declare-before, delete-after" section, and the updated event list),
+`persona/docs/types.md` (`PersonaContextPort`'s narrowed shape), and `scratch/persona-design.md`
+("The private wrapper can be orphaned by a partial write" bullet rewritten to match).
+
+Tests: `persona.test.ts`'s fake Context port was cut down to `declare`/`delete` plus a
+`failNextDelete()` hook; the old `setLive()`-based self-heal tests were removed and replaced
+with two tests exercising the new failure modes — a genuine concurrent `Promise.allSettled()`
+race losing an `update()` CAS (asserting exactly one `persona.wrapper.orphaned` log and no
+thrown-away persona state), and a failed best-effort wrapper delete being logged rather than
+thrown. `persona-wiring.test.ts`'s `createNoopContext()` was simplified to `declare`/`delete`
+only, and its wrapper-lifecycle assertion updated to count `declared`/`deleted` log events
+rather than asserting an `update` call. All 42 tests across both files pass.
+
+### Resolved open items
+
+- **The failure mode is eliminated, not self-healed.** A prior self-heal-based design was
+  implemented and discarded in favor of this ordering fix, because self-heal only detects
+  drift after the fact while this ordering makes the drift structurally impossible.
+- **Revisit trigger.** None remaining for this class of gap — the ordering is safe under
+  genuine concurrency (two callers racing the same persona each declare their own wrapper
+  independently; only one wins the persona-row CAS), not just crash-only, so the serial-queue
+  caveat from the prior design no longer applies.
+- **Item 4b overlap.** `persona.wrapper.declared`/`.deleted` were already shipped by item 4;
+  this item adds `persona.wrapper.orphaned` alongside them (superseding the `.updated`/
+  `.repaired` events from the discarded self-heal design, which never shipped to `main`).
 
 ---
 
 ## 6 · `ContextValidationError`
+
+✅ **DONE 2026-08-02.**
 
 **Three bare-`Error` sites, not one** — this was previously understated:
 
@@ -393,33 +528,74 @@ Action: comments at the three call sites in `personaService.ts`, and correct the
 | `update` line 127 | `Error("Entries exceed maxEntriesPerContext (…)")` |
 | `composeNamed` line 214 | `Error("displayName is required")` |
 
-The job-wiring `contextErrorResponse` ladder catches all three only via its generic fallback,
-so each becomes `400 bad_request` with a raw message rather than a typed code.
+The job-wiring `contextErrorResponse` ladder caught all three only via its generic fallback,
+so each became `400 bad_request` with a raw message rather than a typed code.
 
-Every other Context failure (`ContextNotFoundError`, `ContextConflictError`,
-`StaleContextError`) is a typed class. Inconsistent with `08-conventions.md` ("one typed class
-per distinguishable failure"). One small class plus a ladder entry. Not urgent — the status
-code is already correct.
+**What shipped.** One class, `ContextValidationError(field, reason)`, matching the
+`PersonaValidationError`/`DataValidationError` precedent — added to `context/types.ts` and
+exported from `context/index.ts`. All three throw sites now use it. The job-wiring ladder in
+`registerContextEndpoints.ts` gained a `context_invalid` (400) entry ahead of the generic
+`bad_request` fallback, carrying the error's `field`.
 
-### Open items
+The real bug the open items flagged — `composeNamed` never checked its *combined* union/difference
+result against `maxEntriesPerContext`, only `declare`/`update` checked their input — is also
+fixed: `composeNamed` now throws the same typed error if the combined result exceeds the limit.
 
-- **One class or two?** A blank name and an over-limit entry array are different failures.
-  `PersonaValidationError(field, reason)` carries a `field`, which would cover both in one
-  class; `DataValidationError` in Structured Data does the same. Following that precedent
-  probably beats inventing two classes.
-- **Wire code.** The ladder currently emits `bad_request` for these. A typed class invites a
-  more specific code (`context_invalid`), which is a **client-visible change** even though
-  the status stays 400. Decide whether that matters to any existing caller.
-- **`maxEntriesPerContext` is unenforced on `composeNamed`.** `declare` and `update` check
-  it; the union/difference path does not, so a composition can produce a context larger than
-  either operand was allowed to be. Arguably the real bug in this area, and it is not a
-  naming issue at all.
+`maxEntriesPerContext`'s default was bumped from 1,000 to 100,000 ("very large", per the
+original note) in both `apps/backend/etc/configuration.yaml` and `loadBackendConfig.ts`'s
+`defaults` object.
+
+Docs updated: `context/docs/invariants.md` (limits table, new composeNamed enforcement note),
+`context/docs/types.md` (error family table, new default).
+
+Tests added to `context.test.ts`: typed-error assertions (with correct `field`) for
+`declare`/`update` over the limit, `composeNamed`'s empty-`displayName` case, the newly
+enforced `composeNamed` combined-result-over-limit case, and a wire-level test confirming
+`registerContextEndpoints` maps `ContextValidationError` to `400 context_invalid`.
+
+### Resolved open items
+
+- **One class, not two** — `ContextValidationError(field, reason)`, following the
+  `PersonaValidationError`/`DataValidationError` precedent.
+- **Wire code** — `context_invalid` added; status stays 400.
+- **`composeNamed` enforcement gap** — fixed in the same pass, using the same typed error.
 
 ---
 
 ## 7 · Context bindings belong on the Template record
 
-**Corrects shipped code.** The headline defect from the Templates review.
+✅ **DONE 2026-08-02.** Landed with `name`, `template.update`, `template.load`, and the
+`entry` → `target` rename. Typecheck clean, **297 tests pass** (baseline 262).
+
+What shipped beyond the original item:
+
+- **`name` on every record** — required at registration, trimmed at ingress, unique per
+  `(kind, name)` case-insensitively. Not defaultable: mutating adapter methods return `void`,
+  so Templates cannot read the source's title, and the backing copy's title is sealed anyway.
+  The index carries no partial predicate — deletion removes the live row, so a name is freed
+  by construction — and it covers `reserving` rows so a collision surfaces before the adapter
+  call rather than after a backing copy exists.
+- **`template.update`** — catalog declaration and backing content in one command, CAS on
+  `expectedRevision`, and the first compare-and-swap in this capability. It archives the
+  replaced record into history at its old revision, which the revision/history model requires:
+  every other transition leaves a record, and skipping it would make `latestSnapshot` report
+  pre-update state as current.
+- **`template.load`** — reading a backing copy crosses the Templates boundary, because
+  registration is designed to seal the owning capability's own read surface. This is the one
+  adapter method that does not return `void`; the "nothing to validate on the way back"
+  guarantee now holds for the mutating methods only.
+- **`template.updated` source transaction**, admitted to the outbox `CHECK`.
+
+**Still open, and it is the enforcement half.** Nothing seals a backing copy yet — Document
+has no `isTemplate` flag and refuses nothing, so an ordinary `document.submit` against one
+would still succeed and strand the declaration. Specification is in the plan (Part 4) and in
+`scratch/document-design/templates-and-context-variables.md`.
+
+---
+
+### The defect, as originally written
+
+**Corrected shipped code.** The headline defect from the Templates review.
 
 `template.register` accepts `contextBindings` and **stores none of them**. A binding is
 `{ entry?, description? }` and the wire decoder accepts both. The service forwards them to the
@@ -447,7 +623,9 @@ export interface TemplateRecord {
   readonly description?: string;
   /** The template's declared parameters. */
   readonly contextBindings: TemplateContextBindings;
+  readonly revision: number;
   readonly createdAt: string;
+  readonly updatedAt: string;
 }
 
 /** Store-internal. Never returned. */
@@ -460,12 +638,12 @@ export interface StoredTemplateRecord extends TemplateRecord {
 `state` and `deletedAt` come off the public record — they are reservation and filtering
 mechanics, and any record a caller can retrieve is by definition ready and live.
 
-`entry` stays optional and now reads more cleanly: at registration it means "a declared
-parameter with no default" rather than the awkward "explicitly unbind". One rule covers both
-sites — entry omitted → the destination's variable is unbound.
+`entry` is renamed **`target`** and stays optional, now reading more cleanly: at registration
+it means "a declared parameter with no default" rather than the awkward "explicitly unbind".
+One rule covers both sites — target omitted → the destination's variable is unbound.
 
 `description` only makes sense at **registration**; at instantiation you supply an argument,
-not a declaration. The instantiate decoder therefore uses `exactKeys(["entry"])` so a
+not a declaration. The instantiate decoder therefore uses `exactKeys(["target"])` so a
 description there is a 400 rather than silently ignored — the same class of bug this item
 fixes.
 
@@ -481,385 +659,261 @@ fixes.
 - `scratch/templates-design.md` — add `contextBindings` to the record; state that declared
   bindings are the parameters; note `state`/`deletedAt` are storage mechanics.
 
-### Open items
+### Resolved — both former open items, now shipped
 
-- **Drift.** The stored declaration goes stale if someone edits the backing template's
-  variables directly through the resource capability. Instantiation stays correct — the
-  adapter reads live resource state — only the *displayed* declaration is stale. Accepted for
-  v1. Fixing it needs either a reconciliation step or a read-through on `get`.
-- **No update path.** With no `template.update`, `description` and `contextBindings` are
-  immutable after registration. This is the most likely reason to want an update command;
-  `updatedAt` was deliberately not added ("I don't want to add anything unnecessary").
+Full implementation plan: `.claude/plans/mellow-wandering-shannon.md`.
+
+- **Drift — closed by gating, not accepted.** The earlier note accepted a stale declaration
+  for v1. That is no longer the design: `template.update` becomes the *only* path that
+  changes a registered template, writing the declaration and forwarding the content edits in
+  one command, and the resource capability refuses ordinary edits to a template-mode
+  resource. There is then no way to change a template's variables that does not also update
+  the declaration.
+- **`template.update` — in scope.** Carries `description`, `contextBindings`, and
+  `resourceOperations`. Needs `revision` + `updatedAt` on the record (Templates has no
+  revision today; records are immutable after `markReady`) and a `updateTemplateCopy` adapter
+  method — free right now, since `TemplateResourceAdapter` has zero implementations.
+- **Bindings are constitutive.** A template is a resource as a function of its Context
+  Variables; the declared bindings are that function's parameter list and part of the
+  template's identity. They are persisted and returned, not forwarded. The backing resource
+  separately holds each variable's applied target; neither side is derivable from the other,
+  and a binding `description` has no home anywhere but the record.
+- **`entry` → `target`** inside context bindings, at registration and instantiation.
+  `ContextEntry` itself stays: `kind` is load-bearing in three verified places.
+- **Activity vocabulary is `transaction`, not `fact`.** Comments already ships the right
+  names (`CommentCommittedTransaction`, `source_transaction_id`, `transaction_outbox`);
+  Templates and Document still say "fact". Templates renames as part of this work and adds a
+  `template.updated` transaction kind. Document's rename is separate — see item 12.
+
+### Still open after this item
+
+- **The sealing half** — Document's `isTemplate` flag and its public-surface refusal. Without
+  it, `template.update` is the only *intended* path to a backing copy, not the only possible
+  one.
+- `template.list` has no pagination contract.
+- Registration is deduplicated by `requestId` only, not by source, so two concurrent
+  registrations of the same resource produce two templates (with different names).
 
 ---
 
 ## 8 · Remove `maxTemplatesPerProject`
 
-**Corrects shipped code.** A config knob invented from one vague design clause.
+✅ **DONE 2026-08-02.** Removed the per-capability cap from the model, service, store port and
+SQLite adapter, error ladder, configuration type/parser/YAML, and documentation. Command
+admission remains serial because a pending claim and external adapter call cannot be one
+atomic store operation.
 
-`templates-design.md` said "The initial catalog is bounded by a configured project limit" —
-that clause is in the original commit `c8f32d9`, so it was in the approved design. But the
-doc specified no value, no config section, no error class, no status code, and no check
-placement. All five were invented, which is the actual mistake: an under-specified line
-should have produced a question, not 30 lines of enforcement plus a tuning surface.
-
-Remove it, **and strike the clause** so it cannot regenerate on the next read.
-
-- `domain/model.ts` — drop `TemplateOptions`, `DEFAULT_TEMPLATE_OPTIONS`.
-- `templateService.ts` — drop the `options` constructor parameter and the `countLive()`
-  check; clock and ID factory shift left.
-- `domain/errors.ts` — drop `TemplateCatalogLimitError`.
-- `ports/templateStore.ts`, `persistence/sqliteTemplateStore.ts` — drop `countLive()`.
-- `registerTemplateEndpoints.ts` — drop the `catalog_limit_exceeded` branch **and** the stale
-  reference to the limit in the serial-queue comment.
-- `0-utils/config/loadBackendConfig.ts` — drop `TemplateConfig`, the `BackendConfig.templates`
-  field, its `DEFAULT_CONFIG` entry, the `parsed.templates` extraction, `parseTemplateConfig`.
-- `etc/configuration.yaml`, `etc/README.md`, `1-init/create/templates.ts`.
-- `templates-design.md` — strike the clause; add a catalog size cap to Deferred.
-
-**Serial admission is still required.** Claim-then-execute remains a read-then-write across
-separate statements, so the queue choice does not change; only the limit half of the
-justification goes away. `templates/docs/invariants.md` keeps the claim bullet.
-
-### Open items
-
-- **Removing the config key is safe, but confirm it.** `loadBackendConfig` merges YAML over
-  `DEFAULT_CONFIG` field by field, so a leftover `templates:` section in someone's
-  `configuration.yaml` should be ignored rather than throw. Worth verifying rather than
-  assuming, since the loader's contract is "a missing or malformed key degrades to the
-  default" — not explicitly "an unknown section is ignored".
-- **Does a catalog cap come back in another form?** The design clause is being struck, but
-  "unbounded catalog" is a real if distant concern. If it returns it should probably be a
-  global resource quota rather than a per-capability knob — which is an argument for
-  removing this one now rather than generalising it.
-- **`countLive()` may have a second user later.** Persona has the same method for its own
-  `maxPersonas` check. If the limit concept returns, the two should share a shape rather
-  than diverge — worth a glance at Persona before deleting Templates' copy.
+The loader now ignores a legacy `templates:` YAML section; a regression test confirms that
+behaviour. Any future catalog-size restriction is deferred to a global resource-quota policy.
 
 ---
 
 ## 9 · Per-command `origin`
 
-Templates hardcodes `origin: "user"` in the `1-init` Activity adapter — a policy decision
-sitting in a mapping function. Two patterns already exist:
+✅ **DONE 2026-08-02.** Every Template command now requires an envelope origin of `user`,
+`agent`, `automation`, or `system`; `interactive` is rejected. The origin is deliberately
+outside the canonical command digest, so different-origin retries replay normally.
 
-| Pattern | Capability | Shape |
-|---|---|---|
-| Construction-fixed | Comments | `CommentDependencies.attribution = { actorId, origin }` |
-| Per command | Document | `DocumentCommandRequest.origin`, own vocabulary, mapped in `1-init` |
-
-**Agreed for Templates: the Document pattern.**
-
-```ts
-export type TemplateOrigin = "interactive" | "agent" | "automation";
-
-export interface TemplateCommandRequest {
-  readonly requestId: string;
-  readonly origin: TemplateOrigin;
-  readonly command: TemplateCommand;
-}
-```
-
-`origin` goes on the **envelope, not inside `TemplateCommand`** — it describes who is asking,
-not what is asked. Keeping it out of the canonical digest means two callers issuing the same
-command from different origins replay identically instead of colliding as an idempotency
-mismatch.
-
-- Add `origin` to `TemplateCommittedFact`; thread `request.origin` into `fact()`.
-- `attribution` keeps only `actorId`.
-- `wire/commandSchemas.ts` — add `"origin"` to the envelope's `exactKeys`; decode against the
-  three values; **required**, matching `document.submit`. An absent origin is a client bug and
-  defaulting it mislabels history.
-- `1-init/create/templates.ts` — replace the hardcode with `activityOrigin(fact.origin)`
-  mapping `interactive → user`, mirroring `createDocumentActivityPublisher`.
-
-### Open items
-
-This leaves **Comments** as the only capability on construction-fixed origin. Unifying all of
-Document/Comments/Templates on per-command origin is worth doing in one pass so the
-vocabulary stays consistent — but it is a separate change and nobody has asked for it yet.
+Registration and deletion persist their origin in the local Activity outbox and pass it to
+Activity directly. Existing outbox tables migrate with `user`, preserving the historical
+hardcode; a regression test seeds and upgrades such a table. Document and Comments retain
+their separate origin contracts.
 
 ---
 
 ## 10 · Templates dead code and naming
 
-**Corrects shipped code.** Measured by counting `throw new` sites.
+✅ **DONE 2026-08-02.** Removed the unthrown `TemplateValidationError`, made
+`canonicalize` module-private, and renamed the injected ID factory to `createId`. With the
+catalog cap removal, no exported Templates error class lacks a throw site.
 
-- `TemplateValidationError` — **zero** throw sites. Delete it, plus its `index.ts` export, its
-  branch in the endpoint error ladder, and the test import.
-- `canonicalize` in `domain/canonical.ts` — exported but only used by `canonicalDigest` in the
-  same file. Make it module-private.
-- `DEFAULT_TEMPLATE_OPTIONS` — goes with item 8.
-- Rename the `newId` constructor parameter to `createId`, matching
-  `createCommentsCapability(store, deps, options, clock, createId)`.
-
-After this, every error class exported from `templates/index.ts` should have at least one
-throw site — worth a grep before calling it done.
-
-### Open items
-
-- **This is not a Templates problem.** A sweep for zero-throw-site error classes across all
-  capabilities found four, not one:
-
-  | Capability | Class |
-  |---|---|
-  | templates | `TemplateValidationError` |
-  | derived-outputs | `DerivedOutputConflictError` |
-  | investigation | `InvestigationError` |
-  | connector | `ConnectorAlreadyExistsError` |
-
-  Each needs a decision rather than a blanket delete: an unthrown class may be dead code, or
-  may be a real failure mode that was specified and never wired up. `ConnectorAlreadyExistsError`
-  in particular looks like the latter — Connector's identity is `sha256(kind::locator)` and
-  re-registering is *deliberately* idempotent, so the class may encode a rule that was
-  correctly abandoned. Check each before removing.
-- **Worth an architectural test?** "Every exported error class has ≥1 throw site" is greppable
-  and would fit the `runtime-wiring.test.ts` style. It would have caught all four. The risk is
-  false positives for classes thrown only from another capability's adapter.
-
-**On the injected clock/ID factory generally: this is the house pattern, confirmed.** Comments
-uses the identical signature; Activity injects `ActivityClock`; Persona exports
-`PersonaClock`. Document is the outlier, and `08-conventions.md` already calls that out —
-*"Activity instead injects an `ActivityClock`, which is the better pattern for testability."*
-Neither is injected anywhere in startup: `createTemplatesInstance` passes three arguments, so
-production gets the defaults (`new Date()`, `randomUUID`) and only tests override them.
+The broader zero-throw error-class sweep remains a separate decision for Derived Outputs,
+Investigation, and Connector; it is not a reason to delete their classes blindly.
 
 ---
 
 ## 11 · Context tombstones reach callers
 
-`ContextStore.get(id)` has no `deleted_at` filter (`context/sqlite-store.ts:63`), while
-`getByName` and `list` both do — **and Context's service never filters either**, so a deleted
-record reaches callers. One predicate fixes all five call sites; no service code changes,
-since `update`, `delete`, `resolve`, and `composeNamed` already branch on a missing record.
+✅ **DONE 2026-08-02.** The tactical `deleted_at IS NULL` predicate was superseded by the
+shared current/history model in item 13. Context's typed current table contains live rows
+only; update archives the previous revision, and delete archives the last live snapshot,
+appends a terminal deletion revision, and removes the current row in one transaction.
 
-```sql
-SELECT * FROM ${this.tableName} WHERE id = ? AND deleted_at IS NULL
-```
+Consequently `get`, `getByName`, `list`, `update`, `delete`, `resolve`, union/difference, and
+nested composition cannot observe a deleted Context through a forgotten predicate. A second
+delete is a normal not-found result because there is no current resource to delete.
 
-The call site that matters is `resolve()`, which today **expands a deleted context's
-entries** — the "bound-but-dangling silently keeps working" hole. After the fix such a
-binding resolves to nothing and is caught by the empty-scope rule in
-`document-design/templates-and-context-variables.md`, whose closing paragraph then moves from
-conditional future ("If Context later tightens `get(id)`…") to present tense.
-
-### The sweep — Context is the only leak
-
-Eight capabilities soft-delete. Three have an unfiltered ID path; only one leaks:
-
-| Capability | Store `get(id)` | Service filters? | Verdict |
-|---|---|---|---|
-| comments, investigation, persona, structured-data, templates | filtered | — | fine |
-| connector | **unfiltered** | **yes** — 6 call sites | correct by design |
-| general-files | **unfiltered** | **yes** — 8 call sites | correct by design |
-| context | **unfiltered** | **no — zero checks** | **bug** |
-
-**Do not "fix" Connector or General Files.** Neither exposes a restore endpoint. Their
-tombstone visibility is not a feature choice — it is forced by deterministic identity:
-Connector's ID is `sha256(providerKind::locator)` and General Files' is `sha256(content)`, so
-re-registering the same locator or re-uploading the same bytes lands on the same primary key
-and **must** revive the row rather than insert. General Files already bumps `revision` when it
-does. Removing this breaks re-registration.
-
-The rule worth recording:
-
-> Filter in the **store** when nothing needs to see tombstones. Filter in the **service** when
-> restore or reactivation requires visibility.
-
-Context has no restore path, so store-level is right and puts it with the majority.
-
-### Behaviour changes to accept knowingly
-
-- Double-delete stops being idempotent (second call → `ContextNotFoundError`).
-- `update` on a deleted record stops producing a revision-bumped zombie.
-
-`context.test.ts` has **no delete or tombstone coverage at all**, so nothing will catch these.
-Add: `get`/`update`/`delete`/`composeNamed` operand all reject a deleted ID; `resolve` omits a
-deleted nested context instead of expanding it; a deleted context nested in a live one leaves
-the live entries intact.
-
-Soft-deleted display names already free up correctly — the unique name index is already
-partial on `deleted_at IS NULL`. No change needed.
-
-### Open items
-
-- **Double-delete stops being idempotent — is that acceptable?** Today a second `delete` on
-  the same ID succeeds silently; after the fix it raises `ContextNotFoundError` → 404. That
-  is arguably *more* correct, but it is a client-visible behaviour change and a caller
-  retrying a delete on timeout would now see a 404 on the retry. Decide deliberately rather
-  than discovering it.
-- **Confirm nothing relies on tombstone visibility.** The claim is that Context's service
-  has zero `deleted_at` checks, so nothing can depend on seeing tombstones. Verify by
-  reading all five `store.get(id)` call sites before changing the predicate — this is the
-  whole safety argument for doing it store-side.
-- **The rule in the callout deserves to live somewhere permanent.** "Filter in the store when
-  nothing needs tombstones; filter in the service when restore requires visibility" is a real
-  convention that currently exists only in this TODO. It belongs in `08-conventions.md`
-  alongside the other persistence idioms, or it will be re-derived next time.
+Deterministic identity does not require current tombstones. Connector and General Files use
+their capability history to allocate the next revision when the same provider/locator or
+content hash is registered before purge. That can resemble reactivation, but it is ordinary
+deterministic re-registration: deleted resources remain absent from current storage and from
+Knowledge.
 
 ---
 
 ## 12 · Activity ID allocation — doc drift
 
-The Activity change (producers supply `idempotencyKey`; Activity derives
-`act_<sha256(key)>` and owns the ID) is **implemented and typechecks**. All three producers —
-Document (`fact.factId`), Comments (`transaction.transactionId`), Templates (`fact.factId`) —
-already pass keys. No code work remains. Three docs now assert something false:
+✅ **DONE 2026-08-02.** Activity owns ledger identity. Producers commit a stable
+`sourceTransactionId` with accepted work and pass it as
+`ActivityTransactionInput.idempotencyKey`; Activity deterministically derives
+`ActivityTransaction.id = act_<sha256(idempotencyKey)>`. Equal retries therefore address the
+same ledger row, while changed content under the same source key conflicts.
 
-- `docs/claude-notes/05-async-attempt-pipeline.md:194–197` — "The `factId` is stable across
-  retries, so Activity's `publish()` is naturally idempotent … re-publishing the same ID". The
-  producer no longer supplies the ID; the *key* drives derivation.
-- `document/docs/types.md:82` — "its `factId` **is the stable Activity transaction ID**" →
-  "…the stable idempotency key Activity derives its transaction ID from".
-- `templates/docs/{types,flows}.md` — same, so Templates does not repeat it.
+Producer terminology is consistently transaction-based:
 
-Outbox column names (`document.fact_id`, `comments.transaction_id`, `templates.fact_id`) are
-now idempotency keys, not Activity IDs. **Leave them** — renaming costs a migration across
-three capabilities to fix a naming inaccuracy. Document the meaning instead.
+- `DocumentCommittedTransaction`, `TemplateCommittedTransaction`, and
+  `CommentCommittedTransaction`;
+- `sourceTransactionId` in TypeScript and `source_transaction_id` in SQLite;
+- `transaction_outbox` plus transaction-named store, publisher, recovery, mapper, and logging
+  methods.
 
-### Open items
-
-- `publish()` returns `StoredActivityTransaction`, and **no producer uses the return value**;
-  all three publishers are `async (x) => { await activity.publish(x) }`. Harmless, but worth
-  deciding whether the return is part of the intended contract.
-- The word "fact" (`DocumentCommittedFact`, `activity_outbox`) was disliked. It is Document's
-  existing term and never crosses into Activity, which says "transaction". Renaming is
-  cheapest now, while only three producers exist.
+Because backend data is disposable, only the renamed schemas are initialized; there is no
+outbox migration or compatibility lookup for source IDs previously used directly as Activity
+IDs. Activity remains append-only and is excluded from revision-history retention and purge.
 
 ---
 
 ## 13 · Deletion as a revision, not a flag
 
-**Open question, no agreed answer.** Raised while reviewing item 11.
+✅ **DONE 2026-08-02.** Every user-facing resource now follows one current/history contract:
 
-The concern: soft-delete persists deleted state and then requires every read path to remember
-to filter it. The alternative is that deletion is just a new revision whose latest state is
-"deleted", so a `get` returns nothing without any filter, and prior versions remain for
-history.
+- a typed current table contains exactly one live row and its current revision;
+- a capability-owned history table contains superseded snapshots and terminal deletion
+  records;
+- update archives revision `N` and writes current revision `N + 1` atomically;
+- logical delete archives revision `N`, appends terminal revision `N + 1`, and removes the
+  current row atomically; and
+- normal reads query current storage only, with no `deletedAt`, `trashed`, tombstone filters,
+  restore, or reactivation path.
 
-Worth noting **General Files already half-does this** — a deleted row keeps its `revision`,
-and re-uploading the same content bumps it rather than inserting.
+Irreversible purge is distinct from logical delete. It rejects live resources, requires a
+terminal deletion record, and removes retained history plus capability-owned data without
+creating an Activity transaction. A 30-day retention sweep prunes old history for live
+resources and invokes purge when a deleted resource's terminal record ages out. It never
+prunes Activity, transaction outboxes, receipts, or claims, and it does not run `VACUUM`.
 
-What makes this non-trivial: Connector and General Files still need the tombstone row to exist
-for re-registration to work (item 11), so a revision model **reframes** their behaviour rather
-than removing it. Any design here has to say what "latest revision is deleted" means for a
-content-addressed identity that can be revived.
-
-Scope if pursued: 8 soft-deleting capabilities, their schemas, and their tests. Should be its
-own design note before any code moves. Item 11 is the tactical fix and does not depend on
-this.
+General Files and Connector consult retained history when deterministic re-registration
+reuses an ID, so the new current revision continues from the historical maximum. After
+physical purge no allocation history remains and the same identity begins again at revision
+`1`. Logical deletion removes all Knowledge sources immediately; only history remains.
 
 ---
 
-## Reference · Delegated command claims
+## 14 · Document deletion
 
-**Research only — no action.** Recorded because Persona's Context-wrapper writes (item #5)
-have a similar shape, and the question came up of whether to adopt this mechanism there. The
-answer was no; the reasoning is below so the decision can be revisited on facts.
+✅ **DONE 2026-08-02.**
 
-### The problem it solves
+Documents now use the same current/history model as every other user-facing resource.
+`trashed` and `DocumentNotTrashedError` are removed; `active` and `archived` are both live
+lifecycle states.
 
-A command that has to cause an effect in **another capability's store** cannot be made atomic
-— there is no transaction spanning two SQLite files, and no two-phase commit.
+`documents` contains current heads only. `document_resources` is the stable internal root for
+retained Bases, Change Sets, identities, history, and owned-output references.
+`document_history` stores superseded head envelopes and the terminal deletion revision.
 
-The specific failure this guards against is subtler than "the write was lost". It is
-**retargeting**:
+`document.delete { documentId, expectedRevision }` validates the current head, logically
+deletes every owned Derived Output, archives head revision `N`, appends deletion revision
+`N + 1`, stages a durable `document.deleted` source transaction, and removes the current
+Document and current-scoped operational state. It is exactly replayable from the surviving
+transaction outbox and returns `{ type: "document.deleted", documentId, revision: N + 1 }`.
+Normal list and unqualified load queries read current `documents` only. Revision-qualified
+loads can reconstruct retained revisions from the stable root.
 
-1. Client sends `prompt.update-definition` with `requestId: R`. The Prompt Block at that
-   moment points at Derived Output `A`.
-2. Document begins the external call to update `A`.
-3. Something fails, or the client times out and retries.
-4. Meanwhile the Document has changed — the block now points at Derived Output `B`.
-5. The retry of `R` arrives. Without a record of what `R` originally targeted, it resolves the
-   target *fresh*, and updates `B` instead.
+`document.purge { documentId }` rejects a live Document, requires terminal deletion history,
+purges retained owned Derived Outputs, and then removes `document_resources`, cascading Bases,
+Change Sets, identities, retained output references, and Document history. It produces no
+Activity transaction. Transaction-outbox rows intentionally survive purge so delivery and
+ledger deduplication are not subject to resource-retention policy.
 
-The retry silently did something different from what it was retrying. The comment on the type
-says this plainly:
+The retention sweep anchors a Base at the earliest retained Document revision before pruning
+older Bases, Change Sets, and head envelopes. This preserves reconstruction for every retained
+revision of both live and logically deleted Documents.
 
-```ts
-/**
- * Durable local half of a command delegated to another capability store.
- * The target is frozen before the external side effect starts so an exact
- * retry never retargets after the canonical Document changes.
- */
-```
+---
 
-### The mechanism
+## Reference · Delegated command claims (removed 2026-08-02)
 
-`DocumentDelegatedCommandClaim` in
-[`document/domain/model.ts`](../apps/backend/src/3-capabilities/document/domain/model.ts):
+**Removed, not just declined.** This mechanism existed only for
+`prompt.update-definition` and was fully removed after a closer look showed it earned
+nothing: the two things it seemed to protect against were both already impossible for
+other reasons.
 
-```ts
-interface DocumentDelegatedCommandClaim {
-  documentId: string;
-  requestId: string;
-  requestDigest: string;
-  kind: "prompt.update-definition";
-  targetOutputId: string;              // frozen before the external call
-  state: "pending" | "completed";
-  createdAt: string;
-  updatedAt: string;
-}
-```
+### What it looked like it protected against
 
-Persisted in `${root}_delegated_command_claims`, `PRIMARY KEY (document_id, request_id)`.
+A command that has to cause an effect in **another capability's store** cannot be made
+atomic — there is no transaction spanning two SQLite files, and no two-phase commit. The
+apparent risk was **retargeting**: an exact retry, after resolving the target fresh from
+the current snapshot instead of reusing what the original attempt saw, could land on a
+*different* Derived Output than the one it originally updated, if the Prompt Block's
+output reference had changed in between.
 
-| Store operation | Does |
-|---|---|
-| `claimDelegatedCommand(claim)` | Writes the claim `pending`, **or** returns the receipt if this request already completed. Returns a result discriminated on `"claim"` \| `"receipt"`. |
-| `completeDelegatedCommand(claim, receipt)` | Marks the claim `completed` and writes the command receipt in one transaction. |
-| `getDelegatedCommandClaim(documentId, requestId)` | Read, used by the reuse guard. |
+### Why that risk doesn't actually exist
 
-```text
-claimDelegatedCommand({ …, targetOutputId: block.output.outputId, state: "pending" })
-        │  ← the target is frozen HERE, before anything external happens
-        ▼
-derivedOutputs.updateDefinition(...)          external side effect
-        │
-        ▼
-completeDelegatedCommand(claim, receipt)      claim + receipt in one transaction
-```
+Both halves turned out to already be closed off elsewhere, independent of this mechanism:
 
-There is also `assertDelegatedRequestReuse(request)`, called at the **top of every command**
-(`documentService.ts:216`, before the command-type switch). It catches a request id that was
-used for a delegated command being reused for a *different* command type — so the guard is
-not only about retries of the same command.
+- **A Prompt Block's `output.outputId` never changes to a *different* output.** Refresh
+  (`settlePromptRefresh`) only ever bumps `appliedRevision` on the same id; nothing else
+  writes that field. Traced in `documentService.ts`'s `settlePromptRefresh`.
+- **A deleted block's id cannot be reused to attach a different output.** Document's
+  identity ledger tombstones every structural id (including block ids) on delete and
+  rejects reuse by default (`DocumentIdentityReuseError`); the one exception,
+  `document.compensate` (undo), restores the exact prior state, not a different one.
 
-### What it costs
+So the target a retry resolves fresh is always the same target the original attempt saw,
+or the block is gone entirely. There was no retargeting scenario to guard against.
 
-- A table, three store methods, and a result union.
-- A read on **every** command, not just delegated ones, for the reuse guard.
-- Two writes per delegated command instead of one.
-- It is a **second durable idempotency mechanism** alongside the command-receipt table, doing
-  an overlapping job. Document therefore has receipts, stage receipts, and claims — three
-  mechanisms.
+### What the claim actually bought, once that was clear
 
-### Why it was declined for Persona
+Exactly one thing, in exactly one narrow window: **Derived Outputs' `updateDefinition` is
+already idempotent on its own** (keyed by the `idempotencyKey` Document passes it,
+deterministic from `(documentId, requestId)`), so a retry after a crash between the
+external call succeeding and Document's own receipt commit already replays the same
+result safely with no claim at all — *unless* the addressing Prompt Block was deleted in
+that same window, in which case the retry can no longer resolve `promptBlockId → outputId`
+without a frozen copy of it. The claim's only job was making that one specific
+crash-then-delete-then-retry sequence resumable instead of erroring.
 
-Persona's `create` / `update` / `delete` write to Context and then to their own store, with
-nothing spanning the two. Same shape — but not the same failure:
+### What it cost for that
 
-- **Document's risk is retargeting** — a retry doing something *different* and wrong, with no
-  way to detect it afterwards.
-- **Persona's risk is a partial write** — the Context row lands, the persona row does not. The
-  wrapper's target is not ambiguous, because the wrapper's identity derives from the persona's
-  own immutable id (`persona:<personaId>`). There is nothing to retarget *to*.
+- A table (`delegated_command_claims`), three store methods (`claimDelegatedCommand`,
+  `completeDelegatedCommand`, `getDelegatedCommandClaim`), and a result union.
+- A read on **every** command, not just this one, for a reuse guard
+  (`assertDelegatedRequestReuse`) that only ever mattered for this one command type.
+- Two writes per definition update instead of one.
+- A **second durable idempotency mechanism** alongside the plain command-receipt table,
+  doing an overlapping job for no additional correctness.
 
-Exposure is also narrow: all Persona commands run on the serial queue and there is no
-in-process mutating caller, so this is crash-only today.
+### What shipped instead
 
-### Open items
+`updatePromptDefinition` now: checks the plain submission receipt for replay (identical to
+every other command), resolves the Prompt Block from the current snapshot, calls
+`derivedOutputs.updateDefinition` with the same deterministic idempotency key as before,
+and writes the result via the store's existing (previously unused by this path)
+`recordSubmission`. No claim, no reuse guard, no second table.
 
-- Three overlapping idempotency mechanisms in one capability is a lot. If a fourth capability
-  needs this, it is probably worth asking whether receipts and claims should be **one**
-  mechanism rather than copying both.
-- The reuse guard costs a read on every command for a case that applies to exactly one command
-  type. Whether that is the right trade at higher command volume is untested.
-- **What would change the calculus for Persona:** a mutating in-process caller that bypasses
-  the serial queue. Agents is the obvious candidate — though as designed it only calls
-  `personas.resolve()`, which is read-only. If that ever changes, revisit.
-- Agents' design (`agents-design/`) places a related but distinct requirement on targets:
-  `lookup(requestDigest)` for recovery reconciliation (decision D7). Document stores
-  `request_digest` on both receipts and claims, but **does not currently expose a lookup by
-  digest** — the receipt is keyed `(document_id, request_id)`. That gap is tracked with the
-  Agents work, not here.
+**One accepted, narrower behavior change:** if the process crashes after the external
+call commits but before the local receipt does, *and* the Prompt Block is deleted before
+the client retries, the retry now fails with `Prompt Block not found` instead of resuming
+the completed result. The external update itself is never duplicated or lost either way —
+only whether the retry can still be *replayed* changes. This is covered by two tests in
+`document-application.test.ts`: "prompt.update-definition survives a crash before its
+local receipt commits" (the common case — still fully recoverable) and "prompt.update-
+definition fails cleanly if its Prompt Block is deleted during a crash window" (the one
+narrowed case, now a plain, well-understood error rather than a resumed result).
+
+### Why the reasoning below still holds for Persona
+
+The "why it was declined for Persona" analysis was written before this mechanism was
+reconsidered for Document itself, but the distinction it draws remains correct and is
+_why_ Document's own claim turned out to be removable too, not just Persona's:
+
+- **Retargeting** requires some other write path that can point the same address at a
+  *different* target between attempts. Document has none for `promptBlockId → outputId`
+  (see above); Persona has none for `personaId → wrapperId` either, since the wrapper's
+  identity is deterministic from the immutable persona id.
+- **A partial write** (the address's own record fails to persist) is a different, real
+  risk, and is what item 5's declare-new/CAS/delete-old ordering solves for Persona
+  structurally. Document's equivalent gap (crash before `recordSubmission`) is left as an
+  accepted, narrow case per above, rather than solved with equivalent ordering machinery,
+  because the acceptable fallback (a clear "not found" error on an already-rare compound
+  condition) is cheaper than the mechanism would be.
