@@ -1,10 +1,18 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database, { type Database as DatabaseConnection } from "better-sqlite3";
+import {
+  getLatestHistoryRecord,
+  insertHistoryDeletion,
+  insertHistorySnapshot,
+  listExpiredDeletedResources,
+  pruneHistoryBefore,
+  purgeResourceHistory
+} from "#utils/persistence/resourceHistory.js";
 import { InvalidCommentCursorError } from "../domain/errors.js";
 import type {
   Comment,
-  CommentActivityTransaction,
+  CommentCommittedTransaction,
   CommentCommandReceipt,
   CommentCommandResult,
   CommentPage,
@@ -60,13 +68,11 @@ const rowToComment = (row: SQLiteRow): Comment => ({
       : {})
   },
   state: row.state as CommentState,
+  revision: Number(row.revision),
   createdBy: row.created_by as string,
   updatedBy: row.updated_by as string,
   createdAt: row.created_at as string,
-  updatedAt: row.updated_at as string,
-  ...((row.deleted_at as string | null) !== null
-    ? { deletedAt: row.deleted_at as string }
-    : {})
+  updatedAt: row.updated_at as string
 });
 
 const rowToReceipt = (row: SQLiteRow): CommentCommandReceipt => ({
@@ -76,17 +82,17 @@ const rowToReceipt = (row: SQLiteRow): CommentCommandReceipt => ({
   createdAt: row.created_at as string
 });
 
-const rowToActivity = (row: SQLiteRow): CommentActivityTransaction => ({
-  transactionId: row.transaction_id as string,
+const rowToTransaction = (row: SQLiteRow): CommentCommittedTransaction => ({
+  sourceTransactionId: row.source_transaction_id as string,
   sourceRequestId: row.source_request_id as string,
-  operation: row.operation as CommentActivityTransaction["operation"],
+  operation: row.operation as CommentCommittedTransaction["operation"],
   commentId: row.comment_id as string,
   resourceKind: row.resource_kind as string,
   resourceId: row.resource_id as string,
   state: row.state as CommentState,
   mentionCount: Number(row.mention_count),
   actorId: row.actor_id as string,
-  origin: row.origin as CommentActivityTransaction["origin"],
+  origin: row.origin as CommentCommittedTransaction["origin"],
   occurredAt: row.occurred_at as string,
   ...((row.published_at as string | null) !== null
     ? { publishedAt: row.published_at as string }
@@ -139,28 +145,28 @@ const insertReceipt = (
   );
 };
 
-const insertActivity = (
+const insertTransaction = (
   db: DatabaseConnection,
   tables: CommentTableNames,
-  activity: CommentActivityTransaction
+  transaction: CommentCommittedTransaction
 ): void => {
   db.prepare(`
-    INSERT INTO ${tables.activityOutbox}
-      (transaction_id, source_request_id, operation, comment_id, resource_kind,
+    INSERT INTO ${tables.transactionOutbox}
+      (source_transaction_id, source_request_id, operation, comment_id, resource_kind,
        resource_id, state, mention_count, actor_id, origin, occurred_at, published_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
   `).run(
-    activity.transactionId,
-    activity.sourceRequestId,
-    activity.operation,
-    activity.commentId,
-    activity.resourceKind,
-    activity.resourceId,
-    activity.state,
-    activity.mentionCount,
-    activity.actorId,
-    activity.origin,
-    activity.occurredAt
+    transaction.sourceTransactionId,
+    transaction.sourceRequestId,
+    transaction.operation,
+    transaction.commentId,
+    transaction.resourceKind,
+    transaction.resourceId,
+    transaction.state,
+    transaction.mentionCount,
+    transaction.actorId,
+    transaction.origin,
+    transaction.occurredAt
   );
 };
 
@@ -172,7 +178,7 @@ const insertComment = (
   db.prepare(`
     INSERT INTO ${tables.comments}
       (id, body, mentions_json, resource_kind, resource_id, sub_target_json,
-       state, created_by, updated_by, created_at, updated_at, deleted_at)
+       state, revision, created_by, updated_by, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     comment.id,
@@ -182,11 +188,11 @@ const insertComment = (
     comment.target.resourceId,
     comment.target.subTarget === undefined ? null : encodeJson(comment.target.subTarget),
     comment.state,
+    comment.revision,
     comment.createdBy,
     comment.updatedBy,
     comment.createdAt,
-    comment.updatedAt,
-    comment.deletedAt ?? null
+    comment.updatedAt
   );
 };
 
@@ -209,14 +215,14 @@ export class SQLiteCommentStore implements CommentStore {
   async getComment(commentId: string): Promise<Comment | undefined> {
     const row = this.db.prepare(`
       SELECT * FROM ${this.tables.comments}
-      WHERE id = ? AND deleted_at IS NULL
+      WHERE id = ?
     `).get(commentId) as SQLiteRow | undefined;
     return row ? rowToComment(row) : undefined;
   }
 
   async listComments(filter: CommentListFilter): Promise<CommentPage> {
     const cursor = filter.cursor ? decodeCursor(filter.cursor, filter) : undefined;
-    const where = ["resource_kind = ?", "resource_id = ?", "deleted_at IS NULL"];
+    const where = ["resource_kind = ?", "resource_id = ?"];
     const parameters: unknown[] = [filter.resourceKind, filter.resourceId];
     if (filter.state !== undefined) {
       where.push("state = ?");
@@ -263,34 +269,60 @@ export class SQLiteCommentStore implements CommentStore {
     this.db.transaction(() => {
       insertComment(this.db, this.tables, commit.comment);
       insertReceipt(this.db, this.tables, commit.receipt);
-      insertActivity(this.db, this.tables, commit.activity);
+      insertTransaction(this.db, this.tables, commit.transaction);
     })();
   }
 
   async commitMutation(commit: CommentWriteCommit): Promise<boolean> {
     return this.db.transaction(() => {
-      const changed = this.db.prepare(`
-        UPDATE ${this.tables.comments}
-        SET body = ?, mentions_json = ?, resource_kind = ?, resource_id = ?,
-            sub_target_json = ?, state = ?, updated_by = ?, updated_at = ?, deleted_at = ?
-        WHERE id = ? AND deleted_at IS NULL
-      `).run(
-        commit.comment.body,
-        encodeJson(commit.comment.mentions),
-        commit.comment.target.resourceKind,
-        commit.comment.target.resourceId,
-        commit.comment.target.subTarget === undefined
-          ? null
-          : encodeJson(commit.comment.target.subTarget),
-        commit.comment.state,
-        commit.comment.updatedBy,
-        commit.comment.updatedAt,
-        commit.comment.deletedAt ?? null,
-        commit.comment.id
-      );
-      if (changed.changes !== 1) return false;
+      const row = this.db.prepare(`
+        SELECT * FROM ${this.tables.comments}
+        WHERE id = ? AND revision = ?
+      `).get(commit.comment.id, commit.comment.revision - 1) as SQLiteRow | undefined;
+      if (!row) return false;
+      const previous = rowToComment(row);
+      insertHistorySnapshot(this.db, this.tables.history, {
+        resourceKind: "comment",
+        resourceId: previous.id,
+        revision: previous.revision,
+        snapshot: previous,
+        recordedAt: commit.comment.updatedAt
+      });
+
+      if (commit.transaction.operation === "deleted") {
+        insertHistoryDeletion(this.db, this.tables.history, {
+          resourceKind: "comment",
+          resourceId: previous.id,
+          revision: commit.comment.revision,
+          recordedAt: commit.comment.updatedAt
+        });
+        this.db.prepare(`DELETE FROM ${this.tables.comments} WHERE id = ? AND revision = ?`)
+          .run(previous.id, previous.revision);
+      } else {
+        const changed = this.db.prepare(`
+          UPDATE ${this.tables.comments}
+          SET body = ?, mentions_json = ?, resource_kind = ?, resource_id = ?,
+              sub_target_json = ?, state = ?, revision = ?, updated_by = ?, updated_at = ?
+          WHERE id = ? AND revision = ?
+        `).run(
+          commit.comment.body,
+          encodeJson(commit.comment.mentions),
+          commit.comment.target.resourceKind,
+          commit.comment.target.resourceId,
+          commit.comment.target.subTarget === undefined
+            ? null
+            : encodeJson(commit.comment.target.subTarget),
+          commit.comment.state,
+          commit.comment.revision,
+          commit.comment.updatedBy,
+          commit.comment.updatedAt,
+          commit.comment.id,
+          previous.revision
+        );
+        if (changed.changes !== 1) return false;
+      }
       insertReceipt(this.db, this.tables, commit.receipt);
-      insertActivity(this.db, this.tables, commit.activity);
+      insertTransaction(this.db, this.tables, commit.transaction);
       return true;
     })();
   }
@@ -299,25 +331,68 @@ export class SQLiteCommentStore implements CommentStore {
     this.db.transaction(() => insertReceipt(this.db, this.tables, receipt))();
   }
 
-  async listUnpublishedActivity(limit = DEFAULT_OUTBOX_LIMIT): Promise<CommentActivityTransaction[]> {
+  async purge(
+    commentId: string,
+    receipt: CommentCommandReceipt
+  ): Promise<"purged" | "current" | "missing"> {
+    return this.db.transaction(() => {
+      if (this.db.prepare(`SELECT 1 FROM ${this.tables.comments} WHERE id = ?`).get(commentId)) {
+        return "current" as const;
+      }
+      const latest = getLatestHistoryRecord(
+        this.db,
+        this.tables.history,
+        "comment",
+        commentId
+      );
+      if (!latest || latest.recordType !== "deleted") return "missing" as const;
+      insertReceipt(this.db, this.tables, receipt);
+      purgeResourceHistory(this.db, this.tables.history, "comment", commentId);
+      return "purged" as const;
+    })();
+  }
+
+  async listUnpublishedTransactions(limit = DEFAULT_OUTBOX_LIMIT): Promise<CommentCommittedTransaction[]> {
     if (!Number.isSafeInteger(limit) || limit < 1) {
       throw new Error("Comment Activity outbox limit must be a positive safe integer");
     }
     const bounded = Math.min(limit, MAX_OUTBOX_LIMIT);
     const rows = this.db.prepare(`
-      SELECT * FROM ${this.tables.activityOutbox}
+      SELECT * FROM ${this.tables.transactionOutbox}
       WHERE published_at IS NULL
-      ORDER BY occurred_at ASC, transaction_id ASC
+      ORDER BY occurred_at ASC, source_transaction_id ASC
       LIMIT ?
     `).all(bounded) as SQLiteRow[];
-    return rows.map(rowToActivity);
+    return rows.map(rowToTransaction);
   }
 
-  async markActivityPublished(transactionId: string, publishedAt: string): Promise<void> {
+  async markTransactionPublished(sourceTransactionId: string, publishedAt: string): Promise<void> {
     this.db.prepare(`
-      UPDATE ${this.tables.activityOutbox}
+      UPDATE ${this.tables.transactionOutbox}
       SET published_at = COALESCE(published_at, ?)
-      WHERE transaction_id = ?
-    `).run(publishedAt, transactionId);
+      WHERE source_transaction_id = ?
+    `).run(publishedAt, sourceTransactionId);
+  }
+
+  async pruneHistory(cutoff: string): Promise<number> {
+    return pruneHistoryBefore(
+      this.db,
+      this.tables.history,
+      cutoff,
+      (_kind, id) => Boolean(
+        this.db.prepare(`SELECT 1 FROM ${this.tables.comments} WHERE id = ?`).get(id)
+      )
+    );
+  }
+
+  async purgeExpired(cutoff: string): Promise<number> {
+    let purged = 0;
+    for (const resource of listExpiredDeletedResources(this.db, this.tables.history, cutoff)) {
+      if (await this.getComment(resource.resourceId)) continue;
+      if (purgeResourceHistory(this.db, this.tables.history, "comment", resource.resourceId)) {
+        purged += 1;
+      }
+    }
+    return purged;
   }
 }

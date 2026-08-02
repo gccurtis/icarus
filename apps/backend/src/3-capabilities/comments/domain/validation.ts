@@ -174,6 +174,7 @@ export const normalizeCommentCommand = (
     case "comment.resolve":
     case "comment.reopen":
     case "comment.delete":
+    case "comment.purge":
       return {
         type: command.type,
         requestId,

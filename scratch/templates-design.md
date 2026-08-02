@@ -26,7 +26,8 @@ The first version is deliberately narrow:
 - delete a template through its owning resource kind.
 
 Cross-project sharing, template marketplaces, permissions, categories,
-version pinning, and arbitrary template parameters are deferred.
+version pinning, arbitrary template parameters, and resource quotas are
+deferred.
 
 ## Ownership boundary
 
@@ -79,12 +80,43 @@ interface TemplateRecord {
   /** ID used to open the backing copy through the owning capability. */
   readonly resourceId: string;
 
+  /**
+   * Catalog label. Required, trimmed, and unique per kind among live records.
+   * This is what "rename the template" renames — the backing resource's title
+   * is sealed and unreachable, so the catalog cannot borrow it.
+   */
+  readonly name: string;
+
   /** Optional catalog annotation: what this template is for. */
   readonly description?: string;
 
+  /**
+   * The template's declared parameters. What a caller declares at registration
+   * is what this template exposes; anything undeclared is baked-in content.
+   */
+  readonly contextBindings: TemplateContextBindings;
+
   readonly createdAt: string;
+  readonly updatedAt: string;
 }
 ```
+
+`state` and `deletedAt` exist in storage but are not part of this record. They
+are reservation and filtering mechanics, and any record a caller can retrieve is
+by definition ready and live, so they live on a store-internal
+`StoredTemplateRecord` instead.
+
+**`contextBindings` is constitutive, not descriptive.** A template is a resource
+as a function of its Context Variables; the declared bindings are that
+function's parameter list, so they are a defining part of what the record *is*.
+Two templates over the same Document declaring different parameters are
+different templates. `template.get` returns them because a caller cannot use a
+template without knowing its parameters — and because the declaration exists
+nowhere else to be read from.
+
+Because the record and the backing resource now each hold something real, no
+more than one path may change either: see
+[Editing and deletion](#editing-and-deletion).
 
 **Templates allocates the Template ID and returns it.** A caller registering a
 template is pointing at a resource it already owns and asking for a catalog
@@ -99,9 +131,14 @@ and which one applies depends on who is naming what:
 
 | Convention | Capabilities | Retry safety comes from |
 |---|---|---|
-| Caller-supplied | Document, Slide — aggregate IDs and internal structural IDs (`documentId`, `blockId`) | Request receipts keyed by `(resourceId, requestId)` |
-| Allocated internally | Context (`randomUUID`), Derived Outputs | A caller-supplied idempotency key or request ID |
-| Derived from content | General Files (`sha256(content)`), Connector (`sha256(providerKind::locator)`) | Identity is a pure function of the input |
+| Caller-supplied | Document's *internal structural* IDs only (`blockId` and friends) | Request receipts keyed by `(resourceId, requestId)` |
+| Allocated internally | Document, Context, Derived Outputs, Structured Data, Comments, Investigation, Persona, Templates | A caller-supplied idempotency key or request ID |
+| Derived from content | General Files (`sha256(content)`), Connector (`sha256(providerKind::locator)`), Activity (`act_<sha256(idempotencyKey)>`) | Identity is a pure function of the input |
+
+Updated 2026-08-02: `document.create` now allocates its own ID, and Slide has
+been deleted. Aggregate IDs are allocated everywhere; only Document's structural
+IDs inside an operation batch remain caller-supplied, and that is an open
+question in [`0-general-updates.md`](0-general-updates.md) item 2.
 
 Templates follows the **second** convention, and Derived Outputs is the direct
 precedent: it allocates its own output ID inside `declare()` and takes a
@@ -123,9 +160,13 @@ address from a Template record's storage key.
 
 Allocating rather than accepting the ID does not weaken exact replay. The
 identifier is minted once and **frozen in the command claim before any adapter
-call**, so an exact retry and a resumed pending claim both reuse it. This is the
-same technique as Document's delegated command claim, which freezes its target
-output ID before the external side effect starts.
+call**, so an exact retry and a resumed pending claim both reuse it. This is
+the same problem shape as freezing a target before an external call generally
+— resolving the address fresh on retry would risk pointing at a different
+target if it could change in between — but Templates' own `TemplateCommandClaim`
+is a Templates-only mechanism; freezing an *allocated* resource ID here is a
+different case from freezing a *reference to something that already exists*,
+which is why the two are solved independently rather than shared.
 
 Templates does not own a second display name. A resource adapter may return a
 resource summary for presentation, but the catalog does not duplicate that
@@ -137,8 +178,8 @@ receives its own destination title.
 anything. The backing resource has no field it duplicates: it answers "what is
 this template for, and when should I reach for it?", which is a statement about
 the catalog entry rather than about the resource. It is supplied at
-registration and, in version 1, immutable thereafter — editing it is deferred
-along with the rest of catalog curation.
+registration and edited through `template.update`, alongside the declared
+bindings.
 
 A Template has no independent content revision. The backing resource's
 revision is authoritative. Editing the backing resource does not create a new
@@ -255,8 +296,11 @@ claim before any adapter call, which gives retries the same guarantee.
 ```ts
 interface TemplateCommandRequest {
   readonly requestId: string;
+  readonly origin: TemplateOrigin;
   readonly command: TemplateCommand;
 }
+
+type TemplateOrigin = "user" | "agent" | "automation" | "system";
 
 type TemplateCommand =
   | {
@@ -290,14 +334,33 @@ type TemplateCommandResult =
   | { type: "template.deleted"; templateId: string };
 
 type TemplateQuery =
-  | { type: "template.get"; templateId: string }
-  | { type: "template.list"; kind?: string };
+  | { type: "template.get"; templateId: string }    // the catalog record
+  | { type: "template.list"; kind?: string }
+  | { type: "template.load"; templateId: string };  // the backing content
 ```
 
-`template.list` returns live records ordered by creation time and ID. The
-initial catalog is bounded by a configured project limit and does not expose a
-pagination contract. Pagination can be added without changing record identity
-or copy behavior.
+`template.get` and `template.load` are separate on purpose. `get` is a single
+store read and answers "what is this template"; `load` goes through the adapter
+to the sealed backing resource and answers "what is in it". A picker lists
+records and should not pay for content.
+
+`template.load` exists because registration seals the backing resource's own
+read surface as well as its writes — see
+[Editing and deletion](#editing-and-deletion). Its `content` is `unknown` at the
+Templates boundary: a Document snapshot for kind `document`, something else for
+a later kind. Templates has no per-kind types and must not grow any, exactly as
+with the content edits going the other way. The caller knows the `kind` from the
+record.
+
+This is the one place the adapter port does **not** return `void`. That rule
+bought a real property — a call that returns nothing has nothing to disagree
+with, so there is no resource-mismatch error to write — and it now holds for the
+mutating methods only.
+
+`template.list` returns live records ordered by creation time and ID and does
+not expose a pagination contract. Pagination and any catalog-size limit are
+deferred; a future size limit belongs in a global resource-quota policy, not a
+Templates-specific configuration key.
 
 The public surface uses the repository's two static paths:
 
@@ -313,17 +376,14 @@ The command endpoint is serial because it mutates and the service
 reads-then-writes across several store calls that no single statement makes
 atomic:
 
-- `countLive()` and `reserve()` are separate statements, so concurrent
-  registrations could each observe room under `maxTemplatesPerProject` and then
-  all reserve, overshooting the limit;
 - claim-then-execute has the same shape — two concurrent retries of one
   `requestId` would both observe a pending claim and both drive the adapter.
 
 This is the same reason Document and Slide commands are serial. An earlier
 draft of the implementation plan argued for `concurrent` on the grounds that
 every Templates invariant was a single-row store invariant. That was wrong:
-the catalog limit is not, and the argument also leaned on freeze behaviour in
-an adapter that does not exist yet.
+claim-then-execute crosses store and adapter work, so concurrent retries could
+drive the adapter twice.
 
 ## Registration flow
 
@@ -381,6 +441,18 @@ Instantiation then works the same way over the template's defaults, so the
 whole feature is one override rule applied twice rather than a clear-then-fill
 sequence. Nothing has to be undone, and a resource is never mutated into a
 state its author did not ask for.
+
+Registration **records the declared bindings on the Template record**, and the
+adapter applies the table above to the backing copy's variable state.
+
+The record is the primary of those two, not a copy of the second. A template is
+a resource as a function of its Context Variables, and the declared bindings are
+that function's parameter list — they are a defining part of the template's
+identity, not metadata about it. Two templates over the same Document declaring
+different parameters are different templates. The resource's variable state
+cannot express this: it holds what each variable currently points at, but it
+cannot say which variables the template means to expose, and it has nowhere to
+put a parameter's `description`.
 
 Direct, literally-authored references are untouched at both steps — only
 variables participate. A template author who wants a reference to survive every
@@ -446,19 +518,58 @@ replay of the Templates command returns the same destination resource.
 
 ## Editing and deletion
 
-The backing resource is opened and edited through its normal resource
-capability using `TemplateRecord.resourceId`. The resource capability allows
-content edits in template mode but keeps template-mode resources out of its
-ordinary resource list.
+**Every change to a registered template goes through Templates.** A backing
+template is not opened and edited through its owning resource capability, even
+though `TemplateRecord.resourceId` names it and the resource capability could
+serve the request.
+
+`template.update` is the single editing path. One command carries both halves:
+
+- the **catalog half** — `description` and `contextBindings` replace their
+  predecessors wholesale, under compare-and-swap on `expectedRevision`;
+- the **resource half** — content edits are forwarded to the resource adapter,
+  which applies them through the owning capability's internal command path.
+
+They are one command because they are one fact. An earlier draft let the
+resource be edited directly and kept the declaration only in the resource's
+variable state, precisely so the two could not disagree. Once the declaration
+lives on the record — and it has to, for the catalog to be usable — that
+argument inverts: two writable statements about the same template will drift
+unless one command owns both. Renaming a variable through the Document endpoints
+would otherwise leave the catalog advertising a parameter that no longer exists,
+and nothing would ever notice.
+
+So registration **seals** the backing resource. The moment the copy exists, the
+owning capability's whole public surface is refused for that resource —
+**reads included**, not a chosen subset — checked on the resource rather than
+enumerated per command, so a command or query added later is sealed by default.
+The refusal is one typed error naming Templates as the only way in. Template-mode
+resources also stay out of the capability's ordinary resource list, and nothing
+can move a resource between template and normal mode.
+
+Reading a template therefore crosses the Templates boundary, through
+`template.load`. The one thing the owning capability still answers is a
+*listing* of its templates — a cross-resource question over its own storage,
+handing back identifying metadata rather than content. Listing stays; reading
+moves.
+
+The backing resource is not something a user owns any more. It exists for one
+reason: so instantiation has something to copy.
+
+**Nothing renames it, from either side.** The owning capability cannot — the
+surface is sealed. Templates does not offer it either: `template.update` edits
+the *template*, and the backing resource's title is not part of the template's
+addressable state. It keeps the title it was copied with, which is what an
+instance inherits when instantiation supplies no `title`. Renaming means
+renaming the template record.
 
 Only `template.delete` may remove a backing template. The Templates service
 first claims the command, asks the resource adapter to delete or tombstone the
 backing copy, and then soft-deletes the catalog record. The original resource
 and already-created instances are untouched.
 
-Resource capabilities must reject an ordinary request that tries to change a
-resource between template and normal mode or delete a registered backing
-template behind the catalog.
+Instances are unaffected by a template edit. Instantiation copies; there is no
+propagation, by design.
 
 ## Persistence and idempotency
 
@@ -500,13 +611,17 @@ CREATE TABLE template_command_claims (
 );
 ```
 
-**Templates stores no bindings.** A template's defaults are not catalog state —
-they are the backing resource's own Context Variable state, written by the
-adapter during the copy and thereafter editable through that resource's
-ordinary editing surface. Templates forwards bindings and keeps none of them,
-so the catalog can never disagree with the resource about what a variable
-points at. `description` on the catalog row is the sole exception, and it
-describes the template rather than any variable.
+**Templates stores the declared bindings.** `context_bindings_json BLOB NOT
+NULL` on the catalog row, following the `mentions_json` precedent in
+`comments/persistence/sqliteSchema.ts`. An omitted wire field and `{}` mean the
+same thing, so the column is never null.
+
+The row and the resource hold two different things. The record holds the
+**declaration** — which variables are parameters, and each one's `description`.
+The backing resource holds the **applied targets**, written by the adapter
+during the copy. Neither is derivable from the other, and the declaration exists
+nowhere else. They cannot drift because `template.update` is the only path that
+changes either, and it writes both.
 
 An identical `requestId` retry returns the stored result. Reusing a request ID
 with different canonical input returns `idempotency_mismatch`.
@@ -522,10 +637,18 @@ No SQLite transaction spans Templates and a resource database.
 ## Activity
 
 Templates writes accepted registry changes to its normal source-local Activity
-outbox and publishes them through the injected Activity publisher:
+outbox and publishes them through the injected Activity publisher. Each
+committed transaction carries the required command origin (`user`, `agent`,
+`automation`, or `system`) unchanged:
 
 - `template.registered` for a new catalog/backing template;
+- `template.updated` for an accepted edit to a registered template;
 - `template.deleted` for removal.
+
+The vocabulary here is **transaction**, matching Activity and the Comments
+producer (`CommentCommittedTransaction`, `source_transaction_id`,
+`transaction_outbox`). Templates and Document still say "fact" in code; that is
+a rename to make, not a second concept.
 
 Instantiation already causes the owning resource to publish its normal
 creation transaction, so Templates does not publish a second activity item for
@@ -595,17 +718,24 @@ apps/backend/src/
    present key without `entry` explicitly unbinds.
 9. An unbound variable is legal state on any resource; it is refused only when
    a Prompt tries to produce a concrete Context scope from it.
-10. Templates persists no bindings. Defaults live in the backing resource's own
-    variable state.
-11. Templates never reads or writes resource-owned tables directly.
-12. Unsupported kinds fail before a catalog row or destination is created.
-13. Exact command retries return the original result; divergent reuse fails.
-14. Ordinary resource APIs cannot promote, demote, or delete a registered
+10. The declared bindings are persisted on the Template record and returned by
+    `template.get` and `template.list`. They are the template's parameter list
+    and part of its identity. The backing resource separately holds each
+    variable's applied target; neither side is derivable from the other.
+11. `template.update` is the only path that changes a registered template —
+    catalog declaration and backing content in one command — so the two cannot
+    drift.
+12. Templates never reads or writes resource-owned tables directly.
+13. Unsupported kinds fail before a catalog row or destination is created.
+14. Exact command retries return the original result; divergent reuse fails.
+    Origin is not part of the canonical command digest, so it never turns an
+    otherwise exact retry into a mismatch.
+15. Ordinary resource APIs cannot promote, demote, or delete a registered
     template behind the Templates catalog.
-15. Deleting a template does not mutate its source or prior instances.
-16. Templates performs no Context read or write. It imports the `ContextEntry`
-    type only; bindings travel through as opaque pairs and are interpreted by
-    the owning resource kind.
+16. Deleting a template does not mutate its source or prior instances.
+17. Templates performs no Context read or write. It imports the `ContextEntry`
+    type only; a binding target is an opaque pair, interpreted by the owning
+    resource kind.
 
 ## Deferred
 
@@ -616,6 +746,7 @@ apps/backend/src/
 - arbitrary parameter-schema infrastructure beyond Context Variable bindings
   and an optional title;
 - caller-chosen Template IDs;
+- a global resource quota, including any catalog-size limit;
 - batch instantiation; and
 - Context composition performed on a caller's behalf during instantiation.
   Grouping several resources into one binding target is a caller's single

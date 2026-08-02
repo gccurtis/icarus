@@ -13,7 +13,7 @@ import { collectDocumentIdentities } from "../../src/3-capabilities/document/dom
 import type {
   DocumentAttempt,
   DocumentBase,
-  DocumentCommittedFact,
+  DocumentCommittedTransaction,
   DocumentHead,
   DocumentSnapshot,
   DocumentStageReceipt,
@@ -25,7 +25,6 @@ import type {
   DocumentMutationCommit
 } from "../../src/3-capabilities/document/ports/documentStore.js";
 import { SQLiteDocumentStore } from "../../src/3-capabilities/document/persistence/sqliteDocumentStore.js";
-import { createDocumentTableNames } from "../../src/3-capabilities/document/persistence/sqliteSchema.js";
 
 const timestamp = (offset: number): string =>
   new Date(Date.UTC(2026, 0, 1, 0, 0, offset)).toISOString();
@@ -45,8 +44,8 @@ const creationCommit = (
     id: documentId,
     title,
     lifecycle: "active",
-    revision: 0,
-    baseSeq: 0,
+    revision: 1,
+    baseSeq: 1,
     semanticDigest: `digest-${documentId}-0`,
     createdAt: timestamp(0),
     updatedAt: timestamp(0)
@@ -57,7 +56,7 @@ const creationCommit = (
     base: {
       representationVersion: 1,
       documentId,
-      baseSeq: 0,
+      baseSeq: 1,
       snapshot,
       semanticDigest: head.semanticDigest,
       createdAt: timestamp(0)
@@ -69,12 +68,19 @@ const creationCommit = (
       result: { type: "document.created", head },
       createdAt: timestamp(0)
     },
-    fact: {
-      factId: `fact-${requestId}`,
+    createReceipt: {
+      requestId,
+      documentId,
+      requestDigest: `request-digest-${requestId}`,
+      result: { type: "document.created", head },
+      createdAt: timestamp(0)
+    },
+    transaction: {
+      sourceTransactionId: `transaction-${requestId}`,
       sourceRequestId: requestId,
       kind: "document.created",
       documentId,
-      revision: 0,
+      revision: 1,
       origin: "interactive",
       operationTypes: ["document.create"],
       sourceSemanticDigest: head.semanticDigest,
@@ -128,8 +134,8 @@ const mutationCommit = (
       result: { type: "document.changed", changeSet },
       createdAt: updatedAt
     },
-    fact: {
-      factId: `fact-${changeSet.id}`,
+    transaction: {
+      sourceTransactionId: `transaction-${changeSet.id}`,
       sourceRequestId: changeSet.clientRequestId,
       kind: "document.changed",
       documentId: prior.id,
@@ -156,7 +162,7 @@ const promptCreationAttempt = (
   clientRequestId: `client-${id}`,
   requestDigest: `digest-${id}`,
   blockId: `block-${id}`,
-  frozenDocumentRevision: 0,
+  frozenDocumentRevision: 1,
   state,
   styleId: "document-style-normal",
   placement: { kind: "new-row", rowId: `row-${id}` },
@@ -181,7 +187,7 @@ const promptRefreshAttempt = (
   clientRequestId: `client-${id}`,
   requestDigest: `digest-${id}`,
   blockId: `block-${id}`,
-  frozenDocumentRevision: 0,
+  frozenDocumentRevision: 1,
   state,
   promptBlockId: `block-${id}`,
   outputId: `output-${id}`,
@@ -221,16 +227,25 @@ test("Document stores use isolated project-hashed tables and persist creation at
   await beta.commitCreation(betaCommit);
   assert.equal((await beta.getHead("shared-document"))?.title, "Beta");
   assert.deepEqual(
-    await alpha.getBaseAtOrBefore("shared-document", 0),
+    await alpha.getBaseAtOrBefore("shared-document", 1),
     alphaCommit.base
   );
   assert.deepEqual(
     await alpha.getSubmission("shared-document", "create-alpha"),
     alphaCommit.receipt
   );
+  // The create receipt is written in the same transaction and is keyed by
+  // request id alone, so a retry can find it without knowing the allocated id.
   assert.deepEqual(
-    await alpha.getCommittedFact("fact-create-alpha"),
-    alphaCommit.fact
+    await alpha.getCreateSubmission("create-alpha"),
+    alphaCommit.createReceipt
+  );
+  // And it is project-scoped like everything else.
+  assert.equal(await beta.getCreateSubmission("create-alpha"), undefined);
+  assert.equal(await alpha.getCreateSubmission("never-requested"), undefined);
+  assert.deepEqual(
+    await alpha.getCommittedTransaction("transaction-create-alpha"),
+    alphaCommit.transaction
   );
 
   const inspection = new Database(dbPath, { readonly: true });
@@ -258,10 +273,10 @@ test("Document stores use isolated project-hashed tables and persist creation at
     /FOREIGN KEY/
   );
 
-  const unpublished = await alpha.listUnpublishedFacts();
-  assert.deepEqual(unpublished, [alphaCommit.fact]);
-  await alpha.markFactPublished(alphaCommit.fact.factId, timestamp(2));
-  assert.deepEqual(await alpha.listUnpublishedFacts(), []);
+  const unpublished = await alpha.listUnpublishedTransactions();
+  assert.deepEqual(unpublished, [alphaCommit.transaction]);
+  await alpha.markTransactionPublished(alphaCommit.transaction.sourceTransactionId, timestamp(2));
+  assert.deepEqual(await alpha.listUnpublishedTransactions(), []);
 
   const archived = creationCommit("archived-document", "create-archived", "Archived");
   archived.head.lifecycle = "archived";
@@ -289,24 +304,24 @@ test("Document outbox records retain self-contained Activity source data across 
   const store = new SQLiteDocumentStore("activity-source-project", createStorePath());
   const created = creationCommit("activity-source-document");
   await store.commitCreation(created);
-  const first = mutationCommit(created.head, 1);
+  const first = mutationCommit(created.head, 2);
   await store.commitMutation(first);
-  const second = mutationCommit(first.head, 2);
+  const second = mutationCommit(first.head, 3);
   await store.commitMutation(second);
 
-  const byRequest = await store.getCommittedFactByRequest(
+  const byRequest = await store.getCommittedTransactionByRequest(
     first.head.id,
     first.changeSet.clientRequestId
   );
-  assert.deepEqual(byRequest, first.fact);
+  assert.deepEqual(byRequest, first.transaction);
   assert.equal(byRequest?.sourceSemanticDigest, first.head.semanticDigest);
   assert.equal(byRequest?.origin, "interactive");
 
-  await store.markFactPublished(first.fact.factId, timestamp(3));
-  assert.deepEqual(await store.listUnpublishedFacts(), [created.fact, second.fact]);
+  await store.markTransactionPublished(first.transaction.sourceTransactionId, timestamp(3));
+  assert.deepEqual(await store.listUnpublishedTransactions(), [created.transaction, second.transaction]);
   assert.deepEqual(
-    await store.getCommittedFactByChangeSet(first.head.id, first.changeSet.id),
-    first.fact
+    await store.getCommittedTransactionByChangeSet(first.head.id, first.changeSet.id),
+    first.transaction
   );
 
   assert.equal(
@@ -323,74 +338,9 @@ test("Document outbox records retain self-contained Activity source data across 
   // The relational change_set_id was cleared by compaction, but the copied
   // source value still supports Activity publication/lookup.
   assert.deepEqual(
-    await store.getCommittedFactByChangeSet(second.head.id, first.changeSet.id),
-    first.fact
+    await store.getCommittedTransactionByChangeSet(second.head.id, first.changeSet.id),
+    first.transaction
   );
-  store.close();
-});
-
-test("Document store migrates legacy Activity outbox rows into publishable source records", async () => {
-  const projectId = "document-outbox-migration";
-  const dbPath = createStorePath();
-  const tables = createDocumentTableNames(projectId);
-  const legacy = new Database(dbPath);
-  legacy.exec(`
-    CREATE TABLE ${tables.activityOutbox} (
-      fact_id TEXT PRIMARY KEY,
-      fact_kind TEXT NOT NULL,
-      document_id TEXT NOT NULL,
-      revision INTEGER NOT NULL,
-      change_set_id TEXT,
-      actor_id TEXT,
-      origin TEXT NOT NULL,
-      operation_types BLOB NOT NULL,
-      semantic_digest TEXT NOT NULL,
-      occurred_at TEXT NOT NULL,
-      published_at TEXT
-    );
-  `);
-  legacy
-    .prepare(`
-      INSERT INTO ${tables.activityOutbox}
-        (fact_id, fact_kind, document_id, revision, change_set_id, actor_id,
-         origin, operation_types, semantic_digest, occurred_at, published_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-    .run(
-      "legacy-activity-transaction",
-      "document.changed",
-      "legacy-document",
-      7,
-      null,
-      null,
-      "automation",
-      JSON.stringify(["document.rename"]),
-      "legacy-document-digest",
-      timestamp(7),
-      null
-    );
-  legacy.close();
-
-  const store = new SQLiteDocumentStore(projectId, dbPath);
-  const expected: DocumentCommittedFact = {
-    factId: "legacy-activity-transaction",
-    sourceRequestId: "legacy:legacy-activity-transaction",
-    kind: "document.changed",
-    documentId: "legacy-document",
-    revision: 7,
-    origin: "automation",
-    operationTypes: ["document.rename"],
-    sourceSemanticDigest: "legacy-document-digest",
-    occurredAt: timestamp(7)
-  };
-  assert.deepEqual(
-    await store.getCommittedFactByRequest(
-      "legacy-document",
-      expected.sourceRequestId
-    ),
-    expected
-  );
-  assert.deepEqual(await store.listUnpublishedFacts(), [expected]);
   store.close();
 });
 
@@ -406,12 +356,12 @@ test("identity ledger tombstones removals, rejects reuse atomically, and permits
       id: "document-style-normal",
       kind: "style",
       state: "active",
-      firstRevision: 0,
-      lastTransitionRevision: 0
+      firstRevision: 1,
+      lastTransitionRevision: 1
     }
   );
 
-  const added = mutationCommit(creation.head, 1);
+  const added = mutationCommit(creation.head, 2);
   added.identityTransitions.added = [
     { id: "ledger-row", kind: "row" },
     { id: "ledger-block", kind: "block" },
@@ -425,12 +375,12 @@ test("identity ledger tombstones removals, rejects reuse atomically, and permits
       id: "ledger-block",
       kind: "block",
       state: "active",
-      firstRevision: 1,
-      lastTransitionRevision: 1
+      firstRevision: 2,
+      lastTransitionRevision: 2
     }
   );
 
-  const removed = mutationCommit(added.head, 2);
+  const removed = mutationCommit(added.head, 3);
   removed.identityTransitions.removed = [
     { id: "ledger-row", kind: "row" },
     { id: "ledger-block", kind: "block" },
@@ -444,13 +394,13 @@ test("identity ledger tombstones removals, rejects reuse atomically, and permits
       id: "ledger-block",
       kind: "block",
       state: "tombstoned",
-      firstRevision: 1,
-      lastTransitionRevision: 2,
-      tombstonedRevision: 2
+      firstRevision: 2,
+      lastTransitionRevision: 3,
+      tombstonedRevision: 3
     }
   );
 
-  const ordinaryReuse = mutationCommit(removed.head, 3);
+  const ordinaryReuse = mutationCommit(removed.head, 4);
   ordinaryReuse.identityTransitions.added = [
     { id: "ledger-block", kind: "block" }
   ];
@@ -462,7 +412,7 @@ test("identity ledger tombstones removals, rejects reuse atomically, and permits
       error.previousKind === "block" &&
       error.requestedKind === "block"
   );
-  assert.equal((await store.getHead("identity-document"))?.revision, 2);
+  assert.equal((await store.getHead("identity-document"))?.revision, 3);
   assert.equal(
     await store.getChangeSet("identity-document", ordinaryReuse.changeSet.id),
     undefined
@@ -472,7 +422,7 @@ test("identity ledger tombstones removals, rejects reuse atomically, and permits
     "tombstoned"
   );
 
-  const crossKindReuse = mutationCommit(removed.head, 3);
+  const crossKindReuse = mutationCommit(removed.head, 4);
   crossKindReuse.identityTransitions.added = [
     { id: "ledger-block", kind: "row" }
   ];
@@ -484,7 +434,7 @@ test("identity ledger tombstones removals, rejects reuse atomically, and permits
       error.requestedKind === "row"
   );
 
-  const compensated = mutationCommit(removed.head, 3);
+  const compensated = mutationCommit(removed.head, 4);
   compensated.changeSet.compensation = {
     intent: "undo",
     targetChangeSetId: removed.changeSet.id
@@ -501,18 +451,18 @@ test("identity ledger tombstones removals, rejects reuse atomically, and permits
       id: "ledger-block",
       kind: "block",
       state: "active",
-      firstRevision: 1,
-      lastTransitionRevision: 3
+      firstRevision: 2,
+      lastTransitionRevision: 4
     }
   );
   assert.equal(
     (await store.getIdentity("identity-document", "document-style-normal"))
       ?.lastTransitionRevision,
-    0,
+    1,
     "identities carried across a mutation must not be rewritten"
   );
 
-  const crossKindCompensation = mutationCommit(compensated.head, 4);
+  const crossKindCompensation = mutationCommit(compensated.head, 5);
   crossKindCompensation.changeSet.compensation = {
     intent: "undo",
     targetChangeSetId: removed.changeSet.id
@@ -568,7 +518,7 @@ test("mutation CAS, attempt settlement, ownership, receipt, and outbox commit to
   const imaginaryPrior = { ...creation.head, revision: 9 };
   const stale = mutationCommit(imaginaryPrior, 10);
   assert.equal(await store.commitMutation(stale), false);
-  assert.equal((await store.getHead("document-1"))?.revision, 0);
+  assert.equal((await store.getHead("document-1"))?.revision, 1);
   assert.equal(await store.getChangeSet("document-1", stale.changeSet.id), undefined);
   assert.equal(await store.getSubmission("document-1", stale.receipt.requestId), undefined);
 
@@ -589,7 +539,7 @@ test("mutation CAS, attempt settlement, ownership, receipt, and outbox commit to
       blockId: attempt.blockId,
       creationAttemptId: attempt.id,
       state: "attached",
-      attachedRevision: 1,
+      attachedRevision: 2,
       at: timestamp(2)
     }
   ];
@@ -611,7 +561,7 @@ test("mutation CAS, attempt settlement, ownership, receipt, and outbox commit to
     blockId: attempt.blockId,
     creationAttemptId: attempt.id,
     state: "attached",
-    attachedRevision: 1,
+    attachedRevision: 2,
     createdAt: timestamp(1),
     updatedAt: timestamp(2)
   });
@@ -628,12 +578,15 @@ test("mutation CAS, attempt settlement, ownership, receipt, and outbox commit to
     }
   ];
   await assert.rejects(store.commitMutation(rollback), /ownership not found/);
-  assert.equal((await store.getHead("document-1"))?.revision, 1);
+  assert.equal((await store.getHead("document-1"))?.revision, 2);
   assert.equal(
     await store.getChangeSet("document-1", rollback.changeSet.id),
     undefined
   );
-  assert.equal(await store.getCommittedFact(rollback.fact.factId), undefined);
+  assert.equal(
+    await store.getCommittedTransaction(rollback.transaction.sourceTransactionId),
+    undefined
+  );
 
   await store.updatePromptOutputOwnership({
     outputId: "output-1",
@@ -652,7 +605,7 @@ test("mutation CAS, attempt settlement, ownership, receipt, and outbox commit to
     blockId: attempt.blockId,
     creationAttemptId: attempt.id,
     state: "detached",
-    attachedRevision: 1,
+    attachedRevision: 2,
     detachedRevision: 2,
     createdAt: timestamp(1),
     updatedAt: timestamp(3)
@@ -800,11 +753,11 @@ test("history reads paginate and pruning retains the current replay tail and act
   const initial = creation.base.snapshot;
   let head = creation.head;
 
-  for (let revision = 1; revision <= 6; revision += 1) {
+  for (let revision = 2; revision <= 7; revision += 1) {
     const commit = mutationCommit(head, revision);
     assert.equal(await store.commitMutation(commit), true);
     head = (await store.getHead(head.id))!;
-    if (revision % 2 === 0) {
+    if (revision % 2 === 1) {
       assert.equal(
         await store.appendBaseIfHead(
           head.id,
@@ -818,10 +771,10 @@ test("history reads paginate and pruning retains the current replay tail and act
   }
 
   const firstPage = await store.listChangeSets(head.id, undefined, 2);
-  assert.deepEqual(firstPage.items.map((change) => change.seq), [6, 5]);
+  assert.deepEqual(firstPage.items.map((change) => change.seq), [7, 6]);
   assert.ok(firstPage.nextCursor);
   const secondPage = await store.listChangeSets(head.id, firstPage.nextCursor, 2);
-  assert.deepEqual(secondPage.items.map((change) => change.seq), [4, 3]);
+  assert.deepEqual(secondPage.items.map((change) => change.seq), [5, 4]);
   const malformedHeadCursor = Buffer.from(JSON.stringify({
     kind: "document-head",
     updatedAt: 42,
@@ -840,8 +793,8 @@ test("history reads paginate and pruning retains the current replay tail and act
     (error: unknown) => error instanceof InvalidDocumentCursorError
   );
   assert.deepEqual(
-    (await store.getChangeSets(head.id, 4, 6)).map((change) => change.seq),
-    [5, 6]
+    (await store.getChangeSets(head.id, 5, 7)).map((change) => change.seq),
+    [6, 7]
   );
 
   const staleBase = baseForHead(initial, { ...head, revision: 5 });
@@ -864,15 +817,82 @@ test("history reads paginate and pruning retains the current replay tail and act
   await store.pruneHistory(head.id, 2, 2, 1);
 
   assert.equal(await store.getBaseAtOrBefore(head.id, 3), undefined);
-  assert.equal((await store.getBaseAtOrBefore(head.id, 4))?.baseSeq, 4);
+  assert.equal((await store.getBaseAtOrBefore(head.id, 5))?.baseSeq, 5);
   assert.deepEqual(
-    (await store.getChangeSets(head.id, 0, 6)).map((change) => change.seq),
-    [5, 6]
+    (await store.getChangeSets(head.id, 0, 7)).map((change) => change.seq),
+    [6, 7]
   );
   assert.equal(await store.getAttempt(head.id, "terminal-1"), undefined);
   assert.equal(await store.getAttempt(head.id, "terminal-2"), undefined);
   assert.ok(await store.getAttempt(head.id, "terminal-3"));
   assert.deepEqual(await store.listRecoverableAttempts(), [active]);
+
+  store.close();
+});
+
+test("retention anchors live and deleted Document bodies at the earliest retained revision", async () => {
+  const store = new SQLiteDocumentStore("retention-project", createStorePath());
+  const creation = creationCommit("retention-document");
+  await store.commitCreation(creation);
+  const revision2 = mutationCommit(creation.head, 2);
+  const revision3 = mutationCommit(revision2.head, 3);
+  const revision4 = mutationCommit(revision3.head, 4);
+  assert.equal(await store.commitMutation(revision2), true);
+  assert.equal(await store.commitMutation(revision3), true);
+  assert.equal(await store.commitMutation(revision4), true);
+
+  const liveCutoff = new Date(Date.parse(timestamp(3)) + 500).toISOString();
+  assert.deepEqual(await store.listRetentionAnchors(liveCutoff), [{
+    documentId: creation.head.id,
+    revision: 3,
+    currentRevision: 4
+  }]);
+  assert.equal(
+    await store.compactRetentionHistory(
+      { documentId: creation.head.id, revision: 3, currentRevision: 4 },
+      baseForHead(creation.base.snapshot, revision3.head)
+    ),
+    true
+  );
+  await store.pruneRevisionHistory(liveCutoff);
+  assert.equal(await store.getHistoricalHead(creation.head.id, 2), undefined);
+  assert.deepEqual(await store.getHistoricalHead(creation.head.id, 3), revision3.head);
+  assert.equal((await store.getBaseAtOrBefore(creation.head.id, 3))?.baseSeq, 3);
+  assert.deepEqual(
+    (await store.getChangeSets(creation.head.id, 3, 4)).map((change) => change.revision),
+    [4]
+  );
+
+  const { sourceChangeSetId: _sourceChangeSetId, ...source } = revision4.transaction;
+  const deletionTransaction: DocumentCommittedTransaction = {
+    ...source,
+    sourceTransactionId: "transaction-retention-document-deleted",
+    sourceRequestId: "delete-retention-document",
+    kind: "document.deleted",
+    revision: 5,
+    operationTypes: ["document.delete"],
+    occurredAt: timestamp(5)
+  };
+  assert.equal(
+    await store.deleteDocument(creation.head.id, timestamp(5), deletionTransaction),
+    5
+  );
+  const deletedCutoff = new Date(Date.parse(timestamp(4)) + 500).toISOString();
+  assert.deepEqual(await store.listRetentionAnchors(deletedCutoff), [{
+    documentId: creation.head.id,
+    revision: 4
+  }]);
+  assert.equal(
+    await store.compactRetentionHistory(
+      { documentId: creation.head.id, revision: 4 },
+      baseForHead(creation.base.snapshot, revision4.head)
+    ),
+    true
+  );
+  await store.pruneRevisionHistory(deletedCutoff);
+  assert.deepEqual(await store.getHistoricalHead(creation.head.id, 4), revision4.head);
+  assert.equal((await store.getBaseAtOrBefore(creation.head.id, 4))?.baseSeq, 4);
+  assert.deepEqual(await store.getChangeSets(creation.head.id, 4, 5), []);
 
   store.close();
 });

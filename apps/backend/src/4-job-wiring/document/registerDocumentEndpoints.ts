@@ -7,7 +7,6 @@ import {
 } from "#derived-outputs";
 import {
   CompensationConflictError,
-  DocumentAlreadyExistsError,
   DocumentAttemptNotFoundError,
   DocumentIdentityReuseError,
   DocumentNotFoundError,
@@ -26,8 +25,18 @@ import {
   type DocumentCapability,
   type DocumentCommandResult
 } from "#document";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
 
 const errorResponse = (error: unknown): { statusCode: number; body: unknown } => {
+  if (error instanceof ResourceNotDeletedError) {
+    return { statusCode: 409, body: { error: "not_deleted", message: error.message } };
+  }
+  if (error instanceof ResourceHistoryNotFoundError) {
+    return { statusCode: 404, body: { error: "not_found", message: error.message } };
+  }
   if (error instanceof DocumentNotFoundError || error instanceof DocumentAttemptNotFoundError) {
     return { statusCode: 404, body: { error: "not_found", message: error.message } };
   }
@@ -57,9 +66,6 @@ const errorResponse = (error: unknown): { statusCode: number; body: unknown } =>
   }
   if (error instanceof CompensationConflictError) {
     return { statusCode: 409, body: { error: "compensation_conflict", message: error.message } };
-  }
-  if (error instanceof DocumentAlreadyExistsError) {
-    return { statusCode: 409, body: { error: "already_exists", message: error.message } };
   }
   if (error instanceof DocumentPlacementError) {
     return { statusCode: 400, body: { error: "invalid_placement", message: error.message } };

@@ -25,6 +25,7 @@ export const decodeCommentCommand = (value: unknown): CommentCommand => {
     case "comment.resolve":
     case "comment.reopen":
     case "comment.delete":
+    case "comment.purge":
       exactKeys(command, ["type", "requestId", "commentId"], `Comment ${type} command`);
       return {
         type,

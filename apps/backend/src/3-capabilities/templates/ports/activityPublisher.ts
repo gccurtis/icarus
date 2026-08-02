@@ -1,6 +1,6 @@
-import type { TemplateCommittedFact } from "../domain/model.js";
+import type { TemplateCommittedTransaction } from "../domain/model.js";
 
 /** Narrow source-side Activity port; Templates never imports the Activity runtime. */
 export interface TemplateActivityPublisher {
-  publish(fact: TemplateCommittedFact): Promise<void>;
+  publish(transaction: TemplateCommittedTransaction): Promise<void>;
 }

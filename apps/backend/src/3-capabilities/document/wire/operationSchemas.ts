@@ -108,7 +108,7 @@ export const decodeDocumentOperation = (value: unknown): DocumentOperation => {
       requireString(operation.title, `${type}.title`);
       break;
     case "document.set-lifecycle":
-      requireEnum(operation.lifecycle, ["active", "archived", "trashed"], `${type}.lifecycle`);
+      requireEnum(operation.lifecycle, ["active", "archived"], `${type}.lifecycle`);
       break;
     case "layout.set-page":
       decodePageLayout(operation.layout, `${type}.layout`);

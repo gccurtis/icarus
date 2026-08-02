@@ -11,7 +11,7 @@ import type {
   DerivedOutputRevision
 } from "#derived-outputs";
 
-export type DocumentLifecycle = "active" | "archived" | "trashed";
+export type DocumentLifecycle = "active" | "archived";
 export type DocumentOrigin = "interactive" | "agent" | "automation";
 
 export interface DocumentHead {
@@ -396,15 +396,19 @@ export interface DocumentChangeSet {
   createdAt: string;
 }
 
-export interface DocumentCommittedFact {
+export interface DocumentCommittedTransaction {
   /**
    * The stable Activity transaction ID. It is allocated with the accepted
    * Document mutation and is reused for every outbox delivery attempt.
    */
-  factId: string;
+  sourceTransactionId: string;
   /** The accepted Document command that produced this outbox record. */
   sourceRequestId: string;
-  kind: "document.created" | "document.changed" | "document.compensated";
+  kind:
+    | "document.created"
+    | "document.changed"
+    | "document.compensated"
+    | "document.deleted";
   documentId: string;
   revision: number;
   /**
@@ -436,19 +440,23 @@ export interface DocumentSubmissionReceipt {
 }
 
 /**
- * Durable local half of a command delegated to another capability store.
- * The target is frozen before the external side effect starts so an exact
- * retry never retargets after the canonical Document changes.
+ * Replay record for `document.create`, keyed by request id alone.
+ *
+ * Every other command addresses an existing document, so its receipt can be
+ * keyed `(document_id, request_id)`. A create has no document id until the
+ * service allocates one, so a retry would have nothing to look up with and
+ * would create a second document. This receipt is what makes create replayable.
+ *
+ * `documentId` is carried so the row can cascade when the document is deleted.
+ * The receipt means "this request produced that document"; once the document is
+ * gone, replaying it would return a head for something that no longer exists.
  */
-export interface DocumentDelegatedCommandClaim {
-  documentId: string;
+export interface DocumentCreateReceipt {
   requestId: string;
+  documentId: string;
   requestDigest: string;
-  kind: "prompt.update-definition";
-  targetOutputId: string;
-  state: "pending" | "completed";
+  result: DocumentCommandResult;
   createdAt: string;
-  updatedAt: string;
 }
 
 export type DocumentAttemptState =
@@ -544,8 +552,10 @@ export interface DocumentCommandRequest {
 
 export type DocumentCommand =
   | {
+      // The document id is allocated by the service and returned on the result's
+      // head. A caller has no basis on which to name a resource that does not
+      // exist yet, and letting it try invites collisions with live documents.
       type: "document.create";
-      documentId: string;
       title: string;
       pageLayout?: DocumentPageLayout;
       styles?: DocumentStyleRegistry;
@@ -562,6 +572,16 @@ export type DocumentCommand =
       targetChangeSetId: string;
       intent: "undo" | "redo";
       expectedRevision: number;
+    }
+  | {
+      /** Logical deletion; retained history remains revision-loadable. */
+      type: "document.delete";
+      documentId: string;
+      expectedRevision: number;
+    }
+  | {
+      type: "document.purge";
+      documentId: string;
     }
   | {
       type: "prompt.create.request";
@@ -600,6 +620,8 @@ export type DocumentCommand =
 export type DocumentCommandResult =
   | { type: "document.created"; head: DocumentHead }
   | { type: "document.changed"; changeSet: DocumentChangeSet }
+  | { type: "document.deleted"; documentId: string; revision: number }
+  | { type: "document.purged"; documentId: string }
   | { type: "prompt.create-requested"; attemptId: string }
   | { type: "prompt.definition-updated"; output: DerivedOutput }
   | { type: "prompt.refresh-requested"; attemptId: string }

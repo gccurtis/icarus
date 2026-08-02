@@ -1,12 +1,22 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database, { type Database as DatabaseConnection } from "better-sqlite3";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError,
+  getResourceHistory,
+  insertHistoryDeletion,
+  insertHistorySnapshot,
+  listExpiredDeletedResources,
+  pruneHistoryBefore,
+  purgeResourceHistory
+} from "#utils/persistence/resourceHistory.js";
 import type {
   DocumentAttempt,
   DocumentBase,
   DocumentChangeSet,
-  DocumentCommittedFact,
-  DocumentDelegatedCommandClaim,
+  DocumentCommittedTransaction,
+  DocumentCreateReceipt,
   DocumentHead,
   DocumentLifecycle,
   DocumentStageReceipt,
@@ -21,13 +31,12 @@ import type {
 } from "../domain/identities.js";
 import {
   DocumentIdentityReuseError,
-  IdempotencyMismatchError,
   InvalidDocumentCursorError
 } from "../domain/errors.js";
 import type {
-  DelegatedCommandClaimResult,
   DocumentCreationCommit,
   DocumentMutationCommit,
+  DocumentRetentionAnchor,
   DocumentStore,
   PromptCreationFailureCommit,
   PromptOwnershipTransition,
@@ -39,8 +48,8 @@ import {
   rowToAttempt,
   rowToBase,
   rowToChangeSet,
-  rowToCommittedFact,
-  rowToDelegatedCommandClaim,
+  rowToCommittedTransaction,
+  rowToCreateReceipt,
   rowToHead,
   rowToIdentityLedgerEntry,
   rowToPromptOutputOwnership,
@@ -302,6 +311,18 @@ export class SQLiteDocumentStore implements DocumentStore {
     return row ? rowToSubmission(row) : undefined;
   }
 
+  async getCreateSubmission(
+    requestId: string
+  ): Promise<DocumentCreateReceipt | undefined> {
+    const row = this.db
+      .prepare(`
+        SELECT * FROM ${this.tables.createReceipts}
+        WHERE request_id = ?
+      `)
+      .get(requestId) as SQLiteRow | undefined;
+    return row ? rowToCreateReceipt(row) : undefined;
+  }
+
   async getIdentity(
     documentId: string,
     identityId: string
@@ -319,157 +340,24 @@ export class SQLiteDocumentStore implements DocumentStore {
     this.insertSubmission(receipt);
   }
 
-  async getDelegatedCommandClaim(
-    documentId: string,
-    requestId: string
-  ): Promise<DocumentDelegatedCommandClaim | undefined> {
-    const row = this.db
-      .prepare(`
-        SELECT * FROM ${this.tables.delegatedCommandClaims}
-        WHERE document_id = ? AND request_id = ?
-      `)
-      .get(documentId, requestId) as SQLiteRow | undefined;
-    return row ? rowToDelegatedCommandClaim(row) : undefined;
-  }
-
-  async claimDelegatedCommand(
-    claim: DocumentDelegatedCommandClaim
-  ): Promise<DelegatedCommandClaimResult> {
-    if (claim.state !== "pending") {
-      throw new Error("A new delegated Document command claim must be pending");
-    }
-    return this.db.transaction(() => {
-      const receiptRow = this.db
-        .prepare(`
-          SELECT * FROM ${this.tables.receipts}
-          WHERE document_id = ? AND request_id = ?
-        `)
-        .get(claim.documentId, claim.requestId) as SQLiteRow | undefined;
-      if (receiptRow) {
-        return {
-          type: "receipt" as const,
-          receipt: rowToSubmission(receiptRow)
-        };
-      }
-
-      const existingRow = this.db
-        .prepare(`
-          SELECT * FROM ${this.tables.delegatedCommandClaims}
-          WHERE document_id = ? AND request_id = ?
-        `)
-        .get(claim.documentId, claim.requestId) as SQLiteRow | undefined;
-      if (existingRow) {
-        const existing = rowToDelegatedCommandClaim(existingRow);
-        this.assertSameDelegatedRequest(existing, claim);
-        return { type: "claim" as const, claim: existing };
-      }
-
-      this.db
-        .prepare(`
-          INSERT INTO ${this.tables.delegatedCommandClaims}
-            (document_id, request_id, request_digest, command_kind,
-             target_output_id, state, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)
-        `)
-        .run(
-          claim.documentId,
-          claim.requestId,
-          claim.requestDigest,
-          claim.kind,
-          claim.targetOutputId,
-          claim.createdAt,
-          claim.updatedAt
-        );
-      return { type: "claim" as const, claim };
-    })();
-  }
-
-  async completeDelegatedCommand(
-    claim: DocumentDelegatedCommandClaim,
-    receipt: DocumentSubmissionReceipt
-  ): Promise<void> {
-    if (
-      receipt.documentId !== claim.documentId ||
-      receipt.requestId !== claim.requestId ||
-      receipt.requestDigest !== claim.requestDigest
-    ) {
-      throw new IdempotencyMismatchError(claim.requestId);
-    }
-
-    this.db.transaction(() => {
-      const claimRow = this.db
-        .prepare(`
-          SELECT * FROM ${this.tables.delegatedCommandClaims}
-          WHERE document_id = ? AND request_id = ?
-        `)
-        .get(claim.documentId, claim.requestId) as SQLiteRow | undefined;
-      if (!claimRow) {
-        throw new Error(
-          `Delegated Document command was not claimed: ${claim.requestId}`
-        );
-      }
-      const persistedClaim = rowToDelegatedCommandClaim(claimRow);
-      this.assertSameDelegatedClaim(persistedClaim, claim);
-
-      const receiptRow = this.db
-        .prepare(`
-          SELECT * FROM ${this.tables.receipts}
-          WHERE document_id = ? AND request_id = ?
-        `)
-        .get(claim.documentId, claim.requestId) as SQLiteRow | undefined;
-      if (receiptRow) {
-        const persistedReceipt = rowToSubmission(receiptRow);
-        if (
-          persistedReceipt.requestDigest !== receipt.requestDigest ||
-          encodeJson(persistedReceipt.result).compare(encodeJson(receipt.result)) !== 0
-        ) {
-          throw new IdempotencyMismatchError(receipt.requestId);
-        }
-        if (persistedClaim.state !== "completed") {
-          throw new Error(
-            "Delegated Document command receipt exists before claim completion"
-          );
-        }
-        return;
-      }
-      if (persistedClaim.state === "completed") {
-        throw new Error(
-          "Completed delegated Document command is missing its receipt"
-        );
-      }
-
-      this.insertSubmission(receipt, true);
-      const updated = this.db
-        .prepare(`
-          UPDATE ${this.tables.delegatedCommandClaims}
-          SET state = 'completed', updated_at = ?
-          WHERE document_id = ? AND request_id = ? AND state = 'pending'
-        `)
-        .run(receipt.createdAt, claim.documentId, claim.requestId);
-      if (updated.changes !== 1) {
-        throw new Error(
-          `Delegated Document command could not complete: ${claim.requestId}`
-        );
-      }
-    })();
-  }
-
   async commitCreation(commit: DocumentCreationCommit): Promise<void> {
     assertSameDocument(commit.head.id, [
       { label: "Document Base", documentId: commit.base.documentId },
       { label: "Document receipt", documentId: commit.receipt.documentId },
-      { label: "Document fact", documentId: commit.fact.documentId }
+      { label: "Document transaction", documentId: commit.transaction.documentId }
     ]);
-    if (commit.head.revision !== 0 || commit.base.baseSeq !== 0) {
-      throw new Error("Document creation must commit revision-zero head and Base");
+    if (commit.head.revision !== 1 || commit.base.baseSeq !== 1) {
+      throw new Error("Document creation must commit revision-one head and Base");
     }
 
     this.db.transaction(() => {
+      this.insertResource(commit.head.id, commit.head.createdAt);
       this.insertHead(commit.head);
       this.claimInitialIdentities(commit.head.id, commit.identities);
       this.insertBase(commit.base);
       this.insertSubmission(commit.receipt);
-      this.insertCommittedFact(commit.fact);
+      this.insertCreateReceipt(commit.createReceipt);
+      this.insertCommittedTransaction(commit.transaction);
     })();
   }
 
@@ -478,7 +366,7 @@ export class SQLiteDocumentStore implements DocumentStore {
     assertSameDocument(documentId, [
       { label: "Document ChangeSet", documentId: commit.changeSet.documentId },
       { label: "Document receipt", documentId: commit.receipt.documentId },
-      { label: "Document fact", documentId: commit.fact.documentId },
+      { label: "Document transaction", documentId: commit.transaction.documentId },
       ...(commit.attempts ?? []).map((attempt) => ({
         label: "Document attempt",
         documentId: attempt.documentId
@@ -510,6 +398,17 @@ export class SQLiteDocumentStore implements DocumentStore {
     }
 
     return this.db.transaction(() => {
+      const previousRow = this.db.prepare(
+        `SELECT * FROM ${this.tables.documents} WHERE id = ? AND revision = ?`
+      ).get(documentId, commit.expectedRevision) as SQLiteRow | undefined;
+      if (!previousRow) return false;
+      insertHistorySnapshot(this.db, this.tables.history, {
+        resourceKind: "document",
+        resourceId: documentId,
+        revision: commit.expectedRevision,
+        snapshot: rowToHead(previousRow),
+        recordedAt: commit.head.updatedAt
+      });
       const updated = this.db
         .prepare(`
           UPDATE ${this.tables.documents}
@@ -547,7 +446,7 @@ export class SQLiteDocumentStore implements DocumentStore {
         this.updatePromptOutputOwnershipRow(transition);
       }
       this.insertSubmission(commit.receipt);
-      this.insertCommittedFact(commit.fact);
+      this.insertCommittedTransaction(commit.transaction);
       return true;
     })();
   }
@@ -684,6 +583,18 @@ export class SQLiteDocumentStore implements DocumentStore {
                 FROM ${this.tables.changeSets}
                 WHERE compensation_target_change_set_id IS NOT NULL
               )
+          `)
+          .run(documentId, changeCutoff);
+
+        // A retained head envelope must always have enough Base/Change Set
+        // data to reconstruct it. Count-based compaction makes revisions below
+        // the anchor unavailable, so remove those envelopes in the same
+        // transaction instead of leaving misleading retained history behind.
+        this.db
+          .prepare(`
+            DELETE FROM ${this.tables.history}
+            WHERE resource_kind = 'document' AND resource_id = ?
+              AND record_type = 'snapshot' AND revision < ?
           `)
           .run(documentId, changeCutoff);
       }
@@ -1011,46 +922,260 @@ export class SQLiteDocumentStore implements DocumentStore {
     return rows.map(rowToPromptOutputOwnership);
   }
 
-  async getCommittedFact(
-    factId: string
-  ): Promise<DocumentCommittedFact | undefined> {
-    const row = this.db
-      .prepare(`SELECT * FROM ${this.tables.activityOutbox} WHERE fact_id = ?`)
-      .get(factId) as SQLiteRow | undefined;
-    return row ? rowToCommittedFact(row) : undefined;
+  async listPromptOutputsForDocument(
+    documentId: string
+  ): Promise<PromptOutputOwnership[]> {
+    const rows = this.db
+      .prepare(`
+        SELECT * FROM ${this.tables.promptOutputs}
+        WHERE document_id = ?
+        ORDER BY created_at ASC, output_id ASC
+      `)
+      .all(documentId) as SQLiteRow[];
+    return rows.map(rowToPromptOutputOwnership);
   }
 
-  async getCommittedFactByRequest(
+  async deleteDocument(
+    documentId: string,
+    deletedAt: string,
+    transaction: DocumentCommittedTransaction
+  ): Promise<number | null> {
+    return this.db.transaction(() => {
+      const row = this.db.prepare(
+        `SELECT * FROM ${this.tables.documents} WHERE id = ?`
+      ).get(documentId) as SQLiteRow | undefined;
+      if (!row) return null;
+      const head = rowToHead(row);
+      const deletionRevision = head.revision + 1;
+      if (transaction.revision !== deletionRevision) {
+        throw new Error("Document deletion transaction revision is inconsistent");
+      }
+      insertHistorySnapshot(this.db, this.tables.history, {
+        resourceKind: "document",
+        resourceId: documentId,
+        revision: head.revision,
+        snapshot: head,
+        recordedAt: deletedAt
+      });
+      insertHistoryDeletion(this.db, this.tables.history, {
+        resourceKind: "document",
+        resourceId: documentId,
+        revision: deletionRevision,
+        recordedAt: deletedAt
+      });
+      this.db.prepare(`
+        INSERT OR IGNORE INTO ${this.tables.retainedOutputs} (document_id, output_id)
+        SELECT document_id, output_id FROM ${this.tables.promptOutputs}
+        WHERE document_id = ?
+      `).run(documentId);
+      this.insertCommittedTransaction(transaction);
+      const removed = this.db.prepare(
+        `DELETE FROM ${this.tables.documents} WHERE id = ?`
+      ).run(documentId);
+      return removed.changes === 1 ? deletionRevision : null;
+    })();
+  }
+
+  async purgeDocument(documentId: string): Promise<void> {
+    if (await this.getHead(documentId)) throw new ResourceNotDeletedError("document", documentId);
+    this.db.transaction(() => {
+      if (!purgeResourceHistory(this.db, this.tables.history, "document", documentId)) {
+        throw new ResourceHistoryNotFoundError("document", documentId);
+      }
+      this.db.prepare(`DELETE FROM ${this.tables.resources} WHERE id = ?`).run(documentId);
+    })();
+  }
+
+  async hasResource(documentId: string): Promise<boolean> {
+    return Boolean(this.db.prepare(
+      `SELECT 1 FROM ${this.tables.resources} WHERE id = ?`
+    ).get(documentId));
+  }
+
+  async getHistoricalHead(
+    documentId: string,
+    revision: number
+  ): Promise<DocumentHead | undefined> {
+    return getResourceHistory<DocumentHead>(
+      this.db,
+      this.tables.history,
+      "document",
+      documentId
+    ).find((record) => record.revision === revision && record.recordType === "snapshot")?.snapshot;
+  }
+
+  async listRetainedPromptOutputIds(documentId: string): Promise<string[]> {
+    const rows = this.db.prepare(`
+      SELECT output_id FROM ${this.tables.retainedOutputs}
+      WHERE document_id = ? ORDER BY output_id
+    `).all(documentId) as Array<{ output_id: string }>;
+    return rows.map((row) => row.output_id);
+  }
+
+  async listRetentionAnchors(cutoff: string): Promise<DocumentRetentionAnchor[]> {
+    const live = this.db.prepare(`
+      SELECT
+        current.id AS document_id,
+        current.revision AS current_revision,
+        COALESCE(MIN(history.revision), current.revision) AS anchor_revision
+      FROM ${this.tables.documents} AS current
+      LEFT JOIN ${this.tables.history} AS history
+        ON history.resource_kind = 'document'
+       AND history.resource_id = current.id
+       AND history.record_type = 'snapshot'
+       AND history.recorded_at >= ?
+      GROUP BY current.id, current.revision
+    `).all(cutoff) as Array<{
+      document_id: string;
+      current_revision: number;
+      anchor_revision: number;
+    }>;
+    const deleted = this.db.prepare(`
+      SELECT
+        resource.id AS document_id,
+        MIN(history.revision) AS anchor_revision
+      FROM ${this.tables.resources} AS resource
+      JOIN ${this.tables.history} AS history
+        ON history.resource_kind = 'document'
+       AND history.resource_id = resource.id
+       AND history.record_type = 'snapshot'
+       AND history.recorded_at >= ?
+      LEFT JOIN ${this.tables.documents} AS current ON current.id = resource.id
+      WHERE current.id IS NULL
+      GROUP BY resource.id
+    `).all(cutoff) as Array<{
+      document_id: string;
+      anchor_revision: number;
+    }>;
+    return [
+      ...live.map((row) => ({
+        documentId: row.document_id,
+        revision: Number(row.anchor_revision),
+        currentRevision: Number(row.current_revision)
+      })),
+      ...deleted.map((row) => ({
+        documentId: row.document_id,
+        revision: Number(row.anchor_revision)
+      }))
+    ].sort((left, right) => left.documentId.localeCompare(right.documentId));
+  }
+
+  async compactRetentionHistory(
+    anchor: DocumentRetentionAnchor,
+    base: DocumentBase
+  ): Promise<boolean> {
+    if (base.documentId !== anchor.documentId || base.baseSeq !== anchor.revision) {
+      throw new Error("Document retention Base does not match its anchor");
+    }
+    return this.db.transaction(() => {
+      const current = this.db.prepare(`
+        SELECT revision FROM ${this.tables.documents} WHERE id = ?
+      `).get(anchor.documentId) as { revision: number } | undefined;
+      if (anchor.currentRevision === undefined) {
+        if (current || !this.db.prepare(
+          `SELECT 1 FROM ${this.tables.resources} WHERE id = ?`
+        ).get(anchor.documentId)) return false;
+      } else if (!current || Number(current.revision) !== anchor.currentRevision) {
+        return false;
+      }
+
+      const persisted = this.db.prepare(`
+        SELECT * FROM ${this.tables.bases}
+        WHERE document_id = ? AND base_seq = ?
+      `).get(base.documentId, base.baseSeq) as SQLiteRow | undefined;
+      if (persisted) {
+        const mapped = rowToBase(persisted);
+        if (
+          mapped.semanticDigest !== base.semanticDigest ||
+          encodeJson(mapped.snapshot).compare(encodeJson(base.snapshot)) !== 0
+        ) {
+          throw new Error("A different Document Base already exists at this revision");
+        }
+      } else {
+        this.db.prepare(`
+          INSERT INTO ${this.tables.bases}
+            (document_id, base_seq, representation_version, snapshot_json,
+             semantic_digest, created_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(
+          base.documentId,
+          base.baseSeq,
+          base.representationVersion,
+          encodeJson(base.snapshot),
+          base.semanticDigest,
+          base.createdAt
+        );
+      }
+
+      this.db.prepare(`
+        DELETE FROM ${this.tables.changeSets}
+        WHERE document_id = ? AND seq <= ?
+      `).run(anchor.documentId, anchor.revision);
+      this.db.prepare(`
+        DELETE FROM ${this.tables.bases}
+        WHERE document_id = ? AND base_seq < ?
+      `).run(anchor.documentId, anchor.revision);
+      return true;
+    })();
+  }
+
+  async pruneRevisionHistory(cutoff: string): Promise<number> {
+    return pruneHistoryBefore(
+      this.db,
+      this.tables.history,
+      cutoff,
+      (_kind, id) => Boolean(this.db.prepare(
+        `SELECT 1 FROM ${this.tables.documents} WHERE id = ?`
+      ).get(id))
+    );
+  }
+
+  async listExpiredDeleted(cutoff: string): Promise<string[]> {
+    return listExpiredDeletedResources(this.db, this.tables.history, cutoff)
+      .filter(({ resourceKind }) => resourceKind === "document")
+      .map(({ resourceId }) => resourceId);
+  }
+
+  async getCommittedTransaction(
+    sourceTransactionId: string
+  ): Promise<DocumentCommittedTransaction | undefined> {
+    const row = this.db
+      .prepare(`SELECT * FROM ${this.tables.transactionOutbox} WHERE source_transaction_id = ?`)
+      .get(sourceTransactionId) as SQLiteRow | undefined;
+    return row ? rowToCommittedTransaction(row) : undefined;
+  }
+
+  async getCommittedTransactionByRequest(
     documentId: string,
     sourceRequestId: string
-  ): Promise<DocumentCommittedFact | undefined> {
+  ): Promise<DocumentCommittedTransaction | undefined> {
     const row = this.db
       .prepare(`
-        SELECT * FROM ${this.tables.activityOutbox}
+        SELECT * FROM ${this.tables.transactionOutbox}
         WHERE document_id = ? AND source_request_id = ?
-        ORDER BY occurred_at ASC, fact_id ASC
+        ORDER BY occurred_at ASC, source_transaction_id ASC
         LIMIT 1
       `)
       .get(documentId, sourceRequestId) as SQLiteRow | undefined;
-    return row ? rowToCommittedFact(row) : undefined;
+    return row ? rowToCommittedTransaction(row) : undefined;
   }
 
-  async getCommittedFactByChangeSet(
+  async getCommittedTransactionByChangeSet(
     documentId: string,
     sourceChangeSetId: string
-  ): Promise<DocumentCommittedFact | undefined> {
+  ): Promise<DocumentCommittedTransaction | undefined> {
     const row = this.db
       .prepare(`
-        SELECT * FROM ${this.tables.activityOutbox}
+        SELECT * FROM ${this.tables.transactionOutbox}
         WHERE document_id = ? AND source_change_set_id = ?
-        ORDER BY occurred_at ASC, fact_id ASC
+        ORDER BY occurred_at ASC, source_transaction_id ASC
         LIMIT 1
       `)
       .get(documentId, sourceChangeSetId) as SQLiteRow | undefined;
-    return row ? rowToCommittedFact(row) : undefined;
+    return row ? rowToCommittedTransaction(row) : undefined;
   }
 
-  async listUnpublishedFacts(limit?: number): Promise<DocumentCommittedFact[]> {
+  async listUnpublishedTransactions(limit?: number): Promise<DocumentCommittedTransaction[]> {
     const size = boundedLimit(
       limit,
       DEFAULT_MAINTENANCE_BATCH_SIZE,
@@ -1058,23 +1183,23 @@ export class SQLiteDocumentStore implements DocumentStore {
     );
     const rows = this.db
       .prepare(`
-        SELECT * FROM ${this.tables.activityOutbox}
+        SELECT * FROM ${this.tables.transactionOutbox}
         WHERE published_at IS NULL
-        ORDER BY occurred_at ASC, fact_id ASC
+        ORDER BY occurred_at ASC, source_transaction_id ASC
         LIMIT ?
       `)
       .all(size) as SQLiteRow[];
-    return rows.map(rowToCommittedFact);
+    return rows.map(rowToCommittedTransaction);
   }
 
-  async markFactPublished(factId: string, publishedAt: string): Promise<void> {
+  async markTransactionPublished(sourceTransactionId: string, publishedAt: string): Promise<void> {
     this.db
       .prepare(`
-        UPDATE ${this.tables.activityOutbox}
+        UPDATE ${this.tables.transactionOutbox}
         SET published_at = COALESCE(published_at, ?)
-        WHERE fact_id = ?
+        WHERE source_transaction_id = ?
       `)
-      .run(publishedAt, factId);
+      .run(publishedAt, sourceTransactionId);
   }
 
   private insertHead(head: DocumentHead): void {
@@ -1097,6 +1222,12 @@ export class SQLiteDocumentStore implements DocumentStore {
       );
   }
 
+  private insertResource(documentId: string, createdAt: string): void {
+    this.db.prepare(`
+      INSERT INTO ${this.tables.resources} (id, created_at) VALUES (?, ?)
+    `).run(documentId, createdAt);
+  }
+
   private claimInitialIdentities(
     documentId: string,
     identities: DocumentIdentity[]
@@ -1106,7 +1237,7 @@ export class SQLiteDocumentStore implements DocumentStore {
       INSERT INTO ${this.tables.identityLedger}
         (document_id, identity_id, identity_kind, state, first_revision,
          last_transition_revision, tombstoned_revision)
-      VALUES (?, ?, ?, 'active', 0, 0, NULL)
+      VALUES (?, ?, ?, 'active', 1, 1, NULL)
     `);
     for (const identity of identities) {
       const previousKind = claimed.get(identity.id);
@@ -1269,19 +1400,7 @@ export class SQLiteDocumentStore implements DocumentStore {
       );
   }
 
-  private insertSubmission(
-    receipt: DocumentSubmissionReceipt,
-    completingDelegatedCommand = false
-  ): void {
-    const delegatedRow = this.db
-      .prepare(`
-        SELECT * FROM ${this.tables.delegatedCommandClaims}
-        WHERE document_id = ? AND request_id = ?
-      `)
-      .get(receipt.documentId, receipt.requestId) as SQLiteRow | undefined;
-    if (delegatedRow && !completingDelegatedCommand) {
-      throw new IdempotencyMismatchError(receipt.requestId);
-    }
+  private insertSubmission(receipt: DocumentSubmissionReceipt): void {
     this.db
       .prepare(`
         INSERT INTO ${this.tables.receipts}
@@ -1297,54 +1416,50 @@ export class SQLiteDocumentStore implements DocumentStore {
       );
   }
 
-  private assertSameDelegatedRequest(
-    existing: DocumentDelegatedCommandClaim,
-    incoming: DocumentDelegatedCommandClaim
-  ): void {
-    if (
-      existing.kind !== incoming.kind ||
-      existing.requestDigest !== incoming.requestDigest
-    ) {
-      throw new IdempotencyMismatchError(incoming.requestId);
-    }
-  }
-
-  private assertSameDelegatedClaim(
-    existing: DocumentDelegatedCommandClaim,
-    incoming: DocumentDelegatedCommandClaim
-  ): void {
-    this.assertSameDelegatedRequest(existing, incoming);
-    if (existing.targetOutputId !== incoming.targetOutputId) {
-      throw new IdempotencyMismatchError(incoming.requestId);
-    }
-  }
-
-  private insertCommittedFact(fact: DocumentCommittedFact): void {
+  private insertCreateReceipt(receipt: DocumentCreateReceipt): void {
     this.db
       .prepare(`
-        INSERT INTO ${this.tables.activityOutbox}
-          (fact_id, source_request_id, fact_kind, document_id, revision,
+        INSERT INTO ${this.tables.createReceipts}
+          (request_id, document_id, request_digest, result_json, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `)
+      .run(
+        receipt.requestId,
+        receipt.documentId,
+        receipt.requestDigest,
+        encodeJson(receipt.result),
+        receipt.createdAt
+      );
+  }
+
+  private insertCommittedTransaction(transaction: DocumentCommittedTransaction): void {
+    this.db
+      .prepare(`
+        INSERT INTO ${this.tables.transactionOutbox}
+          (source_transaction_id, source_request_id, transaction_kind, document_id,
+           resource_root_id, revision,
            change_set_id, source_change_set_id, actor_id, origin,
            operation_types, semantic_digest,
            compensation_intent, compensation_target_change_set_id, occurred_at,
            published_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
       `)
       .run(
-        fact.factId,
-        fact.sourceRequestId,
-        fact.kind,
-        fact.documentId,
-        fact.revision,
-        fact.sourceChangeSetId ?? null,
-        fact.sourceChangeSetId ?? null,
-        fact.actorId ?? null,
-        fact.origin,
-        encodeJson(fact.operationTypes),
-        fact.sourceSemanticDigest,
-        fact.compensation?.intent ?? null,
-        fact.compensation?.targetChangeSetId ?? null,
-        fact.occurredAt
+        transaction.sourceTransactionId,
+        transaction.sourceRequestId,
+        transaction.kind,
+        transaction.documentId,
+        transaction.documentId,
+        transaction.revision,
+        transaction.sourceChangeSetId ?? null,
+        transaction.sourceChangeSetId ?? null,
+        transaction.actorId ?? null,
+        transaction.origin,
+        encodeJson(transaction.operationTypes),
+        transaction.sourceSemanticDigest,
+        transaction.compensation?.intent ?? null,
+        transaction.compensation?.targetChangeSetId ?? null,
+        transaction.occurredAt
       );
   }
 

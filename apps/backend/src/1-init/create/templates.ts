@@ -5,7 +5,7 @@ import {
   SQLiteTemplateStore,
   type TemplateActivityPublisher,
   type TemplateCapability,
-  type TemplateCommittedFact,
+  type TemplateCommittedTransaction,
   type TemplateResourceAdapter,
   type TemplateResourceRegistry
 } from "#templates";
@@ -32,26 +32,26 @@ export const createTemplateAdapterRegistry = (): RuntimeTemplateAdapterRegistry 
 };
 
 export const toTemplateActivityTransaction = (
-  fact: TemplateCommittedFact
+  transaction: TemplateCommittedTransaction
 ): ActivityTransactionInput => ({
-  idempotencyKey: fact.factId,
+  idempotencyKey: transaction.sourceTransactionId,
   kind: "template",
-  resourceId: fact.templateId,
-  operation: fact.kind.slice("template.".length),
-  ...(fact.actorId ? { actorId: fact.actorId } : {}),
-  origin: "user",
-  occurredAt: fact.occurredAt,
+  resourceId: transaction.templateId,
+  operation: transaction.kind.slice("template.".length),
+  ...(transaction.actorId ? { actorId: transaction.actorId } : {}),
+  origin: transaction.origin,
+  occurredAt: transaction.occurredAt,
   metadata: {
-    resourceKind: fact.resourceKind,
-    resourceId: fact.resourceId
+    resourceKind: transaction.resourceKind,
+    resourceId: transaction.resourceId
   }
 });
 
 export const createTemplateActivityPublisher = (
   activity: ActivityCapability
 ): TemplateActivityPublisher => ({
-  publish: async (fact) => {
-    await activity.publish(toTemplateActivityTransaction(fact));
+  publish: async (transaction) => {
+    await activity.publish(toTemplateActivityTransaction(transaction));
   }
 });
 
@@ -69,7 +69,6 @@ export const createTemplatesInstance = (
       logger,
       activityPublisher: createTemplateActivityPublisher(activity),
       attribution: { actorId: config.userId }
-    },
-    config.templates
+    }
   );
 };

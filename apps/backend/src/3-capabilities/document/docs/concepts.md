@@ -27,7 +27,9 @@ flowchart TB
 
 | Term | Current meaning |
 | --- | --- |
-| Head | Small current-state record: identity, title/lifecycle, revision, latest Base sequence, semantic digest, timestamps. |
+| Current head | Small live-state record in `documents`: identity, title/lifecycle, revision, latest Base sequence, semantic digest, and timestamps. Its absence means the Document is not current. |
+| Resource root | Stable `document_resources` row keyed only by Document ID. It anchors retained Bases, ChangeSets, structural identities, and owned-output references after logical deletion. |
+| Head history | `document_history` snapshots of superseded heads plus a terminal deletion revision. |
 | Snapshot | Complete canonical representation at one revision. |
 | Base | Durable full snapshot at a selected revision (`baseSeq`). |
 | ChangeSet | One accepted mutation: forward/inverse operations, touched IDs, revision metadata, digest, origin, and optional compensation link. |
@@ -38,9 +40,9 @@ flowchart TB
 | Formula atom | Rich Text atom whose expression is evaluated asynchronously and settled as a Rich Text operation. |
 | Attempt | Durable prompt-create, prompt-refresh, or formula-evaluation workflow record. |
 | Stage receipt | Idempotency/ownership record for one attempt's compute or settle stage. |
-| Identity ledger | Permanent per-Document claim for every canonical local identity, including tombstones. |
+| Identity ledger | Retained per-Document claim for every canonical local identity, including structural tombstones; purge removes it with the resource root. |
 | Submission receipt | `(documentId, requestId)` replay record with canonical request digest and result. |
-| Delegated claim | Local durable half of prompt definition update before calling Derived Outputs. |
+| Create receipt | `requestId` replay record for `document.create`, which has no document id until the service allocates one. Written in the same transaction as the submission receipt, and cascaded away with its document — replaying it after deletion would return a head for something that no longer exists. |
 | Prompt ownership | Local mapping from a dedicated output to one Document Block, with pending/attached/detached state. |
 
 ## Canonical tree
@@ -68,13 +70,22 @@ media snapshot IDs are external references and are not Document identities.
 
 ## Revision lifecycle
 
-Creation writes head revision 0 and Base 0. Every accepted mutation advances
-the head by exactly one and writes a ChangeSet whose `seq === revision` and
+Creation writes current head revision 1 and Base 1. Every accepted mutation
+archives the previous head in `document_history`, advances the current head by
+exactly one, and writes a ChangeSet whose `seq === revision` and
 `priorRevision + 1 === revision`. A historical read reconstructs from the
 newest Base at or before the target and applies the contiguous forward tail.
 
-Lifecycle (`active | archived | trashed`) is canonical metadata, not physical
-deletion. There is no Document hard-delete command in the current model.
+Lifecycle (`active | archived`) is live canonical metadata. Logical
+`document.delete` archives the last current head, appends a terminal deletion
+revision, and removes the `documents` row. Normal list and unqualified load
+therefore cannot return a deleted Document. The stable resource root, Bases,
+ChangeSets, structural identity ledger, head history, and retained Derived
+Output references remain for revision-qualified reads and later purge.
+
+`document.purge` is the separate irreversible operation. It is allowed only
+after logical deletion and removes owned Derived Output history before deleting
+the resource root and all Document history attached to it.
 
 ## Styling concepts
 
@@ -94,9 +105,12 @@ those roles and only text Blocks.
 
 A caller cannot insert a live Prompt Block or directly adopt a Derived Output
 through generic submit. Prompt creation declares a new dedicated output,
-refreshes it, then serially inserts the exact reference. Definition update is a
-delegated Derived Outputs mutation and does not revise the Document. Prompt
-refresh publishes a new Derived revision and serially adopts it.
+refreshes it, then serially inserts the exact reference. Definition update
+resolves the Block's current output and calls Derived Outputs directly,
+keyed by an idempotency key derived from `(documentId, requestId)` so a retry
+after a local crash replays the already-committed result rather than
+reapplying it; it does not revise the Document. Prompt refresh publishes a
+new Derived revision and serially adopts it.
 
 Formula expressions live in Rich Text. The Document workflow freezes an
 expression/digest, computes through Formula using a Structured Data resolver
@@ -110,7 +124,8 @@ projections. They perform no I/O and are not stored as canonical state.
 Activity source transactions describe accepted commits. An optional publisher port
 delivers a committed row after the Document transaction completes; failures
 leave that row unpublished for startup recovery. The publisher maps into
-Activity outside this capability, so Document does not depend on Activity's
-runtime or storage. Exact pagination/render layout is also intentionally
-absent; page layout only establishes authored dimensions and usable-width
-validation.
+Activity outside this capability, passing `sourceTransactionId` as Activity's
+idempotency key; Document neither selects nor stores the Activity ledger ID.
+Document therefore does not depend on Activity's runtime or storage. Exact
+pagination/render layout is also intentionally absent; page layout only
+establishes authored dimensions and usable-width validation.

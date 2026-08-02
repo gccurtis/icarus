@@ -1,6 +1,6 @@
 import type {
   TemplateCommandType,
-  TemplateCommittedFact,
+  TemplateCommittedTransaction,
   TemplateRecord
 } from "../domain/model.js";
 
@@ -32,7 +32,16 @@ export interface TemplateClaimOutcome {
 export interface TemplateFinalizeCommit {
   readonly templateId: string;
   readonly at: string;
-  readonly fact: TemplateCommittedFact;
+  readonly transaction: TemplateCommittedTransaction;
+}
+
+export interface TemplateUpdateCommit {
+  /** The replacement, already carrying its new `revision` and `updatedAt`. */
+  readonly record: TemplateRecord;
+  /** Compare-and-swap target: the revision the caller believes is current. */
+  readonly expectedRevision: number;
+  readonly at: string;
+  readonly transaction: TemplateCommittedTransaction;
 }
 
 /**
@@ -46,22 +55,40 @@ export interface TemplateStore {
   get(id: string): TemplateRecord | undefined;
   /** Ready, live records only, ordered by (createdAt, id). */
   list(kind?: string): TemplateRecord[];
-  countLive(): number;
 
   claimCommand(claim: TemplateCommandClaim): TemplateClaimOutcome;
   /** Freezes the allocated identity on the claim before any adapter call. */
   bindClaimTemplateId(requestId: string, templateId: string, at: string): void;
   completeClaim(requestId: string, result: unknown, at: string): void;
 
-  /** False when the id or (kind, resourceId) pair is already taken. */
+  /** False when the id, the (kind, resourceId) pair, or the (kind, name) pair is taken. */
   reserve(record: TemplateRecord): boolean;
-  /** Marks a reservation ready and writes its activity fact in one transaction. */
+  /** True when a live record of this kind already carries this name. */
+  nameTaken(kind: string, name: string, exceptId?: string): boolean;
+  /** Marks a reservation ready and writes its Activity transaction atomically. */
   markReady(commit: TemplateFinalizeCommit): void;
-  /** Soft-deletes a record and writes its activity fact in one transaction. */
-  softDelete(commit: TemplateFinalizeCommit): void;
+  /**
+   * Compare-and-swap replacement. Archives the record being replaced into
+   * history at its current revision, writes the replacement, and appends the
+   * Activity transaction — all in one SQLite transaction. False when the row is
+   * missing or its revision is not `expectedRevision`; nothing is written.
+   *
+   * The archive is not optional bookkeeping: every other revision transition in
+   * this capability leaves a history record, and an update that skipped it
+   * would make `latestSnapshot` return pre-update state as though it were
+   * current.
+   */
+  update(commit: TemplateUpdateCommit): boolean;
+  /** Archives and removes current state while writing Activity atomically. */
+  delete(commit: TemplateFinalizeCommit): void;
   /** Releases a reservation whose adapter call failed. */
   deleteReservation(id: string): void;
 
-  listUnpublishedFacts(limit?: number): TemplateCommittedFact[];
-  markFactPublished(factId: string, publishedAt: string): void;
+  latestSnapshot(id: string): TemplateRecord | undefined;
+  purge(id: string): void;
+  pruneHistory(cutoff: string): number;
+  expiredDeleted(cutoff: string): string[];
+
+  listUnpublishedTransactions(limit?: number): TemplateCommittedTransaction[];
+  markTransactionPublished(sourceTransactionId: string, publishedAt: string): void;
 }

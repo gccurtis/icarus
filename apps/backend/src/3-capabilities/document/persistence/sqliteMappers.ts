@@ -2,10 +2,10 @@ import type {
   DocumentAttempt,
   DocumentBase,
   DocumentChangeSet,
-  DocumentCommittedFact,
-  DocumentDelegatedCommandClaim,
+  DocumentCommittedTransaction,
   DocumentHead,
   DocumentStageReceipt,
+  DocumentCreateReceipt,
   DocumentSubmissionReceipt,
   FormulaEvaluationAttempt,
   PromptCreationAttempt,
@@ -96,6 +96,14 @@ export const rowToSubmission = (row: SQLiteRow): DocumentSubmissionReceipt => ({
   createdAt: row.created_at as string
 });
 
+export const rowToCreateReceipt = (row: SQLiteRow): DocumentCreateReceipt => ({
+  requestId: row.request_id as string,
+  documentId: row.document_id as string,
+  requestDigest: row.request_digest as string,
+  result: decodeJson<DocumentCreateReceipt["result"]>(row.result_json),
+  createdAt: row.created_at as string
+});
+
 export const rowToIdentityLedgerEntry = (
   row: SQLiteRow
 ): DocumentIdentityLedgerEntry => ({
@@ -110,23 +118,10 @@ export const rowToIdentityLedgerEntry = (
     : {})
 });
 
-export const rowToDelegatedCommandClaim = (
-  row: SQLiteRow
-): DocumentDelegatedCommandClaim => ({
-  documentId: row.document_id as string,
-  requestId: row.request_id as string,
-  requestDigest: row.request_digest as string,
-  kind: row.command_kind as DocumentDelegatedCommandClaim["kind"],
-  targetOutputId: row.target_output_id as string,
-  state: row.state as DocumentDelegatedCommandClaim["state"],
-  createdAt: row.created_at as string,
-  updatedAt: row.updated_at as string
-});
-
-export const rowToCommittedFact = (row: SQLiteRow): DocumentCommittedFact => ({
-  factId: row.fact_id as string,
+export const rowToCommittedTransaction = (row: SQLiteRow): DocumentCommittedTransaction => ({
+  sourceTransactionId: row.source_transaction_id as string,
   sourceRequestId: row.source_request_id as string,
-  kind: row.fact_kind as DocumentCommittedFact["kind"],
+  kind: row.transaction_kind as DocumentCommittedTransaction["kind"],
   documentId: row.document_id as string,
   revision: Number(row.revision),
   ...((row.source_change_set_id as string | null) !== null
@@ -135,7 +130,7 @@ export const rowToCommittedFact = (row: SQLiteRow): DocumentCommittedFact => ({
   ...((row.actor_id as string | null) !== null
     ? { actorId: row.actor_id as string }
     : {}),
-  origin: row.origin as DocumentCommittedFact["origin"],
+  origin: row.origin as DocumentCommittedTransaction["origin"],
   operationTypes: decodeJson<string[]>(row.operation_types),
   sourceSemanticDigest: row.semantic_digest as string,
   ...((row.compensation_intent as string | null) !== null &&

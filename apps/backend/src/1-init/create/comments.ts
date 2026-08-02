@@ -3,7 +3,7 @@ import {
   createCommentsCapability,
   SQLiteCommentStore,
   type CommentActivityPublisher,
-  type CommentActivityTransaction,
+  type CommentCommittedTransaction,
   type CommentsCapability
 } from "#comments";
 import type { Logger } from "#platform/observability/logger.js";
@@ -12,9 +12,9 @@ import type { BackendConfig } from "#utils/config/loadBackendConfig.js";
 const COMMENTS_DB_PATH = "./data/comments.db";
 
 export const toCommentActivityTransaction = (
-  transaction: CommentActivityTransaction
+  transaction: CommentCommittedTransaction
 ): ActivityTransactionInput => ({
-  idempotencyKey: transaction.transactionId,
+  idempotencyKey: transaction.sourceTransactionId,
   kind: "comment",
   resourceId: transaction.commentId,
   operation: transaction.operation,

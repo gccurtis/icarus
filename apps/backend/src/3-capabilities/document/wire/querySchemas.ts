@@ -22,7 +22,7 @@ export const decodeDocumentQuery = (value: unknown): DocumentQueryRequest => {
       exactKeys(raw, ["type", "cursor", "lifecycle"], type);
       const lifecycle = raw.lifecycle === undefined
         ? undefined
-        : requireEnum(raw.lifecycle, ["active", "archived", "trashed"], "lifecycle") as DocumentLifecycle;
+        : requireEnum(raw.lifecycle, ["active", "archived"], "lifecycle") as DocumentLifecycle;
       query = {
         type,
         ...(raw.cursor !== undefined ? { cursor: requireString(raw.cursor, "cursor") } : {}),

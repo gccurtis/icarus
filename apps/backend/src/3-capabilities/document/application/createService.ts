@@ -106,7 +106,7 @@ export const createBlankSnapshot = (input: {
   styles?: DocumentStyleRegistry;
 }): DocumentSnapshot => ({
   representationVersion: 1,
-  revision: 0,
+  revision: 1,
   title: input.title,
   lifecycle: "active",
   pageLayout: structuredClone(input.pageLayout ?? DEFAULT_DOCUMENT_PAGE_LAYOUT),

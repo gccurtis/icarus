@@ -11,6 +11,10 @@ import {
 } from "#comments";
 import type { Logger } from "#platform/observability/logger.js";
 import type { JobRegistry } from "#utils/jobs/registry.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
 
 const errorResponse = (error: unknown): { statusCode: number; body: unknown } => {
   if (error instanceof CommentNotFoundError) {
@@ -18,6 +22,12 @@ const errorResponse = (error: unknown): { statusCode: number; body: unknown } =>
   }
   if (error instanceof CommentIdempotencyMismatchError) {
     return { statusCode: 409, body: { error: "idempotency_mismatch", message: error.message } };
+  }
+  if (error instanceof ResourceNotDeletedError) {
+    return { statusCode: 409, body: { error: "not_deleted", message: error.message } };
+  }
+  if (error instanceof ResourceHistoryNotFoundError) {
+    return { statusCode: 404, body: { error: "not_found", message: error.message } };
   }
   if (
     error instanceof CommentValidationError ||

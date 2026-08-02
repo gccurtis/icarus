@@ -6,9 +6,15 @@ The capability is implemented, tested, and wired into startup. Its catalog,
 command claims, wire decoding, endpoints, and Activity outbox all work.
 
 **No resource adapter is registered yet.** `1-init/startBackend.ts` constructs
-the adapter registry empty, so in the current tree all three mutating commands
-answer `400 unsupported_kind`. `template.get` and `template.list` are fully
-operational and return an empty catalog.
+the adapter registry empty, so in the current tree every command that needs an
+adapter — and `template.load` — answers `400 unsupported_kind`. `template.get`
+and `template.list` are fully operational and return an empty catalog.
+
+**Nothing seals a backing copy yet.** The design has registration close the
+owning capability's whole public surface for a template-mode resource, reads
+included, leaving `template.update` and `template.load` as the only ways in.
+Document has no `isTemplate` flag, so nothing refuses anything today. Templates'
+half is built; the enforcement half is Document work.
 
 The first adapter will be Document, and it requires work that does not exist
 yet: Document representation v2, Context Variables, `isTemplate` persistence,
@@ -40,7 +46,7 @@ tables.
 | Concern | File |
 | --- | --- |
 | Public barrel | [`index.ts`](../index.ts) |
-| Canonical types, commands, queries, facts | [`domain/model.ts`](../domain/model.ts) |
+| Canonical types, commands, queries, source transactions | [`domain/model.ts`](../domain/model.ts) |
 | Typed failure modes | [`domain/errors.ts`](../domain/errors.ts) |
 | Canonical digest for replay | [`domain/canonical.ts`](../domain/canonical.ts) |
 | Commands, queries, outbox drain | [`application/templateService.ts`](../application/templateService.ts) |

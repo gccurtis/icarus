@@ -4,7 +4,8 @@ import { exactKeys, record, requireIdentifier } from "./valueSchemas.js";
 
 const QUERY_KEYS: Record<TemplateQuery["type"], readonly string[]> = {
   "template.get": ["type", "templateId"],
-  "template.list": ["type", "kind"]
+  "template.list": ["type", "kind"],
+  "template.load": ["type", "templateId"]
 };
 
 const decodeQuery = (value: unknown): TemplateQuery => {
@@ -28,6 +29,11 @@ const decodeQuery = (value: unknown): TemplateQuery => {
         ...(query.kind !== undefined
           ? { kind: requireIdentifier(query, "kind", "Template kind") }
           : {})
+      };
+    case "template.load":
+      return {
+        type: "template.load",
+        templateId: requireIdentifier(query, "templateId", "Template templateId")
       };
   }
 };

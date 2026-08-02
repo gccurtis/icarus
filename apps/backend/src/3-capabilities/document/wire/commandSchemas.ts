@@ -33,13 +33,29 @@ export const decodeDocumentCommand = (value: unknown): DocumentCommandRequest =>
 
   switch (type) {
     case "document.create":
-      exactKeys(raw, ["type", "documentId", "title", "pageLayout", "styles"], type);
+      // No documentId: the service allocates it. Supplying one is an unknown key
+      // and therefore a 400, rather than a value that looks accepted and is not.
+      exactKeys(raw, ["type", "title", "pageLayout", "styles"], type);
       command = {
         type,
-        documentId: requireIdentifier(raw.documentId, "documentId"),
         title: requireString(raw.title, "title"),
         ...(raw.pageLayout !== undefined ? { pageLayout: decodePageLayout(raw.pageLayout, "pageLayout") } : {}),
         ...(raw.styles !== undefined ? { styles: decodeStyleRegistry(raw.styles, "styles") } : {})
+      };
+      break;
+    case "document.delete":
+      exactKeys(raw, ["type", "documentId", "expectedRevision"], type);
+      command = {
+        type,
+        documentId: requireIdentifier(raw.documentId, "documentId"),
+        expectedRevision: requireNonNegativeInteger(raw.expectedRevision, "expectedRevision")
+      };
+      break;
+    case "document.purge":
+      exactKeys(raw, ["type", "documentId"], type);
+      command = {
+        type,
+        documentId: requireIdentifier(raw.documentId, "documentId")
       };
       break;
     case "document.submit":

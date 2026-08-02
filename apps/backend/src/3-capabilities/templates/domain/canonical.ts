@@ -18,7 +18,7 @@ const canonicalValue = (value: unknown): unknown => {
   return value;
 };
 
-export const canonicalize = (value: unknown): string =>
+const canonicalize = (value: unknown): string =>
   JSON.stringify(canonicalValue(value));
 
 export const canonicalDigest = (value: unknown): string =>

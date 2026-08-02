@@ -19,7 +19,8 @@ export type {
   TemplateClaimState,
   TemplateCommandClaim,
   TemplateFinalizeCommit,
-  TemplateStore
+  TemplateStore,
+  TemplateUpdateCommit
 } from "./ports/templateStore.js";
 
 export { SQLiteTemplateStore } from "./persistence/sqliteTemplateStore.js";

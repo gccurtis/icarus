@@ -1,6 +1,8 @@
 import type {
-  TemplateCommittedFact,
-  TemplateFactKind,
+  TemplateCommittedTransaction,
+  TemplateContextBindings,
+  TemplateTransactionKind,
+  TemplateOrigin,
   TemplateRecord,
   TemplateRecordState
 } from "../domain/model.js";
@@ -23,24 +25,26 @@ export const rowToTemplate = (row: SQLiteRow): TemplateRecord => ({
   id: row.id as string,
   kind: row.kind as string,
   resourceId: row.resource_id as string,
+  name: row.name as string,
   ...((row.description as string | null) !== null
     ? { description: row.description as string }
     : {}),
+  contextBindings: decodeJson<TemplateContextBindings>(row.context_bindings_json),
   state: row.state as TemplateRecordState,
+  revision: Number(row.revision),
   createdAt: row.created_at as string,
-  ...((row.deleted_at as string | null) !== null
-    ? { deletedAt: row.deleted_at as string }
-    : {})
+  updatedAt: row.updated_at as string
 });
 
-export const rowToFact = (row: SQLiteRow): TemplateCommittedFact => ({
-  factId: row.fact_id as string,
-  kind: row.kind as TemplateFactKind,
+export const rowToTransaction = (row: SQLiteRow): TemplateCommittedTransaction => ({
+  sourceTransactionId: row.source_transaction_id as string,
+  kind: row.transaction_kind as TemplateTransactionKind,
   templateId: row.template_id as string,
   resourceKind: row.resource_kind as string,
   resourceId: row.resource_id as string,
   ...((row.actor_id as string | null) !== null
     ? { actorId: row.actor_id as string }
     : {}),
+  origin: row.origin as TemplateOrigin,
   occurredAt: row.occurred_at as string
 });

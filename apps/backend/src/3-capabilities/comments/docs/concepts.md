@@ -58,8 +58,8 @@ stateDiagram-v2
   [*] --> open: create
   open --> resolved: resolve
   resolved --> open: reopen
-  open --> [*]: soft delete
-  resolved --> [*]: soft delete
+  open --> [*]: logical delete removes current row
+  resolved --> [*]: logical delete removes current row
 ```
 
 Resolve/reopen against an already matching state is an accepted no-op: it gets

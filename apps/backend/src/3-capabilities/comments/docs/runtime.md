@@ -22,14 +22,14 @@ database.
 
 `command` normalizes input, hashes the normalized command, and checks its
 receipt before dispatch. Create, update, state changes, and delete write the
-Comment, receipt, and Activity outbox in one SQLite transaction. A matching
+Comment revision, receipt, and source transaction outbox in one SQLite transaction. A matching
 resolve/reopen writes only a receipt. Post-commit Activity publication is best
 effort and never rolls back accepted Comment state.
 
-`query` validates and dispatches get or target-list requests. Get returns not
-found for absent/soft-deleted rows. Target lists exclude deleted rows, apply an
-optional state filter, order ascending, and read one extra row to determine a
-next cursor.
+`query` validates and dispatches get or target-list requests. Both read the
+current table only, so logically deleted Comments are absent without lifecycle
+filters. Target lists apply an optional state filter, order ascending, and read
+one extra row to determine a next cursor.
 
 `publishPendingActivity` reads unpublished source rows in occurred-time/ID
 order, publishes each stable transaction, and marks it only after Activity
@@ -52,13 +52,14 @@ integers and default page size cannot exceed maximum page size.
 ## SQLite representation
 
 The adapter enables WAL, foreign keys, five-second busy timeout, and NORMAL
-synchronous mode. It creates three tables:
+synchronous mode. It creates four tables:
 
 | Table | Authority |
 | --- | --- |
-| `<prefix>_comments` | Current body, target, state, attribution, and soft-delete time. |
+| `<prefix>_comments` | Current revision, body, target, state, and attribution for live Comments only. |
+| `<prefix>_history` | Superseded Comment snapshots and terminal deletion revisions. |
 | `<prefix>_command_receipts` | Project-global request digest and original result. |
-| `<prefix>_activity_outbox` | Immutable source data and publication marker. |
+| `<prefix>_transaction_outbox` | Immutable source transaction data and publication marker. |
 
 Separate partial indexes support target order, target-plus-state order, and
 pending Activity scans. There is no foreign key to a target resource database.

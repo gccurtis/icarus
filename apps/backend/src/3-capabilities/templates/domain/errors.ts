@@ -5,13 +5,6 @@ export class TemplateWireError extends Error {
   }
 }
 
-export class TemplateValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "TemplateValidationError";
-  }
-}
-
 export class TemplateNotFoundError extends Error {
   constructor(public readonly templateId: string) {
     super(`Template '${templateId}' was not found`);
@@ -33,16 +26,37 @@ export class TemplateUnsupportedKindError extends Error {
   }
 }
 
+/**
+ * `templateName`, not `name`: a parameter property called `name` would be
+ * clobbered by the `this.name` assignment every error class in this file makes,
+ * silently losing the value the caller needs.
+ */
+export class TemplateNameConflictError extends Error {
+  constructor(
+    public readonly kind: string,
+    public readonly templateName: string
+  ) {
+    super(`A '${kind}' template named '${templateName}' already exists`);
+    this.name = "TemplateNameConflictError";
+  }
+}
+
+export class StaleTemplateRevisionError extends Error {
+  constructor(
+    public readonly templateId: string,
+    public readonly expectedRevision: number,
+    public readonly actualRevision: number
+  ) {
+    super(
+      `Template '${templateId}' is at revision ${actualRevision}, not ${expectedRevision}`
+    );
+    this.name = "StaleTemplateRevisionError";
+  }
+}
+
 export class TemplateIdempotencyMismatchError extends Error {
   constructor(public readonly requestId: string) {
     super(`Template request '${requestId}' was reused with different content`);
     this.name = "TemplateIdempotencyMismatchError";
-  }
-}
-
-export class TemplateCatalogLimitError extends Error {
-  constructor(public readonly limit: number) {
-    super(`Template catalog limit of ${limit} has been reached`);
-    this.name = "TemplateCatalogLimitError";
   }
 }

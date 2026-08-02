@@ -14,7 +14,6 @@ import {
 } from "../domain/canonical.js";
 import {
   CompensationConflictError,
-  DocumentAlreadyExistsError,
   DocumentAttemptNotFoundError,
   DocumentNotFoundError,
   DocumentOperationError,
@@ -37,8 +36,7 @@ import type {
   DocumentCommand,
   DocumentCommandRequest,
   DocumentCommandResult,
-  DocumentCommittedFact,
-  DocumentDelegatedCommandClaim,
+  DocumentCommittedTransaction,
   DocumentHead,
   DocumentInternalJobIntent,
   DocumentOperation,
@@ -95,6 +93,8 @@ export interface DocumentCapability {
   /** Retry delivery for source rows left unpublished after a failure or restart. */
   publishPendingActivity(limit?: number): Promise<number>;
   compact(documentId: string): Promise<boolean>;
+  pruneHistory(cutoff: string): Promise<number>;
+  purgeExpired(cutoff: string): Promise<number>;
 }
 
 const now = (): string => new Date().toISOString();
@@ -161,6 +161,17 @@ const promptReferences = (snapshot: DocumentSnapshot): Map<string, string> => {
   return refs;
 };
 
+/**
+ * Matched by name rather than `instanceof` on purpose.
+ *
+ * Document's dependency on Derived Outputs is types-only — `ports/derivedOutputs.ts`
+ * imports nothing at runtime. Importing the concrete error class to identify it
+ * would make this the one place Document links against another capability's
+ * implementation, for a check that only needs to answer "already gone?".
+ */
+const isNotFound = (error: unknown): boolean =>
+  error instanceof Error && error.name === "DerivedOutputNotFoundError";
+
 const isPromptSettlementConflict = (error: unknown): boolean =>
   error instanceof DocumentOperationError ||
   error instanceof DocumentPlacementError ||
@@ -213,10 +224,13 @@ class DocumentService implements DocumentCapability {
     }
     const start = performance.now();
     try {
-      await this.assertDelegatedRequestReuse(request);
       switch (request.command.type) {
         case "document.create":
           return await this.create(request);
+        case "document.delete":
+          return await this.deleteDocument(request);
+        case "document.purge":
+          return await this.purgeDocument(request);
         case "document.submit":
           return await this.submit(request);
         case "document.compensate":
@@ -240,62 +254,71 @@ class DocumentService implements DocumentCapability {
   }
 
   async query(request: DocumentQueryRequest): Promise<DocumentQueryResult> {
-    switch (request.query.type) {
-      case "document.list": {
-        const page = await this.store.listHeads(
-          request.query.cursor,
-          request.query.lifecycle,
-          100
-        );
-        return { type: "document.listed", ...page };
-      }
-      case "document.load": {
-        const { head, snapshot } = await this.loadSnapshot(
-          request.query.documentId,
-          request.query.revision
-        );
-        const promptRevisions = [];
-        const refs = promptReferences(snapshot);
-        for (const outputId of refs.values()) {
-          const block = [...refs.entries()].find(([, id]) => id === outputId);
-          if (!block) continue;
-          const location = findBlock(snapshot, block[0]);
-          if (!location || location.block.kind !== "prompt") continue;
-          const revision = await this.deps.derivedOutputs.getRevision(
-            outputId,
-            location.block.output.appliedRevision
+    const start = performance.now();
+    try {
+      switch (request.query.type) {
+        case "document.list": {
+          const page = await this.store.listHeads(
+            request.query.cursor,
+            request.query.lifecycle,
+            100
           );
-          if (revision) promptRevisions.push(revision);
+          return { type: "document.listed", ...page };
         }
-        return { type: "document.loaded", head, snapshot, promptRevisions };
+        case "document.load": {
+          const { head, snapshot } = await this.loadSnapshot(
+            request.query.documentId,
+            request.query.revision
+          );
+          const promptRevisions = [];
+          const refs = promptReferences(snapshot);
+          for (const outputId of refs.values()) {
+            const block = [...refs.entries()].find(([, id]) => id === outputId);
+            if (!block) continue;
+            const location = findBlock(snapshot, block[0]);
+            if (!location || location.block.kind !== "prompt") continue;
+            const revision = await this.deps.derivedOutputs.getRevision(
+              outputId,
+              location.block.output.appliedRevision
+            );
+            if (revision) promptRevisions.push(revision);
+          }
+          return { type: "document.loaded", head, snapshot, promptRevisions };
+        }
+        case "document.history": {
+          if (!(await this.store.hasResource(request.query.documentId))) {
+            throw new DocumentNotFoundError(request.query.documentId);
+          }
+          const page = await this.store.listChangeSets(
+            request.query.documentId,
+            request.query.cursor,
+            request.query.limit
+          );
+          return { type: "document.history", ...page };
+        }
+        case "document.attempt": {
+          const attempt = await this.store.getAttempt(
+            request.query.documentId,
+            request.query.attemptId
+          );
+          if (!attempt) throw new DocumentAttemptNotFoundError(request.query.attemptId);
+          return { type: "document.attempt", attempt };
+        }
       }
-      case "document.history": {
-        const head = await this.store.getHead(request.query.documentId);
-        if (!head) throw new DocumentNotFoundError(request.query.documentId);
-        const page = await this.store.listChangeSets(
-          request.query.documentId,
-          request.query.cursor,
-          request.query.limit
-        );
-        return { type: "document.history", ...page };
-      }
-      case "document.attempt": {
-        const attempt = await this.store.getAttempt(
-          request.query.documentId,
-          request.query.attemptId
-        );
-        if (!attempt) throw new DocumentAttemptNotFoundError(request.query.attemptId);
-        return { type: "document.attempt", attempt };
-      }
+    } finally {
+      this.deps.logger.debug("document.query.completed", {
+        type: request.query.type,
+        durationMs: Math.round(performance.now() - start)
+      });
     }
   }
 
   async publishPendingActivity(limit?: number): Promise<number> {
     if (!this.deps.activityPublisher) return 0;
-    const facts = await this.store.listUnpublishedFacts(limit);
+    const transactions = await this.store.listUnpublishedTransactions(limit);
     let published = 0;
-    for (const fact of facts) {
-      if (await this.publishActivityFact(fact)) published += 1;
+    for (const transaction of transactions) {
+      if (await this.publishActivityTransaction(transaction)) published += 1;
     }
     return published;
   }
@@ -304,9 +327,12 @@ class DocumentService implements DocumentCapability {
     if (request.command.type !== "document.create") throw new DocumentOperationError("Invalid create command");
     const command = request.command;
     const digest = canonicalDigest(command);
-    const prior = await this.store.getSubmission(command.documentId, request.requestId);
+    // Keyed by request id alone: a retry has no document id to look up with,
+    // because the id below is allocated rather than supplied.
+    const prior = await this.store.getCreateSubmission(request.requestId);
     if (prior) return this.replayReceipt(prior.requestDigest, digest, request.requestId, prior.result);
-    if (await this.store.getHead(command.documentId)) throw new DocumentAlreadyExistsError(command.documentId);
+
+    const documentId = randomUUID();
 
     const snapshot = createBlankSnapshot({
       title: command.title,
@@ -318,21 +344,21 @@ class DocumentService implements DocumentCapability {
     const timestamp = now();
     const semanticDigest = digestSnapshot(snapshot);
     const head: DocumentHead = {
-      id: command.documentId,
+      id: documentId,
       title: snapshot.title,
       lifecycle: snapshot.lifecycle,
-      revision: 0,
-      baseSeq: 0,
+      revision: 1,
+      baseSeq: 1,
       semanticDigest,
       createdAt: timestamp,
       updatedAt: timestamp
     };
     const result: DocumentCommandResult = { type: "document.created", head };
-    const fact = this.fact({
+    const transaction = this.transaction({
       kind: "document.created",
       sourceRequestId: request.requestId,
-      documentId: command.documentId,
-      revision: 0,
+      documentId,
+      revision: 1,
       actorId: this.attributedActor(request.actorId),
       origin: request.origin,
       operationTypes: ["document.create"],
@@ -344,23 +370,128 @@ class DocumentService implements DocumentCapability {
       identities: collectDocumentIdentities(snapshot),
       base: {
         representationVersion: 1,
-        documentId: command.documentId,
-        baseSeq: 0,
+        documentId,
+        baseSeq: 1,
         snapshot,
         semanticDigest,
         createdAt: timestamp
       },
+      // Both receipts, one transaction. The create receipt makes the create
+      // replayable by request id; the document-keyed one keeps the request-id
+      // reuse guard working for later commands on this document.
       receipt: {
-        documentId: command.documentId,
+        documentId,
         requestId: request.requestId,
         requestDigest: digest,
         result,
         createdAt: timestamp
       },
-      fact
+      createReceipt: {
+        requestId: request.requestId,
+        documentId,
+        requestDigest: digest,
+        result,
+        createdAt: timestamp
+      },
+      transaction
     });
-    await this.publishActivityFact(fact);
+    await this.publishActivityTransaction(transaction);
     return result;
+  }
+
+  /** Logical deletion: history and the source transaction remain retained. */
+  private async deleteDocument(
+    request: DocumentCommandRequest
+  ): Promise<DocumentCommandResult> {
+    if (request.command.type !== "document.delete") {
+      throw new DocumentOperationError("Invalid delete command");
+    }
+    const { documentId, expectedRevision } = request.command;
+    const startedAt = performance.now();
+
+    const head = await this.store.getHead(documentId);
+    if (!head) {
+      const replay = await this.store.getCommittedTransactionByRequest(
+        documentId,
+        request.requestId
+      );
+      if (replay?.kind === "document.deleted") {
+        return { type: "document.deleted", documentId, revision: replay.revision };
+      }
+      throw new DocumentNotFoundError(documentId);
+    }
+    if (head.revision !== expectedRevision) {
+      throw new RevisionConflictError(documentId, head.revision, expectedRevision);
+    }
+    // Derived Outputs live in another capability's store, so the cascade cannot
+    // reach them — it only clears the ownership rows that point at them. They
+    // are removed first, before anything is destroyed, so a failure here leaves
+    // the document intact and the command retryable.
+    const owned = await this.store.listPromptOutputsForDocument(documentId);
+    for (const ownership of owned) {
+      try {
+        await this.deps.derivedOutputs.delete(ownership.outputId);
+      } catch (error) {
+        // Already gone is the expected outcome on a retry after a partial run.
+        if (!isNotFound(error)) throw error;
+      }
+    }
+
+    const deletedAt = now();
+    const transaction = this.transaction({
+      kind: "document.deleted",
+      sourceRequestId: request.requestId,
+      documentId,
+      revision: head.revision + 1,
+      actorId: this.attributedActor(request.actorId),
+      origin: request.origin,
+      operationTypes: ["document.delete"],
+      sourceSemanticDigest: head.semanticDigest,
+      occurredAt: deletedAt
+    });
+
+    const deletionRevision = await this.store.deleteDocument(
+      documentId,
+      deletedAt,
+      transaction
+    );
+    if (deletionRevision === null) throw new DocumentNotFoundError(documentId);
+    await this.publishActivityTransaction(transaction);
+
+    this.deps.logger.info("document.deleted", {
+      documentId,
+      revision: deletionRevision,
+      derivedOutputsDeleted: owned.length,
+      requestId: request.requestId,
+      durationMs: Math.round(performance.now() - startedAt)
+    });
+
+    return { type: "document.deleted", documentId, revision: deletionRevision };
+  }
+
+  private async purgeDocument(
+    request: DocumentCommandRequest
+  ): Promise<DocumentCommandResult> {
+    if (request.command.type !== "document.purge") {
+      throw new DocumentOperationError("Invalid purge command");
+    }
+    const documentId = request.command.documentId;
+    await this.purgeRetainedDocument(documentId);
+    this.deps.logger.info("document.purged", { documentId, requestId: request.requestId });
+    return { type: "document.purged", documentId };
+  }
+
+  private async purgeRetainedDocument(documentId: string): Promise<void> {
+    for (const outputId of await this.store.listRetainedPromptOutputIds(documentId)) {
+      try {
+        await this.deps.derivedOutputs.purge(outputId);
+      } catch (error) {
+        if (!(error instanceof Error && error.name === "ResourceHistoryNotFoundError")) {
+          throw error;
+        }
+      }
+    }
+    await this.store.purgeDocument(documentId);
   }
 
   private async submit(request: DocumentCommandRequest): Promise<DocumentCommandResult> {
@@ -507,7 +638,7 @@ class DocumentService implements DocumentCapability {
         result,
         createdAt: timestamp
       },
-      fact: this.fact({
+      transaction: this.transaction({
         kind: input.compensation ? "document.compensated" : "document.changed",
         sourceRequestId: input.requestId,
         documentId: input.documentId,
@@ -534,7 +665,15 @@ class DocumentService implements DocumentCapability {
     if (!await this.store.commitMutation(commit)) {
       throw new RevisionConflictError(input.documentId, current.head.revision, (await this.store.getHead(input.documentId))?.revision ?? -1);
     }
-    await this.publishActivityFact(commit.fact);
+    if (settleAttempt) {
+      this.deps.logger.info("document.attempt.settled", {
+        attemptId: settleAttempt.id,
+        kind: settleAttempt.kind,
+        documentId: input.documentId,
+        settledChangeSetId: changeSetId
+      });
+    }
+    await this.publishActivityTransaction(commit.transaction);
     for (const attempt of formulaAttempts) await this.dispatch(attemptIntent(attempt, "compute"));
     if (
       head.revision - head.baseSeq >=
@@ -691,6 +830,11 @@ class DocumentService implements DocumentCapability {
       result,
       createdAt: timestamp
     });
+    this.deps.logger.info("document.attempt.requested", {
+      attemptId: attempt.id,
+      kind: attempt.kind,
+      documentId: attempt.documentId
+    });
     await this.dispatch(attemptIntent(attempt, "compute"));
     return result;
   }
@@ -713,42 +857,18 @@ class DocumentService implements DocumentCapability {
       );
     }
 
-    let claim = await this.store.getDelegatedCommandClaim(
-      command.documentId,
-      request.requestId
-    );
-    if (!claim) {
-      const { snapshot } = await this.loadSnapshot(command.documentId);
-      const block = findBlock(snapshot, command.promptBlockId)?.block;
-      if (!block || block.kind !== "prompt") {
-        throw new DocumentOperationError(
-          `Prompt Block not found: ${command.promptBlockId}`
-        );
-      }
-      const timestamp = now();
-      const claimResult = await this.store.claimDelegatedCommand({
-        documentId: command.documentId,
-        requestId: request.requestId,
-        requestDigest,
-        kind: "prompt.update-definition",
-        targetOutputId: block.output.outputId,
-        state: "pending",
-        createdAt: timestamp,
-        updatedAt: timestamp
-      });
-      if (claimResult.type === "receipt") {
-        return this.replayReceipt(
-          claimResult.receipt.requestDigest,
-          requestDigest,
-          request.requestId,
-          claimResult.receipt.result
-        );
-      }
-      claim = claimResult.claim;
+    const { snapshot } = await this.loadSnapshot(command.documentId);
+    const block = findBlock(snapshot, command.promptBlockId)?.block;
+    if (!block || block.kind !== "prompt") {
+      throw new DocumentOperationError(
+        `Prompt Block not found: ${command.promptBlockId}`
+      );
     }
-    this.assertSameDelegatedRequest(claim, request);
 
-    const output = await this.deps.derivedOutputs.updateDefinition(claim.targetOutputId, {
+    // Derived Outputs is idempotent on this key alone, so a retry after a
+    // crash between this call and recordSubmission below simply replays the
+    // already-completed result rather than reapplying the definition twice.
+    const output = await this.deps.derivedOutputs.updateDefinition(block.output.outputId, {
       prompt: command.prompt,
       contextEntries: command.contextEntries,
       stabilisationText: command.stabilisationText,
@@ -763,7 +883,7 @@ class DocumentService implements DocumentCapability {
       type: "prompt.definition-updated",
       output
     };
-    await this.store.completeDelegatedCommand(claim, {
+    await this.store.recordSubmission({
       documentId: command.documentId,
       requestId: request.requestId,
       requestDigest,
@@ -771,28 +891,6 @@ class DocumentService implements DocumentCapability {
       createdAt: now()
     });
     return result;
-  }
-
-  private async assertDelegatedRequestReuse(
-    request: DocumentCommandRequest
-  ): Promise<void> {
-    const claim = await this.store.getDelegatedCommandClaim(
-      request.command.documentId,
-      request.requestId
-    );
-    if (claim) this.assertSameDelegatedRequest(claim, request);
-  }
-
-  private assertSameDelegatedRequest(
-    claim: DocumentDelegatedCommandClaim,
-    request: DocumentCommandRequest
-  ): void {
-    if (
-      request.command.type !== claim.kind ||
-      canonicalDigest(request.command) !== claim.requestDigest
-    ) {
-      throw new IdempotencyMismatchError(request.requestId);
-    }
   }
 
   private async requestPromptRefresh(request: DocumentCommandRequest): Promise<DocumentCommandResult> {
@@ -845,6 +943,11 @@ class DocumentService implements DocumentCapability {
       requestDigest,
       result,
       createdAt: timestamp
+    });
+    this.deps.logger.info("document.attempt.requested", {
+      attemptId: attempt.id,
+      kind: attempt.kind,
+      documentId: attempt.documentId
     });
     await this.dispatch(attemptIntent(attempt, "compute"));
     return result;
@@ -901,6 +1004,11 @@ class DocumentService implements DocumentCapability {
       result,
       createdAt: timestamp
     });
+    this.deps.logger.info("document.attempt.requested", {
+      attemptId: attempt.id,
+      kind: attempt.kind,
+      documentId: attempt.documentId
+    });
     await this.dispatch(attemptIntent(attempt, "compute"));
     return result;
   }
@@ -941,6 +1049,12 @@ class DocumentService implements DocumentCapability {
           diagnostic: { code: "initial_refresh_failed", message: "The dedicated Derived Output did not publish a first revision" },
           updatedAt: now()
         });
+        this.deps.logger.info("document.attempt.failed", {
+          attemptId: attempt.id,
+          kind: attempt.kind,
+          documentId: attempt.documentId,
+          diagnosticCode: "initial_refresh_failed"
+        });
         return;
       }
       const updated: PromptCreationAttempt = {
@@ -951,6 +1065,11 @@ class DocumentService implements DocumentCapability {
         updatedAt: now()
       };
       await this.store.updateAttempt(updated);
+      this.deps.logger.info("document.attempt.proposed", {
+        attemptId: updated.id,
+        kind: updated.kind,
+        documentId: updated.documentId
+      });
       await this.dispatch(attemptIntent(updated, "settle"));
     });
   }
@@ -1006,6 +1125,11 @@ class DocumentService implements DocumentCapability {
       });
       if (result.output.headRevision <= attempt.frozenAppliedRevision) {
         await this.store.updateAttempt({ ...attempt, state: "unchanged", updatedAt: now() });
+        this.deps.logger.info("document.attempt.unchanged", {
+          attemptId: attempt.id,
+          kind: attempt.kind,
+          documentId: attempt.documentId
+        });
         return;
       }
       const updated: PromptRefreshAttempt = {
@@ -1015,6 +1139,11 @@ class DocumentService implements DocumentCapability {
         updatedAt: now()
       };
       await this.store.updateAttempt(updated);
+      this.deps.logger.info("document.attempt.proposed", {
+        attemptId: updated.id,
+        kind: updated.kind,
+        documentId: updated.documentId
+      });
       await this.dispatch(attemptIntent(updated, "settle"));
     });
   }
@@ -1081,6 +1210,11 @@ class DocumentService implements DocumentCapability {
         updatedAt: now()
       };
       await this.store.updateAttempt(updated);
+      this.deps.logger.info("document.attempt.proposed", {
+        attemptId: updated.id,
+        kind: updated.kind,
+        documentId: updated.documentId
+      });
       await this.dispatch(attemptIntent(updated, "settle"));
     });
   }
@@ -1178,6 +1312,11 @@ class DocumentService implements DocumentCapability {
             updatedAt: now()
           })
         );
+        this.deps.logger.info("document.attempt.computing", {
+          attemptId,
+          kind,
+          documentId: attempt.documentId
+        });
       }
       await this.retryStageAction(
         attemptId,
@@ -1245,7 +1384,15 @@ class DocumentService implements DocumentCapability {
             ? recordError.message
             : String(recordError)
         });
+        throw error;
       }
+      this.deps.logger.info("document.attempt.failed", {
+        attemptId,
+        kind,
+        documentId: attempt.documentId,
+        diagnosticCode: diagnostic.code,
+        errorMessage: diagnostic.message
+      });
       throw error;
     }
 
@@ -1313,6 +1460,12 @@ class DocumentService implements DocumentCapability {
       },
       updatedAt: now()
     });
+    this.deps.logger.info("document.attempt.stale", {
+      attemptId: attempt.id,
+      kind: attempt.kind,
+      documentId: attempt.documentId,
+      errorMessage: error instanceof Error ? error.message : String(error)
+    });
   }
 
   async recoverPendingAttempts(): Promise<number> {
@@ -1321,13 +1474,16 @@ class DocumentService implements DocumentCapability {
     for (const attempt of attempts) {
       await this.dispatch(attemptIntent(attempt, attempt.state === "proposed" ? "settle" : "compute"));
     }
+    this.deps.logger.info("document.recovery.completed", {
+      recoveredCount: attempts.length
+    });
     return attempts.length;
   }
 
   async compact(documentId: string): Promise<boolean> {
     const current = await this.loadSnapshot(documentId);
     const cutoffRevision = Math.max(
-      0,
+      1,
       current.head.revision - this.options.history.retainedChangeSetCount
     );
     const cutoff = cutoffRevision === current.head.revision
@@ -1346,7 +1502,13 @@ class DocumentService implements DocumentCapability {
         createdAt
       }
     );
-    if (!cutoffAppended) return false;
+    if (!cutoffAppended) {
+      this.deps.logger.debug("document.compaction.skipped", {
+        documentId,
+        cutoffRevision
+      });
+      return false;
+    }
 
     const appended = cutoffRevision === current.head.revision
       ? true
@@ -1366,17 +1528,64 @@ class DocumentService implements DocumentCapability {
         this.options.history.retainedTerminalAttemptCount
       );
     }
+    this.deps.logger.info("document.compaction.completed", {
+      documentId,
+      cutoffRevision,
+      appended
+    });
     return appended;
+  }
+
+  async pruneHistory(cutoff: string): Promise<number> {
+    const anchors = await this.store.listRetentionAnchors(cutoff);
+    let compacted = 0;
+    for (const anchor of anchors) {
+      try {
+        const retained = await this.loadSnapshot(anchor.documentId, anchor.revision);
+        const applied = await this.store.compactRetentionHistory(anchor, {
+          representationVersion: 1,
+          documentId: anchor.documentId,
+          baseSeq: anchor.revision,
+          snapshot: retained.snapshot,
+          semanticDigest: digestSnapshot(retained.snapshot),
+          createdAt: now()
+        });
+        if (applied) compacted += 1;
+      } catch (error) {
+        this.deps.logger.error("document.retention.compaction.failed", {
+          documentId: anchor.documentId,
+          revision: anchor.revision,
+          errorName: error instanceof Error ? error.name : "UnknownError",
+          errorMessage: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+    return compacted + await this.store.pruneRevisionHistory(cutoff);
+  }
+
+  async purgeExpired(cutoff: string): Promise<number> {
+    const documentIds = await this.store.listExpiredDeleted(cutoff);
+    for (const documentId of documentIds) await this.purgeRetainedDocument(documentId);
+    return documentIds.length;
   }
 
   private async loadSnapshot(
     documentId: string,
     revision?: number
   ): Promise<{ head: DocumentHead; snapshot: DocumentSnapshot }> {
-    const head = await this.store.getHead(documentId);
-    if (!head) throw new DocumentNotFoundError(documentId);
-    const target = revision ?? head.revision;
-    if (!Number.isSafeInteger(target) || target < 0 || target > head.revision) {
+    const current = await this.store.getHead(documentId);
+    if (!current && revision === undefined) throw new DocumentNotFoundError(documentId);
+    const target = revision ?? (current as DocumentHead).revision;
+    if (!Number.isSafeInteger(target) || target < 1) {
+      throw new HistoryPrunedError(documentId, target);
+    }
+    const head = current?.revision === target
+      ? current
+      : await this.store.getHistoricalHead(documentId, target);
+    if (!head) {
+      if (!(await this.store.hasResource(documentId))) {
+        throw new DocumentNotFoundError(documentId);
+      }
       throw new HistoryPrunedError(documentId, target);
     }
     const base = await this.store.getBaseAtOrBefore(documentId, target);
@@ -1406,10 +1615,14 @@ class DocumentService implements DocumentCapability {
     return result;
   }
 
-  private fact(
-    input: Omit<DocumentCommittedFact, "factId">
-  ): DocumentCommittedFact {
-    return { ...input, factId: randomUUID() };
+  private transaction(
+    input: Omit<DocumentCommittedTransaction, "sourceTransactionId">
+  ): DocumentCommittedTransaction {
+    return {
+      ...input,
+      sourceTransactionId:
+        `document:${input.documentId}:${input.sourceRequestId}:${input.kind}`
+    };
   }
 
   /**
@@ -1417,18 +1630,20 @@ class DocumentService implements DocumentCapability {
    * the local outbox for `publishPendingActivity()` rather than changing the
    * accepted Document command result.
    */
-  private async publishActivityFact(fact: DocumentCommittedFact): Promise<boolean> {
+  private async publishActivityTransaction(
+    transaction: DocumentCommittedTransaction
+  ): Promise<boolean> {
     const publisher = this.deps.activityPublisher;
     if (!publisher) return false;
     try {
-      await publisher.publish(fact);
-      await this.store.markFactPublished(fact.factId, now());
+      await publisher.publish(transaction);
+      await this.store.markTransactionPublished(transaction.sourceTransactionId, now());
       return true;
     } catch (error) {
       this.deps.logger.warn("document.activity.publish-failed", {
-        factId: fact.factId,
-        documentId: fact.documentId,
-        sourceRequestId: fact.sourceRequestId,
+        sourceTransactionId: transaction.sourceTransactionId,
+        documentId: transaction.documentId,
+        sourceRequestId: transaction.sourceRequestId,
         errorName: error instanceof Error ? error.name : "UnknownError",
         errorMessage: error instanceof Error ? error.message : String(error)
       });

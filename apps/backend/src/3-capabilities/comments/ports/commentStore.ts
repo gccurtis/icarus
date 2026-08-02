@@ -1,6 +1,6 @@
 import type {
   Comment,
-  CommentActivityTransaction,
+  CommentCommittedTransaction,
   CommentCommandReceipt,
   CommentPage,
   CommentState
@@ -17,7 +17,7 @@ export interface CommentListFilter {
 export interface CommentWriteCommit {
   comment: Comment;
   receipt: CommentCommandReceipt;
-  activity: CommentActivityTransaction;
+  transaction: CommentCommittedTransaction;
 }
 
 /** Durable project-local storage owned by Comments. */
@@ -29,7 +29,13 @@ export interface CommentStore {
   commitCreation(commit: CommentWriteCommit): Promise<void>;
   commitMutation(commit: CommentWriteCommit): Promise<boolean>;
   recordReceipt(receipt: CommentCommandReceipt): Promise<void>;
+  purge(
+    commentId: string,
+    receipt: CommentCommandReceipt
+  ): Promise<"purged" | "current" | "missing">;
 
-  listUnpublishedActivity(limit?: number): Promise<CommentActivityTransaction[]>;
-  markActivityPublished(transactionId: string, publishedAt: string): Promise<void>;
+  listUnpublishedTransactions(limit?: number): Promise<CommentCommittedTransaction[]>;
+  markTransactionPublished(sourceTransactionId: string, publishedAt: string): Promise<void>;
+  pruneHistory(cutoff: string): Promise<number>;
+  purgeExpired(cutoff: string): Promise<number>;
 }

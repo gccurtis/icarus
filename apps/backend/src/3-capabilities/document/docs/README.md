@@ -5,11 +5,16 @@
 Document is implemented end to end in the current tree. Its canonical model,
 reducer, strict wire decoders, SQLite store, application service, two public
 endpoint mappings, seven internal-job mappings, startup construction, attempt
-recovery, and post-commit Activity outbox publication are present. The tests
-cover domain behavior, wire admission, persistence, application workflows, and
-job wiring.
+recovery, and post-commit transaction-outbox publication to Activity are
+present. The tests cover domain behavior, wire admission, persistence,
+application workflows, and job wiring.
 
-Document owns canonical authored document state and retained change history.
+Document owns canonical authored state through a current/history split. The
+typed `documents` table contains live heads only; `document_resources` anchors
+retained body history; and `document_history` stores superseded heads and
+terminal deletion revisions. Logical delete removes current and operational
+state, while guarded purge irreversibly removes the retained root and owned
+Derived Output history.
 Rich Text owns authored text atoms/marks and text-operation semantics. Derived
 Outputs owns generated prompt definitions and immutable output revisions.
 Formula owns parse/evaluation semantics. The shared internal-jobs runtime owns
@@ -50,10 +55,12 @@ queue admission, while Document persists the durable attempt/stage authority.
 ## Configuration and storage
 
 The instance factory opens `./data/documents.db` and project-hashes every table
-prefix, so projects in the same SQLite file have isolated tables. History and
-content limits come from `config.document`; current defaults retain 5 Bases,
-1,000 ChangeSets, and 1,000 terminal attempts, with limits documented in
-[Invariants](invariants.md).
+prefix, so projects in the same SQLite file have isolated tables. Document
+compaction and content limits come from `config.document`; current defaults
+retain 5 Bases, 1,000 ChangeSets, and 1,000 terminal attempts. Shared revision
+retention comes from `config.retention`; old superseded heads are pruned and a
+terminally deleted Document is purged after the cutoff. Limits are documented
+in [Invariants](invariants.md).
 
 ## Related material
 

@@ -9,7 +9,7 @@ import {
 import type {
   Comment,
   CommentActivityOperation,
-  CommentActivityTransaction,
+  CommentCommittedTransaction,
   CommentAttribution,
   CommentCommand,
   CommentCommandReceipt,
@@ -29,6 +29,10 @@ import {
 } from "../domain/validation.js";
 import type { CommentActivityPublisher } from "../ports/activityPublisher.js";
 import type { CommentStore, CommentWriteCommit } from "../ports/commentStore.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
 
 export interface CommentClock {
   now(): string;
@@ -45,6 +49,8 @@ export interface CommentsCapability {
   query(query: CommentQuery): Promise<CommentQueryResult>;
   /** Retries source-outbox rows left unpublished after failure or restart. */
   publishPendingActivity(limit?: number): Promise<number>;
+  pruneHistory(cutoff: string): Promise<number>;
+  purgeExpired(cutoff: string): Promise<number>;
 }
 
 const systemClock: CommentClock = { now: () => new Date().toISOString() };
@@ -112,6 +118,9 @@ class CommentService implements CommentsCapability {
           break;
         case "comment.delete":
           result = await this.delete(command, digest);
+          break;
+        case "comment.purge":
+          result = await this.purge(command, digest);
           break;
       }
       this.deps.logger.info("comments.command.completed", {
@@ -190,7 +199,7 @@ class CommentService implements CommentsCapability {
       });
       return 0;
     }
-    const pending = await this.store.listUnpublishedActivity(limit);
+    const pending = await this.store.listUnpublishedTransactions(limit);
     this.deps.logger.debug("comments.activity.recovery.started", {
       requestedLimit: limit,
       pending: pending.length
@@ -209,6 +218,14 @@ class CommentService implements CommentsCapability {
     return published;
   }
 
+  async pruneHistory(cutoff: string): Promise<number> {
+    return this.store.pruneHistory(cutoff);
+  }
+
+  async purgeExpired(cutoff: string): Promise<number> {
+    return this.store.purgeExpired(cutoff);
+  }
+
   private async create(
     command: Extract<CommentCommand, { type: "comment.create" }>,
     digest: string
@@ -220,6 +237,7 @@ class CommentService implements CommentsCapability {
       mentions: parseCommentMentions(command.body, this.limits),
       target: command.target,
       state: "open",
+      revision: 1,
       createdBy: this.attribution.actorId,
       updatedBy: this.attribution.actorId,
       createdAt: timestamp,
@@ -229,7 +247,7 @@ class CommentService implements CommentsCapability {
     const commit = this.commitFor(comment, command.requestId, digest, result, "created", timestamp);
     await this.store.commitCreation(commit);
     this.logMutationCommitted(commit);
-    await this.publishActivity(commit.activity);
+    await this.publishActivity(commit.transaction);
     return result;
   }
 
@@ -243,6 +261,7 @@ class CommentService implements CommentsCapability {
       ...current,
       body: command.body,
       mentions: parseCommentMentions(command.body, this.limits),
+      revision: current.revision + 1,
       updatedBy: this.attribution.actorId,
       updatedAt: timestamp
     };
@@ -282,6 +301,7 @@ class CommentService implements CommentsCapability {
     const comment: Comment = {
       ...current,
       state,
+      revision: current.revision + 1,
       updatedBy: this.attribution.actorId,
       updatedAt: timestamp
     };
@@ -300,17 +320,38 @@ class CommentService implements CommentsCapability {
     const timestamp = this.now();
     const comment: Comment = {
       ...current,
+      revision: current.revision + 1,
       updatedBy: this.attribution.actorId,
-      updatedAt: timestamp,
-      deletedAt: timestamp
+      updatedAt: timestamp
     };
     const result: CommentCommandResult = {
       type: "comment.deleted",
-      commentId: comment.id
+      commentId: comment.id,
+      revision: comment.revision
     };
     await this.persistMutation(
       this.commitFor(comment, command.requestId, digest, result, "deleted", timestamp)
     );
+    return result;
+  }
+
+  private async purge(
+    command: Extract<CommentCommand, { type: "comment.purge" }>,
+    digest: string
+  ): Promise<CommentCommandResult> {
+    const result: CommentCommandResult = {
+      type: "comment.purged",
+      commentId: command.commentId
+    };
+    const outcome = await this.store.purge(command.commentId, {
+      requestId: command.requestId,
+      requestDigest: digest,
+      result,
+      createdAt: this.now()
+    });
+    if (outcome === "current") throw new ResourceNotDeletedError("comment", command.commentId);
+    if (outcome === "missing") throw new ResourceHistoryNotFoundError("comment", command.commentId);
+    this.deps.logger.info("comments.purged", { commentId: command.commentId });
     return result;
   }
 
@@ -325,8 +366,8 @@ class CommentService implements CommentsCapability {
     return {
       comment,
       receipt: { requestId, requestDigest, result, createdAt: occurredAt },
-      activity: {
-        transactionId: this.createId(),
+      transaction: {
+        sourceTransactionId: this.createId(),
         sourceRequestId: requestId,
         operation,
         commentId: comment.id,
@@ -346,7 +387,7 @@ class CommentService implements CommentsCapability {
       throw new CommentNotFoundError(commit.comment.id);
     }
     this.logMutationCommitted(commit);
-    await this.publishActivity(commit.activity);
+    await this.publishActivity(commit.transaction);
   }
 
   private async requireComment(commentId: string): Promise<Comment> {
@@ -362,10 +403,10 @@ class CommentService implements CommentsCapability {
     return receipt.result;
   }
 
-  private async publishActivity(transaction: CommentActivityTransaction): Promise<boolean> {
+  private async publishActivity(transaction: CommentCommittedTransaction): Promise<boolean> {
     if (!this.deps.activityPublisher) {
       this.deps.logger.debug("comments.activity.publish.skipped", {
-        transactionId: transaction.transactionId,
+        sourceTransactionId: transaction.sourceTransactionId,
         operation: transaction.operation,
         reason: "publisher_not_configured"
       });
@@ -373,15 +414,15 @@ class CommentService implements CommentsCapability {
     }
     const startedAt = performance.now();
     this.deps.logger.debug("comments.activity.publish.started", {
-      transactionId: transaction.transactionId,
+      sourceTransactionId: transaction.sourceTransactionId,
       commentId: transaction.commentId,
       operation: transaction.operation
     });
     try {
       await this.deps.activityPublisher.publish(transaction);
-      await this.store.markActivityPublished(transaction.transactionId, this.now());
+      await this.store.markTransactionPublished(transaction.sourceTransactionId, this.now());
       this.deps.logger.info("comments.activity.published", {
-        transactionId: transaction.transactionId,
+        sourceTransactionId: transaction.sourceTransactionId,
         commentId: transaction.commentId,
         operation: transaction.operation,
         durationMs: Math.round(performance.now() - startedAt)
@@ -389,7 +430,7 @@ class CommentService implements CommentsCapability {
       return true;
     } catch (error) {
       this.deps.logger.warn("comments.activity.publish.failed", {
-        transactionId: transaction.transactionId,
+        sourceTransactionId: transaction.sourceTransactionId,
         commentId: transaction.commentId,
         operation: transaction.operation,
         errorName: error instanceof Error ? error.name : "UnknownError",
@@ -403,18 +444,20 @@ class CommentService implements CommentsCapability {
     this.deps.logger.info("comments.mutation.committed", {
       commentId: commit.comment.id,
       requestId: commit.receipt.requestId,
-      operation: commit.activity.operation,
+      operation: commit.transaction.operation,
       state: commit.comment.state,
       resourceKind: commit.comment.target.resourceKind,
       resourceId: commit.comment.target.resourceId,
       mentionCount: commit.comment.mentions.length,
       hasSubTarget: commit.comment.target.subTarget !== undefined,
-      activityTransactionId: commit.activity.transactionId
+      sourceTransactionId: commit.transaction.sourceTransactionId
     });
   }
 
   private resultCommentId(result: CommentCommandResult): string {
-    return result.type === "comment.deleted" ? result.commentId : result.comment.id;
+    return result.type === "comment.deleted" || result.type === "comment.purged"
+      ? result.commentId
+      : result.comment.id;
   }
 
   private now(): string {

@@ -23,4 +23,5 @@ export interface DocumentDerivedOutputs {
   ): Promise<DerivedOutput>;
   refresh(id: string, options?: RefreshDerivedOutputOptions): Promise<DerivedRefreshResult>;
   delete(id: string): Promise<void>;
+  purge(id: string): Promise<void>;
 }

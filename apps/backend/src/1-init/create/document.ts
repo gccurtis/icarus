@@ -14,40 +14,40 @@ import {
   SQLiteDocumentStore,
   type DocumentCapability,
   type DocumentActivityPublisher,
-  type DocumentCommittedFact,
+  type DocumentCommittedTransaction,
   type DocumentDerivedOutputs,
   type DocumentInternalJobIntent
 } from "#document";
 
 const DOCUMENT_DB_PATH = "./data/documents.db";
 
-const activityOrigin = (origin: DocumentCommittedFact["origin"]): ActivityOrigin =>
+const activityOrigin = (origin: DocumentCommittedTransaction["origin"]): ActivityOrigin =>
   origin === "interactive" ? "user" : origin;
 
 const toActivityTransaction = (
-  fact: DocumentCommittedFact
+  transaction: DocumentCommittedTransaction
 ): ActivityTransactionInput => ({
-  idempotencyKey: fact.factId,
+  idempotencyKey: transaction.sourceTransactionId,
   kind: "document",
-  resourceId: fact.documentId,
-  operation: fact.kind.slice("document.".length),
-  revision: fact.revision,
-  ...(fact.sourceChangeSetId ? { changeSetId: fact.sourceChangeSetId } : {}),
-  ...(fact.actorId ? { actorId: fact.actorId } : {}),
-  origin: activityOrigin(fact.origin),
-  occurredAt: fact.occurredAt,
+  resourceId: transaction.documentId,
+  operation: transaction.kind.slice("document.".length),
+  revision: transaction.revision,
+  ...(transaction.sourceChangeSetId ? { changeSetId: transaction.sourceChangeSetId } : {}),
+  ...(transaction.actorId ? { actorId: transaction.actorId } : {}),
+  origin: activityOrigin(transaction.origin),
+  occurredAt: transaction.occurredAt,
   metadata: {
-    operationTypes: fact.operationTypes,
-    sourceSemanticDigest: fact.sourceSemanticDigest,
-    ...(fact.compensation ? { compensation: fact.compensation } : {})
+    operationTypes: transaction.operationTypes,
+    sourceSemanticDigest: transaction.sourceSemanticDigest,
+    ...(transaction.compensation ? { compensation: transaction.compensation } : {})
   }
 });
 
 const createDocumentActivityPublisher = (
   activity: ActivityCapability
 ): DocumentActivityPublisher => ({
-  publish: async (fact) => {
-    await activity.publish(toActivityTransaction(fact));
+  publish: async (transaction) => {
+    await activity.publish(toActivityTransaction(transaction));
   }
 });
 

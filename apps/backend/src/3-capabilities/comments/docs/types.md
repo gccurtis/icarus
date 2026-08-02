@@ -17,11 +17,11 @@ interface Comment {
   mentions: string[];
   target: CommentTarget;
   state: "open" | "resolved";
+  revision: number;
   createdBy: string;
   updatedBy: string;
   createdAt: string;
   updatedAt: string;
-  deletedAt?: string;
 }
 ```
 
@@ -39,6 +39,7 @@ not part of a public command.
 | `comment.resolve` | `commentId` | `comment.resolved` plus Comment |
 | `comment.reopen` | `commentId` | `comment.reopened` plus Comment |
 | `comment.delete` | `commentId` | `comment.deleted` plus `commentId` |
+| `comment.purge` | `commentId` | `comment.purged` plus `commentId` |
 
 Every request ID is project-global within Comments. Equal canonical replay
 returns the stored `CommentCommandResult`; divergent reuse raises
@@ -59,15 +60,16 @@ state filter.
 
 - `CommentCommandReceipt` stores request ID, canonical digest, original result,
   and acceptance time.
-- `CommentActivityTransaction` is a self-contained source-outbox record. It
+- `CommentCommittedTransaction` is a self-contained transaction-outbox record. It
   includes target IDs, resulting state, mention count, trusted attribution,
   and time—but never body, handles, or sub-target.
 - `CommentStore` is the durable port for reads, atomic commits, receipts, and
   outbox recovery.
 - `CommentActivityPublisher` accepts one source record and is implemented by
   composition over Activity.
-- `CommentsCapability` exposes `command`, `query`, and
-  `publishPendingActivity`.
+- `CommentsCapability` exposes `command`, `query`, Activity recovery, and
+  retention operations. Logical deletion archives the live snapshot and a
+  terminal revision; purge removes that retained history.
 
 ## Error family
 
@@ -76,7 +78,7 @@ state filter.
 | `CommentWireError` | Malformed or unexpected public payload field. | 400 |
 | `CommentValidationError` | Invalid or over-limit domain value. | 400 |
 | `InvalidCommentCursorError` | Malformed or filter-mismatched cursor. | 400 |
-| `CommentNotFoundError` | Missing or soft-deleted Comment. | 404 |
+| `CommentNotFoundError` | Missing or logically deleted Comment. | 404 |
 | `CommentIdempotencyMismatchError` | Request ID reused for changed content. | 409 |
 
 Unexpected errors return a non-sensitive 500 response and are logged without

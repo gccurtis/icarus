@@ -63,7 +63,6 @@ const rejectsWire = (work: () => unknown, pattern?: RegExp): void => {
 test("strict command decoding accepts complete Page, Style, Row, Block, and Rich Text DTOs", () => {
   const createInput = commandEnvelope({
     type: "document.create",
-    documentId: "document-1",
     title: "Design",
     pageLayout: structuredClone(DEFAULT_DOCUMENT_PAGE_LAYOUT),
     styles: createDefaultDocumentStyles(),
@@ -101,6 +100,20 @@ test("strict command decoding accepts complete Page, Style, Row, Block, and Rich
   if (created.command.type === "document.create") {
     assert.equal(created.command.pageLayout?.page.widthTwips, DEFAULT_DOCUMENT_PAGE_LAYOUT.page.widthTwips);
   }
+});
+
+test("document.create refuses a caller-supplied documentId", () => {
+  // The service allocates the id. Accepting one here would let a caller name a
+  // resource that does not exist yet, and silently ignoring it would be worse —
+  // the caller would believe it chose the id.
+  rejectsWire(
+    () => decodeDocumentCommand(commandEnvelope({
+      type: "document.create",
+      documentId: "caller-chosen",
+      title: "Design",
+    })),
+    /unknown fields: documentId/,
+  );
 });
 
 test("unknown fields are rejected at every nested Document boundary", () => {
@@ -241,7 +254,6 @@ test("malformed Page, Style, Row, List, Table, Image, and Chart values are rejec
     value: unknown,
   ) => decodeDocumentCommand(commandEnvelope({
     type: "document.create",
-    documentId: "document-1",
     title: "Design",
     [field]: value,
   }));
@@ -363,7 +375,6 @@ test("wire budgets reject excessive operation counts, nesting, strings, and tota
   );
   rejectsWire(() => decodeDocumentCommand(commandEnvelope({
     type: "document.create",
-    documentId: "document-1",
     title: "x".repeat(DOCUMENT_WIRE_LIMITS.maxStringBytes + 1),
   })), /string size limit/);
 
@@ -478,7 +489,6 @@ test("Document endpoints expose identity reuse as a typed 400 domain response", 
     headers: {},
     body: commandEnvelope({
       type: "document.create",
-      documentId: "document-1",
       title: "Document",
     }),
   });

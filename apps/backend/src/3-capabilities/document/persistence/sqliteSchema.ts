@@ -1,14 +1,18 @@
 import { createHash } from "node:crypto";
 import type { Database as DatabaseConnection } from "better-sqlite3";
+import { initializeResourceHistorySchema } from "#utils/persistence/resourceHistory.js";
 
 export interface DocumentTableNames {
+  resources: string;
   documents: string;
+  history: string;
   receipts: string;
-  delegatedCommandClaims: string;
+  createReceipts: string;
   identityLedger: string;
   bases: string;
   changeSets: string;
-  activityOutbox: string;
+  transactionOutbox: string;
+  retainedOutputs: string;
   attempts: string;
   promptOutputs: string;
   stageReceipts: string;
@@ -17,115 +21,21 @@ export interface DocumentTableNames {
 const projectPrefix = (projectId: string): string =>
   createHash("sha256").update(projectId).digest("hex").slice(0, 16);
 
-interface SQLiteColumn {
-  name: string;
-}
-
-const hasColumn = (
-  db: DatabaseConnection,
-  table: string,
-  column: string
-): boolean =>
-  (db.prepare(`PRAGMA table_info(${table})`).all() as SQLiteColumn[]).some(
-    (entry) => entry.name === column
-  );
-
-const addColumnIfMissing = (
-  db: DatabaseConnection,
-  table: string,
-  column: string,
-  definition: string
-): void => {
-  if (!hasColumn(db, table, column)) {
-    db.exec(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
-  }
-};
-
-/**
- * Older Document stores linked activity rows directly to historical ChangeSets.
- * That link is intentionally nullable when history is compacted, so migrate
- * the durable source fields separately and backfill everything recoverable.
- */
-const migrateActivityOutbox = (
-  db: DatabaseConnection,
-  tables: DocumentTableNames
-): void => {
-  const outbox = tables.activityOutbox;
-  addColumnIfMissing(db, outbox, "source_request_id", "source_request_id TEXT");
-  addColumnIfMissing(
-    db,
-    outbox,
-    "source_change_set_id",
-    "source_change_set_id TEXT"
-  );
-  addColumnIfMissing(
-    db,
-    outbox,
-    "compensation_intent",
-    "compensation_intent TEXT CHECK (compensation_intent IN ('undo', 'redo'))"
-  );
-  addColumnIfMissing(
-    db,
-    outbox,
-    "compensation_target_change_set_id",
-    "compensation_target_change_set_id TEXT"
-  );
-
-  db.exec(`
-    UPDATE ${outbox}
-    SET source_change_set_id = change_set_id
-    WHERE source_change_set_id IS NULL AND change_set_id IS NOT NULL;
-
-    UPDATE ${outbox}
-    SET source_request_id = COALESCE(
-      (
-        SELECT client_request_id
-        FROM ${tables.changeSets}
-        WHERE id = ${outbox}.source_change_set_id
-      ),
-      'legacy:' || fact_id
-    )
-    WHERE source_request_id IS NULL OR source_request_id = '';
-
-    UPDATE ${outbox}
-    SET compensation_intent = (
-      SELECT compensation_intent
-      FROM ${tables.changeSets}
-      WHERE id = ${outbox}.source_change_set_id
-    )
-    WHERE compensation_intent IS NULL
-      AND source_change_set_id IS NOT NULL;
-
-    UPDATE ${outbox}
-    SET compensation_target_change_set_id = (
-      SELECT compensation_target_change_set_id
-      FROM ${tables.changeSets}
-      WHERE id = ${outbox}.source_change_set_id
-    )
-    WHERE compensation_target_change_set_id IS NULL
-      AND source_change_set_id IS NOT NULL;
-
-    CREATE INDEX IF NOT EXISTS ${outbox}_source_request
-      ON ${outbox}(document_id, source_request_id);
-
-    CREATE INDEX IF NOT EXISTS ${outbox}_source_change_set
-      ON ${outbox}(document_id, source_change_set_id)
-      WHERE source_change_set_id IS NOT NULL;
-  `);
-};
-
 export const createDocumentTableNames = (
   projectId: string
 ): DocumentTableNames => {
   const root = `doc_${projectPrefix(projectId)}`;
   return {
+    resources: `${root}_resources`,
     documents: `${root}_documents`,
+    history: `${root}_history`,
     receipts: `${root}_command_receipts`,
-    delegatedCommandClaims: `${root}_delegated_command_claims`,
+    createReceipts: `${root}_create_receipts`,
     identityLedger: `${root}_identity_ledger`,
     bases: `${root}_bases`,
     changeSets: `${root}_change_sets`,
-    activityOutbox: `${root}_activity_outbox`,
+    transactionOutbox: `${root}_transaction_outbox`,
+    retainedOutputs: `${root}_retained_outputs`,
     attempts: `${root}_attempts`,
     promptOutputs: `${root}_prompt_outputs`,
     stageReceipts: `${root}_stage_receipts`
@@ -142,17 +52,23 @@ export const initializeDocumentSchema = (
   db.pragma("synchronous = NORMAL");
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS ${tables.resources} (
+      id         TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS ${tables.documents} (
       id               TEXT PRIMARY KEY,
       title            TEXT NOT NULL,
       lifecycle        TEXT NOT NULL
-        CHECK (lifecycle IN ('active', 'archived', 'trashed')),
-      revision         INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0),
-      base_seq         INTEGER NOT NULL DEFAULT 0 CHECK (base_seq >= 0),
+        CHECK (lifecycle IN ('active', 'archived')),
+      revision         INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
+      base_seq         INTEGER NOT NULL DEFAULT 1 CHECK (base_seq >= 1),
       semantic_digest  TEXT NOT NULL,
       created_at       TEXT NOT NULL,
       updated_at       TEXT NOT NULL,
-      CHECK (base_seq <= revision)
+      CHECK (base_seq <= revision),
+      FOREIGN KEY (id) REFERENCES ${tables.resources}(id) ON DELETE CASCADE
     );
 
     CREATE INDEX IF NOT EXISTS ${tables.documents}_lifecycle_updated
@@ -169,25 +85,24 @@ export const initializeDocumentSchema = (
         ON DELETE CASCADE
     );
 
-    CREATE TABLE IF NOT EXISTS ${tables.delegatedCommandClaims} (
+    -- Replay record for document.create. Keyed by request id alone, because the
+    -- document id does not exist until the service allocates one and a retry has
+    -- nothing else to look up with.
+    --
+    -- It still carries document_id, purely so it can CASCADE. A receipt records
+    -- "this request produced that document"; once the document is deleted the
+    -- record is meaningless, and replaying it would hand the caller a head for a
+    -- document that no longer exists — every subsequent load would 404. Letting
+    -- an old request id create a fresh document is the coherent outcome.
+    CREATE TABLE IF NOT EXISTS ${tables.createReceipts} (
+      request_id       TEXT PRIMARY KEY,
       document_id      TEXT NOT NULL,
-      request_id       TEXT NOT NULL,
       request_digest   TEXT NOT NULL,
-      command_kind     TEXT NOT NULL
-        CHECK (command_kind = 'prompt.update-definition'),
-      target_output_id TEXT NOT NULL,
-      state            TEXT NOT NULL
-        CHECK (state IN ('pending', 'completed')),
+      result_json      BLOB NOT NULL,
       created_at       TEXT NOT NULL,
-      updated_at       TEXT NOT NULL,
-      PRIMARY KEY (document_id, request_id),
       FOREIGN KEY (document_id) REFERENCES ${tables.documents}(id)
         ON DELETE CASCADE
     );
-
-    CREATE INDEX IF NOT EXISTS ${tables.delegatedCommandClaims}_pending
-      ON ${tables.delegatedCommandClaims}(state, updated_at, document_id, request_id)
-      WHERE state = 'pending';
 
     CREATE TABLE IF NOT EXISTS ${tables.identityLedger} (
       document_id              TEXT NOT NULL,
@@ -200,16 +115,16 @@ export const initializeDocumentSchema = (
         )),
       state                    TEXT NOT NULL
         CHECK (state IN ('active', 'tombstoned')),
-      first_revision           INTEGER NOT NULL CHECK (first_revision >= 0),
+      first_revision           INTEGER NOT NULL CHECK (first_revision >= 1),
       last_transition_revision INTEGER NOT NULL
         CHECK (last_transition_revision >= first_revision),
-      tombstoned_revision      INTEGER CHECK (tombstoned_revision >= 0),
+      tombstoned_revision      INTEGER CHECK (tombstoned_revision >= 1),
       PRIMARY KEY (document_id, identity_id),
       CHECK (
         (state = 'active' AND tombstoned_revision IS NULL) OR
         (state = 'tombstoned' AND tombstoned_revision IS NOT NULL)
       ),
-      FOREIGN KEY (document_id) REFERENCES ${tables.documents}(id)
+      FOREIGN KEY (document_id) REFERENCES ${tables.resources}(id)
         ON DELETE CASCADE
     );
 
@@ -218,13 +133,13 @@ export const initializeDocumentSchema = (
 
     CREATE TABLE IF NOT EXISTS ${tables.bases} (
       document_id            TEXT NOT NULL,
-      base_seq               INTEGER NOT NULL CHECK (base_seq >= 0),
+      base_seq               INTEGER NOT NULL CHECK (base_seq >= 1),
       representation_version INTEGER NOT NULL CHECK (representation_version = 1),
       snapshot_json          BLOB NOT NULL,
       semantic_digest        TEXT NOT NULL,
       created_at             TEXT NOT NULL,
       PRIMARY KEY (document_id, base_seq),
-      FOREIGN KEY (document_id) REFERENCES ${tables.documents}(id)
+      FOREIGN KEY (document_id) REFERENCES ${tables.resources}(id)
         ON DELETE CASCADE
     );
 
@@ -254,10 +169,10 @@ export const initializeDocumentSchema = (
       UNIQUE (document_id, revision),
       CHECK (seq = revision),
       CHECK (revision = prior_revision + 1),
-      FOREIGN KEY (document_id) REFERENCES ${tables.documents}(id)
+      FOREIGN KEY (document_id) REFERENCES ${tables.resources}(id)
         ON DELETE CASCADE,
       FOREIGN KEY (compensation_target_change_set_id)
-        REFERENCES ${tables.changeSets}(id)
+        REFERENCES ${tables.changeSets}(id) ON DELETE SET NULL
     );
 
     CREATE INDEX IF NOT EXISTS ${tables.changeSets}_recent
@@ -267,13 +182,17 @@ export const initializeDocumentSchema = (
       ON ${tables.changeSets}(compensation_target_change_set_id)
       WHERE compensation_target_change_set_id IS NOT NULL;
 
-    CREATE TABLE IF NOT EXISTS ${tables.activityOutbox} (
-      fact_id           TEXT PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS ${tables.transactionOutbox} (
+      source_transaction_id TEXT PRIMARY KEY,
       source_request_id TEXT NOT NULL,
-      fact_kind         TEXT NOT NULL
-        CHECK (fact_kind IN ('document.created', 'document.changed', 'document.compensated')),
+      transaction_kind  TEXT NOT NULL
+        CHECK (transaction_kind IN ('document.created', 'document.changed',
+                             'document.compensated', 'document.deleted')),
       document_id       TEXT NOT NULL,
-      revision          INTEGER NOT NULL CHECK (revision >= 0),
+      -- Structural attachment while retained; SET NULL lets the immutable
+      -- transaction survive resource purge as required by ledger retention.
+      resource_root_id  TEXT,
+      revision          INTEGER NOT NULL CHECK (revision >= 1),
       -- This historical link may be cleared by ChangeSet compaction.
       change_set_id     TEXT,
       -- This copied source value must survive history compaction.
@@ -290,15 +209,30 @@ export const initializeDocumentSchema = (
       occurred_at       TEXT NOT NULL,
       published_at      TEXT,
       UNIQUE (document_id, revision),
-      FOREIGN KEY (document_id) REFERENCES ${tables.documents}(id)
-        ON DELETE CASCADE,
+      FOREIGN KEY (resource_root_id) REFERENCES ${tables.resources}(id)
+        ON DELETE SET NULL,
       FOREIGN KEY (change_set_id) REFERENCES ${tables.changeSets}(id)
         ON DELETE SET NULL
     );
 
-    CREATE INDEX IF NOT EXISTS ${tables.activityOutbox}_unpublished
-      ON ${tables.activityOutbox}(occurred_at, fact_id)
+    CREATE INDEX IF NOT EXISTS ${tables.transactionOutbox}_unpublished
+      ON ${tables.transactionOutbox}(occurred_at, source_transaction_id)
       WHERE published_at IS NULL;
+
+    CREATE INDEX IF NOT EXISTS ${tables.transactionOutbox}_source_request
+      ON ${tables.transactionOutbox}(document_id, source_request_id);
+
+    CREATE INDEX IF NOT EXISTS ${tables.transactionOutbox}_source_change_set
+      ON ${tables.transactionOutbox}(document_id, source_change_set_id)
+      WHERE source_change_set_id IS NOT NULL;
+
+    CREATE TABLE IF NOT EXISTS ${tables.retainedOutputs} (
+      document_id TEXT NOT NULL,
+      output_id   TEXT NOT NULL,
+      PRIMARY KEY (document_id, output_id),
+      FOREIGN KEY (document_id) REFERENCES ${tables.resources}(id)
+        ON DELETE CASCADE
+    );
 
     CREATE TABLE IF NOT EXISTS ${tables.attempts} (
       id                        TEXT PRIMARY KEY,
@@ -379,6 +313,5 @@ export const initializeDocumentSchema = (
     CREATE INDEX IF NOT EXISTS ${tables.stageReceipts}_state
       ON ${tables.stageReceipts}(state, updated_at, attempt_id);
   `);
-
-  migrateActivityOutbox(db, tables);
+  initializeResourceHistorySchema(db, tables.history);
 };

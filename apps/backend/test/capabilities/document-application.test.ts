@@ -41,8 +41,7 @@ import type {
   DocumentBlock,
   DocumentCommandRequest,
   DocumentCommandResult,
-  DocumentCommittedFact,
-  DocumentDelegatedCommandClaim,
+  DocumentCommittedTransaction,
   DocumentInternalJobIntent,
   DocumentOperation,
   DocumentOptions,
@@ -108,11 +107,11 @@ class CapacityOnceJobs extends CapturingJobs {
 }
 
 class CapturingActivityPublisher implements DocumentActivityPublisher {
-  readonly facts: DocumentCommittedFact[] = [];
+  readonly transactions: DocumentCommittedTransaction[] = [];
   failuresRemaining = 0;
 
-  async publish(fact: DocumentCommittedFact): Promise<void> {
-    this.facts.push(clone(fact));
+  async publish(transaction: DocumentCommittedTransaction): Promise<void> {
+    this.transactions.push(clone(transaction));
     if (this.failuresRemaining > 0) {
       this.failuresRemaining -= 1;
       throw new Error("Simulated Activity publisher failure");
@@ -120,18 +119,17 @@ class CapturingActivityPublisher implements DocumentActivityPublisher {
   }
 }
 
-class FailOnceDelegatedCompletionStore extends SQLiteDocumentStore {
-  completionAttempts = 0;
+class FailOnceRecordSubmissionStore extends SQLiteDocumentStore {
+  recordSubmissionAttempts = 0;
 
-  override async completeDelegatedCommand(
-    claim: DocumentDelegatedCommandClaim,
+  override async recordSubmission(
     receipt: DocumentSubmissionReceipt
   ): Promise<void> {
-    this.completionAttempts += 1;
-    if (this.completionAttempts === 1) {
-      throw new Error("Simulated crash before delegated-command completion");
+    this.recordSubmissionAttempts += 1;
+    if (this.recordSubmissionAttempts === 1) {
+      throw new Error("Simulated crash before the local receipt commits");
     }
-    await super.completeDelegatedCommand(claim, receipt);
+    await super.recordSubmission(receipt);
   }
 }
 
@@ -175,6 +173,7 @@ class FakeDerivedOutputs implements DocumentDerivedOutputs {
     const output: DerivedOutput = {
       id,
       kind: "prompt",
+      revision: 1,
       definition: {
         prompt: request.prompt,
         contextEntries: clone(request.contextEntries ?? []),
@@ -225,6 +224,7 @@ class FakeDerivedOutputs implements DocumentDerivedOutputs {
     const timestamp = new Date().toISOString();
     const updated: DerivedOutput = {
       ...current,
+      revision: current.revision + 1,
       definition: {
         prompt: request.prompt,
         contextEntries: clone(request.contextEntries),
@@ -278,6 +278,7 @@ class FakeDerivedOutputs implements DocumentDerivedOutputs {
     };
     const output: DerivedOutput = {
       ...current,
+      revision: current.revision + 1,
       headRevision: revisionNumber,
       freshness: { state: "current", lastCheckedAt: timestamp },
       updatedAt: timestamp
@@ -291,6 +292,10 @@ class FakeDerivedOutputs implements DocumentDerivedOutputs {
 
   async delete(id: string): Promise<void> {
     this.outputs.delete(id);
+  }
+
+  async purge(id: string): Promise<void> {
+    this.outputs.delete(id);
     for (const key of [...this.revisions.keys()]) {
       if (key.startsWith(`${id}:`)) this.revisions.delete(key);
     }
@@ -303,6 +308,7 @@ interface Harness {
   derivedOutputs: FakeDerivedOutputs;
   jobs: CapturingJobs;
   dbPath: string;
+  logger: CapturingLogger;
 }
 
 interface HarnessOverrides {
@@ -356,7 +362,8 @@ const createHarness = (
     store,
     derivedOutputs,
     jobs,
-    dbPath
+    dbPath,
+    logger
   };
 };
 
@@ -389,6 +396,23 @@ const requireChanged = (
   assert.equal(result.type, "document.changed");
   return result as Extract<DocumentCommandResult, { type: "document.changed" }>;
 };
+
+const requireCreated = (
+  result: DocumentCommandResult
+): Extract<DocumentCommandResult, { type: "document.created" }> => {
+  assert.equal(result.type, "document.created");
+  return result as Extract<DocumentCommandResult, { type: "document.created" }>;
+};
+
+/** Creates a document and returns the id the service allocated for it. */
+const createDocument = async (
+  document: DocumentCapability,
+  requestId: string,
+  title = "Document"
+): Promise<string> =>
+  requireCreated(
+    await document.command(command(requestId, { type: "document.create", title }))
+  ).head.id;
 
 const load = async (
   document: DocumentCapability,
@@ -446,19 +470,38 @@ test("Document creation replays identical requests and rejects divergent request
   const harness = createHarness();
   const create = command("create-request", {
     type: "document.create",
-    documentId: "document-idempotency",
     title: "Initial title"
   });
 
   const first = await harness.document.command(create);
+  const documentId = requireCreated(first).head.id;
+
+  // The replay must return the original result, including the same allocated id.
+  // A second document here would be the failure this receipt exists to prevent.
   const replay = await harness.document.command(clone(create));
   assert.deepEqual(replay, first);
-  assert.equal((await load(harness.document, "document-idempotency")).snapshot.title, "Initial title");
+  assert.equal(requireCreated(replay).head.id, documentId);
+  assert.equal((await load(harness.document, documentId)).snapshot.title, "Initial title");
+  assert.equal(
+    (await harness.document.query({
+      requestId: "list-after-replay",
+      query: { type: "document.list" }
+    }) as { type: "document.listed"; items: unknown[] }).items.length,
+    1
+  );
+
+  // A different request id is a different logical create, so it gets its own document.
+  const second = requireCreated(
+    await harness.document.command(command("create-request-2", {
+      type: "document.create",
+      title: "Initial title"
+    }))
+  );
+  assert.notEqual(second.head.id, documentId);
 
   await assert.rejects(
     harness.document.command(command("create-request", {
       type: "document.create",
-      documentId: "document-idempotency",
       title: "Different title"
     })),
     (error: unknown) =>
@@ -468,8 +511,8 @@ test("Document creation replays identical requests and rejects divergent request
   await assert.rejects(
     harness.document.command(command("$document-internal$:caller", {
       type: "document.submit",
-      documentId: "document-idempotency",
-      expectedRevision: 0,
+      documentId,
+      expectedRevision: 1,
       operations: [{ type: "document.rename", title: "Reserved" }]
     })),
     (error: unknown) =>
@@ -482,9 +525,13 @@ test("Document creation replays identical requests and rejects divergent request
   });
   assert.equal(listed.type, "document.listed");
   if (listed.type === "document.listed") {
-    assert.deepEqual(listed.items.map((head) => head.id), ["document-idempotency"]);
+    // Two documents: the replayed create did not produce a third.
+    assert.deepEqual(
+      listed.items.map((head) => head.id).sort(),
+      [documentId, second.head.id].sort()
+    );
   }
-  assert.equal((await harness.store.listUnpublishedFacts()).length, 1);
+  assert.equal((await harness.store.listUnpublishedTransactions()).length, 2);
 
   harness.store.close();
 });
@@ -495,30 +542,33 @@ test("Document Activity publication is post-commit, best-effort, and recoverable
   const harness = createHarness({ activityPublisher: publisher });
   const create = command("activity-create", {
     type: "document.create",
-    documentId: "document-activity-publication",
     title: "Activity publication"
   });
 
   const result = await harness.document.command(create);
   assert.equal(result.type, "document.created");
-  assert.equal((await load(harness.document, "document-activity-publication")).head.revision, 0);
-  assert.equal(publisher.facts.length, 1);
+  const documentId = requireCreated(result).head.id;
+  assert.equal((await load(harness.document, documentId)).head.revision, 1);
+  assert.equal(publisher.transactions.length, 1);
 
-  const [pending] = await harness.store.listUnpublishedFacts();
+  const [pending] = await harness.store.listUnpublishedTransactions();
   assert.ok(pending);
-  assert.equal(pending.factId, publisher.facts[0]?.factId);
+  assert.equal(
+    pending.sourceTransactionId,
+    publisher.transactions[0]?.sourceTransactionId
+  );
   assert.equal(pending.sourceRequestId, "activity-create");
   assert.equal(pending.origin, "interactive");
   assert.equal(pending.sourceSemanticDigest, result.head.semanticDigest);
 
   // An exact request replay does not create or publish a second transaction.
   assert.deepEqual(await harness.document.command(clone(create)), result);
-  assert.equal(publisher.facts.length, 1);
+  assert.equal(publisher.transactions.length, 1);
 
   assert.equal(await harness.document.publishPendingActivity(), 1);
-  assert.equal(publisher.facts.length, 2);
-  assert.deepEqual(publisher.facts[1], pending);
-  assert.deepEqual(await harness.store.listUnpublishedFacts(), []);
+  assert.equal(publisher.transactions.length, 2);
+  assert.deepEqual(publisher.transactions[1], pending);
+  assert.deepEqual(await harness.store.listUnpublishedTransactions(), []);
 
   harness.store.close();
 });
@@ -526,17 +576,12 @@ test("Document Activity publication is post-commit, best-effort, and recoverable
 test("a capacity-rejected internal intent is redriven in-process", async () => {
   const jobs = new CapacityOnceJobs();
   const harness = createHarness({ jobs });
-  const documentId = "document-dispatch-redrive";
-  await harness.document.command(command("create-dispatch-redrive", {
-    type: "document.create",
-    documentId,
-    title: "Dispatch redrive"
-  }));
+  const documentId = await createDocument(harness.document, "create-dispatch-redrive", "Dispatch redrive");
 
   const requested = await harness.document.command(command("request-dispatch-redrive", {
     type: "prompt.create.request",
     documentId,
-    expectedRevision: 0,
+    expectedRevision: 1,
     blockId: "dispatch-redrive-block",
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "dispatch-redrive-row" },
@@ -574,16 +619,11 @@ test("capacity redrive also supports non-attempt compaction intents", async () =
       }
     }
   });
-  const documentId = "document-compaction-redrive";
-  await harness.document.command(command("create-compaction-redrive", {
-    type: "document.create",
-    documentId,
-    title: "Compaction redrive"
-  }));
+  const documentId = await createDocument(harness.document, "create-compaction-redrive", "Compaction redrive");
   await harness.document.command(command("change-compaction-redrive", {
     type: "document.submit",
     documentId,
-    expectedRevision: 0,
+    expectedRevision: 1,
     operations: [{ type: "document.rename", title: "Changed" }]
   }));
 
@@ -592,7 +632,7 @@ test("capacity redrive also supports non-attempt compaction intents", async () =
   assert.deepEqual(jobs.intents[0], {
     type: "document.compact",
     documentId,
-    idempotencyKey: `document:compact:${documentId}:1`
+    idempotencyKey: `document:compact:${documentId}:2`
   });
 
   harness.store.close();
@@ -610,13 +650,8 @@ test("late compaction anchors and preserves the configured historical tail", asy
       }
     }
   });
-  const documentId = "document-retention-compaction";
-  await harness.document.command(command("create-retention-compaction", {
-    type: "document.create",
-    documentId,
-    title: "Revision 0"
-  }));
-  for (let revision = 1; revision <= 8; revision += 1) {
+  const documentId = await createDocument(harness.document, "create-retention-compaction", "Revision 1");
+  for (let revision = 2; revision <= 9; revision += 1) {
     await harness.document.command(command(`retention-change-${revision}`, {
       type: "document.submit",
       documentId,
@@ -632,22 +667,22 @@ test("late compaction anchors and preserves the configured historical tail", asy
     (intent) => intent.type === "document.compact"
   );
   assert.equal(compactIntents[0]?.documentId, documentId);
-  assert.equal(compactIntents[0]?.idempotencyKey, `document:compact:${documentId}:3`);
+  assert.equal(compactIntents[0]?.idempotencyKey, `document:compact:${documentId}:4`);
 
   assert.equal(await harness.document.compact(documentId), true);
-  assert.equal((await harness.store.getHead(documentId))?.baseSeq, 8);
-  assert.equal((await harness.store.getBaseAtOrBefore(documentId, 5))?.baseSeq, 5);
-  assert.equal((await harness.store.getBaseAtOrBefore(documentId, 8))?.baseSeq, 8);
+  assert.equal((await harness.store.getHead(documentId))?.baseSeq, 9);
+  assert.equal((await harness.store.getBaseAtOrBefore(documentId, 6))?.baseSeq, 6);
+  assert.equal((await harness.store.getBaseAtOrBefore(documentId, 9))?.baseSeq, 9);
 
-  for (let revision = 5; revision <= 8; revision += 1) {
+  for (let revision = 6; revision <= 9; revision += 1) {
     const historical = await load(harness.document, documentId, revision);
     assert.equal(historical.snapshot.revision, revision);
     assert.equal(historical.snapshot.title, `Revision ${revision}`);
   }
   await assert.rejects(
-    load(harness.document, documentId, 4),
+    load(harness.document, documentId, 5),
     (error: unknown) =>
-      error instanceof HistoryPrunedError && error.revision === 4
+      error instanceof HistoryPrunedError && error.revision === 5
   );
   const history = await harness.document.query({
     requestId: "retained-history-query",
@@ -657,16 +692,16 @@ test("late compaction anchors and preserves the configured historical tail", asy
   if (history.type === "document.history") {
     assert.deepEqual(
       history.items.map((changeSet) => changeSet.revision),
-      [8, 7, 6]
+      [9, 8, 7]
     );
   }
 
   const dispatchCount = harness.jobs.intents.length;
-  await harness.document.command(command("retention-change-9", {
+  await harness.document.command(command("retention-change-10", {
     type: "document.submit",
     documentId,
-    expectedRevision: 8,
-    operations: [{ type: "document.rename", title: "Revision 9" }]
+    expectedRevision: 9,
+    operations: [{ type: "document.rename", title: "Revision 10" }]
   }));
   assert.equal(
     harness.jobs.intents.length,
@@ -687,18 +722,13 @@ test("compensation rejects a preserved target when compaction pruned intervening
       }
     }
   });
-  const documentId = "document-pruned-compensation";
-  await harness.document.command(command("create-pruned-compensation", {
-    type: "document.create",
-    documentId,
-    title: "Original"
-  }));
+  const documentId = await createDocument(harness.document, "create-pruned-compensation", "Original");
   const renamed = requireChanged(await harness.document.command(command(
     "rename-before-pruned-compensation",
     {
       type: "document.submit",
       documentId,
-      expectedRevision: 0,
+      expectedRevision: 1,
       operations: [{ type: "document.rename", title: "Changed" }]
     }
   )));
@@ -707,9 +737,9 @@ test("compensation rejects a preserved target when compaction pruned intervening
     documentId,
     targetChangeSetId: renamed.changeSet.id,
     intent: "undo",
-    expectedRevision: 1
+    expectedRevision: 2
   }));
-  for (let revision = 3; revision <= 5; revision += 1) {
+  for (let revision = 4; revision <= 6; revision += 1) {
     await harness.document.command(command(`lifecycle-change-${revision}`, {
       type: "document.submit",
       documentId,
@@ -724,12 +754,12 @@ test("compensation rejects a preserved target when compaction pruned intervening
   assert.equal(await harness.document.compact(documentId), true);
   assert.equal(
     (await harness.store.getChangeSet(documentId, renamed.changeSet.id))?.revision,
-    1,
+    2,
     "a referenced compensation target remains addressable after pruning"
   );
   assert.deepEqual(
     (await harness.store.getChangeSets(documentId, 1, 5)).map((changeSet) => changeSet.revision),
-    [5],
+    [2],
     "the target no longer has a complete intervening history"
   );
 
@@ -739,7 +769,7 @@ test("compensation rejects a preserved target when compaction pruned intervening
       documentId,
       targetChangeSetId: renamed.changeSet.id,
       intent: "undo",
-      expectedRevision: 5
+      expectedRevision: 6
     })),
     (error: unknown) =>
       error instanceof CompensationConflictError && /history has been pruned/.test(error.message)
@@ -761,20 +791,33 @@ test("Document compaction internal work is wired to the serial queue", () => {
   harness.store.close();
 });
 
+test("Every attempt's compute stage is concurrent and its settle stage is serial", () => {
+  const harness = createHarness();
+  const intents: DocumentInternalJobIntent[] = [
+    { type: "document.prompt.create.compute", attemptId: "a", idempotencyKey: "k" },
+    { type: "document.prompt.create.settle", attemptId: "a", idempotencyKey: "k" },
+    { type: "document.prompt.refresh.compute", attemptId: "a", idempotencyKey: "k" },
+    { type: "document.prompt.refresh.settle", attemptId: "a", idempotencyKey: "k" },
+    { type: "document.formula.evaluate.compute", attemptId: "a", idempotencyKey: "k" },
+    { type: "document.formula.evaluate.settle", attemptId: "a", idempotencyKey: "k" }
+  ];
+  for (const intent of intents) {
+    const job = createDocumentInternalJob(harness.document, intent);
+    const expectedQueue = intent.type.endsWith(".settle") ? "serial" : "concurrent";
+    assert.equal(job.queueType, expectedQueue, intent.type);
+  }
+  harness.store.close();
+});
+
 test("commands cannot reuse tombstoned identities while exact compensation restores them", async () => {
   const harness = createHarness();
-  const documentId = "document-identity-ledger";
-  await harness.document.command(command("create-identity-ledger", {
-    type: "document.create",
-    documentId,
-    title: "Identity ledger"
-  }));
+  const documentId = await createDocument(harness.document, "create-identity-ledger", "Identity ledger");
 
   const originalBlock = contentBlock("identity-block", "Original");
   await harness.document.command(command("insert-identities", {
     type: "document.submit",
     documentId,
-    expectedRevision: 0,
+    expectedRevision: 1,
     operations: [rowInsert("identity-row", originalBlock)]
   }));
 
@@ -783,7 +826,7 @@ test("commands cannot reuse tombstoned identities while exact compensation resto
     {
       type: "document.submit",
       documentId,
-      expectedRevision: 1,
+      expectedRevision: 2,
       operations: [{ type: "block.delete", blockId: originalBlock.id }]
     }
   )));
@@ -795,9 +838,9 @@ test("commands cannot reuse tombstoned identities while exact compensation resto
       id: "identity-block",
       kind: "block",
       state: "tombstoned",
-      firstRevision: 1,
-      lastTransitionRevision: 2,
-      tombstonedRevision: 2
+      firstRevision: 2,
+      lastTransitionRevision: 3,
+      tombstonedRevision: 3
     }
   );
 
@@ -805,7 +848,7 @@ test("commands cannot reuse tombstoned identities while exact compensation resto
     harness.document.command(command("reuse-identities", {
       type: "document.submit",
       documentId,
-      expectedRevision: 2,
+      expectedRevision: 3,
       operations: [rowInsert(
         "identity-row",
         contentBlock("identity-block", "Replacement")
@@ -817,14 +860,14 @@ test("commands cannot reuse tombstoned identities while exact compensation resto
       error.previousKind === "block" &&
       error.requestedKind === "block"
   );
-  assert.equal((await harness.store.getHead(documentId))?.revision, 2);
+  assert.equal((await harness.store.getHead(documentId))?.revision, 3);
   assert.equal((await load(harness.document, documentId)).snapshot.rows.length, 0);
 
   await assert.rejects(
     harness.document.command(command("reuse-cross-kind", {
       type: "document.submit",
       documentId,
-      expectedRevision: 2,
+      expectedRevision: 3,
       operations: [rowInsert(
         "identity-block",
         contentBlock("fresh-block", "Cross kind")
@@ -836,7 +879,7 @@ test("commands cannot reuse tombstoned identities while exact compensation resto
       error.previousKind === "block" &&
       error.requestedKind === "row"
   );
-  assert.equal((await harness.store.getHead(documentId))?.revision, 2);
+  assert.equal((await harness.store.getHead(documentId))?.revision, 3);
 
   const restored = requireChanged(await harness.document.command(command(
     "restore-identities",
@@ -845,10 +888,10 @@ test("commands cannot reuse tombstoned identities while exact compensation resto
       documentId,
       targetChangeSetId: deleted.changeSet.id,
       intent: "undo",
-      expectedRevision: 2
+      expectedRevision: 3
     }
   )));
-  assert.equal(restored.changeSet.revision, 3);
+  assert.equal(restored.changeSet.revision, 4);
   const snapshot = (await load(harness.document, documentId)).snapshot;
   assert.equal(snapshot.rows[0]?.id, "identity-row");
   assert.equal(snapshot.rows[0]?.blocks[0]?.id, "identity-block");
@@ -859,7 +902,7 @@ test("commands cannot reuse tombstoned identities while exact compensation resto
   assert.equal(
     (await harness.store.getIdentity(documentId, "identity-block"))
       ?.lastTransitionRevision,
-    3
+    4
   );
 
   harness.store.close();
@@ -867,12 +910,7 @@ test("commands cannot reuse tombstoned identities while exact compensation resto
 
 test("submit, historical load, disjoint stale rebase, conflict, undo, and redo compose through SQLite history", async () => {
   const harness = createHarness();
-  const documentId = "document-history";
-  await harness.document.command(command("create-history", {
-    type: "document.create",
-    documentId,
-    title: "History"
-  }));
+  const documentId = await createDocument(harness.document, "create-history", "History");
 
   const nestedPrompt: DocumentBlock = {
     id: "nested-prompt-container",
@@ -899,7 +937,7 @@ test("submit, historical load, disjoint stale rebase, conflict, undo, and redo c
     harness.document.command(command("forged-nested-prompt", {
       type: "document.submit",
       documentId,
-      expectedRevision: 0,
+      expectedRevision: 1,
       operations: [rowInsert("forged-row", nestedPrompt)]
     })),
     (error: unknown) =>
@@ -909,45 +947,45 @@ test("submit, historical load, disjoint stale rebase, conflict, undo, and redo c
   const initial = requireChanged(await harness.document.command(command("insert-rows", {
     type: "document.submit",
     documentId,
-    expectedRevision: 0,
+    expectedRevision: 1,
     operations: [
       rowInsert("row-a", contentBlock("block-a", "A")),
       rowInsert("row-b", contentBlock("block-b", "B"), "row-a")
     ]
   })));
-  assert.equal(initial.changeSet.revision, 1);
+  assert.equal(initial.changeSet.revision, 2);
 
   const changeA = requireChanged(await harness.document.command(command("change-a", {
     type: "document.submit",
     documentId,
-    expectedRevision: 1,
+    expectedRevision: 2,
     operations: [{
       type: "block.set-presentation",
       blockId: "block-a",
       presentation: { alignment: "center" }
     }]
   })));
-  assert.equal(changeA.changeSet.revision, 2);
+  assert.equal(changeA.changeSet.revision, 3);
 
   const staleButDisjoint = requireChanged(await harness.document.command(command("change-b-stale", {
     type: "document.submit",
     documentId,
-    expectedRevision: 1,
+    expectedRevision: 2,
     operations: [{
       type: "block.set-presentation",
       blockId: "block-b",
       presentation: { alignment: "right" }
     }]
   })));
-  assert.equal(staleButDisjoint.changeSet.authoredRevision, 1);
-  assert.equal(staleButDisjoint.changeSet.priorRevision, 2);
-  assert.equal(staleButDisjoint.changeSet.revision, 3);
+  assert.equal(staleButDisjoint.changeSet.authoredRevision, 2);
+  assert.equal(staleButDisjoint.changeSet.priorRevision, 3);
+  assert.equal(staleButDisjoint.changeSet.revision, 4);
 
   await assert.rejects(
     harness.document.command(command("change-a-conflict", {
       type: "document.submit",
       documentId,
-      expectedRevision: 1,
+      expectedRevision: 2,
       operations: [{
         type: "block.set-presentation",
         blockId: "block-a",
@@ -956,15 +994,15 @@ test("submit, historical load, disjoint stale rebase, conflict, undo, and redo c
     })),
     (error: unknown) =>
       error instanceof RevisionConflictError &&
-      error.expected === 1 &&
-      error.actual === 3
+      error.expected === 2 &&
+      error.actual === 4
   );
 
   const beforeUndo = await load(harness.document, documentId);
   assert.equal(blockById(beforeUndo.snapshot, "block-a")?.presentation?.alignment, "center");
   assert.equal(blockById(beforeUndo.snapshot, "block-b")?.presentation?.alignment, "right");
-  const historical = await load(harness.document, documentId, 1);
-  assert.equal(historical.snapshot.revision, 1);
+  const historical = await load(harness.document, documentId, 2);
+  assert.equal(historical.snapshot.revision, 2);
   assert.equal(blockById(historical.snapshot, "block-a")?.presentation, undefined);
   assert.equal(blockById(historical.snapshot, "block-b")?.presentation, undefined);
 
@@ -973,10 +1011,10 @@ test("submit, historical load, disjoint stale rebase, conflict, undo, and redo c
     documentId,
     targetChangeSetId: changeA.changeSet.id,
     intent: "undo",
-    expectedRevision: 3
+    expectedRevision: 4
   });
   const undo = requireChanged(await harness.document.command(undoRequest));
-  assert.equal(undo.changeSet.revision, 4);
+  assert.equal(undo.changeSet.revision, 5);
   assert.deepEqual(undo.changeSet.compensation, {
     intent: "undo",
     targetChangeSetId: changeA.changeSet.id
@@ -992,9 +1030,9 @@ test("submit, historical load, disjoint stale rebase, conflict, undo, and redo c
     documentId,
     targetChangeSetId: undo.changeSet.id,
     intent: "redo",
-    expectedRevision: 4
+    expectedRevision: 5
   })));
-  assert.equal(redo.changeSet.revision, 5);
+  assert.equal(redo.changeSet.revision, 6);
   assert.equal(
     blockById((await load(harness.document, documentId)).snapshot, "block-a")?.presentation?.alignment,
     "center"
@@ -1006,7 +1044,7 @@ test("submit, historical load, disjoint stale rebase, conflict, undo, and redo c
   });
   assert.equal(history.type, "document.history");
   if (history.type === "document.history") {
-    assert.deepEqual(history.items.map((changeSet) => changeSet.revision), [5, 4, 3, 2, 1]);
+    assert.deepEqual(history.items.map((changeSet) => changeSet.revision), [6, 5, 4, 3, 2]);
   }
 
   harness.store.close();
@@ -1014,17 +1052,12 @@ test("submit, historical load, disjoint stale rebase, conflict, undo, and redo c
 
 test("Prompt creation gives every Block a dedicated output, refresh adopts an exact revision, and deletion detaches ownership", async () => {
   const harness = createHarness();
-  const documentId = "document-prompts";
-  await harness.document.command(command("create-prompts", {
-    type: "document.create",
-    documentId,
-    title: "Prompts"
-  }));
+  const documentId = await createDocument(harness.document, "create-prompts", "Prompts");
 
   const requestFirst = command("prompt-one-request", {
     type: "prompt.create.request",
     documentId,
-    expectedRevision: 0,
+    expectedRevision: 1,
     blockId: "prompt-block-1",
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "prompt-row-1" },
@@ -1039,7 +1072,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
     harness.document.command(command("prompt-one-competing-request", {
       type: "prompt.create.request",
       documentId,
-      expectedRevision: 0,
+      expectedRevision: 1,
       blockId: "prompt-block-1",
       styleId: NORMAL_STYLE,
       placement: { kind: "new-row", rowId: "competing-row" },
@@ -1068,7 +1101,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
   await harness.document.settlePromptCreation(firstRequested.attemptId);
   await harness.document.settlePromptCreation(firstRequested.attemptId);
   assert.equal((await harness.store.getPromptOutputOwnership(firstOutputId))?.state, "attached");
-  assert.equal((await load(harness.document, documentId)).snapshot.revision, 1);
+  assert.equal((await load(harness.document, documentId)).snapshot.revision, 2);
 
   const firstDefinitionRequest = command("prompt-one-definition-v2", {
     type: "prompt.update-definition",
@@ -1117,7 +1150,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
   const secondRequested = await harness.document.command(command("prompt-two-request", {
     type: "prompt.create.request",
     documentId,
-    expectedRevision: 1,
+    expectedRevision: 2,
     blockId: "prompt-block-2",
     styleId: NORMAL_STYLE,
     placement: {
@@ -1142,7 +1175,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
   assert.equal((await harness.store.getPromptOutputOwnership(secondOutputId))?.state, "attached");
 
   const beforeRefresh = await load(harness.document, documentId);
-  assert.equal(beforeRefresh.snapshot.revision, 2);
+  assert.equal(beforeRefresh.snapshot.revision, 3);
   assert.equal(beforeRefresh.promptRevisions.length, 2);
   assert.equal(
     (blockById(beforeRefresh.snapshot, "prompt-block-1") as { output?: { appliedRevision?: number } })
@@ -1154,7 +1187,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
     type: "prompt.refresh.request",
     documentId,
     promptBlockId: "prompt-block-1",
-    expectedRevision: 2
+    expectedRevision: 3
   }));
   assert.equal(refreshRequested.type, "prompt.refresh-requested");
   if (refreshRequested.type !== "prompt.refresh-requested") return;
@@ -1162,7 +1195,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
   await harness.document.settlePromptRefresh(refreshRequested.attemptId);
 
   const afterRefresh = await load(harness.document, documentId);
-  assert.equal(afterRefresh.snapshot.revision, 3);
+  assert.equal(afterRefresh.snapshot.revision, 4);
   assert.equal(
     (blockById(afterRefresh.snapshot, "prompt-block-1") as { output?: { appliedRevision?: number } })
       .output?.appliedRevision,
@@ -1173,39 +1206,98 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
   requireChanged(await harness.document.command(command("delete-prompt-one", {
     type: "document.submit",
     documentId,
-    expectedRevision: 3,
+    expectedRevision: 4,
     operations: [{ type: "block.delete", blockId: "prompt-block-1" }]
   })));
   const detached = await harness.store.getPromptOutputOwnership(firstOutputId);
   assert.equal(detached?.state, "detached");
-  assert.equal(detached?.detachedRevision, 4);
+  assert.equal(detached?.detachedRevision, 5);
   assert.equal((await harness.store.getPromptOutputOwnership(secondOutputId))?.state, "attached");
 
   harness.store.close();
 });
 
-test("Prompt definition delegation recovers exact work after a local completion crash", async () => {
-  const directory = mkdtempSync(join(tmpdir(), "icarus-document-delegated-crash-"));
+test("the attempt lifecycle is logged end-to-end for prompt creation and refresh", async () => {
+  const harness = createHarness();
+  const documentId = await createDocument(harness.document, "create-lifecycle", "Lifecycle");
+
+  const requested = await harness.document.command(command("lifecycle-prompt-request", {
+    type: "prompt.create.request",
+    documentId,
+    expectedRevision: 1,
+    blockId: "lifecycle-block",
+    styleId: NORMAL_STYLE,
+    placement: { kind: "new-row", rowId: "lifecycle-row" },
+    prompt: "Lifecycle question",
+    contextEntries: [],
+    stabilisationText: ""
+  }));
+  assert.equal(requested.type, "prompt.create-requested");
+  if (requested.type !== "prompt.create-requested") return;
+
+  await harness.document.computePromptCreation(requested.attemptId);
+  await harness.document.settlePromptCreation(requested.attemptId);
+
+  const eventsFor = (attemptId: string): string[] =>
+    harness.logger.entries
+      .filter((entry) => (entry.data as { attemptId?: string } | undefined)?.attemptId === attemptId)
+      .map((entry) => entry.message);
+
+  assert.deepEqual(eventsFor(requested.attemptId), [
+    "document.attempt.requested",
+    "document.attempt.computing",
+    "document.attempt.proposed",
+    "document.attempt.settled"
+  ]);
+
+  const refreshRequested = await harness.document.command(command("lifecycle-refresh-request", {
+    type: "prompt.refresh.request",
+    documentId,
+    promptBlockId: "lifecycle-block",
+    expectedRevision: 2
+  }));
+  assert.equal(refreshRequested.type, "prompt.refresh-requested");
+  if (refreshRequested.type !== "prompt.refresh-requested") return;
+
+  await harness.document.computePromptRefresh(refreshRequested.attemptId);
+  assert.deepEqual(eventsFor(refreshRequested.attemptId), [
+    "document.attempt.requested",
+    "document.attempt.computing",
+    "document.attempt.proposed"
+  ]);
+
+  await harness.document.query({
+    requestId: "lifecycle-list-query",
+    query: { type: "document.list" }
+  });
+  assert.ok(
+    harness.logger.entries.some(
+      (entry) =>
+        entry.message === "document.query.completed" &&
+        (entry.data as { type: string }).type === "document.list"
+    )
+  );
+
+  harness.store.close();
+});
+
+test("prompt.update-definition survives a crash before its local receipt commits", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "icarus-document-definition-crash-"));
   const dbPath = join(directory, "documents.db");
   const derivedOutputs = new FakeDerivedOutputs();
   const first = createHarness({
     dbPath,
     derivedOutputs,
-    storeFactory: (path) => new FailOnceDelegatedCompletionStore(
+    storeFactory: (path) => new FailOnceRecordSubmissionStore(
       "application-test-project",
       path
     )
   });
-  const documentId = "document-definition-crash";
-  await first.document.command(command("create-definition-crash", {
-    type: "document.create",
-    documentId,
-    title: "Definition crash"
-  }));
+  const documentId = await createDocument(first.document, "create-definition-crash", "Definition crash");
   const creation = await first.document.command(command("create-crash-prompt", {
     type: "prompt.create.request",
     documentId,
-    expectedRevision: 0,
+    expectedRevision: 1,
     blockId: "crash-prompt-block",
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "crash-prompt-row" },
@@ -1234,61 +1326,27 @@ test("Prompt definition delegation recovers exact work after a local completion 
   });
   await assert.rejects(
     first.document.command(updateRequest),
-    /Simulated crash before delegated-command completion/
+    /Simulated crash before the local receipt commits/
   );
+  // Derived Outputs already committed the definition update before the crash.
   assert.equal(derivedOutputs.outputs.get(outputId)?.definition.definitionRevision, 2);
   assert.equal(derivedOutputs.definitionUpdates.size, 1);
   assert.equal(
     await first.store.getSubmission(documentId, updateRequest.requestId),
     undefined
   );
-  const pendingClaim = await first.store.getDelegatedCommandClaim(
-    documentId,
-    updateRequest.requestId
-  );
-  assert.equal(pendingClaim?.documentId, documentId);
-  assert.equal(pendingClaim?.requestId, updateRequest.requestId);
-  assert.equal(pendingClaim?.kind, "prompt.update-definition");
-  assert.equal(pendingClaim?.targetOutputId, outputId);
-  assert.equal(pendingClaim?.state, "pending");
-  assert.ok(Number.isFinite(Date.parse(pendingClaim?.createdAt ?? "")));
-  assert.equal(pendingClaim?.updatedAt, pendingClaim?.createdAt);
   first.store.close();
 
   const resumed = createHarness({ dbPath, derivedOutputs });
-  await assert.rejects(
-    resumed.document.command(command(updateRequest.requestId, {
-      type: "document.submit",
-      documentId,
-      expectedRevision: 1,
-      operations: [{ type: "document.rename", title: "Must not commit" }]
-    })),
-    (error: unknown) => error instanceof IdempotencyMismatchError
-  );
-  assert.equal((await load(resumed.document, documentId)).snapshot.title, "Definition crash");
-
-  requireChanged(await resumed.document.command(command("delete-before-exact-retry", {
-    type: "document.submit",
-    documentId,
-    expectedRevision: 1,
-    operations: [{ type: "block.delete", blockId: "crash-prompt-block" }]
-  })));
-  assert.equal(blockById((await load(resumed.document, documentId)).snapshot, "crash-prompt-block"), undefined);
-
   const recovered = await resumed.document.command(clone(updateRequest));
   assert.equal(recovered.type, "prompt.definition-updated");
   if (recovered.type !== "prompt.definition-updated") return;
   assert.equal(recovered.output.id, outputId);
   assert.equal(recovered.output.definition.definitionRevision, 2);
+  // Derived Outputs' own idempotency key recognised the retry: no second
+  // definition update was applied, even without any Document-side claim.
   assert.equal(derivedOutputs.definitionUpdates.size, 1);
   assert.deepEqual(await resumed.document.command(clone(updateRequest)), recovered);
-  assert.equal(
-    (await resumed.store.getDelegatedCommandClaim(
-      documentId,
-      updateRequest.requestId
-    ))?.state,
-    "completed"
-  );
   assert.deepEqual(
     (await resumed.store.getSubmission(documentId, updateRequest.requestId))?.result,
     recovered
@@ -1297,18 +1355,81 @@ test("Prompt definition delegation recovers exact work after a local completion 
   resumed.store.close();
 });
 
+test("prompt.update-definition fails cleanly if its Prompt Block is deleted during a crash window", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "icarus-document-definition-crash-delete-"));
+  const dbPath = join(directory, "documents.db");
+  const derivedOutputs = new FakeDerivedOutputs();
+  const first = createHarness({
+    dbPath,
+    derivedOutputs,
+    storeFactory: (path) => new FailOnceRecordSubmissionStore(
+      "application-test-project",
+      path
+    )
+  });
+  const documentId = await createDocument(
+    first.document,
+    "create-definition-crash-delete",
+    "Definition crash delete"
+  );
+  const creation = await first.document.command(command("create-crash-prompt-delete", {
+    type: "prompt.create.request",
+    documentId,
+    expectedRevision: 1,
+    blockId: "crash-prompt-block-delete",
+    styleId: NORMAL_STYLE,
+    placement: { kind: "new-row", rowId: "crash-prompt-row-delete" },
+    prompt: "Original prompt",
+    contextEntries: [],
+    stabilisationText: ""
+  }));
+  assert.equal(creation.type, "prompt.create-requested");
+  if (creation.type !== "prompt.create-requested") return;
+  await first.document.computePromptCreation(creation.attemptId);
+  await first.document.settlePromptCreation(creation.attemptId);
+
+  const updateRequest = command("definition-crash-delete-request", {
+    type: "prompt.update-definition",
+    documentId,
+    promptBlockId: "crash-prompt-block-delete",
+    expectedDefinitionRevision: 1,
+    prompt: "Updated exactly once",
+    contextEntries: [],
+    stabilisationText: ""
+  });
+  await assert.rejects(
+    first.document.command(updateRequest),
+    /Simulated crash before the local receipt commits/
+  );
+  first.store.close();
+
+  const resumed = createHarness({ dbPath, derivedOutputs });
+  requireChanged(await resumed.document.command(command("delete-before-exact-retry", {
+    type: "document.submit",
+    documentId,
+    expectedRevision: 2,
+    operations: [{ type: "block.delete", blockId: "crash-prompt-block-delete" }]
+  })));
+
+  // There is no frozen target to fall back on, so the retry cannot resolve
+  // the Block and fails cleanly. This is an accepted trade-off, not a
+  // correctness bug: the external update already happened and is not undone
+  // or duplicated — the retry just cannot be replayed once its Block is gone.
+  await assert.rejects(
+    resumed.document.command(clone(updateRequest)),
+    /Prompt Block not found/
+  );
+
+  resumed.store.close();
+});
+
 test("a transient Prompt creation exception retries without abandoning its dedicated output", async () => {
   const harness = createHarness();
-  const documentId = "document-transient-prompt";
-  await harness.document.command(command("create-transient-prompt-document", {
-    type: "document.create",
-    documentId,
-    title: "Transient Prompt"
-  }));
+  const documentId = await createDocument(harness.document, "create-transient-prompt-document", "Transient Prompt");
   const requested = await harness.document.command(command("request-transient-prompt", {
     type: "prompt.create.request",
     documentId,
-    expectedRevision: 0,
+    expectedRevision: 1,
     blockId: "transient-prompt-block",
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "transient-prompt-row" },
@@ -1339,23 +1460,18 @@ test("a transient Prompt creation exception retries without abandoning its dedic
     (await harness.store.getPromptOutputOwnership(output.id))?.state,
     "attached"
   );
-  assert.equal((await load(harness.document, documentId)).snapshot.revision, 1);
+  assert.equal((await load(harness.document, documentId)).snapshot.revision, 2);
 
   harness.store.close();
 });
 
 test("failed initial Prompt refresh records a detached dedicated output", async () => {
   const harness = createHarness();
-  const documentId = "document-failed-prompt";
-  await harness.document.command(command("create-failed-prompt-document", {
-    type: "document.create",
-    documentId,
-    title: "Failed Prompt"
-  }));
+  const documentId = await createDocument(harness.document, "create-failed-prompt-document", "Failed Prompt");
   const requested = await harness.document.command(command("request-failed-prompt", {
     type: "prompt.create.request",
     documentId,
-    expectedRevision: 0,
+    expectedRevision: 1,
     blockId: "failed-prompt-block",
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "failed-prompt-row" },
@@ -1378,7 +1494,7 @@ test("failed initial Prompt refresh records a detached dedicated output", async 
   const ownership = await harness.store.getPromptOutputOwnership(output.id);
   assert.equal(ownership?.state, "detached");
   assert.equal(ownership?.detachedRevision, undefined);
-  assert.equal((await load(harness.document, documentId)).snapshot.revision, 0);
+  assert.equal((await load(harness.document, documentId)).snapshot.revision, 1);
 
   harness.store.close();
 });
@@ -1399,17 +1515,16 @@ test("Prompt creation settlement detaches its output after an identity conflict 
       return interruptedStore;
     }
   });
-  const documentId = "document-prompt-settle-recovery";
+  const documentId = await createDocument(
+    first.document,
+    "create-prompt-settle-recovery",
+    "Prompt settlement recovery"
+  );
   const blockId = "identity-conflicted-prompt-block";
-  await first.document.command(command("create-prompt-settle-recovery", {
-    type: "document.create",
-    documentId,
-    title: "Prompt settlement recovery"
-  }));
   const requested = await first.document.command(command("request-conflicted-prompt", {
     type: "prompt.create.request",
     documentId,
-    expectedRevision: 0,
+    expectedRevision: 1,
     blockId,
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "conflicted-prompt-row" },
@@ -1423,13 +1538,13 @@ test("Prompt creation settlement detaches its output after an identity conflict 
   requireChanged(await first.document.command(command("claim-conflicted-identity", {
     type: "document.submit",
     documentId,
-    expectedRevision: 0,
+    expectedRevision: 1,
     operations: [rowInsert("temporary-identity-row", contentBlock(blockId, "Temporary"))]
   })));
   requireChanged(await first.document.command(command("tombstone-conflicted-identity", {
     type: "document.submit",
     documentId,
-    expectedRevision: 1,
+    expectedRevision: 2,
     operations: [{ type: "block.delete", blockId }]
   })));
 
@@ -1487,4 +1602,119 @@ test("Prompt creation settlement detaches its output after an identity conflict 
     "detached"
   );
   restarted.store.close();
+});
+
+test("logical deletion refuses a stale revision and retains revision history", async () => {
+  const harness = createHarness();
+  const documentId = await createDocument(harness.document, "create-guarded", "Guarded");
+
+  await assert.rejects(
+    harness.document.command(command("delete-stale", {
+      type: "document.delete",
+      documentId,
+      expectedRevision: 0
+    })),
+    RevisionConflictError
+  );
+  assert.ok(await harness.store.getHead(documentId));
+
+  const deleted = await harness.document.command(command("delete-it", {
+    type: "document.delete",
+    documentId,
+    expectedRevision: 1
+  }));
+  assert.deepEqual(deleted, { type: "document.deleted", documentId, revision: 2 });
+  assert.equal(await harness.store.getHead(documentId), undefined);
+  assert.equal((await harness.store.getHistoricalHead(documentId, 1))?.id, documentId);
+  assert.equal(
+    (await harness.document.query({
+      requestId: "load-deleted-revision",
+      query: { type: "document.load", documentId, revision: 1 }
+    })).type,
+    "document.loaded"
+  );
+  assert.deepEqual(
+    await harness.document.command(command("delete-it", {
+      type: "document.delete",
+      documentId,
+      expectedRevision: 1
+    })),
+    deleted
+  );
+
+  harness.store.close();
+});
+
+test("deleting a document clears its owned state and frees its create request", async () => {
+  const derivedOutputs = new FakeDerivedOutputs();
+  const harness = createHarness({ derivedOutputs });
+  const documentId = await createDocument(harness.document, "create-purged", "Purged");
+
+  const blockId = "purged-prompt-block";
+  const requested = await harness.document.command(command("request-purged-prompt", {
+    type: "prompt.create.request",
+    documentId,
+    expectedRevision: 1,
+    blockId,
+    styleId: NORMAL_STYLE,
+    placement: { kind: "new-row", rowId: "purged-prompt-row" },
+    prompt: "Question?",
+    contextEntries: []
+  }));
+  assert.equal(requested.type, "prompt.create-requested");
+  if (requested.type !== "prompt.create-requested") throw new Error("expected attempt");
+  await harness.document.computePromptCreation(requested.attemptId);
+  await harness.document.settlePromptCreation(requested.attemptId);
+
+  const [owned] = await harness.store.listPromptOutputsForDocument(documentId);
+  assert.ok(owned, "the settled Prompt Block should own a Derived Output");
+  assert.ok(await derivedOutputs.get(owned.outputId));
+
+  const head = await harness.store.getHead(documentId);
+  assert.ok(head);
+
+  await harness.document.command(command("delete-purged", {
+    type: "document.delete",
+    documentId,
+    expectedRevision: head.revision
+  }));
+
+  // The Derived Output lives in another store, so the cascade cannot reach it —
+  // deletion has to remove it explicitly.
+  assert.equal(await derivedOutputs.get(owned.outputId), null);
+  // Everything Document owned went with the cascade.
+  assert.equal(await harness.store.getHead(documentId), undefined);
+  assert.deepEqual(await harness.store.listPromptOutputsForDocument(documentId), []);
+  assert.equal(await harness.store.getSubmission(documentId, "create-purged"), undefined);
+  assert.equal(await harness.store.getAttemptById(requested.attemptId), undefined);
+  const deletionTransaction = await harness.store.getCommittedTransactionByRequest(
+    documentId,
+    "delete-purged"
+  );
+  assert.equal(deletionTransaction?.kind, "document.deleted");
+
+  await harness.document.command(command("purge-purged", {
+    type: "document.purge",
+    documentId
+  }));
+  assert.equal(await harness.store.hasResource(documentId), false);
+  assert.deepEqual(
+    await harness.store.getCommittedTransactionByRequest(documentId, "delete-purged"),
+    deletionTransaction,
+    "resource purge must not prune the immutable transaction outbox"
+  );
+
+  // The create receipt goes too. Replaying the original create must not hand
+  // back a head for a document that no longer exists — it makes a new one.
+  assert.equal(await harness.store.getCreateSubmission("create-purged"), undefined);
+  const replayed = requireCreated(
+    await harness.document.command(command("create-purged", {
+      type: "document.create",
+      title: "Purged"
+    }))
+  );
+  assert.notEqual(replayed.head.id, documentId);
+  assert.ok(await harness.store.getHead(replayed.head.id));
+
+  harness.store.close();
 });

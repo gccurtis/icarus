@@ -22,11 +22,11 @@ export interface Comment {
   mentions: string[];
   target: CommentTarget;
   state: CommentState;
+  revision: number;
   createdBy: string;
   updatedBy: string;
   createdAt: IsoTimestamp;
   updatedAt: IsoTimestamp;
-  deletedAt?: IsoTimestamp;
 }
 
 /** Trusted attribution supplied by composition, never by the public payload. */
@@ -62,6 +62,11 @@ export type CommentCommand =
       type: "comment.delete";
       requestId: string;
       commentId: string;
+    }
+  | {
+      type: "comment.purge";
+      requestId: string;
+      commentId: string;
     };
 
 export type CommentCommandResult =
@@ -69,7 +74,8 @@ export type CommentCommandResult =
   | { type: "comment.updated"; comment: Comment }
   | { type: "comment.resolved"; comment: Comment }
   | { type: "comment.reopened"; comment: Comment }
-  | { type: "comment.deleted"; commentId: string };
+  | { type: "comment.deleted"; commentId: string; revision: number }
+  | { type: "comment.purged"; commentId: string };
 
 export type CommentQuery =
   | { type: "comment.get"; commentId: string }
@@ -105,8 +111,8 @@ export type CommentActivityOperation =
   | "deleted";
 
 /** Self-contained source-outbox record used to publish immutable Activity. */
-export interface CommentActivityTransaction {
-  transactionId: string;
+export interface CommentCommittedTransaction {
+  sourceTransactionId: string;
   sourceRequestId: string;
   operation: CommentActivityOperation;
   commentId: string;

@@ -1,4 +1,4 @@
-import type { DocumentCommittedFact } from "../domain/model.js";
+import type { DocumentCommittedTransaction } from "../domain/model.js";
 
 /**
  * Narrow integration port for delivering Document's already-committed outbox
@@ -7,5 +7,5 @@ import type { DocumentCommittedFact } from "../domain/model.js";
  * model and performs the trusted Activity call.
  */
 export interface DocumentActivityPublisher {
-  publish(fact: DocumentCommittedFact): Promise<void>;
+  publish(transaction: DocumentCommittedTransaction): Promise<void>;
 }

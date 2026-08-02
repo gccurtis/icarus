@@ -17,17 +17,19 @@ Startup registers internal intents and public endpoints, then invokes
 
 ### `command(request)`
 
-Rejects the reserved `$document-internal$:` request-ID prefix, checks any
-existing delegated claim for consistent request reuse, dispatches all seven
-command variants to their specialized handlers, and logs command type,
+Rejects the reserved `$document-internal$:` request-ID prefix, dispatches all
+nine command variants to their specialized handlers, and logs command type,
 request ID, and duration.
 
 ### `query(request)`
 
-- `document.list`: store pagination, optional lifecycle, service page size 100.
-- `document.load`: reconstruct current/historical snapshot and fetch each exact
-  referenced prompt revision.
-- `document.history`: verifies the head then returns paged recent ChangeSets.
+- `document.list`: current-head pagination, optional live lifecycle, service
+  page size 100; deleted Documents have no row to list.
+- `document.load`: unqualified load requires a current head; revision-qualified
+  load may use `document_history`, reconstruct the retained snapshot, and fetch
+  each exact referenced prompt revision.
+- `document.history`: verifies `document_resources`, then returns paged retained
+  ChangeSets even when the current head has been logically deleted.
 - `document.attempt`: loads one attempt scoped to the Document.
 
 ### Prompt stage methods
@@ -63,11 +65,16 @@ request ID, and duration.
 - `compact(documentId)`: reconstructs a configured cutoff and current head,
   appends Bases only if the head revision still matches, then prunes retained
   history/terminal attempts.
+- `pruneHistory(cutoff)`: removes superseded head-history rows older than the
+  shared revision-retention cutoff.
+- `purgeExpired(cutoff)`: finds terminal deletion records older than the cutoff
+  and invokes the same retained-Document purge path used by `document.purge`.
 
 ## Command handlers and supporting service functions
 
 - `create`: canonical request digest; replay check; existence check; blank
-  snapshot/defaults; full validation; atomic revision-zero commit.
+  snapshot/defaults; full validation; atomic revision-one resource/current
+  commit.
 - `submit`: requires operations, rejects caller-created Prompt content and
   internal output adoption, then calls `mutate`.
 - `mutate`: replay check; load head; optional conservative disjoint rebase;
@@ -77,10 +84,19 @@ request ID, and duration.
 - `compensate`: requires exact current expected revision, retained target and
   contiguous intervening tail, and disjoint touched IDs; applies retained
   inverse as a new compensating ChangeSet.
+- `deleteDocument`: requires current existence and expected revision, logically
+  deletes owned Derived Outputs, then archives the head, appends the terminal
+  revision and source transaction, retains output IDs, and removes current
+  state atomically.
+- `purgeDocument`: purges retained Derived Output history, then requires a
+  terminal Document deletion and removes `document_history` plus the stable
+  resource root and its retained data.
 - `requestPromptCreation`: reserves a new Block identity with a dry-run divider
   insertion, persists attempt + receipt, and dispatches compute.
-- `updatePromptDefinition`: atomically freezes a target output in a delegated
-  claim, calls keyed Derived definition update, then completes claim + receipt.
+- `updatePromptDefinition`: resolves the Prompt Block's current output, calls
+  keyed Derived definition update directly, then records the receipt. Derived
+  Outputs' own idempotency key (not a local claim) is what makes a retry after
+  a crash before the receipt commits replay rather than reapply.
 - `requestPromptRefresh`: freezes exact Block/output/applied revision and
   persists attempt + receipt before dispatch.
 - `requestFormulaEvaluation`: freezes exact Rich Text formula expression and
@@ -107,7 +123,7 @@ logged but not retried.
   1,440-twip margins, decimal page numbers starting at 1;
 - `createDefaultDocumentStyles()`: normal/code/quote/visual plus exactly one of
   heading roles 1–6 and defaults for all ten Block kinds;
-- `createBlankSnapshot(input)`: representation/revision 1/0, active lifecycle,
+- `createBlankSnapshot(input)`: representation/revision 1/1, active lifecycle,
   cloned supplied/default page/styles, and no Rows.
 
 ## Pure domain function families
@@ -133,19 +149,23 @@ logged but not retried.
 The full port is in [`documentStore.ts`](../ports/documentStore.ts). Method
 families are:
 
-- heads/history: `listHeads`, `getHead`, `getBaseAtOrBefore`, `getChangeSets`,
-  `listChangeSets`, `getChangeSet`;
-- idempotency/identity: `getSubmission`, `recordSubmission`, `getIdentity`,
-  delegated claim get/claim/complete;
+- current/history: `listHeads`, `getHead`, `hasResource`,
+  `getHistoricalHead`, `getBaseAtOrBefore`, `getChangeSets`, `listChangeSets`,
+  `getChangeSet`;
+- idempotency/identity: `getSubmission`, `recordSubmission`, `getIdentity`;
 - atomic commits: `commitCreation`, revision-CAS `commitMutation`;
+- deletion/retention: logical `deleteDocument`, guarded `purgeDocument`,
+  `listRetainedPromptOutputIds`, `pruneRevisionHistory`, and
+  `listExpiredDeleted`;
 - compaction: `appendBaseIfHead`, `pruneHistory`;
 - attempts: get variants, list recoverable, create with/without submission,
   update;
 - stages: claim, complete, fail, atomic prompt-creation failure, recover running;
 - prompt ownership: get by output/Block, register pending, transition, list
   detached;
-- outbox: direct get by transaction/request/copied ChangeSet, list unpublished,
-  and mark published.
+- transaction outbox: direct get by `sourceTransactionId`, request, or copied
+  ChangeSet; list unpublished transactions; and mark a source transaction
+  published.
 
 `SQLiteDocumentStore.close()` additionally closes the adapter, although close
 is not part of the `DocumentStore` port and the current Document capability
@@ -153,6 +173,17 @@ does not expose shutdown/close.
 
 SQLite enables WAL, foreign keys, 5-second busy timeout, and NORMAL synchronous
 mode. Creation and mutation transactions co-commit every canonical side effect.
+
+The typed `documents` table is the current projection. `document_resources` is
+the ID-only retained root for Bases, ChangeSets, the structural identity ledger,
+and retained output ownership. `document_history` stores superseded head
+snapshots plus terminal deletion rows. Receipts, attempts, prompt ownership,
+and stage receipts reference the current `documents` row and cascade on logical
+deletion. `transaction_outbox` is self-contained and carries a nullable
+`resource_root_id` foreign key whose `ON DELETE SET NULL` attachment survives
+resource purge. It is not pruned by retention, so already-committed
+transactions — especially `document.deleted` — remain publishable and
+retryable.
 
 ## Wire decoder families
 

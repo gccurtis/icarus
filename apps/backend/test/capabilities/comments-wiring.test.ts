@@ -49,6 +49,7 @@ const createCommentsDouble = (): {
           mentions: [],
           target: command.target,
           state: "open",
+          revision: 1,
           createdBy: "trusted-user",
           updatedBy: "trusted-user",
           createdAt: "2026-08-02T00:00:00.000Z",
@@ -61,7 +62,9 @@ const createCommentsDouble = (): {
       if (query.type !== "comment.listByTarget") throw new Error("unexpected query");
       return { type: "comment.listByTarget", page: { items: [] } };
     },
-    publishPendingActivity: async () => 0
+    publishPendingActivity: async () => 0,
+    pruneHistory: async () => 0,
+    purgeExpired: async () => 0
   };
   return { comments, commands, queries };
 };

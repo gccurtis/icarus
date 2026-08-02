@@ -14,13 +14,6 @@ export class DocumentAttemptNotFoundError extends Error {
   }
 }
 
-export class DocumentAlreadyExistsError extends Error {
-  constructor(public readonly documentId: string) {
-    super(`Document already exists: ${documentId}`);
-    this.name = "DocumentAlreadyExistsError";
-  }
-}
-
 export class RevisionConflictError extends Error {
   constructor(
     public readonly documentId: string,

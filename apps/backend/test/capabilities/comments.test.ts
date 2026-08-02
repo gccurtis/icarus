@@ -10,15 +10,19 @@ import {
   InvalidCommentCursorError,
   SQLiteCommentStore,
   createCommentsCapability,
-  type CommentActivityTransaction,
+  type CommentCommittedTransaction,
   type CommentClock
 } from "../../src/3-capabilities/comments/index.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "../../src/0-utils/persistence/resourceHistory.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const createFixture = (projectId = "comments-test-project") => {
   const directory = mkdtempSync(join(tmpdir(), "icarus-comments-"));
   const store = new SQLiteCommentStore(projectId, join(directory, "comments.db"));
-  const published: CommentActivityTransaction[] = [];
+  const published: CommentCommittedTransaction[] = [];
   const logger = new CapturingLogger();
   let sequence = 0;
   let timestamp = "2026-08-02T00:00:00.000Z";
@@ -78,6 +82,7 @@ test("Comments owns opaque object sub-targets, mentions, lifecycle, and replay",
     resourceOwned: true
   });
   assert.equal(created.comment.createdBy, "user-1");
+  assert.equal(created.comment.revision, 1);
   assert.equal(published.length, 1);
 
   assert.deepEqual(await comments.command(createCommand), created);
@@ -94,6 +99,8 @@ test("Comments owns opaque object sub-targets, mentions, lifecycle, and replay",
     commentId: created.comment.id
   });
   assert.equal(resolved.type, "comment.resolved");
+  if (resolved.type !== "comment.resolved") assert.fail("unexpected command result");
+  assert.equal(resolved.comment.revision, 2);
   assert.equal(published.length, 2);
 
   const resolvedAgain = await comments.command({
@@ -105,12 +112,15 @@ test("Comments owns opaque object sub-targets, mentions, lifecycle, and replay",
   assert.equal(published.length, 2, "an already-resolved command is a recorded no-op");
 
   setTimestamp("2026-08-02T00:02:00.000Z");
-  await comments.command({
+  const updated = await comments.command({
     type: "comment.update",
     requestId: "request-update",
     commentId: created.comment.id,
     body: "Updated for @Carol"
   });
+  assert.equal(updated.type, "comment.updated");
+  if (updated.type !== "comment.updated") assert.fail("unexpected command result");
+  assert.equal(updated.comment.revision, 3);
   const listed = await comments.query({
     type: "comment.listByTarget",
     target: { resourceKind: "document", resourceId: "document-1" },
@@ -128,6 +138,11 @@ test("Comments owns opaque object sub-targets, mentions, lifecycle, and replay",
     commentId: created.comment.id
   };
   const deleted = await comments.command(deleteCommand);
+  assert.deepEqual(deleted, {
+    type: "comment.deleted",
+    commentId: created.comment.id,
+    revision: 4
+  });
   assert.deepEqual(await comments.command(deleteCommand), deleted);
   await assert.rejects(
     () => comments.query({ type: "comment.get", commentId: created.comment.id }),
@@ -157,7 +172,7 @@ test("Comments keeps failed Activity delivery durable and retries the stable tra
       attribution: { actorId: "agent-1", origin: "agent" },
       activityPublisher: {
         publish: async (transaction) => {
-          attempts.push(transaction.transactionId);
+          attempts.push(transaction.sourceTransactionId);
           if (fail) throw new Error("Activity unavailable");
         }
       }
@@ -309,7 +324,7 @@ test("Comments logs operational outcomes without authored content or sub-target 
 
 test("Comment Activity mapping omits body, handles, and opaque sub-target content", () => {
   const mapped = toCommentActivityTransaction({
-    transactionId: "transaction-1",
+    sourceTransactionId: "transaction-1",
     sourceRequestId: "request-1",
     operation: "created",
     commentId: "comment-1",
@@ -335,4 +350,49 @@ test("Comment Activity mapping omits body, handles, and opaque sub-target conten
       mentionCount: 2
     }
   });
+});
+
+test("Comments purge requires terminal history and permanently removes it", async (t) => {
+  const { comments, store } = createFixture("purge-project");
+  t.after(() => store.close());
+
+  const created = await comments.command({
+    type: "comment.create",
+    requestId: "purge-create",
+    body: "Purge me",
+    target: { resourceKind: "document", resourceId: "document-purge" }
+  });
+  assert.equal(created.type, "comment.created");
+  if (created.type !== "comment.created") assert.fail("unexpected command result");
+
+  await assert.rejects(
+    () => comments.command({
+      type: "comment.purge",
+      requestId: "purge-live",
+      commentId: created.comment.id
+    }),
+    (error) => error instanceof ResourceNotDeletedError
+  );
+
+  await comments.command({
+    type: "comment.delete",
+    requestId: "purge-delete",
+    commentId: created.comment.id
+  });
+  assert.deepEqual(await comments.command({
+    type: "comment.purge",
+    requestId: "purge-success",
+    commentId: created.comment.id
+  }), {
+    type: "comment.purged",
+    commentId: created.comment.id
+  });
+  await assert.rejects(
+    () => comments.command({
+      type: "comment.purge",
+      requestId: "purge-again",
+      commentId: created.comment.id
+    }),
+    (error) => error instanceof ResourceHistoryNotFoundError
+  );
 });

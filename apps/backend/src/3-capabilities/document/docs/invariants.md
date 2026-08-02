@@ -4,9 +4,30 @@
 
 For a wire-valid command whose domain preconditions hold:
 
-- create yields exactly revision 0 with a loadable Base;
+- create yields exactly revision 1 with a loadable Base;
 - an accepted mutation yields exactly one new revision and a replayable
   ChangeSet with exact inverse operations;
+- `document.create` allocates the document id; a repeated `requestId` with
+  identical canonical input replays the original result, including the same
+  allocated id, and does not create a second document. A different `requestId`
+  is a different logical create and gets its own document;
+- `document.delete` requires a current Document whose `expectedRevision`
+  matches head. It logically deletes owned Derived Outputs first, then archives
+  head revision `N`, appends terminal deletion revision `N + 1`, records a
+  source transaction, and removes the current head atomically;
+- logical deletion removes current-scoped receipts, attempts, prompt ownership,
+  and stage receipts while retaining the resource root, head history,
+  Bases/ChangeSets, structural identity ledger, source transaction, and owned
+  Derived Output references;
+- an exact deletion retry replays `document.deleted` from the retained source
+  transaction; another request against the absent current Document is not
+  treated as restore or reactivation;
+- `document.purge` requires no current head and a terminal deletion record. It
+  purges retained Derived Outputs and all retained Document state, returns
+  `document.purged`, and emits no Activity transaction;
+- neither revision retention nor purge removes committed transaction-outbox
+  rows; pending delivery of `document.deleted` remains independently
+  recoverable;
 - repeated `(documentId, requestId)` with identical canonical input returns the
   stored result, while different input yields an idempotency conflict;
 - historical load yields the exact validated snapshot if a contiguous retained
@@ -30,8 +51,9 @@ For a wire-valid command whose domain preconditions hold:
 
 - Every governed local ID is unique across Styles, Rows, Blocks, nested
   structures, table parts, and Rich Text atoms/marks.
-- The ledger permanently records claimed IDs. Ordinary mutation cannot reuse a
-  tombstone or change an identity's kind.
+- The ledger records claimed IDs for the retained lifetime of the Document.
+  Ordinary mutation cannot reuse a structural tombstone or change an identity's
+  kind; purge removes the ledger with the resource root.
 - Exact compensation may reactivate a tombstoned ID only with the same kind.
 - External Derived Output/media IDs are references, not ledger identities.
 - One live Prompt Block owns one dedicated output; a Derived Output cannot be
@@ -52,13 +74,14 @@ For a wire-valid command whose domain preconditions hold:
 
 ## History and digest invariants
 
-- Creation co-commits head, initial identities, Base, receipt, and source
-  transaction. The source transaction's stable Activity ID and source request
-  ID are allocated before that commit.
-- Mutation CAS updates only the expected current revision and co-commits head,
-  identity transitions, ChangeSet, attempts/settlements, ownership, receipt,
-  and source transaction. Its copied ChangeSet and compensation fields are not
-  foreign keys and remain usable after history compaction.
+- Creation co-commits the resource root, current head, initial identities,
+  Base, receipts, and source transaction. Its stable `sourceTransactionId` and
+  source request ID are allocated before that commit.
+- Mutation CAS archives the prior head, updates only the expected current
+  revision, and co-commits head, identity transitions, ChangeSet,
+  attempts/settlements, ownership, receipt, and source transaction. Its copied
+  ChangeSet and compensation fields are not foreign keys and remain usable
+  after history compaction.
 - `ChangeSet.seq === ChangeSet.revision === priorRevision + 1`.
 - Canonical digests recursively sort record keys and omit undefined fields.
 - Rebase is allowed only when incoming touched IDs are disjoint from every
@@ -67,6 +90,9 @@ For a wire-valid command whose domain preconditions hold:
   sequence, and disjoint touched IDs.
 - Pruning retains enough Base/tail state for its selected cutoff and does not
   prune active attempts; retained counts must be positive.
+- Revision retention prunes old `document_history` snapshots for live
+  Documents. Once a terminal deletion record crosses the shared cutoff, the
+  retention scheduler invokes the same purge path as `document.purge`.
 
 ## Prompt and Formula ownership invariants
 
@@ -106,7 +132,8 @@ For a wire-valid command whose domain preconditions hold:
   startup can retry safely.
 - Startup retries unpublished Activity source transactions through the optional
   publisher. A failed publisher leaves the source transaction durable and
-  unpublished; Activity's idempotent transaction ID makes retry safe.
+  unpublished; Activity derives the same ledger ID from `sourceTransactionId`
+  on every retry.
 
 ## Limits
 
@@ -153,7 +180,7 @@ but not a proof against every SQLite/process-failure interleaving.
 ## Explicit non-goals and absent behavior
 
 - exact pagination, page count, font-manifest rendering, or export;
-- a Document hard-delete command;
+- restore or resource reactivation after logical deletion;
 - an Activity-mediated undo/redo coordinator or a Document Activity endpoint;
 - automatic deletion of detached Derived Outputs;
 - collaboration/Presence or distributed multi-process serialization;

@@ -7,6 +7,7 @@ import type {
 
 export const TEMPLATE_WIRE_LIMITS = {
   maxIdentifierBytes: 512,
+  maxNameBytes: 512,
   maxDescriptionBytes: 4_096,
   maxTitleBytes: 4_096,
   maxBindings: 256,
@@ -66,6 +67,30 @@ export const optionalText = (
   return candidate;
 };
 
+/**
+ * Trimmed at ingress so trailing whitespace cannot produce two catalog entries
+ * that read identically. The command digest is taken over the decoded value, so
+ * it sees the trimmed form and an exact retry still replays.
+ */
+export const requireName = (
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): string => {
+  const candidate = value[key];
+  if (typeof candidate !== "string") {
+    throw new TemplateWireError(`${label} must be a string`);
+  }
+  const trimmed = candidate.trim();
+  if (trimmed.length === 0) {
+    throw new TemplateWireError(`${label} must not be empty`);
+  }
+  if (byteLength(trimmed) > TEMPLATE_WIRE_LIMITS.maxNameBytes) {
+    throw new TemplateWireError(`${label} exceeds the size limit`);
+  }
+  return trimmed;
+};
+
 const decodeContextEntry = (value: unknown, label: string): ContextEntry => {
   const entry = record(value, label);
   exactKeys(entry, ["id", "kind"], label);
@@ -75,35 +100,47 @@ const decodeContextEntry = (value: unknown, label: string): ContextEntry => {
   };
 };
 
-const decodeBinding = (value: unknown, label: string): TemplateContextBinding => {
-  const binding = record(value, label);
-  exactKeys(binding, ["entry", "description"], label);
+const decodeTarget = (
+  binding: Record<string, unknown>,
+  label: string
+): { target?: ContextEntry } =>
+  // An omitted `target` is meaningful: it says "explicitly unbind". So `{}` is a
+  // valid binding and must not be rejected as empty.
+  binding.target !== undefined
+    ? { target: decodeContextEntry(binding.target, `${label} target`) }
+    : {};
 
+/** Registration: declares a parameter, so a `description` belongs here. */
+const decodeDeclaredBinding = (value: unknown, label: string): TemplateContextBinding => {
+  const binding = record(value, label);
+  exactKeys(binding, ["target", "description"], label);
   const description = optionalText(
     binding,
     "description",
     `${label} description`,
     TEMPLATE_WIRE_LIMITS.maxDescriptionBytes
   );
-
-  // An omitted `entry` is meaningful: it says "explicitly unbind". So `{}` is a
-  // valid binding and must not be rejected as empty.
-  const result: TemplateContextBinding = {
-    ...(binding.entry !== undefined
-      ? { entry: decodeContextEntry(binding.entry, `${label} entry`) }
-      : {}),
+  return {
+    ...decodeTarget(binding, label),
     ...(description !== undefined ? { description } : {})
   };
-  return result;
 };
 
 /**
- * Absent and `{}` mean the same thing, so an omitted field is normalised to an
- * empty record and nothing downstream branches on `undefined`.
+ * Instantiation: supplies an argument, not a declaration. A `description` here
+ * is rejected rather than ignored — silently dropping an accepted field is the
+ * class of bug this split exists to remove.
  */
-export const decodeContextBindings = (
+const decodeBindingArgument = (value: unknown, label: string): TemplateContextBinding => {
+  const binding = record(value, label);
+  exactKeys(binding, ["target"], label);
+  return decodeTarget(binding, label);
+};
+
+const decodeBindings = (
   value: unknown,
-  label: string
+  label: string,
+  decodeOne: (value: unknown, label: string) => TemplateContextBinding
 ): TemplateContextBindings => {
   if (value === undefined) return {};
   const bindings = record(value, label);
@@ -120,7 +157,37 @@ export const decodeContextBindings = (
     if (byteLength(name) > TEMPLATE_WIRE_LIMITS.maxBindingNameBytes) {
       throw new TemplateWireError(`${label} variable name exceeds the size limit`);
     }
-    result[name] = decodeBinding(bindings[name], `${label} '${name}'`);
+    result[name] = decodeOne(bindings[name], `${label} '${name}'`);
   }
   return result;
+};
+
+/**
+ * Absent and `{}` mean the same thing, so an omitted field is normalised to an
+ * empty record and nothing downstream branches on `undefined`.
+ */
+export const decodeDeclaredBindings = (
+  value: unknown,
+  label: string
+): TemplateContextBindings => decodeBindings(value, label, decodeDeclaredBinding);
+
+export const decodeBindingArguments = (
+  value: unknown,
+  label: string
+): TemplateContextBindings => decodeBindings(value, label, decodeBindingArgument);
+
+/**
+ * Strict rather than `Number(...)`: an absent field would otherwise coerce to
+ * NaN and fail a revision comparison as a misleading conflict instead of a 400.
+ */
+export const requireRevision = (
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): number => {
+  const candidate = value[key];
+  if (typeof candidate !== "number" || !Number.isSafeInteger(candidate) || candidate < 0) {
+    throw new TemplateWireError(`${label} must be a non-negative integer`);
+  }
+  return candidate;
 };
