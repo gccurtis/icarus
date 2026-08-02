@@ -1,13 +1,7 @@
 /** The source of an accepted Activity transaction. */
 export type ActivityOrigin = "user" | "agent" | "automation" | "system";
 
-/**
- * One accepted action published by a resource or project-level producer.
- * `id` is created with the source mutation and remains stable across outbox
- * retries and persistence in Activity.
- */
-export interface ActivityTransaction {
-  id: string;
+interface ActivityTransactionFields {
   kind: string;
   resourceId?: string;
   operation: string;
@@ -17,6 +11,20 @@ export interface ActivityTransaction {
   origin: ActivityOrigin;
   occurredAt: string;
   metadata?: Readonly<Record<string, unknown>>;
+}
+
+/** Trusted publication input. Activity owns and returns the ledger ID. */
+export interface ActivityTransactionInput extends ActivityTransactionFields {
+  idempotencyKey: string;
+}
+
+/**
+ * One accepted action published by a resource or project-level producer.
+ * `id` is allocated by Activity from the source idempotency key and remains
+ * stable across outbox retries.
+ */
+export interface ActivityTransaction extends ActivityTransactionFields {
+  id: string;
 }
 
 /** An Activity transaction after the project ledger accepts it. */

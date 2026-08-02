@@ -9,16 +9,17 @@ SQLite adapter persists the same model families.
 | Type | Purpose |
 | --- | --- |
 | `ActivityOrigin` | `user | agent | automation | system`, describing who or what initiated accepted work. |
-| `ActivityTransaction` | Trusted source payload for one accepted action. Its `id` is stable across source-outbox retries. |
+| `ActivityTransactionInput` | Trusted source payload with a stable `idempotencyKey`; it cannot select an Activity ID. |
+| `ActivityTransaction` | Accepted action with the Activity-owned returned `id`. |
 | `StoredActivityTransaction` | An Activity transaction after first acceptance, including Activity `sequence` and `publishedAt`. |
 | `ActivityTransactionFilter` | Optional kind/resource filter plus descending-feed cursor and page limit. |
 | `ActivityTransactionPage` | Descending transaction items and optional cursor for the next older page. |
 
-`ActivityTransaction` fields are:
+Publication accepts:
 
 ```ts
-interface ActivityTransaction {
-  id: string;
+interface ActivityTransactionInput {
+  idempotencyKey: string;
   kind: string;
   resourceId?: string;
   operation: string;
@@ -30,6 +31,8 @@ interface ActivityTransaction {
   metadata?: Readonly<Record<string, unknown>>;
 }
 ```
+
+`ActivityTransaction` replaces `idempotencyKey` with the Activity-owned `id`.
 
 `kind` and `operation` provide the event label, for example
 `document.changed`. `resourceId`, `revision`, and `changeSetId` are
@@ -104,6 +107,7 @@ accept a heartbeat/leave command because it lacks that context.
 | Type | Purpose |
 | --- | --- |
 | `ActivityCapability` | Core runtime: trusted `publish`, typed `query`, and `presence`. |
+| `ActivityDependencies` | Required shared `logger`. |
 | `ActivityOptions` | Currently only optional `presenceTtlMs`. |
 | `ActivityClock` | Injected `now(): string` for deterministic time/expiry behavior. |
 | `ActivityStore` | Durable port implemented by the SQLite adapter. |
@@ -145,6 +149,11 @@ Unexpected query errors are logged without exposing internal details and return
 a 500 `internal_error` response. The registered command endpoint returns 501
 `presence_transport_unsupported` until a trusted session-aware transport
 exists.
+
+Runtime logs cover creation, publication/replay/failure, transaction/list
+queries, Presence heartbeat/list/leave/cleanup, and endpoint rejection. They
+record IDs, kinds, operations, counts, outcomes, and timing, but never metadata
+or Presence state payloads.
 
 ## Persistence representation
 

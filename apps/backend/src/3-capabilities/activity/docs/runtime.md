@@ -7,6 +7,7 @@ The core factory is:
 ```ts
 createActivityCapability(
   store: ActivityStore,
+  dependencies: { logger: Logger },
   options: ActivityOptions = {},
   clock: ActivityClock = systemClock
 ): ActivityCapability
@@ -33,11 +34,12 @@ synchronous mode.
 
 `publish` is trusted internal ingestion. It validates required bounded strings,
 optional bounded strings, origin, non-negative safe revision, occurred timestamp,
-and JSON-compatible metadata. It then calls
-`ActivityStore.publish(transaction, now())`.
+and JSON-compatible metadata. It derives an Activity-owned ID from the supplied
+`idempotencyKey`, then calls `ActivityStore.publish(transaction, now())`.
 
-The method returns the original stored transaction for an equal replay. It does
-not assign a new transaction ID, rewrite source data, or call a producing kind.
+The method returns the stored object—including its Activity-owned ID—for first
+acceptance and equal replay. Caller-supplied `id` fields are rejected. It does
+not rewrite source data or call a producing kind.
 It is deliberately not an arbitrary public append API.
 
 ### `query(query)`
@@ -134,7 +136,7 @@ Document currently supplies the first composition adapter:
 - startup calls `document.publishPendingActivity()` to retry unpublished rows.
 
 The adapter maps Document's `interactive` origin to Activity's `user` origin,
-uses the source record's stable ID as the Activity transaction ID, and carries
+uses the source record's stable ID as the publication key, and carries
 operation types plus any compensation descriptor as Activity metadata. This
 still does not make Document and Activity SQLite writes a distributed
 transaction. Slide and other producer adapters are not wired yet.
@@ -142,3 +144,10 @@ transaction. Slide and other producer adapters are not wired yet.
 Likewise, undo/redo, Presence connection management, and session derivation are
 not runtime methods. They need separate trusted adapters at their respective
 boundaries.
+
+## Logging
+
+The required logger records runtime construction; transaction acceptance,
+replay, and failure; query counts/outcomes; all Presence operations; and
+durations. Endpoint wiring additionally records malformed/rejected input.
+Metadata and Presence `state` are deliberately excluded from log data.

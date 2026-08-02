@@ -2,6 +2,7 @@ export { createActivityCapability } from "./application/activityService.js";
 export type {
   ActivityCapability,
   ActivityClock,
+  ActivityDependencies,
   ActivityOptions,
   ActivityPresenceRuntime
 } from "./application/activityService.js";

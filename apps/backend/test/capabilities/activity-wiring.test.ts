@@ -9,7 +9,7 @@ import { registerActivityEndpoints } from "../../src/4-job-wiring/activity/regis
 import type {
   ActivityCapability,
   ActivityQuery,
-  ActivityTransaction
+  ActivityTransactionInput
 } from "../../src/3-capabilities/activity/index.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
@@ -38,7 +38,7 @@ const createActivityDouble = (): {
   const queries: ActivityQuery[] = [];
   let heartbeats = 0;
   const activity: ActivityCapability = {
-    publish: async (_transaction: ActivityTransaction) => {
+    publish: async (_transaction: ActivityTransactionInput) => {
       throw new Error("publish is not a public HTTP operation");
     },
     query: async (query) => {

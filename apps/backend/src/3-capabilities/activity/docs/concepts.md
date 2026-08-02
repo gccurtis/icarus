@@ -52,11 +52,11 @@ transaction can omit `resourceId`, `revision`, and `changeSetId` altogether.
 
 ## Ledger semantics
 
-Transaction ID is Activity's idempotency key. First publish stores the
-transaction and allocates a sequence. A subsequent publish with canonically
-equal contents returns the stored transaction. A subsequent publish with
-different contents under the same ID is a conflict: a retry identity cannot be
-used to rewrite history.
+The source publication key is Activity's idempotency key; it is not the ledger
+ID. Activity derives and returns an opaque transaction ID on first publish and
+allocates a sequence. A subsequent publish with the same key and canonically
+equal contents returns the stored transaction. Changed content under the same
+key is a conflict.
 
 Sequence is Activity receipt order, not distributed source-commit order. Two
 resource databases can commit independently; the first publisher to reach

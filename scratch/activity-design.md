@@ -26,10 +26,10 @@ it will not own a resource's revisions, ChangeSets, or inverse operations.
 - **Activity transaction** is one accepted action being published to Activity.
   It is not an HTTP request and is not created for failed work or an exact
   retry.
-- **Transaction ID** is the one stable ID for that Activity transaction. The
-  source creates it with its accepted mutation, stores it in its outbox, and
-  Activity keeps the same ID in its ledger. That makes retrying publication
-  simple; we do not need a separate “fact ID.”
+- **Publication key** is the source-owned idempotency key stored with accepted
+  work and reused for delivery retries. It is not an Activity transaction ID.
+- **Transaction ID** is allocated by Activity from the publication key and is
+  returned on first acceptance or exact replay. A publisher cannot select it.
 - **Resource reference** is optional. Most transactions concern a resource,
   but project-level or runtime-level work can publish a transaction with only
   its kind and no resource ID.
@@ -41,9 +41,9 @@ it will not own a resource's revisions, ChangeSets, or inverse operations.
 The central value is intentionally plain:
 
 ```ts
-interface ActivityTransaction {
-  /** Stable across source-outbox retries and the Activity ledger. */
-  id: string;
+interface ActivityTransactionInput {
+  /** Stable source key; not the Activity transaction ID. */
+  idempotencyKey: string;
 
   /** The producer/resource kind, for example "document" or "project". */
   kind: string;
@@ -60,6 +60,11 @@ interface ActivityTransaction {
 
   /** Small, safe display data. Never a copied resource body or prompt. */
   metadata?: Readonly<Record<string, unknown>>;
+}
+
+interface ActivityTransaction extends Omit<ActivityTransactionInput, "idempotencyKey"> {
+  /** Activity-owned identifier returned after acceptance. */
+  id: string;
 }
 
 interface StoredActivityTransaction extends ActivityTransaction {
@@ -93,10 +98,14 @@ rewritten or deleted by normal resource history compaction.
 Activity is created before resource integration so a small publisher can be
 made available to each resource:
 
+The runtime is constructed with the shared `Logger`. It logs transaction
+acceptance/replay/failure, queries, Presence operations, counts, outcomes, and
+timings while excluding transaction metadata and Presence state payloads.
+
 ```ts
 interface ActivityRuntime {
   /** Trusted internal call. It is not a browser endpoint. */
-  publish(transaction: ActivityTransaction): Promise<StoredActivityTransaction>;
+  publish(transaction: ActivityTransactionInput): Promise<StoredActivityTransaction>;
   query(input: ActivityQuery): Promise<ActivityQueryResult>;
   presence: ActivityPresenceRuntime;
 }
@@ -109,15 +118,15 @@ that keeps publication durable:
 ```text
 resource transaction
   ├─ accepted resource change / ChangeSet / command receipt
-  └─ Activity transaction in that resource's outbox
+  └─ Activity publication input/key in that resource's outbox
 
 after commit
   └─ publisher calls Activity.publish(transaction)
        └─ marks the source row published
 ```
 
-`publish` is idempotent by transaction ID. If the same transaction is delivered
-again, Activity returns the stored transaction. If the same ID is delivered
+`publish` is idempotent by source publication key. Activity derives its own
+transaction ID and returns the stored transaction. If the same key is delivered
 with different content, Activity rejects it. Activity's `sequence` is the
 order in which it received published transactions; it is not a claim that
 different resource databases committed in that order.

@@ -7,7 +7,7 @@ import type { InternalJobsRuntime } from "#utils/jobs/internalRuntime.js";
 import type {
   ActivityCapability,
   ActivityOrigin,
-  ActivityTransaction
+  ActivityTransactionInput
 } from "#activity";
 import {
   createDocumentCapability,
@@ -26,8 +26,8 @@ const activityOrigin = (origin: DocumentCommittedFact["origin"]): ActivityOrigin
 
 const toActivityTransaction = (
   fact: DocumentCommittedFact
-): ActivityTransaction => ({
-  id: fact.factId,
+): ActivityTransactionInput => ({
+  idempotencyKey: fact.factId,
   kind: "document",
   resourceId: fact.documentId,
   operation: fact.kind.slice("document.".length),

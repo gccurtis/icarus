@@ -10,7 +10,7 @@ authorized to see every transaction, or that a caller has a trusted session.
 
 ## Transaction admission and idempotency
 
-- A transaction requires bounded non-empty `id`, `kind`, `operation`, and
+- A publication requires bounded non-empty `idempotencyKey`, `kind`, `operation`, and
   parseable ISO `occurredAt` values.
 - Optional `resourceId`, `changeSetId`, and `actorId` must be bounded
   non-empty strings when supplied.
@@ -18,10 +18,11 @@ authorized to see every transaction, or that a caller has a trusted session.
 - A supplied revision is a non-negative safe integer.
 - Metadata must be JSON-compatible; non-finite numbers and unsupported values
   are rejected.
-- First publish of a transaction ID stores the normalized transaction.
-- Replaying that ID with canonically equal content returns the existing stored
+- A caller-supplied Activity `id` is rejected; Activity derives and returns it.
+- First publish of a source key stores the normalized transaction.
+- Replaying that key with canonically equal content returns the existing stored
   transaction without allocating another sequence.
-- Reusing that ID with different canonical content fails with
+- Reusing that key with different canonical content fails with
   `ActivityTransactionConflictError`.
 
 The digest includes all transaction fields and canonicalized metadata.

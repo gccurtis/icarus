@@ -129,11 +129,17 @@ export const registerActivityEndpoints = (
         return { statusCode: 200, body: await activity.query(decodeActivityQuery(request.body)) };
       } catch (error) {
         const response = errorResponse(error);
+        const context = {
+          requestId: request.requestId,
+          statusCode: response.statusCode,
+          errorName: error instanceof Error ? error.name : "UnknownError"
+        };
         if (response.statusCode >= 500) {
           logger.error("activity.query.failed", {
-            requestId: request.requestId,
-            errorName: error instanceof Error ? error.name : "UnknownError"
+            ...context
           });
+        } else {
+          logger.warn("activity.query.rejected", context);
         }
         return response;
       }

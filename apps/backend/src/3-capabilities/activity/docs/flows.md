@@ -3,22 +3,22 @@
 ## Trusted publication
 
 The core's complete publish path starts after a producer has accepted work and
-constructed an `ActivityTransaction`:
+constructed an `ActivityTransactionInput` with a source idempotency key:
 
 ```mermaid
 sequenceDiagram
   participant P as Trusted producer
   participant A as ActivityCapability
   participant S as ActivityStore
-  P->>A: publish(transaction)
+  P->>A: publish(input without Activity ID)
   A->>A: validate fields and metadata
   A->>S: publish(transaction, now())
-  alt first transaction ID
+  alt first publication key
     S->>S: allocate project sequence and insert
     S-->>A: StoredActivityTransaction
-  else equal retry
+  else equal key retry
     S-->>A: existing StoredActivityTransaction
-  else same ID, changed content
+  else same key, changed content
     S-->>A: ActivityTransactionConflictError
   end
   A-->>P: stored transaction or error
@@ -123,7 +123,7 @@ sequenceDiagram
   end
 ```
 
-The Document outbox row retains the stable Activity transaction ID and copied
+The Document outbox row retains the stable Activity publication key and copied
 source data needed to publish after source-history compaction. Its adapter maps
 the source record to `kind: "document"`, operation `created`, `changed`, or
 `compensated`, and source revision/ChangeSet/attribution where present. A crash
