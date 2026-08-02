@@ -135,7 +135,8 @@ export interface DerivedOutputFreshness {
 // ─── Resource reference (held by other capabilities) ───────────────────────
 
 /**
- * What a Document, Slide, or Spreadsheet stores to reference a Derived Output.
+ * What a Document, or any future host capability, stores to reference a
+ * Derived Output.
  */
 export interface DerivedOutputRef {
   readonly outputId: string;
