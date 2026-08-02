@@ -206,12 +206,19 @@ three files:
 - `GROUP` keys and aggregates; `AGGREGATE` as the no-keys rollup; `count`
   ignoring nulls; exact rational `sum`/`average`; kind-strict `min`/`max`; null
   over an empty group;
+- `WHERE` across all ten operators, `all`/`any` composition, kind-strictness,
+  `contains` with and without `caseSensitive`, and the null rules — null passes
+  `equals`/`notEquals`/`in`, fails ordering and `contains`;
 - `SORT` stability, multi-key, `asc`/`desc`, null last, kind-strict comparison;
 - `LIMIT` boundaries and a non-positive rejection;
 - `DISPLAY` round-tripping through `toWire`/`fromWire` and remaining consumable
   as an ordinary table;
+- **options defaults** — every builtin accepts its options record with optional
+  keys omitted and applies the documented default;
+- **quoted names** — `` `Q3 Orders` `` lexes, parses to the same `NameNode`, and
+  binds identically to a bare identifier;
 - every relevant `limit_exceeded` diagnostic, including an intermediate join
-  blow-up.
+  blow-up caught by `JOIN` itself.
 
 ### `structured-analytic.test.ts` — the capability
 
@@ -226,6 +233,11 @@ three files:
   sorted-and-limited one — asserted as source text so a change to the emitted
   shape is visible in review;
 - a definition that cannot compile is rejected at save;
+- compiled columns are readable — `Orders.region`, `Total` — never generated
+  names, so a saved entry has usable fields;
+- a pull returns the definition alongside the rows, at the captured revision;
+- `analytic.save` writes a formula-backed entry whose body re-resolves, and
+  `analytic.copy` writes a literal table that does not; a taken name is a 409;
 - rename handling: a renamed entry resolves through `entryId` and reports
   `renamed`; a name now pointing elsewhere reports `retargeted`; the repair is
   written without advancing `revision`, and loses cleanly to a concurrent edit;
