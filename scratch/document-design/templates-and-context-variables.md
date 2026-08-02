@@ -19,6 +19,12 @@ Context Variables are Document authoring state. Context still owns Context
 records, and Derived Outputs still owns Prompt definitions, concrete Context
 scope, stabilization text, evidence, freshness, and generated revisions.
 
+Context is project-scoped only: one table, no user scope, and no
+project-then-user fallback. A `(kind, id)` binding therefore resolves to the
+same entries for every instantiation in the project, and neither Templates nor
+Document needs a scope-selection argument anywhere in this design. Document
+never creates, mutates, or deletes a Context record; it only references one.
+
 ## Main decisions
 
 - A backing Document uses the Template ID as its Document ID and carries an
@@ -37,6 +43,12 @@ scope, stabilization text, evidence, freshness, and generated revisions.
   user-facing name.
 - Derived Outputs receive only resolved concrete `ContextEntry[]`; they do not
   learn about Document variables.
+- A variable binds exactly one `ContextEntry`. Grouping several resources is
+  Context's job, not Document's, and is now a single call to
+  `POST /contexts/union`.
+- A resolved Prompt context is never allowed to be empty, because an empty
+  entry array is whole-project retrieval in Knowledge rather than an empty
+  scope.
 
 ## Representation version 2
 
@@ -72,12 +84,31 @@ The stable ID lets a variable be renamed without rewriting every Prompt Block.
 The name supplies the authoring and template-instantiation interface the user
 works with. `Main topic` and `main topic` cannot coexist in one Document.
 
-An unbound variable is valid canonical state in a template. It is not
-equivalent to an empty Context scope. A template-mode Prompt Block may retain
-an unresolved variable while it is being authored, but its existing Derived
-Output definition is left untouched and refresh is blocked until the variable
-is bound. A normal Document may not retain a referenced unbound variable. In
-neither mode may an unbound variable fall back to whole-project retrieval.
+**An unbound variable is valid canonical state in any Document, template-mode
+or not.** It is not equivalent to an empty Context scope, and it never falls
+back to whole-project retrieval.
+
+This is a deliberate relaxation of an earlier draft, which allowed unbound
+variables only in template mode and required a normal Document to have every
+referenced variable bound. Two things forced the change:
+
+- registration **clears** every variable target, so a freshly registered
+  template is entirely unbound by construction; and
+- instantiation bindings are optional, so an instance may legitimately be
+  created with variables its author intends to fill in afterwards.
+
+Making unbound state illegal on a normal Document would have made both of those
+impossible, in service of an error that is better caught elsewhere. So the
+constraint moves off document validity and onto **Prompt work admission**: a
+Prompt Block may sit with an unresolved variable indefinitely, but any operation
+that must produce a concrete Context scope from it — prompt creation, refresh,
+or definition synchronization — is refused with `unbound_context_variable`
+while it stays that way. The Block keeps showing its last applied revision, and
+its existing Derived Output definition is left untouched.
+
+This puts unbound variables under exactly the same rule as the empty-scope case
+below: both are structural states that are legal to hold and illegal to
+*resolve*.
 
 Context Variables are intentionally limited to one `ContextEntry` target:
 
@@ -89,9 +120,52 @@ interface ContextEntry {
 ```
 
 The target can be a Context (`kind: "context"`) or another directly usable
-resource. A Context remains the normal way to group several resources. The
-Document validates the pair structurally but does not duplicate the target or
-own its lifecycle.
+resource. A Context remains the normal way to group several resources, and
+`POST /contexts/union` / `POST /contexts/difference` now persist a caller-named
+Context and return its ID, so composing a grouping target is one call before
+instantiation rather than a multi-step setup.
+
+A binding is therefore always a reference. The rejected alternative was to let
+a binding supply inline `entries` that Document would compose into a private
+Context during instantiation. That would give Document a Context *write*
+dependency, add `ContextConflictError` to the instantiation failure surface,
+and leave private records behind that Context neither reference-counts nor
+cleans up. Composition stays in Context, where it is already modelled.
+
+`ContextRecord` also carries `private` and `description`. Neither belongs to
+this design: `private` is a listing-visibility flag that `resolve` ignores, so
+a variable may freely target a private Context, and `description` is mutable
+Context-owned metadata that Document must read live rather than copy.
+
+The Document validates the pair structurally but does not duplicate the target
+or own its lifecycle. In particular it never checks target *liveness* — see
+[Target liveness and the empty-scope rule](#target-liveness-and-the-empty-scope-rule).
+
+### Why this differs from Persona
+
+Persona reaches the opposite conclusion — it *does* create a Context record, a
+private wrapper named deterministically from its own immutable persona ID. The
+two designs are consistent because the deciding question is lifecycle
+ownership, not whether writing Context is allowed:
+
+- Persona needs one **stable, mutable handle** for a scope that lives as long
+  as the persona does, and it owns that record symmetrically: persona create →
+  `declare`, update → `update`, delete → `delete`. A deterministic name from a
+  UUID makes it collision-proof, and nothing else is expected to reference it.
+- A Document context variable binds a target the **user already chose and
+  already owns**. Instantiation is a one-shot copy with no continuing
+  relationship, so a per-variable wrapper would create records with no
+  symmetric owner, no natural delete trigger, and a name Document would have to
+  invent. Persona's accepted orphan gap — a successful Context write followed
+  by a failed owner write — would also be multiplied by every variable in every
+  instantiation rather than bounded to one record per persona.
+
+So Persona writes Context because it owns a scope; Document does not, because
+it only points at one.
+
+The Document validates the pair structurally but does not duplicate the target
+or own its lifecycle. In particular it never checks target *liveness* — see
+below.
 
 ## Prompt context sources
 
@@ -123,10 +197,63 @@ Resolution is deterministic:
    or unbound when concrete resolution is required.
 4. Append each variable target.
 5. Deduplicate by `kind:id`, preserving first appearance.
+6. Fail with `empty_context_scope` if the deduplicated result is empty.
 
 The result is the exact `contextEntries` sent to Derived Outputs. Direct
 entries preserve the current non-template use case. A template can use only
 variables when every instance is expected to supply its own resources.
+
+### Target liveness and the empty-scope rule
+
+Step 6 exists because an empty array is not an empty scope. `Knowledge.resolveScope`
+treats a zero-length entry array as *every indexed source in the project*:
+
+```ts
+const resolved = inputEntries.length === 0
+  ? (await this.store.listSources()).map((source) => ({ id: source.sourceId, kind: "document" }))
+  : /* resolve through Context */;
+```
+
+So a Prompt whose authored scope silently collapses to nothing would not fail —
+it would quietly widen to whole-project retrieval. Document must never hand
+Derived Outputs an empty `contextEntries`.
+
+This matters more than it would have before, because Context resolution is
+lossy by design. `ContextManager.resolve` silently omits nested contexts that
+are missing or past `maxResolveDepth`, and `ContextStore.get(id)` does **not**
+filter `deleted_at`, so an ID path can still observe a tombstoned record.
+Context's own invariants state both. A variable target therefore has three
+states, not two:
+
+| State | Meaning | Document's position |
+|---|---|---|
+| Bound and live | Target resolves to at least one leaf | Normal operation |
+| Unbound | No `target` recorded on the variable | `unbound_context_variable`; legal canonical state in template mode only |
+| Bound but dangling | `target` recorded, but the referenced Context is deleted or resolves to nothing | Structurally valid; caught downstream by the empty-scope rule |
+
+Document deliberately does **not** validate target liveness. Doing so would
+require injecting a Context runtime into Document purely to ask whether an ID
+is live, which contradicts this design's boundary and would still race — a
+Context can be deleted one millisecond after the check. Instead:
+
+- `context-variable.create` / `context-variable.update` / `prompt.set-context`
+  validate the `(kind, id)` pair **structurally only**, exactly as today.
+- Liveness is enforced where it is actually load-bearing: at the point a
+  concrete scope is produced for Derived Outputs. A resolution that yields zero
+  entries is rejected rather than forwarded.
+
+The practical consequence is that a dangling binding is authored and stored
+without complaint, and surfaces as a failed Prompt create/refresh/sync with
+`empty_context_scope` rather than as a silently over-broad answer. That is the
+intended trade: fail visibly and late rather than validate expensively,
+incompletely, and early.
+
+Because a deleted Context is still readable through Context's ID path, a
+binding to a soft-deleted Context keeps resolving to its last entries. That is
+Context's documented current behaviour, not something Document compensates for.
+If Context later tightens `get(id)` to hide tombstones, such a binding will
+begin resolving to nothing and will then be caught by the same empty-scope
+rule — no change is needed here.
 
 Prompt Blocks store variable IDs, not names. Renaming `Main topic` therefore
 changes presentation only. Rebinding it changes the effective Context scope of
@@ -345,6 +472,15 @@ Bindings override template defaults. Variables not named in
 `contextBindings` retain the backing template's current target. Context
 records and other targets are referenced, not copied.
 
+Each binding is exactly one `ContextEntry`; the runtime does not accept inline
+entry arrays and does not compose Contexts. A caller who needs a grouped target
+creates it first through `POST /contexts/union` and passes the returned ID.
+
+Instantiation resolves every copied Prompt Block's context spec under the
+applied bindings before it commits, and rejects the instantiation if any
+resolves to zero entries. This keeps the empty-scope rule an admission check
+rather than a failure discovered on the instance's first refresh.
+
 ## Copy semantics
 
 Both registration and instantiation copy one frozen source revision into a new
@@ -488,6 +624,15 @@ does not invent an empty scope, because empty would mean unrestricted project
 retrieval. New changes are blocked for that broken Prompt until it is repaired
 or removed.
 
+A version 1 Prompt may also have been declared with a genuinely empty
+`contextEntries`, which today means whole-project retrieval. The empty-scope
+rule makes that unrepresentable going forward, so migration must not silently
+re-admit it. Such a Prompt migrates to `{ entries: [], variableIds: [] }`,
+is recorded with the same diagnostic, and is blocked from further changes until
+an explicit scope is authored. Migration never rewrites it into a
+whole-project entry set, because that would bake an implicit behaviour into
+canonical state.
+
 ## Queries and projections
 
 `document.load` returns the version 2 snapshot and a head that includes
@@ -523,19 +668,32 @@ Document Activity transaction.
 3. A Prompt Block references only variable IDs present in the same snapshot.
 4. Context Variable names are non-empty and unique under trim plus
    case-insensitive comparison.
-5. An unbound variable never resolves as whole-project Context.
+5. No Prompt Block ever resolves to whole-project Context. An unbound variable
+   fails as `unbound_context_variable`, and a resolution that deduplicates to
+   zero entries fails as `empty_context_scope`. Document never sends an empty
+   `contextEntries` array to Derived Outputs.
 6. Concrete Derived Output context is the deduplicated resolution of the
    Prompt Block's current context spec.
 7. Every copied Prompt Block owns a newly cloned Derived Output ID.
 8. A destination begins at revision 0 with no copied history, receipts,
    attempts, comments, or Activity history.
-9. Context and other resource targets are referenced, not copied.
+9. Context and other resource targets are referenced, not copied. Document
+    never creates, mutates, or deletes a Context record, and never copies a
+    Context's `displayName`, `description`, or `private` flag into Document
+    state.
 10. Exact adapter retries return the same destination and output mapping.
 11. Templates cannot be deleted through an ordinary Document mutation.
+12. Variable targets are validated structurally only. Target liveness is never
+    checked at authoring time; it is enforced where a concrete scope is
+    produced, by invariant 5.
 
 ## Deferred
 
 - cross-project variable remapping and copying referenced Context records;
+- inline `entries` bindings that Document would compose into a private Context
+  during instantiation, and any other Context write from Document;
+- authoring-time validation that a variable target is live, and any
+  reference-counting or cleanup of Contexts reachable only from a template;
 - typed variables for non-Context purposes or Formula interpolation;
 - variables used by non-Prompt Blocks;
 - automatic model refresh during template instantiation;

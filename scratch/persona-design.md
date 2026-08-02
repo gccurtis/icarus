@@ -39,28 +39,42 @@ Persona does not own:
 
 - model calls, cast selection, or message assembly beyond its own fragment;
 - task state, runs, tool policy, or results;
-- Context records, Context composition, or scope resolution;
+- Context records, Context composition, or scope resolution — except the one
+  private wrapper record it creates and manages for itself, below;
 - Knowledge sources or retrieval; or
 - where in a message list its fragment is placed.
 
 ```text
-caller composes a Context  ──►  context record id
-                                     │
-persona record { sections, context } ─┘
+caller supplies a ContextEntry (an existing record, inline entries composed
+via Context's own union/difference endpoints, or a direct resource reference)
+        │
+        ▼
+persona.create / persona.update
+        │  wraps it: context.declare/update("persona:<id>", [entry], {private:true})
+        ▼
+persona record { sections, definition.context (as authored),
+                  contextWrapperId, contextWrapperRevision }
         │  resolve (freeze)
         ▼
-PersonaSnapshot { prompt, context, digests }
+PersonaSnapshot { prompt, context: {id: contextWrapperId, kind:"context"}, digests }
         │
         └──►  consumer task: system messages + scope union
 ```
 
-The important consequence: **Persona never resolves its own context
-reference.** It holds the reference as an opaque `ContextEntry` and passes it
-to the consumer, which unions it into its own scope and hands the result to
-`knowledge.resolveScope(...)` — the same call Derived Outputs already makes,
-which expands nested Context records and every resource kind exactly once.
-Persona therefore has a type-only import from `#context/types.js` and zero
-runtime dependency on `ContextManager` or Knowledge.
+Persona still never **expands** its context reference into retrievable
+content — that stays the consumer's job via `knowledge.resolveScope(...)`,
+exactly as before. What changes from the earlier draft: Persona now owns a
+private, single-entry Context record of its own. On `create` and `update` it
+declares or updates a wrapper named `persona:<personaId>` that mirrors
+whatever entry the author supplied, and it is *that wrapper* — not the
+author's original entry — that ends up in `PersonaSnapshot.context`. See
+"The private wrapper" below.
+
+This corrects the earlier claim that Persona has "zero runtime dependency on
+`ContextManager`." It does now, through one narrow port — see
+[Ports](#ports) — but the dependency is scoped to managing that one private
+record. Persona still never calls `context.resolve`, `context.combine`, or
+`context.list`, and still has zero dependency on Knowledge.
 
 ## Terms
 
@@ -171,21 +185,88 @@ field. The caller does the set algebra up front:
 
 ```text
 caller picks includes and excludes
-  → POST /project/contexts/compose { op: "difference", a, b }
-  → anonymous ~uuid context record
-  → persona.context = { id: thatRecord.id, kind: "context" }
+  → POST /contexts/difference { a, b, displayName, description? }
+  → named, listable context record   (displayName is required and unique)
+  → persona.definition.context = { id: thatRecord.id, kind: "context" }
 ```
 
-`compose` is already implemented and registered (`context.ts:208`,
-`registerContextEndpoints.ts:276`). It runs the operation and persists the
-result as an anonymous `~`-prefixed record, returning its id. No new Context
-work is required for this design.
+`union`/`difference` are already implemented and registered
+(`context.ts:198`, `registerContextEndpoints.ts:141,160`). They resolve two
+operands (by context ID or inline entries), apply the set operation, and
+persist the result under a caller-supplied, unique `displayName`. The
+anonymous-`~uuid` shape this section originally described was removed by the
+Context migration; every composed context is now a normal, permanently
+catalog-visible record. This is a plain read/compose step the *author*
+performs while shaping what to hand to Persona — unrelated to the private
+wrapper Persona then makes for itself, described next.
 
 `kind` is not constrained to `"context"`. A persona may reference a document or
 any other resource kind directly when that is all it needs; the consumer's
 `resolveScope` handles every kind uniformly. Constraining the kind would buy
 nothing and would block the simple case of "this persona always reads the style
 guide."
+
+### The private wrapper
+
+**Persona owns a second, private Context record that it manages itself.**
+Whatever `ContextEntry` the author supplies in `definition.context` — an
+existing record's id, a direct document reference, whatever — Persona wraps
+it in a context record of its own on `create` and keeps that wrapper in sync
+on every `update`:
+
+```text
+create(input)
+  1. validate the definition (unrelated to Context)
+  2. generate personaId
+  3. if definition.context is present:
+       wrapper = context.declare(`persona:${personaId}`, [definition.context],
+                                  { private: true })
+       → contextWrapperId = wrapper.id, contextWrapperRevision = wrapper.revision
+  4. persist the record (definition as authored, plus the wrapper fields)
+```
+
+```text
+update(input)
+  no context before,  no context now        → no-op
+  no context before,  context now           → context.declare(same name, {private:true})
+  context before,     context still present → context.update(wrapperId, [entry], wrapperRevision)
+                                               (same id, new revision — the wholesale
+                                                definition replace already in effect
+                                                covers both "changed" and "resubmitted
+                                                unchanged")
+  context before,     no context now        → context.delete(wrapperId); clear wrapper fields
+```
+
+```text
+delete(input)  →  if a wrapper exists, context.delete(wrapperId), then soft-delete the persona
+```
+
+Naming is `persona:<personaId>` — the persona's own immutable `id`, not its
+(editable) `displayName`, so a rename can never orphan or collide the
+wrapper. Since `personaId` is a fresh UUID, the name can never collide with
+another persona's wrapper or an author's own context, and no uniqueness
+check beyond Context's existing one is needed.
+
+**`PersonaSnapshot.context` points at the wrapper, not at what the author
+typed.** `GET /personas/entry` still returns `definition.context` exactly as
+authored — round-tripping what someone typed into a form matters — but
+`resolve()` builds the snapshot's `context` field from `contextWrapperId`.
+Every consumer described in this document already treats `snapshot.context`
+as opaque, so this is invisible downstream; nothing in the Freeze contract or
+the Derived Outputs sketch changes.
+
+For now the wrapper always contains exactly one entry — the author's, handed
+to `context.declare`/`context.update` unmodified — so it is functionally a
+*named, private alias* for the author's entry, not a copy. `resolveScope`
+still degrades silently if the underlying entry is later deleted, exactly as
+before; wrapping adds a hop, not a guarantee. A real snapshot (walking
+`context.resolve()` at wrap time and freezing the expanded leaves into the
+wrapper) is a natural next step and is deferred — see Known limitations.
+
+**This requires one change to Context**, worked out in
+`scratch/context-persona-update.md`: `declare`/`composeNamed` gain an
+optional `private` flag, and `list()` excludes private records by default.
+Nothing else about Context changes.
 
 ## The record
 
@@ -195,6 +276,16 @@ interface PersonaRecord {
   readonly displayName: string;      // unique among live records, case-insensitive
   readonly description: string;      // catalog blurb; never rendered, never digested
   readonly definition: PersonaDefinition;
+
+  /**
+   * Persona's own private Context record wrapping definition.context.
+   * Present iff definition.context is present. Internal bookkeeping only —
+   * never exposed in place of definition.context, and excluded from
+   * definitionDigest because it lives outside PersonaDefinition.
+   */
+  readonly contextWrapperId?: string;
+  readonly contextWrapperRevision?: number;
+
   readonly revision: number;         // monotone, starts at 1
   readonly definitionDigest: string; // sha256 over the canonical definition
   readonly createdAt: string;
@@ -222,7 +313,7 @@ interface PersonaSnapshot {
   readonly definition: PersonaDefinition;
   readonly sections: readonly PersonaSectionName[];  // which were folded in
   readonly prompt: string;           // the exact rendered fragment
-  readonly context?: ContextEntry;
+  readonly context?: ContextEntry;   // Persona's private wrapper — see "The private wrapper"
   readonly definitionDigest: string; // identity of the persona's behaviour
   readonly promptDigest: string;     // sha256 of the rendered bytes
   readonly frozenAt: string;
@@ -239,6 +330,10 @@ Two digests, each answering one question. `definitionDigest` identifies the
 persona's behaviour and is stable across section selection. `promptDigest`
 identifies the exact bytes this task received. Logs carry both and never carry
 the text.
+
+`context`, when present, references Persona's own wrapper record
+(`contextWrapperId`), not the author's original entry. This is transparent
+to every consumer: `resolveScope` treats it like any other `ContextEntry`.
 
 ## Capability interface
 
@@ -296,6 +391,48 @@ The interface is `Promise`-returning while the store beneath it is synchronous,
 matching `StructuredData` over `DataStore`. `render` is the exception and is
 synchronous, because it is a pure function and marking it `async` would imply
 it might touch the store.
+
+## Ports
+
+Persona takes one external dependency: a narrow port onto Context, satisfied
+structurally by `ContextManager` itself — the same pattern Document uses for
+its Derived Outputs port ("the real service, passed as-is").
+
+```ts
+interface PersonaContextPort {
+  declare(
+    displayName: string,
+    entries: ContextEntry[],
+    options?: { readonly private?: boolean }
+  ): Promise<{ id: string; revision: number }>;
+  update(
+    id: string,
+    entries: ContextEntry[],
+    expectedRevision: number
+  ): Promise<{ id: string; revision: number }>;
+  delete(id: string): Promise<void>;
+}
+
+interface PersonaDependencies {
+  readonly context: PersonaContextPort;
+}
+```
+
+`createPersonaCapability(store, dependencies: PersonaDependencies, limits,
+logger)` replaces the earlier `(store, limits, logger)` sketch. This is the
+one runtime dependency this design adds relative to the original draft,
+which claimed none — see "The private wrapper" above for why.
+
+Only `create`, `update`, and `delete` touch this port. `resolve`, `render`,
+`get`, `getByName`, and `list` never call it — they read the wrapper id and
+revision already stored on the record. Persona never calls `context.get`,
+`context.resolve`, `context.combine`, or `context.list` — it has no reason to
+read Context, only to manage the one record it privately owns.
+
+A `ContextNotFoundError` or `StaleContextError` surfacing from this port
+during create/update/delete indicates a bug — nothing else should ever touch
+a persona's private wrapper — and is treated as an internal error (500), not
+one of the typed Persona errors below.
 
 ## Rendering
 
@@ -450,7 +587,9 @@ CREATE TABLE IF NOT EXISTS psn_${prefix}_personas (
   approach           TEXT    NOT NULL DEFAULT '',
   output_preferences TEXT    NOT NULL DEFAULT '',
   verification       TEXT    NOT NULL DEFAULT '',
-  context_json       TEXT,                          -- {id, kind} or NULL
+  context_json       TEXT,                          -- {id, kind} or NULL, as authored
+  context_wrapper_id       TEXT,                     -- Persona's own private context; NULL iff context_json is NULL
+  context_wrapper_revision INTEGER,
   definition_digest  TEXT    NOT NULL,
   revision           INTEGER NOT NULL DEFAULT 1,
   created_at         TEXT    NOT NULL,
@@ -470,6 +609,11 @@ Sections are columns rather than one definition blob. The schema is fixed and
 known, so "which personas mention retrieval" stays a plain query instead of
 JSON extraction. The context reference is a single nullable JSON object because
 it is a two-field value, not a list.
+
+`context_wrapper_id` / `context_wrapper_revision` are Persona's own
+bookkeeping for the private Context record it created — see "The private
+wrapper." They round-trip only within Persona; they are never returned in
+place of `context_json` on a read.
 
 Delete is a soft delete. It frees the display name for reuse immediately, since
 the unique index is partial on `deleted_at IS NULL`.
@@ -554,6 +698,11 @@ Every persona operation is local, cheap, and bounded. Reads go on the
 concurrent queue, mutations on the serial queue, all inline. There is no
 deferred work, no background job, and no scheduler involvement.
 
+`create`, `update`, and `delete` now also make one Context call each (when a
+context is present) to manage the private wrapper. That stays a plain
+`await` inside the same synchronous call path — still inline on the serial
+queue, no new job, no new queue.
+
 ## Logging
 
 ```text
@@ -600,6 +749,25 @@ Capability:
 - `resolve()` returns the built-in against an empty database;
 - `resolve()` on a deleted id throws rather than falling back to the built-in;
 - the built-in cannot be updated or deleted.
+
+Private wrapper lifecycle (against a fake `PersonaContextPort`, so these need
+no real Context store):
+
+- creating a persona with a context declares exactly one wrapper, named
+  `persona:<id>`, with `private: true`;
+- creating a persona with no context declares nothing;
+- updating a persona's context calls `update` on the *same* wrapper id, never
+  `declare` again;
+- removing a persona's context (definition replaced with none) calls
+  `delete` on the wrapper and clears both wrapper fields;
+- adding a context to a persona that had none calls `declare`, not `update`;
+- deleting a persona with a wrapper calls `delete` on it before the persona
+  row is soft-deleted;
+- `GET`/`resolve()` never call the context port at all;
+- a record read back exposes `definition.context` exactly as authored, never
+  `contextWrapperId`;
+- `PersonaSnapshot.context.id` equals `contextWrapperId`, not
+  `definition.context.id`, when the two differ.
 
 Wire and architectural:
 
@@ -652,7 +820,11 @@ every future consumer:
   `resolveScope`, under the empty-scope rule above, and the resulting
   `scopeDigest` already flows into the attempt record. No new freeze machinery
   is needed — the attempt already stores a frozen definition revision and
-  context digest, and would store `personaDigest` alongside them.
+  context digest, and would store `personaDigest` alongside them. (The entry
+  that actually joins is Persona's private wrapper, not whatever the author
+  originally typed — see "The private wrapper." Functionally identical today
+  since the wrapper mirrors the author's entry 1:1; this is where a future
+  deep-copy wrapper would start actually differing.)
 
 The same shape applies to Agents later: a task pins the snapshot at creation,
 and every run of that task uses the pinned copy rather than re-resolving.
@@ -665,16 +837,22 @@ and every run of that task uses the pinned copy rather than re-resolving.
    the code exists.
 
 2. **Store port and SQLite adapter.** `store.ts` and `sqlite-store.ts` with the
-   schema above, revision compare-and-swap on update and delete, soft delete,
-   and case-insensitive live-name uniqueness.
+   schema above (including `context_wrapper_id` / `context_wrapper_revision`),
+   revision compare-and-swap on update and delete, soft delete, and
+   case-insensitive live-name uniqueness.
 
 3. **Capability service.** `persona.ts` with `createPersonaCapability(store,
-   limits, logger)`, the built-in fallback, limit enforcement, and the logging
-   above.
+   dependencies, limits, logger)`, the built-in fallback, the private-wrapper
+   lifecycle in create/update/delete (see "The private wrapper" and Ports),
+   limit enforcement, and the logging above. Needs the Context `private` flag
+   change (`scratch/context-persona-update.md`) landed first or alongside.
 
 4. **Wiring.** `4-job-wiring/persona/registerPersonaEndpoints.ts`, error-to-code
-   mapping, `1-init/create/persona.ts`, and `#persona` / `#persona/*` aliases
-   with explicit `development`, `types`, and compiled `default` conditions.
+   mapping, `1-init/create/persona.ts` (passes the already-constructed
+   `ContextManager` in as `dependencies.context` — Context is already built
+   earlier in `startBackend`'s existing order, so no reordering is needed),
+   and `#persona` / `#persona/*` aliases with explicit `development`, `types`,
+   and compiled `default` conditions.
 
 5. **Docs package.** `docs/` beside the module with the six standard files, and
    a "Status and authority" section in `README.md` stating plainly that
@@ -695,19 +873,28 @@ as bugs.
   Until then, a caller who wants a persona's exclusion scope to stay current
   must re-compose and re-point the persona.
 
-- **Anonymous contexts referenced by a persona are a retention root.** Context
-  documents a future housekeeping job that sweeps unreferenced anonymous
-  (`~`-prefixed) contexts. That job must treat a persona's `context_json`
-  reference as a reference, or it will silently strip material from personas
-  that are working correctly. This is a requirement placed on that future job,
-  not something Persona can enforce alone.
+- **The private wrapper can be orphaned by a partial write.** Persona's
+  `create`/`update` call Context first, then write its own row second (see
+  "The private wrapper"). If the Context call succeeds but the following
+  Persona write fails, the wrapper is left behind: private (never listed),
+  unreferenced, and harmless beyond disk usage. This is accepted rather than
+  solved with the full durable-claim machinery Document uses for delegated
+  commands (`DocumentDelegatedCommandClaim`) — that costs more than an
+  occasional orphaned private row is worth at this scale. This also means the
+  original concern about anonymous contexts needing an external sweep job no
+  longer applies in its old form: Persona now owns its wrapper's full
+  lifecycle symmetrically with its own (delete the persona, delete the
+  wrapper), so there is no general-purpose retention problem for a
+  housekeeping job to solve — only this one narrow, accepted gap.
 
-- **A deleted referenced context degrades silently.** Context's `resolve`
-  omits missing ids rather than erroring. A persona pointing at a deleted
-  context therefore contributes no material, and the task proceeds with a
-  narrower scope than the author intended. The consumer's scope manifest is
-  where this is observable; Persona cannot detect it without taking a runtime
-  dependency on Context, which would cost more than the check is worth.
+- **A deleted referenced context degrades silently, one hop later.** Context's
+  `resolve` omits missing ids rather than erroring. If the entry Persona
+  wrapped is itself deleted (e.g. an author-composed context that someone
+  else later removes), the wrapper still exists and still resolves, but
+  contributes no material — same failure mode as before wrapping, just
+  observed through the wrapper instead of directly. Persona still cannot
+  detect this without reading Context, which now it *could* do (it has the
+  dependency) but doesn't, on purpose — see Ports.
 
 ## Non-goals
 
@@ -729,5 +916,13 @@ as bugs.
 - **No per-user personas.** Project scope only, matching Templates. The
   user/project split that Context carries is not obviously right for behaviour
   definitions and should be driven by a real need.
-- **No changes to Derived Outputs, Context, or any other existing capability.**
-  The consumer sketch above is a description, not a scheduled change.
+- **No changes to Derived Outputs, or to any existing capability besides
+  Context.** The consumer sketch above is a description, not a scheduled
+  change. Context does change: `declare`/`composeNamed` gain an optional
+  `private` flag and `list()` gains an `includePrivate` filter, replacing the
+  removed `~`-prefix/`includeAnonymous` convention. See
+  `scratch/context-persona-update.md` for the exact diff.
+
+- **No deep copy of the referenced context, yet.** The private wrapper holds
+  a reference, not a snapshot of resolved content. See "The private wrapper"
+  and the orphan-on-partial-write limitation above.

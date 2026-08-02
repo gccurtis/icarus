@@ -94,8 +94,8 @@ interface Window {
   sourceId: string;
   label: string;     // copied from SourceRecord at ingest — no secondary lookup needed
   ordinal: number;   // position in source, 0-based
-  start: number;     // byte offset in source at index time
-  end: number;
+  start: number;     // UTF-16 code-unit offset in source at index time
+  end: number;       // UTF-16 code-unit offset, exclusive
   text: string;      // stored verbatim — retrieval never reopens the source
   embedding: number[]; // unit-normalized
 }
@@ -273,8 +273,8 @@ with one density count.
 interface Region {
   sourceId: string;
   label: string;      // from the window — no secondary lookup
-  start: number;
-  end: number;
+  start: number;      // UTF-16 code-unit offset, inclusive
+  end: number;        // UTF-16 code-unit offset, exclusive
   text: string;       // verbatim, stored at index time
   relevance: number;  // best covering window's cosine similarity
   density: number;    // how many windows covered this span
@@ -293,10 +293,18 @@ size.
 ### Public surface (on the Knowledge object, no project ID):
 
 ```ts
-retrieve(query: string, topK?: number): Promise<RetrieveResult>
-retrieveMany(queries: string[], topK?: number): Promise<RetrieveResult>
+retrieve(query: string, options?: KnowledgeRetrievalOptions): Promise<RetrieveResult>
+retrieveMany(queries: string[], options?: KnowledgeRetrievalOptions): Promise<RetrieveResult[]>
+resolveScope(scope?: ContextEntry[]): Promise<KnowledgeScopeManifest | null>
 searchTool(): ToolBinding   // sync — returns the binding, handler inside is async
 ```
+
+The `topK?: number` second parameter described in earlier revisions of this
+document was replaced when Context scoping landed. Retrieval now takes an
+options object carrying `topK` and either a `scope` (`ContextEntry[]`) or an
+already-resolved `scopeManifest`. `resolveScope` is the seam a caller uses to
+freeze one manifest and reuse it across every query in a run — see
+[context-design.md](context-design.md).
 
 `searchTool()` is synchronous — it returns a `ToolBinding` immediately. The
 handler *inside* the binding is async (it calls `retrieve`).
@@ -407,7 +415,15 @@ src/1-init/create/
 ## Deferred / dropped
 
 - **Block spans** — dropped entirely.
-- **Generation pinning** — not needed; writes are serialized through the job queue.
+- **Generation pinning** — ~~not needed; writes are serialized through the job
+  queue~~. **Superseded.** A project Knowledge generation counter now exists. It
+  is not owned by Knowledge: a successful add/remove conservatively increments
+  one counter held by the Derived Outputs store, which marks dependents stale
+  and fences an in-flight refresh from publishing against content that changed
+  mid-run. Serialising writes was never the issue — the issue is a long-running
+  consumer that froze its material at the start and settles after the corpus
+  moved. Where the counter should live deserves revisiting now that a second
+  consumer (Research) needs the same fence.
 - **Exact fallback scan** — dropped; no candidates means empty result.
 - **In-memory store** — going straight to SQLite.
 - **Public addBatch** — not needed; embedding batching is automatic.
