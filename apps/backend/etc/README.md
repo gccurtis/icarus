@@ -9,10 +9,9 @@
 - `workerPool.concurrentWorkers`: maximum number of concurrently running jobs.
 - `queue.serialMaxSize`: maximum pending jobs for serial work.
 - `queue.concurrentMaxSize`: maximum pending jobs for concurrent work.
-- `templates.maxTemplatesPerProject`: maximum live Template catalog records
-  (default 500). Checked before a registration reserves its identity, so
-  exceeding it fails with `400 catalog_limit_exceeded` and creates no backing
-  resource.
+- `retention.revisionRetentionDays`: age at which superseded revisions are
+  pruned and logically deleted resources become eligible for physical purge.
+- `retention.sweepIntervalHours`: interval between serial retention sweeps.
 
 Sections not yet documented here: `logging`, `intelligence`, `formula`,
 `structuredData`, `richText`, `context`, `derivedOutputs`, `document`,
@@ -24,3 +23,9 @@ Sections not yet documented here: `logging`, `intelligence`, `formula`,
 - Serial queue processes exactly one job at a time.
 - Concurrent queue drains into a worker pool of size `workerPool.concurrentWorkers`.
 - Queue capacity errors return HTTP 429 on enqueue.
+- After HTTP binds, the resource-retention scheduler runs one immediate sweep and
+  then repeats at `retention.sweepIntervalHours`. Capabilities run sequentially;
+  each purge/prune failure is logged and does not stop later capabilities.
+- Shutdown clears the recurring retention timer and waits for an active sweep.
+- Revision retention does not prune Activity, transaction outboxes, command
+  receipts, or delegated claims, and never runs SQLite `VACUUM`.

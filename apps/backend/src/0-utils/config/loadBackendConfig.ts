@@ -76,10 +76,6 @@ export interface DerivedOutputConfig {
   maxToolRounds: number;
 }
 
-export interface TemplateConfig {
-  maxTemplatesPerProject: number;
-}
-
 export interface DocumentConfig {
   history: {
     retainedBaseCount: number;
@@ -95,6 +91,13 @@ export interface DocumentConfig {
     maxTableRows: number;
     maxTableColumns: number;
   };
+}
+
+export interface RetentionConfig {
+  /** Age after which superseded revisions and deleted resource histories expire. */
+  revisionRetentionDays: number;
+  /** Wall-clock cadence for the process-wide retention sweep. */
+  sweepIntervalHours: number;
 }
 
 export interface BackendConfig {
@@ -121,7 +124,7 @@ export interface BackendConfig {
   context: ContextManagerConfig;
   derivedOutputs: DerivedOutputConfig;
   document: DocumentConfig;
-  templates: TemplateConfig;
+  retention: RetentionConfig;
   projectId: string;
   userId: string;
 }
@@ -217,15 +220,12 @@ const DEFAULT_CONFIG: BackendConfig = {
     maxMarkRangeSpan: 1000
   },
   context: {
-    maxEntriesPerContext: 1000,
+    maxEntriesPerContext: 100000,
     maxResolveDepth: 10
   },
   derivedOutputs: {
     maxPlanQueries: 8,
     maxToolRounds: 8
-  },
-  templates: {
-    maxTemplatesPerProject: 500
   },
   document: {
     history: {
@@ -242,6 +242,10 @@ const DEFAULT_CONFIG: BackendConfig = {
       maxTableRows: 1000,
       maxTableColumns: 256
     }
+  },
+  retention: {
+    revisionRetentionDays: 30,
+    sweepIntervalHours: 24
   }
 };
 
@@ -395,8 +399,8 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     (parsed.derivedOutputs as Record<string, unknown> | undefined) ?? {};
   const document =
     (parsed.document as Record<string, unknown> | undefined) ?? {};
-  const templates =
-    (parsed.templates as Record<string, unknown> | undefined) ?? {};
+  const retention =
+    (parsed.retention as Record<string, unknown> | undefined) ?? {};
   const configuredOpenRouterApiKey = parseString(
     openrouter.apiKey,
     DEFAULT_CONFIG.intelligence.providers.openrouter.apiKey,
@@ -495,7 +499,7 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     context: parseContextConfig(context, DEFAULT_CONFIG.context),
     derivedOutputs: parseDerivedOutputConfig(derivedOutputs, DEFAULT_CONFIG.derivedOutputs),
     document: parseDocumentConfig(document, DEFAULT_CONFIG.document),
-    templates: parseTemplateConfig(templates, DEFAULT_CONFIG.templates)
+    retention: parseRetentionConfig(retention, DEFAULT_CONFIG.retention)
   };
 };
 
@@ -531,12 +535,6 @@ function parseContextConfig(raw: Record<string, unknown>, defaults: ContextManag
   return {
     maxEntriesPerContext: parseNumber(raw.maxEntriesPerContext, defaults.maxEntriesPerContext, "context.maxEntriesPerContext"),
     maxResolveDepth: parseNumber(raw.maxResolveDepth, defaults.maxResolveDepth, "context.maxResolveDepth")
-  };
-}
-
-function parseTemplateConfig(raw: Record<string, unknown>, defaults: TemplateConfig): TemplateConfig {
-  return {
-    maxTemplatesPerProject: parseNumber(raw.maxTemplatesPerProject, defaults.maxTemplatesPerProject, "templates.maxTemplatesPerProject")
   };
 }
 
@@ -609,6 +607,24 @@ function parseDocumentConfig(
         "document.limits.maxTableColumns"
       )
     }
+  };
+}
+
+function parseRetentionConfig(
+  raw: Record<string, unknown>,
+  defaults: RetentionConfig
+): RetentionConfig {
+  return {
+    revisionRetentionDays: parseNumber(
+      raw.revisionRetentionDays,
+      defaults.revisionRetentionDays,
+      "retention.revisionRetentionDays"
+    ),
+    sweepIntervalHours: parseNumber(
+      raw.sweepIntervalHours,
+      defaults.sweepIntervalHours,
+      "retention.sweepIntervalHours"
+    )
   };
 }
 

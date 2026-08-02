@@ -183,7 +183,7 @@ richText:
 
 # Context capability limits.
 context:
-  maxEntriesPerContext: 1000
+  maxEntriesPerContext: 100000
   maxResolveDepth: 10
 
 # Document history retention and canonical content limits.
@@ -201,9 +201,11 @@ document:
     maxTableRows: 1000
     maxTableColumns: 256
 
-# Templates catalog limits.
-templates:
-  maxTemplatesPerProject: 500
+# Resource revision-history retention. This does not prune Activity,
+# transaction outboxes, command receipts, or delegated claims.
+retention:
+  revisionRetentionDays: 30
+  sweepIntervalHours: 24
 
 # Project and user identifiers.
 projectId: default

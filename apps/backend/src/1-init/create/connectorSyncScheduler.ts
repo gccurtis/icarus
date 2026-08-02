@@ -75,7 +75,7 @@ export class ConnectorSyncScheduler {
   private enqueueSyncJob(connectorId: string): void {
     // Check syncing state — if already syncing, skip
     const entry = this.store.getById(connectorId);
-    if (!entry || entry.deletedAt || !entry.syncConfig) return;
+    if (!entry || !entry.syncConfig) return;
     if (entry.syncing) return;
 
     // Set syncing at enqueue time

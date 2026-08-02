@@ -31,6 +31,10 @@ import {
   createTemplatesInstance
 } from "#init/create/templates.js";
 import { SchedulerInternalJobsRuntime } from "#utils/jobs/internalRuntime.js";
+import {
+  bindResourceRetentionPort,
+  ResourceRetentionScheduler
+} from "#utils/persistence/resourceRetentionScheduler.js";
 import type { DocumentInternalJobIntent } from "#document";
 import { registerDocumentEndpoints } from "#job-wiring/document/registerDocumentEndpoints.js";
 import { registerDocumentInternalJobs } from "#job-wiring/document/registerDocumentInternalJobs.js";
@@ -112,6 +116,24 @@ export const startBackend = async (): Promise<void> => {
     // commands answer unsupported_kind and the catalog queries still work.
     const templateAdapters = createTemplateAdapterRegistry();
     const templates = createTemplatesInstance(config, templateAdapters, activity, logger);
+    // Parent resources precede their owned resources so retention can cascade
+    // through ownership before a generic child sweep sees the same history.
+    const retentionScheduler = new ResourceRetentionScheduler(
+      config.retention,
+      [
+        bindResourceRetentionPort("document", document),
+        bindResourceRetentionPort("persona", personas),
+        bindResourceRetentionPort("templates", templates),
+        bindResourceRetentionPort("investigation", investigation),
+        bindResourceRetentionPort("derived-outputs", derivedOutputs),
+        bindResourceRetentionPort("comments", comments),
+        bindResourceRetentionPort("connector", connector),
+        bindResourceRetentionPort("general-files", generalFiles),
+        bindResourceRetentionPort("structured-data", structuredData),
+        bindResourceRetentionPort("context", contextManager)
+      ],
+      logger
+    );
 
     logger.info("Backend starting", {
       host: config.server.host,
@@ -177,9 +199,23 @@ export const startBackend = async (): Promise<void> => {
     // Start recurring work only after the transport has bound successfully.
     // Otherwise a listen failure would leave interval timers keeping the
     // failed startup process alive.
+    await retentionScheduler.start();
     syncScheduler.start();
 
     logger.info("Backend listening", { port: config.server.port });
+
+    // Flush buffered log writes on shutdown so a killed process does not lose
+    // its tail of in-flight log entries.
+    const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
+      logger.info("Backend shutting down", { signal });
+      syncScheduler.stop();
+      await retentionScheduler.stop();
+      await app.close();
+      await logger.close?.();
+      process.exit(0);
+    };
+    process.once("SIGTERM", (signal) => void shutdown(signal));
+    process.once("SIGINT", (signal) => void shutdown(signal));
   } catch (error) {
     logger.error("backend.start.failed", {
       errorName: error instanceof Error ? error.name : "UnknownError",
