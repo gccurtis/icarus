@@ -1,5 +1,15 @@
 # Document Addendum — Templates and Context Variables
 
+> **Partly superseded (2026-08-02).** Five pieces of machinery below were cut as
+> over-built: representation version 2 and its migration, the multi-entry
+> `PromptContextSpec` and its resolution algorithm, `DerivedOutputs.clone`, the
+> `DocumentCopyAttempt` table, and the `DocumentTemplateCopyRuntime` interface.
+> See [`document-changes-design.md`](../document-changes-design.md) for what
+> replaced each and why.
+>
+> This page remains the authority on binding semantics, the Persona comparison,
+> the copy preserve/discard table, and the sealing rule.
+
 ## Intent
 
 This addendum extends Document in two related ways:
@@ -47,8 +57,8 @@ never creates, mutates, or deletes a Context record; it only references one.
   Context's job, not Document's, and is now a single call to
   `POST /contexts/union`.
 - Registration and instantiation apply the **same** binding override rule:
-  absent key inherits, present key with `entry` sets, present key without
-  `entry` explicitly unbinds. Registration records defaults; instantiation
+  absent key inherits, present key with `target` sets, present key without
+  `target` explicitly unbinds. Registration records defaults; instantiation
   overrides them. Nothing is cleared automatically.
 - Bindings are optional at both steps. Unbound variables are legal state on any
   Document; only Prompt work that needs a concrete scope is refused.
@@ -99,7 +109,7 @@ variables only in template mode and required a normal Document to have every
 referenced variable bound. Two things forced the change:
 
 - a registration may deliberately leave variables unbound, by naming them with
-  no `entry`, so that the template is a pure function of its arguments; and
+  no `target`, so that the template is a pure function of its arguments; and
 - instantiation bindings are optional, so an instance may legitimately be
   created with variables its author intends to fill in afterwards.
 
@@ -393,9 +403,12 @@ concrete scope. Once every referenced variable is bound, it schedules one
 synchronization attempt for the affected Prompt Block after the Document
 ChangeSet commits.
 
-Unbinding a referenced variable is likewise allowed in either mode. The
-Document remains fully editable; only Prompt work that needs a concrete scope
-is refused until the variable is rebound.
+Unbinding a referenced variable is likewise allowed in either mode. An unbound
+variable never blocks editing; only Prompt work that needs a concrete scope is
+refused until the variable is rebound. (Template mode blocks editing through
+Document's public surface for an unrelated reason — see
+[Template-mode Documents](#template-mode-documents) — but the adapter's internal
+path is unaffected by either rule.)
 
 Compensating any target-changing operation runs the same dependency detection
 and schedules synchronization for the restored context. Undo and redo never
@@ -422,11 +435,30 @@ between modes and mode does not vary by historical revision.
 - Public `document.create` always creates `isTemplate: false`.
 - Only the trusted Templates adapter can create `isTemplate: true`.
 - `document.list` returns normal Documents only.
-- `document.load`, history, editing, Prompt operations, and projections work
-  for either mode when addressed by ID.
-- An ordinary Document lifecycle/delete operation cannot remove a
-  template-mode Document. Deletion is routed through Templates so the catalog
-  and backing resource cannot diverge.
+- **Registration seals the backing Document.** Once `isTemplate` is true,
+  Document's entire public surface is refused for it — every `DocumentCommand`
+  *and* every `DocumentQuery` naming it, so `document.load`, `document.history`,
+  and `document.attempt` are closed alongside `document.submit`,
+  `document.set-lifecycle`, `document.delete`, `document.compensate`, and every
+  Prompt and Formula command. One typed error (`DocumentTemplateModeError` →
+  409) names Templates as the way in.
+- The check is on the Document, not enumerated per command, so a command or
+  query added later is sealed by default rather than by someone remembering.
+- **`document.listTemplates` is the one exception.** It lists heads for
+  `isTemplate` rows. The line is listing versus reading: listing is a
+  cross-Document question over Document's own storage that returns identifying
+  metadata, while reading *a* template returns content and belongs to Templates.
+- Reading a backing Document's content is `template.load`, which reaches it
+  through the Templates adapter. Editing it is `template.update`, likewise. The
+  adapter uses Document's **internal** command path, which is not the public
+  surface and is therefore not refused.
+- Nothing renames a backing Document, from either side. Document cannot — it is
+  sealed. Templates does not offer it: `template.update` renames the
+  `TemplateRecord`, and the Document's title stays as copied. That title is what
+  an instance inherits when instantiation supplies none.
+
+A backing Document is not a Document a user owns any more. It exists so
+instantiation has something to copy.
 
 For a backing Document, `DocumentHead.id === TemplateRecord.resourceId ===
 TemplateRecord.id`.
@@ -445,9 +477,9 @@ structure rather than a Document peculiarity:
 /** Owned by Templates; reproduced here for reference. */
 interface TemplateContextBinding {
   /** Omitted means "explicitly unbound", not "leave alone". */
-  readonly entry?: ContextEntry;
+  readonly target?: ContextEntry;
 
-  /** Template documentation; never copied into the instantiated Document. */
+  /** Declaration only; never copied into the instantiated Document. */
   readonly description?: string;
 }
 
@@ -476,12 +508,39 @@ interface DocumentTemplateCopyRuntime {
     idempotencyKey: string;
   }): Promise<DocumentHead>;
 
-  deleteTemplateCopy(input: {
+  /** Content edits for a sealed backing Document; the internal command path. */
+  updateTemplateCopy(input: {
+    templateId: string;
+    operations: DocumentOperation[];
+    contextBindings?: TemplateContextBindings;
+    idempotencyKey: string;
+  }): Promise<DocumentHead>;
+
+  /** Reads a sealed backing Document. The one method that returns content. */
+  readTemplateCopy(input: { templateId: string }): Promise<DocumentSnapshot>;
+
+  logicalDeleteTemplateCopy(input: {
+    templateId: string;
+    idempotencyKey: string;
+  }): Promise<void>;
+
+  purgeTemplateCopy(input: {
     templateId: string;
     idempotencyKey: string;
   }): Promise<void>;
 }
 ```
+
+Six methods, matching `TemplateResourceAdapter` as it now ships. Four of them
+did not exist when this section was first written: the delete split into logical
+and purge with the revision/history model, and update/read arrived with the
+sealing rule — once Document refuses its own public surface for a backing copy,
+Templates needs a way through for both editing and reading.
+
+The Templates port types `operations` and the read result as `unknown`, because
+Templates has no per-kind types. Document's own runtime is concretely typed;
+the integration adapter in `1-init` is where the two meet, and it is the only
+place that imports both contracts.
 
 Startup wraps this runtime in the structurally matching
 `TemplateResourceAdapter` owned by Templates. That integration adapter is the
@@ -498,8 +557,8 @@ twice:
 | Binding for a variable | Effect on the destination |
 |---|---|
 | Not a key in the record | Keeps whatever the source held |
-| Key present with `entry` | `entry` becomes the destination's target |
-| Key present, `entry` omitted | Destination variable is unbound |
+| Key present with `target` | that target becomes the destination's |
+| Key present, `target` omitted | Destination variable is unbound |
 
 At registration the source is the original Document and the destination is the
 backing template, so the result is the template's defaults. At instantiation
@@ -689,16 +748,24 @@ re-admit it. Such a Prompt migrates the same way and carries the same
 diagnostic. Migration never rewrites it into a whole-project entry set, because
 that would bake an implicit behaviour into canonical state.
 
-In both cases the Document remains fully editable and loadable — the Block is
+In neither case does migration restrict the Document itself — the Block is
 simply in the ordinary unresolvable state, and is refused Prompt work under the
 same admission rule as an unbound variable until a scope is authored. Migration
-introduces no separate blocked-Document concept.
+introduces no separate blocked-Document concept. (Whether the Document is
+reachable at all is a separate question, answered by template mode.)
 
 ## Queries and projections
 
 `document.load` returns the version 2 snapshot and a head that includes
-`isTemplate`. `document.list` is unchanged at the wire level but filters
-`isTemplate = 0` in the store.
+`isTemplate` — for normal Documents. Against a template-mode Document it is
+refused, like every other public command and query (see
+[Template-mode Documents](#template-mode-documents)); Templates serves that read
+through `template.load`.
+
+`document.list` is unchanged at the wire level but filters `isTemplate = 0` in
+the store. A new `document.listTemplates` query returns heads for the rows it
+excludes, so a caller can still discover which Document templates exist without
+being able to read one.
 
 The dependency projection adds:
 
@@ -712,9 +779,13 @@ to reverse-engineer the authored variable relationship.
 ## Activity
 
 Creating a backing Document publishes an ordinary `document.created`
-transaction with safe metadata indicating template mode. Editing it publishes
-normal Document changes against the Template ID. Creating an instance publishes
-one ordinary `document.created` transaction for the new real resource.
+transaction with safe metadata indicating template mode. Editing it — which now
+only happens through `template.update` and the adapter's internal path — still
+publishes normal Document changes against the Template ID, because the change to
+Document's canonical state is the same one either way. Templates separately
+publishes its own `template.updated` transaction for the catalog change.
+Creating an instance publishes one ordinary `document.created` transaction for
+the new real resource.
 
 Context-variable operations use their exact operation names in the Document
 transaction's `operationTypes`. Derived Output definition synchronization is a
@@ -724,8 +795,11 @@ Document Activity transaction.
 ## Invariants
 
 1. `isTemplate` is immutable for the life of a Document.
-2. A template-mode Document is absent from the ordinary Document list but is
-   loadable and editable by exact ID.
+2. A template-mode Document is absent from the ordinary Document list and is
+   unreachable through Document's public surface by exact ID — commands and
+   queries alike. It is reachable only through Templates, via the adapter's
+   internal path. `document.listTemplates` is the sole exception, and it lists
+   rather than reads.
 3. A Prompt Block references only variable IDs present in the same snapshot.
 4. Context Variable names are non-empty and unique under trim plus
    case-insensitive comparison.
@@ -739,8 +813,8 @@ Document Activity transaction.
    definition synchronization, and keeps showing its last applied revision
    meanwhile.
 7. Registration and instantiation apply one binding override rule: an absent
-   key inherits the source's target, a key with `entry` sets it, and a key
-   without `entry` unbinds it. Nothing is cleared implicitly, and a binding's
+   key inherits the source's target, a key with `target` sets it, and a key
+   without `target` unbinds it. Nothing is cleared implicitly, and a binding's
    `description` is never written into destination Document state.
 8. Concrete Derived Output context is the deduplicated resolution of the
    Prompt Block's current context spec.
@@ -752,7 +826,9 @@ Document Activity transaction.
     Context's `displayName`, `description`, or `private` flag into Document
     state.
 12. Exact adapter retries return the same destination and output mapping.
-13. Templates cannot be deleted through an ordinary Document mutation.
+13. A backing template cannot be read, edited, renamed, or deleted through
+    Document's public surface at all — not only deletion. Every such path is
+    Templates'.
 14. Variable targets are validated structurally only. Target liveness is never
     checked at authoring time; it is enforced where a concrete scope is
     produced, by invariants 5 and 6.
@@ -773,14 +849,22 @@ Document Activity transaction.
 
 ## Implementation order
 
+Expanded into a step-by-step plan with files, tests, and sequencing rationale in
+[`document-implementation-plan.md`](../document-implementation-plan.md), which
+also folds in the Document work tracked outside this addendum. The summary:
+
 1. Add representation version 2, Context Variable and Prompt context models,
    validation, canonicalization, reducer operations, inverses, and migration.
 2. Update Prompt creation/definition/refresh to resolve context specs and add
    durable Prompt-context synchronization.
-3. Add immutable `isTemplate` head persistence and ordinary-list filtering.
+3. Add immutable `isTemplate` head persistence, ordinary-list filtering, the
+   public-surface refusal for template-mode Documents (`DocumentTemplateModeError`
+   on every command and query naming one), and `document.listTemplates`.
 4. Add keyed Derived Outputs clone support and Document copy attempts.
 5. Implement the Document copy runtime and its startup-owned Templates adapter
-   for registration, instantiation, and deletion.
+   for registration, instantiation, deletion, content edits
+   (`updateTemplateCopy`), and reads (`readTemplateCopy`) — the last two being
+   how `template.update` and `template.load` reach a sealed Document.
 6. Wire the adapter into Templates and add tests covering bound/unbound
    variables, duplicate names, multi-Prompt synchronization, deep output
    copies, exact retry, history isolation, and same-project instantiation.

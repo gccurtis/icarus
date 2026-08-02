@@ -16,10 +16,11 @@
 >
 > | Section | Deviation |
 > | --- | --- |
-> | Logging | **Three of seven planned events were not built** — `persona.render`, `persona.list`, `persona.get`. Reads are not logged at all. |
+> | Logging | The three planned read events (`persona.render`, `persona.list`, `persona.get`) were replaced by one discriminated `persona.query.completed` carrying the query type, alongside `persona.command`. Reads **are** logged. Wrapper writes gained `persona.wrapper.declared/.updated/.deleted/.repaired`, which the design did not anticipate. |
 > | Ports | The factory is `createPersonaCapability(store, dependencies)` — two arguments, with limits and clock inside `dependencies`. |
 > | Ports | An injected `PersonaClock` was added; the original design had none. |
 > | Ports | `PersonaContextPort.declare` takes an optional `description` as well as `private`. |
+> | Ports | `PersonaContextPort` gained `getByName`, which `update` and `delete` use to resolve the wrapper's live state and self-heal a stale persisted pointer. |
 >
 > Everything else below — the five sections, rendering rules, digests, the private
 > wrapper, the freeze contract, the built-in, the limits, the error table, the
@@ -448,6 +449,10 @@ interface PersonaContextPort {
     expectedRevision: number
   ): Promise<{ id: string; revision: number }>;
   delete(id: string): Promise<void>;
+  // Added during implementation. The wrapper's name is deterministic, so update
+  // and delete resolve its live state by name instead of trusting the persona
+  // record's persisted pointer, which a partial write can leave stale.
+  getByName(displayName: string): Promise<{ id: string; revision: number } | null>;
 }
 
 // As built: limits and clock arrive inside dependencies rather than as extra
@@ -792,29 +797,30 @@ queue, no new job, no new queue.
 
 ## Logging
 
-Four events are implemented:
+Events implemented (updated 2026-08-02 — see `scratch/0-general-updates.md` item 4b):
 
 ```text
-persona.create   info   { personaId, revision, definitionDigest, sectionCount, hasContext, durationMs }
-persona.update   info   { personaId, revision, definitionDigest, digestChanged, durationMs }
-persona.delete   info   { personaId, revision, durationMs }
-persona.resolve  debug  { personaId, revision, definitionDigest, promptDigest, sectionCount, promptChars, hasContext, durationMs }
+persona.runtime.created   info   {}
+persona.command           debug  { type, durationMs }
+persona.query.completed   debug  { type, personaId?, count?, promptDigest?, durationMs }
+persona.create            info   { personaId, revision, definitionDigest, sectionCount, hasContext, durationMs }
+persona.update            info   { personaId, revision, definitionDigest, digestChanged, durationMs }
+persona.delete            info   { personaId, revision, durationMs }
+persona.resolve           debug  { personaId, revision, definitionDigest, promptDigest, sectionCount, promptChars, hasContext, isBuiltIn, durationMs }
+persona.wrapper.declared  info   { personaId, wrapperId, revision }
+persona.wrapper.updated   info   { personaId, wrapperId, revision }
+persona.wrapper.deleted   info   { personaId, wrapperId }
 ```
 
-**Changed during implementation — three planned events were not built:**
-
-```text
-persona.render   debug  { sectionCount, promptChars, promptDigest, durationMs }   ← NOT implemented
-persona.list     debug  { count, durationMs }                                     ← NOT implemented
-persona.get      debug  { personaId, found, durationMs }                          ← NOT implemented
-```
-
-The reasoning was that reads are cheap and frequent and a line per catalog read
-is noise. That is a judgment call, not a consequence of any house rule, and it
-cuts against Context, which *does* log `context.get` and `context.list` at debug.
-Adding the three back is a few lines each if read-path observability turns out to
-matter — `persona.render` is the most defensible of the three, since it is the
-authoring-preview path and its usage is otherwise invisible.
+The three previously-missing read events (`get`, `getByName`, `list`, `render`) are now
+covered by the single `persona.query.completed` event per query type, rather than one
+named event per catalog operation — that keeps the dispatch-level shape consistent with
+`persona.command`. The wrapper declare/update/delete calls, previously invisible, are now
+logged wherever `PersonaContextPort` is called (`create`, `reconcileWrapper`, `delete`) —
+these are the writes at the centre of the partial-write gap in item 5, and they can now
+at least be observed in the log. The gap itself was subsequently narrowed: `update` and
+`delete` now self-heal against the wrapper's live state, leaving only the `create`-time
+orphan. `persona.wrapper.repaired` (`warn`) fires whenever a discrepancy is corrected.
 
 Section text, rendered prompts, display names, and descriptions never appear in a
 log record. `promptDigest` exists so two runs can be compared for identical
@@ -979,19 +985,36 @@ as bugs.
   Until then, a caller who wants a persona's exclusion scope to stay current
   must re-compose and re-point the persona.
 
-- **The private wrapper can be orphaned by a partial write.** Persona's
-  `create`/`update` call Context first, then write its own row second (see
-  "The private wrapper"). If the Context call succeeds but the following
-  Persona write fails, the wrapper is left behind: private (never listed),
-  unreferenced, and harmless beyond disk usage. This is accepted rather than
-  solved with the full durable-claim machinery Document uses for delegated
-  commands (`DocumentDelegatedCommandClaim`) — that costs more than an
-  occasional orphaned private row is worth at this scale. This also means the
-  original concern about anonymous contexts needing an external sweep job no
-  longer applies in its old form: Persona now owns its wrapper's full
-  lifecycle symmetrically with its own (delete the persona, delete the
-  wrapper), so there is no general-purpose retention problem for a
-  housekeeping job to solve — only this one narrow, accepted gap.
+- **A lost race can, at most, orphan a private wrapper — never leave a
+  persona record pointing at a stale or missing one.** `create` declares the
+  wrapper, then writes its own row second (see "The private wrapper"). If the
+  insert fails, the wrapper is left behind: private (never listed),
+  unreferenced, and harmless beyond disk usage — logged as
+  `persona.wrapper.orphaned` (`warn`). There is no persona row yet at that
+  point to reconcile against, so the caller just retries.
+
+  `update` and `delete` are ordered so the same failure mode can never be
+  worse than that one accepted category. `update` never mutates an existing
+  wrapper in place when the context reference changes — it always `declare`s
+  a brand-new one first (which always starts at revision 1, so it can never
+  itself go stale), then CAS-writes the persona row to point at it. If that
+  CAS is lost, the freshly declared wrapper is simply abandoned and logged as
+  `persona.wrapper.orphaned`; the caller retries against fresh state, and any
+  previous wrapper is untouched. If the CAS succeeds, the previous wrapper
+  (if any) is deleted afterward as best-effort cleanup — a failure there also
+  just orphans it, logged, without undoing the already-committed update.
+  `delete` follows the same shape: its own CAS soft-delete commits first, and
+  the wrapper is deleted afterward as best-effort cleanup.
+
+  This also means the original concern about anonymous contexts needing an
+  external sweep job no longer applies in its old form: Persona owns its
+  wrapper's full lifecycle symmetrically with its own, and every path is
+  ordered so a lost race degrades to "one harmless orphaned row," never a
+  broken pointer — so there is no general-purpose retention problem for a
+  housekeeping job to solve, only the accepted, logged orphan case above. As
+  a side effect, this ordering is safe under genuine concurrency too, not
+  just crash-only: two callers racing the same persona each declare their own
+  wrapper independently, and only one wins the persona-row CAS.
 
 - **A deleted referenced context degrades silently, one hop later.** Context's
   `resolve` omits missing ids rather than erroring. If the entry Persona

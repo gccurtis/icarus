@@ -105,17 +105,6 @@ interface DocumentStore {
     documentId: string,
     clientRequestId: string,
   ): Promise<DocumentSubmissionReceipt | undefined>;
-  getDelegatedCommandClaim(
-    documentId: string,
-    clientRequestId: string,
-  ): Promise<DocumentDelegatedCommandClaim | undefined>;
-  claimDelegatedCommand(
-    claim: DocumentDelegatedCommandClaim,
-  ): Promise<DelegatedCommandClaimResult>;
-  completeDelegatedCommand(
-    claim: DocumentDelegatedCommandClaim,
-    receipt: DocumentSubmissionReceipt,
-  ): Promise<void>;
   getIdentity(
     documentId: string,
     identityId: string,
@@ -328,20 +317,6 @@ CREATE TABLE document_command_receipts (
   FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
 );
 
-CREATE TABLE document_delegated_command_claims (
-  document_id      TEXT NOT NULL,
-  request_id       TEXT NOT NULL,
-  request_digest   TEXT NOT NULL,
-  command_kind     TEXT NOT NULL
-    CHECK (command_kind = 'prompt.update-definition'),
-  target_output_id TEXT NOT NULL,
-  state            TEXT NOT NULL CHECK (state IN ('pending', 'completed')),
-  created_at       TEXT NOT NULL,
-  updated_at       TEXT NOT NULL,
-  PRIMARY KEY (document_id, request_id),
-  FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
-);
-
 CREATE TABLE document_identity_ledger (
   document_id              TEXT NOT NULL,
   identity_id              TEXT NOT NULL,
@@ -512,12 +487,13 @@ designed around that fact:
   Prompt-create attempt ID as its idempotency key. A crash after declaration
   recovers the same output instead of creating a second one.
 - Definition/stabilization updates mutate only Derived Outputs. Document first
-  validates the Prompt Block reference, freezes its output ID in a durable
-  local delegated-command claim, then delegates with a key derived from
-  `(documentId, requestId)`. Derived Outputs durably replays the exact update
-  result, and Document completes the claim plus command receipt atomically. A
-  crash at either side of the database boundary therefore resumes without
-  guessing from current Block or definition state.
+  validates the Prompt Block reference, then delegates with a key derived from
+  `(documentId, requestId)`. Derived Outputs is idempotent on that key by
+  itself, so a crash after the update commits there but before Document's own
+  submission receipt commits simply replays the same result on retry; no local
+  claim on the target is kept. The one case this does not cover is the Prompt
+  Block being deleted before the retry, in which case the retry fails cleanly
+  instead of resuming.
 - Refresh may publish a Derived Output revision before Document adoption. A
   keyed refresh replays its exact result. A failed or stale Document settlement
   leaves the Block on its prior exact revision; no rollback of Derived Outputs

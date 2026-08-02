@@ -74,7 +74,7 @@ Rules:
   logger, no model. Every mode's completion criteria and every grounding
   validation rule becomes a test needing two literals.
 - **Research never imports another capability's module.** Findings, Questions,
-  Hypotheses, Analytic Output, and Agents are all reached through narrow ports
+  Hypotheses, Structured Analysis, and Agents are all reached through narrow ports
   in `ports/`, implemented by adapters in job wiring. Grep for `#findings` or
   `#agents` under `3-capabilities/research/` should return nothing.
 - **Research owns no execution.** There is no runner, no step, no tool

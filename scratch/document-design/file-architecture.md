@@ -71,7 +71,7 @@ projection without changing the capability boundary.
 | `domain/rebase.ts` | Touched-ID calculation and disjoint stale-edit admission. |
 | `application/documentService.ts` | Factory and public `command`/`query` interface. No transport or scheduler imports. |
 | `application/documentService.ts` | Command/query dispatch, receipts, authored snapshot reconstruction, semantic rebase, compare-and-swap commits, compensation, prompt/Formula stage orchestration, recovery, compaction, and committed-fact construction. |
-| `ports/documentStore.ts` | Project-bound head, Base, ChangeSet, receipt, delegated-command claim, identity ledger, attempt, stage, compaction, and outbox persistence. |
+| `ports/documentStore.ts` | Project-bound head, Base, ChangeSet, receipt, identity ledger, attempt, stage, compaction, and outbox persistence. |
 | `ports/derivedOutputs.ts` | Narrow interface implemented by the existing Derived Outputs runtime object. |
 | `ports/formulaResolver.ts` | Narrow `buildSnapshot()` interface implemented by the existing Formula resolver adapter. |
 | `persistence/sqliteDocumentStore.ts` | Opens `./data/documents.db`, hashes project ID, enables pragmas, applies owned schema, and implements the store. |

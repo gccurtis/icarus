@@ -114,7 +114,7 @@ mechanism — they compile to an Agents tool policy:
 | Structured Data | on | policy entries for the Structured Data read commands |
 | Web | **off** | policy entry for the Web Retrieval read command |
 | Computation | off | policy entry for the sandbox command |
-| Analytic Output | off | read-only materialization read by id |
+| Structured Analysis | off | read-only analysis data read by id |
 
 Web is off by default because it performs outbound retrieval, which is a
 different kind of act from reading the project. That is a product decision, not

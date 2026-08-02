@@ -1,59 +1,64 @@
-# Analytic Output — file architecture
+# Structured Analysis — file architecture
 
-## Minimal layout
+## Layout
 
 ```text
 apps/backend/
   src/
-    3-capabilities/analytic-output/
+    3-capabilities/structured-analysis/
       domain/
         model.ts
         errors.ts
         validation.ts
         executor.ts
       application/
-        analyticOutputRuntime.ts
+        structuredAnalysisService.ts
       ports/
-        analyticDataReader.ts
-        analyticOutputStore.ts
+        structuredDataReader.ts
+        structuredAnalysisStore.ts
       persistence/
-        sqliteAnalyticOutputStore.ts
+        sqliteSchema.ts
+        sqliteStructuredAnalysisStore.ts
+      wire/
+        commandSchemas.ts
+        querySchemas.ts
+        valueSchemas.ts
       docs/
-        README.md
-        concepts.md
-        types.md
-        runtime.md
-        flows.md
-        invariants.md
+        README.md concepts.md types.md runtime.md flows.md invariants.md
       index.ts
 
-    1-init/create/analytic-output.ts
-    4-job-wiring/analytic-output/registerAnalyticOutputEndpoints.ts
+    1-init/create/structured-analysis.ts
+    4-job-wiring/structured-analysis/registerStructuredAnalysisEndpoints.ts
 
-  test/capabilities/analytic-output.test.ts
+  test/capabilities/
+    structured-analysis.test.ts
+    structured-analysis-wiring.test.ts
 ```
 
-This uses the current layered capability convention without splitting the small
-design into unnecessary modules.
+This is the current layered shape, including the `wire/` package. Comments,
+Persona, and Templates all decode with `exactKeys` inside the capability and
+call the decoder from wiring; a definition with nested inputs, joins, filters,
+and placements is exactly the recursive-payload case that pattern exists for.
 
 ## Responsibilities
 
 | File | Responsibility |
 | --- | --- |
-| `domain/model.ts` | `AnalyticOutput`, inputs, joins, fields, filters, sorts, graph kind, requests, and transient result types |
-| `domain/errors.ts` | validation, not-found, stale-revision, data, and dependency errors |
-| `domain/validation.ts` | structural definition validation and Formula-limit checks |
-| `domain/executor.ts` | pure normalization, joins, filters, aggregation, sorting, limit, and result construction |
-| `ports/analyticDataReader.ts` | resolve all requested binding IDs from one project snapshot |
-| `ports/analyticOutputStore.ts` | insert, get, list, revision update, and soft delete |
-| `persistence/sqliteAnalyticOutputStore.ts` | the one-table SQLite implementation and schema initialization |
-| `application/analyticOutputRuntime.ts` | six runtime methods, data-reader/executor coordination, IDs, clock, and logs |
-| `registerAnalyticOutputEndpoints.ts` | six exact routes, small request decoders, queues, and error mapping |
+| `domain/model.ts` | `StructuredAnalysis`, definition parts, graph, commands, queries, transient result types |
+| `domain/errors.ts` | validation, not-found, stale-revision, not-deleted, catalog-limit, and data errors |
+| `domain/validation.ts` | structural definition validation, limits, and the structural graph contract |
+| `domain/executor.ts` | pure normalize → join → filter → project → aggregate → sort → limit → result |
+| `ports/structuredDataReader.ts` | resolve requested names from one project snapshot |
+| `ports/structuredAnalysisStore.ts` | current-state reads and writes, history, purge, retention |
+| `persistence/sqliteSchema.ts` | table names, DDL, pragmas, shared history schema |
+| `persistence/sqliteStructuredAnalysisStore.ts` | the adapter, CAS + history transactions |
+| `application/structuredAnalysisService.ts` | command/query dispatch, reader and executor coordination, IDs, clock, logs |
+| `wire/` | strict decoders with exact-key rejection and byte limits |
+| `registerStructuredAnalysisEndpoints.ts` | two routes, queue choice, error mapping |
 
-The SQLite schema stays in the concrete store. Request decoding stays in the
-single endpoint registrar. There is no separate canonical-digest module, wire
-schema package, schema migration subsystem, materialization service, or job
-payload family.
+The executor imports no store, reader, logger, clock, or job type. It is a
+function from values to values, which is what makes the whole pipeline testable
+without SQLite or a resolver.
 
 ## Dependency direction
 
@@ -61,9 +66,9 @@ payload family.
 flowchart LR
   Model[domain/model]
   Domain[validation + executor]
-  Ports[store + data-reader ports]
+  Ports[store + reader ports]
   Store[SQLite store]
-  Runtime[application runtime]
+  Service[application service]
   Factory[startup factory]
   Resolver[FormulaNameResolver]
   Wiring[endpoint wiring]
@@ -71,121 +76,152 @@ flowchart LR
   Model --> Domain
   Model --> Ports
   Ports --> Store
-  Domain --> Runtime
-  Ports --> Runtime
+  Domain --> Service
+  Ports --> Service
   Store --> Factory
-  Runtime --> Factory
+  Service --> Factory
   Resolver --> Factory
-  Runtime --> Wiring
+  Service --> Wiring
 ```
 
-The capability may import Formula wire/rational types and helpers. It does not
-import `#structured-data`; project data reaches it only through
-`AnalyticDataReader`. The executor imports no store, reader, logger, clock, or
-job type.
+The capability imports Formula's wire and rational types and helpers. It does
+**not** import `#structured-data`; project data arrives only through
+`StructuredDataReader`.
 
-## Resolver adapter
+### A required Formula barrel change
 
-The startup factory adapts the existing `FormulaNameResolver`:
+The executor needs exact arithmetic and comparison — `add`, `sub`, `mul`, `div`,
+`compare`, `eq`, and the rational `toWire`/`fromWire`. All exist in
+`0-platform/formula/rational.ts`, but `#formula`'s barrel currently exports only
+`makeRational`, `fromDecimalString`, `toDecimalString`, `fromInt`, `ZERO`, and
+`ONE`.
+
+Either add those helpers to the barrel, or deep-import `#formula/rational.js`.
+There is precedent for the deep form (`#formula/resolver.js` and
+`#formula/value-identity.js` are both imported that way), but extending the
+barrel is the better change: exact arithmetic is a first-class part of what
+Formula offers consumers.
+
+## The reader adapter
+
+`1-init/create/structured-analysis.ts` adapts the existing `FormulaNameResolver`:
 
 ```ts
-const reader: AnalyticDataReader = {
-  async readAll(bindingIds) {
+const reader: StructuredDataReader = {
+  async readAll(names) {
     const snapshot = await formulaResolver.buildSnapshot();
-    const byId = new Map(
-      [...snapshot.bindings.values()].map(binding => [
-        binding.reference.bindingId,
-        binding
-      ])
-    );
+    const out = new Map<string, AnalysisInputResolution>();
 
-    const values = new Map<string, FormulaWireValue>();
-    for (const bindingId of new Set(bindingIds)) {
-      const binding = byId.get(bindingId);
-      if (!binding) {
-        // getIssue(bindingId) distinguishes unresolved from unknown data.
-        throw new AnalyticDataError(bindingId);
+    for (const name of new Set(names.map(normalizeKey))) {
+      const binding = snapshot.bindings.get(name);
+      if (binding) {
+        out.set(
+          name,
+          isWireSerializable(binding.value)
+            ? { kind: "value", value: toWire(binding.value) }
+            : { kind: "unresolved", code: "not_serializable" }
+        );
+        continue;
       }
-      if (!isWireSerializable(binding.value)) {
-        throw new AnalyticDataError(bindingId);
-      }
-      values.set(bindingId, toWire(binding.value));
+      // The snapshot omits entries that failed to resolve. getIssue is keyed by
+      // entry id, so a name miss is looked up through the entry, distinguishing
+      // "broken formula" from "no such name".
+      const issue = resolverIssueForName(formulaResolver, name);
+      out.set(
+        name,
+        issue
+          ? { kind: "unresolved", code: issue.code, detail: issue.displayName }
+          : { kind: "missing" }
+      );
     }
-    return values;
+    return out;
   }
 };
 ```
 
-One call builds one snapshot for all inputs. A scan/index by binding ID is
-necessary because the current resolver map is keyed by normalized display
-name. Saved display names are never used as a fallback.
+One `buildSnapshot()` call serves every input in a run — that is the mechanism
+behind invariant 2. The resolver already caches by entries signature, so
+repeated runs against unchanged project data are cheap.
+
+Because `snapshot.bindings` is keyed by normalized display name, the lookup is a
+direct `Map.get`. No secondary index is built.
 
 ## Construction and startup
 
-`1-init/create/analytic-output.ts` opens the normal fixed capability database:
+`1-init/create/structured-analysis.ts` opens the normal fixed capability
+database:
 
 ```text
-./data/analytic-output.db
+./data/structured-analysis.db
 ```
 
-It constructs the store, resolver adapter, and runtime with `config.userId` and
-the relevant existing Formula limits. No new backend configuration section is
-introduced.
+It constructs the store, the reader adapter, and the service with
+`config.userId` for attribution and `config.structuredAnalysis` for limits.
 
-`startBackend.ts` constructs the runtime after the Formula resolver, adds one
-`analyticOutputReady` startup field, and registers the six endpoints. It does
-not register Analytic Output with Knowledge or the resource registry and does
-not register startup recovery or internal jobs.
+`startBackend.ts`:
+
+1. constructs the service **after** `formulaResolver` exists;
+2. adds `structuredAnalysisReady` to the startup log;
+3. registers the two endpoints; and
+4. adds `bindResourceRetentionPort("structured-analysis", structuredAnalysis)`
+   to the retention scheduler list.
+
+It does not register with Knowledge or the resource registry, and it has no
+startup recovery or internal jobs.
+
+## Configuration
+
+Add a `structuredAnalysis` section to `etc/configuration.yaml`, a
+`StructuredAnalysisConfig` interface plus `DEFAULT_CONFIG` entry and
+`parseStructuredAnalysisConfig` in `loadBackendConfig.ts`, and a row in
+`etc/README.md`. Values are listed in [operations.md](operations.md#limits).
 
 ## Imports
 
-Add the ordinary root and wildcard aliases to both
-`apps/backend/package.json#imports` and `apps/backend/tsconfig.json`:
+Add the ordinary aliases to both `apps/backend/package.json#imports` and
+`apps/backend/tsconfig.json`, using the same `development` / `types` /
+`default` conditions as every other capability:
 
 ```text
-#analytic-output
-#analytic-output/*
+#structured-analysis
+#structured-analysis/*
 ```
-
-They use the same `development`, `types`, and compiled `default` conditions as
-the other current capability aliases.
 
 ## Tests
 
-One capability-level test file is enough initially. It uses `node:test`, a
-temporary SQLite path, deterministic IDs/clock, a fake `AnalyticDataReader`,
-and `CapturingLogger`.
+`structured-analysis.test.ts` — `node:test`, a temporary SQLite path,
+deterministic IDs and clock, a fake `StructuredDataReader`, and
+`CapturingLogger`:
 
-It covers:
+- create, get, list, wholesale update, stale revision, delete, and purge;
+- delete archives a final snapshot and a tombstone; purge before delete fails;
+- `pruneHistory` keeps current resources and `expiredDeleted` finds tombstones;
+- structural validation: aliases, ordered joins, field references, filter
+  shapes, sort targets, limits, and the structural graph contract;
+- executor: one input, inner join, left join with nulls, chained join;
+- filters before aggregation; sorts and limit after aggregation; stable sort;
+- exact `sum`/`average` as rationals, `min`/`max` kind rules, empty-group nulls;
+- null never matching null in a join key;
+- exactly one reader call per run, no matter how many inputs;
+- `analysisRevision` reflects the captured revision when an update races a run;
+- missing name vs unresolved name produce distinguishable 422 details;
+- each run limit rejects rather than truncating.
 
-- create, read, list, wholesale update, stale revision, and soft delete;
-- structural validation of input IDs, ordered joins, field references, filter
-  values, and sort placement IDs;
-- one input, an inner join, a left join, and a chained join;
-- filters before aggregation and sorts/limit after aggregation;
-- exact sum and average, null behavior, and graph shelf validation;
-- one resolver read for every input in a data call;
-- `outputRevision` when an update occurs during a run;
-- all six endpoint mappings and error statuses; and
-- expected log counts without raw authored or result data.
+`structured-analysis-wiring.test.ts` drives a real registry and scheduler:
+command is serial, query is concurrent, and each error maps to its documented
+status.
 
-The existing HTTP smoke script should add one short flow: declare two small
-Structured Data tables, save an output that joins them, call
-`POST /analytic-outputs/data`, assert the returned fields/rows and graph kind,
-then delete the output. Existing HTTP/job/resolver/runtime logs provide timing
-statistics; no analytic statistics subsystem is needed.
+The HTTP smoke script adds one flow: declare two small Structured Data tables,
+save an analysis that joins them, run `analysis.data`, assert the fields, rows,
+and graph, then delete and purge it.
 
 ## Capability docs
 
-Implementation creates the standard in-tree docs set:
+Implementation creates the standard in-tree set — `README.md` (status,
+boundary, source map), `concepts.md` (pills, aliases, ordered joins, the graph
+as recipe), `types.md`, `runtime.md`, `flows.md`, `invariants.md`.
 
-- `README.md` — purpose, boundary, code map, and reading order;
-- `concepts.md` — Tableau-like inputs, ordered joins, shelves, and a Mermaid
-  flow;
-- `types.md` — every persisted and transient type;
-- `runtime.md` — the six runtime methods and supporting functions;
-- `flows.md` — endpoints, jobs, reader, executor order, errors, and logs; and
-- `invariants.md` — the small guarantees and explicit first-version omissions.
-
-Those docs should describe the implemented code, not reintroduce result
-history, rendering, or publication concepts.
+They describe implemented code. They must not reintroduce result history,
+rendering, or publication concepts, and `invariants.md` should state the
+rename-breaks-a-saved-analysis consequence plainly rather than leaving it to be
+rediscovered.
