@@ -70,7 +70,7 @@ Every `registry.register` call hard-codes `queueType`. The rule in practice:
   `POST /connector/delete`, `PATCH /derived-output-definition`, `DELETE /derived-outputs`,
   `POST /audit`.
 - **concurrent** — reads, and mutations whose store already does its own compare-and-swap:
-  all queries, all Context endpoints (21 of them), all Structured Data endpoints (15),
+  all queries, all Context endpoints (9 of them), all Structured Data endpoints (15),
   Connector reads, `POST /derived-output-refresh`.
 
 Note the asymmetry that reveals the reasoning: Document/Slide commands are serial because the
@@ -204,8 +204,8 @@ set by a crashed process.
 
 | Wiring file | Count |
 | --- | --- |
-| `context/registerContextEndpoints.ts` | 21 |
 | `structured-data/registerStructuredDataEndpoints.ts` | 15 |
+| `context/registerContextEndpoints.ts` | 9 |
 | `connector/registerConnectorEndpointMappings.ts` | 9 |
 | `derived-outputs/registerDerivedOutputEndpoints.ts` | 6 |
 | `general-files/registerGeneralFileEndpointMappings.ts` | 5 |
@@ -214,8 +214,9 @@ set by a crashed process.
 | `slide/registerSlideEndpoints.ts` | 2 |
 | `activity/registerActivityEndpoints.ts` | 2 |
 
-Note the inverse relationship between endpoint count and capability complexity. Context
-exposes 21 fine-grained REST-ish routes; Document — by far the largest capability — exposes
-**two**: `POST /documents/command` and `POST /documents/query`, with a discriminated-union
-body. The command/query pair is the newer, preferred shape (Document, Slide, Activity all use
-it); the fine-grained style in Context/Structured Data/Connector is the earlier one.
+Note the inverse relationship between endpoint count and capability complexity. Structured
+Data exposes 15 fine-grained REST-ish routes; Document — by far the largest capability —
+exposes **two**: `POST /documents/command` and `POST /documents/query`, with a
+discriminated-union body. The command/query pair is the newer, preferred shape (Document,
+Slide, Activity all use it); the fine-grained style in Context/Structured Data/Connector is
+the earlier one.

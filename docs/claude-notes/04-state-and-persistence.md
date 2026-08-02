@@ -147,7 +147,7 @@ runner — a fact the Database docs state explicitly.
 | `data/activity.db` | Activity (not yet created on disk) |
 | `data/knowledge.db` | Knowledge platform (`0-platform/database/knowledge-store.ts`) |
 | `data/structured-data.db` | Structured Data |
-| `data/contexts.db` | Context (holds both user and project scoped tables) |
+| `data/contexts.db` | Context (single project-scoped table; no user scope) |
 | `data/derived-outputs.db` | Derived Outputs |
 | `data/general-files.db` | General Files |
 | `data/connector.db` | Connector |

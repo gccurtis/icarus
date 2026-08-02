@@ -10,7 +10,7 @@ Nine directories under `3-capabilities`. Status column reflects what was measure
 | `activity` | Layered | 2 | `activity.db` | Append-only + TTL leases | Ledger complete; Presence writes 501 |
 | `connector` | Layered | 9 | `connector.db` | Atomic revisioned | Complete; filesystem provider only |
 | `general-files` | Layered | 5 | `general-files.db` | Content-addressed | Complete |
-| `context` | Flat | 21 | `contexts.db` | Atomic revisioned | Complete |
+| `context` | Flat | 9 | `contexts.db` | Atomic revisioned | Complete |
 | `structured-data` | Flat | 15 | `structured-data.db` | Atomic revisioned | Complete |
 | `derived-outputs` | Hybrid | 6 | `derived-outputs.db` | Attempt + settlement | Complete |
 | `built-in` | Functions | 4 | — | Stateless | Complete |
@@ -155,22 +155,22 @@ parser, or text extractor lives here — decoding is the caller's job.
 
 ## context
 
-Named sets of typed resource references (`ContextEntry { id, kind }`), with **two scopes**
-(`user` and `project`) in the same database file as separate tables.
+Named sets of typed resource references (`ContextEntry { id, kind }`), scoped only by
+`projectId` — there is no user scope and no user/project fallback.
 
-- Lookups are **project-first with user fallback**.
 - `resolve()` recursively expands `kind: "context"` entries into leaves, with a `seen` cycle
   guard and `maxResolveDepth` (10). Missing/deleted IDs are **silently omitted**.
-- Pure set algebra: `combine` / `difference`, plus `compose(op, a, b)` which persists the
-  result as an *anonymous* context named `~<uuid>` (listing excludes `~`-prefixed records
+- Pure set algebra: `combine` / `difference`, plus `composeNamed(op, a, b, displayName, description?)`
+  which resolves each operand (by existing context ID or inline entries), applies union/difference,
+  and persists the result as a new **caller-named** context (listing excludes `~`-prefixed records
   unless `includeAnonymous=true`).
-- `promote(id)` copies a user context into project scope, erroring on name conflict.
 
 `ContextManager` **structurally satisfies `KnowledgeResourceResolver`**, which is why it can
 be injected into Knowledge without either knowing about the other.
 
-21 endpoints — the same 10 operations mirrored across `/user/contexts/*` and
-`/project/contexts/*`, plus `POST /user/contexts/promote`.
+9 endpoints under `/contexts/*`: declare, list, get, get-by-name, update, delete, resolve, plus
+the two persisted composition endpoints `POST /contexts/union` and `POST /contexts/difference`,
+which return only `{contextId}`.
 
 ---
 
