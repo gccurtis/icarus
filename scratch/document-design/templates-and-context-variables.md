@@ -46,6 +46,12 @@ never creates, mutates, or deletes a Context record; it only references one.
 - A variable binds exactly one `ContextEntry`. Grouping several resources is
   Context's job, not Document's, and is now a single call to
   `POST /contexts/union`.
+- Registration and instantiation apply the **same** binding override rule:
+  absent key inherits, present key with `entry` sets, present key without
+  `entry` explicitly unbinds. Registration records defaults; instantiation
+  overrides them. Nothing is cleared automatically.
+- Bindings are optional at both steps. Unbound variables are legal state on any
+  Document; only Prompt work that needs a concrete scope is refused.
 - A resolved Prompt context is never allowed to be empty, because an empty
   entry array is whole-project retrieval in Knowledge rather than an empty
   scope.
@@ -92,8 +98,8 @@ This is a deliberate relaxation of an earlier draft, which allowed unbound
 variables only in template mode and required a normal Document to have every
 referenced variable bound. Two things forced the change:
 
-- registration **clears** every variable target, so a freshly registered
-  template is entirely unbound by construction; and
+- a registration may deliberately leave variables unbound, by naming them with
+  no `entry`, so that the template is a pure function of its arguments; and
 - instantiation bindings are optional, so an instance may legitimately be
   created with variables its author intends to fill in afterwards.
 
@@ -437,19 +443,29 @@ structure rather than a Document peculiarity:
 
 ```ts
 /** Owned by Templates; reproduced here for reference. */
+interface TemplateContextBinding {
+  /** Omitted means "explicitly unbound", not "leave alone". */
+  readonly entry?: ContextEntry;
+
+  /** Template documentation; never copied into the instantiated Document. */
+  readonly description?: string;
+}
+
+/** User-facing variable name -> binding. Normalised to {} when absent. */
+type TemplateContextBindings = Readonly<Record<string, TemplateContextBinding>>;
+
 interface TemplateInstantiationInput {
   /** Omitted means the instance keeps the backing template's title. */
   readonly title?: string;
 
-  /** User-facing variable name -> project resource/context reference.
-   *  Omitted, empty, and partial are all legal. */
-  readonly contextBindings?: Readonly<Record<string, ContextEntry>>;
+  readonly contextBindings: TemplateContextBindings;
 }
 
 interface DocumentTemplateCopyRuntime {
   createTemplateCopy(input: {
     sourceDocumentId: string;
     templateId: string;
+    contextBindings: TemplateContextBindings;
     idempotencyKey: string;
   }): Promise<DocumentHead>;
 
@@ -471,23 +487,47 @@ Startup wraps this runtime in the structurally matching
 `TemplateResourceAdapter` owned by Templates. That integration adapter is the
 only place that imports both contracts.
 
-The Document copy runtime strictly decodes `DocumentTemplateArguments`.
-Binding names are matched case-insensitively against the frozen template
-snapshot. Unknown names, duplicate normalized names, malformed targets, or a
-missing binding for any referenced unbound variable reject instantiation.
+Bindings are decoded strictly at the Templates wire boundary. The copy runtime
+then matches binding names case-insensitively against the frozen source
+snapshot. Unknown names, duplicate normalized names, and malformed targets
+reject the copy.
 
-Bindings override template defaults. Variables not named in
-`contextBindings` retain the backing template's current target. Context
-records and other targets are referenced, not copied.
+Both copy directions apply one rule, so there is a single implementation used
+twice:
+
+| Binding for a variable | Effect on the destination |
+|---|---|
+| Not a key in the record | Keeps whatever the source held |
+| Key present with `entry` | `entry` becomes the destination's target |
+| Key present, `entry` omitted | Destination variable is unbound |
+
+At registration the source is the original Document and the destination is the
+backing template, so the result is the template's defaults. At instantiation
+the source is the template and the destination is the instance, so the result
+overrides those defaults. Nothing is cleared implicitly in either direction.
+
+`description` is template documentation. It is carried on the binding record
+for whoever reads the template, and is **not** written into the destination
+Document's variable state.
+
+**A missing binding is not an error.** Bindings may be omitted, empty, or
+partial; an unnamed variable stays as the source left it. The destination is
+created either way, and any variable can be bound later through the ordinary
+`context-variable.update` operation.
+
+Instantiation therefore performs **no** whole-Document scope pre-check. An
+earlier draft resolved every copied Prompt Block's context before committing
+and rejected the instantiation if any resolved to zero entries. That is
+incompatible with optional bindings: the common case — instantiate now, bind
+afterwards — would fail at creation. Both the unbound-variable and empty-scope
+rules are enforced where they belong, at Prompt work admission on the created
+instance.
 
 Each binding is exactly one `ContextEntry`; the runtime does not accept inline
 entry arrays and does not compose Contexts. A caller who needs a grouped target
 creates it first through `POST /contexts/union` and passes the returned ID.
 
-Instantiation resolves every copied Prompt Block's context spec under the
-applied bindings before it commits, and rejects the instantiation if any
-resolves to zero entries. This keeps the empty-scope rule an admission check
-rather than a failure discovered on the instance's first refresh.
+Context records and other targets are referenced, not copied.
 
 ## Copy semantics
 
@@ -498,8 +538,8 @@ revision-zero Base. They do not replay source ChangeSets.
 |---|---|
 | Page layout, styles, Rows, Blocks, lists, tables, Rich Content | Copy the frozen snapshot. |
 | Destination Document ID | Use the supplied Template ID or normal resource ID. |
-| Title | Registration copies the source title; instantiation uses the required destination title. |
-| Context Variables | Copy IDs/names/default targets; apply instance binding overrides before commit. |
+| Title | Registration copies the source title; instantiation uses the supplied title, or the template's title when none is given. |
+| Context Variables | Copy IDs and names always. Apply the supplied bindings by name under the override rule above — set, explicitly unbind, or inherit. Identical at registration and instantiation. |
 | Row/Block/style/list/table/atom/mark IDs | Preserve; these identities are scoped by the new Document ID. |
 | Formula atoms and last accepted results | Copy as authored snapshot state. |
 | Media and ordinary resource references | Preserve as references; do not duplicate targets. |
@@ -541,10 +581,19 @@ revision containing that exact content/evidence/status and uses revision `1`
 as its applied copy. It does not copy the source output's entire revision
 history. Exact retry returns the same cloned output.
 
-When instance bindings change the effective Context, Document immediately
-performs a keyed definition update on the clone. Its copied revision remains
-available as stabilization/history, while freshness becomes stale. A later
-normal refresh generates content grounded in the instance binding.
+When a copy produces a **resolvable** effective Context that differs from the
+source's, Document immediately performs a keyed definition update on the clone.
+Its copied revision remains available as stabilization/history, while freshness
+becomes stale. A later normal refresh generates content grounded in the new
+binding.
+
+When the copy leaves a Prompt Block's context **unresolvable** — because a
+binding explicitly unbound a variable, or because the source was already
+unbound and nothing supplied one — Document performs no definition update. The
+clone keeps the source's concrete definition untouched, and the Block is simply
+blocked from refresh under the admission rule above until a target is supplied.
+The previous definition is inert, not authoritative, and never becomes the
+destination's effective scope without an explicit binding.
 
 No two source or destination Prompt Blocks share an output ID.
 
@@ -573,15 +622,17 @@ The adapter performs:
 1. Freeze the source head revision and load that exact snapshot.
 2. Validate source mode: registration requires a normal Document;
    instantiation requires a template-mode Document.
-3. Freeze and validate all referenced Prompt definitions. Registration
-   requires synchronized concrete Prompt contexts. Instantiation may accept an
-   intentionally unresolved template context only when the supplied bindings
-   resolve every variable used by that Prompt.
+3. Freeze and validate all referenced Prompt definitions. Registration requires
+   the *source* to have synchronized concrete Prompt contexts, so a template is
+   never cut from an already-broken Document. Neither mode requires the
+   *destination* to be fully resolvable — that is the whole point of a
+   template.
 4. Persist the copy attempt and destination inputs.
 5. Clone each dedicated output with a key derived from the attempt and source
    Block ID, recording the returned mapping.
-6. Rewrite Prompt references, apply instance bindings, and update cloned
-   definitions whose effective Context changed.
+6. Rewrite Prompt references and apply the supplied bindings under the override
+   rule — the same code path for both modes. Update only those cloned
+   definitions whose effective Context both changed and remains resolvable.
 7. Atomically create the destination head, revision-zero Base, identity
    ledger, Prompt ownership rows, command receipt, and creation Activity
    outbox fact.
@@ -629,17 +680,19 @@ are upgraded by materializing a version 2 Base:
 
 If an existing Prompt output is missing, migration records a diagnostic and
 does not invent an empty scope, because empty would mean unrestricted project
-retrieval. New changes are blocked for that broken Prompt until it is repaired
-or removed.
+retrieval. The Block migrates with `{ entries: [], variableIds: [] }`.
 
 A version 1 Prompt may also have been declared with a genuinely empty
 `contextEntries`, which today means whole-project retrieval. The empty-scope
 rule makes that unrepresentable going forward, so migration must not silently
-re-admit it. Such a Prompt migrates to `{ entries: [], variableIds: [] }`,
-is recorded with the same diagnostic, and is blocked from further changes until
-an explicit scope is authored. Migration never rewrites it into a
-whole-project entry set, because that would bake an implicit behaviour into
-canonical state.
+re-admit it. Such a Prompt migrates the same way and carries the same
+diagnostic. Migration never rewrites it into a whole-project entry set, because
+that would bake an implicit behaviour into canonical state.
+
+In both cases the Document remains fully editable and loadable — the Block is
+simply in the ordinary unresolvable state, and is refused Prompt work under the
+same admission rule as an unbound variable until a scope is authored. Migration
+introduces no separate blocked-Document concept.
 
 ## Queries and projections
 
@@ -680,20 +733,29 @@ Document Activity transaction.
    fails as `unbound_context_variable`, and a resolution that deduplicates to
    zero entries fails as `empty_context_scope`. Document never sends an empty
    `contextEntries` array to Derived Outputs.
-6. Concrete Derived Output context is the deduplicated resolution of the
+6. Both failures in invariant 5 are **admission checks on Prompt work**, not
+   validity checks on a Document. An unresolvable Prompt Block is legal stored
+   state in either mode; it is refused only prompt creation, refresh, and
+   definition synchronization, and keeps showing its last applied revision
+   meanwhile.
+7. Registration and instantiation apply one binding override rule: an absent
+   key inherits the source's target, a key with `entry` sets it, and a key
+   without `entry` unbinds it. Nothing is cleared implicitly, and a binding's
+   `description` is never written into destination Document state.
+8. Concrete Derived Output context is the deduplicated resolution of the
    Prompt Block's current context spec.
-7. Every copied Prompt Block owns a newly cloned Derived Output ID.
-8. A destination begins at revision 0 with no copied history, receipts,
-   attempts, comments, or Activity history.
-9. Context and other resource targets are referenced, not copied. Document
+9. Every copied Prompt Block owns a newly cloned Derived Output ID.
+10. A destination begins at revision 0 with no copied history, receipts,
+    attempts, comments, or Activity history.
+11. Context and other resource targets are referenced, not copied. Document
     never creates, mutates, or deletes a Context record, and never copies a
     Context's `displayName`, `description`, or `private` flag into Document
     state.
-10. Exact adapter retries return the same destination and output mapping.
-11. Templates cannot be deleted through an ordinary Document mutation.
-12. Variable targets are validated structurally only. Target liveness is never
+12. Exact adapter retries return the same destination and output mapping.
+13. Templates cannot be deleted through an ordinary Document mutation.
+14. Variable targets are validated structurally only. Target liveness is never
     checked at authoring time; it is enforced where a concrete scope is
-    produced, by invariant 5.
+    produced, by invariants 5 and 6.
 
 ## Deferred
 

@@ -201,6 +201,10 @@ document:
     maxTableRows: 1000
     maxTableColumns: 256
 
+# Templates catalog limits.
+templates:
+  maxTemplatesPerProject: 500
+
 # Project and user identifiers.
 projectId: default
 userId: default-user

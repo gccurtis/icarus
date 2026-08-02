@@ -76,6 +76,10 @@ export interface DerivedOutputConfig {
   maxToolRounds: number;
 }
 
+export interface TemplateConfig {
+  maxTemplatesPerProject: number;
+}
+
 export interface DocumentConfig {
   history: {
     retainedBaseCount: number;
@@ -117,6 +121,7 @@ export interface BackendConfig {
   context: ContextManagerConfig;
   derivedOutputs: DerivedOutputConfig;
   document: DocumentConfig;
+  templates: TemplateConfig;
   projectId: string;
   userId: string;
 }
@@ -218,6 +223,9 @@ const DEFAULT_CONFIG: BackendConfig = {
   derivedOutputs: {
     maxPlanQueries: 8,
     maxToolRounds: 8
+  },
+  templates: {
+    maxTemplatesPerProject: 500
   },
   document: {
     history: {
@@ -387,6 +395,8 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     (parsed.derivedOutputs as Record<string, unknown> | undefined) ?? {};
   const document =
     (parsed.document as Record<string, unknown> | undefined) ?? {};
+  const templates =
+    (parsed.templates as Record<string, unknown> | undefined) ?? {};
   const configuredOpenRouterApiKey = parseString(
     openrouter.apiKey,
     DEFAULT_CONFIG.intelligence.providers.openrouter.apiKey,
@@ -484,7 +494,8 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     richText: parseRichTextLimitsConfig((parsed.richText as Record<string, unknown> | undefined) ?? {}, DEFAULT_CONFIG.richText),
     context: parseContextConfig(context, DEFAULT_CONFIG.context),
     derivedOutputs: parseDerivedOutputConfig(derivedOutputs, DEFAULT_CONFIG.derivedOutputs),
-    document: parseDocumentConfig(document, DEFAULT_CONFIG.document)
+    document: parseDocumentConfig(document, DEFAULT_CONFIG.document),
+    templates: parseTemplateConfig(templates, DEFAULT_CONFIG.templates)
   };
 };
 
@@ -520,6 +531,12 @@ function parseContextConfig(raw: Record<string, unknown>, defaults: ContextManag
   return {
     maxEntriesPerContext: parseNumber(raw.maxEntriesPerContext, defaults.maxEntriesPerContext, "context.maxEntriesPerContext"),
     maxResolveDepth: parseNumber(raw.maxResolveDepth, defaults.maxResolveDepth, "context.maxResolveDepth")
+  };
+}
+
+function parseTemplateConfig(raw: Record<string, unknown>, defaults: TemplateConfig): TemplateConfig {
+  return {
+    maxTemplatesPerProject: parseNumber(raw.maxTemplatesPerProject, defaults.maxTemplatesPerProject, "templates.maxTemplatesPerProject")
   };
 }
 

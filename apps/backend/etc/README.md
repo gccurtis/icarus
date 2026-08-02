@@ -9,6 +9,15 @@
 - `workerPool.concurrentWorkers`: maximum number of concurrently running jobs.
 - `queue.serialMaxSize`: maximum pending jobs for serial work.
 - `queue.concurrentMaxSize`: maximum pending jobs for concurrent work.
+- `templates.maxTemplatesPerProject`: maximum live Template catalog records
+  (default 500). Checked before a registration reserves its identity, so
+  exceeding it fails with `400 catalog_limit_exceeded` and creates no backing
+  resource.
+
+Sections not yet documented here: `logging`, `intelligence`, `formula`,
+`structuredData`, `richText`, `context`, `derivedOutputs`, `document`,
+`projectId`, `userId`. Their defaults are in `DEFAULT_CONFIG` in
+`src/0-utils/config/loadBackendConfig.ts`.
 
 ## Notes
 

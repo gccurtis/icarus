@@ -13,9 +13,9 @@ template makes another detached copy, this time as a normal resource. The
 source, the backing template, and every instance can be edited independently.
 
 The organising idea is that **a template turns a resource into a function of
-its Context Variables**. Registration keeps the resource's structure and clears
-what its variables pointed at; instantiation supplies the arguments, or leaves
-them to be filled in later.
+its Context Variables**. Registration keeps the resource's structure and records
+default bindings for its variables; instantiation overrides those defaults, or
+leaves them to be filled in later.
 
 The first version is deliberately narrow:
 
@@ -50,9 +50,9 @@ rules. Templates never reads or writes another capability's tables directly.
 
 Context in particular is untouched. Templates has no Context runtime
 dependency, declares no Context port, and never creates, mutates, resolves, or
-deletes a Context record. Instantiation arguments may *reference* a Context,
-but only as an opaque `(kind, id)` pair that the owning resource adapter
-decodes — see the
+deletes a Context record. Instantiation bindings may *reference* a Context, but
+only as an opaque `(kind, id)` pair that the owning resource adapter
+interprets — see the
 [Templates and Context Variables addendum](document-design/templates-and-context-variables.md).
 Because Context is now project-scoped only, with no user scope and no
 project-then-user fallback, such a reference resolves identically for every
@@ -79,6 +79,9 @@ interface TemplateRecord {
   /** ID used to open the backing copy through the owning capability. */
   readonly resourceId: string;
 
+  /** Optional catalog annotation: what this template is for. */
+  readonly description?: string;
+
   readonly createdAt: string;
 }
 ```
@@ -89,11 +92,27 @@ entry it has never seen; it has no basis on which to name that entry. So
 `template.register` takes no ID, and the allocated `TemplateRecord` is the
 command's result.
 
-This is deliberately different from resource creation. Resource IDs *are*
-caller-supplied throughout this backend — `document.create` takes a
-`documentId` — because the caller is creating something it will immediately
-address. The Template ID is catalog identity, not resource identity, and the
-catalog is Templates' own concept.
+### Which identifiers a caller supplies
+
+There is no single rule for this across the backend. Three conventions coexist,
+and which one applies depends on who is naming what:
+
+| Convention | Capabilities | Retry safety comes from |
+|---|---|---|
+| Caller-supplied | Document, Slide — aggregate IDs and internal structural IDs (`documentId`, `blockId`) | Request receipts keyed by `(resourceId, requestId)` |
+| Allocated internally | Context (`randomUUID`), Derived Outputs | A caller-supplied idempotency key or request ID |
+| Derived from content | General Files (`sha256(content)`), Connector (`sha256(providerKind::locator)`) | Identity is a pure function of the input |
+
+Templates follows the **second** convention, and Derived Outputs is the direct
+precedent: it allocates its own output ID inside `declare()` and takes a
+caller-supplied `idempotencyKey` purely so a retry can be recognised. Templates
+does the same thing with `requestId`.
+
+The caller still supplies every identifier it is genuinely the author of — the
+registration `source`, and the `destinationResourceId` for an instance, which
+follows the first convention exactly as `document.create` does. What it does
+not supply is the catalog identity, because the catalog is Templates' own
+concept and the caller has never seen it.
 
 In version 1, `resourceId === id`: Templates allocates one identifier and hands
 it down to the adapter as the ID for the backing copy, exactly as a caller
@@ -114,6 +133,13 @@ mutable metadata. For a Document template, the backing Document's title is
 editable and can be used as the library label. An instantiated Document still
 receives its own destination title.
 
+`description` is not an exception to that rule, because it is not a copy of
+anything. The backing resource has no field it duplicates: it answers "what is
+this template for, and when should I reach for it?", which is a statement about
+the catalog entry rather than about the resource. It is supplied at
+registration and, in version 1, immutable thereafter — editing it is deferred
+along with the rest of catalog curation.
+
 A Template has no independent content revision. The backing resource's
 revision is authoritative. Editing the backing resource does not create a new
 Template record or change its ID.
@@ -128,15 +154,24 @@ interface TemplateResourceRef {
   readonly resourceId: string;
 }
 
-/** Variable name -> target. Names are the user-facing labels, not stable IDs. */
-type TemplateContextBindings = Readonly<Record<string, ContextEntry>>;
+interface TemplateContextBinding {
+  /** Omitted means "explicitly unbound", not "leave alone". */
+  readonly entry?: ContextEntry;
+
+  /** Optional note: what this variable is for, shown to whoever instantiates. */
+  readonly description?: string;
+}
+
+/** Variable name -> binding. Names are the user-facing labels, not stable IDs.
+ *  Normalised to {} when absent; an empty record and an omitted field mean the
+ *  same thing. A variable that is not a key here is left exactly as it is. */
+type TemplateContextBindings = Readonly<Record<string, TemplateContextBinding>>;
 
 interface TemplateInstantiationInput {
   /** Omitted means the instance keeps the backing template's title. */
   readonly title?: string;
 
-  /** Omitted, empty, and partial are all legal. */
-  readonly contextBindings?: TemplateContextBindings;
+  readonly contextBindings: TemplateContextBindings;
 }
 
 interface TemplateResourceAdapter {
@@ -145,6 +180,8 @@ interface TemplateResourceAdapter {
   createTemplateCopy(input: {
     sourceResourceId: string;
     templateId: string;
+    /** Defaults recorded on the template, applied over the copied source. */
+    contextBindings: TemplateContextBindings;
     idempotencyKey: string;
   }): Promise<void>;
 
@@ -184,6 +221,22 @@ function of its variables, whatever kind of resource it is. Hoisting that into
 in the house style, instead of pushing an unvalidated blob through the domain
 for a private decoder to interpret.
 
+**A binding is a pair, not a bare reference.** Each entry carries the target
+*and* an optional description of what the variable is for. A template is only
+useful if the person instantiating it can tell what `Main topic` is supposed to
+mean, and that explanation belongs beside the default rather than in prose
+somewhere else. The description is template documentation, not resource
+content: it is never copied into the instantiated resource's own state.
+
+`entry` is optional inside the pair so a template can declare a documented
+variable with no default at all.
+
+**Bindings are normalised, not optional.** `contextBindings` may be omitted on
+the wire, but the domain always sees a record — an absent field and `{}` mean
+exactly the same thing, so no code branches on `undefined`. This follows the
+codebase's habit of normalising at the edge rather than threading optionality
+inward.
+
 `ContextEntry` is a type-only import of the `{ id, kind }` atom, matching
 Structured Data and Derived Outputs. Templates still has no Context runtime,
 port, read, or write.
@@ -210,12 +263,16 @@ type TemplateCommand =
       type: "template.register";
       /** No templateId: Templates allocates it and returns it. */
       source: TemplateResourceRef;
+      description?: string;
+      /** Defaults recorded on the template. */
+      contextBindings?: TemplateContextBindings;
     }
   | {
       type: "template.instantiate";
       templateId: string;
       destinationResourceId: string;
       title?: string;
+      /** Overrides applied over the template's defaults. */
       contextBindings?: TemplateContextBindings;
     }
   | {
@@ -252,22 +309,31 @@ The public surface uses the repository's two static paths:
 There is no public command for setting `kind`, `resourceId`, or template mode
 on an existing resource. Registration always creates a copy.
 
-> **Under review (deviation D1 in
-> [`templates-implementation-plan.md`](templates-implementation-plan.md)).** The
-> plan argues `/templates/command` should be **concurrent**, not serial:
-> Templates holds no revisioned state, every mutation is a single-row store
-> invariant, and a serial adapter call would block the single serial slot —
-> and therefore every Document and Slide command — for the duration of a
-> cross-database resource copy. Not yet applied to this table.
+The command endpoint is serial because it mutates and the service
+reads-then-writes across several store calls that no single statement makes
+atomic:
+
+- `countLive()` and `reserve()` are separate statements, so concurrent
+  registrations could each observe room under `maxTemplatesPerProject` and then
+  all reserve, overshooting the limit;
+- claim-then-execute has the same shape — two concurrent retries of one
+  `requestId` would both observe a pending claim and both drive the adapter.
+
+This is the same reason Document and Slide commands are serial. An earlier
+draft of the implementation plan argued for `concurrent` on the grounds that
+every Templates invariant was a single-row store invariant. That was wrong:
+the catalog limit is not, and the argument also leaned on freeze behaviour in
+an adapter that does not exist yet.
 
 ## Registration flow
 
 ```text
-template.register(source kind + resourceId)
+template.register(source kind + resourceId, description?, contextBindings?)
   1. Claim requestId and its canonical command digest.
   2. Resolve the injected adapter for source.kind; unknown kind fails here.
   3. Allocate templateId and reserve the catalog row for it.
-  4. Ask the adapter to copy the frozen source as templateId in template mode.
+  4. Ask the adapter to copy the frozen source as templateId in template mode,
+     applying the supplied bindings as the template's defaults.
   5. Mark the record ready and complete the command claim with it.
 ```
 
@@ -287,22 +353,38 @@ Registration never turns the original resource into a template. Later changes
 to the original do not affect the backing template, and later changes to the
 backing template do not affect the original.
 
-### Registration clears the Context Variable bindings
+### Registration sets defaults; it does not clear anything
 
-A backing template copies its source's Context Variable **identities and
-names** but not their **targets**. Every variable on a freshly registered
-template is unbound.
+A backing template copies its source's Context Variables as they are, and then
+applies whatever `contextBindings` the registration supplied on top. There is
+no clearing pass.
 
-This is the point of the feature rather than a detail of it. Registering a
-template means "keep this resource's structure, forget what it was pointed at",
-so that the template is a function of its variables and each instantiation
-supplies the arguments. A template that silently retained the source's
-bindings would produce instances quietly grounded in whatever the original
-author happened to be working on.
+An earlier draft had registration wipe every variable target, on the theory
+that a template must start blank to be a function of its variables. That was
+solving a problem the binding record already solves, at the cost of a
+destructive step and of making a perfectly reasonable case — "this template
+should default to the Cars context unless told otherwise" — impossible to
+express. Once registration accepts bindings, the registrar decides:
 
-Direct, literally-authored references are not cleared — only variable targets.
-A template author who wants a reference to survive every instantiation authors
-it directly instead of through a variable.
+| Registration binding for a variable | Result on the template |
+|---|---|
+| Not a key in the record | Keeps whatever the source had |
+| Key present with `entry` | That target becomes the template's default |
+| Key present, `entry` omitted | Explicitly unbound |
+
+The third row is what replaces the old blanket clear, and it is deliberate
+rather than automatic. A registrar who wants the blank-template behaviour names
+the variables and omits their entries; a registrar who wants sensible defaults
+sets them; a registrar who supplies nothing gets a faithful copy.
+
+Instantiation then works the same way over the template's defaults, so the
+whole feature is one override rule applied twice rather than a clear-then-fill
+sequence. Nothing has to be undone, and a resource is never mutated into a
+state its author did not ask for.
+
+Direct, literally-authored references are untouched at both steps — only
+variables participate. A template author who wants a reference to survive every
+instantiation authors it directly instead of through a variable.
 
 The mechanics for Documents are in the
 [Templates and Context Variables addendum](document-design/templates-and-context-variables.md).
@@ -327,19 +409,33 @@ Instantiation reads the backing resource at one frozen revision. It never
 aliases the template's mutable state. A later template edit affects only later
 instantiations.
 
-### Bindings are optional
+### Bindings override defaults, and every part is optional
 
-`contextBindings` may be omitted, empty, or partial. A variable that no binding
-names stays unbound on the instance, and the owning resource capability can
-bind it later through its ordinary editing surface.
+Instantiation applies exactly the same override rule as registration, this time
+over the template's recorded defaults:
 
-This matters because instantiation is not the only moment a user can decide
-what a template points at. Requiring a complete binding set would force a
-caller to resolve every reference up front, when the natural flow is often to
-create the instance and then fill it in. The rule is therefore that unbound
-variables are legal state on any resource, and are only refused where they
-would actually cause harm — at the point a Prompt tries to produce a concrete
-Context scope. That admission check is described in the addendum.
+| Instantiation binding for a variable | Result on the instance |
+|---|---|
+| Not a key in the record | Keeps the template's default, bound or not |
+| Key present with `entry` | That target overrides the default |
+| Key present, `entry` omitted | Explicitly unbound on the instance |
+
+So `contextBindings` may be omitted, empty, or partial, and the common flows all
+work without special cases: instantiate a fully-defaulted template with no
+input at all; override one variable; or start something deliberately blank.
+
+A variable left unbound stays unbound on the instance, and the owning resource
+capability can bind it later through its ordinary editing surface. This matters
+because instantiation is not the only moment a user can decide what a template
+points at — requiring a complete binding set would force a caller to resolve
+every reference up front, when the natural flow is often to create the instance
+and then fill it in. Unbound variables are therefore legal state on any
+resource, and are refused only where they would actually cause harm: at the
+point a Prompt tries to produce a concrete Context scope. That admission check
+is described in the addendum.
+
+A binding's `description` is template documentation and is not carried into the
+instance; only the resolved target is.
 
 `title` is likewise optional; an instance keeps the backing template's title
 when none is supplied, and can be renamed afterwards.
@@ -382,6 +478,7 @@ CREATE TABLE templates (
   id          TEXT PRIMARY KEY,
   kind        TEXT NOT NULL,
   resource_id TEXT NOT NULL,
+  description TEXT,
   state       TEXT NOT NULL CHECK (state IN ('reserving', 'ready')),
   created_at  TEXT NOT NULL,
   deleted_at  TEXT,
@@ -402,6 +499,14 @@ CREATE TABLE template_command_claims (
   updated_at     TEXT NOT NULL
 );
 ```
+
+**Templates stores no bindings.** A template's defaults are not catalog state —
+they are the backing resource's own Context Variable state, written by the
+adapter during the copy and thereafter editable through that resource's
+ordinary editing surface. Templates forwards bindings and keeps none of them,
+so the catalog can never disagree with the resource about what a variable
+points at. `description` on the catalog row is the sole exception, and it
+describes the template rather than any variable.
 
 An identical `requestId` retry returns the stored result. Reusing a request ID
 with different canonical input returns `idempotency_mismatch`.
@@ -450,15 +555,18 @@ apps/backend/src/
   1-init/create/templates.ts
   3-capabilities/templates/
     application/templateService.ts
+    domain/canonical.ts
     domain/errors.ts
     domain/model.ts
-    persistence/sqliteTemplateStore.ts
+    persistence/sqliteMappers.ts
     persistence/sqliteSchema.ts
+    persistence/sqliteTemplateStore.ts
     ports/activityPublisher.ts
     ports/resourceAdapter.ts
     ports/templateStore.ts
     wire/commandSchemas.ts
     wire/querySchemas.ts
+    wire/valueSchemas.ts
     docs/
     index.ts
   4-job-wiring/templates/registerTemplateEndpoints.ts
@@ -478,19 +586,24 @@ apps/backend/src/
 5. A `reserving` record is invisible to `template.get` and `template.list`, and
    blocks a second registration of the same identity.
 6. A backing resource is a detached copy, never an alias of the registration
-   source, and every Context Variable on it is unbound.
+   source. Its Context Variables are the source's, with the registration
+   bindings applied as defaults.
 7. An instantiated resource is a detached normal resource, never an alias of
    its template.
-8. Instantiation bindings are optional. An unbound variable is legal state on
-   any resource; it is refused only when a Prompt tries to produce a concrete
-   Context scope from it.
-9. Templates never reads or writes resource-owned tables directly.
-10. Unsupported kinds fail before a catalog row or destination is created.
-11. Exact command retries return the original result; divergent reuse fails.
-12. Ordinary resource APIs cannot promote, demote, or delete a registered
+8. Bindings are optional at both registration and instantiation, and apply the
+   same override rule: absent key inherits, present key with `entry` sets,
+   present key without `entry` explicitly unbinds.
+9. An unbound variable is legal state on any resource; it is refused only when
+   a Prompt tries to produce a concrete Context scope from it.
+10. Templates persists no bindings. Defaults live in the backing resource's own
+    variable state.
+11. Templates never reads or writes resource-owned tables directly.
+12. Unsupported kinds fail before a catalog row or destination is created.
+13. Exact command retries return the original result; divergent reuse fails.
+14. Ordinary resource APIs cannot promote, demote, or delete a registered
     template behind the Templates catalog.
-13. Deleting a template does not mutate its source or prior instances.
-14. Templates performs no Context read or write. It imports the `ContextEntry`
+15. Deleting a template does not mutate its source or prior instances.
+16. Templates performs no Context read or write. It imports the `ContextEntry`
     type only; bindings travel through as opaque pairs and are interpreted by
     the owning resource kind.
 
@@ -510,13 +623,20 @@ apps/backend/src/
 
 ## Implementation order
 
-1. Add the project-scoped Templates model, SQLite store, command claims, and
-   get/list queries.
-2. Add the adapter registry and strict command/query wiring.
+1. Add the project-scoped Templates model, SQLite store, ID allocation with
+   `reserving → ready` reservation, command claims, and get/list queries.
+2. Add the adapter registry and strict command/query wiring, including the
+   typed `TemplateInstantiationInput` decoder.
 3. Implement the Document template adapter and Document-mode persistence from
-   the companion addendum.
+   the companion addendum, including the binding override rule at both
+   registration and instantiation.
 4. Wire registration, instantiation, deletion, startup recovery, and Activity
    outbox publication.
-5. Add focused tests for detached copies, `resourceId === templateId`, exact
-   retry, divergent retry, unsupported kind, missing backing resource, and
-   deletion isolation.
+5. Add focused tests for detached copies, allocated-and-returned Template IDs,
+   `resourceId === templateId`, reservation collision before any adapter call,
+   exact retry, divergent retry, unsupported kind, missing backing resource,
+   omitted/partial bindings, and deletion isolation.
+
+Steps 1, 2, 4, and the adapter-independent half of 5 are planned in detail in
+[`templates-implementation-plan.md`](templates-implementation-plan.md). Step 3
+is a separate, larger workstream.

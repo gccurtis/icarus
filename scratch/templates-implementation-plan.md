@@ -60,9 +60,9 @@ the Templates domain, store, wire, or endpoints.
   in TypeScript.
 - The adapter registry is injected at construction. Templates imports no
   capability; `1-init` owns every adapter and the registry that holds them.
-- **Templates performs no Context read or write.** Context references travel
-  through adapter `arguments` as opaque pairs and are decoded only by the owning
-  resource kind.
+- **Templates performs no Context read or write.** It imports the `ContextEntry`
+  type only. Bindings are decoded structurally at the wire boundary, forwarded
+  to the adapter, and interpreted only by the owning resource kind.
 - **No internal job intents and no freeze/compute/settle pipeline.** Templates
   delegates the slow, cross-database part to the adapter, which owns its own
   durable attempt (for Document, `DocumentCopyAttempt`). Templates' durability
@@ -71,52 +71,56 @@ the Templates domain, store, wire, or endpoints.
 - Activity via a local transactional outbox plus an injected publisher,
   mirroring Document.
 
-### Two deviations from `templates-design.md`
+- **Templates allocates the Template ID and returns it.** `template.register`
+  takes no ID. The identifier is minted once and frozen in the command claim
+  and a `reserving` catalog row before any adapter call, which is what makes
+  retries and resumed claims safe. This follows Derived Outputs, which likewise
+  allocates its own output ID inside `declare()` and relies on a caller-supplied
+  idempotency key for retry safety — not Document, which takes caller-supplied
+  aggregate and structural IDs.
+- **Caller-supplied identifiers stay caller-supplied.** The registration
+  `source` and the `destinationResourceId` are the caller's to name, exactly as
+  `document.create` takes a `documentId`.
+- **Bindings are typed pairs, not bare references.**
+  `TemplateContextBinding { entry?, description? }`, keyed by variable name.
+  Decoded strictly at the wire boundary; no per-kind private argument decoder.
+- **Both register and instantiate accept bindings**, and both apply the same
+  override rule: absent key inherits, key with `entry` sets, key without
+  `entry` unbinds. Registration records defaults; instantiation overrides them.
+  There is no clearing pass anywhere.
+- **Bindings are normalised to `{}`**, so the domain never branches on
+  `undefined`. Templates persists none of them.
+- **The catalog row carries an optional `description`.** Set at registration,
+  immutable in v1.
+- **Adapter methods return `void`.** Templates supplies both `kind` and the
+  destination ID, so there is nothing to validate on the way back.
 
-Both are flagged for review. Neither changes the shape of the work; each is a
-one-line-to-one-function change if rejected.
+### Resolved: the command endpoint is serial
 
-**D1 · `POST /templates/command` should be `concurrent`, not `serial`.**
+An earlier draft of this plan argued for `concurrent` on the grounds that every
+Templates invariant was a single-row store invariant. **That was wrong on two
+counts and the design's original `serial` stands.**
 
-The design table says serial. The codebase's own stated rule
-(`02-request-and-job-runtime.md`) is *"Serialisation is used where the store
-cannot enforce the invariant on its own"*, and Templates' invariants are all
-single-row store invariants: the claim is a `request_id` primary-key insert,
-the catalog row is a primary-key plus `UNIQUE (kind, resource_id)` insert, and
-deletion is a single-row soft delete. There is no revisioned read-modify-write
-anywhere in this capability.
+- The catalog limit is not a single-row invariant. `countLive()` and
+  `reserve()` are separate statements, so concurrent registrations could each
+  observe room under `maxTemplatesPerProject` and then all reserve. Serial
+  admission is what prevents the overshoot; the same shape applies to
+  claim-then-execute, where two concurrent retries of one `requestId` would
+  both observe a pending claim and both drive the adapter.
+- The supporting argument — that a concurrent delete racing an instantiate
+  fails cleanly because the adapter freezes its source revision — was reasoning
+  about designed behaviour in an adapter that does not exist yet.
 
-The cost of getting this wrong is real: the serial queue has exactly **one**
-active slot, and a registration or instantiation blocks inside an adapter call
-that, for Document, will clone Derived Outputs across a second database. Every
-Document and Slide command project-wide would queue behind it. The existing
-precedent points the same way — `POST /derived-output-refresh`, the slowest
-LLM-bearing endpoint in the tree, is already on the **concurrent** queue with
-claim-based idempotency.
+The throughput concern was real but is the wrong trade: it is the same one
+Document and Slide already accept, and correctness under a read-then-write
+sequence wins. `test/capabilities/templates-wiring.test.ts` asserts the queue
+choice so it cannot drift back silently.
 
-The one interleaving worth naming: a concurrent `template.delete` racing a
-`template.instantiate` of the same template. The adapter freezes its source
-revision at the start of the copy, so the loser fails cleanly with a not-found
-rather than producing a partial instance. A spurious failure, not corruption.
-
-**D2 · Reserve the catalog row *before* the adapter call, not after.**
-
-The design's registration flow inserts the catalog record at step 5, after the
-copy. That means two requests racing on the same `templateId` both pass their
-claim, both drive the adapter to create a backing resource, and only the second
-catalog insert fails — leaking an orphan backing resource. Ordering it as
-reserve → adapter → finalise detects the collision before any external side
-effect, and gives crash recovery a row to resume from:
-
-```text
-templates.state: 'reserving' -> 'ready'   (plus soft delete via deleted_at)
-```
-
-A `reserving` row is invisible to `template.get`/`template.list` and blocks a
-second registration of the same ID. This also makes the design's own stated
-requirement — *"A crash after the resource copy but before the catalog insert
-… must not create a second backing resource"* — enforceable rather than
-aspirational.
+*(A second earlier deviation, reserving the catalog row before the adapter
+call, has been folded into the design itself. Templates allocating the ID makes
+reserve-first mandatory rather than merely safer: the identifier has to be
+durable before the external side effect or a crash leaves nothing to resume
+from.)*
 
 ## Files
 
@@ -172,15 +176,23 @@ Update only these composition seams:
 
 `domain/model.ts`:
 
-- `TemplateRecord { id, kind, resourceId, state, createdAt, deletedAt? }` with
-  `TemplateRecordState = "reserving" | "ready"`.
+- `TemplateRecord { id, kind, resourceId, description?, state, createdAt,
+  deletedAt? }` with `TemplateRecordState = "reserving" | "ready"`.
 - `TemplateResourceRef { kind, resourceId }`.
 - `TemplateCommandRequest { requestId, command }`.
-- `TemplateCommand` — the three-member union `template.register`,
-  `template.instantiate`, `template.delete`, exactly as designed. `arguments?:
-  unknown` stays type-erased on instantiate.
-- `TemplateCommandResult` — `template.registered`, `template.instantiated`,
-  `template.deleted`.
+- `TemplateCommand` — the three-member union. `template.register` carries
+  `source` plus optional `description` and `contextBindings`, and **no**
+  `templateId`; `template.instantiate` carries `templateId`,
+  `destinationResourceId`, and optional `title` / `contextBindings`.
+- `TemplateContextBinding { entry?: ContextEntry; description?: string }` and
+  `TemplateContextBindings = Readonly<Record<string, TemplateContextBinding>>`,
+  plus `TemplateInstantiationInput { title?, contextBindings }` — note
+  `contextBindings` is **required** on the internal type and normalised to `{}`
+  by the decoder, even though it is optional on the wire.
+- `ContextEntry` is a **type-only** import of the `{ id, kind }` atom, matching
+  Structured Data and Derived Outputs. No Context runtime, port, read, or write.
+- `TemplateCommandResult` — `template.registered` (carries the allocated
+  record), `template.instantiated`, `template.deleted`.
 - `TemplateQuery` / `TemplateQueryResult` — `template.get`, `template.list`.
 - `TemplateCommittedFact` — Templates' own origin vocabulary, translated to
   Activity's in `1-init` (the Document port is the model for this seam).
@@ -190,9 +202,11 @@ Update only these composition seams:
 
 `TemplateNotFoundError`, `TemplateAlreadyExistsError`,
 `TemplateUnsupportedKindError`, `TemplateIdempotencyMismatchError`,
-`TemplateResourceMismatchError` (adapter returned a ref that is not
-`(kind, templateId)`), `TemplateCatalogLimitError`, `TemplateWireError`,
-`TemplateValidationError`.
+`TemplateCatalogLimitError`, `TemplateWireError`, `TemplateValidationError`.
+
+There is deliberately **no** `TemplateResourceMismatchError`. Adapter methods
+return `void`, so there is no returned reference to disagree with what
+Templates asked for.
 
 `domain/canonical.ts` — copy Document's `canonicalValue`/`canonicalize`/
 `canonicalDigest` shape (sorted keys, `undefined` dropped, SHA-256) so a retry
@@ -214,6 +228,8 @@ interface TemplateStore {
   countLive(): number;
 
   claimCommand(claim: TemplateCommandClaim): TemplateClaimOutcome;
+  /** Freezes the allocated ID on the claim row before any adapter call. */
+  bindClaimTemplateId(requestId: string, templateId: string): void;
   completeClaim(requestId: string, result: unknown, at: string): void;
 
   reserve(record: TemplateRecord): boolean;       // false => (kind, resourceId) or id taken
@@ -239,6 +255,7 @@ CREATE TABLE IF NOT EXISTS tpl_<prefix>_templates (
   id          TEXT PRIMARY KEY,
   kind        TEXT NOT NULL,
   resource_id TEXT NOT NULL,
+  description TEXT,
   state       TEXT NOT NULL CHECK (state IN ('reserving','ready')),
   created_at  TEXT NOT NULL,
   deleted_at  TEXT,
@@ -250,6 +267,9 @@ CREATE TABLE IF NOT EXISTS tpl_<prefix>_command_claims (
   request_id     TEXT PRIMARY KEY,
   request_digest TEXT NOT NULL,
   command_type   TEXT NOT NULL,
+  -- Allocated by Templates and frozen here before the adapter call, so a
+  -- resumed pending claim reuses the same identity instead of minting one.
+  template_id    TEXT,
   state          TEXT NOT NULL CHECK (state IN ('pending','completed')),
   result_json    BLOB,
   created_at     TEXT NOT NULL,
@@ -282,7 +302,18 @@ their outbox fact, so a fact cannot exist without its catalog change.
 `ports/resourceAdapter.ts` — `TemplateResourceAdapter` and
 `TemplateResourceRegistry` exactly as designed. Three methods
 (`createTemplateCopy`, `instantiateTemplate`, `deleteTemplateCopy`), each
-taking a deterministic `idempotencyKey`.
+taking a deterministic `idempotencyKey` and each returning `Promise<void>`.
+
+`createTemplateCopy` receives `contextBindings` (the template's defaults) and
+`instantiateTemplate` receives the whole decoded `TemplateInstantiationInput`.
+Applying the override rule — set / explicitly unbind / inherit — is the
+**adapter's** job in both directions, because only the owning kind knows how its
+variables are stored. Templates states the contract and forwards the input; it
+does not implement or persist it.
+
+Note there is no bindings table in Phase 2. A template's defaults live in the
+backing resource's own variable state, so the catalog can never disagree with
+the resource about what a variable points at.
 
 Idempotency keys are minted by Templates from the claimed request, never by the
 caller:
@@ -320,17 +351,28 @@ Every command follows one shape:
 5. store.completeClaim(requestId, result)
 ```
 
-`template.register`:
+`template.register` — note the command carries **no** `templateId`:
 
 1. Resolve the adapter for `source.kind`; unknown ⇒ `TemplateUnsupportedKindError`
    **before** any write.
 2. Enforce `maxTemplatesPerProject` against `countLive()`.
-3. `store.reserve({ id: templateId, kind, resourceId: templateId, state: "reserving" })`;
-   `false` ⇒ `TemplateAlreadyExistsError`.
-4. `adapter.createTemplateCopy({ sourceResourceId, templateId, idempotencyKey })`.
-5. Require the returned ref to equal `(kind, templateId)`; otherwise
-   `TemplateResourceMismatchError` and abandon the reservation.
-6. `markReady` + `template.registered` fact, one transaction.
+3. Determine the Template ID. On a fresh claim, allocate a `randomUUID()`; on a
+   resumed pending claim, read `template_id` off the claim row. Then
+   `store.bindClaimTemplateId(requestId, templateId)` and
+   `store.reserve({ id: templateId, kind, resourceId: templateId,
+   state: "reserving" })`; `false` ⇒ `TemplateAlreadyExistsError`.
+4. `adapter.createTemplateCopy({ sourceResourceId, templateId, contextBindings,
+   idempotencyKey })`.
+5. `markReady` + `template.registered` fact, one transaction. `description` is
+   written on the reserved row at step 3 and is immutable thereafter.
+6. Complete the claim with the full `TemplateRecord` — this is how the caller
+   learns the ID.
+
+Steps 3 and 4 are ordered that way on purpose: allocating an ID that is not yet
+durable and then calling out to another database would leave a crash with no
+way to find what it had already created. Freezing the ID on the claim row *and*
+reserving the catalog row before the adapter call means a resumed claim replays
+the same identity and the same adapter key.
 
 On an adapter throw, delete the reservation and rethrow, so a failed
 registration does not permanently burn the ID.
@@ -340,12 +382,19 @@ registration does not permanently burn the ID.
 1. Load the record; missing, `reserving`, or soft-deleted ⇒
    `TemplateNotFoundError`.
 2. Resolve the adapter for `record.kind`.
-3. `adapter.instantiateTemplate({ templateId, destinationResourceId, arguments,
-   idempotencyKey })` — the adapter strictly decodes `arguments`; Templates
-   never inspects or persists them.
-4. Return `{ template, resource }`. **No catalog row is written** — the instance
-   belongs entirely to the owning capability, and Templates stores no instance
-   list.
+3. `adapter.instantiateTemplate({ templateId, destinationResourceId,
+   instantiation: { title, contextBindings }, idempotencyKey })`. The input was
+   already decoded at the wire boundary; Templates forwards it and persists none
+   of it.
+4. Return `{ template, resource: { kind, resourceId: destinationResourceId } }`,
+   constructed from what Templates already knows. **No catalog row is written**
+   — the instance belongs entirely to the owning capability, and Templates
+   stores no instance list.
+
+Omitted, empty, and partial `contextBindings` are all valid at both commands and
+are passed through unchanged after normalisation to `{}`. Templates never checks
+binding completeness and never inspects a binding's `description`; an unbound
+variable is legal state on the destination.
 
 `template.delete`:
 
@@ -373,10 +422,21 @@ decoder and the union cannot drift.
 
 `wire/querySchemas.ts` — `decodeTemplateQuery`.
 
-`arguments` is the one field passed through **undecoded** — it is forwarded to
-the adapter as `unknown` and is that adapter's responsibility. The decoder still
-requires it to be a JSON object when present, and enforces a size cap, so a
-hostile payload cannot reach an adapter as a string or array.
+`contextBindings` is decoded **fully and strictly**, not passed through as an
+opaque blob. It must be a JSON object whose keys are non-empty-after-trim
+variable names and whose values are objects with `exactKeys(["entry",
+"description"])`. When `entry` is present it must be a `{ id, kind }` pair of
+non-empty strings; when absent, the binding means *explicitly unbind*, which is
+why `{}` is a valid binding value and must not be rejected as empty. Caps apply
+to the number of bindings, key length, and description length.
+
+The decoder normalises an absent `contextBindings` to `{}` so the domain and
+the adapters never branch on `undefined`. An absent, `{}`, or partial map is
+legal input at both `template.register` and `template.instantiate`.
+
+`template.register` explicitly rejects a `templateId` key rather than ignoring
+it, since `exactKeys` already refuses unknown keys; a client that supplies one
+is misunderstanding the contract and should be told so with a 400.
 
 All decode failures raise one `TemplateWireError`.
 
@@ -390,7 +450,6 @@ TemplateNotFoundError                                  -> 404 not_found
 TemplateAlreadyExistsError                             -> 409 already_exists
 TemplateIdempotencyMismatchError                       -> 409 idempotency_mismatch
 TemplateUnsupportedKindError                           -> 400 unsupported_kind
-TemplateResourceMismatchError                          -> 400 resource_mismatch
 TemplateCatalogLimitError                              -> 400 catalog_limit_exceeded
 TemplateWireError | TemplateValidationError            -> 400 validation_error
 (anything else)                                        -> 500 internal_error
@@ -430,46 +489,71 @@ adapter rather than as implemented behaviour.
 ## Phase 8 — Tests and verification
 
 `test/capabilities/templates.test.ts`, `node:test` + `node:assert/strict`, using
-a hand-written `FakeResourceAdapter` (no mocking library) that records its calls
-and can be told to throw or to return a mismatched ref.
+a hand-written `FakeResourceAdapter` (no mocking library) that records every
+call it receives and can be told to throw.
+
+ID allocation — the behaviour that changed most, so cover it directly:
+
+- `template.register` succeeds with no `templateId` in the request, and the
+  result carries a freshly allocated one;
+- two registrations from different requests receive **different** IDs;
+- the allocated ID is written to the claim row and the `reserving` catalog row
+  **before** the adapter is called (assert ordering via the fake's recorded
+  call sequence against store state);
+- a request body containing `templateId` is rejected at the wire boundary.
 
 Catalog and adapter dispatch:
 
 - registering an unsupported kind fails before any row or adapter call;
 - a successful registration produces exactly one `ready` record with
   `resourceId === templateId`, and calls the adapter exactly once;
-- an adapter that returns a ref other than `(kind, templateId)` fails and leaves
-  no catalog row;
-- an adapter throw leaves no catalog row and the ID is reusable;
-- registering a second template with an in-use ID fails **without** calling the
-  adapter (the D2 ordering guarantee);
+- an adapter throw leaves no catalog row and does not burn the ID;
 - `maxTemplatesPerProject` is enforced.
 
 Idempotency:
 
 - an exact retry of each of the three commands replays the stored result and
   calls the adapter exactly once in total;
+- an exact retry of `template.register` returns the **same allocated ID**, not a
+  second one;
 - the same `requestId` with a different canonical body raises
   `TemplateIdempotencyMismatchError`;
 - key ordering in the request body does not change the digest;
-- a claim left `pending` (simulating a crash mid-adapter-call) resumes with the
-  same adapter idempotency key and does not create a second backing resource.
+- a claim left `pending` with a bound `template_id` (simulating a crash
+  mid-adapter-call) resumes on that same ID with the same adapter idempotency
+  key, and does not reserve a second row or create a second backing resource.
 
 Instantiation and deletion:
 
-- instantiate returns the adapter's destination ref and writes **no** catalog
+- instantiate returns `(kind, destinationResourceId)` and writes **no** catalog
   row;
 - instantiate against a `reserving`, missing, or deleted template is 404;
 - delete soft-deletes the record, calls the adapter once, and leaves prior
   instances untouched;
 - a deleted template is absent from `list` and 404s on `get`.
 
+Bindings and descriptions:
+
+- omitted, `{}`, and partial `contextBindings` all succeed at **both** commands
+  and reach the adapter unchanged — Templates never checks completeness;
+- an omitted `contextBindings` reaches the adapter as `{}`, never `undefined`;
+- a binding of `{}` — meaning *explicitly unbind* — is accepted and forwarded,
+  and is **not** confused with an absent key;
+- an absent key and a present-but-empty key are distinguishable in what the
+  adapter receives (this is the whole override rule, so assert it directly);
+- a binding `entry` that is not a `{ id, kind }` pair of non-empty strings is
+  rejected at the wire boundary, as is an unknown key inside a binding;
+- an empty or whitespace-only variable name is rejected;
+- a binding `description` is forwarded verbatim and never inspected;
+- bindings are forwarded but never persisted — assert the store holds none
+  after a successful register and instantiate;
+- `template.register` accepts and stores an optional catalog `description`, and
+  `get`/`list` return it;
+- omitted `title` reaches the adapter as `undefined`.
+
 Wire:
 
-- unknown keys on every command and query are rejected;
-- `arguments` is forwarded byte-identically to the adapter and is never
-  persisted by Templates;
-- a non-object `arguments` is rejected at the boundary.
+- unknown keys on every command and query are rejected.
 
 Activity:
 
@@ -498,7 +582,13 @@ process cannot boot until `slide/application/slideService.ts` exists.
   v2, context variables, `PromptContextSpec`, the v1→v2 migration,
   `prompt-context-sync` attempts, `isTemplate` persistence, `DocumentCopyAttempt`,
   and `DerivedOutputs.clone`.
+- **Actually applying the binding override rule to a resource.** Templates
+  defines the contract and forwards the input; only the owning kind's adapter
+  can carry it out, because only it knows how its variables are stored. The
+  fake adapter asserts the contract is *delivered* correctly, not that any real
+  resource is rewritten.
 - Any Context read or write from Templates.
+- Caller-chosen Template IDs.
 - Cross-project, user-level, or public templates; template versions; instance
   pinning; categories, thumbnails, or search; propagation from a template into
   existing instances; batch instantiation; pagination.
