@@ -379,16 +379,17 @@ Deleting a variable that any live Prompt Block references is rejected. The
 caller must first change those Prompt context specs. This avoids a cascading
 operation with hidden cross-capability effects.
 
-`prompt.set-context` always rejects missing variables. A normal Document also
-rejects unbound variables. A template-mode Document may retain them; in that
-case it records a blocked synchronization state and does not replace the
-Derived Output's previous concrete scope. Once every referenced variable is
-bound, it schedules one synchronization attempt for the affected Prompt Block
-after the Document ChangeSet commits.
+`prompt.set-context` always rejects **missing** variables — an ID with no
+corresponding entry in the snapshot is a structural error in either mode. It
+accepts **unbound** ones in either mode; the Block records a blocked
+synchronization state and does not replace the Derived Output's previous
+concrete scope. Once every referenced variable is bound, it schedules one
+synchronization attempt for the affected Prompt Block after the Document
+ChangeSet commits.
 
-Likewise, unbinding a referenced variable is allowed only in template mode.
-The template remains editable, but Prompt refresh is rejected until the
-placeholder is rebound or an instantiation supplies an override.
+Unbinding a referenced variable is likewise allowed in either mode. The
+Document remains fully editable; only Prompt work that needs a concrete scope
+is refused until the variable is rebound.
 
 Compensating any target-changing operation runs the same dependency detection
 and schedules synchronization for the restored context. Undo and redo never
@@ -429,12 +430,19 @@ TemplateRecord.id`.
 Document exposes a narrow trusted copy runtime to startup wiring; neither its
 domain nor its ordinary public commands import Templates:
 
-```ts
-interface DocumentTemplateArguments {
-  /** Required title for the new normal Document. */
-  readonly title: string;
+The instantiation input is **not** a Document-private argument blob. It is the
+shared, kind-agnostic `TemplateInstantiationInput` owned by Templates, because
+the thing an instantiation varies — Context Variable bindings — is resource-level
+structure rather than a Document peculiarity:
 
-  /** User-facing variable name -> project resource/context reference. */
+```ts
+/** Owned by Templates; reproduced here for reference. */
+interface TemplateInstantiationInput {
+  /** Omitted means the instance keeps the backing template's title. */
+  readonly title?: string;
+
+  /** User-facing variable name -> project resource/context reference.
+   *  Omitted, empty, and partial are all legal. */
   readonly contextBindings?: Readonly<Record<string, ContextEntry>>;
 }
 
@@ -448,7 +456,7 @@ interface DocumentTemplateCopyRuntime {
   instantiateTemplate(input: {
     templateId: string;
     destinationDocumentId: string;
-    arguments: DocumentTemplateArguments;
+    instantiation: TemplateInstantiationInput;
     idempotencyKey: string;
   }): Promise<DocumentHead>;
 
