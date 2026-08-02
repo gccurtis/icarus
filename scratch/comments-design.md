@@ -65,6 +65,7 @@ apps/backend/src/
   1-init/create/comments.ts
   3-capabilities/comments/
     application/commentService.ts
+    domain/canonical.ts
     domain/errors.ts
     domain/model.ts
     domain/validation.ts
@@ -73,6 +74,7 @@ apps/backend/src/
     ports/activityPublisher.ts
     ports/commentStore.ts
     wire/commandSchemas.ts
+    wire/common.ts
     wire/querySchemas.ts
     docs/
       README.md
@@ -109,7 +111,11 @@ type JsonValue =
   | number
   | string
   | readonly JsonValue[]
-  | { readonly [key: string]: JsonValue };
+  | JsonObject;
+
+interface JsonObject {
+  readonly [key: string]: JsonValue;
+}
 
 interface CommentTarget {
   /** A non-empty canonical resource label, such as "document", "slides",
@@ -118,7 +124,7 @@ interface CommentTarget {
   readonly resourceId: string;
 
   /** A bounded, canonical JSON hint interpreted only by the resource owner. */
-  readonly subTarget?: JsonValue;
+  readonly subTarget?: JsonObject;
 }
 
 interface Comment {
@@ -148,10 +154,12 @@ revision and no arbitrary `kind` field: the resource kind is `"comment"` when
 the Comment itself is referenced, while `target.resourceKind` identifies the
 resource it annotates.
 
-An omitted `subTarget` means a resource-level comment. `null` is not used as a
-second spelling for that case. The service accepts JSON values only, sorts
-object keys for persistence/digest purposes, and rejects unsupported values,
-cycles, non-finite numbers, or values over the configured size limit.
+An omitted `subTarget` means a resource-level comment. Its root, when present,
+must be a JSON object; arbitrary JSON maps, arrays, and scalar values may be
+nested beneath that root. `null`, an array, or a scalar is not used as a second
+root-level spelling. The service sorts object keys for persistence/digest
+purposes and rejects unsupported values, cycles, non-finite numbers, or values
+over the configured size limit.
 
 ## Admission limits and mention parsing
 
@@ -170,8 +178,9 @@ The server, not the frontend, is authoritative for mention parsing. It detects
 standalone `@handle` tokens whose handles contain ASCII letters, numbers,
 periods, underscores, or dashes; it does not treat the `@` in an email address
 as a mention. Handles are normalized for case-insensitive de-duplication and
-stored as raw handles. There is no V1 lookup by mentioned user and no claim
-that a handle is an authenticated principal.
+stored as raw handles; a final prose period is not part of the handle. There is
+no V1 lookup by mentioned user and no claim that a handle is an authenticated
+principal.
 
 If notifications or a “mentions for me” query become a product requirement, a
 future user-directory adapter must resolve handles to principal IDs at write
@@ -223,19 +232,20 @@ type CommentQuery =
       limit?: number;
     };
 
-interface CommentCommandResult {
-  readonly type:
-    | "comment.created"
-    | "comment.updated"
-    | "comment.resolved"
-    | "comment.reopened"
-    | "comment.deleted";
-  readonly comment?: Comment;
-}
+type CommentCommandResult =
+  | { type: "comment.created"; comment: Comment }
+  | { type: "comment.updated"; comment: Comment }
+  | { type: "comment.resolved"; comment: Comment }
+  | { type: "comment.reopened"; comment: Comment }
+  | { type: "comment.deleted"; commentId: string };
+
+type CommentQueryResult =
+  | { type: "comment.get"; comment: Comment }
+  | { type: "comment.listByTarget"; page: CommentPage };
 
 interface CommentsCapability {
   command(command: CommentCommand): Promise<CommentCommandResult>;
-  query(query: CommentQuery): Promise<Comment | null | CommentPage>;
+  query(query: CommentQuery): Promise<CommentQueryResult>;
   publishPendingActivity(limit?: number): Promise<number>;
 }
 
@@ -247,10 +257,16 @@ interface CommentPage {
 
 The Comments service receives trusted `CommentAttribution` from composition.
 No public command admits `createdBy`, `updatedBy`, `actorId`, or `origin`.
-Every accepted mutation—including resolve, reopen, and delete—sets `updatedBy`
-and `updatedAt` from that trusted attribution. A future authenticated transport
-can supply the same narrow attribution value without making any public payload
-authoritative.
+Every accepted state-changing mutation—including resolve, reopen, and
+delete—sets `updatedBy` and `updatedAt` from that trusted attribution. A
+matching-state resolve/reopen is an accepted no-op and leaves those fields
+unchanged. A future authenticated transport can supply the same narrow
+attribution value without making any public payload authoritative.
+
+The same composition dependency supplies the shared `Logger`. Comments logs
+runtime creation, command/replay/failure outcomes, mutation metadata, no-ops,
+queries, Activity publication/recovery, counts, and timings. It never logs the
+Comment body, raw mention handles, or `subTarget` contents.
 
 Commands are serial and queries are concurrent. Serial command admission gives
 one deterministic accepted order for Comment state changes, receipts, and
@@ -271,8 +287,8 @@ of the accepted delete still returns its original stored delete result.
 | `POST` | `/comments/command` | `comments.command.v1` | serial / inline | Decode and apply one `CommentCommand`. |
 | `POST` | `/comments/query` | `comments.query.v1` | concurrent / inline | Decode and run one `CommentQuery`. |
 
-The command/query decoders use strict object keys, validate all bounds, and
-never accept caller-controlled attribution. They map malformed input to 400,
+The command/query boundary uses strict object keys and domain-level bounds and
+never accepts caller-controlled attribution. It maps malformed input to 400,
 missing or soft-deleted Comments to 404, and an idempotency mismatch to 409.
 Unexpected errors are logged without comment-body or sub-target content.
 
@@ -324,6 +340,10 @@ CREATE TABLE IF NOT EXISTS cmt_${prefix}_activity_outbox (
 );
 
 CREATE INDEX IF NOT EXISTS cmt_${prefix}_comments_target
+  ON cmt_${prefix}_comments(resource_kind, resource_id, created_at, id)
+  WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS cmt_${prefix}_comments_target_state
   ON cmt_${prefix}_comments(resource_kind, resource_id, state, created_at, id)
   WHERE deleted_at IS NULL;
 
@@ -347,7 +367,7 @@ an Activity transaction:
 
 ```ts
 {
-  id: transactionId,
+  idempotencyKey: transactionId,
   kind: "comment",
   resourceId: commentId,
   operation: "created" | "updated" | "resolved" | "reopened" | "deleted",
@@ -363,10 +383,11 @@ an Activity transaction:
 ```
 
 It never copies the Comment body, raw mention handles, or sub-target into
-Activity metadata. The publisher marks the outbox row published only after
-Activity accepts the stable transaction ID. A delivery failure leaves the
-accepted Comment intact and the source row unpublished; post-commit delivery
-and startup recovery can safely retry the same transaction ID.
+Activity metadata. The outbox transaction ID is used only as Activity's source
+idempotency key. Activity allocates and returns the ledger transaction ID, and
+the publisher marks the outbox row published only after acceptance. A delivery
+failure leaves the accepted Comment intact and the source row unpublished;
+post-commit delivery and startup recovery safely retry the same source key.
 
 Comments exposes only a narrow `CommentActivityPublisher` port. Composition
 maps it to Activity, exactly as Document does, so neither capability receives a
@@ -387,8 +408,8 @@ stateDiagram-v2
    non-empty, and within their configured bounds.
 2. A target’s optional sub-target is canonical, bounded JSON and is never
    interpreted or rewritten by Comments.
-3. `createdBy` and `createdAt` never change. Every accepted mutation updates
-   `updatedBy` and `updatedAt`.
+3. `createdBy` and `createdAt` never change. Every accepted state-changing
+   mutation updates `updatedBy` and `updatedAt`.
 4. `resolve` and `reopen` are idempotent. A command against an already-matching
    state records its own replay receipt but leaves the Comment unchanged and
    does not create a new Activity transaction.
