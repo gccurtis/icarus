@@ -1,31 +1,33 @@
-# Questions Capability — Design
+# Question — Investigation Domain Design
 
 ## Summary
 
-Questions is a small, project-scoped capability for recording what the project
-is trying to learn, decide, or verify. A persisted Question holds the wording,
-the context needed to understand it, optional assumptions, and one current
-answer. A separate runtime projection assembles that record with the Findings
-and Hypotheses relevant to research.
+Question is one of the three record types owned by the
+[Investigation capability](./investigation-design.md). It records what the
+project is trying to learn, decide, or verify: the wording, the context needed
+to understand it, optional assumptions, and one current answer.
 
-The capability deliberately does not own research runs, evidence, answer
-history, or either side of a duplicated relationship graph.
+Question is not a separate capability. It has no standalone service, runtime
+projection, store, database, startup factory, or import alias. Callers create
+and access Questions through the single `InvestigationRuntime`.
 
 ## Outcomes
 
-Given valid project and actor context, Questions can:
+Investigation can use a Question to:
 
-- create and edit a durable Question;
-- distinguish unanswered work, a proposed answer, and a human-confirmed answer;
-- expose the current answer without creating an answer-revision model;
-- assemble a research-ready runtime Question with related Findings and
-  Hypotheses; and
-- soft-delete a Question so it is absent from ordinary reads.
+- record and edit durable research framing;
+- distinguish unanswered work, a proposed answer, and a human-confirmed
+  answer;
+- expose one mutable current answer without adding answer revisions; and
+- locate related Findings and Hypotheses through the runtime's filtered list
+  methods.
 
-It does not guarantee that an answer is factually correct. `answered` means
-that a human confirmed the current answer, not that the system proved it.
+`answered` does not guarantee factual correctness. It means a human confirmed
+the current answer.
 
-## Persisted model
+## Question model
+
+`Question` is the only public representation of this record:
 
 ```ts
 type IsoTimestamp = string;
@@ -43,10 +45,10 @@ interface Question {
   /** Optional framing, constraints, background, and research details. */
   readonly context?: string;
 
-  /** The presently proposed or accepted answer. */
+  /** The presently proposed or human-confirmed answer. */
   readonly currentAnswer?: string;
 
-  /** Plain-text assumptions. An empty list means none were recorded. */
+  /** Plain-text assumptions; empty means none were recorded. */
   readonly assumptions: readonly string[];
 
   readonly status: QuestionStatus;
@@ -60,15 +62,14 @@ interface Question {
 }
 ```
 
-`context` replaces the earlier `description` field. It intentionally combines
-framing, constraints, background, and any other detail needed to understand or
-research the Question. Those concepts are not separate domain fields.
+`context` intentionally combines framing, constraints, background, and any
+other detail needed to understand or research the Question. Those concepts are
+not separate required fields.
 
-`currentAnswer` replaces `answer`. It is mutable and may change as research
-progresses. Questions does not add immutable answer revisions, an Answer
-entity, `answeredAt`, `answeredBy`, or a separate approval flag. General
-change-history infrastructure can provide audit history if that becomes a
-platform requirement.
+`currentAnswer` is mutable and may change as research progresses. There is no
+Answer entity, immutable answer-revision model, `answeredAt`, `answeredBy`, or
+separate approval field. The platform's general change history may capture
+edits if that becomes a broader requirement.
 
 Assumptions are plain strings. They have no IDs, statuses, confidence values,
 approval workflow, or independent lifecycle.
@@ -78,13 +79,11 @@ approval workflow, or independent lifecycle.
 | Status | Meaning |
 |---|---|
 | `open` | No candidate conclusion is ready for approval. `currentAnswer` is absent. |
-| `proposed` | `currentAnswer` contains a candidate answer that a human has not confirmed. |
+| `proposed` | `currentAnswer` contains a candidate that a human has not confirmed. |
 | `answered` | `currentAnswer` is the conclusion currently confirmed by a human. |
 
-The status is the approval signal; there is no parallel approval field.
-Changing an answer through `proposeAnswer` moves the Question to `proposed`.
-Confirming it moves the Question to `answered`. Clearing it moves the Question
-to `open`.
+The status is the approval signal. Proposing or revising an answer sets
+`proposed`; confirming it sets `answered`; clearing it sets `open`.
 
 ```mermaid
 stateDiagram-v2
@@ -97,117 +96,45 @@ stateDiagram-v2
     answered --> open: clear answer
 ```
 
-Deletion is not part of this lifecycle. It sets `deletedAt`; deleted Questions
-are treated as absent by ordinary getters, lists, and runtime assemblers.
+Deletion is outside this lifecycle. It sets `deletedAt`, and ordinary
+Investigation reads then treat the Question as absent.
 
-## Relationship ownership
+## Relationships
 
-Questions persists no Finding IDs and no Hypothesis IDs.
+Question stores no Finding IDs and no Hypothesis IDs.
 
-- Findings owns `FindingQuestionLink[]`, including the optional relationship
-  meaning.
-- Hypotheses owns `questionIds[]`.
-- A Question's reverse Finding and Hypothesis lists are queried from those
-  owners and assembled at runtime.
-
-This avoids two independently mutable copies of the same relationship. A
-reverse Finding reference uses the same optional vocabulary exported by
-Findings:
+- Findings own `questionLinks` and their optional relationship meanings.
+- Hypotheses own `questionIds`.
+- Investigation derives reverse access from those fields.
 
 ```ts
-type FindingRelationship =
-  | "supports"
-  | "refutes"
-  | "qualifies"
-  | "contextualizes";
-
-interface RelatedFindingRef {
-  readonly findingId: string;
-  readonly relationship?: FindingRelationship;
-}
+const findings = await investigation.listFindings({ questionId });
+const hypotheses = await investigation.listHypotheses({ questionId });
 ```
 
-The value always reads from the Finding toward the Question. For example,
-`supports` means “the Finding supports the Question”; the meaning is not
-inverted when exposed from the Question side. An omitted value means the
-Finding is relevant but unclassified.
+Each returned Finding contains the matching `FindingQuestionLink`. Its optional
+relationship retains the Finding-to-Question direction; `supports` means the
+Finding supports the Question.
 
-## Runtime representation
+This exposes both reverse relationships without adding mutable reverse arrays,
+a `RuntimeQuestion`, or a recursively nested object graph. Deleted related
+records are omitted from ordinary list results, and filtering by a deleted
+Question returns an empty list. No cascade or link rewrite is required.
 
-The persisted `Question` is the editable source of truth. Research receives a
-non-persisted `RuntimeQuestion` assembled from current, non-deleted records:
+## Investigation runtime functions
 
-```ts
-interface RuntimeQuestion {
-  /** Includes text, context, currentAnswer, assumptions, and status. */
-  readonly question: Question;
-
-  /** Findings queried by FindingQuestionLink.questionId. */
-  readonly findings: readonly {
-    readonly finding: Finding;
-    readonly relationship?: FindingRelationship;
-  }[];
-
-  /** Hypotheses queried by Hypothesis.questionIds. */
-  readonly hypotheses: readonly Hypothesis[];
-}
-```
-
-The projection is assembled on demand and is never persisted back into the
-Question row. A Research run may freeze the projection or its canonical digest
-at run start, but that snapshot belongs to Research, not Questions.
-
-The assembler depends only on narrow readers:
+The Question portion of the single runtime is:
 
 ```ts
-interface QuestionFindingReader {
-  listForQuestion(questionId: string): Promise<readonly {
-    finding: Finding;
-    relationship?: FindingRelationship;
-  }[]>;
-}
-
-interface QuestionHypothesisReader {
-  listForQuestion(questionId: string): Promise<readonly Hypothesis[]>;
-}
-```
-
-Links to deleted or unavailable records remain in their owning records but are
-omitted from ordinary runtime projections. Questions does not cascade deletion
-into Findings or Hypotheses.
-
-## Store interface
-
-```ts
-interface QuestionStore {
-  get(id: string): Question | undefined;
-  list(filter?: { status?: QuestionStatus; tag?: string }): Question[];
-  insert(question: Question): void;
-  update(question: Question): void;
-  softDelete(id: string, deletedAt: IsoTimestamp): void;
-}
-```
-
-The SQLite store is project-bound and synchronous. `get` and `list` return only
-non-deleted rows, ordered by `updatedAt` descending. No Question table or JSON
-column stores Finding or Hypothesis IDs.
-
-## Service layer
-
-```ts
-interface QuestionService {
-  create(request: CreateQuestionRequest): Promise<Question>;
-  update(id: string, request: UpdateQuestionRequest): Promise<Question>;
-  proposeAnswer(id: string, currentAnswer: string): Promise<Question>;
-  confirmAnswer(id: string): Promise<Question>;
-  clearAnswer(id: string): Promise<Question>;
-  get(id: string): Promise<Question | null>;
-  list(filter?: { status?: QuestionStatus; tag?: string }): Promise<Question[]>;
-  delete(id: string): Promise<void>;
-}
-
-interface QuestionRuntimeAssembler {
-  get(id: string): Promise<RuntimeQuestion>;
+interface InvestigationRuntime {
+  createQuestion(request: CreateQuestionRequest): Promise<Question>;
+  updateQuestion(id: string, request: UpdateQuestionRequest): Promise<Question>;
+  proposeQuestionAnswer(id: string, currentAnswer: string): Promise<Question>;
+  confirmQuestionAnswer(id: string): Promise<Question>;
+  clearQuestionAnswer(id: string): Promise<Question>;
+  getQuestion(id: string): Promise<Question | null>;
+  listQuestions(filter?: QuestionFilter): Promise<Question[]>;
+  deleteQuestion(id: string): Promise<void>;
 }
 
 interface CreateQuestionRequest {
@@ -223,44 +150,48 @@ interface UpdateQuestionRequest {
   readonly assumptions?: readonly string[];
   readonly tags?: readonly string[];
 }
+
+interface QuestionFilter {
+  readonly status?: QuestionStatus;
+  readonly tag?: string;
+}
 ```
 
-Creation always starts in `open`. `proposeAnswer` sets or replaces
-`currentAnswer` and sets `proposed`. `confirmAnswer` represents the explicit
-human confirmation step and requires a current answer. Repeating confirmation
-of the same answer simply leaves the Question `answered`. `clearAnswer` removes
-the value and sets `open`.
+Creation starts in `open`. `proposeQuestionAnswer` sets or replaces
+`currentAnswer` and sets `proposed`. `confirmQuestionAnswer` is the explicit
+human confirmation operation and is harmless when repeated for the same
+answer. `clearQuestionAnswer` removes the value and sets `open`.
 
-Authored mutations use the project's serial queue and deterministic
-last-write-wins order. Reads and runtime assembly are concurrent. No
-Question-specific optimistic concurrency or conflict model is introduced.
-
-The core service is constructed first. After Questions, Hypotheses, and
-Findings exist, composition creates `QuestionRuntimeAssembler` with their
-narrow readers. Keeping assembly outside the core service avoids cyclic
-service construction without adding persisted state.
+Question methods share the Investigation store, Logger, actor/clock context,
+and validation boundary. Authored mutations run serially in deterministic
+last-write-wins order; get/list operations run concurrently.
 
 ## Endpoints
 
-| Method | Path | Queue | Purpose |
-|---|---|---|---|
-| `POST` | `/questions/create` | serial | Create an open Question. |
-| `POST` | `/questions/update` | serial | Edit text, context, assumptions, or tags. |
-| `POST` | `/questions/propose-answer` | serial | Set a candidate current answer. |
-| `POST` | `/questions/confirm-answer` | serial | Record human confirmation of the current answer. |
-| `POST` | `/questions/clear-answer` | serial | Remove the current answer and return to open. |
-| `GET` | `/questions/get?id=...` | concurrent | Read one persisted Question. |
-| `GET` | `/questions/list?status=...&tag=...` | concurrent | List persisted Questions. |
-| `GET` | `/questions/runtime?id=...` | concurrent | Assemble the research runtime projection. |
-| `DELETE` | `/questions/delete?id=...` | serial | Soft-delete a Question. |
+The single Investigation endpoint registrar exposes:
 
-The exact paths follow the backend's static endpoint registry; IDs remain in
-request bodies or query strings rather than path parameters.
+| Method | Path | Queue | Runtime method |
+|---|---|---|---|
+| `POST` | `/questions/create` | serial | `createQuestion` |
+| `POST` | `/questions/update` | serial | `updateQuestion` |
+| `POST` | `/questions/propose-answer` | serial | `proposeQuestionAnswer` |
+| `POST` | `/questions/confirm-answer` | serial | `confirmQuestionAnswer` |
+| `POST` | `/questions/clear-answer` | serial | `clearQuestionAnswer` |
+| `GET` | `/questions/get?id=...` | concurrent | `getQuestion` |
+| `GET` | `/questions/list?status=...&tag=...` | concurrent | `listQuestions` |
+| `DELETE` | `/questions/delete?id=...` | serial | `deleteQuestion` |
+
+There is no `/questions/runtime` endpoint. In-process consumers already hold
+`InvestigationRuntime`; HTTP consumers traverse relationships with the existing
+filtered Finding and Hypothesis list endpoints.
 
 ## Persistence
 
+The central `SQLiteInvestigationStore` creates this table together with the
+Hypothesis and Finding tables on its one connection:
+
 ```sql
-CREATE TABLE IF NOT EXISTS qst_${prefix}_questions (
+CREATE TABLE IF NOT EXISTS inv_${prefix}_questions (
   id                   TEXT PRIMARY KEY,
   text                 TEXT NOT NULL,
   context              TEXT,
@@ -276,28 +207,37 @@ CREATE TABLE IF NOT EXISTS qst_${prefix}_questions (
   deleted_at           TEXT
 );
 
-CREATE INDEX IF NOT EXISTS qst_${prefix}_questions_recent
-  ON qst_${prefix}_questions(status, updated_at DESC)
+CREATE INDEX IF NOT EXISTS inv_${prefix}_questions_recent
+  ON inv_${prefix}_questions(status, updated_at DESC)
   WHERE deleted_at IS NULL;
 ```
 
+There are no Finding/Hypothesis reverse columns and no Question-specific
+database connection. SQLite row mapping is private implementation detail;
+`Question` remains the only exported record type.
+
 ## Logging
 
-Every operation uses the injected Logger. Mutation logs include operation,
-Question ID, actor ID, prior and next status, assumption/tag counts, outcome,
-and duration. Runtime logs include related Finding/Hypothesis counts. Logs do
-not include question text, context, assumptions, or answer content, and the
-capability never calls `console`.
+Question events use the shared Logger under `investigation.questions.*`.
+Mutation logs include operation, Question ID, actor ID, prior/next status,
+assumption/tag counts, outcome, and duration. Logs do not include Question text,
+context, assumptions, or answer content.
+
+## Research integration
+
+Research receives one `InvestigationRuntime`, calls `getQuestion`, and uses
+`listFindings({ questionId })` and `listHypotheses({ questionId })` when it needs
+related records. Research may snapshot those canonical objects at run start;
+Investigation does not define or persist a separate runtime Question.
 
 ## Invariants
 
-1. `text` is non-empty.
-2. `open` has no `currentAnswer`.
-3. `proposed` and `answered` have a non-empty `currentAnswer`.
-4. `answered` means the current answer was explicitly confirmed by a human;
-   there is no separate approval field.
-5. Assumptions are plain text and have no nested lifecycle.
-6. Finding and Hypothesis reverse lists are derived, not persisted by
-   Questions.
-7. Soft-deleted Questions are absent from normal reads and runtime assembly.
-8. The runtime projection is assembled, not persisted.
+1. `Question` is the only public Question representation.
+2. `text` is non-empty.
+3. `open` has no `currentAnswer`.
+4. `proposed` and `answered` have a non-empty `currentAnswer`.
+5. `answered` means explicit human confirmation; there is no approval field.
+6. Assumptions are plain text with no nested lifecycle.
+7. Reverse relationships are runtime filters over Finding and Hypothesis
+   authority, never Question columns.
+8. Soft-deleted Questions are absent from normal Investigation reads.
