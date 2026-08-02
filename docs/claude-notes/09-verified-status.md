@@ -1,81 +1,74 @@
 # 09 · Verified Status
 
-Everything here was measured on 2026-08-01, not inferred. Commands and their actual output
-are given so you can re-check.
+Measured, not inferred. Commands and their actual output are given so you can re-check.
 
-## Typecheck — FAILS (2 errors)
+**Re-measured 2026-08-01 after Slide was deleted.** The original snapshot recorded a tree
+that did not typecheck or boot; both now succeed.
 
-```text
-$ tsc --noEmit -p apps/backend/tsconfig.json
-src/3-capabilities/slide/index.ts(1,39): error TS2307: Cannot find module
-  './application/slideService.js' or its corresponding type declarations.
-src/3-capabilities/slide/index.ts(5,8): error TS2307: Cannot find module
-  './application/slideService.js' or its corresponding type declarations.
-exit 2
-```
-
-Both errors have the same single cause. `apps/backend/src/3-capabilities/slide/application/`
-contains only `createService.ts`; `slideService.ts` does not exist.
-
-## Boot — FAILS
+## Typecheck — PASSES
 
 ```text
-$ tsx --conditions=development -e 'import("#init/startBackend.js")'
-IMPORT FAILED: ERR_MODULE_NOT_FOUND
-Cannot find module '.../src/3-capabilities/slide/application/slideService.js'
-  imported from .../src/3-capabilities/slide/index.ts
+$ pnpm --filter @icarus/backend typecheck
+> tsc --noEmit -p tsconfig.json
+(no output, exit 0)
 ```
 
-`startBackend.ts` imports `#capabilities/slide/index.js` (for `createSlideCapability` and
-`SlideInternalJobIntent`), so the module graph cannot be loaded at all. **`pnpm dev:backend`
-and `pnpm start` both fail before Fastify binds.** No endpoint is currently reachable — not
-just Slide's two.
-
-## Tests — PASS (155/155)
+## Boot — module graph loads
 
 ```text
-$ tsx --conditions=development --test --test-concurrency=1 test/capabilities/*.test.ts
-ℹ tests 155   ℹ pass 155   ℹ fail 0   ℹ duration_ms 4088
+$ node --conditions=development --import tsx -e 'import("#init/startBackend.js")'
+MODULE GRAPH LOADS OK
 ```
 
-The suite passes **despite** the broken build because no test imports
-`3-capabilities/slide/index.ts` or `1-init/startBackend.ts`. `slide-domain.test.ts`,
-`slide-wire.test.ts`, and `slide-persistence.test.ts` import
-`../../src/3-capabilities/slide/domain/…`, `…/wire/…`, `…/persistence/…` directly, routing
-around the broken barrel.
+This is an import-only check: it proves the composition graph resolves, not that
+`startBackend()` runs to a bound listener. A full boot additionally needs `data/` to be
+writable and, for Intelligence, a real `OPENROUTER_API_KEY`.
 
-**This is the most important thing to fix about the verification setup**, independent of
-Slide: a green test run currently does not imply a working service. Two cheap options:
+## Tests — PASS (231/231)
 
-1. Add `pnpm typecheck` to whatever gate runs `pnpm test`.
-2. Add a test that imports `#init/startBackend.js` (import only, no `startBackend()` call) so
-   the composition graph is exercised.
-
-## What Slide needs
-
-Per `slide/index.ts` lines 1–5, the missing module must export:
-
-```ts
-export const createSlideCapability: (store: SlideStore, deps: SlideDependencies,
-                                     options) => SlideCapability;
-export type SlideCapability;
-export type SlideDependencies;
+```text
+$ pnpm --filter @icarus/backend test
+# tests 231   # pass 231   # fail 0
 ```
 
-The contract is fully pinned down by existing code:
+### What changed, and why the count went down
 
-- `1-init/create/slide.ts` calls
-  `createSlideCapability(store, { richText, derivedOutputs, jobs, logger, attribution }, DEFAULT_SLIDE_OPTIONS)`.
-- `4-job-wiring/slide/registerSlideEndpoints.ts` needs `command()` and `query()`, and imports
-  15 Slide error classes it expects the service to throw.
-- `4-job-wiring/slide/createSlideJobs.ts` needs `compact(deckId)`,
-  `computePromptCreation`, `settlePromptCreation`, `computePromptRefresh`,
-  `settlePromptRefresh` — five methods, five intent types.
-- `startBackend.ts` needs `recoverPendingAttempts()`.
+Slide was **deleted**, not completed. `3-capabilities/slide/`, `4-job-wiring/slide/`,
+`1-init/create/slide.ts`, and the three `slide-*.test.ts` files are gone — 39 files, roughly
+9,100 lines. `slideService.ts` had never been written, and that one missing file was what
+broke both the build and the boot.
 
-`document/application/documentService.ts` is the direct template; the differences are that
-Slide has no formula-evaluation attempt kind and no Activity publisher, so it needs roughly
-five of Document's seven stage methods.
+The count moved 257 → 231 because Slide's three test files went with it. Everything else
+stayed green.
+
+Rationale and full scope are in `scratch/0-general-updates.md` item 1.
+
+## The verification gap — closed
+
+The original note flagged this:
+
+> A green test run does not imply a working service.
+
+**Fixed.** `runtime-wiring.test.ts` now carries *"the composition root's module graph
+resolves"*, which dynamically imports `#init/startBackend.js` and asserts `startBackend` is a
+function. Import only — it never calls `startBackend()`, so nothing binds a port or opens a
+database.
+
+Dynamic rather than top-level on purpose: a static import that failed would take the whole
+file down and hide the other seven assertions behind a module-load error.
+
+Verified non-vacuous by deliberately breaking `startBackend.ts` and confirming the test fails
+while its file-mates still pass.
+
+**Known limit, worth understanding.** It catches an unresolvable import whose binding is
+*used* at runtime, but not one that is unused or type-only — esbuild elides those before Node
+resolves them. So it would have caught the Slide breakage (`createSlideInstance` and both
+`register*` functions were called values) but it is not a general substitute for `tsc`.
+
+That makes the other half still worth doing:
+
+1. Add `pnpm typecheck` to whatever gate runs `pnpm test` — **still open**, and now the more
+   valuable of the two.
 
 ## Documentation drift
 
@@ -118,9 +111,11 @@ design page, they say so and are right.
 | --- | --- | --- | --- |
 | Foundations | Intelligence, Context, Formula, Structured Data, Rich Text | ✅ | ✅ confirmed |
 | Resources | Knowledge, Document, Connector, General File | ✅ | ✅ confirmed |
-| Resources | Slides | ☐ | Partially built, not runnable |
-| Resources | Spreadsheet, Templates | ☐ | Absent (design in `scratch/spreadsheet-design/`) |
-| Research | Analysis, Investigation, Research | ☐ | Absent |
+| Resources | Slides | ☐ | **Deleted 2026-08-01** — was partially built and never runnable |
+| Resources | Spreadsheet | ☐ | Absent (design in `scratch/spreadsheet-design/`) |
+| Resources | Templates | ☐ | **Built** since this snapshot |
+| Research | Analysis, Research | ☐ | Absent |
+| Research | Investigation | ☐ | **Built** since this snapshot |
 | Project | Activity (Presence) | ✅ | ✅ ledger + Presence core; Presence writes 501 by design |
 | Project | Comments, Workspace | ☐ | Absent (design in `scratch/comments-design.md`) |
 | Agentic | Persona, Agents, Automation | ☐ | Absent |
@@ -132,8 +127,9 @@ group.
 
 Collected from source reading and the modules' own `invariants.md` pages:
 
-1. **Slide application service missing** — blocks the whole build and boot. Highest priority.
-2. **Test suite does not exercise composition** — see above.
+1. ~~**Slide application service missing** — blocks the whole build and boot.~~ **Resolved** —
+   Slide was deleted rather than finished. Typecheck and the module graph both pass.
+2. **Test suite does not exercise composition** — see above. Still open.
 3. **Connector `filesystemProvider` is not an authorization boundary.** It accepts any path
    readable by the backend process. Fine for local development; a containment boundary is
    needed before any multi-user deployment.
@@ -162,7 +158,8 @@ Collected from source reading and the modules' own `invariants.md` pages:
 
 ```bash
 cd apps/backend
-pnpm typecheck                       # expect: 2 errors, both slide/index.ts
-pnpm test                            # expect: 155 pass
-node -e 'import("#init/startBackend.js")'   # expect: ERR_MODULE_NOT_FOUND
+pnpm typecheck                       # expect: clean, exit 0
+pnpm test                            # expect: 231 pass
+node --conditions=development --import tsx \
+  -e 'import("#init/startBackend.js")'      # expect: resolves, no error
 ```

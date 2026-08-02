@@ -6,7 +6,7 @@ Nine directories under `3-capabilities`. Status column reflects what was measure
 | Capability | Shape | Endpoints | DB file | Revision model | Status |
 | --- | --- | --- | --- | --- | --- |
 | `document` | Layered | 2 | `documents.db` | Base + ChangeSets | Complete, well tested |
-| `slide` | Layered | 2 | `slides.db` | Base + ChangeSets | **Missing application service** |
+| ~~`slide`~~ | — | — | — | — | **Deleted 2026-08-01** — see below |
 | `activity` | Layered | 2 | `activity.db` | Append-only + TTL leases | Ledger complete; Presence writes 501 |
 | `connector` | Layered | 9 | `connector.db` | Atomic revisioned | Complete; filesystem provider only |
 | `general-files` | Layered | 5 | `general-files.db` | Content-addressed | Complete |
@@ -61,24 +61,24 @@ prompt.refresh.{compute,settle}, formula.evaluate.{compute,settle}.
 
 ---
 
-## slide
+## slide — deleted
 
-Mirrors Document file-for-file — same domain/application/ports/persistence/wire/projections
-structure, `DeckSnapshot` instead of `DocumentSnapshot`, plus `domain/geometry.ts` for canvas
-positioning and `DEFAULT_SLIDE_CANVAS`.
+**Removed 2026-08-01.** Historical note only; nothing below exists in the tree.
 
-**`application/slideService.ts` does not exist.** `index.ts` line 1 re-exports
-`createSlideCapability` from it. Everything else — domain (867-line reducer, 501-line
-validation), persistence (1480-line store), wire (1178-line valueSchemas), projections,
-`create/slide.ts`, both wiring files, and the `startBackend` references — is present and
-compiles. Its own `docs/README.md` states this in the first heading: *"Implementation status:
-incomplete and not runnable."*
+Slide mirrored Document file-for-file — domain, ports, persistence, wire, projections, plus
+`domain/geometry.ts` for canvas positioning — but `application/slideService.ts` was never
+written, while `index.ts` re-exported `createSlideCapability` from it. That single missing
+file was the sole cause of both `tsc` errors and of `startBackend` failing at module load, so
+**no endpoint was reachable, not just Slide's two**. Its own `docs/README.md` said so in the
+first heading: *"Implementation status: incomplete and not runnable."*
 
-Domain, wire, and persistence tests (571 + 567 + 735 lines) pass because they import the
-concrete modules directly rather than the barrel.
+It was deleted rather than finished: 39 files, ~9,100 lines, including three test files whose
+571 + 567 + 735 lines passed only by importing concrete modules and routing around the broken
+barrel. Typecheck and the module graph both pass now.
 
-Slide has five internal intents (no `formula.evaluate.*` pair — Slide does not do formula
-settlement) and no Activity publisher wired.
+Rationale and full scope: `scratch/0-general-updates.md` item 1. Recoverable from git if a
+slides capability is wanted later — though the design would likely be revisited rather than
+resumed.
 
 ---
 

@@ -77,7 +77,7 @@ Data is the provisional combined home for the declaration catalog and Structured
 </tr>
 <tr>
 <td>2.3</td>
-<td>Slides</td>
+<td>Slides <em>(deleted 2026-08-01 — partially built, never runnable; removed rather than finished)</em></td>
 <td>Document-native rich content, Formula/Data seam, media/file references, Database</td>
 <td>Decks, Slides, Shapes, Notes, exact geometry, bindings, retained history, endpoints, and Jobs.</td>
 </tr>

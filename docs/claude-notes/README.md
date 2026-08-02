@@ -47,12 +47,22 @@ If you only read one: [01](01-layers-and-boundaries.md) explains the directory s
 
 ## The one thing to know first
 
-**The backend does not currently boot.** `apps/backend/src/3-capabilities/slide/index.ts`
-re-exports `./application/slideService.js`, and that file does not exist. `tsc --noEmit`
-reports exactly two errors, both from that import, and importing `#init/startBackend.js`
-fails at runtime with `ERR_MODULE_NOT_FOUND`. The 155 capability tests still pass because
-they import Slide's domain/persistence/wire modules directly and never touch the barrel.
-Details and reproduction in [09-verified-status.md](09-verified-status.md).
+**These notes are a snapshot taken 2026-08-01 and have since drifted.** They were written
+against a tree that did not boot, and they predate five capabilities.
+
+What has changed since:
+
+- **Slide was deleted** (not finished). It was the sole reason the tree did not typecheck or
+  boot; both now succeed. Every "Document and Slide…" statement below should be read as
+  "Document…", and the Slide sections are historical.
+- **Comments, Templates, Investigation, and Persona** were added and are not described here at
+  all.
+- **Context** collapsed to project-only scope, gained `union`/`difference` composition
+  endpoints and a `private` flag.
+
+Treat the structural material — layers, queues, the attempt pipeline, conventions — as
+current; it still matches. Treat capability inventories, counts, and status claims as stale.
+A full refresh is tracked in `scratch/0-general-updates.md`.
 
 ## Relationship to the repo's other documentation
 

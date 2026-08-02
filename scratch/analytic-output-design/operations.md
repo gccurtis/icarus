@@ -1,188 +1,137 @@
 # Analytic Output — operations
 
-## Endpoints
+## Runtime
 
-Flat endpoints, matching the sibling small capabilities (Questions,
-Hypotheses, Findings, Structured Data). The command/query envelope pair used by
-Document and Slide earns its keep when the operation union is large; here there
-are seven operations and a discriminated body would only add a decode step.
+```ts
+interface CreateAnalyticOutputRequest {
+  readonly title: string;
+  readonly description?: string;
+  readonly definition: AnalyticDefinition;
+}
 
-**No path parameters.** IDs travel in query strings or bodies. The transport
-matches endpoints by exact string equality on `` `${method} ${path}` `` — there
-is no pattern matching anywhere in the backend.
+interface UpdateAnalyticOutputRequest {
+  readonly expectedRevision: number;
+  readonly title: string;
+  readonly description?: string;
+  /** Complete replacement, not a patch. */
+  readonly definition: AnalyticDefinition;
+}
 
-| Method | Path | Queue | Purpose |
-| --- | --- | --- | --- |
-| `POST` | `/analytic-outputs/create` | concurrent | Create a definition. |
-| `POST` | `/analytic-outputs/update` | concurrent | Patch title, description, or definition under revision CAS. |
-| `GET` | `/analytic-outputs/get?id=…` | concurrent | Read one output, optionally with its latest materialization. |
-| `GET` | `/analytic-outputs/list` | concurrent | List live outputs, newest-updated first. |
-| `DELETE` | `/analytic-outputs/delete` | concurrent | Soft-delete under revision CAS. |
-| `POST` | `/analytic-outputs/materialize` | concurrent | Start a materialization; returns the settled result inline. |
-| `GET` | `/analytic-outputs/materialization?id=…` | concurrent | Read one immutable materialization by id. |
-| `GET` | `/analytic-outputs/materializations?outputId=…` | concurrent | List an output's materializations, newest first. |
-
-> **Note on a sibling design.** `findings-design.md` currently specifies
-> `GET /findings/:id` and `DELETE /findings/:id`. Those cannot be registered —
-> path parameters do not exist in this transport. Findings will need
-> `?id=` forms. Recorded here rather than silently copied.
-
-`create` and `update` are concurrent because the store enforces the invariant
-on its own: update is a single compare-and-swap statement returning `false` on
-conflict, exactly like `DataStore.update(entry, expectedRevision)`. Serial
-queues are for capabilities whose service reads-then-writes across several store
-calls.
-
-`materialize` is concurrent for the same reason — its settlement is one
-compare-and-publish statement — but it is the one endpoint that does real work,
-and it is where the staging below applies.
-
-## Materialization staging
-
-Materialization is one job with three internal phases and two transactions. It
-does **not** need three queue hops.
-
-```text
-POST /analytic-outputs/materialize { outputId, idempotencyKey? }
-  │
-  ├─ TRANSACTION 1 · freeze
-  │    read output; capture revision + definitionDigest
-  │    read the binding through AnalyticInputReader
-  │    insert materialization attempt with the frozen input manifest
-  │
-  ├─ compute (no transaction held)
-  │    normalise → filter → project → group/aggregate → sort → limit → validate
-  │
-  └─ TRANSACTION 2 · publish
-       insert the immutable materialization
-       advance latestMaterializationId ONLY IF
-         output.revision === frozenRevision
-       else record as superseded and leave the pointer alone
+interface AnalyticOutputRuntime {
+  create(request: CreateAnalyticOutputRequest): Promise<AnalyticOutput>;
+  update(
+    id: string,
+    request: UpdateAnalyticOutputRequest
+  ): Promise<AnalyticOutput>;
+  get(id: string): Promise<AnalyticOutput | null>;
+  list(): Promise<readonly AnalyticOutput[]>;
+  delete(id: string, expectedRevision: number): Promise<void>;
+  data(id: string): Promise<AnalyticData>;
+}
 ```
 
-The earlier draft ran this as serial → concurrent → serial with stage receipts.
-That is more machinery than the guarantee needs. The recent Derived Outputs
-work settled this exact question and landed on the same answer recorded in
-`recent-capabilities-fixes-2026-08-01.md`:
+Create and update perform structural validation only. They verify nonempty and
+unique IDs, the ordered join shape, field references, filter value shapes,
+sort targets, enums, strings, and positive limits. They do not require the
+referenced project data to exist at save time. A definition remains editable
+while its source is temporarily unavailable or being changed.
 
-> A serial → concurrent → serial queue pipeline would still need a database
-> compare-and-swap to be correct across concurrent refreshes and process
-> failures.
+Update replaces title, description, and definition as one authored record under
+the expected revision. There is no field-by-field patch language.
 
-Since the compare-and-swap is load-bearing either way, the queue hops buy
-nothing. A losing materialization is recorded as superseded and returns
-`{ published: false }` without changing the current pointer — never an error,
-because losing a race is not a failure.
+## Producing data
 
-Holding no transaction during compute is what keeps a large aggregation from
-blocking every other writer on the SQLite file.
+`data(id)` is read-only:
 
-## Idempotency
+```text
+read the live AnalyticOutput once
+  → collect its binding IDs
+  → resolve all bindings from one Formula snapshot
+  → normalize the inputs
+  → joins → filters → projection/aggregation → sorts → limit
+  → return AnalyticData tagged with the output revision used
+```
 
-`materialize` accepts an optional `idempotencyKey`. A replay with the same key
-returns the same materialization rather than computing a second one. Without a
-key, each call materializes — which is correct, because "recompute this now" is
-a legitimate thing to ask for.
+The call neither updates the output nor stores the result. Repeating it simply
+reads current project data and calculates again. It needs no idempotency key,
+settlement step, or background job.
 
-`create` does not take a client request id. A duplicate create makes a second
-output, which is visible and deletable; the machinery to prevent it costs more
-than the mistake.
+If an authored update or deletion occurs after the initial output read, the
+calculation may finish for the already captured definition. Its
+`outputRevision` tells the caller exactly which saved revision was used. There
+is no current-result pointer to race over.
+
+The runtime uses the existing Formula limits for practical bounds:
+
+- `maxRows` limits each normalized input, intermediate joined rows, and result
+  rows;
+- `maxFields` limits source and selected result fields;
+- `maxOutputBytes` limits the encoded response data; and
+- `maxIntegerBits` bounds exact aggregate arithmetic.
+
+No new Analytic Output configuration section is needed initially.
+
+## Endpoints and jobs
+
+The transport registers six exact paths; it does not support path parameters.
+
+| Method and path | Queue | Request | Success |
+| --- | --- | --- | --- |
+| `POST /analytic-outputs/create` | serial | `{ title, description?, definition }` | `201`, output |
+| `POST /analytic-outputs/update` | serial | `{ id, expectedRevision, title, description?, definition }` | `200`, output |
+| `GET /analytic-outputs/get?id=…` | concurrent | query | `200`, output |
+| `GET /analytic-outputs/list` | concurrent | none | `200`, `{ records }` |
+| `DELETE /analytic-outputs/delete?id=…&expectedRevision=…` | serial | query | `204` |
+| `POST /analytic-outputs/data` | concurrent | `{ id }` | `200`, `AnalyticData` |
+
+All jobs are inline. “Serial” is only ordinary mutation admission through the
+existing job runtime; there are no internal stages, deferred jobs, recovery
+jobs, or scheduled work.
+
+The `data` job is Promise-concurrent but executes its pure transformations on
+the Node.js thread. Formula's existing row and output bounds keep the first
+implementation bounded. A worker-thread design should be considered only if
+measurements show it is needed.
 
 ## Errors
 
-```ts
-class AnalyticOutputNotFoundError extends Error { readonly id: string }
-class StaleAnalyticOutputError extends Error {
-  readonly id: string;
-  readonly expectedRevision: number;
-  readonly actualRevision: number;
-}
-class AnalyticInputUnavailableError extends Error {
-  readonly bindingId: string;
-  readonly reason: "unknown_binding" | "not_serializable" | "resolver_failed";
-}
-class AnalyticValidationError extends Error {
-  readonly field: string;
-  readonly reason: string;
-}
-```
+The runtime throws typed errors and endpoint wiring maps them:
 
-| Error | Status | Wire code |
+| Condition | HTTP | Wire code |
 | --- | --- | --- |
-| `AnalyticOutputNotFoundError` | 404 | `analytic_output_not_found` |
-| `StaleAnalyticOutputError` | 409 | `revision_conflict` |
-| `AnalyticInputUnavailableError` | 400 | `analytic_input_unavailable` |
-| `AnalyticValidationError` | 400 | `analytic_invalid` |
+| malformed request or structurally invalid definition | 400 | `analytic_invalid` |
+| output absent or deleted | 404 | `analytic_output_not_found` |
+| stale expected revision | 409 | `analytic_revision_conflict` |
+| binding absent/unresolved, non-tabular input, missing field, incompatible join/filter/aggregate/graph, or data limit | 422 | `analytic_data_invalid` |
+| Formula resolver unavailable | 503 | `analytic_data_unavailable` |
+| unexpected failure | 500 | `internal_error` |
 
-Domain throws typed errors; job wiring maps them. Nothing here mentions a
-status code.
-
-### Diagnostics are not errors
-
-A materialization that cannot complete — unresolvable field path, view rule
-violated, result over the row limit — returns HTTP 200 with
-`status: "diagnostic"` and a typed diagnostic list. It is a real, stored,
-immutable materialization that happens to carry no rows.
-
-```ts
-type AnalyticDiagnostic =
-  | { code: "field_path_unresolved"; path: FieldPath }
-  | { code: "field_kind_incompatible"; path: FieldPath;
-      found: string; requiredBy: AnalyticViewKind }
-  | { code: "view_placement_invalid"; view: AnalyticViewKind; reason: string }
-  | { code: "aggregation_invalid"; path: FieldPath; aggregation: AnalyticAggregation }
-  | { code: "result_rows_exceeded"; limit: number; produced: number }
-  | { code: "result_cells_exceeded"; limit: number; produced: number }
-  | { code: "input_bytes_exceeded"; limit: number; found: number };
-```
-
-Making these errors would mean a chart whose underlying column was renamed
-returns a 400 and shows nothing, with no record that anyone tried. As
-diagnostics they are inspectable, they persist, and the definition stays
-editable.
-
-## Limits
-
-```ts
-interface AnalyticLimits {
-  maxInputBytes: number;        // default 8_000_000  — frozen wire value
-  maxInputRows: number;         // default 200_000
-  maxResultRows: number;        // default 20_000
-  maxResultCells: number;       // default 200_000
-  maxPlacements: number;        // default 24        — across shelves + encodings
-  maxFilters: number;           // default 32
-  maxSorts: number;             // default 8
-  maxFieldPathDepth: number;    // default 8
-  maxOutputs: number;           // default 1_000     — live per project
-}
-```
-
-Input limits are checked at freeze, before compute, so an oversized binding
-fails fast without loading a result set. Result limits are checked during
-emission and produce a diagnostic rather than a truncated result — a silently
-truncated chart is a wrong chart.
+Data errors are returned directly from the run. They do not create a diagnostic
+record. The 500 response contains a generic message; endpoint wiring logs the
+actual unexpected error.
 
 ## Logging
 
+Every path uses the injected repository `Logger`; no implementation file uses
+`console`.
+
 ```text
-analytic.create        info   { outputId, view, placementCount, filterCount, durationMs }
-analytic.update        info   { outputId, revision, digestChanged, durationMs }
-analytic.delete        info   { outputId, revision, durationMs }
-analytic.freeze        debug  { outputId, bindingId, ownerRevision, valueDigest,
-                                inputBytes, inputRows, durationMs }
-analytic.materialize   info   { outputId, materializationId, definitionRevision,
-                                published, status, resultRows, resultCells,
-                                diagnosticCount, executorVersion, durationMs }
-analytic.superseded    info   { outputId, materializationId, frozenRevision,
-                                currentRevision }
-analytic.get           debug  { outputId, found, durationMs }
-analytic.list          debug  { count, durationMs }
+analytic-output.runtime.created       info
+analytic-output.endpoints.registered  info
+analytic-output.create                info
+analytic-output.update                info
+analytic-output.delete                info
+analytic-output.get                   debug
+analytic-output.list                  debug
+analytic-output.data                  info
+analytic-output.*.rejected            warn
+analytic-output.*.failed              error
 ```
 
-Titles, descriptions, field names, filter values, and result data never appear
-in a log record. Digests, counts, and ids do. `valueDigest` is what makes two
-materializations comparable without writing any project data to the log.
+CRUD events include output ID, revision, input/join/shelf/filter/sort counts,
+graph kind, and duration. `data` additionally includes total input rows,
+intermediate peak rows, result rows/fields, and total duration. Wiring adds the
+request ID to rejection and failure events.
 
-`analytic.superseded` is `info` rather than `warn`: losing a publish race is
-ordinary and expected whenever someone edits a definition while a
-materialization is running.
+Logs do not include titles, descriptions, binding display names, field names,
+filter values, source rows, result rows, or whole request/error objects.

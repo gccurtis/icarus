@@ -1,149 +1,191 @@
 # Analytic Output — file architecture
 
-## Layout
-
-Flat capability shape with `kebab-case` filenames, matching Context, Structured
-Data, Findings, and Persona. The layered `domain/application/ports` shape is for
-capabilities with a state machine and a large operation union; this one has a
-record, an executor, and seven endpoints.
+## Minimal layout
 
 ```text
-apps/backend/src/
-  3-capabilities/analytic-output/
-    types.ts          AnalyticOutput, AnalyticDefinition, placements, filters,
-                      views, materialization types, errors
-    canonical.ts      definition and result digests
-    validation.ts     ingress validation + view placement rules
-    executor.ts       the nine-step order; pure, no I/O
-    input-reader.ts   AnalyticInputReader port
-    store.ts          AnalyticOutputStore port (synchronous)
-    sqlite-store.ts   SQLiteAnalyticOutputStore
-    analytic-output.ts createAnalyticOutput(store, inputReader, limits, logger)
-    index.ts          barrel
-    docs/             README, concepts, types, runtime, flows, invariants
+apps/backend/
+  src/
+    3-capabilities/analytic-output/
+      domain/
+        model.ts
+        errors.ts
+        validation.ts
+        executor.ts
+      application/
+        analyticOutputRuntime.ts
+      ports/
+        analyticDataReader.ts
+        analyticOutputStore.ts
+      persistence/
+        sqliteAnalyticOutputStore.ts
+      docs/
+        README.md
+        concepts.md
+        types.md
+        runtime.md
+        flows.md
+        invariants.md
+      index.ts
 
-  4-job-wiring/analytic-output/
-    registerAnalyticOutputEndpoints.ts
+    1-init/create/analytic-output.ts
+    4-job-wiring/analytic-output/registerAnalyticOutputEndpoints.ts
 
-  1-init/create/
-    analyticOutput.ts
+  test/capabilities/analytic-output.test.ts
 ```
 
-`executor.ts` is the file that matters. It is **pure**: frozen input value plus
-definition in, result rows plus resolved view plus diagnostics out. No store, no
-logger, no clock, no reader. Every rule in the canonical model's executor order
-becomes a test that needs nothing but two literals.
+This uses the current layered capability convention without splitting the small
+design into unnecessary modules.
 
-That purity is also what makes `executorVersion` meaningful. A version number
-attached to a function that reaches into a database describes nothing.
+## Responsibilities
+
+| File | Responsibility |
+| --- | --- |
+| `domain/model.ts` | `AnalyticOutput`, inputs, joins, fields, filters, sorts, graph kind, requests, and transient result types |
+| `domain/errors.ts` | validation, not-found, stale-revision, data, and dependency errors |
+| `domain/validation.ts` | structural definition validation and Formula-limit checks |
+| `domain/executor.ts` | pure normalization, joins, filters, aggregation, sorting, limit, and result construction |
+| `ports/analyticDataReader.ts` | resolve all requested binding IDs from one project snapshot |
+| `ports/analyticOutputStore.ts` | insert, get, list, revision update, and soft delete |
+| `persistence/sqliteAnalyticOutputStore.ts` | the one-table SQLite implementation and schema initialization |
+| `application/analyticOutputRuntime.ts` | six runtime methods, data-reader/executor coordination, IDs, clock, and logs |
+| `registerAnalyticOutputEndpoints.ts` | six exact routes, small request decoders, queues, and error mapping |
+
+The SQLite schema stays in the concrete store. Request decoding stays in the
+single endpoint registrar. There is no separate canonical-digest module, wire
+schema package, schema migration subsystem, materialization service, or job
+payload family.
 
 ## Dependency direction
 
-```text
-types ◄── canonical, validation, executor, store, sqlite-store
-             ▲
-analytic-output.ts ──► store (port)
-                   ──► input-reader (port)
+```mermaid
+flowchart LR
+  Model[domain/model]
+  Domain[validation + executor]
+  Ports[store + data-reader ports]
+  Store[SQLite store]
+  Runtime[application runtime]
+  Factory[startup factory]
+  Resolver[FormulaNameResolver]
+  Wiring[endpoint wiring]
 
-input-reader implementation ──► #formula  (composition only)
+  Model --> Domain
+  Model --> Ports
+  Ports --> Store
+  Domain --> Runtime
+  Ports --> Runtime
+  Store --> Factory
+  Runtime --> Factory
+  Resolver --> Factory
+  Runtime --> Wiring
 ```
 
-Rules:
+The capability may import Formula wire/rational types and helpers. It does not
+import `#structured-data`; project data reaches it only through
+`AnalyticDataReader`. The executor imports no store, reader, logger, clock, or
+job type.
 
-- **`executor.ts` imports only `types.ts`** and Formula's value helpers. It
-  never imports the store or the reader.
-- **The capability never imports `#structured-data`.** Project data arrives
-  through `AnalyticInputReader`, whose only implementation lives in composition
-  over the existing `FormulaNameResolver`. Structured Data owns declarations;
-  Formula owns the resolver; this capability owns neither and should not be
-  able to reach either directly.
-- **Formula types are imported as types.** `FormulaWireValue` crosses the
-  boundary as a value; the engine does not.
+## Resolver adapter
 
-## Composition
+The startup factory adapts the existing `FormulaNameResolver`:
 
 ```ts
-// 1-init/create/analyticOutput.ts
+const reader: AnalyticDataReader = {
+  async readAll(bindingIds) {
+    const snapshot = await formulaResolver.buildSnapshot();
+    const byId = new Map(
+      [...snapshot.bindings.values()].map(binding => [
+        binding.reference.bindingId,
+        binding
+      ])
+    );
 
-export const createAnalyticOutputInstance = (
-  config: BackendConfig,
-  logger: Logger,
-  deps: { resolver: FormulaNameResolver }
-): AnalyticOutputCapability => {
-  const store = new SQLiteAnalyticOutputStore(config.projectId, config.dataDir);
-
-  // The reader is the only place that knows about Formula resolution.
-  // Bindings are keyed by normalized display name, so locating a stored
-  // bindingId is a scan of the snapshot rather than a map lookup.
-  const inputReader: AnalyticInputReader = {
-    async read(bindingId) {
-      // FormulaNameResolver lives at 1-init/create/formula-name-resolver.ts
-      // and exposes buildSnapshot(), per formula-resolution-design.md.
-      const snapshot = await deps.resolver.buildSnapshot();
-      for (const binding of snapshot.bindings.values()) {
-        if (binding.reference.bindingId !== bindingId) continue;
-        if (!isWireSerializable(binding.value)) {
-          throw new AnalyticInputUnavailableError(bindingId, "not_serializable");
-        }
-        return {
-          bindingId,
-          displayName: binding.displayName,
-          ownerRevision: binding.ownerRevision,
-          valueDigest: binding.valueDigest,
-          snapshotDigest: snapshot.snapshotDigest,
-          value: toWire(binding.value)
-        };
+    const values = new Map<string, FormulaWireValue>();
+    for (const bindingId of new Set(bindingIds)) {
+      const binding = byId.get(bindingId);
+      if (!binding) {
+        // getIssue(bindingId) distinguishes unresolved from unknown data.
+        throw new AnalyticDataError(bindingId);
       }
-      throw new AnalyticInputUnavailableError(bindingId, "unknown_binding");
+      if (!isWireSerializable(binding.value)) {
+        throw new AnalyticDataError(bindingId);
+      }
+      values.set(bindingId, toWire(binding.value));
     }
-  };
-
-  return createAnalyticOutput(store, inputReader, config.analytic, logger);
+    return values;
+  }
 };
 ```
 
-Construction order in `startBackend.ts`: after Structured Data and the Formula
-resolver, before anything that reads analytic outputs. It has no internal jobs
-and no scheduler involvement, so there is no registrar face to wire.
+One call builds one snapshot for all inputs. A scan/index by binding ID is
+necessary because the current resolver map is keyed by normalized display
+name. Saved display names are never used as a fallback.
 
-## Aliases
+## Construction and startup
 
-| alias | target |
-| --- | --- |
-| `#analytic-output` | `3-capabilities/analytic-output/index.ts` |
-| `#analytic-output/*` | `3-capabilities/analytic-output/*` |
+`1-init/create/analytic-output.ts` opens the normal fixed capability database:
 
-Both need explicit `development`, `types`, and compiled `default` conditions so
-dev and tests select source rather than a stale `dist`.
+```text
+./data/analytic-output.db
+```
+
+It constructs the store, resolver adapter, and runtime with `config.userId` and
+the relevant existing Formula limits. No new backend configuration section is
+introduced.
+
+`startBackend.ts` constructs the runtime after the Formula resolver, adds one
+`analyticOutputReady` startup field, and registers the six endpoints. It does
+not register Analytic Output with Knowledge or the resource registry and does
+not register startup recovery or internal jobs.
+
+## Imports
+
+Add the ordinary root and wildcard aliases to both
+`apps/backend/package.json#imports` and `apps/backend/tsconfig.json`:
+
+```text
+#analytic-output
+#analytic-output/*
+```
+
+They use the same `development`, `types`, and compiled `default` conditions as
+the other current capability aliases.
 
 ## Tests
 
-| File | Covers |
-| --- | --- |
-| `analytic-output-executor.test.ts` | the nine-step order, purely |
-| `analytic-output-domain.test.ts` | validation, view rules, digests |
-| `analytic-output-persistence.test.ts` | revision CAS, publish race, idempotency, retention |
-| `analytic-output-wire.test.ts` | endpoint decoding, error → code mapping |
+One capability-level test file is enough initially. It uses `node:test`, a
+temporary SQLite path, deterministic IDs/clock, a fake `AnalyticDataReader`,
+and `CapturingLogger`.
 
-Executor cases worth writing first, because each encodes a decision that is
-easy to reverse by accident:
+It covers:
 
-- a filter removes rows **before** a sum, and the sum reflects it;
-- a limit of 10 on a grouped result yields ten groups, not ten input rows;
-- `mean` of exact `1/3` and `2/3` is exactly `1/2`, not `0.5000000000000001`;
-- `countDistinct` treats `0.5` and `1/2` as one value;
-- a `list` input normalises to one `value` field, a scalar to one row;
-- a horizontal bar reverses the resolved view's X/Y without moving shelf items;
-- an unresolvable field path produces a diagnostic materialization, not a throw.
+- create, read, list, wholesale update, stale revision, and soft delete;
+- structural validation of input IDs, ordered joins, field references, filter
+  values, and sort placement IDs;
+- one input, an inner join, a left join, and a chained join;
+- filters before aggregation and sorts/limit after aggregation;
+- exact sum and average, null behavior, and graph shelf validation;
+- one resolver read for every input in a data call;
+- `outputRevision` when an update occurs during a run;
+- all six endpoint mappings and error statuses; and
+- expected log counts without raw authored or result data.
 
-Persistence cases:
+The existing HTTP smoke script should add one short flow: declare two small
+Structured Data tables, save an output that joins them, call
+`POST /analytic-outputs/data`, assert the returned fields/rows and graph kind,
+then delete the output. Existing HTTP/job/resolver/runtime logs provide timing
+statistics; no analytic statistics subsystem is needed.
 
-- a stale `expectedRevision` changes zero rows and throws;
-- a publish whose frozen revision no longer matches leaves the pointer alone
-  and stores the materialization as unpublished;
-- editing a definition leaves `latest_materialization_id` intact;
-- a repeated `idempotencyKey` returns the first materialization.
+## Capability docs
 
-Architectural regression test, in the style of the existing `runtime-wiring`
-greps: no `#structured-data` import anywhere under
-`3-capabilities/analytic-output/`.
+Implementation creates the standard in-tree docs set:
+
+- `README.md` — purpose, boundary, code map, and reading order;
+- `concepts.md` — Tableau-like inputs, ordered joins, shelves, and a Mermaid
+  flow;
+- `types.md` — every persisted and transient type;
+- `runtime.md` — the six runtime methods and supporting functions;
+- `flows.md` — endpoints, jobs, reader, executor order, errors, and logs; and
+- `invariants.md` — the small guarantees and explicit first-version omissions.
+
+Those docs should describe the implemented code, not reintroduce result
+history, rendering, or publication concepts.
