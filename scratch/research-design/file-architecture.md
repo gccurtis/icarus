@@ -35,7 +35,7 @@ apps/backend/src/
       questionReader.ts     matches questions-design's reader shape
       hypothesisReader.ts
       computation.ts        bounded sandbox
-      analyticOutputs.ts    read-only materialization by id
+      structuredAnalytics.ts  read-only analytic pull by id
       webRetrieval.ts
     persistence/
       sqliteResearchStore.ts
@@ -74,7 +74,7 @@ Rules:
   logger, no model. Every mode's completion criteria and every grounding
   validation rule becomes a test needing two literals.
 - **Research never imports another capability's module.** Findings, Questions,
-  Hypotheses, Structured Analysis, and Agents are all reached through narrow ports
+  Hypotheses, Structured Analytic, and Agents are all reached through narrow ports
   in `ports/`, implemented by adapters in job wiring. Grep for `#findings` or
   `#agents` under `3-capabilities/research/` should return nothing.
 - **Research owns no execution.** There is no runner, no step, no tool
@@ -96,7 +96,7 @@ const research = createResearchInstance(config, logger, {
   findings: keyedFindingsProposal(findings), // amendment R3
   questions: questionReaderAdapter(questions),
   hypotheses: hypothesisReaderAdapter(hypotheses),
-  analyticOutputs: analyticOutputReader(analyticOutput),
+  structuredAnalytics: structuredAnalyticReader(structuredAnalytic),
   computation: computationSandbox,           // may be absent
   webRetrieval: webRetrievalAdapter          // may be absent
 });

@@ -137,7 +137,7 @@ interface ResearchChannels {
   readonly structuredData: boolean;                // default true
   readonly web: boolean;                           // default false
   readonly computation: boolean;                   // default false
-  readonly analyticOutputIds: readonly string[];   // explicit, read-only
+  readonly structuredAnalyticIds: readonly string[]; // explicit, read-only
   /** Project Knowledge generation at freeze. See below. */
   readonly knowledgeGeneration: number;
 }
