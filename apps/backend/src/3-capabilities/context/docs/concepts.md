@@ -6,12 +6,11 @@ A Context is a reusable, persisted set of references. A reference is the pair `k
 
 The implemented outcomes are:
 
-- declare and replace named entry sets at user or project scope;
+- declare and replace named entry sets, each with an optional description;
 - look up and list those sets;
 - recursively expand nested `kind: "context"` references;
-- compute union or difference in memory;
-- persist a composed result under an anonymous `~…` name; and
-- copy a user context into project scope through promotion.
+- compute union or difference in memory; and
+- persist a union or difference result as a new, caller-named context and return its ID.
 
 ## Vocabulary
 
@@ -20,12 +19,9 @@ The implemented outcomes are:
 | Context entry | `{ id, kind }`, with identity `${kind}:${id}` |
 | Leaf | Any entry whose kind is not `context`; it is returned without resource validation |
 | Nested context | An entry with `kind: "context"`; its `id` is loaded recursively |
-| Named context | A live record whose display name does not start with `~` |
-| Anonymous context | A record whose display name begins with `~`; hidden from default list calls |
-| User scope | A table derived from the configured `userId` |
-| Project scope | A table derived from the configured `projectId`; the default manager scope |
-| Project-first lookup | A project `get`, `getByName`, or `resolve` may fall back to the user table |
-| Promotion | Copy a user record into project scope with a new ID and revision 1 |
+| Private context | A record created with `private: true`; hidden from default `list` calls unless `includePrivate` is passed. A visibility flag only — display names carry no special meaning. |
+| Project scope | The single table derived from the configured `projectId`; there is no user scope |
+| Operand | Composition input: either `{ contextId }` (load an existing context's entries) or `{ entries }` (inline) |
 | Resolution depth | Recursion counter bounded by `maxResolveDepth`; over-depth branches are omitted |
 
 ## Ownership and boundaries
@@ -36,7 +32,6 @@ Context owns reference-set persistence and recursive composition. Knowledge owns
 flowchart LR
   HTTP["Context HTTP endpoint"] --> JOB["inline concurrent job"]
   JOB --> CM["ContextManager"]
-  CM --> US["user Context table"]
   CM --> PS["project Context table"]
   CM --> LOG["shared Logger"]
   RR["RuntimeResourceRegistry"] -->|"resolve nested sets"| CM
@@ -51,18 +46,12 @@ The manager implements the narrow `KnowledgeResourceResolver.resolve` shape, but
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Live: declare / compose
-  UserLive: Live in user scope
-  ProjectLive: Live in project scope
-  Live --> UserLive: scope=user
-  Live --> ProjectLive: scope=project
-  UserLive --> ProjectLive: promote creates copy
-  UserLive --> Deleted: delete marks deletedAt
-  ProjectLive --> Deleted: delete marks deletedAt
+  [*] --> Live: declare / union / difference
+  Live --> Deleted: delete marks deletedAt
   Deleted --> Deleted: row retained
 ```
 
-Promotion is a copy, not a move: the source user row remains. A delete is a soft delete in SQLite. Name lookup and list hide deleted rows, while the current ID lookup does not filter `deleted_at`; that important current limitation is detailed in [Invariants](invariants.md).
+A delete is a soft delete in SQLite. Name lookup and list hide deleted rows, while the current ID lookup does not filter `deleted_at`; that important current limitation is detailed in [Invariants](invariants.md).
 
 ## Resolution lifecycle
 
@@ -74,9 +63,8 @@ flowchart TD
   E -->|no| LEAF["emit first-seen kind:id"]
   E -->|yes| SEEN{"context:id already seen?"}
   SEEN -->|yes| OMIT["omit branch"]
-  SEEN -->|no| LOAD["load selected scope"]
-  LOAD --> FALLBACK["project lookup may fall back to user"]
-  FALLBACK --> FOUND{"record found and depth allowed?"}
+  SEEN -->|no| LOAD["load from project table"]
+  LOAD --> FOUND{"record found and depth allowed?"}
   FOUND -->|no| OMIT
   FOUND -->|yes| E
   LEAF --> OUT["deduplicated leaves in first-seen order"]
@@ -87,4 +75,4 @@ flowchart TD
 
 `combine(a, b)` is a first-seen union over `a` followed by `b`. `difference(a, b)` preserves entries from `a` whose `kind:id` key is absent from `b`; duplicate entries already present in `a` are not independently deduplicated by `difference`. Neither function resolves nested contexts.
 
-`compose` runs one of those operations and inserts the result as a new record named `~${uuid}`. It does not reuse `declare`, so its behavior and limit enforcement are described separately in the runtime and invariant pages.
+`composeNamed(op, a, b, displayName, options?)` resolves each operand (loading `a`/`b` by `contextId` when given, or using inline `entries`), runs `combine` or `difference`, and inserts the result as a new live-named record at revision 1 — reusing the same conflict check as `declare`. It is the backing call for `POST /contexts/union` and `POST /contexts/difference`, which return only the new context's ID. `options.private` (default `false`) is accepted the same way `declare` accepts it; both endpoints read it from the request body.

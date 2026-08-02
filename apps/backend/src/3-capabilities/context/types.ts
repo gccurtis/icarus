@@ -6,13 +6,13 @@ import type { ContextEntry } from "#platform/knowledge/types.js";
 
 export type { ContextEntry };
 
-/** Which persistence table to address. Project is the authoritative runtime view. */
-export type ContextStoreScope = "user" | "project";
-
 export interface ContextRecord {
   readonly id: string;
   readonly displayName: string;
+  readonly description?: string;
   readonly entries: ContextEntry[];     // unordered set; deduplicated on write
+  /** When true, excluded from list() unless includePrivate is set. Fixed at creation. */
+  readonly private: boolean;
   readonly revision: number;            // monotone counter starting at 1
   readonly createdAt: string;           // ISO-8601
   readonly updatedAt: string;

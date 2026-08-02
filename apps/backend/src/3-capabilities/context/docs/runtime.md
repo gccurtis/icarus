@@ -2,11 +2,11 @@
 
 ## Construction
 
-[`createContextManagerInstance`](../../../1-init/create/context.ts) opens `./data/contexts.db`, binds the configured `userId` and `projectId` into `SQLiteContextStore`, and passes `config.context` plus the shared Logger to [`createContextManager`](../context.ts).
+[`createContextManagerInstance`](../../../1-init/create/context.ts) opens `./data/contexts.db`, binds the configured `projectId` into `SQLiteContextStore`, and passes `config.context` plus the shared Logger to [`createContextManager`](../context.ts).
 
 ```mermaid
 flowchart LR
-  CFG["BackendConfig"] --> STORE["SQLiteContextStore(userId, projectId)"]
+  CFG["BackendConfig"] --> STORE["SQLiteContextStore(projectId)"]
   DB["./data/contexts.db"] --> STORE
   STORE --> FACTORY["createContextManager"]
   CFG --> FACTORY
@@ -20,17 +20,16 @@ The manager has no mutable cache and keeps only its store, configuration, and lo
 
 | Method | Work and result | Persistence / side effects | Logging |
 |---|---|---|---|
-| `get(id, scope="project")` | Loads selected scope; project misses fall back to user; returns record or `null` | Read only | debug `context.get` with found/duration |
-| `getByName(name, scope="project")` | Same fallback policy by exact name | Read only | debug `context.getByName` |
-| `list(options={})` | Lists one scope; anonymous records excluded by default | Read only | debug `context.list` with count |
-| `declare(name, entries, scope="project")` | Checks raw entry count, checks live-name conflict, deduplicates, creates UUID at revision 1 | One store insert | info `context.declare` |
-| `update(id, entries, expectedRevision, scope="project")` | Checks raw count, existence, and revision; replaces the complete entry array; increments revision | One unconditional store update after service check | info `context.update` |
-| `delete(id, scope="project")` | Requires an ID lookup, then sets a tombstone timestamp | One store soft-delete; no expected revision | info `context.delete` |
-| `promote(id)` | Loads user row, rejects project live-name conflict, copies entries/name to a new project UUID at revision 1 | One project insert; user source is unchanged | info `context.promote` |
-| `resolve(entries, scope="project")` | Depth-first nested expansion, first-seen deduplication, silent cycle/missing/depth omission | Store reads only | debug `context.resolve` |
+| `get(id)` | Loads by ID from the project table; returns record or `null` | Read only | debug `context.get` with found/duration |
+| `getByName(name)` | Loads by exact live display name | Read only | debug `context.getByName` |
+| `list(options={})` | Lists the project table; private records excluded by default | Read only | debug `context.list` with count |
+| `declare(name, entries, options?)` | Checks raw entry count, checks live-name conflict, deduplicates, creates UUID at revision 1 with `private` from `options.private` (default `false`) | One store insert | info `context.declare` |
+| `update(id, entries, expectedRevision)` | Checks raw count, existence, and revision; replaces the complete entry array; increments revision | One unconditional store update after service check | info `context.update` |
+| `delete(id)` | Requires an ID lookup, then sets a tombstone timestamp | One store soft-delete; no expected revision | info `context.delete` |
+| `resolve(entries)` | Depth-first nested expansion, first-seen deduplication, silent cycle/missing/depth omission | Store reads only | debug `context.resolve` |
 | `combine(a,b)` | First-seen union keyed by `kind:id` | Pure; no log | none |
 | `difference(a,b)` | Returns entries in `a` whose key is absent from `b` | Pure; no log | none |
-| `compose(op,a,b,scope="project")` | Runs union/difference and inserts a new `~uuid` record at revision 1 | One insert | info `context.compose` |
+| `composeNamed(op,a,b,displayName,options?)` | Resolves each operand (by `contextId` or inline `entries`), runs union/difference, checks live-name conflict, and inserts a new named record at revision 1 with `private` from `options.private` (default `false`) | One insert | info `context.composeNamed` |
 
 All public methods return promises where declared, but the current SQLite calls execute synchronously on the event loop.
 
@@ -60,7 +59,7 @@ SQLite operations are individual statements. There is no multi-statement transac
 
 Every Context endpoint currently creates an inline job on the shared `concurrent` queue. Two direct or HTTP updates can both read the same revision and then both execute an unconditional update; the later write can overwrite the earlier one. The `expectedRevision` check detects already-stale callers but is not a cross-request atomic guarantee.
 
-Name uniqueness is stronger: the SQLite partial unique index is the final arbiter for live names in each scope, even when two declarations race. The precheck produces `ContextConflictError` in the ordinary path; a race can instead surface a SQLite error.
+Name uniqueness is stronger: the SQLite partial unique index is the final arbiter for live names in the project table, even when two declarations race. The precheck produces `ContextConflictError` in the ordinary path; a race can instead surface a SQLite error.
 
 ## Resource-registry integration
 

@@ -4,7 +4,6 @@ import { randomUUID } from "node:crypto";
 import type { Logger } from "#platform/observability/logger.js";
 import type { ContextEntry, KnowledgeResourceResolver } from "#platform/knowledge/types.js";
 import type { ContextStore } from "./store.js";
-import type { ContextStoreScope } from "./types.js";
 import { ContextRecord, ContextNotFoundError, ContextConflictError, StaleContextError } from "./types.js";
 
 export interface ContextManagerConfig {
@@ -12,33 +11,44 @@ export interface ContextManagerConfig {
   readonly maxResolveDepth: number;       // default 10 — cycle guard
 }
 
+/** One operand for a composition request: either an existing context by ID, or inline entries. */
+export type ContextOperand = { contextId: string } | { entries: ContextEntry[] };
+
+/** Optional fields shared by declare() and composeNamed(). private defaults to false. */
+export interface ContextWriteOptions {
+  readonly description?: string;
+  readonly private?: boolean;
+}
+
 /** ContextManager satisfies KnowledgeResourceResolver so it can be injected into Knowledge. */
 export interface ContextManager extends KnowledgeResourceResolver {
   // ── CRUD ─────────────────────────────────────────────────────────────────
-  /** Project-first lookup: if not in project scope, falls back to user scope. */
-  get(id: string, scope?: ContextStoreScope): Promise<ContextRecord | null>;
-  getByName(displayName: string, scope?: ContextStoreScope): Promise<ContextRecord | null>;
-  list(opts?: { includeAnonymous?: boolean; scope?: ContextStoreScope }): Promise<ContextRecord[]>;
-  declare(displayName: string, entries: ContextEntry[], scope?: ContextStoreScope): Promise<ContextRecord>;
-  update(id: string, entries: ContextEntry[], expectedRevision: number, scope?: ContextStoreScope): Promise<ContextRecord>;
-  delete(id: string, scope?: ContextStoreScope): Promise<void>;
-
-  // ── Promotion ─────────────────────────────────────────────────────────────
-  /** Copy a user-scoped context into the project scope. Errors on displayName conflict. */
-  promote(id: string): Promise<ContextRecord>;
+  get(id: string): Promise<ContextRecord | null>;
+  getByName(displayName: string): Promise<ContextRecord | null>;
+  list(opts?: { includePrivate?: boolean }): Promise<ContextRecord[]>;
+  declare(displayName: string, entries: ContextEntry[], options?: ContextWriteOptions): Promise<ContextRecord>;
+  update(id: string, entries: ContextEntry[], expectedRevision: number): Promise<ContextRecord>;
+  delete(id: string): Promise<void>;
 
   // ── Resolution (satisfies KnowledgeResourceResolver) ─────────────────────
   /** Expand all kind:"context" entries recursively into leaf entries.
    *  Cycles are guarded; missing IDs are silently omitted. */
-  resolve(entries: ContextEntry[], scope?: ContextStoreScope): Promise<ContextEntry[]>;
+  resolve(entries: ContextEntry[]): Promise<ContextEntry[]>;
 
   // ── Pure composition (no I/O) ─────────────────────────────────────────────
   combine(a: ContextEntry[], b: ContextEntry[]): ContextEntry[];
   difference(a: ContextEntry[], b: ContextEntry[]): ContextEntry[];
 
-  // ── Persisted composition ─────────────────────────────────────────────────
-  /** Run combine/difference and persist the result as an anonymous (~uuid) context. */
-  compose(op: "combine" | "difference", a: ContextEntry[], b: ContextEntry[], scope?: ContextStoreScope): Promise<ContextRecord>;
+  // ── Persisted, named composition ─────────────────────────────────────────
+  /** Resolve each operand (by context ID or inline entries), apply union/difference,
+   *  and persist the result as a new named context. Returns the created record. */
+  composeNamed(
+    op: "union" | "difference",
+    a: ContextOperand,
+    b: ContextOperand,
+    displayName: string,
+    options?: ContextWriteOptions
+  ): Promise<ContextRecord>;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -65,59 +75,58 @@ class ContextManagerImpl implements ContextManager {
     private readonly logger: Logger
   ) {}
 
-  async get(id: string, scope: ContextStoreScope = "project"): Promise<ContextRecord | null> {
+  async get(id: string): Promise<ContextRecord | null> {
     const t = performance.now();
-    let record = this.store.get(id, scope);
-    if (!record && scope === "project") record = this.store.get(id, "user");
-    this.logger.debug("context.get", { id, scope, found: Boolean(record), durationMs: Math.round(performance.now() - t) });
+    const record = this.store.get(id);
+    this.logger.debug("context.get", { id, found: Boolean(record), durationMs: Math.round(performance.now() - t) });
     return record ?? null;
   }
 
-  async getByName(displayName: string, scope: ContextStoreScope = "project"): Promise<ContextRecord | null> {
+  async getByName(displayName: string): Promise<ContextRecord | null> {
     const t = performance.now();
-    let record = this.store.getByName(displayName, scope);
-    if (!record && scope === "project") record = this.store.getByName(displayName, "user");
-    this.logger.debug("context.getByName", { displayName, scope, found: Boolean(record), durationMs: Math.round(performance.now() - t) });
+    const record = this.store.getByName(displayName);
+    this.logger.debug("context.getByName", { displayName, found: Boolean(record), durationMs: Math.round(performance.now() - t) });
     return record ?? null;
   }
 
-  async list(opts: { includeAnonymous?: boolean; scope?: ContextStoreScope } = {}): Promise<ContextRecord[]> {
+  async list(opts: { includePrivate?: boolean } = {}): Promise<ContextRecord[]> {
     const t = performance.now();
-    const scope = opts.scope ?? "project";
-    const includeAnonymous = opts.includeAnonymous ?? false;
-    const records = this.store.list(scope, includeAnonymous);
-    this.logger.debug("context.list", { scope, includeAnonymous, count: records.length, durationMs: Math.round(performance.now() - t) });
+    const includePrivate = opts.includePrivate ?? false;
+    const records = this.store.list(includePrivate);
+    this.logger.debug("context.list", { includePrivate, count: records.length, durationMs: Math.round(performance.now() - t) });
     return records;
   }
 
-  async declare(displayName: string, entries: ContextEntry[], scope: ContextStoreScope = "project"): Promise<ContextRecord> {
+  async declare(displayName: string, entries: ContextEntry[], options: ContextWriteOptions = {}): Promise<ContextRecord> {
     const t = performance.now();
     if (entries.length > this.config.maxEntriesPerContext) {
       throw new Error(`Entries exceed maxEntriesPerContext (${this.config.maxEntriesPerContext})`);
     }
-    const existing = this.store.getByName(displayName, scope);
+    const existing = this.store.getByName(displayName);
     if (existing) throw new ContextConflictError(displayName);
 
     const now = new Date().toISOString();
     const record: ContextRecord = {
       id: randomUUID(),
       displayName,
+      description: options.description,
       entries: dedup(entries),
+      private: options.private ?? false,
       revision: 1,
       createdAt: now,
       updatedAt: now
     };
-    this.store.insert(record, scope);
-    this.logger.info("context.declare", { id: record.id, displayName, scope, entryCount: record.entries.length, durationMs: Math.round(performance.now() - t) });
+    this.store.insert(record);
+    this.logger.info("context.declare", { id: record.id, displayName, entryCount: record.entries.length, private: record.private, durationMs: Math.round(performance.now() - t) });
     return record;
   }
 
-  async update(id: string, entries: ContextEntry[], expectedRevision: number, scope: ContextStoreScope = "project"): Promise<ContextRecord> {
+  async update(id: string, entries: ContextEntry[], expectedRevision: number): Promise<ContextRecord> {
     const t = performance.now();
     if (entries.length > this.config.maxEntriesPerContext) {
       throw new Error(`Entries exceed maxEntriesPerContext (${this.config.maxEntriesPerContext})`);
     }
-    const existing = this.store.get(id, scope);
+    const existing = this.store.get(id);
     if (!existing) throw new ContextNotFoundError(id);
     if (existing.revision !== expectedRevision) throw new StaleContextError(id, existing.revision, expectedRevision);
 
@@ -127,40 +136,20 @@ class ContextManagerImpl implements ContextManager {
       revision: existing.revision + 1,
       updatedAt: new Date().toISOString()
     };
-    this.store.update(updated, scope);
-    this.logger.info("context.update", { id, scope, entryCount: updated.entries.length, revision: updated.revision, durationMs: Math.round(performance.now() - t) });
+    this.store.update(updated);
+    this.logger.info("context.update", { id, entryCount: updated.entries.length, revision: updated.revision, durationMs: Math.round(performance.now() - t) });
     return updated;
   }
 
-  async delete(id: string, scope: ContextStoreScope = "project"): Promise<void> {
+  async delete(id: string): Promise<void> {
     const t = performance.now();
-    const existing = this.store.get(id, scope);
+    const existing = this.store.get(id);
     if (!existing) throw new ContextNotFoundError(id);
-    this.store.softDelete(id, scope, new Date().toISOString());
-    this.logger.info("context.delete", { id, scope, durationMs: Math.round(performance.now() - t) });
+    this.store.softDelete(id, new Date().toISOString());
+    this.logger.info("context.delete", { id, durationMs: Math.round(performance.now() - t) });
   }
 
-  async promote(id: string): Promise<ContextRecord> {
-    const t = performance.now();
-    const userRecord = this.store.get(id, "user");
-    if (!userRecord) throw new ContextNotFoundError(id);
-    const existing = this.store.getByName(userRecord.displayName, "project");
-    if (existing) throw new ContextConflictError(userRecord.displayName);
-
-    const now = new Date().toISOString();
-    const promoted: ContextRecord = {
-      ...userRecord,
-      id: randomUUID(),
-      revision: 1,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.store.insert(promoted, "project");
-    this.logger.info("context.promote", { fromScope: "user", toScope: "project", sourceId: id, resultId: promoted.id, durationMs: Math.round(performance.now() - t) });
-    return promoted;
-  }
-
-  async resolve(entries: ContextEntry[], scope: ContextStoreScope = "project"): Promise<ContextEntry[]> {
+  async resolve(entries: ContextEntry[]): Promise<ContextEntry[]> {
     const t = performance.now();
     const result: ContextEntry[] = [];
     const seen = new Set<string>();
@@ -177,8 +166,7 @@ class ContextManagerImpl implements ContextManager {
         if (seen.has(contextKey)) continue; // cycle guard
         seen.add(contextKey);
 
-        let record = this.store.get(entry.id, scope);
-        if (!record && scope === "project") record = this.store.get(entry.id, "user");
+        const record = this.store.get(entry.id);
         if (!record) continue; // silently omit missing/deleted
 
         await expand(record.entries, depth + 1);
@@ -205,21 +193,46 @@ class ContextManagerImpl implements ContextManager {
     return a.filter(e => !bKeys.has(`${e.kind}:${e.id}`));
   }
 
-  async compose(op: "combine" | "difference", a: ContextEntry[], b: ContextEntry[], scope: ContextStoreScope = "project"): Promise<ContextRecord> {
+  private resolveOperand(operand: ContextOperand): ContextEntry[] {
+    if ("contextId" in operand) {
+      const record = this.store.get(operand.contextId);
+      if (!record) throw new ContextNotFoundError(operand.contextId);
+      return record.entries;
+    }
+    return operand.entries;
+  }
+
+  async composeNamed(
+    op: "union" | "difference",
+    a: ContextOperand,
+    b: ContextOperand,
+    displayName: string,
+    options: ContextWriteOptions = {}
+  ): Promise<ContextRecord> {
     const t = performance.now();
-    const result = op === "combine" ? this.combine(a, b) : this.difference(a, b);
-    const displayName = `~${randomUUID()}`;
+    if (!displayName || displayName.trim().length === 0) {
+      throw new Error("displayName is required");
+    }
+    const existing = this.store.getByName(displayName);
+    if (existing) throw new ContextConflictError(displayName);
+
+    const entriesA = this.resolveOperand(a);
+    const entriesB = this.resolveOperand(b);
+    const result = op === "union" ? this.combine(entriesA, entriesB) : this.difference(entriesA, entriesB);
+
     const now = new Date().toISOString();
     const record: ContextRecord = {
       id: randomUUID(),
       displayName,
+      description: options.description,
       entries: result,
+      private: options.private ?? false,
       revision: 1,
       createdAt: now,
       updatedAt: now
     };
-    this.store.insert(record, scope);
-    this.logger.info("context.compose", { op, scope, entryCount: result.length, resultId: record.id, durationMs: Math.round(performance.now() - t) });
+    this.store.insert(record);
+    this.logger.info("context.composeNamed", { op, displayName, entryCount: result.length, resultId: record.id, private: record.private, durationMs: Math.round(performance.now() - t) });
     return record;
   }
 }

@@ -1,15 +1,15 @@
 // ContextStore interface.
 // All methods are synchronous (SQLite is synchronous).
-// userId/projectId are encoded in the store instance — not in method signatures.
+// projectId is encoded in the store instance — not in method signatures.
 
-import type { ContextRecord, ContextStoreScope } from "./types.js";
+import type { ContextRecord } from "./types.js";
 
 export interface ContextStore {
-  get(id: string, scope: ContextStoreScope): ContextRecord | undefined;
-  getByName(displayName: string, scope: ContextStoreScope): ContextRecord | undefined;
-  /** includeAnonymous: when false, excludes records whose displayName starts with '~'. */
-  list(scope: ContextStoreScope, includeAnonymous: boolean): ContextRecord[];
-  insert(record: ContextRecord, scope: ContextStoreScope): void;
-  update(record: ContextRecord, scope: ContextStoreScope): void;
-  softDelete(id: string, scope: ContextStoreScope, deletedAt: string): void;
+  get(id: string): ContextRecord | undefined;
+  getByName(displayName: string): ContextRecord | undefined;
+  /** includePrivate: when false, excludes records with private = true. */
+  list(includePrivate: boolean): ContextRecord[];
+  insert(record: ContextRecord): void;
+  update(record: ContextRecord): void;
+  softDelete(id: string, deletedAt: string): void;
 }

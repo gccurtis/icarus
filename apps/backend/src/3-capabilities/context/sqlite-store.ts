@@ -1,41 +1,43 @@
 // SQLite implementation of ContextStore.
-// Two tables per database: ctx_user_${userPrefix}_contexts and ctx_proj_${projectPrefix}_contexts.
-// Prefix = SHA-256(id).slice(0,16).
+// One table per database, scoped by project: ctx_${projectPrefix}_contexts.
+// Prefix = SHA-256(projectId).slice(0,16).
 
 import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database, { type Database as DB } from "better-sqlite3";
-import type { ContextEntry, ContextRecord, ContextStoreScope } from "./types.js";
+import type { ContextEntry, ContextRecord } from "./types.js";
 import type { ContextStore } from "./store.js";
 
 const tablePrefix = (id: string): string =>
   createHash("sha256").update(id).digest("hex").slice(0, 16);
 
-function createSchema(db: DB, userP: string, projP: string): void {
-  for (const p of [`ctx_user_${userP}`, `ctx_proj_${projP}`]) {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS ${p}_contexts (
-        id           TEXT    PRIMARY KEY,
-        display_name TEXT    NOT NULL,
-        entries_json TEXT    NOT NULL,
-        revision     INTEGER NOT NULL DEFAULT 1,
-        created_at   TEXT    NOT NULL,
-        updated_at   TEXT    NOT NULL,
-        deleted_at   TEXT
-      );
-      CREATE UNIQUE INDEX IF NOT EXISTS ${p}_contexts_name
-        ON ${p}_contexts(display_name)
-        WHERE deleted_at IS NULL;
-    `);
-  }
+function createSchema(db: DB, prefix: string): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ctx_${prefix}_contexts (
+      id           TEXT    PRIMARY KEY,
+      display_name TEXT    NOT NULL,
+      description  TEXT,
+      entries_json TEXT    NOT NULL,
+      private      INTEGER NOT NULL DEFAULT 0,
+      revision     INTEGER NOT NULL DEFAULT 1,
+      created_at   TEXT    NOT NULL,
+      updated_at   TEXT    NOT NULL,
+      deleted_at   TEXT
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS ctx_${prefix}_contexts_name
+      ON ctx_${prefix}_contexts(display_name)
+      WHERE deleted_at IS NULL;
+  `);
 }
 
 function rowToRecord(row: Record<string, unknown>): ContextRecord {
   return {
     id: row.id as string,
     displayName: row.display_name as string,
+    description: (row.description as string | null) ?? undefined,
     entries: JSON.parse(row.entries_json as string) as ContextEntry[],
+    private: (row.private as number) === 1,
     revision: row.revision as number,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
@@ -45,56 +47,49 @@ function rowToRecord(row: Record<string, unknown>): ContextRecord {
 
 export class SQLiteContextStore implements ContextStore {
   private readonly db: DB;
-  private readonly userP: string;
-  private readonly projP: string;
+  private readonly tableName: string;
 
-  constructor(userId: string, projectId: string, dbPath: string) {
+  constructor(projectId: string, dbPath: string) {
     mkdirSync(dirname(dbPath), { recursive: true });
     this.db = new Database(dbPath);
     this.db.pragma("journal_mode = WAL");
-    this.userP = tablePrefix(userId);
-    this.projP = tablePrefix(projectId);
-    createSchema(this.db, this.userP, this.projP);
+    const prefix = tablePrefix(projectId);
+    this.tableName = `ctx_${prefix}_contexts`;
+    createSchema(this.db, prefix);
   }
 
-  private tbl(scope: ContextStoreScope): string {
-    return scope === "user"
-      ? `ctx_user_${this.userP}_contexts`
-      : `ctx_proj_${this.projP}_contexts`;
-  }
-
-  get(id: string, scope: ContextStoreScope): ContextRecord | undefined {
+  get(id: string): ContextRecord | undefined {
     const row = this.db
-      .prepare(`SELECT * FROM ${this.tbl(scope)} WHERE id = ?`)
+      .prepare(`SELECT * FROM ${this.tableName} WHERE id = ?`)
       .get(id) as Record<string, unknown> | undefined;
     return row ? rowToRecord(row) : undefined;
   }
 
-  getByName(displayName: string, scope: ContextStoreScope): ContextRecord | undefined {
+  getByName(displayName: string): ContextRecord | undefined {
     const row = this.db
-      .prepare(`SELECT * FROM ${this.tbl(scope)} WHERE display_name = ? AND deleted_at IS NULL`)
+      .prepare(`SELECT * FROM ${this.tableName} WHERE display_name = ? AND deleted_at IS NULL`)
       .get(displayName) as Record<string, unknown> | undefined;
     return row ? rowToRecord(row) : undefined;
   }
 
-  list(scope: ContextStoreScope, includeAnonymous: boolean): ContextRecord[] {
-    const tbl = this.tbl(scope);
-    const sql = includeAnonymous
-      ? `SELECT * FROM ${tbl} WHERE deleted_at IS NULL ORDER BY display_name`
-      : `SELECT * FROM ${tbl} WHERE deleted_at IS NULL AND display_name NOT LIKE '~%' ORDER BY display_name`;
+  list(includePrivate: boolean): ContextRecord[] {
+    const sql = includePrivate
+      ? `SELECT * FROM ${this.tableName} WHERE deleted_at IS NULL ORDER BY display_name`
+      : `SELECT * FROM ${this.tableName} WHERE deleted_at IS NULL AND private = 0 ORDER BY display_name`;
     const rows = this.db.prepare(sql).all() as Record<string, unknown>[];
     return rows.map(rowToRecord);
   }
 
-  insert(record: ContextRecord, scope: ContextStoreScope): void {
-    const tbl = this.tbl(scope);
+  insert(record: ContextRecord): void {
     this.db.prepare(`
-      INSERT INTO ${tbl} (id, display_name, entries_json, revision, created_at, updated_at, deleted_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO ${this.tableName} (id, display_name, description, entries_json, private, revision, created_at, updated_at, deleted_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       record.id,
       record.displayName,
+      record.description ?? null,
       JSON.stringify(record.entries),
+      record.private ? 1 : 0,
       record.revision,
       record.createdAt,
       record.updatedAt,
@@ -102,15 +97,16 @@ export class SQLiteContextStore implements ContextStore {
     );
   }
 
-  update(record: ContextRecord, scope: ContextStoreScope): void {
-    const tbl = this.tbl(scope);
+  update(record: ContextRecord): void {
     this.db.prepare(`
-      UPDATE ${tbl}
-      SET display_name = ?, entries_json = ?, revision = ?, updated_at = ?, deleted_at = ?
+      UPDATE ${this.tableName}
+      SET display_name = ?, description = ?, entries_json = ?, private = ?, revision = ?, updated_at = ?, deleted_at = ?
       WHERE id = ?
     `).run(
       record.displayName,
+      record.description ?? null,
       JSON.stringify(record.entries),
+      record.private ? 1 : 0,
       record.revision,
       record.updatedAt,
       record.deletedAt ?? null,
@@ -118,9 +114,9 @@ export class SQLiteContextStore implements ContextStore {
     );
   }
 
-  softDelete(id: string, scope: ContextStoreScope, deletedAt: string): void {
+  softDelete(id: string, deletedAt: string): void {
     this.db
-      .prepare(`UPDATE ${this.tbl(scope)} SET deleted_at = ? WHERE id = ?`)
+      .prepare(`UPDATE ${this.tableName} SET deleted_at = ? WHERE id = ?`)
       .run(deletedAt, id);
   }
 }

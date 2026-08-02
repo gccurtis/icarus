@@ -1,6 +1,6 @@
 import type { JobRegistry } from "#utils/jobs/registry.js";
-import type { ContextManager } from "#context";
-import type { ContextEntry, ContextStoreScope } from "#context";
+import type { ContextManager, ContextOperand } from "#context";
+import type { ContextEntry } from "#context";
 import { ContextNotFoundError, ContextConflictError, StaleContextError } from "#context";
 
 function contextErrorResponse(e: unknown): { statusCode: number; body: unknown } {
@@ -19,14 +19,35 @@ function parseEntries(raw: unknown): ContextEntry[] {
     .filter(e => e.id && e.kind);
 }
 
+function parseOperand(raw: unknown): ContextOperand {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const obj = raw as Record<string, unknown>;
+    if (typeof obj.contextId === "string" && obj.contextId.length > 0) {
+      return { contextId: obj.contextId };
+    }
+    if (Array.isArray(obj.entries)) {
+      return { entries: parseEntries(obj.entries) };
+    }
+  }
+  throw new Error("Operand must be { contextId } or { entries }");
+}
+
+function parseDescription(raw: unknown): string | undefined {
+  return typeof raw === "string" ? raw : undefined;
+}
+
+/** Strict on purpose: only a literal boolean true counts. Anything else, including
+ *  missing, null, or a truthy-looking string, is treated as "not private". */
+function parsePrivate(raw: unknown): boolean {
+  return raw === true;
+}
+
 export function registerContextEndpoints(
   registry: JobRegistry,
   ctx: ContextManager
 ): void {
-  // ── User-scoped endpoints (/user/contexts/…) ────────────────────────────
-
-  registry.register({ method: "POST", path: "/user/contexts" }, (request) => ({
-    name: "context.user.declare",
+  registry.register({ method: "POST", path: "/contexts" }, (request) => ({
+    name: "context.declare",
     queueType: "concurrent",
     responseMode: "inline",
     work: async () => {
@@ -35,50 +56,50 @@ export function registerContextEndpoints(
         const record = await ctx.declare(
           String(body.displayName ?? ""),
           parseEntries(body.entries),
-          "user" as ContextStoreScope
+          { description: parseDescription(body.description), private: parsePrivate(body.private) }
         );
         return { statusCode: 201, body: record };
       } catch (e) { return contextErrorResponse(e); }
     }
   }));
 
-  registry.register({ method: "GET", path: "/user/contexts" }, (request) => ({
-    name: "context.user.list",
+  registry.register({ method: "GET", path: "/contexts" }, (request) => ({
+    name: "context.list",
     queueType: "concurrent",
     responseMode: "inline",
     work: async () => {
       const query = request.query as Record<string, string>;
-      const records = await ctx.list({ scope: "user", includeAnonymous: query.includeAnonymous === "true" });
+      const records = await ctx.list({ includePrivate: query.includePrivate === "true" });
       return { statusCode: 200, body: { records } };
     }
   }));
 
-  registry.register({ method: "GET", path: "/user/contexts/entry" }, (request) => ({
-    name: "context.user.get",
+  registry.register({ method: "GET", path: "/contexts/entry" }, (request) => ({
+    name: "context.get",
     queueType: "concurrent",
     responseMode: "inline",
     work: async () => {
       const query = request.query as Record<string, string>;
-      const record = await ctx.get(query.id ?? "", "user");
+      const record = await ctx.get(query.id ?? "");
       if (!record) return { statusCode: 404, body: { error: "not_found", message: `Context not found: ${query.id}` } };
       return { statusCode: 200, body: record };
     }
   }));
 
-  registry.register({ method: "GET", path: "/user/contexts/by-name" }, (request) => ({
-    name: "context.user.getByName",
+  registry.register({ method: "GET", path: "/contexts/by-name" }, (request) => ({
+    name: "context.getByName",
     queueType: "concurrent",
     responseMode: "inline",
     work: async () => {
       const query = request.query as Record<string, string>;
-      const record = await ctx.getByName(query.displayName ?? "", "user");
+      const record = await ctx.getByName(query.displayName ?? "");
       if (!record) return { statusCode: 404, body: { error: "not_found", message: `Context not found: ${query.displayName}` } };
       return { statusCode: 200, body: record };
     }
   }));
 
-  registry.register({ method: "PATCH", path: "/user/contexts/entries" }, (request) => ({
-    name: "context.user.update",
+  registry.register({ method: "PATCH", path: "/contexts/entries" }, (request) => ({
+    name: "context.update",
     queueType: "concurrent",
     responseMode: "inline",
     work: async () => {
@@ -87,218 +108,78 @@ export function registerContextEndpoints(
         const record = await ctx.update(
           String(body.id ?? ""),
           parseEntries(body.entries),
-          Number(body.expectedRevision),
-          "user"
+          Number(body.expectedRevision)
         );
         return { statusCode: 200, body: record };
       } catch (e) { return contextErrorResponse(e); }
     }
   }));
 
-  registry.register({ method: "DELETE", path: "/user/contexts" }, (request) => ({
-    name: "context.user.delete",
+  registry.register({ method: "DELETE", path: "/contexts" }, (request) => ({
+    name: "context.delete",
     queueType: "concurrent",
     responseMode: "inline",
     work: async () => {
       try {
         const body = request.body as Record<string, unknown>;
-        await ctx.delete(String(body.id ?? ""), "user");
+        await ctx.delete(String(body.id ?? ""));
         return { statusCode: 204, body: null };
       } catch (e) { return contextErrorResponse(e); }
     }
   }));
 
-  registry.register({ method: "POST", path: "/user/contexts/resolve" }, (request) => ({
-    name: "context.user.resolve",
+  registry.register({ method: "POST", path: "/contexts/resolve" }, (request) => ({
+    name: "context.resolve",
     queueType: "concurrent",
     responseMode: "inline",
     work: async () => {
       const body = request.body as Record<string, unknown>;
-      const resolved = await ctx.resolve(parseEntries(body.entries), "user");
+      const resolved = await ctx.resolve(parseEntries(body.entries));
       return { statusCode: 200, body: { entries: resolved } };
     }
   }));
 
-  registry.register({ method: "POST", path: "/user/contexts/combine" }, (request) => ({
-    name: "context.user.combine",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      const body = request.body as Record<string, unknown>;
-      const result = ctx.combine(parseEntries(body.a), parseEntries(body.b));
-      return { statusCode: 200, body: { entries: result } };
-    }
-  }));
+  // ── Composition (persisted, named) ───────────────────────────────────────
+  // Both endpoints resolve two operands (by context ID or inline entries),
+  // apply the set operation, persist the result under the given displayName,
+  // and return only the new context's ID.
 
-  registry.register({ method: "POST", path: "/user/contexts/difference" }, (request) => ({
-    name: "context.user.difference",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      const body = request.body as Record<string, unknown>;
-      const result = ctx.difference(parseEntries(body.a), parseEntries(body.b));
-      return { statusCode: 200, body: { entries: result } };
-    }
-  }));
-
-  registry.register({ method: "POST", path: "/user/contexts/compose" }, (request) => ({
-    name: "context.user.compose",
+  registry.register({ method: "POST", path: "/contexts/union" }, (request) => ({
+    name: "context.union",
     queueType: "concurrent",
     responseMode: "inline",
     work: async () => {
       try {
         const body = request.body as Record<string, unknown>;
-        const op = body.op === "difference" ? "difference" : "combine";
-        const record = await ctx.compose(op, parseEntries(body.a), parseEntries(body.b), "user");
-        return { statusCode: 201, body: record };
-      } catch (e) { return contextErrorResponse(e); }
-    }
-  }));
-
-  // ── Project-scoped endpoints (/project/contexts/…) ──────────────────────
-
-  registry.register({ method: "POST", path: "/project/contexts" }, (request) => ({
-    name: "context.project.declare",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      try {
-        const body = request.body as Record<string, unknown>;
-        const record = await ctx.declare(
+        const record = await ctx.composeNamed(
+          "union",
+          parseOperand(body.a),
+          parseOperand(body.b),
           String(body.displayName ?? ""),
-          parseEntries(body.entries),
-          "project"
+          { description: parseDescription(body.description), private: parsePrivate(body.private) }
         );
-        return { statusCode: 201, body: record };
+        return { statusCode: 201, body: { contextId: record.id } };
       } catch (e) { return contextErrorResponse(e); }
     }
   }));
 
-  registry.register({ method: "GET", path: "/project/contexts" }, (request) => ({
-    name: "context.project.list",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      const query = request.query as Record<string, string>;
-      const records = await ctx.list({ scope: "project", includeAnonymous: query.includeAnonymous === "true" });
-      return { statusCode: 200, body: { records } };
-    }
-  }));
-
-  registry.register({ method: "GET", path: "/project/contexts/entry" }, (request) => ({
-    name: "context.project.get",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      const query = request.query as Record<string, string>;
-      const record = await ctx.get(query.id ?? "", "project");
-      if (!record) return { statusCode: 404, body: { error: "not_found", message: `Context not found: ${query.id}` } };
-      return { statusCode: 200, body: record };
-    }
-  }));
-
-  registry.register({ method: "GET", path: "/project/contexts/by-name" }, (request) => ({
-    name: "context.project.getByName",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      const query = request.query as Record<string, string>;
-      const record = await ctx.getByName(query.displayName ?? "", "project");
-      if (!record) return { statusCode: 404, body: { error: "not_found", message: `Context not found: ${query.displayName}` } };
-      return { statusCode: 200, body: record };
-    }
-  }));
-
-  registry.register({ method: "PATCH", path: "/project/contexts/entries" }, (request) => ({
-    name: "context.project.update",
+  registry.register({ method: "POST", path: "/contexts/difference" }, (request) => ({
+    name: "context.difference",
     queueType: "concurrent",
     responseMode: "inline",
     work: async () => {
       try {
         const body = request.body as Record<string, unknown>;
-        const record = await ctx.update(
-          String(body.id ?? ""),
-          parseEntries(body.entries),
-          Number(body.expectedRevision),
-          "project"
+        const record = await ctx.composeNamed(
+          "difference",
+          parseOperand(body.a),
+          parseOperand(body.b),
+          String(body.displayName ?? ""),
+          { description: parseDescription(body.description), private: parsePrivate(body.private) }
         );
-        return { statusCode: 200, body: record };
-      } catch (e) { return contextErrorResponse(e); }
-    }
-  }));
-
-  registry.register({ method: "DELETE", path: "/project/contexts" }, (request) => ({
-    name: "context.project.delete",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      try {
-        const body = request.body as Record<string, unknown>;
-        await ctx.delete(String(body.id ?? ""), "project");
-        return { statusCode: 204, body: null };
-      } catch (e) { return contextErrorResponse(e); }
-    }
-  }));
-
-  registry.register({ method: "POST", path: "/project/contexts/resolve" }, (request) => ({
-    name: "context.project.resolve",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      const body = request.body as Record<string, unknown>;
-      const resolved = await ctx.resolve(parseEntries(body.entries), "project");
-      return { statusCode: 200, body: { entries: resolved } };
-    }
-  }));
-
-  registry.register({ method: "POST", path: "/project/contexts/combine" }, (request) => ({
-    name: "context.project.combine",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      const body = request.body as Record<string, unknown>;
-      const result = ctx.combine(parseEntries(body.a), parseEntries(body.b));
-      return { statusCode: 200, body: { entries: result } };
-    }
-  }));
-
-  registry.register({ method: "POST", path: "/project/contexts/difference" }, (request) => ({
-    name: "context.project.difference",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      const body = request.body as Record<string, unknown>;
-      const result = ctx.difference(parseEntries(body.a), parseEntries(body.b));
-      return { statusCode: 200, body: { entries: result } };
-    }
-  }));
-
-  registry.register({ method: "POST", path: "/project/contexts/compose" }, (request) => ({
-    name: "context.project.compose",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      try {
-        const body = request.body as Record<string, unknown>;
-        const op = body.op === "difference" ? "difference" : "combine";
-        const record = await ctx.compose(op, parseEntries(body.a), parseEntries(body.b), "project");
-        return { statusCode: 201, body: record };
-      } catch (e) { return contextErrorResponse(e); }
-    }
-  }));
-
-  // ── Promotion (user → project) ─────────────────────────────────────────
-
-  registry.register({ method: "POST", path: "/user/contexts/promote" }, (request) => ({
-    name: "context.promote",
-    queueType: "concurrent",
-    responseMode: "inline",
-    work: async () => {
-      try {
-        const body = request.body as Record<string, unknown>;
-        const record = await ctx.promote(String(body.id ?? ""));
-        return { statusCode: 201, body: record };
+        return { statusCode: 201, body: { contextId: record.id } };
       } catch (e) { return contextErrorResponse(e); }
     }
   }));
 }
+
