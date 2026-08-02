@@ -11,13 +11,12 @@ query route. The current HTTP transport has no trusted stable session identity,
 so `/activity/command` is deliberately registered as an explicit `501`
 unsupported response rather than accepting unsafe Presence writes.
 
-Document publishing is now wired through this boundary. Document writes a
-self-contained local outbox record with its accepted mutation, maps that record
-to an Activity transaction after commit, and marks it published only after
-Activity accepts it. Startup also recovers pending Document delivery. Other
-producing kinds remain separate integration work. Activity owns the project
-ledger and current Presence state; it does not become a second resource
-database.
+Document, Comments, and Templates publish through this boundary. Each writes a
+self-contained local transaction-outbox record with accepted work, passes its
+stable `sourceTransactionId` as Activity's `idempotencyKey`, and marks the row
+published only after Activity accepts it. Activity derives the ledger ID as
+`act_<sha256(idempotencyKey)>`. Activity owns the project ledger and current
+Presence state; it does not become a second resource database.
 
 ## Documentation map
 
@@ -75,5 +74,5 @@ Focused regression coverage is in
 stable-ID replay/conflict behavior, descending transaction queries/filtering,
 and Presence expiry without ledger entries. Endpoint behavior is covered by
 [`activity-wiring.test.ts`](../../../../test/capabilities/activity-wiring.test.ts);
-Document post-commit publication/recovery and self-contained outbox migration
+Document post-commit publication/recovery and self-contained transaction-outbox rows
 are covered in the Document application/persistence suites.

@@ -12,8 +12,9 @@ sequenceDiagram
   participant S as ActivityStore
   P->>A: publish(input without Activity ID)
   A->>A: validate fields and metadata
+  A->>A: derive "act_" + sha256(idempotencyKey)
   A->>S: publish(transaction, now())
-  alt first publication key
+  alt first derived Activity ID
     S->>S: allocate project sequence and insert
     S-->>A: StoredActivityTransaction
   else equal key retry

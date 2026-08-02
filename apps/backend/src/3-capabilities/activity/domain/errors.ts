@@ -5,7 +5,7 @@ export class ActivityValidationError extends Error {
   }
 }
 
-/** A publisher reused a stable Activity transaction ID with different content. */
+/** A publisher reused a source idempotency key with different content. */
 export class ActivityTransactionConflictError extends Error {
   constructor(transactionId: string) {
     super(`Activity transaction '${transactionId}' was published with different content`);

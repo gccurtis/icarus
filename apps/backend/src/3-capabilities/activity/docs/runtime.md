@@ -34,8 +34,9 @@ synchronous mode.
 
 `publish` is trusted internal ingestion. It validates required bounded strings,
 optional bounded strings, origin, non-negative safe revision, occurred timestamp,
-and JSON-compatible metadata. It derives an Activity-owned ID from the supplied
-`idempotencyKey`, then calls `ActivityStore.publish(transaction, now())`.
+and JSON-compatible metadata. It derives the Activity-owned ID as
+`act_<sha256(idempotencyKey)>`, then calls
+`ActivityStore.publish(transaction, now())`.
 
 The method returns the stored object—including its Activity-owned ID—for first
 acceptance and equal replay. Caller-supplied `id` fields are rejected. It does
@@ -124,19 +125,18 @@ for different content.
 ## Source-publisher and management boundaries
 
 The core/runtime does not define a source-specific outbox schema or publisher.
-Document currently supplies the first composition adapter:
+Document, Comments, and Templates each supply a composition adapter:
 
-- its accepted create/change/compensate work co-commits a self-contained local
-  outbox record;
-- [`createDocumentInstance`](../../../1-init/create/document.ts) maps that
-  record into an Activity transaction and calls trusted `activity.publish`;
-- Document marks the local row published only after that call succeeds;
-- delivery failure only logs a warning, leaving accepted Document state intact;
-  and
-- startup calls `document.publishPendingActivity()` to retry unpublished rows.
+- accepted work co-commits a self-contained local transaction-outbox record;
+- the adapter maps that record into an Activity transaction, passing
+  `sourceTransactionId` as `idempotencyKey`;
+- the producer marks the local row published only after trusted
+  `activity.publish` succeeds; and
+- recovery retries unpublished rows.
 
 The adapter maps Document's `interactive` origin to Activity's `user` origin,
-uses the source record's stable ID as the publication key, and carries
+uses the source record's stable `sourceTransactionId` as the publication key,
+and carries
 operation types plus any compensation descriptor as Activity metadata. This
 still does not make Document and Activity SQLite writes a distributed
 transaction. Slide and other producer adapters are not wired yet.

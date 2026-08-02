@@ -20,8 +20,8 @@ export interface ActivityTransactionInput extends ActivityTransactionFields {
 
 /**
  * One accepted action published by a resource or project-level producer.
- * `id` is allocated by Activity from the source idempotency key and remains
- * stable across outbox retries.
+ * `id` is derived as `act_<sha256(idempotencyKey)>` and remains stable across
+ * source transaction-outbox retries.
  */
 export interface ActivityTransaction extends ActivityTransactionFields {
   id: string;

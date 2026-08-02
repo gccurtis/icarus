@@ -18,7 +18,8 @@ authorized to see every transaction, or that a caller has a trusted session.
 - A supplied revision is a non-negative safe integer.
 - Metadata must be JSON-compatible; non-finite numbers and unsupported values
   are rejected.
-- A caller-supplied Activity `id` is rejected; Activity derives and returns it.
+- A caller-supplied Activity `id` is rejected; Activity derives and returns
+  `act_<sha256(idempotencyKey)>`.
 - First publish of a source key stores the normalized transaction.
 - Replaying that key with canonically equal content returns the existing stored
   transaction without allocating another sequence.
@@ -94,10 +95,11 @@ must derive session/actor IDs rather than accept caller-supplied identity.
 
 ## Explicit non-goals and deferred work
 
-- **Document is the only wired source publisher.** It retains a self-contained
-  source outbox row, publishes post-commit, and retries pending rows at startup.
-  Slide and every other producer still need their own adapter/recovery path
-  before their changes appear in Activity.
+- **Document, Comments, and Templates are wired source publishers.** Each
+  retains a self-contained transaction-outbox row, publishes post-commit, and
+  retries pending rows through its recovery path. Slide and every other
+  producer still needs an adapter/recovery path before its changes appear in
+  Activity.
 - **There is no Activity endpoint for ledger append.** Only trusted producer or
   project code may call `publish`.
 - **There is no undo/redo coordinator.** Activity does not choose targets, call
@@ -116,5 +118,5 @@ Focused tests verify first publish/equal replay/divergent conflict, descending
 sequence pagination and kind/resource filtering, and Presence expiry without
 ledger writes. Endpoint tests verify query and explicit Presence-write refusal.
 Document application/persistence tests verify post-commit delivery, recovery,
-and self-contained source-outbox migration. Remaining integration tests should
+and self-contained source-outbox retention. Remaining integration tests should
 cover further producer adapters and authenticated session derivation.

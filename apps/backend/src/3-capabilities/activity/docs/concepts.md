@@ -26,7 +26,8 @@ the durable boundary between those databases.
 | --- | --- |
 | Kind | Producer/resource type, such as `document`, `slides`, `connector`, or `project`. This is the shared word for a transaction producer. |
 | Activity transaction | One accepted action supplied by a trusted producer. It is not an arbitrary browser event or a failed request. |
-| Transaction ID | Stable ID created by the source with accepted work. Activity retains it across delivery retries rather than creating a second identifier. |
+| Source transaction ID | Stable producer-owned idempotency key committed with accepted work and retained across delivery retries. |
+| Activity transaction ID | Ledger-owned ID derived as `act_<sha256(sourceTransactionId)>`; producers cannot select it. |
 | Ledger sequence | Monotonic project-local number assigned when Activity first accepts a transaction. |
 | Resource reference | Optional `resourceId` alongside a kind. Project/runtime work may have no individual resource. |
 | Source outbox | Producer-owned durable row written with a source mutation and later published to Activity. |
@@ -52,11 +53,11 @@ transaction can omit `resourceId`, `revision`, and `changeSetId` altogether.
 
 ## Ledger semantics
 
-The source publication key is Activity's idempotency key; it is not the ledger
-ID. Activity derives and returns an opaque transaction ID on first publish and
-allocates a sequence. A subsequent publish with the same key and canonically
-equal contents returns the stored transaction. Changed content under the same
-key is a conflict.
+The producer passes its `sourceTransactionId` as Activity's `idempotencyKey`;
+it is not the ledger ID. Activity deterministically derives
+`act_<sha256(idempotencyKey)>` and allocates a sequence on first acceptance. A
+subsequent publish with the same key and canonically equal contents returns the
+stored transaction. Changed content under the same key is a conflict.
 
 Sequence is Activity receipt order, not distributed source-commit order. Two
 resource databases can commit independently; the first publisher to reach
@@ -103,14 +104,15 @@ after source commit
 The source must persist every field needed to construct the transaction. A
 publisher should never rebuild it from a mutable or prunable ChangeSet after
 the source commit. If a crash follows Activity ingestion but precedes marking
-the source row published, retry is safe because its ID and contents are stable.
+the source row published, retry is safe because its source transaction ID and
+contents are stable.
 
 Activity is constructed before resource integration so composition can provide
-a narrow publisher/notifier. Document is the currently wired producer: it maps
-its committed source record to an Activity transaction after commit and retries
-unpublished records during startup recovery. This does not make cross-database
-writes atomic; the Document outbox remains the recovery authority. Slide and
-other producer adapters remain deferred.
+narrow publisher adapters. Document, Comments, and Templates map committed
+source-transaction records to Activity transactions after commit and retry
+unpublished records through their recovery paths. This does not make
+cross-database writes atomic; each producer's transaction outbox remains its
+recovery authority. Slide and other producer adapters remain deferred.
 
 ## Deferred management
 

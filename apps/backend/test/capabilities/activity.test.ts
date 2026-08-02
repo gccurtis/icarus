@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -64,7 +65,10 @@ test("Activity publishes one stable transaction exactly once", async (t) => {
   }));
 
   assert.notEqual(first.id, "transaction-1");
-  assert.match(first.id, /^act_[0-9a-f]{64}$/);
+  assert.equal(
+    first.id,
+    `act_${createHash("sha256").update("transaction-1").digest("hex")}`
+  );
   assert.equal(first.sequence, 1);
   assert.deepEqual(replay, first);
 

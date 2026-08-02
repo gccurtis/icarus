@@ -103,7 +103,6 @@ const assertTransaction = (transaction: ActivityTransactionInput): void => {
 
 const activityTransactionId = (idempotencyKey: string): string =>
   `act_${createHash("sha256")
-    .update("icarus.activity.transaction\0")
     .update(idempotencyKey)
     .digest("hex")}`;
 
@@ -262,14 +261,9 @@ export const createActivityCapability = (
       const startedAt = performance.now();
       try {
         assertTransaction(transaction);
-        // Existing ledgers used the source key directly as the transaction ID.
-        // Reusing that row keeps pending outbox retries migration-safe while all
-        // new transactions receive an Activity-owned opaque ID.
         const { idempotencyKey, ...fields } = transaction;
         const generatedId = activityTransactionId(idempotencyKey);
-        const existing =
-          await store.getTransaction(idempotencyKey) ??
-          await store.getTransaction(generatedId);
+        const existing = await store.getTransaction(generatedId);
         const accepted: ActivityTransaction = {
           id: existing?.id ?? generatedId,
           ...fields

@@ -32,7 +32,8 @@ interface ActivityTransactionInput {
 }
 ```
 
-`ActivityTransaction` replaces `idempotencyKey` with the Activity-owned `id`.
+`ActivityTransaction` replaces `idempotencyKey` with the Activity-owned `id`,
+derived as `act_<sha256(idempotencyKey)>`.
 
 `kind` and `operation` provide the event label, for example
 `document.changed`. `resourceId`, `revision`, and `changeSetId` are
@@ -143,7 +144,7 @@ need not own a SQLite connection.
 | --- | --- | --- |
 | `ActivityValidationError` | Invalid trusted input, clock value, TTL, metadata/state, or query shape. | 400 `validation_error` |
 | `InvalidActivityCursorError` | Malformed, wrong-kind, or invalid-sequence transaction cursor. | 400 `validation_error` |
-| `ActivityTransactionConflictError` | Existing transaction ID was replayed with different canonical content. | No public publish endpoint currently maps this. |
+| `ActivityTransactionConflictError` | A source idempotency key was replayed with different canonical content. | No public publish endpoint currently maps this. |
 
 Unexpected query errors are logged without exposing internal details and return
 a 500 `internal_error` response. The registered command endpoint returns 501
