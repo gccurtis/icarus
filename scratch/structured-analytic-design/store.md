@@ -1,21 +1,21 @@
-# Structured Analysis — store
+# Structured Analytic — store
 
 ## Two tables
 
-Structured Analysis owns one project-scoped current-state table and the shared
-resource-history table every revisioned capability now carries. Computed data is
+Structured Analytic owns one project-scoped current-state table and the shared
+resource-history table every revisioned capability now carries. Pull results are
 never stored.
 
 ```ts
-export interface StructuredAnalysisTableNames {
-  analyses: string;
+export interface StructuredAnalyticTableNames {
+  analytics: string;
   history: string;
 }
 
-export const createStructuredAnalysisTableNames = (
+export const createStructuredAnalyticTableNames = (
   projectId: string
-): StructuredAnalysisTableNames => ({
-  analyses: `sta_${projectPrefix(projectId)}_analyses`,
+): StructuredAnalyticTableNames => ({
+  analytics: `sta_${projectPrefix(projectId)}_analytics`,
   history: `sta_${projectPrefix(projectId)}_history`
 });
 ```
@@ -26,7 +26,7 @@ project-scoped store. The connection opens with the standard four pragmas
 `synchronous = NORMAL`).
 
 ```sql
-CREATE TABLE IF NOT EXISTS sta_${prefix}_analyses (
+CREATE TABLE IF NOT EXISTS sta_${prefix}_analytics (
   id              TEXT PRIMARY KEY,
   title           TEXT NOT NULL,
   description     TEXT,
@@ -38,8 +38,8 @@ CREATE TABLE IF NOT EXISTS sta_${prefix}_analyses (
   updated_at      TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS sta_${prefix}_analyses_recent
-  ON sta_${prefix}_analyses(updated_at DESC, id);
+CREATE INDEX IF NOT EXISTS sta_${prefix}_analytics_recent
+  ON sta_${prefix}_analytics(updated_at DESC, id);
 ```
 
 There is no `deleted_at` column. Under the current model a deleted resource
@@ -59,19 +59,19 @@ separate tables would add write machinery that supports no current read.
 ## Store port
 
 ```ts
-interface StructuredAnalysisStore {
-  get(id: string): StructuredAnalysis | undefined;
+interface StructuredAnalyticStore {
+  get(id: string): StructuredAnalytic | undefined;
   /** Ordered by (updated_at DESC, id ASC). */
-  list(): StructuredAnalysis[];
+  list(): StructuredAnalytic[];
   countLive(): number;
 
-  insert(analysis: StructuredAnalysis): void;
+  insert(analytic: StructuredAnalytic): void;
   /** Archives the prior revision, then CAS-updates. False means stale. */
-  update(analysis: StructuredAnalysis, expectedRevision: number): boolean;
+  update(analytic: StructuredAnalytic, expectedRevision: number): boolean;
   /** Archives the final snapshot and a tombstone, then removes current state. */
   delete(id: string, expectedRevision: number, deletedAt: string): boolean;
 
-  latestSnapshot(id: string): StructuredAnalysis | undefined;
+  latestSnapshot(id: string): StructuredAnalytic | undefined;
   purge(id: string): void;
   pruneHistory(cutoff: string): number;
   expiredDeleted(cutoff: string): string[];
@@ -83,8 +83,8 @@ non-SQLite future to keep open — matching the Templates and Structured Data
 stores. The runtime methods stay `Promise`-returning so the transport surface
 does not change if that ever needs revisiting.
 
-The boolean CAS results follow Persona and Templates: the store reports
-success or staleness, and the service turns a `false` into the typed error after
+The boolean CAS results follow Persona and Templates: the store reports success
+or staleness, and the service turns a `false` into the typed error after
 re-reading to distinguish "gone" from "stale".
 
 ## Create, update, delete, purge
@@ -113,14 +113,14 @@ SELECT the row WHERE id = ? AND revision = ?
   → miss: return false
 insertHistorySnapshot(history, revision = current.revision, snapshot = current)
 insertHistoryDeletion(history, revision = current.revision + 1)
-DELETE FROM analyses WHERE id = ? AND revision = ?
+DELETE FROM analytics WHERE id = ? AND revision = ?
 ```
 
-After this the analysis is absent from `get` and `list`, and its full authored
+After this the analytic is absent from `get` and `list`, and its full authored
 history — including the final state — remains recoverable until purge or
 retention expiry.
 
-**Purge** permanently drops the history for one analysis. It is legal only after
+**Purge** permanently drops the history for one analytic. It is legal only after
 deletion: `purgeResourceHistory` refuses when the latest history record is not a
 tombstone, which surfaces as `ResourceNotDeletedError`.
 
@@ -136,7 +136,7 @@ Two methods put the capability into the process-wide sweep:
 Composition binds them like every other capability:
 
 ```ts
-bindResourceRetentionPort("structured-analysis", structuredAnalysis)
+bindResourceRetentionPort("structured-analytic", structuredAnalytic)
 ```
 
 `config.retention` supplies `revisionRetentionDays` and `sweepIntervalHours`.
@@ -146,14 +146,19 @@ There is no capability-specific retention setting.
 
 - `get` and `list` return current-state rows only.
 - `list` orders by `updated_at DESC, id ASC`.
-- Deleted analyses are absent from ordinary reads; `latestSnapshot` reaches them
+- Deleted analytics are absent from ordinary reads; `latestSnapshot` reaches them
   and exists for purge bookkeeping, not as a public read surface.
 - There is no history query endpoint in this version. Nothing in the product
-  needs to browse prior analysis revisions yet, and adding one later is a query
+  needs to browse prior analytic revisions yet, and adding one later is a query
   variant over data that is already being kept.
 
 ## What the store deliberately does not have
 
-Because a run never writes back, there is no result table, definition digest,
+Because a pull never writes back, there is no result table, definition digest,
 idempotency claim, transaction spanning computation, or concurrency rule beyond
 the ordinary authored revision CAS.
+
+The pull receipt is not persisted either. It is assembled from the resolver
+snapshot at read time and returned to the caller; if something later needs to
+retain a pull, it retains it in its own store, which is exactly how Research
+will hold an analysis result.

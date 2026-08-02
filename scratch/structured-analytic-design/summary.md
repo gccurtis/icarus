@@ -1,117 +1,195 @@
-# Structured Analysis — design summary
+# Structured Analytic — design summary
 
 ## Purpose
 
-Structured Analysis stores the **recipe for one table or chart**, and runs that
-recipe on demand. It is the backend equivalent of arranging a small set of
-Tableau pills: choose named project data, join it, place fields on Rows and
-Columns, filter it, aggregate it, sort it, and say what kind of chart the result
-is meant to be.
+Structured Data says how to represent **data**. Structured Analytic says how to
+represent the **combinations of that data that show a relationship** — the thing
+you actually put on a screen.
+
+A saved analytic is the recipe for one table or chart. It is the backend
+equivalent of arranging a small set of Tableau pills: choose named project data,
+join it, place fields on Rows and Columns, filter it, aggregate it, sort it, and
+say what kind of chart the result is meant to be.
 
 ```text
-Structured Data inputs (by display name)
+Structured Data inputs (by name)
   → ordered equality joins
   → filters
   → Rows and Columns placements
   → grouping and aggregation
   → sorts and optional limit
-  → transient tabular data + the saved graph
+  → a pull: tabular data + the saved display + a source receipt
 ```
 
-The capability does not draw anything. It returns structured data plus the
-authored rendering intent, and the frontend renders it.
+The capability does not draw anything. It returns data plus the authored
+rendering intent, and the frontend renders it.
+
+### Why "analytic" and not "analysis"
+
+**Analysis is a different, later capability.** Research will run real analysis —
+Python, arbitrary computation, retained code and inputs — and its output will
+be a genuine analysis resource.
+
+The point of this capability is that the *shape it returns is the common
+display language*. When Research produces a result, it produces data in this
+shape, and it is renderable for free. Reserving "analysis" for the thing that
+computes, and "analytic" for the saved display recipe and its result, keeps that
+boundary legible.
 
 ## The two runtime values
 
-Only one value is persisted:
+Only one is persisted:
 
-- **`StructuredAnalysis`** — a saved, revisioned definition. The recipe.
+- **`StructuredAnalytic`** — a saved, revisioned definition. The recipe.
 
-Running that definition returns one transient value:
+Running one is a **pull**, and it returns:
 
-- **`AnalysisData`** — result fields and rows for the analysis revision that was
-  read, carrying the saved graph so the caller renders what the author intended.
+- **`AnalyticPull`** — result fields and rows, the saved display, the analytic
+  revision that produced it, and what every Structured Data input was when it
+  was read.
 
-`AnalysisData` is never stored. There are no materializations, result history,
+`AnalyticPull` is never stored. There are no materializations, result history,
 publication rules, freeze/settle stages, idempotency keys, recovery jobs, or
-result retention. Running an analysis is a read-only calculation.
+result retention. A pull is a read-only calculation.
 
 ## The saved definition
 
-An `AnalysisDefinition` contains:
+An `AnalyticDefinition` contains:
 
-- one or more project data **inputs**, selected by Structured Data **display
-  name**;
+- one or more project data **inputs**, selected by Structured Data **name**;
 - an ordered list of simple `inner` or `left` equality **joins**;
 - **fields placed on Rows and Columns**, each with an aggregation;
 - **filters**;
 - **sorts**;
 - an optional row **limit**; and
-- the **graph** — the intended rendering.
+- the **display** — the intended rendering.
 
-Inputs carry a definition-local alias so two inputs can hold fields with the
-same name and the same table can be used twice in a self-join. Field references
-are always qualified by that alias.
+### Inputs are just names, and every kind works
 
-### The graph belongs in the definition
+An input is a name. `Orders` is the input, and a field on it is
+`{ input: "Orders", field: "region" }`. There is no separate alias to invent or
+remember; the author writes what they already call the data.
 
-The graph is part of the recipe, not a presentation flag the caller passes at
-run time. "Revenue by region as a bar chart" and "revenue by region as a line"
-are two different saved analyses, and the shelf shape a definition needs
-depends on which one it is.
+**Every wire-serializable Structured Data kind is a valid input**, because they
+are all tables once you look at them right: a table is a table, a record is one
+row, a list is one column, and a scalar is a one-by-one table. For a list or a
+scalar the single field is named after the input itself, so a variable holding
+`42` named `TargetMargin` is `{ input: "TargetMargin", field: "TargetMargin" }`.
+An author never has to know how something was declared before putting it on a
+shelf. Only `function` values are rejected — they cannot cross the wire.
 
-It is stored as an **object**, not a bare string, specifically so richer
-renderings — side-by-side panels, overlaid series, dual axes — can be added as
-new fields or variants without rewriting persisted definitions.
+The one case that needs more than a name is a self-join, where an optional `as`
+supplies a second label. It is also the seam a future *computed* input would use
+— an expression over other inputs, named by `as` rather than by a project name.
 
-### Inputs are selected by display name
+### Renames are survivable
 
-Structured Data enforces a live, case-insensitive unique index on display name,
-and the Formula resolver snapshot is already keyed by normalized display name.
-Names are the project's naming authority, so an analysis names what it wants
-the same way a formula does.
+Names are the selector, but the dependency runs one way and Structured Data
+cannot notify anything when a name changes. So a definition also records, best
+effort, which entry each name meant when it was saved.
 
-The consequence is explicit and accepted: **renaming a Structured Data entry
-breaks every saved analysis that named it.** The analysis stays editable and
-its run fails with a typed error naming the missing input, rather than silently
-retargeting to a different entry.
+A pull looks up by name first. If the name is gone but the recorded entry still
+exists, the entry was renamed: the pull **succeeds** using it and reports
+`renamed`. If the name resolves to a *different* entry than the one recorded,
+the pull succeeds — the name is the authority — and reports `retargeted`. Both
+are reported rather than silently absorbed, and neither writes back to the
+definition; repairing the stored name is an ordinary update the author makes.
 
-## Execution
+### The display belongs in the definition
 
-One run resolves every input from **one** `FormulaResolverSnapshot`. This keeps
-the inputs internally consistent — a two-input analysis can never combine data
-from two different project states — and it means formula-backed cells are
-already evaluated before the analysis sees them.
+The display is part of the recipe, not a flag the caller passes at pull time.
+"Revenue by region as a bar" and "revenue by region as a line" are two different
+saved analytics, and the shelf shape each needs differs.
 
-The executor is a small pure function over Formula wire values. It joins,
-filters before aggregation, groups and aggregates from the shelf placements,
-sorts after aggregation, then applies the limit. Exact Formula rational numbers
-stay exact through arithmetic and comparison.
+It is called *display* rather than *graph* because a **table is a first-class
+output**, not a fallback for "no chart". Producing a joined, filtered,
+aggregated table is exactly the job this capability exists for.
 
-The result records the analysis revision it used. If the definition is edited
-while a run is executing, the run still returns data for the revision it
-started with; nothing is written back.
+It is stored as an **object**, not a bare string, so richer renderings —
+side-by-side panels, overlaid series, dual axes — can be added as new fields or
+variants without rewriting persisted definitions.
+
+## Pulls carry a receipt
+
+A pull reads project data that changes underneath it. So every pull reports
+what it actually read:
+
+- the **analytic revision** the calculation used; and
+- for each input, the **entry that answered, its current name, and its
+  revision**, plus whether it resolved normally, was renamed, or was retargeted.
+
+**Revisions only — no digests.** A digest can say "this value differs from the
+one you had", but it cannot say what the value was or why, and there is no
+revision to go back and look at. A revision is an address; a digest is a boolean
+nobody can act on. The known gap — a formula-backed entry's revision not moving
+when its inputs move — is fixed properly by propagating revisions through the
+dependency graph in Structured Data, tracked in
+[supplementary-changes.md](supplementary-changes.md).
+
+A pull is always fresh. **Staleness is a property of a pull someone is still
+holding, not of the analytic**, so `analytic.check` re-reads metadata cheaply and
+lets a client watching a live chart avoid re-pulling on a timer. There is no
+sweep, no scheduler, and no active/inactive flag — see
+[operations.md](operations.md#freshness).
+
+## The definition is sugar for a formula
+
+**A Formula expression is the semantics; the pills are the authoring surface.**
+
+The recipe exists because it is *manipulable* — swapping a column or changing an
+aggregation is a small structured edit, and doing the same by rewriting formula
+text is not. But nothing about that structure defines what the numbers mean.
+Meaning comes from one deterministic function, `compile: definition → formula`,
+and a pull compiles and evaluates rather than interpreting.
+
+```text
+DISPLAY(LIMIT(SORT(GROUP(JOIN(ASTABLE(Orders,…), ASTABLE(Reps,…), …)
+        .{ c3 = "closed" }, …), …), 10), "bar")
+```
+
+Seven new Formula builtins carry it — `ASTABLE`, `JOIN`, `GROUP`, `AGGREGATE`,
+`SORT`, `LIMIT`, `DISPLAY` — each independently useful to a formula author.
+Filters reuse the existing `.{…}` condition query. Full mapping, worked example,
+and the builtin specs are in [compilation.md](compilation.md).
+
+Three things follow:
+
+- **There is no second evaluator.** No parallel semantics to keep in sync, and
+  exact rational arithmetic is Formula's, not a reimplementation.
+- **Compilation is one-way.** The definition stays canonical; the expression is
+  derived, never persisted, and re-derived whenever it is wanted.
+- **A formula can return a chart.** `DISPLAY` yields a table carrying rendering
+  intent, which is what makes "any display can be used as a table" true by
+  construction rather than by a conversion rule.
+
+One pull evaluates against **one** `FormulaResolverSnapshot`, so a two-input
+analytic can never combine data from two different project states. If the
+definition is edited mid-pull, the pull still returns data for the revision it
+captured.
 
 ## Boundaries
 
 | Concern | Owner |
 | --- | --- |
-| Saved inputs, joins, shelves, filters, sorts, limit, graph | Structured Analysis |
+| Saved inputs, joins, shelves, filters, sorts, limit, display | Structured Analytic |
 | Named project values and table contents | Structured Data |
 | Name resolution and exact value representation | Formula and the project resolver |
+| Real computation over data (Python, retained code) | Research / Analysis, later |
 | Chart rendering, layout, palettes, fonts, interaction | Frontend |
 
-Structured Analysis does not import `#structured-data`. Project data reaches it
-through one narrow `StructuredDataReader` port, satisfied in composition by an
-adapter over the existing Formula name resolver.
+Structured Analytic does not import `#structured-data`. It reaches project data
+through one narrow `ProjectDataPort` — a resolver snapshot and cheap entry
+metadata — satisfied in composition by an adapter over the existing Formula name
+resolver. It does import `#formula` directly, which is an ordinary platform
+dependency Document already has.
 
 ## Storage and runtime
 
 The capability has:
 
-- one `StructuredAnalysisCapability` runtime;
+- one `StructuredAnalyticCapability` runtime;
 - one current-state SQLite table plus the shared resource-history table;
-- one pure executor;
+- one pure compiler;
 - two endpoints — one command, one query; and
 - no internal jobs, attempts, or background work of its own beyond the
   process-wide retention sweep every capability joins.
@@ -120,7 +198,13 @@ The capability has:
 
 | File | Contents |
 | --- | --- |
-| [canonical-model.md](canonical-model.md) | Saved definition and transient data types, joins, shelves, graph, execution rules |
+| [canonical-model.md](canonical-model.md) | Saved definition and pull types, input normalization, joins, shelves, display, rename handling |
+| [compilation.md](compilation.md) | The definition → Formula mapping, the seven new builtins, and a worked example |
 | [store.md](store.md) | Current-state table, revision CAS, history, delete, purge, retention |
-| [operations.md](operations.md) | Runtime methods, the two endpoints, errors, and logging |
+| [operations.md](operations.md) | Runtime methods, validation split, the two endpoints, freshness, errors, logging |
 | [file-architecture.md](file-architecture.md) | Code layout, composition, adapter, and tests |
+| [derived-tables.md](derived-tables.md) | **Open direction** — an analytic as project data, and compiling the recipe to a formula |
+| [supplementary-changes.md](supplementary-changes.md) | Changes wanted in Formula and Structured Data, and why |
+
+The implementation plan lives at
+[`scratch/structured-analytic-implementation-plan.md`](../structured-analytic-implementation-plan.md).
