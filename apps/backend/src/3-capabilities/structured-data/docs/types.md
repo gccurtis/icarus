@@ -26,7 +26,6 @@ interface DataEntryBase {
   revision: number;
   createdAt: string;
   updatedAt: string;
-  deletedAt?: string;
 }
 
 interface FormulaEntry extends DataEntryBase {
@@ -62,7 +61,9 @@ interface CollectionEntry extends DataEntryBase {
 | `DataQuery` | Optional `kind`, text substring, and `ContextEntry[]` overlap scope |
 | `DataQueryResult` | Filtered `entries` and equal `totalCount` |
 
-`viewRevision` is not a project-global sequence. It is the maximum per-entry revision in that particular live set and can remain unchanged across mutations.
+`viewRevision` is not a project-global sequence. It is the maximum per-entry
+revision in that particular current set and can remain unchanged across
+mutations.
 
 ## Request types
 
@@ -86,8 +87,8 @@ Only `DeleteEntryRequest` is currently re-exported from the barrel alongside `St
 
 | Error | Payload | Meaning | HTTP mapping |
 |---|---|---|---:|
-| `DataEntryNotFoundError` | `id` | No live entry by ID | 404 |
-| `DataEntryConflictError` | `displayName` | Live case-insensitive name conflict | 409 |
+| `DataEntryNotFoundError` | `id` | No current entry by ID | 404 |
+| `DataEntryConflictError` | `displayName` | Current case-insensitive name conflict | 409 |
 | `StaleDataRevisionError` | ID/current/expected revisions | Revision check or SQLite CAS lost | 409 |
 | `DataValidationError` | `field`, prefixed message | Ingress shape/kind/limit failure | default 400 |
 | ordinary `Error` | message | Wrong operation for kind, max entries, store/resolver failures | default 400 at CRUD endpoint layer |
@@ -105,15 +106,22 @@ interface DataStore {
   listAll(kind?: DataKind): DataEntry[];
   insert(entry: DataEntry): void;
   update(entry: DataEntry, expectedRevision: number): boolean;
-  softDelete(id: string, expectedRevision: number, deletedAt: string): boolean;
+  delete(id: string, expectedRevision: number, recordedAt: string): number | undefined;
+  purge(id: string): "purged" | "current" | "missing";
+  history(id: string): ResourceHistoryRecord<DataEntry>[];
+  pruneHistory(cutoff: string): number;
+  purgeExpired(cutoff: string): number;
 }
 ```
 
-Both mutations return CAS success. All reads filter tombstones.
+Update returns CAS success. Delete returns terminal revision `N + 1` when its
+current-row CAS wins. All normal reads use the current table only.
 
 ## SQLite representation
 
-[`SQLiteDataStore`](../sqlite-store.ts) uses `./data/structured-data.db`, WAL mode, and table `sd_${sha256(projectId).slice(0,16)}_entries` in the current factory.
+[`SQLiteDataStore`](../sqlite-store.ts) uses `./data/structured-data.db`, WAL
+mode, current table `sd_${sha256(projectId).slice(0,16)}_entries`, and matching
+`_history` table.
 
 | Columns | Representation |
 |---|---|
@@ -121,9 +129,12 @@ Both mutations return CAS success. All reads filter tombstones.
 | `contextEntries` | JSON string in `context_entries` |
 | formula body | `body`; schema/rows null |
 | collection schema/rows | JSON in `schema_json` / `rows_json`; body null |
-| lifecycle | nullable `deleted_at` |
+| history | complete prior `DataEntry` JSON snapshots and terminal deletion records keyed by kind/ID/revision |
 
-A partial `display_name COLLATE NOCASE` unique index enforces one live case-insensitive name. An index supports kind reads. The table itself has few `CHECK` constraints; application validation is the primary schema authority.
+A `display_name COLLATE NOCASE` unique index enforces one current
+case-insensitive name. An index supports kind reads. The current table itself
+has few `CHECK` constraints; application validation is the primary schema
+authority.
 
 ## Formula and wire representation
 

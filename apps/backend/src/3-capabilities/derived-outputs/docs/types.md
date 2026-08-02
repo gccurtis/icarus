@@ -12,6 +12,7 @@ type DerivedOutputKind = "prompt";
 interface DerivedOutput {
   id: string;                       // random 32 lowercase hex characters
   kind: "prompt";
+  revision: number;                 // current aggregate/resource revision
   definition: DerivedOutputDefinition;
   headRevision: number;             // 0 before publication
   freshness: DerivedOutputFreshness;
@@ -27,7 +28,9 @@ interface DerivedOutputDefinition {
 }
 ```
 
-There is no `deletedAt`: output deletion is hard.
+The public Output has no lifecycle marker. It exists only while its row is in the typed
+current table; logical deletion is represented by retained history, not a field callers
+must filter.
 
 ### Immutable revision and status
 
@@ -120,14 +123,22 @@ These types make the exact atomic comparison inputs explicit.
 | Table | Durable purpose |
 |---|---|
 | `_outputs` | Definition, head, freshness, timestamps |
+| `_resources` | Stable internal FK root retained across logical deletion |
 | `_runtime_state` | Singleton Knowledge generation |
 | `_declarations` | Declaration idempotency key/digest/output |
 | `_refresh_claims` | Refresh key/digest/output and canonical JSON result |
 | `_definition_update_claims` | Definition key/digest/output and canonical JSON result |
 | `_revisions` | Immutable content/evidence/status history |
 | `_refresh_attempts` | Operational frozen inputs, candidate/discard, token usage |
+| `_history` | Superseded aggregate snapshots and terminal deletion records |
 
-The schema constrains claim key/digest shapes and generation non-negativity but relies substantially on service validation for statuses/revisions/JSON content. Revisions/attempts are explicitly deleted by `deleteOutput`; their tables do not declare output foreign keys.
+The schema constrains claim key/digest shapes and generation non-negativity but relies
+substantially on service validation for statuses/revisions/JSON content. `_outputs`, all
+claim tables, and `_refresh_attempts` reference current state with `ON DELETE CASCADE`.
+Immutable answer `_revisions` reference `_resources`, so logical deletion retains them.
+The generic `_history` key is `(resource_kind, resource_id, revision)`; a terminal record
+has no snapshot JSON. Physical purge removes history and then the stable root, cascading
+retained answer revisions.
 
 ## Wire representation
 

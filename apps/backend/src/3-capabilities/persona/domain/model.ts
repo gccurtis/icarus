@@ -64,7 +64,6 @@ export interface PersonaRecord {
   readonly definitionDigest: string;
   readonly createdAt: string;
   readonly updatedAt: string;
-  readonly deletedAt?: string;
 }
 
 export interface PersonaSnapshot {
@@ -109,15 +108,21 @@ export interface DeletePersonaInput {
   readonly expectedRevision: number;
 }
 
+export interface PurgePersonaInput {
+  readonly id: string;
+}
+
 export type PersonaCommand =
   | { readonly type: "persona.create"; readonly input: CreatePersonaInput }
   | { readonly type: "persona.update"; readonly input: UpdatePersonaInput }
-  | { readonly type: "persona.delete"; readonly input: DeletePersonaInput };
+  | { readonly type: "persona.delete"; readonly input: DeletePersonaInput }
+  | { readonly type: "persona.purge"; readonly input: PurgePersonaInput };
 
 export type PersonaCommandResult =
   | { readonly type: "persona.created"; readonly record: PersonaRecord }
   | { readonly type: "persona.updated"; readonly record: PersonaRecord }
-  | { readonly type: "persona.deleted"; readonly personaId: string };
+  | { readonly type: "persona.deleted"; readonly personaId: string; readonly revision: number }
+  | { readonly type: "persona.purged"; readonly personaId: string };
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 

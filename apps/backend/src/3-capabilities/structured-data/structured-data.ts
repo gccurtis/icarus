@@ -11,6 +11,10 @@ import {
   DataEntryNotFoundError, DataEntryConflictError, StaleDataRevisionError
 } from "./types.js";
 import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
+import {
   canonicalizeDisplayName,
   normalizeDisplayNameKey,
   validateAppendRows,
@@ -99,6 +103,9 @@ export interface StructuredData {
   rename(req: RenameEntryRequest): Promise<DataEntry>;
   updateDescription(req: UpdateDescriptionRequest): Promise<DataEntry>;
   delete(req: DeleteEntryRequest): Promise<void>;
+  purge(id: string): Promise<void>;
+  pruneHistory(cutoff: string): number;
+  purgeExpired(cutoff: string): number;
   // Write — formula/function only
   updateBody(req: UpdateBodyRequest): Promise<DataEntry>;
   // Write — collection only
@@ -286,13 +293,29 @@ class StructuredDataImpl implements StructuredData {
       throw new StaleDataRevisionError(req.id, entry.revision, req.expectedRevision);
     }
     const now = new Date().toISOString();
-    if (!this.store.softDelete(req.id, req.expectedRevision, now)) {
+    const deletedRevision = this.store.delete(req.id, req.expectedRevision, now);
+    if (deletedRevision === undefined) {
       const current = this.store.getEntry(req.id);
       if (!current) throw new DataEntryNotFoundError(req.id);
       throw new StaleDataRevisionError(req.id, current.revision, req.expectedRevision);
     }
     const durationMs = Math.round(performance.now() - start);
-    this.logger.info("data.delete", { id: req.id, revision: req.expectedRevision, durationMs });
+    this.logger.info("data.delete", { id: req.id, revision: deletedRevision, durationMs });
+  }
+
+  async purge(id: string): Promise<void> {
+    const outcome = this.store.purge(id);
+    if (outcome === "current") throw new ResourceNotDeletedError("structured-data", id);
+    if (outcome === "missing") throw new ResourceHistoryNotFoundError("structured-data", id);
+    this.logger.info("data.purge", { id });
+  }
+
+  pruneHistory(cutoff: string): number {
+    return this.store.pruneHistory(cutoff);
+  }
+
+  purgeExpired(cutoff: string): number {
+    return this.store.purgeExpired(cutoff);
   }
 
   async updateBody(req: UpdateBodyRequest): Promise<DataEntry> {

@@ -10,6 +10,7 @@ export type DerivedOutputKind = "prompt"; // extensible: future kinds are additi
 export interface DerivedOutput {
   readonly id: string;                  // random 16-byte hex
   readonly kind: DerivedOutputKind;
+  readonly revision: number;            // current resource revision
   readonly definition: DerivedOutputDefinition;
   readonly headRevision: number;        // 0 until first successful refresh
   readonly freshness: DerivedOutputFreshness;

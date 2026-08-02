@@ -4,6 +4,10 @@ import {
 } from "#investigation";
 import type { Logger } from "#platform/observability/logger.js";
 import type { JobRegistry } from "#utils/jobs/registry.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
 
 type CreateQuestionRequest = Parameters<InvestigationRuntime["createQuestion"]>[0];
 type UpdateQuestionRequest = Parameters<InvestigationRuntime["updateQuestion"]>[1];
@@ -404,6 +408,12 @@ const decodeFindingUpdate = (
 });
 
 const errorResponse = (error: unknown): EndpointResponse => {
+  if (error instanceof ResourceNotDeletedError) {
+    return { statusCode: 409, body: { error: "not_deleted", message: error.message } };
+  }
+  if (error instanceof ResourceHistoryNotFoundError) {
+    return { statusCode: 404, body: { error: "not_found", message: error.message } };
+  }
   if (error instanceof InvestigationIngressError) {
     return {
       statusCode: 400,
@@ -570,6 +580,17 @@ export const registerInvestigationEndpoints = (
       })
   }));
 
+  registry.register({ method: "POST", path: "/questions/purge" }, (request) => ({
+    name: "investigation.questions.purge",
+    queueType: "serial",
+    responseMode: "inline",
+    work: () => execute(logger, "investigation.questions.purge", request.requestId, {}, async () => {
+      const id = requiredString(record(request.body, "Question purge body").id, "Question id");
+      await investigation.purgeQuestion(id);
+      return { statusCode: 204, body: null };
+    })
+  }));
+
   registry.register({ method: "POST", path: "/hypotheses/create" }, (request) => ({
     name: "investigation.hypotheses.create",
     queueType: "serial",
@@ -634,6 +655,17 @@ export const registerInvestigationEndpoints = (
         await investigation.deleteHypothesis(id);
         return { statusCode: 204, body: null };
       })
+  }));
+
+  registry.register({ method: "POST", path: "/hypotheses/purge" }, (request) => ({
+    name: "investigation.hypotheses.purge",
+    queueType: "serial",
+    responseMode: "inline",
+    work: () => execute(logger, "investigation.hypotheses.purge", request.requestId, {}, async () => {
+      const id = requiredString(record(request.body, "Hypothesis purge body").id, "Hypothesis id");
+      await investigation.purgeHypothesis(id);
+      return { statusCode: 204, body: null };
+    })
   }));
 
   registry.register({ method: "POST", path: "/findings/propose" }, (request) => ({
@@ -770,6 +802,17 @@ export const registerInvestigationEndpoints = (
         await investigation.deleteFinding(id);
         return { statusCode: 204, body: null };
       })
+  }));
+
+  registry.register({ method: "POST", path: "/findings/purge" }, (request) => ({
+    name: "investigation.findings.purge",
+    queueType: "serial",
+    responseMode: "inline",
+    work: () => execute(logger, "investigation.findings.purge", request.requestId, {}, async () => {
+      const id = requiredString(record(request.body, "Finding purge body").id, "Finding id");
+      await investigation.purgeFinding(id);
+      return { statusCode: 204, body: null };
+    })
   }));
 
   logger.info("investigation.endpoints.registered", {

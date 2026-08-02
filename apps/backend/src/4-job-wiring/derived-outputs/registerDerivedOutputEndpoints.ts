@@ -2,6 +2,10 @@ import type { JobRegistry } from "#utils/jobs/registry.js";
 import type { Logger } from "#platform/observability/logger.js";
 import type { DerivedOutputService } from "#derived-outputs";
 import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
+import {
   DerivedOutputNotFoundError,
   DerivedOutputConflictError,
   DerivedOutputIdempotencyConflictError,
@@ -9,6 +13,10 @@ import {
 } from "#derived-outputs";
 
 function deError(e: unknown): { statusCode: number; body: unknown } {
+  if (e instanceof ResourceNotDeletedError)
+    return { statusCode: 409, body: { error: "not_deleted", message: e.message } };
+  if (e instanceof ResourceHistoryNotFoundError)
+    return { statusCode: 404, body: { error: "not_found", message: e.message } };
   if (e instanceof DerivedOutputNotFoundError)
     return { statusCode: 404, body: { error: "not_found", message: e.message } };
   if (e instanceof DerivedOutputConflictError)
@@ -168,15 +176,31 @@ export function registerDerivedOutputEndpoints(
     }
   }));
 
+  registry.register({ method: "POST", path: "/derived-outputs/purge" }, (request) => ({
+    name: "derived-outputs.purge",
+    queueType: "serial",
+    responseMode: "inline",
+    work: async () => {
+      try {
+        const body = request.body as Record<string, unknown>;
+        await service.purge(String(body.id ?? ""));
+        return { statusCode: 204, body: null };
+      } catch (e) {
+        return deError(e);
+      }
+    }
+  }));
+
   logger.info("derived-outputs.endpoints.registered", {
-    count: 6,
+    count: 7,
     endpoints: [
       "POST /derived-outputs",
       "GET /derived-outputs",
       "GET /derived-output-revisions",
       "PATCH /derived-output-definition",
       "POST /derived-output-refresh",
-      "DELETE /derived-outputs"
+      "DELETE /derived-outputs",
+      "POST /derived-outputs/purge"
     ]
   });
 }

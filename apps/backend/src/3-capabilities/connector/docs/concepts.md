@@ -66,11 +66,11 @@ stateDiagram-v2
   Pending --> Active: reconciliation + snapshot update succeeds
   Pending --> Failed: provider/Knowledge/store step fails
   Failed --> Pending: next sync/delete retries
-  Pending --> Deleted: all tracked sources removed + soft delete
+  Pending --> Deleted: all tracked sources removed + current row removed
   Deleted --> Active: register deterministic identity again
 ```
 
-Register indexes before inserting/restoring a row and compensates admitted sources if persistence fails. A deleted deterministic ID can be restored at prior revision +1. Re-registering an active connector returns it unchanged; it does not alter its sync interval or relist the provider.
+Register indexes before inserting the current row and compensates admitted sources if persistence fails. Deletion archives the aggregate entry/item snapshot, appends a terminal history revision, and removes the current row. Registering the same provider/locator again before purge reuses the deterministic ID at the revision after that terminal record; after purge it starts at revision 1. Re-registering an active connector returns it unchanged; it does not alter its sync interval or relist the provider.
 
 ## Synchronization model
 

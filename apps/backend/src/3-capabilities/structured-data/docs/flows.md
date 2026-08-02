@@ -2,7 +2,10 @@
 
 ## Common job behavior
 
-[`registerStructuredDataEndpoints`](../../../4-job-wiring/structured-data/registerStructuredDataEndpoints.ts) registers 15 inline jobs. Every one uses the concurrent queue. Scope is the one project instance composed at startup; no user/project selector appears in the path or payload.
+[`registerStructuredDataEndpoints`](../../../4-job-wiring/structured-data/registerStructuredDataEndpoints.ts)
+registers 16 inline jobs. Every one uses the concurrent queue. Scope is the one
+project instance composed at startup; no user/project selector appears in the
+path or payload.
 
 CRUD handlers map not-found → 404, name conflict/stale revision → 409, and all other caught errors → 400. Several read/query handlers do not wrap unexpected failures in `sdError`.
 
@@ -17,6 +20,7 @@ CRUD handlers map not-found → 404, name conflict/stale revision → 409, and a
 | `PATCH /structured-data/rename` | `structured-data.rename` | string coercion, `Number(expectedRevision)`; service name validation | `sd.rename` | 200 entry; typed mappings |
 | `PATCH /structured-data/description` | `structured-data.updateDescription` | description coerced to string, numeric revision | `sd.updateDescription` | 200 entry |
 | `DELETE /structured-data` | `structured-data.delete` | ID string, numeric expected revision | `sd.delete` | 204 null |
+| `POST /structured-data/purge` | `structured-data.purge` | body ID string | `sd.purge` | 204; current → 409 `not_deleted`; no terminal history → 404 |
 | `POST /structured-data/query` | `structured-data.query` | kind/scope cast; text coerced if present | `sd.query` | 200 result; no local catch |
 | `PATCH /structured-data/body` | `structured-data.updateBody` | body coerced to string, numeric revision; service validates | `sd.updateBody` | 200 entry |
 | `PATCH /structured-data/schema` | `structured-data.replaceSchema` | schema cast; service validates complete shape/retained rows | `sd.replaceSchema` | 200 collection |
@@ -26,7 +30,9 @@ CRUD handlers map not-found → 404, name conflict/stale revision → 409, and a
 | `GET /structured-data/value/by-name` | `structured-data.valueByDisplayName` | query display name | `sd.getByName`, resolver, `toWire` | 200 evaluated value; 404/409/422 |
 | `POST /structured-data/evaluate` | `structured-data.evaluate` | `source` coerced to string | Formula parse, resolver snapshot, Formula evaluate, `toWire` | 200 result; parse/eval 400; function 422 |
 
-There are no deferred, scheduled, or internal Structured Data jobs.
+There are no deferred or internal Structured Data jobs. The shared retention
+scheduler invokes its maintenance hooks; Structured Data owns no scheduler
+itself.
 
 ## Mutation sequence
 
@@ -38,11 +44,11 @@ sequenceDiagram
   participant S as SQLiteDataStore
   participant L as Logger
   C->>SD: revisioned mutation request
-  SD->>S: get live entry
+  SD->>S: get current entry
   SD->>SD: compare expected revision
   SD->>V: validate operation payload
   V-->>SD: canonical admitted value
-  SD->>S: UPDATE where id + expected revision + live
+  SD->>S: archive prior + mutate current where id + expected revision
   alt one row changed
     SD->>L: operation metadata + duration
     SD-->>C: revision + 1 entry
@@ -52,7 +58,11 @@ sequenceDiagram
   end
 ```
 
-Declaration differs: it checks name and count, validates full input, then inserts revision 1. SQLite's live `NOCASE` unique index is the final name-race guard.
+Declaration differs: it checks name and count, validates full input, then
+inserts current revision 1. SQLite's current-table `NOCASE` unique index is the
+final name-race guard. Delete uses the same transaction boundary to archive
+snapshot `N`, append terminal revision `N + 1`, and remove current. Retention
+later prunes old snapshots or purges expired terminal history.
 
 ## Binding and evaluated-value sequence
 

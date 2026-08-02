@@ -2,13 +2,17 @@
 
 ## Purpose
 
-Structured Data provides one stable named-data catalog for a project. A declaration has a UUID that never changes, a mutable Formula-compatible display name, a kind-specific body or collection, descriptive/context metadata, and a monotone live revision. Formula snapshots evaluate declarations into values while retaining stable binding identity.
+Structured Data provides one stable named-data catalog for a project. A
+declaration has a UUID that never changes, a mutable Formula-compatible display
+name, a kind-specific body or collection, descriptive/context metadata, and a
+monotone current revision. Formula snapshots evaluate declarations into values
+while retaining stable binding identity.
 
 ## Vocabulary
 
 | Term | Current meaning |
 |---|---|
-| Declaration / data entry | One live `DataEntry`, either formula-backed or collection-backed |
+| Declaration / data entry | One current `DataEntry`, either formula-backed or collection-backed |
 | Formula entry | `variable` or `function` with a Formula source `body` |
 | Collection entry | `table`, `record`, or `list` with a schema and rows |
 | Cell | One row field value: primitive/null literal or `{formula: string}` |
@@ -17,7 +21,7 @@ Structured Data provides one stable named-data catalog for a project. A declarat
 | Binding view | One SQL list result mapped by normalized name, with a random view ID |
 | Resolver snapshot | Evaluated Formula bindings, identity/value digests, issues, and source revisions |
 | Owner revision | The Structured Data entry revision recorded on a Formula binding |
-| Tombstone | Row with `deleted_at`; hidden by all current store reads |
+| History record | A complete superseded `DataEntry` snapshot or terminal deletion revision outside the current table |
 | Ingress validation | Validation of a declaration, replacement schema, newly appended rows, or deletion indices before persistence |
 
 ## Authority boundaries
@@ -62,15 +66,20 @@ Literal cells support text, finite/safe number, logic, and null. A formula cell 
 
 ```mermaid
 stateDiagram-v2
-  [*] --> LiveR1: declare
-  LiveR1 --> LiveRn: rename / description / body / schema / rows
-  LiveRn --> LiveRn: later revisioned mutations
-  LiveR1 --> Deleted: delete with expected revision
-  LiveRn --> Deleted: delete with expected revision
-  Deleted --> [*]: hidden from current API
+  [*] --> CurrentR1: declare
+  CurrentR1 --> CurrentRn: mutation archives prior revision
+  CurrentRn --> CurrentRn: later revisioned mutations
+  CurrentR1 --> DeletedHistory: delete archives R1 + appends terminal R2
+  CurrentRn --> DeletedHistory: delete archives Rn + appends terminal Rn+1
+  DeletedHistory --> Purged: manual purge or retention cutoff
 ```
 
-Mutation operations replace the affected aggregate representation and increment the live revision, except soft delete, which records `deletedAt` without incrementing revision. Deleted deterministic UUIDs are not resurrected by this capability.
+Mutation operations archive the prior aggregate representation and increment
+the current revision in one transaction. Delete archives the current entry,
+appends terminal revision `N + 1`, and removes the current row. Normal reads and
+Formula binding views therefore cannot return deleted entries. Manual purge and
+shared retention remove terminally deleted history; neither creates a current
+entry.
 
 ## Formula resolution lifecycle
 
@@ -85,7 +94,7 @@ Mutation operations replace the affected aggregate representation and increment 
 
 ```mermaid
 flowchart TD
-  V["bindingView: all live entries"] --> P["iterative passes"]
+  V["bindingView: all current entries"] --> P["iterative passes"]
   P --> READY{"dependencies available?"}
   READY -->|no| WAIT["wait for later pass"]
   READY -->|yes| EVAL["Formula evaluate"]

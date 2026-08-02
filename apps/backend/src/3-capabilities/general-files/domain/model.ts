@@ -44,7 +44,6 @@ export interface GeneralFile {
   readonly replacedById?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
-  readonly deletedAt?: string;
 }
 
 export interface GeneralFileUploadRequest {

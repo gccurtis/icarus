@@ -2,7 +2,7 @@
 
 ## Exhaustive HTTP endpoint table
 
-[`registerDerivedOutputEndpoints`](../../../4-job-wiring/derived-outputs/registerDerivedOutputEndpoints.ts) registers six inline jobs.
+[`registerDerivedOutputEndpoints`](../../../4-job-wiring/derived-outputs/registerDerivedOutputEndpoints.ts) registers seven inline jobs.
 
 | Method/path | Job | Queue | Input normalization | Calls | Success / notable behavior |
 |---|---|---|---|---|---|
@@ -12,8 +12,9 @@
 | `PATCH /derived-output-definition` | `derived-outputs.update-definition` | serial | complete strings/array; numeric expected revision | `updateDefinition` | 200 output; 404/409/400 |
 | `POST /derived-output-refresh` | `derived-outputs.refresh` | concurrent | body ID string | `refresh` | 200 result; owned pipeline failure is represented in result |
 | `DELETE /derived-outputs?id=` | `derived-outputs.delete` | serial | query ID default `""` | `delete` | 204 null or 404 |
+| `POST /derived-outputs/purge` | `derived-outputs.purge` | serial | body ID string | `purge` | 204 null; 409 live / 404 no terminal history |
 
-The registration logs a six-endpoint manifest at startup. No endpoint forwards an idempotency key. There are no deferred or scheduler-owned Derived Output jobs; concurrency is inside the service/provider calls plus SQLite settlement.
+The registration logs a seven-endpoint manifest at startup. No endpoint forwards an idempotency key. There are no deferred or capability-owned Derived Output jobs; concurrency is inside the service/provider calls plus SQLite settlement. The backend-wide retention scheduler calls the service's pruning and expired-purge methods.
 
 Endpoint typed mapping explicitly handles not found, generic conflict, declaration idempotency mismatch, and stale definition. Refresh/definition-specific idempotency errors fall through to generic 400 if invoked through custom wiring; current endpoints cannot trigger them because they pass no options.
 
@@ -121,4 +122,20 @@ The runtime registry expands nested Context once, passes raw `document` source I
 
 ## Deletion flow
 
-The serial endpoint calls one store transaction that explicitly deletes declaration claims, refresh claims, definition-update claims, revisions, attempts, then output. Subsequent update/refresh/delete sees not found. Referencing Document/Slide/etc. rows are outside this database and remain broken references until their owning capability handles them.
+The serial delete endpoint calls one store transaction that archives the final Output
+aggregate at resource revision `N`, appends terminal deletion revision `N + 1`, and
+deletes the current Output row. Current-owned declaration claims, refresh claims,
+definition-update claims, and attempts cascade away. Immutable answer revisions and
+lifecycle history remain attached to the stable internal root. Subsequent unqualified
+get, update, refresh, and delete operations see not found.
+
+`POST /derived-outputs/purge` requires that current state is absent and the latest history
+record is terminal deletion. It removes all lifecycle history and then the stable root,
+cascading retained answer revisions. A live Output returns `409 not_deleted`; an unknown
+or already-purged id returns `404 not_found`. Retention uses the same physical purge for
+expired terminal deletions and prunes old lifecycle snapshots for Outputs that remain
+live.
+
+References in Document or another owning capability are outside this database. Owners
+must logically delete their Outputs before owner deletion and physically purge them
+before owner purge; Derived Outputs does not rewrite external references itself.

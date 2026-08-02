@@ -16,6 +16,10 @@ import {
 } from "../../src/3-capabilities/structured-data/types.js";
 import { registerStructuredDataEndpoints } from "../../src/4-job-wiring/structured-data/registerStructuredDataEndpoints.js";
 import { CapturingLogger, TEST_FORMULA_LIMITS } from "../helpers/testDoubles.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "../../src/0-utils/persistence/resourceHistory.js";
 
 const databasePath = (name: string): string =>
   join(mkdtempSync(join(tmpdir(), `icarus-${name}-`)), "test.db");
@@ -23,8 +27,9 @@ const databasePath = (name: string): string =>
 const createHarness = () => {
   const logger = new CapturingLogger();
   const formula = createFormulaEngine(TEST_FORMULA_LIMITS, logger);
+  const store = new SQLiteDataStore("test-project", databasePath("structured-data"));
   const data = createStructuredData(
-    new SQLiteDataStore("test-project", databasePath("structured-data")),
+    store,
     {
       maxDisplayNameBytes: 256,
       maxEntries: 100,
@@ -38,7 +43,7 @@ const createHarness = () => {
     userId: "test-user",
     projectId: "test-project"
   });
-  return { data, formula, logger, resolver };
+  return { data, formula, logger, resolver, store };
 };
 
 test("Formula resolution reads only the Structured Data instance composed into its resolver", async () => {
@@ -83,8 +88,8 @@ test("Structured Data rejects display names that collide under Formula's case-in
   );
 });
 
-test("Structured Data hides deleted entries and rejects deleting them again", async () => {
-  const { data } = createHarness();
+test("Structured Data archives revisions, hides logical deletion, and supports guarded purge", async () => {
+  const { data, resolver, store } = createHarness();
   const entry = await data.declare({ kind: "variable", displayName: "temporary", body: "1" });
   const updated = await data.updateDescription({
     id: entry.id,
@@ -96,14 +101,29 @@ test("Structured Data hides deleted entries and rejects deleting them again", as
     data.delete({ id: entry.id, expectedRevision: entry.revision }),
     error => error instanceof StaleDataRevisionError
   );
+  await assert.rejects(() => data.purge(entry.id), ResourceNotDeletedError);
+  assert.deepEqual(store.history(entry.id).map((record) => [record.revision, record.recordType]), [
+    [1, "snapshot"]
+  ]);
 
   await data.delete({ id: entry.id, expectedRevision: updated.revision });
 
   assert.equal(await data.get(entry.id), undefined);
+  assert.deepEqual(await data.list(), []);
+  assert.equal((await resolver.buildSnapshot()).bindings.has(normalizeKey("temporary")), false);
+  assert.deepEqual(store.history(entry.id).map((record) => [record.revision, record.recordType]), [
+    [1, "snapshot"],
+    [2, "snapshot"],
+    [3, "deleted"]
+  ]);
   await assert.rejects(
     data.delete({ id: entry.id, expectedRevision: updated.revision }),
     error => error instanceof DataEntryNotFoundError
   );
+
+  await data.purge(entry.id);
+  assert.deepEqual(store.history(entry.id), []);
+  await assert.rejects(() => data.purge(entry.id), ResourceHistoryNotFoundError);
 });
 
 test("Structured Data delete endpoint forwards expectedRevision and maps stale revisions", async () => {
@@ -176,8 +196,8 @@ test("SQLite update CAS rejects a second store's stale revision", async () => {
   assert.equal(firstStore.update(firstUpdated, declared.revision), true);
   assert.equal(secondStore.update(secondUpdated, declared.revision), false);
   assert.equal(
-    secondStore.softDelete(declared.id, declared.revision, new Date().toISOString()),
-    false
+    secondStore.delete(declared.id, declared.revision, new Date().toISOString()),
+    undefined
   );
 
   await assert.rejects(

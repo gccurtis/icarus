@@ -2,7 +2,12 @@
 
 ## Status and authority
 
-Structured Data is the implemented, project-scoped authority for Formula-visible named declarations. It stores variables, functions, tables, records, and lists under stable UUIDs; validates mutations at ingress; exposes revisioned CRUD and collection operations; and supplies point-in-time entry views to the Formula name resolver.
+Structured Data is the implemented, project-scoped authority for
+Formula-visible named declarations. A typed current table stores variables,
+functions, tables, records, and lists under stable UUIDs; a capability history
+table stores superseded snapshots and terminal deletion revisions. The service
+validates mutations at ingress, exposes revisioned CRUD/collection operations,
+and supplies current entry views to the Formula name resolver.
 
 Name Manager has been removed. Formula language names (built-ins and lambda locals) remain owned by Formula; otherwise-unresolved project names come only from the Structured Data instance composed into [`FormulaNameResolver`](../../../1-init/create/formula-name-resolver.ts).
 
@@ -15,7 +20,7 @@ These documents describe current source behavior, including narrower runtime val
 | [Concepts](concepts.md) | Authority, declarations, collection model, resolution, and architecture |
 | [Types](types.md) | Entry/request/query/error families, store shape, SQLite and wire values |
 | [Runtime](runtime.md) | Factory, every service method, validators, resolver, logging, and concurrency |
-| [Flows](flows.md) | All 15 endpoints, Formula evaluation paths, and call sequences |
+| [Flows](flows.md) | All 16 endpoints, Formula evaluation paths, and call sequences |
 | [Invariants](invariants.md) | Admitted inputs, limits, identity/revisions, CAS, failure behavior, tests, and non-goals |
 
 ## Dependencies

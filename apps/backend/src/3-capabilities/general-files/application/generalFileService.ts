@@ -15,6 +15,10 @@ import {
   type GeneralFileUploadResult,
 } from "../domain/model.js";
 import type { GeneralFileStore } from "../ports/repository.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
 
 /**
  * Hash content with SHA-256. Returns hex string.
@@ -44,6 +48,9 @@ export interface GeneralFileService {
   get(id: string): GeneralFile;
   list(filters?: GeneralFileFilter[]): Omit<GeneralFile, "content">[];
   delete(id: string): Promise<void>;
+  purge(id: string): Promise<void>;
+  pruneHistory(cutoff: string): number;
+  purgeExpired(cutoff: string): number;
 }
 
 export function createGeneralFileService(
@@ -102,7 +109,6 @@ export function createGeneralFileService(
     const current = store.getById(file.id);
     if (
       !current ||
-      current.deletedAt ||
       current.revision !== file.revision ||
       current.contentHash !== file.contentHash
     ) {
@@ -117,7 +123,7 @@ export function createGeneralFileService(
 
   async function removeKnowledgeIfNotActive(file: GeneralFile): Promise<void> {
     const current = store.getById(file.id);
-    if (current && !current.deletedAt) return;
+    if (current) return;
     await compensateKnowledge(file, "remove");
   }
 
@@ -150,7 +156,7 @@ export function createGeneralFileService(
 
       // Check for existing
       const existing = store.getByHash(contentHash);
-      if (existing && !existing.deletedAt) {
+      if (existing) {
         // Upsert into Knowledge as a cheap self-heal for records left behind by
         // an earlier failed ingestion. Matching revisions are skipped.
         await admitToKnowledge(existing);
@@ -167,7 +173,6 @@ export function createGeneralFileService(
       const createdAt = now();
       const byteSize = Buffer.byteLength(content, "utf8");
 
-      const deleted = store.getById(id);
       const file: GeneralFile = {
         id,
         kind,
@@ -176,9 +181,8 @@ export function createGeneralFileService(
         content,
         byteSize,
         contentHash,
-        revision: deleted ? deleted.revision + 1 : 1,
+        revision: store.nextRevision(id),
         knowledgeSourceId: kind === "general::file::text" ? `general-file:${id}` : null,
-        replacesId: deleted?.replacesId,
         createdAt,
         updatedAt: createdAt,
       };
@@ -187,14 +191,10 @@ export function createGeneralFileService(
       // the newly admitted source so a retry starts from a coherent state.
       const knowledgeResult = await admitToKnowledge(file);
       try {
-        if (deleted) {
-          store.update(file);
-        } else {
-          store.insert(file);
-        }
+        store.insert(file);
       } catch (error) {
         const concurrent = store.getById(id);
-        if (concurrent && !concurrent.deletedAt) {
+        if (concurrent) {
           return { kind: "reused", file: concurrent, message: "identical content already exists" };
         }
         await compensateKnowledge(file, "remove");
@@ -206,7 +206,7 @@ export function createGeneralFileService(
         kind,
         fileName,
         byteSize,
-        resurrected: Boolean(deleted),
+        resumedIdentity: file.revision > 1,
         durationMs: Math.round(performance.now() - startedAt),
       });
 
@@ -219,7 +219,7 @@ export function createGeneralFileService(
         throw new GeneralFileEncodingError("content must be a string");
       }
       const existing = store.getById(id);
-      if (!existing || existing.deletedAt) {
+      if (!existing) {
         throw new GeneralFileNotFoundError(id);
       }
 
@@ -251,7 +251,7 @@ export function createGeneralFileService(
 
       // Check if the new hash already exists — if so, reuse that file
       const existingByHash = store.getByHash(newContentHash);
-      if (existingByHash && !existingByHash.deletedAt && existingByHash.id !== id) {
+      if (existingByHash && existingByHash.id !== id) {
         const knowledgeResult = await admitToKnowledge(existingByHash);
         await removeFromKnowledge(existing);
         try {
@@ -284,7 +284,7 @@ export function createGeneralFileService(
         content: request.content,
         byteSize,
         contentHash: newContentHash,
-        revision: existing.revision + 1,
+        revision: store.nextRevision(newId),
         knowledgeSourceId: kind === "general::file::text" ? `general-file:${newId}` : null,
         replacesId: id,
         createdAt,
@@ -321,7 +321,7 @@ export function createGeneralFileService(
     get(id: string): GeneralFile {
       const startedAt = performance.now();
       const file = store.getById(id);
-      if (!file || file.deletedAt) {
+      if (!file) {
         throw new GeneralFileNotFoundError(id);
       }
       logger.debug("general-files.get", {
@@ -346,7 +346,7 @@ export function createGeneralFileService(
     async delete(id: string): Promise<void> {
       const startedAt = performance.now();
       const file = store.getById(id);
-      if (!file || file.deletedAt) {
+      if (!file) {
         throw new GeneralFileNotFoundError(id);
       }
 
@@ -354,7 +354,8 @@ export function createGeneralFileService(
 
       await removeFromKnowledge(file);
       try {
-        store.softDelete(id, deletedAt);
+        const revision = store.delete(id, deletedAt);
+        if (revision === undefined) throw new GeneralFileNotFoundError(id);
       } catch (error) {
         await restoreKnowledgeIfStillActive(file);
         throw error;
@@ -364,6 +365,21 @@ export function createGeneralFileService(
         id,
         durationMs: Math.round(performance.now() - startedAt),
       });
+    },
+
+    async purge(id: string): Promise<void> {
+      const outcome = store.purge(id);
+      if (outcome === "current") throw new ResourceNotDeletedError("general-file", id);
+      if (outcome === "missing") throw new ResourceHistoryNotFoundError("general-file", id);
+      logger.info("general-files.purge", { id });
+    },
+
+    pruneHistory(cutoff: string): number {
+      return store.pruneHistory(cutoff);
+    },
+
+    purgeExpired(cutoff: string): number {
+      return store.purgeExpired(cutoff);
     },
   };
 }

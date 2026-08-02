@@ -5,6 +5,17 @@ import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database, { type Database as DB } from "better-sqlite3";
+import {
+  getResourceHistory,
+  initializeResourceHistorySchema,
+  insertHistoryDeletion,
+  insertHistorySnapshot,
+  listExpiredDeletedResources,
+  nextRevisionAfterHistory,
+  pruneHistoryBefore,
+  purgeResourceHistory,
+  type ResourceHistoryRecord
+} from "#utils/persistence/resourceHistory.js";
 import type { GeneralFile, GeneralFileFilter } from "../domain/model.js";
 import type { GeneralFileStore } from "../ports/repository.js";
 
@@ -33,86 +44,23 @@ function createSchema(db: DB, p: string): void {
       replaced_by_id      TEXT,
       created_at          TEXT NOT NULL,
       updated_at          TEXT NOT NULL,
-      deleted_at          TEXT,
       CHECK (byte_size = length(CAST(content AS BLOB))),
-      CHECK (content_hash = id),
-      FOREIGN KEY (replaces_id)
-        REFERENCES gf_${p}_files(id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
-      FOREIGN KEY (replaced_by_id)
-        REFERENCES gf_${p}_files(id)
-        ON UPDATE CASCADE ON DELETE SET NULL
+      CHECK (content_hash = id)
     );
 
     CREATE INDEX IF NOT EXISTS gf_${p}_files_kind_created
-      ON gf_${p}_files(kind, deleted_at IS NULL, created_at DESC);
+      ON gf_${p}_files(kind, created_at DESC);
 
     CREATE INDEX IF NOT EXISTS gf_${p}_files_extension
-      ON gf_${p}_files(extension, deleted_at IS NULL);
+      ON gf_${p}_files(extension);
 
     CREATE INDEX IF NOT EXISTS gf_${p}_files_file_name
-      ON gf_${p}_files(file_name COLLATE NOCASE, deleted_at IS NULL)
-      WHERE deleted_at IS NULL;
+      ON gf_${p}_files(file_name COLLATE NOCASE);
 
     CREATE UNIQUE INDEX IF NOT EXISTS gf_${p}_files_active_content
-      ON gf_${p}_files(content_hash)
-      WHERE deleted_at IS NULL;
+      ON gf_${p}_files(content_hash);
   `);
-}
-
-/**
- * The first General Files schema counted characters instead of UTF-8 bytes and
- * rejected extensionless files. Rebuild only that early schema in place so
- * existing development databases do not keep the stale CHECK constraints.
- */
-function ensureCurrentSchema(db: DB, p: string): void {
-  const table = `gf_${p}_files`;
-  const existing = db.prepare(
-    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?"
-  ).get(table) as { sql: string } | undefined;
-
-  if (!existing) {
-    createSchema(db, p);
-    return;
-  }
-
-  const needsRebuild =
-    existing.sql.includes("length(extension) > 0") ||
-    existing.sql.includes("byte_size = length(content)");
-
-  if (!needsRebuild) {
-    createSchema(db, p);
-    return;
-  }
-
-  const legacy = `${table}_legacy_schema`;
-  db.pragma("foreign_keys = OFF");
-  try {
-    db.transaction(() => {
-      db.exec(`ALTER TABLE ${table} RENAME TO ${legacy}`);
-      db.exec(`
-        DROP INDEX IF EXISTS gf_${p}_files_kind_created;
-        DROP INDEX IF EXISTS gf_${p}_files_extension;
-        DROP INDEX IF EXISTS gf_${p}_files_file_name;
-        DROP INDEX IF EXISTS gf_${p}_files_active_content;
-      `);
-      createSchema(db, p);
-      db.exec(`
-        INSERT INTO ${table}
-          (id, kind, file_name, extension, content, byte_size, content_hash,
-           revision, knowledge_source_id, replaces_id, replaced_by_id,
-           created_at, updated_at, deleted_at)
-        SELECT
-          id, kind, file_name, extension, content, byte_size, content_hash,
-          revision, knowledge_source_id, replaces_id, replaced_by_id,
-          created_at, updated_at, deleted_at
-        FROM ${legacy};
-        DROP TABLE ${legacy};
-      `);
-    })();
-  } finally {
-    db.pragma("foreign_keys = ON");
-  }
+  initializeResourceHistorySchema(db, `gf_${p}_history`);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -131,7 +79,6 @@ function rowToFile(row: Record<string, any>): GeneralFile {
     replacedById: (row.replaced_by_id as string | null) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
-    deletedAt: (row.deleted_at as string | null) ?? undefined,
   };
 }
 
@@ -145,6 +92,7 @@ function rowToFileMeta(row: Record<string, any>): Omit<GeneralFile, "content"> {
 export class SQLiteGeneralFileStore implements GeneralFileStore {
   private readonly db: DB;
   private readonly p: string;
+  private readonly historyTableName: string;
 
   constructor(projectId: string, dbPath: string) {
     mkdirSync(dirname(dbPath), { recursive: true });
@@ -152,7 +100,8 @@ export class SQLiteGeneralFileStore implements GeneralFileStore {
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("synchronous = NORMAL");
     this.p = tablePrefix(projectId);
-    ensureCurrentSchema(this.db, this.p);
+    this.historyTableName = `gf_${this.p}_history`;
+    createSchema(this.db, this.p);
     this.db.pragma("foreign_keys = ON");
   }
 
@@ -166,15 +115,14 @@ export class SQLiteGeneralFileStore implements GeneralFileStore {
   getByHash(contentHash: string): GeneralFile | undefined {
     const row = this.db
       .prepare(
-        `SELECT * FROM gf_${this.p}_files
-         WHERE content_hash = ? AND deleted_at IS NULL`
+        `SELECT * FROM gf_${this.p}_files WHERE content_hash = ?`
       )
       .get(contentHash) as Record<string, unknown> | undefined;
     return row ? rowToFile(row) : undefined;
   }
 
   list(filters?: GeneralFileFilter[]): Omit<GeneralFile, "content">[] {
-    let sql = `SELECT * FROM gf_${this.p}_files WHERE deleted_at IS NULL`;
+    let sql = `SELECT * FROM gf_${this.p}_files`;
     const params: unknown[] = [];
 
     if (filters && filters.length > 0) {
@@ -204,7 +152,7 @@ export class SQLiteGeneralFileStore implements GeneralFileStore {
         }
       }
       if (clauses.length > 0) {
-        sql += " AND " + clauses.join(" AND ");
+        sql += " WHERE " + clauses.join(" AND ");
       }
     }
 
@@ -219,8 +167,8 @@ export class SQLiteGeneralFileStore implements GeneralFileStore {
       INSERT INTO gf_${this.p}_files
         (id, kind, file_name, extension, content, byte_size, content_hash,
          revision, knowledge_source_id, replaces_id, replaced_by_id,
-         created_at, updated_at, deleted_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       file.id,
       file.kind,
@@ -235,33 +183,11 @@ export class SQLiteGeneralFileStore implements GeneralFileStore {
       file.replacedById ?? null,
       file.createdAt,
       file.updatedAt,
-      file.deletedAt ?? null,
     );
   }
 
-  update(file: GeneralFile): void {
-    this.db.prepare(`
-      UPDATE gf_${this.p}_files
-      SET kind = ?, file_name = ?, extension = ?, content = ?,
-          byte_size = ?, content_hash = ?, revision = ?,
-          knowledge_source_id = ?, replaces_id = ?, replaced_by_id = ?,
-          updated_at = ?, deleted_at = ?
-      WHERE id = ?
-    `).run(
-      file.kind,
-      file.fileName,
-      file.extension,
-      file.content,
-      file.byteSize,
-      file.contentHash,
-      file.revision,
-      file.knowledgeSourceId,
-      file.replacesId ?? null,
-      file.replacedById ?? null,
-      file.updatedAt,
-      file.deletedAt ?? null,
-      file.id,
-    );
+  nextRevision(id: string): number {
+    return nextRevisionAfterHistory(this.db, this.historyTableName, "general-file", id);
   }
 
   replace(previous: GeneralFile, replacement: GeneralFile, replacedAt: string): void {
@@ -269,30 +195,17 @@ export class SQLiteGeneralFileStore implements GeneralFileStore {
       INSERT INTO gf_${this.p}_files
         (id, kind, file_name, extension, content, byte_size, content_hash,
          revision, knowledge_source_id, replaces_id, replaced_by_id,
-         created_at, updated_at, deleted_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
-      ON CONFLICT(id) DO UPDATE SET
-        kind = excluded.kind,
-        file_name = excluded.file_name,
-        extension = excluded.extension,
-        content = excluded.content,
-        byte_size = excluded.byte_size,
-        content_hash = excluded.content_hash,
-        revision = excluded.revision,
-        knowledge_source_id = excluded.knowledge_source_id,
-        replaces_id = excluded.replaces_id,
-        replaced_by_id = excluded.replaced_by_id,
-        created_at = excluded.created_at,
-        updated_at = excluded.updated_at,
-        deleted_at = NULL
-    `);
-    const retirePrevious = this.db.prepare(`
-      UPDATE gf_${this.p}_files
-      SET replaced_by_id = ?, updated_at = ?, deleted_at = ?
-      WHERE id = ? AND revision = ? AND deleted_at IS NULL
+         created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     this.db.transaction(() => {
+      const previousRow = this.db.prepare(`
+        SELECT * FROM gf_${this.p}_files WHERE id = ? AND revision = ?
+      `).get(previous.id, previous.revision) as Record<string, unknown> | undefined;
+      if (!previousRow) {
+        throw new Error(`General file replacement lost its current source: ${previous.id}`);
+      }
       upsertReplacement.run(
         replacement.id,
         replacement.kind,
@@ -308,33 +221,106 @@ export class SQLiteGeneralFileStore implements GeneralFileStore {
         replacement.createdAt,
         replacement.updatedAt,
       );
-      const result = retirePrevious.run(
-        replacement.id,
-        replacedAt,
-        replacedAt,
-        previous.id,
-        previous.revision,
-      );
-      if (result.changes !== 1) {
-        throw new Error(`General file replacement lost its active source: ${previous.id}`);
-      }
+      const snapshot = { ...rowToFile(previousRow), replacedById: replacement.id, updatedAt: replacedAt };
+      insertHistorySnapshot(this.db, this.historyTableName, {
+        resourceKind: "general-file",
+        resourceId: previous.id,
+        revision: previous.revision,
+        snapshot,
+        recordedAt: replacedAt
+      });
+      insertHistoryDeletion(this.db, this.historyTableName, {
+        resourceKind: "general-file",
+        resourceId: previous.id,
+        revision: previous.revision + 1,
+        recordedAt: replacedAt
+      });
+      this.db.prepare(`DELETE FROM gf_${this.p}_files WHERE id = ? AND revision = ?`)
+        .run(previous.id, previous.revision);
     })();
   }
 
   linkReplacement(previous: GeneralFile, replacementId: string, replacedAt: string): void {
-    const result = this.db.prepare(`
-      UPDATE gf_${this.p}_files
-      SET replaced_by_id = ?, updated_at = ?, deleted_at = ?
-      WHERE id = ? AND revision = ? AND deleted_at IS NULL
-    `).run(replacementId, replacedAt, replacedAt, previous.id, previous.revision);
-    if (result.changes !== 1) {
-      throw new Error(`General file replacement lost its active source: ${previous.id}`);
-    }
+    this.db.transaction(() => {
+      const row = this.db.prepare(`
+        SELECT * FROM gf_${this.p}_files WHERE id = ? AND revision = ?
+      `).get(previous.id, previous.revision) as Record<string, unknown> | undefined;
+      if (!row) throw new Error(`General file replacement lost its current source: ${previous.id}`);
+      insertHistorySnapshot(this.db, this.historyTableName, {
+        resourceKind: "general-file",
+        resourceId: previous.id,
+        revision: previous.revision,
+        snapshot: { ...rowToFile(row), replacedById: replacementId, updatedAt: replacedAt },
+        recordedAt: replacedAt
+      });
+      insertHistoryDeletion(this.db, this.historyTableName, {
+        resourceKind: "general-file",
+        resourceId: previous.id,
+        revision: previous.revision + 1,
+        recordedAt: replacedAt
+      });
+      this.db.prepare(`DELETE FROM gf_${this.p}_files WHERE id = ? AND revision = ?`)
+        .run(previous.id, previous.revision);
+    })();
   }
 
-  softDelete(id: string, deletedAt: string): void {
-    this.db
-      .prepare(`UPDATE gf_${this.p}_files SET deleted_at = ?, updated_at = ? WHERE id = ?`)
-      .run(deletedAt, deletedAt, id);
+  delete(id: string, deletedAt: string): number | undefined {
+    return this.db.transaction(() => {
+      const row = this.db.prepare(`SELECT * FROM gf_${this.p}_files WHERE id = ?`)
+        .get(id) as Record<string, unknown> | undefined;
+      if (!row) return undefined;
+      const current = rowToFile(row);
+      insertHistorySnapshot(this.db, this.historyTableName, {
+        resourceKind: "general-file",
+        resourceId: id,
+        revision: current.revision,
+        snapshot: current,
+        recordedAt: deletedAt
+      });
+      const deletedRevision = current.revision + 1;
+      insertHistoryDeletion(this.db, this.historyTableName, {
+        resourceKind: "general-file",
+        resourceId: id,
+        revision: deletedRevision,
+        recordedAt: deletedAt
+      });
+      this.db.prepare(`DELETE FROM gf_${this.p}_files WHERE id = ?`).run(id);
+      return deletedRevision;
+    })();
+  }
+
+  purge(id: string): "purged" | "current" | "missing" {
+    if (this.getById(id)) return "current";
+    return purgeResourceHistory(this.db, this.historyTableName, "general-file", id)
+      ? "purged"
+      : "missing";
+  }
+
+  history(id: string): ResourceHistoryRecord<GeneralFile>[] {
+    return getResourceHistory<GeneralFile>(
+      this.db,
+      this.historyTableName,
+      "general-file",
+      id
+    );
+  }
+
+  pruneHistory(cutoff: string): number {
+    return pruneHistoryBefore(
+      this.db,
+      this.historyTableName,
+      cutoff,
+      (_kind, id) => Boolean(this.getById(id))
+    );
+  }
+
+  purgeExpired(cutoff: string): number {
+    let purged = 0;
+    for (const resource of listExpiredDeletedResources(this.db, this.historyTableName, cutoff)) {
+      if (!this.getById(resource.resourceId) && this.purge(resource.resourceId) === "purged") {
+        purged += 1;
+      }
+    }
+    return purged;
   }
 }

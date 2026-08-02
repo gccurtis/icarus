@@ -1,6 +1,16 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database, { type Database as DatabaseConnection } from "better-sqlite3";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError,
+  getResourceHistory,
+  insertHistoryDeletion,
+  insertHistorySnapshot,
+  listExpiredDeletedResources,
+  pruneHistoryBefore,
+  purgeResourceHistory
+} from "#utils/persistence/resourceHistory.js";
 import type { ContextEntry, PersonaRecord } from "../domain/model.js";
 import type { PersonaStore } from "../ports/personaStore.js";
 import {
@@ -34,8 +44,7 @@ const rowToRecord = (row: Record<string, unknown>): PersonaRecord => {
     revision: row.revision as number,
     definitionDigest: row.definition_digest as string,
     createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
-    ...(row.deleted_at ? { deletedAt: row.deleted_at as string } : {})
+    updatedAt: row.updated_at as string
   };
 };
 
@@ -52,7 +61,7 @@ export class SQLitePersonaStore implements PersonaStore {
 
   async get(id: string): Promise<PersonaRecord | undefined> {
     const row = this.db
-      .prepare(`SELECT * FROM ${this.tables.personas} WHERE id = ? AND deleted_at IS NULL`)
+      .prepare(`SELECT * FROM ${this.tables.personas} WHERE id = ?`)
       .get(id) as Record<string, unknown> | undefined;
     return row ? rowToRecord(row) : undefined;
   }
@@ -61,7 +70,7 @@ export class SQLitePersonaStore implements PersonaStore {
     const row = this.db
       .prepare(
         `SELECT * FROM ${this.tables.personas}
-         WHERE display_name = ? COLLATE NOCASE AND deleted_at IS NULL`
+         WHERE display_name = ? COLLATE NOCASE`
       )
       .get(displayName) as Record<string, unknown> | undefined;
     return row ? rowToRecord(row) : undefined;
@@ -71,7 +80,6 @@ export class SQLitePersonaStore implements PersonaStore {
     const rows = this.db
       .prepare(
         `SELECT * FROM ${this.tables.personas}
-         WHERE deleted_at IS NULL
          ORDER BY display_name COLLATE NOCASE, id`
       )
       .all() as Record<string, unknown>[];
@@ -80,7 +88,7 @@ export class SQLitePersonaStore implements PersonaStore {
 
   async countLive(): Promise<number> {
     const row = this.db
-      .prepare(`SELECT COUNT(*) AS count FROM ${this.tables.personas} WHERE deleted_at IS NULL`)
+      .prepare(`SELECT COUNT(*) AS count FROM ${this.tables.personas}`)
       .get() as { count: number };
     return row.count;
   }
@@ -92,8 +100,8 @@ export class SQLitePersonaStore implements PersonaStore {
            (id, display_name, description, focus, background, approach,
             output_preferences, verification, context_json, context_wrapper_id,
             context_wrapper_revision, definition_digest, revision,
-            created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         record.id,
@@ -110,22 +118,32 @@ export class SQLitePersonaStore implements PersonaStore {
         record.definitionDigest,
         record.revision,
         record.createdAt,
-        record.updatedAt,
-        record.deletedAt ?? null
+        record.updatedAt
       );
   }
 
   async update(record: PersonaRecord, expectedRevision: number): Promise<boolean> {
-    const result = this.db
-      .prepare(
+    return this.db.transaction(() => {
+      const row = this.db.prepare(
+        `SELECT * FROM ${this.tables.personas} WHERE id = ? AND revision = ?`
+      ).get(record.id, expectedRevision) as Record<string, unknown> | undefined;
+      if (!row) return false;
+      const previous = rowToRecord(row);
+      insertHistorySnapshot(this.db, this.tables.history, {
+        resourceKind: "persona",
+        resourceId: record.id,
+        revision: previous.revision,
+        snapshot: previous,
+        recordedAt: record.updatedAt
+      });
+      const result = this.db.prepare(
         `UPDATE ${this.tables.personas}
          SET display_name = ?, description = ?, focus = ?, background = ?, approach = ?,
              output_preferences = ?, verification = ?, context_json = ?,
              context_wrapper_id = ?, context_wrapper_revision = ?,
              definition_digest = ?, revision = ?, updated_at = ?
-         WHERE id = ? AND revision = ? AND deleted_at IS NULL`
-      )
-      .run(
+         WHERE id = ? AND revision = ?`
+      ).run(
         record.displayName,
         record.description,
         record.definition.focus,
@@ -142,17 +160,67 @@ export class SQLitePersonaStore implements PersonaStore {
         record.id,
         expectedRevision
       );
-    return result.changes === 1;
+      return result.changes === 1;
+    })();
   }
 
-  async softDelete(id: string, expectedRevision: number, deletedAt: string): Promise<boolean> {
-    const result = this.db
-      .prepare(
-        `UPDATE ${this.tables.personas}
-         SET deleted_at = ?, updated_at = ?
-         WHERE id = ? AND revision = ? AND deleted_at IS NULL`
-      )
-      .run(deletedAt, deletedAt, id, expectedRevision);
-    return result.changes === 1;
+  async delete(record: PersonaRecord, expectedRevision: number, deletedAt: string): Promise<boolean> {
+    return this.db.transaction(() => {
+      const current = this.db.prepare(
+        `SELECT * FROM ${this.tables.personas} WHERE id = ? AND revision = ?`
+      ).get(record.id, expectedRevision) as Record<string, unknown> | undefined;
+      if (!current) return false;
+      const snapshot = rowToRecord(current);
+      insertHistorySnapshot(this.db, this.tables.history, {
+        resourceKind: "persona",
+        resourceId: record.id,
+        revision: snapshot.revision,
+        snapshot,
+        recordedAt: deletedAt
+      });
+      insertHistoryDeletion(this.db, this.tables.history, {
+        resourceKind: "persona",
+        resourceId: record.id,
+        revision: snapshot.revision + 1,
+        recordedAt: deletedAt
+      });
+      return this.db.prepare(
+        `DELETE FROM ${this.tables.personas} WHERE id = ? AND revision = ?`
+      ).run(record.id, expectedRevision).changes === 1;
+    })();
+  }
+
+  async latestSnapshot(id: string): Promise<PersonaRecord | undefined> {
+    const history = getResourceHistory<PersonaRecord>(
+      this.db,
+      this.tables.history,
+      "persona",
+      id
+    );
+    return history.slice().reverse().find((record) => record.recordType === "snapshot")?.snapshot;
+  }
+
+  async purge(id: string): Promise<void> {
+    if (await this.get(id)) throw new ResourceNotDeletedError("persona", id);
+    if (!purgeResourceHistory(this.db, this.tables.history, "persona", id)) {
+      throw new ResourceHistoryNotFoundError("persona", id);
+    }
+  }
+
+  async pruneHistory(cutoff: string): Promise<number> {
+    return pruneHistoryBefore(
+      this.db,
+      this.tables.history,
+      cutoff,
+      (_kind, id) => Boolean(this.db.prepare(
+        `SELECT 1 FROM ${this.tables.personas} WHERE id = ?`
+      ).get(id))
+    );
+  }
+
+  async expiredDeleted(cutoff: string): Promise<string[]> {
+    return listExpiredDeletedResources(this.db, this.tables.history, cutoff)
+      .filter(({ resourceKind }) => resourceKind === "persona")
+      .map(({ resourceId }) => resourceId);
   }
 }

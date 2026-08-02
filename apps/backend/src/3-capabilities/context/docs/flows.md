@@ -2,9 +2,15 @@
 
 ## Common transport behavior
 
-[`registerContextEndpoints`](../../../4-job-wiring/context/registerContextEndpoints.ts) registers 9 exact method/path pairs, all under `/contexts`. Every mapping creates a fresh `concurrent`, `inline` job. There is no scope selection in the path — every route addresses the one project-scoped table.
+[`registerContextEndpoints`](../../../4-job-wiring/context/registerContextEndpoints.ts)
+registers 10 exact method/path pairs, all under `/contexts`. Every mapping
+creates a fresh `concurrent`, `inline` job. There is no scope selection in the
+path — every route addresses the one project-scoped current/history store.
 
-Typed errors map as follows: not found → 404, live-name conflict → 409, stale revision → 409, other caught values → 400. Successful records are returned directly; list and pure-set operations wrap arrays in `{records}` or `{entries}`. The two persisted composition endpoints return only `{contextId}`.
+Typed errors map as follows: not found → 404, current-name conflict → 409,
+stale revision → 409, other caught values → 400. Successful records are
+returned directly; list and pure-set operations wrap arrays in `{records}` or
+`{entries}`. The two persisted composition endpoints return only `{contextId}`.
 
 ## Exhaustive endpoint table
 
@@ -16,11 +22,13 @@ Typed errors map as follows: not found → 404, live-name conflict → 409, stal
 | `GET /contexts/by-name` | `context.getByName` | query `displayName`, default `""` | `getByName(name)` | 200 record | explicit 404 on `null` |
 | `PATCH /contexts/entries` | `context.update` | `id` string, parsed entries, `Number(expectedRevision)` | `update(id, entries, expected)` | 200 record | typed/default mapping |
 | `DELETE /contexts` | `context.delete` | body `id` → string | `delete(id)` | 204 null | typed/default mapping |
+| `POST /contexts/purge` | `context.purge` | body `id` → string | `purge(id)` | 204 null | current → 409 `not_deleted`; no terminal history → 404 |
 | `POST /contexts/resolve` | `context.resolve` | entries via parser | `resolve(entries)` | 200 `{entries}` | unexpected failures not locally mapped |
 | `POST /contexts/union` | `context.union` | `a`, `b` via `parseOperand` (`{contextId}` or `{entries}`); `displayName` required; optional `description`; `private` via `parsePrivate` | `composeNamed("union", a, b, displayName, {description, private})` | 201 `{contextId}` | typed/default mapping; missing operand context → 404 |
 | `POST /contexts/difference` | `context.difference` | same operand/displayName/description/private normalization | `composeNamed("difference", a, b, displayName, {description, private})` | 201 `{contextId}` | typed/default mapping; missing operand context → 404 |
 
-There are no deferred Context jobs, scheduled jobs, or internal stage jobs.
+There are no deferred or internal Context jobs. The shared retention scheduler
+invokes Context's maintenance hooks; Context owns no scheduler itself.
 
 ## Mutation call chain
 
@@ -39,7 +47,7 @@ sequenceDiagram
   E->>E: coerce body / parse entries
   E->>M: declare, update, delete, or composeNamed
   M->>S: synchronous lookup(s)
-  M->>S: insert/update/softDelete
+  M->>S: insert or transactional history/current mutation
   M->>L: structured operation record
   M-->>E: record or error
   E-->>C: mapped inline response
@@ -52,7 +60,8 @@ sequenceDiagram
 3. A leaf is appended on first sight.
 4. A nested context is marked seen before loading.
 5. Resolution loads the nested context by ID from the single project table.
-6. Found entries recurse until the depth guard; missing/deleted-as-hidden-by-name is not relevant because resolution loads by ID.
+6. Found current entries recurse until the depth guard; a logically deleted
+   nested Context has no current row and is omitted like any other missing ID.
 7. The manager logs input and resolved counts and returns the first-seen leaf sequence.
 
 ## Knowledge scope call chain

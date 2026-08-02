@@ -51,17 +51,17 @@ export interface ConnectorEntry {
   readonly syncConfig: ConnectorSyncConfig | null;
   /** True while a sync Job is in the queue or actively running. */
   readonly syncing: boolean;
-  /**
-   * Whether persisted item metadata and Knowledge are known to agree.
-   * Missing is treated as "active" for legacy callers; persisted rows always
-   * expose an explicit state.
-   */
-  readonly ingestionState?: ConnectorIngestionState;
+  /** Whether persisted item metadata and Knowledge are known to agree. */
+  readonly ingestionState: ConnectorIngestionState;
   /** Knowledge source IDs, one per prose item. */
   readonly knowledgeSourceIds: readonly string[];
   readonly createdAt: string;
   readonly updatedAt: string;
-  readonly deletedAt?: string;
+}
+
+export interface ConnectorHistorySnapshot {
+  readonly entry: ConnectorEntry;
+  readonly items: readonly ConnectorItemEntry[];
 }
 
 export interface ConnectorItemEntry {

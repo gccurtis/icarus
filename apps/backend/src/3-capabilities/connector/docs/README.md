@@ -15,7 +15,7 @@ These documents describe current source behavior. Connector owns connector/item 
 | [Concepts](concepts.md) | Provider/snapshot/reconciliation vocabulary, boundaries, and architecture |
 | [Types](types.md) | Connector, item, provider, reader, errors, store, SQL and wire types |
 | [Runtime](runtime.md) | Every service/store/provider/reader/scheduler method and helper group |
-| [Flows](flows.md) | All nine endpoints plus scheduled synchronization and detailed sequences |
+| [Flows](flows.md) | All ten endpoints plus scheduled synchronization and detailed sequences |
 | [Invariants](invariants.md) | Guarantees, limits, identity/revisions, concurrency, failure recovery, scope, tests, and non-goals |
 
 ## Dependencies
@@ -37,7 +37,7 @@ These documents describe current source behavior. Connector owns connector/item 
 | Reader ports | [`domain/reader.ts`](../domain/reader.ts) |
 | Store port | [`ports/repository.ts`](../ports/repository.ts) |
 | Service and reconciliation | [`application/connectorService.ts`](../application/connectorService.ts) |
-| SQLite schema/migrations/claims | [`persistence/sqliteConnectorRepository.ts`](../persistence/sqliteConnectorRepository.ts) |
+| SQLite current/history schema and claims | [`persistence/sqliteConnectorRepository.ts`](../persistence/sqliteConnectorRepository.ts) |
 | Development filesystem adapter | [`providers/filesystem.ts`](../providers/filesystem.ts) |
 | Public exports | [`index.ts`](../index.ts) |
 | Factory/provider registration | [`1-init/create/connector.ts`](../../../1-init/create/connector.ts) |

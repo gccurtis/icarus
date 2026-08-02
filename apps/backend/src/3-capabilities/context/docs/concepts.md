@@ -23,6 +23,8 @@ The implemented outcomes are:
 | Project scope | The single table derived from the configured `projectId`; there is no user scope |
 | Operand | Composition input: either `{ contextId }` (load an existing context's entries) or `{ entries }` (inline) |
 | Resolution depth | Recursion counter bounded by `maxResolveDepth`; over-depth branches are omitted |
+| Current record | The one typed current row for a Context identity, beginning at revision 1 |
+| History record | A complete superseded snapshot or terminal deletion revision retained outside the current table |
 
 ## Ownership and boundaries
 
@@ -46,12 +48,17 @@ The manager implements the narrow `KnowledgeResourceResolver.resolve` shape, but
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Live: declare / union / difference
-  Live --> Deleted: delete marks deletedAt
-  Deleted --> Deleted: row retained
+  [*] --> CurrentR1: declare / union / difference
+  CurrentR1 --> CurrentRn: update archives prior revision
+  CurrentRn --> DeletedHistory: delete archives current + appends terminal revision
+  DeletedHistory --> Purged: manual purge or retention cutoff
 ```
 
-A delete is a soft delete in SQLite. Name lookup and list hide deleted rows, while the current ID lookup does not filter `deleted_at`; that important current limitation is detailed in [Invariants](invariants.md).
+Delete removes the current row in the same SQLite transaction that archives the
+last current snapshot and appends terminal revision `N + 1`. Every normal read and
+nested-resolution path uses the current table only. Manual purge and shared
+retention remove terminally deleted history; neither operation creates a
+current record.
 
 ## Resolution lifecycle
 
@@ -75,4 +82,10 @@ flowchart TD
 
 `combine(a, b)` is a first-seen union over `a` followed by `b`. `difference(a, b)` preserves entries from `a` whose `kind:id` key is absent from `b`; duplicate entries already present in `a` are not independently deduplicated by `difference`. Neither function resolves nested contexts.
 
-`composeNamed(op, a, b, displayName, options?)` resolves each operand (loading `a`/`b` by `contextId` when given, or using inline `entries`), runs `combine` or `difference`, and inserts the result as a new live-named record at revision 1 — reusing the same conflict check as `declare`. It is the backing call for `POST /contexts/union` and `POST /contexts/difference`, which return only the new context's ID. `options.private` (default `false`) is accepted the same way `declare` accepts it; both endpoints read it from the request body.
+`composeNamed(op, a, b, displayName, options?)` resolves each operand (loading
+`a`/`b` by `contextId` when given, or using inline `entries`), runs `combine` or
+`difference`, and inserts the result as a new current-named record at revision
+1 — reusing the same conflict check as `declare`. It is the backing call for
+`POST /contexts/union` and `POST /contexts/difference`, which return only the
+new context's ID. `options.private` (default `false`) is accepted the same way
+`declare` accepts it; both endpoints read it from the request body.

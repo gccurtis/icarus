@@ -1,4 +1,5 @@
 import type { GeneralFile, GeneralFileFilter } from "../domain/model.js";
+import type { ResourceHistoryRecord } from "#utils/persistence/resourceHistory.js";
 
 /**
  * GeneralFileStore — persistence interface for General Files.
@@ -9,7 +10,7 @@ export interface GeneralFileStore {
   /** Get by content-addressed ID. */
   getById(id: string): GeneralFile | undefined;
 
-  /** Get active file by content hash (for idempotent upload check). */
+  /** Get current file by content hash (for idempotent upload check). */
   getByHash(contentHash: string): GeneralFile | undefined;
 
   /** List active files, optionally filtered. Returns metadata only (no content). */
@@ -18,18 +19,22 @@ export interface GeneralFileStore {
   /** Insert a new file record. */
   insert(file: GeneralFile): void;
 
-  /** Update an existing file record. */
-  update(file: GeneralFile): void;
+  /** Next revision for a deterministic identity that has no current row. */
+  nextRevision(id: string): number;
 
   /**
-   * Atomically activate a replacement and retire the previous version.
-   * The replacement may be a previously soft-deleted content-addressed row.
+   * Atomically insert a replacement and move the previous identity to history.
    */
   replace(previous: GeneralFile, replacement: GeneralFile, replacedAt: string): void;
 
   /** Atomically retire a file in favour of an already-active target. */
   linkReplacement(previous: GeneralFile, replacementId: string, replacedAt: string): void;
 
-  /** Soft-delete a file. */
-  softDelete(id: string, deletedAt: string): void;
+  /** Move a current file to history and append its deletion revision. */
+  delete(id: string, deletedAt: string): number | undefined;
+
+  purge(id: string): "purged" | "current" | "missing";
+  history(id: string): ResourceHistoryRecord<GeneralFile>[];
+  pruneHistory(cutoff: string): number;
+  purgeExpired(cutoff: string): number;
 }

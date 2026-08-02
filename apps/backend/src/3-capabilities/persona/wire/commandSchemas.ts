@@ -65,6 +65,13 @@ export const decodePersonaCommand = (value: unknown): PersonaCommand => {
         }
       };
     }
+    case "persona.purge": {
+      exactKeys(command, ["type", "id"], "Persona purge command");
+      return {
+        type,
+        input: { id: stringField(command, "id", "Persona ID") }
+      };
+    }
     default:
       throw new PersonaWireError(`Unsupported Persona command '${type}'`);
   }

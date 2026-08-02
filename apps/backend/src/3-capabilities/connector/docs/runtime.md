@@ -16,7 +16,7 @@ Startup registers the service with the runtime resource registry and starts [`Co
 - lists all provider items, derives connector kind and deterministic ID;
 - reads and admits each prose item to Knowledge;
 - builds complete entry/item results;
-- inserts or restores a tombstoned deterministic row transactionally;
+- inserts a current deterministic row at the next revision after retained history;
 - on failure, returns a concurrently created active entry if present, otherwise best-effort removes every admitted source and rethrows.
 
 The sync config is created only when the provider opts into scheduled sync and the request supplies an interval.
@@ -47,7 +47,11 @@ The current directory reader does not itself verify that a supplied `itemKey` ap
 
 ### `delete(id)`
 
-Delete loads the live entry, acquires the same persisted claim as sync, builds a source union from entry and item metadata, persists `pending`, removes all sources, then guarded-soft-deletes while holding the claim. Failure leaves pending/failed reconciliation metadata; `finally` clears the claim after the delete attempt.
+Delete loads the current entry and items, acquires the same persisted claim as sync, builds a source union, persists `pending`, and removes all sources. It then archives the aggregate snapshot, appends the terminal deletion revision, and removes the current entry in one transaction. Failure leaves pending/failed reconciliation metadata when possible; `finally` clears the claim after the attempt.
+
+### `purge(id)` and retention
+
+Purge refuses a current Connector, requires retained deletion history, and then physically removes that history. `pruneHistory(cutoff)` removes old superseded history for current Connectors; `purgeExpired(cutoff)` purges Connectors whose terminal deletion predates the cutoff. Composition invokes these through the shared retention scheduler.
 
 ## Service helpers
 
@@ -63,10 +67,11 @@ Delete loads the live entry, acquires the same persisted claim as sync, builds a
 ## Store methods and transaction boundaries
 
 - `insert`: entry plus all items in one SQLite transaction.
-- `restore`: guarded deleted-row update plus complete item replacement in one transaction.
-- `update`: guarded `deleted_at IS NULL AND syncing=1` entry update plus complete item replacement in one transaction.
+- `nextRevision`: returns 1 without history or one after the maximum retained revision.
+- `update`: expected-revision/claimed entry update, previous aggregate history snapshot, and complete item replacement in one transaction.
 - `markIngestionState`: one guarded update requiring live claimed row.
-- `softDelete`: one guarded update requiring live claimed row.
+- `delete`: final aggregate snapshot, terminal revision, and current-row removal in one transaction.
+- `purge`/`pruneHistory`/`purgeExpired`: irreversible history maintenance.
 - `setSyncing`: atomic compare-and-set `0→1` on a live row.
 - `clearSyncing`: set zero by ID, including after deletion.
 - `resetSyncing`: clear crash-left claims on live rows at scheduler start.

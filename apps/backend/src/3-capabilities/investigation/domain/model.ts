@@ -46,11 +46,11 @@ export interface Question {
   readonly assumptions: readonly string[];
   readonly status: QuestionStatus;
   readonly tags: readonly string[];
+  readonly revision: number;
   readonly createdBy: ActorId;
   readonly updatedBy: ActorId;
   readonly createdAt: IsoTimestamp;
   readonly updatedAt: IsoTimestamp;
-  readonly deletedAt?: IsoTimestamp;
 }
 
 export interface Hypothesis {
@@ -61,11 +61,11 @@ export interface Hypothesis {
   readonly assumptions: readonly string[];
   readonly status: HypothesisStatus;
   readonly confidenceLevel?: HypothesisConfidenceLevel;
+  readonly revision: number;
   readonly createdBy: ActorId;
   readonly updatedBy: ActorId;
   readonly createdAt: IsoTimestamp;
   readonly updatedAt: IsoTimestamp;
-  readonly deletedAt?: IsoTimestamp;
 }
 
 export interface FindingQuestionLink {
@@ -122,11 +122,11 @@ export interface Finding {
   readonly questionLinks: readonly FindingQuestionLink[];
   readonly hypothesisLinks: readonly FindingHypothesisLink[];
   readonly knowledgeSourceId?: string;
+  readonly revision: number;
   readonly createdBy: ActorId;
   readonly updatedBy: ActorId;
   readonly createdAt: IsoTimestamp;
   readonly updatedAt: IsoTimestamp;
-  readonly deletedAt?: IsoTimestamp;
 }
 
 export interface CreateQuestionRequest {
@@ -211,6 +211,7 @@ export interface InvestigationRuntime {
   getQuestion(id: string): Promise<Question | null>;
   listQuestions(filter?: QuestionFilter): Promise<Question[]>;
   deleteQuestion(id: string): Promise<void>;
+  purgeQuestion(id: string): Promise<void>;
 
   createHypothesis(request: CreateHypothesisRequest): Promise<Hypothesis>;
   updateHypothesis(
@@ -220,6 +221,7 @@ export interface InvestigationRuntime {
   getHypothesis(id: string): Promise<Hypothesis | null>;
   listHypotheses(filter?: HypothesisFilter): Promise<Hypothesis[]>;
   deleteHypothesis(id: string): Promise<void>;
+  purgeHypothesis(id: string): Promise<void>;
 
   proposeFinding(request: ProposeFindingRequest): Promise<Finding>;
   updateFinding(id: string, request: UpdateFindingRequest): Promise<Finding>;
@@ -237,6 +239,9 @@ export interface InvestigationRuntime {
   getFinding(id: string): Promise<Finding | null>;
   listFindings(filter?: FindingFilter): Promise<Finding[]>;
   deleteFinding(id: string): Promise<void>;
+  purgeFinding(id: string): Promise<void>;
+  pruneHistory(cutoff: string): Promise<number>;
+  purgeExpired(cutoff: string): Promise<number>;
 }
 
 export const findingNeedsReview = (finding: Finding): boolean =>

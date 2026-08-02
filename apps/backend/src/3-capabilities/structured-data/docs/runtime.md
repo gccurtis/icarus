@@ -13,9 +13,9 @@ Startup separately creates [`FormulaNameResolver`](../../../1-init/create/formul
 | Method | Implementation | Logging |
 |---|---|---|
 | `bindingView()` | One `listAll`; map by normalized name; `viewRevision = max(entry.revision)`; random view ID | debug count/revision/duration |
-| `get(id)` | Live store lookup | none |
-| `getByName(name)` | Trim name, case-insensitive live lookup | none |
-| `list(kind?)` | Live store list, optionally exact kind | none |
+| `get(id)` | Current-table lookup | none |
+| `getByName(name)` | Trim name, case-insensitive current lookup | none |
+| `list(kind?)` | Current-table list, optionally exact kind | none |
 | `query(q)` | List, then text/context-overlap filters in memory | debug filter flags/count/duration |
 
 ### Shared mutations
@@ -25,7 +25,9 @@ Startup separately creates [`FormulaNameResolver`](../../../1-init/create/formul
 | `declare` | Validate/canonicalize name, check conflict and max count; validate body or complete collection schema/rows; UUID/revision 1 insert |
 | `rename` | Load/check expected revision; validate name; case-insensitive conflict check unless normalized key unchanged; SQLite CAS update |
 | `updateDescription` | Load/check expected revision; replace description; SQLite CAS update |
-| `delete` | Load/check expected revision; SQLite CAS tombstone; no revision increment |
+| `delete` | Load/check expected revision; archive snapshot `N`, append terminal `N + 1`, and remove current by SQLite CAS transaction |
+| `purge` | Reject a current entry; require terminal deletion history; irreversibly remove retained history |
+| `pruneHistory` / `purgeExpired` | Shared retention hooks for old current-entry snapshots and expired deleted entries |
 
 ### Kind-specific mutations
 
@@ -36,7 +38,11 @@ Startup separately creates [`FormulaNameResolver`](../../../1-init/create/formul
 | `appendRows` | Require collection; validate only new payload plus final count; append; revision +1 CAS |
 | `deleteRows` | Require collection; validate integer/unique/in-range indices and record cardinality; filter rows; revision +1 CAS |
 
-`persistUpdate` calls the store CAS. If it loses, it reloads: absence becomes `DataEntryNotFoundError`, otherwise the current revision becomes `StaleDataRevisionError`.
+`persistUpdate` calls the store CAS. If it loses, it reloads: absence becomes
+`DataEntryNotFoundError`, otherwise the current revision becomes
+`StaleDataRevisionError`. Startup's shared retention scheduler supplies the
+cutoff. Defaults are 30 days and a 24-hour sweep interval, with one sweep
+immediately after HTTP binds and per-capability failure isolation.
 
 ## Validation helpers
 
@@ -68,7 +74,11 @@ Every build iteratively calls two private groups:
 
 ## SQLite CAS and concurrency
 
-All endpoint jobs use the concurrent queue. Update and delete correctness therefore comes from SQL predicates `id + expected revision + deleted_at IS NULL`, not queue serialization. A second store/process with a stale revision receives `false`, which the service maps to a typed stale/not-found outcome.
+All endpoint jobs use the concurrent queue. Update and delete correctness
+therefore comes from SQLite transactions and `id + expectedRevision` current-row
+predicates, not queue serialization. A second store/process with a stale
+revision loses the CAS, which the service maps to a typed stale/not-found
+outcome.
 
 Declaration performs count/conflict reads before a plain insert. The case-insensitive unique index closes the name race, but the configured `maxEntries` check is not an atomic quota and can overshoot under competing declarations. A race-time constraint error maps through the generic 400 path.
 
@@ -76,4 +86,6 @@ Declaration performs count/conflict reads before a plain insert. The case-insens
 
 Successful mutations log IDs, kind/name where relevant, revisions/counts, and durations. `query` and `bindingView` log read metrics. Simple `get`, `getByName`, and `list` do not log at the capability layer. Resolver logs cache hits, built snapshots, and typed failures without logging Formula source text.
 
-Structured Data has no cross-database write, compensation workflow, timer, background job, or store close method.
+Structured Data has no cross-database write or compensation workflow. Shared
+startup composition invokes its retention hooks; the capability owns no timer
+or store close method itself.

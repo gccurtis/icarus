@@ -2,6 +2,16 @@ import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database, { type Database as DatabaseConnection } from "better-sqlite3";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError,
+  initializeResourceHistorySchema,
+  insertHistoryDeletion,
+  insertHistorySnapshot,
+  listExpiredDeletedResources,
+  pruneHistoryBefore,
+  purgeResourceHistory
+} from "#utils/persistence/resourceHistory.js";
 import type {
   Finding,
   FindingFilter,
@@ -18,6 +28,7 @@ interface InvestigationTableNames {
   questions: string;
   hypotheses: string;
   findings: string;
+  history: string;
 }
 
 const projectPrefix = (projectId: string): string =>
@@ -28,7 +39,8 @@ const createTableNames = (projectId: string): InvestigationTableNames => {
   return {
     questions: `${root}_questions`,
     hypotheses: `${root}_hypotheses`,
-    findings: `${root}_findings`
+    findings: `${root}_findings`,
+    history: `${root}_history`
   };
 };
 
@@ -52,11 +64,11 @@ const rowToQuestion = (row: SQLiteRow): Question => ({
   assumptions: decodeJson<Question["assumptions"]>(row.assumptions_json),
   status: row.status as Question["status"],
   tags: decodeJson<Question["tags"]>(row.tags_json),
+  revision: Number(row.revision),
   createdBy: row.created_by as string,
   updatedBy: row.updated_by as string,
   createdAt: row.created_at as string,
-  updatedAt: row.updated_at as string,
-  ...optionalString("deletedAt", row.deleted_at)
+  updatedAt: row.updated_at as string
 });
 
 const rowToHypothesis = (row: SQLiteRow): Hypothesis => ({
@@ -69,11 +81,11 @@ const rowToHypothesis = (row: SQLiteRow): Hypothesis => ({
   ...(row.confidence_level === null || row.confidence_level === undefined
     ? {}
     : { confidenceLevel: row.confidence_level as Hypothesis["confidenceLevel"] }),
+  revision: Number(row.revision),
   createdBy: row.created_by as string,
   updatedBy: row.updated_by as string,
   createdAt: row.created_at as string,
-  updatedAt: row.updated_at as string,
-  ...optionalString("deletedAt", row.deleted_at)
+  updatedAt: row.updated_at as string
 });
 
 const rowToFinding = (row: SQLiteRow): Finding => ({
@@ -88,11 +100,11 @@ const rowToFinding = (row: SQLiteRow): Finding => ({
     row.hypothesis_links_json
   ),
   ...optionalString("knowledgeSourceId", row.knowledge_source_id),
+  revision: Number(row.revision),
   createdBy: row.created_by as string,
   updatedBy: row.updated_by as string,
   createdAt: row.created_at as string,
-  updatedAt: row.updated_at as string,
-  ...optionalString("deletedAt", row.deleted_at)
+  updatedAt: row.updated_at as string
 });
 
 const initializeSchema = (
@@ -114,16 +126,15 @@ const initializeSchema = (
         status               TEXT NOT NULL
                                CHECK (status IN ('open', 'proposed', 'answered')),
         tags_json            TEXT NOT NULL DEFAULT '[]',
+        revision             INTEGER NOT NULL CHECK (revision >= 1),
         created_by           TEXT NOT NULL,
         updated_by           TEXT NOT NULL,
         created_at           TEXT NOT NULL,
-        updated_at           TEXT NOT NULL,
-        deleted_at           TEXT
+        updated_at           TEXT NOT NULL
       );
 
       CREATE INDEX IF NOT EXISTS ${tables.questions}_recent
-        ON ${tables.questions}(status, updated_at DESC)
-        WHERE deleted_at IS NULL;
+        ON ${tables.questions}(status, updated_at DESC);
 
       CREATE TABLE IF NOT EXISTS ${tables.hypotheses} (
         id                   TEXT PRIMARY KEY,
@@ -145,16 +156,15 @@ const initializeSchema = (
                                  'strongly_supported'
                                )
                              ),
+        revision             INTEGER NOT NULL CHECK (revision >= 1),
         created_by           TEXT NOT NULL,
         updated_by           TEXT NOT NULL,
         created_at           TEXT NOT NULL,
-        updated_at           TEXT NOT NULL,
-        deleted_at           TEXT
+        updated_at           TEXT NOT NULL
       );
 
       CREATE INDEX IF NOT EXISTS ${tables.hypotheses}_recent
-        ON ${tables.hypotheses}(status, updated_at DESC)
-        WHERE deleted_at IS NULL;
+        ON ${tables.hypotheses}(status, updated_at DESC);
 
       CREATE TABLE IF NOT EXISTS ${tables.findings} (
         id                    TEXT PRIMARY KEY,
@@ -167,21 +177,21 @@ const initializeSchema = (
         question_links_json    TEXT NOT NULL DEFAULT '[]',
         hypothesis_links_json  TEXT NOT NULL DEFAULT '[]',
         knowledge_source_id    TEXT,
+        revision               INTEGER NOT NULL CHECK (revision >= 1),
         created_by             TEXT NOT NULL,
         updated_by             TEXT NOT NULL,
         created_at             TEXT NOT NULL,
-        updated_at             TEXT NOT NULL,
-        deleted_at             TEXT
+        updated_at             TEXT NOT NULL
       );
 
       CREATE INDEX IF NOT EXISTS ${tables.findings}_recent
-        ON ${tables.findings}(status, updated_at DESC)
-        WHERE deleted_at IS NULL;
+        ON ${tables.findings}(status, updated_at DESC);
 
       CREATE INDEX IF NOT EXISTS ${tables.findings}_knowledge_source
         ON ${tables.findings}(knowledge_source_id)
-        WHERE deleted_at IS NULL AND status = 'accepted';
+        WHERE status = 'accepted';
     `);
+    initializeResourceHistorySchema(db, tables.history);
   })();
 };
 
@@ -206,7 +216,7 @@ export class SQLiteInvestigationStore implements InvestigationStore {
       .prepare(`
         INSERT INTO ${this.tables.questions}
           (id, text, context, current_answer, assumptions_json, status,
-           tags_json, created_by, updated_by, created_at, updated_at, deleted_at)
+           tags_json, revision, created_by, updated_by, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
@@ -217,23 +227,23 @@ export class SQLiteInvestigationStore implements InvestigationStore {
         encodeJson(question.assumptions),
         question.status,
         encodeJson(question.tags),
+        question.revision,
         question.createdBy,
         question.updatedBy,
         question.createdAt,
-        question.updatedAt,
-        question.deletedAt ?? null
+        question.updatedAt
       );
   }
 
   getQuestion(id: string): Question | undefined {
     const row = this.db
-      .prepare(`SELECT * FROM ${this.tables.questions} WHERE id = ? AND deleted_at IS NULL`)
+      .prepare(`SELECT * FROM ${this.tables.questions} WHERE id = ?`)
       .get(id) as SQLiteRow | undefined;
     return row ? rowToQuestion(row) : undefined;
   }
 
   listQuestions(filter: QuestionFilter = {}): Question[] {
-    const where = ["deleted_at IS NULL"];
+    const where = ["1 = 1"];
     const parameters: unknown[] = [];
 
     if (filter.status !== undefined) {
@@ -258,34 +268,41 @@ export class SQLiteInvestigationStore implements InvestigationStore {
   }
 
   updateQuestion(question: Question): void {
-    this.db
-      .prepare(`
+    this.db.transaction(() => {
+      const row = this.db.prepare(
+        `SELECT * FROM ${this.tables.questions} WHERE id = ?`
+      ).get(question.id) as SQLiteRow | undefined;
+      if (!row) return;
+      const previous = rowToQuestion(row);
+      insertHistorySnapshot(this.db, this.tables.history, {
+        resourceKind: "question",
+        resourceId: question.id,
+        revision: previous.revision,
+        snapshot: previous,
+        recordedAt: question.updatedAt
+      });
+      this.db.prepare(`
         UPDATE ${this.tables.questions}
         SET text = ?, context = ?, current_answer = ?, assumptions_json = ?,
-            status = ?, tags_json = ?, updated_by = ?, updated_at = ?
-        WHERE id = ? AND deleted_at IS NULL
-      `)
-      .run(
+            status = ?, tags_json = ?, revision = ?, updated_by = ?, updated_at = ?
+        WHERE id = ?
+      `).run(
         question.text,
         question.context ?? null,
         question.currentAnswer ?? null,
         encodeJson(question.assumptions),
         question.status,
         encodeJson(question.tags),
+        question.revision,
         question.updatedBy,
         question.updatedAt,
         question.id
       );
+    })();
   }
 
-  softDeleteQuestion(id: string, updatedBy: string, deletedAt: string): void {
-    this.db
-      .prepare(`
-        UPDATE ${this.tables.questions}
-        SET updated_by = ?, updated_at = ?, deleted_at = ?
-        WHERE id = ? AND deleted_at IS NULL
-      `)
-      .run(updatedBy, deletedAt, deletedAt, id);
+  deleteQuestion(question: Question, deletedAt: string): void {
+    this.deleteCurrent("question", this.tables.questions, question, deletedAt);
   }
 
   insertHypothesis(hypothesis: Hypothesis): void {
@@ -293,8 +310,8 @@ export class SQLiteInvestigationStore implements InvestigationStore {
       .prepare(`
         INSERT INTO ${this.tables.hypotheses}
           (id, question_ids_json, statement, rationale, assumptions_json,
-           status, confidence_level, created_by, updated_by, created_at,
-           updated_at, deleted_at)
+           status, confidence_level, revision, created_by, updated_by, created_at,
+           updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
@@ -305,23 +322,23 @@ export class SQLiteInvestigationStore implements InvestigationStore {
         encodeJson(hypothesis.assumptions),
         hypothesis.status,
         hypothesis.confidenceLevel ?? null,
+        hypothesis.revision,
         hypothesis.createdBy,
         hypothesis.updatedBy,
         hypothesis.createdAt,
-        hypothesis.updatedAt,
-        hypothesis.deletedAt ?? null
+        hypothesis.updatedAt
       );
   }
 
   getHypothesis(id: string): Hypothesis | undefined {
     const row = this.db
-      .prepare(`SELECT * FROM ${this.tables.hypotheses} WHERE id = ? AND deleted_at IS NULL`)
+      .prepare(`SELECT * FROM ${this.tables.hypotheses} WHERE id = ?`)
       .get(id) as SQLiteRow | undefined;
     return row ? rowToHypothesis(row) : undefined;
   }
 
   listHypotheses(filter: HypothesisFilter = {}): Hypothesis[] {
-    const where = ["hypothesis.deleted_at IS NULL"];
+    const where = ["1 = 1"];
     const parameters: unknown[] = [];
 
     if (filter.status !== undefined) {
@@ -332,7 +349,7 @@ export class SQLiteInvestigationStore implements InvestigationStore {
       where.push(`
         EXISTS (
           SELECT 1 FROM ${this.tables.questions} AS question
-          WHERE question.id = ? AND question.deleted_at IS NULL
+          WHERE question.id = ?
         )
       `);
       parameters.push(filter.questionId);
@@ -356,35 +373,42 @@ export class SQLiteInvestigationStore implements InvestigationStore {
   }
 
   updateHypothesis(hypothesis: Hypothesis): void {
-    this.db
-      .prepare(`
+    this.db.transaction(() => {
+      const row = this.db.prepare(
+        `SELECT * FROM ${this.tables.hypotheses} WHERE id = ?`
+      ).get(hypothesis.id) as SQLiteRow | undefined;
+      if (!row) return;
+      const previous = rowToHypothesis(row);
+      insertHistorySnapshot(this.db, this.tables.history, {
+        resourceKind: "hypothesis",
+        resourceId: hypothesis.id,
+        revision: previous.revision,
+        snapshot: previous,
+        recordedAt: hypothesis.updatedAt
+      });
+      this.db.prepare(`
         UPDATE ${this.tables.hypotheses}
         SET question_ids_json = ?, statement = ?, rationale = ?,
             assumptions_json = ?, status = ?, confidence_level = ?,
-            updated_by = ?, updated_at = ?
-        WHERE id = ? AND deleted_at IS NULL
-      `)
-      .run(
+            revision = ?, updated_by = ?, updated_at = ?
+        WHERE id = ?
+      `).run(
         encodeJson(hypothesis.questionIds),
         hypothesis.statement,
         hypothesis.rationale ?? null,
         encodeJson(hypothesis.assumptions),
         hypothesis.status,
         hypothesis.confidenceLevel ?? null,
+        hypothesis.revision,
         hypothesis.updatedBy,
         hypothesis.updatedAt,
         hypothesis.id
       );
+    })();
   }
 
-  softDeleteHypothesis(id: string, updatedBy: string, deletedAt: string): void {
-    this.db
-      .prepare(`
-        UPDATE ${this.tables.hypotheses}
-        SET updated_by = ?, updated_at = ?, deleted_at = ?
-        WHERE id = ? AND deleted_at IS NULL
-      `)
-      .run(updatedBy, deletedAt, deletedAt, id);
+  deleteHypothesis(hypothesis: Hypothesis, deletedAt: string): void {
+    this.deleteCurrent("hypothesis", this.tables.hypotheses, hypothesis, deletedAt);
   }
 
   insertFinding(finding: Finding): void {
@@ -393,7 +417,7 @@ export class SQLiteInvestigationStore implements InvestigationStore {
         INSERT INTO ${this.tables.findings}
           (id, claim, references_json, commentary, status, tags_json,
            question_links_json, hypothesis_links_json, knowledge_source_id,
-           created_by, updated_by, created_at, updated_at, deleted_at)
+           revision, created_by, updated_by, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
@@ -406,23 +430,23 @@ export class SQLiteInvestigationStore implements InvestigationStore {
         encodeJson(finding.questionLinks),
         encodeJson(finding.hypothesisLinks),
         finding.knowledgeSourceId ?? null,
+        finding.revision,
         finding.createdBy,
         finding.updatedBy,
         finding.createdAt,
-        finding.updatedAt,
-        finding.deletedAt ?? null
+        finding.updatedAt
       );
   }
 
   getFinding(id: string): Finding | undefined {
     const row = this.db
-      .prepare(`SELECT * FROM ${this.tables.findings} WHERE id = ? AND deleted_at IS NULL`)
+      .prepare(`SELECT * FROM ${this.tables.findings} WHERE id = ?`)
       .get(id) as SQLiteRow | undefined;
     return row ? rowToFinding(row) : undefined;
   }
 
   listFindings(filter: FindingFilter = {}): Finding[] {
-    const where = ["finding.deleted_at IS NULL"];
+    const where = ["1 = 1"];
     const parameters: unknown[] = [];
 
     if (filter.status !== undefined) {
@@ -433,7 +457,7 @@ export class SQLiteInvestigationStore implements InvestigationStore {
       where.push(`
         EXISTS (
           SELECT 1 FROM ${this.tables.questions} AS question
-          WHERE question.id = ? AND question.deleted_at IS NULL
+          WHERE question.id = ?
         )
       `);
       parameters.push(filter.questionId);
@@ -449,7 +473,7 @@ export class SQLiteInvestigationStore implements InvestigationStore {
       where.push(`
         EXISTS (
           SELECT 1 FROM ${this.tables.hypotheses} AS hypothesis
-          WHERE hypothesis.id = ? AND hypothesis.deleted_at IS NULL
+          WHERE hypothesis.id = ?
         )
       `);
       parameters.push(filter.hypothesisId);
@@ -473,15 +497,26 @@ export class SQLiteInvestigationStore implements InvestigationStore {
   }
 
   updateFinding(finding: Finding): void {
-    this.db
-      .prepare(`
+    this.db.transaction(() => {
+      const row = this.db.prepare(
+        `SELECT * FROM ${this.tables.findings} WHERE id = ?`
+      ).get(finding.id) as SQLiteRow | undefined;
+      if (!row) return;
+      const previous = rowToFinding(row);
+      insertHistorySnapshot(this.db, this.tables.history, {
+        resourceKind: "finding",
+        resourceId: finding.id,
+        revision: previous.revision,
+        snapshot: previous,
+        recordedAt: finding.updatedAt
+      });
+      this.db.prepare(`
         UPDATE ${this.tables.findings}
         SET claim = ?, references_json = ?, commentary = ?, status = ?,
             tags_json = ?, question_links_json = ?, hypothesis_links_json = ?,
-            knowledge_source_id = ?, updated_by = ?, updated_at = ?
-        WHERE id = ? AND deleted_at IS NULL
-      `)
-      .run(
+            knowledge_source_id = ?, revision = ?, updated_by = ?, updated_at = ?
+        WHERE id = ?
+      `).run(
         finding.claim,
         encodeJson(finding.references),
         finding.commentary ?? null,
@@ -490,20 +525,16 @@ export class SQLiteInvestigationStore implements InvestigationStore {
         encodeJson(finding.questionLinks),
         encodeJson(finding.hypothesisLinks),
         finding.knowledgeSourceId ?? null,
+        finding.revision,
         finding.updatedBy,
         finding.updatedAt,
         finding.id
       );
+    })();
   }
 
-  softDeleteFinding(id: string, updatedBy: string, deletedAt: string): void {
-    this.db
-      .prepare(`
-        UPDATE ${this.tables.findings}
-        SET knowledge_source_id = NULL, updated_by = ?, updated_at = ?, deleted_at = ?
-        WHERE id = ? AND deleted_at IS NULL
-      `)
-      .run(updatedBy, deletedAt, deletedAt, id);
+  deleteFinding(finding: Finding, deletedAt: string): void {
+    this.deleteCurrent("finding", this.tables.findings, finding, deletedAt);
   }
 
   acceptFindingIfClaimMatches(
@@ -513,13 +544,91 @@ export class SQLiteInvestigationStore implements InvestigationStore {
     updatedBy: string,
     updatedAt: string
   ): boolean {
-    const result = this.db
-      .prepare(`
+    return this.db.transaction(() => {
+      const row = this.db.prepare(
+        `SELECT * FROM ${this.tables.findings} WHERE id = ? AND claim = ?`
+      ).get(id, expectedClaim) as SQLiteRow | undefined;
+      if (!row) return false;
+      const previous = rowToFinding(row);
+      insertHistorySnapshot(this.db, this.tables.history, {
+        resourceKind: "finding",
+        resourceId: id,
+        revision: previous.revision,
+        snapshot: previous,
+        recordedAt: updatedAt
+      });
+      const result = this.db.prepare(`
         UPDATE ${this.tables.findings}
-        SET status = 'accepted', knowledge_source_id = ?, updated_by = ?, updated_at = ?
-        WHERE id = ? AND claim = ? AND deleted_at IS NULL
-      `)
-      .run(knowledgeSourceId, updatedBy, updatedAt, id, expectedClaim);
-    return result.changes === 1;
+        SET status = 'accepted', knowledge_source_id = ?, revision = revision + 1,
+            updated_by = ?, updated_at = ?
+        WHERE id = ? AND claim = ?
+      `).run(knowledgeSourceId, updatedBy, updatedAt, id, expectedClaim);
+      return result.changes === 1;
+    })();
+  }
+
+  purge(resourceKind: "question" | "hypothesis" | "finding", id: string): void {
+    const table = this.tableFor(resourceKind);
+    if (this.db.prepare(`SELECT 1 FROM ${table} WHERE id = ?`).get(id)) {
+      throw new ResourceNotDeletedError(resourceKind, id);
+    }
+    if (!purgeResourceHistory(this.db, this.tables.history, resourceKind, id)) {
+      throw new ResourceHistoryNotFoundError(resourceKind, id);
+    }
+  }
+
+  pruneHistory(cutoff: string): number {
+    return pruneHistoryBefore(
+      this.db,
+      this.tables.history,
+      cutoff,
+      (kind, id) => Boolean(this.db.prepare(
+        `SELECT 1 FROM ${this.tableFor(kind as "question" | "hypothesis" | "finding")} WHERE id = ?`
+      ).get(id))
+    );
+  }
+
+  expiredDeleted(cutoff: string): Array<{
+    resourceKind: "question" | "hypothesis" | "finding";
+    resourceId: string;
+  }> {
+    return listExpiredDeletedResources(this.db, this.tables.history, cutoff)
+      .filter((record): record is {
+        resourceKind: "question" | "hypothesis" | "finding";
+        resourceId: string;
+      } => record.resourceKind === "question" ||
+        record.resourceKind === "hypothesis" || record.resourceKind === "finding");
+  }
+
+  private deleteCurrent(
+    resourceKind: "question" | "hypothesis" | "finding",
+    table: string,
+    snapshot: Question | Hypothesis | Finding,
+    deletedAt: string
+  ): void {
+    this.db.transaction(() => {
+      insertHistorySnapshot(this.db, this.tables.history, {
+        resourceKind,
+        resourceId: snapshot.id,
+        revision: snapshot.revision,
+        snapshot,
+        recordedAt: deletedAt
+      });
+      insertHistoryDeletion(this.db, this.tables.history, {
+        resourceKind,
+        resourceId: snapshot.id,
+        revision: snapshot.revision + 1,
+        recordedAt: deletedAt
+      });
+      this.db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(snapshot.id);
+    })();
+  }
+
+  private tableFor(resourceKind: "question" | "hypothesis" | "finding"): string {
+    switch (resourceKind) {
+      case "question": return this.tables.questions;
+      case "hypothesis": return this.tables.hypotheses;
+      case "finding": return this.tables.findings;
+    }
   }
 }

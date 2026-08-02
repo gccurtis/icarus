@@ -31,6 +31,8 @@ values. `exactKeys` rejects **unknown** keys, not just missing ones, so a client
   "displayName": "…", "description": "…", "definition": { … } }        // all optional
 
 { "type": "persona.delete", "id": "…", "expectedRevision": 1 }
+
+{ "type": "persona.purge", "id": "…" }
 ```
 
 ### Queries
@@ -148,7 +150,24 @@ performs mechanically.
 This is why sections are a fixed named vocabulary rather than author-defined headings: a
 consumer cannot select what it cannot name.
 
-## No jobs, no scheduler
+## Delete, purge, and retention flows
+
+`persona.delete` validates the current revision, logically deletes the owned private
+Context wrapper, then archives the final Persona snapshot, appends terminal revision
+`N + 1`, and removes the Persona from current storage in one Persona transaction. A retry
+after the wrapper has already disappeared tolerates that absence and can finish the
+Persona deletion. All normal Persona queries and resolution read only the current table.
+
+`persona.purge` is irreversible. It requires an absent current Persona and terminal
+deletion history, obtains the wrapper identity from the retained snapshot, purges that
+Context wrapper, and then removes Persona history. A live Persona conflicts; an id with
+neither current state nor terminal history is not found. The shared retention runner
+prunes old snapshots for live Personas and routes expired deleted Personas through this
+same ownership-aware purge path.
+
+## Job and scheduler boundaries
 
 There are no internal job intents, no deferred responses, no recovery pass, and no
-recurring work. Every operation is local, cheap, and bounded.
+capability-local recurring jobs. Every request operation is local, cheap, and bounded.
+The backend-wide retention scheduler invokes Persona's history pruning and expired-delete
+purge methods.

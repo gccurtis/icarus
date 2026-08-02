@@ -2,9 +2,19 @@
 
 ## Status and authority
 
-General Files is an implemented project-scoped capability for storing arbitrary caller-supplied file transport strings. Identity is the SHA-256 digest of the complete string. A small extension allowlist classifies prose text for Knowledge admission; every other extension is stored without indexing. Updating content is a wholesale replacement that creates or reactivates the content-addressed target and retires the prior row.
+General Files is an implemented project-scoped capability for storing arbitrary
+caller-supplied file transport strings. Identity is the SHA-256 digest of the
+complete string. A typed current table contains files; capability history
+contains superseded snapshots and terminal deletion revisions. A small
+extension allowlist classifies prose text for Knowledge admission; every other
+extension is stored without indexing. Updating content is a wholesale
+replacement that makes the content-addressed target current and moves the
+prior identity to history.
 
-These pages document the current TypeScript and SQLite behavior. General Files owns stored content, content identity, metadata, replacement links, active/deleted lifecycle, and its synchronous Knowledge reconciliation workflow. Knowledge owns windows, embeddings, lattice state, and retrieval.
+General Files owns stored content, deterministic identity, revisions, metadata,
+replacement links, current/history lifecycle, purge/retention hooks, and its
+synchronous Knowledge reconciliation workflow. Knowledge owns windows,
+embeddings, lattice state, and retrieval.
 
 ## Documentation map
 
@@ -13,7 +23,7 @@ These pages document the current TypeScript and SQLite behavior. General Files o
 | [Concepts](concepts.md) | Content addressing, classification, replacement, Knowledge boundary, and architecture |
 | [Types](types.md) | Domain types, result unions, filters, errors, store and SQLite representation |
 | [Runtime](runtime.md) | Factory, all service/store methods, helpers, logging, and compensation |
-| [Flows](flows.md) | All five endpoints and upload/update/delete call chains |
+| [Flows](flows.md) | All six endpoints and upload/update/delete/purge call chains |
 | [Invariants](invariants.md) | Exact guarantees, concurrency, transaction boundaries, limits, tests, and non-goals |
 
 ## Dependencies
@@ -22,7 +32,7 @@ These pages document the current TypeScript and SQLite behavior. General Files o
 - The shared [`Logger`](../../../0-platform/observability/logger.ts).
 - Project identity from backend configuration, bound into SQLite at construction.
 - The serial/concurrent job scheduler at the endpoint boundary.
-- The [runtime resource registry](../../../1-init/create/resource-reader.ts), which exposes active prose files to Derived Output scope/list/read tools.
+- The [runtime resource registry](../../../1-init/create/resource-reader.ts), which exposes current prose files to Derived Output scope/list/read tools.
 
 There is no filesystem read, multipart parser, binary decoder, text extractor, Formula dependency, or Intelligence call in this capability. The `content` field has already been decoded into a JavaScript string by its caller.
 
@@ -34,7 +44,7 @@ There is no filesystem read, multipart parser, binary decoder, text extractor, F
 | Typed application errors | [`domain/errors.ts`](../domain/errors.ts) |
 | Persistence port | [`ports/repository.ts`](../ports/repository.ts) |
 | Service and reconciliation helpers | [`application/generalFileService.ts`](../application/generalFileService.ts) |
-| SQLite schema, migration, and transactions | [`persistence/sqliteGeneralFileRepository.ts`](../persistence/sqliteGeneralFileRepository.ts) |
+| SQLite current/history schema and transactions | [`persistence/sqliteGeneralFileRepository.ts`](../persistence/sqliteGeneralFileRepository.ts) |
 | Public exports | [`index.ts`](../index.ts) |
 | Composition factory | [`1-init/create/generalFiles.ts`](../../../1-init/create/generalFiles.ts) |
 | HTTP/job wiring | [`4-job-wiring/general-files/registerGeneralFileEndpointMappings.ts`](../../../4-job-wiring/general-files/registerGeneralFileEndpointMappings.ts) |

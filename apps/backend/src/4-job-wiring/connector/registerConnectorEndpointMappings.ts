@@ -10,6 +10,10 @@ import {
   type ConnectorService,
 } from "#connector";
 import type { JobRegistry } from "#utils/jobs/registry.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
 
 function errorResponse(e: unknown): { statusCode: number; body: unknown } {
   if (e instanceof ConnectorNotFoundError) {
@@ -24,6 +28,8 @@ function errorResponse(e: unknown): { statusCode: number; body: unknown } {
   if (e instanceof ConnectorValidationError || e instanceof UnsupportedLocatorError || e instanceof RangeError) {
     return { statusCode: 400, body: { error: "bad_request", message: e.message } };
   }
+  if (e instanceof ResourceNotDeletedError) return { statusCode: 409, body: { error: "not_deleted", message: e.message } };
+  if (e instanceof ResourceHistoryNotFoundError) return { statusCode: 404, body: { error: "not_found", message: e.message } };
   const message = e instanceof Error ? e.message : String(e);
   return { statusCode: 500, body: { error: "internal_error", message } };
 }
@@ -237,6 +243,22 @@ export function registerConnectorEndpoints(
         return { statusCode: 200, body: { status: "deleted", id } };
       } catch (e) {
         logError(logger, "delete", e);
+        return errorResponse(e);
+      }
+    },
+  }));
+
+  registry.register({ method: "POST", path: "/connector/purge" }, (request) => ({
+    name: "connector.purge",
+    queueType: "serial",
+    responseMode: "inline",
+    work: async () => {
+      try {
+        const { id } = (request.body ?? {}) as { id: string };
+        await service.purge(id);
+        return { statusCode: 204, body: null };
+      } catch (e) {
+        logError(logger, "purge", e);
         return errorResponse(e);
       }
     },

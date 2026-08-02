@@ -6,6 +6,17 @@ import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database, { type Database as DB } from "better-sqlite3";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError,
+  getLatestHistoryRecord,
+  initializeResourceHistorySchema,
+  insertHistoryDeletion,
+  insertHistorySnapshot,
+  listExpiredDeletedResources,
+  pruneHistoryBefore,
+  purgeResourceHistory
+} from "#utils/persistence/resourceHistory.js";
 import type {
   DerivedOutput,
   DerivedOutputDefinition,
@@ -37,9 +48,15 @@ const tablePrefix = (projectId: string): string =>
 
 function createSchema(db: DB, prefix: string): void {
   db.exec(`
+    CREATE TABLE IF NOT EXISTS do_${prefix}_resources (
+      id         TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS do_${prefix}_outputs (
       id                           TEXT    PRIMARY KEY,
       kind                         TEXT    NOT NULL,
+      revision                     INTEGER NOT NULL CHECK (revision >= 1),
       prompt                       TEXT    NOT NULL,
       context_entries              TEXT    NOT NULL DEFAULT '[]',
       stabilisation_text           TEXT    NOT NULL DEFAULT '',
@@ -51,7 +68,8 @@ function createSchema(db: DB, prefix: string): void {
       freshness_diagnostic_code    TEXT,
       freshness_diagnostic_message TEXT,
       created_at                   TEXT    NOT NULL,
-      updated_at                   TEXT    NOT NULL
+      updated_at                   TEXT    NOT NULL,
+      FOREIGN KEY (id) REFERENCES do_${prefix}_resources(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS do_${prefix}_runtime_state (
@@ -120,7 +138,10 @@ function createSchema(db: DB, prefix: string): void {
       evidence_json        TEXT    NOT NULL DEFAULT '[]',
       status               TEXT    NOT NULL,
       created_at           TEXT    NOT NULL,
-      PRIMARY KEY (output_id, revision)
+      PRIMARY KEY (output_id, revision),
+      FOREIGN KEY (output_id)
+        REFERENCES do_${prefix}_resources(id)
+        ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS do_${prefix}_refresh_attempts (
@@ -137,9 +158,13 @@ function createSchema(db: DB, prefix: string): void {
       usage_total_tokens           INTEGER NOT NULL DEFAULT 0,
       usage_reasoning_tokens       INTEGER NOT NULL DEFAULT 0,
       started_at                   TEXT NOT NULL,
-      completed_at                 TEXT
+      completed_at                 TEXT,
+      FOREIGN KEY (output_id)
+        REFERENCES do_${prefix}_outputs(id)
+        ON DELETE CASCADE
     );
   `);
+  initializeResourceHistorySchema(db, `do_${prefix}_history`);
 }
 
 // ─── Row mappers ────────────────────────────────────────────────────────────
@@ -168,6 +193,7 @@ function rowToOutput(row: Record<string, unknown>): DerivedOutput {
   return {
     id: row.id as string,
     kind: row.kind as DerivedOutputKind,
+    revision: Number(row.revision),
     definition,
     headRevision: row.head_revision as number,
     freshness,
@@ -226,20 +252,25 @@ export class SQLiteDerivedOutputStore implements DerivedOutputStore {
   insertOutput(output: DerivedOutput): void {
     const d = output.definition;
     const f = output.freshness;
+    this.db.prepare(`
+      INSERT OR IGNORE INTO do_${this.prefix}_resources (id, created_at)
+      VALUES (?, ?)
+    `).run(output.id, output.createdAt);
     this.db
       .prepare(`
         INSERT INTO do_${this.prefix}_outputs
-          (id, kind, prompt, context_entries, stabilisation_text,
+          (id, kind, revision, prompt, context_entries, stabilisation_text,
            definition_revision, head_revision,
            freshness_state, freshness_last_checked_at,
            freshness_stale_since, freshness_diagnostic_code,
            freshness_diagnostic_message,
            created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         output.id,
         output.kind,
+        output.revision,
         d.prompt,
         JSON.stringify(d.contextEntries),
         d.stabilisationText,
@@ -386,22 +417,26 @@ export class SQLiteDerivedOutputStore implements DerivedOutputStore {
       }
 
       const row = this.db.prepare(`
-        SELECT definition_revision
+        SELECT *
         FROM do_${this.prefix}_outputs
         WHERE id = ?
-      `).get(input.outputId) as { definition_revision: number } | undefined;
+      `).get(input.outputId) as Record<string, unknown> | undefined;
       if (!row) return { state: "not_found" };
-      if (row.definition_revision !== input.expectedDefinitionRevision) {
+      const previous = rowToOutput(row);
+      if (previous.definition.definitionRevision !== input.expectedDefinitionRevision) {
         return {
           state: "stale",
-          actualDefinitionRevision: row.definition_revision
+          actualDefinitionRevision: previous.definition.definitionRevision
         };
       }
+
+      this.archiveOutput(previous, input.updatedAt);
 
       const result = this.db.prepare(`
         UPDATE do_${this.prefix}_outputs
         SET prompt = ?, context_entries = ?, stabilisation_text = ?,
             definition_revision = definition_revision + 1,
+            revision = revision + 1,
             freshness_state = 'stale',
             freshness_last_checked_at = ?,
             freshness_stale_since = ?,
@@ -434,36 +469,67 @@ export class SQLiteDerivedOutputStore implements DerivedOutputStore {
     }).immediate();
   }
 
-  deleteOutput(id: string): boolean {
-    return this.db.transaction((): boolean => {
-      const exists = this.db.prepare(`
-        SELECT 1 FROM do_${this.prefix}_outputs WHERE id = ?
-      `).get(id);
-      if (!exists) return false;
-
-      this.db.prepare(`
-        DELETE FROM do_${this.prefix}_declarations WHERE output_id = ?
-      `).run(id);
-      this.db.prepare(`
-        DELETE FROM do_${this.prefix}_refresh_claims WHERE output_id = ?
-      `).run(id);
-      this.db.prepare(`
-        DELETE FROM do_${this.prefix}_definition_update_claims WHERE output_id = ?
-      `).run(id);
-      this.db.prepare(`
-        DELETE FROM do_${this.prefix}_revisions WHERE output_id = ?
-      `).run(id);
-      this.db.prepare(`
-        DELETE FROM do_${this.prefix}_refresh_attempts WHERE output_id = ?
-      `).run(id);
-      const result = this.db.prepare(`
-        DELETE FROM do_${this.prefix}_outputs WHERE id = ?
-      `).run(id);
-      if (result.changes !== 1) {
-        throw new Error("Derived output deletion changed an unexpected row count");
-      }
-      return true;
+  deleteOutput(id: string, deletedAt: string): number | null {
+    return this.db.transaction((): number | null => {
+      const row = this.db.prepare(`
+        SELECT * FROM do_${this.prefix}_outputs WHERE id = ?
+      `).get(id) as Record<string, unknown> | undefined;
+      if (!row) return null;
+      const output = rowToOutput(row);
+      this.archiveOutput(output, deletedAt);
+      insertHistoryDeletion(this.db, `do_${this.prefix}_history`, {
+        resourceKind: "derived-output",
+        resourceId: id,
+        revision: output.revision + 1,
+        recordedAt: deletedAt
+      });
+      const result = this.db.prepare(
+        `DELETE FROM do_${this.prefix}_outputs WHERE id = ?`
+      ).run(id);
+      if (result.changes !== 1) throw new Error("Derived output deletion changed an unexpected row count");
+      return output.revision + 1;
     }).immediate();
+  }
+
+  purgeOutput(id: string): void {
+    if (this.getOutput(id)) throw new ResourceNotDeletedError("derived-output", id);
+    const latest = getLatestHistoryRecord(
+      this.db,
+      `do_${this.prefix}_history`,
+      "derived-output",
+      id
+    );
+    if (!latest || latest.recordType !== "deleted") {
+      throw new ResourceHistoryNotFoundError("derived-output", id);
+    }
+    this.db.transaction(() => {
+      if (!purgeResourceHistory(
+        this.db,
+        `do_${this.prefix}_history`,
+        "derived-output",
+        id
+      )) throw new ResourceHistoryNotFoundError("derived-output", id);
+      this.db.prepare(`DELETE FROM do_${this.prefix}_resources WHERE id = ?`).run(id);
+    }).immediate();
+  }
+
+  pruneHistory(cutoff: string): number {
+    return pruneHistoryBefore(
+      this.db,
+      `do_${this.prefix}_history`,
+      cutoff,
+      (_kind, id) => this.getOutput(id) !== null
+    );
+  }
+
+  purgeExpired(cutoff: string): number {
+    const ids = listExpiredDeletedResources(
+      this.db,
+      `do_${this.prefix}_history`,
+      cutoff
+    ).filter(({ resourceKind }) => resourceKind === "derived-output");
+    for (const { resourceId } of ids) this.purgeOutput(resourceId);
+    return ids.length;
   }
 
   // ── Knowledge invalidation ──────────────────────────────────────────────
@@ -481,6 +547,10 @@ export class SQLiteDerivedOutputStore implements DerivedOutputStore {
     changedAt: string
   ): KnowledgeInvalidationResult {
     return this.db.transaction((): KnowledgeInvalidationResult => {
+      const outputs = this.db.prepare(
+        `SELECT * FROM do_${this.prefix}_outputs`
+      ).all() as Record<string, unknown>[];
+      for (const row of outputs) this.archiveOutput(rowToOutput(row), changedAt);
       this.db.prepare(`
         UPDATE do_${this.prefix}_runtime_state
         SET knowledge_generation = knowledge_generation + 1
@@ -489,6 +559,7 @@ export class SQLiteDerivedOutputStore implements DerivedOutputStore {
       const stale = this.db.prepare(`
         UPDATE do_${this.prefix}_outputs
         SET freshness_state = 'stale',
+            revision = revision + 1,
             freshness_stale_since = COALESCE(freshness_stale_since, ?),
             freshness_diagnostic_code = NULL,
             freshness_diagnostic_message = NULL,
@@ -675,9 +746,11 @@ export class SQLiteDerivedOutputStore implements DerivedOutputStore {
       }
 
       this.insertRevision(input.revision);
+      this.archiveOutput(output, input.completedAt);
       const published = this.db.prepare(`
         UPDATE do_${this.prefix}_outputs
         SET head_revision = ?,
+            revision = revision + 1,
             stabilisation_text = CASE
               WHEN stabilisation_text = '' THEN ?
               ELSE stabilisation_text
@@ -783,9 +856,11 @@ export class SQLiteDerivedOutputStore implements DerivedOutputStore {
       }
 
       this.failAttempt(input, input.diagnosticCode);
+      this.archiveOutput(output, input.completedAt);
       const markedFailed = this.db.prepare(`
         UPDATE do_${this.prefix}_outputs
         SET freshness_state = 'failed',
+            revision = revision + 1,
             freshness_last_checked_at = ?,
             freshness_stale_since = NULL,
             freshness_diagnostic_code = ?,
@@ -824,6 +899,16 @@ export class SQLiteDerivedOutputStore implements DerivedOutputStore {
 
   close(): void {
     this.db.close();
+  }
+
+  private archiveOutput(output: DerivedOutput, recordedAt: string): void {
+    insertHistorySnapshot(this.db, `do_${this.prefix}_history`, {
+      resourceKind: "derived-output",
+      resourceId: output.id,
+      revision: output.revision,
+      snapshot: output,
+      recordedAt
+    });
   }
 
   private settleAttempt(

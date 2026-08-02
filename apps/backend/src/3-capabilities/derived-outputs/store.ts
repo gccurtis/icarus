@@ -117,7 +117,10 @@ export interface DerivedOutputStore {
   updateOutputDefinition(
     input: UpdateOutputDefinitionInput
   ): UpdateOutputDefinitionResult;
-  deleteOutput(id: string): boolean;
+  deleteOutput(id: string, deletedAt: string): number | null;
+  purgeOutput(id: string): void;
+  pruneHistory(cutoff: string): number;
+  purgeExpired(cutoff: string): number;
 
   // ── Knowledge invalidation ──────────────────────────────────────────────
   getKnowledgeGeneration(): number;

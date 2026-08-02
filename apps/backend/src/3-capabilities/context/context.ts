@@ -4,10 +4,14 @@ import { randomUUID } from "node:crypto";
 import type { Logger } from "#platform/observability/logger.js";
 import type { ContextEntry, KnowledgeResourceResolver } from "#platform/knowledge/types.js";
 import type { ContextStore } from "./store.js";
-import { ContextRecord, ContextNotFoundError, ContextConflictError, StaleContextError } from "./types.js";
+import { ContextRecord, ContextNotFoundError, ContextConflictError, StaleContextError, ContextValidationError } from "./types.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
 
 export interface ContextManagerConfig {
-  readonly maxEntriesPerContext: number;  // default 1000
+  readonly maxEntriesPerContext: number;  // default 100,000
   readonly maxResolveDepth: number;       // default 10 — cycle guard
 }
 
@@ -29,6 +33,9 @@ export interface ContextManager extends KnowledgeResourceResolver {
   declare(displayName: string, entries: ContextEntry[], options?: ContextWriteOptions): Promise<ContextRecord>;
   update(id: string, entries: ContextEntry[], expectedRevision: number): Promise<ContextRecord>;
   delete(id: string): Promise<void>;
+  purge(id: string): Promise<void>;
+  pruneHistory(cutoff: string): number;
+  purgeExpired(cutoff: string): number;
 
   // ── Resolution (satisfies KnowledgeResourceResolver) ─────────────────────
   /** Expand all kind:"context" entries recursively into leaf entries.
@@ -100,7 +107,10 @@ class ContextManagerImpl implements ContextManager {
   async declare(displayName: string, entries: ContextEntry[], options: ContextWriteOptions = {}): Promise<ContextRecord> {
     const t = performance.now();
     if (entries.length > this.config.maxEntriesPerContext) {
-      throw new Error(`Entries exceed maxEntriesPerContext (${this.config.maxEntriesPerContext})`);
+      throw new ContextValidationError(
+        "entries",
+        `count ${entries.length} exceeds maxEntriesPerContext (${this.config.maxEntriesPerContext})`
+      );
     }
     const existing = this.store.getByName(displayName);
     if (existing) throw new ContextConflictError(displayName);
@@ -124,7 +134,10 @@ class ContextManagerImpl implements ContextManager {
   async update(id: string, entries: ContextEntry[], expectedRevision: number): Promise<ContextRecord> {
     const t = performance.now();
     if (entries.length > this.config.maxEntriesPerContext) {
-      throw new Error(`Entries exceed maxEntriesPerContext (${this.config.maxEntriesPerContext})`);
+      throw new ContextValidationError(
+        "entries",
+        `count ${entries.length} exceeds maxEntriesPerContext (${this.config.maxEntriesPerContext})`
+      );
     }
     const existing = this.store.get(id);
     if (!existing) throw new ContextNotFoundError(id);
@@ -136,7 +149,11 @@ class ContextManagerImpl implements ContextManager {
       revision: existing.revision + 1,
       updatedAt: new Date().toISOString()
     };
-    this.store.update(updated);
+    if (!this.store.update(updated, expectedRevision)) {
+      const current = this.store.get(id);
+      if (!current) throw new ContextNotFoundError(id);
+      throw new StaleContextError(id, current.revision, expectedRevision);
+    }
     this.logger.info("context.update", { id, entryCount: updated.entries.length, revision: updated.revision, durationMs: Math.round(performance.now() - t) });
     return updated;
   }
@@ -145,8 +162,24 @@ class ContextManagerImpl implements ContextManager {
     const t = performance.now();
     const existing = this.store.get(id);
     if (!existing) throw new ContextNotFoundError(id);
-    this.store.softDelete(id, new Date().toISOString());
-    this.logger.info("context.delete", { id, durationMs: Math.round(performance.now() - t) });
+    const revision = this.store.delete(id, new Date().toISOString());
+    if (revision === undefined) throw new ContextNotFoundError(id);
+    this.logger.info("context.delete", { id, revision, durationMs: Math.round(performance.now() - t) });
+  }
+
+  async purge(id: string): Promise<void> {
+    const outcome = this.store.purge(id);
+    if (outcome === "current") throw new ResourceNotDeletedError("context", id);
+    if (outcome === "missing") throw new ResourceHistoryNotFoundError("context", id);
+    this.logger.info("context.purge", { id });
+  }
+
+  pruneHistory(cutoff: string): number {
+    return this.store.pruneHistory(cutoff);
+  }
+
+  purgeExpired(cutoff: string): number {
+    return this.store.purgeExpired(cutoff);
   }
 
   async resolve(entries: ContextEntry[]): Promise<ContextEntry[]> {
@@ -211,7 +244,7 @@ class ContextManagerImpl implements ContextManager {
   ): Promise<ContextRecord> {
     const t = performance.now();
     if (!displayName || displayName.trim().length === 0) {
-      throw new Error("displayName is required");
+      throw new ContextValidationError("displayName", "is required");
     }
     const existing = this.store.getByName(displayName);
     if (existing) throw new ContextConflictError(displayName);
@@ -219,6 +252,12 @@ class ContextManagerImpl implements ContextManager {
     const entriesA = this.resolveOperand(a);
     const entriesB = this.resolveOperand(b);
     const result = op === "union" ? this.combine(entriesA, entriesB) : this.difference(entriesA, entriesB);
+    if (result.length > this.config.maxEntriesPerContext) {
+      throw new ContextValidationError(
+        "entries",
+        `count ${result.length} exceeds maxEntriesPerContext (${this.config.maxEntriesPerContext})`
+      );
+    }
 
     const now = new Date().toISOString();
     const record: ContextRecord = {

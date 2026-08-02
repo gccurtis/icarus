@@ -24,14 +24,14 @@ ports or separate “persisted” and “runtime” variants.
 | Question | Durable research framing plus an optional current answer |
 | Hypothesis | A proposed explanation or claim, related to zero or more Questions |
 | Finding | A durable, reference-grounded claim that may relate to Questions/Hypotheses |
-| Current answer | The presently proposed or human-confirmed answer on a Question; not immutable history |
+| Current answer | The presently proposed or human-confirmed answer on a Question; not a separate immutable answer entity, but included in aggregate history snapshots |
 | Assumption | Plain text on a Question or Hypothesis; not an independently managed entity |
 | Finding link | A Finding-owned Question or Hypothesis ID plus an optional relationship meaning |
 | Reverse relationship | A filtered query over the owning record, not a second persisted list |
 | Reference | A lightweight locator for an existing resource or webpage; not a generic Source object |
 | Needs review | Optional per-reference flag indicating that the Finding may need revalidation |
 | Knowledge source | The internal `finding:{id}` source used only while a Finding is accepted |
-| Soft deletion | Setting `deletedAt`; ordinary reads then treat the record as absent |
+| Logical deletion | Archive the final snapshot and a terminal revision, then remove the current row |
 
 ## One capability, one runtime, one store
 
@@ -47,6 +47,7 @@ flowchart TB
   IS --> Q[("inv_<project>_questions")]
   IS --> H[("inv_<project>_hypotheses")]
   IS --> F[("inv_<project>_findings")]
+  IS --> HIST[("inv_<project>_history")]
   FOPS --> K["Knowledge add/remove"]
 ```
 
@@ -96,7 +97,7 @@ await investigation.listHypotheses({ questionId });
 ```
 
 SQLite evaluates these filters against JSON arrays on the owning rows. It also
-requires the named target row to be live. A missing or soft-deleted target
+requires the named target row to be current. A missing or logically deleted target
 therefore produces an empty reverse list, even if an owner still contains its
 ID. Deletion does not cascade or rewrite those owner arrays.
 
@@ -130,11 +131,12 @@ stateDiagram-v2
 `open` means no candidate conclusion is ready. `proposed` means
 `currentAnswer` exists but is not human-confirmed. `answered` means the current
 answer is human-confirmed. Status is the approval signal; no separate approval
-field or answer-revision entity exists. Confirmation requires a nonblank
+or answer entity exists, although superseded Question snapshots are retained in
+Investigation history. Confirmation requires a nonblank
 current answer and is harmless when the Question is already answered.
 
-Deletion is not a status transition. It sets `deletedAt` through the store and
-makes the Question unavailable to ordinary get/list/reverse-filter operations.
+Deletion is not a status transition. It moves the final current Question into
+history, appends a terminal deletion revision, and removes the current row.
 
 ## Hypothesis lifecycle and confidence
 
@@ -222,9 +224,10 @@ one schema transaction. A 16-hex SHA-256 prefix of `projectId` namespaces the
 table names, so projects can share the database file without sharing rows.
 
 Arrays (`assumptions`, tags, Question IDs, references, and link arrays) are
-stored as JSON on their owning row. There are no link tables, foreign keys,
-mirrored relationship columns, or a fourth Investigation table. Ordinary SQL
-reads always include `deleted_at IS NULL`.
+stored as JSON on their owning current row. There are no link tables, foreign
+keys, or mirrored relationship columns. One shared history table is keyed by
+`(resource_kind, resource_id, revision)` and stores superseded snapshots plus
+terminal deletion records. Ordinary reads query only the three current tables.
 
 ## Boundaries
 
@@ -235,5 +238,5 @@ mapping Context entries and scoped reads. The job layer owns HTTP ingress,
 queue choice, response codes, and request telemetry.
 
 The capability does not yet define a Research execution graph, automatically
-promote Derived Output evidence, detect owner revisions, maintain detailed
-change history, or run a durable cross-store reconciliation worker.
+promote Derived Output evidence, detect owner revisions, expose history through
+a public query API, or run a durable cross-store reconciliation worker.

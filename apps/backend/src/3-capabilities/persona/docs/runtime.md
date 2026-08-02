@@ -18,8 +18,9 @@ flowchart LR
 
 Persona is constructed immediately after `contextManager` in
 [`startBackend.ts`](../../../1-init/startBackend.ts) — Context is its only dependency, so
-nothing else needs to exist first. There is no recovery step, no scheduler involvement,
-and no background work.
+nothing else needs to exist first. There is no Persona-specific recovery step or
+background worker; the backend-wide retention scheduler calls the capability's retention
+methods.
 
 ```ts
 interface PersonaDependencies {
@@ -37,14 +38,17 @@ and Comments — it is what makes timestamps assertable in tests.
 
 | Method | Work and result | Persistence / side effects | Logging |
 |---|---|---|---|
-| `command(cmd)` | Total switch dispatching to create/update/delete | as dispatched | via the target method |
+| `command(cmd)` | Total switch dispatching to create/update/delete/purge | as dispatched | via the target method |
 | `query(q)` | Total switch dispatching to get/getByName/list/render | reads only | via the target method |
 | `create(input)` | Validates name, description, definition; checks live-name conflict and `maxPersonas`; declares the wrapper; inserts at revision 1 | one Context `declare` (if a context is present), then one store insert | info `persona.create` |
 | `get(id)` | Returns the built-in for `builtin:default`, else loads a live row | read only | none |
 | `getByName(name)` | Case-insensitive live lookup. Does **not** resolve the built-in. | read only | none |
 | `list()` | Live records, name-sorted, case-insensitive | read only | none |
-| `update(input)` | Rejects the built-in; revision check; validates supplied fields; reconciles the wrapper; CAS-updates at revision + 1 | up to one Context call, then one store CAS update | info `persona.update` |
-| `delete(input)` | Rejects the built-in; revision check; deletes the wrapper; CAS soft-delete | one Context `delete` (if a wrapper exists), then one store CAS | info `persona.delete` |
+| `update(input)` | Rejects the built-in; revision check; validates supplied fields; plans and, if needed, declares a fresh wrapper; CAS-updates at revision + 1; best-effort deletes any superseded wrapper | up to one Context `declare` before the store CAS, then up to one Context `delete` after it | info `persona.update` |
+| `delete(input)` | Rejects the built-in; revision check; deletes the wrapper, then archives the final snapshot plus terminal revision and removes current state | one Context `delete` (if owned), then one Persona transaction | info `persona.delete` |
+| `purge(input)` | Rejects the built-in; reads the latest retained snapshot; purges its wrapper, then physically removes Persona history | one Context `purge` (if owned), then one Persona transaction | info `persona.purge` |
+| `pruneHistory(cutoff)` | Removes old snapshots for Personas that remain current | one Persona transaction | none |
+| `purgeExpired(cutoff)` | Finds terminal deletions before the cutoff and calls ownership-aware `purge` for each | Context and Persona purge per expired id | via `purge` |
 | `render(definition, sections?)` | Pure. No I/O. | none | none |
 | `resolve(id?, options?)` | Absent id → built-in. Renders, digests, and builds the snapshot. | read only | debug `persona.resolve` |
 
@@ -53,44 +57,63 @@ it might touch the store.
 
 ## The wrapper reconciliation
 
-`update` routes through a private `reconcileWrapper(existing, definition)`:
+`update` routes through a private `planWrapperChange(existing, definition)`:
 
 | Before | After | Action | Wrapper fields |
 |---|---|---|---|
 | none | none | nothing | stay absent |
-| none | present | `context.declare("persona:<id>", [entry], { private: true })` | set |
-| present | present | `context.update(wrapperId, [entry], wrapperRevision)` | id unchanged, revision bumped |
-| present | none | `context.delete(wrapperId)` | cleared |
+| none | present | `context.declare("persona:<id>", [entry], { private: true })` | set to the new wrapper |
+| present | present, unchanged | nothing (compared by `id`/`kind`, no Context call) | unchanged |
+| present | present, different | `context.declare(...)` for a **new** wrapper now; the old one is deleted only after the persona row's CAS write has committed to the new one | set to the new wrapper; old one deleted afterward |
+| present | none | nothing here; the persona row's CAS write drops the fields; the old wrapper is deleted afterward | cleared |
 
-The wrapper id is **stable for the life of the persona**: a changed context updates the
-same record rather than declaring a new one, so anything already holding that id keeps
-resolving.
+A changed context is never applied by mutating the existing wrapper in place. A fresh
+`declare()` always starts at revision 1, so it can never itself go stale — the persona
+row's own CAS write is what decides whether it takes effect, and the previous wrapper is
+only torn down once that has happened. See "Ordering" below for why.
 
-Note the third row fires even when the entry is unchanged, because a definition is
-replaced wholesale and Persona does not diff prose. The cost is one redundant Context
-revision on a no-op definition resubmit.
+## Ordering: declare-before for updates; wrapper-before for Persona deletion
 
-## Ordering: Context first, then the store
+`create`, `update`, and `delete` order cross-capability work so that create/update can, at
+worst, leave one harmless orphaned private wrapper, while successful deletion cannot
+leave a live owned wrapper:
 
-`create`, `update`, and `delete` all call Context **before** writing their own row. The
-consequence is stated plainly in [invariants.md](invariants.md): a Context call that
-succeeds followed by a store write that fails leaves an orphaned private record. That is
-accepted rather than solved with durable-claim machinery.
+- `create` declares the wrapper, then inserts the row. A failed insert orphans the
+  wrapper; there is no row yet to reconcile against, so the caller just retries.
+- `update` declares any *new* wrapper it needs **before** its own CAS write, and only
+  deletes a *superseded* wrapper **after** that CAS has committed. A lost CAS abandons
+  the freshly declared wrapper rather than ever repairing or mutating anything.
+- `delete` deletes the wrapper **before** archiving and removing the Persona current row.
+  Missing-wrapper errors are tolerated on retry; other wrapper failures stop the Persona
+  deletion. A failure between the two databases is therefore recoverable by retry and
+  cannot finish with the owned wrapper still current.
 
-The ordering is not arbitrary — the reverse would be worse. Writing the persona row first
-and then failing the Context call would leave a record whose `context_wrapper_id` points
-at nothing, which the schema `CHECK` forbids and which every later read would have to
-defend against.
+Every create/update "orphan on failure" path is logged as `persona.wrapper.orphaned`
+(`warn`) rather than retried or repaired. Delete instead exposes a recoverable window:
+after the wrapper succeeds but before Persona commits, current Persona state can still
+refer to the now-absent wrapper until the same command is retried. See
+[invariants.md](invariants.md) for the full reasoning.
+
+The schema `CHECK` (`context_json`/`context_wrapper_id` both null or both set) is also
+why `create` must declare before inserting rather than the reverse: a row written with a
+`context_wrapper_id` before the wrapper exists would be briefly unrepresentable, and a row
+written without one when a wrapper was expected would violate the pairing invariant.
 
 ## Logging
 
 ```text
-persona.create   info   { personaId, revision, definitionDigest, sectionCount,
-                          hasContext, durationMs }
-persona.update   info   { personaId, revision, definitionDigest, digestChanged, durationMs }
-persona.delete   info   { personaId, revision, durationMs }
-persona.resolve  debug  { personaId, revision, definitionDigest, promptDigest,
-                          sectionCount, promptChars, hasContext, durationMs }
+persona.runtime.created  info   {}
+persona.command          debug  { type, durationMs }
+persona.query.completed  debug  { type, personaId?, count?, promptDigest?, durationMs }
+persona.create           info   { personaId, revision, definitionDigest, sectionCount,
+                                  hasContext, durationMs }
+persona.update           info   { personaId, revision, definitionDigest, digestChanged, durationMs }
+persona.delete           info   { personaId, revision, durationMs }
+persona.resolve          debug  { personaId, revision, definitionDigest, promptDigest,
+                                  sectionCount, promptChars, hasContext, isBuiltIn, durationMs }
+persona.wrapper.declared info   { personaId, wrapperId, revision }
+persona.wrapper.deleted  info   { personaId, wrapperId }
+persona.wrapper.orphaned warn   { personaId, wrapperId, reason }
 ```
 
 **Section text, rendered prompts, display names, and descriptions never appear in a log
@@ -101,8 +124,15 @@ asserting it
 ([`persona-wiring.test.ts`](../../../../test/capabilities/persona-wiring.test.ts) →
 "persona logs carry digests and never section text").
 
-Reads are not logged at all. `get`, `getByName`, and `list` are cheap and frequent, and a
-log line per catalog read would be noise.
+Every command and query is logged (`persona.command` / `persona.query.completed`), plus a
+dedicated event per catalog operation (`get`, `getByName`, `list`, `render`). Every
+individual Context write Persona makes is logged at its call site — `persona.wrapper.declared`
+whenever `context.declare` is called (from `create` or from `update`'s wrapper-change
+plan), and `persona.wrapper.deleted` whenever `context.delete` succeeds (from `update`'s
+best-effort cleanup of a superseded wrapper, or from `delete`'s cleanup of the persona's
+own wrapper). `persona.wrapper.orphaned` covers create/update paths where a wrapper ends
+up unreferenced without a corresponding delete: a lost CAS race abandoning a freshly
+declared wrapper, or a best-effort superseded-wrapper cleanup failing after update.
 
 ## Queue behaviour
 
@@ -111,9 +141,10 @@ log line per catalog read would be noise.
 | `POST /personas/command` | serial | inline |
 | `POST /personas/query` | concurrent | inline |
 
-Commands are serial because create, update, and delete each read-then-write across the
+Commands are serial because create, update, delete, and purge read-then-write across the
 store *and* the Context port — the store cannot enforce that invariant on its own, which
 is the same reasoning that puts Document and Slide commands on the serial queue. The
 revision compare-and-swap is a genuine second line of defence rather than the only one.
 
-There is no deferred work, no internal job intent, and no scheduler involvement.
+There is no deferred work or internal job intent. Retention is scheduled centrally after
+HTTP binds and stops during backend shutdown.

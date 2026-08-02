@@ -10,10 +10,20 @@ import {
   type PersonaCapability,
   type PersonaCommandResult
 } from "#persona";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
 import type { Logger } from "#platform/observability/logger.js";
 import type { JobRegistry } from "#utils/jobs/registry.js";
 
 const errorResponse = (error: unknown): { statusCode: number; body: unknown } => {
+  if (error instanceof ResourceNotDeletedError) {
+    return { statusCode: 409, body: { error: "not_deleted", message: error.message } };
+  }
+  if (error instanceof ResourceHistoryNotFoundError) {
+    return { statusCode: 404, body: { error: "not_found", message: error.message } };
+  }
   if (error instanceof PersonaNotFoundError) {
     return { statusCode: 404, body: { error: "persona_not_found", message: error.message } };
   }

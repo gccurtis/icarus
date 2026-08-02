@@ -5,8 +5,8 @@
 Investigation is an implemented, project-scoped capability for managing
 Questions, Hypotheses, and Findings as one coherent domain. It exposes one
 flat `InvestigationRuntime`, persists the three record types through one
-`InvestigationStore`, and initializes all three project-prefixed tables on one
-SQLite connection.
+`InvestigationStore`, and initializes three typed current tables plus one shared
+project-prefixed history table on one SQLite connection.
 
 Questions frame work and hold a mutable current answer. Hypotheses express
 claims that may relate to zero or more Questions. Findings preserve grounded
@@ -26,7 +26,7 @@ the runtime authority.
 | [Concepts](concepts.md) | Domain vocabulary, ownership, lifecycles, relationships, references, and architecture |
 | [Types](types.md) | Canonical records, requests, filters, errors, store port, and SQLite representation |
 | [Runtime](runtime.md) | Construction, every runtime/store operation, validation, Knowledge reconciliation, and logging |
-| [Flows](flows.md) | All 23 HTTP jobs, relationship traversal, acceptance, review, deletion, and resource-resolution sequences |
+| [Flows](flows.md) | All 26 HTTP jobs, relationship traversal, acceptance, review, deletion, purge, and resource-resolution sequences |
 | [Invariants](invariants.md) | Guarantees, concurrency boundaries, validation rules, failure behavior, tests, and non-goals |
 
 ## Architecture at a glance
@@ -37,7 +37,7 @@ flowchart LR
   JOBS --> RUNTIME["one InvestigationRuntime"]
   RESEARCH["Research and in-process consumers"] --> RUNTIME
   RUNTIME --> STORE["one InvestigationStore"]
-  STORE --> DB[("investigation.db<br/>Questions + Hypotheses + Findings")]
+  STORE --> DB[("investigation.db<br/>current Questions/Hypotheses/Findings + shared history")]
   RUNTIME --> KNOW["Knowledge"]
   START["startBackend"] --> FACTORY["Investigation factory"]
   FACTORY --> STORE
@@ -56,7 +56,7 @@ flowchart LR
 | Canonical domain records, requests, filters, helpers, runtime contract, and errors | [`domain/model.ts`](../domain/model.ts) |
 | One persistence port for all three record types | [`ports/investigationStore.ts`](../ports/investigationStore.ts) |
 | Service implementation, validation, lifecycle logic, Knowledge reconciliation, and runtime logging | [`application/investigationRuntime.ts`](../application/investigationRuntime.ts) |
-| SQLite connection, schema, row mapping, filters, soft deletion, and conditional acceptance | [`persistence/sqliteInvestigationStore.ts`](../persistence/sqliteInvestigationStore.ts) |
+| SQLite connection, current/history schema, row mapping, filters, logical deletion/purge, and conditional acceptance | [`persistence/sqliteInvestigationStore.ts`](../persistence/sqliteInvestigationStore.ts) |
 | Public capability exports | [`index.ts`](../index.ts) |
 | Project-bound store/runtime factory | [`1-init/create/investigation.ts`](../../../1-init/create/investigation.ts) |
 | Startup composition and endpoint registration | [`1-init/startBackend.ts`](../../../1-init/startBackend.ts) |

@@ -71,7 +71,20 @@ Synchronously increments project generation and marks every output stale in one 
 
 ### `delete(id)`
 
-Calls transactional hard deletion and throws not-found if no row existed. Output, revisions, attempts, and all claim rows are deleted together. External `DerivedOutputRef` owners are not updated.
+Calls transactional logical deletion and throws not-found if no current row exists. The
+store archives the final aggregate, appends terminal resource revision `N + 1`, and
+deletes current state. Current-owned claims and attempts cascade away; the stable root,
+immutable answer revisions, and lifecycle history remain. External `DerivedOutputRef`
+owners are not updated.
+
+### `purge(id)`, `pruneHistory(cutoff)`, and `purgeExpired(cutoff)`
+
+`purge` requires no current Output and a terminal deletion record, then removes lifecycle
+history and the stable root so retained answer revisions cascade. `pruneHistory` removes
+old lifecycle snapshots only for still-current Outputs. `purgeExpired` finds terminal
+deletions older than the cutoff and applies the same guarded purge. These methods are
+called by the direct purge endpoint and backend-wide retention runner; purge emits no
+Activity transaction.
 
 ## Validation/helper groups
 
@@ -101,7 +114,16 @@ The tool set is mutable only in its growing per-refresh candidate list and usage
 
 ## Store runtime and transactions
 
-`SQLiteDerivedOutputStore` uses immediate transactions for every claim, definition update, hard delete, Knowledge invalidation, successful settlement, and failure settlement. Claim acquisition and the long provider computation are intentionally not one transaction.
+`SQLiteDerivedOutputStore` uses immediate transactions for every claim, definition
+update, logical delete, physical purge, Knowledge invalidation, successful settlement,
+and failure settlement. Each mutation archives the prior aggregate and advances its
+resource revision in the same transaction. Claim acquisition and the long provider
+computation are intentionally not one transaction.
+
+The `_outputs` table is current-only. `_resources` is a stable FK root, `_history` stores
+superseded aggregate snapshots and terminal deletion records, and immutable answer
+`_revisions` attach to the root. Claims and attempts attach to current Output state, so
+logical deletion removes operational state without losing retained answers.
 
 Completed keyed results are persisted as JSON and replay after process restart. An incomplete claim does not provide durable work resumption or single-flight waiting; another caller with the same pending key can recompute, while final CAS and canonical claim completion prevent divergent publication/results.
 

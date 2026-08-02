@@ -4,12 +4,13 @@
 
 | Preconditions | Guaranteed outcome in the current implementation | Enforcement boundary |
 |---|---|---|
-| `declare` receives no more than `maxEntriesPerContext` raw entries and no live exact-name match | A UUID record at revision 1 is inserted with first-seen `kind:id` deduplication | Manager checks plus SQLite PK/live-name index |
-| `update` sees a live-or-ID-visible row whose revision equals `expectedRevision` | The complete entries array is replaced and returned at revision +1 | Manager read/check, then store update; not one SQL CAS |
-| `list` is called without `includePrivate` | Only live rows with `private = 0` are returned | SQLite predicate |
-| `getByName` succeeds | Returned row is live and exactly matches the table's name comparison | SQLite live predicate |
-| `composeNamed` receives operands that resolve (by ID or inline) and a `displayName` with no live conflict | A UUID record at revision 1 is inserted holding the union/difference result | Manager checks plus SQLite PK/live-name index |
-| `composeNamed` receives a `{contextId}` operand that does not resolve to a live row | Throws `ContextNotFoundError` before any insert | Manager operand resolution |
+| `declare` receives no more than `maxEntriesPerContext` raw entries and no current exact-name match | A UUID record at revision 1 is inserted with first-seen `kind:id` deduplication | Manager checks plus SQLite PK/current-name index |
+| `update` sees a current row whose revision equals `expectedRevision` | Revision `N` is archived and the complete entries array becomes current revision `N + 1` | One SQLite history + CAS transaction |
+| `delete` sees a current row at revision `N` | Snapshot `N` and terminal deletion `N + 1` are recorded and no current row remains | One SQLite transaction |
+| `list` is called without `includePrivate` | Only current rows with `private = 0` are returned | SQLite predicate |
+| `getByName` succeeds | Returned row is current and exactly matches the table's name comparison | SQLite current-table lookup |
+| `composeNamed` receives operands that resolve (by ID or inline) and a `displayName` with no current conflict | A UUID record at revision 1 is inserted holding the union/difference result | Manager checks plus SQLite PK/current-name index |
+| `composeNamed` receives a `{contextId}` operand that does not resolve to a current row | Throws `ContextNotFoundError` before any insert | Manager operand resolution |
 | `resolve` receives repeated leaf identities | Each first-seen leaf key appears at most once in the result | Per-call `seen` set |
 | `resolve` encounters a cycle, missing nested ID, or depth beyond the cap | That path terminates or is omitted; the call does not intentionally throw a cycle/depth error | Recursive helper |
 | `combine(a,b)` is called | Result is first-seen union of `a` then `b` | Pure helper |
@@ -19,8 +20,8 @@
 
 - Entry identity is case-sensitive `${kind}:${id}`.
 - Record IDs are random UUIDs.
-- Live display-name uniqueness is across the single project table and case-sensitive.
-- `update` increments `revision`; `delete` currently does not increment it or update `updatedAt`.
+- Current display-name uniqueness is across the single project table and case-sensitive.
+- `update` increments the current revision; `delete` records terminal revision `N + 1` in history.
 - `private` is a real column, fixed at creation by `declare`/`composeNamed` (defaults `false`) and immutable thereafter — there is no "make private" command on an existing record. It is a visibility flag only: `list` excludes private records unless `includePrivate` is set; `get`, `getByName`, `resolve`, and composition-operand lookup are unaffected by it. There is no ownership or reference-counting concept attached to it — a private record with nothing pointing at it is not detected or cleaned up by Context.
 - Entries are stored as arrays and emitted in first-seen order. The code does not sort them into a canonical order.
 
@@ -28,31 +29,36 @@
 
 | Limit | Default | Applied to |
 |---|---:|---|
-| `maxEntriesPerContext` | 1,000 | Raw array length for declare/update only |
+| `maxEntriesPerContext` | 100,000 | Raw array length for declare/update, and the combined result for composeNamed |
 | `maxResolveDepth` | 10 | Nested resolve recursion; branches beyond it are silently omitted |
 
-`composeNamed` does not enforce `maxEntriesPerContext` on its combined result. There are no implemented byte limits for names, descriptions, or serialized entries.
+All three sites throw a typed `ContextValidationError(field, reason)` on violation, mapped to 400 `context_invalid`. There are no implemented byte limits for names, descriptions, or serialized entries.
 
 ## Concurrency and atomicity
 
-SQLite guarantees each individual statement and the live-name unique index. Context does not open a transaction around lookup plus mutation, and `ContextStore.update` has no expected-revision predicate. Therefore:
+SQLite guarantees the current-name unique index and the multi-statement
+transactions used by update and delete. Therefore:
 
 - an update already stale at its read is rejected;
-- two concurrent writers can both pass the same revision check and last-writer-wins;
-- delete can race update and has no revision argument; and
+- concurrent writers for the same revision have one update-CAS winner;
+- delete has no public expected revision, but archives and removes the row in
+  one store transaction; and
 - a declaration race may surface a raw SQLite constraint error instead of `ContextConflictError`.
 
-These are current non-guarantees, not properties callers should depend on. All endpoint jobs use the concurrent queue, so queue topology does not serialize these mutations.
+All endpoint jobs use the concurrent queue, so SQLite rather than queue topology
+serializes these mutations.
 
-## Soft-delete visibility
+## Current/history deletion
 
-The intended public model is soft deletion, but current store predicates differ:
+Normal reads use the typed current table only. Deleted Contexts are absent from
+`get`, `getByName`, `list`, update/delete lookup, resolution, and composition
+operand lookup without lifecycle predicates.
 
-- `list` and `getByName` exclude deleted rows;
-- `get(id)` does not filter `deleted_at`;
-- update/delete/resolve/composeNamed operand resolution use ID lookup and can observe a tombstoned row.
-
-Documentation and callers must not claim that every ID path hides tombstones until the store query is tightened.
+History retains complete superseded snapshots and a terminal deletion record.
+Purge returns 409 while a current row exists, 404 without terminal history, and
+otherwise removes that history. Shared retention prunes old snapshots for
+current Contexts and purges deleted Contexts whose terminal record crosses the
+cutoff.
 
 ## Scope and security
 
@@ -71,6 +77,10 @@ Documentation and callers must not claim that every ID path hides tombstones unt
 
 ## Test coverage and non-goals
 
-There is currently no dedicated Context capability test file under `apps/backend/test/capabilities`. Context behavior receives indirect coverage through Derived Output scope/resource tests and production smoke routing. The contracts above were therefore derived from [`context.ts`](../context.ts), [`sqlite-store.ts`](../sqlite-store.ts), and endpoint wiring rather than inferred from an absent test.
+Context has focused tests for revisioned update, logical deletion, normal-read
+absence, and purge in addition to scope/resource integration coverage.
 
-Current non-goals include content ownership, leaf existence validation, retrieval, authentication, automatic cleanup of unreferenced private contexts, Context history, hard deletion, and canonical sorting/digests inside this capability.
+Current non-goals include content ownership, leaf existence validation,
+retrieval, authentication, automatic cleanup of unreferenced private contexts,
+history inspection endpoints, and canonical sorting/digests inside this
+capability.

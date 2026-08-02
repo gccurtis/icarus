@@ -17,6 +17,8 @@ makes its first model call.
 | Freeze | The single moment a consumer resolves a persona to a snapshot — once per task, before the first model call. |
 | Fold in | A consumer selecting which sections apply to the kind of work it does. |
 | Private wrapper | Persona's own Context record, one per persona carrying a context reference. |
+| Logical deletion | Remove the Persona and its wrapper from current storage while retaining revision history. |
+| Purge | Irreversibly remove retained Persona history and the owned wrapper's history. |
 
 ## The five sections
 
@@ -138,3 +140,17 @@ carries no context reference and no `background`.
 
 Resolving a *deleted or unknown* id throws rather than falling back to the built-in — a
 consumer never silently gets different behaviour than the one it named.
+
+## Current and history lifecycle
+
+The typed Persona table contains exactly the live catalog. An accepted update archives
+the previous complete record and replaces it with revision `N + 1`. Logical deletion
+deletes the owned private Context wrapper, archives the final Persona record, appends a
+terminal deletion revision, and removes the Persona current row. Consequently a deleted
+Persona has no catalog, get, resolve, or name-uniqueness presence; it exists only in
+retained history.
+
+Physical purge removes both retained Persona history and the wrapper's retained Context
+history. The built-in remains outside this lifecycle. Retained snapshots are for
+inspection, not history-to-current replay; the backend-wide policy prunes old live
+snapshots and purges terminal deletions after the configured cutoff.

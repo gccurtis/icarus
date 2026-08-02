@@ -17,7 +17,7 @@
 | One reference is marked or cleared successfully | Only that current array element's review flag changes; overall review need remains derived | Runtime/store |
 | A reverse filter names a live target | Results are live owner rows whose authoritative JSON array contains that target ID | SQLite store |
 | A reverse filter names an unavailable/deleted target | The result is empty even if an owner retained the target ID | SQLite store |
-| Any soft-delete method completes | `deletedAt` is set and the record is absent from ordinary get/list operations | SQLite store |
+| Any logical-delete method completes | Final snapshot and terminal revision are historical, no current row remains, and ordinary reads return absent | SQLite store |
 
 These are completion guarantees, not a distributed transaction guarantee.
 Investigation SQLite and Knowledge are independent stores; process termination
@@ -66,7 +66,8 @@ before every related record is present.
 - `confirmQuestionAnswer` requires a current answer; `answered` is the
   human-confirmed signal, so no approval field is needed.
 - `clearQuestionAnswer` removes the answer and sets `open`.
-- `currentAnswer` is mutable and has no Investigation-specific revision history.
+- `currentAnswer` is mutable and has no separate answer ledger; superseded complete
+  Question snapshots retain the answer value in shared Investigation history.
 - `context` is one optional text field for framing, constraints, background,
   and research detail.
 - Assumptions are plain strings without IDs/status/approval/confidence.
@@ -151,18 +152,19 @@ or verify that the cited span actually entails the claim.
 Finding resource descriptors currently omit a public numeric resource
 revision. Knowledge retains the internal claim digest on its own SourceRecord.
 
-## Deletion invariants
+## Deletion, purge, and retention invariants
 
-- Deletion is represented by `deletedAt`, never by a Question/Hypothesis/
-  Finding status.
-- Ordinary store get/list methods always filter `deleted_at IS NULL`.
-- The public runtime has no include-deleted or restore operation.
+- Deletion is represented by absence from the current table plus a terminal
+  shared-history record, never by a Question/Hypothesis/Finding status.
+- Ordinary store get/list methods read current tables only.
+- The public runtime has no include-deleted operation.
 - Question/Hypothesis deletion does not cascade or rewrite owner links.
-- Finding soft deletion clears `knowledge_source_id` in the SQL row.
-- Accepted Finding deletion attempts Knowledge removal before soft deletion and
+- Accepted Finding deletion attempts Knowledge removal before current-row removal and
   reconciliation afterward.
-- IDs and historical rows remain in SQLite; normal capability behavior treats
-  them as absent.
+- Purge rejects current records, requires terminal history, and removes all
+  retained history for the requested resource.
+- Retention prunes old history for current records and purges expired deleted
+  records without pruning Activity or transaction outboxes.
 
 ## Concurrency and atomicity
 
@@ -172,9 +174,9 @@ HTTP queue policy is part of the guarantee:
 - Finding edit, review, unaccept, reject, and delete are serial.
 - get/list, Finding proposal, and acceptance are concurrent.
 - Serial authored mutations use deterministic queue order and last-write-wins
-  semantics; they do not add record versions or merge logic.
+  semantics while archiving each previous current revision; they do not merge.
 
-SQLite single statements are atomic, and the three-table schema is initialized
+SQLite single statements are atomic, and the current/history schema is initialized
 inside one transaction. The claim-matching acceptance update is one atomic SQL
 statement. The runtime does not wrap multiple runtime/store operations in a
 general transaction or hold SQLite transactions during Knowledge embedding.
@@ -271,6 +273,6 @@ Question/Hypothesis/Finding services or databases; runtime projection objects;
 a generic Source entity; immutable answer or Finding revisions; relationship
 entities/mirrored arrays; cascading relationship cleanup; evidence gates on
 Hypothesis status; calibrated probability claims; automatic webpage change
-detection; detailed review history; record restore/archive states; a general
+detection; detailed review history; record history-to-current replay/archive states; a general
 mutation conflict system; durable cross-store workflow orchestration; automatic
 Research/Derived Output promotion; and end-user authorization.

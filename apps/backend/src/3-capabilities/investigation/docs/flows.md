@@ -3,7 +3,7 @@
 ## HTTP/job boundary
 
 [`registerInvestigationEndpoints`](../../../4-job-wiring/investigation/registerInvestigationEndpoints.ts)
-registers all 23 resource-oriented routes in one function. Every job responds
+registers all 26 resource-oriented routes in one function. Every job responds
 inline. IDs stay in JSON bodies for POST mutations and query strings for
 GET/DELETE because the transport does not use path parameters.
 
@@ -23,6 +23,7 @@ runtime performs domain validation again for non-HTTP callers.
 | `GET /questions/get?id=` | concurrent | required query `id` | `getQuestion` | 200 Question or explicit 404 |
 | `GET /questions/list?status=&tag=` | concurrent | optional exact status/tag | `listQuestions` | 200 `{records}` |
 | `DELETE /questions/delete?id=` | serial | required query `id` | `deleteQuestion` | 204 `null` |
+| `POST /questions/purge` | serial | body `id` | `purgeQuestion` | 204 `null` |
 
 ### Hypothesis endpoints
 
@@ -33,6 +34,7 @@ runtime performs domain validation again for non-HTTP callers.
 | `GET /hypotheses/get?id=` | concurrent | required query `id` | `getHypothesis` | 200 Hypothesis or explicit 404 |
 | `GET /hypotheses/list?questionId=&status=` | concurrent | optional live Question/status filters | `listHypotheses` | 200 `{records}` |
 | `DELETE /hypotheses/delete?id=` | serial | required query `id` | `deleteHypothesis` | 204 `null` |
+| `POST /hypotheses/purge` | serial | body `id` | `purgeHypothesis` | 204 `null` |
 
 ### Finding endpoints
 
@@ -48,6 +50,7 @@ runtime performs domain validation again for non-HTTP callers.
 | `GET /findings/get?id=` | concurrent | required query `id` | `getFinding` | 200 Finding or explicit 404 |
 | `GET /findings/list?status=&questionId=&hypothesisId=` | concurrent | optional status/live target filters | `listFindings` | 200 `{records}` |
 | `DELETE /findings/delete?id=` | serial | required query `id` | `deleteFinding` | 204 `null` |
+| `POST /findings/purge` | serial | body `id` | `purgeFinding` | 204 `null` |
 
 There are no `/questions/runtime` or `/hypotheses/runtime` endpoints. Related
 data is obtained through filtered list routes or through the one in-process
@@ -205,7 +208,7 @@ flowchart TD
   LIVE -->|"yes; metadata/review edit"| META["write SQLite only"]
   ADD --> WRITE
   REMOVE --> WRITE
-  WRITE -->|"SQLite failure after Knowledge change"| COMP["best-effort restore prior accepted claim"]
+  WRITE -->|"SQLite failure after Knowledge change"| COMP["best-effort re-add prior accepted claim"]
   WRITE -->|"success"| REC["reconcile durable winner with Knowledge"]
   META --> DONE
   REC --> DONE["return/log canonical result"]
@@ -215,7 +218,7 @@ Accepted metadata/review edits use the direct SQLite-only branch and do not
 call Knowledge. Explicit repeated `acceptFinding` still calls `Knowledge.add`;
 the same digest normally makes that call revision-skipped. Unaccept clears
 `knowledgeSourceId` and sets proposed. Reject clears the ID and sets rejected.
-Soft delete clears the ID and makes ordinary store reads return absent.
+Logical delete removes the current row after retaining its final and terminal revisions.
 
 ## Context and scoped resource flow
 
@@ -245,10 +248,10 @@ A read additionally requires a matching descriptor in the caller's frozen
 scope manifest. This prevents proposed/rejected/deleted Findings from being
 exposed merely because a caller knows an ID.
 
-## Soft-deletion flow
+## Logical deletion, purge, and retention flow
 
-Question and Hypothesis deletion requires the current live record and performs
-one soft-delete update. It does not cascade:
+Question and Hypothesis deletion requires the current record and performs one
+current-to-history transaction. It does not cascade:
 
 - a deleted Question disappears from Question reads and causes Question-based
   reverse filters to return `[]`;
@@ -256,10 +259,16 @@ one soft-delete update. It does not cascade:
 - a deleted Hypothesis disappears from its reads and causes
   Hypothesis-filtered Finding queries to return `[]`.
 
-Finding deletion first removes its source when accepted, soft-deletes the row,
-then reconciles source absence. All ordinary get/list and resource-registry
-paths treat the deleted Finding as absent. There is no deleted status and no
-restore endpoint.
+Finding deletion first removes its source when accepted, archives the final
+snapshot and terminal revision, removes the current row, then reconciles source
+absence. All ordinary get/list and resource-registry paths treat it as absent.
+There is no deleted status or public history-loading operation.
+
+Each resource-specific purge requires no current row and a terminal deletion
+record, then irreversibly removes that resource's shared-history rows. Live
+resources return `409 not_deleted`; missing history returns 404. The backend
+retention sweep prunes old superseded revisions for current records and invokes
+purge for terminal deletions older than the configured cutoff.
 
 ## Startup registration flow
 
@@ -269,6 +278,6 @@ After constructing the runtime, startup:
 - calls `resourceRegistry.registerInvestigation(investigation)` once; and
 - calls `registerInvestigationEndpoints(registry, investigation, logger)` once.
 
-Endpoint registration emits one manifest log containing the 23 method/path
+Endpoint registration emits one manifest log containing the 26 method/path
 pairs. No separate Question/Hypothesis/Finding startup factories, databases,
 registrars, or readiness flags exist.

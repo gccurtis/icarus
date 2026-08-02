@@ -22,7 +22,6 @@ export interface DataEntryBase {
   readonly revision: number;              // monotone counter; starts at 1
   readonly createdAt: string;             // ISO-8601
   readonly updatedAt: string;             // ISO-8601
-  readonly deletedAt?: string;            // present means soft-deleted
 }
 
 // variable and function — body is formula source text or lambda source text

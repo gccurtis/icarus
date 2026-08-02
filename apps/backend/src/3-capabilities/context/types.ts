@@ -16,7 +16,6 @@ export interface ContextRecord {
   readonly revision: number;            // monotone counter starting at 1
   readonly createdAt: string;           // ISO-8601
   readonly updatedAt: string;
-  readonly deletedAt?: string;          // soft-delete
 }
 
 export class ContextNotFoundError extends Error {
@@ -41,5 +40,15 @@ export class StaleContextError extends Error {
   ) {
     super(`Stale revision for context ${id}: expected ${expected}, current ${current}`);
     this.name = "StaleContextError";
+  }
+}
+
+export class ContextValidationError extends Error {
+  constructor(
+    public readonly field: string,
+    public readonly reason: string
+  ) {
+    super(`${field}: ${reason}`);
+    this.name = "ContextValidationError";
   }
 }

@@ -5,8 +5,20 @@ import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database, { type Database as DB } from "better-sqlite3";
+import {
+  getResourceHistory,
+  initializeResourceHistorySchema,
+  insertHistoryDeletion,
+  insertHistorySnapshot,
+  listExpiredDeletedResources,
+  nextRevisionAfterHistory,
+  pruneHistoryBefore,
+  purgeResourceHistory,
+  type ResourceHistoryRecord
+} from "#utils/persistence/resourceHistory.js";
 import type {
   ConnectorEntry,
+  ConnectorHistorySnapshot,
   ConnectorIngestionState,
   ConnectorItemEntry,
   ConnectorSyncConfig,
@@ -42,20 +54,17 @@ function createSchema(db: DB, p: string): void {
       knowledge_source_ids_json TEXT NOT NULL
         CHECK (json_valid(knowledge_source_ids_json) AND json_type(knowledge_source_ids_json) = 'array'),
       created_at          TEXT NOT NULL,
-      updated_at          TEXT NOT NULL,
-      deleted_at          TEXT
+      updated_at          TEXT NOT NULL
     );
 
     CREATE UNIQUE INDEX IF NOT EXISTS conn_${p}_entries_active_locator
-      ON conn_${p}_entries(provider_kind, locator)
-      WHERE deleted_at IS NULL;
+      ON conn_${p}_entries(provider_kind, locator);
 
     CREATE INDEX IF NOT EXISTS conn_${p}_entries_syncing
-      ON conn_${p}_entries(syncing, deleted_at IS NULL)
-      WHERE deleted_at IS NULL;
+      ON conn_${p}_entries(syncing);
 
     CREATE INDEX IF NOT EXISTS conn_${p}_entries_kind_created
-      ON conn_${p}_entries(kind, deleted_at IS NULL, created_at DESC);
+      ON conn_${p}_entries(kind, created_at DESC);
 
     CREATE TABLE IF NOT EXISTS conn_${p}_items (
       entry_id            TEXT NOT NULL,
@@ -81,56 +90,7 @@ function createSchema(db: DB, p: string): void {
     CREATE INDEX IF NOT EXISTS conn_${p}_items_status
       ON conn_${p}_items(entry_id, status);
   `);
-}
-
-/** Relax the early schema's extension check without discarding indexed items. */
-function ensureCurrentSchema(db: DB, p: string): void {
-  const itemsTable = `conn_${p}_items`;
-  const existing = db.prepare(
-    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?"
-  ).get(itemsTable) as { sql: string } | undefined;
-
-  if (!existing) {
-    createSchema(db, p);
-    return;
-  }
-
-  if (!existing.sql.includes("length(extension) > 0")) {
-    createSchema(db, p);
-    return;
-  }
-
-  const legacy = `${itemsTable}_legacy_schema`;
-  db.pragma("foreign_keys = OFF");
-  try {
-    db.transaction(() => {
-      db.exec(`ALTER TABLE ${itemsTable} RENAME TO ${legacy}`);
-      db.exec(`DROP INDEX IF EXISTS conn_${p}_items_status`);
-      createSchema(db, p);
-      db.exec(`
-        INSERT INTO ${itemsTable}
-          (entry_id, item_key, name, extension, byte_size, status,
-           revision_token, last_modified_at, knowledge_source_id)
-        SELECT
-          entry_id, item_key, name, extension, byte_size, status,
-          revision_token, last_modified_at, knowledge_source_id
-        FROM ${legacy};
-        DROP TABLE ${legacy};
-      `);
-    })();
-  } finally {
-    db.pragma("foreign_keys = ON");
-  }
-}
-
-function ensureIngestionStateColumn(db: DB, p: string): void {
-  const columns = db.prepare(`PRAGMA table_info(conn_${p}_entries)`).all() as Array<{ name: string }>;
-  if (columns.some(column => column.name === "ingestion_state")) return;
-  db.exec(`
-    ALTER TABLE conn_${p}_entries
-    ADD COLUMN ingestion_state TEXT NOT NULL DEFAULT 'active'
-      CHECK (ingestion_state IN ('active', 'pending', 'failed'))
-  `);
+  initializeResourceHistorySchema(db, `conn_${p}_history`);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,11 +106,10 @@ function rowToEntry(row: Record<string, any>): ConnectorEntry {
       ? (JSON.parse(row.sync_config_json as string) as ConnectorSyncConfig)
       : null,
     syncing: (row.syncing as number) === 1,
-    ingestionState: (row.ingestion_state as ConnectorIngestionState | undefined) ?? "active",
+    ingestionState: row.ingestion_state as ConnectorIngestionState,
     knowledgeSourceIds: JSON.parse(row.knowledge_source_ids_json as string) as readonly string[],
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
-    deletedAt: (row.deleted_at as string | null) ?? undefined,
   };
 }
 
@@ -171,6 +130,7 @@ function rowToItem(row: Record<string, any>): ConnectorItemEntry {
 export class SQLiteConnectorStore implements ConnectorStore {
   private readonly db: DB;
   private readonly p: string;
+  private readonly historyTableName: string;
 
   constructor(projectId: string, dbPath: string) {
     mkdirSync(dirname(dbPath), { recursive: true });
@@ -178,8 +138,8 @@ export class SQLiteConnectorStore implements ConnectorStore {
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("synchronous = NORMAL");
     this.p = tablePrefix(projectId);
-    ensureCurrentSchema(this.db, this.p);
-    ensureIngestionStateColumn(this.db, this.p);
+    this.historyTableName = `conn_${this.p}_history`;
+    createSchema(this.db, this.p);
     this.db.pragma("foreign_keys = ON");
   }
 
@@ -194,7 +154,7 @@ export class SQLiteConnectorStore implements ConnectorStore {
     const row = this.db
       .prepare(
         `SELECT * FROM conn_${this.p}_entries
-         WHERE provider_kind = ? AND locator = ? AND deleted_at IS NULL`
+         WHERE provider_kind = ? AND locator = ?`
       )
       .get(providerKind, locator) as Record<string, unknown> | undefined;
     return row ? rowToEntry(row) : undefined;
@@ -202,7 +162,7 @@ export class SQLiteConnectorStore implements ConnectorStore {
 
   listAll(): ConnectorEntry[] {
     const rows = this.db
-      .prepare(`SELECT * FROM conn_${this.p}_entries WHERE deleted_at IS NULL ORDER BY created_at DESC`)
+      .prepare(`SELECT * FROM conn_${this.p}_entries ORDER BY created_at DESC`)
       .all() as Record<string, unknown>[];
     return rows.map(rowToEntry);
   }
@@ -212,8 +172,8 @@ export class SQLiteConnectorStore implements ConnectorStore {
       INSERT INTO conn_${this.p}_entries
         (id, kind, provider_kind, locator, label, revision,
          sync_config_json, syncing, ingestion_state, knowledge_source_ids_json,
-         created_at, updated_at, deleted_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const insertItem = this.db.prepare(`
@@ -229,9 +189,9 @@ export class SQLiteConnectorStore implements ConnectorStore {
         entry.revision,
         entry.syncConfig ? JSON.stringify(entry.syncConfig) : null,
         entry.syncing ? 1 : 0,
-        entry.ingestionState ?? "active",
+        entry.ingestionState,
         JSON.stringify(entry.knowledgeSourceIds),
-        entry.createdAt, entry.updatedAt, entry.deletedAt ?? null,
+        entry.createdAt, entry.updatedAt,
       );
 
       for (const item of items) {
@@ -246,29 +206,21 @@ export class SQLiteConnectorStore implements ConnectorStore {
     tx();
   }
 
-  restore(entry: ConnectorEntry, items: ConnectorItemEntry[]): void {
-    this.replaceEntry(entry, items, true);
+  nextRevision(id: string): number {
+    return nextRevisionAfterHistory(this.db, this.historyTableName, "connector", id);
   }
 
-  update(entry: ConnectorEntry, items: ConnectorItemEntry[]): void {
-    this.replaceEntry(entry, items, false);
-  }
-
-  private replaceEntry(
+  update(
     entry: ConnectorEntry,
     items: ConnectorItemEntry[],
-    restoring: boolean,
+    previous: ConnectorHistorySnapshot,
   ): void {
-    const deletedAssignment = restoring ? ", deleted_at = NULL" : "";
-    const stateGuard = restoring
-      ? "deleted_at IS NOT NULL"
-      : "deleted_at IS NULL AND syncing = 1";
     const updateEntry = this.db.prepare(`
       UPDATE conn_${this.p}_entries
       SET kind = ?, provider_kind = ?, locator = ?, label = ?, revision = ?,
           sync_config_json = ?, syncing = ?, ingestion_state = ?, knowledge_source_ids_json = ?,
-          updated_at = ?${deletedAssignment}
-      WHERE id = ? AND ${stateGuard}
+          updated_at = ?
+      WHERE id = ? AND revision = ? AND syncing = 1
     `);
 
     const deleteItems = this.db.prepare(
@@ -288,16 +240,22 @@ export class SQLiteConnectorStore implements ConnectorStore {
         entry.revision,
         entry.syncConfig ? JSON.stringify(entry.syncConfig) : null,
         entry.syncing ? 1 : 0,
-        entry.ingestionState ?? "active",
+        entry.ingestionState,
         JSON.stringify(entry.knowledgeSourceIds),
         entry.updatedAt,
         entry.id,
+        previous.entry.revision,
       );
       if (result.changes !== 1) {
-        throw new Error(
-          `Connector entry lost its ${restoring ? "deleted" : "active sync"} state: ${entry.id}`
-        );
+        throw new Error(`Connector entry lost its current sync state: ${entry.id}`);
       }
+      insertHistorySnapshot(this.db, this.historyTableName, {
+        resourceKind: "connector",
+        resourceId: previous.entry.id,
+        revision: previous.entry.revision,
+        snapshot: previous,
+        recordedAt: entry.updatedAt
+      });
 
       deleteItems.run(entry.id);
 
@@ -322,24 +280,38 @@ export class SQLiteConnectorStore implements ConnectorStore {
     const result = this.db.prepare(`
       UPDATE conn_${this.p}_entries
       SET ingestion_state = ?, knowledge_source_ids_json = ?, updated_at = ?
-      WHERE id = ? AND deleted_at IS NULL AND syncing = 1
+      WHERE id = ? AND syncing = 1
     `).run(state, JSON.stringify(trackedKnowledgeSourceIds), updatedAt, id);
     if (result.changes !== 1) {
       throw new Error(`Connector ingestion state lost its active sync claim: ${id}`);
     }
   }
 
-  softDelete(id: string, deletedAt: string): void {
-    const result = this.db
-      .prepare(`
-        UPDATE conn_${this.p}_entries
-        SET deleted_at = ?, updated_at = ?
-        WHERE id = ? AND deleted_at IS NULL AND syncing = 1
-      `)
-      .run(deletedAt, deletedAt, id);
-    if (result.changes !== 1) {
-      throw new Error(`Connector delete lost its active claim: ${id}`);
-    }
+  delete(snapshot: ConnectorHistorySnapshot, deletedAt: string): number {
+    return this.db.transaction(() => {
+      const current = this.db.prepare(`
+        SELECT revision FROM conn_${this.p}_entries
+        WHERE id = ? AND revision = ? AND syncing = 1
+      `).get(snapshot.entry.id, snapshot.entry.revision) as { revision: number } | undefined;
+      if (!current) throw new Error(`Connector delete lost its current claim: ${snapshot.entry.id}`);
+      insertHistorySnapshot(this.db, this.historyTableName, {
+        resourceKind: "connector",
+        resourceId: snapshot.entry.id,
+        revision: snapshot.entry.revision,
+        snapshot,
+        recordedAt: deletedAt
+      });
+      const deletedRevision = snapshot.entry.revision + 1;
+      insertHistoryDeletion(this.db, this.historyTableName, {
+        resourceKind: "connector",
+        resourceId: snapshot.entry.id,
+        revision: deletedRevision,
+        recordedAt: deletedAt
+      });
+      this.db.prepare(`DELETE FROM conn_${this.p}_entries WHERE id = ?`)
+        .run(snapshot.entry.id);
+      return deletedRevision;
+    })();
   }
 
   getItems(entryId: string): ConnectorItemEntry[] {
@@ -353,7 +325,7 @@ export class SQLiteConnectorStore implements ConnectorStore {
     const result = this.db
       .prepare(
         `UPDATE conn_${this.p}_entries SET syncing = 1
-         WHERE id = ? AND syncing = 0 AND deleted_at IS NULL`
+         WHERE id = ? AND syncing = 0`
       )
       .run(id);
     return result.changes > 0;
@@ -367,7 +339,7 @@ export class SQLiteConnectorStore implements ConnectorStore {
 
   resetSyncing(): number {
     const result = this.db
-      .prepare(`UPDATE conn_${this.p}_entries SET syncing = 0 WHERE syncing = 1 AND deleted_at IS NULL`)
+      .prepare(`UPDATE conn_${this.p}_entries SET syncing = 0 WHERE syncing = 1`)
       .run();
     return result.changes;
   }
@@ -376,7 +348,7 @@ export class SQLiteConnectorStore implements ConnectorStore {
     const rows = this.db
       .prepare(
         `SELECT * FROM conn_${this.p}_entries
-         WHERE deleted_at IS NULL AND syncing = 0
+         WHERE syncing = 0
            AND sync_config_json IS NOT NULL
          ORDER BY created_at DESC`
       )
@@ -395,5 +367,40 @@ export class SQLiteConnectorStore implements ConnectorStore {
          WHERE id = ?`
       )
       .run(lastSyncedAt, new Date().toISOString(), id);
+  }
+
+  purge(id: string): "purged" | "current" | "missing" {
+    if (this.getById(id)) return "current";
+    return purgeResourceHistory(this.db, this.historyTableName, "connector", id)
+      ? "purged"
+      : "missing";
+  }
+
+  history(id: string): ResourceHistoryRecord<ConnectorHistorySnapshot>[] {
+    return getResourceHistory<ConnectorHistorySnapshot>(
+      this.db,
+      this.historyTableName,
+      "connector",
+      id
+    );
+  }
+
+  pruneHistory(cutoff: string): number {
+    return pruneHistoryBefore(
+      this.db,
+      this.historyTableName,
+      cutoff,
+      (_kind, id) => Boolean(this.getById(id))
+    );
+  }
+
+  purgeExpired(cutoff: string): number {
+    let purged = 0;
+    for (const resource of listExpiredDeletedResources(this.db, this.historyTableName, cutoff)) {
+      if (!this.getById(resource.resourceId) && this.purge(resource.resourceId) === "purged") {
+        purged += 1;
+      }
+    }
+    return purged;
   }
 }

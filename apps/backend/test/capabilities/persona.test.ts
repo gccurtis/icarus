@@ -21,6 +21,10 @@ import {
   type PersonaDefinition
 } from "../../src/3-capabilities/persona/index.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "../../src/0-utils/persistence/resourceHistory.js";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -42,18 +46,22 @@ const fullDefinition = (overrides: Partial<PersonaDefinition> = {}): PersonaDefi
 });
 
 interface ContextCall {
-  readonly op: "declare" | "update" | "delete";
+  readonly op: "declare" | "delete" | "purge";
   readonly displayName?: string;
   readonly id?: string;
   readonly entries?: ContextEntry[];
   readonly isPrivate?: boolean;
-  readonly expectedRevision?: number;
 }
 
-const createFakeContext = (): PersonaContextPort & { readonly calls: ContextCall[] } => {
+const createFakeContext = (): PersonaContextPort & {
+  readonly calls: ContextCall[];
+  /** Test-only hook: make the next delete() call for this id throw, to exercise
+   *  the best-effort-cleanup-failure (orphan) path. */
+  failNextDelete(id: string): void;
+} => {
   const calls: ContextCall[] = [];
   let sequence = 0;
-  const revisions = new Map<string, number>();
+  const failingDeletes = new Set<string>();
   return {
     calls,
     declare: async (displayName, entries, options): Promise<PersonaContextRecordRef> => {
@@ -63,18 +71,20 @@ const createFakeContext = (): PersonaContextPort & { readonly calls: ContextCall
         entries: [...entries],
         isPrivate: options?.private ?? false
       });
-      const id = `wrapper-${(sequence += 1)}`;
-      revisions.set(id, 1);
-      return { id, revision: 1 };
-    },
-    update: async (id, entries, expectedRevision): Promise<PersonaContextRecordRef> => {
-      calls.push({ op: "update", id, entries: [...entries], expectedRevision });
-      const revision = (revisions.get(id) ?? 1) + 1;
-      revisions.set(id, revision);
-      return { id, revision };
+      return { id: `wrapper-${(sequence += 1)}`, revision: 1 };
     },
     delete: async (id): Promise<void> => {
       calls.push({ op: "delete", id });
+      if (failingDeletes.has(id)) {
+        failingDeletes.delete(id);
+        throw new Error(`simulated delete failure for ${id}`);
+      }
+    },
+    purge: async (id): Promise<void> => {
+      calls.push({ op: "purge", id });
+    },
+    failNextDelete: (id): void => {
+      failingDeletes.add(id);
     }
   };
 };
@@ -84,17 +94,20 @@ let fixtureSequence = 0;
 const createFixture = (): {
   personas: PersonaCapability;
   context: ReturnType<typeof createFakeContext>;
+  logger: CapturingLogger;
+  store: SQLitePersonaStore;
 } => {
   const projectId = `persona-test-project-${(fixtureSequence += 1)}`;
   const directory = mkdtempSync(join(tmpdir(), "icarus-persona-"));
   const store = new SQLitePersonaStore(projectId, join(directory, "personas.db"));
   const context = createFakeContext();
+  const logger = new CapturingLogger();
   const personas = createPersonaCapability(store, {
     context,
-    logger: new CapturingLogger(),
+    logger,
     clock: { now: () => "2026-08-02T00:00:00.000Z" }
   });
-  return { personas, context };
+  return { personas, context, logger, store };
 };
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
@@ -289,7 +302,7 @@ test("display-name uniqueness is case-insensitive", async () => {
   );
 });
 
-test("soft delete frees the display name for immediate reuse", async () => {
+test("logical deletion removes current state and frees the display name", async () => {
   const { personas } = createFixture();
   const created = await personas.create({ displayName: "Analyst", definition: fullDefinition() });
   await personas.delete({ id: created.id, expectedRevision: created.revision });
@@ -300,6 +313,35 @@ test("soft delete frees the display name for immediate reuse", async () => {
   });
   assert.notEqual(recreated.id, created.id);
   assert.equal(await personas.get(created.id), undefined);
+});
+
+test("Persona purge is guarded, removes retained history, and purges its Context wrapper", async () => {
+  const { personas, context, store } = createFixture();
+  const created = await personas.create({
+    displayName: "Scoped purge",
+    definition: {
+      ...fullDefinition(),
+      context: { id: "ctx-source", kind: "context" }
+    }
+  });
+  const updated = await personas.update({
+    id: created.id,
+    expectedRevision: created.revision,
+    description: "revision two"
+  });
+
+  await assert.rejects(() => personas.purge({ id: created.id }), ResourceNotDeletedError);
+  await personas.delete({ id: created.id, expectedRevision: updated.revision });
+  assert.equal(await personas.get(created.id), undefined);
+  assert.equal((await store.latestSnapshot(created.id))?.revision, 2);
+
+  await personas.purge({ id: created.id });
+  assert.deepEqual(context.calls.slice(-2), [
+    { op: "delete", id: created.contextWrapperId },
+    { op: "purge", id: created.contextWrapperId }
+  ]);
+  assert.equal(await store.latestSnapshot(created.id), undefined);
+  await assert.rejects(() => personas.purge({ id: created.id }), ResourceHistoryNotFoundError);
 });
 
 test("revision compare-and-swap rejects a stale update and a stale delete", async () => {
@@ -405,7 +447,7 @@ test("creating a persona with no context declares nothing", async () => {
   assert.equal(created.contextWrapperId, undefined);
 });
 
-test("changing a persona's context updates the same wrapper rather than declaring a new one", async () => {
+test("changing a persona's context declares a fresh wrapper and deletes the old one", async () => {
   const { personas, context } = createFixture();
   const created = await personas.create({
     displayName: "Scoped",
@@ -418,11 +460,34 @@ test("changing a persona's context updates the same wrapper rather than declarin
     definition: { ...fullDefinition(), context: { id: "ctx-b", kind: "context" } }
   });
 
-  assert.deepEqual(context.calls.map((call) => call.op), ["declare", "update"]);
-  assert.equal(context.calls[1]?.id, created.contextWrapperId);
-  assert.deepEqual(context.calls[1]?.entries, [{ id: "ctx-b", kind: "context" }]);
+  // A changed context is never applied in place: a brand-new wrapper is
+  // declared, the persona row is CAS-written to point at it, and only then is
+  // the old wrapper deleted.
+  assert.deepEqual(context.calls.map((call) => call.op), ["declare", "declare", "delete"]);
+  assert.equal(context.calls[1]?.entries?.[0]?.id, "ctx-b");
+  assert.equal(context.calls[2]?.id, created.contextWrapperId);
+  assert.equal(updated.contextWrapperId, "wrapper-2");
+  assert.notEqual(updated.contextWrapperId, created.contextWrapperId);
+});
+
+test("re-submitting the same context makes no Context call at all", async () => {
+  const { personas, context } = createFixture();
+  const created = await personas.create({
+    displayName: "Scoped",
+    definition: { ...fullDefinition(), context: { id: "ctx-a", kind: "context" } }
+  });
+  const callsAfterCreate = context.calls.length;
+
+  const updated = await personas.update({
+    id: created.id,
+    expectedRevision: created.revision,
+    description: "a metadata-only edit",
+    definition: { ...fullDefinition(), context: { id: "ctx-a", kind: "context" } }
+  });
+
+  assert.equal(context.calls.length, callsAfterCreate);
   assert.equal(updated.contextWrapperId, created.contextWrapperId);
-  assert.equal(updated.contextWrapperRevision, 2);
+  assert.equal(updated.contextWrapperRevision, created.contextWrapperRevision);
 });
 
 test("adding a context to a persona that had none declares rather than updates", async () => {
@@ -478,6 +543,73 @@ test("deleting a persona deletes its wrapper", async () => {
 
   assert.deepEqual(context.calls.map((call) => call.op), ["declare", "delete"]);
   assert.equal(context.calls[1]?.id, created.contextWrapperId);
+});
+
+// ─── Wrapper cleanup failures are logged, not repaired ─────────────────────────
+
+test("a lost update revision race orphans a freshly declared wrapper and logs it", async () => {
+  const { personas, context, logger } = createFixture();
+  const created = await personas.create({
+    displayName: "Scoped",
+    definition: { ...fullDefinition(), context: { id: "ctx-a", kind: "context" } }
+  });
+
+  // Two concurrent updates both read the same starting revision (both calls
+  // run their synchronous prefix, including the read, before either reaches
+  // its first await) and both change the context, so both declare a fresh
+  // wrapper before either commits. Only one persona-row CAS can win.
+  const [a, b] = await Promise.allSettled([
+    personas.update({
+      id: created.id,
+      expectedRevision: created.revision,
+      definition: { ...fullDefinition(), context: { id: "ctx-b", kind: "context" } }
+    }),
+    personas.update({
+      id: created.id,
+      expectedRevision: created.revision,
+      definition: { ...fullDefinition(), context: { id: "ctx-c", kind: "context" } }
+    })
+  ]);
+
+  const outcomes = [a, b];
+  assert.equal(outcomes.filter((o) => o.status === "fulfilled").length, 1, "exactly one caller wins the CAS");
+  const loser = outcomes.find((o) => o.status === "rejected");
+  assert.ok(loser, "exactly one caller loses the CAS");
+  assert.ok((loser as PromiseRejectedResult).reason instanceof StalePersonaRevisionError);
+
+  const orphaned = logger.entries.filter((entry) => entry.message === "persona.wrapper.orphaned");
+  assert.equal(orphaned.length, 1, "the loser's freshly declared wrapper is logged as orphaned, not repaired");
+  assert.equal(orphaned[0]?.level, "warn");
+
+  // The old wrapper was deleted as part of the winner's swap; only the winner's
+  // fresh wrapper and the loser's orphaned one exist afterward.
+  assert.equal(context.calls.filter((call) => call.op === "declare").length, 3); // create + 2 racers
+  const reloaded = await personas.get(created.id);
+  assert.notEqual(reloaded?.contextWrapperId, created.contextWrapperId);
+});
+
+test("a failed best-effort delete of the old wrapper is logged as an orphan, not thrown", async () => {
+  const { personas, context, logger } = createFixture();
+  const created = await personas.create({
+    displayName: "Scoped",
+    definition: { ...fullDefinition(), context: { id: "ctx-a", kind: "context" } }
+  });
+
+  context.failNextDelete(created.contextWrapperId as string);
+
+  const updated = await personas.update({
+    id: created.id,
+    expectedRevision: created.revision,
+    definition: { ...fullDefinition(), context: { id: "ctx-b", kind: "context" } }
+  });
+
+  // The update itself still succeeds — cleanup failure does not undo it.
+  assert.equal(updated.contextWrapperId, "wrapper-2");
+
+  const orphaned = logger.entries.find((entry) => entry.message === "persona.wrapper.orphaned");
+  assert.ok(orphaned, "expected a persona.wrapper.orphaned log entry");
+  assert.equal(orphaned?.level, "warn");
+  assert.equal((orphaned?.data as { wrapperId: string }).wrapperId, created.contextWrapperId);
 });
 
 test("reads and resolve never touch the context port", async () => {

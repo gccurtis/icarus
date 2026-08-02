@@ -23,6 +23,10 @@ import {
 } from "../../src/3-capabilities/investigation/index.js";
 import { registerInvestigationEndpoints } from "../../src/4-job-wiring/investigation/registerInvestigationEndpoints.js";
 import { CapturingLogger, ZERO_USAGE } from "../helpers/testDoubles.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "../../src/0-utils/persistence/resourceHistory.js";
 
 type KnowledgeItem = Parameters<Knowledge["add"]>[0];
 
@@ -117,7 +121,7 @@ const request = (
   body: options.body,
 });
 
-test("one SQLite store constructor creates all three project-scoped tables", (t) => {
+test("one SQLite store constructor creates current tables and one shared history table", (t) => {
   const harness = createHarness();
   t.after(harness.close);
 
@@ -131,16 +135,16 @@ test("one SQLite store constructor creates all three project-scoped tables", (t)
       .all() as Array<{ name: string }>
   ).map(({ name }) => name);
 
-  assert.equal(tableNames.length, 3);
+  assert.equal(tableNames.length, 4);
   assert.deepEqual(
     tableNames.map((name) => name.replace(/^inv_[a-f0-9]{16}_/, "")),
-    ["findings", "hypotheses", "questions"],
+    ["findings", "history", "hypotheses", "questions"],
   );
   assert.ok(tableNames.every((name) => /^inv_[a-f0-9]{16}_/.test(name)));
 });
 
-test("Questions support authored updates, answer transitions, filters, and soft deletion", async (t) => {
-  const { runtime, close } = createHarness();
+test("Questions archive every prior revision, disappear on logical delete, and can be purged", async (t) => {
+  const { runtime, close, dbPath } = createHarness();
   t.after(close);
 
   const question = await runtime.createQuestion({
@@ -157,6 +161,7 @@ test("Questions support authored updates, answer transitions, filters, and soft 
   assert.equal(question.text, "Which market should we enter?");
   assert.deepEqual(question.tags, ["strategy", "market"]);
   assert.equal(question.status, "open");
+  assert.equal(question.revision, 1);
   assert.equal(question.createdBy, "test-actor");
 
   const updated = await runtime.updateQuestion(question.id, {
@@ -168,6 +173,7 @@ test("Questions support authored updates, answer transitions, filters, and soft 
   assert.equal(updated.text, "Which segment should we enter?");
   assert.equal(updated.context, undefined);
   assert.deepEqual(updated.assumptions, ["Budget is approved", "A launch is feasible"]);
+  assert.equal(updated.revision, 2);
   assert.deepEqual((await runtime.listQuestions({ tag: "market" })).map(({ id }) => id), [
     question.id,
   ]);
@@ -178,20 +184,45 @@ test("Questions support authored updates, answer transitions, filters, and soft 
   );
   assert.equal(proposed.currentAnswer, "Start with the enterprise segment.");
   assert.equal(proposed.status, "proposed");
+  assert.equal(proposed.revision, 3);
   assert.deepEqual((await runtime.listQuestions({ status: "proposed" })).map(({ id }) => id), [
     question.id,
   ]);
 
   const answered = await runtime.confirmQuestionAnswer(question.id);
   assert.equal(answered.status, "answered");
+  assert.equal(answered.revision, 4);
   assert.equal((await runtime.confirmQuestionAnswer(question.id)).status, "answered");
   const cleared = await runtime.clearQuestionAnswer(question.id);
   assert.equal(cleared.status, "open");
+  assert.equal(cleared.revision, 5);
   assert.equal(cleared.currentAnswer, undefined);
 
+  await assert.rejects(() => runtime.purgeQuestion(question.id), ResourceNotDeletedError);
   await runtime.deleteQuestion(question.id);
   assert.equal(await runtime.getQuestion(question.id), null);
   assert.deepEqual((await runtime.listQuestions()).map(({ id }) => id), [other.id]);
+
+  const inspection = new Database(dbPath, { readonly: true });
+  const historyTable = (inspection.prepare(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'inv_%_history'"
+  ).get() as { name: string }).name;
+  const history = inspection.prepare(
+    `SELECT revision, record_type FROM ${historyTable}
+     WHERE resource_kind = 'question' AND resource_id = ? ORDER BY revision`
+  ).all(question.id) as Array<{ revision: number; record_type: string }>;
+  inspection.close();
+  assert.deepEqual(history, [
+    { revision: 1, record_type: "snapshot" },
+    { revision: 2, record_type: "snapshot" },
+    { revision: 3, record_type: "snapshot" },
+    { revision: 4, record_type: "snapshot" },
+    { revision: 5, record_type: "snapshot" },
+    { revision: 6, record_type: "deleted" }
+  ]);
+
+  await runtime.purgeQuestion(question.id);
+  await assert.rejects(() => runtime.purgeQuestion(question.id), ResourceHistoryNotFoundError);
 });
 
 test("Hypotheses allow zero or many Questions and filter only through live targets", async (t) => {
@@ -257,6 +288,11 @@ test("Hypotheses allow zero or many Questions and filter only through live targe
   await runtime.deleteHypothesis(hypothesis.id);
   assert.equal(await runtime.getHypothesis(hypothesis.id), null);
   assert.deepEqual((await runtime.listHypotheses()).map(({ id }) => id), [unlinked.id]);
+  await runtime.purgeHypothesis(hypothesis.id);
+  await assert.rejects(
+    () => runtime.purgeHypothesis(hypothesis.id),
+    ResourceHistoryNotFoundError
+  );
 });
 
 test("Findings persist lightweight references, exact relationship vocabulary, review state, and derived reverse views", async (t) => {
@@ -469,6 +505,11 @@ test("Finding acceptance is idempotent, uses one stable Knowledge source, and re
   assert.equal(await runtime.getFinding(deletable.id), null);
   assert.ok(knowledge.removeCalls.includes(`finding:${deletable.id}`));
   assert.equal(knowledge.active.has(`finding:${deletable.id}`), false);
+  await runtime.purgeFinding(deletable.id);
+  await assert.rejects(
+    () => runtime.purgeFinding(deletable.id),
+    ResourceHistoryNotFoundError
+  );
 });
 
 test("an edit that wins while acceptance ingests is the claim ultimately accepted", async (t) => {
@@ -603,7 +644,7 @@ test("all Investigation endpoints are registered with intentional queue policies
   const registry = new JobRegistry();
   registerInvestigationEndpoints(registry, harness.runtime, harness.logger);
 
-  assert.equal(registry.listEndpoints().length, 23);
+  assert.equal(registry.listEndpoints().length, 26);
   const policies: Array<[string, string, "serial" | "concurrent"]> = [
     ["POST", "/questions/create", "serial"],
     ["POST", "/questions/update", "serial"],
@@ -613,11 +654,13 @@ test("all Investigation endpoints are registered with intentional queue policies
     ["GET", "/questions/get", "concurrent"],
     ["GET", "/questions/list", "concurrent"],
     ["DELETE", "/questions/delete", "serial"],
+    ["POST", "/questions/purge", "serial"],
     ["POST", "/hypotheses/create", "serial"],
     ["POST", "/hypotheses/update", "serial"],
     ["GET", "/hypotheses/get", "concurrent"],
     ["GET", "/hypotheses/list", "concurrent"],
     ["DELETE", "/hypotheses/delete", "serial"],
+    ["POST", "/hypotheses/purge", "serial"],
     ["POST", "/findings/propose", "concurrent"],
     ["POST", "/findings/update", "serial"],
     ["POST", "/findings/accept", "concurrent"],
@@ -628,6 +671,7 @@ test("all Investigation endpoints are registered with intentional queue policies
     ["GET", "/findings/get", "concurrent"],
     ["GET", "/findings/list", "concurrent"],
     ["DELETE", "/findings/delete", "serial"],
+    ["POST", "/findings/purge", "serial"],
   ];
   for (const [method, path, queueType] of policies) {
     assert.equal(registry.createJob(request(method, path)).queueType, queueType, path);

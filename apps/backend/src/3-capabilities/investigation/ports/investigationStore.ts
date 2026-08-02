@@ -11,38 +11,33 @@ import type {
 
 /**
  * Project-local persistence for all Investigation record types.
- * Implementations exclude soft-deleted records from ordinary reads and lists.
+ * Current tables contain only live records; history is retained separately.
  */
 export interface InvestigationStore {
   insertQuestion(question: Question): void;
   getQuestion(id: string): Question | undefined;
   listQuestions(filter?: QuestionFilter): Question[];
   updateQuestion(question: Question): void;
-  softDeleteQuestion(
-    id: string,
-    updatedBy: ActorId,
-    deletedAt: IsoTimestamp
-  ): void;
+  deleteQuestion(question: Question, deletedAt: string): void;
 
   insertHypothesis(hypothesis: Hypothesis): void;
   getHypothesis(id: string): Hypothesis | undefined;
   listHypotheses(filter?: HypothesisFilter): Hypothesis[];
   updateHypothesis(hypothesis: Hypothesis): void;
-  softDeleteHypothesis(
-    id: string,
-    updatedBy: ActorId,
-    deletedAt: IsoTimestamp
-  ): void;
+  deleteHypothesis(hypothesis: Hypothesis, deletedAt: string): void;
 
   insertFinding(finding: Finding): void;
   getFinding(id: string): Finding | undefined;
   listFindings(filter?: FindingFilter): Finding[];
   updateFinding(finding: Finding): void;
-  softDeleteFinding(
-    id: string,
-    updatedBy: ActorId,
-    deletedAt: IsoTimestamp
-  ): void;
+  deleteFinding(finding: Finding, deletedAt: string): void;
+
+  purge(resourceKind: "question" | "hypothesis" | "finding", id: string): void;
+  pruneHistory(cutoff: string): number;
+  expiredDeleted(cutoff: string): Array<{
+    resourceKind: "question" | "hypothesis" | "finding";
+    resourceId: string;
+  }>;
 
   /**
    * Atomically accepts a live Finding only while its persisted claim still

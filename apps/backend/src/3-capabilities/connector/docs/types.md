@@ -35,15 +35,15 @@ interface ConnectorEntry {
   revision: number;
   syncConfig: ConnectorSyncConfig | null;
   syncing: boolean;
-  ingestionState?: ConnectorIngestionState;
+  ingestionState: ConnectorIngestionState;
   knowledgeSourceIds: readonly string[];
   createdAt: string;
   updatedAt: string;
-  deletedAt?: string;
 }
 ```
 
-`ingestionState` is optional in the TypeScript interface for legacy callers; persisted rows map it to an explicit state. The service returns an entry copy with empty source IDs whenever state is not active.
+`ingestionState` is required on every `ConnectorEntry` and persisted explicitly. The
+service returns an entry copy with empty source IDs whenever state is not active.
 
 ### `ConnectorItemEntry`
 
@@ -85,8 +85,9 @@ The prose source ID is `connector:${connectorId}:${sha256(itemKey)}`. Arbitrary 
 [`ConnectorStore`](../ports/repository.ts) groups:
 
 - reads: `getById`, live provider+locator lookup, live list, item list;
-- snapshot writes: transactional `insert`, `restore`, `update`;
-- reconciliation: guarded `markIngestionState`, guarded `softDelete`;
+- snapshot writes: transactional `insert`, `update`, and current-to-history `delete`;
+- history: `nextRevision`, `history`, `purge`, `pruneHistory`, and `purgeExpired`;
+- reconciliation: guarded `markIngestionState`;
 - claim lifecycle: atomic `setSyncing`, `clearSyncing`, startup `resetSyncing`;
 - scheduling: `listSyncableEntries`, `updateSyncTimestamp`.
 
@@ -98,13 +99,17 @@ The prose source ID is `connector:${connectorId}:${sha256(itemKey)}`. Arbitrary 
 
 ### Entry table
 
-Stores kind/provider/locator/label/revision, optional JSON sync config, boolean sync claim, ingestion state, JSON source-ID array, timestamps, and tombstone. A partial unique index enforces one active exact provider+locator pair.
+Stores exactly one current row per live Connector: kind/provider/locator/label/revision,
+optional JSON sync config, boolean sync claim, required ingestion state, JSON source-ID
+array, and timestamps. A unique index enforces one current exact provider+locator pair.
 
 ### Item table
 
 Composite primary key `(entry_id,item_key)`, metadata/status/source ID, and `ON DELETE CASCADE` foreign key. Extensions may be empty. Full snapshot replacement deletes then reinserts item rows inside the entry transaction.
 
-The constructor migrates an early required-extension check by rebuilding the item table and adds `ingestion_state` to older entry tables with default `active`.
+### History table
+
+One project-scoped history table stores aggregate `{entry, items}` snapshots and terminal deletion records keyed by Connector ID and revision. Current reads never consult it. Purge removes this allocation history, so a later deterministic registration restarts at revision 1.
 
 ## Wire/resource representations
 

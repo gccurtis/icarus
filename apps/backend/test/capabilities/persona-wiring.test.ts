@@ -35,10 +35,13 @@ const DEFINITION = {
 
 let fixtureSequence = 0;
 
-const noopContext: PersonaContextPort = {
-  declare: async () => ({ id: "wrapper-1", revision: 1 }),
-  update: async (id) => ({ id, revision: 2 }),
-  delete: async () => undefined
+const createNoopContext = (): PersonaContextPort => {
+  let sequence = 0;
+  return {
+    declare: async () => ({ id: `wrapper-${(sequence += 1)}`, revision: 1 }),
+    delete: async () => undefined,
+    purge: async () => undefined
+  };
 };
 
 const createHarness = () => {
@@ -47,7 +50,7 @@ const createHarness = () => {
   const projectId = `persona-wiring-project-${(fixtureSequence += 1)}`;
   const directory = mkdtempSync(join(tmpdir(), "icarus-persona-wiring-"));
   const store = new SQLitePersonaStore(projectId, join(directory, "personas.db"));
-  const personas = createPersonaCapability(store, { context: noopContext, logger });
+  const personas = createPersonaCapability(store, { context: createNoopContext(), logger });
   registerPersonaEndpoints(registry, personas, logger);
   const app = createApp();
   registerHttpTransport(app, {
@@ -293,4 +296,107 @@ test("persona logs carry digests and never section text", async (t) => {
   assert.doesNotMatch(serialized, /Contract terms\./);
   assert.doesNotMatch(serialized, /Cite the clause first\./);
   assert.doesNotMatch(serialized, /Reads contracts\./);
+});
+
+test("persona construction logs a runtime.created event", () => {
+  const { logger } = createHarness();
+  assert.ok(
+    logger.entries.some((entry) => entry.message === "persona.runtime.created")
+  );
+});
+
+test("every persona query dispatches a persona.query.completed log", async (t) => {
+  const { app, logger } = createHarness();
+  t.after(() => app.close());
+
+  const created = await app.inject({
+    method: "POST",
+    url: "/personas/command",
+    payload: {
+      type: "persona.create",
+      displayName: "Analyst",
+      description: "Reads contracts.",
+      definition: DEFINITION
+    }
+  });
+  const createdBody = created.json() as { record: { id: string } };
+
+  await app.inject({
+    method: "POST",
+    url: "/personas/query",
+    payload: { type: "persona.get", id: createdBody.record.id }
+  });
+  await app.inject({
+    method: "POST",
+    url: "/personas/query",
+    payload: { type: "persona.getByName", displayName: "Analyst" }
+  });
+  await app.inject({
+    method: "POST",
+    url: "/personas/query",
+    payload: { type: "persona.list" }
+  });
+  await app.inject({
+    method: "POST",
+    url: "/personas/query",
+    payload: { type: "persona.render", definition: DEFINITION }
+  });
+
+  const queryLogs = logger.entries.filter((entry) => entry.message === "persona.query.completed");
+  const loggedTypes = queryLogs.map((entry) => (entry.data as { type: string }).type);
+  assert.deepEqual(
+    new Set(loggedTypes),
+    new Set(["persona.get", "persona.getByName", "persona.list", "persona.render"])
+  );
+});
+
+test("wrapper declare and delete are logged for every Context write", async (t) => {
+  const { app, logger } = createHarness();
+  t.after(() => app.close());
+
+  const created = await app.inject({
+    method: "POST",
+    url: "/personas/command",
+    payload: {
+      type: "persona.create",
+      displayName: "Analyst",
+      description: "Reads contracts.",
+      definition: { ...DEFINITION, context: { id: "context-1", kind: "context" } }
+    }
+  });
+  const createdBody = created.json() as { record: { id: string; revision: number } };
+  const declaredCount = (): number =>
+    logger.entries.filter((entry) => entry.message === "persona.wrapper.declared").length;
+  assert.equal(declaredCount(), 1, "create with a context declares a wrapper");
+
+  await app.inject({
+    method: "POST",
+    url: "/personas/command",
+    payload: {
+      type: "persona.update",
+      id: createdBody.record.id,
+      expectedRevision: createdBody.record.revision,
+      definition: { ...DEFINITION, context: { id: "context-2", kind: "context" } }
+    }
+  });
+  // A changed context declares a fresh wrapper and deletes the old one, rather
+  // than mutating the existing wrapper in place.
+  assert.equal(declaredCount(), 2, "changing an existing context declares a fresh wrapper");
+  assert.ok(
+    logger.entries.some((entry) => entry.message === "persona.wrapper.deleted"),
+    "changing an existing context deletes the old wrapper"
+  );
+
+  await app.inject({
+    method: "POST",
+    url: "/personas/command",
+    payload: {
+      type: "persona.update",
+      id: createdBody.record.id,
+      expectedRevision: createdBody.record.revision + 1,
+      definition: DEFINITION
+    }
+  });
+  const deletedCount = logger.entries.filter((entry) => entry.message === "persona.wrapper.deleted").length;
+  assert.equal(deletedCount, 2, "removing the context deletes the wrapper again");
 });

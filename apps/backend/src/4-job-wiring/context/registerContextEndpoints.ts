@@ -1,12 +1,19 @@
 import type { JobRegistry } from "#utils/jobs/registry.js";
 import type { ContextManager, ContextOperand } from "#context";
 import type { ContextEntry } from "#context";
-import { ContextNotFoundError, ContextConflictError, StaleContextError } from "#context";
+import { ContextNotFoundError, ContextConflictError, StaleContextError, ContextValidationError } from "#context";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
 
 function contextErrorResponse(e: unknown): { statusCode: number; body: unknown } {
   if (e instanceof ContextNotFoundError) return { statusCode: 404, body: { error: "not_found", message: e.message } };
   if (e instanceof ContextConflictError) return { statusCode: 409, body: { error: "conflict", message: e.message } };
   if (e instanceof StaleContextError) return { statusCode: 409, body: { error: "stale_revision", message: e.message } };
+  if (e instanceof ContextValidationError) return { statusCode: 400, body: { error: "context_invalid", message: e.message, field: e.field } };
+  if (e instanceof ResourceNotDeletedError) return { statusCode: 409, body: { error: "not_deleted", message: e.message } };
+  if (e instanceof ResourceHistoryNotFoundError) return { statusCode: 404, body: { error: "not_found", message: e.message } };
   const msg = e instanceof Error ? e.message : String(e);
   return { statusCode: 400, body: { error: "bad_request", message: msg } };
 }
@@ -128,6 +135,19 @@ export function registerContextEndpoints(
     }
   }));
 
+  registry.register({ method: "POST", path: "/contexts/purge" }, (request) => ({
+    name: "context.purge",
+    queueType: "serial",
+    responseMode: "inline",
+    work: async () => {
+      try {
+        const body = request.body as Record<string, unknown>;
+        await ctx.purge(String(body.id ?? ""));
+        return { statusCode: 204, body: null };
+      } catch (e) { return contextErrorResponse(e); }
+    }
+  }));
+
   registry.register({ method: "POST", path: "/contexts/resolve" }, (request) => ({
     name: "context.resolve",
     queueType: "concurrent",
@@ -182,4 +202,3 @@ export function registerContextEndpoints(
     }
   }));
 }
-

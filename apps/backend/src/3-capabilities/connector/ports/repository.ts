@@ -2,8 +2,10 @@ import type {
   ConnectorEntry,
   ConnectorIngestionState,
   ConnectorSyncConfig,
+  ConnectorHistorySnapshot,
 } from "../domain/model.js";
 import type { ConnectorItemEntry } from "../domain/model.js";
+import type { ResourceHistoryRecord } from "#utils/persistence/resourceHistory.js";
 
 /**
  * ConnectorStore — persistence interface for Connector capability.
@@ -16,10 +18,14 @@ export interface ConnectorStore {
 
   /** Insert a new connector entry and its items. */
   insert(entry: ConnectorEntry, items: ConnectorItemEntry[]): void;
-  /** Reactivate a previously soft-deleted deterministic connector ID. */
-  restore(entry: ConnectorEntry, items: ConnectorItemEntry[]): void;
+  /** Next revision for a deterministic identity with no current row. */
+  nextRevision(id: string): number;
   /** Update entry metadata and replace all items atomically. */
-  update(entry: ConnectorEntry, items: ConnectorItemEntry[]): void;
+  update(
+    entry: ConnectorEntry,
+    items: ConnectorItemEntry[],
+    previous: ConnectorHistorySnapshot
+  ): void;
   /**
    * Persist a reconciliation boundary without replacing the last active item
    * snapshot. Tracked source IDs are the union that a retry must reconcile.
@@ -30,7 +36,11 @@ export interface ConnectorStore {
     trackedKnowledgeSourceIds: readonly string[],
     updatedAt: string,
   ): void;
-  softDelete(id: string, deletedAt: string): void;
+  delete(snapshot: ConnectorHistorySnapshot, deletedAt: string): number;
+  purge(id: string): "purged" | "current" | "missing";
+  history(id: string): ResourceHistoryRecord<ConnectorHistorySnapshot>[];
+  pruneHistory(cutoff: string): number;
+  purgeExpired(cutoff: string): number;
 
   /** Get items for a connector. */
   getItems(entryId: string): ConnectorItemEntry[];

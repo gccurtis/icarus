@@ -18,6 +18,10 @@ import {
 import type { ConnectorProvider } from "../domain/provider.js";
 import type { ConnectorReader, DirectoryReader } from "../domain/reader.js";
 import type { ConnectorStore } from "../ports/repository.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
 
 function connectorId(providerKind: string, locator: string): string {
   const canonical = `${providerKind}::${locator}`;
@@ -48,6 +52,9 @@ export interface ConnectorService {
   get(id: string): ConnectorEntry;
   list(): ConnectorEntry[];
   delete(id: string): Promise<void>;
+  purge(id: string): Promise<void>;
+  pruneHistory(cutoff: string): number;
+  purgeExpired(cutoff: string): number;
   getReader(id: string): Promise<ConnectorReader>;
   getDirectoryReader(id: string): DirectoryReader;
 }
@@ -67,7 +74,7 @@ export function createConnectorService(
   const now = (): string => new Date().toISOString();
 
   function publicEntry(entry: ConnectorEntry): ConnectorEntry {
-    if ((entry.ingestionState ?? "active") === "active") return entry;
+    if (entry.ingestionState === "active") return entry;
     // Pending/failed source unions are recovery metadata, not a safe
     // Knowledge scope. Keep the state visible while withholding those IDs.
     return { ...entry, knowledgeSourceIds: [] };
@@ -119,7 +126,6 @@ export function createConnectorService(
       const kind = determineKind(items);
 
       const entryId = connectorId(providerKind, locator);
-      const deleted = store.getById(entryId);
       const createdAt = now();
       const label = locator;
 
@@ -181,7 +187,7 @@ export function createConnectorService(
           providerKind,
           locator,
           label,
-          revision: deleted ? deleted.revision + 1 : 1,
+          revision: store.nextRevision(entryId),
           syncConfig,
           syncing: false,
           ingestionState: "active",
@@ -190,11 +196,7 @@ export function createConnectorService(
           updatedAt: createdAt,
         };
 
-        if (deleted) {
-          store.restore(entry, entryItems);
-        } else {
-          store.insert(entry, entryItems);
-        }
+        store.insert(entry, entryItems);
 
         logger.info("connector.register", {
           id: entryId,
@@ -202,7 +204,7 @@ export function createConnectorService(
           providerKind,
           itemCount: items.length,
           proseItemCount: knowledgeSourceIds.length,
-          resurrected: Boolean(deleted),
+          resumedIdentity: entry.revision > 1,
           durationMs: Math.round(performance.now() - startedAt),
         });
 
@@ -244,7 +246,7 @@ export function createConnectorService(
     async sync(connectorId: string, lockAlreadyAcquired = false): Promise<void> {
       const startedAt = performance.now();
       const entry = store.getById(connectorId);
-      if (!entry || entry.deletedAt) {
+      if (!entry) {
         throw new ConnectorNotFoundError(connectorId);
       }
 
@@ -292,7 +294,7 @@ export function createConnectorService(
 
         const newEntries: ConnectorItemEntry[] = [];
         const sourceIdsToRemove = new Set<string>();
-        const forceReconciliation = (entry.ingestionState ?? "active") !== "active";
+        const forceReconciliation = entry.ingestionState !== "active";
         let changedCount = 0;
         let addedCount = 0;
         let removedCount = 0;
@@ -421,7 +423,7 @@ export function createConnectorService(
             : null,
           updatedAt: completedAt,
         };
-        store.update(updatedEntry, newEntries);
+        store.update(updatedEntry, newEntries, { entry, items: existingItems });
 
         logger.info("connector.sync.complete", {
           id: connectorId,
@@ -462,7 +464,7 @@ export function createConnectorService(
     get(id: string): ConnectorEntry {
       const startedAt = performance.now();
       const entry = store.getById(id);
-      if (!entry || entry.deletedAt) {
+      if (!entry) {
         throw new ConnectorNotFoundError(id);
       }
       logger.debug("connector.get", {
@@ -487,7 +489,7 @@ export function createConnectorService(
     async delete(id: string): Promise<void> {
       const startedAt = performance.now();
       const entry = store.getById(id);
-      if (!entry || entry.deletedAt) {
+      if (!entry) {
         throw new ConnectorNotFoundError(id);
       }
 
@@ -496,7 +498,7 @@ export function createConnectorService(
       const acquired = store.setSyncing(id);
       if (!acquired) {
         const current = store.getById(id);
-        if (!current || current.deletedAt) {
+        if (!current) {
           throw new ConnectorNotFoundError(id);
         }
         throw new SyncInProgressError(id);
@@ -522,7 +524,7 @@ export function createConnectorService(
           });
           await knowledge.remove(sourceId);
         }
-        store.softDelete(id, deletedAt);
+        store.delete({ entry, items }, deletedAt);
       } catch (error) {
         if (reconciliationMarked) {
           try {
@@ -543,8 +545,7 @@ export function createConnectorService(
         });
         throw error;
       } finally {
-        // The claim remains held through softDelete; releasing it afterward
-        // changes only the syncing flag and cannot reactivate the row.
+        // Releasing the claim after the current row is removed is a no-op.
         store.clearSyncing(id);
       }
 
@@ -556,10 +557,25 @@ export function createConnectorService(
       });
     },
 
+    async purge(id: string): Promise<void> {
+      const outcome = store.purge(id);
+      if (outcome === "current") throw new ResourceNotDeletedError("connector", id);
+      if (outcome === "missing") throw new ResourceHistoryNotFoundError("connector", id);
+      logger.info("connector.purge", { id });
+    },
+
+    pruneHistory(cutoff: string): number {
+      return store.pruneHistory(cutoff);
+    },
+
+    purgeExpired(cutoff: string): number {
+      return store.purgeExpired(cutoff);
+    },
+
     async getReader(id: string): Promise<ConnectorReader> {
       const startedAt = performance.now();
       const entry = store.getById(id);
-      if (!entry || entry.deletedAt) {
+      if (!entry) {
         throw new ConnectorNotFoundError(id);
       }
 
@@ -583,7 +599,7 @@ export function createConnectorService(
     getDirectoryReader(id: string): DirectoryReader {
       const startedAt = performance.now();
       const entry = store.getById(id);
-      if (!entry || entry.deletedAt) {
+      if (!entry) {
         throw new ConnectorNotFoundError(id);
       }
 

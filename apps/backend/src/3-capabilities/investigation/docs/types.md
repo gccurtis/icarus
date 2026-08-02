@@ -44,17 +44,19 @@ interface Question {
   readonly assumptions: readonly string[];
   readonly status: QuestionStatus;
   readonly tags: readonly string[];
+  readonly revision: number;
   readonly createdBy: ActorId;
   readonly updatedBy: ActorId;
   readonly createdAt: IsoTimestamp;
   readonly updatedAt: IsoTimestamp;
-  readonly deletedAt?: IsoTimestamp;
 }
 ```
 
 `context` contains framing, constraints, background, and any other information
-needed to understand/research the Question. `currentAnswer` is mutable; no
-answer history or approval object is stored. Assumptions are plain strings.
+needed to understand/research the Question. `currentAnswer` is mutable and has no
+separate immutable answer entity or approval object; superseded complete Question
+snapshots, including their answers, are retained in shared history. Assumptions are plain
+strings.
 
 ### Question requests and filter
 
@@ -95,11 +97,11 @@ interface Hypothesis {
   readonly assumptions: readonly string[];
   readonly status: HypothesisStatus;
   readonly confidenceLevel?: HypothesisConfidenceLevel;
+  readonly revision: number;
   readonly createdBy: ActorId;
   readonly updatedBy: ActorId;
   readonly createdAt: IsoTimestamp;
   readonly updatedAt: IsoTimestamp;
-  readonly deletedAt?: IsoTimestamp;
 }
 ```
 
@@ -223,11 +225,11 @@ interface Finding {
   readonly questionLinks: readonly FindingQuestionLink[];
   readonly hypothesisLinks: readonly FindingHypothesisLink[];
   readonly knowledgeSourceId?: string;
+  readonly revision: number;
   readonly createdBy: ActorId;
   readonly updatedBy: ActorId;
   readonly createdAt: IsoTimestamp;
   readonly updatedAt: IsoTimestamp;
-  readonly deletedAt?: IsoTimestamp;
 }
 ```
 
@@ -270,8 +272,9 @@ existence is not a write precondition.
 
 ## Runtime contract and construction context
 
-[`InvestigationRuntime`](../domain/model.ts) contains 23 flat methods: eight
-Question methods, five Hypothesis methods, and ten Finding methods. Every
+[`InvestigationRuntime`](../domain/model.ts) contains 28 flat methods: nine
+Question methods, six Hypothesis methods, eleven Finding methods, and two shared retention
+methods. Every
 method returns a Promise even though the current SQLite store is synchronous,
 because Knowledge operations and other adapters are asynchronous.
 
@@ -306,10 +309,11 @@ project-local persistence contract:
 
 | Record | Methods |
 |---|---|
-| Question | `insertQuestion`, `getQuestion`, `listQuestions`, `updateQuestion`, `softDeleteQuestion` |
-| Hypothesis | `insertHypothesis`, `getHypothesis`, `listHypotheses`, `updateHypothesis`, `softDeleteHypothesis` |
-| Finding | `insertFinding`, `getFinding`, `listFindings`, `updateFinding`, `softDeleteFinding` |
+| Question | `insertQuestion`, `getQuestion`, `listQuestions`, `updateQuestion`, `deleteQuestion` |
+| Hypothesis | `insertHypothesis`, `getHypothesis`, `listHypotheses`, `updateHypothesis`, `deleteHypothesis` |
+| Finding | `insertFinding`, `getFinding`, `listFindings`, `updateFinding`, `deleteFinding` |
 | Acceptance fence | `acceptFindingIfClaimMatches` |
+| Shared history | `purge`, `pruneHistory`, `expiredDeleted` |
 
 The conditional acceptance method atomically updates a live Finding to
 `accepted` only when its persisted claim still equals the text that was just
@@ -317,8 +321,7 @@ admitted to Knowledge. This narrow store primitive avoids a public record
 revision/CAS abstraction.
 
 Store `get` methods return `undefined`; the runtime converts that to `null` for
-public optional reads. Implementations exclude soft-deleted rows from ordinary
-reads and lists.
+public optional reads. Current tables contain live records only.
 
 ## SQLite representation
 
@@ -329,7 +332,7 @@ reads and lists.
 inv_${sha256(projectId).slice(0, 16)}
 ```
 
-All three tables are created on that connection in one schema transaction.
+The three current tables and one shared history table are created on that connection.
 WAL, `busy_timeout=5000`, and `synchronous=NORMAL` are configured.
 
 ### Questions table
@@ -340,10 +343,9 @@ WAL, `busy_timeout=5000`, and `synchronous=NORMAL` are configured.
 | `context`, `current_answer` | nullable text |
 | `assumptions_json`, `tags_json` | required JSON arrays, default `[]` |
 | `status` | checked `open | proposed | answered` |
-| authorship/timestamps | `created_by`, `updated_by`, `created_at`, `updated_at` |
-| deletion | nullable `deleted_at` |
+| revision/authorship/timestamps | `revision`, `created_by`, `updated_by`, `created_at`, `updated_at` |
 
-The partial recent index covers `(status, updated_at DESC)` for live rows.
+The recent index covers `(status, updated_at DESC)`.
 
 ### Hypotheses table
 
@@ -354,9 +356,9 @@ The partial recent index covers `(status, updated_at DESC)` for live rows.
 | `rationale` | nullable text |
 | `status` | checked four-value Hypothesis status |
 | `confidence_level` | nullable, checked five-value category |
-| authorship/timestamps/deletion | same convention as Question |
+| revision/authorship/timestamps | same convention as Question |
 
-The partial recent index covers `(status, updated_at DESC)` for live rows.
+The recent index covers `(status, updated_at DESC)`.
 
 ### Findings table
 
@@ -368,10 +370,17 @@ The partial recent index covers `(status, updated_at DESC)` for live rows.
 | `status` | checked `proposed | accepted | rejected` |
 | `tags_json`, `question_links_json`, `hypothesis_links_json` | required JSON arrays, default `[]` for all except references |
 | `knowledge_source_id` | nullable internal Knowledge identity |
-| authorship/timestamps/deletion | same convention as Question |
+| revision/authorship/timestamps | same convention as Question |
 
-The live-row recent index covers `(status, updated_at DESC)`. A second partial
-index covers `knowledge_source_id` for live accepted rows.
+The recent index covers `(status, updated_at DESC)`. A second index covers
+`knowledge_source_id` for accepted current rows.
+
+### Shared history table
+
+Rows are keyed by `(resource_kind, resource_id, revision)`. `snapshot` rows
+contain the complete prior Question, Hypothesis, or Finding JSON; `deleted`
+rows have no snapshot and terminate a deleted resource's history. Purge removes
+all history rows for one resource.
 
 There are no foreign keys or relationship tables. Reverse filtering uses
 SQLite JSON functions and an `EXISTS` check for the live target. Results are

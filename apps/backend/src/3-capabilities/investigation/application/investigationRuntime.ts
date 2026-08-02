@@ -442,6 +442,7 @@ export function createInvestigationRuntime(
           deduplicate: true,
           nonEmpty: true
         }),
+        revision: 1,
         createdBy: actorId,
         updatedBy: actorId,
         createdAt,
@@ -475,6 +476,7 @@ export function createInvestigationRuntime(
       );
       const question: Question = {
         ...current,
+        revision: current.revision + 1,
         text:
           request.text === undefined
             ? current.text
@@ -514,6 +516,7 @@ export function createInvestigationRuntime(
       const current = questionOrThrow(store, id);
       const question: Question = {
         ...current,
+        revision: current.revision + 1,
         currentAnswer: requiredString(currentAnswer, "currentAnswer"),
         status: "proposed",
         updatedBy: actorId,
@@ -541,6 +544,7 @@ export function createInvestigationRuntime(
       if (current.status === "answered") return current;
       const question: Question = {
         ...current,
+        revision: current.revision + 1,
         status: "answered",
         updatedBy: actorId,
         updatedAt: timestamp()
@@ -561,6 +565,7 @@ export function createInvestigationRuntime(
       const current = questionOrThrow(store, id);
       const question: Question = {
         ...current,
+        revision: current.revision + 1,
         status: "open",
         updatedBy: actorId,
         updatedAt: timestamp()
@@ -610,13 +615,17 @@ export function createInvestigationRuntime(
       const startedAt = performance.now();
       const question = questionOrThrow(store, id);
       const deletedAt = timestamp();
-      store.softDeleteQuestion(question.id, actorId, deletedAt);
+      store.deleteQuestion(question, deletedAt);
       logger.info("investigation.questions.deleted", {
         questionId: question.id,
         actorId,
         priorStatus: question.status,
         durationMs: durationMs(startedAt)
       });
+    },
+
+    async purgeQuestion(id: string): Promise<void> {
+      store.purge("question", validateId(id));
     },
 
     async createHypothesis(
@@ -648,6 +657,7 @@ export function createInvestigationRuntime(
         ...(request.confidenceLevel !== undefined
           ? { confidenceLevel: request.confidenceLevel }
           : {}),
+        revision: 1,
         createdBy: actorId,
         updatedBy: actorId,
         createdAt,
@@ -698,6 +708,7 @@ export function createInvestigationRuntime(
             : request.confidenceLevel;
       const hypothesis: Hypothesis = {
         ...current,
+        revision: current.revision + 1,
         questionIds:
           request.questionIds === undefined
             ? current.questionIds
@@ -772,13 +783,17 @@ export function createInvestigationRuntime(
       const startedAt = performance.now();
       const hypothesis = hypothesisOrThrow(store, id);
       const deletedAt = timestamp();
-      store.softDeleteHypothesis(hypothesis.id, actorId, deletedAt);
+      store.deleteHypothesis(hypothesis, deletedAt);
       logger.info("investigation.hypotheses.deleted", {
         hypothesisId: hypothesis.id,
         actorId,
         priorStatus: hypothesis.status,
         durationMs: durationMs(startedAt)
       });
+    },
+
+    async purgeHypothesis(id: string): Promise<void> {
+      store.purge("hypothesis", validateId(id));
     },
 
     async proposeFinding(request: ProposeFindingRequest): Promise<Finding> {
@@ -801,6 +816,7 @@ export function createInvestigationRuntime(
         }),
         questionLinks: validateQuestionLinks(request.questionLinks ?? []),
         hypothesisLinks: validateHypothesisLinks(request.hypothesisLinks ?? []),
+        revision: 1,
         createdBy: actorId,
         updatedBy: actorId,
         createdAt,
@@ -836,6 +852,7 @@ export function createInvestigationRuntime(
       );
       const finding: Finding = {
         ...current,
+        revision: current.revision + 1,
         claim:
           request.claim === undefined
             ? current.claim
@@ -998,6 +1015,7 @@ export function createInvestigationRuntime(
       if (current.status === "accepted") {
         const finding: Finding = {
           ...current,
+          revision: current.revision + 1,
           status: "proposed",
           updatedBy: actorId,
           updatedAt: timestamp()
@@ -1031,6 +1049,7 @@ export function createInvestigationRuntime(
       }
       const finding: Finding = {
         ...current,
+        revision: current.revision + 1,
         status: "rejected",
         updatedBy: actorId,
         updatedAt: timestamp()
@@ -1066,6 +1085,7 @@ export function createInvestigationRuntime(
       );
       const finding: Finding = {
         ...current,
+        revision: current.revision + 1,
         references,
         updatedBy: actorId,
         updatedAt: timestamp()
@@ -1100,6 +1120,7 @@ export function createInvestigationRuntime(
       });
       const finding: Finding = {
         ...current,
+        revision: current.revision + 1,
         references,
         updatedBy: actorId,
         updatedAt: timestamp()
@@ -1161,7 +1182,7 @@ export function createInvestigationRuntime(
       }
       const deletedAt = timestamp();
       try {
-        store.softDeleteFinding(current.id, actorId, deletedAt);
+        store.deleteFinding(current, deletedAt);
       } catch (error) {
         if (current.status === "accepted") await addFindingToKnowledge(current);
         throw error;
@@ -1173,6 +1194,22 @@ export function createInvestigationRuntime(
         priorStatus: current.status,
         durationMs: durationMs(startedAt)
       });
+    },
+
+    async purgeFinding(id: string): Promise<void> {
+      store.purge("finding", validateId(id));
+    },
+
+    async pruneHistory(cutoff: string): Promise<number> {
+      return store.pruneHistory(cutoff);
+    },
+
+    async purgeExpired(cutoff: string): Promise<number> {
+      const expired = store.expiredDeleted(cutoff);
+      for (const resource of expired) {
+        store.purge(resource.resourceKind, resource.resourceId);
+      }
+      return expired.length;
     }
   };
 

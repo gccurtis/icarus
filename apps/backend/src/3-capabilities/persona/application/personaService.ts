@@ -24,6 +24,7 @@ import type {
   PersonaResolveOptions,
   PersonaSectionName,
   PersonaSnapshot,
+  PurgePersonaInput,
   UpdatePersonaInput
 } from "../domain/model.js";
 import { renderPersona, selectPersonaSections } from "../domain/render.js";
@@ -62,6 +63,9 @@ export interface PersonaCapability {
   list(): Promise<PersonaRecord[]>;
   update(input: UpdatePersonaInput): Promise<PersonaRecord>;
   delete(input: DeletePersonaInput): Promise<void>;
+  purge(input: PurgePersonaInput): Promise<void>;
+  pruneHistory(cutoff: string): Promise<number>;
+  purgeExpired(cutoff: string): Promise<number>;
 
   // ── Pure ────────────────────────────────────────────────────────────────
   /** No I/O. Same definition and selection always produce the same bytes. */
@@ -80,6 +84,14 @@ export interface PersonaCapability {
  *  its editable display name, so a rename can never orphan or collide it. */
 const wrapperName = (personaId: string): string => `persona:${personaId}`;
 
+/** Whether two optional context references point at the same entry, so a
+ *  metadata-only edit that leaves the context untouched can skip any Context
+ *  write entirely. */
+const sameContextEntry = (a: ContextEntry | undefined, b: ContextEntry | undefined): boolean => {
+  if (!a || !b) return a === b;
+  return a.id === b.id && a.kind === b.kind;
+};
+
 class PersonaService implements PersonaCapability {
   private readonly limits: PersonaLimits;
   private readonly clock: PersonaClock;
@@ -95,38 +107,77 @@ class PersonaService implements PersonaCapability {
   // Total switches with no default clause: adding a command or query variant is a
   // compile error until it is handled here.
   async command(command: PersonaCommand): Promise<PersonaCommandResult> {
-    switch (command.type) {
-      case "persona.create":
-        return { type: "persona.created", record: await this.create(command.input) };
-      case "persona.update":
-        return { type: "persona.updated", record: await this.update(command.input) };
-      case "persona.delete":
-        await this.delete(command.input);
-        return { type: "persona.deleted", personaId: command.input.id };
+    const startedAt = performance.now();
+    try {
+      switch (command.type) {
+        case "persona.create":
+          return { type: "persona.created", record: await this.create(command.input) };
+        case "persona.update":
+          return { type: "persona.updated", record: await this.update(command.input) };
+        case "persona.delete":
+          await this.delete(command.input);
+          return {
+            type: "persona.deleted",
+            personaId: command.input.id,
+            revision: command.input.expectedRevision + 1
+          };
+        case "persona.purge":
+          await this.purge(command.input);
+          return { type: "persona.purged", personaId: command.input.id };
+      }
+    } finally {
+      this.deps.logger.debug("persona.command", {
+        type: command.type,
+        durationMs: Math.round(performance.now() - startedAt)
+      });
     }
   }
 
   async query(query: PersonaQuery): Promise<PersonaQueryResult> {
+    const startedAt = performance.now();
     switch (query.type) {
       case "persona.get": {
         const record = await this.get(query.id);
         if (!record) throw new PersonaNotFoundError(query.id);
+        this.deps.logger.debug("persona.query.completed", {
+          type: query.type,
+          personaId: record.id,
+          durationMs: Math.round(performance.now() - startedAt)
+        });
         return { type: "persona.entry", record };
       }
       case "persona.getByName": {
         const record = await this.getByName(query.displayName);
         if (!record) throw new PersonaNotFoundError(query.displayName);
+        this.deps.logger.debug("persona.query.completed", {
+          type: query.type,
+          personaId: record.id,
+          durationMs: Math.round(performance.now() - startedAt)
+        });
         return { type: "persona.entry", record };
       }
-      case "persona.list":
-        return { type: "persona.records", records: await this.list() };
+      case "persona.list": {
+        const records = await this.list();
+        this.deps.logger.debug("persona.query.completed", {
+          type: query.type,
+          count: records.length,
+          durationMs: Math.round(performance.now() - startedAt)
+        });
+        return { type: "persona.records", records };
+      }
       case "persona.render": {
         const definition = validateDefinition(query.definition, this.limits);
         const prompt = this.render(definition, query.sections);
+        const promptDigest = digestPrompt(prompt);
+        this.deps.logger.debug("persona.query.completed", {
+          type: query.type,
+          promptDigest,
+          durationMs: Math.round(performance.now() - startedAt)
+        });
         return {
           type: "persona.rendered",
           prompt,
-          promptDigest: digestPrompt(prompt),
+          promptDigest,
           sections: selectPersonaSections(definition, query.sections)
         };
       }
@@ -171,6 +222,13 @@ class PersonaService implements PersonaCapability {
           description: `Private scope wrapper for persona ${displayName}`
         })
       : undefined;
+    if (wrapper) {
+      this.deps.logger.info("persona.wrapper.declared", {
+        personaId: id,
+        wrapperId: wrapper.id,
+        revision: wrapper.revision
+      });
+    }
 
     const now = this.clock.now();
     const record: PersonaRecord = {
@@ -184,7 +242,18 @@ class PersonaService implements PersonaCapability {
       createdAt: now,
       updatedAt: now
     };
-    await this.store.insert(record);
+    try {
+      await this.store.insert(record);
+    } catch (error) {
+      if (wrapper) {
+        this.deps.logger.warn("persona.wrapper.orphaned", {
+          personaId: id,
+          wrapperId: wrapper.id,
+          reason: error instanceof Error ? error.message : String(error)
+        });
+      }
+      throw error;
+    }
 
     this.deps.logger.info("persona.create", {
       personaId: record.id,
@@ -235,29 +304,45 @@ class PersonaService implements PersonaCapability {
         ? existing.definition
         : validateDefinition(input.definition, this.limits);
 
-    const wrapper = await this.reconcileWrapper(existing, definition);
+    const plan = await this.planWrapperChange(existing, definition);
 
     const updated: PersonaRecord = {
       ...existing,
       displayName,
       description,
       definition,
-      ...(wrapper ? { contextWrapperId: wrapper.id, contextWrapperRevision: wrapper.revision } : {}),
+      ...(plan.kind === "set" ? { contextWrapperId: plan.wrapper.id, contextWrapperRevision: plan.wrapper.revision } : {}),
       revision: existing.revision + 1,
       definitionDigest: digestPersonaDefinition(definition),
       updatedAt: this.clock.now()
     };
-    // reconcileWrapper returns undefined both when there is no wrapper and when it
-    // was just removed, so the fields are stripped rather than spread away.
-    if (!wrapper) {
+    if (plan.kind === "cleared") {
       delete (updated as { contextWrapperId?: string }).contextWrapperId;
       delete (updated as { contextWrapperRevision?: number }).contextWrapperRevision;
     }
 
     if (!(await this.store.update(updated, input.expectedRevision))) {
+      // The persona row lost its revision race. A wrapper freshly declared just
+      // above for this attempt is now unreferenced — it is never adopted by any
+      // record, so it is simply abandoned rather than repaired; the caller
+      // retries the whole operation against fresh state, and any *previous*
+      // wrapper (if this was a swap or removal) is untouched and still valid.
+      if (plan.kind === "set") {
+        this.deps.logger.warn("persona.wrapper.orphaned", {
+          personaId: existing.id,
+          wrapperId: plan.wrapper.id,
+          reason: "persona update lost its revision race after the wrapper was declared"
+        });
+      }
       const current = await this.store.get(input.id);
       if (!current) throw new PersonaNotFoundError(input.id);
       throw new StalePersonaRevisionError(input.id, input.expectedRevision, current.revision);
+    }
+
+    if (plan.kind === "set" && plan.previousWrapperId) {
+      await this.deleteWrapperBestEffort(existing.id, plan.previousWrapperId);
+    } else if (plan.kind === "cleared") {
+      await this.deleteWrapperBestEffort(existing.id, plan.previousWrapperId);
     }
 
     this.deps.logger.info("persona.update", {
@@ -271,38 +356,67 @@ class PersonaService implements PersonaCapability {
   }
 
   /**
-   * Bring the private wrapper into line with the incoming definition.
+   * Decide what the persona's private wrapper should become for the incoming
+   * definition, declaring a fresh wrapper up front when one is needed.
    *
-   * The wrapper id is stable for the life of the persona: a changed context
-   * updates the same record rather than declaring a new one, so anything holding
-   * the wrapper id keeps resolving.
+   * A changed or newly-added context is never applied by mutating the existing
+   * wrapper in place — a brand-new wrapper is declared instead (declare() always
+   * starts at revision 1, so this step can never itself go stale). The persona's
+   * own CAS write, made by the caller right after this returns, is what decides
+   * whether the new wrapper takes effect; the old wrapper (if any) is only
+   * deleted once that CAS has committed. If the CAS is lost, the freshly
+   * declared wrapper here is simply abandoned as a harmless orphan and the
+   * caller retries the whole operation against fresh state — the old wrapper,
+   * untouched, is still exactly what the (unchanged) persona record points at.
+   * This ordering is what keeps a lost race from ever leaving the persona
+   * record pointing at a stale or missing wrapper (see docs/invariants.md).
    */
-  private async reconcileWrapper(
+  private async planWrapperChange(
     existing: PersonaRecord,
     definition: PersonaDefinition
-  ): Promise<{ id: string; revision: number } | undefined> {
+  ): Promise<
+    | { kind: "unchanged" }
+    | { kind: "cleared"; previousWrapperId: string }
+    | { kind: "set"; wrapper: { id: string; revision: number }; previousWrapperId?: string }
+  > {
     const before = existing.contextWrapperId;
+    const beforeEntry = existing.definition.context;
     const after = definition.context;
 
-    if (!before && !after) return undefined;
-
-    if (!before && after) {
-      return this.deps.context.declare(wrapperName(existing.id), [after], {
-        private: true,
-        description: `Private scope wrapper for persona ${existing.displayName}`
-      });
-    }
+    if (!before && !after) return { kind: "unchanged" };
+    if (before && after && sameContextEntry(beforeEntry, after)) return { kind: "unchanged" };
 
     if (before && !after) {
-      await this.deps.context.delete(before);
-      return undefined;
+      return { kind: "cleared", previousWrapperId: before };
     }
 
-    return this.deps.context.update(
-      before as string,
-      [after as ContextEntry],
-      existing.contextWrapperRevision ?? 1
-    );
+    const wrapper = await this.deps.context.declare(wrapperName(existing.id), [after as ContextEntry], {
+      private: true,
+      description: `Private scope wrapper for persona ${existing.displayName}`
+    });
+    this.deps.logger.info("persona.wrapper.declared", {
+      personaId: existing.id,
+      wrapperId: wrapper.id,
+      revision: wrapper.revision
+    });
+    return before ? { kind: "set", wrapper, previousWrapperId: before } : { kind: "set", wrapper };
+  }
+
+  /** Best-effort cleanup of a wrapper that is no longer referenced by any
+   *  persona record. A failure here does not undo or fail the mutation that
+   *  already committed — it just leaves an inert, harmless orphan, logged so
+   *  it is visible rather than silent. */
+  private async deleteWrapperBestEffort(personaId: string, wrapperId: string): Promise<void> {
+    try {
+      await this.deps.context.delete(wrapperId);
+      this.deps.logger.info("persona.wrapper.deleted", { personaId, wrapperId });
+    } catch (error) {
+      this.deps.logger.warn("persona.wrapper.orphaned", {
+        personaId,
+        wrapperId,
+        reason: error instanceof Error ? error.message : String(error)
+      });
+    }
   }
 
   async delete(input: DeletePersonaInput): Promise<void> {
@@ -313,11 +427,23 @@ class PersonaService implements PersonaCapability {
       throw new StalePersonaRevisionError(input.id, input.expectedRevision, existing.revision);
     }
 
+    // Delete the owned wrapper first. A retry tolerates an already-absent
+    // wrapper, so a failure between the two databases is recoverable and a
+    // successful Persona deletion can never leave a live wrapper behind.
     if (existing.contextWrapperId) {
-      await this.deps.context.delete(existing.contextWrapperId);
+      try {
+        await this.deps.context.delete(existing.contextWrapperId);
+        this.deps.logger.info("persona.wrapper.deleted", {
+          personaId: input.id,
+          wrapperId: existing.contextWrapperId
+        });
+      } catch (error) {
+        if (!(error instanceof Error && error.name === "ContextNotFoundError")) throw error;
+      }
     }
 
-    if (!(await this.store.softDelete(input.id, input.expectedRevision, this.clock.now()))) {
+    const deletedAt = this.clock.now();
+    if (!(await this.store.delete(existing, input.expectedRevision, deletedAt))) {
       const current = await this.store.get(input.id);
       if (!current) throw new PersonaNotFoundError(input.id);
       throw new StalePersonaRevisionError(input.id, input.expectedRevision, current.revision);
@@ -325,9 +451,36 @@ class PersonaService implements PersonaCapability {
 
     this.deps.logger.info("persona.delete", {
       personaId: input.id,
-      revision: existing.revision,
+      revision: existing.revision + 1,
       durationMs: Math.round(performance.now() - startedAt)
     });
+  }
+
+  async purge(input: PurgePersonaInput): Promise<void> {
+    this.assertMutable(input.id);
+    const snapshot = await this.store.latestSnapshot(input.id);
+    if (snapshot?.contextWrapperId) {
+      try {
+        await this.deps.context.purge(snapshot.contextWrapperId);
+      } catch (error) {
+        if (!(error instanceof Error && error.name === "ResourceHistoryNotFoundError")) throw error;
+      }
+    }
+    await this.store.purge(input.id);
+    this.deps.logger.info("persona.purge", { personaId: input.id });
+  }
+
+  async pruneHistory(cutoff: string): Promise<number> {
+    return this.store.pruneHistory(cutoff);
+  }
+
+  async purgeExpired(cutoff: string): Promise<number> {
+    let count = 0;
+    for (const id of await this.store.expiredDeleted(cutoff)) {
+      await this.purge({ id });
+      count += 1;
+    }
+    return count;
   }
 
   render(definition: PersonaDefinition, sections?: readonly PersonaSectionName[]): string {
@@ -336,7 +489,8 @@ class PersonaService implements PersonaCapability {
 
   async resolve(id?: string, options?: PersonaResolveOptions): Promise<PersonaSnapshot> {
     const startedAt = performance.now();
-    const record = id === undefined ? BUILTIN_PERSONA : await this.get(id);
+    const isBuiltIn = id === undefined;
+    const record = isBuiltIn ? BUILTIN_PERSONA : await this.get(id);
     if (!record) throw new PersonaNotFoundError(id as string);
 
     const sections = selectPersonaSections(record.definition, options?.sections);
@@ -368,6 +522,7 @@ class PersonaService implements PersonaCapability {
       sectionCount: snapshot.sections.length,
       promptChars: prompt.length,
       hasContext: Boolean(wrapperEntry),
+      isBuiltIn,
       durationMs: Math.round(performance.now() - startedAt)
     });
     return snapshot;
@@ -377,4 +532,7 @@ class PersonaService implements PersonaCapability {
 export const createPersonaCapability = (
   store: PersonaStore,
   dependencies: PersonaDependencies
-): PersonaCapability => new PersonaService(store, dependencies);
+): PersonaCapability => {
+  dependencies.logger.info("persona.runtime.created", {});
+  return new PersonaService(store, dependencies);
+};

@@ -2,7 +2,11 @@
 
 ## Status and authority
 
-Context is implemented as a project-scoped SQLite capability. There is no user scope and no user/project fallback — every context lives in one table keyed by the configured `projectId`. It stores named sets of typed resource references, expands nested contexts, and provides pure and persisted set composition. These pages describe the current implementation; the TypeScript and SQLite adapter remain authoritative when an older design page differs.
+Context is implemented as a project-scoped SQLite capability. There is no user
+scope and no user/project fallback. Each project has a typed current table for
+Contexts and a history table for superseded snapshots and terminal
+deletion revisions. It stores named sets of typed resource references, expands
+nested contexts, and provides pure and persisted set composition.
 
 Context owns context identity, names, membership, descriptions, revision metadata, nesting, and composition. It does not own the referenced resource, decide whether a leaf kind is meaningful, or retrieve content. The runtime resource registry translates resolved leaves into Knowledge source IDs.
 
@@ -13,7 +17,7 @@ Context owns context identity, names, membership, descriptions, revision metadat
 | [Concepts](concepts.md) | Vocabulary, boundaries, architecture, and lifecycle |
 | [Types](types.md) | Records, entries, errors, store contract, and SQLite representation |
 | [Runtime](runtime.md) | Construction, every manager/store method, helpers, logging, and concurrency |
-| [Flows](flows.md) | All 9 HTTP mappings and their call chains |
+| [Flows](flows.md) | All 10 HTTP mappings and their call chains |
 | [Invariants](invariants.md) | Actual guarantees, limits, failure behavior, tests, and known non-guarantees |
 
 ## Runtime dependencies

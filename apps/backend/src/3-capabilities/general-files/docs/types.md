@@ -33,7 +33,6 @@ interface GeneralFile {
   readonly replacedById?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
-  readonly deletedAt?: string;
 }
 ```
 
@@ -67,11 +66,13 @@ Multiple filters are combined with SQL `AND`. List results are `Omit<GeneralFile
 
 | Error | Code | Meaning | HTTP status |
 |---|---|---|---:|
-| `GeneralFileNotFoundError` | `not_found` | ID is absent or soft-deleted at service boundary | 404 |
+| `GeneralFileNotFoundError` | `not_found` | ID has no current row | 404 |
 | `GeneralFileEncodingError` | `encoding_error` | Invalid filename/content shape or failed text round-trip | 400 |
 | Other errors | none | SQLite, Knowledge, or unexpected application failure | 500 |
 
-The service does not expose a stale-revision error because update requests do not carry an expected revision. The repository's active revision guard can still reject a lost replacement as an ordinary `Error`.
+The service does not expose a stale-revision error because update requests do
+not carry an expected revision. The repository's current-revision guard can
+still reject a lost replacement as an ordinary `Error`.
 
 ## Store contract
 
@@ -79,17 +80,23 @@ The service does not expose a stale-revision error because update requests do no
 
 | Method | Contract |
 |---|---|
-| `getById` | Returns any row by content ID, including deleted rows |
-| `getByHash` | Returns an active row by hash |
-| `list` | Returns active metadata only, optionally filtered |
-| `insert` / `update` | Writes one complete row; `update` is unconditional by ID |
-| `replace` | Atomically upserts target and retires active expected-revision source |
-| `linkReplacement` | Atomically retires source in favor of an already-active target |
-| `softDelete` | Marks a row deleted by ID |
+| `getById` | Returns the current row by content ID |
+| `getByHash` | Returns the current row by hash |
+| `list` | Returns current metadata only, optionally filtered |
+| `insert` | Writes one complete current row |
+| `nextRevision` | Returns 1 without retained history, otherwise historical max +1 |
+| `replace` | Atomically inserts a target and moves the expected current source to snapshot + terminal history |
+| `linkReplacement` | Atomically moves the current source to history in favor of an already-current target |
+| `delete` | Archives current snapshot, appends terminal revision, and removes current |
+| `purge` | Rejects a current row; removes terminally deleted history |
+| retention methods | Prune old current-identity snapshots and purge expired deleted identities |
 
 ## SQLite representation
 
-[`SQLiteGeneralFileStore`](../persistence/sqliteGeneralFileRepository.ts) opens `./data/general-files.db` in WAL mode with `synchronous=NORMAL` and foreign keys enabled after schema setup. The table is `gf_${sha256(projectId).slice(0,16)}_files`.
+[`SQLiteGeneralFileStore`](../persistence/sqliteGeneralFileRepository.ts) opens
+`./data/general-files.db` in WAL mode with `synchronous=NORMAL`. Its current
+table is `gf_${sha256(projectId).slice(0,16)}_files`; matching `_history`
+stores complete snapshots and terminal deletion records.
 
 Important SQL constraints:
 
@@ -100,10 +107,10 @@ Important SQL constraints:
 - extension may be empty.
 - `byte_size` equals `length(CAST(content AS BLOB))`.
 - revision is at least 1.
-- replacement links are self-referencing foreign keys.
-- a partial unique index permits at most one active row per content hash.
+- a unique index permits at most one current row per content hash.
 
-The constructor detects the early character-count/required-extension schema and transactionally rebuilds it. Row mappers convert nullable SQL fields to optional/null domain fields.
+There is no legacy-schema migration. Row mappers convert nullable SQL fields
+to optional/null domain fields.
 
 ## Wire and Knowledge representations
 

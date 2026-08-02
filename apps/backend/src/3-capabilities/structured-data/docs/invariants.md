@@ -4,12 +4,12 @@
 
 | Preconditions | Current guaranteed outcome | Enforcement |
 |---|---|---|
-| Valid Formula-compatible, non-reserved display name within byte limit | Stored trimmed; lookup/collision key is case-insensitive | Validator plus SQLite `NOCASE` live index |
+| Valid Formula-compatible, non-reserved display name within byte limit | Stored trimmed; lookup/collision key is case-insensitive | Validator plus SQLite `NOCASE` current index |
 | Valid formula/function declaration | UUID entry at revision 1 with source body and empty context entries | Service/insert |
 | Valid collection declaration | Schema/rows are admitted, `rowCount === rows.length`, revision 1 | Validators/service |
-| Revisioned update wins SQL CAS | Exactly one live row changes and returned revision is previous +1 | SQLite `id + revision + live` predicate |
+| Revisioned update wins SQL CAS | Prior snapshot is archived and exactly one current row changes to previous revision +1 | SQLite history + `id + revision` transaction |
 | Revisioned update loses SQL CAS | Service returns typed current stale revision or not-found | `persistUpdate` reload |
-| Delete wins CAS | Tombstone is written and entry disappears from get/name/list/binding views | SQLite live predicates |
+| Delete wins CAS | Current snapshot `N` and terminal deletion `N + 1` enter history; no current row remains | SQLite transaction |
 | Append succeeds | Only submitted rows were newly validated; prior rows are retained without routine rescan | `validateAppendRows` |
 | Schema replacement succeeds | Every retained row validates against the new complete schema | replacement validator |
 | Resolver cannot parse/evaluate a declaration | No binding is published for it; a typed issue is available | Formula resolver |
@@ -42,7 +42,7 @@
 | Config | Default | Application |
 |---|---:|---|
 | `maxDisplayNameBytes` | 256 | Declaration/rename names |
-| `maxEntries` | 10,000 | Pre-insert live count check |
+| `maxEntries` | 10,000 | Pre-insert current count check |
 | `maxFieldsPerCollection` | 256 | Schema length |
 | `maxRowsPerCollection` | 100,000 | Declare/replacement rows and append final count |
 | `maxBodyBytes` | 65,536 | Entry bodies and formula-cell source |
@@ -52,10 +52,17 @@ Schema field names use a separate hard-coded 256-byte call to the display-name v
 ## Identity, revision, and deletion
 
 - IDs are random UUIDs and survive rename/content/schema/row mutations.
-- Every live update increments the entry revision once.
-- Delete requires the current expected revision but does not increment the stored revision.
-- Tombstones are retained but hidden by every current DataStore read.
-- A newly declared entry can reuse a deleted display name but receives a new UUID.
+- Every current update increments the entry revision once and archives its
+  previous state.
+- Delete requires the current expected revision and records terminal revision
+  `N + 1` after archiving snapshot `N`.
+- Deleted entries have no current row and are absent from get/name/list,
+  binding views, Formula resolution, and mutations.
+- A newly declared entry can reuse a deleted display name but receives a new
+  UUID and starts at revision 1.
+- Purge rejects current entries, requires terminal deletion history, and
+  irreversibly removes all retained history. Shared retention prunes old
+  snapshots for current entries and purges expired deleted entries.
 - `DataBindingView.viewRevision` is a maximum, not a global mutation sequence or complete snapshot digest.
 
 ## Concurrency and atomicity
@@ -65,7 +72,9 @@ SQLite update/delete CAS is atomic across concurrent queue jobs, direct callers,
 Two boundaries are weaker:
 
 - `maxEntries` is checked by a read followed by insert, so competing declarations may exceed the configured quota.
-- The service's conflict precheck can race; SQLite still rejects duplicate live names, but the resulting exception may be generic rather than `DataEntryConflictError`.
+- The service's conflict precheck can race; SQLite still rejects duplicate
+  current names, but the resulting exception may be generic rather than
+  `DataEntryConflictError`.
 
 There are no cross-store mutations or compensation steps in the core capability. Formula snapshot construction is read/evaluate work and does not mutate Structured Data.
 
@@ -96,8 +105,20 @@ There are no cross-store mutations or compensation steps in the core capability.
 
 ## Regression coverage
 
-[`structured-data-formula.test.ts`](../../../../test/capabilities/structured-data-formula.test.ts) covers sole-source Formula resolution, case collisions, tombstone visibility/repeated delete, delete endpoint revision forwarding, cross-store update/delete CAS, collection-cell dependencies, built-ins/lambda locals, function identity/wire rejection, lexical captures, reserved names, long dependency chains, Formula output limits, stable-binding non-retargeting, snapshot owner identity, typed resolution issues, ingress collection validation, and incompatible schema replacement.
+[`structured-data-formula.test.ts`](../../../../test/capabilities/structured-data-formula.test.ts)
+covers sole-source Formula resolution, case collisions, current/history
+deletion and purge, delete endpoint revision forwarding, cross-store
+update/delete CAS, collection-cell dependencies, built-ins/lambda locals,
+function identity/wire rejection, lexical captures, reserved names, long
+dependency chains, Formula output limits, stable-binding non-retargeting,
+snapshot owner identity, typed resolution issues, ingress collection
+validation, and incompatible schema replacement.
 
 ## Non-goals
 
-Current non-goals include a second Name Manager, migration compatibility, user-scoped Structured Data in startup, global mutation sequence, change history/undo, typed dates, nested literal collection cells, schema conversions, row IDs, partial row updates, SQL-level JSON/schema constraints, automatic Context metadata inference, Knowledge ingestion, and direct Intelligence generation.
+Current non-goals include a second Name Manager, migration compatibility,
+user-scoped Structured Data in startup, a global mutation sequence, public
+history inspection/undo, typed dates, nested literal collection cells, schema
+conversions, row IDs, partial row updates, SQL-level JSON/schema constraints,
+automatic Context metadata inference, Knowledge ingestion, and direct
+Intelligence generation.

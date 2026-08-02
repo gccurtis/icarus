@@ -9,6 +9,7 @@ A Derived Output is a saved, refreshable question. The mutable output records wh
 | Term | Current meaning |
 |---|---|
 | Output | Mutable identity, definition, head pointer, and cached freshness |
+| Resource revision | Monotone version of the live Output aggregate; distinct from definition and answer revision |
 | Definition | Prompt, Context entries, stabilisation text, optimistic revision |
 | Head revision | Latest published immutable answer number; 0 before first publication |
 | Revision | Frozen answer text/status/evidence produced from one definition revision |
@@ -21,6 +22,8 @@ A Derived Output is a saved, refreshable question. The mutable output records wh
 | Settlement fence | Definition revision + head revision + Knowledge generation checked in one SQLite transaction |
 | Skipped refresh | Computation lost a fence or its output was deleted; no revision was published |
 | Idempotency claim | Optional service-level key/digest/result record for declaration, definition update, or refresh replay |
+| Logical deletion | Archive the final live aggregate plus a terminal revision, then remove current and operational state |
+| Purge | Irreversibly remove the stable root, retained answer revisions, and resource history |
 
 ## Ownership and architecture
 
@@ -56,12 +59,25 @@ stateDiagram-v2
   Current --> Failed: owned refresh fails
   Stale --> Failed: owned refresh fails
   Failed --> Current: later refresh publishes
-  Current --> [*]: hard delete
-  Stale --> [*]: hard delete
-  Failed --> [*]: hard delete
+  Current --> [*]: logical delete
+  Stale --> [*]: logical delete
+  Failed --> [*]: logical delete
 ```
 
 The service does not change an existing output to `refreshing` at refresh start. That state is assigned at declaration and persists until the first owned settlement. Definition update marks stale atomically. Every successful Knowledge mutation conservatively marks every output stale.
+
+The typed Output table is the current projection and contains live aggregates only. Each
+accepted definition update, refresh settlement, owned failure, or Knowledge invalidation
+archives the previous aggregate snapshot and advances its resource revision. Logical
+deletion archives the last live snapshot, appends terminal revision `N + 1`, and removes
+the current row. Current-owned declaration claims, refresh claims, definition-update
+claims, and refresh attempts cascade away; the stable internal root keeps immutable
+answer revisions and lifecycle history available.
+
+Physical purge is a separate irreversible operation allowed only after terminal deletion.
+It removes lifecycle history and the stable root, cascading retained answer revisions.
+The backend-wide retention policy prunes old snapshots for live Outputs and purges
+terminal deletions after the configured cutoff.
 
 ## Definition and stabilization
 

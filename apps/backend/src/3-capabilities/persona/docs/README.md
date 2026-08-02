@@ -10,11 +10,15 @@ chooses no model, executes no tool, and resolves no scope. It produces one
 deterministic block of text plus one optional resource reference, and hands both to a
 consumer that freezes them into its own task.
 
+The project catalog is current-only. Superseded revisions and terminal deletions live in
+a separate history table; logical deletion also deletes Persona's owned private Context
+wrapper, while purge removes both retained histories.
+
 ## Status and authority
 
-**Implemented and tested.** 36 tests across
-[`persona.test.ts`](../../../../test/capabilities/persona.test.ts) (28) and
-[`persona-wiring.test.ts`](../../../../test/capabilities/persona-wiring.test.ts) (8).
+**Implemented and tested** across
+[`persona.test.ts`](../../../../test/capabilities/persona.test.ts) and
+[`persona-wiring.test.ts`](../../../../test/capabilities/persona-wiring.test.ts).
 
 There is **no consumer yet**. Derived Outputs is unchanged, and Agents does not exist.
 `resolve()` is exercised only by tests. The snapshot shape is the contract Agents will
@@ -32,9 +36,9 @@ built here.
 ### Deliberate deviations, so they are not rediscovered as bugs
 
 - **No command-receipts table.** Comments carries one because its commands are
-  externally retried. Persona's `update` and `delete` are naturally idempotent under
-  revision compare-and-swap, and `create` is not replayed. Add one if a real need
-  appears.
+  externally retried. Persona uses expected revisions for update/delete and does not
+  promise replay of a completed response; `create` is also not replayed. Add receipts if
+  a real need appears.
 - **Limits live in [`domain/validation.ts`](../domain/validation.ts)** as
   `DEFAULT_PERSONA_LIMITS`, not in `etc/configuration.yaml`, matching Comments. Adding a
   `persona:` config section later is a ~3-line change in `loadBackendConfig.ts` plus an

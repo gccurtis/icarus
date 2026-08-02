@@ -58,7 +58,8 @@ methods.
 | `clearQuestionAnswer(id)` | Removes `currentAnswer` and sets `open` |
 | `getQuestion(id)` | Returns the live canonical Question or `null` |
 | `listQuestions(filter?)` | Filters by exact status and/or exact tag; returns live rows newest-first |
-| `deleteQuestion(id)` | Requires a live row, then sets `deletedAt` and updates actor/time |
+| `deleteQuestion(id)` | Requires current state, archives it plus a terminal revision, then removes current state |
+| `purgeQuestion(id)` | Requires terminal deletion history and no current row; removes retained history |
 
 Question mutation methods log IDs, actor, status transition/count metadata,
 and durations. They never log Question text, Context, answer, or assumption
@@ -72,7 +73,8 @@ content.
 | `updateHypothesis(id, request)` | Replaces supplied content/IDs/status/confidence; `null` clears rationale/confidence; no evidence gate |
 | `getHypothesis(id)` | Returns the live canonical Hypothesis or `null` |
 | `listHypotheses(filter?)` | Filters by status and/or related live Question ID |
-| `deleteHypothesis(id)` | Requires a live row, then sets `deletedAt` and updates actor/time |
+| `deleteHypothesis(id)` | Archives the final current snapshot and terminal revision, then removes current state |
+| `purgeHypothesis(id)` | Requires terminal deletion history and no current row; removes retained history |
 
 The runtime permits zero Question IDs and all supported direct status changes.
 It does not load/assemble related Questions or Findings into the returned
@@ -91,7 +93,8 @@ object. Callers traverse those records with `getQuestion` and `listFindings`.
 | `clearFindingReferenceReview(id, index)` | Removes `needsReview` from one current zero-based reference index |
 | `getFinding(id)` | Returns the live canonical Finding or `null` |
 | `listFindings(filter?)` | Filters by status, related live Question, and/or related live Hypothesis |
-| `deleteFinding(id)` | Removes accepted Knowledge source when needed, then sets `deletedAt` |
+| `deleteFinding(id)` | Removes accepted Knowledge source, then archives and removes current state |
+| `purgeFinding(id)` | Requires terminal deletion history and no current row; removes retained history |
 
 Mark/clear validates that `referenceIndex` is a nonnegative safe integer within
 the current array. Review operations do not change Finding status or claim.
@@ -104,10 +107,16 @@ implements the one synchronous
 canonical domain objects and pass them to entity-specific insert/update
 methods. The concrete store maps JSON arrays and nullable fields to/from SQL.
 
-Ordinary reads always exclude `deleted_at IS NOT NULL`. Soft deletion is one
-SQLite update that sets `updated_by`, `updated_at`, and `deleted_at`; Finding
-deletion also clears `knowledge_source_id`. There is no include-deleted runtime
-operation.
+Ordinary reads query only current tables. Every update archives the previous
+current revision. Logical deletion archives the final snapshot, appends the
+next terminal revision, and removes the current row in one SQLite transaction.
+There is no include-deleted runtime operation. The shared history table serves
+all three resource kinds.
+
+`pruneHistory(cutoff)` removes expired superseded history for current records.
+`purgeExpired(cutoff)` physically purges deleted resources whose terminal
+record predates the cutoff. The backend scheduler invokes both through the
+capability retention port.
 
 Reverse list behavior is implemented in SQL:
 

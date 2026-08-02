@@ -18,6 +18,10 @@ import { SQLiteConnectorStore } from "../../src/3-capabilities/connector/persist
 import { filesystemProvider } from "../../src/3-capabilities/connector/providers/filesystem.js";
 import { registerConnectorEndpoints } from "../../src/4-job-wiring/connector/registerConnectorEndpointMappings.js";
 import { CapturingLogger, ZERO_USAGE } from "../helpers/testDoubles.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "../../src/0-utils/persistence/resourceHistory.js";
 
 const createKnowledge = () => {
   const calls = { added: [] as string[], removed: [] as string[] };
@@ -306,11 +310,11 @@ test("scheduler discovers persisted scheduled connectors when it starts", () => 
   assert.deepEqual(recovery?.data, { connectors: 2 });
 });
 
-test("deleted deterministic connectors can be registered again", async () => {
-  const directory = mkdtempSync(join(tmpdir(), "icarus-connector-resurrection-"));
-  const filePath = join(directory, "data.bin");
-  writeFileSync(filePath, "opaque");
-  const { knowledge } = createKnowledge();
+test("deterministic Connector registration advances history until physical purge", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "icarus-connector-reregistration-"));
+  const filePath = join(directory, "notes.txt");
+  writeFileSync(filePath, "indexed prose");
+  const { calls, knowledge } = createKnowledge();
   const store = createStore();
   const service = createConnectorService(
     store,
@@ -319,14 +323,32 @@ test("deleted deterministic connectors can be registered again", async () => {
     new CapturingLogger()
   );
   const first = await service.register({ providerKind: "filesystem", locator: filePath });
+  await assert.rejects(() => service.purge(first.entry.id), ResourceNotDeletedError);
 
   await service.delete(first.entry.id);
-  const restored = await service.register({ providerKind: "filesystem", locator: filePath });
+  assert.deepEqual(calls.removed, first.entry.knowledgeSourceIds);
+  assert.equal(store.getById(first.entry.id), undefined);
+  assert.deepEqual(store.history(first.entry.id).map((record) => [record.revision, record.recordType]), [
+    [1, "snapshot"],
+    [2, "deleted"]
+  ]);
+  const registeredAgain = await service.register({ providerKind: "filesystem", locator: filePath });
 
-  assert.equal(restored.status, "registered");
-  assert.equal(restored.entry.id, first.entry.id);
-  assert.equal(restored.entry.revision, 2);
-  assert.equal(service.get(first.entry.id).deletedAt, undefined);
+  assert.equal(registeredAgain.status, "registered");
+  assert.equal(registeredAgain.entry.id, first.entry.id);
+  assert.equal(registeredAgain.entry.revision, 3);
+
+  await service.delete(first.entry.id);
+  await service.purge(first.entry.id);
+  assert.deepEqual(store.history(first.entry.id), []);
+  await assert.rejects(() => service.purge(first.entry.id), ResourceHistoryNotFoundError);
+
+  const registeredAfterPurge = await service.register({
+    providerKind: "filesystem",
+    locator: filePath
+  });
+  assert.equal(registeredAfterPurge.entry.id, first.entry.id);
+  assert.equal(registeredAfterPurge.entry.revision, 1);
 });
 
 test("delete holds the sync claim and a stale sync update cannot resurrect the connector", async () => {
@@ -377,14 +399,21 @@ test("delete holds the sync claim and a stale sync update cannot resurrect the c
     assert.ok(syncOutcome.reason instanceof SyncInProgressError);
   }
   const deleted = store.getById(registered.entry.id);
-  assert.ok(deleted?.deletedAt);
-  assert.equal(deleted.syncing, false);
+  assert.equal(deleted, undefined);
+  assert.deepEqual(store.history(registered.entry.id).map((record) => [record.revision, record.recordType]), [
+    [registered.entry.revision, "snapshot"],
+    [registered.entry.revision + 1, "deleted"]
+  ]);
 
   assert.throws(
-    () => store.update({ ...registered.entry, revision: 2, syncing: true }, staleItems),
-    /lost its active sync state/
+    () => store.update(
+      { ...registered.entry, revision: 2, syncing: true },
+      staleItems,
+      { entry: registered.entry, items: staleItems }
+    ),
+    /lost its current sync state/
   );
-  assert.equal(store.getById(registered.entry.id)?.deletedAt, deleted.deletedAt);
+  assert.equal(store.getById(registered.entry.id), undefined);
   assert.throws(() => service.get(registered.entry.id), ConnectorNotFoundError);
 });
 

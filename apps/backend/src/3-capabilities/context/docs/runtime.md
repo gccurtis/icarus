@@ -21,17 +21,22 @@ The manager has no mutable cache and keeps only its store, configuration, and lo
 | Method | Work and result | Persistence / side effects | Logging |
 |---|---|---|---|
 | `get(id)` | Loads by ID from the project table; returns record or `null` | Read only | debug `context.get` with found/duration |
-| `getByName(name)` | Loads by exact live display name | Read only | debug `context.getByName` |
+| `getByName(name)` | Loads by exact current display name | Read only | debug `context.getByName` |
 | `list(options={})` | Lists the project table; private records excluded by default | Read only | debug `context.list` with count |
-| `declare(name, entries, options?)` | Checks raw entry count, checks live-name conflict, deduplicates, creates UUID at revision 1 with `private` from `options.private` (default `false`) | One store insert | info `context.declare` |
-| `update(id, entries, expectedRevision)` | Checks raw count, existence, and revision; replaces the complete entry array; increments revision | One unconditional store update after service check | info `context.update` |
-| `delete(id)` | Requires an ID lookup, then sets a tombstone timestamp | One store soft-delete; no expected revision | info `context.delete` |
+| `declare(name, entries, options?)` | Checks raw entry count, checks current-name conflict, deduplicates, creates UUID at revision 1 with `private` from `options.private` (default `false`) | One current-table insert | info `context.declare` |
+| `update(id, entries, expectedRevision)` | Checks raw count, existence, and revision; replaces the complete entry array at revision +1 | Archives prior snapshot and CAS-updates current in one transaction | info `context.update` |
+| `delete(id)` | Requires a current row | Archives current revision, appends terminal revision +1, removes current in one transaction | info `context.delete` |
+| `purge(id)` | Requires no current row and terminal deletion history | Irreversibly removes retained history | info `context.purge` |
+| `pruneHistory(cutoff)` / `purgeExpired(cutoff)` | Shared retention hooks | Prune old current-resource snapshots / purge expired deleted resources | scheduler logging |
 | `resolve(entries)` | Depth-first nested expansion, first-seen deduplication, silent cycle/missing/depth omission | Store reads only | debug `context.resolve` |
 | `combine(a,b)` | First-seen union keyed by `kind:id` | Pure; no log | none |
 | `difference(a,b)` | Returns entries in `a` whose key is absent from `b` | Pure; no log | none |
-| `composeNamed(op,a,b,displayName,options?)` | Resolves each operand (by `contextId` or inline `entries`), runs union/difference, checks live-name conflict, and inserts a new named record at revision 1 with `private` from `options.private` (default `false`) | One insert | info `context.composeNamed` |
+| `composeNamed(op,a,b,displayName,options?)` | Resolves each operand (by `contextId` or inline `entries`), runs union/difference, checks current-name conflict, and inserts a new named record at revision 1 with `private` from `options.private` (default `false`) | One insert | info `context.composeNamed` |
 
-All public methods return promises where declared, but the current SQLite calls execute synchronously on the event loop.
+All public methods return promises where declared, but the current SQLite calls
+execute synchronously on the event loop. Startup's shared retention scheduler
+supplies the cutoff. Defaults are 30 days and a 24-hour sweep interval, with one
+sweep immediately after HTTP binds and per-capability failure isolation.
 
 ## Auxiliary helpers
 
@@ -47,19 +52,28 @@ The module-private helper walks entries once, keys each as `${kind}:${id}`, and 
 
 [`parseEntries`](../../../4-job-wiring/context/registerContextEndpoints.ts) treats a non-array as empty, ignores non-object elements, coerces `id` and `kind` with `String`, and drops entries with an empty result. It is transport normalization, not a complete schema validator.
 
-`contextErrorResponse` maps three typed errors and maps every other thrown value to a 400 response. Endpoint read and pure-composition handlers do not consistently wrap all unexpected errors.
+`contextErrorResponse` maps Context validation/not-found/conflict/revision
+errors plus purge's `not_deleted` and missing-history outcomes. Other caught
+values map to a 400 response.
 
 ## Store operations
 
-The store derives trusted table names once in its constructor and uses prepared parameters for values. `createSchema` is idempotent. `rowToRecord` parses `entries_json` without a recovery path; malformed stored JSON throws to the caller.
-
-SQLite operations are individual statements. There is no multi-statement transaction in this capability and no store-level revision predicate on update/delete. WAL allows readers alongside a writer, but it does not turn the manager's read-then-write sequence into one atomic compare-and-swap.
+The store derives trusted current/history table names once in its constructor
+and uses prepared parameters for values. `createSchema` is idempotent.
+`rowToRecord` parses `entries_json` without a recovery path; malformed stored
+JSON throws to the caller. Update and delete use SQLite transactions to keep
+history and current state atomic.
 
 ## Concurrency and queue behavior
 
-Every Context endpoint currently creates an inline job on the shared `concurrent` queue. Two direct or HTTP updates can both read the same revision and then both execute an unconditional update; the later write can overwrite the earlier one. The `expectedRevision` check detects already-stale callers but is not a cross-request atomic guarantee.
+Every Context endpoint creates an inline job on the shared `concurrent` queue.
+Update's `id + expectedRevision` SQL predicate gives concurrent writers one
+winner. Delete is transactionally serialized with current-row lookup, history
+append, and current-row removal.
 
-Name uniqueness is stronger: the SQLite partial unique index is the final arbiter for live names in the project table, even when two declarations race. The precheck produces `ContextConflictError` in the ordinary path; a race can instead surface a SQLite error.
+Name uniqueness is enforced by the current table's SQLite unique index even
+when two declarations race. The precheck produces `ContextConflictError` in
+the ordinary path; a race can instead surface a SQLite error.
 
 ## Resource-registry integration
 

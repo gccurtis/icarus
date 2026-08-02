@@ -6,11 +6,17 @@ import type { FormulaEngine } from "#formula";
 import { isWireSerializable, toWire } from "#formula";
 import { normalizeKey } from "#formula/resolver.js";
 import type { FormulaNameResolver } from "#init/create/formula-name-resolver.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "#utils/persistence/resourceHistory.js";
 
 function sdError(e: unknown): { statusCode: number; body: unknown } {
   if (e instanceof DataEntryNotFoundError) return { statusCode: 404, body: { error: "not_found", message: e.message } };
   if (e instanceof DataEntryConflictError) return { statusCode: 409, body: { error: "conflict", message: e.message } };
   if (e instanceof StaleDataRevisionError) return { statusCode: 409, body: { error: "stale_revision", message: e.message } };
+  if (e instanceof ResourceNotDeletedError) return { statusCode: 409, body: { error: "not_deleted", message: e.message } };
+  if (e instanceof ResourceHistoryNotFoundError) return { statusCode: 404, body: { error: "not_found", message: e.message } };
   const msg = e instanceof Error ? e.message : String(e);
   return { statusCode: 400, body: { error: "bad_request", message: msg } };
 }
@@ -152,6 +158,21 @@ export function registerStructuredDataEndpoints(
           id: String(body.id ?? ""),
           expectedRevision: Number(body.expectedRevision)
         });
+        return { statusCode: 204, body: null };
+      } catch (e) {
+        return sdError(e);
+      }
+    }
+  }));
+
+  registry.register({ method: "POST", path: `${base}/purge` }, (request) => ({
+    name: "structured-data.purge",
+    queueType: "serial",
+    responseMode: "inline",
+    work: async () => {
+      try {
+        const body = request.body as Record<string, unknown>;
+        await sd.purge(String(body.id ?? ""));
         return { statusCode: 204, body: null };
       } catch (e) {
         return sdError(e);

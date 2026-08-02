@@ -38,6 +38,10 @@ import { SQLiteDerivedOutputStore } from "../../src/3-capabilities/derived-outpu
 import { createGeneralFileService } from "../../src/3-capabilities/general-files/application/generalFileService.js";
 import { SQLiteGeneralFileStore } from "../../src/3-capabilities/general-files/persistence/sqliteGeneralFileRepository.js";
 import { CapturingLogger, ZERO_USAGE } from "../helpers/testDoubles.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "../../src/0-utils/persistence/resourceHistory.js";
 
 const PROJECT_ID = "test-project";
 
@@ -504,7 +508,7 @@ test("definition update is one SQLite CAS that also marks freshness stale", asyn
   assert.equal(persisted?.freshness.state, "stale");
 });
 
-test("delete atomically removes output history, attempts, and declaration claim", async (t) => {
+test("logical delete removes current operational state while purge removes retained output history", async (t) => {
   const { store, dbPath } = createStoreFixture();
   t.after(() => store.close());
   const intelligence = {
@@ -546,36 +550,45 @@ test("delete atomically removes output history, attempts, and declaration claim"
     return row.count;
   };
   assert.deepEqual({
+    resources: count("resources"),
     outputs: count("outputs"),
     declarations: count("declarations"),
     definitionUpdateClaims: count("definition_update_claims"),
     refreshClaims: count("refresh_claims"),
     revisions: count("revisions"),
-    attempts: count("refresh_attempts")
+    attempts: count("refresh_attempts"),
+    history: count("history")
   }, {
+    resources: 1,
     outputs: 1,
     declarations: 1,
     definitionUpdateClaims: 1,
     refreshClaims: 1,
     revisions: 1,
-    attempts: 1
+    attempts: 1,
+    history: 2
   });
 
+  await assert.rejects(() => service.purge(output.id), ResourceNotDeletedError);
   await service.delete(output.id);
   assert.deepEqual({
+    resources: count("resources"),
     outputs: count("outputs"),
     declarations: count("declarations"),
     definitionUpdateClaims: count("definition_update_claims"),
     refreshClaims: count("refresh_claims"),
     revisions: count("revisions"),
-    attempts: count("refresh_attempts")
+    attempts: count("refresh_attempts"),
+    history: count("history")
   }, {
+    resources: 1,
     outputs: 0,
     declarations: 0,
     definitionUpdateClaims: 0,
     refreshClaims: 0,
-    revisions: 0,
-    attempts: 0
+    revisions: 1,
+    attempts: 0,
+    history: 4
   });
   await assert.rejects(
     service.delete(output.id),
@@ -590,6 +603,20 @@ test("delete atomically removes output history, attempts, and declaration claim"
     }),
     DerivedOutputNotFoundError
   );
+
+  await service.purge(output.id);
+  assert.deepEqual({
+    resources: count("resources"),
+    outputs: count("outputs"),
+    revisions: count("revisions"),
+    history: count("history")
+  }, {
+    resources: 0,
+    outputs: 0,
+    revisions: 0,
+    history: 0
+  });
+  await assert.rejects(() => service.purge(output.id), ResourceHistoryNotFoundError);
 
   const redeclared = await service.declare(declaration, {
     idempotencyKey: "delete-claim"

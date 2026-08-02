@@ -9,6 +9,10 @@ import { createGeneralFileService } from "../../src/3-capabilities/general-files
 import { SQLiteGeneralFileStore } from "../../src/3-capabilities/general-files/persistence/sqliteGeneralFileRepository.js";
 import { registerGeneralFileEndpoints } from "../../src/4-job-wiring/general-files/registerGeneralFileEndpointMappings.js";
 import { CapturingLogger, ZERO_USAGE } from "../helpers/testDoubles.js";
+import {
+  ResourceHistoryNotFoundError,
+  ResourceNotDeletedError
+} from "../../src/0-utils/persistence/resourceHistory.js";
 
 const createHarness = () => {
   const directory = mkdtempSync(join(tmpdir(), "icarus-general-files-"));
@@ -46,6 +50,7 @@ test("all General Files mutation endpoints use the serial queue", () => {
     "/general-files/upload",
     "/general-files/update",
     "/general-files/delete",
+    "/general-files/purge",
   ]) {
     const job = registry.createJob({
       requestId: `request-${path}`,
@@ -111,24 +116,41 @@ test("updating content atomically creates a linked replacement", async () => {
   assert.notEqual(updated.file.id, original.file.id);
   assert.deepEqual(calls.removed, [`general-file:${original.file.id}`]);
   assert.throws(() => service.get(original.file.id), /not found/i);
-  assert.equal(store.getById(original.file.id)?.replacedById, updated.file.id);
+  assert.equal(store.history(original.file.id)[0]?.snapshot?.replacedById, updated.file.id);
   assert.equal(store.getById(updated.file.id)?.replacesId, original.file.id);
-  assert.equal(updated.file.revision, 2);
+  assert.equal(updated.file.revision, 1);
 });
 
-test("delete awaits Knowledge removal and the same content can be resurrected", async () => {
-  const { calls, service } = createHarness();
-  const original = await service.upload({ fileName: "notes.txt", content: "resurrect me" });
+test("delete removes Knowledge and deterministic re-registration advances until purge", async () => {
+  const { calls, service, store } = createHarness();
+  const original = await service.upload({ fileName: "notes.txt", content: "register again" });
+
+  await assert.rejects(() => service.purge(original.file.id), ResourceNotDeletedError);
 
   await service.delete(original.file.id);
   assert.deepEqual(calls.removed, [`general-file:${original.file.id}`]);
   assert.throws(() => service.get(original.file.id), /not found/i);
+  assert.deepEqual(store.history(original.file.id).map((record) => [record.revision, record.recordType]), [
+    [1, "snapshot"],
+    [2, "deleted"]
+  ]);
 
-  const restored = await service.upload({ fileName: "notes.txt", content: "resurrect me" });
-  assert.equal(restored.kind, "created");
-  assert.equal(restored.file.id, original.file.id);
-  assert.equal(restored.file.revision, 2);
-  assert.equal(service.get(original.file.id).deletedAt, undefined);
+  const registeredAgain = await service.upload({ fileName: "notes.txt", content: "register again" });
+  assert.equal(registeredAgain.kind, "created");
+  assert.equal(registeredAgain.file.id, original.file.id);
+  assert.equal(registeredAgain.file.revision, 3);
+
+  await service.delete(original.file.id);
+  await service.purge(original.file.id);
+  assert.deepEqual(store.history(original.file.id), []);
+  await assert.rejects(() => service.purge(original.file.id), ResourceHistoryNotFoundError);
+
+  const registeredAfterPurge = await service.upload({
+    fileName: "notes.txt",
+    content: "register again"
+  });
+  assert.equal(registeredAfterPurge.file.id, original.file.id);
+  assert.equal(registeredAfterPurge.file.revision, 1);
 });
 
 test("a failed Knowledge admission leaves no active file and can be retried", async () => {

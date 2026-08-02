@@ -90,6 +90,9 @@ export interface DerivedOutputService {
   ): Promise<DerivedRefreshResult>;
   recordKnowledgeSourceMutation(mutation: KnowledgeSourceMutation): void;
   delete(id: string): Promise<void>;
+  purge(id: string): Promise<void>;
+  pruneHistory(cutoff: string): Promise<number>;
+  purgeExpired(cutoff: string): Promise<number>;
 }
 
 // ─── Prompts (inline, versioned in code) ────────────────────────────────────
@@ -595,6 +598,7 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
     const output: DerivedOutput = {
       id,
       kind: "prompt",
+      revision: 1,
       definition: {
         prompt: request.prompt,
         contextEntries: request.contextEntries ?? [],
@@ -1053,9 +1057,22 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
 
   async delete(id: string): Promise<void> {
     const start = performance.now();
-    if (!this.store.deleteOutput(id)) throw new DerivedOutputNotFoundError(id);
+    if (this.store.deleteOutput(id, now()) === null) throw new DerivedOutputNotFoundError(id);
     const durationMs = Math.round(performance.now() - start);
     this.logger.info("derived-outputs.delete", { id, durationMs });
+  }
+
+  async purge(id: string): Promise<void> {
+    this.store.purgeOutput(id);
+    this.logger.info("derived-outputs.purge", { id });
+  }
+
+  async pruneHistory(cutoff: string): Promise<number> {
+    return this.store.pruneHistory(cutoff);
+  }
+
+  async purgeExpired(cutoff: string): Promise<number> {
+    return this.store.purgeExpired(cutoff);
   }
 
   // ── Tool Builders ──────────────────────────────────────────────────────

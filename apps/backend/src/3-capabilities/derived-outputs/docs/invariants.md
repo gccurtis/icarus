@@ -14,17 +14,22 @@
 | A failure still owns all fences | Output becomes failed with generic diagnostic; no revision is inserted | Failure transaction |
 | A failure lost a fence | Newer output/freshness is not overwritten | Failure transaction |
 | Successful non-skipped Knowledge mutation event is handled | Generation increments and every output becomes stale atomically in Derived SQLite | Invalidation transaction |
-| Hard delete succeeds | Output, revisions, attempts, and all its claims are removed together | Delete transaction |
+| Logical delete succeeds | Final aggregate snapshot and terminal revision are retained; current Output and operational claims/attempts are removed | Delete transaction and current-row foreign keys |
+| Purge targets a terminally deleted Output | Lifecycle history, stable root, and retained answer revisions are physically removed | Purge guard plus transaction/root cascade |
 
 ## Identity and revision rules
 
 - Output IDs are random 16-byte/32-hex identities.
+- Resource revision starts at 1 and increments for every accepted current-state mutation;
+  logical deletion is terminal resource revision `N + 1`.
 - Definition revision starts at 1 and increments only on accepted complete definition update.
 - Head starts at 0; accepted revisions are 1-based and exactly previous head +1.
 - Immutable revisions are never overwritten or reused while the output exists.
 - Concurrent candidates can propose the same next number, but only one can insert/publish because settlement is immediate and head-guarded.
-- Hard deletion removes history and permits a previously used declaration idempotency key to declare a new output after its claim is removed.
-- Refresh attempt IDs are random 32-hex values; losing/failed attempts remain operational history until output deletion.
+- Logical deletion removes declaration idempotency claims with the current row; it retains
+  answer and lifecycle history until purge.
+- Refresh attempt IDs are random 32-hex values; losing/failed attempts remain operational
+  state only while the Output is current.
 
 ## Scope and retrieval guarantees
 
@@ -59,7 +64,8 @@ The store uses WAL, 5-second busy timeout, and immediate transactions for claims
 - publish revision/head/freshness/attempt/keyed result is one transaction;
 - failure ownership/freshness/attempt/keyed result is one transaction;
 - generation increment/stale-all is one transaction;
-- hard delete is one transaction.
+- logical delete is one history/current transaction;
+- purge is one history/root transaction after its current/terminal guards.
 
 Intelligence, Knowledge, external resource reads, and Derived SQLite do not share a transaction. Correctness is freeze → concurrent compute → compare-and-publish. Token/provider work can be wasted by a lost race, but a loser cannot roll back the winner.
 
@@ -115,8 +121,8 @@ There is no capability-specific maximum prompt, stabilization text, answer text,
 
 ## Regression coverage
 
-[`derived-outputs.test.ts`](../../../../test/capabilities/derived-outputs.test.ts) currently covers no-evidence publication/telemetry; persisted keyed refresh replay, skipped replay, mismatch, and unkeyed repetition; keyed definition replay/mismatch and unkeyed CAS; transactional definition stale marking; hard deletion of history/claims; Knowledge invalidation/generation fencing; one frozen manifest across all tools; real General File/Connector registry mapping/read containment; concurrent refresh winner; old-definition and late-failure races; and untrusted evidence rejection with complete usage accounting.
+[`derived-outputs.test.ts`](../../../../test/capabilities/derived-outputs.test.ts) currently covers no-evidence publication/telemetry; persisted keyed refresh replay, skipped replay, mismatch, and unkeyed repetition; keyed definition replay/mismatch and unkeyed CAS; transactional definition stale marking; current/history logical deletion and purge; Knowledge invalidation/generation fencing; one frozen manifest across all tools; real General File/Connector registry mapping/read containment; concurrent refresh winner; old-definition and late-failure races; and untrusted evidence rejection with complete usage accounting.
 
 ## Non-goals
 
-Current non-goals include auto-refresh scheduling, a second jobs-runtime graph, durable resumable provider stages, fine-grained source→output invalidation, semantic entailment proof, output diffing, rich-text/value/matrix output kinds, automatic adoption by resources, retaining history after delete, Document direct-read registration, end-user authorization, and distributed transactions across Knowledge/Intelligence/resource stores.
+Current non-goals include auto-refresh scheduling, a second jobs-runtime graph, durable resumable provider stages, fine-grained source→output invalidation, semantic entailment proof, output diffing, rich-text/value/matrix output kinds, automatic adoption by resources, history-to-current replay, Document direct-read registration, end-user authorization, and distributed transactions across Knowledge/Intelligence/resource stores.

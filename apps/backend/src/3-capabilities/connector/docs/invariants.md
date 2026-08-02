@@ -13,22 +13,23 @@
 | Sync completes | Entry/items form one SQLite snapshot, state active, source list equals current prose items, revision +1 | Transactional store update |
 | Sync fails after pending | State remains pending or becomes failed; public source list is empty | Reconciliation marker/public filter |
 | Retry starts from pending/failed | All current prose is re-added and all tracked non-current sources are removed before active publication | Forced reconciliation |
-| Delete completes | All tracked Knowledge sources were removed before tombstone | Service ordering + guarded delete |
-| Active deterministic connector is deleted then re-registered | Same ID is restored at prior revision +1 | Store restore transaction |
+| Delete completes | All tracked Knowledge sources were removed; no current row remains; final snapshot and terminal revision are historical | Service ordering + delete transaction |
+| Deleted deterministic connector is registered before purge | Same ID returns at one revision after the terminal history record | History-based allocation |
+| Deleted deterministic connector is registered after purge | Same ID starts again at revision 1 | No allocation history remains |
 
 ## Identity and revision
 
 - Connector ID hashes the exact locator string, not the filesystem-resolved canonical path. Equivalent path spellings can therefore produce different connector IDs.
 - Item source ID hashes the item key under connector ID.
-- Active exact `(providerKind, locator)` uniqueness is enforced by a partial SQLite index.
-- Connector revision starts at 1 and increments on restore or every successful sync.
+- Exact `(providerKind, locator)` uniqueness is enforced in the current table.
+- Connector revision starts at 1, increments on every successful sync, and resumes after the maximum retained history revision when re-registered.
 - `register` of an existing active row does not increment revision.
 - Every item in one connector's Derived resource manifest currently shares connector revision, not its provider revision token.
 - Provider revision tokens govern Knowledge add/upsert and metadata-change detection.
 
 ## Ingestion consistency and atomicity
 
-Entry+item insert/restore/update is atomic inside Connector SQLite. Claim/state/delete guards are atomic individual statements. No transaction spans provider state, Knowledge, and Connector SQLite.
+Entry+item insert/update is atomic inside Connector SQLite. Update archives the previous aggregate snapshot in the same transaction. Logical deletion archives the final aggregate, appends its terminal revision, and removes current state atomically. No transaction spans provider state, Knowledge, and Connector SQLite.
 
 The `active | pending | failed` protocol guarantees visibility of uncertainty, not all-or-nothing distributed rollback:
 
@@ -42,8 +43,8 @@ The `active | pending | failed` protocol guarantees visibility of uncertainty, n
 
 - `setSyncing` is the shared sync/delete claim across manual calls, timer jobs, direct service callers, and processes on the same database.
 - Scheduler claims at enqueue; `sync(id,true)` verifies it remains held.
-- Final snapshot update requires `deleted_at IS NULL AND syncing=1`.
-- Delete also holds the claim through its guarded tombstone write.
+- Final snapshot update requires the expected current revision with `syncing=1`.
+- Delete also holds the claim through its current-to-history transaction.
 - `finally` clears the flag; startup clears flags left by process crashes.
 - In-process timers are not durable job records; a process restart relies on persisted connector config and state, not queued timer work.
 
@@ -94,7 +95,7 @@ Offsets/counts must be safe integers. Byte range is `[start,end)`, within the re
 
 ## Regression coverage
 
-[`connector.test.ts`](../../../../test/capabilities/connector.test.ts) covers absolute list-route registration, extensionless classification, reader bounds/stream UTF-8, prose→other Knowledge removal, failed-sync reconciliation and retry, scheduler startup discovery/recovery, deterministic resurrection, delete/sync race safety, and inline manual-refresh errors.
+[`connector.test.ts`](../../../../test/capabilities/connector.test.ts) covers absolute list-route registration, extensionless classification, reader bounds/stream UTF-8, prose→other Knowledge removal, failed-sync reconciliation and retry, scheduler startup discovery/recovery, deterministic re-registration before and after purge, delete/sync race safety, and inline manual-refresh errors.
 
 ## Non-goals
 

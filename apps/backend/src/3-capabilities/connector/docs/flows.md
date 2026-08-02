@@ -2,7 +2,7 @@
 
 ## Common HTTP behavior
 
-[`registerConnectorEndpoints`](../../../4-job-wiring/connector/registerConnectorEndpointMappings.ts) creates inline jobs. Register, refresh, reads, get, list, and list-items use the concurrent queue. Delete uses the serial queue and also acquires the persisted sync claim, which is the cross-caller concurrency boundary.
+[`registerConnectorEndpoints`](../../../4-job-wiring/connector/registerConnectorEndpointMappings.ts) creates inline jobs. Register, refresh, reads, get, list, and list-items use the concurrent queue. Delete and purge use the serial queue; delete also acquires the persisted sync claim, which is the cross-caller concurrency boundary.
 
 Typed mapping: missing 404; already exists/sync in progress 409; validation/unsupported locator/range 400; other 500. Every caught endpoint error is logged with operation and error metadata.
 
@@ -19,6 +19,7 @@ Typed mapping: missing 404; already exists/sync in progress 409; validation/unsu
 | `POST /connector/read-lines` | `connector.read-lines` | concurrent | `id`, optional `itemKey`, `startLine/endLine` | select reader; `readLines` | 200 `{lines}` |
 | `POST /connector/list-items` | `connector.list-items` | concurrent | body `id` | `getDirectoryReader(id).listItems()` | 200 item array |
 | `POST /connector/delete` | `connector.delete` | serial | body `id` | `service.delete` | 200 `{status:"deleted",id}` |
+| `POST /connector/purge` | `connector.purge` | serial | body `id` | `service.purge` | 204 null |
 
 All are response mode `inline`. Manual refresh no longer acknowledges before work finishes.
 
@@ -35,13 +36,13 @@ sequenceDiagram
   C->>S: find live provider+locator
   alt exists
     C-->>H: already_exists + persisted items
-  else new/tombstoned
+  else no current row
     C->>P: listItems(locator)
     loop prose items
       C->>P: getReader(locator,itemKey)
       C->>K: add deterministic source/revision/text
     end
-    C->>S: transaction insert or restore entry + all items
+    C->>S: transaction insert current entry + all items at next history revision
     alt failure without concurrent winner
       loop sources admitted by this call
         C->>K: best-effort remove
@@ -102,7 +103,9 @@ Scheduled job work returns 200 `{status:"synced"}` internally or catches/logs an
 
 ## Delete sequence
 
-Delete acquires the same claim before awaiting Knowledge, records pending source union, removes every tracked source, and guarded-soft-deletes the claimed live row. A simultaneous sync receives `SyncInProgressError`; a stale sync snapshot cannot use `store.update` to resurrect the deleted row because update requires a live claimed row.
+Delete acquires the same claim before awaiting Knowledge, records the pending source union, and removes every tracked source. The final SQLite transaction writes the complete entry/item snapshot and terminal deletion revision to history, then removes the current entry; item rows cascade with it. A simultaneous sync receives `SyncInProgressError`, and a stale sync snapshot cannot recreate the missing current row because update requires a claimed current revision.
+
+Purge is irreversible and produces no Activity transaction. A live current row returns `409 not_deleted`; a missing terminal history record returns 404. A valid purge removes the Connector history. The backend retention sweep uses the same purge behavior when a terminal deletion is older than the configured cutoff and prunes old history for live Connectors.
 
 ## Read and resource-registry paths
 
