@@ -1,5 +1,33 @@
 # Persona Capability — Design
 
+> **Status: implemented.** This document has been reconciled with what was built.
+> Three shape decisions were changed during implementation, all to follow the
+> `comments` capability, which landed after this design was written and is the
+> newest precedent for how a capability is built here:
+>
+> | This design originally said | What was built | Why |
+> | --- | --- | --- |
+> | Flat shape (files at the capability root, following Structured Data) | **Layered** — `domain/ application/ ports/ persistence/ wire/` | Comments, the newest capability, is layered at a comparable size. Review 001's rule is "layered above a complexity threshold", and a state-carrying capability with a wire decoder is over it. |
+> | Seven REST-ish endpoints (`POST /personas`, `GET /personas/entry`, …) | **`POST /personas/command` + `POST /personas/query`** | The newer house shape, used by Document, Slide, Activity, and Comments. |
+> | No `wire/` package; validation in the service | **A `wire/` package** with `exactKeys` rejecting unknown fields | Review 001 Tier 3: every new capability adopts the decoder pattern from the start. Closes the `Number(undefined) → NaN → misleading 409` defect by construction. |
+> | A synchronous store, matching `DataStore` | **A `Promise`-returning store** | Layered capabilities are async here; flat ones are sync. |
+>
+> Four smaller deviations, each flagged inline in the section it affects:
+>
+> | Section | Deviation |
+> | --- | --- |
+> | Logging | **Three of seven planned events were not built** — `persona.render`, `persona.list`, `persona.get`. Reads are not logged at all. |
+> | Ports | The factory is `createPersonaCapability(store, dependencies)` — two arguments, with limits and clock inside `dependencies`. |
+> | Ports | An injected `PersonaClock` was added; the original design had none. |
+> | Ports | `PersonaContextPort.declare` takes an optional `description` as well as `private`. |
+>
+> Everything else below — the five sections, rendering rules, digests, the private
+> wrapper, the freeze contract, the built-in, the limits, the error table, the
+> queue placement, and the non-goals — was built as written, and every test listed
+> under Testing exists. The authoritative reference for implemented behaviour is
+> now
+> [`apps/backend/src/3-capabilities/persona/docs/`](../apps/backend/src/3-capabilities/persona/docs/).
+
 ## Intent
 
 Persona is a small, project-scoped, regular capability that owns named
@@ -358,6 +386,12 @@ interface UpdatePersonaInput {
 }
 
 interface PersonaCapability {
+  // ── Transport surface (added during implementation) ───────────────────
+  /** Discriminated dispatch for POST /personas/command. Total switch. */
+  command(command: PersonaCommand): Promise<PersonaCommandResult>;
+  /** Discriminated dispatch for POST /personas/query. Total switch. */
+  query(query: PersonaQuery): Promise<PersonaQueryResult>;
+
   // ── Catalog ───────────────────────────────────────────────────────────
   create(input: CreatePersonaInput): Promise<PersonaRecord>;
   get(id: string): Promise<PersonaRecord | undefined>;
@@ -403,7 +437,10 @@ interface PersonaContextPort {
   declare(
     displayName: string,
     entries: ContextEntry[],
-    options?: { readonly private?: boolean }
+    // `description` added during implementation — the wrapper gets a human-readable
+    // blurb ("Private scope wrapper for persona X") so it is self-explaining if
+    // someone lists private records while debugging.
+    options?: { readonly description?: string; readonly private?: boolean }
   ): Promise<{ id: string; revision: number }>;
   update(
     id: string,
@@ -413,15 +450,28 @@ interface PersonaContextPort {
   delete(id: string): Promise<void>;
 }
 
+// As built: limits and clock arrive inside dependencies rather than as extra
+// positional arguments.
 interface PersonaDependencies {
   readonly context: PersonaContextPort;
+  readonly logger: Logger;
+  readonly limits?: PersonaLimits;   // defaults to DEFAULT_PERSONA_LIMITS
+  readonly clock?: PersonaClock;     // defaults to () => new Date().toISOString()
 }
+
+interface PersonaClock { now(): string; }
 ```
 
-`createPersonaCapability(store, dependencies: PersonaDependencies, limits,
-logger)` replaces the earlier `(store, limits, logger)` sketch. This is the
-one runtime dependency this design adds relative to the original draft,
-which claimed none — see "The private wrapper" above for why.
+**Changed during implementation:** the factory is
+`createPersonaCapability(store, dependencies)` — two arguments, not the
+`(store, dependencies, limits, logger)` this section originally sketched.
+
+The injected `PersonaClock` was not in the original design. It follows Activity
+and Comments, and `08-conventions.md` calls it the better pattern than a
+module-level `now()`: it is what makes timestamps assertable in tests.
+
+Context is the one runtime dependency this design adds relative to the original
+draft, which claimed none — see "The private wrapper" above for why.
 
 Only `create`, `update`, and `delete` touch this port. `resolve`, `render`,
 `get`, `getByName`, and `list` never call it — they read the wrapper id and
@@ -594,7 +644,12 @@ CREATE TABLE IF NOT EXISTS psn_${prefix}_personas (
   revision           INTEGER NOT NULL DEFAULT 1,
   created_at         TEXT    NOT NULL,
   updated_at         TEXT    NOT NULL,
-  deleted_at         TEXT
+  deleted_at         TEXT,
+  -- Added during implementation: makes "a context with no wrapper"
+  -- unrepresentable, so the pairing invariant is enforced by the database
+  -- rather than only by the service.
+  CHECK ((context_json IS NULL AND context_wrapper_id IS NULL)
+      OR (context_json IS NOT NULL AND context_wrapper_id IS NOT NULL))
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS psn_${prefix}_personas_name_live_nocase
@@ -618,26 +673,50 @@ place of `context_json` on a read.
 Delete is a soft delete. It frees the display name for reuse immediately, since
 the unique index is partial on `deleted_at IS NULL`.
 
-The store is synchronous, matching `DataStore` and `ContextStore`; the
-capability interface is `Promise`-returning, matching `StructuredData`.
+**Changed during implementation:** the store port is `Promise`-returning, not
+synchronous. Layered capabilities here (Document, Slide, Activity, Comments) use
+async store ports; the sync ones are all flat. The SQLite implementation
+underneath is still synchronous.
+
+The schema is created by `persistence/sqliteSchema.ts`, which opens with the four
+standard pragmas (`journal_mode = WAL`, `foreign_keys = ON`,
+`busy_timeout = 5000`, `synchronous = NORMAL`) — the Comments/Document pattern,
+rather than Context's single WAL pragma.
 
 ## Endpoints
 
-No path parameters — ids travel in query or body.
+No path parameters — the backend's `getEndpointKey` is exact string equality, so
+ids travel in the body.
 
-| Method | Path | Params |
-| --- | --- | --- |
-| POST | `/personas` | body `{displayName, description?, definition}` |
-| GET | `/personas` | — live records, name-sorted |
-| GET | `/personas/entry` | query `?id=` |
-| GET | `/personas/by-name` | query `?displayName=` |
-| PATCH | `/personas` | body `{id, expectedRevision, displayName?, description?, definition?}` |
-| DELETE | `/personas` | body `{id, expectedRevision}` |
-| POST | `/personas/render` | body `{definition, sections?}` |
+**Changed during implementation.** This design originally specified seven REST-ish
+endpoints; the built shape is the command/query pair used by Document, Slide,
+Activity, and Comments.
 
-`POST /personas/render` is the authoring preview. It is pure and saves nothing,
-and it lets the UI show an author the exact text a task would receive, for a
-definition that has not been created yet.
+| Method | Path | Queue | Body |
+| --- | --- | --- | --- |
+| POST | `/personas/command` | serial | `persona.create` \| `persona.update` \| `persona.delete` |
+| POST | `/personas/query` | concurrent | `persona.get` \| `persona.getByName` \| `persona.list` \| `persona.render` |
+
+```jsonc
+{ "type": "persona.create", "displayName": "…", "description": "…", "definition": { … } }
+{ "type": "persona.update", "id": "…", "expectedRevision": 1, "definition": { … } }
+{ "type": "persona.delete", "id": "…", "expectedRevision": 1 }
+
+{ "type": "persona.get", "id": "…" }
+{ "type": "persona.getByName", "displayName": "…" }
+{ "type": "persona.list" }
+{ "type": "persona.render", "definition": { … }, "sections": ["focus"] }
+```
+
+`persona.render` is the authoring preview. It is pure and saves nothing, and it
+lets the UI show an author the exact text a task would receive, for a definition
+that has not been created yet. It sits on the **query** side precisely because it
+writes nothing.
+
+Commands are serial because create, update, and delete each read-then-write
+across the store *and* the Context port — the store cannot enforce that on its
+own, which is the same reasoning that puts Document and Slide commands on the
+serial queue.
 
 **There is deliberately no `resolve` endpoint.** Consumers are in-process and
 call the capability directly. Exposing snapshot resolution over the wire would
@@ -646,7 +725,7 @@ the consumer's job and happens in the consumer's transaction.
 
 ## Errors
 
-Naming follows Structured Data's flat-capability convention.
+One class per distinguishable failure, in `domain/errors.ts`.
 
 ```ts
 class PersonaNotFoundError      extends Error { readonly personaId: string }
@@ -660,7 +739,14 @@ class PersonaValidationError    extends Error {
   readonly field: string;
   readonly reason: string;
 }
+// Added during implementation:
+class BuiltInPersonaImmutableError extends Error { readonly personaId: string }
+class PersonaWireError             extends Error {}
 ```
+
+`BuiltInPersonaImmutableError` exists because mutating `builtin:default` is a
+caller error rather than a missing record — reporting it as 404 would be a lie,
+since the persona is right there and resolvable.
 
 Domain throws typed errors and never mentions a status code. Job wiring maps
 them:
@@ -670,7 +756,8 @@ them:
 | `PersonaNotFoundError` | 404 | `persona_not_found` |
 | `PersonaConflictError` | 409 | `persona_name_conflict` |
 | `StalePersonaRevisionError` | 409 | `persona_revision_conflict` |
-| `PersonaValidationError` | 400 | `persona_invalid` |
+| `BuiltInPersonaImmutableError` | 409 | `persona_builtin_immutable` |
+| `PersonaValidationError` / `PersonaWireError` | 400 | `persona_invalid` |
 
 ### Validation at ingress
 
@@ -705,19 +792,34 @@ queue, no new job, no new queue.
 
 ## Logging
 
+Four events are implemented:
+
 ```text
 persona.create   info   { personaId, revision, definitionDigest, sectionCount, hasContext, durationMs }
 persona.update   info   { personaId, revision, definitionDigest, digestChanged, durationMs }
 persona.delete   info   { personaId, revision, durationMs }
 persona.resolve  debug  { personaId, revision, definitionDigest, promptDigest, sectionCount, promptChars, hasContext, durationMs }
-persona.render   debug  { sectionCount, promptChars, promptDigest, durationMs }
-persona.list     debug  { count, durationMs }
-persona.get      debug  { personaId, found, durationMs }
 ```
 
-Section text, rendered prompts, and descriptions never appear in a log record.
-`promptDigest` exists so two runs can be compared for identical prompt bytes
-without ever writing those bytes to the log.
+**Changed during implementation — three planned events were not built:**
+
+```text
+persona.render   debug  { sectionCount, promptChars, promptDigest, durationMs }   ← NOT implemented
+persona.list     debug  { count, durationMs }                                     ← NOT implemented
+persona.get      debug  { personaId, found, durationMs }                          ← NOT implemented
+```
+
+The reasoning was that reads are cheap and frequent and a line per catalog read
+is noise. That is a judgment call, not a consequence of any house rule, and it
+cuts against Context, which *does* log `context.get` and `context.list` at debug.
+Adding the three back is a few lines each if read-path observability turns out to
+matter — `persona.render` is the most defensible of the three, since it is the
+authoring-preview path and its usage is otherwise invisible.
+
+Section text, rendered prompts, display names, and descriptions never appear in a
+log record. `promptDigest` exists so two runs can be compared for identical
+prompt bytes without ever writing those bytes to the log. There is a regression
+test asserting this.
 
 ## Testing
 
@@ -829,35 +931,39 @@ every future consumer:
 The same shape applies to Agents later: a task pins the snapshot at creation,
 and every run of that task uses the pinned copy rather than re-resolving.
 
-## Implementation plan
+## Implementation plan — done
 
-1. **Pure domain first.** `types.ts`, `canonical.ts`, `render.ts`,
-   `validation.ts`, and the built-in constant. No I/O, no store, no logger.
-   Every rule in the Rendering and Validation sections becomes a test before
-   the code exists.
+All five steps landed. The as-built layout, following `comments`:
 
-2. **Store port and SQLite adapter.** `store.ts` and `sqlite-store.ts` with the
-   schema above (including `context_wrapper_id` / `context_wrapper_revision`),
-   revision compare-and-swap on update and delete, soft delete, and
-   case-insensitive live-name uniqueness.
+```text
+3-capabilities/persona/
+  index.ts
+  domain/       model.ts errors.ts canonical.ts render.ts validation.ts builtin.ts
+  application/  personaService.ts
+  ports/        personaStore.ts personaContext.ts
+  persistence/  sqliteSchema.ts sqlitePersonaStore.ts
+  wire/         common.ts commandSchemas.ts querySchemas.ts
+  docs/         README concepts types runtime flows invariants
+4-job-wiring/persona/registerPersonaEndpoints.ts
+1-init/create/persona.ts
+```
 
-3. **Capability service.** `persona.ts` with `createPersonaCapability(store,
-   dependencies, limits, logger)`, the built-in fallback, the private-wrapper
-   lifecycle in create/update/delete (see "The private wrapper" and Ports),
-   limit enforcement, and the logging above. Needs the Context `private` flag
-   change (`scratch/context-persona-update.md`) landed first or alongside.
+`createPersonaCapability(store, dependencies)` — limits and clock arrive inside
+`dependencies` rather than as separate positional arguments, matching Comments.
+The Context `private` flag this depends on (`scratch/context-persona-update.md`)
+landed first.
 
-4. **Wiring.** `4-job-wiring/persona/registerPersonaEndpoints.ts`, error-to-code
-   mapping, `1-init/create/persona.ts` (passes the already-constructed
-   `ContextManager` in as `dependencies.context` — Context is already built
-   earlier in `startBackend`'s existing order, so no reordering is needed),
-   and `#persona` / `#persona/*` aliases with explicit `development`, `types`,
-   and compiled `default` conditions.
+Tests: `test/capabilities/persona.test.ts` (28) and
+`test/capabilities/persona-wiring.test.ts` (8).
 
-5. **Docs package.** `docs/` beside the module with the six standard files, and
-   a "Status and authority" section in `README.md` stating plainly that
-   `docs/capabilities-old/persona.md` describes a Library-kernel design that was
-   not built and must not be read as current behaviour.
+### Two implementation notes worth carrying forward
+
+- **Limits live in `domain/validation.ts` as `DEFAULT_PERSONA_LIMITS`, not in
+  `etc/configuration.yaml`.** This follows Comments and diverges from the older
+  capabilities. Adding a `persona:` config section later is a ~3-line change.
+- **No command-receipts table.** Comments carries one because its commands are
+  externally retried. Persona's update and delete are naturally idempotent under
+  revision CAS, and create is not replayed.
 
 ## Known limitations
 
