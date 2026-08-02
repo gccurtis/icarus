@@ -6,6 +6,7 @@ import type {
   ResourceReader
 } from "#derived-outputs";
 import type { GeneralFile, GeneralFileService } from "#general-files";
+import type { Finding, InvestigationRuntime } from "#investigation";
 import type { Logger } from "#platform/observability/logger.js";
 import type {
   ContextEntry,
@@ -15,6 +16,7 @@ import type {
 
 const GENERAL_FILE_SOURCE_PREFIX = "general-file:";
 const CONNECTOR_SOURCE_PREFIX = "connector:";
+const FINDING_SOURCE_PREFIX = "finding:";
 
 const isGeneralFileKind = (kind: string): boolean =>
   kind.startsWith("general::file::") || kind === "general-file";
@@ -49,11 +51,13 @@ export type RuntimeResourceRegistry = ResourceReader &
   KnowledgeResourceResolver & {
     registerGeneralFiles(service: GeneralFileService): void;
     registerConnector(service: ConnectorService): void;
+    registerInvestigation(runtime: InvestigationRuntime): void;
   };
 
 class ResourceRegistry implements RuntimeResourceRegistry {
   private generalFiles?: GeneralFileService;
   private connector?: ConnectorService;
+  private investigation?: InvestigationRuntime;
 
   constructor(
     private readonly contexts: ContextManager,
@@ -68,6 +72,10 @@ class ResourceRegistry implements RuntimeResourceRegistry {
     this.connector = service;
   }
 
+  registerInvestigation(runtime: InvestigationRuntime): void {
+    this.investigation = runtime;
+  }
+
   /** Expand nested Contexts, then map every known resource to Knowledge IDs. */
   async resolve(entries: ContextEntry[]): Promise<ContextEntry[]> {
     const leaves = await this.contexts.resolve(entries);
@@ -76,6 +84,12 @@ class ResourceRegistry implements RuntimeResourceRegistry {
     for (const entry of leaves) {
       if (entry.kind === "document") {
         sourceIds.add(entry.id);
+        continue;
+      }
+
+      const finding = await this.findFinding(entry.id, entry.kind);
+      if (finding?.status === "accepted" && finding.knowledgeSourceId) {
+        sourceIds.add(finding.knowledgeSourceId);
         continue;
       }
 
@@ -106,6 +120,15 @@ class ResourceRegistry implements RuntimeResourceRegistry {
   }
 
   async describeSource(sourceId: string): Promise<ResourceDescriptor | null> {
+    const finding = await this.findFindingBySource(sourceId);
+    if (finding) {
+      return {
+        sourceId,
+        resourceId: finding.id,
+        resourceKind: "finding"
+      };
+    }
+
     const generalFile = this.findGeneralFileBySource(sourceId);
     if (generalFile) {
       return {
@@ -152,6 +175,20 @@ class ResourceRegistry implements RuntimeResourceRegistry {
     if (!descriptor) {
       this.logger.debug("resources.read.denied", { resourceId, resourceKind });
       return null;
+    }
+
+    const finding = await this.findFindingBySource(descriptor.sourceId);
+    if (
+      finding &&
+      finding.id === descriptor.resourceId &&
+      descriptor.resourceKind === "finding"
+    ) {
+      return {
+        resourceId: finding.id,
+        resourceKind: "finding",
+        text: sliceLines(finding.claim, startLine, endLine),
+        byteSize: Buffer.byteLength(finding.claim, "utf8")
+      };
     }
 
     const generalFile = this.findGeneralFileBySource(descriptor.sourceId);
@@ -272,6 +309,37 @@ class ResourceRegistry implements RuntimeResourceRegistry {
     }
 
     return { entry };
+  }
+
+  private async findFinding(id: string, kind: string): Promise<Finding | null> {
+    if (!this.investigation || (kind !== "finding" && !id.startsWith(FINDING_SOURCE_PREFIX))) {
+      return null;
+    }
+    const findingId = id.startsWith(FINDING_SOURCE_PREFIX)
+      ? id.slice(FINDING_SOURCE_PREFIX.length)
+      : id;
+    try {
+      return await this.investigation.getFinding(findingId);
+    } catch {
+      return null;
+    }
+  }
+
+  private async findFindingBySource(sourceId: string): Promise<Finding | null> {
+    if (!this.investigation || !sourceId.startsWith(FINDING_SOURCE_PREFIX)) {
+      return null;
+    }
+    let finding: Finding | null;
+    try {
+      finding = await this.investigation.getFinding(
+        sourceId.slice(FINDING_SOURCE_PREFIX.length)
+      );
+    } catch {
+      return null;
+    }
+    return finding?.status === "accepted" && finding.knowledgeSourceId === sourceId
+      ? finding
+      : null;
   }
 }
 

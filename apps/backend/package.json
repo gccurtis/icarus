@@ -123,6 +123,16 @@
       "development": "./src/3-capabilities/connector/*",
       "types": "./src/3-capabilities/connector/*",
       "default": "./dist/3-capabilities/connector/*"
+    },
+    "#investigation": {
+      "development": "./src/3-capabilities/investigation/index.ts",
+      "types": "./src/3-capabilities/investigation/index.ts",
+      "default": "./dist/3-capabilities/investigation/index.js"
+    },
+    "#investigation/*": {
+      "development": "./src/3-capabilities/investigation/*",
+      "types": "./src/3-capabilities/investigation/*",
+      "default": "./dist/3-capabilities/investigation/*"
     }
   },
   "scripts": {

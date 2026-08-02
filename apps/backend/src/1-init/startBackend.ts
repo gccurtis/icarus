@@ -24,6 +24,7 @@ import { createResourceReader } from "#init/create/resource-reader.js";
 import { createDocumentInstance } from "#init/create/document.js";
 import { createSlideInstance } from "#init/create/slide.js";
 import { createActivityInstance } from "#init/create/activity.js";
+import { createInvestigationRuntimeInstance } from "#init/create/investigation.js";
 import { SchedulerInternalJobsRuntime } from "#utils/jobs/internalRuntime.js";
 import type { DocumentInternalJobIntent } from "#document";
 import type { SlideInternalJobIntent } from "#capabilities/slide/index.js";
@@ -32,6 +33,7 @@ import { registerDocumentInternalJobs } from "#job-wiring/document/registerDocum
 import { registerSlideEndpoints } from "#job-wiring/slide/registerSlideEndpoints.js";
 import { registerSlideInternalJobs } from "#job-wiring/slide/registerSlideInternalJobs.js";
 import { registerActivityEndpoints } from "#job-wiring/activity/registerActivityEndpoints.js";
+import { registerInvestigationEndpoints } from "#job-wiring/investigation/registerInvestigationEndpoints.js";
 
 export const startBackend = async (): Promise<void> => {
   const config = await createConfig();
@@ -53,6 +55,8 @@ export const startBackend = async (): Promise<void> => {
       logger,
       resourceRegistry
     );
+    const investigation = createInvestigationRuntimeInstance(config, knowledge, logger);
+    resourceRegistry.registerInvestigation(investigation);
     const formula = createFormula(config, logger);
     const structuredData = createStructuredDataInstance(config, logger);
     const formulaResolver = createFormulaNameResolver(formula, structuredData, logger, {
@@ -113,6 +117,7 @@ export const startBackend = async (): Promise<void> => {
       intelligenceModel: config.intelligence.embedding.model,
       intelligenceReady: Boolean(intelligence),
       knowledgeReady: Boolean(knowledge),
+      investigationReady: Boolean(investigation),
       formulaReady: Boolean(formula),
       structuredDataReady: Boolean(structuredData),
       formulaResolverReady: Boolean(formulaResolver),
@@ -133,6 +138,7 @@ export const startBackend = async (): Promise<void> => {
     registerGeneralFileEndpoints(registry, generalFiles, logger);
     registerConnectorEndpoints(registry, connector, logger);
     registerActivityEndpoints(registry, activity, logger);
+    registerInvestigationEndpoints(registry, investigation, logger);
     registerDocumentEndpoints(registry, document, logger);
     registerSlideEndpoints(registry, slide, logger);
 
