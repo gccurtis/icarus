@@ -143,24 +143,33 @@ Meaning comes from one deterministic function, `compile: definition → formula`
 and a pull compiles and evaluates rather than interpreting.
 
 ```text
-DISPLAY(LIMIT(SORT(GROUP(JOIN(ASTABLE(Orders,…), ASTABLE(Reps,…), …)
-        .{ c3 = "closed" }, …), …), 10), "bar")
+DISPLAY(LIMIT(SORT(GROUP(WHERE(JOIN(ASTABLE(Orders,"Orders"), ASTABLE(Reps,"Reps"), …),
+        { all: [{ field: "Orders.status", op: "equals", value: "closed" }] }),
+        { keys: ["Orders.region"],
+          aggregates: [{ as: "Total", field: "Orders.amount", fn: "sum" }] }),
+        [{ field: "Total", direction: "desc" }]), 10), "bar")
 ```
 
-Seven new Formula builtins carry it — `ASTABLE`, `JOIN`, `GROUP`, `AGGREGATE`,
-`SORT`, `LIMIT`, `DISPLAY` — each independently useful to a formula author.
-Filters reuse the existing `.{…}` condition query. Full mapping, worked example,
-and the builtin specs are in [compilation.md](compilation.md).
+Eight new Formula builtins carry it — `ASTABLE`, `JOIN`, `WHERE`, `GROUP`,
+`AGGREGATE`, `SORT`, `LIMIT`, `DISPLAY` — plus backtick-quoted names so a table
+called `Q3 Orders` is referenceable at all. Each is independently useful to a
+formula author. Options are records with per-key defaults. Full mapping, the
+research that shaped it, and the builtin specs are in
+[compilation.md](compilation.md).
 
-Three things follow:
+Four things follow:
 
 - **There is no second evaluator.** No parallel semantics to keep in sync, and
   exact rational arithmetic is Formula's, not a reimplementation.
 - **Compilation is one-way.** The definition stays canonical; the expression is
-  derived, never persisted, and re-derived whenever it is wanted.
+  derived, never persisted, and re-derived whenever it is wanted. That is why a
+  pull returns the definition alongside the data — a pill editor cannot recover
+  it from the result.
 - **A formula can return a chart.** `DISPLAY` yields a table carrying rendering
   intent, which is what makes "any display can be used as a table" true by
   construction rather than by a conversion rule.
+- **Compiled columns are readable** — `Orders.region`, `Total` — which is what
+  makes a compiled analytic worth saving into the project.
 
 One pull evaluates against **one** `FormulaResolverSnapshot`, so a two-input
 analytic can never combine data from two different project states. If the
@@ -190,7 +199,9 @@ The capability has:
 - one `StructuredAnalyticCapability` runtime;
 - one current-state SQLite table plus the shared resource-history table;
 - one pure compiler;
-- two endpoints — one command, one query; and
+- two endpoints — one command, one query;
+- two ways to become project data — `save` (live, a formula-backed entry) and
+  `copy` (frozen, a literal table); and
 - no internal jobs, attempts, or background work of its own beyond the
   process-wide retention sweep every capability joins.
 
@@ -203,7 +214,7 @@ The capability has:
 | [store.md](store.md) | Current-state table, revision CAS, history, delete, purge, retention |
 | [operations.md](operations.md) | Runtime methods, validation split, the two endpoints, freshness, errors, logging |
 | [file-architecture.md](file-architecture.md) | Code layout, composition, adapter, and tests |
-| [derived-tables.md](derived-tables.md) | **Open direction** — an analytic as project data, and compiling the recipe to a formula |
+| [derived-tables.md](derived-tables.md) | `save` and `copy` — an analytic as a live or frozen Structured Data entry |
 | [supplementary-changes.md](supplementary-changes.md) | Changes wanted in Formula and Structured Data, and why |
 
 The implementation plan lives at
