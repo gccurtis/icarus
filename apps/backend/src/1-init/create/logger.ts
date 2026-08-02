@@ -1,4 +1,5 @@
-import { appendFileSync, mkdirSync } from "node:fs";
+import { mkdirSync, createWriteStream } from "node:fs";
+import type { WriteStream } from "node:fs";
 import { join } from "node:path";
 import type { BackendConfig } from "#utils/config/loadBackendConfig.js";
 import { FileLogger, NoopLogger } from "#platform/observability/logger.js";
@@ -24,14 +25,41 @@ export const createLogger = (config: BackendConfig): Logger => {
   // Ensure the directory exists before the first write attempt.
   mkdirSync(dir, { recursive: true });
 
-  // Keep one sync append-write per entry. For a future high-throughput version
-  // this can be swapped for a buffered write-stream without touching the Logger
-  // interface or any call site.
-  const writeEntry = (entry: LogEntry): void => {
-    const line = JSON.stringify(entry) + "\n";
-    const path = join(dir, dailyFileName());
-    appendFileSync(path, line, "utf-8");
+  // One write stream per day, reopened on rollover. A stream buffers writes
+  // internally instead of the previous per-entry blocking appendFileSync, so
+  // dense logging (e.g. per-attempt lifecycle events) no longer puts a
+  // synchronous disk write directly on the request path.
+  let currentFileName = "";
+  let stream: WriteStream | undefined;
+
+  const streamForToday = (): WriteStream => {
+    const fileName = dailyFileName();
+    if (fileName !== currentFileName || !stream) {
+      stream?.end();
+      currentFileName = fileName;
+      stream = createWriteStream(join(dir, fileName), { flags: "a", encoding: "utf-8" });
+      // A sink failure must not throw into a capability call. The bounded
+      // fallback signal is stderr; the domain result is never affected.
+      stream.on("error", (error) => {
+        process.stderr.write(`logger: write stream error: ${String(error)}\n`);
+      });
+    }
+    return stream;
   };
 
-  return new FileLogger(dir, config.logging.level as LogLevel, writeEntry);
+  const writeEntry = (entry: LogEntry): void => {
+    const line = JSON.stringify(entry) + "\n";
+    streamForToday().write(line);
+  };
+
+  const closeWriter = async (): Promise<void> => {
+    if (!stream) return;
+    const active = stream;
+    stream = undefined;
+    await new Promise<void>((resolve) => {
+      active.end(() => resolve());
+    });
+  };
+
+  return new FileLogger(dir, config.logging.level as LogLevel, writeEntry, closeWriter);
 };

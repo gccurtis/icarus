@@ -25,6 +25,12 @@ export interface Logger {
   info(message: string, data?: unknown): void;
   warn(message: string, data?: unknown): void;
   error(message: string, data?: unknown): void;
+  /**
+   * Flush and release any buffered writes. Optional because most Logger
+   * implementations (NoopLogger, test doubles) hold nothing to flush.
+   * Shutdown calls this on whatever Logger was constructed.
+   */
+  close?(): Promise<void>;
 }
 
 /** Returned when logging is disabled. Every method is a no-op. */
@@ -38,6 +44,9 @@ export class NoopLogger implements Logger {
 /**
  * Writes JSON-line entries to a daily log file in the configured directory.
  * One line per entry: {"timestamp":"…","level":"info","message":"…","data":{…}}
+ *
+ * Writes are buffered by the caller-supplied `writeEntry`/`closeWriter` pair
+ * rather than one blocking write per entry — see 1-init/create/logger.ts.
  */
 export class FileLogger implements Logger {
   private readonly minLevel: number;
@@ -45,9 +54,14 @@ export class FileLogger implements Logger {
   constructor(
     private readonly directory: string,
     private readonly level: LogLevel,
-    private readonly writeEntry: (entry: LogEntry) => void
+    private readonly writeEntry: (entry: LogEntry) => void,
+    private readonly closeWriter?: () => Promise<void>
   ) {
     this.minLevel = LOG_LEVEL_RANK[level];
+  }
+
+  async close(): Promise<void> {
+    await this.closeWriter?.();
   }
 
   debug(message: string, data?: unknown): void {

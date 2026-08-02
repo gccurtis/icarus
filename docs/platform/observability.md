@@ -120,6 +120,44 @@ Logger adapters catch sink failures, expose a bounded fallback signal on standar
 - Deferred Jobs expose response-ready and final outcome as separate events.
 - Provider calls report route and usage metadata without request or response content.
 - Sink failure produces a bounded fallback signal and preserves the caller result.
+## Logging practice
+This section states the *practice* every capability follows, distinct from the interface
+and ownership boundary above. It exists here rather than as a separate page so there is one
+place, not a fourth, for this content to drift.
+
+- **The expectation.** Every capability logs every accepted mutation, every rejected
+  command, every query, its construction, and its endpoint registration. Observability is
+  not optional polish. **Activity and Comments are the reference implementations** —
+  see `activityService.ts` for the full lifecycle shape (`.runtime.created`,
+  `.transaction.accepted`, `.query.completed`, presence heartbeat/leave/expiry, and their
+  paired `.failed` events).
+- **Event naming.** `dot.separated.lowercase`, `<capability>.<subject>.<outcome>`. Recurring
+  vocabulary: `.runtime.created`, `.endpoints.registered`, `.command.completed`,
+  `.command.failed`, `.query.completed`, `.read`, `.listed`.
+- **Levels.** `debug` for per-operation timing and reads; `info` for lifecycle and accepted
+  mutations; `warn` for expected-but-notable outcomes; `error` for unexpected failures only.
+  Expected 4xx are **not** error-logged; only `>= 500` is.
+- **Required fields.** A flat object with stable keys. Carry `requestId` or `jobId` for
+  correlation, `durationMs` from `performance.now()`, and `errorName` + `errorMessage` on
+  errors.
+- **Never logged.** User content, prompts, provider bodies, Formula source, persona section
+  text, comment bodies. Log **digests, ids, counts, and outcomes** instead — this is why
+  digests are carried on records in the first place.
+- **Never `console.*`.** A workspace test enforces this; use the injected `Logger` only.
+- **Testing.** Inject `CapturingLogger` (`apps/backend/test/helpers/testDoubles.ts`) and
+  assert on its `entries` array. This is the standard way to regression-test a logging rule
+  without asserting on file contents.
+- **The writer is buffered, not per-entry synchronous.** An earlier version of this
+  component wrote one blocking `appendFileSync` per log entry. Once capabilities began
+  logging densely (attempt lifecycles, per-query events), that per-entry disk write sat
+  directly on the request path. The file adapter now batches writes through a stream and
+  flushes on `close()` during shutdown, so "log as much as the practice above asks for" and
+  "logging is cheap" are no longer in tension.
+
+This checklist is advisory, not enforced by a gate — there is no source-scanning test
+requiring these events to exist. New capabilities should follow it deliberately rather than
+because CI demands it.
+
 ## Sources
 - [Icarus Logger implementation](https://github.com/gccurtis/icarus/blob/main/apps/backend/src/0-platform/observability/logger.ts)
 - [Icarus Logger construction](https://github.com/gccurtis/icarus/blob/main/apps/backend/src/1-init/create/logger.ts)
