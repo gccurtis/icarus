@@ -124,7 +124,8 @@ revision to go back and look at. A revision is an address; a digest is a boolean
 nobody can act on. The known gap — a formula-backed entry's revision not moving
 when its inputs move — is fixed properly by propagating revisions through the
 dependency graph in Structured Data, tracked in
-[`0-general-updates.md` item 17](../0-general-updates.md).
+the "Structured Data revisions should propagate to dependents" item in
+[`0-general-updates.md`](../0-general-updates.md).
 
 A pull is always fresh. **Staleness is a property of a pull someone is still
 holding, not of the analytic**, so `analytic.check` re-reads metadata cheaply and

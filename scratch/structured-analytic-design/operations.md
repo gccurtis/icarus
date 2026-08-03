@@ -227,8 +227,9 @@ One honest limit, which is the same gap named in
 a formula-backed entry's revision does not move when its own inputs move, so a
 check can report "unchanged" for `Total = SUM(Orders.amount)` while the number
 has changed. The fix is revision propagation in Structured Data, tracked in
-[`0-general-updates.md` item 17](../0-general-updates.md). Until then a check is a
-reliable *changed* signal and an imperfect *unchanged* one.
+the "Structured Data revisions should propagate to dependents" item in
+[`0-general-updates.md`](../0-general-updates.md). Until then a check is
+a reliable *changed* signal and an imperfect *unchanged* one.
 
 ### What is deliberately not built
 
