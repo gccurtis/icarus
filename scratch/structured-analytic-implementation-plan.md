@@ -19,7 +19,7 @@ The work has two halves, and the first is the larger one:
    analytic into project data.
 
 **Scope boundary.** This plan does not implement revision propagation in
-Structured Data — that is item 17 in
+Structured Data — that is item 19 in
 [`0-general-updates.md`](0-general-updates.md) and is independent of this work.
 
 ### Definition of done

@@ -15,7 +15,7 @@ reference points at does not move.
 
 **Revisions in the receipt are read revisions, not propagated ones.** Structured
 Data does not yet propagate a revision bump from an entry to the formulas that
-depend on it — that is item 17 in
+depend on it — that is item 19 in
 [`0-general-updates.md`](../../../../../../scratch/0-general-updates.md). So a
 pull's `sources[].revision` is the revision of the entry it read, and a `check`
 comparing those revisions detects a change to a *directly named* input. It does
