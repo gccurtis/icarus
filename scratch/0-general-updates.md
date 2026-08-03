@@ -31,6 +31,7 @@ Items 15 and 16 are **Phase C** of the Templates/Document work and are ticked in
 | 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | agreed — sweep needed |
 | 19 | [Structured Data revisions should propagate to dependents](#19--structured-data-revisions-should-propagate-to-dependents) | agreed — explore |
 | 20 | [Quoted names — decide whether we actually want them](#20--quoted-names--decide-whether-we-actually-want-them) | **decision needed** — default no |
+| 21 | [Log content in dev, shape in production, behind a label](#21--log-content-in-dev-shape-in-production-behind-a-label) | agreed — wanted soon |
 | R | [Reference: delegated command claims](#reference--delegated-command-claims-removed-2026-08-02) | ✅ **REMOVED 2026-08-02** |
 
 Items 7–10 correct Templates, which is **already implemented and green** (254 tests). They
@@ -1068,6 +1069,58 @@ it is a handful of lines in `lexer.ts` plus its tests. If the answer becomes yes
 `FORMULA_IDENTIFIER` is the only remaining change, because the lexer half already landed.
 
 Either way this is a decision to make deliberately, not to discover.
+
+---
+
+## 21 · Log content in dev, shape in production, behind a label
+
+**Agreed, wanted soon.** Today's convention is that logs carry *shape only* —
+counts, enums, ids, durations — and never names, titles, field values, or rows.
+Several capabilities have regression tests asserting exactly that.
+
+That is the right rule for a production build and the **wrong** rule for the one
+we are actually running. While building, content in the log is the fastest way to
+see what happened, and it exposes problems earlier and more reliably than tests
+do. We should be logging as much as we can, content included.
+
+### The shape of the change
+
+Do not solve this by loosening the existing rule, which would leave nothing to
+tighten later. Instead, **label what a record carries** and let configuration
+decide which labels are written:
+
+```text
+logger.debug("structured-analytic.definition.validated", data, { detail: "shape" })
+logger.debug("structured-analytic.definition.source",    data, { detail: "content" })
+```
+
+- A `logging.detail` configuration value selects which labels are recorded —
+  something like `shape` for production and `content` (meaning everything) for
+  development, defaulting to the developer-friendly setting.
+- Migration is then mechanical: the switch from dev to production is one config
+  value, not an audit of every call site.
+
+Open questions worth settling when this is picked up:
+
+- **What is the label vocabulary?** `shape` and `content` is the minimum. A third
+  for identifiers that are sensitive-but-useful (actor ids, project ids) may earn
+  its place; more than three probably will not.
+- **Where does the label live** — a third argument, a field inside `data`, or a
+  distinct method? A third argument keeps `data` clean and stays additive.
+- **What happens to the existing no-content tests?** They should assert the
+  *production* setting still redacts, rather than being deleted.
+
+### Sequencing
+
+**Additive first, migrate second.** Add the optional label and the config value
+without changing any existing call site; every current call keeps its meaning and
+defaults to the label it already implies. Capabilities then adopt content logging
+one at a time.
+
+Deliberately **not** being done inside the Structured Analytic branch: touching
+the shared `Logger` while several capabilities are in flight invites conflicts
+for no benefit. That work logs shape only for now and will migrate with everyone
+else.
 
 ---
 
