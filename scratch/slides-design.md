@@ -331,11 +331,16 @@ attempt is still live.
 Two endpoints, matching Document: `POST /slides/command` (serial) and
 `POST /slides/query` (concurrent).
 
+There is no request ID on the envelope. Every mutating command carries
+`expectedRevision`, so a duplicate arrives holding a revision the head has
+already passed and is told so — the compare-and-set *is* the retry guard, and a
+receipt keyed by request ID would only answer the same question twice.
+
 ```ts
 interface SlideCommandRequest {
-  requestId: string;
   /** Slides keeps its own vocabulary; the 1-init adapter maps it to Activity's. */
   origin: SlideOrigin;
+  actorId?: string;
   command: SlideCommand;
 }
 
@@ -380,8 +385,10 @@ type PromptCreateTarget =
 ```
 
 `deck.create` allocates the Deck ID and its first Slide; the caller supplies no
-identifiers for things that do not exist yet. Replay safety comes from a
-`requestId`-keyed create receipt, as `document.create` does.
+identifiers for things that do not exist yet. It is the one command with no
+revision to compare against, so a retry makes a second Deck. That is accepted
+rather than engineered around: the duplicate is visible in `deck.list`, where a
+caller can see it and delete it.
 
 `deck.delete` is terminal and distinct from `set-lifecycle → trashed`, which is
 reversible. Prompt outputs are detached, not destroyed — Derived Outputs owns
@@ -395,13 +402,15 @@ IDs.
 ## Persistence
 
 Own SQLite file `./data/slides.db`, project-hashed table prefix, Base +
-append-only ChangeSets — Document's model exactly. Tables: `decks`, `bases`,
-`change_sets`, `command_receipts`, `create_receipts`, `identity_ledger`,
-`attempts`, `stage_receipts`, `prompt_outputs`, `activity_outbox`.
+append-only ChangeSets — Document's model exactly. Tables: `resources`, `decks`,
+`history`, `bases`, `change_sets`, `identity_ledger`, `attempts`,
+`stage_receipts`, `prompt_outputs`, `retained_outputs`, `transaction_outbox`.
 
-Accepted mutations write an Activity fact in the same transaction; the fact
-carries the command `origin` and its `factId` is the idempotency key Activity
-derives its transaction ID from.
+Accepted mutations stage an Activity transaction in the same database
+transaction. Its key is `slides:<deckId>:<revision>:<kind>` — derived from
+committed state rather than allocated, because exactly one transaction is ever
+recorded for a given Deck revision. Republication after a crash recomputes the
+same key and collapses into the existing row.
 
 ## Invariants
 

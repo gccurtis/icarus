@@ -84,11 +84,8 @@ const decodeQuery = (value: unknown): SlideQuery => {
 export const decodeSlideQuery = (value: unknown): SlideQueryRequest => {
   assertSlideWireInput(value, "Slides query request");
   const raw = requireRecord(value, "Slides query request");
-  exactKeys(raw, ["requestId", "query"], "Slides query request");
-  return {
-    requestId: requireIdentifier(raw.requestId, "requestId"),
-    query: decodeQuery(raw.query)
-  };
+  exactKeys(raw, ["query"], "Slides query request");
+  return { query: decodeQuery(raw.query) };
 };
 
 export { SLIDE_WIRE_LIMITS };

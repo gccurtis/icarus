@@ -23,7 +23,6 @@ import {
 import {
   CompensationConflictError,
   DeckNotFoundError,
-  IdempotencyMismatchError,
   RevisionConflictError,
   SlideOperationError
 } from "../../src/3-capabilities/slides/domain/errors.js";
@@ -78,12 +77,8 @@ const harness = (options: SlideOptions = OPTIONS): Harness => {
   return { slides, logs, dispatched };
 };
 
-let requestCounter = 0;
-const nextRequestId = (): string => `request-${(requestCounter += 1)}`;
-
 const createDeck = async (slides: SlidesCapability, title = "Quarterly review") => {
   const result = await slides.command({
-    requestId: nextRequestId(),
     origin: "interactive",
     command: { type: "deck.create", title }
   });
@@ -95,11 +90,9 @@ const submit = async (
   slides: SlidesCapability,
   deckId: string,
   expectedRevision: number,
-  operations: SlideOperation[],
-  requestId = nextRequestId()
+  operations: SlideOperation[]
 ) => {
   const result = await slides.command({
-    requestId,
     origin: "interactive",
     command: { type: "deck.submit", deckId, expectedRevision, operations }
   });
@@ -109,7 +102,6 @@ const submit = async (
 
 const load = async (slides: SlidesCapability, deckId: string, revision?: number) => {
   const result = await slides.query({
-    requestId: nextRequestId(),
     query: { type: "deck.load", deckId, ...(revision !== undefined ? { revision } : {}) }
   });
   assert.equal(result.type, "deck.loaded");
@@ -175,29 +167,21 @@ test("deck.create allocates the Deck and a Deck that satisfies every invariant",
   );
 });
 
-test("a create retried with the same request ID replays, and a changed one is refused", async () => {
+test("deck.create is not deduplicated, and the duplicate is visible rather than silent", async () => {
   const { slides } = harness();
-  const requestId = nextRequestId();
-  const first = await slides.command({
-    requestId,
-    origin: "interactive",
-    command: { type: "deck.create", title: "Once" }
-  });
-  const replay = await slides.command({
-    requestId,
-    origin: "interactive",
-    command: { type: "deck.create", title: "Once" }
-  });
-  assert.deepEqual(replay, first);
+  const first = await createDeck(slides, "Once");
+  const second = await createDeck(slides, "Once");
 
-  await assert.rejects(
-    () =>
-      slides.command({
-        requestId,
-        origin: "interactive",
-        command: { type: "deck.create", title: "Different" }
-      }),
-    IdempotencyMismatchError
+  // Create is the one command with no revision to compare against, so a retry
+  // makes a second Deck. That is the accepted cost of having no request ID:
+  // the duplicate shows up in deck.list, where a caller can see and delete it.
+  assert.notEqual(first.id, second.id);
+  const listed = await slides.query({ query: { type: "deck.list" } });
+  assert.deepEqual(
+    (listed as Extract<SlideQueryResult, { type: "deck.listed" }>).items
+      .map((item) => item.id)
+      .sort(),
+    [first.id, second.id].sort()
   );
 });
 
@@ -439,18 +423,28 @@ test("a stale submission touching the same element is refused", async () => {
   );
 });
 
-test("a retried submission replays without applying twice", async () => {
+test("a resent submission is refused by the revision check, not applied twice", async () => {
   const { slides } = harness();
   const head = await createDeck(slides);
-  const requestId = nextRequestId();
   const operations: SlideOperation[] = [
     { type: "element.insert", container: SLIDE, element: textElement("a", 0) }
   ];
 
-  const first = await submit(slides, head.id, 1, operations, requestId);
-  const replay = await submit(slides, head.id, 1, operations, requestId);
-  assert.deepEqual(replay, first);
-  assert.equal((await load(slides, head.id)).head.revision, 2);
+  await submit(slides, head.id, 1, operations);
+  // The resend still carries revision 1, which the head has passed. Rebase
+  // cannot save it either: the element it inserts is exactly the one the first
+  // attempt already landed, so the touched IDs collide.
+  await assert.rejects(
+    () =>
+      slides.command({
+        origin: "interactive",
+        command: { type: "deck.submit", deckId: head.id, expectedRevision: 1, operations }
+      }),
+    RevisionConflictError
+  );
+  const loaded = await load(slides, head.id);
+  assert.equal(loaded.head.revision, 2);
+  assert.deepEqual(Object.keys(loaded.snapshot.slides[INITIAL_SLIDE_ID].elements), ["a"]);
 });
 
 test("undo restores the previous state exactly, and redo puts it back", async () => {
@@ -464,7 +458,6 @@ test("undo restores the previous state exactly, and redo puts it back", async ()
   ]);
 
   const undone = await slides.command({
-    requestId: nextRequestId(),
     origin: "interactive",
     command: {
       type: "deck.compensate",
@@ -489,7 +482,6 @@ test("undo restores the previous state exactly, and redo puts it back", async ()
   // element `a` come back under the ID it already burned.
   const undoChangeSet = (undone as Extract<SlideCommandResult, { type: "deck.changed" }>).changeSet;
   await slides.command({
-    requestId: nextRequestId(),
     origin: "interactive",
     command: {
       type: "deck.compensate",
@@ -517,7 +509,6 @@ test("compensation is refused when an intervening ChangeSet touched the same thi
   await assert.rejects(
     () =>
       slides.command({
-        requestId: nextRequestId(),
         origin: "interactive",
         command: {
           type: "deck.compensate",
@@ -607,7 +598,6 @@ test("commands not yet implemented are refused by name", async () => {
   await assert.rejects(
     () =>
       slides.command({
-        requestId: nextRequestId(),
         origin: "interactive",
         command: {
           type: "prompt.refresh.request",
@@ -643,7 +633,7 @@ test("deck.list pages, and deck.delete removes the Deck but keeps its history", 
   const first = await createDeck(slides, "Alpha");
   const second = await createDeck(slides, "Beta");
 
-  const listed = await slides.query({ requestId: nextRequestId(), query: { type: "deck.list" } });
+  const listed = await slides.query({ query: { type: "deck.list" } });
   assert.equal(listed.type, "deck.listed");
   assert.deepEqual(
     (listed as Extract<SlideQueryResult, { type: "deck.listed" }>).items
@@ -653,7 +643,6 @@ test("deck.list pages, and deck.delete removes the Deck but keeps its history", 
   );
 
   const deleted = await slides.command({
-    requestId: nextRequestId(),
     origin: "interactive",
     command: { type: "deck.delete", deckId: second.id, expectedRevision: 1 }
   });
@@ -670,7 +659,6 @@ test("deck.history returns the ChangeSets and 404s an unknown Deck", async () =>
   await submit(slides, head.id, 1, [{ type: "deck.rename", title: "Second" }]);
 
   const history = await slides.query({
-    requestId: nextRequestId(),
     query: { type: "deck.history", deckId: head.id, limit: 10 }
   });
   assert.equal(history.type, "deck.history");
@@ -682,7 +670,6 @@ test("deck.history returns the ChangeSets and 404s an unknown Deck", async () =>
   await assert.rejects(
     () =>
       slides.query({
-        requestId: nextRequestId(),
         query: { type: "deck.history", deckId: "missing", limit: 10 }
       }),
     DeckNotFoundError
@@ -691,19 +678,15 @@ test("deck.history returns the ChangeSets and 404s an unknown Deck", async () =>
 
 // ── Observability ────────────────────────────────────────────────────────
 
-test("the command path logs start, completion and replay", async () => {
+test("the command path logs start, completion and the store's commits", async () => {
   const { slides, logs } = harness();
   const head = await createDeck(slides);
-  const requestId = nextRequestId();
-  const operations: SlideOperation[] = [{ type: "deck.rename", title: "Logged" }];
-  await submit(slides, head.id, 1, operations, requestId);
-  await submit(slides, head.id, 1, operations, requestId);
+  await submit(slides, head.id, 1, [{ type: "deck.rename", title: "Logged" }]);
 
   const names = logs.entries.map((entry) => entry.message);
   for (const expected of [
     "slides.command.started",
     "slides.command.completed",
-    "slides.command.replayed",
     "slides.store.deck.created",
     "slides.store.mutation.committed"
   ]) {

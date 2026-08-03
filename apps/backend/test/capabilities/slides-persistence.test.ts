@@ -140,10 +140,7 @@ const snapshot = (title: string): DeckSnapshot => ({
   }
 });
 
-const creationCommit = (
-  deckId: string,
-  requestId = `create-${deckId}`
-): DeckCreationCommit => {
+const creationCommit = (deckId: string): DeckCreationCommit => {
   const deckSnapshot = snapshot(`Deck ${deckId}`);
   const head: DeckHead = {
     id: deckId,
@@ -151,7 +148,6 @@ const creationCommit = (
     lifecycle: "active",
     revision: 1,
     baseSeq: 1,
-    semanticDigest: `digest-${deckId}-0`,
     createdAt: timestamp(0),
     updatedAt: timestamp(0)
   };
@@ -160,37 +156,19 @@ const creationCommit = (
     deckId,
     baseSeq: 1,
     snapshot: deckSnapshot,
-    semanticDigest: head.semanticDigest,
     createdAt: timestamp(0)
   };
-  const result = { type: "deck.created", head } as const;
   return {
     head,
     base,
     identities: collectSlideIdentities(deckSnapshot),
-    receipt: {
-      deckId,
-      requestId,
-      requestDigest: `digest-${requestId}`,
-      result,
-      createdAt: timestamp(0)
-    },
-    createReceipt: {
-      requestId,
-      deckId,
-      requestDigest: `digest-${requestId}`,
-      result,
-      createdAt: timestamp(0)
-    },
     transaction: {
-      sourceTransactionId: `txn-${deckId}-1`,
-      sourceRequestId: requestId,
+      sourceTransactionId: `slides:${deckId}:1:deck.created`,
       kind: "deck.created",
       deckId,
       revision: 1,
       origin: "interactive",
       operationTypes: ["deck.create"],
-      sourceSemanticDigest: head.semanticDigest,
       occurredAt: timestamp(0)
     }
   };
@@ -200,8 +178,7 @@ const mutationCommit = (
   deckId: string,
   expectedRevision: number,
   before: DeckSnapshot,
-  after: DeckSnapshot,
-  requestId = `submit-${deckId}-${expectedRevision}`
+  after: DeckSnapshot
 ): DeckMutationCommit => {
   const revision = expectedRevision + 1;
   const head: DeckHead = {
@@ -210,15 +187,12 @@ const mutationCommit = (
     lifecycle: after.lifecycle,
     revision,
     baseSeq: 1,
-    semanticDigest: `digest-${deckId}-${revision}`,
     createdAt: timestamp(0),
     updatedAt: timestamp(revision)
   };
   const changeSet: DeckChangeSet = {
     id: `cs-${deckId}-${revision}`,
     deckId,
-    clientRequestId: requestId,
-    requestDigest: `digest-${requestId}`,
     authoredRevision: expectedRevision,
     priorRevision: expectedRevision,
     revision,
@@ -226,31 +200,21 @@ const mutationCommit = (
     origin: "interactive",
     operations: [{ type: "deck.rename", title: after.title }],
     inverseOperations: [{ type: "deck.rename", title: before.title }],
-    touchedIds: [],
-    semanticDigest: head.semanticDigest,
+    touchedIds: ["$slides:deck-title"],
     createdAt: timestamp(revision)
   };
   return {
     expectedRevision,
     head,
     changeSet,
-    receipt: {
-      deckId,
-      requestId,
-      requestDigest: `digest-${requestId}`,
-      result: { type: "deck.changed", changeSet },
-      createdAt: timestamp(revision)
-    },
     transaction: {
-      sourceTransactionId: `txn-${deckId}-${revision}`,
-      sourceRequestId: requestId,
+      sourceTransactionId: `slides:${deckId}:${revision}:deck.changed`,
       kind: "deck.changed",
       deckId,
       revision,
       sourceChangeSetId: changeSet.id,
       origin: "interactive",
       operationTypes: ["deck.rename"],
-      sourceSemanticDigest: head.semanticDigest,
       occurredAt: timestamp(revision)
     },
     identityTransitions: computeSlideIdentityTransitions(before, after),
@@ -315,7 +279,7 @@ test("the identity-kind CHECK constraint matches the SlideIdentityKind union", a
 
 // ── Creation and replay ──────────────────────────────────────────────────
 
-test("creation commits head, base, receipts, identities and outbox atomically", async () => {
+test("creation commits head, base, identities and outbox atomically", async () => {
   const { store } = newStore();
   const commit = creationCommit("deck-1");
   await store.commitCreation(commit);
@@ -324,11 +288,9 @@ test("creation commits head, base, receipts, identities and outbox atomically", 
   assert.equal(head?.revision, 1);
   assert.equal(await store.hasResource("deck-1"), true);
   assert.deepEqual((await store.getBaseAtOrBefore("deck-1", 1))?.baseSeq, 1);
-  assert.equal((await store.getSubmission("deck-1", "create-deck-1"))?.requestId, "create-deck-1");
-  assert.equal((await store.getCreateSubmission("create-deck-1"))?.deckId, "deck-1");
   assert.equal((await store.getIdentity("deck-1", "slide-1"))?.kind, "slide");
   assert.equal(
-    (await store.getCommittedTransaction("txn-deck-1-1"))?.kind,
+    (await store.getCommittedTransaction("slides:deck-1:1:deck.created"))?.kind,
     "deck.created"
   );
 });
@@ -349,26 +311,28 @@ test("creation refuses to claim one identity twice", async () => {
   assert.equal(await store.hasResource("deck-dup"), false);
 });
 
-test("a create receipt survives for replay and cascades on purge", async () => {
+test("logical deletion drops the Deck row but keeps the root and retained history", async () => {
   const { store } = newStore();
-  await store.commitCreation(creationCommit("deck-replay"));
-  assert.equal((await store.getCreateSubmission("create-deck-replay"))?.deckId, "deck-replay");
+  await store.commitCreation(creationCommit("deck-deleted"));
 
-  await store.deleteDeck("deck-replay", timestamp(10), {
-    sourceTransactionId: "txn-deck-replay-del",
-    sourceRequestId: "delete-1",
+  await store.deleteDeck("deck-deleted", timestamp(10), {
+    sourceTransactionId: "slides:deck-deleted:2:deck.deleted",
     kind: "deck.deleted",
-    deckId: "deck-replay",
+    deckId: "deck-deleted",
     revision: 2,
     origin: "interactive",
     operationTypes: ["deck.delete"],
-    sourceSemanticDigest: "digest-deck-replay-0",
     occurredAt: timestamp(10)
   });
-  // The Deck row is gone, so the receipt cascaded; the resource root remains.
-  assert.equal(await store.getCreateSubmission("create-deck-replay"), undefined);
-  assert.equal(await store.hasResource("deck-replay"), true);
-  assert.equal((await store.getHistoricalHead("deck-replay", 1))?.revision, 1);
+
+  assert.equal(await store.getHead("deck-deleted"), undefined);
+  assert.equal(await store.hasResource("deck-deleted"), true);
+  assert.equal((await store.getHistoricalHead("deck-deleted", 1))?.revision, 1);
+  // The deletion transaction outlives the Deck row so Activity can still see it.
+  assert.equal(
+    (await store.getCommittedTransaction("slides:deck-deleted:2:deck.deleted"))?.kind,
+    "deck.deleted"
+  );
 });
 
 // ── Mutation and compare-and-set ─────────────────────────────────────────
@@ -390,19 +354,23 @@ test("a mutation commits on the expected revision and is refused off it", async 
   // an ordinary outcome, not an error: false, with nothing written.
   assert.equal(
     await store.commitMutation(
-      mutationCommit("deck-cas", 1, first, renamed(first, "Renamed twice"), "submit-late")
+      mutationCommit("deck-cas", 1, first, renamed(first, "Renamed twice"))
     ),
     false
   );
   assert.equal((await store.getHead("deck-cas"))?.revision, 2);
-  assert.equal(await store.getSubmission("deck-cas", "submit-late"), undefined);
+  // Nothing from the losing writer landed: revision 2 is still the first one.
+  assert.equal((await store.getHead("deck-cas"))?.title, "Renamed once");
+  assert.deepEqual((await store.getChangeSets("deck-cas", 1, 2))[0].operations, [
+    { type: "deck.rename", title: "Renamed once" }
+  ]);
 
   const rejected = logs.records.find((e) => e.message === "slides.store.mutation.rejected");
   assert.equal(rejected?.level, "warn");
   assert.equal((rejected?.data as { reason: string }).reason, "revision-conflict");
 });
 
-test("a mutation records history, the ChangeSet, the receipt and the outbox together", async () => {
+test("a mutation records history, the ChangeSet and the outbox together", async () => {
   const { store } = newStore();
   await store.commitCreation(creationCommit("deck-hist"));
   const first = snapshot("Deck deck-hist");
@@ -414,8 +382,10 @@ test("a mutation records history, the ChangeSet, the receipt and the outbox toge
   assert.deepEqual(changeSets[0].inverseOperations, [
     { type: "deck.rename", title: "Deck deck-hist" }
   ]);
-  assert.equal((await store.getSubmission("deck-hist", "submit-deck-hist-1"))?.requestId, "submit-deck-hist-1");
-  assert.equal((await store.getCommittedTransaction("txn-deck-hist-2"))?.revision, 2);
+  assert.equal(
+    (await store.getCommittedTransaction("slides:deck-hist:2:deck.changed"))?.revision,
+    2
+  );
 });
 
 test("inconsistent mutation revisions are refused before any write", async () => {
@@ -511,7 +481,6 @@ test("a Base is appended only while the head has not moved", async () => {
     deckId: "deck-base",
     baseSeq: 2,
     snapshot: renamed(first, "Second"),
-    semanticDigest: "digest-deck-base-2",
     createdAt: timestamp(5)
   };
   assert.equal(await store.appendBaseIfHead("deck-base", 1, base), false);
@@ -570,8 +539,6 @@ const promptAttempt = (deckId: string, id: string): PromptCreationAttempt => ({
   id,
   deckId,
   kind: "prompt-create",
-  clientRequestId: `req-${id}`,
-  requestDigest: `digest-${id}`,
   frozenDeckRevision: 1,
   state: "requested",
   target: { kind: "existing", site },
@@ -731,14 +698,34 @@ test("the outbox lists unpublished transactions once and marks them published", 
   const { store } = newStore();
   await store.commitCreation(creationCommit("deck-outbox"));
   const pending = await store.listUnpublishedTransactions();
-  assert.deepEqual(pending.map((t) => t.sourceTransactionId), ["txn-deck-outbox-1"]);
+  assert.deepEqual(
+    pending.map((t) => t.sourceTransactionId),
+    ["slides:deck-outbox:1:deck.created"]
+  );
 
-  await store.markTransactionPublished("txn-deck-outbox-1", timestamp(4));
+  await store.markTransactionPublished("slides:deck-outbox:1:deck.created", timestamp(4));
   assert.deepEqual(await store.listUnpublishedTransactions(), []);
   assert.equal(
-    (await store.getCommittedTransactionByRequest("deck-outbox", "create-deck-outbox"))?.revision,
-    1
+    (await store.getCommittedTransactionByRevision("deck-outbox", 1))?.kind,
+    "deck.created"
   );
+});
+
+test("the outbox holds exactly one row per Deck revision", async () => {
+  const { store } = newStore();
+  await store.commitCreation(creationCommit("deck-once"));
+  const first = snapshot("Deck deck-once");
+  await store.commitMutation(mutationCommit("deck-once", 1, first, renamed(first, "Second")));
+
+  // This is what lets the transaction ID be derived rather than allocated: a
+  // Deck and a revision name one transaction, so recomputing the key during
+  // republication cannot address a different one.
+  assert.deepEqual(
+    (await store.listUnpublishedTransactions()).map((t) => t.sourceTransactionId),
+    ["slides:deck-once:1:deck.created", "slides:deck-once:2:deck.changed"]
+  );
+  assert.equal((await store.getCommittedTransactionByRevision("deck-once", 2))?.kind, "deck.changed");
+  assert.equal(await store.getCommittedTransactionByRevision("deck-once", 3), undefined);
 });
 
 // ── Observability ────────────────────────────────────────────────────────

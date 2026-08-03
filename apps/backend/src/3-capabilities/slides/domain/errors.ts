@@ -25,13 +25,6 @@ export class RevisionConflictError extends Error {
   }
 }
 
-export class IdempotencyMismatchError extends Error {
-  constructor(public readonly requestId: string) {
-    super(`Request ID was reused with different input: ${requestId}`);
-    this.name = "IdempotencyMismatchError";
-  }
-}
-
 export class CompensationConflictError extends Error {
   constructor(public readonly changeSetId: string, message?: string) {
     super(message ?? `ChangeSet cannot be compensated at the current head: ${changeSetId}`);

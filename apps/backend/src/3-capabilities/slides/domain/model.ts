@@ -593,8 +593,6 @@ export interface DeckBase {
 export interface DeckChangeSet {
   id: string;
   deckId: string;
-  clientRequestId: string;
-  requestDigest: string;
   authoredRevision: number;
   priorRevision: number;
   revision: number;
@@ -612,11 +610,11 @@ export interface DeckChangeSet {
 
 export interface DeckCommittedTransaction {
   /**
-   * The idempotency key Activity derives its transaction ID from. It is
-   * allocated with the accepted mutation and reused for every delivery attempt.
+   * The idempotency key Activity derives its transaction ID from. Derived from
+   * the Deck and the revision it records, both of which are already unique and
+   * already committed, so every delivery attempt recomputes the same key.
    */
   sourceTransactionId: string;
-  sourceRequestId: string;
   kind: "deck.created" | "deck.changed" | "deck.compensated" | "deck.deleted";
   deckId: string;
   revision: number;
@@ -637,30 +635,6 @@ export interface DeckCommittedTransaction {
   occurredAt: string;
 }
 
-export interface DeckSubmissionReceipt {
-  deckId: string;
-  requestId: string;
-  requestDigest: string;
-  result: SlideCommandResult;
-  createdAt: string;
-}
-
-/**
- * Replay record for `deck.create`, keyed by request ID alone.
- *
- * Every other command addresses an existing Deck, so its receipt can be keyed
- * `(deck_id, request_id)`. A create has no Deck ID until the service allocates
- * one, so a retry would have nothing to look up with and would create a second
- * Deck. `deckId` is carried only so the row can cascade on deletion.
- */
-export interface DeckCreateReceipt {
-  requestId: string;
-  deckId: string;
-  requestDigest: string;
-  result: SlideCommandResult;
-  createdAt: string;
-}
-
 // ── Attempts ─────────────────────────────────────────────────────────────
 
 export type SlideAttemptState =
@@ -675,8 +649,6 @@ export type SlideAttemptState =
 export interface AttemptBase {
   id: string;
   deckId: string;
-  clientRequestId: string;
-  requestDigest: string;
   frozenDeckRevision: number;
   state: SlideAttemptState;
   settledChangeSetId?: string;
@@ -753,8 +725,15 @@ export interface PromptOutputOwnership {
 
 // ── Commands and queries ─────────────────────────────────────────────────
 
+/**
+ * There is no request ID. Every mutating command carries `expectedRevision`, so
+ * a duplicate arrives with a revision the head has already passed and is told
+ * so — the compare-and-set is the retry guard, and a second one keyed by
+ * request ID would only answer the same question twice. `deck.create` is the
+ * one command with no revision to compare, and a duplicated Deck is visible in
+ * `deck.list` rather than silent.
+ */
 export interface SlideCommandRequest {
-  requestId: string;
   origin: SlideOrigin;
   actorId?: string;
   command: SlideCommand;
@@ -832,7 +811,6 @@ export type SlideCommandResult =
   | { type: "formula.evaluate-requested"; attemptId: string };
 
 export interface SlideQueryRequest {
-  requestId: string;
   query: SlideQuery;
 }
 

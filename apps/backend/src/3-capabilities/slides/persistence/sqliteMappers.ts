@@ -2,9 +2,7 @@ import type {
   DeckBase,
   DeckChangeSet,
   DeckCommittedTransaction,
-  DeckCreateReceipt,
   DeckHead,
-  DeckSubmissionReceipt,
   FormulaEvaluationAttempt,
   PromptCreationAttempt,
   PromptOutputOwnership,
@@ -57,8 +55,6 @@ export const rowToChangeSet = (row: SQLiteRow): DeckChangeSet => {
   return {
     id: row.id as string,
     deckId: row.deck_id as string,
-    clientRequestId: row.client_request_id as string,
-    requestDigest: row.request_digest as string,
     authoredRevision: Number(row.authored_revision),
     priorRevision: Number(row.prior_revision),
     revision: Number(row.revision),
@@ -81,22 +77,6 @@ export const rowToChangeSet = (row: SQLiteRow): DeckChangeSet => {
   };
 };
 
-export const rowToSubmission = (row: SQLiteRow): DeckSubmissionReceipt => ({
-  deckId: row.deck_id as string,
-  requestId: row.request_id as string,
-  requestDigest: row.request_digest as string,
-  result: decodeJson<DeckSubmissionReceipt["result"]>(row.result_json),
-  createdAt: row.created_at as string
-});
-
-export const rowToCreateReceipt = (row: SQLiteRow): DeckCreateReceipt => ({
-  requestId: row.request_id as string,
-  deckId: row.deck_id as string,
-  requestDigest: row.request_digest as string,
-  result: decodeJson<DeckCreateReceipt["result"]>(row.result_json),
-  createdAt: row.created_at as string
-});
-
 export const rowToIdentityLedgerEntry = (row: SQLiteRow): SlideIdentityLedgerEntry => ({
   deckId: row.deck_id as string,
   id: row.identity_id as string,
@@ -111,7 +91,6 @@ export const rowToIdentityLedgerEntry = (row: SQLiteRow): SlideIdentityLedgerEnt
 
 export const rowToCommittedTransaction = (row: SQLiteRow): DeckCommittedTransaction => ({
   sourceTransactionId: row.source_transaction_id as string,
-  sourceRequestId: row.source_request_id as string,
   kind: row.transaction_kind as DeckCommittedTransaction["kind"],
   deckId: row.deck_id as string,
   revision: Number(row.revision),
@@ -217,8 +196,6 @@ export const attemptToStorageParts = (attempt: SlideAttempt): AttemptStoragePart
 const attemptBase = (row: SQLiteRow) => ({
   id: row.id as string,
   deckId: row.deck_id as string,
-  clientRequestId: row.client_request_id as string,
-  requestDigest: row.request_digest as string,
   frozenDeckRevision: Number(row.frozen_deck_revision),
   state: row.state as SlideAttempt["state"],
   ...((row.settled_change_set_id as string | null) !== null

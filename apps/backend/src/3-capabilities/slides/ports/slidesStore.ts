@@ -2,10 +2,8 @@ import type {
   DeckBase,
   DeckChangeSet,
   DeckCommittedTransaction,
-  DeckCreateReceipt,
   DeckHead,
   DeckLifecycle,
-  DeckSubmissionReceipt,
   PromptOutputOwnership,
   PromptSite,
   SlideAttempt,
@@ -22,14 +20,6 @@ export interface DeckCreationCommit {
   head: DeckHead;
   base: DeckBase;
   identities: SlideIdentity[];
-  receipt: DeckSubmissionReceipt;
-  /**
-   * Written in the same transaction as the receipt above. The two are not
-   * redundant: this one makes the create replayable by request id, while the
-   * deck-keyed receipt keeps the request-id reuse guard working for later
-   * commands on the same Deck.
-   */
-  createReceipt: DeckCreateReceipt;
   transaction: DeckCommittedTransaction;
 }
 
@@ -48,7 +38,6 @@ export interface DeckMutationCommit {
   expectedRevision: number;
   head: DeckHead;
   changeSet: DeckChangeSet;
-  receipt: DeckSubmissionReceipt;
   transaction: DeckCommittedTransaction;
   identityTransitions: SlideIdentityTransitions;
   identityReactivation: SlideIdentityReactivation;
@@ -90,13 +79,9 @@ export interface SlidesStore {
   ): Promise<{ items: DeckChangeSet[]; nextCursor?: string }>;
   getChangeSet(deckId: string, changeSetId: string): Promise<DeckChangeSet | undefined>;
 
-  getSubmission(deckId: string, requestId: string): Promise<DeckSubmissionReceipt | undefined>;
-  /** Replay lookup for deck.create, which has no Deck id at retry time. */
-  getCreateSubmission(requestId: string): Promise<DeckCreateReceipt | undefined>;
   getIdentity(deckId: string, identityId: string): Promise<SlideIdentityLedgerEntry | undefined>;
 
   // ── Writes ─────────────────────────────────────────────────────────────
-  recordSubmission(receipt: DeckSubmissionReceipt): Promise<void>;
   commitCreation(commit: DeckCreationCommit): Promise<void>;
   /**
    * Returns false when the compare-and-set on `expectedRevision` loses, which
@@ -132,21 +117,17 @@ export interface SlidesStore {
   // ── Attempts and stages ────────────────────────────────────────────────
   getAttempt(deckId: string, attemptId: string): Promise<SlideAttempt | undefined>;
   getAttemptById(attemptId: string): Promise<SlideAttempt | undefined>;
-  getAttemptByRequest(
-    deckId: string,
-    kind: SlideAttempt["kind"],
-    requestId: string
-  ): Promise<SlideAttempt | undefined>;
+  /**
+   * The dedupe key for prompt creation is the site, not a request id: two
+   * requests to put a prompt in the same place are the same request however
+   * they were labelled.
+   */
   getPromptCreationAttemptBySite(
     deckId: string,
     site: PromptSite
   ): Promise<SlideAttempt | undefined>;
   listRecoverableAttempts(): Promise<SlideAttempt[]>;
   createAttempt(attempt: SlideAttempt): Promise<void>;
-  createAttemptWithSubmission(
-    attempt: SlideAttempt,
-    receipt: DeckSubmissionReceipt
-  ): Promise<void>;
   updateAttempt(attempt: SlideAttempt): Promise<void>;
 
   claimStage(receipt: SlideStageReceipt): Promise<StageClaimResult>;
@@ -174,9 +155,9 @@ export interface SlidesStore {
   getCommittedTransaction(
     sourceTransactionId: string
   ): Promise<DeckCommittedTransaction | undefined>;
-  getCommittedTransactionByRequest(
+  getCommittedTransactionByRevision(
     deckId: string,
-    sourceRequestId: string
+    revision: number
   ): Promise<DeckCommittedTransaction | undefined>;
   listUnpublishedTransactions(limit?: number): Promise<DeckCommittedTransaction[]>;
   markTransactionPublished(sourceTransactionId: string, publishedAt: string): Promise<void>;

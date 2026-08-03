@@ -6,8 +6,6 @@ export interface SlideTableNames {
   resources: string;
   decks: string;
   history: string;
-  receipts: string;
-  createReceipts: string;
   identityLedger: string;
   bases: string;
   changeSets: string;
@@ -27,8 +25,6 @@ export const createSlideTableNames = (projectId: string): SlideTableNames => {
     resources: `${root}_resources`,
     decks: `${root}_decks`,
     history: `${root}_history`,
-    receipts: `${root}_command_receipts`,
-    createReceipts: `${root}_create_receipts`,
     identityLedger: `${root}_identity_ledger`,
     bases: `${root}_bases`,
     changeSets: `${root}_change_sets`,
@@ -73,30 +69,6 @@ export const initializeSlidesSchema = (
 
     CREATE INDEX IF NOT EXISTS ${tables.decks}_lifecycle_updated
       ON ${tables.decks}(lifecycle, updated_at DESC, id);
-
-    CREATE TABLE IF NOT EXISTS ${tables.receipts} (
-      deck_id          TEXT NOT NULL,
-      request_id       TEXT NOT NULL,
-      request_digest   TEXT NOT NULL,
-      result_json      BLOB NOT NULL,
-      created_at       TEXT NOT NULL,
-      PRIMARY KEY (deck_id, request_id),
-      FOREIGN KEY (deck_id) REFERENCES ${tables.decks}(id) ON DELETE CASCADE
-    );
-
-    -- Replay record for deck.create. Keyed by request id alone, because the Deck
-    -- id does not exist until the service allocates one and a retry has nothing
-    -- else to look up with. It carries deck_id purely so it can CASCADE: once
-    -- the Deck is gone the record is meaningless, and replaying it would hand
-    -- the caller a head for a Deck that no longer exists.
-    CREATE TABLE IF NOT EXISTS ${tables.createReceipts} (
-      request_id       TEXT PRIMARY KEY,
-      deck_id          TEXT NOT NULL,
-      request_digest   TEXT NOT NULL,
-      result_json      BLOB NOT NULL,
-      created_at       TEXT NOT NULL,
-      FOREIGN KEY (deck_id) REFERENCES ${tables.decks}(id) ON DELETE CASCADE
-    );
 
     -- Permanent identity non-reuse across retained history. The kind list is the
     -- SlideIdentityKind union; a mismatch between the two is caught by a test
@@ -143,8 +115,6 @@ export const initializeSlidesSchema = (
     CREATE TABLE IF NOT EXISTS ${tables.changeSets} (
       id                                 TEXT PRIMARY KEY,
       deck_id                            TEXT NOT NULL,
-      client_request_id                  TEXT NOT NULL,
-      request_digest                     TEXT NOT NULL,
       authored_revision                  INTEGER NOT NULL CHECK (authored_revision >= 0),
       prior_revision                     INTEGER NOT NULL CHECK (prior_revision >= 0),
       revision                           INTEGER NOT NULL CHECK (revision > 0),
@@ -176,7 +146,6 @@ export const initializeSlidesSchema = (
 
     CREATE TABLE IF NOT EXISTS ${tables.transactionOutbox} (
       source_transaction_id TEXT PRIMARY KEY,
-      source_request_id     TEXT NOT NULL,
       transaction_kind      TEXT NOT NULL
         CHECK (transaction_kind IN ('deck.created', 'deck.changed',
                                     'deck.compensated', 'deck.deleted')),
@@ -209,9 +178,6 @@ export const initializeSlidesSchema = (
       ON ${tables.transactionOutbox}(occurred_at, source_transaction_id)
       WHERE published_at IS NULL;
 
-    CREATE INDEX IF NOT EXISTS ${tables.transactionOutbox}_source_request
-      ON ${tables.transactionOutbox}(deck_id, source_request_id);
-
     CREATE TABLE IF NOT EXISTS ${tables.retainedOutputs} (
       deck_id   TEXT NOT NULL,
       output_id TEXT NOT NULL,
@@ -227,8 +193,6 @@ export const initializeSlidesSchema = (
       deck_id                TEXT NOT NULL,
       kind                   TEXT NOT NULL
         CHECK (kind IN ('prompt-create', 'prompt-refresh', 'formula-evaluation')),
-      client_request_id      TEXT NOT NULL,
-      request_digest         TEXT NOT NULL,
       site_key               TEXT NOT NULL,
       frozen_deck_revision   INTEGER NOT NULL CHECK (frozen_deck_revision >= 0),
       state                  TEXT NOT NULL
@@ -242,7 +206,6 @@ export const initializeSlidesSchema = (
       settled_change_set_id  TEXT,
       created_at             TEXT NOT NULL,
       updated_at             TEXT NOT NULL,
-      UNIQUE (deck_id, kind, client_request_id),
       FOREIGN KEY (deck_id) REFERENCES ${tables.decks}(id) ON DELETE CASCADE,
       FOREIGN KEY (settled_change_set_id) REFERENCES ${tables.changeSets}(id)
         ON DELETE SET NULL

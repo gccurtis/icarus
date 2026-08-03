@@ -380,7 +380,6 @@ test("an unknown field is rejected, and the message names it", () => {
   rejects(
     () =>
       decodeSlideCommand({
-        requestId: "r1",
         origin: "interactive",
         command: { type: "deck.purge", deckId: "d1" },
         sneaky: true
@@ -404,14 +403,13 @@ test("an unknown discriminant is rejected by name", () => {
   rejects(
     () =>
       decodeSlideCommand({
-        requestId: "r1",
         origin: "interactive",
         command: { type: "deck.explode" }
       }),
     /Unknown Slides command/
   );
   rejects(
-    () => decodeSlideQuery({ requestId: "r1", query: { type: "deck.explode" } }),
+    () => decodeSlideQuery({ query: { type: "deck.explode" } }),
     /Unknown Slides query/
   );
 });
@@ -424,7 +422,6 @@ test("a wrong enum value is rejected and lists what is allowed", () => {
   rejects(
     () =>
       decodeSlideCommand({
-        requestId: "r1",
         origin: "user",
         command: { type: "deck.purge", deckId: "d1" }
       }),
@@ -592,7 +589,6 @@ test("a prompt site does not accept slide-notes, but a content target does", () 
 
 test("prompt.create names placement, never an element ID", () => {
   const request = decodeSlideCommand({
-    requestId: "r1",
     origin: "agent",
     command: {
       type: "prompt.create.request",
@@ -614,7 +610,6 @@ test("prompt.create names placement, never an element ID", () => {
   rejects(
     () =>
       decodeSlideCommand({
-        requestId: "r1",
         origin: "agent",
         command: {
           type: "prompt.create.request",
@@ -736,31 +731,35 @@ test("slide notes are Rich Content, not a text source", () => {
 
 // ── Envelopes ────────────────────────────────────────────────────────────
 
-test("a command envelope requires a request ID and an origin", () => {
+test("a command envelope requires an origin and carries no request ID", () => {
   const decoded = decodeSlideCommand({
-    requestId: "r1",
     origin: "automation",
     command: { type: "deck.create", title: "Deck" }
   });
   assert.deepEqual(decoded, {
-    requestId: "r1",
     origin: "automation",
     command: { type: "deck.create", title: "Deck" }
   });
 
   rejects(
-    () => decodeSlideCommand({ origin: "interactive", command: { type: "deck.purge", deckId: "d" } }),
-    /requestId must be a string/
-  );
-  rejects(
-    () => decodeSlideCommand({ requestId: "r1", command: { type: "deck.purge", deckId: "d" } }),
+    () => decodeSlideCommand({ command: { type: "deck.purge", deckId: "d" } }),
     /origin must be one of/
+  );
+  // Retry safety is expectedRevision's job, so a caller-supplied idempotency
+  // key is not merely unused — it is refused, rather than silently ignored.
+  rejects(
+    () =>
+      decodeSlideCommand({
+        requestId: "r1",
+        origin: "interactive",
+        command: { type: "deck.purge", deckId: "d" }
+      }),
+    /unknown fields: requestId/
   );
 });
 
 test("deck.create takes no identifier and an optional canvas", () => {
   const withCanvas = decodeSlideCommand({
-    requestId: "r1",
     origin: "interactive",
     command: { type: "deck.create", title: "Deck", canvas: { widthPt: 960, heightPt: 540 } }
   });
@@ -771,7 +770,6 @@ test("deck.create takes no identifier and an optional canvas", () => {
   });
   // An absent optional stays absent rather than becoming an explicit undefined.
   const without = decodeSlideCommand({
-    requestId: "r1",
     origin: "interactive",
     command: { type: "deck.create", title: "Deck" }
   });
@@ -780,7 +778,6 @@ test("deck.create takes no identifier and an optional canvas", () => {
   rejects(
     () =>
       decodeSlideCommand({
-        requestId: "r1",
         origin: "interactive",
         command: { type: "deck.create", title: "Deck", deckId: "caller-chosen" }
       }),
@@ -789,13 +786,11 @@ test("deck.create takes no identifier and an optional canvas", () => {
 });
 
 test("a query envelope decodes each query and bounds the history page", () => {
-  assert.deepEqual(
-    decodeSlideQuery({ requestId: "q1", query: { type: "deck.list" } }),
-    { requestId: "q1", query: { type: "deck.list" } }
-  );
+  assert.deepEqual(decodeSlideQuery({ query: { type: "deck.list" } }), {
+    query: { type: "deck.list" }
+  });
   assert.deepEqual(
     decodeSlideQuery({
-      requestId: "q1",
       query: { type: "deck.load", deckId: "d1", revision: 4 }
     }).query,
     { type: "deck.load", deckId: "d1", revision: 4 }
@@ -803,7 +798,6 @@ test("a query envelope decodes each query and bounds the history page", () => {
   rejects(
     () =>
       decodeSlideQuery({
-        requestId: "q1",
         query: { type: "deck.history", deckId: "d1", limit: MAX_HISTORY_LIMIT + 1 }
       }),
     /exceeds the page limit/
@@ -811,7 +805,6 @@ test("a query envelope decodes each query and bounds the history page", () => {
   rejects(
     () =>
       decodeSlideQuery({
-        requestId: "q1",
         query: { type: "deck.load", deckId: "d1", revision: 0 }
       }),
     /positive integer/

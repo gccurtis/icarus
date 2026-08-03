@@ -399,7 +399,6 @@ const deck = await request(
   {
     method: "POST",
     body: json({
-      requestId: "smoke-deck-1",
       origin: "interactive",
       command: { type: "deck.create", title: "Smoke deck" }
     })
@@ -415,7 +414,6 @@ await request(
   {
     method: "POST",
     body: json({
-      requestId: "smoke-deck-2",
       origin: "interactive",
       command: {
         type: "deck.submit",
@@ -433,7 +431,7 @@ const loadedDeck = await request(
   "/slides/query",
   {
     method: "POST",
-    body: json({ requestId: "smoke-deck-3", query: { type: "deck.load", deckId } })
+    body: json({ query: { type: "deck.load", deckId } })
   },
   200
 );
@@ -446,7 +444,6 @@ await request(
   {
     method: "POST",
     body: json({
-      requestId: "smoke-deck-4",
       origin: "interactive",
       command: {
         type: "deck.submit",
@@ -466,7 +463,6 @@ await request(
   {
     method: "POST",
     body: json({
-      requestId: "smoke-deck-5",
       origin: "interactive",
       command: { type: "deck.create", title: "Bad", deckId: "caller-chosen" }
     })
@@ -480,7 +476,6 @@ await request(
   {
     method: "POST",
     body: json({
-      requestId: "smoke-deck-6",
       query: { type: "deck.load", deckId: "smoke-missing" }
     })
   },

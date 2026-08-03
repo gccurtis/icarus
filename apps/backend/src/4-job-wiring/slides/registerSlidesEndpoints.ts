@@ -4,7 +4,6 @@ import {
   CompensationConflictError,
   DeckNotFoundError,
   HistoryPrunedError,
-  IdempotencyMismatchError,
   InvalidDeckCursorError,
   RevisionConflictError,
   SlideAttemptNotFoundError,
@@ -44,9 +43,6 @@ const errorResponse = (error: unknown): { statusCode: number; body: unknown } =>
   }
   if (error instanceof RevisionConflictError) {
     return { statusCode: 409, body: { error: "revision_conflict", message: error.message } };
-  }
-  if (error instanceof IdempotencyMismatchError) {
-    return { statusCode: 409, body: { error: "idempotency_mismatch", message: error.message } };
   }
   if (error instanceof CompensationConflictError) {
     return { statusCode: 409, body: { error: "compensation_conflict", message: error.message } };

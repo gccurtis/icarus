@@ -2,12 +2,10 @@ import { randomUUID } from "node:crypto";
 import type { RichText } from "#rich-text";
 import type { Logger } from "#platform/observability/logger.js";
 import type { InternalJobsRuntime } from "#utils/jobs/internalRuntime.js";
-import { canonicalDigest } from "../domain/canonical.js";
 import {
   CompensationConflictError,
   DeckNotFoundError,
   HistoryPrunedError,
-  IdempotencyMismatchError,
   RevisionConflictError,
   SlideOperationError,
   SlideValidationError
@@ -112,14 +110,12 @@ class SlidesService implements SlidesCapability {
   async command(request: SlideCommandRequest): Promise<SlideCommandResult> {
     const startedAt = Date.now();
     this.deps.logger.debug("slides.command.started", {
-      requestId: request.requestId,
       commandType: request.command.type,
       origin: request.origin
     });
     try {
       const result = await this.dispatchCommand(request);
       this.deps.logger.info("slides.command.completed", {
-        requestId: request.requestId,
         commandType: request.command.type,
         origin: request.origin,
         resultType: result.type,
@@ -130,7 +126,6 @@ class SlidesService implements SlidesCapability {
       // The service warns because it cannot know the caller's severity; the
       // wiring layer decides error-vs-warn from the status it computes.
       this.deps.logger.warn("slides.command.failed", {
-        requestId: request.requestId,
         commandType: request.command.type,
         errorName: error instanceof Error ? error.name : "UnknownError",
         errorMessage: error instanceof Error ? error.message : String(error),
@@ -205,7 +200,6 @@ class SlidesService implements SlidesCapability {
       }
     })();
     this.deps.logger.debug("slides.query.completed", {
-      requestId: request.requestId,
       queryType: query.type,
       resultType: result.type,
       durationMs: Date.now() - startedAt
@@ -220,14 +214,6 @@ class SlidesService implements SlidesCapability {
       throw new SlideOperationError("Invalid create command");
     }
     const command = request.command;
-    const digest = canonicalDigest(command);
-    // Keyed by request ID alone: a retry has no Deck ID to look up with,
-    // because the ID below is allocated rather than supplied.
-    const prior = await this.store.getCreateSubmission(request.requestId);
-    if (prior) {
-      return this.replayReceipt(prior.requestDigest, digest, request.requestId, prior.result);
-    }
-
     const deckId = randomUUID();
     const snapshot = createBlankDeckSnapshot({
       title: command.title,
@@ -249,7 +235,6 @@ class SlidesService implements SlidesCapability {
     const result: SlideCommandResult = { type: "deck.created", head };
     const transaction = this.transaction({
       kind: "deck.created",
-      sourceRequestId: request.requestId,
       deckId,
       revision: 1,
       ...(this.attributedActor(request.actorId)
@@ -268,23 +253,6 @@ class SlidesService implements SlidesCapability {
         deckId,
         baseSeq: 1,
         snapshot,
-        createdAt: timestamp
-      },
-      // Both receipts, one transaction. The create receipt makes the create
-      // replayable by request ID; the Deck-keyed one keeps the request-ID reuse
-      // guard working for later commands on this Deck.
-      receipt: {
-        deckId,
-        requestId: request.requestId,
-        requestDigest: digest,
-        result,
-        createdAt: timestamp
-      },
-      createReceipt: {
-        requestId: request.requestId,
-        deckId,
-        requestDigest: digest,
-        result,
         createdAt: timestamp
       },
       transaction
@@ -315,7 +283,6 @@ class SlidesService implements SlidesCapability {
       deckId: command.deckId,
       expectedRevision: command.expectedRevision,
       operations: command.operations,
-      requestId: request.requestId,
       origin: request.origin,
       ...(this.attributedActor(request.actorId)
         ? { actorId: this.attributedActor(request.actorId) as string }
@@ -328,16 +295,6 @@ class SlidesService implements SlidesCapability {
       throw new SlideOperationError("Invalid compensation command");
     }
     const command = request.command;
-    const requestDigest = canonicalDigest(command);
-    const prior = await this.store.getSubmission(command.deckId, request.requestId);
-    if (prior) {
-      return this.replayReceipt(
-        prior.requestDigest,
-        requestDigest,
-        request.requestId,
-        prior.result
-      );
-    }
     const current = await this.loadSnapshot(command.deckId);
     if (current.head.revision !== command.expectedRevision) {
       throw new RevisionConflictError(
@@ -381,7 +338,6 @@ class SlidesService implements SlidesCapability {
       deckId: command.deckId,
       expectedRevision: current.head.revision,
       operations: target.inverseOperations,
-      requestId: request.requestId,
       origin: request.origin,
       ...(this.attributedActor(request.actorId)
         ? { actorId: this.attributedActor(request.actorId) as string }
@@ -389,8 +345,7 @@ class SlidesService implements SlidesCapability {
       compensation: {
         intent: command.intent,
         targetChangeSetId: command.targetChangeSetId
-      },
-      requestDigest
+      }
     });
   }
 
@@ -399,16 +354,6 @@ class SlidesService implements SlidesCapability {
     request: SlideCommandRequest,
     command: Extract<SlideCommand, { type: "deck.delete" }>
   ): Promise<SlideCommandResult> {
-    const requestDigest = canonicalDigest(command);
-    const prior = await this.store.getSubmission(command.deckId, request.requestId);
-    if (prior) {
-      return this.replayReceipt(
-        prior.requestDigest,
-        requestDigest,
-        request.requestId,
-        prior.result
-      );
-    }
     const head = await this.store.getHead(command.deckId);
     if (!head) throw new DeckNotFoundError(command.deckId);
     if (head.revision !== command.expectedRevision) {
@@ -419,7 +364,6 @@ class SlidesService implements SlidesCapability {
     const revision = head.revision + 1;
     const transaction = this.transaction({
       kind: "deck.deleted",
-      sourceRequestId: request.requestId,
       deckId: command.deckId,
       revision,
       ...(this.attributedActor(request.actorId)
@@ -451,29 +395,10 @@ class SlidesService implements SlidesCapability {
     deckId: string;
     expectedRevision: number;
     operations: SlideOperation[];
-    requestId: string;
     origin: SlideOrigin;
     actorId?: string;
     compensation?: DeckChangeSet["compensation"];
-    requestDigest?: string;
   }): Promise<SlideCommandResult> {
-    const requestValue = {
-      deckId: input.deckId,
-      expectedRevision: input.expectedRevision,
-      operations: input.operations,
-      compensation: input.compensation
-    };
-    const requestDigest = input.requestDigest ?? canonicalDigest(requestValue);
-    const prior = await this.store.getSubmission(input.deckId, input.requestId);
-    if (prior) {
-      return this.replayReceipt(
-        prior.requestDigest,
-        requestDigest,
-        input.requestId,
-        prior.result
-      );
-    }
-
     const current = await this.loadSnapshot(input.deckId);
     if (input.expectedRevision > current.head.revision) {
       throw new RevisionConflictError(
@@ -499,7 +424,6 @@ class SlidesService implements SlidesCapability {
       if (touched.length === 0) {
         this.deps.logger.warn("slides.mutation.rebase-refused", {
           deckId: input.deckId,
-          requestId: input.requestId,
           authoredRevision: input.expectedRevision,
           headRevision: current.head.revision,
           reason: "no-touched-ids",
@@ -520,7 +444,6 @@ class SlidesService implements SlidesCapability {
       if (!decision.allowed) {
         this.deps.logger.debug("slides.mutation.rebase-refused", {
           deckId: input.deckId,
-          requestId: input.requestId,
           authoredRevision: input.expectedRevision,
           headRevision: current.head.revision,
           conflictingIds: decision.conflictingIds
@@ -533,7 +456,6 @@ class SlidesService implements SlidesCapability {
       }
       this.deps.logger.debug("slides.mutation.rebased", {
         deckId: input.deckId,
-        requestId: input.requestId,
         authoredRevision: input.expectedRevision,
         headRevision: current.head.revision,
         interveningCount: intervening.length
@@ -556,8 +478,6 @@ class SlidesService implements SlidesCapability {
     const changeSet: DeckChangeSet = {
       id: changeSetId,
       deckId: input.deckId,
-      clientRequestId: input.requestId,
-      requestDigest,
       authoredRevision: input.expectedRevision,
       priorRevision: current.head.revision,
       revision,
@@ -586,16 +506,8 @@ class SlidesService implements SlidesCapability {
       // Reactivating a tombstoned identity is legal only when an exact inverse
       // is putting it back, which is what compensation is.
       identityReactivation: input.compensation ? "same-kind-compensation" : "forbid",
-      receipt: {
-        deckId: input.deckId,
-        requestId: input.requestId,
-        requestDigest,
-        result,
-        createdAt: timestamp
-      },
       transaction: this.transaction({
         kind: input.compensation ? "deck.compensated" : "deck.changed",
-        sourceRequestId: input.requestId,
         deckId: input.deckId,
         revision,
         sourceChangeSetId: changeSetId,
@@ -736,33 +648,16 @@ class SlidesService implements SlidesCapability {
     return { head, snapshot };
   }
 
-  /**
-   * A retry of the same request replays its stored result. A retry of the same
-   * request ID with *different* input is a client bug, not a replay, and saying
-   * so is the only way the caller finds out.
-   */
-  private replayReceipt(
-    storedDigest: string,
-    requestDigest: string,
-    requestId: string,
-    result: SlideCommandResult
-  ): SlideCommandResult {
-    if (storedDigest !== requestDigest) throw new IdempotencyMismatchError(requestId);
-    this.deps.logger.info("slides.command.replayed", {
-      requestId,
-      resultType: result.type
-    });
-    return result;
-  }
-
   private transaction(
     input: Omit<DeckCommittedTransaction, "sourceTransactionId">
   ): DeckCommittedTransaction {
     return {
       ...input,
-      // Derived, not random: a retry that reaches this point again produces the
-      // same key, and the outbox insert is ON CONFLICT DO NOTHING.
-      sourceTransactionId: `slides:${input.deckId}:${input.sourceRequestId}:${input.kind}`
+      // Derived from committed state, not random. Exactly one transaction is
+      // ever recorded for a given Deck revision, so recomputing this during
+      // republication produces the same key and the outbox insert — and
+      // Activity's own idempotency — collapse the duplicate.
+      sourceTransactionId: `slides:${input.deckId}:${input.revision}:${input.kind}`
     };
   }
 
@@ -784,7 +679,7 @@ class SlidesService implements SlidesCapability {
       this.deps.logger.warn("slides.activity.publish-failed", {
         sourceTransactionId: transaction.sourceTransactionId,
         deckId: transaction.deckId,
-        sourceRequestId: transaction.sourceRequestId,
+        revision: transaction.revision,
         errorName: error instanceof Error ? error.name : "UnknownError",
         errorMessage: error instanceof Error ? error.message : String(error)
       });
