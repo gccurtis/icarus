@@ -967,3 +967,75 @@ test("a creation commit accepts prompt ownership with no creation attempt", asyn
 
   store.close();
 });
+
+test("detached prompt outputs are listed only once past the cutoff, and released only when detached", async () => {
+  const store = new SQLiteDocumentStore("project-reap", createStorePath());
+  const creation = creationCommit("document-reap");
+  await store.commitCreation({
+    ...creation,
+    promptOutputs: [
+      {
+        outputId: "output-old",
+        documentId: "document-reap",
+        blockId: "block-old",
+        state: "attached",
+        attachedRevision: 1,
+        createdAt: timestamp(0),
+        updatedAt: timestamp(0)
+      },
+      {
+        outputId: "output-recent",
+        documentId: "document-reap",
+        blockId: "block-recent",
+        state: "attached",
+        attachedRevision: 1,
+        createdAt: timestamp(0),
+        updatedAt: timestamp(0)
+      },
+      {
+        outputId: "output-live",
+        documentId: "document-reap",
+        blockId: "block-live",
+        state: "attached",
+        attachedRevision: 1,
+        createdAt: timestamp(0),
+        updatedAt: timestamp(0)
+      }
+    ]
+  });
+
+  const detach = async (outputId: string, blockId: string, at: string): Promise<void> => {
+    await store.updatePromptOutputOwnership({
+      outputId,
+      documentId: "document-reap",
+      blockId,
+      state: "detached",
+      detachedRevision: 2,
+      at
+    });
+  };
+  await detach("output-old", "block-old", timestamp(10));
+  await detach("output-recent", "block-recent", timestamp(40));
+
+  // The grace period is the whole safety argument: compensation re-attaches a
+  // detached output by ID, so only rows past the cutoff are genuinely
+  // abandoned.
+  const cutoff = timestamp(20);
+  assert.deepEqual(
+    (await store.listDetachedPromptOutputsBefore(cutoff)).map((entry) => entry.outputId),
+    ["output-old"]
+  );
+
+  // An attached row is never released, even if named directly — that would
+  // strand a live Prompt Block pointing at a deleted output.
+  await store.deletePromptOutputOwnership("output-live");
+  assert.equal((await store.getPromptOutputOwnership("output-live"))?.state, "attached");
+
+  await store.deletePromptOutputOwnership("output-old");
+  assert.equal(await store.getPromptOutputOwnership("output-old"), undefined);
+  assert.deepEqual(await store.listDetachedPromptOutputsBefore(cutoff), []);
+  // The recent one is untouched and still waiting for its grace period.
+  assert.equal((await store.getPromptOutputOwnership("output-recent"))?.state, "detached");
+
+  store.close();
+});

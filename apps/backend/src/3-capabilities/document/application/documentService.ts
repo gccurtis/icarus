@@ -138,6 +138,22 @@ export interface DocumentCapability extends DocumentTemplateRuntime {
   compact(documentId: string): Promise<boolean>;
   pruneHistory(cutoff: string): Promise<number>;
   purgeExpired(cutoff: string): Promise<number>;
+
+  // ── Derived Output ownership, for the orphan sweep ────────────────────────
+  /**
+   * Which Derived Outputs this capability once owned and no longer attaches to
+   * any block. The `kind` inherited from the Templates runtime port doubles as
+   * the claimant's name, so a sweep coordinating several of them can say whose
+   * output it reaped.
+   *
+   * Deliberately a *positive* statement rather than a diff. Derived Outputs can
+   * be declared standing alone through their own API, so "no owner" does not
+   * mean "orphan" — only an owner saying "I released this" does.
+   */
+  listDetachedOutputs(
+    cutoff: string
+  ): Promise<Array<{ outputId: string; detachedAt: string }>>;
+  releaseDetachedOutput(outputId: string): Promise<void>;
 }
 
 const now = (): string => new Date().toISOString();
@@ -766,6 +782,28 @@ class DocumentService implements DocumentCapability {
 
   async listSealedResources(): Promise<Array<{ resourceId: string; sealedAt: string }>> {
     return this.store.listSealedResources();
+  }
+
+  async listDetachedOutputs(
+    cutoff: string
+  ): Promise<Array<{ outputId: string; detachedAt: string }>> {
+    const detached = await this.store.listDetachedPromptOutputsBefore(cutoff);
+    if (detached.length > 0) {
+      this.deps.logger.info("document.outputs.detached-found", {
+        cutoff,
+        count: detached.length,
+        outputIds: detached.map((entry) => entry.outputId)
+      });
+    }
+    return detached.map((entry) => ({
+      outputId: entry.outputId,
+      detachedAt: entry.updatedAt
+    }));
+  }
+
+  async releaseDetachedOutput(outputId: string): Promise<void> {
+    await this.store.deletePromptOutputOwnership(outputId);
+    this.deps.logger.info("document.outputs.released", { outputId });
   }
 
   async load(input: { resourceId: string }): Promise<unknown> {

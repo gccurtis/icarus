@@ -165,6 +165,13 @@ export interface DocumentStore {
   registerPendingPromptOutput(ownership: PromptOutputOwnership): Promise<void>;
   updatePromptOutputOwnership(transition: PromptOwnershipTransition): Promise<void>;
   listDetachedPromptOutputs(limit?: number): Promise<PromptOutputOwnership[]>;
+  /** Detached before `cutoff` — old enough that no compensation can re-attach. */
+  listDetachedPromptOutputsBefore(
+    cutoff: string,
+    limit?: number
+  ): Promise<PromptOutputOwnership[]>;
+  /** Removes a detached ownership row. Refuses to touch an attached one. */
+  deletePromptOutputOwnership(outputId: string): Promise<void>;
   /** Every ownership row for one document, in any state. Logical deletion
    *  records these outputs on the stable root before current operational rows
    *  cascade away. */

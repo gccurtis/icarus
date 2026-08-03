@@ -22,6 +22,7 @@ import { createGeneralFilesInstance } from "#init/create/generalFiles.js";
 import { createConnectorInstance } from "#init/create/connector.js";
 import { ConnectorSyncScheduler } from "#init/create/connectorSyncScheduler.js";
 import { createResourceReader } from "#init/create/resource-reader.js";
+import { createDerivedOutputReaper } from "#init/create/derivedOutputReaper.js";
 import { createDocumentInstance } from "#init/create/document.js";
 import { createSlidesInstance } from "#init/create/slides.js";
 import { createActivityInstance } from "#init/create/activity.js";
@@ -150,6 +151,20 @@ export const startBackend = async (): Promise<void> => {
         }),
         bindResourceRetentionPort("investigation", investigation),
         bindResourceRetentionPort("derived-outputs", derivedOutputs),
+        // After both `document` and `derived-outputs`, so it never observes a
+        // half-finished document deletion. It logically deletes what it reaps
+        // and leaves the history for the `derived-outputs` port above to purge
+        // on the next sweep — one retention mechanism, not two.
+        bindResourceRetentionPort(
+          "derived-outputs-orphans",
+          createDerivedOutputReaper({
+            // Document is the only claimant today. Slides owns a byte-identical
+            // ownership table and joins this list when it is wired in.
+            claimants: [document],
+            derivedOutputs,
+            logger
+          })
+        ),
         bindResourceRetentionPort("comments", comments),
         bindResourceRetentionPort("connector", connector),
         bindResourceRetentionPort("general-files", generalFiles),
