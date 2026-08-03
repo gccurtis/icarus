@@ -33,6 +33,7 @@ Items 15 and 16 are **Phase C** of the Templates/Document work and are ticked in
 | 20 | [Quoted names — decide whether we actually want them](#20--quoted-names--decide-whether-we-actually-want-them) | **decision needed** — default no |
 | 21 | [Log content in dev, shape in production, behind a label](#21--log-content-in-dev-shape-in-production-behind-a-label) | ✅ **DONE 2026-08-02** — mechanism landed; migration ongoing |
 | 22 | [Audit what we do with caller-supplied strings](#22--audit-what-we-do-with-caller-supplied-strings) | agreed — explore |
+| 23 | [Test files are not typechecked](#23--test-files-are-not-typechecked) | agreed — small change, expect a backlog |
 | R | [Reference: delegated command claims](#reference--delegated-command-claims-removed-2026-08-02) | ✅ **REMOVED 2026-08-02** |
 
 Items 7–10 correct Templates, which is **already implemented and green** (254 tests). They
@@ -1287,3 +1288,52 @@ Not a fix list — a **table of every place caller text acquires meaning**, with
 and where that escaping lives. Item 18's answer was a shared helper in `0-utils/persistence/`;
 some of these will want the same, and some are genuinely local. The value is knowing which is
 which.
+
+---
+
+## 23 · Test files are not typechecked
+
+**Status:** agreed — worth doing, small
+
+`apps/backend/tsconfig.json` is `"include": ["src/**/*.ts"]` with `rootDir: "src"`, and
+`pnpm test` runs `tsx`, which strips types without checking them. So **nothing under
+`test/` is ever typechecked**, by either script.
+
+Found while reviewing Structured Analytic Phase 2, where a test existed solely to
+catch drift between the domain limits type and the config section:
+
+```ts
+const fromConfig: StructuredAnalyticLimits = DEFAULT_STRUCTURED_ANALYTIC_LIMITS;
+assert.equal(typeof fromConfig.maxDescriptionBytes, "number");
+```
+
+The annotation is inert. The test could never fail for the reason it was written, and
+the comment above it claimed a guarantee it did not provide. It has been replaced with
+a runtime key-set assertion, but the general problem stands: every type annotation in
+every test file is decoration, and the ones that look like drift detectors are worse
+than nothing because they stop anyone from writing a real check.
+
+Two consequences, both real:
+
+- **Assertions that read as compile-time checks silently do nothing.** Test fixtures
+  are `Record<string, unknown>` literals, so when a domain type gains a required field,
+  no test surfaces it — the fixtures keep compiling because they were never compiled.
+- **Test helpers can drift from the code they double.** `CapturingLogger` implements
+  `Logger`; when `Logger` gained its third argument, nothing would have told us if the
+  double had not been updated by hand.
+
+**The fix is small:** a `tsconfig.test.json` extending the base config with
+`include: ["src/**/*.ts", "test/**/*.ts"]` and no `rootDir`, wired into `pnpm typecheck`
+as a second `tsc --noEmit` invocation. Nothing about how tests *run* changes.
+
+**Expect a first-run backlog.** Years of unchecked test code will produce errors on the
+first pass — implicit `any` in helpers, fixtures that do not satisfy the types they are
+annotated with, doubles missing newer members. That backlog is the finding, not an
+argument against it. Worth timeboxing the first run before committing to fixing it all
+in one go; `skipLibCheck` and a temporarily looser `strict` for `test/**` are both
+reasonable staging tactics.
+
+**Open question:** whether the fixtures *should* be typed. Some are deliberately
+malformed — the whole point of a validator test is to hand it garbage — so those want
+`unknown` and a cast at the call site, not a satisfied interface. The valuable typing is
+on helpers, doubles, and expected-value objects, not on hostile inputs.

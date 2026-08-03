@@ -327,6 +327,18 @@ Two routes, the documented error ladder, `commandStatus` returning 201 only for
 `analytic.created`, and Formula `limit_exceeded` / type diagnostics mapping to
 422 `analytic_pull_invalid`.
 
+Map `AnalyticConfigurationError` nowhere — it is a startup fault, and reaching
+job wiring at all would mean the process should not have booted. Purge maps the
+shared `ResourceNotDeletedError` to 409 `not_deleted`, exactly as the ten
+existing mappers do; this capability has no private twin.
+
+**Bound the request body.** There is no global cap — every existing limit is a
+per-capability field limit — and the rejected-payload log record writes the
+*unvalidated* payload verbatim. Until a body cap exists, an oversized malformed
+request is written to disk in full. Either cap the body here or make the
+rejection record truncate; capping is the better answer, because the same hole
+is open on every other capability's decoder.
+
 ---
 
 ## Phase 8 — Startup and aliases
