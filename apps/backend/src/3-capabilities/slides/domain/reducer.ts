@@ -159,9 +159,8 @@ const readTextSource = (
   snapshot: DeckSnapshot,
   site: PromptSite
 ): SlideTextSource => {
-  if (site.kind === "slide-notes") return requireSlide(snapshot, site.slideId).notes;
-  const element = requireElement(snapshot, { kind: "slide", slideId: site.slideId }, site.elementId);
-  if (site.kind === "text-element") {
+  const element = requireElement(snapshot, site.container, site.elementId);
+  if (site.kind === "element-body") {
     if (element.kind !== "text") {
       throw new SlideOperationError(`Element is not a text element: ${site.elementId}`);
     }
@@ -180,12 +179,8 @@ const writeTextSource = (
   site: PromptSite,
   source: SlideTextSource
 ): void => {
-  if (site.kind === "slide-notes") {
-    requireSlide(snapshot, site.slideId).notes = source;
-    return;
-  }
-  const element = requireElement(snapshot, { kind: "slide", slideId: site.slideId }, site.elementId);
-  if (site.kind === "text-element") {
+  const element = requireElement(snapshot, site.container, site.elementId);
+  if (site.kind === "element-body") {
     if (element.kind !== "text") {
       throw new SlideOperationError(`Element is not a text element: ${site.elementId}`);
     }
@@ -204,13 +199,7 @@ const readRichContent = (
   snapshot: DeckSnapshot,
   target: RichContentTarget
 ): RichContent => {
-  if (target.kind === "slide-notes") {
-    const notes = requireSlide(snapshot, target.slideId).notes;
-    if (notes.kind !== "rich") {
-      throw new SlideOperationError(`Slide notes hold a prompt source: ${target.slideId}`);
-    }
-    return notes.content;
-  }
+  if (target.kind === "slide-notes") return requireSlide(snapshot, target.slideId).notes;
   const element = requireElement(snapshot, target.container, target.elementId);
   if (target.kind === "element-body") {
     if (element.kind !== "text") {
@@ -246,7 +235,7 @@ const writeRichContent = (
   content: RichContent
 ): void => {
   if (target.kind === "slide-notes") {
-    requireSlide(snapshot, target.slideId).notes = { kind: "rich", content };
+    requireSlide(snapshot, target.slideId).notes = content;
     return;
   }
   const element = requireElement(snapshot, target.container, target.elementId);
@@ -1732,8 +1721,7 @@ const operationIds = (snapshot: DeckSnapshot, operation: SlideOperation): string
     case "prompt.apply-derived-output": {
       const site = operation.type === "text-source.set" ? operation.target : operation.site;
       ids.add(promptSiteKey(site));
-      if (site.kind !== "slide-notes") ids.add(site.elementId);
-      else ids.add(site.slideId);
+      ids.add(site.elementId);
       break;
     }
     case "rich-text.apply": {

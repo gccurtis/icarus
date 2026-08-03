@@ -208,14 +208,9 @@ const validateTextSource = (
   source: SlideTextSource,
   richText: RichText,
   where: string,
-  authoredOnly: boolean,
   diagnostics: string[]
 ): void => {
   if (source.kind === "prompt") {
-    if (authoredOnly) {
-      diagnostics.push(`${where} may not hold a prompt source`);
-      return;
-    }
     if (!source.output.outputId) {
       diagnostics.push(`${where} prompt source must reference an output`);
     }
@@ -236,7 +231,6 @@ const validateTable = (
   table: SlideTable,
   richText: RichText,
   where: string,
-  authoredOnly: boolean,
   diagnostics: string[]
 ): void => {
   const rowIds = new Set<string>();
@@ -278,7 +272,7 @@ const validateTable = (
       diagnostics.push(`${where} has two cells at one coordinate`);
     }
     occupied.add(coordinate);
-    validateTextSource(cell.body, richText, `${where} cell ${cell.id}`, authoredOnly, diagnostics);
+    validateTextSource(cell.body, richText, `${where} cell ${cell.id}`, diagnostics);
   }
 
   // A table is dense: every coordinate is materialised, unlike Spreadsheet.
@@ -320,9 +314,6 @@ const validateElements = (
   diagnostics: string[]
 ): void => {
   const where = describeContainer(container);
-  // Backdrop planes are authored-only: a prompt in a Master would generate once
-  // and appear beneath every Slide, which is not a thing anyone means to do.
-  const authoredOnly = container.kind !== "slide";
 
   for (const [elementId, element] of Object.entries(elements)) {
     const at = `${where} element ${elementId}`;
@@ -354,9 +345,9 @@ const validateElements = (
     }
 
     if (element.kind === "text") {
-      validateTextSource(element.body, richText, at, authoredOnly, diagnostics);
+      validateTextSource(element.body, richText, at, diagnostics);
     } else if (element.kind === "table") {
-      validateTable(element.table, richText, at, authoredOnly, diagnostics);
+      validateTable(element.table, richText, at, diagnostics);
     } else if (element.kind === "chart") {
       const labelIds = new Set<string>();
       for (const label of element.chart.labels) {
@@ -511,7 +502,12 @@ export const validateSnapshot = (
       diagnostics.push(`Slide ${slideId} references missing Layout ${slide.layoutId}`);
     }
     validateBackground(snapshot.theme, slide.background, `Slide ${slideId}`, diagnostics);
-    validateTextSource(slide.notes, richText, `Slide ${slideId} notes`, false, diagnostics);
+    const notes = richText.validate(slide.notes);
+    if (!notes.ok) {
+      diagnostics.push(
+        `Slide ${slideId} notes hold invalid Rich Content: ${notes.diagnostics.map((item) => item.message).join(", ")}`
+      );
+    }
   }
   if (snapshot.slideOrder.length === 0) {
     diagnostics.push("a Deck must have at least one Slide");
@@ -568,26 +564,24 @@ export const validateSnapshot = (
   // One distinct dedicated Derived Output per live prompt source, and no output
   // bound at two sites.
   const outputSites = new Map<string, string>();
-  for (const [slideId, slide] of Object.entries(snapshot.slides)) {
-    const claim = (outputId: string, site: string): void => {
-      const previous = outputSites.get(outputId);
-      if (previous) {
-        diagnostics.push(`Derived Output ${outputId} is bound at both ${previous} and ${site}`);
-      }
-      outputSites.set(outputId, site);
-    };
-    if (slide.notes.kind === "prompt") {
-      claim(slide.notes.output.outputId, `Slide ${slideId} notes`);
+  const claim = (outputId: string, site: string): void => {
+    const previous = outputSites.get(outputId);
+    if (previous) {
+      diagnostics.push(`Derived Output ${outputId} is bound at both ${previous} and ${site}`);
     }
-    for (const element of Object.values(slide.elements)) {
+    outputSites.set(outputId, site);
+  };
+  for (const container of allContainers(snapshot)) {
+    const where = describeContainer(container.ref);
+    for (const element of Object.values(container.elements)) {
       if (element.kind === "text" && element.body.kind === "prompt") {
-        claim(element.body.output.outputId, `Slide ${slideId} element ${element.id}`);
+        claim(element.body.output.outputId, `${where} element ${element.id}`);
         continue;
       }
       if (element.kind !== "table") continue;
       for (const cell of element.table.cells) {
         if (cell.body.kind !== "prompt") continue;
-        claim(cell.body.output.outputId, `Slide ${slideId} cell ${cell.id}`);
+        claim(cell.body.output.outputId, `${where} cell ${cell.id}`);
       }
     }
   }

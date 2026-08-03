@@ -81,9 +81,12 @@ layouts, slideOrder, slides), `Master`, `Layout`, `LayoutSlot`, `Slide`, the
 closed seven-member `SlideElement` union, `SlideTextSource`, `PromptSite`,
 `ElementPlacement`, operations, history, attempts, intents.
 
-`SlideTextSource` is `rich | prompt`, and the three surfaces that hold one are
-`TextElement.body`, `TableCell.body`, and `Slide.notes`. Prompt is a property of
-content, not an element kind — see
+`SlideTextSource` is `rich | prompt`, and the two surfaces that hold one are
+`TextElement.body` and `TableCell.body`, in any of the three planes — a Master
+or Layout element may hold a prompt like any other. `Slide.notes` is plain
+`RichContent`: notes are the author's own aside, never generated.
+
+Prompt is a property of content, not an element kind — see
 [the rationale](slides-design.md#text-is-a-source-not-an-element-kind). Get the
 `rich → prompt` conversion's exact inverse right here, in the reducer, where it
 is pure: the inverse carries the displaced Rich Content verbatim.

@@ -357,9 +357,7 @@ export const forEachRichContent = (
   }
   for (const slideId of snapshot.slideOrder) {
     const slide = snapshot.slides[slideId];
-    if (slide?.notes.kind === "rich") {
-      visit({ target: { kind: "slide-notes", slideId }, content: slide.notes.content });
-    }
+    if (slide) visit({ target: { kind: "slide-notes", slideId }, content: slide.notes });
   }
 };
 
@@ -367,10 +365,7 @@ export const findRichContent = (
   snapshot: DeckSnapshot,
   target: RichContentTarget
 ): RichContent | undefined => {
-  if (target.kind === "slide-notes") {
-    const notes = snapshot.slides[target.slideId]?.notes;
-    return notes?.kind === "rich" ? notes.content : undefined;
-  }
+  if (target.kind === "slide-notes") return snapshot.slides[target.slideId]?.notes;
   const located = findElement(snapshot, target.container, target.elementId);
   if (!located) return undefined;
   const { element } = located;
@@ -388,32 +383,20 @@ export const findRichContent = (
   return element.chart.labels.find((label) => label.id === target.labelId)?.content;
 };
 
-/** The Rich Content target that addresses the same surface as a prompt site. */
-export const siteAsRichContentTarget = (site: PromptSite): RichContentTarget => {
-  if (site.kind === "slide-notes") return { kind: "slide-notes", slideId: site.slideId };
-  if (site.kind === "table-cell") {
-    return {
-      kind: "table-cell",
-      container: { kind: "slide", slideId: site.slideId },
-      elementId: site.elementId,
-      cellId: site.cellId
-    };
-  }
-  return {
-    kind: "element-body",
-    container: { kind: "slide", slideId: site.slideId },
-    elementId: site.elementId
-  };
-};
+/**
+ * The Rich Content target that addresses the same surface as a prompt site.
+ * Every `PromptSite` is also a `RichContentTarget`; the reverse does not hold,
+ * because chart labels and Slide notes are authored-only.
+ */
+export const siteAsRichContentTarget = (site: PromptSite): RichContentTarget => site;
 
 export const findTextSource = (
   snapshot: DeckSnapshot,
   site: PromptSite
 ): SlideTextSource | undefined => {
-  if (site.kind === "slide-notes") return snapshot.slides[site.slideId]?.notes;
-  const element = snapshot.slides[site.slideId]?.elements[site.elementId];
+  const element = findContainer(snapshot, site.container)?.elements[site.elementId];
   if (!element) return undefined;
-  if (site.kind === "text-element") {
+  if (site.kind === "element-body") {
     return element.kind === "text" ? element.body : undefined;
   }
   if (element.kind !== "table") return undefined;
@@ -427,27 +410,18 @@ export interface PromptSiteEntry {
 }
 
 /**
- * Every live `prompt` source, keyed by site. This is what drives ownership
- * transitions: the diff of these entries before and after a mutation says which
- * outputs attached and which detached.
+ * Every live `prompt` source, keyed by site, across all three planes. This is
+ * what drives ownership transitions: the diff of these entries before and after
+ * a mutation says which outputs attached and which detached.
  */
 export const promptSites = (snapshot: DeckSnapshot): PromptSiteEntry[] => {
   const entries: PromptSiteEntry[] = [];
-  for (const slideId of snapshot.slideOrder) {
-    const slide = snapshot.slides[slideId];
-    if (!slide) continue;
-    if (slide.notes.kind === "prompt") {
-      entries.push({
-        site: { kind: "slide-notes", slideId },
-        outputId: slide.notes.output.outputId,
-        appliedRevision: slide.notes.output.appliedRevision
-      });
-    }
-    for (const elementId of Object.keys(slide.elements).sort()) {
-      const element = slide.elements[elementId];
+  for (const container of allContainers(snapshot)) {
+    for (const elementId of Object.keys(container.elements).sort()) {
+      const element = container.elements[elementId];
       if (element.kind === "text" && element.body.kind === "prompt") {
         entries.push({
-          site: { kind: "text-element", slideId, elementId },
+          site: { kind: "element-body", container: container.ref, elementId },
           outputId: element.body.output.outputId,
           appliedRevision: element.body.output.appliedRevision
         });
@@ -457,7 +431,12 @@ export const promptSites = (snapshot: DeckSnapshot): PromptSiteEntry[] => {
       for (const cell of element.table.cells) {
         if (cell.body.kind !== "prompt") continue;
         entries.push({
-          site: { kind: "table-cell", slideId, elementId, cellId: cell.id },
+          site: {
+            kind: "table-cell",
+            container: container.ref,
+            elementId,
+            cellId: cell.id
+          },
           outputId: cell.body.output.outputId,
           appliedRevision: cell.body.output.appliedRevision
         });
@@ -469,9 +448,8 @@ export const promptSites = (snapshot: DeckSnapshot): PromptSiteEntry[] => {
 
 /** A stable string form of a site, used as a map key and as a touched ID. */
 export const promptSiteKey = (site: PromptSite): string => {
-  if (site.kind === "slide-notes") return `slide-notes:${site.slideId}`;
-  if (site.kind === "table-cell") {
-    return `table-cell:${site.slideId}:${site.elementId}:${site.cellId}`;
-  }
-  return `text-element:${site.slideId}:${site.elementId}`;
+  const container = `${site.container.kind}:${containerId(site.container)}`;
+  return site.kind === "table-cell"
+    ? `table-cell:${container}:${site.elementId}:${site.cellId}`
+    : `element-body:${container}:${site.elementId}`;
 };

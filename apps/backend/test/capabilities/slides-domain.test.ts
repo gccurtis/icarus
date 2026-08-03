@@ -14,6 +14,7 @@ import {
   descendantsOf,
   paintOrder,
   promptSites,
+  promptSiteKey,
   siblingsOf,
   unreachableElementIds,
 } from "../../src/3-capabilities/slides/domain/elements.js";
@@ -196,9 +197,12 @@ const layout = (): Layout => ({
 const slide = (elements: Record<string, SlideElement> = {}): Slide => ({
   id: SLIDE_ID,
   layoutId: LAYOUT_ID,
-  notes: { kind: "rich", content: content("notes-atom", "Speaker notes") },
+  notes: content("notes-atom", "Speaker notes"),
   elements,
 });
+
+const bodySite = (elementId: string, container: ElementContainerRef = SLIDE) =>
+  ({ kind: "element-body", container, elementId }) as const;
 
 const blankSnapshot = (): DeckSnapshot => ({
   representationVersion: 1,
@@ -418,27 +422,29 @@ test("the operation set offers no way to build a parent cycle", () => {
   );
 });
 
-test("a prompt source is legal on a Slide and rejected on a Master or Layout", () => {
+test("a prompt source is live in all three planes", () => {
   const runtime = richText();
-
-  const onSlide = withElements({
-    ...textElement("prompted", 0),
-    body: { kind: "prompt", output: { outputId: "output-1", appliedRevision: 3 } },
+  const prompted = (id: string, outputId: string) => ({
+    ...textElement(id, 0),
+    body: { kind: "prompt" as const, output: { outputId, appliedRevision: 3 } },
   });
-  assert.deepEqual(validateSnapshot(onSlide, runtime, LIMITS).diagnostics, []);
 
-  const onMaster = blankSnapshot();
-  onMaster.masters[MASTER_ID].elements = {
-    backdrop: {
-      ...textElement("backdrop", 0),
-      body: { kind: "prompt", output: { outputId: "output-2", appliedRevision: 1 } },
-    },
-  };
-  assert.ok(
-    validateSnapshot(onMaster, runtime, LIMITS).diagnostics.some((entry) =>
-      entry.includes("may not hold a prompt source"),
-    ),
+  const snapshot = withElements(prompted("on-slide", "output-1"));
+  snapshot.masters[MASTER_ID].elements = { "on-master": prompted("on-master", "output-2") };
+  snapshot.layouts[LAYOUT_ID].elements = { "on-layout": prompted("on-layout", "output-3") };
+
+  assert.deepEqual(validateSnapshot(snapshot, runtime, LIMITS).diagnostics, []);
+  assert.deepEqual(
+    promptSites(snapshot).map((entry) => `${entry.site.container.kind}:${entry.outputId}`),
+    ["master:output-2", "layout:output-3", "slide:output-1"],
   );
+});
+
+test("slide notes are authored only and hold Rich Content directly", () => {
+  const snapshot = blankSnapshot();
+  assert.deepEqual(snapshot.slides[SLIDE_ID].notes, content("notes-atom", "Speaker notes"));
+  // Notes are the author's own aside, so they are not a prompt site at all.
+  assert.deepEqual(promptSites(snapshot), []);
 });
 
 test("one Derived Output may not be bound at two prompt sites", () => {
@@ -967,7 +973,7 @@ test("element.replace is a content edit and never moves the element", () => {
 
 test("converting a text source between rich and prompt inverts exactly", () => {
   const source = withElements(textElement("a", 0, "Authored"));
-  const site = { kind: "text-element", slideId: SLIDE_ID, elementId: "a" } as const;
+  const site = bodySite("a") as const;
 
   const applied = applyOperations(
     source,
@@ -1013,7 +1019,7 @@ test("a prompt source takes a new revision through apply-derived-output and inve
   assertRoundTrip(source, [
     {
       type: "prompt.apply-derived-output",
-      site: { kind: "text-element", slideId: SLIDE_ID, elementId: "a" },
+      site: bodySite("a"),
       output: { outputId: "output-1", appliedRevision: 4 },
     },
   ]);
@@ -1025,7 +1031,7 @@ test("a prompt source takes a new revision through apply-derived-output and inve
         [
           {
             type: "prompt.apply-derived-output",
-            site: { kind: "text-element", slideId: SLIDE_ID, elementId: "a" },
+            site: bodySite("a"),
             output: { outputId: "output-1", appliedRevision: 4 },
           },
         ],
@@ -1036,21 +1042,17 @@ test("a prompt source takes a new revision through apply-derived-output and inve
   );
 });
 
-test("prompt sites are found in text elements, table cells and slide notes", () => {
+test("prompt sites are found in text element bodies and table cells", () => {
   const snapshot = withElements(
     { ...textElement("a", 0), body: { kind: "prompt", output: { outputId: "o1", appliedRevision: 1 } } },
     tableElement("t", 1),
   );
   const cells = (snapshot.slides[SLIDE_ID].elements.t as { table: SlideTable }).table.cells;
   cells[0].body = { kind: "prompt", output: { outputId: "o2", appliedRevision: 2 } };
-  snapshot.slides[SLIDE_ID].notes = {
-    kind: "prompt",
-    output: { outputId: "o3", appliedRevision: 3 },
-  };
 
   assert.deepEqual(
     promptSites(snapshot).map((entry) => `${entry.site.kind}:${entry.outputId}`),
-    ["slide-notes:o3", "text-element:o1", "table-cell:o2"],
+    ["element-body:o1", "table-cell:o2"],
   );
 });
 
@@ -1276,11 +1278,30 @@ test("touched IDs for a prompt write name the site as well as the element", () =
     computeTouchedIds(snapshot, [
       {
         type: "prompt.apply-derived-output",
-        site: { kind: "text-element", slideId: SLIDE_ID, elementId: "a" },
+        site: bodySite("a"),
         output: { outputId: "o1", appliedRevision: 2 },
       },
     ]),
-    ["a", `text-element:${SLIDE_ID}:a`],
+    ["a", `element-body:slide:${SLIDE_ID}:a`],
+  );
+});
+
+test("the same element ID in two planes is two distinct prompt sites", () => {
+  // The site key carries the container, so a Master element and a Slide element
+  // that happen to share an ID never collide in the ownership table.
+  const snapshot = blankSnapshot();
+  const prompted = {
+    ...textElement("shared", 0),
+    body: { kind: "prompt" as const, output: { outputId: "o1", appliedRevision: 1 } },
+  };
+  snapshot.slides[SLIDE_ID].elements = { shared: prompted };
+  snapshot.masters[MASTER_ID].elements = {
+    shared: { ...prompted, body: { kind: "prompt", output: { outputId: "o2", appliedRevision: 1 } } },
+  };
+
+  assert.deepEqual(
+    promptSites(snapshot).map((entry) => promptSiteKey(entry.site)),
+    [`element-body:master:${MASTER_ID}:shared`, `element-body:slide:${SLIDE_ID}:shared`],
   );
 });
 

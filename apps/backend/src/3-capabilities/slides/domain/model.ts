@@ -177,7 +177,8 @@ export interface Slide {
   title?: string;
   /** Overrides the Layout's when present. */
   background?: SlideBackground;
-  notes: SlideTextSource;
+  /** Authored only. Notes are the author's own aside, never generated. */
+  notes: RichContent;
   elements: Record<string, SlideElement>;
 }
 
@@ -388,14 +389,23 @@ export type RichContentTarget =
   | { kind: "slide-notes"; slideId: string };
 
 /**
- * Every surface that may hold a `prompt` source. Deliberately narrower than
- * `RichContentTarget`: chart labels are too small to be worth generating, and
- * Master and Layout elements are backdrop, so both are authored-only.
+ * Every surface that may hold a `prompt` source: a Text element's body and a
+ * table cell, in any of the three planes. A generated element on a Master or
+ * Layout is a live prompt like any other — the backdrop is as much authored
+ * content as a Slide is.
+ *
+ * Narrower than `RichContentTarget` in two places. Chart labels are too small
+ * to be worth generating, and Slide notes are the author's own aside rather
+ * than something to hand to a model.
  */
 export type PromptSite =
-  | { kind: "text-element"; slideId: string; elementId: string }
-  | { kind: "table-cell"; slideId: string; elementId: string; cellId: string }
-  | { kind: "slide-notes"; slideId: string };
+  | { kind: "element-body"; container: ElementContainerRef; elementId: string }
+  | {
+      kind: "table-cell";
+      container: ElementContainerRef;
+      elementId: string;
+      cellId: string;
+    };
 
 export type PromptSiteKind = PromptSite["kind"];
 
@@ -406,7 +416,7 @@ export type PromptSiteKind = PromptSite["kind"];
 export type PromptCreateTarget =
   | {
       kind: "new-text-element";
-      slideId: string;
+      container: ElementContainerRef;
       placement: ElementPlacement;
       styleId?: string;
       parentGroupId?: string;

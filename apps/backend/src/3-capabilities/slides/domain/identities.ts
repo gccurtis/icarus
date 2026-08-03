@@ -1,3 +1,4 @@
+import type { RichContent } from "#rich-text";
 import type { DeckSnapshot, SlideElement, SlideTextSource } from "./model.js";
 import { allContainers } from "./elements.js";
 
@@ -79,14 +80,18 @@ export const collectSlideIdentities = (snapshot: DeckSnapshot): SlideIdentity[] 
     identities.push({ kind: "slide", id: slideId });
   }
 
-  const collectTextSource = (source: SlideTextSource): void => {
-    if (source.kind !== "rich") return;
-    for (const atom of source.content.atoms) {
+  const collectRichContent = (content: RichContent): void => {
+    for (const atom of content.atoms) {
       identities.push({ kind: "rich-text-atom", id: atom.id });
     }
-    for (const mark of source.content.marks) {
+    for (const mark of content.marks) {
       identities.push({ kind: "rich-text-mark", id: mark.id });
     }
+  };
+
+  /** A `prompt` source holds a reference, so it contributes no identities. */
+  const collectTextSource = (source: SlideTextSource): void => {
+    if (source.kind === "rich") collectRichContent(source.content);
   };
 
   const collectElement = (element: SlideElement): void => {
@@ -118,12 +123,7 @@ export const collectSlideIdentities = (snapshot: DeckSnapshot): SlideIdentity[] 
     if (element.kind === "chart") {
       for (const label of element.chart.labels) {
         identities.push({ kind: "chart-label", id: label.id });
-        for (const atom of label.content.atoms) {
-          identities.push({ kind: "rich-text-atom", id: atom.id });
-        }
-        for (const mark of label.content.marks) {
-          identities.push({ kind: "rich-text-mark", id: mark.id });
-        }
+        collectRichContent(label.content);
       }
     }
   };
@@ -134,7 +134,7 @@ export const collectSlideIdentities = (snapshot: DeckSnapshot): SlideIdentity[] 
     }
   }
   for (const slideId of Object.keys(snapshot.slides)) {
-    collectTextSource(snapshot.slides[slideId].notes);
+    collectRichContent(snapshot.slides[slideId].notes);
   }
 
   return identities.sort(compareIdentities);
