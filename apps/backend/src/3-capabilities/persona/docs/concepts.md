@@ -101,19 +101,28 @@ Set algebra happens **before** Persona sees anything. A caller shapes what it wa
 Context's own endpoints and passes the result in:
 
 ```text
-POST /contexts/difference { a, b, displayName, description? }
-  → a named, listable context record
+POST /contexts/difference
+  { a: { entries: [{ id: "*", kind: "project" }] },   // the whole project, named explicitly
+    b: { contextId: "ctx-x" },                        // minus this
+    displayName, description? }
+  → a named, listable context record: the left operand becomes its `entries`, the
+    right becomes its `excludes`, subtracted at resolve time
   → persona.definition.context = { id: thatRecord.id, kind: "context" }
 ```
 
+That record stores the operation, not its result. `{ id: "*", kind: "project" }` expands to
+whatever the project holds at the moment a consumer resolves it, so "the whole project
+except `ctx-x`" keeps meaning that as sources are added.
+
 This is why a persona carries **one** entry rather than a list. A `ContextEntry[]` is
 union-only by construction: a list can only mean "all of these". It cannot represent "the
-whole project except this part", because set difference is an operation applied to a
-list, not a value expressible within one. A single reference to an already-composed
-context solves this and is a smaller field.
+whole project except this part", because the exclusion is a field on a Context *record*
+(`excludes`) and there is nowhere in a bare entry list to put it. A single reference to an
+already-composed context reaches that record and is a smaller field.
 
-`kind` is not constrained to `"context"`. A persona may reference a document or any other
-resource kind directly; the consumer's `resolveScope` handles every kind uniformly.
+`kind` is not constrained to `"context"`. A persona may reference a document, the project
+itself, or any other resource kind directly. `project` is the one kind that is not opaque:
+it expands to the project's live membership rather than naming a resource.
 
 ## The fragment is appended, never substituted
 

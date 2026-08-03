@@ -37,9 +37,18 @@ Type comments describe embeddings/centroids as unit-normalized. `centroid` norma
 | Type | Purpose |
 | --- | --- |
 | `ContextEntry` | Generic reference atom `{ id, kind }` |
+| `PROJECT_CONTEXT_KIND` | The `kind` string `"project"`, naming the project itself rather than a resource in it |
+| `PROJECT_CONTEXT_ENTRY` | The canonical whole-project entry `{ id: "*", kind: "project" }`; `id` is fixed because a store is built from exactly one project |
+| `isProjectEntry` | Matches that entry on `kind` alone, so an unexpected `id` still resolves to the project instead of to nothing |
 | `KnowledgeResourceDescriptor` | Source ID mapped to public resource ID/kind and optional numeric revision |
 | `KnowledgeScopeManifest` | Canonical input, resolver output, descriptors, admissible IDs, two digests, timestamp |
 | `KnowledgeResourceResolver` | `resolve(entries)` plus optional `describeSource(sourceId)` |
+
+The three project values are values, not types, and live here beside the atom because both
+sides need them and neither can import the other: Context expands the sentinel into live
+project membership, Knowledge recognises it as the explicit spelling of whole-project
+scope. They are re-exported from [`#context`](../../../3-capabilities/context/index.ts),
+not from the Knowledge barrel.
 
 `KnowledgeScopeManifest` fields are readonly at the type level. Manifests produced by `resolveScope` are also runtime-frozen. `retrieve` accepts any structurally compatible caller-supplied manifest and does not authenticate its provenance.
 

@@ -25,6 +25,7 @@ flowchart LR
 | Frontier | Stored entries from which retrieval descent begins |
 | Region | One or more overlapping retrieved windows merged into a verbatim span |
 | Context entry | Input reference `{ id, kind }` supplied by a caller |
+| Project sentinel | `{ id: "*", kind: "project" }`, the entry that names the project itself rather than a resource in it |
 | Scope manifest | Frozen resolved source/resource identity snapshot reused across a run |
 | Resource descriptor | Trusted mapping from Knowledge `sourceId` to public resource identity/revision |
 | Mutation listener | Synchronous post-success notification after source add/remove |
@@ -96,13 +97,30 @@ Descent is global even for a scoped query; scope filtering happens after candida
 
 ## Scope semantics
 
-- `resolveScope(undefined)` returns `null`: unscoped.
-- `resolveScope([])` snapshots every currently listed Knowledge source into a non-null manifest.
-- Nonempty entries go through the injected resolver when present.
+Three cases, and the difference between the last two is the point:
+
+| Argument | Result |
+| --- | --- |
+| absent (`undefined`) | `null`: unscoped, the whole lattice, no filtering |
+| `[]` | A non-null manifest with no admissible sources: an empty scope admits nothing |
+| `[{ id: "*", kind: "project" }]` | The whole project, resolved at call time |
+
+An empty array used to mean “the whole project.” It no longer does, because that made an
+unbound reference and a genuinely empty scope indistinguishable, and resolved the mistake
+to the broadest possible grounding. `resolveScope` logs `knowledge.scope.empty` at warn
+when it receives one, since it is nearly always an upstream mistake rather than a caller
+who wants to ground on nothing.
+
+- `PROJECT_CONTEXT_ENTRY` is the canonical spelling of whole-project scope; `isProjectEntry` matches on `kind` alone, because there is only one project and an unrecognised `id` still meant it.
+- Normally the resolver has already expanded the sentinel into concrete resources. `resolveScope` also handles it arriving unexpanded — no resolver wired, or a caller passing it straight to Knowledge — by appending every currently listed source, and logs `knowledge.scope.project` at debug. The alternative is that an unknown kind is dropped and the scope silently becomes empty, which is the opposite of what was asked for.
+- Other nonempty entries go through the injected resolver when present.
 - Without a resolver, only input entries whose kind is exactly `document` remain.
 - Resolved source IDs are deduplicated and sorted.
 - Input and resolved entries are sorted but not deduplicated.
 - Descriptors record public resource identity and optional revision when the resolver can describe a source.
+
+Callers may enforce more. Derived Outputs refuses to refresh an output whose definition
+names nothing, so an empty scope never reaches `resolveScope` from that path.
 
 The manifest arrays, descriptor objects, and outer object are frozen. Digests are SHA-256 hashes of canonical input entries and resource descriptors. `resolvedAt` records snapshot time and is not part of either digest.
 

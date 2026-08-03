@@ -51,8 +51,11 @@ For a wire-valid command whose domain preconditions hold:
 - Variable IDs join the retained-history non-reuse ledger. A Prompt Block
   addresses a variable by ID, so reusing a deleted one would silently re-point a
   Block in retained history at a different variable.
-- A Prompt Block always carries exactly one context. A `variable` context must
-  resolve to a variable that exists.
+- A Prompt Block always carries exactly one context, so its scope can never
+  collapse to a zero-length entry list by accident. A `direct` context names one
+  `ContextEntry` — the project sentinel `{ id: "*", kind: "project" }` included,
+  which is how a Block grounds on the whole project. A `variable` context must
+  resolve to a variable that exists, and an unbound one is refused.
 - **Deleting a bound variable cascades and changes no grounding.** Every
   referencing Block is re-pointed at the variable's current target — the same
   thing it already resolved to — so deletion removes a level of indirection
@@ -128,6 +131,18 @@ For a wire-valid command whose domain preconditions hold:
 - Definition update freezes the target output in a local claim before the
   external call, preventing retries from retargeting after Block edits.
 - Prompt refresh adopts only a newer revision of the same frozen output.
+- A detached ownership row older than the retention cutoff has its Derived
+  Output logically deleted and the row removed. `listDetachedOutputs(cutoff)`
+  reports those rows and `releaseDetachedOutput` forgets each one, both called by
+  the `derived-outputs-orphans` retention port, which deletes the output first
+  and only then releases the row. `deletePromptOutputOwnership` refuses an
+  attached row, so a live Prompt Block can never be stranded.
+- The grace period is load-bearing rather than cautious: compensation
+  re-attaches a detached output by ID, so a recently detached row may still come
+  back and only rows past the cutoff are beyond its reach.
+- The sweep logically deletes rather than purges. The `derived-outputs`
+  retention port clears the history that deletion leaves behind on the same
+  schedule, so there is one retention mechanism, not two.
 - Formula settlement targets the same atom and expression digest and refuses an
   atom touched since its frozen revision.
 - Formula errors are represented as diagnostic settlements, distinct from
@@ -208,7 +223,9 @@ but not a proof against every SQLite/process-failure interleaving.
 - exact pagination, page count, font-manifest rendering, or export;
 - restore or resource reactivation after logical deletion;
 - an Activity-mediated undo/redo coordinator or a Document Activity endpoint;
-- automatic deletion of detached Derived Outputs;
+- deletion of Derived Outputs this capability never owned; the orphan sweep acts
+  only on outputs a claimant positively released, so a standalone output
+  declared through the Derived Outputs API is never reaped;
 - collaboration/Presence or distributed multi-process serialization;
 - live media resolution or chart execution;
 - client-controlled actor attribution (wire does not admit `actorId`);

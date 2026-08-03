@@ -79,6 +79,8 @@ sequenceDiagram
 
 Derived Outputs reuses one exact manifest for all initial and tool retrieval. Its resource-list/read tools also close over that manifest. It does not use `Knowledge.searchTool`, because that built-in binding performs unscoped retrieval.
 
+The entry array is always nonempty on this path: `refresh` throws `DerivedOutputEmptyScopeError` before reaching `resolveScope` when the definition names no context. A definition that wants everything names the project sentinel, which the resource registry expands into current General File, Connector, and accepted Finding entries through `listProjectEntries`.
+
 ## Mutation invalidation
 
 After a non-skipped `add` or any `remove`, Knowledge emits synchronously. [`startBackend.ts`](../../../1-init/startBackend.ts) forwards the event to `DerivedOutputService.recordKnowledgeSourceMutation`. The Derived store advances a persistent Knowledge generation; in-flight refresh settlement checks the generation so stale work cannot publish. If the listener throws, the Knowledge operation rejects even though its store writes already completed.

@@ -33,7 +33,13 @@ Optionally claims and replays an idempotent result. Then `updateOutputDefinition
 
 ### `refresh(id, options?)`
 
-Optionally claims/replays a keyed result, freezes state, inserts an attempt, executes the pipeline, and settles through one of two store transactions. The method catches pipeline failures and normally returns `failRefresh(...).result`; it does not rethrow the provider/model error.
+Loads the output, checks the empty-scope precondition, then optionally claims/replays a keyed result, freezes state, inserts an attempt, executes the pipeline, and settles through one of two store transactions. The method catches pipeline failures and normally returns `failRefresh(...).result`; it does not rethrow the provider/model error.
+
+#### Empty-scope precondition
+
+Before the idempotency claim and before the attempt insert, `refresh` rejects an output whose `definition.contextEntries` is empty: it logs `derived-outputs.refresh.empty-scope` with the output ID and definition revision at error level and throws `DerivedOutputEmptyScopeError`. Nothing is written, so a refused refresh costs no attempt row, no usage, and no failed revision, and `Knowledge.resolveScope` is never reached with an empty array. Together with `DerivedOutputNotFoundError`, this is one of only two errors that leave `refresh` as a rejection instead of a `DerivedRefreshResult`.
+
+`declare` still accepts a missing `contextEntries` and stores `[]`, so a declaration without a scope succeeds and its immediate refresh is what fails.
 
 #### Frozen values
 
@@ -85,6 +91,30 @@ old lifecycle snapshots only for still-current Outputs. `purgeExpired` finds ter
 deletions older than the cutoff and applies the same guarded purge. These methods are
 called by the direct purge endpoint and backend-wide retention runner; purge emits no
 Activity transaction.
+
+## Orphan reaper
+
+[`createDerivedOutputReaper`](../../../1-init/create/derivedOutputReaper.ts) builds a
+second `ResourceRetentionTarget`, registered as `derived-outputs-orphans` after both the
+`document` and `derived-outputs` ports. It is composition-layer code, not part of the
+service, and needs only `delete` from Derived Outputs.
+
+| Member | Behavior |
+|---|---|
+| `pruneHistory(cutoff)` | Returns 0. The reaper owns no history; its deletions are pruned by the `derived-outputs` port |
+| `purgeExpired(cutoff)` | Asks each `DerivedOutputClaimant` for `listDetachedOutputs(cutoff)`, calls `delete` on each, then `releaseDetachedOutput`, and returns how many it reaped |
+
+`DerivedOutputClaimant` is `{ kind, listDetachedOutputs(cutoff), releaseDetachedOutput(outputId) }`.
+`kind` names the owner in logs so a reaped Output traces back to whose it was. Document is
+the only claimant wired today.
+
+Error handling is per-claimant and per-Output. A claimant whose listing throws is logged as
+`derived-outputs.reap.list-failed` and skipped without stopping the rest. A delete that
+fails with anything but `DerivedOutputNotFoundError` logs
+`derived-outputs.reap.delete-failed` and leaves the ownership row alone, because that row
+is the only record that the Output still needs reaping. A not-found delete falls through to
+release the row it left behind. Successful reaps log `derived-outputs.reap.found` at warn
+per claimant and `derived-outputs.reap.deleted` per Output.
 
 ## Validation/helper groups
 

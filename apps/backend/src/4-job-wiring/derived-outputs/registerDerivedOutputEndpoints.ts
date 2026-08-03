@@ -90,8 +90,25 @@ export function registerDerivedOutputEndpoints(
         });
 
         // Run the first refresh
-        const result = await service.refresh(output.id);
-        return { statusCode: 201, body: result };
+        try {
+          const result = await service.refresh(output.id);
+          return { statusCode: 201, body: result };
+        } catch (refreshError) {
+          if (!(refreshError instanceof DerivedOutputEmptyScopeError)) throw refreshError;
+          // The declaration succeeded and the refresh could not run. Returning a
+          // bare 400 would strand the Output behind an ID the caller never saw,
+          // so the id comes back with the error and the caller can give it a
+          // scope through a definition update.
+          logger.warn("derived-outputs.declare.empty-scope", { outputId: output.id });
+          return {
+            statusCode: 400,
+            body: {
+              error: "empty_scope",
+              message: refreshError.message,
+              outputId: output.id
+            }
+          };
+        }
       } catch (e) {
         logger.error("derived-outputs.declare.error", {
           error: e instanceof Error ? e.message : String(e)

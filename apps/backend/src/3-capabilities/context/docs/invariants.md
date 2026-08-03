@@ -9,16 +9,22 @@
 | `delete` sees a current row at revision `N` | Snapshot `N` and terminal deletion `N + 1` are recorded and no current row remains | One SQLite transaction |
 | `list` is called without `includePrivate` | Only current rows with `private = 0` are returned | SQLite predicate |
 | `getByName` succeeds | Returned row is current and exactly matches the table's name comparison | SQLite current-table lookup |
-| `composeNamed` receives operands that resolve (by ID or inline) and a `displayName` with no current conflict | A UUID record at revision 1 is inserted holding the union/difference result | Manager checks plus SQLite PK/current-name index |
+| `composeNamed` receives operands that resolve (by ID or inline) and a `displayName` with no current conflict | A UUID record at revision 1 is inserted holding the composition as a rule: a `{contextId}` operand as a nested reference, a difference's right operand as `excludes` | Manager checks plus SQLite PK/current-name index |
 | `composeNamed` receives a `{contextId}` operand that does not resolve to a current row | Throws `ContextNotFoundError` before any insert | Manager operand resolution |
-| `resolve` receives repeated leaf identities | Each first-seen leaf key appears at most once in the result | Per-call `seen` set |
-| `resolve` encounters a cycle, missing nested ID, or depth beyond the cap | That path terminates or is omitted; the call does not intentionally throw a cycle/depth error | Recursive helper |
+| `resolve` receives repeated leaf identities | Each first-seen leaf key appears at most once in the result | Final deduplication |
+| `resolve` encounters a cycle, missing nested ID, or depth beyond the cap **on the include side** | That path terminates or is omitted; the call does not intentionally throw a cycle/depth error | Recursive helper |
+| `resolve` encounters a cycle or the depth cap **while expanding a record's `excludes`** | That record resolves to nothing, and the truncation is logged at error | Recursive helper |
+| A record carries `excludes` | They are expanded (including nested contexts) and subtracted from *that record's own* expansion; a parent sees the subtracted result, not the exclusions | Per-record resolution |
+| `resolve` encounters a `kind: "project"` entry and a membership port is registered | It expands to that port's answer, fetched at most once per call | `ProjectMembershipPort` |
+| `resolve` encounters a `kind: "project"` entry and no port is registered, or enumeration throws | It expands to nothing, and the reason is logged | Manager |
+| The same Context is reached by two different routes in one resolve | Both routes see the same set | Ancestor-path cycle guard plus per-record memo |
 | `combine(a,b)` is called | Result is first-seen union of `a` then `b` | Pure helper |
 | `difference(a,b)` is called | Every occurrence in `a` whose key is absent from `b` is retained in `a` order | Pure helper |
 
 ## Identity, name, and revision rules
 
 - Entry identity is case-sensitive `${kind}:${id}`.
+- **Exclusions match on `id` alone, not on `kind:id`.** The two sides are spelled by different people: the expansion by whichever capability owns the resource (`general::file::markdown`), the exclusion by whoever typed it (`general-file`). Requiring the kinds to agree lets an exclusion silently fail to subtract. The looser match can exclude two resources that share an `id` across kinds, which narrows a scope rather than leaking one — the safe direction to be wrong in, since an exclusion that misses leaks exactly what someone asked to withhold.
 - Record IDs are random UUIDs.
 - Current display-name uniqueness is across the single project table and case-sensitive.
 - `update` increments the current revision; `delete` records terminal revision `N + 1` in history.
@@ -29,10 +35,12 @@
 
 | Limit | Default | Applied to |
 |---|---:|---|
-| `maxEntriesPerContext` | 100,000 | Raw array length for declare/update, and the combined result for composeNamed |
-| `maxResolveDepth` | 10 | Nested resolve recursion; branches beyond it are silently omitted |
+| `maxEntriesPerContext` | 100,000 | Raw array length of `entries` and of `excludes`, on declare/update/composeNamed |
+| `maxResolveDepth` | 10 | Nested resolve recursion; branches beyond it are omitted on the include side and withhold the record on the exclude side |
 
-All three sites throw a typed `ContextValidationError(field, reason)` on violation, mapped to 400 `context_invalid`. There are no implemented byte limits for names, descriptions, or serialized entries.
+All sites throw a typed `ContextValidationError(field, reason)` on violation, mapped to 400 `context_invalid`. There are no implemented byte limits for names, descriptions, or serialized entries.
+
+`maxEntriesPerContext` bounds what a record stores, not what it resolves to. A record naming the project holds one entry and can expand to every resource in it.
 
 ## Concurrency and atomicity
 
@@ -70,7 +78,8 @@ cutoff.
 
 ## Failure behavior
 
-- Missing nested contexts and depth exhaustion are omissions, not diagnostics.
+- Missing nested contexts and depth exhaustion are omissions, not diagnostics — **on the include side only**. On the exclude side they withhold the record and log at error.
+- An unavailable or failing `ProjectMembershipPort` expands `project` to nothing, not to everything. Both directions of failure are wrong, but only one of them is invisible: a caller who gets nothing notices, and a caller silently grounded on the whole corpus does not.
 - JSON corruption or SQLite errors propagate; mutation handlers generally map them to 400.
 - Manager logging occurs after successful operations; a persistence throw prevents the success log.
 - There is no cross-capability write or compensation in Context itself.

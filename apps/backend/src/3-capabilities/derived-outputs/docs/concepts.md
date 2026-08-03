@@ -16,6 +16,9 @@ A Derived Output is a saved, refreshable question. The mutable output records wh
 | Refresh attempt | Operational record of frozen input digest, candidate, usage, and settlement/discard |
 | Stabilisation text | Prior/reference prose supplied to both planner and synthesizer to preserve answer shape |
 | Frozen scope manifest | One immutable Context/resource/source snapshot reused by every retrieval and tool in a refresh |
+| Project scope sentinel | `{ id: "*", kind: "project" }`, the explicit spelling of whole-project scope, expanded to live membership when the scope is resolved |
+| Empty scope | A definition whose `contextEntries` is `[]`; it names nothing, and refresh refuses it |
+| Released output | An output an owning capability detached from every block and reports to the orphan sweep |
 | Knowledge generation | Project-wide counter incremented on every successful, non-skipped source add/remove event |
 | Evidence candidate | Trusted identity/span observed from Knowledge or a successful scoped read |
 | Evidence | Model-selected candidate plus rank and contribution, accepted only by exact validation |
@@ -79,25 +82,49 @@ It removes lifecycle history and the stable root, cascading retained answer revi
 The backend-wide retention policy prunes old snapshots for live Outputs and purges
 terminal deletions after the configured cutoff.
 
+Logical deletion also arrives unattended, from the `derived-outputs-orphans` retention
+port. An owning capability that has detached an Output from every block reports it as
+released; the sweep logically deletes exactly those and leaves the history for the
+ordinary `derived-outputs` port to purge. It never enumerates Outputs, so an Output
+declared standing alone through the API is never a candidate. See
+[Flows](flows.md#orphan-reaping) for the sweep and [Invariants](invariants.md) for the
+safety property it rests on.
+
 ## Definition and stabilization
 
 Definition revision begins at 1. A complete definition update replaces prompt, Context entries, and stabilisation text under expected-revision CAS and marks freshness stale.
 
 On successful refresh settlement, SQLite fills `stabilisationText` from the new content only when it is currently empty. Once non-empty, later refreshes preserve it until an explicit definition update. The model prompt instructs minimal factual changes around that text, but model adherence is not a deterministic guarantee.
 
+## Empty scope precondition
+
+A definition whose `contextEntries` is `[]` names nothing, and `refresh` throws
+[`DerivedOutputEmptyScopeError`](../domain/model.ts) before it inserts an attempt. The
+check is a precondition on the definition, not a pipeline failure: there is no attempt
+row, no usage, no failed revision, and no freshness change. HTTP maps it to
+`400 empty_scope`.
+
+An empty array is what an unbound Context Variable and an omitted request field produce.
+It used to mean “the whole project,” so those mistakes grounded on the entire corpus and
+published a confident answer. To scope to everything, a definition names the project
+explicitly with `{ id: "*", kind: "project" }`.
+
 ## Frozen scope model
 
-Every refresh calls `Knowledge.resolveScope` exactly once:
+A refresh that passes the precondition calls `Knowledge.resolveScope` exactly once with a
+non-empty entry array:
 
-- `contextEntries: []` is explicit and freezes every current Knowledge source;
-- non-empty entries are recursively resolved through Context and the runtime resource registry;
+- entries are recursively resolved through Context and the runtime resource registry;
+- `{ id: "*", kind: "project" }` names the whole project and expands to its live membership when the scope is resolved, so it is a rule rather than a snapshot taken at declaration;
 - manifest fields include canonical input/leaves, sorted source IDs, public resource descriptors/revisions, two digests, and timestamp;
 - the object and contained arrays/records are frozen;
 - initial queries and all four synthesis tools close over the same object.
 
 ```mermaid
 flowchart TD
-  DEF["definition.contextEntries"] --> RESOLVE["Knowledge.resolveScope once"]
+  DEF["definition.contextEntries"] --> GATE{"names anything?"}
+  GATE -->|no| REFUSE["DerivedOutputEmptyScopeError"]
+  GATE -->|yes| RESOLVE["Knowledge.resolveScope once"]
   RESOLVE --> MAN["frozen manifest"]
   MAN --> PLANRET["all planned retrieves"]
   MAN --> TOOLRET["retrieve tool"]
@@ -114,16 +141,20 @@ The manifest freezes membership and resource revision identity, not source bytes
 
 ## Refresh pipeline
 
-1. Freeze definition/head/Knowledge generation and insert an attempt.
-2. Resolve one scope manifest.
-3. Ask Intelligence for bounded retrieval queries.
-4. Run those Knowledge retrievals sequentially with the manifest.
-5. Convert every region into an evidence candidate using a manifest descriptor.
-6. If no regions exist, produce a deterministic `insufficient` answer without synthesis.
-7. Otherwise run high-strength tool-using structured synthesis.
-8. Validate status, text, evidence identity/revision/source/span/rank.
-9. Atomically compare-and-publish, or discard when a fence changed.
-10. On computation error, atomically mark failed only when the same fences still belong to this attempt; otherwise skip without overwriting newer state.
+1. Refuse an output whose definition names no context, before any state is written.
+2. Freeze definition/head/Knowledge generation and insert an attempt.
+3. Resolve one scope manifest.
+4. Ask Intelligence for bounded retrieval queries.
+5. Run those Knowledge retrievals sequentially with the manifest.
+6. Convert every region into an evidence candidate using a manifest descriptor.
+7. If no regions exist, produce a deterministic `insufficient` answer without synthesis.
+8. Otherwise run high-strength tool-using structured synthesis.
+9. Validate status, text, evidence identity/revision/source/span/rank.
+10. Atomically compare-and-publish, or discard when a fence changed.
+11. On computation error, atomically mark failed only when the same fences still belong to this attempt; otherwise skip without overwriting newer state.
+
+Step 1 is the only one that throws out of `refresh`. Everything from step 2 onward is
+caught and converted into a failed or skipped result.
 
 Expensive work may run concurrently. Correctness comes from atomic final settlement, not a serial→concurrent→serial orchestration object.
 
