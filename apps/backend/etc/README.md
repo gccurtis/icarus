@@ -6,12 +6,6 @@
 
 - `server.host`: host interface to bind.
 - `server.port`: backend HTTP port.
-- `server.maxBodyBytes`: largest accepted request body. Effectively unbounded by
-  default (2 GiB − 1), which overrides Fastify's 1 MiB default. Unbounded on
-  purpose: a rejected request is logged with its payload verbatim, and a cap
-  would silently stop that at the size where the payload matters most. A body
-  over 1 MiB is still logged as `http.request.body-large` — it is allowed, and
-  it is an anomaly worth seeing.
 - `workerPool.concurrentWorkers`: maximum number of concurrently running jobs.
 - `queue.serialMaxSize`: maximum pending jobs for serial work.
 - `queue.concurrentMaxSize`: maximum pending jobs for concurrent work.

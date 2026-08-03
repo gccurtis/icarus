@@ -6,14 +6,6 @@ server:
   host: 0.0.0.0
   # HTTP port for Fastify.
   port: 4000
-  # Largest accepted request body, in bytes. Effectively unbounded by default,
-  # and deliberately so: a rejected request is logged with its payload verbatim,
-  # and a cap here would silently stop that at exactly the size where the
-  # payload matters most. Fastify's own default is 1 MiB — a number nobody here
-  # chose — and this overrides it. Nothing legitimate should come close, so a
-  # body over 1 MiB is logged as `http.request.body-large` even though it is
-  # allowed: the anomaly is the point, not the refusal.
-  maxBodyBytes: 2147483647
 
 workerPool:
   # Max number of concurrent jobs running at the same time.

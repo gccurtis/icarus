@@ -117,7 +117,7 @@ export const startBackend = async (): Promise<void> => {
     knowledge.onSourceMutation((mutation) => {
       derivedOutputs.recordKnowledgeSourceMutation(mutation);
     });
-    const app = createApp(config.server.maxBodyBytes);
+    const app = createApp();
     const scheduler = createScheduler(config, logger);
     const registry = createRegistry(scheduler);
     const documentJobs = new SchedulerInternalJobsRuntime<DocumentInternalJobIntent>(scheduler);

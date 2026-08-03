@@ -7,15 +7,6 @@ import type {
 } from "#utils/types/request.js";
 import type { Logger } from "#platform/observability/logger.js";
 
-/**
- * The size that used to be the silent ceiling — Fastify's 1 MiB default, which
- * this backend now overrides with an effectively unbounded configured limit.
- *
- * Defined here rather than imported from `1-init`: composition depends on
- * transport, not the other way round.
- */
-const NOTABLE_BODY_BYTES = 1_048_576;
-
 export interface RegisterHttpTransportDeps {
   scheduler: JobScheduler;
   registry: JobRegistry;
@@ -29,25 +20,6 @@ const errorFields = (error: unknown): Record<string, unknown> =>
 
 // Convert Fastify-shaped request data into the framework-neutral request used
 // as input to the endpoint registry and its job factories.
-/**
- * How big a body actually was, when it is big enough to be worth saying.
- *
- * The body limit is configured effectively unbounded so that a rejected
- * request can always be logged whole. That makes an enormous request something
- * we accept rather than refuse — so it has to be something we can *see*, or
- * the decision to allow it is invisible until a log file fills a disk.
- */
-const notableBodyBytes = (body: unknown): number | undefined => {
-  if (body === undefined || body === null) return undefined;
-  try {
-    const bytes = Buffer.byteLength(JSON.stringify(body) ?? "", "utf8");
-    return bytes >= NOTABLE_BODY_BYTES ? bytes : undefined;
-  } catch {
-    // A body that will not serialize is not something to fail a request over.
-    return undefined;
-  }
-};
-
 const buildEnvelope = (request: IncomingRequest): RequestEnvelope => ({
   requestId: request.id,
   method: request.method,
@@ -77,17 +49,6 @@ export const registerHttpTransport = (
         headers: request.headers as Record<string, unknown>,
         body: request.body
       });
-
-      const oversized = notableBodyBytes(envelope.body);
-      if (oversized !== undefined) {
-        deps.logger.warn("http.request.body-large", {
-          requestId: envelope.requestId,
-          method: envelope.method,
-          path: envelope.path,
-          bytes: oversized,
-          notableAtBytes: NOTABLE_BODY_BYTES
-        });
-      }
 
       // Registry lookup maps the received method/path to a fresh concrete job.
       if (!deps.registry.has(envelope)) {

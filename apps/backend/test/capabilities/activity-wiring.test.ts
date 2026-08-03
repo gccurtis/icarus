@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createApp } from "../../src/1-init/create/app.js";
-import { UNBOUNDED_BODY_BYTES } from "../../src/0-utils/config/loadBackendConfig.js";
 import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
 import { JobScheduler } from "../../src/0-utils/jobs/scheduler.js";
 import { registerHttpTransport } from "../../src/2-transport/registerHttpTransport.js";
@@ -70,7 +69,7 @@ test("Activity query endpoint decodes project-history requests", async (t) => {
   const registry = new JobRegistry();
   const { activity, queries } = createActivityDouble();
   registerActivityEndpoints(registry, activity, logger);
-  const app = createApp(UNBOUNDED_BODY_BYTES);
+  const app = createApp();
   registerHttpTransport(app, {
     scheduler: new JobScheduler(schedulerConfig, logger),
     registry,
@@ -99,7 +98,7 @@ test("Activity Presence commands reject caller-supplied identities until trusted
   const registry = new JobRegistry();
   const { activity, heartbeatCalls } = createActivityDouble();
   registerActivityEndpoints(registry, activity, logger);
-  const app = createApp(UNBOUNDED_BODY_BYTES);
+  const app = createApp();
   registerHttpTransport(app, {
     scheduler: new JobScheduler(schedulerConfig, logger),
     registry,
