@@ -120,8 +120,25 @@ history — including the final state — remains recoverable until purge or
 retention expiry.
 
 **Purge** permanently drops the history for one analytic. It is legal only after
-deletion: `purgeResourceHistory` refuses when the latest history record is not a
-tombstone, which surfaces as `ResourceNotDeletedError`.
+deletion, and **the store enforces that itself**:
+
+```ts
+purge(id) {
+  if (this.get(id)) throw new ResourceNotDeletedError("structured-analytic", id);
+  if (!purgeResourceHistory(...)) throw new ResourceHistoryNotFoundError(...);
+}
+```
+
+An earlier draft of this document said `purgeResourceHistory` refuses on its own
+and surfaces `ResourceNotDeletedError`. **That is wrong twice over.** The helper
+returns a boolean and never throws, and it never reads the current table — it
+cannot distinguish a live resource from a deleted one. It returns `false` only
+when there is no history at all, or when the newest record is a snapshot rather
+than a tombstone. Called on a live analytic whose history happens to end in a
+tombstone, it would delete that history and return `true`.
+
+The liveness guard is therefore load-bearing, not defensive. Templates carries
+the same guard for the same reason.
 
 ## Retention
 

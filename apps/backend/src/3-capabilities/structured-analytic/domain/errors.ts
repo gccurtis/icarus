@@ -1,11 +1,18 @@
 // One class per distinguishable failure. Job wiring maps these to status codes;
 // nothing here mentions HTTP.
 //
-// Purge-before-delete is deliberately absent: `purgeResourceHistory` already
-// throws the shared `ResourceNotDeletedError` from
-// 0-utils/persistence/resourceHistory.ts, which every endpoint mapper in the
-// repo already maps to 409 `not_deleted`. A capability-private twin would have
-// to be mapped by hand and would be missed by any future shared handler.
+// Purge-before-delete is deliberately absent, but NOT because the shared helper
+// raises it. `purgeResourceHistory` returns a boolean, never throws, and never
+// looks at the current table at all — it cannot tell a live resource from a
+// deleted one. A store that trusts it to refuse would erase the history of a
+// live analytic and report success.
+//
+// The store raises the shared `ResourceNotDeletedError` itself, from an explicit
+// liveness guard, exactly as Templates does
+// (templates/persistence/sqliteTemplateStore.ts:323). Using the shared class is
+// still the win: every endpoint mapper in the repo already turns it into
+// 409 `not_deleted`, and a capability-private twin would be missed by all of
+// them.
 
 /**
  * A definition that is structurally incoherent, or a malformed request.
