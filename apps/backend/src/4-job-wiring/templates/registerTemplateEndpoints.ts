@@ -76,7 +76,8 @@ const logUnexpected = (
 ): void => {
   logger.error(event, {
     requestId,
-    errorName: error instanceof Error ? error.name : "UnknownError"
+    errorName: error instanceof Error ? error.name : "UnknownError",
+    errorMessage: error instanceof Error ? error.message : String(error)
   });
 };
 

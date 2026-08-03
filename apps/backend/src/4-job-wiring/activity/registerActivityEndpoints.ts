@@ -132,7 +132,8 @@ export const registerActivityEndpoints = (
         const context = {
           requestId: request.requestId,
           statusCode: response.statusCode,
-          errorName: error instanceof Error ? error.name : "UnknownError"
+          errorName: error instanceof Error ? error.name : "UnknownError",
+          errorMessage: error instanceof Error ? error.message : String(error)
         };
         if (response.statusCode >= 500) {
           logger.error("activity.query.failed", {

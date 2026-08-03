@@ -455,6 +455,9 @@ const execute = async (
       ...details,
       statusCode: response.statusCode,
       errorName: error instanceof Error ? error.name : "UnknownError",
+      // The name alone cannot tell an upstream 401 from a null dereference, and
+      // this is the only record written for a 500.
+      errorMessage: error instanceof Error ? error.message : String(error),
       durationMs: Math.round(performance.now() - startedAt)
     };
     if (response.statusCode >= 500) logger.error(`${event}.failed`, metadata);

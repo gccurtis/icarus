@@ -52,7 +52,8 @@ const logResponse = (
   const context = {
     requestId,
     statusCode,
-    errorName: error instanceof Error ? error.name : "UnknownError"
+    errorName: error instanceof Error ? error.name : "UnknownError",
+    errorMessage: error instanceof Error ? error.message : String(error)
   };
   if (statusCode >= 500) logger.error(event, context);
   else logger.warn(event, context);
