@@ -895,3 +895,75 @@ test("retention anchors live and deleted Document bodies at the earliest retaine
 
   store.close();
 });
+
+test("a creation commit rejects prompt ownership naming an attempt that does not exist", async () => {
+  // The copy path has no attempt: nothing was asked and nothing was answered, so
+  // there is no attempts row for the ownership to point at. `creation_attempt_id`
+  // is a real foreign key with `foreign_keys = ON`, so naming a non-attempt is a
+  // constraint failure rather than a stray string — and it fails *after* the
+  // Derived Outputs have already been declared, which is precisely how a copy
+  // leaks one output per Prompt Block on every attempt.
+  const store = new SQLiteDocumentStore("project-fk", createStorePath());
+  const creation = creationCommit("document-fk");
+
+  await assert.rejects(
+    store.commitCreation({
+      ...creation,
+      promptOutputs: [
+        {
+          outputId: "output-fk",
+          documentId: "document-fk",
+          blockId: "block-fk",
+          creationAttemptId: "not-an-attempt-id",
+          state: "attached",
+          attachedRevision: 1,
+          createdAt: timestamp(0),
+          updatedAt: timestamp(0)
+        }
+      ]
+    }),
+    /FOREIGN KEY constraint failed/
+  );
+  assert.equal(await store.getHead("document-fk"), undefined, "nothing is committed");
+
+  store.close();
+});
+
+test("a creation commit accepts prompt ownership with no creation attempt", async () => {
+  // Omitting it is what a copy must do, and the column is nullable precisely so
+  // that "there was no attempt" is expressible.
+  const store = new SQLiteDocumentStore("project-fk-ok", createStorePath());
+  const creation = creationCommit("document-fk-ok");
+
+  await store.commitCreation({
+    ...creation,
+    promptOutputs: [
+      {
+        outputId: "output-fk-ok",
+        documentId: "document-fk-ok",
+        blockId: "block-fk-ok",
+        state: "attached",
+        attachedRevision: 1,
+        createdAt: timestamp(0),
+        updatedAt: timestamp(0)
+      },
+      // Two Prompt Blocks in one copy. A shared creation attempt id would also
+      // trip the UNIQUE constraint, so this is the second reason the copy path
+      // cannot borrow its idempotency key for the column.
+      {
+        outputId: "output-fk-ok-2",
+        documentId: "document-fk-ok",
+        blockId: "block-fk-ok-2",
+        state: "attached",
+        attachedRevision: 1,
+        createdAt: timestamp(0),
+        updatedAt: timestamp(0)
+      }
+    ]
+  });
+
+  assert.equal((await store.getPromptOutputOwnership("output-fk-ok"))?.blockId, "block-fk-ok");
+  assert.equal((await store.getPromptOutputOwnership("output-fk-ok-2"))?.blockId, "block-fk-ok-2");
+
+  store.close();
+});

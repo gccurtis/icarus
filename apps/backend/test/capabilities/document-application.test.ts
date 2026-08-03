@@ -1890,6 +1890,81 @@ test("Document satisfies the Templates runtime contract end to end", async (t) =
     );
   });
 
+  await t.test("a copy of a Document holding Prompt Blocks commits, and leaks nothing", async () => {
+    // The case the rest of this suite never reached: seedDocument builds no
+    // Prompt Block, so every other duplicate test skips the loop that declares
+    // Derived Outputs. That loop is the whole of the copy path's risk.
+    const harness = createHarness();
+    const documentId = await seedDocument(harness);
+
+    const settleBlock = async (label: string, blockId: string, rowId: string): Promise<void> => {
+      const requested = await harness.document.command(command(`request-${label}`, {
+        type: "prompt.create.request",
+        documentId,
+        expectedRevision: (await harness.store.getHead(documentId))!.revision,
+        blockId,
+        styleId: NORMAL_STYLE,
+        placement: { kind: "new-row", rowId },
+        prompt: `Summarise ${label}`,
+        context: { kind: "direct", target: { id: "ctx-1", kind: "context" } },
+        stabilisationText: ""
+      }));
+      assert.equal(requested.type, "prompt.create-requested");
+      if (requested.type !== "prompt.create-requested") throw new Error("unreachable");
+      await harness.document.computePromptCreation(requested.attemptId);
+      await harness.document.settlePromptCreation(requested.attemptId);
+    };
+
+    // Two, because a single shared creation-attempt id would also collide on the
+    // UNIQUE constraint — one block would not have proven that.
+    await settleBlock("first", "prompt-block-1", "prompt-row-1");
+    await settleBlock("second", "prompt-block-2", "prompt-row-2");
+
+    const outputsBefore = harness.derivedOutputs.outputs.size;
+
+    const copy = await harness.document.duplicate({
+      sourceResourceId: documentId,
+      idempotencyKey: "templates:register:copy-with-prompts"
+    });
+
+    // It committed at all. Before the creation_attempt_id fix this threw
+    // FOREIGN KEY constraint failed *after* declaring both outputs, so every
+    // attempt left two unreachable Derived Outputs behind.
+    const { snapshot } = await harness.document.load({ resourceId: copy.resourceId }) as
+      { snapshot: DocumentSnapshot };
+    const copiedPrompts = snapshot.rows
+      .flatMap((row) => row.blocks)
+      .filter((block): block is Extract<typeof block, { kind: "prompt" }> =>
+        block.kind === "prompt");
+    assert.equal(copiedPrompts.length, 2);
+
+    // Each copied block owns a fresh, unanswered output — not the source's.
+    for (const block of copiedPrompts) {
+      assert.equal(block.output.appliedRevision, 0);
+      const ownership = await harness.store.getPromptOutputOwnership(block.output.outputId);
+      assert.equal(ownership?.documentId, copy.resourceId);
+      assert.equal(ownership?.state, "attached");
+      assert.equal(
+        ownership?.creationAttemptId,
+        undefined,
+        "a copy has no attempt, so it names none"
+      );
+    }
+
+    // Exactly two new outputs: one per block, no more.
+    assert.equal(harness.derivedOutputs.outputs.size, outputsBefore + 2);
+
+    // And every declared output is owned by something — nothing was left behind.
+    const owned = new Set(
+      (await harness.store.listPromptOutputsForDocument(copy.resourceId))
+        .map((entry) => entry.outputId)
+    );
+    assert.equal(owned.size, 2);
+    for (const block of copiedPrompts) {
+      assert.ok(owned.has(block.output.outputId));
+    }
+  });
+
   await t.test("submit edits a sealed template through the internal path", async () => {
     const harness = createHarness();
     const documentId = await seedDocument(harness);

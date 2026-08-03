@@ -493,7 +493,13 @@ class DocumentService implements DocumentCapability {
         outputId: output.id,
         documentId,
         blockId: block.id,
-        creationAttemptId: input.idempotencyKey,
+        // No creation attempt, deliberately. `creation_attempt_id` is a real
+        // foreign key into the attempts table, and a copy has no attempt —
+        // nothing was asked and nothing was answered, the output is declared and
+        // unanswered at appliedRevision 0. Naming the command's idempotency key
+        // here was a constraint failure on every copy containing a Prompt Block,
+        // and it failed *after* the outputs were declared, leaking one per
+        // block. A second block would have collided on UNIQUE as well.
         state: "attached",
         attachedRevision: 1,
         createdAt: timestamp,
