@@ -102,14 +102,13 @@ interface StructuredDataWriter {
 Structured Data's live display names are uniquely indexed case-insensitively, so
 a taken name surfaces as a conflict the adapter maps to 409 `name_conflict`.
 
-## What is still open
+## Provenance is deliberately not tracked
 
-**Provenance.** A saved or copied entry does not record which analytic produced
-it. Recording it would enable "show me what depends on this analytic" and the
-`resync` above, and it needs a Structured Data field or a distinguishable entry
-kind. Not required for either command to be useful, so deferred rather than
-guessed at.
+A saved or copied entry does not record which analytic produced it, and is an
+ordinary Structured Data entry among all the others.
 
-**Whether a saved analytic should be listable as such.** Today it is an ordinary
-entry among all the others. That is the simplest thing and may be the right
-thing; it is worth revisiting once there are enough of them to be confusing.
+That is the intended end state, not a gap. Recording provenance would buy "show
+me what depends on this analytic" and an automatic `resync`, and both cost a
+back-reference from Structured Data toward Structured Analytic — the exact
+direction this design keeps out. The entry is a value in the project; how it got
+there is not part of what it means.

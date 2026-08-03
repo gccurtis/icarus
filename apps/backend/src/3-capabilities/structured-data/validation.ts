@@ -1,3 +1,4 @@
+import { isBuiltinName } from "#formula";
 import type {
   CellValue,
   CollectionEntry,
@@ -8,11 +9,17 @@ import type {
 } from "./types.js";
 
 const FORMULA_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const FORMULA_RESERVED_NAMES = new Set([
-  "true", "false", "null", "if", "lambda", "function",
-  "sum", "product", "min", "max", "avg", "average", "count",
-  "abs", "mod", "power", "pow", "round", "floor", "ceil", "ceiling",
-  "table", "rows", "columns", "not", "and", "or", "text", "number", "concat"
+
+/**
+ * Literals and keywords the lexer resolves before any name lookup. Builtins are
+ * NOT listed here — `isBuiltinName` is asked directly, because the binder short
+ * circuits on builtin names before consulting the snapshot
+ * (`0-platform/formula/binder.ts`). A hand-maintained copy of that list would
+ * drift the moment a builtin is added, and the failure mode is silent: an entry
+ * whose name became a builtin simply stops resolving, with no error anywhere.
+ */
+const FORMULA_LITERAL_NAMES = new Set([
+  "true", "false", "null", "if", "lambda", "function"
 ]);
 const DATA_KINDS = new Set<DataKind>(["variable", "function", "table", "record", "list"]);
 const SUPPORTED_FIELD_KINDS = new Set<ValueKind>([
@@ -64,7 +71,8 @@ export function validateDisplayName(displayName: unknown, maxBytes: number): str
       "must be an ASCII Formula identifier beginning with a letter or underscore"
     );
   }
-  if (FORMULA_RESERVED_NAMES.has(normalizeDisplayNameKey(canonical))) {
+  const nameKey = normalizeDisplayNameKey(canonical);
+  if (FORMULA_LITERAL_NAMES.has(nameKey) || isBuiltinName(nameKey)) {
     throw new DataValidationError("displayName", "is reserved by Formula");
   }
   const byteLength = Buffer.byteLength(canonical, "utf8");

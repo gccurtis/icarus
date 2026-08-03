@@ -439,7 +439,7 @@ The correct fix is upstream, not here: **a Structured Data entry's revision
 should advance when an entry it depends on advances**, propagating through the
 dependency graph. Then revision alone is both an address and a complete change
 signal, and this capability needs nothing further. That is recorded as the first
-item in [supplementary-changes.md](supplementary-changes.md) and is not required
+item 17 in [`0-general-updates.md`](../0-general-updates.md) and is not required
 for the first version.
 
 The project-wide `snapshotDigest` was worse: it digests every entry, so an edit

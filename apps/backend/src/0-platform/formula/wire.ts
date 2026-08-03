@@ -1,11 +1,11 @@
 // Wire encoding — FormulaValue ↔ JSON-safe FormulaWireValue.
 // Functions are not serializable as values; they render as descriptors.
 
-import type { FormulaValue, FormulaTable } from "./value.js";
+import type { FormulaValue, FormulaTable, DisplayKind } from "./value.js";
 import type { RationalWire } from "./rational.js";
 import { toWire as rToWire, fromWire as rFromWire } from "./rational.js";
 import {
-  NULL_VALUE, makeNumber, makeText, makeLogic, makeList, makeRecord, makeTable
+  NULL_VALUE, makeNumber, makeText, makeLogic, makeList, makeRecord, makeTable, isDisplayKind
 } from "./value.js";
 
 export type FormulaWireValue =
@@ -13,7 +13,15 @@ export type FormulaWireValue =
   | { readonly kind: "number"; readonly numerator: string; readonly denominator: string }
   | { readonly kind: "text"; readonly value: string }
   | { readonly kind: "logic"; readonly value: boolean }
-  | { readonly kind: "list" | "record" | "table"; readonly fields: readonly string[]; readonly rows: FormulaWireValue[][] };
+  | { readonly kind: "list" | "record"; readonly fields: readonly string[]; readonly rows: FormulaWireValue[][] }
+  | {
+      readonly kind: "table";
+      readonly fields: readonly string[];
+      readonly rows: FormulaWireValue[][];
+      /** Set only by DISPLAY. Split from the list/record arm so a displayed
+       *  list is unrepresentable rather than merely undocumented. */
+      readonly display?: DisplayKind;
+    };
 
 export function isWireSerializable(v: FormulaValue): boolean {
   if (v.kind === "function") return false;
@@ -34,12 +42,19 @@ export function toWire(v: FormulaValue): FormulaWireValue {
     case "logic": return { kind: "logic", value: v.value };
     case "list":
     case "record":
-    case "table":
       return {
         kind: v.kind,
         fields: [...v.table.fields],
         rows: v.table.rows.map(row => row.map(cell => toWire(cell)))
       };
+    case "table": {
+      const wire = {
+        kind: "table" as const,
+        fields: [...v.table.fields],
+        rows: v.table.rows.map(row => row.map(cell => toWire(cell)))
+      };
+      return v.display === undefined ? wire : { ...wire, display: v.display };
+    }
     case "function":
       throw new TypeError("Formula function values are not wire-serializable");
   }
@@ -61,7 +76,10 @@ export function fromWire(w: FormulaWireValue): FormulaValue {
     }
     case "table": {
       const rows = w.rows.map(row => row.map(c => fromWire(c)));
-      return makeTable([...w.fields], rows);
+      // Wire values arrive from outside the engine, so the annotation is checked
+      // rather than trusted — the type says DisplayKind, the bytes need not.
+      const display = w.display !== undefined && isDisplayKind(w.display) ? w.display : undefined;
+      return makeTable([...w.fields], rows, display);
     }
   }
 }

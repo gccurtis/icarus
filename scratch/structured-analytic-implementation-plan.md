@@ -10,42 +10,61 @@ data.
 
 The work has two halves, and the first is the larger one:
 
-1. **Formula gains relational power** — seven builtins that make joins,
-   grouping, ordering, limiting, and rendering intent expressible in the
-   language. Useful to every formula author, independent of analytics.
+1. **Formula gains relational power** — eight builtins plus quoted names, making
+   joins, filtering, grouping, ordering, limiting, and rendering intent
+   expressible in the language. Useful to every formula author, independent of
+   analytics.
 2. **Structured Analytic is a thin capability over that** — model, validation,
-   compiler, store, service, wire, endpoints.
+   compiler, store, service, wire, endpoints, and the two commands that turn an
+   analytic into project data.
 
-**Scope boundary.** This plan does not implement saving an analytic as project
-data (copy or link, per
-[`derived-tables.md`](structured-analytic-design/derived-tables.md)) or revision
-propagation in Structured Data (per
-[`supplementary-changes.md`](structured-analytic-design/supplementary-changes.md)).
+**Scope boundary.** This plan does not implement revision propagation in
+Structured Data — that is item 17 in
+[`0-general-updates.md`](0-general-updates.md) and is independent of this work.
 
 ### Definition of done
 
-`analytic.create/update/delete/purge` and `analytic.get/list/check/pull` are
-operational end to end, wired into startup, joined to the retention scheduler,
-covered by three test files, and exercised by one HTTP smoke flow. `typecheck`
-is clean and the full suite is green.
+`analytic.create/update/delete/purge/save/copy` and
+`analytic.get/list/check/pull` are operational end to end, wired into startup,
+joined to the retention scheduler, covered by three test files, and exercised by
+one HTTP smoke flow. `typecheck` is clean and the full suite is green.
 
 ## Preconditions and honest constraints
 
-- **The working tree is mid-refactor.** As last measured, `tsc --noEmit` is
-  clean but 31 test assertions fail across Templates, Document, Investigation,
-  and Connector — largely the resource-history/retention work. This capability
-  conforms to that retention model, so it should not start until that work
-  settles and the suite is green; otherwise "did I break it" is unanswerable.
-- **One compilation detail needs verifying before Phase 1** — whether Formula's
-  `.{…}` condition-query grammar covers the full filter vocabulary (six
-  comparisons, `in`, `contains` with case sensitivity, `isNull`/`isNotNull`). If
-  it does not, add a `WHERE` builtin and the count becomes eight. Check this
-  first; it changes Phase 1's shape.
+- **Baseline is green. This is clear to start.** Measured 2026-08-02:
+  `pnpm typecheck` clean, `pnpm test` **299 pass / 0 fail**, and
+  `import("#init/startBackend.js")` resolves the whole composition graph. The
+  earlier 31 failures were the retention and Activity-vocabulary refactor
+  landing in pieces; they were closed by `0e44375`, `1cbe845`, `63791f0`, and
+  `993e0e2`. Nothing about this plan is waiting on anything.
+- **The backend boots again.** Slide's deletion (`91165f9`) removed the missing
+  `slideService.js` that had made the module graph unloadable, so a live HTTP
+  smoke run — which this plan's exit criteria require — is possible for the
+  first time.
+- **One concurrent workstream shares one file.** The uncommitted Templates
+  rework (Phase A of
+  [`0-templates-checklist.md`](0-templates-checklist.md)) touches only Templates
+  today, but its Phase B and this plan both edit `1-init/startBackend.ts` to add
+  a capability. That is a trivial merge, not a dependency — but whichever lands
+  second should re-run the suite rather than assume. Their checklist quotes a
+  297-test baseline; this plan quotes 299 because the dirty tree already adds
+  two.
+- **The filter-grammar question is settled.** `.{…}` supports exactly
+  `= != < <= > >=` (`ConditionOperator` in `ast.ts`) and requires identifier
+  field names (`parseFieldCondition`). It cannot express `contains` or
+  `isNull`/`isNotNull`. A `WHERE` builtin is therefore in scope, and it removes
+  the need for any column-name mangling — see
+  [`compilation.md`](structured-analytic-design/compilation.md#research-findings-that-shaped-this).
+- **Formula has no quoted-name syntax.** `parsePrimary` builds a `NameNode` only
+  from an identifier, so a Structured Data entry named `Q3 Orders` is
+  unreferenceable from any formula today. Adding one is in Phase 1; without it
+  an analytic could only name identifier-safe entries.
 - **Do not build on the projection-plus-filter pipe form.** Formula's own docs
   record that the parser does not preserve projection fields there. Compilation
   avoids it deliberately.
 - **Structured Data needs no change.** `list()` already returns rows without
-  evaluating anything.
+  evaluating anything, and `declare` already accepts formula-backed and literal
+  entries.
 
 ## Settled architecture
 
@@ -70,6 +89,33 @@ is clean and the full suite is green.
 
 ## Phase 1 — Formula relational builtins
 
+✅ **DONE 2026-08-02.** All eight builtins, backtick-quoted names, and the
+display annotation shipped in `0-platform/formula/`, with 76 tests in
+`test/capabilities/formula-relational.test.ts`. Full suite green.
+
+Both design questions resolved during implementation:
+
+- **(a) The join's intermediate bound** is enforced by `JOIN` itself, checked
+  *during* accumulation after each left row's matches are appended rather than
+  once at the end — so a runaway product fails before it is materialised. It
+  reuses the existing `maxRows` / `maxFields` / `maxCells` limits and the
+  existing `limit_exceeded` diagnostic; no new limit or code was needed.
+- **(b) Options-as-records parse cleanly.** `parsePrimary` already handles
+  `{key: expr}` as an ordinary primary expression (`parser.ts:607`), record keys
+  must be identifiers or the six usable keywords, and none of the option names
+  collide with `KEYWORDS` (only TRUE/FALSE/NULL/IF/LAMBDA/FUNCTION). No fallback
+  to positional arguments was required.
+
+Two implementation decisions worth knowing, neither in the original spec:
+
+- **Unknown option keys are rejected**, not ignored, mirroring the `exactKeys`
+  rule the capability wire decoders use. A typo is a `type_error`, not silence.
+- **`BUILTIN_IMPLEMENTATION_VERSION` bumped `@1` → `@2`.** Builtin function
+  values carry it in their identity digest, so the bump re-digests them once.
+  Nothing persists a function value, so this is a cache refresh, not a break.
+
+---
+
 `0-platform/formula/builtins.ts`, plus `value.ts` and `wire.ts` for the display
 annotation. Specs in
 [`compilation.md`](structured-analytic-design/compilation.md#new-formula-builtins).
@@ -78,15 +124,24 @@ annotation. Specs in
 | --- | --- |
 | `ASTABLE` | `(value, name)` — table/record unchanged, list renamed, scalar to 1 × 1, function rejected |
 | `JOIN` | `(left, right, { kind, on, leftAs, rightAs })` |
+| `WHERE` | `(table, { all, any })` — all ten filter operators, string field names |
 | `GROUP` | `(table, { keys, aggregates })` |
 | `AGGREGATE` | `(table, { aggregates })` — `GROUP` with no keys |
 | `SORT` | `(table, [{ field, direction }])` |
 | `LIMIT` | `(table, n)` |
 | `DISPLAY` | `(table, kind)` — table carrying rendering intent |
 
-Add each name to `BUILTIN_NAMES` and `callBuiltin`'s switch; they follow the
+Plus **backtick-quoted names**: a lexer token and one `parsePrimary` branch
+producing the same `NameNode`, so `` `Q3 Orders`.region `` works. No binder,
+resolver, or normalization change.
+
+Add each builtin to `BUILTIN_NAMES` and `callBuiltin`'s switch; they follow the
 existing `BuiltinResult` / `fail(diagnostic)` convention, so no user-facing
 throwing.
+
+**Options are records with per-key defaults** — no nullable types, no positional
+variants. Each builtin defines its own default for every optional key, so
+`JOIN(a, b, { on: [...] })` is legal and `kind` defaults to `"inner"`.
 
 The semantics that need dedicated tests because they are easy to get subtly
 wrong:
@@ -94,11 +149,14 @@ wrong:
 - **null never matches null** in a join key;
 - left join with no match emits nulls for every right field;
 - many-to-many preserves left row order then right source order;
+- `WHERE` null rules — null passes `equals`/`notEquals`/`in`, fails ordering and
+  `contains`; `contains` honours `caseSensitive`; no cross-kind coercion;
 - `count` ignores nulls; `sum`/`average` are exact rationals; `min`/`max` are
   kind-strict; every aggregate yields null over an empty group;
 - sorts are stable, kind-strict, null last;
 - `DISPLAY` round-trips through `toWire`/`fromWire` and stays consumable as an
-  ordinary table.
+  ordinary table;
+- every optional options key can be omitted and takes its default.
 
 Also in this phase: **bound the intermediate join result.** `JOIN` must enforce
 a row limit itself rather than relying on the evaluator's output-side
@@ -143,23 +201,28 @@ Exit: a test per rule, each with a valid and an invalid literal.
 out.
 
 ```text
-inputs   → ASTABLE(<name>, "<inputKey>")     one per input
+inputs   → ASTABLE(<name>, "<inputKey>")     one per input, backtick-quoted
+                                             when the name is not identifier-safe
 joins    → left-deep JOIN chain in saved order
-filters  → .{ c3 = "closed", … }             ANDed condition query
+filters  → WHERE(…, { all: [...] })
 shelves  → GROUP / AGGREGATE when any placement aggregates, else projection
 sorts    → SORT([...])
 limit    → LIMIT(n)
 display  → DISPLAY(…, "<kind>")
 ```
 
-Column names are generated identifiers `c1..cn` with a compiler-held map from
-`{ input, field }`, because Formula identifiers are `[A-Za-z_][A-Za-z0-9_]*`
-while display names and field names are arbitrary strings.
+**Column names are readable, not mangled.** `JOIN` qualifies output fields as
+`<inputKey>.<field>` and `GROUP` names aggregates with `as`, both as plain
+strings inside record literals. Nothing needs to be a Formula identifier,
+because `WHERE` took the last place that required one. The final table's fields
+are the placement labels — the same names the pull reports — so a saved
+analytic has usable columns with no rename step.
 
 Tests are **golden expression text** — a one-input analytic, an inner join, a
 left join, a chained join, a filtered-and-grouped pipeline, a sorted-and-limited
-one. Asserting source text makes any change to the emitted shape visible in
-review, which is the property that keeps compiler drift honest.
+one, and one input whose name needs quoting. Asserting source text makes any
+change to the emitted shape visible in review, which is what keeps compiler
+drift honest.
 
 ---
 
@@ -186,13 +249,15 @@ current resources, and the repair losing cleanly to a concurrent edit.
 
 ---
 
-## Phase 5 — Project data port and adapter
+## Phase 5 — Project data ports and adapters
 
 `ports/projectData.ts`: `snapshot()` and `metadata()`.
+`ports/structuredDataWriter.ts`: `declareFormula()` and `declareTable()`.
 
-`1-init/create/structured-analytic.ts` implements it over `FormulaNameResolver`
-and `StructuredDataService.list()`. Roughly ten lines — value fetching and
-normalization are the evaluator's job now.
+`1-init/create/structured-analytic.ts` implements both over
+`FormulaNameResolver` and `StructuredDataService`. The read side is roughly ten
+lines — value fetching and normalization are the evaluator's job now. The write
+side maps a taken display name onto 409 `name_conflict`.
 
 `resolverIssueForName` turns a missing binding into a precise 422, distinguishing
 "broken formula upstream" from "no such name".
@@ -212,8 +277,11 @@ plus `pruneHistory` and `purgeExpired`.
 - **check** — `metadata()` only; repairs renamed names; no resolution, no data.
 - **pull** — capture revision → compile → `snapshot()` → resolve inputs by name,
   falling back to `entryId` → repair renamed names → `formula.evaluate` →
-  display data checks → map `c1..cn` back to result fields → assemble the
-  receipt from `observedDependencies`.
+  display data checks → assemble the receipt from `observedDependencies` →
+  return rows **and the captured definition**.
+- **save** — compile, then `declareFormula` with the compiled source. No
+  evaluation, so it cannot fail on data.
+- **copy** — run a full pull, then `declareTable` with the resolved rows.
 
 Attribution from `config.userId`. Logs carry counts, durations, and identifiers
 only — never titles, names, field names, filter values, or rows.
@@ -264,10 +332,13 @@ Three files per
 `formula-relational.test.ts` (the largest — the semantics live there),
 `structured-analytic.test.ts`, `structured-analytic-wiring.test.ts`.
 
-Smoke flow: declare two small Structured Data tables → save an analytic joining
-them → `analytic.pull` and assert fields, rows, display, and receipt → rename one
-source → pull again and assert `renamed` with a successful result → delete →
-purge.
+Smoke flow: declare two small Structured Data tables → create an analytic
+joining them → `analytic.pull` and assert fields, rows, display, definition, and
+receipt → `analytic.save` under a name, then read that name back through
+Structured Data and confirm it resolves → append a row to a source and confirm
+the saved name's value moves → `analytic.copy` and confirm that one does *not*
+move → rename a source → pull again and assert `renamed` with a successful
+result → delete → purge.
 
 Exit criteria: `pnpm typecheck` clean; `pnpm test` green with no pre-existing
 failures reintroduced; smoke flow passes against a running server.
@@ -278,6 +349,7 @@ failures reintroduced; smoke flow passes against a running server.
 
 Calculated and computed inputs, nested-field traversal, unions, pivots, windows,
 non-equality joins, full and cross joins, multi-series and composite displays,
-color/size encodings, renderer styling, result persistence, copy or link to
-Structured Data, revision propagation, decompilation of a formula back into
-pills, and any background sweep or presence-driven refresh.
+color/size encodings, renderer styling, pull-result persistence, provenance
+tracking or automatic republication of saved entries, revision propagation,
+decompilation of a formula back into pills, and any background sweep or
+presence-driven refresh.

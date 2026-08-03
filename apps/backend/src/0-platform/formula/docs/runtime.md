@@ -87,7 +87,28 @@ Row fields are installed in a copied local environment during a query and restor
 
 [`callBuiltin`](../builtins.ts) uses strict arity/type checks and returns an internal `{ value, diagnostics }`. Numeric aggregates flatten numbers through list/table cells but do not accept record aggregates. `TABLE` accepts records directly or in a list, aligns differing field order, and rejects missing fields. Conversion functions are explicit; ordinary operators do not coerce kinds.
 
-`BUILTIN_IMPLEMENTATION_VERSION` and lambda identity make function identity version-aware. `isBuiltinName` is also used by binding/dependency extraction and Structured Data ingress reservation.
+`BUILTIN_IMPLEMENTATION_VERSION` is carried in a built-in function value's identity payload, so bumping it re-digests function values; it does not otherwise version behaviour. Lambda identity is a separate digest. `isBuiltinName` is also used by binding/dependency extraction and by Structured Data ingress, which calls it directly rather than duplicating the list.
+
+### The relational group
+
+`ASTABLE`, `JOIN`, `WHERE`, `GROUP`, `AGGREGATE`, `SORT`, `LIMIT`, and `DISPLAY` take their options as a **record with per-key defaults**, so an omitted key takes the built-in's default and an unknown key is a `type_error` rather than being ignored. Field names are passed as strings inside those records, which is why none of them has to be a Formula identifier.
+
+`ASTABLE` is the coercion every other one relies on: a table passes through, a record is already one row, a list's single column is renamed from `value` to the supplied name, and a scalar becomes a one-by-one table. A function value is refused.
+
+Four different null rules coexist deliberately, and conflating them is the main hazard:
+
+| Context | Rule |
+| --- | --- |
+| `JOIN` keys | null never matches, not even another null |
+| `WHERE` `equals`/`notEquals`/`in` | null equals null |
+| `WHERE` ordering and `contains` | null never passes |
+| `GROUP` keys | nulls group together |
+| `SORT` | null sorts last in **both** directions |
+| aggregates | nulls ignored; an empty group is null, except `count` which is 0 |
+
+`JOIN` bounds its own intermediate row count as the product accumulates rather than relying on the evaluator's output-side limits, because a join multiplies rows faster than anything else in the language. Composite keys are length-prefixed so text containing a separator cannot collide.
+
+`DISPLAY` returns the table itself carrying a `display` annotation rather than a new value kind, so every table operation still applies and a non-rendering consumer ignores it. The annotation participates in the identity digest — the same rows shown as a bar and as a line are different values — but not in `=`, which compares data through `tableEqual`.
 
 ## Numeric, identity, display, and wire helpers
 

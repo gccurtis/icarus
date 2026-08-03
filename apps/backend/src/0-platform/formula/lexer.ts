@@ -79,6 +79,46 @@ export function lex(source: string): Token[] {
       continue;
     }
 
+    // Quoted name — backtick-delimited, with backslash escape.
+    //
+    // Emitted as an ordinary identifier carrying the unquoted text, so a project
+    // name that is not identifier-safe stays referenceable everywhere a bare name
+    // is: `Q3 Orders`.region. Nothing downstream needs to know it was quoted.
+    if (ch === "`") {
+      i++;
+      let value = "";
+      while (i < len && source[i] !== "`") {
+        if (source[i] === "\\") {
+          i++;
+          // A trailing backslash must not read past the end; falling through
+          // leaves the unterminated check below to report it.
+          if (i >= len) break;
+          const esc = source[i];
+          if (esc === "n") value += "\n";
+          else if (esc === "t") value += "\t";
+          else if (esc === "r") value += "\r";
+          else if (esc === "`") value += "`";
+          else if (esc === "\\") value += "\\";
+          else value += esc;
+          i++;
+        } else {
+          value += source[i++];
+        }
+      }
+      if (i >= len) {
+        // Unterminated, matching how an unterminated string literal is reported.
+        tokens.push({ kind: "error", span: { startByte: start, endByte: i }, text: source.slice(start, i) });
+        continue;
+      }
+      i++; // closing `
+      if (value.length === 0) {
+        tokens.push({ kind: "error", span: { startByte: start, endByte: i }, text: source.slice(start, i) });
+        continue;
+      }
+      tokens.push({ kind: "identifier", span: { startByte: start, endByte: i }, text: value });
+      continue;
+    }
+
     // Number literal
     if (isDigit(ch) || (ch === "." && i + 1 < len && isDigit(source[i + 1]))) {
       while (i < len && isDigit(source[i])) i++;

@@ -152,7 +152,7 @@ read the current analytic by id            → capture id + revision
        any input name missing → look it up by recorded entryId in that snapshot
        renamed → repair the cached name (single CAS'd UPDATE, no revision bump)
   → formula.evaluate(expression, snapshot, limits)
-       ASTABLE → JOIN → .{filters} → GROUP/AGGREGATE → SORT → LIMIT → DISPLAY
+       ASTABLE → JOIN → WHERE → GROUP/AGGREGATE → SORT → LIMIT → DISPLAY
        diagnostics → 422
   → display data checks
   → return AnalyticPull {
@@ -227,7 +227,7 @@ One honest limit, which is the same gap named in
 a formula-backed entry's revision does not move when its own inputs move, so a
 check can report "unchanged" for `Total = SUM(Orders.amount)` while the number
 has changed. The fix is revision propagation in Structured Data, tracked in
-[supplementary-changes.md](supplementary-changes.md). Until then a check is a
+[`0-general-updates.md` item 17](../0-general-updates.md). Until then a check is a
 reliable *changed* signal and an imperfect *unchanged* one.
 
 ### What is deliberately not built

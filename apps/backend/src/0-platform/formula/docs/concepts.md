@@ -104,7 +104,14 @@ flowchart TD
 - numeric: `ABS`, `MOD`, `POWER`, `POW`, `ROUND`, `FLOOR`, `CEIL`, `CEILING`;
 - structure: `TABLE`, `ROWS`, `COLUMNS`;
 - conversion/text: `TEXT`, `NUMBER`, `CONCAT`;
+- relational: `ASTABLE`, `JOIN`, `WHERE`, `GROUP`, `AGGREGATE`, `SORT`, `LIMIT`, `DISPLAY`;
 - function syntax names: `LAMBDA`, `FUNCTION`.
+
+A built-in name **cannot be shadowed by project data** — the binder returns on
+`isBuiltinName` before it consults the snapshot. Structured Data therefore asks
+`isBuiltinName` directly at ingress rather than keeping its own list, because a
+copy that drifts turns an added built-in into an entry that silently stops
+resolving.
 
 `LAMBDA` and `FUNCTION` are parsed into lambda AST nodes; reaching the built-in call branch for those names returns an arity diagnostic. `IF` is lazy only through the evaluator's named-call special case. `AND` and `OR` functions receive eagerly evaluated arguments, while `&&` and `||` operators short-circuit.
 

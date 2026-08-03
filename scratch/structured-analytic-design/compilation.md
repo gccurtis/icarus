@@ -120,11 +120,13 @@ DISPLAY(
           JOIN(
             ASTABLE(Orders, "Orders"),
             ASTABLE(Reps, "Reps"),
-            { kind: "left", on: [{ left: "repId", right: "id" }] }
+            { kind: "left",
+              on: [{ left: "repId", right: "id" }],
+              leftAs: "Orders", rightAs: "Reps" }
           ),
           { all: [{ field: "Orders.status", op: "equals", value: "closed" }] }
         ),
-        { keys: ["Orders.region"],
+        { keys: [{ field: "Orders.region", as: "Region" }],
           aggregates: [{ as: "Total", field: "Orders.amount", fn: "sum" }] }
       ),
       [{ field: "Total", direction: "desc" }]
@@ -188,14 +190,23 @@ without a join to hang the coercion on.
 ```text
 { kind: "inner" | "left",          default "inner"
   on: [{ left, right }, ...],      required, nonempty, ANDed
-  leftAs: <prefix>,                default: inferred from the left input
-  rightAs: <prefix> }              default: inferred from the right input
+  leftAs: <prefix>,                default "" — no prefix
+  rightAs: <prefix> }              default "" — no prefix
 ```
 
 Exact scalar equality; **null never matches null**. A left join with no match
 supplies null for every right field. Many-to-many produces all matching pairs,
 preserving left row order then right source order. Output fields are
-`<prefix>.<field>` on both sides.
+`<prefix>.<field>` when a prefix is given and the bare field name when it is
+not; colliding output names are refused with a message naming the field.
+
+**The prefixes are not inferred, and the compiler always emits them.** An
+earlier draft said `leftAs`/`rightAs` default to "the input name", which cannot
+work: `ASTABLE` takes a name but a table value carries none afterwards, so
+`JOIN` has nothing to infer from. Making it inferable would mean giving tables a
+name annotation alongside `display` — more machinery than the compiler emitting
+two strings it already knows. In a chained join the compiler passes `rightAs`
+only, because the accumulated left side is already qualified.
 
 `JOIN` also enforces its own intermediate row bound, because a join multiplies
 rows faster than anything Formula does today and the evaluator's output-side
@@ -225,18 +236,32 @@ form for the six comparisons it supports.
 ### `GROUP(table, options)` and `AGGREGATE(table, options)`
 
 ```text
-GROUP(table, { keys: [<field>, ...], aggregates: [{ as, field, fn }, ...] })
+GROUP(table, { keys: [<field> | { field, as }, ...],
+               aggregates: [{ as, field, fn }, ...] })
 AGGREGATE(table, { aggregates: [{ as, field, fn }, ...] })
 ```
 
-`fn` is `sum | count | average | min | max`. `AGGREGATE` is exactly `GROUP` with
-no keys — a whole-table rollup to one row. It exists as its own name because
-`GROUP(t, { keys: [], aggregates: […] })` reads badly for "just total this", and
-a reader should not have to know that empty keys mean something special.
+A key is a bare field name, or `{ field, as }` when the output column should be
+named something else. That form exists so a **labelled non-aggregated
+placement** carries its label through compilation — without it the column naming
+rule below is unreachable for grouping columns and a rename pass would be needed
+after all.
 
-`count` counts non-null; `sum`/`average` require numbers and are exact
-rationals; `min`/`max` accept number or text and are kind-strict; every
-aggregate ignores nulls and yields null over an empty group.
+`fn` is `sum | count | average | min | max`.
+
+`AGGREGATE` is `GROUP` with no keys — a whole-table rollup — and exists as its
+own name because `GROUP(t, { keys: [], aggregates: […] })` reads badly for "just
+total this". It differs in exactly two ways, both deliberate:
+
+- **`aggregates` is required and nonempty.** A rollup with nothing to roll up is
+  a mistake, whereas `GROUP` with no aggregates is a useful distinct.
+- **Over an empty input it still returns one row.** A rollup of nothing is a row
+  of empty answers; a grouping of nothing is no groups, so `GROUP` returns none.
+
+`count` counts non-null values and is **0 over an empty group**; `sum`/`average`
+require numbers and are exact rationals; `min`/`max` accept number or text, are
+kind-strict, and refuse a mixed column; every aggregate ignores nulls, and every
+aggregate *except* `count` yields null over an empty group.
 
 ### `SORT(table, [{ field, direction }, ...])`
 
@@ -277,6 +302,15 @@ does not change the binder, the resolver, or name normalization.
 
 Without this, an analytic can only name identifier-safe entries — which would
 surface a Formula limitation as an arbitrary-looking analytic rule.
+
+**It is forward-looking as shipped.** Structured Data still validates display
+names against `FORMULA_IDENTIFIER` (`^[A-Za-z_][A-Za-z0-9_]*$`), so an entry
+named `Q3 Orders` cannot be *created* yet — the quoting works, but there is
+nothing that needs it. Relaxing that rule is a separate change with its own
+consequences (every existing formula referencing a name would keep working, but
+the set of legal names widens permanently), so it is deliberately not bundled
+here. The lexer half landing first means the day the rule relaxes, nothing else
+has to change.
 
 ## Where validation lives
 

@@ -17,12 +17,21 @@ export function formulaValueIdentityPayload(value: FormulaValue): unknown {
       return { kind: value.kind, value: value.value };
     case "list":
     case "record":
-    case "table":
       return {
         kind: value.kind,
         fields: [...value.table.fields],
         rows: value.table.rows.map(row => row.map(formulaValueIdentityPayload))
       };
+    case "table": {
+      // Rendering intent is part of a table's identity: the same rows shown as a
+      // bar and as a line are different values to anyone comparing digests.
+      const payload = {
+        kind: value.kind,
+        fields: [...value.table.fields],
+        rows: value.table.rows.map(row => row.map(formulaValueIdentityPayload))
+      };
+      return value.display === undefined ? payload : { ...payload, display: value.display };
+    }
     case "function":
       return value.fn.kind === "lambda"
         ? {

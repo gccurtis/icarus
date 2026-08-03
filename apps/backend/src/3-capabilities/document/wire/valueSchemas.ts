@@ -1,4 +1,5 @@
 import type { ContextEntry } from "#context";
+import { DISPLAY_KINDS } from "#formula";
 import type { FormulaWireValue } from "#formula";
 import type {
   FormulaAtomSettlement,
@@ -434,7 +435,16 @@ const decodeFormulaWireValue = (value: unknown, label: string, depth = 0): Formu
     exactKeys(raw, ["kind", "value"], label);
     requireBoolean(raw.value, `${label}.value`);
   } else {
-    exactKeys(raw, ["kind", "fields", "rows"], label);
+    // Only a table may carry rendering intent, and only one of the known kinds,
+    // so an unrecognised chart kind is refused at the seam rather than stored.
+    if (kind === "table") {
+      exactKeys(raw, ["kind", "fields", "rows", "display"], label);
+      if (raw.display !== undefined) {
+        requireEnum(raw.display, [...DISPLAY_KINDS], `${label}.display`);
+      }
+    } else {
+      exactKeys(raw, ["kind", "fields", "rows"], label);
+    }
     const fields = requireArray(raw.fields, `${label}.fields`).map((field, index) =>
       requireString(field, `${label}.fields[${index}]`));
     const rows = requireArray(raw.rows, `${label}.rows`).map((row, rowIndex) => {

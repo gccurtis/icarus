@@ -12,3 +12,8 @@ export { formatFormulaValue, formatFormulaWireValue } from "./display.js";
 export type { CanonicalRational, RationalWire } from "./rational.js";
 export { makeRational, fromDecimalString, toDecimalString, fromInt, ZERO, ONE } from "./rational.js";
 export { NULL_VALUE, makeNumber, makeText, makeLogic, makeList, makeRecord, makeTable, EMPTY_TABLE, TRUE_VALUE, FALSE_VALUE } from "./value.js";
+export type { DisplayKind } from "./value.js";
+export { DISPLAY_KINDS, isDisplayKind } from "./value.js";
+/** Exported so consumers ask the engine which names are reserved rather than
+ *  keeping their own copy of the list, which silently drifts when one is added. */
+export { isBuiltinName } from "./builtins.js";

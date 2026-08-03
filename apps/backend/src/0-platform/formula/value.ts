@@ -40,9 +40,31 @@ export interface RecordValue {
   readonly table: FormulaTable;
 }
 
+/**
+ * Rendering intent a table may carry. A display IS its table — every table
+ * operation still applies, and a consumer that does not render simply ignores
+ * this. See the DISPLAY builtin.
+ */
+export type DisplayKind = "table" | "bar" | "line" | "area" | "scatter" | "pie";
+
+export const DISPLAY_KINDS: readonly DisplayKind[] = [
+  "table",
+  "bar",
+  "line",
+  "area",
+  "scatter",
+  "pie"
+];
+
+export function isDisplayKind(value: string): value is DisplayKind {
+  return (DISPLAY_KINDS as readonly string[]).includes(value);
+}
+
 export interface TableValue {
   readonly kind: "table";
   readonly table: FormulaTable;
+  /** Present only when DISPLAY set it. Absent tables render however the caller likes. */
+  readonly display?: DisplayKind;
 }
 
 export interface FunctionValue {
@@ -118,12 +140,17 @@ export function makeRecord(fields: string[], values: FormulaValue[]): RecordValu
   return { kind: "record", table: { fields, rows: [values] } };
 }
 
-/** Build a TableValue. */
-export function makeTable(fields: string[], rows: FormulaValue[][]): TableValue {
+/** Build a TableValue, optionally carrying rendering intent. */
+export function makeTable(
+  fields: string[],
+  rows: FormulaValue[][],
+  display?: DisplayKind
+): TableValue {
   for (const row of rows) {
     if (row.length !== fields.length) throw new Error("table: row length mismatch");
   }
-  return { kind: "table", table: { fields, rows } };
+  const table = { fields, rows };
+  return display === undefined ? { kind: "table", table } : { kind: "table", table, display };
 }
 
 export const EMPTY_TABLE: TableValue = { kind: "table", table: { fields: [], rows: [] } };

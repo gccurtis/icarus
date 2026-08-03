@@ -124,7 +124,7 @@ revision to go back and look at. A revision is an address; a digest is a boolean
 nobody can act on. The known gap — a formula-backed entry's revision not moving
 when its inputs move — is fixed properly by propagating revisions through the
 dependency graph in Structured Data, tracked in
-[supplementary-changes.md](supplementary-changes.md).
+[`0-general-updates.md` item 17](../0-general-updates.md).
 
 A pull is always fresh. **Staleness is a property of a pull someone is still
 holding, not of the analytic**, so `analytic.check` re-reads metadata cheaply and
@@ -210,12 +210,11 @@ The capability has:
 | File | Contents |
 | --- | --- |
 | [canonical-model.md](canonical-model.md) | Saved definition and pull types, input normalization, joins, shelves, display, rename handling |
-| [compilation.md](compilation.md) | The definition → Formula mapping, the seven new builtins, and a worked example |
+| [compilation.md](compilation.md) | The definition → Formula mapping, the eight new builtins, and a worked example |
 | [store.md](store.md) | Current-state table, revision CAS, history, delete, purge, retention |
 | [operations.md](operations.md) | Runtime methods, validation split, the two endpoints, freshness, errors, logging |
 | [file-architecture.md](file-architecture.md) | Code layout, composition, adapter, and tests |
 | [derived-tables.md](derived-tables.md) | `save` and `copy` — an analytic as a live or frozen Structured Data entry |
-| [supplementary-changes.md](supplementary-changes.md) | Changes wanted in Formula and Structured Data, and why |
 
 The implementation plan lives at
 [`scratch/structured-analytic-implementation-plan.md`](../structured-analytic-implementation-plan.md).
