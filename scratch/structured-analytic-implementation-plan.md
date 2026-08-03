@@ -171,6 +171,32 @@ independently.**
 
 ## Phase 2 — Domain model and validation
 
+✅ **DONE 2026-08-02.** `domain/{model,errors,validation}.ts` plus 62 tests in
+`structured-analytic-domain.test.ts`. Typecheck clean, full suite 466 pass.
+
+Three things landed differently from the plan as written, all deliberate:
+
+- **The shape limits are configuration now, not in Phase 8.** A limit that lives
+  only as a constant is not a limit anyone can tune, so the
+  `structuredAnalytic` section, its parser, its defaults, and its `etc/README.md`
+  table shipped with the rules that use them. Phase 8 keeps only the aliases and
+  the startup wiring.
+- **`maxAnalyticsPerProject` is gone.** A per-project catalog cap contradicts the
+  removal of `maxTemplatesPerProject` earlier the same day, which deferred
+  catalog size to a global resource-quota policy. A test asserts it stays absent.
+- **`maxTitleBytes` and `maxDescriptionBytes` are separate.** They were sharing
+  one bound, so tightening a title silently tightened a description.
+
+**Logging is part of every phase from here, not a documentation step.** Validation
+takes an optional `Logger`, emits a debug event carrying the definition's *shape*
+on acceptance and a warn naming the rule that fired on rejection, and exports
+`describeDefinition` so the service logs the same shape on every command. The
+rule the rest of the capability follows: **log counts, enums, ids, and durations;
+never names, titles, field names, filter values, or rows.** A test enforces it by
+scanning the serialized log for content that must not appear.
+
+---
+
 `domain/model.ts` — `StructuredAnalytic`, `AnalyticDefinition`, `AnalyticInput`,
 `AnalyticFieldRef`, `AnalyticFieldPlacement`, `AnalyticJoin`, `AnalyticFilter`,
 `AnalyticSort`, `AnalyticDisplay`, `AnalyticScalar`, commands, queries,
@@ -299,12 +325,12 @@ Two routes, the documented error ladder, `commandStatus` returning 201 only for
 
 ---
 
-## Phase 8 — Configuration, startup, aliases
+## Phase 8 — Startup and aliases
 
-- `structuredAnalytic` section in `etc/configuration.yaml`,
-  `StructuredAnalyticConfig` + `DEFAULT_CONFIG` + parser in
-  `loadBackendConfig.ts`, a row in `etc/README.md`. Shape limits only — data
-  limits stay in `config.formula`.
+The configuration half of this phase **landed early, in Phase 2** — the
+`structuredAnalytic` section, its parser, its defaults, and its `etc/README.md`
+table all exist. What remains:
+
 - `#structured-analytic` and `#structured-analytic/*` in `package.json` imports
   and `tsconfig.json` paths.
 - `startBackend.ts`: construct after `formula` and `formulaResolver`, add
