@@ -6,7 +6,7 @@
 
 | Method/path | Job | Queue | Input normalization | Calls | Success / notable behavior |
 |---|---|---|---|---|---|
-| `POST /derived-outputs` | `derived-outputs.declare` | concurrent | prompt/stabilization coerced to strings; `contextEntries` validated by `requireContextEntries`, optional here | `declare`, then unkeyed `refresh` | 201 refresh result, including failed/skipped result; 400 `empty_scope` when no context was named |
+| `POST /derived-outputs` | `derived-outputs.declare` | concurrent | prompt/stabilization coerced to strings; `contextEntries` validated by `requireContextEntries`, optional here | `declare`, then unkeyed `refresh` | 201 refresh result, including failed/skipped result; 400 `empty_scope` plus the declared `outputId` when no context was named |
 | `GET /derived-outputs?id=` | `derived-outputs.get` | concurrent | query ID default `""` | `get` | 200 output or explicit 404 |
 | `GET /derived-output-revisions?outputId=&revision=` | `derived-outputs.get-revision` | concurrent | revision via `Number`, default 0 | `getRevision` | 200 revision or explicit 404 |
 | `PATCH /derived-output-definition` | `derived-outputs.update-definition` | serial | complete strings; `contextEntries` validated and required; numeric expected revision | `updateDefinition` | 200 output; 404/409/400 |
@@ -16,7 +16,7 @@
 
 The registration logs a seven-endpoint manifest at startup. No endpoint forwards an idempotency key. There are no deferred or capability-owned Derived Output jobs; concurrency is inside the service/provider calls plus SQLite settlement. The backend-wide retention scheduler calls the service's pruning and expired-purge methods.
 
-Endpoint typed mapping explicitly handles not found, generic conflict, declaration idempotency mismatch, stale definition, and empty scope. `DerivedOutputEmptyScopeError` maps to `400 {"error":"empty_scope"}`. Refresh/definition-specific idempotency errors fall through to generic 400 if invoked through custom wiring; current endpoints cannot trigger them because they pass no options.
+Endpoint typed mapping explicitly handles not found, generic conflict, declaration idempotency mismatch, stale definition, and empty scope. `DerivedOutputEmptyScopeError` maps to `400 {"error":"empty_scope","message"}`; the declare job catches it before the shared mapper and adds `outputId`, and logs `derived-outputs.declare.empty-scope` at warn. Refresh/definition-specific idempotency errors fall through to generic 400 if invoked through custom wiring; current endpoints cannot trigger them because they pass no options.
 
 `requireContextEntries` rejects a malformed `contextEntries` with a generic `400 bad_request` rather than coercing it. Both handlers used to turn any non-array into `undefined` or `[]`, which then meant the whole project, so a typo in the body produced the broadest possible grounding. Declare treats an omitted value as `undefined`, which `declare` still distinguishes from an explicit empty list; the definition update requires the field, because it replaces the definition wholesale and an omitted scope would silently erase it.
 

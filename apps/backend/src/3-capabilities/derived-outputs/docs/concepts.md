@@ -109,6 +109,11 @@ It used to mean “the whole project,” so those mistakes grounded on the entir
 published a confident answer. To scope to everything, a definition names the project
 explicitly with `{ id: "*", kind: "project" }`.
 
+`declare` still accepts an empty scope. A Document copied from a template carries Prompt
+Blocks whose Context Variables are unbound, and declaring their Outputs is how the copy is
+made; refusing there would make that impossible. The refusal belongs at `refresh`, the
+moment an answer would otherwise be produced from nothing.
+
 ## Frozen scope model
 
 A refresh that passes the precondition calls `Knowledge.resolveScope` exactly once with a

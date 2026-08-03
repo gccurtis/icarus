@@ -39,7 +39,7 @@ Loads the output, checks the empty-scope precondition, then optionally claims/re
 
 Before the idempotency claim and before the attempt insert, `refresh` rejects an output whose `definition.contextEntries` is empty: it logs `derived-outputs.refresh.empty-scope` with the output ID and definition revision at error level and throws `DerivedOutputEmptyScopeError`. Nothing is written, so a refused refresh costs no attempt row, no usage, and no failed revision, and `Knowledge.resolveScope` is never reached with an empty array. Together with `DerivedOutputNotFoundError`, this is one of only two errors that leave `refresh` as a rejection instead of a `DerivedRefreshResult`.
 
-`declare` still accepts a missing `contextEntries` and stores `[]`, so a declaration without a scope succeeds and its immediate refresh is what fails.
+`declare` still accepts a missing `contextEntries` and stores `[]`, deliberately: `duplicate` in Document declares one Output per copied Prompt Block through `resolvePromptContextIfBound`, which yields `[]` for an unbound Context Variable. A declaration without a scope therefore succeeds, and its first refresh is what fails.
 
 #### Frozen values
 
