@@ -198,14 +198,25 @@ pnpm --filter @icarus/backend typecheck
 pnpm --filter @icarus/backend test
 ```
 
-**Precondition: get the tree green first.** The baseline is *not* clean as of
-2026-08-02 — the Templates rework is mid-`A2`, with `ports/resourceAdapter.ts`
-deleted, `ports/templatableResource.ts` added, and `templateService.ts`,
-`index.ts`, and `1-init/create/templates.ts` still on the old names (four
-errors). That is in-flight work tracked in
-[`0-templates-checklist.md`](0-templates-checklist.md), not a Slides concern —
-but starting Slides against a red tree destroys the only signal that matters
-here, which is *any error is this work*. Finish A2, confirm green, then begin.
+**Keep the tree green before starting each phase.** The signal that matters here
+is *any error is this work*, and it only works from a clean baseline. The
+Templates rework runs concurrently in the same tree, so check before you start
+rather than assuming: `A2` was mid-rename when Phase 1 began and landed during
+it, and a transient error in `formula/wire.ts` appeared and cleared the same way.
+
+## Status
+
+**Phase 1 is complete** (branch `slides-phase1-domain`, 2026-08-02): eleven
+`domain/` files, 52 tests in `slides-domain.test.ts`, backend suite green at 462.
+
+Two defects were found by the tests and fixed in the same commit — restoring a
+deleted table column appended its cells and changed canonical bytes, and the
+group-cycle check was dead code that let a cycle through validation and into a
+stack overflow. Both are worth knowing about before Phase 2, because the first
+means **cell array order is derived, not authored**, and the second means
+**acyclicity is reachability from the container root**, never an ancestor walk.
+
+Phases 2–7 are unstarted.
 
 Extend `http-smoke.mjs` from phase 4 onward. The composition-root import test in
 `runtime-wiring.test.ts` catches an unresolvable barrel immediately.
