@@ -322,7 +322,7 @@ type CellContent =
   | { kind: "logic";   value: boolean }
   | { kind: "date";    value: string }              // ISO-8601
   | { kind: "formula"; source: string; settlement?: CellFormulaSettlement }
-  | { kind: "prompt";  output: DerivedOutputRef };
+  | { kind: "prompt";  output: DerivedOutputRef };   // on hold — see below
 
 type CellFormulaSettlement =
   | { status: "ok"; value: FormulaWireValue;
@@ -364,9 +364,10 @@ is an Excel compatibility artefact and would leak a representation choice into
 Formula/v1.
 
 `list`, `record`, and `table` values are deliberately absent as cell kinds. A
-formula returning one settles as that value, and a client displays a summary; it
-does not spill into neighbouring coordinates, because spilling is what the
-removed projection subsystem existed for.
+formula returning one settles as that value in the cell that owns the
+expression. **What a client can then do with it is unresolved** — see
+[Open: range-valued results](#open-range-valued-results), which is a real gap,
+not a closed decision.
 
 ### What typing into a cell produces
 
@@ -433,12 +434,41 @@ transaction, computes concurrently against a frozen resolver snapshot, and
 settles serially only if the atom still exists with the same expression digest
 and nothing intervening touched it.
 
-### Prompt cells
+### Prompt cells — on hold, and probably replaced
 
-A prompt lands in **one cell**. One output, one text value, one cell. It is not
-a range and never spills — spreading one output across neighbouring coordinates
-is exactly the projection subsystem this design removed. Prompt output in
-several cells means several prompt cells, each owning its own Derived Output.
+> **Do not build this.** The `prompt` cell kind below is very likely to be
+> deleted and replaced by a **prompt formula**, and the decision waits on
+> Research. Everything else in this document stands; this section does not.
+>
+> **Why.** Derived Outputs is built for text and textual analysis — a durable
+> prose artefact you re-pull as its sources move. That is the right shape for a
+> Document block or a Slide text box. It is the wrong shape for a cell. Cells
+> rarely want fresh prose, and the machinery around one — dedicated output,
+> ownership rows, refresh attempts, applied revisions — is heavy for what a cell
+> actually asks for.
+>
+> **What replaces it.** A `prompt` *formula*: a deliberately cheaper imitation
+> of what Document and Slides do, differing mainly in how context reaches it.
+> It is an addition to Formula, not to Spreadsheet, so it arrives in every
+> capability that already speaks Formula rather than only here. It still covers
+> substantially everything a prompt cell would have.
+>
+> **Why Research is the blocker.** The interesting spreadsheet ask is not "give
+> me a sentence" — it is *pull the relevant structured names and structured data
+> and build me a table*. Research is what makes assembling that scope possible.
+> Being more opinionated in a grid than in prose is the right trade here, and it
+> is a trade that cannot be made before Research lands.
+>
+> This is also the strongest argument that
+> [range-valued results](#open-range-valued-results) has to be solved: a prompt
+> formula's natural output is a table.
+
+The shape recorded below is what a prompt cell *would* be, kept because the
+staleness reasoning transfers to whatever replaces it.
+
+A prompt lands in **one cell**. One output, one text value, one cell. Prompt
+output in several cells means several prompt cells, each owning its own Derived
+Output.
 
 The cell holds only the reference:
 
@@ -520,6 +550,7 @@ type SpreadsheetCommand =
       expectedRevision: number }
   | { type: "spreadsheet.delete"; spreadsheetId: SpreadsheetId;
       expectedRevision: number }
+  // The three prompt commands are on hold; a prompt formula likely replaces them.
   | { type: "prompt.create.request"; spreadsheetId: SpreadsheetId;
       expectedRevision: number;
       /** Stable coordinate. The cell need not exist yet. */
@@ -550,8 +581,9 @@ Two endpoints as everywhere else: `POST /spreadsheet/command` (serial),
 
 `./data/spreadsheet.db`, project-hashed prefix, Base + append-only ChangeSets,
 identity ledger, command and create receipts, attempts and stage receipts for
-formula and prompt work, and an Activity outbox carrying the command `origin`.
-Document's schema shape throughout.
+formula settlement, and an Activity outbox carrying the command `origin`.
+Document's schema shape throughout. No `prompt_outputs` table while prompt cells
+are on hold.
 
 ## Invariants
 
@@ -562,9 +594,10 @@ Document's schema shape throughout.
 4. A merged span covers only coordinates that are unmaterialized or blank; the
    anchor keeps its content.
 5. Every text-bearing field holds valid normalized Rich Content.
-6. One distinct dedicated Derived Output per live Prompt cell. A prompt occupies
-   exactly one cell and never spills. Generated text is never stored in the
-   snapshot — the cell holds a reference and readers resolve it.
+6. *(On hold with prompt cells.)* One distinct dedicated Derived Output per live
+   Prompt cell. A prompt occupies exactly one cell and never spills. Generated
+   text is never stored in the snapshot — the cell holds a reference and readers
+   resolve it.
 7. Overlay `z` is unique and contiguous.
 8. Permanent identity non-reuse; exact same-kind compensation only.
 
@@ -663,6 +696,59 @@ cells. If write-time rejection is ever wanted as well, it is additive: the rules
 are already stored, so it is one check at admission, and it would supplement the
 projection rather than replace it.
 
+## Open: range-valued results
+
+**Unresolved, and it needs a conversation before anything is built for it** —
+but it is now expected to be *needed*, not merely possible. The prompt formula
+that replaces [prompt cells](#prompt-cells--on-hold-and-probably-replaced) is
+aimed squarely at producing tables, and the same question arrives with
+structured data generally and with images. Nothing in v1 depends on the answer,
+but the answer may change what a cell is, so it is recorded here rather than in
+Deferred.
+
+Formula's wire values include `list`, `record`, and `table`. One expression
+lives in one cell. So a single cell can evaluate to a hundred rows of data, and
+this design currently says only that the value settles in that cell — which is
+not an answer, it is a description of the gap.
+
+The old design answered it with a *range projection subsystem*: collision
+arbitration, occupancy tracking, and a materialisation pass. That was removed
+and should stay removed — it was a large mechanism for a question nobody had
+framed. But removing the mechanism did not resolve the question, and the
+previous revision of this document wrongly implied it had.
+
+The name matters here too. "Projection subsystem" describes an implementation
+nobody wants; **range-valued results** describes the actual thing — a result
+whose shape is data, not authorship.
+
+Three directions, none chosen:
+
+1. **Opaque value.** The anchor cell holds the whole `table` and clients render
+   a summary. Cheapest, and it is what the design says today. The cost is that
+   the result is not spreadsheet data: no cell references into it, no formatting
+   of a row inside it, no sorting.
+2. **Materialised into neighbouring coordinates**, owned by the anchor. This is
+   what users expect from modern spreadsheets. It needs an occupancy rule, a
+   collision rule, an interaction with merged spans, and a decision about
+   whether materialised cells are real Cell records (which fights sparseness) or
+   a read-time overlay (which fights cell references).
+3. **A first-class range object** the expression writes into — closer to a
+   structured table than to a grid, decoupling result shape from cell adjacency,
+   and a natural fit with the named-range vocabulary validation already uses.
+
+Whatever is chosen must survive the constraints already fixed: cells are sparse,
+operations need exact inverses, rebase works on touched IDs, and a result's
+shape depends on data — so it cannot be validated at write time, only settled.
+Option 2 is the one where those constraints bite hardest, and it is also the one
+users most expect, which is exactly why this deserves its own discussion rather
+than a decision made in passing.
+
+Three things will land on whatever is chosen, so the discussion should cover all
+three rather than tables alone: **tables**, **structured data** more broadly,
+and **images**. An image arriving as a result is not a value in a cell in any
+sense the current `CellContent` union admits — it is the overlay's problem, or a
+new one.
+
 ## Inventory: what happened to each feature
 
 Judged on **how different the product is without it** and **how reversible
@@ -676,7 +762,7 @@ adding it later is**.
 | Sheet default + per-axis + per-cell style | **Kept** | The baseline styling story |
 | A1 authoring layer | Removed | Existed only for cell-to-cell references, which the model does not have |
 | Calculation planning | Removed | One expression at a time; Formula already does this |
-| Range projection subsystem | Removed | Spilling is a rendering concern |
+| Range projection subsystem | Removed, but the problem it addressed is **still open** — see [Open: range-valued results](#open-range-valued-results) | The old machinery was wrong; the question of what a `list` or `table` result means in a grid is not answered by deleting it |
 | Multi-sheet workbooks | Removed | One sheet per resource |
 | Data cells (pinned/follow-head) | Removed | A `formula` cell over a project binding already is this |
 | Style registry (named styles, inheritance, protected `Normal`) | **Kept** | Same shape as Document and Slides; a spreadsheet style just bundles text *and* cell properties |
