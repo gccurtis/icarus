@@ -225,10 +225,11 @@ const validateDisplayContract = (
 };
 
 /**
- * The shape of a definition, with no content in it. This is what gets logged and
- * what a command event carries: counts and enums, never a name, title, field, or
- * filter value. It is also the cheapest useful description of an analytic when
- * reading a log after the fact.
+ * A definition reduced to counts and enums, with no content in it.
+ *
+ * This is the summary a reader wants first — "six inputs, one self-join, two
+ * measures, rendered as a bar" — and it is what survives into a build that logs
+ * shape only. The definition itself is logged alongside it, labelled `content`.
  */
 export interface AnalyticDefinitionShape {
   readonly inputCount: number;
@@ -272,20 +273,47 @@ export const validateAnalyticDefinition = (
   const startedAt = performance.now();
   try {
     const definition = validateDefinitionInternal(value, options);
-    logger?.debug("structured-analytic.definition.validated", {
-      ...describeDefinition(definition),
-      durationMs: Math.round(performance.now() - startedAt)
-    });
+    // Shape first, so the summary survives into a shape-only build. The
+    // definition in full is the recipe the compiler will turn into a Formula
+    // expression — having it verbatim is what lets a surprising pull later be
+    // traced back to exactly what was saved.
+    logger?.debug(
+      "structured-analytic.definition.validated",
+      {
+        ...describeDefinition(definition),
+        definition,
+        durationMs: Math.round(performance.now() - startedAt)
+      },
+      { detail: "content" }
+    );
     return definition;
   } catch (error) {
-    // A rejection is an expected 400, not a fault — but it is worth seeing,
-    // because a client repeatedly failing the same rule is a real signal. The
-    // field is the rule that fired; the offending value is never logged.
+    // A rejection is an expected 400, not a fault — but it is the single most
+    // useful line in the log, so it carries the rule that fired, the message,
+    // and the payload that broke it. Reproducing a client's bad request should
+    // never require asking the client what they sent.
+    //
+    // Two records on purpose: the shape-labelled one says a rejection happened
+    // and which rule caught it, and survives into production. The content one
+    // carries the payload. Dropping content must not lose the fact.
+    const durationMs = Math.round(performance.now() - startedAt);
+    const field = error instanceof AnalyticValidationError ? error.field : "unknown";
+    const errorName = error instanceof Error ? error.name : "UnknownError";
     logger?.warn("structured-analytic.definition.rejected", {
-      field: error instanceof AnalyticValidationError ? error.field : "unknown",
-      errorName: error instanceof Error ? error.name : "UnknownError",
-      durationMs: Math.round(performance.now() - startedAt)
+      field,
+      errorName,
+      durationMs
     });
+    logger?.warn(
+      "structured-analytic.definition.rejected.detail",
+      {
+        field,
+        errorName,
+        reason: error instanceof Error ? error.message : String(error),
+        rejected: value
+      },
+      { detail: "content" }
+    );
     throw error;
   }
 };
@@ -476,10 +504,23 @@ export const validateAnalyticDescription = (
 ): string | undefined =>
   value === undefined ? undefined : boundedText(value, "description", options.maxDescriptionBytes);
 
-export const validateAnalyticOptions = (options: StructuredAnalyticOptions): void => {
+/**
+ * Runs once at startup. The limits are logged in full because "why was that
+ * rejected" and "which configuration is this process actually running" are the
+ * same question often enough to be worth answering in advance.
+ */
+export const validateAnalyticOptions = (
+  options: StructuredAnalyticOptions,
+  logger?: Logger
+): void => {
   for (const [name, value] of Object.entries(options)) {
     if (!Number.isSafeInteger(value) || value < 1) {
+      logger?.error("structured-analytic.options.rejected", { option: name, value });
       fail(`options.${name}`, "must be a positive safe integer");
     }
   }
+  // Labelled `content` even though these are operator-set numbers rather than
+  // user data: the rule is about who authored the value, and staying strict
+  // costs nothing here.
+  logger?.info("structured-analytic.options.resolved", { ...options }, { detail: "content" });
 };

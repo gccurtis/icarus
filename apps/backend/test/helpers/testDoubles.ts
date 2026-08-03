@@ -1,4 +1,9 @@
-import type { Logger, LogLevel } from "../../src/0-platform/observability/logger.js";
+import type {
+  Logger,
+  LogDetail,
+  LogLevel,
+  LogOptions
+} from "../../src/0-platform/observability/logger.js";
 import type { FormulaLimits } from "../../src/0-platform/formula/limits.js";
 import type { Usage } from "../../src/0-platform/intelligence/types.js";
 
@@ -6,25 +11,58 @@ export interface CapturedLog {
   level: LogLevel;
   message: string;
   data?: unknown;
+  /** Absent means the call was unlabelled, which the Logger reads as `shape`. */
+  detail?: LogDetail;
 }
 
+/**
+ * Captures every record regardless of label — a test asserting that content is
+ * only ever written under a `content` label needs to see the records a
+ * configured FileLogger would have dropped.
+ */
 export class CapturingLogger implements Logger {
   readonly entries: CapturedLog[] = [];
 
-  debug(message: string, data?: unknown): void {
-    this.entries.push({ level: "debug", message, data });
+  debug(message: string, data?: unknown, options?: LogOptions): void {
+    this.capture("debug", message, data, options);
   }
 
-  info(message: string, data?: unknown): void {
-    this.entries.push({ level: "info", message, data });
+  info(message: string, data?: unknown, options?: LogOptions): void {
+    this.capture("info", message, data, options);
   }
 
-  warn(message: string, data?: unknown): void {
-    this.entries.push({ level: "warn", message, data });
+  warn(message: string, data?: unknown, options?: LogOptions): void {
+    this.capture("warn", message, data, options);
   }
 
-  error(message: string, data?: unknown): void {
-    this.entries.push({ level: "error", message, data });
+  error(message: string, data?: unknown, options?: LogOptions): void {
+    this.capture("error", message, data, options);
+  }
+
+  /** Records labelled `content`; unlabelled ones the Logger treats as `shape`. */
+  get contentEntries(): readonly CapturedLog[] {
+    return this.entries.filter(entry => entry.detail === "content");
+  }
+
+  /** What a shape-only build would keep. */
+  get shapeEntries(): readonly CapturedLog[] {
+    return this.entries.filter(entry => entry.detail !== "content");
+  }
+
+  private capture(
+    level: LogLevel,
+    message: string,
+    data: unknown,
+    options?: LogOptions
+  ): void {
+    // `detail` is omitted rather than defaulted so an entry serializes exactly
+    // as it did before the label existed.
+    this.entries.push({
+      level,
+      message,
+      data,
+      ...(options?.detail !== undefined ? { detail: options.detail } : {})
+    });
   }
 }
 
