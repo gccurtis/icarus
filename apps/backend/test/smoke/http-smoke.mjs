@@ -494,4 +494,282 @@ await request(
   404
 );
 
+
+// ─── Structured Analytic ──────────────────────────────────────────────────────
+//
+// The flow that distinguishes `save` from `copy`, which is the pair most likely
+// to be got wrong: append a row to a source afterwards and confirm the saved
+// formula moves while the copied table does not.
+
+const analyticSuffix = Date.now().toString(36);
+const ordersName = `smokeOrders${analyticSuffix}`;
+const repsName = `smokeReps${analyticSuffix}`;
+
+const smokeOrders = await request(
+  "analytic-declare-orders",
+  "/structured-data",
+  {
+    method: "POST",
+    body: json({
+      kind: "table",
+      displayName: ordersName,
+      schema: [
+        { name: "repId", kind: "text" },
+        { name: "region", kind: "text" },
+        { name: "amount", kind: "number" }
+      ],
+      rows: [
+        { repId: "r1", region: "north", amount: 100 },
+        { repId: "r1", region: "north", amount: 50 },
+        { repId: "r2", region: "south", amount: 30 }
+      ]
+    })
+  },
+  201
+);
+
+await request(
+  "analytic-declare-reps",
+  "/structured-data",
+  {
+    method: "POST",
+    body: json({
+      kind: "table",
+      displayName: repsName,
+      schema: [{ name: "id", kind: "text" }, { name: "name", kind: "text" }],
+      rows: [{ id: "r1", name: "Ada" }, { id: "r2", name: "Grace" }]
+    })
+  },
+  201
+);
+
+const analyticDefinition = {
+  inputs: [{ name: ordersName }, { name: repsName }],
+  joins: [
+    {
+      kind: "left",
+      left: ordersName,
+      right: repsName,
+      on: [{ leftField: "repId", rightField: "id" }]
+    }
+  ],
+  columns: [
+    { id: "p1", field: { input: ordersName, field: "region" }, aggregation: "none", label: "Region" }
+  ],
+  rows: [
+    { id: "p2", field: { input: ordersName, field: "amount" }, aggregation: "sum", label: "Total" }
+  ],
+  filters: [],
+  sorts: [{ placementId: "p2", direction: "desc" }],
+  display: { kind: "bar" }
+};
+
+const created = await request(
+  "analytic-create",
+  "/structured-analytics/command",
+  {
+    method: "POST",
+    body: json({
+      type: "analytic.create",
+      input: { title: "Revenue by region", definition: analyticDefinition }
+    })
+  },
+  201
+);
+const analyticId = created.analytic.id;
+assert.equal(created.analytic.revision, 1);
+// The entry ids were captured from the project, not supplied by this request.
+assert.equal(created.analytic.definition.inputs[0].entryId, smokeOrders.id);
+
+const pulled = await request(
+  "analytic-pull",
+  "/structured-analytics/query",
+  { method: "POST", body: json({ type: "analytic.pull", id: analyticId }) },
+  200
+);
+// Rows placements first, then Columns — not the compiled order.
+assert.deepEqual(pulled.pull.fields.map((f) => f.name), ["Total", "Region"]);
+assert.equal(pulled.pull.display.kind, "bar");
+assert.equal(pulled.pull.rows.length, 2);
+// north totals 150 and sorts before south's 30.
+assert.equal(pulled.pull.rows[0][1].value, "north");
+assert.equal(pulled.pull.rows[0][0].numerator, "150");
+// The receipt names what actually answered.
+assert.equal(pulled.pull.sources.length, 2);
+assert.equal(pulled.pull.sources[0].status, "ok");
+assert.equal(pulled.pull.sources[0].entryId, smokeOrders.id);
+// The pills come back with the data, because compilation is one-way.
+assert.ok(pulled.pull.definition.inputs.length === 2);
+
+const savedName = `smokeSaved${analyticSuffix}`;
+await request(
+  "analytic-save",
+  "/structured-analytics/command",
+  {
+    method: "POST",
+    body: json({ type: "analytic.save", input: { id: analyticId, name: savedName } })
+  },
+  200
+);
+
+const copiedName = `smokeCopied${analyticSuffix}`;
+const copied = await request(
+  "analytic-copy",
+  "/structured-analytics/command",
+  {
+    method: "POST",
+    body: json({ type: "analytic.copy", input: { id: analyticId, name: copiedName } })
+  },
+  200
+);
+assert.equal(copied.rowCount, 2);
+
+// The saved formula resolves through Structured Data like any other entry.
+const savedBefore = await request(
+  "analytic-saved-resolves",
+  `/structured-data/by-name?displayName=${encodeURIComponent(savedName)}`,
+  undefined,
+  200
+);
+assert.equal(savedBefore.kind, "variable");
+assert.match(savedBefore.body, /^DISPLAY\(/);
+
+// ── The distinction: append a row and see which one moves ──
+await request(
+  "analytic-append-row",
+  "/structured-data/rows",
+  {
+    method: "POST",
+    body: json({
+      id: smokeOrders.id,
+      rows: [{ repId: "r2", region: "south", amount: 500 }],
+      expectedRevision: smokeOrders.revision
+    })
+  },
+  200
+);
+
+const pulledAfter = await request(
+  "analytic-pull-after-append",
+  "/structured-analytics/query",
+  { method: "POST", body: json({ type: "analytic.pull", id: analyticId }) },
+  200
+);
+// south is now 530 and sorts first; the analytic tracked the new row.
+assert.equal(pulledAfter.pull.rows[0][1].value, "south");
+assert.equal(pulledAfter.pull.rows[0][0].numerator, "530");
+
+// The copy is frozen at what it resolved to.
+const copiedAfter = await request(
+  "analytic-copy-frozen",
+  `/structured-data/by-name?displayName=${encodeURIComponent(copiedName)}`,
+  undefined,
+  200
+);
+assert.equal(copiedAfter.kind, "table");
+assert.equal(copiedAfter.rows.length, 2, "a copy must not move when its source does");
+
+// ── Rename a source; the pull heals without advancing the revision ──
+const renamedOrders = `${ordersName}Renamed`;
+await request(
+  "analytic-rename-source",
+  "/structured-data/rename",
+  {
+    method: "PATCH",
+    body: json({
+      id: smokeOrders.id,
+      newDisplayName: renamedOrders,
+      expectedRevision: smokeOrders.revision + 1
+    })
+  },
+  200
+);
+
+const pulledRenamed = await request(
+  "analytic-pull-after-rename",
+  "/structured-analytics/query",
+  { method: "POST", body: json({ type: "analytic.pull", id: analyticId }) },
+  200
+);
+const ordersSource = pulledRenamed.pull.sources.find((s) => s.entryId === smokeOrders.id);
+assert.equal(ordersSource.status, "renamed");
+assert.equal(ordersSource.name, renamedOrders);
+assert.equal(pulledRenamed.pull.rows.length, 2, "and the data still resolves");
+
+const afterHeal = await request(
+  "analytic-get-after-heal",
+  "/structured-analytics/query",
+  { method: "POST", body: json({ type: "analytic.get", id: analyticId }) },
+  200
+);
+assert.equal(afterHeal.analytic.definition.inputs[0].name, renamedOrders, "healed on disk");
+assert.equal(afterHeal.analytic.revision, 1, "viewing a chart must not bump the revision");
+assert.equal(afterHeal.analytic.definition.inputs[0].as, ordersName, "the key did not move");
+
+// ── The error ladder, over the wire ──
+await request(
+  "analytic-unknown-field",
+  "/structured-analytics/command",
+  {
+    method: "POST",
+    body: json({
+      type: "analytic.purge",
+      input: { id: analyticId, unexpected: true }
+    })
+  },
+  400
+);
+
+await request(
+  "analytic-not-found",
+  "/structured-analytics/query",
+  { method: "POST", body: json({ type: "analytic.pull", id: "smoke-missing" }) },
+  404
+);
+
+await request(
+  "analytic-purge-before-delete",
+  "/structured-analytics/command",
+  { method: "POST", body: json({ type: "analytic.purge", input: { id: analyticId } }) },
+  409
+);
+
+await request(
+  "analytic-stale-revision",
+  "/structured-analytics/command",
+  {
+    method: "POST",
+    body: json({
+      type: "analytic.delete",
+      input: { id: analyticId, expectedRevision: 99 }
+    })
+  },
+  409
+);
+
+// ── Delete, then purge ──
+await request(
+  "analytic-delete",
+  "/structured-analytics/command",
+  {
+    method: "POST",
+    body: json({ type: "analytic.delete", input: { id: analyticId, expectedRevision: 1 } })
+  },
+  200
+);
+
+await request(
+  "analytic-get-after-delete",
+  "/structured-analytics/query",
+  { method: "POST", body: json({ type: "analytic.get", id: analyticId }) },
+  404
+);
+
+await request(
+  "analytic-purge",
+  "/structured-analytics/command",
+  { method: "POST", body: json({ type: "analytic.purge", input: { id: analyticId } }) },
+  200
+);
+
 process.stdout.write(`${JSON.stringify({ baseUrl, samples }, null, 2)}\n`);

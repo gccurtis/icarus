@@ -392,7 +392,7 @@ table all exist. What remains:
 
 ---
 
-## Phase 9 — Documentation
+## Phase 9 — Documentation ✅ DONE
 
 The standard six-file in-tree `docs/` package, plus a Formula docs update for
 the seven new builtins — they are language features and belong in
@@ -404,7 +404,7 @@ and the revision-propagation gap and its consequence for `check`.
 
 ---
 
-## Phase 10 — Tests and verification
+## Phase 10 — Tests and verification ✅ DONE
 
 Three files per
 [`file-architecture.md`](structured-analytic-design/file-architecture.md#tests):

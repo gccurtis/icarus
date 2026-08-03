@@ -208,14 +208,16 @@ export const createStructuredDataWriter = (
         )
       );
 
+      // The rows are about to be persisted into Structured Data, so they are
+      // readable there rather than only here — the schema and the count are
+      // what this record adds.
       logger.info(
         "structured-analytic.writer.declare-table",
         {
           displayName: input.displayName,
           description: input.description ?? null,
           schema,
-          rowCount: rows.length,
-          rows
+          rowCount: rows.length
         },
         { detail: "content" }
       );

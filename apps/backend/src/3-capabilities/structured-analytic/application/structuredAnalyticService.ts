@@ -405,16 +405,27 @@ export const createStructuredAnalyticService = (
       pulledAt: now()
     };
 
+    // Everything needed to reproduce this pull, and not the result itself.
+    //
+    // The rows are the one thing here that is *derivable*: a pull is
+    // deterministic given the definition and the source revisions, and both are
+    // in this record — so re-running it against those revisions reproduces the
+    // rows exactly. Logging them would duplicate the response body into the log
+    // for no diagnostic gain, and Formula permits a million cells, so a single
+    // pull could write tens of megabytes.
+    //
+    // Contrast `store.purged`, which logs the history it is about to destroy.
+    // That is not derivable from anything, so it stays.
     logger.info(
       "structured-analytic.pull.completed",
       {
         analyticId: id,
         analyticRevision,
         rowCount: rows.length,
+        cellCount: rows.length * fields.length,
         fields,
         sources,
         source: expression.source,
-        rows,
         durationMs: Math.round(performance.now() - startedAt)
       },
       { detail: "content" }
