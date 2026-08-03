@@ -395,31 +395,251 @@ test("a group parent cycle is rejected, and the helpers survive one", () => {
   );
 });
 
-test("the operation set offers no way to build a parent cycle", () => {
-  const source = withElements(
+// Group membership being acyclic is load-bearing: a cycle makes every downward
+// walk non-terminating, so no operation may be able to produce one. There are
+// exactly five operations that write a parent pointer — element.insert,
+// element.replace, element.reorder, element.group, element.ungroup — plus three
+// that take a whole element record: slide.insert, master.insert, layout.insert.
+// Every one of them is covered below.
+
+/**
+ * outer[ inner[ leaf, twig ], keep ], free
+ *
+ * Both groups carry two members, so moving one out never empties a group —
+ * that is a separate rule, and it would otherwise mask the cycle assertions.
+ */
+const nested = (): DeckSnapshot =>
+  withElements(
     groupElement("outer", 0),
     groupElement("inner", 0, "outer"),
     textElement("keep", 1, "Keep", "outer"),
     textElement("leaf", 0, "Leaf", "inner"),
+    textElement("twig", 1, "Twig", "inner"),
+    textElement("free", 1),
   );
+
+const refuses = (source: DeckSnapshot, operations: SlideOperation[]): void => {
+  assert.throws(
+    () => applyOperations(source, operations, richText(), LIMITS),
+    (error: unknown) =>
+      error instanceof SlideOperationError || error instanceof SlideValidationError,
+  );
+};
+
+/** Cyclic element record, built by hand — no operation can produce this. */
+const cyclicElements = (): Record<string, SlideElement> => {
+  const a = groupElement("cyc-a", 0);
+  const b = groupElement("cyc-b", 0);
+  a.parentGroupId = "cyc-b";
+  b.parentGroupId = "cyc-a";
+  return { "cyc-a": a, "cyc-b": b };
+};
+
+test("element.insert cannot create a cycle", () => {
+  const source = nested();
+  // Self-parent: the parent lookup runs before the element exists, so it fails.
+  const selfParented = { ...textElement("novel", 0), parentGroupId: "novel" };
+  refuses(source, [{ type: "element.insert", container: SLIDE, element: selfParented }]);
+  // A non-group parent is refused, which is what keeps the forest a forest.
+  refuses(source, [
+    {
+      type: "element.insert",
+      container: SLIDE,
+      element: { ...textElement("novel", 0), parentGroupId: "leaf" },
+    },
+  ]);
+});
+
+test("element.replace cannot change parentage at all", () => {
+  const source = nested();
+  const applied = applyOperations(
+    source,
+    [
+      {
+        type: "element.replace",
+        container: SLIDE,
+        // The replacement claims a different parent; replace must ignore it.
+        element: { ...textElement("leaf", 0, "Rewritten"), parentGroupId: "outer" },
+      },
+    ],
+    richText(),
+    LIMITS,
+  );
+  assert.equal(applied.snapshot.slides[SLIDE_ID].elements.leaf.parentGroupId, "inner");
+  assert.deepEqual(unreachableElementIds(applied.snapshot.slides[SLIDE_ID].elements), []);
+});
+
+test("element.reorder cannot create a cycle, in one step or two", () => {
+  const source = nested();
+  // Beneath itself.
+  refuses(source, [
+    { type: "element.reorder", container: SLIDE, elementId: "outer", parentGroupId: "outer", zIndex: 0 },
+  ]);
+  // Beneath its own descendant.
+  refuses(source, [
+    { type: "element.reorder", container: SLIDE, elementId: "outer", parentGroupId: "inner", zIndex: 0 },
+  ]);
+  // Beneath a non-group.
+  refuses(source, [
+    { type: "element.reorder", container: SLIDE, elementId: "free", parentGroupId: "leaf", zIndex: 0 },
+  ]);
+  // Two legal-looking steps that would close a cycle: the second must refuse,
+  // because the first has already made `free` an ancestor of nothing but the
+  // guard is evaluated against the state the first step produced.
+  refuses(source, [
+    { type: "element.reorder", container: SLIDE, elementId: "inner", zIndex: 2 },
+    { type: "element.reorder", container: SLIDE, elementId: "inner", parentGroupId: "inner", zIndex: 0 },
+  ]);
+});
+
+test("element.group cannot create a cycle", () => {
+  const source = nested();
+  // Naming the same member twice corrupts sibling numbering. End-of-batch
+  // validation would catch the corruption, so this asserts the specific guard
+  // rather than merely that the batch is refused — otherwise the guard could be
+  // deleted without any test noticing.
   assert.throws(
     () =>
       applyOperations(
         source,
         [
           {
-            type: "element.reorder",
+            type: "element.group",
             container: SLIDE,
-            elementId: "outer",
-            parentGroupId: "inner",
-            zIndex: 0,
+            group: groupElement("g", 0),
+            memberIds: ["free", "free"],
           },
         ],
         richText(),
         LIMITS,
       ),
-    SlideOperationError,
+    (error: unknown) =>
+      error instanceof SlideOperationError && /same member twice/.test((error as Error).message),
   );
+  // A member that contains another member sits at a different depth, so the
+  // shared-parent rule refuses it. This is what makes grouping cycle-proof.
+  refuses(source, [
+    {
+      type: "element.group",
+      container: SLIDE,
+      group: groupElement("g", 0),
+      memberIds: ["inner", "leaf"],
+    },
+  ]);
+  // The Group cannot be its own member: its ID does not exist yet.
+  refuses(source, [
+    {
+      type: "element.group",
+      container: SLIDE,
+      group: groupElement("g", 0),
+      memberIds: ["g"],
+    },
+  ]);
+});
+
+test("element.ungroup only ever moves members upward", () => {
+  const source = nested();
+  const applied = applyOperations(
+    source,
+    [{ type: "element.ungroup", container: SLIDE, groupId: "inner" }],
+    richText(),
+    LIMITS,
+  );
+  assert.equal(applied.snapshot.slides[SLIDE_ID].elements.leaf.parentGroupId, "outer");
+  assert.deepEqual(unreachableElementIds(applied.snapshot.slides[SLIDE_ID].elements), []);
+});
+
+test("a container insert refuses a cyclic or malformed element record", () => {
+  const source = blankSnapshot();
+
+  refuses(source, [
+    {
+      type: "slide.insert",
+      slide: { ...slide(), id: "slide-2", elements: cyclicElements() },
+      afterSlideId: SLIDE_ID,
+    },
+  ]);
+  refuses(source, [
+    {
+      type: "master.insert",
+      master: { ...master(), id: "master-2", elements: cyclicElements() },
+    },
+  ]);
+  refuses(source, [
+    {
+      type: "layout.insert",
+      layout: { ...layout(), id: "layout-2", slots: {}, elements: cyclicElements() },
+    },
+  ]);
+
+  // A dangling parent pointer is refused by the same guard.
+  refuses(source, [
+    {
+      type: "slide.insert",
+      slide: {
+        ...slide(),
+        id: "slide-2",
+        elements: { orphan: { ...textElement("orphan", 0), parentGroupId: "absent" } },
+      },
+      afterSlideId: SLIDE_ID,
+    },
+  ]);
+});
+
+test("a cycle is refused at the operation, not merely at end-of-batch validation", () => {
+  // The distinction matters: end-of-batch validation runs after every operation
+  // has been applied, and a downward walk over a cycle does not terminate. The
+  // guard has to fire before anything walks the structure.
+  const source = blankSnapshot();
+  assert.throws(
+    () =>
+      applyOperations(
+        source,
+        [
+          {
+            type: "slide.insert",
+            slide: { ...slide(), id: "slide-2", elements: cyclicElements() },
+            afterSlideId: SLIDE_ID,
+          },
+        ],
+        richText(),
+        LIMITS,
+      ),
+    (error: unknown) =>
+      error instanceof SlideOperationError && /group cycle/.test((error as Error).message),
+  );
+});
+
+test("no legal operation sequence leaves an unreachable element", () => {
+  // A sweep over every structural operation, asserting the forest invariant
+  // holds after each one rather than only at the end.
+  const source = nested();
+  const runtime = richText();
+  const sequences: SlideOperation[][] = [
+    [{ type: "element.insert", container: SLIDE, element: textElement("added", 2) }],
+    [{ type: "element.insert", container: SLIDE, element: textElement("added", 0, "In", "inner") }],
+    [{ type: "element.reorder", container: SLIDE, elementId: "free", parentGroupId: "inner", zIndex: 0 }],
+    [{ type: "element.reorder", container: SLIDE, elementId: "leaf", zIndex: 0 }],
+    [{ type: "element.ungroup", container: SLIDE, groupId: "inner" }],
+    [{ type: "element.delete", container: SLIDE, elementId: "inner" }],
+    [
+      { type: "element.reorder", container: SLIDE, elementId: "leaf", zIndex: 0 },
+      { type: "element.group", container: SLIDE, group: groupElement("g", 0), memberIds: ["leaf", "free"] },
+    ],
+  ];
+
+  for (const operations of sequences) {
+    const applied = applyOperations(source, operations, runtime, LIMITS);
+    for (const container of [SLIDE, MASTER, LAYOUT]) {
+      const elements =
+        container.kind === "slide"
+          ? applied.snapshot.slides[SLIDE_ID].elements
+          : container.kind === "master"
+            ? applied.snapshot.masters[MASTER_ID].elements
+            : applied.snapshot.layouts[LAYOUT_ID].elements;
+      assert.deepEqual(unreachableElementIds(elements), []);
+    }
+  }
 });
 
 test("a prompt source is live in all three planes", () => {
