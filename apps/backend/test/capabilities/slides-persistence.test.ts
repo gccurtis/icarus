@@ -27,12 +27,9 @@ import type {
   DeckCreationCommit,
   DeckMutationCommit
 } from "../../src/3-capabilities/slides/ports/slidesStore.js";
-import {
-  CONTENT_KEY,
-  SQLiteSlidesStore
-} from "../../src/3-capabilities/slides/persistence/sqliteSlidesStore.js";
+import { SQLiteSlidesStore } from "../../src/3-capabilities/slides/persistence/sqliteSlidesStore.js";
 import { createSlideTableNames } from "../../src/3-capabilities/slides/persistence/sqliteSchema.js";
-import { CapturingLogger } from "../helpers/testDoubles.js";
+import type { LogDetail, Logger } from "../../src/0-platform/observability/logger.js";
 
 const PROJECT = "project-slides-persistence";
 
@@ -42,8 +39,45 @@ const timestamp = (offset: number): string =>
 const storePath = (): string =>
   join(mkdtempSync(join(tmpdir(), "icarus-slides-store-")), "slides.db");
 
-const newStore = (): { store: SQLiteSlidesStore; logs: CapturingLogger; path: string } => {
-  const logs = new CapturingLogger();
+interface CapturedRecord {
+  level: string;
+  message: string;
+  data?: unknown;
+  detail?: string;
+}
+
+/**
+ * `CapturingLogger` drops the third argument, so it cannot see the detail
+ * label. This one keeps it. Worth folding back into the shared double once the
+ * tree is quieter — every capability that labels records needs it.
+ */
+class DetailCapturingLogger implements Logger {
+  readonly records: CapturedRecord[] = [];
+
+  private push(level: string, message: string, data?: unknown, options?: { detail?: string }) {
+    this.records.push({ level, message, data, detail: options?.detail ?? "shape" });
+  }
+
+  debug(message: string, data?: unknown, options?: { detail?: LogDetail }): void {
+    this.push("debug", message, data, options);
+  }
+  info(message: string, data?: unknown, options?: { detail?: LogDetail }): void {
+    this.push("info", message, data, options);
+  }
+  warn(message: string, data?: unknown, options?: { detail?: LogDetail }): void {
+    this.push("warn", message, data, options);
+  }
+  error(message: string, data?: unknown, options?: { detail?: LogDetail }): void {
+    this.push("error", message, data, options);
+  }
+}
+
+const newStore = (): {
+  store: SQLiteSlidesStore;
+  logs: DetailCapturingLogger;
+  path: string;
+} => {
+  const logs = new DetailCapturingLogger();
   const path = storePath();
   return { store: new SQLiteSlidesStore(PROJECT, path, logs), logs, path };
 };
@@ -363,7 +397,7 @@ test("a mutation commits on the expected revision and is refused off it", async 
   assert.equal((await store.getHead("deck-cas"))?.revision, 2);
   assert.equal(await store.getSubmission("deck-cas", "submit-late"), undefined);
 
-  const rejected = logs.entries.find((e) => e.message === "slides.store.mutation.rejected");
+  const rejected = logs.records.find((e) => e.message === "slides.store.mutation.rejected");
   assert.equal(rejected?.level, "warn");
   assert.equal((rejected?.data as { reason: string }).reason, "revision-conflict");
 });
@@ -461,7 +495,7 @@ test("compensation reactivates a tombstoned identity of the same kind", async ()
     true
   );
   assert.equal((await store.getIdentity("deck-undo", "slide-1"))?.state, "active");
-  assert.ok(logs.entries.some((e) => e.message === "slides.store.identity.reactivated"));
+  assert.ok(logs.records.some((e) => e.message === "slides.store.identity.reactivated"));
 });
 
 // ── History, bases and pagination ────────────────────────────────────────
@@ -633,7 +667,7 @@ test("an interrupted stage is recovered as failed on restart", async () => {
 
   assert.equal(await store.recoverInterruptedStages(timestamp(9)), 1);
   assert.equal(await store.recoverInterruptedStages(timestamp(9)), 0);
-  assert.ok(logs.entries.some((e) => e.message === "slides.store.stages.recovered"));
+  assert.ok(logs.records.some((e) => e.message === "slides.store.stages.recovered"));
 });
 
 test("prompt-output ownership registers, transitions and lists detached", async () => {
@@ -709,7 +743,7 @@ test("the outbox lists unpublished transactions once and marks them published", 
 
 // ── Observability ────────────────────────────────────────────────────────
 
-test("a commit logs shape at the top level and authored content under `content`", async () => {
+test("a commit emits a shape record and a paired content record", async () => {
   const { store, logs } = newStore();
   await store.commitCreation(creationCommit("deck-log"));
   const first = snapshot("Authored deck title");
@@ -717,29 +751,34 @@ test("a commit logs shape at the top level and authored content under `content`"
     mutationCommit("deck-log", 1, first, renamed(first, "Authored deck title"))
   );
 
-  const committed = logs.entries.find((e) => e.message === "slides.store.mutation.committed");
-  assert.equal(committed?.level, "info");
-  const data = committed?.data as Record<string, unknown>;
+  const shape = logs.records.find((r) => r.message === "slides.store.mutation.committed");
+  assert.equal(shape?.level, "info");
+  assert.equal(shape?.detail, "shape");
+  const shapeData = shape?.data as Record<string, unknown>;
+  assert.equal(shapeData.deckId, "deck-log");
+  assert.equal(shapeData.revision, 2);
+  assert.deepEqual(shapeData.operationTypes, ["deck.rename"]);
 
-  assert.equal(data.deckId, "deck-log");
-  assert.equal(data.revision, 2);
-  assert.deepEqual(data.operationTypes, ["deck.rename"]);
-  assert.equal(data.operationCount, 1);
-
-  // Everything a person wrote sits under one reserved key, so a shape-only sink
-  // drops `data.content` and needs to know nothing about Slides.
-  const content = data[CONTENT_KEY] as Record<string, unknown>;
-  assert.equal(content.title, "Authored deck title");
-  assert.deepEqual(content.operations, [{ type: "deck.rename", title: "Authored deck title" }]);
-  assert.deepEqual(content.inverseOperations, [
+  const content = logs.records.find(
+    (r) => r.message === "slides.store.mutation.committed.detail"
+  );
+  assert.equal(content?.level, "debug");
+  assert.equal(content?.detail, "content");
+  const contentData = content?.data as Record<string, unknown>;
+  assert.equal(contentData.title, "Authored deck title");
+  assert.deepEqual(contentData.operations, [
     { type: "deck.rename", title: "Authored deck title" }
   ]);
+  // The content record repeats the identifiers needed to correlate it with the
+  // shape record, because in shape mode it is dropped whole.
+  assert.equal(contentData.deckId, "deck-log");
+  assert.equal(contentData.changeSetId, shapeData.changeSetId);
 });
 
-test("no authored content appears outside the reserved `content` key", async () => {
-  // The half of the split that is easy to break: a title added to a top-level
-  // payload would still log fine and still read fine, and would quietly defeat
-  // the shape-only mode the flag is for.
+test("no authored content rides on a shape-labelled record", async () => {
+  // The half of the contract that is easy to break. A content record is dropped
+  // whole in shape mode, so anything authored that leaks into a shape record
+  // would survive a mode that exists precisely to exclude it.
   const { store, logs } = newStore();
   const marker = "UNIQUE-AUTHORED-MARKER";
   const commit = creationCommit("deck-split");
@@ -751,31 +790,36 @@ test("no authored content appears outside the reserved `content` key", async () 
   await store.commitMutation(mutationCommit("deck-split", 1, first, renamed(first, marker)));
   await store.createAttempt(promptAttempt("deck-split", "attempt-1"));
 
-  for (const entry of logs.entries) {
-    const data = (entry.data ?? {}) as Record<string, unknown>;
-    const { [CONTENT_KEY]: _content, ...shape } = data;
+  for (const record of logs.records) {
+    if (record.detail === "content") continue;
     assert.ok(
-      !JSON.stringify(shape).includes(marker),
-      `authored text leaked outside content in ${entry.message}`
+      !JSON.stringify(record.data ?? {}).includes(marker),
+      `authored text on a shape record: ${record.message}`
     );
     // The project ID is never logged either — the table prefix is a hash of it.
-    assert.ok(!JSON.stringify(data).includes(PROJECT), entry.message);
+    assert.ok(!JSON.stringify(record.data ?? {}).includes(PROJECT), record.message);
   }
 
-  // And the content really is there: this is a dev-mode log-everything store.
-  const created = logs.entries.find((e) => e.message === "slides.store.deck.created");
-  assert.equal((created?.data as Record<string, unknown>)[CONTENT_KEY] !== undefined, true);
+  // And the content really is emitted: this is a log-everything store.
+  const contentRecords = logs.records.filter((r) => r.detail === "content");
+  assert.ok(contentRecords.length >= 3);
+  assert.ok(JSON.stringify(contentRecords).includes(marker));
 });
 
-test("an attempt logs the prompt a person wrote, under `content`", async () => {
+test("an attempt emits the prompt a person wrote on its content record", async () => {
   const { store, logs } = newStore();
   await store.commitCreation(creationCommit("deck-prompt-log"));
   await store.createAttempt(promptAttempt("deck-prompt-log", "attempt-1"));
 
-  const entry = logs.entries.find((e) => e.message === "slides.store.attempt.created");
-  const data = entry?.data as Record<string, unknown>;
-  assert.equal(data.kind, "prompt-create");
-  assert.equal((data[CONTENT_KEY] as Record<string, unknown>).prompt, "Summarise");
+  const shape = logs.records.find((r) => r.message === "slides.store.attempt.created");
+  assert.equal((shape?.data as Record<string, unknown>).kind, "prompt-create");
+  assert.equal(shape?.detail, "shape");
+
+  const content = logs.records.find(
+    (r) => r.message === "slides.store.attempt.created.detail"
+  );
+  assert.equal(content?.detail, "content");
+  assert.equal((content?.data as Record<string, unknown>).prompt, "Summarise");
 });
 
 test("every mutating store method emits an event", async () => {
@@ -790,7 +834,7 @@ test("every mutating store method emits an event", async () => {
   });
   await store.pruneHistory("deck-events", 1, 1, 0);
 
-  const names = new Set(logs.entries.map((e) => e.message));
+  const names = new Set(logs.records.map((e) => e.message));
   for (const expected of [
     "slides.store.runtime.created",
     "slides.store.deck.created",

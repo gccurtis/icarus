@@ -128,29 +128,6 @@ const assertSameDeck = (
 
 const TERMINAL_ATTEMPT_STATES = ["settled", "unchanged", "stale", "failed"];
 
-/**
- * The reserved log-payload key under which authored content is carried.
- *
- * A log payload is `{ ...shape, content?: { ...authored } }`. Shape is safe to
- * emit anywhere: IDs, counts, revisions, digests, kinds, states. Content is
- * whatever a person typed.
- *
- * This exists so the split is enforced in one place rather than remembered at
- * every call site, and so a future `logContent: false` sink can strip
- * `data[CONTENT_KEY]` without knowing anything about Slides. It belongs in
- * `0-platform/observability` once that flag lands; it is here for now because
- * Slides is the only capability observing the convention.
- */
-export const CONTENT_KEY = "content";
-
-/** Attach authored content to a shape-only payload. */
-const withContent = <S extends Record<string, unknown>>(
-  shape: S,
-  content: Record<string, unknown>
-): S & { content: Record<string, unknown> } => ({ ...shape, [CONTENT_KEY]: content }) as S & {
-  content: Record<string, unknown>;
-};
-
 /** The authored part of an attempt: the prompt or the formula a person wrote. */
 const attemptContent = (attempt: SlideAttempt): Record<string, unknown> => {
   if (attempt.kind === "prompt-create") {
@@ -183,18 +160,16 @@ const attemptContent = (attempt: SlideAttempt): Record<string, unknown> => {
  * commits, `warn` for outcomes a caller is expected to handle, and `error` for
  * state that should be impossible.
  *
- * **Authored content is logged, under a reserved `content` key.** Everything
- * outside `content` is *shape* — identifiers, counts, revisions, digests, kinds.
- * Everything inside it is what a person wrote: titles, operations carrying Rich
- * Content, prompt text.
+ * **Authored content is logged, in its own record.** Every event that has
+ * something a person wrote emits a second `<event>.detail` record at `debug`,
+ * labelled `{ detail: "content" }`: the Deck title, the operations and their
+ * inverses, the snapshot at creation, the prompt text on an attempt.
  *
- * The split is the point. A logger that wants shape only drops `data.content`
- * and needs to know nothing else about any capability, so the eventual
- * configuration flag is one line in the sink rather than an audit of every call
- * site. Nothing outside `content` may carry authored text, or that guarantee
- * silently stops holding.
- *
- * Today everything is logged. See {@link CONTENT_KEY}.
+ * Pairing rather than mixing is what the platform's detail label requires — a
+ * content record is dropped whole in shape mode, so anything mixed into it
+ * would disappear with it. The shape record must therefore stand alone and
+ * carry no authored text, and the content record repeats the few identifiers
+ * needed to correlate the two.
  */
 export class SQLiteSlidesStore implements SlidesStore {
   private readonly db: DatabaseConnection;
@@ -449,22 +424,21 @@ export class SQLiteSlidesStore implements SlidesStore {
       this.insertCommittedTransaction(commit.transaction);
     })();
 
-    this.logger.info(
-      "slides.store.deck.created",
-      withContent(
-        {
-          deckId: commit.head.id,
-          requestId: commit.receipt.requestId,
-          revision: commit.head.revision,
-          identityCount: commit.identities.length,
-          slideCount: commit.base.snapshot.slideOrder.length,
-          masterCount: Object.keys(commit.base.snapshot.masters).length,
-          layoutCount: Object.keys(commit.base.snapshot.layouts).length,
-          semanticDigest: commit.head.semanticDigest,
-          sourceTransactionId: commit.transaction.sourceTransactionId
-        },
-        { title: commit.head.title, snapshot: commit.base.snapshot }
-      )
+    this.logger.info("slides.store.deck.created", {
+      deckId: commit.head.id,
+      requestId: commit.receipt.requestId,
+      revision: commit.head.revision,
+      identityCount: commit.identities.length,
+      slideCount: commit.base.snapshot.slideOrder.length,
+      masterCount: Object.keys(commit.base.snapshot.masters).length,
+      layoutCount: Object.keys(commit.base.snapshot.layouts).length,
+      semanticDigest: commit.head.semanticDigest,
+      sourceTransactionId: commit.transaction.sourceTransactionId
+    });
+    this.logger.debug(
+      "slides.store.deck.created.detail",
+      { deckId: commit.head.id, title: commit.head.title, snapshot: commit.base.snapshot },
+      { detail: "content" }
     );
   }
 
@@ -565,37 +539,37 @@ export class SQLiteSlidesStore implements SlidesStore {
       return false;
     }
 
-    this.logger.info(
-      "slides.store.mutation.committed",
-      withContent(
-        {
-          deckId,
-          requestId: commit.receipt.requestId,
-          changeSetId: commit.changeSet.id,
-          priorRevision: commit.changeSet.priorRevision,
-          revision: commit.changeSet.revision,
-          operationTypes: commit.changeSet.operations.map((operation) => operation.type),
-          operationCount: commit.changeSet.operations.length,
-          inverseCount: commit.changeSet.inverseOperations.length,
-          touchedIdCount: commit.changeSet.touchedIds.length,
-          touchedIds: commit.changeSet.touchedIds,
-          identitiesAdded: commit.identityTransitions.added.length,
-          identitiesRemoved: commit.identityTransitions.removed.length,
-          identityReactivation: commit.identityReactivation,
-          attemptsCreated: commit.attempts?.length ?? 0,
-          attemptsUpdated: commit.attemptUpdates?.length ?? 0,
-          promptTransitions: commit.promptOwnershipTransitions?.length ?? 0,
-          compensationIntent: commit.changeSet.compensation?.intent,
-          semanticDigest: commit.changeSet.semanticDigest
-        },
-        {
-          title: commit.head.title,
-          // The operations are the whole point of the line: they are what
-          // changed, and they carry the authored text that changed.
-          operations: commit.changeSet.operations,
-          inverseOperations: commit.changeSet.inverseOperations
-        }
-      )
+    this.logger.info("slides.store.mutation.committed", {
+      deckId,
+      requestId: commit.receipt.requestId,
+      changeSetId: commit.changeSet.id,
+      priorRevision: commit.changeSet.priorRevision,
+      revision: commit.changeSet.revision,
+      operationTypes: commit.changeSet.operations.map((operation) => operation.type),
+      operationCount: commit.changeSet.operations.length,
+      inverseCount: commit.changeSet.inverseOperations.length,
+      touchedIdCount: commit.changeSet.touchedIds.length,
+      identitiesAdded: commit.identityTransitions.added.length,
+      identitiesRemoved: commit.identityTransitions.removed.length,
+      identityReactivation: commit.identityReactivation,
+      attemptsCreated: commit.attempts?.length ?? 0,
+      attemptsUpdated: commit.attemptUpdates?.length ?? 0,
+      promptTransitions: commit.promptOwnershipTransitions?.length ?? 0,
+      compensationIntent: commit.changeSet.compensation?.intent,
+      semanticDigest: commit.changeSet.semanticDigest
+    });
+    // The operations are what changed, and they carry the text that changed.
+    this.logger.debug(
+      "slides.store.mutation.committed.detail",
+      {
+        deckId,
+        changeSetId: commit.changeSet.id,
+        title: commit.head.title,
+        touchedIds: commit.changeSet.touchedIds,
+        operations: commit.changeSet.operations,
+        inverseOperations: commit.changeSet.inverseOperations
+      },
+      { detail: "content" }
     );
     return true;
   }
@@ -824,18 +798,17 @@ export class SQLiteSlidesStore implements SlidesStore {
 
   async createAttempt(attempt: SlideAttempt): Promise<void> {
     this.insertAttempt(attempt);
-    this.logger.info(
-      "slides.store.attempt.created",
-      withContent(
-        {
-          attemptId: attempt.id,
-          deckId: attempt.deckId,
-          kind: attempt.kind,
-          state: attempt.state,
-          frozenDeckRevision: attempt.frozenDeckRevision
-        },
-        attemptContent(attempt)
-      )
+    this.logger.info("slides.store.attempt.created", {
+      attemptId: attempt.id,
+      deckId: attempt.deckId,
+      kind: attempt.kind,
+      state: attempt.state,
+      frozenDeckRevision: attempt.frozenDeckRevision
+    });
+    this.logger.debug(
+      "slides.store.attempt.created.detail",
+      { attemptId: attempt.id, deckId: attempt.deckId, ...attemptContent(attempt) },
+      { detail: "content" }
     );
   }
 
@@ -847,36 +820,34 @@ export class SQLiteSlidesStore implements SlidesStore {
       this.insertAttempt(attempt);
       this.insertSubmission(receipt);
     })();
-    this.logger.info(
-      "slides.store.attempt.created",
-      withContent(
-        {
-          attemptId: attempt.id,
-          deckId: attempt.deckId,
-          kind: attempt.kind,
-          state: attempt.state,
-          requestId: receipt.requestId,
-          withReceipt: true
-        },
-        attemptContent(attempt)
-      )
+    this.logger.info("slides.store.attempt.created", {
+      attemptId: attempt.id,
+      deckId: attempt.deckId,
+      kind: attempt.kind,
+      state: attempt.state,
+      requestId: receipt.requestId,
+      withReceipt: true
+    });
+    this.logger.debug(
+      "slides.store.attempt.created.detail",
+      { attemptId: attempt.id, deckId: attempt.deckId, ...attemptContent(attempt) },
+      { detail: "content" }
     );
   }
 
   async updateAttempt(attempt: SlideAttempt): Promise<void> {
     this.updateAttemptRow(attempt);
-    this.logger.info(
-      "slides.store.attempt.updated",
-      withContent(
-        {
-          attemptId: attempt.id,
-          deckId: attempt.deckId,
-          kind: attempt.kind,
-          state: attempt.state,
-          diagnosticCode: attempt.diagnostic?.code
-        },
-        attemptContent(attempt)
-      )
+    this.logger.info("slides.store.attempt.updated", {
+      attemptId: attempt.id,
+      deckId: attempt.deckId,
+      kind: attempt.kind,
+      state: attempt.state,
+      diagnosticCode: attempt.diagnostic?.code
+    });
+    this.logger.debug(
+      "slides.store.attempt.updated.detail",
+      { attemptId: attempt.id, deckId: attempt.deckId, ...attemptContent(attempt) },
+      { detail: "content" }
     );
   }
 

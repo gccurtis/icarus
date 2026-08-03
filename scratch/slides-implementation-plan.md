@@ -136,14 +136,13 @@ identity was refused — and those are exactly the "right answer, wrong process"
 cases. Cost is controlled by level: statement detail is `debug`, `info` is
 durable commits, `warn` is a caller's problem, `error` is impossible state.
 
-**Authored content is logged, under a reserved `content` key.** A payload is
-`{ ...shape, content?: { ...authored } }`. Outside it: identifiers, counts,
-revisions, digests, kinds. Inside it: the Deck title, the operations and their
-inverses, the snapshot at creation, the prompt text on an attempt. Splitting on
-one reserved key is what makes the planned shape-only logger flag a single line
-in the sink rather than an audit of every call site — so the rule that keeps it
-true is that **nothing outside `content` may carry authored text**. A test
-plants a marker in every authored field and asserts it appears nowhere else.
+**Authored content is logged, in a paired record.** Every event with something
+a person wrote emits a second `<event>.detail` record at `debug`, labelled
+`{ detail: "content" }` — the platform mechanism added in `ef6d462`. Pairing
+rather than mixing is what that label requires: a content record is dropped
+whole in shape mode, so anything mixed into it disappears with it. The shape
+record therefore stands alone and carries no authored text. A test plants a
+marker in every authored field and asserts no shape-labelled record contains it.
 
 Gate: `slides-persistence.test.ts` — 26 tests.
 
