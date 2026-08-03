@@ -43,6 +43,8 @@ import { registerCommentEndpoints } from "#job-wiring/comments/registerCommentEn
 import { registerPersonaEndpoints } from "#job-wiring/persona/registerPersonaEndpoints.js";
 import { registerInvestigationEndpoints } from "#job-wiring/investigation/registerInvestigationEndpoints.js";
 import { registerTemplateEndpoints } from "#job-wiring/templates/registerTemplateEndpoints.js";
+import { registerStructuredAnalyticEndpoints } from "#job-wiring/structured-analytic/registerStructuredAnalyticEndpoints.js";
+import { createStructuredAnalyticInstance } from "#init/create/structured-analytic.js";
 
 export const startBackend = async (): Promise<void> => {
   const config = await createConfig();
@@ -76,6 +78,15 @@ export const startBackend = async (): Promise<void> => {
       userId: config.userId,
       projectId: config.projectId
     });
+    // After Formula and the resolver: a pull compiles to a Formula expression
+    // and evaluates it against a resolver snapshot, so it needs both.
+    const structuredAnalytic = createStructuredAnalyticInstance(
+      config,
+      structuredData,
+      formulaResolver,
+      formula,
+      logger
+    );
     const richText = createRichTextInstance(config, logger);
     const generalFiles = createGeneralFilesInstance(config, knowledge, logger);
     const { service: connector, store: connectorStore } = createConnectorInstance(
@@ -95,7 +106,7 @@ export const startBackend = async (): Promise<void> => {
     knowledge.onSourceMutation((mutation) => {
       derivedOutputs.recordKnowledgeSourceMutation(mutation);
     });
-    const app = createApp();
+    const app = createApp({ maxBodyBytes: config.server.maxBodyBytes });
     const scheduler = createScheduler(config, logger);
     const registry = createRegistry(scheduler);
     const documentJobs = new SchedulerInternalJobsRuntime<DocumentInternalJobIntent>(scheduler);
@@ -141,6 +152,7 @@ export const startBackend = async (): Promise<void> => {
         bindResourceRetentionPort("connector", connector),
         bindResourceRetentionPort("general-files", generalFiles),
         bindResourceRetentionPort("structured-data", structuredData),
+        bindResourceRetentionPort("structured-analytic", structuredAnalytic),
         bindResourceRetentionPort("context", contextManager)
       ],
       logger
@@ -170,7 +182,8 @@ export const startBackend = async (): Promise<void> => {
       commentsReady: Boolean(comments),
       personaReady: Boolean(personas),
       documentReady: Boolean(document),
-      templatesReady: Boolean(templates)
+      templatesReady: Boolean(templates),
+      structuredAnalyticReady: Boolean(structuredAnalytic)
     });
 
     registerStructuredDataEndpoints(registry, structuredData, formula, formulaResolver, logger);
@@ -184,6 +197,7 @@ export const startBackend = async (): Promise<void> => {
     registerInvestigationEndpoints(registry, investigation, logger);
     registerDocumentEndpoints(registry, document, logger);
     registerTemplateEndpoints(registry, templates, logger);
+    registerStructuredAnalyticEndpoints(registry, structuredAnalytic, logger);
 
     const recoveredDocumentAttempts = await document.recoverPendingAttempts();
     logger.info("document.attempts.recovered", { count: recoveredDocumentAttempts });

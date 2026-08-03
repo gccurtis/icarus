@@ -28,6 +28,8 @@
       "#persona/*": ["./src/3-capabilities/persona/*"],
       "#comments": ["./src/3-capabilities/comments/index.ts"],
       "#comments/*": ["./src/3-capabilities/comments/*"],
+      "#structured-analytic": ["./src/3-capabilities/structured-analytic/index.ts"],
+      "#structured-analytic/*": ["./src/3-capabilities/structured-analytic/*"],
       "#templates": ["./src/3-capabilities/templates/index.ts"],
       "#templates/*": ["./src/3-capabilities/templates/*"],
       "#document": ["./src/3-capabilities/document/index.ts"],

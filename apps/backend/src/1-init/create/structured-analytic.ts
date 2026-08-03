@@ -5,22 +5,28 @@
 // write side is one `declare` call each, plus the one error translation that
 // matters: a taken display name is a 409 the caller can act on, not a 500.
 
-import type { FormulaResolverSnapshot } from "#formula";
+import { randomUUID } from "node:crypto";
+import type { FormulaEngine, FormulaResolverSnapshot } from "#formula";
 import type { Logger } from "#platform/observability/logger.js";
 import type { FormulaNameResolver } from "./formula-name-resolver.js";
 import type { StructuredData } from "#structured-data";
 import { DataEntryConflictError } from "#structured-data";
-import { AnalyticNameConflictError } from "#capabilities/structured-analytic/domain/errors.js";
-import type { AnalyticScalar } from "#capabilities/structured-analytic/domain/model.js";
-import type {
-  ProjectData,
-  ProjectEntryMetadata
-} from "#capabilities/structured-analytic/ports/projectData.js";
-import type {
-  DeclaredEntry,
-  StructuredDataWriter
-} from "#capabilities/structured-analytic/ports/structuredDataWriter.js";
+import {
+  AnalyticNameConflictError,
+  SQLiteStructuredAnalyticStore,
+  createStructuredAnalyticService,
+  validateAnalyticLimits,
+  type AnalyticScalar,
+  type ProjectData,
+  type ProjectEntryMetadata,
+  type StructuredAnalyticService,
+  type StructuredDataWriter
+} from "#structured-analytic";
+import type { DeclaredEntry } from "#structured-analytic/ports/structuredDataWriter.js";
 import type { DataEntry, DataRow, FieldDef, ValueKind } from "#structured-data";
+import type { BackendConfig } from "#utils/config/loadBackendConfig.js";
+
+const STRUCTURED_ANALYTIC_DB_PATH = "./data/structured-analytics.db";
 
 /**
  * A resolution failure, phrased for someone reading a 422.
@@ -127,7 +133,6 @@ const columnKind = (
 
 const cellLiteral = (scalar: AnalyticScalar): string | number | boolean | null => {
   switch (scalar.kind) {
-    case "null": return null;
     case "text": return scalar.value;
     case "logic": return scalar.value;
     case "number":
@@ -136,6 +141,11 @@ const cellLiteral = (scalar: AnalyticScalar): string | number | boolean | null =
       // Precision beyond a double is lost at this boundary, which is a reason
       // to prefer `save` over `copy` when the numbers matter.
       return Number(scalar.numerator) / Number(scalar.denominator);
+    // `null` and anything a future scalar kind adds. Falling through to null
+    // rather than throwing: a copy is a snapshot for reading, and one
+    // unrepresentable cell should not lose the other ten thousand.
+    default:
+      return null;
   }
 };
 
@@ -237,4 +247,38 @@ export const createStructuredDataWriter = (
       }
     }
   };
+};
+
+/**
+ * Composes the capability. Called once, after Formula and the name resolver
+ * exist, because a pull needs both.
+ *
+ * The limits are validated here rather than at first use: a bad
+ * `configuration.yaml` should stop the process at startup, not surface as a
+ * confusing rejection on somebody's first request.
+ */
+export const createStructuredAnalyticInstance = (
+  config: BackendConfig,
+  structuredData: StructuredData,
+  resolver: FormulaNameResolver,
+  formula: FormulaEngine,
+  logger: Logger
+): StructuredAnalyticService => {
+  validateAnalyticLimits(config.structuredAnalytic, logger);
+
+  return createStructuredAnalyticService({
+    store: new SQLiteStructuredAnalyticStore(
+      STRUCTURED_ANALYTIC_DB_PATH,
+      config.projectId,
+      logger
+    ),
+    projectData: createProjectData(structuredData, resolver, logger),
+    writer: createStructuredDataWriter(structuredData, logger),
+    formula,
+    limits: config.structuredAnalytic,
+    logger,
+    now: () => new Date().toISOString(),
+    newId: () => randomUUID(),
+    userId: config.userId
+  });
 };

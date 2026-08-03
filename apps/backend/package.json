@@ -114,6 +114,16 @@
       "types": "./src/3-capabilities/comments/*",
       "default": "./dist/3-capabilities/comments/*"
     },
+    "#structured-analytic": {
+      "development": "./src/3-capabilities/structured-analytic/index.ts",
+      "types": "./src/3-capabilities/structured-analytic/index.ts",
+      "default": "./dist/3-capabilities/structured-analytic/index.js"
+    },
+    "#structured-analytic/*": {
+      "development": "./src/3-capabilities/structured-analytic/*",
+      "types": "./src/3-capabilities/structured-analytic/*",
+      "default": "./dist/3-capabilities/structured-analytic/*"
+    },
     "#templates": {
       "development": "./src/3-capabilities/templates/index.ts",
       "types": "./src/3-capabilities/templates/index.ts",

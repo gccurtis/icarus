@@ -355,7 +355,7 @@ of this line said the opposite and is superseded.
 
 ---
 
-## Phase 7 — Wire and endpoints
+## Phase 7 — Wire and endpoints ✅ DONE
 
 `wire/` decoders with `exactKeys` rejection and byte limits, called from
 `4-job-wiring/structured-analytic/registerStructuredAnalyticEndpoints.ts`.
@@ -378,7 +378,7 @@ is open on every other capability's decoder.
 
 ---
 
-## Phase 8 — Startup and aliases
+## Phase 8 — Startup and aliases ✅ DONE
 
 The configuration half of this phase **landed early, in Phase 2** — the
 `structuredAnalytic` section, its parser, its defaults, and its `etc/README.md`

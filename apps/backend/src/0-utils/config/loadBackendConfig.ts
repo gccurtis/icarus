@@ -121,10 +121,28 @@ export interface RetentionConfig {
   sweepIntervalHours: number;
 }
 
+/**
+ * Effectively no limit, spelled as a number because Fastify requires a positive
+ * integer. Two gibibytes is far past anything a legitimate request carries, so
+ * it is a runaway backstop rather than a policy — nothing should ever approach
+ * it, and a request that does is the interesting event.
+ */
+export const UNBOUNDED_BODY_BYTES = 2_147_483_647;
+
 export interface BackendConfig {
   server: {
     host: string;
     port: number;
+    /**
+     * Largest accepted request body.
+     *
+     * Unbounded by default and deliberately so: a rejected request is logged
+     * with its payload verbatim, and a cap here would silently stop that at
+     * exactly the size where the payload matters most. Fastify's own default
+     * is 1 MiB, which this overrides — that number was never a decision anyone
+     * made, just a framework default nobody had looked at.
+     */
+    maxBodyBytes: number;
   };
   workerPool: {
     concurrentWorkers: number;
@@ -185,7 +203,8 @@ const buildDefaultCastRoutes = (
 const DEFAULT_CONFIG: BackendConfig = {
   server: {
     host: "0.0.0.0",
-    port: 4000
+    port: 4000,
+    maxBodyBytes: UNBOUNDED_BODY_BYTES
   },
   workerPool: {
     concurrentWorkers: 4
@@ -462,7 +481,12 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
   return {
     server: {
       host: parseString(server.host, DEFAULT_CONFIG.server.host, "server.host"),
-      port: parseNumber(server.port, DEFAULT_CONFIG.server.port, "server.port")
+      port: parseNumber(server.port, DEFAULT_CONFIG.server.port, "server.port"),
+      maxBodyBytes: parseNumber(
+        server.maxBodyBytes,
+        DEFAULT_CONFIG.server.maxBodyBytes,
+        "server.maxBodyBytes"
+      )
     },
     workerPool: {
       concurrentWorkers: parseNumber(
