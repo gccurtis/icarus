@@ -167,8 +167,15 @@ class StructuredDataImpl implements StructuredData {
 
     if (q.scope && q.scope.length > 0) {
       const scopeKeys = new Set(q.scope.map((ce) => `${ce.kind}:${ce.id}`));
-      entries = entries.filter((e) =>
-        e.contextEntries.some((ce) => scopeKeys.has(`${ce.kind}:${ce.id}`))
+      entries = entries.filter(
+        (e) =>
+          // No context entries means project-wide, so the entry is relevant to
+          // every scope rather than to none. Without this the filter excludes
+          // it — and since `declare` writes `contextEntries: []` and nothing
+          // else ever populates the field, a scope filter returned zero entries
+          // for every query. A confident empty list, not an error.
+          e.contextEntries.length === 0 ||
+          e.contextEntries.some((ce) => scopeKeys.has(`${ce.kind}:${ce.id}`))
       );
     }
 
