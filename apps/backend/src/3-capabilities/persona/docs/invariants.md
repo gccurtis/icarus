@@ -123,9 +123,12 @@ exclusion that subtracts more than intended (exclusions match on `id` alone, not
 a hop rather than a guarantee. A real snapshot — expanding `context.resolve()` at wrap time
 and freezing the leaves — is a natural next step and is deferred.
 
-**A no-op definition resubmit still bumps the wrapper's revision.** Definitions are
-replaced wholesale and Persona does not diff prose, so `update` with an unchanged context
-still calls `context.update`.
+**A no-op definition resubmit bumps the persona's revision but not the wrapper's.**
+Definitions are replaced wholesale and Persona does not diff prose, so every accepted
+`update` advances `PersonaRecord.revision`. The wrapper is untouched:
+`planWrapperChange` returns `unchanged` when the context entry matches, and
+`PersonaContextPort` exposes only `declare`, `delete`, and `purge` — there is no
+wrapper-update path to take.
 
 ## Limits
 

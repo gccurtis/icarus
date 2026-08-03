@@ -4,11 +4,11 @@ import type { ResourceRetentionTarget } from "#utils/persistence/resourceRetenti
 /**
  * A capability that owns Derived Outputs on behalf of its own blocks.
  *
- * Document is the only one today; Slides has a byte-identical ownership table
- * and will be a second the moment it is wired in. That is why this is a list of
- * claimants rather than a single hard-wired store — a sweep whose claim set is
- * "Document says so" would start deleting Slides' outputs on the day Slides
- * ships, silently and with no test to catch it.
+ * Document is the only one today. Slides declares a byte-identical ownership
+ * table but does not yet take Derived Outputs or write ownership rows, so it
+ * becomes a second claimant the day it does. That is why this is a list rather
+ * than a single hard-wired store — a sweep whose claim set is "Document says so"
+ * would start deleting Slides' outputs silently, with no test to catch it.
  */
 export interface DerivedOutputClaimant {
   /** Names the owner in logs, so a reaped output can be traced to whose it was. */

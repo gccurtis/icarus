@@ -33,8 +33,9 @@ flowchart TD
 
 The empty-scope check runs before the idempotency claim and before the attempt insert, so
 a refused refresh leaves no attempt row, no usage, no failed revision, and no freshness
-change. It is the one error `refresh` throws out of the method rather than converting into
-a `DerivedRefreshResult`; every later stage is caught. `POST /derived-outputs` runs
+change. With `DerivedOutputNotFoundError` it is one of only two errors `refresh` throws out
+of the method rather than converting into a `DerivedRefreshResult`; both are preconditions,
+and every later stage is caught. `POST /derived-outputs` runs
 `declare` first, so a declaration that names no context leaves its declared Output behind
 and answers 400. That response carries the `outputId`, because the declaration did succeed
 and a bare error would strand the Output behind an ID the caller never saw; it can then be

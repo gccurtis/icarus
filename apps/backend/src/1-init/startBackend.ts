@@ -158,8 +158,10 @@ export const startBackend = async (): Promise<void> => {
         bindResourceRetentionPort(
           "derived-outputs-orphans",
           createDerivedOutputReaper({
-            // Document is the only claimant today. Slides owns a byte-identical
-            // ownership table and joins this list when it is wired in.
+            // Document is the only claimant today. Slides declares a
+            // byte-identical ownership table but takes no Derived Outputs and
+            // writes no ownership rows yet; it joins this list on the day it
+            // does, and until then has nothing here to reap.
             claimants: [document],
             derivedOutputs,
             logger
