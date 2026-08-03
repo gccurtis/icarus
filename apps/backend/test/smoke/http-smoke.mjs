@@ -437,6 +437,18 @@ const loadedDeck = await request(
 );
 assert.equal(loadedDeck.snapshot.title, "Smoke deck renamed");
 
+const deckOutline = await request(
+  "slides-outline",
+  "/slides/query",
+  {
+    method: "POST",
+    body: json({ query: { type: "deck.outline", deckId } })
+  },
+  200
+);
+assert.equal(typeof deckOutline.text, "string");
+assert.equal(deckOutline.revision, 2);
+
 // The revision the caller already used: a conflict, not a second write.
 await request(
   "slides-revision-conflict",

@@ -26,6 +26,7 @@ import type {
   SlideQueryRequest,
   SlideQueryResult
 } from "../domain/model.js";
+import { deckOutline } from "../domain/outline.js";
 import { canRebase } from "../domain/rebase.js";
 import {
   applyOperations,
@@ -179,6 +180,15 @@ class SlidesService implements SlidesCapability {
             // Empty until Phase 5: a prompt source resolves its text here, and
             // no Deck can hold one yet.
             promptRevisions: []
+          };
+        }
+        case "deck.outline": {
+          const loaded = await this.loadSnapshot(query.deckId, query.revision);
+          return {
+            type: "deck.outline",
+            deckId: query.deckId,
+            revision: loaded.head.revision,
+            text: deckOutline(loaded.snapshot)
           };
         }
         case "deck.history": {

@@ -368,9 +368,33 @@ type SlideCommand =
 type SlideQuery =
   | { type: "deck.list"; cursor?: string; lifecycle?: DeckLifecycle }
   | { type: "deck.load"; deckId: DeckId; revision?: number }
+  | { type: "deck.outline"; deckId: DeckId; revision?: number }
   | { type: "deck.history"; deckId: DeckId; cursor?: string; limit: number }
   | { type: "deck.attempt"; deckId: DeckId; attemptId: string };
 ```
+
+## The outline
+
+`deck.outline` returns the Deck's text as Markdown. It is a projection and only
+a projection — nothing takes an outline as input, and a Deck is authored through
+operations alone.
+
+It exists because the Knowledge lattice consumes text, and that requirement
+decides every judgement in it:
+
+- One `#` heading per Slide, taken from the first text in reading order. A Slide
+  has no title field and a Layout slot carries a name rather than a role, so no
+  slot can be trusted to be "the title"; reading order is the only honest rule,
+  and in practice what a Slide says first is what it is about.
+- Remaining text becomes `-` bullets, tables render as Markdown tables so the
+  grid survives, and Slide notes become a `>` blockquote.
+- **Master and Layout text is excluded.** It is chrome — a confidentiality
+  footer, a running header — repeated behind every Slide, and emitting it would
+  put the same sentence in the lattice once per Slide.
+- A prompt source contributes nothing until it has settled, because it has no
+  text until then.
+
+It reads a snapshot, so it accepts a `revision` exactly as `deck.load` does.
 
 A prompt either fills a surface that already exists or brings one into being:
 

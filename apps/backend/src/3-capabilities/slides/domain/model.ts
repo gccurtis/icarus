@@ -817,6 +817,12 @@ export interface SlideQueryRequest {
 export type SlideQuery =
   | { type: "deck.list"; cursor?: string; lifecycle?: DeckLifecycle }
   | { type: "deck.load"; deckId: string; revision?: number }
+  | {
+      /** The Deck's text, as text. A projection for the Knowledge lattice. */
+      type: "deck.outline";
+      deckId: string;
+      revision?: number;
+    }
   | { type: "deck.history"; deckId: string; cursor?: string; limit: number }
   | { type: "deck.attempt"; deckId: string; attemptId: string };
 
@@ -828,6 +834,7 @@ export type SlideQueryResult =
       snapshot: DeckSnapshot;
       promptRevisions: DerivedOutputRevision[];
     }
+  | { type: "deck.outline"; deckId: string; revision: number; text: string }
   | { type: "deck.history"; items: DeckChangeSet[]; nextCursor?: string }
   | { type: "deck.attempt"; attempt: SlideAttempt };
 

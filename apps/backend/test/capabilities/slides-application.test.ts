@@ -533,6 +533,36 @@ test("an older revision loads as it was, not as it is now", async () => {
   assert.equal((await load(slides, head.id)).snapshot.title, "Third");
 });
 
+test("deck.outline projects the Deck's text, at the head or an older revision", async () => {
+  const { slides } = harness();
+  const head = await createDeck(slides);
+  await submit(slides, head.id, 1, [
+    { type: "element.insert", container: SLIDE, element: textElement("a", 0, "Revenue grew 40%") },
+    { type: "element.insert", container: SLIDE, element: textElement("b", 1, "Q3 closed at $4.2M") }
+  ]);
+
+  const outline = await slides.query({
+    query: { type: "deck.outline", deckId: head.id }
+  });
+  assert.equal(outline.type, "deck.outline");
+  const projected = outline as Extract<SlideQueryResult, { type: "deck.outline" }>;
+  assert.equal(projected.revision, 2);
+  assert.equal(projected.text, "# Revenue grew 40%\n\n- Q3 closed at $4.2M");
+
+  // It reads history like deck.load does, because it is a projection of a
+  // snapshot rather than of the head.
+  const before = (await slides.query({
+    query: { type: "deck.outline", deckId: head.id, revision: 1 }
+  })) as Extract<SlideQueryResult, { type: "deck.outline" }>;
+  assert.equal(before.revision, 1);
+  assert.equal(before.text, "");
+
+  await assert.rejects(
+    () => slides.query({ query: { type: "deck.outline", deckId: "missing" } }),
+    DeckNotFoundError
+  );
+});
+
 test("compaction is dispatched once the retained window is exceeded", async () => {
   const { slides, dispatched } = harness({
     ...OPTIONS,

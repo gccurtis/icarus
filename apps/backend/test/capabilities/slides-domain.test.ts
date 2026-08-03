@@ -27,6 +27,7 @@ import {
   collectSlideIdentities,
   computeSlideIdentityTransitions,
 } from "../../src/3-capabilities/slides/domain/identities.js";
+import { deckOutline } from "../../src/3-capabilities/slides/domain/outline.js";
 import type {
   DeckChangeSet,
   DeckSnapshot,
@@ -1773,4 +1774,91 @@ test("an operation against a missing container or element is refused", () => {
       ),
     SlideOperationError,
   );
+});
+
+// ── Outline ──────────────────────────────────────────────────────────────
+
+test("the outline is Markdown: first text is the heading, the rest are bullets", () => {
+  const source = withElements(
+    textElement("a", 0, "Revenue grew 40%"),
+    textElement("b", 1, "Q3 closed at $4.2M"),
+    textElement("c", 2, "Enterprise drove 60% of new ARR"),
+  );
+  assert.equal(
+    deckOutline(source),
+    [
+      "# Revenue grew 40%",
+      "",
+      "- Q3 closed at $4.2M",
+      "- Enterprise drove 60% of new ARR",
+      "",
+      "> Speaker notes",
+    ].join("\n"),
+  );
+});
+
+test("the outline follows paint order, not element ID order", () => {
+  // Named so that ID order and zIndex order disagree: sorting by ID would put
+  // "a" first and make it the heading.
+  const source = withElements(textElement("a", 1, "Second"), textElement("b", 0, "First"));
+  assert.match(deckOutline(source), /^# First\n\n- Second\n/);
+});
+
+test("a table keeps its grid, and empty text contributes nothing", () => {
+  const source = withElements(textElement("a", 0, "Results"), tableElement("t", 1));
+  assert.equal(
+    deckOutline(source),
+    ["# Results", "", "| A | B |", "| --- | --- |", "| C | D |", "", "> Speaker notes"].join("\n"),
+  );
+
+  const empty = withElements(textElement("a", 0, "   "), textElement("b", 1, "Only line"));
+  // The blank element is skipped entirely, so the heading is the next real text.
+  assert.match(deckOutline(empty), /^# Only line\n/);
+});
+
+test("a prompt source contributes nothing until it has settled", () => {
+  const source = withElements(textElement("a", 0, "Heading"), textElement("b", 1, "Body"));
+  const promptElement = source.slides[SLIDE_ID].elements.b;
+  if (promptElement.kind !== "text") throw new Error("expected a text element");
+  promptElement.body = { kind: "prompt", output: { outputId: "output-1" } };
+
+  const outline = deckOutline(source);
+  assert.match(outline, /^# Heading\n/);
+  assert.doesNotMatch(outline, /Body/);
+});
+
+test("Master and Layout text stays out of the outline", () => {
+  const source = withElements(textElement("a", 0, "Slide text"));
+  source.masters[MASTER_ID].elements = { m: textElement("m", 0, "Confidential") };
+  source.layouts[LAYOUT_ID].elements = { l: textElement("l", 0, "Running header") };
+
+  // Chrome repeats behind every Slide; emitting it would put the same sentence
+  // into the lattice once per Slide.
+  const outline = deckOutline(source);
+  assert.doesNotMatch(outline, /Confidential/);
+  assert.doesNotMatch(outline, /Running header/);
+  assert.match(outline, /Slide text/);
+});
+
+test("slides are separated, and a Slide with no text contributes nothing", () => {
+  const source = withElements(textElement("a", 0, "One"));
+  source.slides[SLIDE_ID].notes = { atoms: [], marks: [] };
+  const secondId = "slide-2";
+  source.slides[secondId] = {
+    id: secondId,
+    layoutId: LAYOUT_ID,
+    notes: { atoms: [], marks: [] },
+    elements: { b: textElement("b", 0, "Two") },
+  };
+  const emptyId = "slide-3";
+  source.slides[emptyId] = {
+    id: emptyId,
+    layoutId: LAYOUT_ID,
+    notes: { atoms: [], marks: [] },
+    elements: {},
+  };
+  source.slideOrder = [SLIDE_ID, emptyId, secondId];
+
+  // The empty Slide leaves no trace at all — not a blank heading, not a gap.
+  assert.equal(deckOutline(source), "# One\n\n# Two");
 });

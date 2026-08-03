@@ -32,6 +32,7 @@ export {
   canonicalizeSnapshot,
   digestFormulaExpression
 } from "./domain/canonical.js";
+export { deckOutline } from "./domain/outline.js";
 export { validateSnapshot, SLIDE_ELEMENT_KINDS } from "./domain/validation.js";
 export {
   collectSlideIdentities,

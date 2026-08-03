@@ -366,7 +366,7 @@ test("every command and query in the union has a decoder", () => {
     "prompt.update-definition"
   ] satisfies SlideCommand["type"][]);
   assert.deepEqual([...SLIDE_QUERY_TYPES].sort(), [
-    "deck.attempt", "deck.history", "deck.list", "deck.load"
+    "deck.attempt", "deck.history", "deck.list", "deck.load", "deck.outline"
   ] satisfies SlideQuery["type"][]);
 });
 
@@ -808,6 +808,15 @@ test("a query envelope decodes each query and bounds the history page", () => {
         query: { type: "deck.load", deckId: "d1", revision: 0 }
       }),
     /positive integer/
+  );
+  // The outline is addressed exactly like a load, because it is one.
+  assert.deepEqual(
+    decodeSlideQuery({ query: { type: "deck.outline", deckId: "d1", revision: 4 } }).query,
+    { type: "deck.outline", deckId: "d1", revision: 4 }
+  );
+  rejects(
+    () => decodeSlideQuery({ query: { type: "deck.outline", deckId: "d1", text: "x" } }),
+    /unknown fields: text/
   );
 });
 
