@@ -3,142 +3,196 @@
 ## Purpose
 
 Templates keeps one project-scoped catalog of reusable resource templates. A
-template is not a second content format. It is a reference to a template-mode
-resource owned by another kind, such as Document.
+template is not a second content format. It is a catalog entry pointing at a
+sealed copy of a resource owned by another kind, such as Document.
 
 The organising idea is that **a template turns a resource into a function of its
-Context Variables**. Registration keeps the resource's structure and records
-default bindings for its variables; instantiation overrides those defaults, or
-leaves them to be filled in later.
+Context Variables**. Registration copies the resource, seals the copy, and
+records which of its variables are parameters; instantiation copies the template
+and supplies arguments for those parameters.
 
 ## Vocabulary
 
 | Term | Meaning in the implementation |
 |---|---|
-| Template record | `{ id, kind, resourceId, name, description?, contextBindings, state, revision, createdAt, updatedAt }` |
-| Backing resource | The template-mode copy the catalog points at. In v1 its ID equals the Template ID |
-| Reserving | A record whose identity is durable but whose copy has not finished. Invisible to `get`/`list` |
-| Ready | A completed record, visible and usable |
-| Adapter | The per-kind copy contract supplied by composition |
+| Template record | `{ id, kind, resourceId, name, description?, contextBindings, revision, createdAt, updatedAt }` |
+| Backing copy | The sealed resource the catalog points at. Its ID is allocated by the owning capability and is **not** the Template ID |
+| Resource runtime | The owning capability's own object, satisfying `TemplatableResource` structurally |
 | Binding | `{ target?, description? }` keyed by user-facing variable name |
-| Name | Catalog label, unique per kind. What `template.update` renames — never the sealed backing resource |
-| Claim | A per-`requestId` row that replays a completed command and resumes an interrupted one |
+| Name | Catalog label, unique per kind. What `template.update` renames — never the sealed backing copy |
+| Receipt | A per-`requestId` row holding what a completed command returned, so an exact retry replays it |
 
 ## Identity
 
-Templates **allocates** the Template ID and returns it. A caller registering a
-template points at a resource it already owns and asks for a catalog entry it
-has never seen, so it has no basis on which to name that entry.
+**The capability that stores a thing allocates its ID.** Templates allocates the
+Template ID because it stores the catalog row. The owning capability allocates
+the backing copy's ID because it stores the copy, and hands it back from
+`duplicate`.
 
-This differs from the identifiers the caller genuinely authors — the
-registration `source` and an instance's `destinationResourceId` — which stay
-caller-supplied.
+So `resourceId !== id`, always. An earlier design enforced `resource_id = id`
+with a CHECK constraint; that only held because Templates was passing its own ID
+down as the destination, which made a coincidence look like a rule.
 
-Allocation does not weaken replay. The identifier is minted once and frozen on
-the command claim *and* in a `reserving` catalog row before the adapter runs, so
-an exact retry and a resumed pending claim both reuse it. Derived Outputs is the
-precedent: it allocates its own output ID and relies on a caller-supplied
-idempotency key.
+Nothing is caller-supplied except the source: registration names `{ kind,
+resourceId }` for a resource the caller already owns. Instantiation names no
+destination at all.
 
-See [`scratch/resource-id-allocation.md`](../../../../../../scratch/resource-id-allocation.md)
-for the open question of whether Document and Slide should move the same way.
+## The resource seam
 
-## The adapter seam
-
-Templates is generic because startup injects one adapter per supported kind.
+Templates is generic because startup registers one runtime per supported kind.
 
 ```text
 Templates catalog
   Template { id, kind, resourceId }
                        |
-                       +-- kind adapter --> backing resource in template mode
+                       +-- kind's runtime --> the sealed backing copy
 ```
 
-Adding a kind means implementing and registering another adapter. It adds no
-union member, table, or import to the Templates domain.
+**There is no adapter object.** The capability's own runtime satisfies
+`TemplatableResource` structurally, and composition is one line in `1-init`:
 
-**Mutating** adapter methods return `void`. Templates supplies both the `kind`
-and the destination identifier, so a successful call can only have produced what
-it was told to produce — there is nothing to validate on the way back, which is
-why there is no resource-mismatch error.
+```ts
+templateResources.register(document);
+```
 
-The port has five mutating methods: create and instantiate copies, update a
-backing copy's content, then logically delete and purge it. All five return
-`void`.
+The interface exists so that line typechecks — see
+[`ports/templatableResource.ts`](../ports/templatableResource.ts) for why a
+`Record<string, any>` registry and a `DocumentCapability`-typed one both fail.
 
-`readTemplateCopy` is the sixth and the exception, and it **narrows** that rule
-rather than keeping it: a read has to return something. It hands back the
-backing content as `unknown`, because a template's content is whatever the
-owning kind says it is and Templates grows no per-kind types. The caller knows
-the `kind` from the record. This is symmetric with the content edits going the
-other way, which are `unknown` for the same reason.
+Adding a kind adds no union member, table, or import to the Templates domain.
+
+### What crosses the seam, and in which direction
+
+| Method | Templates supplies | Gets back |
+|---|---|---|
+| `duplicate` | a source ID, an optional name for the copy, a key | **the ID it allocated** |
+| `markAsTemplate` | the copy's ID | nothing |
+| `applyBindings` | bindings, in Templates' own vocabulary | nothing |
+| `submit` | caller-authored operations, `unknown` | nothing |
+| `load` | the copy's ID | the content, `unknown` |
+| `logicalDelete` / `purge` | the copy's ID, a key | nothing |
+
+Two things are `unknown` here, for the same reason and not by accident:
+`submit`'s operations were authored by the *caller* and `load`'s content is
+whatever the kind says it is. Templates interprets neither and grows no per-kind
+types. The caller knows the kind from the record.
+
+Bindings are the deliberate exception. They arrive in Templates' own vocabulary,
+decoded strictly at its wire boundary and stored on its record, so they cross as
+themselves. Folding them into `submit` would mean constructing a resource
+operation, which is exactly the per-kind knowledge this seam keeps out.
 
 ## Bindings
 
-Instantiation input is typed rather than an opaque blob, because the thing an
-instantiation varies is Context Variables, and those are resource-level
-structure rather than a Document peculiarity.
+One override rule governs how a binding record reaches a resource, and only the
+owning kind can carry it out, because only it knows how its variables are stored:
 
-One override rule applies at both registration and instantiation:
-
-| Binding for a variable | Effect on the destination |
+| Binding for a variable | Effect on the resource |
 |---|---|
-| Not a key in the record | Keeps whatever the source held |
-| Key present with `entry` | That target becomes the destination's |
-| Key present, `entry` omitted | Explicitly unbound |
+| Not a key in the record | Keeps whatever it currently holds |
+| Key present with `target` | That target becomes its target |
+| Key present, `target` omitted | Explicitly unbound |
 
 Nothing is cleared implicitly. A registrar wanting a blank template names the
-variables and omits their entries; one wanting defaults sets them; one
-supplying nothing gets a faithful copy.
+variables and omits their targets; one wanting defaults sets them; one supplying
+nothing gets a faithful copy.
+
+The third row is reachable **only at registration**. Instantiation requires a
+target on every argument — see below.
 
 ### The bindings are the template
 
 A template is a resource *as a function of its Context Variables*. The declared
 bindings are that function's parameter list, so they are not incidental to the
-Template record — they are most of what distinguishes one template from
-another. Two templates over the same Document with different declared parameters
-are different templates. Anything undeclared is not a parameter; it is baked-in
+Template record — they are most of what distinguishes one template from another.
+Two templates over the same Document with different declared parameters are
+different templates. Anything undeclared is not a parameter; it is baked-in
 content.
 
 Templates therefore **persists them**, and returns them from `template.get` and
 `template.list`. That is not caching a value that lives elsewhere: the
-declaration exists only here. A binding's `description` documents a parameter
-of the template and has no home on the resource at all, and the resource's
-variable state cannot say which of its variables a template means to expose.
+declaration exists only here. A binding's `description` documents a parameter of
+the template and has no home on the resource at all, and the resource's variable
+state cannot say which of its variables a template means to expose.
 
-What the resource holds is the *applied* target for each variable, written by
-the adapter during the copy — because only the owning kind knows how its
-variables are stored. The record says what the parameters are; the resource
-holds what they currently point at.
+What the resource holds is the *applied* target for each variable. The record
+says what the parameters are; the resource holds what they currently point at.
 
-The two cannot drift, because `template.update` is the only path that changes
-either. It rewrites the declaration and applies the content edits as one
-command.
+### Registration declares; instantiation supplies
 
-Registration **seals** the backing resource to make that true: the owning
-capability refuses its whole public surface for a template-mode resource —
-reads included, and renaming with them. The backing copy exists for one reason,
-so instantiation has something to copy, and Templates reaches it through the
-adapter rather than the public path. Reading a template is therefore
-`template.load`, not the owning capability's own load; that capability still
-answers a *listing* of its templates, which hands back identifying metadata
-rather than content.
+The two halves of the rule are not symmetric, and the asymmetry is the design.
 
-> **Half implemented, and the half that is missing is the enforcement.**
-> Templates now persists the declaration, returns it, and routes every change
-> through `template.update`. **No resource capability refuses anything yet** —
-> there is no `isTemplate` flag in Document, so nothing stops an ordinary
+| | Registration | Instantiation |
+|---|---|---|
+| Which variables are named | The ones being made parameters | **Exactly** the declared set |
+| A `target` on each | Optional | **Required** |
+| What an omitted `target` means | A parameter with no default | Rejected at the wire |
+
+**Registration** says *which variables are parameters*, and may give each one a
+target. Those targets are what the backing copy holds, which is what makes the
+template itself a working resource — openable, previewable, and a sensible
+default to show whoever instantiates it.
+
+**Instantiation** names every declared parameter and says what each one points
+at. Mechanically the copy starts from the declared targets, because `duplicate`
+is verbatim, and `applyBindings` then replaces them with the supplied ones.
+
+The result is that no instance holds an unbound variable — not because the
+declaration happened to have defaults, but because an instantiation that left one
+open was refused.
+
+An argument for an undeclared variable is refused for the converse reason: that
+variable is baked-in content, and binding it would edit the instance rather than
+configure it.
+
+### Three names meet at instantiation
+
+None of them is the other, and conflating any two is a bug:
+
+| Name | Owned by | Changed by |
+|---|---|---|
+| The Template record's `name` | Templates | `template.update` |
+| The sealed backing copy's own title | The resource | **Nothing** — inherited from the source and unreachable |
+| The instance's name | The resource | Its own capability, after instantiation |
+
+`template.instantiate` takes the third. Omitting it inherits the backing copy's
+title, which is the only default available.
+
+### Why the two statements cannot drift
+
+`template.update` is the only path that changes either. It rewrites the
+declaration and applies the resource changes as one command.
+
+Registration **seals** the backing copy to make that true: the owning capability
+refuses its whole public surface for a resource in template mode — reads
+included, and renaming with them. The copy exists for one reason, so
+instantiation has something to copy, and Templates reaches it by holding the
+runtime object rather than going through the public path.
+
+Reading a template is therefore `template.load`. And `template.list` is the only
+template listing in the system: no resource capability exposes one, because a
+sealed resource is not something its own capability answers questions about.
+
+> **Half implemented, and the missing half is the enforcement.** Templates
+> persists the declaration, returns it, and routes every change through
+> `template.update`. **No resource capability refuses anything yet** — there is
+> no `isTemplate` flag in Document, so nothing stops an ordinary
 > `document.submit` against a backing copy. Until that lands, "cannot drift" is
 > a property of the Templates side alone.
 
-`ContextEntry` is a type-only import of the `{ id, kind }` atom. Templates has
-no Context runtime, port, read, or write.
+`ContextEntry` is a type-only import of the `{ id, kind }` atom. Templates has no
+Context runtime, port, read, or write.
 
 ## Ownership boundaries
 
-Templates owns the catalog and command replay. The resource capability owns
-content, revisions, the template-mode flag, and copy rules. Context owns Context
-records. Derived Outputs owns generated content.
+Templates owns the catalog, command replay, and the whole registration and
+instantiation *procedure*. The resource capability owns content, revisions, IDs,
+the template-mode flag, and how a copy is made. Context owns Context records.
+Derived Outputs owns generated content.
+
+The resource is driven, not consulted: it neither knows nor decides that it is
+becoming a template. `duplicate` is a pure copy that a capability could offer for
+its own reasons, and `markAsTemplate` is a separate instruction.
 
 Instantiation writes no catalog row: the instance belongs entirely to its owning
 capability, and Templates keeps no instance list.

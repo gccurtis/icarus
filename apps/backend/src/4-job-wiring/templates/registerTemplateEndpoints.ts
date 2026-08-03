@@ -5,8 +5,10 @@ import {
   ResourceNotDeletedError
 } from "#utils/persistence/resourceHistory.js";
 import {
+  InvalidTemplateCursorError,
   StaleTemplateRevisionError,
   TemplateAlreadyExistsError,
+  TemplateBindingMismatchError,
   TemplateIdempotencyMismatchError,
   TemplateNameConflictError,
   TemplateNotFoundError,
@@ -40,8 +42,22 @@ const errorResponse = (error: unknown): { statusCode: number; body: unknown } =>
   if (error instanceof TemplateIdempotencyMismatchError) {
     return { statusCode: 409, body: { error: "idempotency_mismatch", message: error.message } };
   }
+  if (error instanceof TemplateBindingMismatchError) {
+    return {
+      statusCode: 400,
+      body: {
+        error: "binding_mismatch",
+        message: error.message,
+        missing: error.missing,
+        unexpected: error.unexpected
+      }
+    };
+  }
   if (error instanceof TemplateUnsupportedKindError) {
     return { statusCode: 400, body: { error: "unsupported_kind", message: error.message } };
+  }
+  if (error instanceof InvalidTemplateCursorError) {
+    return { statusCode: 400, body: { error: "invalid_cursor", message: error.message } };
   }
   if (error instanceof TemplateWireError) {
     return { statusCode: 400, body: { error: "validation_error", message: error.message } };

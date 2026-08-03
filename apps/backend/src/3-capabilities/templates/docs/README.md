@@ -3,12 +3,12 @@
 ## Status and authority
 
 The capability is implemented, tested, and wired into startup. Its catalog,
-command claims, wire decoding, endpoints, and Activity outbox all work.
+receipts, wire decoding, endpoints, search, and Activity outbox all work.
 
-**No resource adapter is registered yet.** `1-init/startBackend.ts` constructs
-the adapter registry empty, so in the current tree every command that needs an
-adapter — and `template.load` — answers `400 unsupported_kind`. `template.get`
-and `template.list` are fully operational and return an empty catalog.
+**No resource runtime is registered yet.** `1-init/startBackend.ts` constructs
+the registry empty, so in the current tree every command that reaches a resource
+— and `template.load` — answers `400 unsupported_kind`. `template.get` and
+`template.list` are fully operational and return an empty catalog.
 
 **Nothing seals a backing copy yet.** The design has registration close the
 owning capability's whole public surface for a template-mode resource, reads
@@ -16,30 +16,40 @@ included, leaving `template.update` and `template.load` as the only ways in.
 Document has no `isTemplate` flag, so nothing refuses anything today. Templates'
 half is built; the enforcement half is Document work.
 
-The first adapter will be Document, and it requires work that does not exist
-yet: Document representation v2, Context Variables, `isTemplate` persistence,
-durable copy attempts, and a new `DerivedOutputs.clone`. That design lives in
-[`scratch/document-design/templates-and-context-variables.md`](../../../../../../scratch/document-design/templates-and-context-variables.md)
+The first runtime will be Document, and it requires work that does not exist yet:
+Context Variables, `isTemplate` persistence, `duplicate`, `markAsTemplate`, and
+allowing a Prompt Block to hold `appliedRevision: 0`. That design lives in
+[`scratch/document-changes-design.md`](../../../../../../scratch/document-changes-design.md)
 and must be read as intent, **not** as implemented behaviour.
 
 A green Templates test run therefore means "Templates upholds its half of the
-adapter contract". It does not mean a user can create a template.
+contract". It does not mean a user can create a template.
 
 Design intent for the capability itself is in
 [`scratch/templates-design.md`](../../../../../../scratch/templates-design.md);
-the build plan is in
-[`scratch/templates-implementation-plan.md`](../../../../../../scratch/templates-implementation-plan.md).
+progress is tracked in
+[`scratch/0-templates-checklist.md`](../../../../../../scratch/0-templates-checklist.md).
 
 ## What it owns
 
 - Which backing resources are registered as templates.
 - Allocation of the Template ID, and the resource kind.
-- Exact command replay for registration, instantiation, and deletion.
-- Dispatch to one injected adapter per registered kind.
+- The whole registration and instantiation **procedure** — copy, seal, bind.
+- Exact command replay, by receipt.
+- The only template listing in the system.
 
-It does not own resource content, revision history, copy rules, Context
-records, or Derived Outputs. It never reads or writes another capability's
-tables.
+It does not own resource content, resource IDs, revision history, copy
+mechanics, Context records, or Derived Outputs. It never reads or writes another
+capability's tables.
+
+## The shape, in one line
+
+Templates receives a resource capability's **own runtime object** and drives it.
+There is no adapter to write:
+
+```ts
+templateResources.register(document);
+```
 
 ## Implementation map
 
@@ -51,10 +61,10 @@ tables.
 | Canonical digest for replay | [`domain/canonical.ts`](../domain/canonical.ts) |
 | Commands, queries, outbox drain | [`application/templateService.ts`](../application/templateService.ts) |
 | Persistence contract | [`ports/templateStore.ts`](../ports/templateStore.ts) |
-| Per-kind copy contract | [`ports/resourceAdapter.ts`](../ports/resourceAdapter.ts) |
+| What a templatable resource must do | [`ports/templatableResource.ts`](../ports/templatableResource.ts) |
 | Narrow Activity port | [`ports/activityPublisher.ts`](../ports/activityPublisher.ts) |
 | Table names and DDL | [`persistence/sqliteSchema.ts`](../persistence/sqliteSchema.ts) |
-| SQLite adapter | [`persistence/sqliteTemplateStore.ts`](../persistence/sqliteTemplateStore.ts) |
+| SQLite adapter, search, and cursors | [`persistence/sqliteTemplateStore.ts`](../persistence/sqliteTemplateStore.ts) |
 | Row/domain mapping | [`persistence/sqliteMappers.ts`](../persistence/sqliteMappers.ts) |
 | Strict ingress decoding | [`wire/`](../wire/) |
 | Construction and Activity adaptation | [`1-init/create/templates.ts`](../../../1-init/create/templates.ts) |
@@ -63,8 +73,8 @@ tables.
 
 ## Documentation map
 
-- [Concepts](concepts.md): vocabulary, ownership, and the adapter seam.
+- [Concepts](concepts.md): vocabulary, ownership, identity, and the resource seam.
 - [Types](types.md): record, command, query, binding, and port families.
 - [Runtime](runtime.md): construction, endpoints, queue choice, and logging.
-- [Flows](flows.md): registration, instantiation, deletion, and recovery.
+- [Flows](flows.md): registration, instantiation, update, deletion, and recovery.
 - [Invariants](invariants.md): what is guaranteed, and what is not.

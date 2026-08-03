@@ -3,11 +3,11 @@ import type { Logger } from "#platform/observability/logger.js";
 import {
   createTemplateCapability,
   SQLiteTemplateStore,
+  type TemplatableResource,
+  type TemplatableResourceRegistry,
   type TemplateActivityPublisher,
   type TemplateCapability,
-  type TemplateCommittedTransaction,
-  type TemplateResourceAdapter,
-  type TemplateResourceRegistry
+  type TemplateCommittedTransaction
 } from "#templates";
 import type { BackendConfig } from "#utils/config/loadBackendConfig.js";
 
@@ -15,18 +15,22 @@ const TEMPLATES_DB_PATH = "./data/templates.db";
 
 /**
  * Mutable only during composition. Templates receives it through the narrow
- * read-only TemplateResourceRegistry interface.
+ * read-only TemplatableResourceRegistry interface.
+ *
+ * `register` takes a capability's runtime object directly — there is no adapter
+ * to write. This is the only place that sees both sides, which is what keeps
+ * Templates and the resource capabilities from importing each other.
  */
-export type RuntimeTemplateAdapterRegistry = TemplateResourceRegistry & {
-  register(adapter: TemplateResourceAdapter): void;
+export type RuntimeTemplateResourceRegistry = TemplatableResourceRegistry & {
+  register(resource: TemplatableResource): void;
 };
 
-export const createTemplateAdapterRegistry = (): RuntimeTemplateAdapterRegistry => {
-  const adapters = new Map<string, TemplateResourceAdapter>();
+export const createTemplateResourceRegistry = (): RuntimeTemplateResourceRegistry => {
+  const resources = new Map<string, TemplatableResource>();
   return {
-    get: (kind) => adapters.get(kind),
-    register: (adapter) => {
-      adapters.set(adapter.kind, adapter);
+    get: (kind) => resources.get(kind),
+    register: (resource) => {
+      resources.set(resource.kind, resource);
     }
   };
 };
@@ -57,7 +61,7 @@ export const createTemplateActivityPublisher = (
 
 export const createTemplatesInstance = (
   config: BackendConfig,
-  adapters: TemplateResourceRegistry,
+  resources: TemplatableResourceRegistry,
   activity: ActivityCapability,
   logger: Logger
 ): TemplateCapability => {
@@ -65,7 +69,7 @@ export const createTemplatesInstance = (
   return createTemplateCapability(
     store,
     {
-      adapters,
+      resources,
       logger,
       activityPublisher: createTemplateActivityPublisher(activity),
       attribution: { actorId: config.userId }

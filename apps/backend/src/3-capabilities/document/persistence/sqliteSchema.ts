@@ -62,6 +62,8 @@ export const initializeDocumentSchema = (
       title            TEXT NOT NULL,
       lifecycle        TEXT NOT NULL
         CHECK (lifecycle IN ('active', 'archived')),
+      -- One-way. Nothing in the schema or the service clears it.
+      is_template      INTEGER NOT NULL DEFAULT 0 CHECK (is_template IN (0, 1)),
       revision         INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
       base_seq         INTEGER NOT NULL DEFAULT 1 CHECK (base_seq >= 1),
       semantic_digest  TEXT NOT NULL,
@@ -111,7 +113,7 @@ export const initializeDocumentSchema = (
         CHECK (identity_kind IN (
           'style', 'row', 'block', 'list', 'list-item', 'table',
           'table-row', 'table-column', 'table-cell', 'table-merge',
-          'rich-text-atom', 'rich-text-mark'
+          'rich-text-atom', 'rich-text-mark', 'context-variable'
         )),
       state                    TEXT NOT NULL
         CHECK (state IN ('active', 'tombstoned')),
@@ -134,7 +136,6 @@ export const initializeDocumentSchema = (
     CREATE TABLE IF NOT EXISTS ${tables.bases} (
       document_id            TEXT NOT NULL,
       base_seq               INTEGER NOT NULL CHECK (base_seq >= 1),
-      representation_version INTEGER NOT NULL CHECK (representation_version = 1),
       snapshot_json          BLOB NOT NULL,
       semantic_digest        TEXT NOT NULL,
       created_at             TEXT NOT NULL,

@@ -16,7 +16,7 @@ document, and most of it is **gone**:
 |---|---|
 | A1 formula authoring layer — tokenizer, stable-reference manifests, reserved aliases, display re-rendering | Existed only to make cell-to-cell references safe under axis moves. There are no cell-to-cell references |
 | Calculation planning — dependency graph, dirty derivation, cycle detection | Same reason. Formula evaluates one expression at a time, as it does for Document |
-| Range projection subsystem — spill matrices, collision arbitration | Rendering concern. A structured value settles and a client displays it |
+| Range projection subsystem — spill matrices, collision arbitration | The machinery was disproportionate and stays removed. **The question it addressed is still open** — what a `list` or `table` result means in a grid. See [Open: range-valued results](spreadsheet-design.md#open-range-valued-results); no phase below depends on it |
 | Multi-sheet workbooks, sheet-qualified references | One sheet per resource |
 | Data cells with pinned/follow-head tracking | A `formula` cell over a project binding already is this |
 
@@ -152,9 +152,10 @@ selection produce the same digest.
 
 `ports/spreadsheetStore.ts`, `persistence/`, `wire/`. Tables mirror Document:
 `spreadsheets`, `bases`, `change_sets`, `command_receipts`, `create_receipts`,
-`identity_ledger`, `attempts`, `stage_receipts`, `prompt_outputs`,
-`activity_outbox`. `create_receipts` keyed on `request_id` with
-`spreadsheet_id` for cascade only.
+`identity_ledger`, `attempts`, `stage_receipts`, `activity_outbox`.
+`create_receipts` keyed on `request_id` with `spreadsheet_id` for cascade only.
+No `prompt_outputs` — phase 7 is blocked, and an unused table is a migration to
+undo later.
 
 The wire layer owns **cell entry coercion**: a leading `=` is a `formula`,
 numeric input is a `number`, `true`/`false` is `logic`, a recognised date
@@ -199,12 +200,22 @@ Both paths, sharing one attempt family:
 Needs `ports/formulaResolver.ts`. No dependency planning: each expression is
 independent because nothing references another cell.
 
-## Phase 7 — Prompt cells
+## Phase 7 — Prompt cells (blocked; do not build)
+
+**This phase does not run.** The `prompt` cell kind is expected to be dropped
+and replaced by a **prompt formula** — an addition to Formula, not to
+Spreadsheet — and that decision waits on Research. Rationale in
+[the design](spreadsheet-design.md#prompt-cells--on-hold-and-probably-replaced).
+
+Phases 1–6 and 8 do not depend on it. The only work it touches elsewhere:
+`prompt` stays out of the `CellContent` union until this resolves, `sheet.load`
+needs no output resolution, and the `prompt_outputs` table is not created. Leave
+`ports/derivedOutputs.ts` unwritten. Everything below is retained because the
+staleness reasoning transfers to whatever replaces it.
 
 Freeze → compute → settle, mirroring Document. One dedicated Derived Output per
 Prompt cell; the cell stores only the `DerivedOutputRef` and `sheet.load`
-resolves the text on read. Enables the `prompt` cell kind in validation. Needs
-`ports/derivedOutputs.ts`.
+resolves the text on read.
 
 **The one divergence from Document is the sparse target.** Document inserts a
 Block into an existing Row; here the target coordinate may hold no Cell record.

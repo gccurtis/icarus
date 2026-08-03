@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { ContextEntry } from "#context";
 import type { FormulaDiagnostic, FormulaEngine } from "#formula";
 import { toWire } from "#formula";
 import { formulaAtomDisplayText } from "../domain/formulaDisplay.js";
@@ -20,7 +21,9 @@ import {
   DocumentOperationError,
   DocumentPlacementError,
   DocumentStaleAttemptError,
+  DocumentContextVariableNotFoundError,
   DocumentStyleReferenceError,
+  DocumentTemplateModeError,
   DocumentValidationError,
   HistoryPrunedError,
   IdempotencyMismatchError,
@@ -47,6 +50,7 @@ import type {
   DocumentSnapshot,
   DocumentStageReceipt,
   FormulaEvaluationAttempt,
+  PromptBlock,
   PromptCreationAttempt,
   PromptOutputOwnership,
   PromptRefreshAttempt
@@ -55,6 +59,9 @@ import { canRebase } from "../domain/rebase.js";
 import {
   applyOperations,
   applyWithoutValidation,
+  normalizeVariableName,
+  resolvePromptContext,
+  resolvePromptContextIfBound,
   computeTouchedIds
 } from "../domain/reducer.js";
 import { findBlock, forEachBlock } from "../domain/tree.js";
@@ -81,7 +88,42 @@ export interface DocumentDependencies {
   activityPublisher?: DocumentActivityPublisher;
 }
 
-export interface DocumentCapability {
+/**
+ * Document's half of Templates' `TemplatableResource`.
+ *
+ * Declared here, not imported from Templates: neither capability imports the
+ * other, and `1-init` is the only place that sees both. The shapes match
+ * structurally, which is what makes `templateResources.register(document)`
+ * typecheck with no wrapper.
+ *
+ * Every method here is the **internal** path. None goes through `command` or
+ * `query`, so none is subject to the template-mode seal — that is precisely how
+ * Templates reaches a sealed Document when nothing else can.
+ */
+export interface DocumentTemplateRuntime {
+  readonly kind: "document";
+  duplicate(input: {
+    sourceResourceId: string;
+    name?: string;
+    idempotencyKey: string;
+  }): Promise<{ resourceId: string }>;
+  markAsTemplate(input: { resourceId: string }): Promise<void>;
+  applyBindings(input: {
+    resourceId: string;
+    contextBindings: Readonly<Record<string, { target?: ContextEntry }>>;
+    idempotencyKey: string;
+  }): Promise<void>;
+  submit(input: {
+    resourceId: string;
+    operations: unknown;
+    idempotencyKey: string;
+  }): Promise<void>;
+  load(input: { resourceId: string }): Promise<unknown>;
+  logicalDelete(input: { resourceId: string; idempotencyKey: string }): Promise<void>;
+  purge(input: { resourceId: string; idempotencyKey: string }): Promise<void>;
+}
+
+export interface DocumentCapability extends DocumentTemplateRuntime {
   command(request: DocumentCommandRequest): Promise<DocumentCommandResult>;
   query(request: DocumentQueryRequest): Promise<DocumentQueryResult>;
   computePromptCreation(attemptId: string): Promise<void>;
@@ -154,6 +196,19 @@ const introducesPrompt = (operation: DocumentOperation): boolean => {
   }
 };
 
+/**
+ * Every live Prompt Block, in document order. Returns the Blocks themselves so a
+ * caller can rewrite them in place — `duplicate` re-points each one at a freshly
+ * declared output.
+ */
+const collectPromptBlocks = (snapshot: DocumentSnapshot): PromptBlock[] => {
+  const blocks: PromptBlock[] = [];
+  forEachBlock(snapshot, (block) => {
+    if (block.kind === "prompt") blocks.push(block);
+  });
+  return blocks;
+};
+
 const promptReferences = (snapshot: DocumentSnapshot): Map<string, string> => {
   const refs = new Map<string, string>();
   forEachBlock(snapshot, (block) => {
@@ -199,6 +254,21 @@ const compactionIntent = (head: DocumentHead): DocumentInternalJobIntent => ({
   idempotencyKey: `document:compact:${head.id}:${head.revision}`
 });
 
+/**
+ * Which Document a public command or query addresses, if any.
+ *
+ * Structural rather than a per-type list on purpose: this is what lets the seal
+ * check be written once. A command added later either names a `documentId` — and
+ * is sealed automatically — or names none, and cannot reach a sealed Document to
+ * begin with. `document.create` and `document.list` are the two that name none.
+ */
+const addressedDocumentId = (
+  operation: DocumentCommand | DocumentQueryRequest["query"]
+): string | undefined =>
+  "documentId" in operation && typeof operation.documentId === "string"
+    ? operation.documentId
+    : undefined;
+
 const intentLogContext = (
   intent: DocumentInternalJobIntent
 ): { attemptId: string } | { documentId: string } =>
@@ -223,6 +293,7 @@ class DocumentService implements DocumentCapability {
     if (request.requestId.startsWith(INTERNAL_REQUEST_PREFIX)) {
       throw new DocumentOperationError("Request ID uses a reserved Document namespace");
     }
+    await this.assertNotSealed(addressedDocumentId(request.command));
     const start = performance.now();
     try {
       switch (request.command.type) {
@@ -233,7 +304,7 @@ class DocumentService implements DocumentCapability {
         case "document.purge":
           return await this.purgeDocument(request);
         case "document.submit":
-          return await this.submit(request);
+          return await this.submitDocument(request);
         case "document.compensate":
           return await this.compensate(request);
         case "prompt.create.request":
@@ -255,6 +326,7 @@ class DocumentService implements DocumentCapability {
   }
 
   async query(request: DocumentQueryRequest): Promise<DocumentQueryResult> {
+    await this.assertNotSealed(addressedDocumentId(request.query));
     const start = performance.now();
     try {
       switch (request.query.type) {
@@ -278,6 +350,9 @@ class DocumentService implements DocumentCapability {
             if (!block) continue;
             const location = findBlock(snapshot, block[0]);
             if (!location || location.block.kind !== "prompt") continue;
+            // 0 means declared but never answered, so there is no revision to
+            // fetch. Asking for it would be a lookup guaranteed to miss.
+            if (location.block.output.appliedRevision === 0) continue;
             const revision = await this.deps.derivedOutputs.getRevision(
               outputId,
               location.block.output.appliedRevision
@@ -314,6 +389,247 @@ class DocumentService implements DocumentCapability {
     }
   }
 
+  /**
+   * One indexed lookup per addressed command, which is the price of "sealed by
+   * default". Templates does not pay it: it holds this runtime object and calls
+   * `duplicate`/`submit`/`load` directly, which is the internal path rather than
+   * the public one.
+   */
+  private async assertNotSealed(documentId: string | undefined): Promise<void> {
+    if (documentId === undefined) return;
+    const head = await this.store.getHead(documentId);
+    if (head?.isTemplate) throw new DocumentTemplateModeError(documentId);
+  }
+
+  // ─── Templates runtime ──────────────────────────────────────────────────────
+  //
+  // Document does not know what a template is for. It knows how to copy itself,
+  // how to go private, and how to bind its own variables. Templates decides when.
+
+  readonly kind = "document" as const;
+
+  /**
+   * A pure copy: new ID, same content, new Derived Outputs. No template
+   * awareness and no bindings applied — Templates calls `markAsTemplate` and
+   * `applyBindings` afterwards, which is what lets registration and
+   * instantiation be the same procedure differing by one call.
+   */
+  async duplicate(input: {
+    sourceResourceId: string;
+    name?: string;
+    idempotencyKey: string;
+  }): Promise<{ resourceId: string }> {
+    // The Templates key *is* the create-receipt key, so a retried registration
+    // replays this copy instead of making a second one. That is the whole retry
+    // story for the cross-capability call.
+    const prior = await this.store.getCreateSubmission(input.idempotencyKey);
+    if (prior) return { resourceId: prior.documentId };
+
+    const { head: source, snapshot: sourceSnapshot } =
+      await this.loadSnapshot(input.sourceResourceId);
+    const documentId = randomUUID();
+    const timestamp = now();
+
+    const snapshot: DocumentSnapshot = {
+      ...structuredClone(sourceSnapshot),
+      revision: 1,
+      title: input.name ?? sourceSnapshot.title
+    };
+
+    // One new Derived Output per Prompt Block. Not optional: one live Prompt
+    // Block owns one dedicated output, so the copy cannot point at the source's.
+    const declared: PromptOutputOwnership[] = [];
+    for (const block of collectPromptBlocks(snapshot)) {
+      // The prompt text carries over; the answer does not. A copy inherits what
+      // to ask, and asks it fresh.
+      const source = await this.deps.derivedOutputs.get(block.output.outputId);
+      const output = await this.deps.derivedOutputs.declare({
+        prompt: source?.definition.prompt ?? "",
+        contextEntries: resolvePromptContextIfBound(snapshot, block.context),
+        stabilisationText: source?.definition.stabilisationText ?? ""
+      }, { idempotencyKey: `${input.idempotencyKey}:${block.id}` });
+      // appliedRevision 0: declared, never answered. Legal since change 0, and
+      // the reason it had to be — every Prompt Block in a fresh copy is here.
+      block.output = { outputId: output.id, appliedRevision: 0 };
+      declared.push({
+        outputId: output.id,
+        documentId,
+        blockId: block.id,
+        creationAttemptId: input.idempotencyKey,
+        state: "attached",
+        attachedRevision: 1,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      });
+    }
+
+    const validation = validateSnapshot(snapshot, this.deps.richText, this.options.limits);
+    if (!validation.ok) throw new DocumentValidationError(validation.diagnostics);
+    const semanticDigest = digestSnapshot(snapshot);
+    const head: DocumentHead = {
+      id: documentId,
+      title: snapshot.title,
+      lifecycle: snapshot.lifecycle,
+      // A copy is an ordinary Document. Sealing is a separate instruction, and
+      // instantiation never gives it — which is the only difference between the
+      // two procedures.
+      isTemplate: false,
+      revision: 1,
+      baseSeq: 1,
+      semanticDigest,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+    const result: DocumentCommandResult = { type: "document.created", head };
+    const receipt = {
+      documentId,
+      requestId: input.idempotencyKey,
+      requestDigest: canonicalDigest({ duplicate: input.sourceResourceId, key: input.idempotencyKey }),
+      result,
+      createdAt: timestamp
+    };
+
+    await this.store.commitCreation({
+      head,
+      identities: collectDocumentIdentities(snapshot),
+      base: { documentId, baseSeq: 1, snapshot, semanticDigest, createdAt: timestamp },
+      receipt,
+      createReceipt: { ...receipt },
+      promptOutputs: declared,
+      transaction: this.transaction({
+        kind: "document.created",
+        sourceRequestId: input.idempotencyKey,
+        documentId,
+        revision: 1,
+        origin: "automation",
+        operationTypes: ["document.create"],
+        sourceSemanticDigest: semanticDigest,
+        occurredAt: timestamp
+      })
+    });
+
+    this.deps.logger.info("document.duplicated", {
+      sourceDocumentId: source.id,
+      documentId,
+      promptOutputs: declared.length
+    });
+    return { resourceId: documentId };
+  }
+
+  async markAsTemplate(input: { resourceId: string }): Promise<void> {
+    const head = await this.store.getHead(input.resourceId);
+    if (!head) throw new DocumentNotFoundError(input.resourceId);
+    await this.store.markAsTemplate(input.resourceId);
+    this.deps.logger.info("document.marked-as-template", { documentId: input.resourceId });
+  }
+
+  /**
+   * Binds this Document's own Context Variables **by name**, then re-points the
+   * Derived Output definition of every Prompt Block the change touched.
+   *
+   * Two writes rather than one, and in this order, because they live in two
+   * capabilities: the variable is Document's state and the grounding is Derived
+   * Outputs'. Committing the variable first means a crash in between leaves the
+   * declaration correct and an output stale — which the next refresh corrects —
+   * rather than an output grounded on a target the Document does not hold.
+   */
+  async applyBindings(input: {
+    resourceId: string;
+    contextBindings: Readonly<Record<string, { target?: ContextEntry }>>;
+    idempotencyKey: string;
+  }): Promise<void> {
+    const { head, snapshot } = await this.loadSnapshot(input.resourceId);
+    const byName = new Map(
+      snapshot.contextVariables.map((variable) => [normalizeVariableName(variable.name), variable])
+    );
+
+    const operations: DocumentOperation[] = [];
+    const changed = new Set<string>();
+    for (const [name, binding] of Object.entries(input.contextBindings)) {
+      const variable = byName.get(normalizeVariableName(name));
+      // A binding naming a variable this Document does not have is a caller
+      // error, not something to ignore: the template's declaration and its
+      // backing content would silently disagree from then on.
+      if (!variable) throw new DocumentContextVariableNotFoundError(input.resourceId, name);
+      operations.push({
+        type: "context-variable.update",
+        variable: {
+          id: variable.id,
+          name: variable.name,
+          ...(binding.target !== undefined ? { target: binding.target } : {})
+        }
+      });
+      changed.add(variable.id);
+    }
+    if (operations.length === 0) return;
+
+    await this.mutate({
+      documentId: input.resourceId,
+      expectedRevision: head.revision,
+      operations,
+      requestId: internalRequestId("apply-bindings", input.idempotencyKey),
+      origin: "automation",
+      allowPromptOperations: false
+    });
+
+    const { snapshot: bound } = await this.loadSnapshot(input.resourceId);
+    for (const block of collectPromptBlocks(bound)) {
+      if (block.context.kind !== "variable" || !changed.has(block.context.variableId)) continue;
+      const output = await this.deps.derivedOutputs.get(block.output.outputId);
+      if (!output) continue;
+      await this.deps.derivedOutputs.updateDefinition(block.output.outputId, {
+        prompt: output.definition.prompt,
+        contextEntries: resolvePromptContextIfBound(bound, block.context),
+        stabilisationText: output.definition.stabilisationText,
+        expectedDefinitionRevision: output.definition.definitionRevision
+      }, { idempotencyKey: `${input.idempotencyKey}:rebind:${block.id}` });
+    }
+  }
+
+  /** Pass-through edit. The operations are the caller's, decoded by Templates' caller. */
+  async submit(input: {
+    resourceId: string;
+    operations: unknown;
+    idempotencyKey: string;
+  }): Promise<void> {
+    const operations = input.operations as DocumentOperation[];
+    if (!Array.isArray(operations) || operations.length === 0) {
+      throw new DocumentOperationError("A template submission requires at least one operation");
+    }
+    const { head } = await this.loadSnapshot(input.resourceId);
+    await this.mutate({
+      documentId: input.resourceId,
+      expectedRevision: head.revision,
+      operations,
+      requestId: internalRequestId("template-submit", input.idempotencyKey),
+      origin: "automation",
+      // A template is fully editable, prompts included. `template.update` is the
+      // only path here, so the usual public-surface restriction does not apply.
+      allowPromptOperations: true
+    });
+  }
+
+  async load(input: { resourceId: string }): Promise<unknown> {
+    const { head, snapshot } = await this.loadSnapshot(input.resourceId);
+    return { head, snapshot };
+  }
+
+  async logicalDelete(input: { resourceId: string; idempotencyKey: string }): Promise<void> {
+    await this.deleteDocument({
+      requestId: internalRequestId("template-delete", input.idempotencyKey),
+      origin: "automation",
+      command: { type: "document.delete", documentId: input.resourceId }
+    } as DocumentCommandRequest);
+  }
+
+  async purge(input: { resourceId: string; idempotencyKey: string }): Promise<void> {
+    await this.purgeDocument({
+      requestId: internalRequestId("template-purge", input.idempotencyKey),
+      origin: "automation",
+      command: { type: "document.purge", documentId: input.resourceId }
+    } as DocumentCommandRequest);
+  }
+
   async publishPendingActivity(limit?: number): Promise<number> {
     if (!this.deps.activityPublisher) return 0;
     const transactions = await this.store.listUnpublishedTransactions(limit);
@@ -348,6 +664,9 @@ class DocumentService implements DocumentCapability {
       id: documentId,
       title: snapshot.title,
       lifecycle: snapshot.lifecycle,
+      // Never at creation. A Document becomes a template only by being copied
+      // and then marked, which is Templates' decision and not a caller's.
+      isTemplate: false,
       revision: 1,
       baseSeq: 1,
       semanticDigest,
@@ -370,7 +689,6 @@ class DocumentService implements DocumentCapability {
       head,
       identities: collectDocumentIdentities(snapshot),
       base: {
-        representationVersion: 1,
         documentId,
         baseSeq: 1,
         snapshot,
@@ -495,7 +813,7 @@ class DocumentService implements DocumentCapability {
     await this.store.purgeDocument(documentId);
   }
 
-  private async submit(request: DocumentCommandRequest): Promise<DocumentCommandResult> {
+  private async submitDocument(request: DocumentCommandRequest): Promise<DocumentCommandResult> {
     if (request.command.type !== "document.submit") throw new DocumentOperationError("Invalid submit command");
     if (request.command.operations.length === 0) throw new DocumentOperationError("A submission requires at least one operation");
     if (request.command.operations.some(introducesPrompt)) {
@@ -813,7 +1131,7 @@ class DocumentService implements DocumentCapability {
       placement: command.placement,
       definition: {
         prompt: command.prompt,
-        contextEntries: command.contextEntries,
+        context: command.context,
         stabilisationText: command.stabilisationText
       },
       state: "requested",
@@ -871,7 +1189,10 @@ class DocumentService implements DocumentCapability {
     // already-completed result rather than reapplying the definition twice.
     const output = await this.deps.derivedOutputs.updateDefinition(block.output.outputId, {
       prompt: command.prompt,
-      contextEntries: command.contextEntries,
+      // The Block's own context, not the caller's. A definition update edits the
+      // prompt text; re-pointing is `prompt.set-context`, and letting both do it
+      // gave two answers to "what is this grounded on" that nothing reconciled.
+      contextEntries: resolvePromptContext(snapshot, block.context),
       stabilisationText: command.stabilisationText,
       expectedDefinitionRevision: command.expectedDefinitionRevision
     }, {
@@ -1016,9 +1337,13 @@ class DocumentService implements DocumentCapability {
 
   async computePromptCreation(attemptId: string): Promise<void> {
     await this.runStage(attemptId, "compute", "prompt-create", async (attempt) => {
+      // Resolved here rather than at request time: the variable may have been
+      // rebound in between, and the definition should reflect what the Block is
+      // grounded on now, not what it was when the request was queued.
+      const current = await this.loadSnapshot(attempt.documentId);
       const output = await this.deps.derivedOutputs.declare({
         prompt: attempt.definition.prompt,
-        contextEntries: attempt.definition.contextEntries,
+        contextEntries: resolvePromptContext(current.snapshot, attempt.definition.context),
         stabilisationText: attempt.definition.stabilisationText
       }, { idempotencyKey: `document:prompt-create:${attempt.id}` });
       const ownership: PromptOutputOwnership = {
@@ -1092,6 +1417,7 @@ class DocumentService implements DocumentCapability {
               id: attempt.blockId,
               styleId: attempt.styleId,
               presentation: attempt.presentation,
+              context: attempt.definition.context,
               output: {
                 outputId: attempt.candidateOutputId,
                 appliedRevision: attempt.candidateHeadRevision
@@ -1495,7 +1821,6 @@ class DocumentService implements DocumentCapability {
       documentId,
       current.head.revision,
       {
-        representationVersion: 1,
         documentId,
         baseSeq: cutoffRevision,
         snapshot: cutoff.snapshot,
@@ -1514,8 +1839,7 @@ class DocumentService implements DocumentCapability {
     const appended = cutoffRevision === current.head.revision
       ? true
       : await this.store.appendBaseIfHead(documentId, current.head.revision, {
-          representationVersion: 1,
-          documentId,
+            documentId,
           baseSeq: current.head.revision,
           snapshot: current.snapshot,
           semanticDigest: current.head.semanticDigest,
@@ -1544,8 +1868,7 @@ class DocumentService implements DocumentCapability {
       try {
         const retained = await this.loadSnapshot(anchor.documentId, anchor.revision);
         const applied = await this.store.compactRetentionHistory(anchor, {
-          representationVersion: 1,
-          documentId: anchor.documentId,
+            documentId: anchor.documentId,
           baseSeq: anchor.revision,
           snapshot: retained.snapshot,
           semanticDigest: digestSnapshot(retained.snapshot),

@@ -3,7 +3,9 @@ import test from "node:test";
 import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
 import { JobScheduler } from "../../src/0-utils/jobs/scheduler.js";
 import {
+  InvalidTemplateCursorError,
   StaleTemplateRevisionError,
+  TemplateBindingMismatchError,
   TemplateNameConflictError,
   type TemplateCapability,
   type TemplateCommandRequest,
@@ -103,4 +105,59 @@ test("Template conflicts map to distinguishable 409 codes", async (t) => {
       assert.equal((response?.body as { error: string }).error, code);
     });
   }
+});
+
+test("Caller mistakes answer 400 with enough detail to act on", async (t) => {
+  const commandEnvelope = {
+    method: "POST",
+    path: "/templates/command",
+    requestId: "req-1",
+    params: {},
+    query: {},
+    headers: {},
+    body: {
+      requestId: "req-1",
+      origin: "user",
+      command: { type: "template.delete", templateId: "t-1" }
+    }
+  };
+
+  await t.test("a binding mismatch names what is missing and what is not declared", async () => {
+    const job = buildRegistry(() => {
+      throw new TemplateBindingMismatchError("t-1", ["Region"], ["Tone"]);
+    }).createJob(commandEnvelope);
+    const response = await job.work?.();
+
+    assert.equal(response?.statusCode, 400);
+    const body = response?.body as {
+      error: string;
+      missing: string[];
+      unexpected: string[];
+    };
+    assert.equal(body.error, "binding_mismatch");
+    // The lists travel, not just the message: a client fixing the call needs
+    // the names, and parsing them back out of prose is not an interface.
+    assert.deepEqual(body.missing, ["Region"]);
+    assert.deepEqual(body.unexpected, ["Tone"]);
+  });
+
+  await t.test("an unusable list cursor is its own code, not a generic validation error", async () => {
+    const job = buildRegistry(() => {
+      throw new InvalidTemplateCursorError();
+    }).createJob({
+      method: "POST",
+      path: "/templates/query",
+      requestId: "req-2",
+      params: {},
+      query: {},
+      headers: {},
+      body: { query: { type: "template.list", cursor: "whatever" } }
+    });
+    const response = await job.work?.();
+
+    assert.equal(response?.statusCode, 400);
+    // Distinct from validation_error because the fix differs: restart the
+    // listing from the beginning rather than correct the request's shape.
+    assert.equal((response?.body as { error: string }).error, "invalid_cursor");
+  });
 });

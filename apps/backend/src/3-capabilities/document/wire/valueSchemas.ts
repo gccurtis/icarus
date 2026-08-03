@@ -18,8 +18,10 @@ import type {
   ChartBlockData,
   DocumentBlock,
   DocumentBlockKind,
+  DocumentContextVariable,
   DocumentList,
   DocumentPageLayout,
+  PromptContext,
   DocumentRow,
   DocumentStyle,
   DocumentStyleRegistry,
@@ -45,6 +47,8 @@ export const DOCUMENT_WIRE_LIMITS = {
   maxPayloadBytes: 1_048_576,
   maxStringBytes: 262_144,
   maxIdentifierBytes: 512,
+  /** Context Variable names. Short by nature: a template binding types them. */
+  maxVariableNameBytes: 512,
   maxCollectionItems: 10_000,
   maxOperations: 1_000,
   maxRichTextOperations: 1_000,
@@ -219,15 +223,53 @@ const requireArray = (
 const decodeIdentifierArray = (value: unknown, label: string): string[] =>
   requireArray(value, label).map((item, index) => requireIdentifier(item, `${label}[${index}]`));
 
+export const decodeContextEntry = (value: unknown, label: string): ContextEntry => {
+  const entry = requireRecord(value, label);
+  exactKeys(entry, ["id", "kind"], label);
+  return {
+    id: requireIdentifier(entry.id, `${label}.id`),
+    kind: requireIdentifier(entry.kind, `${label}.kind`),
+  };
+};
+
 export const decodeContextEntries = (value: unknown, label: string): ContextEntry[] =>
-  requireArray(value, label).map((item, index) => {
-    const entry = requireRecord(item, `${label}[${index}]`);
-    exactKeys(entry, ["id", "kind"], `${label}[${index}]`);
-    return {
-      id: requireIdentifier(entry.id, `${label}[${index}].id`),
-      kind: requireIdentifier(entry.kind, `${label}[${index}].kind`),
-    };
-  });
+  requireArray(value, label).map((item, index) =>
+    decodeContextEntry(item, `${label}[${index}]`));
+
+export const decodePromptContext = (value: unknown, label: string): PromptContext => {
+  const raw = requireRecord(value, label);
+  const kind = requireEnum(raw.kind, ["direct", "variable"] as const, `${label}.kind`);
+  if (kind === "direct") {
+    exactKeys(raw, ["kind", "target"], label);
+    return { kind, target: decodeContextEntry(raw.target, `${label}.target`) };
+  }
+  exactKeys(raw, ["kind", "variableId"], label);
+  return { kind, variableId: requireIdentifier(raw.variableId, `${label}.variableId`) };
+};
+
+export const decodeContextVariable = (
+  value: unknown,
+  label: string,
+): DocumentContextVariable => {
+  const raw = requireRecord(value, label);
+  exactKeys(raw, ["id", "name", "target"], label);
+  // Trimmed at ingress, like every other name in the codebase: whitespace must
+  // not produce two variables a template binding cannot tell apart.
+  const name = requireString(raw.name, `${label}.name`).trim();
+  if (!name) throw new DocumentWireError(`${label}.name must not be empty`);
+  if (Buffer.byteLength(name, "utf8") > DOCUMENT_WIRE_LIMITS.maxVariableNameBytes) {
+    throw new DocumentWireError(`${label}.name exceeds the size limit`);
+  }
+  return {
+    id: requireIdentifier(raw.id, `${label}.id`),
+    name,
+    // An omitted target is meaningful — it declares an unbound variable — so
+    // `{ id, name }` is valid and must not be rejected as incomplete.
+    ...(raw.target !== undefined
+      ? { target: decodeContextEntry(raw.target, `${label}.target`) }
+      : {}),
+  };
+};
 
 const decodePosition = (value: unknown, label: string): TextPosition => {
   const raw = requireRecord(value, label);
@@ -790,11 +832,15 @@ export const decodeDocumentBlock = (value: unknown, label: string, depth = 0): D
     if (raw.language !== undefined) requireString(raw.language, `${label}.language`);
     decodeRichContent(raw.content, `${label}.content`);
   } else if (kind === "prompt") {
-    exactKeys(raw, [...base, "output"], label);
+    exactKeys(raw, [...base, "output", "context"], label);
+    decodePromptContext(raw.context, `${label}.context`);
     const output = requireRecord(raw.output, `${label}.output`);
     exactKeys(output, ["outputId", "appliedRevision"], `${label}.output`);
     requireIdentifier(output.outputId, `${label}.output.outputId`);
-    requirePositiveInteger(output.appliedRevision, `${label}.output.appliedRevision`);
+    // 0 is legal here and means "declared, never answered" — see
+    // domain/validation.ts. `prompt.apply-derived-output` still requires a
+    // positive revision, because applying revision 0 would be un-answering.
+    requireNonNegativeInteger(output.appliedRevision, `${label}.output.appliedRevision`);
   } else if (kind === "divider") {
     exactKeys(raw, base, label);
   } else if (kind === "callout") {

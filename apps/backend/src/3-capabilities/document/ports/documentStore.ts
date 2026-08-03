@@ -30,6 +30,12 @@ export interface DocumentCreationCommit {
    * commands on the same document.
    */
   createReceipt: DocumentCreateReceipt;
+  /**
+   * Ownership rows for outputs declared during a copy. `document.create` has
+   * none; `duplicate` declares one per Prompt Block and must record ownership in
+   * the same transaction, or a crash would leave outputs no Document claims.
+   */
+  promptOutputs?: PromptOutputOwnership[];
   transaction: DocumentCommittedTransaction;
 }
 
@@ -101,6 +107,12 @@ export interface DocumentStore {
     identityId: string
   ): Promise<DocumentIdentityLedgerEntry | undefined>;
   recordSubmission(receipt: DocumentSubmissionReceipt): Promise<void>;
+
+  /**
+   * Seals a Document. One-way: there is no method that clears the flag, and the
+   * absence is the point rather than an oversight.
+   */
+  markAsTemplate(documentId: string): Promise<void>;
 
   commitCreation(commit: DocumentCreationCommit): Promise<void>;
   commitMutation(commit: DocumentMutationCommit): Promise<boolean>;

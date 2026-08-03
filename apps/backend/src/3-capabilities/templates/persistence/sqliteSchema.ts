@@ -4,7 +4,7 @@ import { initializeResourceHistorySchema } from "#utils/persistence/resourceHist
 
 export interface TemplateTableNames {
   templates: string;
-  commandClaims: string;
+  commandReceipts: string;
   transactionOutbox: string;
   history: string;
 }
@@ -16,7 +16,7 @@ export const createTemplateTableNames = (projectId: string): TemplateTableNames 
   const root = `tpl_${projectPrefix(projectId)}`;
   return {
     templates: `${root}_templates`,
-    commandClaims: `${root}_command_claims`,
+    commandReceipts: `${root}_command_receipts`,
     transactionOutbox: `${root}_transaction_outbox`,
     history: `${root}_history`
   };
@@ -41,38 +41,34 @@ export const initializeTemplateSchema = (
       -- The declared parameters. NOT NULL because an omitted wire field and {}
       -- mean the same thing, so nothing downstream branches on null.
       context_bindings_json BLOB NOT NULL,
-      state TEXT NOT NULL CHECK (state IN ('reserving', 'ready')),
       revision INTEGER NOT NULL CHECK (revision >= 1),
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
-      UNIQUE (kind, resource_id),
-      CHECK (resource_id = id)
+      -- One template per backing resource. No CHECK tying resource_id to id:
+      -- the capability that stores a resource allocates its ID, so Templates
+      -- names the catalog row and the owning capability names the resource.
+      UNIQUE (kind, resource_id)
     );
 
-    CREATE INDEX IF NOT EXISTS ${tables.templates}_ready
-      ON ${tables.templates}(kind, created_at, id)
-      WHERE state = 'ready';
+    -- Every row is a live, usable template; there is no state to filter on.
+    CREATE INDEX IF NOT EXISTS ${tables.templates}_catalog
+      ON ${tables.templates}(kind, created_at, id);
 
     -- Per kind, so a Document and a Spreadsheet template may share a name.
-    --
-    -- No partial predicate, for two reasons. Deletion removes the live row
-    -- rather than flagging it, so a name is freed by construction. And covering
-    -- 'reserving' rows is what makes a collision surface in reserve(), before
-    -- the adapter call, rather than at markReady() after a backing copy exists.
+    -- No partial predicate: deletion removes the live row rather than flagging
+    -- it, so a name is freed by construction rather than by a predicate.
     CREATE UNIQUE INDEX IF NOT EXISTS ${tables.templates}_name_nocase
       ON ${tables.templates}(kind, name COLLATE NOCASE);
 
-    CREATE TABLE IF NOT EXISTS ${tables.commandClaims} (
+    -- Idempotency without reservation: a completed command records what it
+    -- returned, and an exact retry replays it. Nothing is claimed ahead of the
+    -- work, so there is no pending state and no identity to freeze.
+    CREATE TABLE IF NOT EXISTS ${tables.commandReceipts} (
       request_id TEXT PRIMARY KEY,
       request_digest TEXT NOT NULL,
       command_type TEXT NOT NULL,
-      -- Allocated by Templates and frozen here before the adapter call, so a
-      -- resumed pending claim reuses the same identity instead of minting one.
-      template_id TEXT,
-      state TEXT NOT NULL CHECK (state IN ('pending', 'completed')),
-      result_json BLOB,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
+      result_json BLOB NOT NULL,
+      created_at TEXT NOT NULL
     );
 
     -- No foreign key to current templates: accepted source transactions remain

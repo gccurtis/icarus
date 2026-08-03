@@ -2,8 +2,7 @@ import { TemplateWireError } from "../domain/errors.js";
 import type {
   TemplateCommand,
   TemplateCommandRequest,
-  TemplateOrigin,
-  TemplateResourceRef
+  TemplateOrigin
 } from "../domain/model.js";
 import {
   decodeBindingArguments,
@@ -25,7 +24,14 @@ const origins = new Set<TemplateOrigin>(["user", "agent", "automation", "system"
  * that sends one gets a 400 from exactKeys rather than silent acceptance.
  */
 const COMMAND_KEYS: Record<TemplateCommand["type"], readonly string[]> = {
-  "template.register": ["type", "source", "name", "description", "contextBindings"],
+  "template.register": [
+    "type",
+    "kind",
+    "resourceId",
+    "name",
+    "description",
+    "contextBindings"
+  ],
   "template.update": [
     "type",
     "templateId",
@@ -35,24 +41,9 @@ const COMMAND_KEYS: Record<TemplateCommand["type"], readonly string[]> = {
     "contextBindings",
     "resourceOperations"
   ],
-  "template.instantiate": [
-    "type",
-    "templateId",
-    "destinationResourceId",
-    "title",
-    "contextBindings"
-  ],
+  "template.instantiate": ["type", "templateId", "name", "contextBindings"],
   "template.delete": ["type", "templateId"],
   "template.purge": ["type", "templateId"]
-};
-
-const decodeResourceRef = (value: unknown, label: string): TemplateResourceRef => {
-  const ref = record(value, label);
-  exactKeys(ref, ["kind", "resourceId"], label);
-  return {
-    kind: requireIdentifier(ref, "kind", `${label} kind`),
-    resourceId: requireIdentifier(ref, "resourceId", `${label} resourceId`)
-  };
 };
 
 const decodeCommand = (value: unknown): TemplateCommand => {
@@ -74,7 +65,8 @@ const decodeCommand = (value: unknown): TemplateCommand => {
       );
       return {
         type: "template.register",
-        source: decodeResourceRef(command.source, "Template source"),
+        kind: requireIdentifier(command, "kind", "Template kind"),
+        resourceId: requireIdentifier(command, "resourceId", "Template resourceId"),
         name: requireName(command, "name", "Template name"),
         ...(description !== undefined ? { description } : {}),
         contextBindings: decodeDeclaredBindings(
@@ -119,28 +111,20 @@ const decodeCommand = (value: unknown): TemplateCommand => {
           : {})
       };
     }
-    case "template.instantiate": {
-      const title = optionalText(
-        command,
-        "title",
-        "Template title",
-        TEMPLATE_WIRE_LIMITS.maxTitleBytes
-      );
+    case "template.instantiate":
       return {
         type: "template.instantiate",
         templateId: requireIdentifier(command, "templateId", "Template templateId"),
-        destinationResourceId: requireIdentifier(
-          command,
-          "destinationResourceId",
-          "Template destinationResourceId"
-        ),
-        ...(title !== undefined ? { title } : {}),
+        // Trimmed like the catalog name, and for the same reason: whitespace
+        // must not produce two instances that read identically.
+        ...(command.name !== undefined
+          ? { name: requireName(command, "name", "Template instance name") }
+          : {}),
         contextBindings: decodeBindingArguments(
           command.contextBindings,
           "Template contextBindings"
         )
       };
-    }
     case "template.delete":
       return {
         type: "template.delete",

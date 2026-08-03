@@ -182,6 +182,10 @@ export class SQLiteDocumentStore implements DocumentStore {
       parameters.push(decoded.updatedAt, decoded.updatedAt, decoded.id);
     }
 
+    // Template-mode rows are excluded rather than refused: this is a listing,
+    // and a sealed Document is not something its own capability answers
+    // questions about. `template.list` is the only template listing.
+    clauses.push("is_template = 0");
     const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
     const rows = this.db
       .prepare(`
@@ -340,6 +344,14 @@ export class SQLiteDocumentStore implements DocumentStore {
     this.insertSubmission(receipt);
   }
 
+  async markAsTemplate(documentId: string): Promise<void> {
+    // Idempotent by shape: setting 1 to 1 changes nothing, so a retried
+    // registration does not need a receipt of its own for this step.
+    this.db
+      .prepare(`UPDATE ${this.tables.documents} SET is_template = 1 WHERE id = ?`)
+      .run(documentId);
+  }
+
   async commitCreation(commit: DocumentCreationCommit): Promise<void> {
     assertSameDocument(commit.head.id, [
       { label: "Document Base", documentId: commit.base.documentId },
@@ -357,6 +369,9 @@ export class SQLiteDocumentStore implements DocumentStore {
       this.insertBase(commit.base);
       this.insertSubmission(commit.receipt);
       this.insertCreateReceipt(commit.createReceipt);
+      for (const ownership of commit.promptOutputs ?? []) {
+        this.insertPromptOwnership(ownership);
+      }
       this.insertCommittedTransaction(commit.transaction);
     })();
   }
@@ -477,15 +492,14 @@ export class SQLiteDocumentStore implements DocumentStore {
       this.db
         .prepare(`
           INSERT INTO ${this.tables.bases}
-            (document_id, base_seq, representation_version, snapshot_json,
+            (document_id, base_seq, snapshot_json,
              semantic_digest, created_at)
-          VALUES (?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?)
           ON CONFLICT(document_id, base_seq) DO NOTHING
         `)
         .run(
           base.documentId,
           base.baseSeq,
-          base.representationVersion,
           encodeJson(base.snapshot),
           base.semanticDigest,
           base.createdAt
@@ -897,6 +911,33 @@ export class SQLiteDocumentStore implements DocumentStore {
     })();
   }
 
+  /**
+   * Raw insert, used by `commitCreation` for a copy's freshly declared outputs.
+   * They are `attached` from birth rather than `pending`: the Block and the
+   * output land in the same commit, so there is no window in which one exists
+   * without the other.
+   */
+  private insertPromptOwnership(ownership: PromptOutputOwnership): void {
+    this.db
+      .prepare(`
+        INSERT INTO ${this.tables.promptOutputs}
+          (output_id, document_id, block_id, creation_attempt_id, state,
+           attached_revision, detached_revision, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .run(
+        ownership.outputId,
+        ownership.documentId,
+        ownership.blockId,
+        ownership.creationAttemptId ?? null,
+        ownership.state,
+        ownership.attachedRevision ?? null,
+        ownership.detachedRevision ?? null,
+        ownership.createdAt,
+        ownership.updatedAt
+      );
+  }
+
   async updatePromptOutputOwnership(
     transition: PromptOwnershipTransition
   ): Promise<void> {
@@ -1094,13 +1135,12 @@ export class SQLiteDocumentStore implements DocumentStore {
       } else {
         this.db.prepare(`
           INSERT INTO ${this.tables.bases}
-            (document_id, base_seq, representation_version, snapshot_json,
+            (document_id, base_seq, snapshot_json,
              semantic_digest, created_at)
-          VALUES (?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?)
         `).run(
           base.documentId,
           base.baseSeq,
-          base.representationVersion,
           encodeJson(base.snapshot),
           base.semanticDigest,
           base.createdAt
@@ -1206,14 +1246,15 @@ export class SQLiteDocumentStore implements DocumentStore {
     this.db
       .prepare(`
         INSERT INTO ${this.tables.documents}
-          (id, title, lifecycle, revision, base_seq, semantic_digest,
+          (id, title, lifecycle, is_template, revision, base_seq, semantic_digest,
            created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         head.id,
         head.title,
         head.lifecycle,
+        head.isTemplate ? 1 : 0,
         head.revision,
         head.baseSeq,
         head.semanticDigest,
@@ -1355,14 +1396,13 @@ export class SQLiteDocumentStore implements DocumentStore {
     this.db
       .prepare(`
         INSERT INTO ${this.tables.bases}
-          (document_id, base_seq, representation_version, snapshot_json,
+          (document_id, base_seq, snapshot_json,
            semantic_digest, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?)
       `)
       .run(
         base.documentId,
         base.baseSeq,
-        base.representationVersion,
         encodeJson(base.snapshot),
         base.semanticDigest,
         base.createdAt

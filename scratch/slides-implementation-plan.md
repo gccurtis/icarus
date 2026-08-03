@@ -39,7 +39,7 @@ styling capability, and a model authors already know from Document.
   /slides/query` (concurrent).
 - Strict `wire/` decoders with `exactKeys`.
 - `./data/slides.db`, project-hashed prefix, Base + append-only ChangeSets.
-- Freeze → compute → settle for Prompt elements and formula atoms.
+- Freeze → compute → settle for prompt text sources and formula atoms.
 - Activity via local transactional outbox carrying the command `origin`.
 
 ## Files
@@ -78,8 +78,18 @@ No `formulaDependencies.ts` — formula atoms live in Rich Content and the ordin
 
 `domain/model.ts`: `DeckHead`, `DeckSnapshot` (canvas, theme, styles, masters,
 layouts, slideOrder, slides), `Master`, `Layout`, `LayoutSlot`, `Slide`, the
-closed eight-member `SlideElement` union, `ElementPlacement`, operations,
-history, attempts, intents.
+closed seven-member `SlideElement` union, `SlideTextSource`, `PromptSite`,
+`ElementPlacement`, operations, history, attempts, intents.
+
+`SlideTextSource` is `rich | prompt`, and the two surfaces that hold one are
+`TextElement.body` and `TableCell.body`, in any of the three planes — a Master
+or Layout element may hold a prompt like any other. `Slide.notes` is plain
+`RichContent`: notes are the author's own aside, never generated.
+
+Prompt is a property of content, not an element kind — see
+[the rationale](slides-design.md#text-is-a-source-not-an-element-kind). Get the
+`rich → prompt` conversion's exact inverse right here, in the reducer, where it
+is pure: the inverse carries the displaced Rich Content verbatim.
 
 Then `canonical.ts` (canonical bytes + semantic digest), `elements.ts` (flat
 lookup, parent traversal, `zIndex` ordering), `geometry.ts` (frame validation),
@@ -134,24 +144,38 @@ against a Layout, fill slots, add free text/table/chart/image elements, group,
 reorder, undo, load, list, delete. No prompt content, no formula settlement yet.
 Gate: `slides-application.test.ts` + smoke.
 
-## Phase 5 — Prompt elements
+## Phase 5 — Prompt text sources
 
 `prompt.create.request` (serial freeze + durable attempt) → `.compute`
 (concurrent declare + first refresh via Derived Outputs) → `.settle` (serial
-revalidate + insert). Plus `prompt.refresh.*` and `prompt.update-definition`.
+revalidate + write). Plus `prompt.refresh.*` and `prompt.update-definition`.
 Needs `ports/derivedOutputs.ts` and `recoverPendingAttempts()` from startup.
 
-The element holds only a `DerivedOutputRef`; generated text never enters the
-snapshot, and `deck.load` resolves it per prompt element on read, as
-`document.load` does.
+A prompt source holds only a `DerivedOutputRef`; generated text never enters the
+snapshot, and `deck.load` resolves each one on read, as `document.load` does.
 
-**The Slides-specific part is placement.** The attempt freezes the whole
-positioned `PromptElementShell` — free frame or slot binding, `zIndex`, styling
-— and the freeze stage dry-runs that placement before spending an LLM call, the
-way Document proves a block placement with a throwaway divider. Settlement then
-revalidates it, because a bound Layout slot may have been deleted while the
-model was running. A failed revalidation is **stale, not an error**: detach the
-ownership row and stop.
+**The Slides-specific part is the address.** Document keys ownership on a
+`blockId`; Slides keys on a `PromptSite`, because a prompt can sit in a table
+cell. Store the site on `prompt_outputs` and resolve it at settle.
+
+Creation has two shapes, and only one of them is Document's:
+
+- `existing` — the surface is already there; settlement replaces its body.
+- `new-text-element` — the service allocates the element ID at freeze, freezes
+  the placement, and dry-runs it before spending an LLM call, the way Document
+  proves a block placement with a throwaway divider. Settlement revalidates,
+  because a bound Layout slot can be deleted while the model is running.
+
+Settlement is stale, not failed, when the site no longer resolves, no longer
+holds a `prompt` source, holds a different `outputId`, or has moved off the
+`appliedRevision` the attempt froze. **Write these four as tests before the
+happy path** — the last one is the one that is easy to miss, and it is what
+catches a concurrent refresh or an undo landing mid-flight.
+
+Deleting a source **detaches** the ownership row and leaves the Derived Output
+alone; the diff of prompt references before/after each mutation drives the
+transitions, and re-attaches on undo. Follow
+`documentService.promptOwnershipTransitions` literally.
 
 ## Phase 6 — Formula atoms
 
@@ -160,8 +184,9 @@ one evaluation attempt per atom inside the mutation transaction, computes
 against a frozen resolver snapshot, and settles conditionally on digest equality
 plus a touched-ID scan. Needs `ports/formulaResolver.ts`.
 
-Because every text surface is `RichContent`, this lights up formulas in text
-elements, table cells, chart labels, and slide notes at once.
+Because every authored text surface is `RichContent`, this lights up formulas in
+text elements, table cells, chart labels, and slide notes at once. A `prompt`
+source carries no atoms, so the walk simply skips it.
 
 ## Phase 7 — Projections, docs, hardening
 
@@ -172,9 +197,29 @@ Master/Layout/Slide plan and which slots are unfilled — plus the six-file
 ## Verification
 
 ```bash
-pnpm --filter @icarus/backend typecheck   # clean at baseline — any error is this work
+pnpm --filter @icarus/backend typecheck
 pnpm --filter @icarus/backend test
 ```
+
+**Keep the tree green before starting each phase.** The signal that matters here
+is *any error is this work*, and it only works from a clean baseline. The
+Templates rework runs concurrently in the same tree, so check before you start
+rather than assuming: `A2` was mid-rename when Phase 1 began and landed during
+it, and a transient error in `formula/wire.ts` appeared and cleared the same way.
+
+## Status
+
+**Phase 1 is complete** (branch `slides-phase1-domain`, 2026-08-02): eleven
+`domain/` files, 52 tests in `slides-domain.test.ts`, backend suite green at 462.
+
+Two defects were found by the tests and fixed in the same commit — restoring a
+deleted table column appended its cells and changed canonical bytes, and the
+group-cycle check was dead code that let a cycle through validation and into a
+stack overflow. Both are worth knowing about before Phase 2, because the first
+means **cell array order is derived, not authored**, and the second means
+**acyclicity is reachability from the container root**, never an ancestor walk.
+
+Phases 2–7 are unstarted.
 
 Extend `http-smoke.mjs` from phase 4 onward. The composition-root import test in
 `runtime-wiring.test.ts` catches an unresolvable barrel immediately.

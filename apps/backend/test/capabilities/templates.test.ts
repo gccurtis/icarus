@@ -8,9 +8,10 @@ import { toTemplateActivityTransaction } from "../../src/1-init/create/templates
 import { loadBackendConfig } from "../../src/0-utils/config/loadBackendConfig.js";
 import {
   SQLiteTemplateStore,
+  InvalidTemplateCursorError,
   StaleTemplateRevisionError,
-  TemplateAlreadyExistsError,
   TemplateIdempotencyMismatchError,
+  TemplateBindingMismatchError,
   TemplateNameConflictError,
   TemplateNotFoundError,
   TemplateUnsupportedKindError,
@@ -18,12 +19,11 @@ import {
   createTemplateCapability,
   decodeTemplateCommand,
   decodeTemplateQuery,
+  type TemplatableResource,
   type TemplateClock,
   type TemplateCommittedTransaction,
   type TemplateContextBindings,
-  type TemplateInstantiationInput,
   type TemplateOrigin,
-  type TemplateResourceAdapter,
   type TemplateStore
 } from "../../src/3-capabilities/templates/index.js";
 import { createTemplateTableNames } from "../../src/3-capabilities/templates/persistence/sqliteSchema.js";
@@ -34,138 +34,175 @@ import {
   getResourceHistory
 } from "../../src/0-utils/persistence/resourceHistory.js";
 
-// ─── Fake adapter ─────────────────────────────────────────────────────────────
+// ─── Fake resource runtime ────────────────────────────────────────────────────
 
-interface CreateCall {
-  method: "createTemplateCopy";
+interface DuplicateCall {
+  method: "duplicate";
   sourceResourceId: string;
-  templateId: string;
+  name?: string;
+  idempotencyKey: string;
+  /** What it allocated, so a test can follow the ID Templates was handed. */
+  allocated: string;
+  /** Rows visible from inside the call, to assert the catalog is written after. */
+  observedRows: number;
+}
+
+interface MarkCall {
+  method: "markAsTemplate";
+  resourceId: string;
+}
+
+interface BindingsCall {
+  method: "applyBindings";
+  resourceId: string;
   contextBindings: TemplateContextBindings;
   idempotencyKey: string;
-  /** Catalog state observed from inside the call, to assert ordering. */
-  observedState: string | undefined;
 }
 
-interface InstantiateCall {
-  method: "instantiateTemplate";
-  templateId: string;
-  destinationResourceId: string;
-  instantiation: TemplateInstantiationInput;
-  idempotencyKey: string;
-}
-
-interface UpdateCall {
-  method: "updateTemplateCopy";
-  templateId: string;
+interface SubmitCall {
+  method: "submit";
+  resourceId: string;
   operations: unknown;
-  contextBindings?: TemplateContextBindings;
   idempotencyKey: string;
 }
 
-interface ReadCall {
-  method: "readTemplateCopy";
-  templateId: string;
+interface LoadCall {
+  method: "load";
+  resourceId: string;
 }
 
-interface DeleteCall {
-  method: "logicalDeleteTemplateCopy" | "purgeTemplateCopy";
-  templateId: string;
+interface RemovalCall {
+  method: "logicalDelete" | "purge";
+  resourceId: string;
   idempotencyKey: string;
 }
 
-type AdapterCall = CreateCall | InstantiateCall | UpdateCall | ReadCall | DeleteCall;
+type ResourceCall =
+  | DuplicateCall
+  | MarkCall
+  | BindingsCall
+  | SubmitCall
+  | LoadCall
+  | RemovalCall;
 
-class FakeResourceAdapter implements TemplateResourceAdapter {
-  readonly calls: AdapterCall[] = [];
+/**
+ * Stands in for a capability's own runtime object. It allocates its own IDs,
+ * which is the whole point of the seam: Templates never learns a resource ID it
+ * did not receive from here.
+ */
+class FakeResource implements TemplatableResource {
+  readonly calls: ResourceCall[] = [];
   failNext = false;
-  /** Whatever readTemplateCopy hands back; opaque to Templates by design. */
-  content: unknown = { representationVersion: 2, title: "backing copy" };
+  /** Whatever load() hands back; opaque to Templates by design. */
+  content: unknown = { title: "backing copy" };
+  private allocations = 0;
 
   constructor(
     readonly kind: string,
-    /** Supplied so createTemplateCopy can observe catalog state mid-call. */
+    /** Supplied so duplicate() can observe the catalog mid-call. */
     private readonly store?: TemplateStore
   ) {}
 
   private guard(): void {
     if (this.failNext) {
       this.failNext = false;
-      throw new Error("adapter refused");
+      throw new Error("resource refused");
     }
   }
 
-  async createTemplateCopy(input: {
+  async duplicate(input: {
     sourceResourceId: string;
-    templateId: string;
+    name?: string;
+    idempotencyKey: string;
+  }): Promise<{ resourceId: string }> {
+    // Keyed replay, like a real capability's create receipt: the same request
+    // twice yields one copy, so a retry does not multiply resources.
+    const prior = this.duplicateCalls().find(
+      (call) => call.idempotencyKey === input.idempotencyKey
+    );
+    const allocated = prior?.allocated ?? `${this.kind}-copy-${++this.allocations}`;
+    this.calls.push({
+      method: "duplicate",
+      ...input,
+      allocated,
+      observedRows: this.store?.list().items.length ?? 0
+    });
+    this.guard();
+    return { resourceId: allocated };
+  }
+
+  async markAsTemplate(input: { resourceId: string }): Promise<void> {
+    this.calls.push({ method: "markAsTemplate", ...input });
+    this.guard();
+  }
+
+  async applyBindings(input: {
+    resourceId: string;
     contextBindings: TemplateContextBindings;
     idempotencyKey: string;
   }): Promise<void> {
-    this.calls.push({
-      method: "createTemplateCopy",
-      ...input,
-      observedState: this.store?.get(input.templateId)?.state
-    });
+    this.calls.push({ method: "applyBindings", ...input });
     this.guard();
   }
 
-  async instantiateTemplate(input: {
-    templateId: string;
-    destinationResourceId: string;
-    instantiation: TemplateInstantiationInput;
-    idempotencyKey: string;
-  }): Promise<void> {
-    this.calls.push({ method: "instantiateTemplate", ...input });
-    this.guard();
-  }
-
-  async updateTemplateCopy(input: {
-    templateId: string;
+  async submit(input: {
+    resourceId: string;
     operations: unknown;
-    contextBindings?: TemplateContextBindings;
     idempotencyKey: string;
   }): Promise<void> {
-    this.calls.push({ method: "updateTemplateCopy", ...input });
+    this.calls.push({ method: "submit", ...input });
     this.guard();
   }
 
-  async readTemplateCopy(input: { templateId: string }): Promise<unknown> {
-    this.calls.push({ method: "readTemplateCopy", ...input });
+  async load(input: { resourceId: string }): Promise<unknown> {
+    this.calls.push({ method: "load", ...input });
     this.guard();
     return this.content;
   }
 
-  async logicalDeleteTemplateCopy(input: {
-    templateId: string;
-    idempotencyKey: string;
-  }): Promise<void> {
-    this.calls.push({ method: "logicalDeleteTemplateCopy", ...input });
+  async logicalDelete(input: { resourceId: string; idempotencyKey: string }): Promise<void> {
+    this.calls.push({ method: "logicalDelete", ...input });
     this.guard();
   }
 
-  async purgeTemplateCopy(input: {
-    templateId: string;
-    idempotencyKey: string;
-  }): Promise<void> {
-    this.calls.push({ method: "purgeTemplateCopy", ...input });
+  async purge(input: { resourceId: string; idempotencyKey: string }): Promise<void> {
+    this.calls.push({ method: "purge", ...input });
     this.guard();
   }
 
-  createCalls(): CreateCall[] {
-    return this.calls.filter((call): call is CreateCall => call.method === "createTemplateCopy");
+  private of<T extends ResourceCall>(method: ResourceCall["method"]): T[] {
+    return this.calls.filter((call): call is T => call.method === method);
   }
 
-  instantiateCalls(): InstantiateCall[] {
-    return this.calls.filter(
-      (call): call is InstantiateCall => call.method === "instantiateTemplate"
+  duplicateCalls(): DuplicateCall[] {
+    return this.of<DuplicateCall>("duplicate");
+  }
+
+  /**
+   * Copies made from one source. Registration copies the caller's resource;
+   * instantiation copies the backing template, so the source tells the two
+   * apart without counting calls.
+   */
+  duplicatesOf(sourceResourceId: string): DuplicateCall[] {
+    return this.duplicateCalls().filter(
+      (call) => call.sourceResourceId === sourceResourceId
     );
   }
 
-  updateCalls(): UpdateCall[] {
-    return this.calls.filter((call): call is UpdateCall => call.method === "updateTemplateCopy");
+  markCalls(): MarkCall[] {
+    return this.of<MarkCall>("markAsTemplate");
   }
 
-  readCalls(): ReadCall[] {
-    return this.calls.filter((call): call is ReadCall => call.method === "readTemplateCopy");
+  bindingsCalls(): BindingsCall[] {
+    return this.of<BindingsCall>("applyBindings");
+  }
+
+  submitCalls(): SubmitCall[] {
+    return this.of<SubmitCall>("submit");
+  }
+
+  loadCalls(): LoadCall[] {
+    return this.of<LoadCall>("load");
   }
 }
 
@@ -175,7 +212,7 @@ let fixtureSequence = 0;
 
 const createFixture = (
   options: {
-    registerAdapter?: boolean;
+    registerResource?: boolean;
     /** Lets a test interpose on the store, e.g. to simulate a mid-command crash. */
     wrapStore?: (store: TemplateStore) => TemplateStore;
   } = {}
@@ -185,9 +222,9 @@ const createFixture = (
   const filePath = join(directory, "templates.db");
   const realStore = new SQLiteTemplateStore(projectId, filePath);
   const store = options.wrapStore ? options.wrapStore(realStore) : realStore;
-  const adapter = new FakeResourceAdapter("document", store);
-  const adapters = new Map<string, TemplateResourceAdapter>();
-  if (options.registerAdapter !== false) adapters.set(adapter.kind, adapter);
+  const resource = new FakeResource("document", store);
+  const resources = new Map<string, TemplatableResource>();
+  if (options.registerResource !== false) resources.set(resource.kind, resource);
 
   const published: TemplateCommittedTransaction[] = [];
   let publisherFails = false;
@@ -199,7 +236,7 @@ const createFixture = (
   const templates = createTemplateCapability(
     store,
     {
-      adapters: { get: (kind) => adapters.get(kind) },
+      resources: { get: (kind) => resources.get(kind) },
       logger,
       activityPublisher: {
         publish: async (transaction) => {
@@ -216,11 +253,11 @@ const createFixture = (
   return {
     templates,
     store,
-    adapter,
+    resource,
     published,
     logger,
-    /** Lets a test drop the adapter after registration succeeded. */
-    unregisterAdapter: () => adapters.delete(adapter.kind),
+    /** Lets a test drop the runtime after registration succeeded. */
+    unregisterResource: () => resources.delete(resource.kind),
     /** Lets a test read the shared history table directly. */
     history: (templateId: string) => {
       const db = new Database(filePath, { readonly: true });
@@ -248,7 +285,8 @@ const registerCommand = (
   origin,
   command: {
     type: "template.register" as const,
-    source: { kind: "document", resourceId: "doc-1" },
+    kind: "document",
+    resourceId: "doc-1",
     // Derived from the requestId, not a counter: names are unique per kind, so
     // two registrations in one fixture need different names — but a replay of
     // the same requestId must reproduce the same command, or the digest differs
@@ -266,10 +304,25 @@ test("Templates allocates the Template ID rather than accepting one", async (t) 
     const { templates } = createFixture();
     const result = await templates.command(registerCommand("req-1"));
     assert.equal(result.type, "template.registered");
-    assert.equal(result.type === "template.registered" && result.template.id, "generated-1");
+    const template = result.type === "template.registered" ? result.template : undefined;
+    assert.equal(template?.id, "generated-1");
+  });
+
+  await t.test("the catalog ID and the backing resource ID are different things", async () => {
+    const { templates, resource } = createFixture();
+    const result = await templates.command(registerCommand("req-1"));
+    const template = result.type === "template.registered" ? result.template : undefined;
+
+    // Templates names the catalog row because it stores it; the resource names
+    // the copy because it stores that. They were never required to match — the
+    // old CHECK made a coincidence look like a rule.
+    assert.equal(template?.id, "generated-1");
+    assert.equal(template?.resourceId, "document-copy-1");
+    assert.equal(resource.duplicateCalls()[0].allocated, "document-copy-1");
+    // And Templates never told the resource which ID to use.
     assert.equal(
-      result.type === "template.registered" && result.template.resourceId,
-      "generated-1"
+      Object.prototype.hasOwnProperty.call(resource.duplicateCalls()[0], "templateId"),
+      false
     );
   });
 
@@ -283,11 +336,14 @@ test("Templates allocates the Template ID rather than accepting one", async (t) 
     );
   });
 
-  await t.test("the catalog row is reserved before the adapter is called", async () => {
-    const { templates, adapter } = createFixture();
+  await t.test("no catalog row exists while the resource runs", async () => {
+    const { templates, store, resource } = createFixture();
     await templates.command(registerCommand("req-1"));
-    // Observed from inside createTemplateCopy: the identity was already durable.
-    assert.equal(adapter.createCalls()[0].observedState, "reserving");
+    // Observed from inside duplicate(). Nothing durable is written until the
+    // resource returns, which is why there is no identity to freeze and nothing
+    // to release when it fails.
+    assert.equal(resource.duplicateCalls()[0].observedRows, 0);
+    assert.equal(store.list().items.length, 1);
   });
 
   await t.test("a caller-supplied templateId is rejected at the wire boundary", () => {
@@ -299,7 +355,8 @@ test("Templates allocates the Template ID rather than accepting one", async (t) 
           command: {
             type: "template.register",
             templateId: "chosen-by-client",
-            source: { kind: "document", resourceId: "doc-1" }
+            kind: "document",
+            resourceId: "doc-1"
           }
         }),
       TemplateWireError
@@ -307,65 +364,96 @@ test("Templates allocates the Template ID rather than accepting one", async (t) 
   });
 });
 
-// ─── Catalog and adapter dispatch ─────────────────────────────────────────────
+// ─── Catalog and resource dispatch ─────────────────────────────────────────────
 
-test("Templates dispatches to the adapter registry and guards the catalog", async (t) => {
-  await t.test("an unsupported kind fails before any row or adapter call", async () => {
-    const { templates, store, adapter } = createFixture({ registerAdapter: false });
+test("Templates dispatches to the resource registry and guards the catalog", async (t) => {
+  await t.test("an unsupported kind fails before any row or resource call", async () => {
+    const { templates, store, resource } = createFixture({ registerResource: false });
     await assert.rejects(
       () => templates.command(registerCommand("req-1")),
       TemplateUnsupportedKindError
     );
-    assert.equal(adapter.calls.length, 0);
-    assert.equal(store.list().length, 0);
+    assert.equal(resource.calls.length, 0);
+    assert.equal(store.list().items.length, 0);
   });
 
-  await t.test("a successful registration produces one ready record", async () => {
-    const { templates, store, adapter } = createFixture();
+  await t.test("a successful registration produces one usable record", async () => {
+    const { templates, store, resource } = createFixture();
     const result = await templates.command(registerCommand("req-1"));
     const id = result.type === "template.registered" ? result.template.id : "";
-    assert.equal(store.get(id)?.state, "ready");
-    assert.equal(adapter.createCalls().length, 1);
-    assert.equal(store.list().length, 1);
+    assert.equal(store.get(id)?.revision, 1);
+    assert.equal(resource.duplicateCalls().length, 1);
+    assert.equal(store.list().items.length, 1);
   });
 
-  await t.test("an adapter throw leaves no catalog row", async () => {
-    const { templates, store, adapter } = createFixture();
-    adapter.failNext = true;
+  await t.test("an resource throw leaves no catalog row and no receipt", async () => {
+    const { templates, store, resource } = createFixture();
+    resource.failNext = true;
     await assert.rejects(() => templates.command(registerCommand("req-1")));
-    assert.equal(store.list().length, 0);
+    assert.equal(store.list().items.length, 0);
+    // No receipt either, so the retry is the same command against the same
+    // state rather than a resumption of a half-finished one.
+    assert.equal(store.getReceipt("req-1"), undefined);
+
+    const retried = await templates.command(registerCommand("req-1"));
+    assert.equal(retried.type, "template.registered");
+    assert.equal(store.list().items.length, 1);
   });
 
-  await t.test("a reserving record is invisible and blocks its own identity", async () => {
-    const { templates, store } = createFixture();
-    const createdAt = "2026-08-02T00:00:00.000Z";
-    const reservation = {
-      id: "generated-1",
-      kind: "document",
-      resourceId: "generated-1",
-      name: "reserved template",
-      contextBindings: {},
-      state: "reserving" as const,
-      revision: 1,
-      updatedAt: createdAt,
-      createdAt
-    };
-    assert.equal(store.reserve(reservation), true);
-    // Invisible to list, and a second reservation of the same identity fails.
-    assert.equal(store.list().length, 0);
-    assert.equal(store.reserve(reservation), false);
-    // A reserving row also holds its name, so a colliding registration fails
-    // before its adapter call rather than after a backing copy exists.
-    assert.equal(store.nameTaken("document", "Reserved Template"), true);
+  await t.test("an unknown template is not found", async () => {
+    const { templates } = createFixture();
     await assert.rejects(
       () =>
         templates.command({
           requestId: "req-x",
           origin: "user",
-          command: { type: "template.instantiate", templateId: "generated-1", destinationResourceId: "doc-9", contextBindings: {} }
+          command: {
+            type: "template.instantiate",
+            templateId: "generated-1",
+            contextBindings: {}
+          }
         }),
       TemplateNotFoundError
     );
+  });
+
+  await t.test("one template per backing resource, and a losing create writes nothing", async () => {
+    const { templates, store } = createFixture();
+    const registered = await templates.command(registerCommand("req-1", { name: "First" }));
+    const existing = registered.type === "template.registered" ? registered.template : undefined;
+    assert.ok(existing);
+
+    // A second catalog row over the same (kind, resourceId). Unreachable through
+    // the service while Templates still supplies the backing ID, and reachable
+    // the moment the resource allocates it — which is why the store enforces it
+    // rather than the caller.
+    const at = "2026-08-02T00:00:00.000Z";
+    const receipt = {
+      requestId: "req-collide",
+      requestDigest: "digest",
+      commandType: "template.register" as const,
+      result: { type: "template.registered" },
+      createdAt: at
+    };
+    assert.equal(
+      store.create({
+        record: { ...existing, id: "other-id", name: "Second" },
+        receipt,
+        transaction: {
+          sourceTransactionId: "req-collide:registered",
+          kind: "template.registered",
+          templateId: "other-id",
+          resourceKind: existing.kind,
+          resourceId: existing.resourceId,
+          origin: "user",
+          occurredAt: at
+        }
+      }),
+      false
+    );
+    assert.equal(store.list().items.length, 1);
+    assert.equal(store.getReceipt("req-collide"), undefined, "the receipt rolled back too");
+    assert.equal(store.listUnpublishedTransactions().length, 1);
   });
 });
 
@@ -373,31 +461,32 @@ test("Templates dispatches to the adapter registry and guards the catalog", asyn
 
 test("Templates replays exact retries and refuses divergent reuse", async (t) => {
   await t.test("an exact register retry returns the same allocated ID once", async () => {
-    const { templates, adapter } = createFixture();
+    const { templates, resource } = createFixture();
     const first = await templates.command(registerCommand("req-1"));
     const second = await templates.command(registerCommand("req-1"));
     assert.deepEqual(first, second);
-    assert.equal(adapter.createCalls().length, 1);
+    assert.equal(resource.duplicateCalls().length, 1);
   });
 
   await t.test("origin does not affect replay and the committed transaction keeps its first origin", async () => {
-    const { templates, store, adapter } = createFixture();
+    const { templates, store, resource } = createFixture();
     const first = await templates.command(registerCommand("req-1", {}, "automation"));
     const replay = await templates.command(registerCommand("req-1", {}, "system"));
 
     assert.deepEqual(replay, first);
-    assert.equal(adapter.createCalls().length, 1);
+    assert.equal(resource.duplicateCalls().length, 1);
     assert.equal(store.listUnpublishedTransactions()[0].origin, "automation");
   });
 
   await t.test("key ordering in the command does not change the digest", async () => {
-    const { templates, adapter } = createFixture();
+    const { templates, resource } = createFixture();
     await templates.command({
       requestId: "req-1",
       origin: "user",
       command: {
         type: "template.register",
-        source: { kind: "document", resourceId: "doc-1" },
+        kind: "document",
+        resourceId: "doc-1",
         name: "ordering-probe",
         description: "a template",
         contextBindings: {}
@@ -409,13 +498,14 @@ test("Templates replays exact retries and refuses divergent reuse", async (t) =>
       origin: "agent",
       command: {
         contextBindings: {},
+        resourceId: "doc-1",
         description: "a template",
         name: "ordering-probe",
-        source: { resourceId: "doc-1", kind: "document" },
+        kind: "document",
         type: "template.register"
       } as never
     });
-    assert.equal(adapter.createCalls().length, 1);
+    assert.equal(resource.duplicateCalls().length, 1);
   });
 
   await t.test("reusing a request ID with different content is a mismatch", async () => {
@@ -424,7 +514,7 @@ test("Templates replays exact retries and refuses divergent reuse", async (t) =>
     await assert.rejects(
       () =>
         templates.command(
-          registerCommand("req-1", { source: { kind: "document", resourceId: "doc-2" } })
+          registerCommand("req-1", { resourceId: "doc-2" })
         ),
       TemplateIdempotencyMismatchError
     );
@@ -444,49 +534,246 @@ test("Templates replays exact retries and refuses divergent reuse", async (t) =>
     );
   });
 
-  await t.test("a pending claim resumes on the frozen ID without a second copy", async () => {
-    const { templates, store, adapter } = createFixture();
-    adapter.failNext = true;
-    // First attempt reserves + freezes the identity, then the adapter fails.
+  await t.test("a retried attempt presents the resource the same idempotency key", async () => {
+    const { templates, store, resource } = createFixture();
+    resource.failNext = true;
     await assert.rejects(() => templates.command(registerCommand("req-1")));
-    assert.equal(store.list().length, 0);
+    assert.equal(store.list().items.length, 0);
 
-    // The claim is still pending with its frozen template_id, so the retry
-    // reuses that identity and the same adapter key instead of minting a new one.
+    // The retry re-runs the command from the start — there is nothing to resume
+    // from — but the key is derived from the request, so the resource replays its
+    // own attempt rather than making a second backing copy.
     const result = await templates.command(registerCommand("req-1"));
-    assert.equal(result.type === "template.registered" && result.template.id, "generated-1");
-    assert.equal(store.list().length, 1);
-    const keys = adapter.createCalls().map((call) => call.idempotencyKey);
+    assert.equal(result.type, "template.registered");
+    assert.equal(store.list().items.length, 1);
+    const keys = resource.duplicateCalls().map((call) => call.idempotencyKey);
     assert.deepEqual(keys, ["templates:register:req-1", "templates:register:req-1"]);
+  });
+
+  await t.test("the receipt records the command type, so a replay can check it", async () => {
+    const { templates, store } = createFixture();
+    await templates.command(registerCommand("req-1"));
+    const receipt = store.getReceipt("req-1");
+    assert.equal(receipt?.commandType, "template.register");
+    assert.equal(
+      (receipt?.result as { type: string } | undefined)?.type,
+      "template.registered"
+    );
+  });
+
+  // register, update, and delete each commit their receipt inside their own
+  // store transaction. instantiate and purge change no local state, so their
+  // receipts come only from the generic write after execute — which is the one
+  // path nothing else in this suite exercises.
+  await t.test("an exact instantiate retry replays without a second copy", async () => {
+    const { templates, resource } = createFixture();
+    const registered = await templates.command(registerCommand("req-1"));
+    const template = registered.type === "template.registered" ? registered.template : undefined;
+    assert.ok(template);
+    const instantiate = {
+      requestId: "req-2",
+      origin: "user" as const,
+      command: {
+        type: "template.instantiate" as const,
+        templateId: template.id,
+        contextBindings: {}
+      }
+    };
+
+    const first = await templates.command(instantiate);
+    const replay = await templates.command(instantiate);
+    assert.deepEqual(replay, first);
+    assert.equal(resource.duplicatesOf(template.resourceId).length, 1);
+  });
+
+  await t.test("an exact purge retry replays instead of failing as already purged", async () => {
+    const { templates, resource } = createFixture();
+    const registered = await templates.command(registerCommand("req-1"));
+    const templateId = registered.type === "template.registered" ? registered.template.id : "";
+    await templates.command({
+      requestId: "req-2",
+      origin: "user",
+      command: { type: "template.delete", templateId }
+    });
+    const purge = {
+      requestId: "req-3",
+      origin: "user" as const,
+      command: { type: "template.purge" as const, templateId }
+    };
+
+    const first = await templates.command(purge);
+    // Without a receipt this would raise ResourceHistoryNotFoundError: the
+    // history it purges is already gone by the time the retry arrives.
+    const replay = await templates.command(purge);
+    assert.deepEqual(replay, first);
+    assert.equal(resource.calls.filter((c) => c.method === "purge").length, 1);
   });
 });
 
 // ─── Instantiation and deletion ───────────────────────────────────────────────
 
-test("Templates instantiates without a catalog row and deletes through the adapter", async (t) => {
-  await t.test("instantiate returns the destination ref and writes no row", async () => {
-    const { templates, store, adapter } = createFixture();
+test("Templates instantiates without a catalog row and deletes through the resource", async (t) => {
+  await t.test("instantiate returns the ref the resource allocated and writes no row", async () => {
+    const { templates, store, resource } = createFixture();
     const registered = await templates.command(registerCommand("req-1"));
-    const templateId = registered.type === "template.registered" ? registered.template.id : "";
+    const template = registered.type === "template.registered" ? registered.template : undefined;
+    assert.ok(template);
 
     const result = await templates.command({
       requestId: "req-2",
       origin: "user",
       command: {
         type: "template.instantiate",
-        templateId,
-        destinationResourceId: "doc-copy-1",
+        templateId: template.id,
         contextBindings: {}
       }
     });
 
     assert.equal(result.type, "template.instantiated");
+    // The caller named no destination; this ID came back from the resource.
+    const copies = resource.duplicatesOf(template.resourceId);
+    assert.equal(copies.length, 1);
     assert.deepEqual(
       result.type === "template.instantiated" ? result.resource : undefined,
-      { kind: "document", resourceId: "doc-copy-1" }
+      { kind: "document", resourceId: copies[0].allocated }
     );
-    assert.equal(store.list().length, 1, "no catalog row is written for an instance");
-    assert.equal(adapter.instantiateCalls().length, 1);
+    assert.equal(store.list().items.length, 1, "no catalog row is written for an instance");
+    // The instance is an ordinary resource: it is copied from the template but
+    // never sealed as one.
+    assert.deepEqual(resource.markCalls().map((call) => call.resourceId), [template.resourceId]);
+  });
+
+  await t.test("a destinationResourceId is rejected at the wire boundary", () => {
+    // Removed rather than ignored: the resource allocates the ID, so a caller
+    // supplying one is stating something that cannot be honoured.
+    assert.throws(
+      () =>
+        decodeTemplateCommand({
+          requestId: "req-1",
+          origin: "user",
+          command: {
+            type: "template.instantiate",
+            templateId: "t-1",
+            destinationResourceId: "doc-9",
+            contextBindings: {}
+          }
+        }),
+      TemplateWireError
+    );
+  });
+
+  await t.test("instantiation must supply every declared parameter", async () => {
+    const { templates, resource } = createFixture();
+    const registered = await templates.command(
+      registerCommand("req-1", {
+        contextBindings: {
+          "Main topic": {},
+          // A declared default. It configured the backing copy; it is not a
+          // fallback for an omitted argument.
+          Region: { target: { id: "ctx-1", kind: "context" } }
+        }
+      })
+    );
+    const templateId = registered.type === "template.registered" ? registered.template.id : "";
+    resource.calls.length = 0;
+
+    await assert.rejects(
+      () =>
+        templates.command({
+          requestId: "req-2",
+          origin: "user",
+          command: {
+            type: "template.instantiate",
+            templateId,
+            contextBindings: { "Main topic": { target: { id: "ctx-9", kind: "context" } } }
+          }
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof TemplateBindingMismatchError);
+        assert.deepEqual(error.missing, ["Region"]);
+        assert.deepEqual(error.unexpected, []);
+        return true;
+      }
+    );
+    // Refused before anything was copied, so a rejected instantiation leaves
+    // no resource behind.
+    assert.deepEqual(resource.calls, []);
+  });
+
+  await t.test("instantiation may not bind a variable the template never declared", async () => {
+    const { templates } = createFixture();
+    const registered = await templates.command(
+      registerCommand("req-1", { contextBindings: { Region: {} } })
+    );
+    const templateId = registered.type === "template.registered" ? registered.template.id : "";
+
+    await assert.rejects(
+      () =>
+        templates.command({
+          requestId: "req-2",
+          origin: "user",
+          command: {
+            type: "template.instantiate",
+            templateId,
+            contextBindings: {
+              Region: { target: { id: "ctx-1", kind: "context" } },
+              // Not a parameter. It is baked-in content, and binding it would
+              // edit the instance rather than configure it.
+              Tone: { target: { id: "ctx-2", kind: "context" } }
+            }
+          }
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof TemplateBindingMismatchError);
+        assert.deepEqual(error.missing, []);
+        assert.deepEqual(error.unexpected, ["Tone"]);
+        return true;
+      }
+    );
+  });
+
+  await t.test("an instantiation argument must say what it points at", () => {
+    // At registration an omitted target declares a parameter with no default.
+    // Here it would leave the instance holding an unbound variable, which is
+    // the state the binding rule exists to prevent.
+    assert.throws(
+      () =>
+        decodeTemplateCommand({
+          requestId: "req-1",
+          origin: "user",
+          command: {
+            type: "template.instantiate",
+            templateId: "t-1",
+            contextBindings: { Region: {} }
+          }
+        }),
+      TemplateWireError
+    );
+
+    // The same shape is valid at registration, and means something different.
+    const declared = decodeTemplateCommand(
+      registerCommand("req-1", { contextBindings: { Region: {} } })
+    );
+    assert.equal(
+      declared.command.type === "template.register"
+        ? declared.command.contextBindings.Region.target
+        : "unset",
+      undefined
+    );
+  });
+
+  await t.test("a template with no parameters instantiates with no bindings", async () => {
+    const { templates, resource } = createFixture();
+    const registered = await templates.command(registerCommand("req-1"));
+    const templateId = registered.type === "template.registered" ? registered.template.id : "";
+    const result = await templates.command({
+      requestId: "req-2",
+      origin: "user",
+      command: { type: "template.instantiate", templateId, contextBindings: {} }
+    });
+    assert.equal(result.type, "template.instantiated");
+    // Nothing declared, nothing supplied, nothing to apply.
+    assert.deepEqual(resource.bindingsCalls(), []);
   });
 
   await t.test("instantiating a missing or deleted template is not found", async () => {
@@ -499,7 +786,6 @@ test("Templates instantiates without a catalog row and deletes through the adapt
           command: {
             type: "template.instantiate",
             templateId: "nope",
-            destinationResourceId: "doc-copy-1",
             contextBindings: {}
           }
         }),
@@ -507,8 +793,8 @@ test("Templates instantiates without a catalog row and deletes through the adapt
     );
   });
 
-  await t.test("delete archives current state and purge removes retained state through the adapter", async () => {
-    const { templates, store, adapter } = createFixture();
+  await t.test("delete archives current state and purge removes retained state through the resource", async () => {
+    const { templates, store, resource } = createFixture();
     const registered = await templates.command(registerCommand("req-1"));
     const templateId = registered.type === "template.registered" ? registered.template.id : "";
 
@@ -529,9 +815,9 @@ test("Templates instantiates without a catalog row and deletes through the adapt
 
     assert.deepEqual(deleted, { type: "template.deleted", templateId, revision: 2 });
     assert.equal(store.get(templateId), undefined);
-    assert.equal(store.list().length, 0);
+    assert.equal(store.list().items.length, 0);
     assert.equal(store.latestSnapshot(templateId)?.revision, 1);
-    assert.equal(adapter.calls.filter((c) => c.method === "logicalDeleteTemplateCopy").length, 1);
+    assert.equal(resource.calls.filter((c) => c.method === "logicalDelete").length, 1);
     await assert.rejects(
       () => templates.query({ query: { type: "template.get", templateId } }),
       TemplateNotFoundError
@@ -542,7 +828,7 @@ test("Templates instantiates without a catalog row and deletes through the adapt
       origin: "user",
       command: { type: "template.purge", templateId }
     }), { type: "template.purged", templateId });
-    assert.equal(adapter.calls.filter((c) => c.method === "purgeTemplateCopy").length, 1);
+    assert.equal(resource.calls.filter((c) => c.method === "purge").length, 1);
     assert.equal(store.latestSnapshot(templateId), undefined);
     await assert.rejects(
       () => templates.command({
@@ -553,47 +839,93 @@ test("Templates instantiates without a catalog row and deletes through the adapt
       ResourceHistoryNotFoundError
     );
   });
+
+  await t.test("removal addresses the resource by its own ID, not the template's", async () => {
+    const { templates, store, resource } = createFixture();
+    const registered = await templates.command(registerCommand("req-1"));
+    const template = registered.type === "template.registered" ? registered.template : undefined;
+    assert.ok(template);
+    assert.notEqual(template.resourceId, template.id);
+
+    await templates.command({
+      requestId: "req-2",
+      origin: "user",
+      command: { type: "template.delete", templateId: template.id }
+    });
+    await templates.command({
+      requestId: "req-3",
+      origin: "user",
+      command: { type: "template.purge", templateId: template.id }
+    });
+
+    // Purge runs off the archived snapshot, so this also proves history keeps
+    // the backing ID — without it there would be nothing left to purge.
+    assert.deepEqual(
+      resource.calls
+        .filter((call) => call.method === "logicalDelete" || call.method === "purge")
+        .map((call) => [call.method, (call as { resourceId: string }).resourceId]),
+      [
+        ["logicalDelete", template.resourceId],
+        ["purge", template.resourceId]
+      ]
+    );
+    assert.equal(store.latestSnapshot(template.id), undefined);
+  });
 });
 
 // ─── Bindings and descriptions ────────────────────────────────────────────────
 
-// TO BE DELETED — this test's name and its "bindings are never persisted"
-// subtest assert a decision that has been reversed. Templates persists the
-// declared bindings: they are the template's parameter list and part of what
-// identifies it, not a pass-through to the adapter. The subtest below inverts
-// (assert the declaration round-trips through get/list) and this name becomes
-// "Templates records the declared bindings and forwards the applied targets".
-// Left green for now so nothing breaks before item 7 lands.
-// See scratch/0-general-updates.md item 7.
 test("Templates records the declared bindings and applies the targets", async (t) => {
-  await t.test("omitted bindings reach the adapter as an empty record", async () => {
-    const { templates, adapter } = createFixture();
+  await t.test("no declared bindings means no applyBindings call at all", async () => {
+    const { templates, resource } = createFixture();
     await templates.command({
       requestId: "req-1",
       origin: "user",
       command: {
         type: "template.register",
-        source: { kind: "document", resourceId: "doc-1" },
+        kind: "document",
+        resourceId: "doc-1",
         name: "template-req-1",
         contextBindings: decodeContextBindingsFromWire(undefined)
       }
     });
-    assert.deepEqual(adapter.createCalls()[0].contextBindings, {});
+    // duplicate() is a pure copy, so there is nothing to say to the resource
+    // when a template declares no parameters.
+    assert.deepEqual(resource.bindingsCalls(), []);
+    assert.equal(resource.duplicateCalls().length, 1);
+  });
+
+  await t.test("registration copies, seals, then binds — in that order", async () => {
+    const { templates, resource } = createFixture();
+    const registered = await templates.command(
+      registerCommand("req-1", {
+        contextBindings: { Region: { target: { id: "ctx-1", kind: "context" } } }
+      })
+    );
+    const template = registered.type === "template.registered" ? registered.template : undefined;
+
+    assert.deepEqual(
+      resource.calls.map((call) => call.method),
+      ["duplicate", "markAsTemplate", "applyBindings"]
+    );
+    // Every call after the copy addresses the ID the copy allocated.
+    assert.equal(resource.markCalls()[0].resourceId, template?.resourceId);
+    assert.equal(resource.bindingsCalls()[0].resourceId, template?.resourceId);
   });
 
   await t.test("an absent key and an explicit-unbind key stay distinguishable", async () => {
-    const { templates, adapter } = createFixture();
+    const { templates, resource } = createFixture();
     await templates.command(
       registerCommand("req-1", {
         contextBindings: { "Main topic": {}, Region: { target: { id: "ctx-1", kind: "context" } } }
       })
     );
-    const forwarded = adapter.createCalls()[0].contextBindings;
+    const applied = resource.bindingsCalls()[0].contextBindings;
     // "Main topic" is present-but-empty: explicitly unbound, not absent.
-    assert.ok(Object.prototype.hasOwnProperty.call(forwarded, "Main topic"));
-    assert.equal(forwarded["Main topic"].target, undefined);
-    assert.deepEqual(forwarded.Region.target, { id: "ctx-1", kind: "context" });
-    assert.equal(Object.prototype.hasOwnProperty.call(forwarded, "Absent"), false);
+    assert.ok(Object.prototype.hasOwnProperty.call(applied, "Main topic"));
+    assert.equal(applied["Main topic"].target, undefined);
+    assert.deepEqual(applied.Region.target, { id: "ctx-1", kind: "context" });
+    assert.equal(Object.prototype.hasOwnProperty.call(applied, "Absent"), false);
   });
 
   await t.test("a binding description is declared, stored, and returned", async () => {
@@ -611,26 +943,97 @@ test("Templates records the declared bindings and applies the targets", async (t
     );
   });
 
-  await t.test("instantiation forwards binding arguments and an omitted title", async () => {
-    const { templates, adapter } = createFixture();
-    const registered = await templates.command(registerCommand("req-1"));
-    const templateId = registered.type === "template.registered" ? registered.template.id : "";
+  await t.test("instantiation copies then binds, with no seal and no name", async () => {
+    const { templates, resource } = createFixture();
+    const registered = await templates.command(
+      registerCommand("req-1", { contextBindings: { Region: {} } })
+    );
+    const template = registered.type === "template.registered" ? registered.template : undefined;
+    assert.ok(template);
+    resource.calls.length = 0;
+
     await templates.command({
       requestId: "req-2",
       origin: "user",
       command: {
         type: "template.instantiate",
-        templateId,
-        destinationResourceId: "doc-copy-1",
+        templateId: template.id,
         contextBindings: { Region: { target: { id: "ctx-2", kind: "context" } } }
       }
     });
-    const call = adapter.instantiateCalls()[0];
-    assert.equal(call.instantiation.title, undefined);
-    assert.deepEqual(call.instantiation.contextBindings.Region.target, {
+
+    // The mirror of registration, one call shorter.
+    assert.deepEqual(resource.calls.map((call) => call.method), ["duplicate", "applyBindings"]);
+    const copy = resource.duplicateCalls()[0];
+    assert.equal(copy.sourceResourceId, template.resourceId);
+    assert.equal(copy.name, undefined, "an omitted name inherits the copy's own");
+    assert.deepEqual(resource.bindingsCalls()[0].contextBindings.Region.target, {
       id: "ctx-2",
       kind: "context"
     });
+    assert.equal(resource.bindingsCalls()[0].resourceId, copy.allocated);
+  });
+
+  await t.test("three names meet at instantiation and none is the other", async () => {
+    const { templates, resource, store } = createFixture();
+    const registered = await templates.command(
+      registerCommand("req-1", { name: "Quarterly report template" })
+    );
+    const template = registered.type === "template.registered" ? registered.template : undefined;
+    assert.ok(template);
+
+    await templates.command({
+      requestId: "req-2",
+      origin: "user",
+      command: {
+        type: "template.instantiate",
+        templateId: template.id,
+        name: "Q3 report",
+        contextBindings: {}
+      }
+    });
+
+    // The instance's name goes to the resource, which is the only thing that
+    // can act on it.
+    assert.equal(resource.duplicatesOf(template.resourceId)[0].name, "Q3 report");
+    // The catalog label is untouched by instantiating from it.
+    assert.equal(store.get(template.id)?.name, "Quarterly report template");
+    // And registration supplies no name at all: a backing copy is not something
+    // a user names, and the title it inherits is sealed with it.
+    assert.equal(resource.duplicatesOf("doc-1")[0].name, undefined);
+  });
+
+  await t.test("an instance name is trimmed at ingress like every other name", () => {
+    const decoded = decodeTemplateCommand({
+      requestId: "req-1",
+      origin: "user",
+      command: {
+        type: "template.instantiate",
+        templateId: "t-1",
+        name: "  Q3 report  ",
+        contextBindings: {}
+      }
+    });
+    assert.equal(
+      decoded.command.type === "template.instantiate" ? decoded.command.name : "",
+      "Q3 report"
+    );
+    for (const name of ["", "   "]) {
+      assert.throws(
+        () =>
+          decodeTemplateCommand({
+            requestId: "req-1",
+            origin: "user",
+            command: {
+              type: "template.instantiate",
+              templateId: "t-1",
+              name,
+              contextBindings: {}
+            }
+          }),
+        TemplateWireError
+      );
+    }
   });
 
   // The case that would have caught the original defect: bindings were accepted
@@ -675,7 +1078,6 @@ test("Templates records the declared bindings and applies the targets", async (t
           command: {
             type: "template.instantiate",
             templateId: "t-1",
-            destinationResourceId: "doc-9",
             contextBindings: { Region: { description: "not a declaration here" } }
           }
         }),
@@ -730,7 +1132,8 @@ test("Templates gives every record its own catalog name", async (t) => {
           origin: "user",
           command: {
             type: "template.register",
-            source: { kind: "document", resourceId: "doc-1" },
+            kind: "document",
+        resourceId: "doc-1",
             contextBindings: {}
           }
         }),
@@ -764,7 +1167,7 @@ test("Templates gives every record its own catalog name", async (t) => {
   });
 
   await t.test("a duplicate name conflicts and creates no backing copy", async () => {
-    const { templates, adapter } = createFixture();
+    const { templates, resource } = createFixture();
     await templates.command(registerCommand("req-1", { name: "Quarterly report" }));
     await assert.rejects(
       // Case-insensitive: the index collates NOCASE.
@@ -772,26 +1175,16 @@ test("Templates gives every record its own catalog name", async (t) => {
       TemplateNameConflictError
     );
     // The ordering guarantee: the conflict is detected before any side effect.
-    assert.equal(adapter.createCalls().length, 1);
+    assert.equal(resource.duplicateCalls().length, 1);
   });
 
-  await t.test("the same name under a different kind is accepted", async () => {
-    const { store } = createFixture();
-    const at = "2026-08-02T00:00:00.000Z";
-    const reservation = (id: string, kind: string) => ({
-      id,
-      kind,
-      resourceId: id,
-      name: "Quarterly report",
-      contextBindings: {},
-      state: "reserving" as const,
-      revision: 1,
-      createdAt: at,
-      updatedAt: at
-    });
-    assert.equal(store.reserve(reservation("t-doc", "document")), true);
-    assert.equal(store.reserve(reservation("t-sheet", "spreadsheet")), true);
-    assert.equal(store.nameTaken("spreadsheet", "Quarterly report"), true);
+  await t.test("a name is taken per kind, not globally", async () => {
+    const { templates, store } = createFixture();
+    await templates.command(registerCommand("req-1", { name: "Quarterly report" }));
+    assert.equal(store.nameTaken("document", "Quarterly report"), true);
+    // The same name under another kind is free, so a Document template and a
+    // Spreadsheet template may both be called "Quarterly report".
+    assert.equal(store.nameTaken("spreadsheet", "Quarterly report"), false);
     assert.equal(store.nameTaken("slides", "Quarterly report"), false);
   });
 
@@ -808,6 +1201,160 @@ test("Templates gives every record its own catalog name", async (t) => {
     // the name is released by construction rather than by a predicate.
     const reused = await templates.command(registerCommand("req-3", { name: "Quarterly report" }));
     assert.equal(reused.type, "template.registered");
+  });
+});
+
+// ─── Search ───────────────────────────────────────────────────────────────────
+
+test("Templates lists templates as a picker rather than a dump", async (t) => {
+  const namesFrom = (result: { type: string }): string[] =>
+    result.type === "template.records"
+      ? (result as { templates: Array<{ name: string }> }).templates.map((t) => t.name)
+      : [];
+
+  const seed = async (
+    templates: ReturnType<typeof createFixture>["templates"],
+    entries: Array<{ name: string; description?: string }>
+  ): Promise<void> => {
+    for (const [index, entry] of entries.entries()) {
+      await templates.command(
+        registerCommand(`seed-${index}`, {
+          resourceId: `doc-${index}`,
+          name: entry.name,
+          ...(entry.description !== undefined ? { description: entry.description } : {})
+        })
+      );
+    }
+  };
+
+  await t.test("search matches name and description, case-insensitively", async () => {
+    const { templates } = createFixture();
+    await seed(templates, [
+      { name: "Quarterly report", description: "finance" },
+      { name: "Weekly digest", description: "a quarterly rollup lives here" },
+      { name: "Onboarding", description: "people" }
+    ]);
+
+    const byName = await templates.query({
+      query: { type: "template.list", search: "QUARTERLY" }
+    });
+    assert.deepEqual(namesFrom(byName).sort(), ["Quarterly report", "Weekly digest"]);
+
+    const noMatch = await templates.query({ query: { type: "template.list", search: "zzz" } });
+    assert.deepEqual(namesFrom(noMatch), []);
+  });
+
+  await t.test("a search term's LIKE wildcards are literal, not patterns", async () => {
+    const { templates } = createFixture();
+    await seed(templates, [
+      { name: "Discount 50% off" },
+      { name: "Plain report" },
+      { name: "snake_case guide" },
+      { name: "snakeXcase decoy" }
+    ]);
+
+    // Unescaped, "%" would match every row and "_" would match any character.
+    assert.deepEqual(
+      namesFrom(await templates.query({ query: { type: "template.list", search: "50%" } })),
+      ["Discount 50% off"]
+    );
+    assert.deepEqual(
+      namesFrom(await templates.query({ query: { type: "template.list", search: "snake_" } })),
+      ["snake_case guide"]
+    );
+  });
+
+  await t.test("kinds is any-of, and an empty list matches nothing", async () => {
+    const { templates } = createFixture();
+    await seed(templates, [{ name: "One" }, { name: "Two" }]);
+
+    assert.equal(
+      namesFrom(await templates.query({ query: { type: "template.list", kinds: ["document"] } }))
+        .length,
+      2
+    );
+    assert.deepEqual(
+      namesFrom(await templates.query({ query: { type: "template.list", kinds: ["slides"] } })),
+      []
+    );
+    // Not normalised to "every kind": a caller that filtered everything out
+    // should see nothing rather than the whole catalog.
+    assert.deepEqual(
+      namesFrom(await templates.query({ query: { type: "template.list", kinds: [] } })),
+      []
+    );
+  });
+
+  await t.test("pagination walks the whole catalog exactly once", async () => {
+    const { templates } = createFixture();
+    await seed(templates, [
+      { name: "A" },
+      { name: "B" },
+      { name: "C" },
+      { name: "D" },
+      { name: "E" }
+    ]);
+
+    const seen: string[] = [];
+    let cursor: string | undefined;
+    let pages = 0;
+    do {
+      const page = await templates.query({
+        query: { type: "template.list", limit: 2, ...(cursor !== undefined ? { cursor } : {}) }
+      });
+      assert.equal(page.type, "template.records");
+      seen.push(...namesFrom(page));
+      cursor = page.type === "template.records" ? page.nextCursor : undefined;
+      pages += 1;
+    } while (cursor !== undefined && pages < 10);
+
+    assert.deepEqual(seen, ["A", "B", "C", "D", "E"]);
+    assert.equal(pages, 3, "two full pages and a short final one");
+  });
+
+  await t.test("the last page carries no cursor", async () => {
+    const { templates } = createFixture();
+    await seed(templates, [{ name: "Only" }]);
+    const page = await templates.query({ query: { type: "template.list", limit: 10 } });
+    assert.equal(page.type === "template.records" ? page.nextCursor : "unset", undefined);
+  });
+
+  await t.test("a cursor from elsewhere is refused rather than misread", async () => {
+    const { templates } = createFixture();
+    await seed(templates, [{ name: "Only" }]);
+    const foreign = Buffer.from(
+      JSON.stringify({ kind: "activity-transactions", sequence: 1 }),
+      "utf8"
+    ).toString("base64url");
+
+    for (const cursor of [foreign, "not-base64-json"]) {
+      await assert.rejects(
+        () => templates.query({ query: { type: "template.list", cursor } }),
+        InvalidTemplateCursorError
+      );
+    }
+  });
+
+  await t.test("list filters are decoded strictly", () => {
+    const list = (extra: Record<string, unknown>) => () =>
+      decodeTemplateQuery({ query: { type: "template.list", ...extra } });
+
+    assert.throws(list({ kinds: "document" }), TemplateWireError);
+    assert.throws(list({ kinds: ["document", "document"] }), TemplateWireError);
+    assert.throws(list({ kinds: [""] }), TemplateWireError);
+    assert.throws(list({ limit: 0 }), TemplateWireError);
+    assert.throws(list({ limit: 1.5 }), TemplateWireError);
+    assert.throws(list({ limit: 5_000 }), TemplateWireError);
+    assert.throws(list({ cursor: "" }), TemplateWireError);
+    assert.throws(list({ search: 42 }), TemplateWireError);
+
+    // A whitespace-only search is a search for nothing, so it is dropped rather
+    // than passed down to match nothing.
+    const blank = decodeTemplateQuery({ query: { type: "template.list", search: "   " } });
+    assert.equal(
+      blank.query.type === "template.list" ? blank.query.search : "unset",
+      undefined
+    );
   });
 });
 
@@ -892,7 +1439,7 @@ test("Templates updates a template through one gated command", async (t) => {
   });
 
   await t.test("a stale expectedRevision conflicts and writes nothing", async () => {
-    const { templates, adapter, store } = createFixture();
+    const { templates, resource, store } = createFixture();
     const templateId = await registerFor(templates, "req-1", { name: "Draft" });
     await templates.command({
       requestId: "req-2",
@@ -911,12 +1458,12 @@ test("Templates updates a template through one gated command", async (t) => {
     );
     assert.equal(store.get(templateId)?.name, "Second");
     assert.equal(store.get(templateId)?.revision, 2);
-    // The conflict is raised before the adapter runs, so no content was edited.
-    assert.equal(adapter.updateCalls().length, 0);
+    // The conflict is raised before the resource runs, so no content was edited.
+    assert.equal(resource.submitCalls().length, 0);
   });
 
-  await t.test("resourceOperations reach the adapter with the template's own ID", async () => {
-    const { templates, adapter } = createFixture();
+  await t.test("resourceOperations reach submit, addressed by the backing resource's ID", async () => {
+    const { templates, resource, store } = createFixture();
     const templateId = await registerFor(templates, "req-1");
     await templates.command({
       requestId: "req-2",
@@ -928,27 +1475,57 @@ test("Templates updates a template through one gated command", async (t) => {
         resourceOperations: [{ type: "block.insert", blockId: "b-1" }]
       }
     });
-    const call = adapter.updateCalls()[0];
-    assert.equal(call.templateId, templateId);
+    const call = resource.submitCalls()[0];
+    // Not the template ID: the resource knows its own row and nothing else.
+    assert.equal(call.resourceId, store.get(templateId)?.resourceId);
+    assert.notEqual(call.resourceId, templateId);
     assert.deepEqual(call.operations, [{ type: "block.insert", blockId: "b-1" }]);
     assert.equal(call.idempotencyKey, "templates:update:req-2");
   });
 
-  await t.test("a purely-catalog update does not disturb the backing resource", async () => {
-    const { templates, adapter } = createFixture();
+  await t.test("changed bindings go to applyBindings, before any content edit", async () => {
+    const { templates, resource, store } = createFixture();
     const templateId = await registerFor(templates, "req-1");
+    resource.calls.length = 0;
+
+    await templates.command({
+      requestId: "req-2",
+      origin: "user",
+      command: {
+        type: "template.update",
+        templateId,
+        expectedRevision: 1,
+        contextBindings: { Region: { description: "which market" } },
+        resourceOperations: [{ type: "block.insert" }]
+      }
+    });
+
+    // Bindings first, so a content edit referencing a freshly bound variable
+    // sees it. Two calls, because they are two different statements about the
+    // template — one about its parameters, one about its content.
+    assert.deepEqual(resource.calls.map((call) => call.method), ["applyBindings", "submit"]);
+    assert.deepEqual(resource.bindingsCalls()[0].contextBindings, {
+      Region: { description: "which market" }
+    });
+    assert.equal(resource.bindingsCalls()[0].resourceId, store.get(templateId)?.resourceId);
+  });
+
+  await t.test("a purely-catalog update does not disturb the backing resource", async () => {
+    const { templates, resource } = createFixture();
+    const templateId = await registerFor(templates, "req-1");
+    resource.calls.length = 0;
     await templates.command({
       requestId: "req-2",
       origin: "user",
       command: { type: "template.update", templateId, expectedRevision: 1, description: "blurb" }
     });
-    assert.equal(adapter.updateCalls().length, 0);
+    assert.deepEqual(resource.calls, []);
   });
 
-  await t.test("an adapter failure leaves the catalog untouched and retryable", async () => {
-    const { templates, store, adapter } = createFixture();
+  await t.test("a resource failure leaves the catalog untouched and retryable", async () => {
+    const { templates, store, resource } = createFixture();
     const templateId = await registerFor(templates, "req-1", { name: "Draft" });
-    adapter.failNext = true;
+    resource.failNext = true;
 
     const update = {
       requestId: "req-2",
@@ -971,8 +1548,8 @@ test("Templates updates a template through one gated command", async (t) => {
     assert.equal(retried.type === "template.updated" && retried.template.name, "Final");
   });
 
-  await t.test("an exact replay returns the original result without re-calling the adapter", async () => {
-    const { templates, adapter } = createFixture();
+  await t.test("an exact replay returns the original result without re-calling the resource", async () => {
+    const { templates, resource } = createFixture();
     const templateId = await registerFor(templates, "req-1");
     const update = {
       requestId: "req-2",
@@ -988,7 +1565,7 @@ test("Templates updates a template through one gated command", async (t) => {
     const first = await templates.command(update);
     const replay = await templates.command(update);
     assert.deepEqual(replay, first);
-    assert.equal(adapter.updateCalls().length, 1);
+    assert.equal(resource.submitCalls().length, 1);
   });
 
   await t.test("renaming onto a taken name conflicts and writes nothing", async () => {
@@ -1089,9 +1666,9 @@ test("Templates updates a template through one gated command", async (t) => {
 // ─── Reading a template ───────────────────────────────────────────────────────
 
 test("Templates serves the backing content its owning capability seals away", async (t) => {
-  await t.test("template.load returns the record and the adapter's content verbatim", async () => {
-    const { templates, adapter } = createFixture();
-    adapter.content = { representationVersion: 2, rows: ["opaque to Templates"] };
+  await t.test("template.load returns the record and the resource's content verbatim", async () => {
+    const { templates, resource, store } = createFixture();
+    resource.content = { rows: ["opaque to Templates"] };
     const templateId = await registerFor(templates, "req-1", { name: "Draft" });
 
     const loaded = await templates.query({ query: { type: "template.load", templateId } });
@@ -1099,17 +1676,20 @@ test("Templates serves the backing content its owning capability seals away", as
     assert.equal(loaded.type === "template.content" ? loaded.template.name : "", "Draft");
     assert.deepEqual(
       loaded.type === "template.content" ? loaded.content : undefined,
-      { representationVersion: 2, rows: ["opaque to Templates"] }
+      { rows: ["opaque to Templates"] }
     );
-    assert.deepEqual(adapter.readCalls(), [{ method: "readTemplateCopy", templateId }]);
+    // Addressed by the resource's own ID, and handed back unread.
+    assert.deepEqual(resource.loadCalls(), [
+      { method: "load", resourceId: store.get(templateId)?.resourceId }
+    ]);
   });
 
-  await t.test("template.get never calls the adapter, so listing stays cheap", async () => {
-    const { templates, adapter } = createFixture();
+  await t.test("template.get never calls the resource, so listing stays cheap", async () => {
+    const { templates, resource } = createFixture();
     const templateId = await registerFor(templates, "req-1");
     await templates.query({ query: { type: "template.get", templateId } });
     await templates.query({ query: { type: "template.list" } });
-    assert.equal(adapter.readCalls().length, 0);
+    assert.equal(resource.loadCalls().length, 0);
   });
 
   await t.test("loading an unknown or deleted template is not found", async () => {
@@ -1130,11 +1710,11 @@ test("Templates serves the backing content its owning capability seals away", as
     );
   });
 
-  await t.test("loading a kind with no adapter is unsupported, not empty content", async () => {
-    const { templates, unregisterAdapter } = createFixture();
+  await t.test("loading a kind with no resource is unsupported, not empty content", async () => {
+    const { templates, unregisterResource } = createFixture();
     const templateId = await registerFor(templates, "req-1");
     // The catalog row stays; only the way to its content goes away.
-    unregisterAdapter();
+    unregisterResource();
     await assert.rejects(
       () => templates.query({ query: { type: "template.load", templateId } }),
       TemplateUnsupportedKindError
@@ -1233,9 +1813,9 @@ test("Templates logs every query and a failed command", async (t) => {
     );
   });
 
-  await t.test("a failing adapter call logs templates.command.failed and rethrows", async () => {
-    const { templates, adapter, logger } = createFixture();
-    adapter.failNext = true;
+  await t.test("a failing resource call logs templates.command.failed and rethrows", async () => {
+    const { templates, resource, logger } = createFixture();
+    resource.failNext = true;
 
     await assert.rejects(() => templates.command(registerCommand("req-1")));
 
@@ -1255,7 +1835,8 @@ function decodeContextBindingsFromWire(value: unknown): TemplateContextBindings 
     origin: "user",
     command: {
       type: "template.register",
-      source: { kind: "document", resourceId: "doc-1" },
+      kind: "document",
+        resourceId: "doc-1",
       name: "probe-template",
       ...(value !== undefined ? { contextBindings: value } : {})
     }
@@ -1323,7 +1904,8 @@ test("Templates decodes commands and queries strictly", async (t) => {
       origin: "user",
       command: {
         type: "template.register",
-        source: { kind: "document", resourceId: "doc-1" },
+        kind: "document",
+        resourceId: "doc-1",
         name: "a template"
       }
     });
@@ -1339,7 +1921,8 @@ test("Templates decodes commands and queries strictly", async (t) => {
       origin: "user",
       command: {
         type: "template.register",
-        source: { kind: "document", resourceId: "doc-1" },
+        kind: "document",
+        resourceId: "doc-1",
         name: "a template",
         contextBindings: { Topic: {} }
       }
@@ -1357,7 +1940,8 @@ test("Templates decodes commands and queries strictly", async (t) => {
         origin: "user",
         command: {
           type: "template.register",
-          source: { kind: "document", resourceId: "doc-1" },
+          kind: "document",
+        resourceId: "doc-1",
           name: "a template",
           contextBindings
         }
@@ -1406,8 +1990,8 @@ test("Templates records accepted registry changes in a local transaction outbox"
   });
 
   await t.test("a rejected command and an exact retry write no transaction", async () => {
-    const { templates, store, adapter } = createFixture();
-    adapter.failNext = true;
+    const { templates, store, resource } = createFixture();
+    resource.failNext = true;
     await assert.rejects(() => templates.command(registerCommand("req-1")));
     assert.equal(store.listUnpublishedTransactions().length, 0);
 
@@ -1416,21 +2000,22 @@ test("Templates records accepted registry changes in a local transaction outbox"
     assert.equal(store.listUnpublishedTransactions().length, 1);
   });
 
-  await t.test("a crash between the catalog commit and claim completion writes one transaction", async () => {
-    // The dangerous window: markReady has committed the catalog row and its
-    // transaction, but completeClaim has not run. The claim stays pending, so an
-    // identical retry re-runs the whole command against an already-ready
-    // record. Source transaction IDs derive from the request, so
-    // the second pass must not append duplicate history for one registration.
-    let failCompleteClaim = true;
-    const { templates, store } = createFixture({
+  await t.test("the catalog row, its receipt, and its transaction commit together", async () => {
+    // The window that used to exist: the catalog row committed while the record
+    // of having done so did not, so a retry re-ran the whole command and then
+    // collided with the name it had written itself. create() takes all three
+    // writes in one SQLite transaction, so a crash after it is fully replayable
+    // and a crash during it leaves nothing.
+    let crashAfterCreate = true;
+    const { templates, store, resource } = createFixture({
       wrapStore: (real) =>
         new Proxy(real, {
           get(target, property, receiver) {
-            if (property === "completeClaim" && failCompleteClaim) {
-              return () => {
-                failCompleteClaim = false;
-                throw new Error("crash after commit, before claim completion");
+            if (property === "create" && crashAfterCreate) {
+              return (commit: Parameters<TemplateStore["create"]>[0]) => {
+                crashAfterCreate = false;
+                target.create(commit);
+                throw new Error("crash after commit, before the caller is answered");
               };
             }
             return Reflect.get(target, property, receiver);
@@ -1439,18 +2024,42 @@ test("Templates records accepted registry changes in a local transaction outbox"
     });
 
     await assert.rejects(() => templates.command(registerCommand("req-1")));
-    assert.equal(store.list().length, 1, "the catalog row committed before the crash");
+    assert.equal(store.list().items.length, 1, "the catalog row committed");
+    assert.equal(store.getReceipt("req-1")?.commandType, "template.register",
+      "and so did its receipt, in the same transaction");
     assert.equal(store.listUnpublishedTransactions().length, 1);
 
-    // Same request, resumed.
+    // Same request. The receipt is what makes this a replay rather than a re-run.
     const resumed = await templates.command(registerCommand("req-1"));
     assert.equal(resumed.type, "template.registered");
+    assert.equal(resource.duplicateCalls().length, 1, "no second backing copy");
+    assert.equal(store.list().items.length, 1, "no duplicate catalog row");
     assert.equal(
       store.listUnpublishedTransactions().length,
       1,
       "one source transaction per request, not one per attempt"
     );
-    assert.equal(store.list().length, 1, "no duplicate catalog row");
+  });
+
+  await t.test("a failed local commit leaves neither row nor receipt", async () => {
+    const { templates, store } = createFixture({
+      wrapStore: (real) =>
+        new Proxy(real, {
+          get(target, property, receiver) {
+            if (property === "create") {
+              return () => {
+                throw new Error("disk full");
+              };
+            }
+            return Reflect.get(target, property, receiver);
+          }
+        })
+    });
+
+    await assert.rejects(() => templates.command(registerCommand("req-1")));
+    assert.equal(store.list().items.length, 0);
+    assert.equal(store.getReceipt("req-1"), undefined);
+    assert.equal(store.listUnpublishedTransactions().length, 0);
   });
 
   await t.test("a publisher failure leaves the transaction for the next drain", async () => {
@@ -1501,7 +2110,9 @@ test("Templates initializes only the fresh current/history and transaction schem
   assert.ok(tableNames.includes(tables.templates));
   assert.ok(tableNames.includes(tables.history));
   assert.ok(tableNames.includes(tables.transactionOutbox));
+  assert.ok(tableNames.includes(tables.commandReceipts));
   assert.equal(tableNames.some((name) => name.endsWith("_activity_outbox")), false);
+  assert.equal(tableNames.some((name) => name.endsWith("_command_claims")), false);
 
   const columns = (
     db.prepare(`PRAGMA table_info(${tables.transactionOutbox})`).all() as Array<{ name: string }>
@@ -1509,6 +2120,17 @@ test("Templates initializes only the fresh current/history and transaction schem
   assert.ok(columns.includes("source_transaction_id"));
   assert.ok(columns.includes("transaction_kind"));
   assert.equal(columns.includes("fact_id"), false);
+
+  // No reservation state on the record, and no CHECK tying the backing
+  // resource's ID to the catalog ID — the owning capability names its own row.
+  const templateColumns = (
+    db.prepare(`PRAGMA table_info(${tables.templates})`).all() as Array<{ name: string }>
+  ).map(({ name }) => name);
+  assert.equal(templateColumns.includes("state"), false);
+  const templateDdl = (db.prepare(
+    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?"
+  ).get(tables.templates) as { sql: string }).sql;
+  assert.equal(templateDdl.includes("resource_id = id"), false);
   db.close();
 });
 

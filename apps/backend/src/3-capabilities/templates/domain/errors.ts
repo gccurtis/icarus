@@ -21,7 +21,7 @@ export class TemplateAlreadyExistsError extends Error {
 
 export class TemplateUnsupportedKindError extends Error {
   constructor(public readonly kind: string) {
-    super(`No template adapter is registered for resource kind '${kind}'`);
+    super(`No resource runtime is registered for kind '${kind}'`);
     this.name = "TemplateUnsupportedKindError";
   }
 }
@@ -41,6 +41,35 @@ export class TemplateNameConflictError extends Error {
   }
 }
 
+/**
+ * Instantiation must name exactly the parameters the template declares.
+ *
+ * Missing keys are rejected because a partial instantiation would produce a
+ * resource with an unbound variable — a prompt grounded on nothing, which fails
+ * later and further from the cause. Unexpected keys are rejected for the
+ * converse reason: a variable the template did not declare is not a parameter,
+ * it is baked-in content, and binding it would edit the instance rather than
+ * configure it.
+ */
+export class TemplateBindingMismatchError extends Error {
+  constructor(
+    public readonly templateId: string,
+    public readonly missing: readonly string[],
+    public readonly unexpected: readonly string[]
+  ) {
+    super(
+      [
+        `Template '${templateId}' bindings do not match its declaration`,
+        missing.length > 0 ? `missing: ${missing.join(", ")}` : "",
+        unexpected.length > 0 ? `not declared: ${unexpected.join(", ")}` : ""
+      ]
+        .filter((part) => part.length > 0)
+        .join("; ")
+    );
+    this.name = "TemplateBindingMismatchError";
+  }
+}
+
 export class StaleTemplateRevisionError extends Error {
   constructor(
     public readonly templateId: string,
@@ -51,6 +80,13 @@ export class StaleTemplateRevisionError extends Error {
       `Template '${templateId}' is at revision ${actualRevision}, not ${expectedRevision}`
     );
     this.name = "StaleTemplateRevisionError";
+  }
+}
+
+export class InvalidTemplateCursorError extends Error {
+  constructor() {
+    super("Template list cursor is not valid");
+    this.name = "InvalidTemplateCursorError";
   }
 }
 
