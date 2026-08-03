@@ -20,9 +20,10 @@ export interface StructuredAnalyticStore {
    * Every live analytic, ordered by (updated_at DESC, id ASC).
    *
    * Unpaginated, unlike Templates and Comments. A project holds tens of
-   * analytics, not thousands, and there is no catalog cap to make that a
-   * guarantee — so if this ever needs a keyset cursor, note that the mixed sort
-   * directions mean it needs a new index, not just new code.
+   * analytics, not thousands — and with no catalog cap that is a expectation
+   * rather than a guarantee, so a keyset cursor may be needed one day. The
+   * schema's mixed-direction index is already in exactly that cursor's tuple
+   * order, so adding one is new code, not a migration.
    */
   list(): StructuredAnalytic[];
 
@@ -86,11 +87,25 @@ export interface StructuredAnalyticStore {
    *
    * Throws `ResourceNotDeletedError` while current state exists and
    * `ResourceHistoryNotFoundError` when there is nothing purgeable. Both are the
-   * shared classes, which every endpoint mapper in the repo already handles.
+   * shared classes, which every mapper fronting a history-owning store already
+   * turns into 409 `not_deleted` and 404 `not_found` — ten of them today. This
+   * capability's own mapper still has to be written; using the shared classes
+   * is what will make that mapper a copy rather than a design.
    */
   purge(id: string): void;
 
-  /** Drops history rows older than `cutoff`, keeping every live resource. */
+  /**
+   * Drops history rows older than `cutoff` — for live and deleted analytics
+   * alike. History is a bounded window, not an archive.
+   *
+   * Exactly one thing is protected: a deleted analytic's terminal tombstone,
+   * so it stays discoverable as deleted and therefore stays purgeable. And one
+   * thing is swept *extra*: the stale tombstone of an id that is live again.
+   *
+   * ("Keeping every live resource" is what an earlier version of this comment
+   * said. It is the inverse of what happens, and of what the liveness callback
+   * is for.)
+   */
   pruneHistory(cutoff: string): number;
 
   /** Ids whose tombstone predates `cutoff`, for the retention sweep to purge. */

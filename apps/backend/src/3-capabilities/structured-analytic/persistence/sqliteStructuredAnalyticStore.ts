@@ -8,6 +8,7 @@ import {
   insertHistoryDeletion,
   insertHistorySnapshot,
   listExpiredDeletedResources,
+  nextRevisionAfterHistory,
   pruneHistoryBefore,
   purgeResourceHistory
 } from "#utils/persistence/resourceHistory.js";
@@ -39,11 +40,13 @@ interface SQLiteRow {
 }
 
 /**
- * Thrown when a stored definition will not parse.
+ * Thrown when a stored definition will not parse, or is not text at all.
  *
- * No other store in this backend handles this case — a corrupt JSON column
- * propagates a bare `SyntaxError` naming neither the row nor the column. That
- * is not a convention worth copying, so this one says what it could not read.
+ * For the *wrong type* case there is prior art: Document and Slides both reject
+ * a non-string JSON column. For a *corrupt string*, nothing does — Templates,
+ * Persona, Slides, and Investigation all call bare `JSON.parse`, so a damaged
+ * column throws a `SyntaxError` naming neither the row nor the column. This
+ * says what it could not read, in both cases.
  */
 export class CorruptAnalyticRowError extends Error {
   constructor(
@@ -52,6 +55,31 @@ export class CorruptAnalyticRowError extends Error {
   ) {
     super(`Structured Analytic ${analyticId} has an unreadable definition: ${reason}`);
     this.name = "CorruptAnalyticRowError";
+  }
+}
+
+/**
+ * An id whose history has not been purged cannot be used again.
+ *
+ * History is keyed by (kind, id, revision) and a new analytic starts at
+ * revision 1, so re-using an id whose old snapshot@1 still exists collides on
+ * the *next* update — which then rolls back forever, silently discarding every
+ * edit, while `latestSnapshot` reports the dead analytic's final state as this
+ * one's. Refusing here turns a permanent, invisible wedge into an immediate,
+ * explicable fault.
+ *
+ * Purging the old history frees the id, which is the intended way back.
+ */
+export class AnalyticIdRetiredError extends Error {
+  constructor(
+    public readonly analyticId: string,
+    public readonly survivingRevisions: number
+  ) {
+    super(
+      `Structured Analytic id ${analyticId} still has history through revision`
+      + ` ${survivingRevisions}; purge it before reusing the id`
+    );
+    this.name = "AnalyticIdRetiredError";
   }
 }
 
@@ -121,6 +149,25 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
   // ── Writes ──────────────────────────────────────────────────────────────
 
   insert(analytic: StructuredAnalytic): void {
+    // An id is retired until its history is purged. `nextRevisionAfterHistory`
+    // returns 1 exactly when no history exists, so anything else means this id
+    // has a past — and a new record at revision 1 would collide with it.
+    //
+    // Connector and General Files instead resume numbering from history. That
+    // avoids the collision but not the other half of the problem: until the new
+    // analytic is first updated, `latestSnapshot` still returns the *previous*
+    // resource's final state, which the port promises is `undefined`. Retiring
+    // the id closes both.
+    const nextFree = nextRevisionAfterHistory(
+      this.db,
+      this.tables.history,
+      RESOURCE_KIND,
+      analytic.id
+    );
+    if (nextFree !== 1) {
+      throw new AnalyticIdRetiredError(analytic.id, nextFree - 1);
+    }
+
     this.db.prepare(
       `INSERT INTO ${this.tables.analytics}
          (id, title, description, definition_json, revision,
@@ -191,7 +238,14 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
         return result.changes === 1;
       }
     );
-    return run(analytic, expectedRevision);
+    // IMMEDIATE, not the default DEFERRED. A deferred transaction begins as a
+    // reader at the guard SELECT and only tries to become a writer at the
+    // UPDATE; in WAL mode, if another connection commits in between, that
+    // upgrade fails with SQLITE_BUSY_SNAPSHOT and `busy_timeout` does not
+    // apply. The caller would get a raw SqliteError in exactly the situation
+    // the boolean exists to describe. Derived Outputs takes the write lock up
+    // front for the same reason.
+    return run.immediate(analytic, expectedRevision);
   }
 
   delete(id: string, expectedRevision: number, deletedAt: string): boolean {
@@ -223,7 +277,7 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
       ).run(target, expected);
       return result.changes === 1;
     });
-    return run(id, expectedRevision, deletedAt);
+    return run.immediate(id, expectedRevision, deletedAt);
   }
 
   /**
@@ -256,10 +310,16 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
   }
 
   purge(id: string): void {
-    // Load-bearing, not defensive. `purgeResourceHistory` never reads the
-    // current table, so it cannot tell a live analytic from a deleted one: on a
-    // live analytic whose history happens to end in a tombstone it would delete
-    // that history and return true.
+    // `purgeResourceHistory` never reads the current table, so it cannot tell a
+    // live analytic from a deleted one: given a live analytic whose history
+    // ended in a tombstone it would delete that history and return true.
+    //
+    // Retiring reused ids in `insert` makes that state unreachable, so this
+    // guard is no longer the only thing standing between a live analytic and
+    // its history. It still earns its place: without it, purging a live
+    // analytic that has ordinary snapshot history reports
+    // `ResourceHistoryNotFoundError` — a 404 saying nothing is there — instead
+    // of `ResourceNotDeletedError`, the 409 that says delete it first.
     if (this.get(id)) throw new ResourceNotDeletedError(RESOURCE_KIND, id);
     if (!purgeResourceHistory(this.db, this.tables.history, RESOURCE_KIND, id)) {
       throw new ResourceHistoryNotFoundError(RESOURCE_KIND, id);
@@ -267,6 +327,11 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
   }
 
   pruneHistory(cutoff: string): number {
+    // The callback drives the helper's second phase, which sweeps the retained
+    // tombstone of an id that is live again. Retiring reused ids makes that
+    // state unreachable here, so this is belt-and-braces — one indexed lookup
+    // per expired resource, and the phase it guards silently becomes correct
+    // rather than dead if that invariant ever moves.
     return pruneHistoryBefore(
       this.db,
       this.tables.history,

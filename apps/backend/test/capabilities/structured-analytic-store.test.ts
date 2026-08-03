@@ -2,17 +2,19 @@ import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
+import test, { after } from "node:test";
 import Database from "better-sqlite3";
 import {
   ResourceHistoryNotFoundError,
-  ResourceNotDeletedError
+  ResourceNotDeletedError,
+  getResourceHistory
 } from "../../src/0-utils/persistence/resourceHistory.js";
 import type {
   AnalyticDefinition,
   StructuredAnalytic
 } from "../../src/3-capabilities/structured-analytic/domain/model.js";
 import {
+  AnalyticIdRetiredError,
   CorruptAnalyticRowError,
   SQLiteStructuredAnalyticStore
 } from "../../src/3-capabilities/structured-analytic/persistence/sqliteStructuredAnalyticStore.js";
@@ -26,8 +28,23 @@ const timestamp = (offset: number): string =>
 const storePath = (): string =>
   join(mkdtempSync(join(tmpdir(), "icarus-sa-store-")), "analytics.db");
 
-const store = (): SQLiteStructuredAnalyticStore =>
-  new SQLiteStructuredAnalyticStore(storePath(), PROJECT);
+/**
+ * Every store this file opens, closed once at the end. Without it the run
+ * leaves a connection and a temp directory open per test — harmless at this
+ * size and exactly the kind of thing that stops being harmless quietly.
+ */
+const opened: SQLiteStructuredAnalyticStore[] = [];
+after(() => {
+  for (const db of opened) db.close();
+});
+
+const storeAt = (path: string): SQLiteStructuredAnalyticStore => {
+  const db = new SQLiteStructuredAnalyticStore(path, PROJECT);
+  opened.push(db);
+  return db;
+};
+
+const store = (): SQLiteStructuredAnalyticStore => storeAt(storePath());
 
 const definition = (field = "region"): AnalyticDefinition => ({
   inputs: [{ name: "Orders" }],
@@ -182,7 +199,8 @@ test("update is a compare-and-swap that archives what it replaces", async (t) =>
   });
 
   await t.test("history accumulates one snapshot per update", () => {
-    const db = store();
+    const path = storePath();
+    const db = storeAt(path);
     let current = analytic();
     db.insert(current);
     for (let i = 0; i < 3; i++) {
@@ -192,6 +210,15 @@ test("update is a compare-and-swap that archives what it replaces", async (t) =>
     }
     assert.equal(db.get("an-1")?.revision, 4);
     assert.equal(db.latestSnapshot("an-1")?.revision, 3, "the last archived is the last replaced");
+
+    // The count, not just the newest — otherwise this passes whether the store
+    // wrote one history row or three, which is the thing the title claims.
+    const tables = createStructuredAnalyticTableNames(PROJECT);
+    const history = getResourceHistory<StructuredAnalytic>(
+      new Database(path), tables.history, "structured-analytic", "an-1"
+    );
+    assert.deepEqual(history.map(record => record.revision), [1, 2, 3]);
+    assert.deepEqual(history.map(record => record.recordType), ["snapshot", "snapshot", "snapshot"]);
   });
 });
 
@@ -226,10 +253,61 @@ test("delete archives a final snapshot and a tombstone, then removes current sta
   });
 });
 
+// An id whose history survives cannot be used again. Without this, a re-insert
+// succeeds, `latestSnapshot` reports the dead analytic's final state as the new
+// one's, and the next update collides on the history primary key — rolling back
+// every edit from then on, permanently and silently.
+test("an id is retired until its history is purged", async (t) => {
+  await t.test("re-inserting after a delete is refused", () => {
+    const db = store();
+    db.insert(analytic());
+    db.delete("an-1", 1, timestamp(60));
+
+    assert.throws(
+      () => db.insert(analytic()),
+      (error: unknown) => {
+        assert.ok(error instanceof AnalyticIdRetiredError);
+        assert.equal(error.analyticId, "an-1");
+        assert.equal(error.survivingRevisions, 2, "snapshot@1 and tombstone@2");
+        return true;
+      }
+    );
+  });
+
+  await t.test("purging first frees the id", () => {
+    const db = store();
+    db.insert(analytic());
+    db.delete("an-1", 1, timestamp(60));
+    db.purge("an-1");
+
+    const reborn = analytic({ title: "Second life" });
+    assert.doesNotThrow(() => db.insert(reborn));
+    assert.deepEqual(db.get("an-1"), reborn);
+    assert.equal(db.latestSnapshot("an-1"), undefined, "no inherited history");
+
+    // And the update that used to collide now works.
+    assert.equal(db.update(next(reborn, { title: "Edited" }), 1), true);
+    assert.equal(db.get("an-1")?.revision, 2);
+  });
+
+  await t.test("an id with update history is retired too, not just a deleted one", () => {
+    // Reachable without a delete: history exists from the first update onward.
+    const db = store();
+    const first = analytic();
+    db.insert(first);
+    db.update(next(first), 1);
+    db.delete("an-1", 2, timestamp(60));
+
+    assert.throws(() => db.insert(analytic()), AnalyticIdRetiredError);
+  });
+});
+
 test("purge is legal only after delete", async (t) => {
-  // The shared helper cannot enforce this: it never reads the current table, so
-  // on a live analytic whose history ends in a tombstone it would delete that
-  // history and report success. The store's guard is what makes purge safe.
+  // The shared helper cannot enforce this: it never reads the current table.
+  // Retiring reused ids makes "live analytic whose history ends in a tombstone"
+  // unreachable, so this guard is now about returning the right error rather
+  // than about preventing loss — a 409 saying delete it first, not a 404 saying
+  // there is nothing here.
   await t.test("purging a live analytic refuses, and keeps its history", () => {
     const db = store();
     const first = analytic();
@@ -388,40 +466,69 @@ test("retention bounds the history window, and protects the tombstone", async (t
 
 // ─── Storage details worth pinning ────────────────────────────────────────────
 
-test("the definition column is TEXT, matching the history table's encoding", () => {
-  // A Buffer encoder would round-trip as a Uint8Array here and be accepted
-  // silently by SQLite's dynamic typing, then fail on read.
+test("both JSON columns are TEXT — that agreement is why TEXT was chosen", () => {
+  // A Buffer encoder would round-trip as a Uint8Array and be accepted silently
+  // by SQLite's dynamic typing, then fail on read. Checking only the analytics
+  // table would leave the half of the claim that motivated it unverified.
   const path = storePath();
-  const db = new SQLiteStructuredAnalyticStore(path, PROJECT);
-  db.insert(analytic());
+  const db = storeAt(path);
+  const first = analytic();
+  db.insert(first);
+  db.update(next(first, { title: "Edited" }), 1);
 
   const tables = createStructuredAnalyticTableNames(PROJECT);
-  const raw = new Database(path)
+  const connection = new Database(path);
+
+  const current = connection
     .prepare(`SELECT typeof(definition_json) AS kind, definition_json AS body FROM ${tables.analytics}`)
     .get() as { kind: string; body: unknown };
+  assert.equal(current.kind, "text");
+  assert.deepEqual(JSON.parse(current.body as string), definition());
 
-  assert.equal(raw.kind, "text");
-  assert.deepEqual(JSON.parse(raw.body as string), definition());
+  const archived = connection
+    .prepare(`SELECT typeof(snapshot_json) AS kind FROM ${tables.history} WHERE snapshot_json IS NOT NULL`)
+    .get() as { kind: string };
+  assert.equal(archived.kind, "text", "the history table's encoding is the one being matched");
 });
 
-test("an unreadable definition names the row rather than throwing a bare SyntaxError", () => {
-  const path = storePath();
-  const db = new SQLiteStructuredAnalyticStore(path, PROJECT);
-  db.insert(analytic());
+test("an unreadable definition names the row rather than throwing a bare SyntaxError", async (t) => {
+  const corrupted = (value: unknown): SQLiteStructuredAnalyticStore => {
+    const path = storePath();
+    const db = storeAt(path);
+    db.insert(analytic());
+    const tables = createStructuredAnalyticTableNames(PROJECT);
+    new Database(path)
+      .prepare(`UPDATE ${tables.analytics} SET definition_json = ? WHERE id = ?`)
+      .run(value, "an-1");
+    return db;
+  };
 
-  const tables = createStructuredAnalyticTableNames(PROJECT);
-  new Database(path)
-    .prepare(`UPDATE ${tables.analytics} SET definition_json = ? WHERE id = ?`)
-    .run("{ not json", "an-1");
+  await t.test("a damaged string reports which row it was", () => {
+    const db = corrupted("{ not json");
+    assert.throws(
+      () => db.get("an-1"),
+      (error: unknown) => {
+        assert.ok(error instanceof CorruptAnalyticRowError);
+        assert.equal(error.analyticId, "an-1");
+        assert.match(error.reason, /JSON|token|Unexpected/i);
+        return true;
+      }
+    );
+  });
 
-  assert.throws(
-    () => db.get("an-1"),
-    (error: unknown) => {
-      assert.ok(error instanceof CorruptAnalyticRowError);
-      assert.equal(error.analyticId, "an-1");
-      return true;
-    }
-  );
+  await t.test("a value written with a BLOB encoder is caught, not parsed", () => {
+    // The hazard TEXT was chosen to avoid: SQLite stores a Buffer in a TEXT
+    // column unchanged and hands it back as a Uint8Array.
+    const db = corrupted(Buffer.from(JSON.stringify(definition()), "utf8"));
+    assert.throws(
+      () => db.get("an-1"),
+      (error: unknown) => {
+        assert.ok(error instanceof CorruptAnalyticRowError);
+        assert.match(error.reason, /expected TEXT/);
+        return true;
+      }
+    );
+  });
 });
 
 test("two projects do not share a table", () => {

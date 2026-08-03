@@ -87,7 +87,7 @@ one HTTP smoke flow. `typecheck` is clean and the full suite is green.
 
 ---
 
-## Phase 1 — Formula relational builtins
+## Phase 1 — Formula relational builtins ✅ DONE
 
 ✅ **DONE 2026-08-02.** All eight builtins, backtick-quoted names, and the
 display annotation shipped in `0-platform/formula/`, with 76 tests in
@@ -169,7 +169,7 @@ independently.**
 
 ---
 
-## Phase 2 — Domain model and validation
+## Phase 2 — Domain model and validation ✅ DONE
 
 ✅ **DONE 2026-08-02.** `domain/{model,errors,validation}.ts` plus 62 tests in
 `structured-analytic-domain.test.ts`. Typecheck clean, full suite 466 pass.
@@ -343,8 +343,15 @@ plus `pruneHistory` and `purgeExpired`.
   evaluation, so it cannot fail on data.
 - **copy** — run a full pull, then `declareTable` with the resolved rows.
 
-Attribution from `config.userId`. Logs carry counts, durations, and identifiers
-only — never titles, names, field names, filter values, or rows.
+Attribution from `config.userId`.
+
+**Log content, not just shape.** Main is a development build, so every service
+record carries what actually happened: titles, input names, the definition, the
+compiled source, resolved revisions, and the rejected payload on a failure.
+Records are labelled `{ detail: "content" }` so a production build can drop them
+by configuration rather than by an audit of every call site — that mechanism
+landed in `ef6d462`. Do not reintroduce a shape-only rule here; an earlier draft
+of this line said the opposite and is superseded.
 
 ---
 
