@@ -7,6 +7,7 @@
 // The complementary half — does this evaluate against the data as it is right
 // now — happens during a pull and fails differently on purpose.
 
+import type { Logger } from "#platform/observability/logger.js";
 import { AnalyticValidationError } from "./errors.js";
 import {
   ANALYTIC_AGGREGATIONS,
@@ -223,7 +224,73 @@ const validateDisplayContract = (
   }
 };
 
+/**
+ * The shape of a definition, with no content in it. This is what gets logged and
+ * what a command event carries: counts and enums, never a name, title, field, or
+ * filter value. It is also the cheapest useful description of an analytic when
+ * reading a log after the fact.
+ */
+export interface AnalyticDefinitionShape {
+  readonly inputCount: number;
+  readonly joinCount: number;
+  readonly rowPlacementCount: number;
+  readonly columnPlacementCount: number;
+  readonly aggregatedPlacementCount: number;
+  readonly filterCount: number;
+  readonly sortCount: number;
+  readonly hasLimit: boolean;
+  readonly displayKind: string;
+  readonly selfJoinCount: number;
+  readonly inputsWithRecordedEntryId: number;
+}
+
+export const describeDefinition = (
+  definition: AnalyticDefinition
+): AnalyticDefinitionShape => {
+  const placements = [...definition.rows, ...definition.columns];
+  const names = definition.inputs.map(input => normalizeInputKey(input.name));
+  return {
+    inputCount: definition.inputs.length,
+    joinCount: definition.joins.length,
+    rowPlacementCount: definition.rows.length,
+    columnPlacementCount: definition.columns.length,
+    aggregatedPlacementCount: placements.filter(p => p.aggregation !== "none").length,
+    filterCount: definition.filters.length,
+    sortCount: definition.sorts.length,
+    hasLimit: definition.limit !== undefined,
+    displayKind: definition.display.kind,
+    selfJoinCount: names.length - new Set(names).size,
+    inputsWithRecordedEntryId: definition.inputs.filter(input => input.entryId !== undefined).length
+  };
+};
+
 export const validateAnalyticDefinition = (
+  value: unknown,
+  options: StructuredAnalyticOptions,
+  logger?: Logger
+): AnalyticDefinition => {
+  const startedAt = performance.now();
+  try {
+    const definition = validateDefinitionInternal(value, options);
+    logger?.debug("structured-analytic.definition.validated", {
+      ...describeDefinition(definition),
+      durationMs: Math.round(performance.now() - startedAt)
+    });
+    return definition;
+  } catch (error) {
+    // A rejection is an expected 400, not a fault — but it is worth seeing,
+    // because a client repeatedly failing the same rule is a real signal. The
+    // field is the rule that fired; the offending value is never logged.
+    logger?.warn("structured-analytic.definition.rejected", {
+      field: error instanceof AnalyticValidationError ? error.field : "unknown",
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      durationMs: Math.round(performance.now() - startedAt)
+    });
+    throw error;
+  }
+};
+
+const validateDefinitionInternal = (
   value: unknown,
   options: StructuredAnalyticOptions
 ): AnalyticDefinition => {
@@ -407,7 +474,7 @@ export const validateAnalyticDescription = (
   value: unknown,
   options: StructuredAnalyticOptions
 ): string | undefined =>
-  value === undefined ? undefined : boundedText(value, "description", options.maxTitleBytes);
+  value === undefined ? undefined : boundedText(value, "description", options.maxDescriptionBytes);
 
 export const validateAnalyticOptions = (options: StructuredAnalyticOptions): void => {
   for (const [name, value] of Object.entries(options)) {

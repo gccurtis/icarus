@@ -372,25 +372,33 @@ export interface AnalyticCheck {
 /**
  * Shape limits only — how big a recipe may be, not how big its data is. Data
  * size is Formula's business and is enforced by the evaluator.
+ *
+ * Structurally identical to `StructuredAnalyticConfig`, which is where the
+ * values come from at runtime; the capability keeps its own type so the domain
+ * does not depend on the config loader.
+ *
+ * There is deliberately no per-project catalog cap. That was removed from
+ * Templates and deferred to a global resource-quota policy.
  */
 export interface StructuredAnalyticOptions {
-  readonly maxAnalyticsPerProject: number;
   readonly maxInputs: number;
   readonly maxJoinKeys: number;
   readonly maxPlacements: number;
   readonly maxFilters: number;
   readonly maxSorts: number;
   readonly maxTitleBytes: number;
+  readonly maxDescriptionBytes: number;
   readonly maxNameBytes: number;
 }
 
+/** Test and fallback values. Production values come from configuration. */
 export const DEFAULT_STRUCTURED_ANALYTIC_OPTIONS: StructuredAnalyticOptions = {
-  maxAnalyticsPerProject: 500,
   maxInputs: 8,
   maxJoinKeys: 8,
   maxPlacements: 32,
   maxFilters: 32,
   maxSorts: 8,
   maxTitleBytes: 4_096,
+  maxDescriptionBytes: 4_096,
   maxNameBytes: 256
 };

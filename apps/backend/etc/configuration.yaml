@@ -201,6 +201,19 @@ document:
     maxTableRows: 1000
     maxTableColumns: 256
 
+# Structured Analytic shape limits — how big a saved recipe may be, not how big
+# its data is. Data size is enforced by Formula's own limits above, so nothing
+# here duplicates them. There is deliberately no per-project catalog cap.
+structuredAnalytic:
+  maxInputs: 8
+  maxJoinKeys: 8
+  maxPlacements: 32
+  maxFilters: 32
+  maxSorts: 8
+  maxTitleBytes: 4096
+  maxDescriptionBytes: 4096
+  maxNameBytes: 256
+
 # Resource revision-history retention. This does not prune Activity,
 # transaction outboxes, command receipts, or delegated claims.
 retention:

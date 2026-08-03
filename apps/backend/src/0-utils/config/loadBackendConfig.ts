@@ -76,6 +76,25 @@ export interface DerivedOutputConfig {
   maxToolRounds: number;
 }
 
+/**
+ * Shape limits for a saved analytic — how big a recipe may be, not how big its
+ * data is. Data size is Formula's business and is enforced by the evaluator, so
+ * nothing here duplicates `formula.max*`.
+ *
+ * There is deliberately no per-project catalog cap: that was removed from
+ * Templates and deferred to a global resource-quota policy.
+ */
+export interface StructuredAnalyticConfig {
+  maxInputs: number;
+  maxJoinKeys: number;
+  maxPlacements: number;
+  maxFilters: number;
+  maxSorts: number;
+  maxTitleBytes: number;
+  maxDescriptionBytes: number;
+  maxNameBytes: number;
+}
+
 export interface DocumentConfig {
   history: {
     retainedBaseCount: number;
@@ -124,6 +143,7 @@ export interface BackendConfig {
   context: ContextManagerConfig;
   derivedOutputs: DerivedOutputConfig;
   document: DocumentConfig;
+  structuredAnalytic: StructuredAnalyticConfig;
   retention: RetentionConfig;
   projectId: string;
   userId: string;
@@ -242,6 +262,16 @@ const DEFAULT_CONFIG: BackendConfig = {
       maxTableRows: 1000,
       maxTableColumns: 256
     }
+  },
+  structuredAnalytic: {
+    maxInputs: 8,
+    maxJoinKeys: 8,
+    maxPlacements: 32,
+    maxFilters: 32,
+    maxSorts: 8,
+    maxTitleBytes: 4096,
+    maxDescriptionBytes: 4096,
+    maxNameBytes: 256
   },
   retention: {
     revisionRetentionDays: 30,
@@ -399,6 +429,8 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     (parsed.derivedOutputs as Record<string, unknown> | undefined) ?? {};
   const document =
     (parsed.document as Record<string, unknown> | undefined) ?? {};
+  const structuredAnalytic =
+    (parsed.structuredAnalytic as Record<string, unknown> | undefined) ?? {};
   const retention =
     (parsed.retention as Record<string, unknown> | undefined) ?? {};
   const configuredOpenRouterApiKey = parseString(
@@ -499,6 +531,10 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     context: parseContextConfig(context, DEFAULT_CONFIG.context),
     derivedOutputs: parseDerivedOutputConfig(derivedOutputs, DEFAULT_CONFIG.derivedOutputs),
     document: parseDocumentConfig(document, DEFAULT_CONFIG.document),
+    structuredAnalytic: parseStructuredAnalyticConfig(
+      structuredAnalytic,
+      DEFAULT_CONFIG.structuredAnalytic
+    ),
     retention: parseRetentionConfig(retention, DEFAULT_CONFIG.retention)
   };
 };
@@ -607,6 +643,26 @@ function parseDocumentConfig(
         "document.limits.maxTableColumns"
       )
     }
+  };
+}
+
+function parseStructuredAnalyticConfig(
+  raw: Record<string, unknown>,
+  defaults: StructuredAnalyticConfig
+): StructuredAnalyticConfig {
+  return {
+    maxInputs: parseNumber(raw.maxInputs, defaults.maxInputs, "structuredAnalytic.maxInputs"),
+    maxJoinKeys: parseNumber(raw.maxJoinKeys, defaults.maxJoinKeys, "structuredAnalytic.maxJoinKeys"),
+    maxPlacements: parseNumber(raw.maxPlacements, defaults.maxPlacements, "structuredAnalytic.maxPlacements"),
+    maxFilters: parseNumber(raw.maxFilters, defaults.maxFilters, "structuredAnalytic.maxFilters"),
+    maxSorts: parseNumber(raw.maxSorts, defaults.maxSorts, "structuredAnalytic.maxSorts"),
+    maxTitleBytes: parseNumber(raw.maxTitleBytes, defaults.maxTitleBytes, "structuredAnalytic.maxTitleBytes"),
+    maxDescriptionBytes: parseNumber(
+      raw.maxDescriptionBytes,
+      defaults.maxDescriptionBytes,
+      "structuredAnalytic.maxDescriptionBytes"
+    ),
+    maxNameBytes: parseNumber(raw.maxNameBytes, defaults.maxNameBytes, "structuredAnalytic.maxNameBytes")
   };
 }
 

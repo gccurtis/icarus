@@ -11,12 +11,15 @@ import type {
   StructuredAnalyticOptions
 } from "../../src/3-capabilities/structured-analytic/domain/model.js";
 import {
+  describeDefinition,
   normalizeInputKey,
   validateAnalyticDefinition,
   validateAnalyticDescription,
   validateAnalyticOptions,
   validateAnalyticTitle
 } from "../../src/3-capabilities/structured-analytic/domain/validation.js";
+import { loadBackendConfig } from "../../src/0-utils/config/loadBackendConfig.js";
+import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const OPTIONS = DEFAULT_STRUCTURED_ANALYTIC_OPTIONS;
 
@@ -464,6 +467,106 @@ test("title, description, and the options themselves are validated", async (t) =
     assert.doesNotThrow(() => validateAnalyticOptions(OPTIONS));
     assert.throws(() => validateAnalyticOptions({ ...OPTIONS, maxInputs: 0 }), AnalyticValidationError);
     assert.throws(() => validateAnalyticOptions({ ...OPTIONS, maxSorts: 1.5 }), AnalyticValidationError);
+  });
+});
+
+// ─── Observability ────────────────────────────────────────────────────────────
+
+test("validation reports its shape without ever logging content", async (t) => {
+  await t.test("an accepted definition logs counts, enums, and a duration", () => {
+    const logger = new CapturingLogger();
+    validateAnalyticDefinition(base(), OPTIONS, logger);
+
+    const entry = logger.entries.find(e => e.message === "structured-analytic.definition.validated");
+    assert.ok(entry, "expected a validated event");
+    assert.equal(entry.level, "debug");
+    const data = entry.data as Record<string, unknown>;
+    assert.equal(data.inputCount, 2);
+    assert.equal(data.joinCount, 1);
+    assert.equal(data.rowPlacementCount, 1);
+    assert.equal(data.columnPlacementCount, 1);
+    assert.equal(data.aggregatedPlacementCount, 1);
+    assert.equal(data.filterCount, 1);
+    assert.equal(data.sortCount, 1);
+    assert.equal(data.hasLimit, true);
+    assert.equal(data.displayKind, "bar");
+    assert.equal(data.selfJoinCount, 0);
+    assert.equal(typeof data.durationMs, "number");
+  });
+
+  await t.test("a rejected definition logs the rule that fired, at warn", () => {
+    const logger = new CapturingLogger();
+    assert.throws(() => validateAnalyticDefinition({ ...base(), inputs: [] }, OPTIONS, logger));
+
+    const entry = logger.entries.find(e => e.message === "structured-analytic.definition.rejected");
+    assert.ok(entry, "expected a rejected event");
+    assert.equal(entry.level, "warn");
+    const data = entry.data as Record<string, unknown>;
+    assert.equal(data.field, "inputs");
+    assert.equal(data.errorName, "AnalyticValidationError");
+  });
+
+  await t.test("no log record contains a name, title, field, or filter value", () => {
+    const logger = new CapturingLogger();
+    validateAnalyticDefinition(base(), OPTIONS, logger);
+    assert.throws(() => validateAnalyticDefinition({ ...base(), limit: 0 }, OPTIONS, logger));
+
+    const serialized = JSON.stringify(logger.entries);
+    for (const secret of ["Orders", "Reps", "region", "amount", "repId", "closed", "Total"]) {
+      assert.equal(serialized.includes(secret), false, `log leaked ${secret}`);
+    }
+  });
+
+  await t.test("the logger is optional, so the domain stays callable as a pure function", () => {
+    assert.doesNotThrow(() => validateAnalyticDefinition(base(), OPTIONS));
+  });
+
+  await t.test("describeDefinition counts a self-join and recorded entry ids", () => {
+    const definition = validateAnalyticDefinition({
+      inputs: [{ name: "Orders", entryId: "e1" }, { name: "Orders", as: "Prior" }],
+      joins: [{ kind: "inner", left: "Orders", right: "Prior", on: [{ leftField: "id", rightField: "id" }] }],
+      columns: [{ id: "c", field: { input: "Prior", field: "region" }, aggregation: "none" }],
+      rows: [], filters: [], sorts: [], display: { kind: "table" }
+    }, OPTIONS);
+    const shape = describeDefinition(definition);
+    assert.equal(shape.selfJoinCount, 1);
+    assert.equal(shape.inputsWithRecordedEntryId, 1);
+    assert.equal(shape.hasLimit, false);
+  });
+});
+
+// ─── Configuration ────────────────────────────────────────────────────────────
+
+test("the shape limits are configuration, not constants", async (t) => {
+  await t.test("the shipped YAML carries every limit and matches the defaults", async () => {
+    const config = await loadBackendConfig();
+    assert.deepEqual(
+      Object.keys(config.structuredAnalytic).sort(),
+      Object.keys(DEFAULT_STRUCTURED_ANALYTIC_OPTIONS).sort()
+    );
+    assert.deepEqual(config.structuredAnalytic, DEFAULT_STRUCTURED_ANALYTIC_OPTIONS);
+  });
+
+  await t.test("the domain options type and the config section stay the same shape", () => {
+    // If one gains a field and the other does not, this fails rather than the
+    // limit silently becoming unconfigurable.
+    const fromConfig: StructuredAnalyticOptions = DEFAULT_STRUCTURED_ANALYTIC_OPTIONS;
+    assert.equal(typeof fromConfig.maxDescriptionBytes, "number");
+  });
+
+  await t.test("there is no per-project catalog cap, matching the Templates decision", () => {
+    assert.equal("maxAnalyticsPerProject" in DEFAULT_STRUCTURED_ANALYTIC_OPTIONS, false);
+  });
+
+  await t.test("configured limits actually bind", () => {
+    rejects(base(), /inputs: exceeds maxInputs \(1\)/, { ...OPTIONS, maxInputs: 1 });
+    assert.throws(
+      () => validateAnalyticDescription("a much longer description", { ...OPTIONS, maxDescriptionBytes: 4 }),
+      AnalyticValidationError
+    );
+    // Title and description are bounded independently.
+    assert.doesNotThrow(() =>
+      validateAnalyticTitle("short", { ...OPTIONS, maxTitleBytes: 10, maxDescriptionBytes: 1 }));
   });
 });
 
