@@ -8,27 +8,38 @@
 // now — happens during a pull and fails differently on purpose.
 
 import type { Logger } from "#platform/observability/logger.js";
-import { AnalyticValidationError } from "./errors.js";
+import { normalizeDisplayNameKey } from "#structured-data";
+import { AnalyticConfigurationError, AnalyticValidationError } from "./errors.js";
 import {
   ANALYTIC_AGGREGATIONS,
-  ANALYTIC_COMPARISON_OPERATORS,
   ANALYTIC_DISPLAY_KINDS,
+  ANALYTIC_FILTER_OPERATORS,
   ANALYTIC_JOIN_KINDS,
   ANALYTIC_SORT_DIRECTIONS,
+  STRUCTURED_ANALYTIC_LIMIT_KEYS,
   inputKey,
   type AnalyticDefinition,
   type AnalyticFieldPlacement,
   type AnalyticFieldRef,
   type AnalyticFilter,
   type AnalyticScalar,
-  type StructuredAnalyticOptions
+  type StructuredAnalyticLimits
 } from "./model.js";
 
-/** Names are matched the way Structured Data and the Formula resolver match them. */
-export const normalizeInputKey = (key: string): string => key.trim().toLowerCase();
+/**
+ * Names are matched the way Structured Data and the Formula resolver match
+ * them — by delegating, not by agreeing. An input key is resolved against a
+ * Structured Data display name at pull time, so if that normalization ever
+ * gains Unicode folding, a private copy here would silently stop resolving
+ * inputs with no error anywhere to notice.
+ */
+export const normalizeInputKey = (key: string): string => normalizeDisplayNameKey(key);
 
-const fail = (field: string, message: string): never => {
-  throw new AnalyticValidationError(field, message);
+// Annotated on the binding rather than on the arrow so TypeScript narrows at
+// call sites: without this, every `fail(...)` looks like it returns, and the
+// `as` casts that follow one become load-bearing rather than cosmetic.
+const fail: (field: string, reason: string) => never = (field, reason) => {
+  throw new AnalyticValidationError(field, reason);
 };
 
 const boundedText = (
@@ -71,53 +82,89 @@ const POSITIVE_INTEGER_STRING = /^[1-9][0-9]*$/;
  * survives compilation as an exact division expression. Reduction is not
  * required: nothing compares stored literals for identity.
  */
-const validateScalar = (value: unknown, field: string): AnalyticScalar => {
+const validateScalar = (
+  value: unknown,
+  field: string,
+  options: StructuredAnalyticLimits
+): AnalyticScalar => {
   if (typeof value !== "object" || value === null) fail(field, "must be a scalar value");
   const raw = value as Record<string, unknown>;
+  // Literals are bounded like everything else. Without this a definition has no
+  // total size: names are capped at 256 bytes while a single filter value, or a
+  // rational's digit string, could be arbitrarily long.
+  const boundedLiteral = (text: unknown, at: string): string => {
+    if (typeof text !== "string") fail(at, "must be a string");
+    if (Buffer.byteLength(text as string, "utf8") > options.maxScalarBytes) {
+      fail(at, `exceeds its ${options.maxScalarBytes}-byte limit`);
+    }
+    return text as string;
+  };
+
   switch (raw.kind) {
     case "null":
       return { kind: "null" };
     case "text":
-      if (typeof raw.value !== "string") fail(`${field}.value`, "must be a string");
-      return { kind: "text", value: raw.value as string };
+      // Not `boundedText`: a filter may legitimately match the empty string or
+      // one made of spaces, so this neither trims nor requires non-blank.
+      return { kind: "text", value: boundedLiteral(raw.value, `${field}.value`) };
     case "logic":
       if (typeof raw.value !== "boolean") fail(`${field}.value`, "must be a boolean");
       return { kind: "logic", value: raw.value as boolean };
     case "number": {
-      if (typeof raw.numerator !== "string" || !INTEGER_STRING.test(raw.numerator)) {
+      const numerator = boundedLiteral(raw.numerator, `${field}.numerator`);
+      if (!INTEGER_STRING.test(numerator)) {
         fail(`${field}.numerator`, "must be an integer string");
       }
-      if (
-        typeof raw.denominator !== "string" ||
-        !POSITIVE_INTEGER_STRING.test(raw.denominator)
-      ) {
+      const denominator = boundedLiteral(raw.denominator, `${field}.denominator`);
+      if (!POSITIVE_INTEGER_STRING.test(denominator)) {
         fail(`${field}.denominator`, "must be a positive integer string");
       }
-      return {
-        kind: "number",
-        numerator: raw.numerator as string,
-        denominator: raw.denominator as string
-      };
+      return { kind: "number", numerator, denominator };
     }
     default:
       return fail(`${field}.kind`, "must be null, number, text, or logic");
   }
 };
 
+/**
+ * Maps a normalized input key to the exact spelling the definition declared.
+ *
+ * Keys match case-insensitively, but compilation has to emit one spelling:
+ * `JOIN` qualifies every output column as `<inputKey>.<field>`, and WHERE,
+ * GROUP, and SORT then address those columns by that exact string. A reference
+ * authored as `orders` against an input declared `Orders` must therefore be
+ * *stored* as `Orders`, or every pull fails on an unresolvable field.
+ */
+type DeclaredKeys = ReadonlyMap<string, string>;
+
+const canonicalInput = (
+  authored: string,
+  field: string,
+  declaredKeys: DeclaredKeys
+): string => {
+  const declared = declaredKeys.get(normalizeInputKey(authored));
+  if (declared === undefined) {
+    fail(field, `names no declared input: ${authored}`);
+  }
+  return declared as string;
+};
+
 const validateFieldRef = (
   value: unknown,
   field: string,
-  declaredKeys: ReadonlySet<string>,
-  options: StructuredAnalyticOptions
+  declaredKeys: DeclaredKeys,
+  options: StructuredAnalyticLimits
 ): AnalyticFieldRef => {
   if (typeof value !== "object" || value === null) fail(field, "must be an object");
   const raw = value as Record<string, unknown>;
-  const input = boundedText(raw.input, `${field}.input`, options.maxNameBytes);
-  if (!declaredKeys.has(normalizeInputKey(input))) {
-    fail(`${field}.input`, `names no declared input: ${input}`);
-  }
+  const authored = boundedText(raw.input, `${field}.input`, options.maxNameBytes);
+  const input = canonicalInput(authored, `${field}.input`, declaredKeys);
   // Field names come from inside a table value, not the project name space, so
   // they are matched case-sensitively and Formula does not normalize them.
+  //
+  // The one exception is the synthesized column of a list or scalar input, which
+  // *is* the input key and so matches the way keys match. Only a pull can tell
+  // the two apart, because only a pull knows whether the input was tabular.
   const name = boundedText(raw.field, `${field}.field`, options.maxNameBytes);
   return { input, field: name };
 };
@@ -125,8 +172,8 @@ const validateFieldRef = (
 const validatePlacement = (
   value: unknown,
   field: string,
-  declaredKeys: ReadonlySet<string>,
-  options: StructuredAnalyticOptions
+  declaredKeys: DeclaredKeys,
+  options: StructuredAnalyticLimits
 ): AnalyticFieldPlacement => {
   if (typeof value !== "object" || value === null) fail(field, "must be an object");
   const raw = value as Record<string, unknown>;
@@ -141,13 +188,16 @@ const validatePlacement = (
 const validateFilter = (
   value: unknown,
   field: string,
-  declaredKeys: ReadonlySet<string>,
-  options: StructuredAnalyticOptions
+  declaredKeys: DeclaredKeys,
+  options: StructuredAnalyticLimits
 ): AnalyticFilter => {
   if (typeof value !== "object" || value === null) fail(field, "must be an object");
   const raw = value as Record<string, unknown>;
   const ref = validateFieldRef(raw.field, `${field}.field`, declaredKeys, options);
-  const operator = raw.operator;
+  // Checked against the full vocabulary first, so a typo is told about all ten
+  // operators. Branching straight to the comparison arm would report only the
+  // six it handles and claim `in` and `contains` are invalid.
+  const operator = oneOf(raw.operator, ANALYTIC_FILTER_OPERATORS, `${field}.operator`);
 
   if (operator === "isNull" || operator === "isNotNull") {
     return { field: ref, operator };
@@ -156,14 +206,21 @@ const validateFilter = (
     if (!Array.isArray(raw.values)) fail(`${field}.values`, "must be an array");
     const values = raw.values as unknown[];
     if (values.length === 0) fail(`${field}.values`, "must not be empty");
+    if (values.length > options.maxFilterValues) {
+      fail(`${field}.values`, `exceeds maxFilterValues (${options.maxFilterValues})`);
+    }
     return {
       field: ref,
       operator: "in",
-      values: values.map((entry, index) => validateScalar(entry, `${field}.values[${index}]`))
+      values: values.map((entry, index) =>
+        validateScalar(entry, `${field}.values[${index}]`, options))
     };
   }
   if (operator === "contains") {
     if (typeof raw.value !== "string") fail(`${field}.value`, "must be a string");
+    if (Buffer.byteLength(raw.value as string, "utf8") > options.maxScalarBytes) {
+      fail(`${field}.value`, `exceeds its ${options.maxScalarBytes}-byte limit`);
+    }
     if (typeof raw.caseSensitive !== "boolean") {
       fail(`${field}.caseSensitive`, "must be a boolean");
     }
@@ -176,8 +233,8 @@ const validateFilter = (
   }
   return {
     field: ref,
-    operator: oneOf(operator, ANALYTIC_COMPARISON_OPERATORS, `${field}.operator`),
-    value: validateScalar(raw.value, `${field}.value`)
+    operator,
+    value: validateScalar(raw.value, `${field}.value`, options)
   };
 };
 
@@ -267,23 +324,26 @@ export const describeDefinition = (
 
 export const validateAnalyticDefinition = (
   value: unknown,
-  options: StructuredAnalyticOptions,
+  options: StructuredAnalyticLimits,
   logger?: Logger
 ): AnalyticDefinition => {
   const startedAt = performance.now();
   try {
     const definition = validateDefinitionInternal(value, options);
-    // Shape first, so the summary survives into a shape-only build. The
-    // definition in full is the recipe the compiler will turn into a Formula
-    // expression — having it verbatim is what lets a surprising pull later be
-    // traced back to exactly what was saved.
+    // Two records, for the same reason the rejection path emits two: a
+    // content-labelled record is dropped *whole* in a shape-only build, so
+    // folding the counts into it would mean a successful validation logged
+    // nothing at all there.
+    const durationMs = Math.round(performance.now() - startedAt);
+    logger?.debug("structured-analytic.definition.validated", {
+      ...describeDefinition(definition),
+      durationMs
+    });
+    // The recipe the compiler will turn into a Formula expression. Having it
+    // verbatim is what lets a surprising pull be traced back to what was saved.
     logger?.debug(
-      "structured-analytic.definition.validated",
-      {
-        ...describeDefinition(definition),
-        definition,
-        durationMs: Math.round(performance.now() - startedAt)
-      },
+      "structured-analytic.definition.validated.detail",
+      { definition },
       { detail: "content" }
     );
     return definition;
@@ -299,6 +359,9 @@ export const validateAnalyticDefinition = (
     const durationMs = Math.round(performance.now() - startedAt);
     const field = error instanceof AnalyticValidationError ? error.field : "unknown";
     const errorName = error instanceof Error ? error.name : "UnknownError";
+    // No `reason` here: several rules quote the offending name into their
+    // message ("names no declared input: Orders"), so the message is content
+    // even though the field is not.
     logger?.warn("structured-analytic.definition.rejected", {
       field,
       errorName,
@@ -309,7 +372,12 @@ export const validateAnalyticDefinition = (
       {
         field,
         errorName,
-        reason: error instanceof Error ? error.message : String(error),
+        reason:
+          error instanceof AnalyticValidationError
+            ? error.reason
+            : error instanceof Error
+              ? error.message
+              : String(error),
         rejected: value
       },
       { detail: "content" }
@@ -320,7 +388,7 @@ export const validateAnalyticDefinition = (
 
 const validateDefinitionInternal = (
   value: unknown,
-  options: StructuredAnalyticOptions
+  options: StructuredAnalyticLimits
 ): AnalyticDefinition => {
   if (typeof value !== "object" || value === null) fail("definition", "must be an object");
   const raw = value as Record<string, unknown>;
@@ -333,30 +401,39 @@ const validateDefinitionInternal = (
     fail("inputs", `exceeds maxInputs (${options.maxInputs})`);
   }
 
-  const declaredKeys = new Set<string>();
+  const declaredKeys = new Map<string, string>();
   const inputs = rawInputs.map((entry, index) => {
     const field = `inputs[${index}]`;
     if (typeof entry !== "object" || entry === null) fail(field, "must be an object");
     const rawInput = entry as Record<string, unknown>;
     const name = boundedText(rawInput.name, `${field}.name`, options.maxNameBytes);
-    const alias =
+    // `as` is a second label for the same source, not an alias in the dropped
+    // sense: it exists so a self-join can tell its two sides apart.
+    const asLabel =
       rawInput.as === undefined
         ? undefined
         : boundedText(rawInput.as, `${field}.as`, options.maxNameBytes);
+    // Best-effort rename bookkeeping the runtime captures at save time. A
+    // caller must not be able to steer it — a client-supplied `entryId` on a
+    // name that does not currently resolve would retarget the input to an
+    // unrelated entry on the first pull, and the self-heal would then rewrite
+    // the stored name to match. Create and update overwrite this field; it is
+    // accepted here only because rehydration from storage shares this path.
     const entryId =
       rawInput.entryId === undefined
         ? undefined
         : boundedText(rawInput.entryId, `${field}.entryId`, options.maxNameBytes);
 
-    const key = normalizeInputKey(alias ?? name);
+    const declared = asLabel ?? name;
+    const key = normalizeInputKey(declared);
     if (declaredKeys.has(key)) {
-      fail(field, `duplicate input key: ${alias ?? name}`);
+      fail(field, `duplicate input key: ${declared}`);
     }
-    declaredKeys.add(key);
+    declaredKeys.set(key, declared);
 
     return {
       name,
-      ...(alias !== undefined ? { as: alias } : {}),
+      ...(asLabel !== undefined ? { as: asLabel } : {}),
       ...(entryId !== undefined ? { entryId } : {})
     };
   });
@@ -380,15 +457,17 @@ const validateDefinitionInternal = (
     if (typeof entry !== "object" || entry === null) fail(field, "must be an object");
     const rawJoin = entry as Record<string, unknown>;
     const kind = oneOf(rawJoin.kind, ANALYTIC_JOIN_KINDS, `${field}.kind`);
-    const left = boundedText(rawJoin.left, `${field}.left`, options.maxNameBytes);
-    const right = boundedText(rawJoin.right, `${field}.right`, options.maxNameBytes);
+    const authoredLeft = boundedText(rawJoin.left, `${field}.left`, options.maxNameBytes);
+    const authoredRight = boundedText(rawJoin.right, `${field}.right`, options.maxNameBytes);
 
+    // Stored as declared, not as authored — see canonicalInput.
+    const left = canonicalInput(authoredLeft, `${field}.left`, declaredKeys);
     if (!introduced.has(normalizeInputKey(left))) {
-      fail(`${field}.left`, `is not introduced yet: ${left}`);
+      fail(`${field}.left`, `is not introduced yet: ${authoredLeft}`);
     }
-    const expectedRight = inputKey(inputs[index + 1]);
-    if (normalizeInputKey(right) !== normalizeInputKey(expectedRight)) {
-      fail(`${field}.right`, `must introduce ${expectedRight}, got ${right}`);
+    const right = inputKey(inputs[index + 1]);
+    if (normalizeInputKey(authoredRight) !== normalizeInputKey(right)) {
+      fail(`${field}.right`, `must introduce ${right}, got ${authoredRight}`);
     }
     introduced.add(normalizeInputKey(right));
 
@@ -419,7 +498,8 @@ const validateDefinitionInternal = (
   const rawRows = raw.rows as unknown[];
   const rawColumns = raw.columns as unknown[];
   if (rawRows.length + rawColumns.length > options.maxPlacements) {
-    fail("rows", `Rows and Columns together exceed maxPlacements (${options.maxPlacements})`);
+    // Neither shelf alone is at fault, so neither is named.
+    fail("placements", `Rows and Columns together exceed maxPlacements (${options.maxPlacements})`);
   }
 
   const rows = rawRows.map((entry, index) =>
@@ -427,12 +507,18 @@ const validateDefinitionInternal = (
   const columns = rawColumns.map((entry, index) =>
     validatePlacement(entry, `columns[${index}]`, declaredKeys, options));
 
+  // Ids are unique across both shelves, and the error points at the offender.
+  // `field` is the only machine-readable part of a rejection — an editing
+  // surface highlights it — so reporting "rows" for a duplicate in Columns
+  // sends the client to the wrong pill.
   const placementIds = new Set<string>();
-  for (const placement of [...rows, ...columns]) {
-    if (placementIds.has(placement.id)) {
-      fail("rows", `duplicate placement id across Rows and Columns: ${placement.id}`);
-    }
-    placementIds.add(placement.id);
+  for (const [shelf, placements] of [["rows", rows], ["columns", columns]] as const) {
+    placements.forEach((placement, index) => {
+      if (placementIds.has(placement.id)) {
+        fail(`${shelf}[${index}].id`, `duplicates another placement id: ${placement.id}`);
+      }
+      placementIds.add(placement.id);
+    });
   }
 
   // ── Filters ─────────────────────────────────────────────────────────────
@@ -495,12 +581,12 @@ const validateDefinitionInternal = (
 
 export const validateAnalyticTitle = (
   value: unknown,
-  options: StructuredAnalyticOptions
+  options: StructuredAnalyticLimits
 ): string => boundedText(value, "title", options.maxTitleBytes);
 
 export const validateAnalyticDescription = (
   value: unknown,
-  options: StructuredAnalyticOptions
+  options: StructuredAnalyticLimits
 ): string | undefined =>
   value === undefined ? undefined : boundedText(value, "description", options.maxDescriptionBytes);
 
@@ -509,18 +595,23 @@ export const validateAnalyticDescription = (
  * rejected" and "which configuration is this process actually running" are the
  * same question often enough to be worth answering in advance.
  */
-export const validateAnalyticOptions = (
-  options: StructuredAnalyticOptions,
+export const validateAnalyticLimits = (
+  limits: StructuredAnalyticLimits,
   logger?: Logger
 ): void => {
-  for (const [name, value] of Object.entries(options)) {
-    if (!Number.isSafeInteger(value) || value < 1) {
-      logger?.error("structured-analytic.options.rejected", { option: name, value });
-      fail(`options.${name}`, "must be a positive safe integer");
+  const record = limits as unknown as Record<string, unknown>;
+  // Every key is asserted, not just the ones present. A limit built by omission
+  // is silently permissive — both `bytes > undefined` and `length > undefined`
+  // are `false` — so a missing key disables exactly the check it names.
+  for (const key of STRUCTURED_ANALYTIC_LIMIT_KEYS) {
+    const value = record[key];
+    if (!Number.isSafeInteger(value) || (value as number) < 1) {
+      logger?.error("structured-analytic.limits.rejected", { limit: key, value });
+      throw new AnalyticConfigurationError(key, "must be a positive safe integer");
     }
   }
-  // Labelled `content` even though these are operator-set numbers rather than
-  // user data: the rule is about who authored the value, and staying strict
-  // costs nothing here.
-  logger?.info("structured-analytic.options.resolved", { ...options }, { detail: "content" });
+  // Shape, not content: eight operator-set integers, and the reason to log them
+  // is to answer "which configuration is this process running" in the build
+  // where you cannot simply re-run it locally.
+  logger?.info("structured-analytic.limits.resolved", { ...limits });
 };

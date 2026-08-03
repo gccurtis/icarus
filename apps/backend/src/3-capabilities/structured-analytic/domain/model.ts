@@ -324,7 +324,7 @@ export interface AnalyticSourceRead {
   /** The entry that answered. Stable across renames. */
   readonly entryId: string;
   /** Revision of that entry at read time. */
-  readonly revision: number | string;
+  readonly revision: number;
   readonly status: AnalyticSourceStatus;
 }
 
@@ -339,7 +339,15 @@ export interface AnalyticPull {
    */
   readonly definition: AnalyticDefinition;
   readonly display: AnalyticDisplay;
-  /** Rows placements first, then Columns placements, preserving shelf order. */
+  /**
+   * Rows placements first, then Columns placements, preserving shelf order.
+   *
+   * This is the shelf order the client authored, which is deliberately *not*
+   * the compiled column order: `GROUP` emits its keys before its aggregates, so
+   * dimensions arrive first regardless of which shelf they came from. The
+   * service permutes cells into this order rather than passing the compiled
+   * table through — see the pull step in the implementation plan.
+   */
   readonly fields: readonly AnalyticResultField[];
   readonly rows: readonly (readonly AnalyticScalar[])[];
 
@@ -380,23 +388,49 @@ export interface AnalyticCheck {
  * There is deliberately no per-project catalog cap. That was removed from
  * Templates and deferred to a global resource-quota policy.
  */
-export interface StructuredAnalyticOptions {
+export interface StructuredAnalyticLimits {
   readonly maxInputs: number;
   readonly maxJoinKeys: number;
   readonly maxPlacements: number;
   readonly maxFilters: number;
+  /** Values in a single `in` list. Without this a definition is unbounded. */
+  readonly maxFilterValues: number;
+  /** A literal inside a filter: a text value, or a rational's digit strings. */
+  readonly maxScalarBytes: number;
   readonly maxSorts: number;
   readonly maxTitleBytes: number;
   readonly maxDescriptionBytes: number;
   readonly maxNameBytes: number;
 }
 
+/**
+ * Every key of `StructuredAnalyticLimits`, so validation can assert the set it
+ * was handed rather than iterating whatever happened to be present. A missing
+ * limit is silently permissive — `bytes > undefined` is `false` — so an options
+ * record built by omission would disable the very checks this type exists to
+ * guarantee.
+ */
+export const STRUCTURED_ANALYTIC_LIMIT_KEYS = [
+  "maxInputs",
+  "maxJoinKeys",
+  "maxPlacements",
+  "maxFilters",
+  "maxFilterValues",
+  "maxScalarBytes",
+  "maxSorts",
+  "maxTitleBytes",
+  "maxDescriptionBytes",
+  "maxNameBytes"
+] as const satisfies readonly (keyof StructuredAnalyticLimits)[];
+
 /** Test and fallback values. Production values come from configuration. */
-export const DEFAULT_STRUCTURED_ANALYTIC_OPTIONS: StructuredAnalyticOptions = {
+export const DEFAULT_STRUCTURED_ANALYTIC_LIMITS: StructuredAnalyticLimits = {
   maxInputs: 8,
   maxJoinKeys: 8,
   maxPlacements: 32,
   maxFilters: 32,
+  maxFilterValues: 256,
+  maxScalarBytes: 4_096,
   maxSorts: 8,
   maxTitleBytes: 4_096,
   maxDescriptionBytes: 4_096,

@@ -17,3 +17,7 @@ export { DISPLAY_KINDS, isDisplayKind } from "./value.js";
 /** Exported so consumers ask the engine which names are reserved rather than
  *  keeping their own copy of the list, which silently drifts when one is added. */
 export { isBuiltinName } from "./builtins.js";
+/** The option vocabularies of the relational builtins, exported for the same
+ *  reason: a caller that compiles into WHERE/AGGREGATE/SORT can then assert
+ *  parity instead of maintaining a second list. */
+export { WHERE_OPS, AGGREGATE_FNS, SORT_DIRECTIONS } from "./builtins.js";

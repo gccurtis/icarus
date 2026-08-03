@@ -89,6 +89,8 @@ export interface StructuredAnalyticConfig {
   maxJoinKeys: number;
   maxPlacements: number;
   maxFilters: number;
+  maxFilterValues: number;
+  maxScalarBytes: number;
   maxSorts: number;
   maxTitleBytes: number;
   maxDescriptionBytes: number;
@@ -276,6 +278,8 @@ const DEFAULT_CONFIG: BackendConfig = {
     maxJoinKeys: 8,
     maxPlacements: 32,
     maxFilters: 32,
+    maxFilterValues: 256,
+    maxScalarBytes: 4096,
     maxSorts: 8,
     maxTitleBytes: 4096,
     maxDescriptionBytes: 4096,
@@ -671,6 +675,16 @@ function parseStructuredAnalyticConfig(
     maxJoinKeys: parseNumber(raw.maxJoinKeys, defaults.maxJoinKeys, "structuredAnalytic.maxJoinKeys"),
     maxPlacements: parseNumber(raw.maxPlacements, defaults.maxPlacements, "structuredAnalytic.maxPlacements"),
     maxFilters: parseNumber(raw.maxFilters, defaults.maxFilters, "structuredAnalytic.maxFilters"),
+    maxFilterValues: parseNumber(
+      raw.maxFilterValues,
+      defaults.maxFilterValues,
+      "structuredAnalytic.maxFilterValues"
+    ),
+    maxScalarBytes: parseNumber(
+      raw.maxScalarBytes,
+      defaults.maxScalarBytes,
+      "structuredAnalytic.maxScalarBytes"
+    ),
     maxSorts: parseNumber(raw.maxSorts, defaults.maxSorts, "structuredAnalytic.maxSorts"),
     maxTitleBytes: parseNumber(raw.maxTitleBytes, defaults.maxTitleBytes, "structuredAnalytic.maxTitleBytes"),
     maxDescriptionBytes: parseNumber(

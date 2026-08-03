@@ -17,8 +17,13 @@
 
 How big a saved analytic *recipe* may be. These bound the definition, not the
 data it reads — data size is enforced by Formula's own `formula.max*` limits, so
-nothing here duplicates them. Every value is a positive integer, and an omitted
-key falls back to its default rather than failing to load.
+nothing here duplicates them. An omitted key falls back to its default rather
+than failing to load.
+
+Every value must be a positive safe integer. The loader itself only rejects
+non-numbers, non-finite values, and values below 1 — a fractional `32.5` loads —
+so startup calls `validateAnalyticLimits`, which enforces whole numbers and the
+complete key set, and fails the process rather than the request.
 
 | Field | Default | Bounds |
 | --- | ---: | --- |
@@ -26,6 +31,8 @@ key falls back to its default rather than failing to load.
 | `maxJoinKeys` | 8 | equality keys on a single join |
 | `maxPlacements` | 32 | Rows and Columns placements **together** |
 | `maxFilters` | 32 | filters in one definition |
+| `maxFilterValues` | 256 | values in one `in` list |
+| `maxScalarBytes` | 4096 | one filter literal: a text value, or a rational's digit string |
 | `maxSorts` | 8 | sort entries in one definition |
 | `maxTitleBytes` | 4096 | UTF-8 size of the title |
 | `maxDescriptionBytes` | 4096 | UTF-8 size of the description |

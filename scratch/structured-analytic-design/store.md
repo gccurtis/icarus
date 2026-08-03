@@ -63,7 +63,6 @@ interface StructuredAnalyticStore {
   get(id: string): StructuredAnalytic | undefined;
   /** Ordered by (updated_at DESC, id ASC). */
   list(): StructuredAnalytic[];
-  countLive(): number;
 
   insert(analytic: StructuredAnalytic): void;
   /** Archives the prior revision, then CAS-updates. False means stale. */

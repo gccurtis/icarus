@@ -267,15 +267,22 @@ big a recipe may be, not how big its data is:
 ```yaml
 # Structured Analytic limits.
 structuredAnalytic:
-  maxAnalyticsPerProject: 500
   maxInputs: 8
   maxJoinKeys: 8
   maxPlacements: 32
   maxFilters: 32
   maxSorts: 8
   maxTitleBytes: 4096
+  maxDescriptionBytes: 16384
   maxNameBytes: 256
 ```
+
+There is deliberately **no `maxAnalyticsPerProject`**. How many analytics a
+project may hold is a question about storage a tenant is entitled to, which is
+the same question for every capability and does not have a different answer
+here. It belongs to a global resource-quota policy that does not exist yet.
+Templates dropped `maxTemplatesPerProject` for the same reason; adding it back
+here would mean re-litigating that per capability forever.
 
 Exceeding a data limit is an error, not a truncation — a silently truncated
 chart is worse than a failed one.
@@ -287,10 +294,14 @@ chart is worse than a failed one.
 | `POST /structured-analytics/command` | serial | `{ type, input }` | `201` created/saved/copied, `200` updated/deleted/purged |
 | `POST /structured-analytics/query` | concurrent | `{ type, … }` | `200` |
 
-**Why serial for commands.** Create reads `countLive()` then inserts, and update
-and delete read-then-write across a CAS plus a history insert. The store cannot
-enforce the catalog limit on its own, which is the house rule for choosing the
-serial queue.
+**Why serial for commands.** Update and delete read-then-write across a CAS plus
+a history insert, and `save`/`copy` check a Structured Data name for conflict
+before writing under it. Those are multi-statement sequences the store cannot
+make atomic on its own, which is the house rule for choosing the serial queue.
+
+(The original argument here was that create reads `countLive()` before
+inserting. That limit is gone — see above — but the rationale survives on the
+CAS and name-conflict paths, which is why the queue choice does not change.)
 
 **Why concurrent for queries, including `pull`.** No writes. Promise-concurrent,
 running its transformations on the Node.js thread; the configured row and cell
@@ -305,7 +316,6 @@ or scheduled work beyond the shared retention sweep.
 | Condition | HTTP | Wire code |
 | --- | --- | --- |
 | malformed payload or structurally invalid definition | 400 | `validation_error` |
-| catalog limit reached | 400 | `catalog_limit_exceeded` |
 | analytic absent or deleted | 404 | `not_found` |
 | purge on an analytic that still exists | 409 | `not_deleted` |
 | stale `expectedRevision` | 409 | `revision_conflict` |

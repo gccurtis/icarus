@@ -1,27 +1,43 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AnalyticValidationError } from "../../src/3-capabilities/structured-analytic/domain/errors.js";
 import {
-  DEFAULT_STRUCTURED_ANALYTIC_OPTIONS,
+  AnalyticConfigurationError,
+  AnalyticValidationError
+} from "../../src/3-capabilities/structured-analytic/domain/errors.js";
+import {
+  ANALYTIC_AGGREGATIONS,
+  ANALYTIC_DISPLAY_KINDS,
+  ANALYTIC_FILTER_OPERATORS,
+  ANALYTIC_JOIN_KINDS,
+  ANALYTIC_SORT_DIRECTIONS,
+  DEFAULT_STRUCTURED_ANALYTIC_LIMITS,
+  STRUCTURED_ANALYTIC_LIMIT_KEYS,
   inputKey,
   placementName
 } from "../../src/3-capabilities/structured-analytic/domain/model.js";
+import {
+  AGGREGATE_FNS,
+  DISPLAY_KINDS,
+  SORT_DIRECTIONS,
+  WHERE_OPS,
+  isDisplayKind
+} from "../../src/0-platform/formula/index.js";
 import type {
   AnalyticFieldPlacement,
-  StructuredAnalyticOptions
+  StructuredAnalyticLimits
 } from "../../src/3-capabilities/structured-analytic/domain/model.js";
 import {
   describeDefinition,
   normalizeInputKey,
   validateAnalyticDefinition,
   validateAnalyticDescription,
-  validateAnalyticOptions,
+  validateAnalyticLimits,
   validateAnalyticTitle
 } from "../../src/3-capabilities/structured-analytic/domain/validation.js";
 import { loadBackendConfig } from "../../src/0-utils/config/loadBackendConfig.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
-const OPTIONS = DEFAULT_STRUCTURED_ANALYTIC_OPTIONS;
+const OPTIONS = DEFAULT_STRUCTURED_ANALYTIC_LIMITS;
 
 /** The reference definition every case perturbs: a bar chart over one join. */
 const base = (): Record<string, unknown> => ({
@@ -64,21 +80,44 @@ const simple = (patch: Record<string, unknown> = {}): Record<string, unknown> =>
   ...patch
 });
 
-const accepts = (definition: unknown, options: StructuredAnalyticOptions = OPTIONS) =>
+const accepts = (definition: unknown, options: StructuredAnalyticLimits = OPTIONS) =>
   validateAnalyticDefinition(definition, options);
 
+/**
+ * `expectedField` is the assertion that matters: `error.field` is the only
+ * machine-readable part of a rejection and the thing job wiring will put in a
+ * 400 body, whereas the message is prose that any rewording breaks. It is
+ * optional so existing call sites stay valid, but new ones should pass it.
+ */
 const rejects = (
   definition: unknown,
-  field: RegExp,
-  options: StructuredAnalyticOptions = OPTIONS
+  message: RegExp,
+  expectedField?: string,
+  options: StructuredAnalyticLimits = OPTIONS
 ): void => {
   assert.throws(
     () => validateAnalyticDefinition(definition, options),
-    (error: unknown) =>
-      error instanceof AnalyticValidationError && field.test(error.message),
-    `expected a validation error matching ${field}`
+    (error: unknown) => {
+      assert.ok(
+        error instanceof AnalyticValidationError,
+        `expected an AnalyticValidationError, got ${String(error)}`
+      );
+      assert.match(error.message, message);
+      if (expectedField !== undefined) assert.equal(error.field, expectedField);
+      // The message is exactly `${field}: ${reason}`, and `reason` is kept as
+      // its own field so a caller need not strip the prefix back off.
+      assert.equal(error.message, `${error.field}: ${error.reason}`);
+      return true;
+    }
   );
 };
+
+/** `rejects` with the limits overridden — the old positional third argument. */
+const rejectsWith = (
+  definition: unknown,
+  message: RegExp,
+  options: StructuredAnalyticLimits
+): void => rejects(definition, message, undefined, options);
 
 // ─── Model helpers ────────────────────────────────────────────────────────────
 
@@ -146,7 +185,7 @@ test("inputs must be a nonempty, uniquely keyed, bounded list", async (t) => {
     const definition = { ...simple(), inputs: many, joins,
       columns: [{ id: "c", field: { input: "T0", field: "a" }, aggregation: "none" }] };
     accepts(definition, { ...OPTIONS, maxInputs: 3 });
-    rejects(definition, /inputs: exceeds maxInputs \(2\)/, { ...OPTIONS, maxInputs: 2 });
+    rejectsWith(definition, /inputs: exceeds maxInputs \(2\)/, { ...OPTIONS, maxInputs: 2 });
   });
 
   await t.test("an optional entryId round-trips when present and is absent otherwise", () => {
@@ -215,9 +254,9 @@ test("joins are an ordered left-deep chain, which is what makes cycles unreprese
       ...base(),
       joins: [{ kind: "left", left: "Orders", right: "Reps", on }]
     });
-    rejects(withOn([]), /joins\[0\]\.on: must not be empty/);
-    rejects(withOn({}), /joins\[0\]\.on: must be an array/);
-    rejects(
+    rejects(withOn([]), /joins\[0\]\.on: must not be empty/, "joins[0].on");
+    rejects(withOn({}), /joins\[0\]\.on: must be an array/, "joins[0].on");
+    rejectsWith(
       withOn([{ leftField: "a", rightField: "b" }, { leftField: "c", rightField: "d" }]),
       /joins\[0\]\.on: exceeds maxJoinKeys \(1\)/,
       { ...OPTIONS, maxJoinKeys: 1 }
@@ -247,6 +286,40 @@ test("every field reference names a declared input", async (t) => {
       accepts(simple({ columns: [{ id: "c", field: { input: "orders", field: "region" }, aggregation: "none" }] })));
   });
 
+  // Compilation qualifies every joined column as `<inputKey>.<field>`, so the
+  // stored spelling has to be the declared one. Accepting `orders` and storing
+  // it verbatim would compile against a table whose columns are `Orders.…` and
+  // fail on every pull, for a definition that validated cleanly.
+  await t.test("a case-variant reference is stored as the input declared it", () => {
+    const definition = accepts(simple({
+      columns: [{ id: "c", field: { input: "oRdErS", field: "region" }, aggregation: "none" }]
+    }));
+    assert.equal(definition.columns[0].field.input, "Orders");
+  });
+
+  await t.test("a case-variant reference to a self-join label is canonicalized too", () => {
+    const definition = accepts({
+      inputs: [{ name: "Orders" }, { name: "Orders", as: "Prior" }],
+      joins: [{ kind: "inner", left: "orders", right: "PRIOR", on: [{ leftField: "id", rightField: "id" }] }],
+      columns: [{ id: "c", field: { input: "prior", field: "region" }, aggregation: "none" }],
+      rows: [], filters: [], sorts: [], display: { kind: "table" }
+    });
+    assert.equal(definition.columns[0].field.input, "Prior");
+    assert.equal(definition.joins[0].left, "Orders");
+    assert.equal(definition.joins[0].right, "Prior");
+  });
+
+  await t.test("a case-variant filter reference is canonicalized too", () => {
+    const definition = accepts(simple({
+      filters: [{
+        field: { input: "ORDERS", field: "status" },
+        operator: "equals",
+        value: { kind: "text", value: "closed" }
+      }]
+    }));
+    assert.equal(definition.filters[0].field.input, "Orders");
+  });
+
   await t.test("a self-join alias is a legal reference target", () => {
     assert.doesNotThrow(() => accepts({
       inputs: [{ name: "Orders" }, { name: "Orders", as: "Prior" }],
@@ -265,7 +338,58 @@ test("placements have unique ids, valid aggregations, and an optional label", as
         columns: [{ id: "same", field: { input: "Orders", field: "region" }, aggregation: "none" }],
         rows: [{ id: "same", field: { input: "Orders", field: "amount" }, aggregation: "sum" }]
       },
-      /duplicate placement id across Rows and Columns: same/
+      /duplicates another placement id: same/,
+      // Rows are walked first, so the Columns entry is the one reported.
+      "columns[0].id"
+    );
+  });
+
+  // `field` is the only machine-readable part of a rejection, and an editing
+  // surface highlights it. Reporting "rows" for a duplicate in Columns sends
+  // the client to the wrong pill.
+  await t.test("a duplicate within one shelf names that shelf and index", () => {
+    rejects(
+      simple({
+        columns: [
+          { id: "dup", field: { input: "Orders", field: "a" }, aggregation: "none" },
+          { id: "dup", field: { input: "Orders", field: "b" }, aggregation: "none" }
+        ]
+      }),
+      /duplicates another placement id/,
+      "columns[1].id"
+    );
+    rejects(
+      simple({
+        columns: [{ id: "keep", field: { input: "Orders", field: "a" }, aggregation: "none" }],
+        rows: [
+          { id: "r", field: { input: "Orders", field: "a" }, aggregation: "sum" },
+          { id: "r", field: { input: "Orders", field: "b" }, aggregation: "sum" }
+        ]
+      }),
+      /duplicates another placement id/,
+      "rows[1].id"
+    );
+  });
+
+  await t.test("placement ids are matched exactly, unlike input keys", () => {
+    // Deliberate asymmetry: an input key is a project name and matches the way
+    // Structured Data matches names; a placement id is an opaque handle the
+    // client mints, so `a` and `A` are two different pills.
+    const definition = accepts(simple({
+      columns: [
+        { id: "p", field: { input: "Orders", field: "a" }, aggregation: "none" },
+        { id: "P", field: { input: "Orders", field: "b" }, aggregation: "none" }
+      ]
+    }));
+    assert.deepEqual(definition.columns.map(placement => placement.id), ["p", "P"]);
+
+    rejects(
+      simple({
+        columns: [{ id: "p2", field: { input: "Orders", field: "a" }, aggregation: "none" }],
+        sorts: [{ placementId: "P2", direction: "asc" }]
+      }),
+      /names no declared placement/,
+      "sorts[0].placementId"
     );
   });
 
@@ -291,7 +415,7 @@ test("placements have unique ids, valid aggregations, and an optional label", as
       ]
     });
     accepts(definition, { ...OPTIONS, maxPlacements: 2 });
-    rejects(definition, /exceed maxPlacements \(1\)/, { ...OPTIONS, maxPlacements: 1 });
+    rejectsWith(definition, /exceed maxPlacements \(1\)/, { ...OPTIONS, maxPlacements: 1 });
   });
 
   await t.test("a label is optional and bounded", () => {
@@ -352,7 +476,7 @@ test("filter shapes are validated per operator", async (t) => {
       accepts(withFilter({ field: ref, operator: "equals", value: { kind: "number", numerator: "-1", denominator: "3" } })));
     rejects(
       withFilter({ field: ref, operator: "equals", value: { kind: "number", numerator: 1, denominator: "3" } }),
-      /numerator: must be an integer string/
+      /numerator: must be a string/
     );
     rejects(
       withFilter({ field: ref, operator: "equals", value: { kind: "number", numerator: "1", denominator: "0" } }),
@@ -371,7 +495,7 @@ test("filter shapes are validated per operator", async (t) => {
   await t.test("maxFilters is enforced", () => {
     const one = { field: ref, operator: "isNull" };
     accepts(simple({ filters: [one] }), { ...OPTIONS, maxFilters: 1 });
-    rejects(simple({ filters: [one, one] }), /filters: exceeds maxFilters \(1\)/, { ...OPTIONS, maxFilters: 1 });
+    rejectsWith(simple({ filters: [one, one] }), /filters: exceeds maxFilters \(1\)/, { ...OPTIONS, maxFilters: 1 });
   });
 });
 
@@ -392,7 +516,7 @@ test("sorts target declared placements and limit is a positive integer", async (
   await t.test("maxSorts is enforced", () => {
     const sort = { placementId: "p2", direction: "asc" };
     accepts({ ...base(), sorts: [sort] }, { ...OPTIONS, maxSorts: 1 });
-    rejects({ ...base(), sorts: [sort, sort] }, /sorts: exceeds maxSorts \(1\)/, { ...OPTIONS, maxSorts: 1 });
+    rejectsWith({ ...base(), sorts: [sort, sort] }, /sorts: exceeds maxSorts \(1\)/, { ...OPTIONS, maxSorts: 1 });
   });
 
   await t.test("limit is optional but must be a positive integer when present", () => {
@@ -463,10 +587,48 @@ test("title, description, and the options themselves are validated", async (t) =
     assert.throws(() => validateAnalyticDescription("", OPTIONS), AnalyticValidationError);
   });
 
-  await t.test("every option must be a positive safe integer", () => {
-    assert.doesNotThrow(() => validateAnalyticOptions(OPTIONS));
-    assert.throws(() => validateAnalyticOptions({ ...OPTIONS, maxInputs: 0 }), AnalyticValidationError);
-    assert.throws(() => validateAnalyticOptions({ ...OPTIONS, maxSorts: 1.5 }), AnalyticValidationError);
+  // A bad limit is an operator's mistake in configuration.yaml, not a caller's.
+  // Throwing AnalyticValidationError would map to 400 and blame the client for
+  // it, while echoing an internal field name back to them.
+  await t.test("a bad limit is a configuration error, not a validation error", () => {
+    assert.doesNotThrow(() => validateAnalyticLimits(OPTIONS));
+    assert.throws(
+      () => validateAnalyticLimits({ ...OPTIONS, maxInputs: 0 }),
+      (error: unknown) => error instanceof AnalyticConfigurationError && error.limit === "maxInputs"
+    );
+    assert.throws(
+      () => validateAnalyticLimits({ ...OPTIONS, maxSorts: 1.5 }),
+      (error: unknown) => error instanceof AnalyticConfigurationError && error.limit === "maxSorts"
+    );
+    assert.equal(
+      new AnalyticConfigurationError("maxInputs", "boom") instanceof AnalyticValidationError,
+      false
+    );
+  });
+
+  // A limit built by omission is silently permissive: `bytes > undefined` and
+  // `length > undefined` are both false, so the missing key disables exactly
+  // the check it names. Iterating Object.entries could never catch that.
+  await t.test("a missing limit is rejected rather than silently disabling a check", () => {
+    for (const key of STRUCTURED_ANALYTIC_LIMIT_KEYS) {
+      const incomplete = { ...OPTIONS } as Record<string, unknown>;
+      delete incomplete[key];
+      assert.throws(
+        () => validateAnalyticLimits(incomplete as unknown as StructuredAnalyticLimits),
+        (error: unknown) => error instanceof AnalyticConfigurationError && error.limit === key,
+        `a missing ${key} must be rejected`
+      );
+    }
+  });
+
+  await t.test("the rejection is logged before it is thrown", () => {
+    const logger = new CapturingLogger();
+    assert.throws(() => validateAnalyticLimits({ ...OPTIONS, maxFilters: -1 }, logger));
+
+    const entry = logger.entries.find(e => e.message === "structured-analytic.limits.rejected");
+    assert.ok(entry, "a startup-fatal misconfiguration must be logged");
+    assert.equal(entry.level, "error");
+    assert.deepEqual(entry.data, { limit: "maxFilters", value: -1 });
   });
 });
 
@@ -501,10 +663,28 @@ test("validation logs content, and labels it so production can drop it", async (
     const logger = new CapturingLogger();
     const definition = validateAnalyticDefinition(base(), OPTIONS, logger);
 
-    const entry = logger.entries.find(e => e.message === "structured-analytic.definition.validated");
+    const entry = logger.entries.find(
+      e => e.message === "structured-analytic.definition.validated.detail"
+    );
     assert.ok(entry);
     assert.equal(entry.detail, "content", "a record carrying the definition must say so");
     assert.deepEqual((entry.data as Record<string, unknown>).definition, definition);
+  });
+
+  // A content-labelled record is dropped WHOLE, not field by field. Folding the
+  // counts into it would mean a successful validation logged nothing at all in
+  // a shape-only build — which is what this file's comments claimed it avoided.
+  await t.test("dropping content still leaves the acceptance visible", () => {
+    const logger = new CapturingLogger();
+    validateAnalyticDefinition(base(), OPTIONS, logger);
+
+    const kept = logger.shapeEntries.filter(e => e.message.startsWith("structured-analytic"));
+    assert.equal(kept.length, 1);
+    const data = kept[0].data as Record<string, unknown>;
+    assert.equal(data.inputCount, 2);
+    assert.equal(data.displayKind, "bar");
+    assert.equal(typeof data.durationMs, "number");
+    assert.equal(data.definition, undefined, "the definition belongs to the content record");
   });
 
   await t.test("a rejected definition logs the rule that fired, at warn", () => {
@@ -557,6 +737,29 @@ test("validation logs content, and labels it so production can drop it", async (
     }
   });
 
+  // The probe above cannot detect the likeliest leak: `limit: 0` fails with a
+  // content-free message. Several rules quote the offending name into their
+  // message, so adding `reason` to the shape record would leak — and only a
+  // rejection of this kind catches it.
+  await t.test("a rejection whose message quotes a name still keeps it out of shape", () => {
+    const logger = new CapturingLogger();
+    assert.throws(() => validateAnalyticDefinition({
+      ...base(),
+      joins: [{ kind: "left", left: "Orders", right: "Orders", on: [{ leftField: "a", rightField: "b" }] }]
+    }, OPTIONS, logger));
+
+    const rejection = logger.shapeEntries.find(
+      e => e.message === "structured-analytic.definition.rejected"
+    );
+    assert.ok(rejection);
+    // Proves the message really does quote content, so the probe is meaningful.
+    const detail = logger.contentEntries.find(
+      e => e.message === "structured-analytic.definition.rejected.detail"
+    );
+    assert.match(String((detail?.data as Record<string, unknown>).reason), /Reps/);
+    assert.equal(JSON.stringify(rejection).includes("Reps"), false);
+  });
+
   await t.test("content-labelled records do carry it — that is the point", () => {
     const logger = new CapturingLogger();
     validateAnalyticDefinition(base(), OPTIONS, logger);
@@ -567,19 +770,22 @@ test("validation logs content, and labels it so production can drop it", async (
     }
   });
 
-  await t.test("resolved options are logged once, in full", () => {
+  await t.test("resolved limits are logged once, in full, and survive shape-only", () => {
     const logger = new CapturingLogger();
-    validateAnalyticOptions(OPTIONS, logger);
+    validateAnalyticLimits(OPTIONS, logger);
 
-    const entry = logger.entries.find(e => e.message === "structured-analytic.options.resolved");
+    const entry = logger.entries.find(e => e.message === "structured-analytic.limits.resolved");
     assert.ok(entry);
     assert.equal(entry.level, "info");
     assert.deepEqual(entry.data, { ...OPTIONS });
+    // Eight operator-set integers are shape by the platform's own taxonomy, and
+    // the build where you cannot re-run this locally is the one that needs it.
+    assert.equal(entry.detail, undefined);
   });
 
   await t.test("the logger is optional, so the domain stays callable as a pure function", () => {
     assert.doesNotThrow(() => validateAnalyticDefinition(base(), OPTIONS));
-    assert.doesNotThrow(() => validateAnalyticOptions(OPTIONS));
+    assert.doesNotThrow(() => validateAnalyticLimits(OPTIONS));
   });
 
   await t.test("describeDefinition counts a self-join and recorded entry ids", () => {
@@ -603,24 +809,28 @@ test("the shape limits are configuration, not constants", async (t) => {
     const config = await loadBackendConfig();
     assert.deepEqual(
       Object.keys(config.structuredAnalytic).sort(),
-      Object.keys(DEFAULT_STRUCTURED_ANALYTIC_OPTIONS).sort()
+      Object.keys(DEFAULT_STRUCTURED_ANALYTIC_LIMITS).sort()
     );
-    assert.deepEqual(config.structuredAnalytic, DEFAULT_STRUCTURED_ANALYTIC_OPTIONS);
+    assert.deepEqual(config.structuredAnalytic, DEFAULT_STRUCTURED_ANALYTIC_LIMITS);
   });
 
-  await t.test("the domain options type and the config section stay the same shape", () => {
-    // If one gains a field and the other does not, this fails rather than the
-    // limit silently becoming unconfigurable.
-    const fromConfig: StructuredAnalyticOptions = DEFAULT_STRUCTURED_ANALYTIC_OPTIONS;
-    assert.equal(typeof fromConfig.maxDescriptionBytes, "number");
+  // The type annotation that used to stand here proved nothing: apps/backend
+  // tsconfig includes only src/**, and tests run under tsx, which strips types
+  // without checking them. Only a runtime assertion means anything in this file.
+  await t.test("the declared key list matches the defaults exactly", () => {
+    assert.deepEqual(
+      [...STRUCTURED_ANALYTIC_LIMIT_KEYS].sort(),
+      Object.keys(DEFAULT_STRUCTURED_ANALYTIC_LIMITS).sort(),
+      "a limit added to one and not the other is a check that silently stops running"
+    );
   });
 
   await t.test("there is no per-project catalog cap, matching the Templates decision", () => {
-    assert.equal("maxAnalyticsPerProject" in DEFAULT_STRUCTURED_ANALYTIC_OPTIONS, false);
+    assert.equal("maxAnalyticsPerProject" in DEFAULT_STRUCTURED_ANALYTIC_LIMITS, false);
   });
 
   await t.test("configured limits actually bind", () => {
-    rejects(base(), /inputs: exceeds maxInputs \(1\)/, { ...OPTIONS, maxInputs: 1 });
+    rejectsWith(base(), /inputs: exceeds maxInputs \(1\)/, { ...OPTIONS, maxInputs: 1 });
     assert.throws(
       () => validateAnalyticDescription("a much longer description", { ...OPTIONS, maxDescriptionBytes: 4 }),
       AnalyticValidationError
@@ -639,4 +849,421 @@ test("validation never requires the named data to exist", () => {
   const definition = accepts(simple({ inputs: [{ name: "DoesNotExistAnywhere" }],
     columns: [{ id: "c", field: { input: "DoesNotExistAnywhere", field: "whatever" }, aggregation: "none" }] }));
   assert.equal(definition.inputs[0].name, "DoesNotExistAnywhere");
+});
+
+// ─── Round trip ───────────────────────────────────────────────────────────────
+
+// One test that reads every field back off a validated definition.
+//
+// Almost every assertion in this file above was `doesNotThrow` or a message
+// match, which proves a value is *accepted* and never that it is *preserved*.
+// Swapping `leftField`/`rightField`, returning the wrong join kind, or dropping
+// `caseSensitive` all passed the suite. This pins the whole object, and with it
+// the collection ordering the compiler depends on.
+test("a validated definition preserves every field, exactly", () => {
+  const authored = {
+    inputs: [
+      { name: "Orders", entryId: "entry-7" },
+      { name: "Orders", as: "Prior" }
+    ],
+    joins: [{
+      kind: "inner",
+      left: "Orders",
+      right: "Prior",
+      on: [
+        { leftField: "repId", rightField: "id" },
+        { leftField: "year", rightField: "priorYear" }
+      ]
+    }],
+    columns: [
+      { id: "c1", field: { input: "Orders", field: "region" }, aggregation: "none" }
+    ],
+    rows: [
+      { id: "r1", field: { input: "Prior", field: "amount" }, aggregation: "sum", label: "Total" }
+    ],
+    filters: [
+      { field: { input: "Orders", field: "status" }, operator: "notEquals", value: { kind: "text", value: "void" } },
+      { field: { input: "Orders", field: "tier" }, operator: "in", values: [
+        { kind: "text", value: "gold" },
+        { kind: "number", numerator: "-7", denominator: "3" },
+        { kind: "logic", value: true },
+        { kind: "null" }
+      ] },
+      { field: { input: "Orders", field: "note" }, operator: "contains", value: "urgent", caseSensitive: true },
+      { field: { input: "Prior", field: "closedAt" }, operator: "isNull" }
+    ],
+    sorts: [
+      { placementId: "r1", direction: "desc" },
+      { placementId: "c1", direction: "asc" }
+    ],
+    limit: 25,
+    display: { kind: "bar" }
+  };
+
+  assert.deepEqual(accepts(authored), {
+    inputs: [
+      { name: "Orders", entryId: "entry-7" },
+      { name: "Orders", as: "Prior" }
+    ],
+    joins: [{
+      kind: "inner",
+      left: "Orders",
+      right: "Prior",
+      on: [
+        { leftField: "repId", rightField: "id" },
+        { leftField: "year", rightField: "priorYear" }
+      ]
+    }],
+    rows: [
+      { id: "r1", field: { input: "Prior", field: "amount" }, aggregation: "sum", label: "Total" }
+    ],
+    columns: [
+      { id: "c1", field: { input: "Orders", field: "region" }, aggregation: "none" }
+    ],
+    filters: [
+      { field: { input: "Orders", field: "status" }, operator: "notEquals", value: { kind: "text", value: "void" } },
+      { field: { input: "Orders", field: "tier" }, operator: "in", values: [
+        { kind: "text", value: "gold" },
+        { kind: "number", numerator: "-7", denominator: "3" },
+        { kind: "logic", value: true },
+        { kind: "null" }
+      ] },
+      { field: { input: "Orders", field: "note" }, operator: "contains", value: "urgent", caseSensitive: true },
+      { field: { input: "Prior", field: "closedAt" }, operator: "isNull" }
+    ],
+    sorts: [
+      { placementId: "r1", direction: "desc" },
+      { placementId: "c1", direction: "asc" }
+    ],
+    limit: 25,
+    display: { kind: "bar" }
+  });
+});
+
+test("each enum value is stored as authored, not merely accepted", async (t) => {
+  await t.test("join kind", () => {
+    for (const kind of ANALYTIC_JOIN_KINDS) {
+      const definition = accepts({
+        inputs: [{ name: "A" }, { name: "B" }],
+        joins: [{ kind, left: "A", right: "B", on: [{ leftField: "k", rightField: "k" }] }],
+        columns: [{ id: "c", field: { input: "A", field: "k" }, aggregation: "none" }],
+        rows: [], filters: [], sorts: [], display: { kind: "table" }
+      });
+      assert.equal(definition.joins[0].kind, kind);
+    }
+  });
+
+  await t.test("aggregation", () => {
+    for (const aggregation of ANALYTIC_AGGREGATIONS) {
+      const definition = accepts(simple({
+        columns: [{ id: "c", field: { input: "Orders", field: "region" }, aggregation }]
+      }));
+      assert.equal(definition.columns[0].aggregation, aggregation);
+    }
+  });
+
+  await t.test("sort direction", () => {
+    for (const direction of ANALYTIC_SORT_DIRECTIONS) {
+      const definition = accepts(simple({ sorts: [{ placementId: "c1", direction }] }));
+      assert.equal(definition.sorts[0].direction, direction);
+    }
+  });
+
+  await t.test("display kind, over a definition legal for each", () => {
+    for (const kind of ANALYTIC_DISPLAY_KINDS) {
+      const measure = kind === "table" || kind === "scatter" ? "none" : "sum";
+      const definition = accepts({
+        inputs: [{ name: "A" }], joins: [],
+        columns: [{ id: "c", field: { input: "A", field: "k" }, aggregation: "none" }],
+        rows: [{ id: "r", field: { input: "A", field: "v" }, aggregation: measure }],
+        filters: [], sorts: [], display: { kind }
+      });
+      assert.equal(definition.display.kind, kind);
+    }
+  });
+});
+
+// ─── Vocabulary parity with Formula ───────────────────────────────────────────
+
+// The domain re-declares four vocabularies that compilation turns directly into
+// Formula builtin options. A rename on either side would otherwise produce
+// definitions that save cleanly and fail at pull time, per analytic, forever —
+// the exact failure mode `isBuiltinName` was exported to prevent.
+test("the domain's vocabularies match the Formula builtins they compile into", async (t) => {
+  await t.test("filter operators are WHERE's operators", () => {
+    assert.deepEqual([...ANALYTIC_FILTER_OPERATORS].sort(), [...WHERE_OPS].sort());
+  });
+
+  await t.test("aggregations are AGGREGATE's functions, plus `none`", () => {
+    const aggregating = ANALYTIC_AGGREGATIONS.filter(name => name !== "none");
+    assert.deepEqual([...aggregating].sort(), [...AGGREGATE_FNS].sort());
+    assert.equal(ANALYTIC_AGGREGATIONS.includes("none"), true);
+  });
+
+  await t.test("sort directions are SORT's directions", () => {
+    assert.deepEqual([...ANALYTIC_SORT_DIRECTIONS].sort(), [...SORT_DIRECTIONS].sort());
+  });
+
+  await t.test("display kinds are the Formula engine's display kinds", () => {
+    assert.deepEqual([...ANALYTIC_DISPLAY_KINDS].sort(), [...DISPLAY_KINDS].sort());
+    for (const kind of ANALYTIC_DISPLAY_KINDS) assert.equal(isDisplayKind(kind), true);
+  });
+});
+
+// ─── Byte limits ──────────────────────────────────────────────────────────────
+
+test("limits are counted in bytes, and bind at every name site", async (t) => {
+  await t.test("the boundary is inclusive", () => {
+    assert.equal(validateAnalyticTitle("x".repeat(10), { ...OPTIONS, maxTitleBytes: 10 }), "x".repeat(10));
+    assert.throws(
+      () => validateAnalyticTitle("x".repeat(11), { ...OPTIONS, maxTitleBytes: 10 }),
+      AnalyticValidationError
+    );
+  });
+
+  // The whole reason the limit is expressed in bytes. "é" is one UTF-16 unit
+  // and two UTF-8 bytes, so `.length` would let twice as much through.
+  await t.test("multibyte characters are counted as their encoded bytes", () => {
+    const limits = { ...OPTIONS, maxTitleBytes: 5 };
+    assert.equal(validateAnalyticTitle("éé", limits), "éé");
+    assert.throws(() => validateAnalyticTitle("ééé", limits), AnalyticValidationError);
+    // An astral character is four bytes but two UTF-16 units.
+    assert.throws(() => validateAnalyticTitle("😀😀", limits), AnalyticValidationError);
+  });
+
+  await t.test("maxNameBytes binds at every site that uses it", () => {
+    const limits = { ...OPTIONS, maxNameBytes: 4 };
+    const long = "toolongname";
+    const cases: ReadonlyArray<readonly [string, Record<string, unknown>]> = [
+      ["inputs[0].name", simple({ inputs: [{ name: long }],
+        columns: [{ id: "c", field: { input: long, field: "a" }, aggregation: "none" }] })],
+      ["inputs[0].entryId", simple({ inputs: [{ name: "Ord", entryId: long }],
+        columns: [{ id: "c", field: { input: "Ord", field: "a" }, aggregation: "none" }] })],
+      ["inputs[1].as", { inputs: [{ name: "Ord" }, { name: "Ord", as: long }],
+        joins: [{ kind: "inner", left: "Ord", right: long, on: [{ leftField: "a", rightField: "a" }] }],
+        columns: [{ id: "c", field: { input: "Ord", field: "a" }, aggregation: "none" }],
+        rows: [], filters: [], sorts: [], display: { kind: "table" } }],
+      ["columns[0].id", simple({ columns: [{ id: long, field: { input: "Ord", field: "a" }, aggregation: "none" }],
+        inputs: [{ name: "Ord" }] })],
+      ["columns[0].field.field", simple({ inputs: [{ name: "Ord" }],
+        columns: [{ id: "c", field: { input: "Ord", field: long }, aggregation: "none" }] })],
+      ["columns[0].label", simple({ inputs: [{ name: "Ord" }],
+        columns: [{ id: "c", field: { input: "Ord", field: "a" }, aggregation: "none", label: long }] })],
+      ["joins[0].on[0].leftField", { inputs: [{ name: "Ord" }, { name: "Rep" }],
+        joins: [{ kind: "inner", left: "Ord", right: "Rep", on: [{ leftField: long, rightField: "a" }] }],
+        columns: [{ id: "c", field: { input: "Ord", field: "a" }, aggregation: "none" }],
+        rows: [], filters: [], sorts: [], display: { kind: "table" } }],
+      ["sorts[0].placementId", simple({ inputs: [{ name: "Ord" }],
+        columns: [{ id: "c", field: { input: "Ord", field: "a" }, aggregation: "none" }],
+        sorts: [{ placementId: long, direction: "asc" }] })]
+    ];
+
+    for (const [field, definition] of cases) {
+      rejects(definition, /exceeds its 4-byte limit/, field, limits);
+    }
+  });
+
+  await t.test("a filter literal is bounded too, so a definition has a total size", () => {
+    const limits = { ...OPTIONS, maxScalarBytes: 8 };
+    const ref = { input: "Orders", field: "status" };
+    rejects(
+      simple({ filters: [{ field: ref, operator: "equals", value: { kind: "text", value: "x".repeat(9) } }] }),
+      /exceeds its 8-byte limit/,
+      "filters[0].value.value",
+      limits
+    );
+    rejects(
+      simple({ filters: [{ field: ref, operator: "contains", value: "x".repeat(9), caseSensitive: false }] }),
+      /exceeds its 8-byte limit/,
+      "filters[0].value",
+      limits
+    );
+    rejects(
+      simple({ filters: [{ field: ref, operator: "equals",
+        value: { kind: "number", numerator: "1".repeat(9), denominator: "1" } }] }),
+      /exceeds its 8-byte limit/,
+      "filters[0].value.numerator",
+      limits
+    );
+  });
+
+  await t.test("maxFilterValues bounds an `in` list", () => {
+    const ref = { input: "Orders", field: "tier" };
+    const values = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({ kind: "text", value: `t${index}` }));
+    const limits = { ...OPTIONS, maxFilterValues: 3 };
+    accepts(simple({ filters: [{ field: ref, operator: "in", values: values(3) }] }), limits);
+    rejects(
+      simple({ filters: [{ field: ref, operator: "in", values: values(4) }] }),
+      /exceeds maxFilterValues \(3\)/,
+      "filters[0].values",
+      limits
+    );
+  });
+});
+
+// ─── Structural guards ────────────────────────────────────────────────────────
+
+// Each of these is a 400-vs-500 distinction at the job-wiring boundary: remove
+// or reorder any guard and the same input yields a raw TypeError instead.
+test("every structural guard yields a validation error, never a TypeError", () => {
+  const ref = { input: "Orders", field: "a" };
+  const one = { id: "c1", field: { input: "Orders", field: "region" }, aggregation: "none" };
+  const cases: ReadonlyArray<readonly [string, unknown, string]> = [
+    ["definition", null, "definition"],
+    ["definition is an array", [], "inputs"],
+    ["inputs[0] not an object", simple({ inputs: ["Orders"] }), "inputs[0]"],
+    ["joins not an array", simple({ joins: {} }), "joins"],
+    ["joins[0] not an object", { ...base(), joins: [null] }, "joins[0]"],
+    ["joins[0].on[0] not an object", { ...base(),
+      joins: [{ kind: "left", left: "Orders", right: "Reps", on: ["k"] }] }, "joins[0].on[0]"],
+    ["rows not an array", simple({ rows: {} }), "rows"],
+    ["columns not an array", simple({ columns: {} }), "columns"],
+    ["columns[0] not an object", simple({ columns: ["c1"] }), "columns[0]"],
+    ["placement field not an object", simple({
+      columns: [{ id: "c", field: "amount", aggregation: "none" }] }), "columns[0].field"],
+    ["filters not an array", simple({ filters: {} }), "filters"],
+    ["filters[0] not an object", simple({ filters: [null] }), "filters[0]"],
+    ["sorts not an array", simple({ sorts: {} }), "sorts"],
+    ["sorts[0] not an object", simple({ columns: [one], sorts: [null] }), "sorts[0]"],
+    ["display not an object", simple({ display: null }), "display"],
+    ["display is an array", simple({ display: [] }), "display.kind"],
+    ["scalar not an object", simple({
+      filters: [{ field: ref, operator: "equals", value: "closed" }] }), "filters[0].value"],
+    ["scalar value missing", simple({
+      filters: [{ field: ref, operator: "equals" }] }), "filters[0].value"],
+    ["aggregation missing", simple({
+      columns: [{ id: "c", field: ref }] }), "columns[0].aggregation"]
+  ];
+
+  for (const [label, definition, expectedField] of cases) {
+    assert.throws(
+      () => validateAnalyticDefinition(definition, OPTIONS),
+      (error: unknown) => {
+        assert.ok(error instanceof AnalyticValidationError, `${label} threw ${String(error)}`);
+        assert.equal(error.field, expectedField, label);
+        return true;
+      },
+      label
+    );
+  }
+});
+
+// ─── Remaining gaps ───────────────────────────────────────────────────────────
+
+test("the logic scalar kind is validated like the other three", async (t) => {
+  const ref = { input: "Orders", field: "active" };
+
+  await t.test("a boolean is accepted and preserved", () => {
+    for (const value of [true, false]) {
+      const definition = accepts(simple({
+        filters: [{ field: ref, operator: "equals", value: { kind: "logic", value } }]
+      }));
+      assert.deepEqual(definition.filters[0], {
+        field: ref, operator: "equals", value: { kind: "logic", value }
+      });
+    }
+  });
+
+  await t.test("a stringly-typed boolean is refused", () => {
+    rejects(
+      simple({ filters: [{ field: ref, operator: "equals", value: { kind: "logic", value: "true" } }] }),
+      /must be a boolean/,
+      "filters[0].value.value"
+    );
+  });
+
+  await t.test("a null literal is accepted under a real operator", () => {
+    const definition = accepts(simple({
+      filters: [{ field: ref, operator: "notEquals", value: { kind: "null" } }]
+    }));
+    assert.deepEqual(definition.filters[0].value, { kind: "null" });
+  });
+
+  await t.test("a text literal may be empty or blank — a filter can match those", () => {
+    for (const value of ["", "   "]) {
+      const definition = accepts(simple({
+        filters: [{ field: ref, operator: "equals", value: { kind: "text", value } }]
+      }));
+      assert.deepEqual(definition.filters[0].value, { kind: "text", value });
+    }
+  });
+});
+
+test("an unknown filter operator is told about all ten, not only the six comparisons", () => {
+  rejects(
+    simple({ filters: [{ field: { input: "Orders", field: "a" }, operator: "IN", values: [] }] }),
+    /in, contains, isNull, isNotNull/,
+    "filters[0].operator"
+  );
+});
+
+test("an `as` label colliding with another input's name is a duplicate key", () => {
+  rejects(
+    {
+      inputs: [{ name: "A" }, { name: "B", as: "a" }],
+      joins: [{ kind: "inner", left: "A", right: "a", on: [{ leftField: "k", rightField: "k" }] }],
+      columns: [{ id: "c", field: { input: "A", field: "k" }, aggregation: "none" }],
+      rows: [], filters: [], sorts: [], display: { kind: "table" }
+    },
+    /duplicate input key: a/,
+    "inputs[1]"
+  );
+});
+
+test("limit accepts the whole safe-integer range and nothing outside it", () => {
+  assert.equal(accepts(simple({ limit: 1 })).limit, 1);
+  assert.equal(accepts(simple({ limit: Number.MAX_SAFE_INTEGER })).limit, Number.MAX_SAFE_INTEGER);
+  // The reason isSafeInteger was chosen over isInteger: this is a whole number.
+  rejects(simple({ limit: Number.MAX_SAFE_INTEGER + 1 }), /must be a positive integer/, "limit");
+  rejects(simple({ limit: Number.POSITIVE_INFINITY }), /must be a positive integer/, "limit");
+});
+
+test("a chart's second requirement is enforced, not only its first", async (t) => {
+  const dimension = (id: string) => ({
+    id, field: { input: "A", field: id }, aggregation: "none"
+  });
+  const measure = (id: string) => ({
+    id, field: { input: "A", field: id }, aggregation: "sum"
+  });
+  const shelves = (columns: unknown[], rows: unknown[], kind: string) => ({
+    inputs: [{ name: "A" }], joins: [], columns, rows,
+    filters: [], sorts: [], display: { kind }
+  });
+
+  // The commonest authoring mistake: the right number of pills, but the Rows
+  // pill was never aggregated. Both existing cases had the wrong count, so they
+  // fired on the first disjunct and this one never ran.
+  await t.test("one non-aggregated Rows placement is refused for bar, line, area, pie", () => {
+    for (const kind of ["bar", "line", "area", "pie"]) {
+      rejects(
+        shelves([dimension("c")], [dimension("r")], kind),
+        new RegExp(`a ${kind} requires exactly one aggregated Rows placement`),
+        "display"
+      );
+    }
+  });
+
+  await t.test("an aggregated Columns placement is refused for bar, line, area, pie", () => {
+    for (const kind of ["bar", "line", "area", "pie"]) {
+      rejects(
+        shelves([measure("c")], [measure("r")], kind),
+        new RegExp(`a ${kind} requires exactly one non-aggregated Columns placement`),
+        "display"
+      );
+    }
+  });
+
+  await t.test("a scatter refuses an aggregated placement on either shelf", () => {
+    rejects(
+      shelves([measure("c")], [dimension("r")], "scatter"),
+      /scatter requires exactly one non-aggregated Columns/,
+      "display"
+    );
+    rejects(
+      shelves([dimension("c")], [measure("r")], "scatter"),
+      /scatter requires exactly one non-aggregated Rows/,
+      "display"
+    );
+  });
 });

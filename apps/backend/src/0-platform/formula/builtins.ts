@@ -89,11 +89,16 @@ function flattenNumbers(values: FormulaValue[], span?: SourceSpan): CanonicalRat
 
 type ScalarValue = NumberValue | TextValue | LogicValue | { readonly kind: "null" };
 
-const AGGREGATE_FNS = ["sum", "count", "average", "min", "max"] as const;
-const WHERE_OPS = [
+// Exported for the same reason as `isBuiltinName`: a consumer that builds these
+// option strings — Structured Analytic compiles a definition into exactly these
+// calls — must be able to ask the engine what it accepts rather than keep a
+// second copy that drifts when one is added here.
+export const AGGREGATE_FNS = ["sum", "count", "average", "min", "max"] as const;
+export const WHERE_OPS = [
   "equals", "notEquals", "greaterThan", "greaterThanOrEqual",
   "lessThan", "lessThanOrEqual", "in", "contains", "isNull", "isNotNull"
 ] as const;
+export const SORT_DIRECTIONS = ["asc", "desc"] as const;
 
 /** Distinguishes a returned diagnostic from a returned value. */
 function isDiagnostic(value: unknown): value is FormulaDiagnostic {

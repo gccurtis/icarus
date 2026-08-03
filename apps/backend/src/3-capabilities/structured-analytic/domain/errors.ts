@@ -1,14 +1,41 @@
 // One class per distinguishable failure. Job wiring maps these to status codes;
 // nothing here mentions HTTP.
+//
+// Purge-before-delete is deliberately absent: `purgeResourceHistory` already
+// throws the shared `ResourceNotDeletedError` from
+// 0-utils/persistence/resourceHistory.ts, which every endpoint mapper in the
+// repo already maps to 409 `not_deleted`. A capability-private twin would have
+// to be mapped by hand and would be missed by any future shared handler.
 
-/** A definition that is structurally incoherent, or a malformed request. */
+/**
+ * A definition that is structurally incoherent, or a malformed request.
+ *
+ * `reason` is kept alongside `message` so a caller does not have to strip the
+ * `"<field>: "` prefix back off to get at it — the same split Persona makes.
+ */
 export class AnalyticValidationError extends Error {
   constructor(
-    readonly field: string,
-    message: string
+    public readonly field: string,
+    public readonly reason: string
   ) {
-    super(`${field}: ${message}`);
+    super(`${field}: ${reason}`);
     this.name = "AnalyticValidationError";
+  }
+}
+
+/**
+ * The configured limits are unusable. An operator fault, not a caller's — it is
+ * deliberately not an `AnalyticValidationError`, because job wiring maps those
+ * to 400 and would blame the client for a bad `configuration.yaml` while
+ * echoing an internal field name back to them.
+ */
+export class AnalyticConfigurationError extends Error {
+  constructor(
+    public readonly limit: string,
+    public readonly reason: string
+  ) {
+    super(`structuredAnalytic.${limit}: ${reason}`);
+    this.name = "AnalyticConfigurationError";
   }
 }
 
@@ -21,17 +48,9 @@ export class AnalyticWireError extends Error {
 }
 
 export class AnalyticNotFoundError extends Error {
-  constructor(readonly analyticId: string) {
+  constructor(public readonly analyticId: string) {
     super(`Structured Analytic not found: ${analyticId}`);
     this.name = "AnalyticNotFoundError";
-  }
-}
-
-/** Purge was asked for while the analytic still exists. */
-export class AnalyticNotDeletedError extends Error {
-  constructor(readonly analyticId: string) {
-    super(`Structured Analytic is still current: ${analyticId}`);
-    this.name = "AnalyticNotDeletedError";
   }
 }
 
@@ -48,12 +67,9 @@ export class StaleAnalyticRevisionError extends Error {
   }
 }
 
-export class AnalyticCatalogLimitError extends Error {
-  constructor(readonly limit: number) {
-    super(`project already holds the maximum of ${limit} structured analytics`);
-    this.name = "AnalyticCatalogLimitError";
-  }
-}
+// There is no catalog-limit error. A per-project cap on how many analytics may
+// exist belongs to a global resource-quota policy, not to this capability — the
+// same call Templates made when `maxTemplatesPerProject` was dropped.
 
 /** A save or copy target name is already taken in Structured Data. */
 export class AnalyticNameConflictError extends Error {

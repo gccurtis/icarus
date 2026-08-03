@@ -209,6 +209,8 @@ structuredAnalytic:
   maxJoinKeys: 8
   maxPlacements: 32
   maxFilters: 32
+  maxFilterValues: 256
+  maxScalarBytes: 4096
   maxSorts: 8
   maxTitleBytes: 4096
   maxDescriptionBytes: 4096

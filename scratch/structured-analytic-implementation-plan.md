@@ -297,7 +297,11 @@ plus `pruneHistory` and `purgeExpired`.
 
 - **create** — validate, **compile** (a definition that will not compile is
   rejected before storage), best-effort `metadata()` for `entryId` capture,
-  `countLive()` limit, insert at revision 1.
+  insert at revision 1. No catalog-size check; that limit is gone.
+  **Overwrite any caller-supplied `entryId`** — it is server-captured
+  bookkeeping, and honouring a client's value lets a caller retarget an input to
+  an entry its name never referred to, which the first pull would then self-heal
+  into the stored name. Same on update.
 - **update** — validate, compile, CAS, typed error on `false` after a re-read.
 - **delete / purge** — CAS and the not-deleted rule.
 - **check** — `metadata()` only; repairs renamed names; no resolution, no data.
