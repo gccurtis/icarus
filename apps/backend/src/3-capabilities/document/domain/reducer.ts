@@ -81,11 +81,14 @@ export const normalizeVariableName = (name: string): string =>
  * one target in, one target out — which is what replacing the entry *list* with
  * a single `PromptContext` bought.
  *
- * An unbound variable **throws** rather than resolving to nothing. Resolving to
- * `[]` would hand `Knowledge.resolveScope` the zero-length array it reads as
- * whole-project retrieval, so a prompt nobody finished configuring would
- * silently ground itself on everything — a wrong answer instead of a refused
- * one. Unbound variables only exist on template-mode Documents, because
+ * An unbound variable **throws** rather than resolving to nothing. An empty
+ * scope is now refused at refresh time too, so this is no longer the only thing
+ * standing between an unconfigured prompt and a wrong answer — but it is still
+ * the better place to fail, because here we can name the variable that is
+ * missing. A refusal at refresh time can only say the output grounds on
+ * nothing; it cannot say which parameter nobody filled in.
+ *
+ * Unbound variables only exist on template-mode Documents, because
  * instantiation must bind every declared parameter, so on an ordinary Document
  * this cannot fire.
  */

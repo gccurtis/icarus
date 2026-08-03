@@ -19,6 +19,7 @@ import type {
   Usage,
   WindowOptions
 } from "#platform/knowledge/types.js";
+import { isProjectEntry } from "#platform/knowledge/types.js";
 import type { KnowledgeStore } from "#platform/knowledge/store.js";
 import type { Embedder } from "#platform/knowledge/embedder.js";
 import type { ToolBinding } from "#platform/intelligence/tools.js";
@@ -241,20 +242,60 @@ export class Knowledge {
 
   /**
    * Resolve a Context/resource scope once so a multi-query caller can reuse an
-   * immutable membership snapshot for its whole operation. An explicit empty
-   * scope snapshots the full project lattice; `undefined` remains unscoped.
+   * immutable membership snapshot for its whole operation.
+   *
+   * Three cases, and the middle one used to be the other two at once:
+   *
+   * - `undefined` — unscoped. Retrieval sees the whole lattice and says so by
+   *   returning a null manifest.
+   * - `[]` — an empty scope. It admits nothing.
+   * - `[{ kind: "project" }]` — the whole project, resolved now.
+   *
+   * **An empty array no longer means the whole project.** It did, and that was
+   * a silent trap: an omitted field, a coerced body value, or a Prompt Block
+   * whose Context Variable was never bound all produce `[]`, and every one of
+   * them quietly widened to whole-corpus grounding instead of failing. Naming
+   * the project explicitly is the only way to get it, so the accidental empties
+   * now resolve to nothing and are visible instead of wrong.
    */
   async resolveScope(scope?: ContextEntry[]): Promise<KnowledgeScopeManifest | null> {
     if (scope === undefined) return null;
     const inputEntries = canonicalEntries(scope);
-    const resolved = inputEntries.length === 0
-      ? (await this.store.listSources()).map((source) => ({
-          id: source.sourceId,
-          kind: "document"
-        }))
-      : this.resolver
-        ? await this.resolver.resolve(inputEntries)
-        : inputEntries.filter((entry) => entry.kind === "document");
+
+    if (inputEntries.length === 0) {
+      // Loud, because it is nearly always a mistake upstream rather than a
+      // caller who genuinely wants to ground on nothing.
+      this.logger.warn("knowledge.scope.empty", {
+        reason: "an empty scope admits nothing; name the project explicitly to scope to all of it"
+      });
+    }
+
+    // Normally Context has already expanded this into concrete resources. This
+    // handles the sentinel arriving unexpanded — no resolver wired, or a caller
+    // passing it straight to Knowledge — because the alternative is that the
+    // resolver drops an unknown kind and the scope silently becomes empty,
+    // which looks identical to a genuine empty scope and is the opposite of
+    // what was asked for.
+    const namesProject = inputEntries.some(isProjectEntry);
+    const resolvedFromEntries = this.resolver
+      ? await this.resolver.resolve(inputEntries)
+      : inputEntries.filter((entry) => entry.kind === "document");
+    const resolved = namesProject
+      ? [
+          ...resolvedFromEntries,
+          ...(await this.store.listSources()).map((source) => ({
+            id: source.sourceId,
+            kind: "document"
+          }))
+        ]
+      : resolvedFromEntries;
+
+    if (namesProject) {
+      this.logger.debug("knowledge.scope.project", {
+        fromEntries: resolvedFromEntries.length,
+        total: resolved.length
+      });
+    }
     const resolvedEntries = canonicalEntries(resolved);
     const resolvedSourceIds = [
       ...new Set(

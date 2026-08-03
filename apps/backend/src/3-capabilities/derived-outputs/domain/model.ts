@@ -226,6 +226,25 @@ export class DerivedOutputConflictError extends Error {
   }
 }
 
+/**
+ * A refresh was asked for on an output whose definition names no sources.
+ *
+ * Not a retrieval that found nothing — that is an ordinary `insufficient`
+ * answer. This is an output that could never find anything, because it was
+ * declared without a scope or its Context Variable was never bound. It used to
+ * be treated as "the whole project", which turned a configuration mistake into
+ * a confident answer drawn from everything.
+ */
+export class DerivedOutputEmptyScopeError extends Error {
+  constructor(public readonly outputId: string) {
+    super(
+      `Derived output ${outputId} names no context to ground on. ` +
+      "Name the resources to search, or the project itself."
+    );
+    this.name = "DerivedOutputEmptyScopeError";
+  }
+}
+
 export class DerivedOutputIdempotencyConflictError extends Error {
   constructor(public readonly idempotencyKey: string) {
     super("Derived output declaration key was reused with different input");

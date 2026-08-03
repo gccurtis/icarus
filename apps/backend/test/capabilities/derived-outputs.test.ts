@@ -30,6 +30,7 @@ import {
 } from "../../src/3-capabilities/derived-outputs/derived-outputs.js";
 import {
   DerivedOutputDefinitionUpdateIdempotencyConflictError,
+  DerivedOutputEmptyScopeError,
   DerivedOutputNotFoundError,
   DerivedOutputRefreshIdempotencyConflictError,
   StaleDefinitionRevisionError
@@ -78,6 +79,13 @@ const makeManifest = (
 });
 
 const EMPTY_MANIFEST = makeManifest();
+
+/**
+ * Every output has to name something to ground on. An empty scope is refused
+ * now rather than silently meaning "the whole project", so fixtures that only
+ * care about the refresh machinery still have to say what they are searching.
+ */
+const SCOPED_ENTRIES = [{ id: "src-1", kind: "document" }];
 
 const makeResourceReader = (): ResourceReader => ({
   describeSource: async () => null,
@@ -174,7 +182,7 @@ test("a no-evidence refresh atomically publishes an insufficient revision and te
     { maxPlanQueries: 8, maxToolRounds: 8 },
     logger
   );
-  const output = await service.declare({ prompt: "What is the answer?" });
+  const output = await service.declare({ prompt: "What is the answer?", contextEntries: SCOPED_ENTRIES });
   const result = await service.refresh(output.id);
 
   assert.equal(result.skipped, false);
@@ -208,7 +216,7 @@ test("a keyed refresh replays its exact published result after reopening the sto
     { maxPlanQueries: 8, maxToolRounds: 8 },
     new CapturingLogger()
   );
-  const output = await firstService.declare({ prompt: "Replay me" });
+  const output = await firstService.declare({ prompt: "Replay me", contextEntries: SCOPED_ENTRIES });
   const first = await firstService.refresh(output.id, {
     idempotencyKey: "document:prompt-refresh:attempt-1"
   });
@@ -259,7 +267,7 @@ test("a keyed skipped refresh is persisted and replayed without provider work", 
     { maxPlanQueries: 8, maxToolRounds: 8 },
     new CapturingLogger()
   );
-  const output = await service.declare({ prompt: "Fence me" });
+  const output = await service.declare({ prompt: "Fence me", contextEntries: SCOPED_ENTRIES });
   const pending = service.refresh(output.id, {
     idempotencyKey: "document:prompt-refresh:attempt-skipped"
   });
@@ -296,8 +304,8 @@ test("a refresh key rejects reuse for a different output", async (t) => {
     { maxPlanQueries: 8, maxToolRounds: 8 },
     new CapturingLogger()
   );
-  const first = await service.declare({ prompt: "First" });
-  const second = await service.declare({ prompt: "Second" });
+  const first = await service.declare({ prompt: "First", contextEntries: SCOPED_ENTRIES });
+  const second = await service.declare({ prompt: "Second", contextEntries: SCOPED_ENTRIES });
   const key = "document:prompt-refresh:shared-key";
   await service.refresh(first.id, { idempotencyKey: key });
 
@@ -326,7 +334,7 @@ test("unkeyed refreshes retain their existing repeatable behavior", async (t) =>
     { maxPlanQueries: 8, maxToolRounds: 8 },
     new CapturingLogger()
   );
-  const output = await service.declare({ prompt: "Refresh twice" });
+  const output = await service.declare({ prompt: "Refresh twice", contextEntries: SCOPED_ENTRIES });
 
   const first = await service.refresh(output.id);
   const second = await service.refresh(output.id);
@@ -346,7 +354,7 @@ test("a keyed definition update replays its exact result after later edits and r
     { maxPlanQueries: 8, maxToolRounds: 8 },
     new CapturingLogger()
   );
-  const output = await firstService.declare({ prompt: "Original" });
+  const output = await firstService.declare({ prompt: "Original", contextEntries: SCOPED_ENTRIES });
   const request = {
     prompt: "First update",
     contextEntries: [{ id: "document-1", kind: "document" }],
@@ -358,7 +366,7 @@ test("a keyed definition update replays its exact result after later edits and r
   });
   const later = await firstService.updateDefinition(output.id, {
     prompt: "Later update",
-    contextEntries: [],
+    contextEntries: SCOPED_ENTRIES,
     stabilisationText: "Later result",
     expectedDefinitionRevision: 2
   });
@@ -399,12 +407,12 @@ test("a definition-update key rejects divergent input and output reuse", async (
     { maxPlanQueries: 8, maxToolRounds: 8 },
     new CapturingLogger()
   );
-  const first = await service.declare({ prompt: "First" });
-  const second = await service.declare({ prompt: "Second" });
+  const first = await service.declare({ prompt: "First", contextEntries: SCOPED_ENTRIES });
+  const second = await service.declare({ prompt: "Second", contextEntries: SCOPED_ENTRIES });
   const key = "document:prompt-definition:shared-key";
   const request = {
     prompt: "Updated",
-    contextEntries: [],
+    contextEntries: SCOPED_ENTRIES,
     stabilisationText: "",
     expectedDefinitionRevision: 1
   };
@@ -435,16 +443,16 @@ test("unkeyed definition updates retain their existing CAS behavior", async (t) 
     { maxPlanQueries: 8, maxToolRounds: 8 },
     new CapturingLogger()
   );
-  const output = await service.declare({ prompt: "Original" });
+  const output = await service.declare({ prompt: "Original", contextEntries: SCOPED_ENTRIES });
   const first = await service.updateDefinition(output.id, {
     prompt: "Revision two",
-    contextEntries: [],
+    contextEntries: SCOPED_ENTRIES,
     stabilisationText: "",
     expectedDefinitionRevision: 1
   });
   const second = await service.updateDefinition(output.id, {
     prompt: "Revision three",
-    contextEntries: [],
+    contextEntries: SCOPED_ENTRIES,
     stabilisationText: "",
     expectedDefinitionRevision: 2
   });
@@ -476,10 +484,10 @@ test("definition update is one SQLite CAS that also marks freshness stale", asyn
     { maxPlanQueries: 8, maxToolRounds: 8 },
     new CapturingLogger()
   );
-  const output = await firstService.declare({ prompt: "Original" });
+  const output = await firstService.declare({ prompt: "Original", contextEntries: SCOPED_ENTRIES });
   const request = (prompt: string) => ({
     prompt,
-    contextEntries: [],
+    contextEntries: SCOPED_ENTRIES,
     stabilisationText: "",
     expectedDefinitionRevision: 1
   });
@@ -525,13 +533,13 @@ test("logical delete removes current operational state while purge removes retai
     { maxPlanQueries: 8, maxToolRounds: 8 },
     new CapturingLogger()
   );
-  const declaration = { prompt: "Delete me" };
+  const declaration = { prompt: "Delete me", contextEntries: SCOPED_ENTRIES };
   const output = await service.declare(declaration, {
     idempotencyKey: "delete-claim"
   });
   await service.updateDefinition(output.id, {
     prompt: "Delete me after an update",
-    contextEntries: [],
+    contextEntries: SCOPED_ENTRIES,
     stabilisationText: "",
     expectedDefinitionRevision: 1
   }, { idempotencyKey: "delete-definition-update" });
@@ -597,7 +605,7 @@ test("logical delete removes current operational state while purge removes retai
   await assert.rejects(
     service.updateDefinition(output.id, {
       prompt: "Missing",
-      contextEntries: [],
+      contextEntries: SCOPED_ENTRIES,
       stabilisationText: "",
       expectedDefinitionRevision: 1
     }),
@@ -653,7 +661,7 @@ test("Knowledge add and remove invalidate outputs and fence an in-flight refresh
   knowledge.onSourceMutation((mutation) => {
     service.recordKnowledgeSourceMutation(mutation);
   });
-  const output = await service.declare({ prompt: "Question" });
+  const output = await service.declare({ prompt: "Question", contextEntries: SCOPED_ENTRIES });
   const oldRefresh = service.refresh(output.id);
   await oldPlanningStarted.promise;
 
@@ -989,7 +997,7 @@ test("concurrent refreshes publish one revision and leave current freshness", as
     { maxPlanQueries: 8, maxToolRounds: 8 },
     new CapturingLogger()
   );
-  const output = await service.declare({ prompt: "Question" });
+  const output = await service.declare({ prompt: "Question", contextEntries: SCOPED_ENTRIES });
 
   const results = await Promise.all([
     service.refresh(output.id),
@@ -1027,13 +1035,13 @@ test("an old-definition refresh cannot roll back a newer published definition", 
     { maxPlanQueries: 8, maxToolRounds: 8 },
     new CapturingLogger()
   );
-  const output = await service.declare({ prompt: "Old question" });
+  const output = await service.declare({ prompt: "Old question", contextEntries: SCOPED_ENTRIES });
   const oldRefresh = service.refresh(output.id);
   await oldStarted.promise;
 
   await service.updateDefinition(output.id, {
     prompt: "New question",
-    contextEntries: [],
+    contextEntries: SCOPED_ENTRIES,
     stabilisationText: "",
     expectedDefinitionRevision: 1
   });
@@ -1076,7 +1084,7 @@ test("a late failing attempt cannot overwrite a newer successful head", async (t
     { maxPlanQueries: 8, maxToolRounds: 8 },
     logger
   );
-  const output = await service.declare({ prompt: "Question" });
+  const output = await service.declare({ prompt: "Question", contextEntries: SCOPED_ENTRIES });
   const oldRefresh = service.refresh(output.id);
   await oldStarted.promise;
   const newer = await service.refresh(output.id);
@@ -1155,7 +1163,7 @@ test("untrusted evidence spans fail safely after all pipeline usage is counted",
     { maxPlanQueries: 8, maxToolRounds: 8 },
     logger
   );
-  const output = await service.declare({ prompt: "Question" });
+  const output = await service.declare({ prompt: "Question", contextEntries: SCOPED_ENTRIES });
   const result = await service.refresh(output.id);
 
   assert.equal(result.output.headRevision, 0);
@@ -1166,4 +1174,76 @@ test("untrusted evidence spans fail safely after all pipeline usage is counted",
   );
   assert.equal((failure?.data as { totalTokens?: number }).totalTokens, 6);
   assert.doesNotMatch(JSON.stringify(logger.entries), /outside the frozen scope|did not originate/);
+});
+
+// ─── Empty scope is a refusal, not a whole-project answer ────────────────────
+
+const knowledgeOverSources = (
+  sourceIds: string[],
+  logger: CapturingLogger
+): Knowledge => {
+  const sources = new Map<string, SourceRecord>(
+    sourceIds.map((sourceId) => [sourceId, {
+      sourceId,
+      label: sourceId,
+      revision: "1",
+      windowCount: 0,
+      updatedAt: "2026-08-01T00:00:00.000Z"
+    } as unknown as SourceRecord])
+  );
+  const store = {
+    listSources: async () => [...sources.values()],
+    getWindows: async () => [],
+    getNodes: async () => [],
+    getFrontier: async () => [],
+    getLevelIndex: async () => undefined
+  } as unknown as KnowledgeStore;
+  const embedder: Embedder = {
+    embed: async (inputs) => ({ vectors: inputs.map(() => [1]), usage: ZERO_USAGE })
+  };
+  return new Knowledge(store, embedder, logger);
+};
+
+test("an empty scope admits nothing, and naming the project admits everything", async () => {
+  const logger = new CapturingLogger();
+  const knowledge = knowledgeOverSources(["src-a", "src-b"], logger);
+
+  // Undefined is unscoped — the whole lattice, and no manifest at all.
+  assert.equal(await knowledge.resolveScope(undefined), null);
+
+  // An empty array used to mean exactly what naming the project means now.
+  // It does not any more, and it says so.
+  const empty = await knowledge.resolveScope([]);
+  assert.deepEqual(empty?.resolvedSourceIds, []);
+  assert.ok(
+    logger.entries.some((entry) => entry.message === "knowledge.scope.empty"),
+    "an empty scope is reported, because it is nearly always a mistake upstream"
+  );
+
+  // The explicit spelling, resolved at call time.
+  const project = await knowledge.resolveScope([{ id: "*", kind: "project" }]);
+  assert.deepEqual(project?.resolvedSourceIds, ["src-a", "src-b"]);
+});
+
+test("a refresh refuses an output that names nothing to ground on", async (t) => {
+  const store = createStore();
+  t.after(() => store.close());
+  const service = createDerivedOutputService(
+    store,
+    noEvidenceKnowledge(),
+    { reasonStructured: async () => ({ structured: { queries: [] }, usage: ZERO_USAGE }) } as unknown as Intelligence,
+    makeResourceReader(),
+    { maxPlanQueries: 8, maxToolRounds: 8 },
+    new CapturingLogger()
+  );
+
+  // This is the shape an unbound Context Variable produces, and the shape an
+  // omitted request field used to produce. It answered from the whole corpus.
+  const output = await service.declare({ prompt: "Grounded in what?", contextEntries: [] });
+
+  await assert.rejects(
+    () => service.refresh(output.id),
+    (error: unknown) =>
+      error instanceof DerivedOutputEmptyScopeError && error.outputId === output.id
+  );
 });

@@ -3,38 +3,26 @@
 // Context imports it from there to avoid duplicating the atom.
 
 import type { ContextEntry } from "#platform/knowledge/types.js";
+import {
+  PROJECT_CONTEXT_KIND,
+  PROJECT_CONTEXT_ENTRY,
+  isProjectEntry
+} from "#platform/knowledge/types.js";
 
 export type { ContextEntry };
 
 /**
- * The one `kind` that names the project itself rather than a resource in it.
+ * Re-exported from the platform layer, where the atom itself lives, so every
+ * capability keeps naming the project through `#context` as it does for
+ * `ContextEntry`.
  *
- * Every other kind is opaque to Context — it is a resource reference that some
- * other capability knows how to locate. This one is not a reference at all: it
- * is a *rule*, expanded at resolve time into whatever the project currently
- * holds. That is the whole point. A materialised "everything" is stale the
- * moment anything is added; a rule is not.
+ * Every other kind is opaque to Context — a reference some other capability
+ * knows how to locate. This one is not a reference at all: it is a *rule*,
+ * expanded at resolve time into whatever the project currently holds. A
+ * materialised "everything" is stale the moment anything is added; a rule is
+ * not.
  */
-export const PROJECT_CONTEXT_KIND = "project";
-
-/**
- * The canonical spelling. `id` is fixed at `"*"` because a Context store is
- * built from exactly one `projectId` — there is no second project to name, so
- * there is nothing for the `id` to distinguish.
- */
-export const PROJECT_CONTEXT_ENTRY: ContextEntry = {
-  id: "*",
-  kind: PROJECT_CONTEXT_KIND
-};
-
-/**
- * Matches on `kind` alone. A caller who writes some other `id` still meant the
- * project — there is only one — and treating it as an ordinary leaf instead
- * would resolve it to nothing, which is the silent-empty-scope failure this
- * capability is supposed to make impossible.
- */
-export const isProjectEntry = (entry: ContextEntry): boolean =>
-  entry.kind === PROJECT_CONTEXT_KIND;
+export { PROJECT_CONTEXT_KIND, PROJECT_CONTEXT_ENTRY, isProjectEntry };
 
 export interface ContextRecord {
   readonly id: string;
