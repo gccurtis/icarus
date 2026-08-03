@@ -10,6 +10,7 @@ import {
   insertIntoSiblings,
   detachFromSiblings,
   isWithinGroup,
+  unreachableElementIds,
   promptSiteKey,
   siblingsOf
 } from "./elements.js";
@@ -272,6 +273,48 @@ const snapshotFormulaMap = (
 
 // ── Group helpers ────────────────────────────────────────────────────────
 
+/**
+ * Reject an element record that is not a well-formed forest.
+ *
+ * Acyclic group membership is not something the reducer may leave to
+ * end-of-batch validation: a cycle makes every downward walk non-terminating,
+ * so it has to be unreachable rather than merely rejected. Element-level
+ * operations carry their own targeted guards; this covers the operations that
+ * accept a whole element record from the caller — `slide.insert`,
+ * `master.insert` and `layout.insert` — where there is nothing to guard
+ * incrementally.
+ */
+const assertElementForest = (
+  elements: Record<string, SlideElement>,
+  where: string
+): void => {
+  for (const [elementId, element] of Object.entries(elements)) {
+    if (element.id !== elementId) {
+      throw new SlideOperationError(
+        `${where} element ${elementId} is keyed by a different ID than it carries`
+      );
+    }
+    if (element.parentGroupId === undefined) continue;
+    const parent = elements[element.parentGroupId];
+    if (!parent) {
+      throw new SlideOperationError(
+        `${where} element ${elementId} references missing group ${element.parentGroupId}`
+      );
+    }
+    if (parent.kind !== "group") {
+      throw new SlideOperationError(
+        `${where} element ${elementId} names a non-group parent ${element.parentGroupId}`
+      );
+    }
+  }
+  const unreachable = unreachableElementIds(elements);
+  if (unreachable.length > 0) {
+    throw new SlideOperationError(
+      `${where} contains a group cycle: ${unreachable.join(", ")}`
+    );
+  }
+};
+
 /** Delete an element and, when it is a Group, everything beneath it. */
 const removeElementTree = (
   elements: Record<string, SlideElement>,
@@ -376,6 +419,7 @@ const applyOne = (
       if (snapshot.masters[operation.master.id]) {
         throw new SlideOperationError(`Master already exists: ${operation.master.id}`);
       }
+      assertElementForest(operation.master.elements, `Master ${operation.master.id}`);
       snapshot.masters[operation.master.id] = clone(operation.master);
       return;
     case "master.rename":
@@ -401,6 +445,7 @@ const applyOne = (
         throw new SlideOperationError(`Layout already exists: ${operation.layout.id}`);
       }
       requireMaster(snapshot, operation.layout.masterId);
+      assertElementForest(operation.layout.elements, `Layout ${operation.layout.id}`);
       snapshot.layouts[operation.layout.id] = clone(operation.layout);
       return;
     case "layout.rename":
@@ -466,6 +511,7 @@ const applyOne = (
       if (operation.afterSlideId && index === 0) {
         throw new SlidePlacementError(`Anchor Slide not found: ${operation.afterSlideId}`);
       }
+      assertElementForest(operation.slide.elements, `Slide ${operation.slide.id}`);
       snapshot.slides[operation.slide.id] = clone(operation.slide);
       snapshot.slideOrder.splice(index, 0, operation.slide.id);
       return;
@@ -605,11 +651,17 @@ const applyOne = (
       if (operation.memberIds.length === 0) {
         throw new SlideOperationError("A Group must be created with at least one member");
       }
+      if (new Set(operation.memberIds).size !== operation.memberIds.length) {
+        throw new SlideOperationError("A Group may not name the same member twice");
+      }
       const members = operation.memberIds.map((id) => {
         const member = elements[id];
         if (!member) throw new SlideOperationError(`Group member not found: ${id}`);
         return member;
       });
+      // Sharing one parent is what makes grouping incapable of producing a
+      // cycle: a member that already contained another member would sit at a
+      // different depth, so it cannot pass this check.
       const parentGroupId = members[0].parentGroupId;
       for (const member of members) {
         if (member.parentGroupId !== parentGroupId) {
