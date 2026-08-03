@@ -26,27 +26,54 @@ function createSchema(db: DB, prefix: string): void {
   const historyTable = `ctx_${prefix}_history`;
   db.exec(`
     CREATE TABLE IF NOT EXISTS ctx_${prefix}_contexts (
-      id           TEXT    PRIMARY KEY,
-      display_name TEXT    NOT NULL,
-      description  TEXT,
-      entries_json TEXT    NOT NULL,
-      private      INTEGER NOT NULL DEFAULT 0,
-      revision     INTEGER NOT NULL DEFAULT 1,
-      created_at   TEXT    NOT NULL,
-      updated_at   TEXT    NOT NULL
+      id            TEXT    PRIMARY KEY,
+      display_name  TEXT    NOT NULL,
+      description   TEXT,
+      entries_json  TEXT    NOT NULL,
+      -- Subtracted from the expansion of entries_json at resolve time. Defaulted
+      -- rather than nullable so a row written before the column existed reads
+      -- back as "excludes nothing" instead of undefined.
+      excludes_json TEXT    NOT NULL DEFAULT '[]',
+      private       INTEGER NOT NULL DEFAULT 0,
+      revision      INTEGER NOT NULL DEFAULT 1,
+      created_at    TEXT    NOT NULL,
+      updated_at    TEXT    NOT NULL
     );
     CREATE UNIQUE INDEX IF NOT EXISTS ctx_${prefix}_contexts_name
       ON ctx_${prefix}_contexts(display_name);
   `);
+  addExcludesColumn(db, `ctx_${prefix}_contexts`);
   initializeResourceHistorySchema(db, historyTable);
 }
 
+/**
+ * `CREATE TABLE IF NOT EXISTS` never revisits a table that already exists, so a
+ * database created before `excludes` shipped would silently lack the column and
+ * every read would come back `undefined`. The column is additive with a default,
+ * which is the one schema change SQLite can make in place — so this is done
+ * rather than asking every dev to delete their database.
+ */
+function addExcludesColumn(db: DB, table: string): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (columns.some((column) => column.name === "excludes_json")) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN excludes_json TEXT NOT NULL DEFAULT '[]'`);
+}
+
 function rowToRecord(row: Record<string, unknown>): ContextRecord {
+  // Tolerates a missing or null column so a history snapshot archived before
+  // excludes existed still decodes, rather than throwing on JSON.parse(null).
+  const excludesJson = row.excludes_json as string | null | undefined;
+  const excludes = excludesJson
+    ? (JSON.parse(excludesJson) as ContextEntry[])
+    : [];
   return {
     id: row.id as string,
     displayName: row.display_name as string,
     description: (row.description as string | null) ?? undefined,
     entries: JSON.parse(row.entries_json as string) as ContextEntry[],
+    // Absent rather than empty, so a record with no exclusions serialises the
+    // same way it did before the column existed.
+    ...(excludes.length > 0 ? { excludes } : {}),
     private: (row.private as number) === 1,
     revision: row.revision as number,
     createdAt: row.created_at as string,
@@ -93,13 +120,14 @@ export class SQLiteContextStore implements ContextStore {
 
   insert(record: ContextRecord): void {
     this.db.prepare(`
-      INSERT INTO ${this.tableName} (id, display_name, description, entries_json, private, revision, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO ${this.tableName} (id, display_name, description, entries_json, excludes_json, private, revision, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       record.id,
       record.displayName,
       record.description ?? null,
       JSON.stringify(record.entries),
+      JSON.stringify(record.excludes ?? []),
       record.private ? 1 : 0,
       record.revision,
       record.createdAt,
@@ -122,12 +150,13 @@ export class SQLiteContextStore implements ContextStore {
       });
       const result = this.db.prepare(`
         UPDATE ${this.tableName}
-        SET display_name = ?, description = ?, entries_json = ?, private = ?, revision = ?, updated_at = ?
+        SET display_name = ?, description = ?, entries_json = ?, excludes_json = ?, private = ?, revision = ?, updated_at = ?
         WHERE id = ? AND revision = ?
       `).run(
         record.displayName,
         record.description ?? null,
         JSON.stringify(record.entries),
+        JSON.stringify(record.excludes ?? []),
         record.private ? 1 : 0,
         record.revision,
         record.updatedAt,

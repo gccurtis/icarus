@@ -134,6 +134,16 @@
       "types": "./src/3-capabilities/templates/*",
       "default": "./dist/3-capabilities/templates/*"
     },
+    "#slides": {
+      "development": "./src/3-capabilities/slides/index.ts",
+      "types": "./src/3-capabilities/slides/index.ts",
+      "default": "./dist/3-capabilities/slides/index.js"
+    },
+    "#slides/*": {
+      "development": "./src/3-capabilities/slides/*",
+      "types": "./src/3-capabilities/slides/*",
+      "default": "./dist/3-capabilities/slides/*"
+    },
     "#document": {
       "development": "./src/3-capabilities/document/index.ts",
       "types": "./src/3-capabilities/document/index.ts",

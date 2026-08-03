@@ -14,6 +14,7 @@ import {
 const QUERY_KEYS: Record<SlideQuery["type"], readonly string[]> = {
   "deck.list": ["type", "cursor", "lifecycle"],
   "deck.load": ["type", "deckId", "revision"],
+  "deck.outline": ["type", "deckId", "revision"],
   "deck.history": ["type", "deckId", "cursor", "limit"],
   "deck.attempt": ["type", "deckId", "attemptId"]
 };
@@ -49,6 +50,7 @@ const decodeQuery = (value: unknown): SlideQuery => {
           : {})
       };
     case "deck.load":
+    case "deck.outline":
       return {
         type,
         deckId: requireIdentifier(raw.deckId, `${type}.deckId`),
@@ -84,11 +86,8 @@ const decodeQuery = (value: unknown): SlideQuery => {
 export const decodeSlideQuery = (value: unknown): SlideQueryRequest => {
   assertSlideWireInput(value, "Slides query request");
   const raw = requireRecord(value, "Slides query request");
-  exactKeys(raw, ["requestId", "query"], "Slides query request");
-  return {
-    requestId: requireIdentifier(raw.requestId, "requestId"),
-    query: decodeQuery(raw.query)
-  };
+  exactKeys(raw, ["query"], "Slides query request");
+  return { query: decodeQuery(raw.query) };
 };
 
 export { SLIDE_WIRE_LIMITS };

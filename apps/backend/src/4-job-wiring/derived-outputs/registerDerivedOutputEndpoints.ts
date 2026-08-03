@@ -8,6 +8,7 @@ import {
 import {
   DerivedOutputNotFoundError,
   DerivedOutputConflictError,
+  DerivedOutputEmptyScopeError,
   DerivedOutputIdempotencyConflictError,
   StaleDefinitionRevisionError
 } from "#derived-outputs";
@@ -25,8 +26,43 @@ function deError(e: unknown): { statusCode: number; body: unknown } {
     return { statusCode: 409, body: { error: "idempotency_mismatch", message: e.message } };
   if (e instanceof StaleDefinitionRevisionError)
     return { statusCode: 409, body: { error: "stale_revision", message: e.message } };
+  if (e instanceof DerivedOutputEmptyScopeError)
+    return { statusCode: 400, body: { error: "empty_scope", message: e.message } };
   const msg = e instanceof Error ? e.message : String(e);
   return { statusCode: 400, body: { error: "bad_request", message: msg } };
+}
+
+/**
+ * Rejects a malformed `contextEntries` instead of coercing it away.
+ *
+ * Both of these sites used to turn anything non-array into `undefined` or `[]`,
+ * which then meant "the whole project". A typo in the body silently produced
+ * the broadest possible grounding. Now a bad value is a 400 and an omitted one
+ * is `undefined`, which `declare` still distinguishes from an explicit empty
+ * list.
+ */
+function requireContextEntries(
+  raw: unknown,
+  { required }: { required: boolean }
+): Array<{ id: string; kind: string }> | undefined {
+  if (raw === undefined || raw === null) {
+    if (required) throw new Error("contextEntries is required");
+    return undefined;
+  }
+  if (!Array.isArray(raw)) throw new Error("contextEntries must be an array");
+  return raw.map((entry, index) => {
+    if (typeof entry !== "object" || entry === null) {
+      throw new Error(`contextEntries[${index}] must be an object`);
+    }
+    const { id, kind } = entry as Record<string, unknown>;
+    if (typeof id !== "string" || id.length === 0) {
+      throw new Error(`contextEntries[${index}].id must be a non-empty string`);
+    }
+    if (typeof kind !== "string" || kind.length === 0) {
+      throw new Error(`contextEntries[${index}].kind must be a non-empty string`);
+    }
+    return { id, kind };
+  });
 }
 
 export function registerDerivedOutputEndpoints(
@@ -46,9 +82,7 @@ export function registerDerivedOutputEndpoints(
         const body = request.body as Record<string, unknown>;
         const output = await service.declare({
           prompt: String(body.prompt ?? ""),
-          contextEntries: Array.isArray(body.contextEntries)
-            ? (body.contextEntries as Array<{ id: string; kind: string }>)
-            : undefined,
+          contextEntries: requireContextEntries(body.contextEntries, { required: false }),
           stabilisationText:
             body.stabilisationText !== undefined
               ? String(body.stabilisationText)
@@ -56,8 +90,25 @@ export function registerDerivedOutputEndpoints(
         });
 
         // Run the first refresh
-        const result = await service.refresh(output.id);
-        return { statusCode: 201, body: result };
+        try {
+          const result = await service.refresh(output.id);
+          return { statusCode: 201, body: result };
+        } catch (refreshError) {
+          if (!(refreshError instanceof DerivedOutputEmptyScopeError)) throw refreshError;
+          // The declaration succeeded and the refresh could not run. Returning a
+          // bare 400 would strand the Output behind an ID the caller never saw,
+          // so the id comes back with the error and the caller can give it a
+          // scope through a definition update.
+          logger.warn("derived-outputs.declare.empty-scope", { outputId: output.id });
+          return {
+            statusCode: 400,
+            body: {
+              error: "empty_scope",
+              message: refreshError.message,
+              outputId: output.id
+            }
+          };
+        }
       } catch (e) {
         logger.error("derived-outputs.declare.error", {
           error: e instanceof Error ? e.message : String(e)
@@ -126,9 +177,9 @@ export function registerDerivedOutputEndpoints(
             String(body.id ?? ""),
             {
               prompt: String(body.prompt ?? ""),
-              contextEntries: Array.isArray(body.contextEntries)
-                ? (body.contextEntries as Array<{ id: string; kind: string }>)
-                : [],
+              // Required here: `updateDefinition` replaces the definition
+              // wholesale, so omitting the scope would silently erase it.
+              contextEntries: requireContextEntries(body.contextEntries, { required: true })!,
               stabilisationText: String(body.stabilisationText ?? ""),
               expectedDefinitionRevision: Number(body.expectedDefinitionRevision ?? 0)
             }

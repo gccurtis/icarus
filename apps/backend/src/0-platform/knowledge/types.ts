@@ -84,8 +84,35 @@ export interface Region {
 /** The shared resource-reference atom used by Context and scope-aware retrieval. */
 export interface ContextEntry {
   id: string;
-  kind: string;  // e.g. "document", "context"
+  kind: string;  // e.g. "document", "context", "project"
 }
+
+/**
+ * The one `kind` that names the project itself rather than a resource in it.
+ *
+ * It lives here, beside the atom, because both sides need it: Context expands it
+ * into the project's live membership, and Knowledge recognises it as the
+ * explicit spelling of whole-project scope. Neither can import the other.
+ */
+export const PROJECT_CONTEXT_KIND = "project";
+
+/**
+ * The canonical spelling. `id` is fixed at `"*"` because a store is built from
+ * exactly one `projectId` — there is no second project to name.
+ */
+export const PROJECT_CONTEXT_ENTRY: ContextEntry = {
+  id: "*",
+  kind: PROJECT_CONTEXT_KIND
+};
+
+/**
+ * Matches on `kind` alone. A caller who writes some other `id` still meant the
+ * project — there is only one — and treating it as an ordinary leaf would
+ * resolve it to nothing, which is the silent-empty-scope failure this spelling
+ * exists to prevent.
+ */
+export const isProjectEntry = (entry: ContextEntry): boolean =>
+  entry.kind === PROJECT_CONTEXT_KIND;
 
 /** Trusted resource identity captured when a Context is resolved. */
 export interface KnowledgeResourceDescriptor {
@@ -107,7 +134,12 @@ export interface KnowledgeScopeManifest {
 
 export interface KnowledgeRetrievalOptions {
   topK?: number;
-  scope?: ContextEntry[];  // absent or [] = no restriction, full lattice
+  /**
+   * Absent = unscoped, the full lattice. `[]` = an empty scope, which admits
+   * nothing. `[{ kind: "project", id: "*" }]` = the whole project, resolved at
+   * call time. Absent and empty are deliberately not the same thing.
+   */
+  scope?: ContextEntry[];
   /**
    * A scope resolved once by `Knowledge.resolveScope`. Supplying this prevents
    * Context/resource membership from changing between queries in one run.

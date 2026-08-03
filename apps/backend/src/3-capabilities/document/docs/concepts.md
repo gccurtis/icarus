@@ -145,20 +145,31 @@ and there is no way to say "these sources except those" in an array of entries.
 A Context can say it, so pointing at one Context inherits every composition
 Context can express. The caller composes first and points second.
 
+A `direct` target is an ordinary `ContextEntry`, so grounding on the whole
+project is spelled out like any other target: `PROJECT_CONTEXT_ENTRY`,
+`{ id: "*", kind: "project" }`, which Knowledge resolves to every source at call
+time. There is no implicit spelling — an empty entry list admits **nothing**, and
+Knowledge warns `knowledge.scope.empty` when it sees one.
+
 Resolution has no algorithm: `direct` yields its target, `variable` yields the
 variable's. An **unbound** variable refuses to resolve rather than yielding
-nothing — yielding `[]` would hand Knowledge the zero-length array it reads as
-whole-project retrieval, so a half-configured prompt would silently ground itself
-on everything.
+nothing. Yielding `[]` would declare an output grounded on nothing, whose refresh
+Derived Outputs refuses outright with `DerivedOutputEmptyScopeError` — so the
+failure being prevented is "cannot be answered at all" rather than "silently
+grounds on everything". Refusing here is still the better place to fail: this is
+where the missing variable can be named, while a refusal at refresh time can only
+say the output grounds on nothing.
 
 Unbound variables exist only on **template-mode** Documents, where declaring a
 parameter with no default is the point. Templates requires instantiation to bind
 every declared parameter, so an ordinary Document cannot hold one.
 
-An **empty** resolution is a different thing and is perfectly legal: a Block may
-point at a Context that currently contains nothing. That is a choice someone
-made. What is refused is a variable with *no target at all*, which is nobody
-having chosen yet.
+A target that currently **expands** to nothing is a different thing and is
+perfectly legal: a Block may point at a Context that holds no members yet.
+Resolution still yields exactly one entry, so the declaration is well formed and
+refresh admits it; the expansion happens later, inside Context and Knowledge.
+That is a choice someone made. What is refused is a variable with *no target at
+all*, which is nobody having chosen yet.
 
 **Deleting a bound variable cascades.** Each referencing Block is re-pointed at
 the variable's current target, so the grounding is identical and only the

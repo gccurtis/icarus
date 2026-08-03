@@ -2,14 +2,15 @@
 
 ## Status and authority
 
-Derived Outputs is an implemented project-scoped capability that turns a prompt plus optional Context scope into an immutable, evidence-backed answer revision. A refresh plans retrieval, resolves and freezes one resource manifest, retrieves Knowledge regions, optionally uses scoped synthesis tools, validates provenance, and atomically publishes only if the definition, head, and project Knowledge generation are still current.
+Derived Outputs is an implemented project-scoped capability that turns a prompt plus a named Context scope into an immutable, evidence-backed answer revision. A refresh refuses a definition that names no context, plans retrieval, resolves and freezes one resource manifest, retrieves Knowledge regions, optionally uses scoped synthesis tools, validates provenance, and atomically publishes only if the definition, head, and project Knowledge generation are still current.
 
 The capability owns current saved definitions, immutable answer revisions, lifecycle
 history, refresh attempts, freshness, evidence validation, optional idempotency claims,
 and refresh settlement. Logical deletion removes current/operational state while a stable
 root retains answers and history until purge. Knowledge owns source ingestion and
 retrieval. Intelligence owns provider execution. Resource capabilities own source content
-and the places where an output reference is presented.
+and the places where an output reference is presented; they also own the statement that an
+output has been released, which is the only thing the orphan sweep acts on.
 
 These pages describe the current code. Historical designs proposing a different owner, staged job graph, byte offsets, or broader output kinds are not runtime authority.
 
@@ -20,8 +21,8 @@ These pages describe the current code. Historical designs proposing a different 
 | [Concepts](concepts.md) | Output/revision/evidence/scope vocabulary, ownership, lifecycle, and architecture |
 | [Types](types.md) | All public and store-internal families, errors, manifests, persistence and wire shapes |
 | [Runtime](runtime.md) | Construction, every service/store method, refresh stages, helpers, tools, logging, and concurrency |
-| [Flows](flows.md) | All seven HTTP jobs, full refresh sequences, tools, invalidation, deletion/purge, and status mapping |
-| [Invariants](invariants.md) | Publication/evidence/idempotency guarantees, limits, failure behavior, scope/security, tests, and non-goals |
+| [Flows](flows.md) | All seven HTTP jobs, the refresh precondition, full refresh sequences, tools, invalidation, deletion/purge/orphan reaping, and status mapping |
+| [Invariants](invariants.md) | Publication/evidence/idempotency guarantees, limits, failure behavior, scope/security, deletion and retention, tests, and non-goals |
 
 ## Dependencies
 
@@ -43,11 +44,12 @@ These pages describe the current code. Historical designs proposing a different 
 | SQLite current/root/history schema, claims, CAS settlement/invalidation, deletion, and purge | [`sqlite-store.ts`](../sqlite-store.ts) |
 | Public exports | [`index.ts`](../index.ts) |
 | Factory | [`1-init/create/derived-outputs.ts`](../../../1-init/create/derived-outputs.ts) |
+| Orphan retention port and claimant interface | [`1-init/create/derivedOutputReaper.ts`](../../../1-init/create/derivedOutputReaper.ts) |
 | Resource registry | [`1-init/create/resource-reader.ts`](../../../1-init/create/resource-reader.ts) |
 | Knowledge scope/events | [`knowledge.ts`](../../../0-platform/knowledge/knowledge.ts), [`types.ts`](../../../0-platform/knowledge/types.ts) |
 | Composition and event subscription | [`1-init/startBackend.ts`](../../../1-init/startBackend.ts) |
 | HTTP/job wiring | [`4-job-wiring/derived-outputs/registerDerivedOutputEndpoints.ts`](../../../4-job-wiring/derived-outputs/registerDerivedOutputEndpoints.ts) |
-| Regression tests | [`derived-outputs.test.ts`](../../../../test/capabilities/derived-outputs.test.ts) |
+| Regression tests | [`derived-outputs.test.ts`](../../../../test/capabilities/derived-outputs.test.ts), [`derived-output-reaper.test.ts`](../../../../test/capabilities/derived-output-reaper.test.ts) |
 
 ## Related material
 

@@ -11,10 +11,8 @@ import type {
   DeckBase,
   DeckChangeSet,
   DeckCommittedTransaction,
-  DeckCreateReceipt,
   DeckHead,
   DeckLifecycle,
-  DeckSubmissionReceipt,
   PromptOutputOwnership,
   PromptSite,
   SlideAttempt,
@@ -42,12 +40,10 @@ import {
   rowToBase,
   rowToChangeSet,
   rowToCommittedTransaction,
-  rowToCreateReceipt,
   rowToHead,
   rowToIdentityLedgerEntry,
   rowToPromptOutputOwnership,
   rowToStageReceipt,
-  rowToSubmission,
   type SQLiteRow
 } from "./sqliteMappers.js";
 import {
@@ -357,32 +353,6 @@ export class SQLiteSlidesStore implements SlidesStore {
     return row ? rowToChangeSet(row) : undefined;
   }
 
-  async getSubmission(
-    deckId: string,
-    requestId: string
-  ): Promise<DeckSubmissionReceipt | undefined> {
-    const row = this.db
-      .prepare(`SELECT * FROM ${this.tables.receipts} WHERE deck_id = ? AND request_id = ?`)
-      .get(deckId, requestId) as SQLiteRow | undefined;
-    this.logger.debug("slides.store.receipt.read", {
-      deckId,
-      requestId,
-      found: row !== undefined
-    });
-    return row ? rowToSubmission(row) : undefined;
-  }
-
-  async getCreateSubmission(requestId: string): Promise<DeckCreateReceipt | undefined> {
-    const row = this.db
-      .prepare(`SELECT * FROM ${this.tables.createReceipts} WHERE request_id = ?`)
-      .get(requestId) as SQLiteRow | undefined;
-    this.logger.debug("slides.store.create-receipt.read", {
-      requestId,
-      found: row !== undefined
-    });
-    return row ? rowToCreateReceipt(row) : undefined;
-  }
-
   async getIdentity(
     deckId: string,
     identityId: string
@@ -398,14 +368,9 @@ export class SQLiteSlidesStore implements SlidesStore {
 
   // ── Writes ─────────────────────────────────────────────────────────────
 
-  async recordSubmission(receipt: DeckSubmissionReceipt): Promise<void> {
-    this.insertSubmission(receipt);
-  }
-
   async commitCreation(commit: DeckCreationCommit): Promise<void> {
     assertSameDeck(commit.head.id, [
       { label: "Deck Base", deckId: commit.base.deckId },
-      { label: "Deck receipt", deckId: commit.receipt.deckId },
       { label: "Deck transaction", deckId: commit.transaction.deckId }
     ]);
     if (commit.head.revision !== 1 || commit.base.baseSeq !== 1) {
@@ -419,20 +384,16 @@ export class SQLiteSlidesStore implements SlidesStore {
       this.insertHead(commit.head);
       this.claimInitialIdentities(commit.head.id, commit.identities);
       this.insertBase(commit.base);
-      this.insertSubmission(commit.receipt);
-      this.insertCreateReceipt(commit.createReceipt);
       this.insertCommittedTransaction(commit.transaction);
     })();
 
     this.logger.info("slides.store.deck.created", {
       deckId: commit.head.id,
-      requestId: commit.receipt.requestId,
       revision: commit.head.revision,
       identityCount: commit.identities.length,
       slideCount: commit.base.snapshot.slideOrder.length,
       masterCount: Object.keys(commit.base.snapshot.masters).length,
       layoutCount: Object.keys(commit.base.snapshot.layouts).length,
-      semanticDigest: commit.head.semanticDigest,
       sourceTransactionId: commit.transaction.sourceTransactionId
     });
     this.logger.debug(
@@ -446,7 +407,6 @@ export class SQLiteSlidesStore implements SlidesStore {
     const deckId = commit.head.id;
     assertSameDeck(deckId, [
       { label: "Deck ChangeSet", deckId: commit.changeSet.deckId },
-      { label: "Deck receipt", deckId: commit.receipt.deckId },
       { label: "Deck transaction", deckId: commit.transaction.deckId },
       ...(commit.attempts ?? []).map((attempt) => ({
         label: "Deck attempt",
@@ -493,8 +453,7 @@ export class SQLiteSlidesStore implements SlidesStore {
       const updated = this.db
         .prepare(`
           UPDATE ${this.tables.decks}
-          SET title = ?, lifecycle = ?, revision = ?, base_seq = ?,
-              semantic_digest = ?, updated_at = ?
+          SET title = ?, lifecycle = ?, revision = ?, base_seq = ?, updated_at = ?
           WHERE id = ? AND revision = ?
         `)
         .run(
@@ -502,7 +461,6 @@ export class SQLiteSlidesStore implements SlidesStore {
           commit.head.lifecycle,
           commit.head.revision,
           commit.head.baseSeq,
-          commit.head.semanticDigest,
           commit.head.updatedAt,
           deckId,
           commit.expectedRevision
@@ -521,7 +479,6 @@ export class SQLiteSlidesStore implements SlidesStore {
       for (const transition of commit.promptOwnershipTransitions ?? []) {
         this.updatePromptOutputOwnershipRow(transition);
       }
-      this.insertSubmission(commit.receipt);
       this.insertCommittedTransaction(commit.transaction);
       return true;
     })();
@@ -532,7 +489,6 @@ export class SQLiteSlidesStore implements SlidesStore {
       // "why did my write vanish" is otherwise invisible from outside.
       this.logger.warn("slides.store.mutation.rejected", {
         deckId,
-        requestId: commit.receipt.requestId,
         expectedRevision: commit.expectedRevision,
         reason: "revision-conflict"
       });
@@ -541,7 +497,6 @@ export class SQLiteSlidesStore implements SlidesStore {
 
     this.logger.info("slides.store.mutation.committed", {
       deckId,
-      requestId: commit.receipt.requestId,
       changeSetId: commit.changeSet.id,
       priorRevision: commit.changeSet.priorRevision,
       revision: commit.changeSet.revision,
@@ -555,8 +510,7 @@ export class SQLiteSlidesStore implements SlidesStore {
       attemptsCreated: commit.attempts?.length ?? 0,
       attemptsUpdated: commit.attemptUpdates?.length ?? 0,
       promptTransitions: commit.promptOwnershipTransitions?.length ?? 0,
-      compensationIntent: commit.changeSet.compensation?.intent,
-      semanticDigest: commit.changeSet.semanticDigest
+      compensationIntent: commit.changeSet.compensation?.intent
     });
     // The operations are what changed, and they carry the text that changed.
     this.logger.debug(
@@ -598,8 +552,7 @@ export class SQLiteSlidesStore implements SlidesStore {
       this.logger.info("slides.store.base.appended", {
         deckId,
         baseSeq: base.baseSeq,
-        headRevision: expectedHeadRevision,
-        semanticDigest: base.semanticDigest
+        headRevision: expectedHeadRevision
       });
     } else {
       this.logger.debug("slides.store.base.skipped", {
@@ -756,20 +709,6 @@ export class SQLiteSlidesStore implements SlidesStore {
     return row ? rowToAttempt(row) : undefined;
   }
 
-  async getAttemptByRequest(
-    deckId: string,
-    kind: SlideAttempt["kind"],
-    requestId: string
-  ): Promise<SlideAttempt | undefined> {
-    const row = this.db
-      .prepare(`
-        SELECT * FROM ${this.tables.attempts}
-        WHERE deck_id = ? AND kind = ? AND client_request_id = ?
-      `)
-      .get(deckId, kind, requestId) as SQLiteRow | undefined;
-    return row ? rowToAttempt(row) : undefined;
-  }
-
   async getPromptCreationAttemptBySite(
     deckId: string,
     site: PromptSite
@@ -804,29 +743,6 @@ export class SQLiteSlidesStore implements SlidesStore {
       kind: attempt.kind,
       state: attempt.state,
       frozenDeckRevision: attempt.frozenDeckRevision
-    });
-    this.logger.debug(
-      "slides.store.attempt.created.detail",
-      { attemptId: attempt.id, deckId: attempt.deckId, ...attemptContent(attempt) },
-      { detail: "content" }
-    );
-  }
-
-  async createAttemptWithSubmission(
-    attempt: SlideAttempt,
-    receipt: DeckSubmissionReceipt
-  ): Promise<void> {
-    this.db.transaction(() => {
-      this.insertAttempt(attempt);
-      this.insertSubmission(receipt);
-    })();
-    this.logger.info("slides.store.attempt.created", {
-      attemptId: attempt.id,
-      deckId: attempt.deckId,
-      kind: attempt.kind,
-      state: attempt.state,
-      requestId: receipt.requestId,
-      withReceipt: true
     });
     this.logger.debug(
       "slides.store.attempt.created.detail",
@@ -1045,18 +961,16 @@ export class SQLiteSlidesStore implements SlidesStore {
     return row ? rowToCommittedTransaction(row) : undefined;
   }
 
-  async getCommittedTransactionByRequest(
+  async getCommittedTransactionByRevision(
     deckId: string,
-    sourceRequestId: string
+    revision: number
   ): Promise<DeckCommittedTransaction | undefined> {
     const row = this.db
       .prepare(`
         SELECT * FROM ${this.tables.transactionOutbox}
-        WHERE deck_id = ? AND source_request_id = ?
-        ORDER BY revision DESC
-        LIMIT 1
+        WHERE deck_id = ? AND revision = ?
       `)
-      .get(deckId, sourceRequestId) as SQLiteRow | undefined;
+      .get(deckId, revision) as SQLiteRow | undefined;
     return row ? rowToCommittedTransaction(row) : undefined;
   }
 
@@ -1097,9 +1011,8 @@ export class SQLiteSlidesStore implements SlidesStore {
     this.db
       .prepare(`
         INSERT INTO ${this.tables.decks}
-          (id, title, lifecycle, revision, base_seq, semantic_digest,
-           created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          (id, title, lifecycle, revision, base_seq, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         head.id,
@@ -1107,7 +1020,6 @@ export class SQLiteSlidesStore implements SlidesStore {
         head.lifecycle,
         head.revision,
         head.baseSeq,
-        head.semanticDigest,
         head.createdAt,
         head.updatedAt
       );
@@ -1117,15 +1029,13 @@ export class SQLiteSlidesStore implements SlidesStore {
     this.db
       .prepare(`
         INSERT INTO ${this.tables.bases}
-          (deck_id, base_seq, representation_version, snapshot_json,
-           semantic_digest, created_at)
-        VALUES (?, ?, 1, ?, ?, ?)
+          (deck_id, base_seq, representation_version, snapshot_json, created_at)
+        VALUES (?, ?, 1, ?, ?)
       `)
       .run(
         base.deckId,
         base.baseSeq,
         encodeJson(base.snapshot),
-        base.semanticDigest,
         base.createdAt
       );
   }
@@ -1134,17 +1044,15 @@ export class SQLiteSlidesStore implements SlidesStore {
     this.db
       .prepare(`
         INSERT INTO ${this.tables.changeSets}
-          (id, deck_id, client_request_id, request_digest, authored_revision,
+          (id, deck_id, authored_revision,
            prior_revision, revision, seq, origin, operations_json,
            inverse_operations_json, touched_ids_json, compensation_intent,
-           compensation_target_change_set_id, semantic_digest, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           compensation_target_change_set_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         changeSet.id,
         changeSet.deckId,
-        changeSet.clientRequestId,
-        changeSet.requestDigest,
         changeSet.authoredRevision,
         changeSet.priorRevision,
         changeSet.revision,
@@ -1155,42 +1063,7 @@ export class SQLiteSlidesStore implements SlidesStore {
         encodeJson(changeSet.touchedIds),
         changeSet.compensation?.intent ?? null,
         changeSet.compensation?.targetChangeSetId ?? null,
-        changeSet.semanticDigest,
         changeSet.createdAt
-      );
-  }
-
-  private insertSubmission(receipt: DeckSubmissionReceipt): void {
-    this.db
-      .prepare(`
-        INSERT INTO ${this.tables.receipts}
-          (deck_id, request_id, request_digest, result_json, created_at)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(deck_id, request_id) DO NOTHING
-      `)
-      .run(
-        receipt.deckId,
-        receipt.requestId,
-        receipt.requestDigest,
-        encodeJson(receipt.result),
-        receipt.createdAt
-      );
-  }
-
-  private insertCreateReceipt(receipt: DeckCreateReceipt): void {
-    this.db
-      .prepare(`
-        INSERT INTO ${this.tables.createReceipts}
-          (request_id, deck_id, request_digest, result_json, created_at)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(request_id) DO NOTHING
-      `)
-      .run(
-        receipt.requestId,
-        receipt.deckId,
-        receipt.requestDigest,
-        encodeJson(receipt.result),
-        receipt.createdAt
       );
   }
 
@@ -1198,17 +1071,16 @@ export class SQLiteSlidesStore implements SlidesStore {
     this.db
       .prepare(`
         INSERT INTO ${this.tables.transactionOutbox}
-          (source_transaction_id, source_request_id, transaction_kind, deck_id,
+          (source_transaction_id, transaction_kind, deck_id,
            resource_root_id, revision, change_set_id, source_change_set_id,
-           actor_id, origin, operation_types, semantic_digest,
+           actor_id, origin, operation_types,
            compensation_intent, compensation_target_change_set_id,
            occurred_at, published_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
         ON CONFLICT(source_transaction_id) DO NOTHING
       `)
       .run(
         transaction.sourceTransactionId,
-        transaction.sourceRequestId,
         transaction.kind,
         transaction.deckId,
         transaction.deckId,
@@ -1218,7 +1090,6 @@ export class SQLiteSlidesStore implements SlidesStore {
         transaction.actorId ?? null,
         transaction.origin,
         encodeJson(transaction.operationTypes),
-        transaction.sourceSemanticDigest,
         transaction.compensation?.intent ?? null,
         transaction.compensation?.targetChangeSetId ?? null,
         transaction.occurredAt
@@ -1230,17 +1101,15 @@ export class SQLiteSlidesStore implements SlidesStore {
     this.db
       .prepare(`
         INSERT INTO ${this.tables.attempts}
-          (id, deck_id, kind, client_request_id, request_digest, site_key,
+          (id, deck_id, kind, site_key,
            frozen_deck_revision, state, frozen_json, candidate_json,
            diagnostic_json, settled_change_set_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         attempt.id,
         attempt.deckId,
         attempt.kind,
-        attempt.clientRequestId,
-        attempt.requestDigest,
         parts.siteKey,
         attempt.frozenDeckRevision,
         attempt.state,

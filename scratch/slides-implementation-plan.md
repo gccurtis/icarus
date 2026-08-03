@@ -112,13 +112,14 @@ complete before any persistence exists.
 `ports/slidesStore.ts` (async, like Document), then `persistence/`. Four
 standard pragmas; CHECK constraints carry the revision invariants.
 
-Thirteen tables, not the ten first listed here: Document's `resources` root and
+Eleven tables, not the ten first listed here: Document's `resources` root and
 its shared `history` table were missing from that list and are not optional.
 The root is what survives logical deletion so retained history and the identity
 ledger have something to hang from, and adding either later is a migration.
 
-`create_receipts` keyed on `request_id` with `deck_id` for cascade only — the
-correction in general-updates item 2.
+The two receipt tables this phase first built — `command_receipts` and
+`create_receipts` — were removed in Phase 5 along with request IDs. See the
+note there.
 
 **Two divergences from Document, both deliberate.**
 
@@ -151,7 +152,7 @@ Gate: `slides-persistence.test.ts` — 26 tests.
 `valueSchemas.ts` with `exactKeys` and a wire budget; `operationSchemas.ts` with
 an `OPERATION_KEYS` table typed `Record<SlideOperation["type"], …>` so decoder
 and union cannot drift; `commandSchemas.ts` decoding
-`{ requestId, origin, command }`; `querySchemas.ts`.
+`{ origin, actorId?, command }`; `querySchemas.ts`.
 
 The Rich Text decoders are hand-written here rather than shared with Document.
 That is the convention rather than an oversight: `exactKeys` is defined four
@@ -184,10 +185,27 @@ compaction dispatch, Activity outbox in the mutation transaction.
 
 Then job wiring, `1-init/create/slides.ts`, `startBackend`.
 
-**End-to-end slice**: create a Deck, edit its Master and Layouts, add slides
-against a Layout, fill slots, add free text/table/chart/image elements, group,
-reorder, undo, load, list, delete. No prompt content, no formula settlement yet.
-Gate: `slides-application.test.ts` + smoke.
+**End-to-end slice**, all covered: create a Deck, edit its Master and Layouts,
+add slides against a Layout, fill slots, add free text and table elements,
+group, reorder, undo, redo, load an older revision, list, delete. No prompt
+content, no formula settlement.
+
+One guard the plan did not call for, and it is real: the public submit path
+refuses any operation that would write a `prompt` text source — a caller could
+otherwise name a Derived Output nothing owns, invisible to the detach diff and
+unresolvable on load. A second, a reserved `$slides-internal$:` request-ID
+namespace, was removed: it guarded nothing, because no internal request IDs
+existed for it to protect against.
+
+**Deck-level fields needed sentinel touched IDs.** `deck.rename` and its
+siblings own no identity, so they touched nothing, so two concurrent renames
+were both admitted by rebase and one was silently discarded with a 200. One
+sentinel per field — renaming and re-themeing still do not conflict. This was
+invisible to every unit test and only surfaced running the slice over HTTP.
+
+Config lives in `loadBackendConfig` under `slides`, mirroring Document's.
+
+Gate: `slides-application.test.ts` — 22 tests, plus the smoke additions.
 
 ## Phase 5 — Prompt text sources
 
@@ -252,11 +270,41 @@ Templates rework runs concurrently in the same tree, so check before you start
 rather than assuming: `A2` was mid-rename when Phase 1 began and landed during
 it, and a transient error in `formula/wire.ts` appeared and cleared the same way.
 
+## Request IDs were removed after Phase 4
+
+Not a phase, a correction, and it changes the schema so it is recorded here.
+
+Idempotency was built twice. Every mutating command already carries
+`expectedRevision`, so a resend arrives holding a revision the head has passed
+and is refused with a 409 the caller can act on; the receipt tables answered
+the same question a second time. Once the write path is `outline` — "make the
+deck look like this text" — the duplication gets worse, because a convergent
+write is idempotent by construction: applying the same text twice produces zero
+operations the second time. Idempotency keys are for imperative writes.
+
+Removed: `requestId` on both envelopes, `command_receipts`, `create_receipts`,
+`IdempotencyMismatchError`, `ChangeSet.clientRequestId` and `requestDigest`,
+the same two fields on attempts, `getAttemptByRequest`,
+`createAttemptWithSubmission`, and the whole replay path in the service.
+
+The one thing that needed a replacement: the Activity transaction key was
+derived from the request ID. It is now `slides:<deckId>:<revision>:<kind>`,
+which is a better key anyway — derived from committed state, and unique because
+exactly one transaction is recorded per Deck revision.
+
+`deck.create` is the one command with no revision to compare, so a retry now
+makes a second Deck. Accepted: the duplicate is visible in `deck.list`.
+
+Prompt-creation attempts dedupe on the **site** rather than a request ID, which
+is the honest key — two requests to put a prompt in the same place are the same
+request however they were labelled. The `UNIQUE (deck_id, site_key)` index that
+enforced this already existed.
+
 ## Status
 
-**Phases 1, 2 and 3 are complete** (2026-08-02): eleven `domain/` files, four
-`ports/` + `persistence/` files and four `wire/` files — 61 domain, 26
-persistence and 25 wire tests.
+**Phases 1–4 are complete** (2026-08-02). The capability is wired into the
+composition root and serving `POST /slides/command` and `POST /slides/query`:
+61 domain, 27 persistence, 25 wire and 22 application tests.
 
 Work happens in a worktree at `/home/jakul/cyberia/icarus-slides` to keep other
 agents' uncommitted files out of the way; every commit still lands on `main`.

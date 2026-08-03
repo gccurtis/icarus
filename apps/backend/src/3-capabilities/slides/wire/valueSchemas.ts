@@ -1237,11 +1237,10 @@ export const decodeLayout = (value: unknown, label: string): Layout => {
 
 export const decodeSlide = (value: unknown, label: string): Slide => {
   const raw = requireRecord(value, label);
-  exactKeys(raw, ["id", "layoutId", "title", "background", "notes", "elements"], label);
+  exactKeys(raw, ["id", "layoutId", "background", "notes", "elements"], label);
   return {
     id: requireIdentifier(raw.id, `${label}.id`),
     layoutId: requireIdentifier(raw.layoutId, `${label}.layoutId`),
-    ...(raw.title !== undefined ? { title: requireText(raw.title, `${label}.title`) } : {}),
     ...(raw.background !== undefined
       ? { background: decodeBackground(raw.background, `${label}.background`) }
       : {}),

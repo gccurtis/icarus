@@ -114,6 +114,26 @@ export interface DocumentConfig {
   };
 }
 
+export interface SlidesConfig {
+  history: {
+    retainedBaseCount: number;
+    retainedChangeSetCount: number;
+    retainedTerminalAttemptCount: number;
+  };
+  limits: {
+    maxSlidesPerDeck: number;
+    maxElementsPerContainer: number;
+    maxMastersPerDeck: number;
+    maxLayoutsPerDeck: number;
+    maxSlotsPerLayout: number;
+    maxStylesPerDeck: number;
+    maxTokensPerTheme: number;
+    maxGroupDepth: number;
+    maxTableRows: number;
+    maxTableColumns: number;
+  };
+}
+
 export interface RetentionConfig {
   /** Age after which superseded revisions and deleted resource histories expire. */
   revisionRetentionDays: number;
@@ -121,28 +141,10 @@ export interface RetentionConfig {
   sweepIntervalHours: number;
 }
 
-/**
- * Effectively no limit, spelled as a number because Fastify requires a positive
- * integer. Two gibibytes is far past anything a legitimate request carries, so
- * it is a runaway backstop rather than a policy — nothing should ever approach
- * it, and a request that does is the interesting event.
- */
-export const UNBOUNDED_BODY_BYTES = 2_147_483_647;
-
 export interface BackendConfig {
   server: {
     host: string;
     port: number;
-    /**
-     * Largest accepted request body.
-     *
-     * Unbounded by default and deliberately so: a rejected request is logged
-     * with its payload verbatim, and a cap here would silently stop that at
-     * exactly the size where the payload matters most. Fastify's own default
-     * is 1 MiB, which this overrides — that number was never a decision anyone
-     * made, just a framework default nobody had looked at.
-     */
-    maxBodyBytes: number;
   };
   workerPool: {
     concurrentWorkers: number;
@@ -170,6 +172,7 @@ export interface BackendConfig {
   derivedOutputs: DerivedOutputConfig;
   document: DocumentConfig;
   structuredAnalytic: StructuredAnalyticConfig;
+  slides: SlidesConfig;
   retention: RetentionConfig;
   projectId: string;
   userId: string;
@@ -203,8 +206,7 @@ const buildDefaultCastRoutes = (
 const DEFAULT_CONFIG: BackendConfig = {
   server: {
     host: "0.0.0.0",
-    port: 4000,
-    maxBodyBytes: UNBOUNDED_BODY_BYTES
+    port: 4000
   },
   workerPool: {
     concurrentWorkers: 4
@@ -303,6 +305,25 @@ const DEFAULT_CONFIG: BackendConfig = {
     maxTitleBytes: 4096,
     maxDescriptionBytes: 4096,
     maxNameBytes: 256
+  },
+  slides: {
+    history: {
+      retainedBaseCount: 5,
+      retainedChangeSetCount: 1000,
+      retainedTerminalAttemptCount: 1000
+    },
+    limits: {
+      maxSlidesPerDeck: 1000,
+      maxElementsPerContainer: 500,
+      maxMastersPerDeck: 32,
+      maxLayoutsPerDeck: 64,
+      maxSlotsPerLayout: 32,
+      maxStylesPerDeck: 256,
+      maxTokensPerTheme: 256,
+      maxGroupDepth: 16,
+      maxTableRows: 1000,
+      maxTableColumns: 256
+    }
   },
   retention: {
     revisionRetentionDays: 30,
@@ -462,6 +483,7 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     (parsed.document as Record<string, unknown> | undefined) ?? {};
   const structuredAnalytic =
     (parsed.structuredAnalytic as Record<string, unknown> | undefined) ?? {};
+  const slides = (parsed.slides as Record<string, unknown> | undefined) ?? {};
   const retention =
     (parsed.retention as Record<string, unknown> | undefined) ?? {};
   const configuredOpenRouterApiKey = parseString(
@@ -481,12 +503,7 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
   return {
     server: {
       host: parseString(server.host, DEFAULT_CONFIG.server.host, "server.host"),
-      port: parseNumber(server.port, DEFAULT_CONFIG.server.port, "server.port"),
-      maxBodyBytes: parseNumber(
-        server.maxBodyBytes,
-        DEFAULT_CONFIG.server.maxBodyBytes,
-        "server.maxBodyBytes"
-      )
+      port: parseNumber(server.port, DEFAULT_CONFIG.server.port, "server.port")
     },
     workerPool: {
       concurrentWorkers: parseNumber(
@@ -579,6 +596,7 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
       structuredAnalytic,
       DEFAULT_CONFIG.structuredAnalytic
     ),
+    slides: parseSlidesConfig(slides, DEFAULT_CONFIG.slides),
     retention: parseRetentionConfig(retention, DEFAULT_CONFIG.retention)
   };
 };
@@ -622,6 +640,51 @@ function parseDerivedOutputConfig(raw: Record<string, unknown>, defaults: Derive
   return {
     maxPlanQueries: parseNumber(raw.maxPlanQueries, defaults.maxPlanQueries, "derivedOutputs.maxPlanQueries"),
     maxToolRounds: parseNumber(raw.maxToolRounds, defaults.maxToolRounds, "derivedOutputs.maxToolRounds")
+  };
+}
+
+function parseSlidesConfig(
+  raw: Record<string, unknown>,
+  defaults: SlidesConfig
+): SlidesConfig {
+  const history = (raw.history as Record<string, unknown> | undefined) ?? {};
+  const limits = (raw.limits as Record<string, unknown> | undefined) ?? {};
+  const number = (
+    value: unknown,
+    fallback: number,
+    label: string
+  ): number => parseNumber(value, fallback, label);
+
+  return {
+    history: {
+      retainedBaseCount: number(
+        history.retainedBaseCount,
+        defaults.history.retainedBaseCount,
+        "slides.history.retainedBaseCount"
+      ),
+      retainedChangeSetCount: number(
+        history.retainedChangeSetCount,
+        defaults.history.retainedChangeSetCount,
+        "slides.history.retainedChangeSetCount"
+      ),
+      retainedTerminalAttemptCount: number(
+        history.retainedTerminalAttemptCount,
+        defaults.history.retainedTerminalAttemptCount,
+        "slides.history.retainedTerminalAttemptCount"
+      )
+    },
+    limits: {
+      maxSlidesPerDeck: number(limits.maxSlidesPerDeck, defaults.limits.maxSlidesPerDeck, "slides.limits.maxSlidesPerDeck"),
+      maxElementsPerContainer: number(limits.maxElementsPerContainer, defaults.limits.maxElementsPerContainer, "slides.limits.maxElementsPerContainer"),
+      maxMastersPerDeck: number(limits.maxMastersPerDeck, defaults.limits.maxMastersPerDeck, "slides.limits.maxMastersPerDeck"),
+      maxLayoutsPerDeck: number(limits.maxLayoutsPerDeck, defaults.limits.maxLayoutsPerDeck, "slides.limits.maxLayoutsPerDeck"),
+      maxSlotsPerLayout: number(limits.maxSlotsPerLayout, defaults.limits.maxSlotsPerLayout, "slides.limits.maxSlotsPerLayout"),
+      maxStylesPerDeck: number(limits.maxStylesPerDeck, defaults.limits.maxStylesPerDeck, "slides.limits.maxStylesPerDeck"),
+      maxTokensPerTheme: number(limits.maxTokensPerTheme, defaults.limits.maxTokensPerTheme, "slides.limits.maxTokensPerTheme"),
+      maxGroupDepth: number(limits.maxGroupDepth, defaults.limits.maxGroupDepth, "slides.limits.maxGroupDepth"),
+      maxTableRows: number(limits.maxTableRows, defaults.limits.maxTableRows, "slides.limits.maxTableRows"),
+      maxTableColumns: number(limits.maxTableColumns, defaults.limits.maxTableColumns, "slides.limits.maxTableColumns")
+    }
   };
 }
 

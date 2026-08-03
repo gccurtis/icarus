@@ -2,9 +2,7 @@ import type {
   DeckBase,
   DeckChangeSet,
   DeckCommittedTransaction,
-  DeckCreateReceipt,
   DeckHead,
-  DeckSubmissionReceipt,
   FormulaEvaluationAttempt,
   PromptCreationAttempt,
   PromptOutputOwnership,
@@ -38,7 +36,6 @@ export const rowToHead = (row: SQLiteRow): DeckHead => ({
   lifecycle: row.lifecycle as DeckHead["lifecycle"],
   revision: Number(row.revision),
   baseSeq: Number(row.base_seq),
-  semanticDigest: row.semantic_digest as string,
   createdAt: row.created_at as string,
   updatedAt: row.updated_at as string
 });
@@ -48,7 +45,6 @@ export const rowToBase = (row: SQLiteRow): DeckBase => ({
   deckId: row.deck_id as string,
   baseSeq: Number(row.base_seq),
   snapshot: decodeJson<DeckBase["snapshot"]>(row.snapshot_json),
-  semanticDigest: row.semantic_digest as string,
   createdAt: row.created_at as string
 });
 
@@ -59,8 +55,6 @@ export const rowToChangeSet = (row: SQLiteRow): DeckChangeSet => {
   return {
     id: row.id as string,
     deckId: row.deck_id as string,
-    clientRequestId: row.client_request_id as string,
-    requestDigest: row.request_digest as string,
     authoredRevision: Number(row.authored_revision),
     priorRevision: Number(row.prior_revision),
     revision: Number(row.revision),
@@ -79,26 +73,9 @@ export const rowToChangeSet = (row: SQLiteRow): DeckChangeSet => {
           }
         }
       : {}),
-    semanticDigest: row.semantic_digest as string,
     createdAt: row.created_at as string
   };
 };
-
-export const rowToSubmission = (row: SQLiteRow): DeckSubmissionReceipt => ({
-  deckId: row.deck_id as string,
-  requestId: row.request_id as string,
-  requestDigest: row.request_digest as string,
-  result: decodeJson<DeckSubmissionReceipt["result"]>(row.result_json),
-  createdAt: row.created_at as string
-});
-
-export const rowToCreateReceipt = (row: SQLiteRow): DeckCreateReceipt => ({
-  requestId: row.request_id as string,
-  deckId: row.deck_id as string,
-  requestDigest: row.request_digest as string,
-  result: decodeJson<DeckCreateReceipt["result"]>(row.result_json),
-  createdAt: row.created_at as string
-});
 
 export const rowToIdentityLedgerEntry = (row: SQLiteRow): SlideIdentityLedgerEntry => ({
   deckId: row.deck_id as string,
@@ -114,7 +91,6 @@ export const rowToIdentityLedgerEntry = (row: SQLiteRow): SlideIdentityLedgerEnt
 
 export const rowToCommittedTransaction = (row: SQLiteRow): DeckCommittedTransaction => ({
   sourceTransactionId: row.source_transaction_id as string,
-  sourceRequestId: row.source_request_id as string,
   kind: row.transaction_kind as DeckCommittedTransaction["kind"],
   deckId: row.deck_id as string,
   revision: Number(row.revision),
@@ -126,7 +102,6 @@ export const rowToCommittedTransaction = (row: SQLiteRow): DeckCommittedTransact
     : {}),
   origin: row.origin as DeckCommittedTransaction["origin"],
   operationTypes: decodeJson<string[]>(row.operation_types),
-  sourceSemanticDigest: row.semantic_digest as string,
   ...((row.compensation_intent as string | null) !== null &&
   (row.compensation_target_change_set_id as string | null) !== null
     ? {
@@ -221,8 +196,6 @@ export const attemptToStorageParts = (attempt: SlideAttempt): AttemptStoragePart
 const attemptBase = (row: SQLiteRow) => ({
   id: row.id as string,
   deckId: row.deck_id as string,
-  clientRequestId: row.client_request_id as string,
-  requestDigest: row.request_digest as string,
   frozenDeckRevision: Number(row.frozen_deck_revision),
   state: row.state as SlideAttempt["state"],
   ...((row.settled_change_set_id as string | null) !== null

@@ -32,7 +32,7 @@ Embedding reuse is based only on window ID. The reported `windowsReused` is the 
 
 ## Scope methods
 
-`canonicalEntries` copies/sorts entries by kind then ID. `resolveScope` uses all stored sources for an explicit empty array, otherwise delegates to the resolver or filters exact `document` kinds. Resolved IDs are unique/sorted; resource descriptors are resolver-provided or default to identity-as-document. It freezes copies and computes:
+`canonicalEntries` copies/sorts entries by kind then ID. `resolveScope` returns `null` for an absent argument, and otherwise builds a manifest: it delegates to the resolver or filters exact `document` kinds, and appends every stored source when any input entry satisfies `isProjectEntry`. An explicit empty array produces a manifest with no admissible sources and a `knowledge.scope.empty` warning; it does not mean the whole project. Resolved IDs are unique/sorted; resource descriptors are resolver-provided or default to identity-as-document. It freezes copies and computes:
 
 - `contextDigest = SHA-256(JSON canonical input entries)`;
 - `scopeDigest = SHA-256(JSON sorted resource descriptors)`.

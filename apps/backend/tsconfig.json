@@ -32,6 +32,8 @@
       "#structured-analytic/*": ["./src/3-capabilities/structured-analytic/*"],
       "#templates": ["./src/3-capabilities/templates/index.ts"],
       "#templates/*": ["./src/3-capabilities/templates/*"],
+      "#slides": ["./src/3-capabilities/slides/index.ts"],
+      "#slides/*": ["./src/3-capabilities/slides/*"],
       "#document": ["./src/3-capabilities/document/index.ts"],
       "#document/*": ["./src/3-capabilities/document/*"],
       "#general-files": ["./src/3-capabilities/general-files/index.ts"],

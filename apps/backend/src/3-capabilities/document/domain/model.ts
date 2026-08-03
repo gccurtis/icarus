@@ -176,10 +176,17 @@ export interface PromptBlock extends BlockBase {
   kind: "prompt";
   output: DerivedOutputRef;
   /**
-   * Required. A Prompt Block always has a context, which is what makes the old
-   * empty-scope guard unnecessary rather than merely removed: with exactly one
-   * target, a scope can never collapse to the zero-length array that
-   * `Knowledge.resolveScope` reads as whole-project retrieval.
+   * Required. A Prompt Block always has a context, so a scope can never
+   * collapse to a zero-length array by accident — there is always exactly one
+   * target, and the only way to get none is to leave a variable unbound, which
+   * is refused.
+   *
+   * An empty scope no longer means whole-project retrieval; it means nothing,
+   * and a refresh refuses it outright. So the failure this guarantee prevents
+   * has changed from "silently grounds on everything" to "cannot be answered at
+   * all" — still worth preventing, and now for the honest reason.
+   *
+   * To ground on the whole project, name it: `{ kind: "project", id: "*" }`.
    */
   context: PromptContext;
 }

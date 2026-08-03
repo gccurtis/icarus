@@ -1,5 +1,5 @@
 import type { ConnectorEntry, ConnectorItemEntry, ConnectorService } from "#connector";
-import type { ContextManager } from "#context";
+import type { ContextManager, ProjectMembershipPort } from "#context";
 import type {
   ResourceContent,
   ResourceDescriptor,
@@ -48,7 +48,8 @@ interface ConnectorSourceMatch {
  * KnowledgeResourceResolver interfaces.
  */
 export type RuntimeResourceRegistry = ResourceReader &
-  KnowledgeResourceResolver & {
+  KnowledgeResourceResolver &
+  ProjectMembershipPort & {
     registerGeneralFiles(service: GeneralFileService): void;
     registerConnector(service: ConnectorService): void;
     registerInvestigation(runtime: InvestigationRuntime): void;
@@ -74,6 +75,61 @@ class ResourceRegistry implements RuntimeResourceRegistry {
 
   registerInvestigation(runtime: InvestigationRuntime): void {
     this.investigation = runtime;
+  }
+
+  /**
+   * Everything currently in the project, in resource vocabulary.
+   *
+   * This is the live membership behind `{ kind: "project" }`. It enumerates the
+   * capabilities that actually put content into Knowledge — General Files,
+   * Connector, and accepted Findings — because those are exactly the things a
+   * scope can admit. Documents are deliberately absent: a Document is not a
+   * Knowledge source, and `kind: "document"` in a Context entry means a source
+   * ID, not a Document capability row.
+   *
+   * The spelling matters. Each entry uses the same `kind:id` a caller would
+   * write to name that resource, so an exclusion naming one actually subtracts
+   * it. Enumerating in source-ID vocabulary instead would leave exclusions
+   * silently failing to match.
+   */
+  async listProjectEntries(): Promise<ContextEntry[]> {
+    const entries: ContextEntry[] = [];
+    let generalFiles = 0;
+    let connectors = 0;
+    let findings = 0;
+
+    if (this.generalFiles) {
+      for (const file of this.generalFiles.list()) {
+        entries.push({ id: file.id, kind: file.kind });
+        generalFiles += 1;
+      }
+    }
+    if (this.connector) {
+      for (const entry of this.connector.list()) {
+        entries.push({ id: entry.id, kind: entry.kind });
+        connectors += 1;
+      }
+    }
+    if (this.investigation) {
+      // Only accepted Findings are indexed, so only those can be grounded on.
+      for (const finding of await this.investigation.listFindings({ status: "accepted" })) {
+        entries.push({ id: finding.id, kind: "finding" });
+        findings += 1;
+      }
+    }
+
+    // Per-contributor counts, because a contributor that was never registered
+    // shows up here as a silent zero rather than an error.
+    this.logger.debug("resources.project.enumerated", {
+      total: entries.length,
+      generalFiles,
+      connectors,
+      findings,
+      generalFilesRegistered: Boolean(this.generalFiles),
+      connectorRegistered: Boolean(this.connector),
+      investigationRegistered: Boolean(this.investigation)
+    });
+    return entries;
   }
 
   /** Expand nested Contexts, then map every known resource to Knowledge IDs. */

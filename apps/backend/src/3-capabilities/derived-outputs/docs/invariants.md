@@ -5,7 +5,8 @@
 | Preconditions | Current guaranteed outcome | Boundary |
 |---|---|---|
 | Declaration store insert/claim succeeds | A 32-hex prompt output exists at definition revision 1/head 0 | Service/store |
-| Refresh starts on an existing output | Definition/head/Knowledge generation and input Context digest are frozen in an attempt | Service/store |
+| Refresh targets an output whose `contextEntries` is empty | `DerivedOutputEmptyScopeError` is thrown; no attempt, no usage, no revision, no freshness change | Service precondition, before any write |
+| Refresh starts on an existing output with a non-empty scope | Definition/head/Knowledge generation and input Context digest are frozen in an attempt | Service/store |
 | Scope resolution succeeds | Every planned/tool retrieval uses one immutable manifest object | Knowledge/service closure |
 | Knowledge returns a region | Its source must have a manifest descriptor before it becomes grounding/candidate | `candidateForRegion` |
 | Synthesis status is `ok` | Text is nonblank and at least one exact trusted evidence item exists | `validateSynthesis` |
@@ -16,6 +17,8 @@
 | Successful non-skipped Knowledge mutation event is handled | Generation increments and every output becomes stale atomically in Derived SQLite | Invalidation transaction |
 | Logical delete succeeds | Final aggregate snapshot and terminal revision are retained; current Output and operational claims/attempts are removed | Delete transaction and current-row foreign keys |
 | Purge targets a terminally deleted Output | Lifecycle history, stable root, and retained answer revisions are physically removed | Purge guard plus transaction/root cascade |
+| A claimant reports an Output it released before the cutoff | That Output is logically deleted and its ownership row is forgotten | `derived-outputs-orphans` retention port |
+| No claimant reports an Output | It is never reaped, whatever its ownership state | Same port; it never enumerates Outputs |
 
 ## Identity and revision rules
 
@@ -33,7 +36,8 @@
 
 ## Scope and retrieval guarantees
 
-- Empty definition Context means “freeze all current Knowledge sources,” not “retrieve nothing.”
+- An empty definition Context is refused. Refresh throws `DerivedOutputEmptyScopeError` before any attempt exists, so no refresh ever runs against a scope that admits nothing.
+- Whole-project scope is named explicitly with `{ id: "*", kind: "project" }`, which resolves to the project's live membership at refresh time rather than a snapshot frozen at declaration.
 - Non-empty Context is recursively resolved once through the resource registry.
 - Source membership, public resource identities, and known resource revisions are immutable for the refresh.
 - Initial retrieval, synthesis retrieval, resource listing, direct read, and evidence listing all use that manifest/candidate lineage.
@@ -92,6 +96,33 @@ Knowledge mutation listeners run synchronously after Knowledge has committed its
 - Refresh of an existing output does not first persist `refreshing`; callers cannot use freshness as an in-flight lock.
 - Freshness is conservative cached metadata, not proof that the answer is factually current.
 
+## Deletion and retention guarantees
+
+Deletion has three entry points: the `DELETE` endpoint, `POST /derived-outputs/purge`, and
+the backend-wide retention scheduler. The scheduler runs two ports against this
+capability.
+
+| Port | What it removes |
+|---|---|
+| `derived-outputs` | Old lifecycle snapshots for still-current Outputs; terminal deletions older than the cutoff, physically |
+| `derived-outputs-orphans` | Outputs a claiming capability reports as released, logically |
+
+The safety property of the orphan port is that it only reaps what an owner positively
+released:
+
+- It asks every [`DerivedOutputClaimant`](../../../1-init/create/derivedOutputReaper.ts) for Outputs it once owned, no longer attaches to any block, and detached before the cutoff.
+- It never enumerates Outputs and never computes "every Output minus everything claimed". A diff would delete every Output declared through `POST /derived-outputs`, because those legitimately have no owner; asking each claimant what it released cannot make that mistake.
+- Standalone Outputs declared through the Derived Outputs API are therefore untouched, permanently — not merely until some future owner appears.
+- Detachment is only actionable after the cutoff, because undo re-attaches a detached Output by ID and a recently detached row may still come back.
+- The claim set is a list of claimants, not one hard-wired store, so a second owning capability with the same ownership table does not silently start losing its Outputs to Document's claim set.
+
+Reaping is logical deletion, so it is subject to every ordinary delete guarantee above: the
+final aggregate and answer revisions survive until the `derived-outputs` port purges the
+resulting terminal deletion on a later sweep. A delete that fails for any reason other than
+not-found leaves the ownership row in place, so the next sweep retries; an Output already
+gone still has its ownership row released. One claimant failing to list or delete does not
+stop the others.
+
 ## Limits and validation
 
 | Limit | Default | Current effect |
@@ -104,6 +135,7 @@ There is no capability-specific maximum prompt, stabilization text, answer text,
 
 ## Failure and status behavior
 
+- An empty definition scope is a thrown precondition error, not a result. It is distinct from empty retrieval: one output could never find anything, the other searched a real scope and found nothing.
 - Empty retrieval is a successful published `insufficient` revision after planning/retrieval costs.
 - Invalid planning/synthesis/tool/evidence data becomes a refresh failure result, not untrusted persisted content.
 - Failed diagnostics disclose stage but not provider exception message.
@@ -121,8 +153,15 @@ There is no capability-specific maximum prompt, stabilization text, answer text,
 
 ## Regression coverage
 
-[`derived-outputs.test.ts`](../../../../test/capabilities/derived-outputs.test.ts) currently covers no-evidence publication/telemetry; persisted keyed refresh replay, skipped replay, mismatch, and unkeyed repetition; keyed definition replay/mismatch and unkeyed CAS; transactional definition stale marking; current/history logical deletion and purge; Knowledge invalidation/generation fencing; one frozen manifest across all tools; real General File/Connector registry mapping/read containment; concurrent refresh winner; old-definition and late-failure races; and untrusted evidence rejection with complete usage accounting.
+[`derived-outputs.test.ts`](../../../../test/capabilities/derived-outputs.test.ts) currently covers no-evidence publication/telemetry; the empty-scope refusal; persisted keyed refresh replay, skipped replay, mismatch, and unkeyed repetition; keyed definition replay/mismatch and unkeyed CAS; transactional definition stale marking; current/history logical deletion and purge; Knowledge invalidation/generation fencing; one frozen manifest across all tools; real General File/Connector registry mapping/read containment; concurrent refresh winner; old-definition and late-failure races; and untrusted evidence rejection with complete usage accounting.
+
+[`derived-output-reaper.test.ts`](../../../../test/capabilities/derived-output-reaper.test.ts) covers the orphan port: released Outputs are deleted and their ownership rows forgotten; nothing is touched when no claimant reports anything; every claimant is swept and each names its own reaped Outputs; a failed delete keeps the ownership row for the next sweep; an already-gone Output still has its row released; and one claimant failing to list does not stop the others.
 
 ## Non-goals
 
 Current non-goals include auto-refresh scheduling, a second jobs-runtime graph, durable resumable provider stages, fine-grained source→output invalidation, semantic entailment proof, output diffing, rich-text/value/matrix output kinds, automatic adoption by resources, history-to-current replay, Document direct-read registration, end-user authorization, and distributed transactions across Knowledge/Intelligence/resource stores.
+
+Unattended deletion is not among them, but it is narrow: the `derived-outputs-orphans`
+port reaps released Outputs only. General garbage collection of unreferenced Outputs, a
+reachability scan, and rewriting external `DerivedOutputRef` holders remain non-goals, and
+the orphan port owns no timer of its own — it rides the retention sweep.

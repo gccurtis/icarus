@@ -22,7 +22,9 @@ import { createGeneralFilesInstance } from "#init/create/generalFiles.js";
 import { createConnectorInstance } from "#init/create/connector.js";
 import { ConnectorSyncScheduler } from "#init/create/connectorSyncScheduler.js";
 import { createResourceReader } from "#init/create/resource-reader.js";
+import { createDerivedOutputReaper } from "#init/create/derivedOutputReaper.js";
 import { createDocumentInstance } from "#init/create/document.js";
+import { createSlidesInstance } from "#init/create/slides.js";
 import { createActivityInstance } from "#init/create/activity.js";
 import { createCommentsInstance } from "#init/create/comments.js";
 import { createInvestigationRuntimeInstance } from "#init/create/investigation.js";
@@ -36,8 +38,11 @@ import {
   ResourceRetentionScheduler
 } from "#utils/persistence/resourceRetentionScheduler.js";
 import type { DocumentInternalJobIntent } from "#document";
+import type { SlideInternalJobIntent } from "#slides";
 import { registerDocumentEndpoints } from "#job-wiring/document/registerDocumentEndpoints.js";
 import { registerDocumentInternalJobs } from "#job-wiring/document/registerDocumentInternalJobs.js";
+import { registerSlidesEndpoints } from "#job-wiring/slides/registerSlidesEndpoints.js";
+import { registerSlidesInternalJobs } from "#job-wiring/slides/registerSlidesInternalJobs.js";
 import { registerActivityEndpoints } from "#job-wiring/activity/registerActivityEndpoints.js";
 import { registerCommentEndpoints } from "#job-wiring/comments/registerCommentEndpoints.js";
 import { registerPersonaEndpoints } from "#job-wiring/persona/registerPersonaEndpoints.js";
@@ -96,6 +101,12 @@ export const startBackend = async (): Promise<void> => {
     );
     resourceRegistry.registerGeneralFiles(generalFiles);
     resourceRegistry.registerConnector(connector);
+    // Closes the loop the other way: the registry already resolves Context's
+    // leaves, and now Context can ask it what the project holds so a
+    // `{ kind: "project" }` entry means the live membership rather than a
+    // snapshot. Registered after the resource capabilities exist, so the first
+    // enumeration is already complete.
+    contextManager.setProjectMembership(resourceRegistry);
     const derivedOutputs = createDerivedOutputServiceInstance(
       config,
       knowledge,
@@ -121,6 +132,9 @@ export const startBackend = async (): Promise<void> => {
       logger
     );
     registerDocumentInternalJobs(documentJobs, document);
+    const slidesJobs = new SchedulerInternalJobsRuntime<SlideInternalJobIntent>(scheduler);
+    const slides = createSlidesInstance(config, richText, activity, slidesJobs, logger);
+    registerSlidesInternalJobs(slidesJobs, slides);
     // Templates is constructed after the resource capabilities so their runtime
     // objects can be registered into it without a constructor cycle.
     const templateResources = createTemplateResourceRegistry();
@@ -148,6 +162,22 @@ export const startBackend = async (): Promise<void> => {
         }),
         bindResourceRetentionPort("investigation", investigation),
         bindResourceRetentionPort("derived-outputs", derivedOutputs),
+        // After both `document` and `derived-outputs`, so it never observes a
+        // half-finished document deletion. It logically deletes what it reaps
+        // and leaves the history for the `derived-outputs` port above to purge
+        // on the next sweep — one retention mechanism, not two.
+        bindResourceRetentionPort(
+          "derived-outputs-orphans",
+          createDerivedOutputReaper({
+            // Document is the only claimant today. Slides declares a
+            // byte-identical ownership table but takes no Derived Outputs and
+            // writes no ownership rows yet; it joins this list on the day it
+            // does, and until then has nothing here to reap.
+            claimants: [document],
+            derivedOutputs,
+            logger
+          })
+        ),
         bindResourceRetentionPort("comments", comments),
         bindResourceRetentionPort("connector", connector),
         bindResourceRetentionPort("general-files", generalFiles),
@@ -196,6 +226,7 @@ export const startBackend = async (): Promise<void> => {
     registerPersonaEndpoints(registry, personas, logger);
     registerInvestigationEndpoints(registry, investigation, logger);
     registerDocumentEndpoints(registry, document, logger);
+    registerSlidesEndpoints(registry, slides, logger);
     registerTemplateEndpoints(registry, templates, logger);
     registerStructuredAnalyticEndpoints(registry, structuredAnalytic, logger);
 

@@ -393,4 +393,105 @@ await request(
   404
 );
 
+const deck = await request(
+  "slides-create",
+  "/slides/command",
+  {
+    method: "POST",
+    body: json({
+      origin: "interactive",
+      command: { type: "deck.create", title: "Smoke deck" }
+    })
+  },
+  201
+);
+
+const deckId = deck.head.id;
+
+await request(
+  "slides-submit",
+  "/slides/command",
+  {
+    method: "POST",
+    body: json({
+      origin: "interactive",
+      command: {
+        type: "deck.submit",
+        deckId,
+        expectedRevision: 1,
+        operations: [{ type: "deck.rename", title: "Smoke deck renamed" }]
+      }
+    })
+  },
+  200
+);
+
+const loadedDeck = await request(
+  "slides-load",
+  "/slides/query",
+  {
+    method: "POST",
+    body: json({ query: { type: "deck.load", deckId } })
+  },
+  200
+);
+assert.equal(loadedDeck.snapshot.title, "Smoke deck renamed");
+
+const deckOutline = await request(
+  "slides-outline",
+  "/slides/query",
+  {
+    method: "POST",
+    body: json({ query: { type: "deck.outline", deckId } })
+  },
+  200
+);
+assert.equal(typeof deckOutline.text, "string");
+assert.equal(deckOutline.revision, 2);
+
+// The revision the caller already used: a conflict, not a second write.
+await request(
+  "slides-revision-conflict",
+  "/slides/command",
+  {
+    method: "POST",
+    body: json({
+      origin: "interactive",
+      command: {
+        type: "deck.submit",
+        deckId,
+        expectedRevision: 1,
+        operations: [{ type: "deck.rename", title: "Loser" }]
+      }
+    })
+  },
+  409
+);
+
+// An unknown field must be a 400 rather than a silently ignored key.
+await request(
+  "slides-unknown-field",
+  "/slides/command",
+  {
+    method: "POST",
+    body: json({
+      origin: "interactive",
+      command: { type: "deck.create", title: "Bad", deckId: "caller-chosen" }
+    })
+  },
+  400
+);
+
+await request(
+  "slides-load-missing",
+  "/slides/query",
+  {
+    method: "POST",
+    body: json({
+      query: { type: "deck.load", deckId: "smoke-missing" }
+    })
+  },
+  404
+);
+
 process.stdout.write(`${JSON.stringify({ baseUrl, samples }, null, 2)}\n`);

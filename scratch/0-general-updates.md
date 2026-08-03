@@ -25,8 +25,8 @@ Items 15 and 16 are **Phase C** of the Templates/Document work and are ticked in
 | 12 | [Activity ID allocation — doc drift](#12--activity-id-allocation--doc-drift) | ✅ **DONE 2026-08-02** |
 | 13 | [Deletion as a revision, not a flag](#13--deletion-as-a-revision-not-a-flag) | ✅ **DONE 2026-08-02** |
 | 14 | [Document deletion](#14--document-deletion) | ✅ **DONE 2026-08-02** |
-| 15 | [Live project-scoped Context](#15--live-project-scoped-context) | agreed — needed for exclusions |
-| 16 | [Garbage collection for orphaned resources](#16--garbage-collection-for-orphaned-resources) | 16a ✅ **DONE 2026-08-02**; 16b open |
+| 15 | [Live project-scoped Context](#15--live-project-scoped-context) | ✅ **DONE 2026-08-02** — including retiring the implicit empty-scope rule |
+| 16 | [Garbage collection for orphaned resources](#16--garbage-collection-for-orphaned-resources) | ✅ **DONE 2026-08-02** — both 16a and 16b |
 | ~~17~~ | Remove command claims from Templates | **moved** → [`templates-rework-plan.md`](templates-rework-plan.md) step 1 |
 | 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | ✅ **DONE 2026-08-02** |
 | 19 | [Structured Data revisions should propagate to dependents](#19--structured-data-revisions-should-propagate-to-dependents) | agreed — explore |
@@ -927,6 +927,32 @@ revision of both live and logically deleted Documents.
 
 ## 15 · Live project-scoped Context
 
+✅ **DONE 2026-08-02.** Shipped. `{ kind: "project" }` expands at resolve time via a `ProjectMembershipPort` that
+`1-init` satisfies with the resource registry; `excludes` sits on `ContextRecord` and is
+subtracted from that record's own expansion; and `composeNamed` now stores a rule rather
+than a snapshot, so a composition tracks its operands instead of freezing them.
+
+The design and the decisions are in [`context-design.md`](context-design.md) and the
+capability's own [docs](../apps/backend/src/3-capabilities/context/docs/README.md). Three
+things worth recording here because they were judgement calls, not mechanics:
+
+- **Exclusions match on `id` alone, not `kind:id`.** The expansion is spelled by whichever
+  capability owns the resource; the exclusion is spelled by whoever typed it. Requiring the
+  kinds to agree lets an exclusion silently fail to subtract, which leaks exactly what
+  someone asked to withhold. Over-excluding merely narrows a scope.
+- **A cycle or depth cut inside an exclusion list withholds the whole record.** On the
+  include side a cut branch is a harmless omission. On the exclude side the same rule hands
+  back the withheld resources, so it fails the other way and logs at error.
+- **No membership port, or an enumeration that throws, expands the project to nothing.** An
+  empty result is visible; a silent whole-corpus grounding is not.
+
+The knock-on below is done too. `Knowledge.resolveScope` no longer reads a zero-length array
+as the whole project, and `DerivedOutputService.refresh` refuses an output whose definition
+names nothing rather than answering it from everything — see the retirement note after the
+original text.
+
+### Original statement of the problem
+
 **Needed, not yet possible.** A caller must be able to express *"the whole project, less
 these five resources"* and have it stay correct as the project changes. Today
 `composeNamed("difference", …)` materialises a static entry set at compose time, so such a
@@ -953,10 +979,24 @@ is materialised at write time.
 
 Knock-on effects worth deciding with it:
 
-- **Knowledge's implicit rule.** `resolveScope` already treats a zero-length entry array as
-  whole-project retrieval. A `{ kind: "project" }` sentinel gives that an explicit spelling,
-  and the implicit rule could then be retired rather than kept as a second way to say the
-  same thing.
+- **Knowledge's implicit rule.** ✅ **Retired 2026-08-02.** `resolveScope` treated a
+  zero-length entry array as whole-project retrieval. That was not merely a second spelling —
+  it was a trap, because an empty array is what you get by *accident*: `declare()` coerced a
+  missing field with `?? []`, both derived-output HTTP handlers coerced any malformed body
+  value to `[]`, a Prompt Block whose Context Variable was never bound resolves to `[]`, and
+  the `context_entries` column defaults to `'[]'`. Every one of those silently produced a
+  confident answer drawn from the whole corpus.
+
+  Now: absent is unscoped, `[]` admits nothing and logs at warn, and the project must be
+  named. `refresh` refuses an output whose definition names nothing with
+  `DerivedOutputEmptyScopeError` → 400 `empty_scope`, checked before an attempt row exists so
+  there is no attempt, no usage, and no failed revision. Both HTTP handlers now validate
+  `contextEntries` instead of coercing it.
+
+  `resolveScope` recognises the project entry itself as well as Context expanding it, so the
+  sentinel arriving unexpanded — no resolver wired, or a caller going straight to Knowledge —
+  still means the project rather than being dropped as an unknown kind and silently becoming
+  empty.
 - **Blast radius.** Store, wire, `resolve`, `composeNamed`, and every consumer of `entries`
   — Knowledge, Derived Outputs, Persona, and Document's context variables.
 - **Cycle safety.** `project` cannot contain itself, but a context excluded from another
@@ -969,6 +1009,38 @@ single-context bindings work without it.
 ---
 
 ## 16 · Garbage collection for orphaned resources
+
+✅ **DONE 2026-08-02.** Both leaks are closed. 16a ships as the `templates-orphans` retention port; 16b as
+`derived-outputs-orphans`, in [`1-init/create/derivedOutputReaper.ts`](../apps/backend/src/1-init/create/derivedOutputReaper.ts).
+
+**16b turned out narrower and more dangerous than written below.** Two corrections to the
+original text:
+
+- *"the cross-check against outputs that were never registered as owned at all"* would be a
+  serious bug. `POST /derived-outputs` legitimately creates outputs with no owner, so a diff
+  of "every output minus everything claimed" deletes all of them. The reaper never enumerates
+  outputs; it asks each claiming capability what it has **released**. That is the defining
+  constraint of the design.
+- The claim set must be a **list of claimants**, not Document. Slides owns a byte-identical
+  `prompt_outputs` table and is not yet wired into `startBackend`; a sweep keyed on "Document
+  says so" would have started deleting Slides' outputs silently the day Slides shipped.
+
+The grace period is load-bearing rather than cautious: compensation re-attaches a detached
+output by ID, so only rows detached before the cutoff are past the reach of undo. Reaped
+outputs are logically deleted, not purged — purge refuses a live output, and deletion leaves
+history that the ordinary `derived-outputs` retention port clears on the same schedule.
+
+A failed delete deliberately keeps its ownership row. That row is the only record the output
+needs reaping, so dropping it would lose the leak rather than close it.
+
+**A separate defect surfaced while mapping this**, and is fixed: `duplicate` set
+`creationAttemptId` to the command's idempotency key, but that column is a real foreign key
+into the attempts table. Every copy of a Document containing a Prompt Block failed — *after*
+declaring one Derived Output per block. So 16b's leak was not a rare crash window at all; it
+was certain, on every template instantiation of a Document with a prompt. The copy path now
+omits the field, since a copy has no attempt.
+
+### Original statement of the problem
 
 **Explore.** Two known leaks, both of the same shape: a resource that was created for an
 owner that never came into existence, or that outlived it. Neither is reachable by any

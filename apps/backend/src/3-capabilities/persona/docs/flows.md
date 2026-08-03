@@ -105,27 +105,43 @@ task start
      ]
 ```
 
-### The empty-scope trap
+### The scope-union trap
 
-Naively unioning the persona's context into the task's entries is wrong, and the failure
-is silent. `resolveScope([])` means *the whole project*; `resolveScope([X])` means *only
-X*. Adding a persona's context to an empty task scope would narrow the task from
-everything to one context — the exact opposite of the intent.
+Naively unioning the persona's context into the task's entries is wrong in exactly one
+case, and the failure is silent. `Knowledge.resolveScope` reads its argument three ways:
+
+| Argument | Meaning |
+|---|---|
+| `undefined` | unscoped — the whole lattice, no scope filter applied at all |
+| `[]` | an **empty** scope that admits nothing; logged as `knowledge.scope.empty` at `warn` |
+| `[{ id: "*", kind: "project" }]` | the whole project, expanded at resolve time |
+
+Only the first is a trap. An unscoped task already searches everything, so appending the
+persona's one entry would narrow it from everything to that entry — the exact opposite of
+the intent. The other two are ordinary entry lists and union without a special case.
 
 ```ts
-const scopeEntriesFor = (task, snapshot): ContextEntry[] =>
-  // An empty task scope already means the whole project, which subsumes anything
-  // the persona could reference. Adding the persona entry here would narrow it.
-  task.contextEntries.length === 0
-    ? []
+const scopeEntriesFor = (task, snapshot): ContextEntry[] | undefined =>
+  // An unscoped task subsumes anything the persona could reference. Adding the
+  // persona entry here would turn "everything" into "only this".
+  task.contextEntries === undefined
+    ? undefined
     : snapshot.context
       ? [...task.contextEntries, snapshot.context]
       : [...task.contextEntries];
 ```
 
-This holds because a persona's context resolves to project Knowledge sources, which a
-whole-project scope already contains. Persona has no way to reference material outside the
-project, and no such mechanism is planned.
+**Never spell "the whole project" as `[]`.** An empty array admits nothing, so a task
+scoped that way retrieves nothing at all, and unioning the persona entry into it would
+make the persona's material the only thing the task could find. A task that means the
+whole project names it: `PROJECT_CONTEXT_ENTRY`, re-exported from `#context` as
+`{ id: "*", kind: "project" }`. It expands to the project's live membership when the
+consumer resolves it, so it stays current as sources are added.
+
+Unioning the persona entry into a whole-project scope is redundant rather than harmful: a
+persona's context resolves to project Knowledge sources, which the project entry already
+expands to. Persona has no way to reference material outside the project, and no such
+mechanism is planned.
 
 ### Consumer laws
 
@@ -135,7 +151,7 @@ project, and no such mechanism is planned.
 3. **Never precede the contract.** The fragment is appended to the consumer's system
    content, never placed before or in place of it.
 4. **Union only.** A persona may add reference material; it may never narrow a task's
-   scope.
+   scope — see the trap above for the one argument where a union would.
 5. **Never substitute silently.** Resolving a deleted or unknown persona is an error.
 6. **Never log section text.** Logs carry ids, revisions, and digests.
 

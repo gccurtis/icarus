@@ -139,6 +139,22 @@ export interface DocumentCapability extends DocumentTemplateRuntime {
   compact(documentId: string): Promise<boolean>;
   pruneHistory(cutoff: string): Promise<number>;
   purgeExpired(cutoff: string): Promise<number>;
+
+  // ── Derived Output ownership, for the orphan sweep ────────────────────────
+  /**
+   * Which Derived Outputs this capability once owned and no longer attaches to
+   * any block. The `kind` inherited from the Templates runtime port doubles as
+   * the claimant's name, so a sweep coordinating several of them can say whose
+   * output it reaped.
+   *
+   * Deliberately a *positive* statement rather than a diff. Derived Outputs can
+   * be declared standing alone through their own API, so "no owner" does not
+   * mean "orphan" — only an owner saying "I released this" does.
+   */
+  listDetachedOutputs(
+    cutoff: string
+  ): Promise<Array<{ outputId: string; detachedAt: string }>>;
+  releaseDetachedOutput(outputId: string): Promise<void>;
 }
 
 const now = (): string => new Date().toISOString();
@@ -494,7 +510,13 @@ class DocumentService implements DocumentCapability {
         outputId: output.id,
         documentId,
         blockId: block.id,
-        creationAttemptId: input.idempotencyKey,
+        // No creation attempt, deliberately. `creation_attempt_id` is a real
+        // foreign key into the attempts table, and a copy has no attempt —
+        // nothing was asked and nothing was answered, the output is declared and
+        // unanswered at appliedRevision 0. Naming the command's idempotency key
+        // here was a constraint failure on every copy containing a Prompt Block,
+        // and it failed *after* the outputs were declared, leaking one per
+        // block. A second block would have collided on UNIQUE as well.
         state: "attached",
         attachedRevision: 1,
         createdAt: timestamp,
@@ -761,6 +783,28 @@ class DocumentService implements DocumentCapability {
 
   async listSealedResources(): Promise<Array<{ resourceId: string; sealedAt: string }>> {
     return this.store.listSealedResources();
+  }
+
+  async listDetachedOutputs(
+    cutoff: string
+  ): Promise<Array<{ outputId: string; detachedAt: string }>> {
+    const detached = await this.store.listDetachedPromptOutputsBefore(cutoff);
+    if (detached.length > 0) {
+      this.deps.logger.info("document.outputs.detached-found", {
+        cutoff,
+        count: detached.length,
+        outputIds: detached.map((entry) => entry.outputId)
+      });
+    }
+    return detached.map((entry) => ({
+      outputId: entry.outputId,
+      detachedAt: entry.updatedAt
+    }));
+  }
+
+  async releaseDetachedOutput(outputId: string): Promise<void> {
+    await this.store.deletePromptOutputOwnership(outputId);
+    this.deps.logger.info("document.outputs.released", { outputId });
   }
 
   async load(input: { resourceId: string }): Promise<unknown> {

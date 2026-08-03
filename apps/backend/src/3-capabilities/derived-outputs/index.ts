@@ -32,6 +32,7 @@ export type {
   DerivedOutputChangeOperation
 } from "./domain/model.js";
 export {
+  DerivedOutputEmptyScopeError,
   DerivedOutputNotFoundError,
   DerivedOutputConflictError,
   DerivedOutputIdempotencyConflictError,

@@ -6,17 +6,45 @@
 
 | Method/path | Job | Queue | Input normalization | Calls | Success / notable behavior |
 |---|---|---|---|---|---|
-| `POST /derived-outputs` | `derived-outputs.declare` | concurrent | prompt/stabilization coerced to strings; Context array cast | `declare`, then unkeyed `refresh` | 201 refresh result, including failed/skipped result |
+| `POST /derived-outputs` | `derived-outputs.declare` | concurrent | prompt/stabilization coerced to strings; `contextEntries` validated by `requireContextEntries`, optional here | `declare`, then unkeyed `refresh` | 201 refresh result, including failed/skipped result; 400 `empty_scope` plus the declared `outputId` when no context was named |
 | `GET /derived-outputs?id=` | `derived-outputs.get` | concurrent | query ID default `""` | `get` | 200 output or explicit 404 |
 | `GET /derived-output-revisions?outputId=&revision=` | `derived-outputs.get-revision` | concurrent | revision via `Number`, default 0 | `getRevision` | 200 revision or explicit 404 |
-| `PATCH /derived-output-definition` | `derived-outputs.update-definition` | serial | complete strings/array; numeric expected revision | `updateDefinition` | 200 output; 404/409/400 |
-| `POST /derived-output-refresh` | `derived-outputs.refresh` | concurrent | body ID string | `refresh` | 200 result; owned pipeline failure is represented in result |
+| `PATCH /derived-output-definition` | `derived-outputs.update-definition` | serial | complete strings; `contextEntries` validated and required; numeric expected revision | `updateDefinition` | 200 output; 404/409/400 |
+| `POST /derived-output-refresh` | `derived-outputs.refresh` | concurrent | body ID string | `refresh` | 200 result; owned pipeline failure is represented in result; 400 `empty_scope` when the definition names no context |
 | `DELETE /derived-outputs?id=` | `derived-outputs.delete` | serial | query ID default `""` | `delete` | 204 null or 404 |
 | `POST /derived-outputs/purge` | `derived-outputs.purge` | serial | body ID string | `purge` | 204 null; 409 live / 404 no terminal history |
 
 The registration logs a seven-endpoint manifest at startup. No endpoint forwards an idempotency key. There are no deferred or capability-owned Derived Output jobs; concurrency is inside the service/provider calls plus SQLite settlement. The backend-wide retention scheduler calls the service's pruning and expired-purge methods.
 
-Endpoint typed mapping explicitly handles not found, generic conflict, declaration idempotency mismatch, and stale definition. Refresh/definition-specific idempotency errors fall through to generic 400 if invoked through custom wiring; current endpoints cannot trigger them because they pass no options.
+Endpoint typed mapping explicitly handles not found, generic conflict, declaration idempotency mismatch, stale definition, and empty scope. `DerivedOutputEmptyScopeError` maps to `400 {"error":"empty_scope","message"}`; the declare job catches it before the shared mapper and adds `outputId`, and logs `derived-outputs.declare.empty-scope` at warn. Refresh/definition-specific idempotency errors fall through to generic 400 if invoked through custom wiring; current endpoints cannot trigger them because they pass no options.
+
+`requireContextEntries` rejects a malformed `contextEntries` with a generic `400 bad_request` rather than coercing it. Both handlers used to turn any non-array into `undefined` or `[]`, which then meant the whole project, so a typo in the body produced the broadest possible grounding. Declare treats an omitted value as `undefined`, which `declare` still distinguishes from an explicit empty list; the definition update requires the field, because it replaces the definition wholesale and an omitted scope would silently erase it.
+
+## Refresh precondition
+
+```mermaid
+flowchart TD
+  REQ["refresh(id)"] --> EXISTS{"output exists?"}
+  EXISTS -->|no| NF["DerivedOutputNotFoundError → 404"]
+  EXISTS -->|yes| SCOPE{"definition.contextEntries empty?"}
+  SCOPE -->|yes| EMPTY["log derived-outputs.refresh.empty-scope;<br/>DerivedOutputEmptyScopeError → 400 empty_scope"]
+  SCOPE -->|no| PIPE["optional claim, freeze fences, insert attempt, run pipeline"]
+```
+
+The empty-scope check runs before the idempotency claim and before the attempt insert, so
+a refused refresh leaves no attempt row, no usage, no failed revision, and no freshness
+change. With `DerivedOutputNotFoundError` it is one of only two errors `refresh` throws out
+of the method rather than converting into a `DerivedRefreshResult`; both are preconditions,
+and every later stage is caught. `POST /derived-outputs` runs
+`declare` first, so a declaration that names no context leaves its declared Output behind
+and answers 400. That response carries the `outputId`, because the declaration did succeed
+and a bare error would strand the Output behind an ID the caller never saw; it can then be
+given a scope through a definition update.
+
+`declare` itself accepts an empty scope on purpose. A template legitimately holds unbound
+Context Variables, and copying one calls `declare` with the empty entries that produces —
+so refusing at declaration time would make template instantiation impossible. Only
+`refresh` refuses, which is the moment an answer would otherwise be produced from nothing.
 
 ## Full refresh sequence
 
@@ -139,3 +167,37 @@ live.
 References in Document or another owning capability are outside this database. Owners
 must logically delete their Outputs before owner deletion and physically purge them
 before owner purge; Derived Outputs does not rewrite external references itself.
+
+## Orphan reaping
+
+[`createDerivedOutputReaper`](../../../1-init/create/derivedOutputReaper.ts) is registered
+in [`startBackend.ts`](../../../1-init/startBackend.ts) as the `derived-outputs-orphans`
+retention port. It closes the leak where a Prompt Block that was removed or repointed left
+its Derived Output alive and named by nothing.
+
+```mermaid
+flowchart TD
+  SWEEP["retention sweep at cutoff"] --> EACH["for each DerivedOutputClaimant"]
+  EACH --> LIST["listDetachedOutputs(cutoff)"]
+  LIST --> DEL["DerivedOutputService.delete(outputId)"]
+  DEL --> REL["claimant.releaseDetachedOutput(outputId)"]
+  REL --> COUNT["counted as reaped; derived-outputs.reap.deleted"]
+  DEL -->|not found| REL
+  DEL -->|other error| KEEP["keep the ownership row; next sweep retries"]
+  LIST -->|throws| SKIP["log and continue with the next claimant"]
+```
+
+It asks each claimant what it has **released** — an Output it once owned and no longer
+attaches to any block, detached before the cutoff. It never enumerates Outputs and never
+treats "has no owner" as "orphaned", so the standalone Outputs `POST /derived-outputs`
+creates are untouched. The claimant list is a list rather than a hard-wired store because
+Document is only the first owner of this shape.
+
+The cutoff is the grace period, not caution: undo re-attaches a detached Output by ID, so
+only rows older than the cutoff are past the reach of compensation.
+
+Reaped Outputs are logically deleted, not purged — purge refuses anything still live — and
+the resulting history is left to the `derived-outputs` retention port registered just
+above it. `pruneHistory` on this port returns 0; the reaper owns no history of its own.
+Port order in the scheduler is load-bearing: `derived-outputs-orphans` runs after both
+`document` and `derived-outputs`, so it never observes a half-finished document deletion.

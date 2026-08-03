@@ -72,7 +72,7 @@ interface DerivedLineSpan {
 
 | Type | Shape / semantics |
 |---|---|
-| `DeclareDerivedOutputRequest` | prompt; optional Context entries and stabilization text |
+| `DeclareDerivedOutputRequest` | prompt; optional Context entries and stabilization text. Omitted entries are stored as `[]`, which `refresh` then refuses |
 | `DeclareDerivedOutputOptions` | optional service-only idempotency key |
 | `UpdateDefinitionRequest` | complete new definition plus expected definition revision |
 | `UpdateDerivedOutputDefinitionOptions` | optional service-only idempotency key |
@@ -90,19 +90,33 @@ Current HTTP mappings do not accept/forward idempotency options; these contracts
 | Error | Meaning / payload | Current reachability |
 |---|---|---|
 | `DerivedOutputNotFoundError(outputId)` | Missing output for update/refresh/delete | service and HTTP |
+| `DerivedOutputEmptyScopeError(outputId)` | Refresh of an output whose definition names no context | service precondition; mapped 400 `empty_scope` |
 | `DerivedOutputConflictError(outputId)` | Generic exported conflict | mapped by HTTP but not currently raised by service |
 | `DerivedOutputIdempotencyConflictError(key)` | Declaration key reused with different request | optional service path; mapped 409 |
 | `DerivedOutputRefreshIdempotencyConflictError(key)` | Refresh key reused for another digest/output | optional service path; not explicitly mapped by current endpoint helper |
 | `DerivedOutputDefinitionUpdateIdempotencyConflictError(key)` | Definition key divergent/reused | optional service path; not explicitly mapped by current endpoint helper |
 | `StaleDefinitionRevisionError(outputId,expected,actual)` | Definition CAS mismatch | service and HTTP 409 |
 
-Other pipeline errors are normally caught by `refresh` and converted to a failed/skipped `DerivedRefreshResult`, not thrown through HTTP.
+`DerivedOutputNotFoundError` and `DerivedOutputEmptyScopeError` are the two `refresh` rejections; both are preconditions checked before any state is written. Other pipeline errors are normally caught by `refresh` and converted to a failed/skipped `DerivedRefreshResult`, not thrown through HTTP.
 
 ## Resource and Knowledge scope ports
 
 [`ResourceReader`](../derived-outputs.ts) defines `describeSource`, `list(scope)`, and bounded `read(resourceId,kind,startLine,endLine,scope)`. `ResourceDescriptor` aliases Knowledge's `{sourceId,resourceId,resourceKind,resourceRevision?}`. `ResourceContent` adds text and byte size.
 
 [`KnowledgeScopeManifest`](../../../0-platform/knowledge/types.ts) contains frozen canonical input/resolved entries, trusted descriptors, sorted admissible source IDs, context/scope SHA-256 digests, and resolution time.
+
+`PROJECT_CONTEXT_KIND`, `PROJECT_CONTEXT_ENTRY`, and `isProjectEntry` also live in [`knowledge/types.ts`](../../../0-platform/knowledge/types.ts) and are re-exported from [`#context`](../../context/index.ts). A definition scopes to the whole project by naming `PROJECT_CONTEXT_ENTRY`.
+
+## Retention ports
+
+[`derivedOutputReaper.ts`](../../../1-init/create/derivedOutputReaper.ts) declares two composition-layer interfaces that are not part of the capability's public surface:
+
+| Type | Shape / semantics |
+|---|---|
+| `DerivedOutputClaimant` | `kind` naming the owner in logs, `listDetachedOutputs(cutoff)` returning `{outputId, detachedAt}` for Outputs it released, and `releaseDetachedOutput(outputId)` |
+| `DerivedOutputRemover` | The single `delete(outputId)` half of the service the reaper needs |
+
+`listDetachedOutputs` is deliberately a positive statement of what an owner released rather than a diff against all Outputs.
 
 ## Store command/result types
 

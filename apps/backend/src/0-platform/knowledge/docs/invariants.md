@@ -29,6 +29,8 @@ Hashes are truncated; collision detection is absent. Repeated identical window t
 
 `resolveScope` makes sorted copies and freezes the produced manifest graph. Equivalent ordered multisets of input entries give the same context digest; equivalent sorted resource descriptor arrays give the same scope digest. Input duplicates remain significant to `contextDigest`. Resource/source membership is a point-in-time snapshot and is not automatically re-resolved during retrieval.
 
+Scope arguments have exactly three outcomes: an absent argument is unscoped and returns `null`; `[]` produces a manifest whose `resolvedSourceIds` is empty, so every reached window is filtered out and no region can be returned; and an entry satisfying `isProjectEntry` admits the whole project as it stands when the scope is resolved. Because the project sentinel is expanded at resolve time, a manifest built from it is still a point-in-time snapshot for the run that holds it.
+
 Manifest provenance is a trust convention, not a cryptographic capability: `retrieve` accepts a structurally supplied manifest without verifying its digest/frozen state or consulting the resolver again.
 
 ## Mutation-event guarantees

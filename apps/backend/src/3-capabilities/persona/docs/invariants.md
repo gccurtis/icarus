@@ -109,20 +109,26 @@ mode as before wrapping, just observed through the wrapper. The consumer's scope
 is where this is visible. Persona could now detect it (it holds a Context dependency) but
 deliberately does not, since the check would cost a read on every resolve.
 
-**A composed context is a frozen enumeration.** "The whole project except X" is
-expressible only by enumerating the project at compose time, so a document added tomorrow
-will not appear in it. `resolveScope([])` does mean live whole-project, but `[] minus X`
-cannot be expressed. Fixing this properly needs an exclusion primitive on the Context
-side. Until then, an author wanting an exclusion scope to stay current must re-compose and
-re-point the persona.
+**A composed context is a rule, not a frozen enumeration — and Persona checks none of
+it.** `composeNamed` stores its operands rather than their expansion: a `{ contextId }`
+operand becomes a nested `kind: "context"` entry, and a difference stores its right
+operand as the record's `excludes`, subtracted at resolve time. "The whole project except
+X" is therefore expressible, as a difference of `{ id: "*", kind: "project" }` against X,
+and it stays current as sources are added without re-composing or re-pointing the persona.
+What Persona does not do is inspect any of that — it never calls `context.resolve` — so an
+exclusion that subtracts more than intended (exclusions match on `id` alone, not
+`kind:id`) is invisible here and surfaces only in the consumer's scope manifest.
 
 **The wrapper is an alias, not a copy.** It holds the author's entry unmodified, so it adds
 a hop rather than a guarantee. A real snapshot — expanding `context.resolve()` at wrap time
 and freezing the leaves — is a natural next step and is deferred.
 
-**A no-op definition resubmit still bumps the wrapper's revision.** Definitions are
-replaced wholesale and Persona does not diff prose, so `update` with an unchanged context
-still calls `context.update`.
+**A no-op definition resubmit bumps the persona's revision but not the wrapper's.**
+Definitions are replaced wholesale and Persona does not diff prose, so every accepted
+`update` advances `PersonaRecord.revision`. The wrapper is untouched:
+`planWrapperChange` returns `unchanged` when the context entry matches, and
+`PersonaContextPort` exposes only `declare`, `delete`, and `purge` — there is no
+wrapper-update path to take.
 
 ## Limits
 

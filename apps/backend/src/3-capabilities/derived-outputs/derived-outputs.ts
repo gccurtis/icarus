@@ -20,6 +20,7 @@ import {
   DerivedOutputIdempotencyConflictError,
   DerivedOutputDefinitionUpdateIdempotencyConflictError,
   DerivedOutputRefreshIdempotencyConflictError,
+  DerivedOutputEmptyScopeError,
   DerivedOutputNotFoundError,
   StaleDefinitionRevisionError,
   type DerivedOutput,
@@ -733,6 +734,24 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
     const output = this.store.getOutput(id);
     if (!output) throw new DerivedOutputNotFoundError(id);
 
+    // An output that names nothing cannot be answered. This is a precondition on
+    // the definition, not a failure of the pipeline, so it is refused before an
+    // attempt exists rather than recorded as one — no attempt row, no usage, no
+    // failed revision in the history.
+    //
+    // It used to be answered anyway: an empty array meant "the whole project",
+    // so a Prompt Block whose Context Variable was never bound, or a request
+    // that omitted the field, quietly grounded itself on the entire corpus and
+    // returned a confident answer. Refusing is the point of the change. To scope
+    // to the whole project, name it.
+    if (output.definition.contextEntries.length === 0) {
+      this.logger.error("derived-outputs.refresh.empty-scope", {
+        outputId: id,
+        definitionRevision: output.definition.definitionRevision
+      });
+      throw new DerivedOutputEmptyScopeError(id);
+    }
+
     if (options) {
       validateIdempotencyKey(options.idempotencyKey);
       const requestDigest = refreshRequestDigest(id);
@@ -793,8 +812,8 @@ export class DerivedOutputServiceImpl implements DerivedOutputService {
     let scopeDigest: string | undefined;
 
     try {
-      // Resolve nested Context and every resource kind exactly once. Passing an
-      // explicit empty array snapshots the current full-project source set.
+      // Resolve nested Context and every resource kind exactly once. The scope
+      // is known non-empty here — that is checked before the attempt exists.
       const frozenScope = await this.knowledge.resolveScope(
         output.definition.contextEntries
       );

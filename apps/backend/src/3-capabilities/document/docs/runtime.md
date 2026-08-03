@@ -69,6 +69,19 @@ request ID, and duration.
   shared revision-retention cutoff.
 - `purgeExpired(cutoff)`: finds terminal deletion records older than the cutoff
   and invokes the same retained-Document purge path used by `document.purge`.
+- `listDetachedOutputs(cutoff)`: dedicated outputs this capability owned and
+  released before the cutoff, read through
+  `listDetachedPromptOutputsBefore`. A positive statement rather than a diff,
+  because an output declared through the Derived Outputs API legitimately has no
+  owner and is not an orphan.
+- `releaseDetachedOutput(outputId)`: forgets one detached ownership row through
+  `deletePromptOutputOwnership`, called only after the output itself is deleted.
+
+The last two make `DocumentCapability` a claimant of the
+`derived-outputs-orphans` retention port
+([`derivedOutputReaper.ts`](../../../1-init/create/derivedOutputReaper.ts)),
+which logically deletes each reported output and then releases its row. The
+`kind` field, `"document"`, names the claimant in its logs.
 
 ## Command handlers and supporting service functions
 
@@ -162,7 +175,9 @@ families are:
   update;
 - stages: claim, complete, fail, atomic prompt-creation failure, recover running;
 - prompt ownership: get by output/Block, register pending, transition, list
-  detached;
+  detached, `listDetachedPromptOutputsBefore(cutoff, limit?)` for rows detached
+  before a cutoff, and `deletePromptOutputOwnership(outputId)`, which deletes
+  only a detached row;
 - transaction outbox: direct get by `sourceTransactionId`, request, or copied
   ChangeSet; list unpublished transactions; and mark a source transaction
   published.

@@ -25,7 +25,9 @@ test("General Files and Connector aliases are available to the built runtime", (
     "#connector",
     "#connector/*",
     "#templates",
-    "#templates/*"
+    "#templates/*",
+    "#slides",
+    "#slides/*"
   ]) {
     assert.ok(alias in imports, `missing package import alias: ${alias}`);
   }

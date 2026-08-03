@@ -981,6 +981,49 @@ export class SQLiteDocumentStore implements DocumentStore {
     return rows.map(rowToPromptOutputOwnership);
   }
 
+  /**
+   * Detached ownership rows that have been detached since before `cutoff`.
+   *
+   * The grace period is doing real work here, not just caution. Compensation
+   * re-attaches a detached output by ID, so a row detached a moment ago may yet
+   * come back; only one old enough that no undo can reach it is genuinely
+   * abandoned. Ordered oldest-first, which is what the partial index on
+   * `(state, updated_at, output_id) WHERE state = 'detached'` is built for.
+   */
+  async listDetachedPromptOutputsBefore(
+    cutoff: string,
+    limit?: number
+  ): Promise<PromptOutputOwnership[]> {
+    const size = boundedLimit(
+      limit,
+      DEFAULT_MAINTENANCE_BATCH_SIZE,
+      MAX_MAINTENANCE_BATCH_SIZE
+    );
+    const rows = this.db
+      .prepare(`
+        SELECT * FROM ${this.tables.promptOutputs}
+        WHERE state = 'detached' AND updated_at < ?
+        ORDER BY updated_at ASC, output_id ASC
+        LIMIT ?
+      `)
+      .all(cutoff, size) as SQLiteRow[];
+    return rows.map(rowToPromptOutputOwnership);
+  }
+
+  /**
+   * Forgets an ownership row once its output is gone. Only ever called after the
+   * Derived Output has been deleted, so the row cannot outlive what it names —
+   * and never on an attached row, which would strand a live Prompt Block.
+   */
+  async deletePromptOutputOwnership(outputId: string): Promise<void> {
+    this.db
+      .prepare(`
+        DELETE FROM ${this.tables.promptOutputs}
+        WHERE output_id = ? AND state = 'detached'
+      `)
+      .run(outputId);
+  }
+
   async listPromptOutputsForDocument(
     documentId: string
   ): Promise<PromptOutputOwnership[]> {

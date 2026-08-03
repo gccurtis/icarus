@@ -149,10 +149,9 @@ const decodeCommand = (value: unknown): SlideCommand => {
 export const decodeSlideCommand = (value: unknown): SlideCommandRequest => {
   assertSlideWireInput(value, "Slides command request");
   const raw = requireRecord(value, "Slides command request");
-  exactKeys(raw, ["requestId", "origin", "actorId", "command"], "Slides command request");
+  exactKeys(raw, ["origin", "actorId", "command"], "Slides command request");
   return {
-    requestId: requireIdentifier(raw.requestId, "requestId"),
-    // Required, matching document.submit. An absent origin is a client bug, and
+    // Required. An absent origin is a client bug, and
     // defaulting it would mislabel history that Activity cannot later correct.
     origin: requireEnum(raw.origin, SLIDE_ORIGINS, "origin"),
     ...(raw.actorId !== undefined

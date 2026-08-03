@@ -31,11 +31,9 @@ Tick boxes here. Change designs there.
 
 ## Status — 2026-08-02
 
-**Phases A and B are complete.** 399 tests pass, typecheck clean.
+**All three phases are complete.** 489 tests pass, typecheck clean.
 `templateResources.register(document)` is one line in `startBackend.ts` with no
-wrapper, so a Document can now actually be registered as a template.
-
-Only **Phase C** remains, and nothing in A or B waits on it.
+wrapper, so a Document can be registered as a template.
 
 ---
 
@@ -188,13 +186,33 @@ untested surface.
 
 ---
 
-## Phase C — Deferred
+## Phase C ✅ **DONE 2026-08-02**
 
-- [ ] [**15** · Live project-scoped Context](0-general-updates.md#15--live-project-scoped-context)
-      — unblocks *"everything except these"* in a binding. Nothing in A or B
-      waits on it
-- [ ] [**16** · Garbage collection for orphaned resources](0-general-updates.md#16--garbage-collection-for-orphaned-resources)
-      — 16a is the leak A3 knowingly creates
+- [x] [**15** · Live project-scoped Context](0-general-updates.md#15--live-project-scoped-context)
+      — `{ kind: "project" }` expands at resolve time, `excludes` on the record,
+      and `composeNamed` stores a rule rather than a snapshot. *"Everything
+      except these"* now works in a binding
+- [x] **15's knock-on** — `Knowledge.resolveScope` no longer reads `[]` as the
+      whole project, and a Derived Output naming nothing is refused instead of
+      answered from everything
+- [x] [**16** · Garbage collection for orphaned resources](0-general-updates.md#16--garbage-collection-for-orphaned-resources)
+      — 16a shipped with Phase A; 16b is the `derived-outputs-orphans` retention
+      port
+
+**One defect found and fixed on the way.** `duplicate` named the command's
+idempotency key as `creationAttemptId`, which is a foreign key into the attempts
+table — so every copy of a Document containing a Prompt Block failed, *after*
+declaring one Derived Output per block. 16b's leak was therefore certain on every
+template instantiation of a Document with a prompt, not the rare crash window it
+was recorded as. It was invisible because `seedDocument` builds no Prompt Block,
+so the whole `duplicate` suite skipped the loop that declares outputs.
+
+**Two things came out narrower than written.** 16b must never diff "every output
+minus everything claimed" — outputs declared through the Derived Outputs API
+legitimately have no owner, and a diff deletes all of them. And its claim set has
+to be a list of claimants rather than Document, because Slides owns a
+byte-identical ownership table and would have started losing outputs the day it
+was wired in.
 
 ---
 

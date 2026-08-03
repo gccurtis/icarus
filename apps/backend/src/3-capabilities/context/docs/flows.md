@@ -16,11 +16,11 @@ returned directly; list and pure-set operations wrap arrays in `{records}` or
 
 | Method and path | Job name | Input normalization | Runtime call | Success | Error behavior |
 |---|---|---|---|---|---|
-| `POST /contexts` | `context.declare` | `displayName` → string; `entries` via `parseEntries`; optional `description`; `private` via `parsePrivate` (only literal `true` counts) | `declare(name, entries, {description, private})` | 201 record | typed/default mapping |
+| `POST /contexts` | `context.declare` | `displayName` → string; `entries` via `parseEntries`; optional `excludes` via `parseExcludes`; optional `description`; `private` via `parsePrivate` (only literal `true` counts) | `declare(name, entries, {description, private, excludes})` | 201 record | typed/default mapping |
 | `GET /contexts` | `context.list` | `includePrivate === "true"` | `list({includePrivate})` | 200 `{records}` | uncaught unexpected failure |
 | `GET /contexts/entry` | `context.get` | query `id`, default `""` | `get(id)` | 200 record | explicit 404 on `null` |
 | `GET /contexts/by-name` | `context.getByName` | query `displayName`, default `""` | `getByName(name)` | 200 record | explicit 404 on `null` |
-| `PATCH /contexts/entries` | `context.update` | `id` string, parsed entries, `Number(expectedRevision)` | `update(id, entries, expected)` | 200 record | typed/default mapping |
+| `PATCH /contexts/entries` | `context.update` | `id` string, parsed entries, `Number(expectedRevision)`, optional `excludes` via `parseExcludes` — absent and `[]` mean different things | `update(id, entries, expected, {excludes})` | 200 record | typed/default mapping |
 | `DELETE /contexts` | `context.delete` | body `id` → string | `delete(id)` | 204 null | typed/default mapping |
 | `POST /contexts/purge` | `context.purge` | body `id` → string | `purge(id)` | 204 null | current → 409 `not_deleted`; no terminal history → 404 |
 | `POST /contexts/resolve` | `context.resolve` | entries via parser | `resolve(entries)` | 200 `{entries}` | unexpected failures not locally mapped |
@@ -56,13 +56,22 @@ sequenceDiagram
 ## Nested resolution call chain
 
 1. The endpoint parses entries and calls `resolve`.
-2. The manager walks entries depth-first.
-3. A leaf is appended on first sight.
-4. A nested context is marked seen before loading.
-5. Resolution loads the nested context by ID from the single project table.
-6. Found current entries recurse until the depth guard; a logically deleted
-   nested Context has no current row and is omitted like any other missing ID.
-7. The manager logs input and resolved counts and returns the first-seen leaf sequence.
+2. The manager expands the supplied list. Leaves pass through.
+3. A `kind: "project"` entry expands to the membership port's answer, fetched at
+   most once per call so one resolve observes one membership. With no port
+   registered, or on an enumeration failure, it expands to nothing and says so.
+4. A `kind: "context"` entry is checked against the ancestor path (a cycle cuts
+   the branch) and the memo, then loaded from the single project table. A
+   logically deleted nested Context has no current row and is omitted like any
+   other missing ID.
+5. That record's own `entries` and `excludes` are each expanded, and the
+   exclusions are subtracted from the inclusions. The parent sees the result, not
+   the exclusions — which is what makes exclusions compose.
+6. If a cycle or the depth cap truncated the **exclusion** list, the record
+   resolves to nothing and logs at error rather than handing back resources it
+   was told to withhold.
+7. The manager deduplicates once over the whole result, logs counts and the
+   resolved membership, and returns.
 
 ## Knowledge scope call chain
 
@@ -74,7 +83,10 @@ sequenceDiagram
   participant RC as Resource capabilities
   K->>RR: resolve(canonical input entries)
   RR->>CM: resolve(entries)
-  CM-->>RR: opaque leaf entries
+  CM->>RR: listProjectEntries() when an entry names the project
+  RR->>RC: enumerate General Files, Connectors, accepted Findings
+  RR-->>CM: current project membership
+  CM-->>RR: opaque leaf entries, exclusions already subtracted
   loop each leaf
     RR->>RC: find live resource / Knowledge source IDs
   end
@@ -84,4 +96,8 @@ sequenceDiagram
   K-->>K: freeze scope manifest and digests
 ```
 
-Context itself never invokes Knowledge; this direction prevents Context from owning resource ingestion or retrieval.
+Context itself never invokes Knowledge; this direction prevents Context from owning resource ingestion or retrieval. The membership call is to the registry, not to Knowledge, for the same reason — Context asks what the project holds, and something else decides what that means.
+
+Exclusions are applied inside `ContextManager.resolve`, before the registry maps leaves and before Knowledge freezes the manifest. That ordering matters beyond retrieval: `scope.resources` is also the read boundary for the Derived Output tools, so an exclusion applied later than this would leave the excluded resource fully readable.
+
+`Knowledge.resolveScope` distinguishes three inputs. Absent is unscoped and returns no manifest. An empty array is an empty scope that admits nothing, and logs at warn. An entry naming the project resolves to every current source — handled there as well as in Context, so the sentinel arriving unexpanded still means the project instead of being dropped as an unknown kind.

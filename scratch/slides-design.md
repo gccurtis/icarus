@@ -331,11 +331,16 @@ attempt is still live.
 Two endpoints, matching Document: `POST /slides/command` (serial) and
 `POST /slides/query` (concurrent).
 
+There is no request ID on the envelope. Every mutating command carries
+`expectedRevision`, so a duplicate arrives holding a revision the head has
+already passed and is told so — the compare-and-set *is* the retry guard, and a
+receipt keyed by request ID would only answer the same question twice.
+
 ```ts
 interface SlideCommandRequest {
-  requestId: string;
   /** Slides keeps its own vocabulary; the 1-init adapter maps it to Activity's. */
   origin: SlideOrigin;
+  actorId?: string;
   command: SlideCommand;
 }
 
@@ -363,9 +368,33 @@ type SlideCommand =
 type SlideQuery =
   | { type: "deck.list"; cursor?: string; lifecycle?: DeckLifecycle }
   | { type: "deck.load"; deckId: DeckId; revision?: number }
+  | { type: "deck.outline"; deckId: DeckId; revision?: number }
   | { type: "deck.history"; deckId: DeckId; cursor?: string; limit: number }
   | { type: "deck.attempt"; deckId: DeckId; attemptId: string };
 ```
+
+## The outline
+
+`deck.outline` returns the Deck's text as Markdown. It is a projection and only
+a projection — nothing takes an outline as input, and a Deck is authored through
+operations alone.
+
+It exists because the Knowledge lattice consumes text, and that requirement
+decides every judgement in it:
+
+- One `#` heading per Slide, taken from the first text in reading order. A Slide
+  has no title field and a Layout slot carries a name rather than a role, so no
+  slot can be trusted to be "the title"; reading order is the only honest rule,
+  and in practice what a Slide says first is what it is about.
+- Remaining text becomes `-` bullets, tables render as Markdown tables so the
+  grid survives, and Slide notes become a `>` blockquote.
+- **Master and Layout text is excluded.** It is chrome — a confidentiality
+  footer, a running header — repeated behind every Slide, and emitting it would
+  put the same sentence in the lattice once per Slide.
+- A prompt source contributes nothing until it has settled, because it has no
+  text until then.
+
+It reads a snapshot, so it accepts a `revision` exactly as `deck.load` does.
 
 A prompt either fills a surface that already exists or brings one into being:
 
@@ -380,8 +409,10 @@ type PromptCreateTarget =
 ```
 
 `deck.create` allocates the Deck ID and its first Slide; the caller supplies no
-identifiers for things that do not exist yet. Replay safety comes from a
-`requestId`-keyed create receipt, as `document.create` does.
+identifiers for things that do not exist yet. It is the one command with no
+revision to compare against, so a retry makes a second Deck. That is accepted
+rather than engineered around: the duplicate is visible in `deck.list`, where a
+caller can see it and delete it.
 
 `deck.delete` is terminal and distinct from `set-lifecycle → trashed`, which is
 reversible. Prompt outputs are detached, not destroyed — Derived Outputs owns
@@ -395,13 +426,15 @@ IDs.
 ## Persistence
 
 Own SQLite file `./data/slides.db`, project-hashed table prefix, Base +
-append-only ChangeSets — Document's model exactly. Tables: `decks`, `bases`,
-`change_sets`, `command_receipts`, `create_receipts`, `identity_ledger`,
-`attempts`, `stage_receipts`, `prompt_outputs`, `activity_outbox`.
+append-only ChangeSets — Document's model exactly. Tables: `resources`, `decks`,
+`history`, `bases`, `change_sets`, `identity_ledger`, `attempts`,
+`stage_receipts`, `prompt_outputs`, `retained_outputs`, `transaction_outbox`.
 
-Accepted mutations write an Activity fact in the same transaction; the fact
-carries the command `origin` and its `factId` is the idempotency key Activity
-derives its transaction ID from.
+Accepted mutations stage an Activity transaction in the same database
+transaction. Its key is `slides:<deckId>:<revision>:<kind>` — derived from
+committed state rather than allocated, because exactly one transaction is ever
+recorded for a given Deck revision. Republication after a crash recomputes the
+same key and collapses into the existing row.
 
 ## Invariants
 
