@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { createApp } from "../../src/1-init/create/app.js";
+import { UNBOUNDED_BODY_BYTES } from "../../src/0-utils/config/loadBackendConfig.js";
 import { JobScheduler } from "../../src/0-utils/jobs/scheduler.js";
 import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
 import { registerHttpTransport } from "../../src/2-transport/registerHttpTransport.js";
@@ -141,7 +142,7 @@ test("HTTP requests and jobs share request correlation in the application Logger
     responseMode: "inline",
     work: async () => ({ statusCode: 204 })
   }));
-  const app = createApp();
+  const app = createApp(UNBOUNDED_BODY_BYTES);
   registerHttpTransport(app, { scheduler, registry, logger });
 
   const response = await app.inject({ method: "GET", url: "/logging-probe" });

@@ -7,6 +7,7 @@ import Database from "better-sqlite3";
 import type { Knowledge } from "../../src/0-platform/knowledge/knowledge.js";
 import type { KnowledgeScopeManifest } from "../../src/0-platform/knowledge/types.js";
 import { createApp } from "../../src/1-init/create/app.js";
+import { UNBOUNDED_BODY_BYTES } from "../../src/0-utils/config/loadBackendConfig.js";
 import { createResourceReader } from "../../src/1-init/create/resource-reader.js";
 import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
 import { JobScheduler } from "../../src/0-utils/jobs/scheduler.js";
@@ -709,7 +710,7 @@ test("Investigation runs a linked create, list, and delete flow over a real HTTP
   const harness = createHarness();
   const registry = new JobRegistry();
   registerInvestigationEndpoints(registry, harness.runtime, harness.logger);
-  const app = createApp();
+  const app = createApp(UNBOUNDED_BODY_BYTES);
   registerHttpTransport(app, {
     registry,
     logger: harness.logger,

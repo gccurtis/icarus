@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createApp } from "../../src/1-init/create/app.js";
+import { UNBOUNDED_BODY_BYTES } from "../../src/0-utils/config/loadBackendConfig.js";
 import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
 import { JobScheduler } from "../../src/0-utils/jobs/scheduler.js";
 import { registerHttpTransport } from "../../src/2-transport/registerHttpTransport.js";
@@ -74,7 +75,7 @@ const createHarness = () => {
   const registry = new JobRegistry();
   const double = createCommentsDouble();
   registerCommentEndpoints(registry, double.comments, logger);
-  const app = createApp();
+  const app = createApp(UNBOUNDED_BODY_BYTES);
   registerHttpTransport(app, {
     scheduler: new JobScheduler(schedulerConfig, logger),
     registry,
