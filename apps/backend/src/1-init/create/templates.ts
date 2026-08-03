@@ -29,6 +29,7 @@ export const createTemplateResourceRegistry = (): RuntimeTemplateResourceRegistr
   const resources = new Map<string, TemplatableResource>();
   return {
     get: (kind) => resources.get(kind),
+    kinds: () => [...resources.keys()],
     register: (resource) => {
       resources.set(resource.kind, resource);
     }

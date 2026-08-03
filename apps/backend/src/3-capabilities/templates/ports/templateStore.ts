@@ -83,6 +83,13 @@ export interface TemplateStore {
    * store's own half-finished write.
    */
   create(commit: TemplateCreateCommit): boolean;
+  /**
+   * Every backing resource ID this catalog currently claims, for one kind.
+   * Includes history, because a logically-deleted template still owns its copy
+   * until purge — treating one as an orphan would delete a resource the catalog
+   * is still keeping for retention.
+   */
+  claimedResourceIds(kind: string): Set<string>;
   /** True when a live record of this kind already carries this name. */
   nameTaken(kind: string, name: string, exceptId?: string): boolean;
   /**

@@ -26,11 +26,13 @@ Items 15 and 16 are **Phase C** of the Templates/Document work and are ticked in
 | 13 | [Deletion as a revision, not a flag](#13--deletion-as-a-revision-not-a-flag) | ✅ **DONE 2026-08-02** |
 | 14 | [Document deletion](#14--document-deletion) | ✅ **DONE 2026-08-02** |
 | 15 | [Live project-scoped Context](#15--live-project-scoped-context) | agreed — needed for exclusions |
-| 16 | [Garbage collection for orphaned resources](#16--garbage-collection-for-orphaned-resources) | agreed — explore |
+| 16 | [Garbage collection for orphaned resources](#16--garbage-collection-for-orphaned-resources) | 16a ✅ **DONE 2026-08-02**; 16b open |
 | ~~17~~ | Remove command claims from Templates | **moved** → [`templates-rework-plan.md`](templates-rework-plan.md) step 1 |
-| 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | agreed — sweep needed |
+| 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | ✅ **DONE 2026-08-02** |
 | 19 | [Structured Data revisions should propagate to dependents](#19--structured-data-revisions-should-propagate-to-dependents) | agreed — explore |
 | 20 | [Quoted names — decide whether we actually want them](#20--quoted-names--decide-whether-we-actually-want-them) | **decision needed** — default no |
+| 21 | [Log content in dev, shape in production, behind a label](#21--log-content-in-dev-shape-in-production-behind-a-label) | ✅ **DONE 2026-08-02** — mechanism landed; migration ongoing |
+| 22 | [Audit what we do with caller-supplied strings](#22--audit-what-we-do-with-caller-supplied-strings) | agreed — explore |
 | R | [Reference: delegated command claims](#reference--delegated-command-claims-removed-2026-08-02) | ✅ **REMOVED 2026-08-02** |
 
 Items 7–10 correct Templates, which is **already implemented and green** (254 tests). They
@@ -45,6 +47,9 @@ something**, recorded here so the trade stays visible instead of being rediscove
 surprise. Anything that stops being worth its price belongs in the numbered list above.
 
 ### AR-1 · Registration can leak an orphaned backing resource
+
+> ✅ **CLOSED 2026-08-02** — see the bottom of this entry. Kept in full because the trade it
+> describes is why the leak existed at all, and that reasoning still governs the sweep.
 
 **What it is.** `template.register` calls `duplicate` → `markAsTemplate` → `applyBindings`
 and *then* writes its catalog row. A crash between the copy and the catalog write leaves a
@@ -67,12 +72,16 @@ the resource replays its own copy on the same idempotency key, and the catalog w
 completes. So the exposure is "process died mid-command **and** the client gave up", not
 "process died mid-command".
 
-**What would close it.** [Item 16a](#16--garbage-collection-for-orphaned-resources) — a
-conservative interval sweep. Not scheduled.
+**CLOSED 2026-08-02.** `TemplateCapability.collectOrphanedResources` rides the existing
+retention scheduler and diffs what each kind reports sealed against what the catalog claims.
+The retention cutoff doubles as the grace period, which is what tells an orphan from a
+registration in flight. History counts as a claim, so a deleted-but-unpurged template keeps
+its copy. One failing purge does not stop the sweep.
 
-**When to revisit.** If registration ever becomes something automation drives in bulk. One
-user clicking "make this a template" and walking away is a rounding error; a job registering
-hundreds is not.
+The seam that made it possible: `TemplatableResource.listSealedResources()`. **That is not a
+template listing** — `template.list` is still the only way anyone asks what templates exist.
+It answers "which of your rows did I tell you to seal", which only Templates can ask and only
+so it can compare that against its own catalog.
 
 ---
 
@@ -92,20 +101,22 @@ const escapeLikeTerm = (term: string): string =>
 
 `\` is escaped first, or it would escape the escapes the replacement adds.
 
-**Known unfixed.** `general-files/persistence/sqliteGeneralFileRepository.ts` — the
-`by-name-contains`, `by-name-starts-with`, and `by-name-ends-with` filters all interpolate
-the raw value into a `LIKE ?` parameter. A filename containing `_` is common enough that
-this is a live wrong-results bug, not a theoretical one.
+**Fixed in General Files too.** All three name filters escape and declare `ESCAPE`. This was
+a live wrong-results bug, not a theoretical one: a filename containing `_` is common.
 
 **The sweep.** Grep for `LIKE` across `src/` and check each site for three things: is the
 pattern built from caller-supplied text, is that text escaped, and is `ESCAPE` declared.
 A site that builds its pattern from a fixed vocabulary is fine and should be marked so
 rather than left ambiguous.
 
-**Worth deciding while sweeping:** whether this belongs in a shared helper. It is four lines
-and every capability owns its own persistence, so duplicating it is defensible — but four
-capabilities silently disagreeing about escaping is exactly how this happened. A single
-`escapeLikeTerm` in `0-utils/persistence/` is the obvious counter-proposal.
+**Resolved as a shared helper**: `0-utils/persistence/likePattern.ts`. This is the one place
+the "capabilities own their own storage" rule gives way, and the reason is the history above —
+Templates and General Files each grew a name filter and disagreed, so the same query returned
+different results depending on which capability answered it. Four copies of a four-line
+function is cheap; four copies that disagree is a class of bug nobody goes looking for.
+
+**Still worth a sweep** for any `LIKE` added later: check that the pattern is escaped and that
+`ESCAPE` is declared, or that the pattern comes from a fixed vocabulary.
 
 ---
 
@@ -1071,6 +1082,84 @@ Either way this is a decision to make deliberately, not to discover.
 
 ---
 
+## 21 · Log content in dev, shape in production, behind a label
+
+**Agreed, wanted soon.** Today's convention is that logs carry *shape only* —
+counts, enums, ids, durations — and never names, titles, field values, or rows.
+Several capabilities have regression tests asserting exactly that.
+
+That is the right rule for a production build and the **wrong** rule for the one
+we are actually running. While building, content in the log is the fastest way to
+see what happened, and it exposes problems earlier and more reliably than tests
+do. We should be logging as much as we can, content included.
+
+### The shape of the change
+
+Do not solve this by loosening the existing rule, which would leave nothing to
+tighten later. Instead, **label what a record carries** and let configuration
+decide which labels are written:
+
+```text
+logger.debug("structured-analytic.definition.validated", data, { detail: "shape" })
+logger.debug("structured-analytic.definition.source",    data, { detail: "content" })
+```
+
+- A `logging.detail` configuration value selects which labels are recorded —
+  something like `shape` for production and `content` (meaning everything) for
+  development, defaulting to the developer-friendly setting.
+- Migration is then mechanical: the switch from dev to production is one config
+  value, not an audit of every call site.
+
+Open questions worth settling when this is picked up:
+
+- **What is the label vocabulary?** `shape` and `content` is the minimum. A third
+  for identifiers that are sensitive-but-useful (actor ids, project ids) may earn
+  its place; more than three probably will not.
+- **Where does the label live** — a third argument, a field inside `data`, or a
+  distinct method? A third argument keeps `data` clean and stays additive.
+- **What happens to the existing no-content tests?** They should assert the
+  *production* setting still redacts, rather than being deleted.
+
+### Sequencing
+
+**Additive first, migrate second.** Add the optional label and the config value
+without changing any existing call site; every current call keeps its meaning and
+defaults to the label it already implies. Capabilities then adopt content logging
+one at a time.
+
+Deliberately **not** being done inside the Structured Analytic branch: touching
+the shared `Logger` while several capabilities are in flight invites conflicts
+for no benefit. That work logs shape only for now and will migrate with everyone
+else.
+
+### ✅ Mechanism landed 2026-08-02
+
+The additive half is done, exactly as specified above:
+
+- `LogDetail = "shape" | "content"` and an optional third argument
+  `{ detail }` on all four `Logger` methods. The third-argument form won, for
+  the reason given above — `data` stays clean and every existing call site keeps
+  compiling untouched.
+- **Unlabelled means `shape`**, so no existing record changed meaning. Turning
+  production on cannot silently start dropping things nobody labelled.
+- `logging.detail` in configuration, defaulting to `content`. An unrecognised
+  value resolves to `content`, so a typo fails toward *more* logging — the safe
+  direction while this is a development setting.
+- A content-labelled record in `shape` mode is **dropped whole, not redacted**.
+  A half-redacted record is worse than an absent one: it looks complete.
+- The label is written into the entry, so a reader can filter after the fact
+  rather than only at write time.
+
+Covered by `test/capabilities/logging-detail.test.ts`, which also pins the
+production behaviour rather than deleting it.
+
+**Migration is per capability and ongoing.** Templates and Document now log
+content — names, descriptions, bindings, prompt text, resolved context entries,
+submitted operations, and what a search matched. Everything else still logs shape
+only and adopts when it is touched.
+
+---
+
 ## Reference · Delegated command claims (removed 2026-08-02)
 
 **Removed, not just declined.** This mechanism existed only for
@@ -1157,3 +1246,44 @@ _why_ Document's own claim turned out to be removable too, not just Persona's:
   accepted, narrow case per above, rather than solved with equivalent ordering machinery,
   because the acceptable fallback (a clear "not found" error on an already-rare compound
   condition) is cheaper than the mechanism would be.
+
+---
+
+## 22 · Audit what we do with caller-supplied strings
+
+**Agreed — explore.** [Item 18](#18--like-wildcards-are-not-escaped-in-text-search) was one
+instance of a general shape: a caller-supplied string reaches a place that gives some
+character a meaning, and nobody escaped it. That one was `LIKE` wildcards. It is unlikely to
+be the only one.
+
+**Why this is worth a pass rather than a fix.** The bug was not "we forgot to escape". It was
+that two capabilities each wrote a filter, one escaped and one did not, and nothing compared
+them — so the same question returned different answers depending on who answered it. Finding
+the next one means looking for the *pattern*, not the symptom.
+
+### What to look at
+
+- **SQL** — `LIKE` is done. Check `GLOB` (a different wildcard vocabulary: `*`, `?`, `[…]`),
+  `REGEXP` if it is ever registered, and any `json_extract` path built from input. Table and
+  column names are interpolated in this codebase, but only from `projectId` hashes and
+  literals; confirm that stays true.
+- **Regex construction.** Anywhere a `RegExp` is built from a caller string, an unescaped `.`
+  or `(` changes what matches, and a pathological pattern is a denial of service against our
+  own worker.
+- **Identifier round-tripping.** Names that are trimmed, case-folded, or normalised on the way
+  in but compared raw later, or vice versa — the two Context Variable resolvers were nearly
+  this bug.
+- **Formula and expression text.** Structured Data and Document both accept expressions; those
+  have their own parsers, so the question is whether anything *else* re-interprets that text.
+- **Path construction.** File names from callers reaching `join()`. General Files stores
+  content in SQLite rather than on disk, so this may be empty — worth confirming rather than
+  assuming.
+- **Log and error messages.** A name containing a newline can forge a log line, since records
+  are JSON-per-line. `JSON.stringify` handles it, but only where we actually stringify.
+
+### The output
+
+Not a fix list — a **table of every place caller text acquires meaning**, with what escapes it
+and where that escaping lives. Item 18's answer was a shared helper in `0-utils/persistence/`;
+some of these will want the same, and some are genuinely local. The value is knowing which is
+which.

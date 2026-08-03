@@ -1154,11 +1154,44 @@ test("Context Variables are named parameters a Prompt Block can point at", async
     assert.ok(left.some((id) => right.includes(id)), "the shared name is a shared footprint");
   });
 
-  await t.test("a referenced variable cannot be deleted", () => {
-    // Refused rather than cascaded: re-pointing the Blocks is a decision only
-    // the caller can make.
+  await t.test("deleting a bound variable cascades and changes no grounding", () => {
+    // The Block is re-pointed at the variable's current target — the same thing
+    // it already resolved to — so deleting a variable removes a level of
+    // indirection rather than the grounding underneath it.
     const source = withVariables(
       [{ id: "var-1", name: "Region", target: { id: "ctx-1", kind: "context" } }],
+      { kind: "variable", variableId: "var-1" },
+    );
+    const before = resolvePromptContext(source, { kind: "variable", variableId: "var-1" });
+
+    const deleted = applyOperations(source, [{
+      type: "context-variable.delete",
+      variableId: "var-1",
+    }], runtime, LIMITS);
+
+    assert.deepEqual(deleted.snapshot.contextVariables, []);
+    const block = deleted.snapshot.rows[0].blocks[0];
+    assert.equal(block.kind, "prompt");
+    if (block.kind !== "prompt") return;
+    assert.deepEqual(block.context, { kind: "direct", target: { id: "ctx-1", kind: "context" } });
+    assert.deepEqual(resolvePromptContext(deleted.snapshot, block.context), before);
+
+    // The inverse restores the variable *and* re-points the Block back at it.
+    // Restoring only the variable would leave the same grounding expressed as a
+    // literal, which is a different Document.
+    const restored = applyOperations(deleted.snapshot, deleted.inverse, runtime, LIMITS);
+    assert.deepEqual(
+      canonicalizeSnapshot(restored.snapshot),
+      canonicalizeSnapshot(source),
+    );
+  });
+
+  await t.test("deleting an unbound referenced variable is refused", () => {
+    // The one case with nothing to substitute. Only reachable on a template,
+    // where an unbound variable is a declared parameter — and there the cascade
+    // really would strand the Blocks with no grounding.
+    const source = withVariables(
+      [{ id: "var-1", name: "Main topic" }],
       { kind: "variable", variableId: "var-1" },
     );
     assert.throws(
@@ -1167,15 +1200,21 @@ test("Context Variables are named parameters a Prompt Block can point at", async
         variableId: "var-1",
       }], runtime, LIMITS),
       (error) => error instanceof DocumentOperationError
-        && /referenced by Prompt Blocks: prompt-block/.test(error.message),
+        && /unbound and referenced by Prompt Blocks: prompt-block/.test(error.message),
     );
+  });
 
-    // Re-point first, then delete.
-    const repointed = applyOperations(source, [
-      { type: "prompt.set-context", blockId: "prompt-block", context: { kind: "direct", target: { id: "ctx-2", kind: "context" } } },
-      { type: "context-variable.delete", variableId: "var-1" },
-    ], runtime, LIMITS);
-    assert.deepEqual(repointed.snapshot.contextVariables, []);
+  await t.test("an unreferenced variable deletes with no cascade at all", () => {
+    const source = withVariables([{ id: "var-1", name: "Region" }]);
+    const deleted = applyOperations(source, [{
+      type: "context-variable.delete",
+      variableId: "var-1",
+    }], runtime, LIMITS);
+    assert.deepEqual(deleted.snapshot.contextVariables, []);
+    assert.deepEqual(deleted.inverse, [{
+      type: "context-variable.create",
+      variable: { id: "var-1", name: "Region" },
+    }]);
   });
 
   await t.test("a Prompt Block cannot point at a variable that does not exist", () => {

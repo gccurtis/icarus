@@ -35,6 +35,8 @@ export interface TemplateCapability {
   publishPendingActivity(limit?: number): Promise<number>;
   pruneHistory(cutoff: string): Promise<number>;
   purgeExpired(cutoff: string): Promise<number>;
+  /** Reaps sealed resources no catalog row claims. See the method for why. */
+  collectOrphanedResources(cutoff: string): Promise<number>;
 }
 
 export interface TemplateDependencies {
@@ -76,13 +78,24 @@ const resourceKey = (command: TemplateCommand["type"], requestId: string): strin
  */
 const assertBindingsMatchDeclaration = (
   template: TemplateRecord,
-  supplied: TemplateContextBindings
+  supplied: TemplateContextBindings,
+  logger: Logger,
+  requestId: string
 ): void => {
   const declared = new Set(Object.keys(template.contextBindings));
   const given = new Set(Object.keys(supplied));
   const missing = [...declared].filter((name) => !given.has(name));
   const unexpected = [...given].filter((name) => !declared.has(name));
   if (missing.length > 0 || unexpected.length > 0) {
+    // The names, not just the counts. Whoever is debugging a rejected
+    // instantiation needs to know *which* parameter, and the error carries the
+    // same lists so the log and the response agree.
+    logger.info("templates.instantiate.binding-mismatch", {
+      templateId: template.id,
+      missing,
+      unexpected,
+      requestId
+    });
     throw new TemplateBindingMismatchError(template.id, missing, unexpected);
   }
 };
@@ -113,13 +126,33 @@ class TemplateService implements TemplateCapability {
     const { requestId, origin, command } = request;
     const digest = digestTemplateCommand(command);
 
+    const startedAt = performance.now();
     const prior = this.store.getReceipt(requestId);
     if (prior) {
       if (prior.requestDigest !== digest || prior.commandType !== command.type) {
+        // The two mismatch kinds are logged apart because they mean different
+        // caller bugs: a reused ID with new content, versus a reused ID for a
+        // different command entirely.
+        this.dependencies.logger.warn("templates.command.idempotency-mismatch", {
+          requestId,
+          requested: command.type,
+          recorded: prior.commandType,
+          digestMatches: prior.requestDigest === digest
+        });
         throw new TemplateIdempotencyMismatchError(requestId);
       }
+      this.dependencies.logger.info("templates.command.replayed", {
+        type: command.type,
+        requestId
+      });
       return prior.result as TemplateCommandResult;
     }
+
+    this.dependencies.logger.debug("templates.command.started", {
+      type: command.type,
+      requestId,
+      origin
+    });
 
     let result: TemplateCommandResult;
     try {
@@ -128,8 +161,10 @@ class TemplateService implements TemplateCapability {
       this.dependencies.logger.warn("templates.command.failed", {
         type: command.type,
         requestId,
+        origin,
         errorName: error instanceof Error ? error.name : "UnknownError",
-        errorMessage: error instanceof Error ? error.message : String(error)
+        errorMessage: error instanceof Error ? error.message : String(error),
+        durationMs: Math.round(performance.now() - startedAt)
       });
       throw error;
     }
@@ -170,6 +205,15 @@ class TemplateService implements TemplateCapability {
       return { type: "template.content", template, content };
     }
     const page = this.store.list(query);
+    if (query.search !== undefined || query.kinds !== undefined) {
+      // The term and what it matched. A search returning nothing is the case
+      // worth seeing, and counts alone cannot tell you why.
+      this.dependencies.logger.debug("templates.list.filtered", {
+        search: query.search,
+        kinds: query.kinds,
+        matched: page.items.map((record) => record.name)
+      }, { detail: "content" });
+    }
     this.dependencies.logger.debug("templates.query.completed", {
       type: query.type,
       ...(query.kinds !== undefined ? { kinds: query.kinds } : {}),
@@ -250,10 +294,19 @@ class TemplateService implements TemplateCapability {
   ): Promise<TemplateCommandResult> {
     const resource = this.requireResource(command.kind);
     if (this.store.nameTaken(command.kind, command.name)) {
+      // Logged here rather than only at the endpoint, because the *ordering* is
+      // the guarantee: this fires before any resource call, so a conflict never
+      // leaves a backing copy behind.
+      this.dependencies.logger.info("templates.register.name-conflict", {
+        kind: command.kind,
+        name: command.name,
+        requestId
+      });
       throw new TemplateNameConflictError(command.kind, command.name);
     }
 
     const idempotencyKey = resourceKey(command.type, requestId);
+    const startedAt = performance.now();
     // The resource names its own row. Templates names the catalog entry, below,
     // and only after the copy exists — so there is no identity to freeze across
     // the call and nothing to release when it fails.
@@ -293,10 +346,24 @@ class TemplateService implements TemplateCapability {
       throw new TemplateAlreadyExistsError(templateId);
     }
 
+    this.dependencies.logger.debug("templates.register.detail", {
+      templateId,
+      name: template.name,
+      description: template.description,
+      contextBindings: template.contextBindings
+    }, { detail: "content" });
     this.dependencies.logger.info("templates.registered", {
       templateId,
       kind: template.kind,
-      requestId
+      // Both IDs, always. They are different by rule now, and a log line
+      // carrying only one is unusable for tracing a template to its backing
+      // resource or back.
+      sourceResourceId: command.resourceId,
+      resourceId: template.resourceId,
+      name: template.name,
+      declaredBindings: Object.keys(command.contextBindings).length,
+      requestId,
+      durationMs: Math.round(performance.now() - startedAt)
     });
     return result;
   }
@@ -387,10 +454,26 @@ class TemplateService implements TemplateCapability {
       );
     }
 
+    this.dependencies.logger.debug("templates.update.detail", {
+      templateId: template.id,
+      priorName: current.name,
+      name: template.name,
+      description: template.description,
+      priorBindings: current.contextBindings,
+      contextBindings: template.contextBindings,
+      resourceOperations: command.resourceOperations
+    }, { detail: "content" });
     this.dependencies.logger.info("templates.updated", {
       templateId: template.id,
       kind: template.kind,
+      resourceId: template.resourceId,
+      priorRevision: current.revision,
       revision: template.revision,
+      // Which halves the command actually touched. An update that changed only
+      // the catalog looks identical to one that rewrote the content otherwise.
+      renamed: command.name !== undefined && command.name !== current.name,
+      bindingsChanged: command.contextBindings !== undefined,
+      contentChanged: command.resourceOperations !== undefined,
       requestId
     });
     return result;
@@ -408,9 +491,15 @@ class TemplateService implements TemplateCapability {
   ): Promise<TemplateCommandResult> {
     const template = this.requireTemplate(command.templateId);
     const resource = this.requireResource(template.kind);
-    assertBindingsMatchDeclaration(template, command.contextBindings);
+    assertBindingsMatchDeclaration(
+      template,
+      command.contextBindings,
+      this.dependencies.logger,
+      requestId
+    );
 
     const idempotencyKey = resourceKey(command.type, requestId);
+    const startedAt = performance.now();
     const created = await resource.duplicate({
       sourceResourceId: template.resourceId,
       ...(command.name !== undefined ? { name: command.name } : {}),
@@ -424,11 +513,25 @@ class TemplateService implements TemplateCapability {
       });
     }
 
+    this.dependencies.logger.debug("templates.instantiate.detail", {
+      templateId: template.id,
+      templateName: template.name,
+      instanceName: command.name,
+      // The arguments themselves. Which Context each parameter got is the
+      // question you actually have when an instance reads wrong.
+      contextBindings: command.contextBindings
+    }, { detail: "content" });
     this.dependencies.logger.info("templates.instantiated", {
       templateId: template.id,
       kind: template.kind,
+      // Three IDs, and they are all different things: the catalog row, the
+      // sealed template it copied, and the instance the caller now owns.
+      templateResourceId: template.resourceId,
       resourceId: created.resourceId,
-      requestId
+      boundParameters: Object.keys(command.contextBindings).length,
+      named: command.name !== undefined,
+      requestId,
+      durationMs: Math.round(performance.now() - startedAt)
     });
 
     // No catalog row: the instance belongs entirely to its owning capability,
@@ -470,6 +573,8 @@ class TemplateService implements TemplateCapability {
     this.dependencies.logger.info("templates.deleted", {
       templateId: template.id,
       kind: template.kind,
+      resourceId: template.resourceId,
+      revision: template.revision + 1,
       requestId
     });
     return result;
@@ -492,6 +597,7 @@ class TemplateService implements TemplateCapability {
     this.dependencies.logger.info("templates.purged", {
       templateId: retained.id,
       kind: retained.kind,
+      resourceId: retained.resourceId,
       requestId
     });
     return { type: "template.purged", templateId: retained.id };
@@ -550,6 +656,69 @@ class TemplateService implements TemplateCapability {
       count += 1;
     }
     return count;
+  }
+
+  /**
+   * Finds backing resources this catalog does not claim, and removes them.
+   *
+   * The leak this closes: registration seals the copy and *then* writes the
+   * catalog row, so a crash in between leaves a sealed resource nothing points
+   * at. It is not merely hidden — the owning capability refuses sealed
+   * resources and `template.list` only knows catalog rows — so a diff of the two
+   * sides is the only thing that can see it.
+   *
+   * **Conservative on purpose.** Only resources sealed before `cutoff` are
+   * considered, because a registration in flight *right now* has a sealed copy
+   * and no catalog row yet, and that is the healthy case rather than the leak.
+   * The grace period is what tells them apart.
+   */
+  async collectOrphanedResources(cutoff: string): Promise<number> {
+    let reaped = 0;
+    for (const kind of this.dependencies.resources.kinds()) {
+      const resource = this.dependencies.resources.get(kind);
+      if (!resource) continue;
+      const claimed = this.store.claimedResourceIds(kind);
+      const sealed = await resource.listSealedResources();
+      const orphans = sealed.filter(
+        (entry) => entry.sealedAt < cutoff && !claimed.has(entry.resourceId)
+      );
+      if (orphans.length === 0) continue;
+
+      this.dependencies.logger.warn("templates.orphans.found", {
+        kind,
+        sealed: sealed.length,
+        claimed: claimed.size,
+        orphans: orphans.length,
+        cutoff,
+        resourceIds: orphans.map((entry) => entry.resourceId)
+      });
+
+      for (const orphan of orphans) {
+        try {
+          await resource.purge({
+            resourceId: orphan.resourceId,
+            idempotencyKey: `templates:orphan-purge:${orphan.resourceId}`
+          });
+          reaped += 1;
+          this.dependencies.logger.info("templates.orphan.purged", {
+            kind,
+            resourceId: orphan.resourceId,
+            sealedAt: orphan.sealedAt
+          });
+        } catch (error) {
+          // One failure must not stop the sweep: the rest of the orphans are
+          // independent, and a permanent failure on one would otherwise wedge
+          // collection forever.
+          this.dependencies.logger.error("templates.orphan.purge-failed", {
+            kind,
+            resourceId: orphan.resourceId,
+            errorName: error instanceof Error ? error.name : "UnknownError",
+            errorMessage: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+    }
+    return reaped;
   }
 
   private requireResource(kind: string): TemplatableResource {

@@ -344,6 +344,24 @@ export class SQLiteDocumentStore implements DocumentStore {
     this.insertSubmission(receipt);
   }
 
+  async listSealedResources(): Promise<Array<{ resourceId: string; sealedAt: string }>> {
+    // `updated_at` rather than a dedicated sealed_at column: markAsTemplate is
+    // the last thing that touches a backing copy before the catalog row is
+    // written, so this is the age of the seal for every row that matters here —
+    // and an orphan by definition never got edited afterwards.
+    const rows = this.db
+      .prepare(
+        `SELECT id, updated_at FROM ${this.tables.documents}
+         WHERE is_template = 1
+         ORDER BY updated_at`
+      )
+      .all() as SQLiteRow[];
+    return rows.map((row) => ({
+      resourceId: row.id as string,
+      sealedAt: row.updated_at as string
+    }));
+  }
+
   async markAsTemplate(documentId: string): Promise<void> {
     // Idempotent by shape: setting 1 to 1 changes nothing, so a retried
     // registration does not need a receipt of its own for this step.

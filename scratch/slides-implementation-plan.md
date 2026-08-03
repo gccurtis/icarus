@@ -109,24 +109,69 @@ complete before any persistence exists.
 
 ## Phase 2 — Persistence
 
-`ports/slidesStore.ts` (async, like Document), then `persistence/`. Tables:
-`decks`, `bases`, `change_sets`, `command_receipts`, `create_receipts`,
-`identity_ledger`, `attempts`, `stage_receipts`, `prompt_outputs`,
-`activity_outbox`. Four standard pragmas; CHECK constraints carry the
-revision invariants.
+`ports/slidesStore.ts` (async, like Document), then `persistence/`. Four
+standard pragmas; CHECK constraints carry the revision invariants.
+
+Thirteen tables, not the ten first listed here: Document's `resources` root and
+its shared `history` table were missing from that list and are not optional.
+The root is what survives logical deletion so retained history and the identity
+ledger have something to hang from, and adding either later is a migration.
 
 `create_receipts` keyed on `request_id` with `deck_id` for cascade only — the
 correction in general-updates item 2.
 
-Gate: `slides-persistence.test.ts`.
+**Two divergences from Document, both deliberate.**
+
+*The prompt-output address.* Document keys ownership on a bare `block_id`. A
+Slides site is a container plus an element plus an optional cell, so the table
+stores a composite `site_key` string alongside the structured `site_json`. It
+has to be a string because the rule it enforces — one dedicated output per live
+site — is a SQL `UNIQUE`, and the container has to be in it because two planes
+may hold elements with the same ID.
+
+*The store logs.* No other store in this backend does; logging is
+application-layer everywhere else. Changed here on purpose: several facts are
+visible only from inside the transaction — which compare-and-set lost, which
+identity was refused — and those are exactly the "right answer, wrong process"
+cases. Cost is controlled by level: statement detail is `debug`, `info` is
+durable commits, `warn` is a caller's problem, `error` is impossible state.
+
+**Authored content is logged, in a paired record.** Every event with something
+a person wrote emits a second `<event>.detail` record at `debug`, labelled
+`{ detail: "content" }` — the platform mechanism added in `ef6d462`. Pairing
+rather than mixing is what that label requires: a content record is dropped
+whole in shape mode, so anything mixed into it disappears with it. The shape
+record therefore stands alone and carries no authored text. A test plants a
+marker in every authored field and asserts no shape-labelled record contains it.
+
+Gate: `slides-persistence.test.ts` — 26 tests.
 
 ## Phase 3 — Wire
 
 `valueSchemas.ts` with `exactKeys` and a wire budget; `operationSchemas.ts` with
-an `OPERATION_KEYS` table so decoder and union cannot drift; `commandSchemas.ts`
-decoding `{ requestId, origin, command }`; `querySchemas.ts`.
+an `OPERATION_KEYS` table typed `Record<SlideOperation["type"], …>` so decoder
+and union cannot drift; `commandSchemas.ts` decoding
+`{ requestId, origin, command }`; `querySchemas.ts`.
 
-Gate: `slides-wire.test.ts`.
+The Rich Text decoders are hand-written here rather than shared with Document.
+That is the convention rather than an oversight: `exactKeys` is defined four
+times across four capabilities, each throwing its own error class, because a
+capability owns its wire layer. Worth extracting to `0-platform` one day, not
+worth touching shared files for while several agents are in the tree.
+
+Two divergences from Document. Lengths are finite positives rather than
+integers, because slide geometry is in points and half-point positions are
+ordinary where Document's twips are integral. And the history page bound is a
+named constant, where Document inlines `1..1000`.
+
+**A decoded operation is a validated clone of the input, not a reconstruction.**
+The value decoders build clean objects, but `decodeSlideOperation` returns
+`structuredClone(operation)` and discards them, exactly as Document does — so
+for operations the decoders are validation side-effects only. Their constructed
+output matters for commands, which do return it. Do not write a test that thinks
+otherwise; one here did, and passed for the wrong reason.
+
+Gate: `slides-wire.test.ts` — 25 tests.
 
 ## Phase 4 — Service and composition: first working slice
 
@@ -209,8 +254,12 @@ it, and a transient error in `formula/wire.ts` appeared and cleared the same way
 
 ## Status
 
-**Phase 1 is complete** (branch `slides-phase1-domain`, 2026-08-02): eleven
-`domain/` files, 52 tests in `slides-domain.test.ts`, backend suite green at 462.
+**Phases 1, 2 and 3 are complete** (2026-08-02): eleven `domain/` files, four
+`ports/` + `persistence/` files and four `wire/` files — 61 domain, 26
+persistence and 25 wire tests.
+
+Work happens in a worktree at `/home/jakul/cyberia/icarus-slides` to keep other
+agents' uncommitted files out of the way; every commit still lands on `main`.
 
 Two defects were found by the tests and fixed in the same commit — restoring a
 deleted table column appended its cells and changed canonical bytes, and the

@@ -155,6 +155,16 @@ Unbound variables exist only on **template-mode** Documents, where declaring a
 parameter with no default is the point. Templates requires instantiation to bind
 every declared parameter, so an ordinary Document cannot hold one.
 
+An **empty** resolution is a different thing and is perfectly legal: a Block may
+point at a Context that currently contains nothing. That is a choice someone
+made. What is refused is a variable with *no target at all*, which is nobody
+having chosen yet.
+
+**Deleting a bound variable cascades.** Each referencing Block is re-pointed at
+the variable's current target, so the grounding is identical and only the
+indirection is gone. Refusing instead would have pushed the caller into doing
+exactly this by hand, one `prompt.set-context` at a time.
+
 **Template mode is one-way and sealing is total.** `markAsTemplate` sets
 `isTemplate` on the head; nothing clears it. Every public command *and* query
 naming a sealed Document is refused with `DocumentTemplateModeError`, and
