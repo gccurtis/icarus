@@ -1656,12 +1656,27 @@ const operationIds = (snapshot: DeckSnapshot, operation: SlideOperation): string
   const elements = container ? findContainer(snapshot, container)?.elements : undefined;
 
   switch (operation.type) {
+    // Deck-level fields own no identity, so without a sentinel they touch
+    // nothing — and two concurrent renames would both be admitted by rebase,
+    // silently discarding one. One sentinel per field rather than one for the
+    // whole Deck, so renaming and re-themeing still do not conflict.
     case "deck.rename":
+      ids.add("$slides:deck-title");
+      break;
     case "deck.set-lifecycle":
+      ids.add("$slides:deck-lifecycle");
+      break;
     case "canvas.set":
+      ids.add("$slides:canvas");
+      break;
     case "theme.rename":
+      ids.add("$slides:theme-name");
+      break;
     case "theme.set-palette":
+      ids.add("$slides:theme-palette");
+      break;
     case "theme.set-typography":
+      ids.add("$slides:theme-typography");
       break;
     case "token.create":
       ids.add(operation.token.id);

@@ -23,6 +23,7 @@ import { createConnectorInstance } from "#init/create/connector.js";
 import { ConnectorSyncScheduler } from "#init/create/connectorSyncScheduler.js";
 import { createResourceReader } from "#init/create/resource-reader.js";
 import { createDocumentInstance } from "#init/create/document.js";
+import { createSlidesInstance } from "#init/create/slides.js";
 import { createActivityInstance } from "#init/create/activity.js";
 import { createCommentsInstance } from "#init/create/comments.js";
 import { createInvestigationRuntimeInstance } from "#init/create/investigation.js";
@@ -36,8 +37,11 @@ import {
   ResourceRetentionScheduler
 } from "#utils/persistence/resourceRetentionScheduler.js";
 import type { DocumentInternalJobIntent } from "#document";
+import type { SlideInternalJobIntent } from "#slides";
 import { registerDocumentEndpoints } from "#job-wiring/document/registerDocumentEndpoints.js";
 import { registerDocumentInternalJobs } from "#job-wiring/document/registerDocumentInternalJobs.js";
+import { registerSlidesEndpoints } from "#job-wiring/slides/registerSlidesEndpoints.js";
+import { registerSlidesInternalJobs } from "#job-wiring/slides/registerSlidesInternalJobs.js";
 import { registerActivityEndpoints } from "#job-wiring/activity/registerActivityEndpoints.js";
 import { registerCommentEndpoints } from "#job-wiring/comments/registerCommentEndpoints.js";
 import { registerPersonaEndpoints } from "#job-wiring/persona/registerPersonaEndpoints.js";
@@ -110,6 +114,9 @@ export const startBackend = async (): Promise<void> => {
       logger
     );
     registerDocumentInternalJobs(documentJobs, document);
+    const slidesJobs = new SchedulerInternalJobsRuntime<SlideInternalJobIntent>(scheduler);
+    const slides = createSlidesInstance(config, richText, activity, slidesJobs, logger);
+    registerSlidesInternalJobs(slidesJobs, slides);
     // Templates is constructed after the resource capabilities so their runtime
     // objects can be registered into it without a constructor cycle.
     const templateResources = createTemplateResourceRegistry();
@@ -183,6 +190,7 @@ export const startBackend = async (): Promise<void> => {
     registerPersonaEndpoints(registry, personas, logger);
     registerInvestigationEndpoints(registry, investigation, logger);
     registerDocumentEndpoints(registry, document, logger);
+    registerSlidesEndpoints(registry, slides, logger);
     registerTemplateEndpoints(registry, templates, logger);
 
     const recoveredDocumentAttempts = await document.recoverPendingAttempts();

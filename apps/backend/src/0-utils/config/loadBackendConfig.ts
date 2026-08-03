@@ -93,6 +93,26 @@ export interface DocumentConfig {
   };
 }
 
+export interface SlidesConfig {
+  history: {
+    retainedBaseCount: number;
+    retainedChangeSetCount: number;
+    retainedTerminalAttemptCount: number;
+  };
+  limits: {
+    maxSlidesPerDeck: number;
+    maxElementsPerContainer: number;
+    maxMastersPerDeck: number;
+    maxLayoutsPerDeck: number;
+    maxSlotsPerLayout: number;
+    maxStylesPerDeck: number;
+    maxTokensPerTheme: number;
+    maxGroupDepth: number;
+    maxTableRows: number;
+    maxTableColumns: number;
+  };
+}
+
 export interface RetentionConfig {
   /** Age after which superseded revisions and deleted resource histories expire. */
   revisionRetentionDays: number;
@@ -130,6 +150,7 @@ export interface BackendConfig {
   context: ContextManagerConfig;
   derivedOutputs: DerivedOutputConfig;
   document: DocumentConfig;
+  slides: SlidesConfig;
   retention: RetentionConfig;
   projectId: string;
   userId: string;
@@ -247,6 +268,25 @@ const DEFAULT_CONFIG: BackendConfig = {
       maxStylesPerDocument: 256,
       maxNestingDepth: 16,
       maxAtomsPerBlockContent: 10000,
+      maxTableRows: 1000,
+      maxTableColumns: 256
+    }
+  },
+  slides: {
+    history: {
+      retainedBaseCount: 5,
+      retainedChangeSetCount: 1000,
+      retainedTerminalAttemptCount: 1000
+    },
+    limits: {
+      maxSlidesPerDeck: 1000,
+      maxElementsPerContainer: 500,
+      maxMastersPerDeck: 32,
+      maxLayoutsPerDeck: 64,
+      maxSlotsPerLayout: 32,
+      maxStylesPerDeck: 256,
+      maxTokensPerTheme: 256,
+      maxGroupDepth: 16,
       maxTableRows: 1000,
       maxTableColumns: 256
     }
@@ -407,6 +447,7 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     (parsed.derivedOutputs as Record<string, unknown> | undefined) ?? {};
   const document =
     (parsed.document as Record<string, unknown> | undefined) ?? {};
+  const slides = (parsed.slides as Record<string, unknown> | undefined) ?? {};
   const retention =
     (parsed.retention as Record<string, unknown> | undefined) ?? {};
   const configuredOpenRouterApiKey = parseString(
@@ -515,6 +556,7 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
     context: parseContextConfig(context, DEFAULT_CONFIG.context),
     derivedOutputs: parseDerivedOutputConfig(derivedOutputs, DEFAULT_CONFIG.derivedOutputs),
     document: parseDocumentConfig(document, DEFAULT_CONFIG.document),
+    slides: parseSlidesConfig(slides, DEFAULT_CONFIG.slides),
     retention: parseRetentionConfig(retention, DEFAULT_CONFIG.retention)
   };
 };
@@ -558,6 +600,51 @@ function parseDerivedOutputConfig(raw: Record<string, unknown>, defaults: Derive
   return {
     maxPlanQueries: parseNumber(raw.maxPlanQueries, defaults.maxPlanQueries, "derivedOutputs.maxPlanQueries"),
     maxToolRounds: parseNumber(raw.maxToolRounds, defaults.maxToolRounds, "derivedOutputs.maxToolRounds")
+  };
+}
+
+function parseSlidesConfig(
+  raw: Record<string, unknown>,
+  defaults: SlidesConfig
+): SlidesConfig {
+  const history = (raw.history as Record<string, unknown> | undefined) ?? {};
+  const limits = (raw.limits as Record<string, unknown> | undefined) ?? {};
+  const number = (
+    value: unknown,
+    fallback: number,
+    label: string
+  ): number => parseNumber(value, fallback, label);
+
+  return {
+    history: {
+      retainedBaseCount: number(
+        history.retainedBaseCount,
+        defaults.history.retainedBaseCount,
+        "slides.history.retainedBaseCount"
+      ),
+      retainedChangeSetCount: number(
+        history.retainedChangeSetCount,
+        defaults.history.retainedChangeSetCount,
+        "slides.history.retainedChangeSetCount"
+      ),
+      retainedTerminalAttemptCount: number(
+        history.retainedTerminalAttemptCount,
+        defaults.history.retainedTerminalAttemptCount,
+        "slides.history.retainedTerminalAttemptCount"
+      )
+    },
+    limits: {
+      maxSlidesPerDeck: number(limits.maxSlidesPerDeck, defaults.limits.maxSlidesPerDeck, "slides.limits.maxSlidesPerDeck"),
+      maxElementsPerContainer: number(limits.maxElementsPerContainer, defaults.limits.maxElementsPerContainer, "slides.limits.maxElementsPerContainer"),
+      maxMastersPerDeck: number(limits.maxMastersPerDeck, defaults.limits.maxMastersPerDeck, "slides.limits.maxMastersPerDeck"),
+      maxLayoutsPerDeck: number(limits.maxLayoutsPerDeck, defaults.limits.maxLayoutsPerDeck, "slides.limits.maxLayoutsPerDeck"),
+      maxSlotsPerLayout: number(limits.maxSlotsPerLayout, defaults.limits.maxSlotsPerLayout, "slides.limits.maxSlotsPerLayout"),
+      maxStylesPerDeck: number(limits.maxStylesPerDeck, defaults.limits.maxStylesPerDeck, "slides.limits.maxStylesPerDeck"),
+      maxTokensPerTheme: number(limits.maxTokensPerTheme, defaults.limits.maxTokensPerTheme, "slides.limits.maxTokensPerTheme"),
+      maxGroupDepth: number(limits.maxGroupDepth, defaults.limits.maxGroupDepth, "slides.limits.maxGroupDepth"),
+      maxTableRows: number(limits.maxTableRows, defaults.limits.maxTableRows, "slides.limits.maxTableRows"),
+      maxTableColumns: number(limits.maxTableColumns, defaults.limits.maxTableColumns, "slides.limits.maxTableColumns")
+    }
   };
 }
 

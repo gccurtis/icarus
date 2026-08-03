@@ -184,10 +184,26 @@ compaction dispatch, Activity outbox in the mutation transaction.
 
 Then job wiring, `1-init/create/slides.ts`, `startBackend`.
 
-**End-to-end slice**: create a Deck, edit its Master and Layouts, add slides
-against a Layout, fill slots, add free text/table/chart/image elements, group,
-reorder, undo, load, list, delete. No prompt content, no formula settlement yet.
-Gate: `slides-application.test.ts` + smoke.
+**End-to-end slice**, all covered: create a Deck, edit its Master and Layouts,
+add slides against a Layout, fill slots, add free text and table elements,
+group, reorder, undo, redo, load an older revision, list, delete. No prompt
+content, no formula settlement.
+
+Two guards the plan did not call for, both real. The public submit path
+refuses any operation that would write a `prompt` text source — a caller could
+otherwise name a Derived Output nothing owns, invisible to the detach diff and
+unresolvable on load. And `$slides-internal$:` is reserved on request IDs now
+rather than in Phase 5, so nothing can already depend on the namespace.
+
+**Deck-level fields needed sentinel touched IDs.** `deck.rename` and its
+siblings own no identity, so they touched nothing, so two concurrent renames
+were both admitted by rebase and one was silently discarded with a 200. One
+sentinel per field — renaming and re-themeing still do not conflict. This was
+invisible to every unit test and only surfaced running the slice over HTTP.
+
+Config lives in `loadBackendConfig` under `slides`, mirroring Document's.
+
+Gate: `slides-application.test.ts` — 22 tests, plus the smoke additions.
 
 ## Phase 5 — Prompt text sources
 
@@ -254,9 +270,9 @@ it, and a transient error in `formula/wire.ts` appeared and cleared the same way
 
 ## Status
 
-**Phases 1, 2 and 3 are complete** (2026-08-02): eleven `domain/` files, four
-`ports/` + `persistence/` files and four `wire/` files — 61 domain, 26
-persistence and 25 wire tests.
+**Phases 1–4 are complete** (2026-08-02). The capability is wired into the
+composition root and serving `POST /slides/command` and `POST /slides/query`:
+61 domain, 26 persistence, 25 wire and 22 application tests.
 
 Work happens in a worktree at `/home/jakul/cyberia/icarus-slides` to keep other
 agents' uncommitted files out of the way; every commit still lands on `main`.
