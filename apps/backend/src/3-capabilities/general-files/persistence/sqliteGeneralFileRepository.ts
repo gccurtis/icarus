@@ -1,3 +1,4 @@
+import { escapeLikeTerm } from "#utils/persistence/likePattern.js";
 // SQLite implementation of GeneralFileStore.
 // Table prefix = SHA-256(projectId).slice(0,16).
 
@@ -137,17 +138,21 @@ export class SQLiteGeneralFileStore implements GeneralFileStore {
             clauses.push("extension = ?");
             params.push(f.value);
             break;
+          // Escaped, and ESCAPE declared. Without it a filename filter stops
+          // being a filename filter: `_` matches any character and `%` matches
+          // everything, so searching for "report_final" also found
+          // "reportXfinal" and searching for "50%" found every file.
           case "by-name-contains":
-            clauses.push("file_name LIKE ?");
-            params.push(`%${f.value}%`);
+            clauses.push("file_name LIKE ? ESCAPE '\\'");
+            params.push(`%${escapeLikeTerm(f.value)}%`);
             break;
           case "by-name-starts-with":
-            clauses.push("file_name LIKE ?");
-            params.push(`${f.value}%`);
+            clauses.push("file_name LIKE ? ESCAPE '\\'");
+            params.push(`${escapeLikeTerm(f.value)}%`);
             break;
           case "by-name-ends-with":
-            clauses.push("file_name LIKE ?");
-            params.push(`%${f.value}`);
+            clauses.push("file_name LIKE ? ESCAPE '\\'");
+            params.push(`%${escapeLikeTerm(f.value)}`);
             break;
         }
       }

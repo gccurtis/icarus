@@ -11,6 +11,7 @@ import {
   pruneHistoryBefore,
   purgeResourceHistory
 } from "#utils/persistence/resourceHistory.js";
+import { escapeLikeTerm } from "#utils/persistence/likePattern.js";
 import { InvalidTemplateCursorError } from "../domain/errors.js";
 import type {
   TemplateCommittedTransaction,
@@ -31,6 +32,7 @@ import {
   type TemplateTableNames
 } from "./sqliteSchema.js";
 import {
+  decodeJson,
   encodeJson,
   rowToReceipt,
   rowToTransaction,
@@ -56,14 +58,6 @@ const boundedLimit = (value: number | undefined): number =>
   value === undefined
     ? DEFAULT_PAGE_SIZE
     : Math.min(Math.max(1, Math.trunc(value)), MAX_PAGE_SIZE);
-
-/**
- * `%` and `_` are LIKE wildcards, so a term containing either has to be escaped
- * or it stops being a substring search. `\` is escaped first, or it would
- * escape the escapes this adds.
- */
-const escapeLikeTerm = (term: string): string =>
-  term.replace(/[\\%_]/g, (character) => `\\${character}`);
 
 const encodeCursor = (cursor: Omit<CatalogCursor, "kind">): string =>
   Buffer.from(JSON.stringify({ kind: CURSOR_KIND, ...cursor }), "utf8").toString("base64url");
@@ -209,6 +203,29 @@ export class SQLiteTemplateStore implements TemplateStore {
       if (isUniqueViolation(error)) return false;
       throw error;
     }
+  }
+
+  claimedResourceIds(kind: string): Set<string> {
+    const live = this.db
+      .prepare(`SELECT resource_id FROM ${this.tables.templates} WHERE kind = ?`)
+      .all(kind) as SQLiteRow[];
+    const claimed = new Set(live.map((row) => row.resource_id as string));
+    // History too. A deleted-but-not-purged template still owns its backing
+    // copy, and reaping it would destroy state the retention window promised to
+    // keep. Read straight from the history table rather than through
+    // `latestSnapshot` per ID: this runs on a sweep over the whole catalog, and
+    // one scan beats N lookups.
+    const archived = this.db
+      .prepare(
+        `SELECT snapshot_json FROM ${this.tables.history}
+         WHERE resource_kind = 'template' AND record_type = 'snapshot'`
+      )
+      .all() as SQLiteRow[];
+    for (const row of archived) {
+      const record = decodeJson<TemplateRecord>(row.snapshot_json);
+      if (record.kind === kind) claimed.add(record.resourceId);
+    }
+    return claimed;
   }
 
   nameTaken(kind: string, name: string, exceptId?: string): boolean {

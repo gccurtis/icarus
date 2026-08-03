@@ -167,7 +167,31 @@ class FakeResource implements TemplatableResource {
 
   async purge(input: { resourceId: string; idempotencyKey: string }): Promise<void> {
     this.calls.push({ method: "purge", ...input });
+    if (this.failPurgeFor.has(input.resourceId)) {
+      throw new Error(`resource refused to purge ${input.resourceId}`);
+    }
     this.guard();
+  }
+
+  /** Sealed rows this fake knows about, keyed by ID. */
+  private readonly sealed = new Map<string, string>();
+  /** Resource IDs whose purge throws, to prove one failure does not stop a sweep. */
+  readonly failPurgeFor = new Set<string>();
+
+  /** Seals a resource without a catalog row — the orphan this sweep exists for. */
+  seal(resourceId: string, sealedAt: string): void {
+    this.sealed.set(resourceId, sealedAt);
+  }
+
+  async listSealedResources(): Promise<Array<{ resourceId: string; sealedAt: string }>> {
+    // Registration's own copies count too: `markAsTemplate` seals them, so a
+    // real runtime would list them and the sweep must not reap the claimed ones.
+    for (const call of this.markCalls()) {
+      if (!this.sealed.has(call.resourceId)) {
+        this.sealed.set(call.resourceId, "2026-08-01T00:00:00.000Z");
+      }
+    }
+    return [...this.sealed].map(([resourceId, sealedAt]) => ({ resourceId, sealedAt }));
   }
 
   private of<T extends ResourceCall>(method: ResourceCall["method"]): T[] {
@@ -236,7 +260,10 @@ const createFixture = (
   const templates = createTemplateCapability(
     store,
     {
-      resources: { get: (kind) => resources.get(kind) },
+      resources: {
+        get: (kind) => resources.get(kind),
+        kinds: () => [...resources.keys()]
+      },
       logger,
       activityPublisher: {
         publish: async (transaction) => {
@@ -2146,4 +2173,76 @@ test("Templates ignores a legacy catalog-limit configuration section", async () 
   const config = await loadBackendConfig(filePath);
   assert.equal(config.projectId, "template-config-test");
   assert.equal("templates" in config, false);
+});
+
+// ─── Orphan collection ────────────────────────────────────────────────────────
+
+test("Templates reaps sealed resources no catalog row claims", async (t) => {
+  await t.test("an orphan past the grace period is purged", async () => {
+    const { templates, resource, store } = createFixture();
+    const registered = await templates.command(registerCommand("req-1"));
+    const template = registered.type === "template.registered" ? registered.template : undefined;
+    assert.ok(template);
+
+    // The leak: a copy that got sealed and whose catalog row never landed.
+    // Unreachable by any query, which is why a diff is the only way to see it.
+    resource.seal("document-orphan-1", "2026-08-01T00:00:00.000Z");
+
+    const reaped = await templates.collectOrphanedResources("2026-08-02T00:00:00.000Z");
+    assert.equal(reaped, 1);
+    assert.deepEqual(
+      resource.calls.filter((call) => call.method === "purge")
+        .map((call) => (call as { resourceId: string }).resourceId),
+      ["document-orphan-1"]
+    );
+    // The claimed copy is untouched.
+    assert.equal(store.get(template.id)?.resourceId, template.resourceId);
+  });
+
+  await t.test("a registration in flight is not an orphan", async () => {
+    const { templates, resource } = createFixture();
+    // Sealed just now, no catalog row yet — which is exactly what a healthy
+    // registration looks like between markAsTemplate and the catalog write.
+    resource.seal("document-inflight", "2026-08-02T00:00:30.000Z");
+
+    const reaped = await templates.collectOrphanedResources("2026-08-02T00:00:00.000Z");
+    assert.equal(reaped, 0, "the grace period is what tells them apart");
+    assert.equal(resource.calls.filter((call) => call.method === "purge").length, 0);
+  });
+
+  await t.test("a deleted-but-unpurged template still owns its copy", async () => {
+    const { templates, resource } = createFixture();
+    const registered = await templates.command(registerCommand("req-1"));
+    const template = registered.type === "template.registered" ? registered.template : undefined;
+    assert.ok(template);
+    await templates.command({
+      requestId: "req-2",
+      origin: "user",
+      command: { type: "template.delete", templateId: template.id }
+    });
+    resource.calls.length = 0;
+
+    // The live row is gone but history retains it, so the backing copy is still
+    // claimed. Reaping it would destroy what the retention window promised.
+    const reaped = await templates.collectOrphanedResources("2099-01-01T00:00:00.000Z");
+    assert.equal(reaped, 0);
+    assert.equal(resource.calls.filter((call) => call.method === "purge").length, 0);
+  });
+
+  await t.test("one failing purge does not stop the sweep", async () => {
+    const { templates, resource } = createFixture();
+    resource.seal("document-orphan-1", "2026-08-01T00:00:00.000Z");
+    resource.seal("document-orphan-2", "2026-08-01T00:00:00.000Z");
+    resource.failPurgeFor.add("document-orphan-1");
+
+    const reaped = await templates.collectOrphanedResources("2026-08-02T00:00:00.000Z");
+    // The orphans are independent, and a permanent failure on one would
+    // otherwise wedge collection forever.
+    assert.equal(reaped, 1);
+    assert.deepEqual(
+      resource.calls.filter((call) => call.method === "purge")
+        .map((call) => (call as { resourceId: string }).resourceId).sort(),
+      ["document-orphan-1", "document-orphan-2"]
+    );
+  });
 });

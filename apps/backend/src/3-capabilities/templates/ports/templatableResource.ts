@@ -96,8 +96,32 @@ export interface TemplatableResource {
 
   logicalDelete(input: { resourceId: string; idempotencyKey: string }): Promise<void>;
   purge(input: { resourceId: string; idempotencyKey: string }): Promise<void>;
+
+  /**
+   * Every resource this kind has sealed, with when it was sealed.
+   *
+   * **This is not a template listing**, and the distinction is the whole reason
+   * it is allowed to exist. `template.list` remains the only way anyone asks
+   * "what templates are there" — this answers "which of your rows did I tell you
+   * to seal", which only Templates can even ask, and only so it can compare that
+   * against its own catalog.
+   *
+   * It exists for exactly one caller: `collectOrphanedResources`. Registration
+   * writes the catalog row *after* sealing the copy, so a crash in between
+   * leaves a sealed resource no catalog row points at — unreachable by any
+   * query, because the owning capability refuses sealed resources and
+   * `template.list` only knows catalog rows. Diffing the two sides is the only
+   * way to see it.
+   */
+  listSealedResources(): Promise<Array<{ resourceId: string; sealedAt: string }>>;
 }
 
 export interface TemplatableResourceRegistry {
   get(kind: string): TemplatableResource | undefined;
+  /**
+   * Every registered kind. Needed only by the orphan sweep, which has to ask
+   * each kind what it has sealed — there is no other way to enumerate resources
+   * Templates may have lost track of.
+   */
+  kinds(): string[];
 }

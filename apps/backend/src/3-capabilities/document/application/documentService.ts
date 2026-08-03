@@ -118,6 +118,7 @@ export interface DocumentTemplateRuntime {
     idempotencyKey: string;
   }): Promise<void>;
   load(input: { resourceId: string }): Promise<unknown>;
+  listSealedResources(): Promise<Array<{ resourceId: string; sealedAt: string }>>;
   logicalDelete(input: { resourceId: string; idempotencyKey: string }): Promise<void>;
   purge(input: { resourceId: string; idempotencyKey: string }): Promise<void>;
 }
@@ -292,7 +293,11 @@ class DocumentService implements DocumentCapability {
     if (request.requestId.startsWith(INTERNAL_REQUEST_PREFIX)) {
       throw new DocumentOperationError("Request ID uses a reserved Document namespace");
     }
-    await this.assertNotSealed(addressedDocumentId(request.command));
+    await this.assertNotSealed(
+      addressedDocumentId(request.command),
+      request.command.type,
+      request.requestId
+    );
     const start = performance.now();
     try {
       switch (request.command.type) {
@@ -325,7 +330,7 @@ class DocumentService implements DocumentCapability {
   }
 
   async query(request: DocumentQueryRequest): Promise<DocumentQueryResult> {
-    await this.assertNotSealed(addressedDocumentId(request.query));
+    await this.assertNotSealed(addressedDocumentId(request.query), request.query.type);
     const start = performance.now();
     try {
       switch (request.query.type) {
@@ -394,10 +399,23 @@ class DocumentService implements DocumentCapability {
    * `duplicate`/`submit`/`load` directly, which is the internal path rather than
    * the public one.
    */
-  private async assertNotSealed(documentId: string | undefined): Promise<void> {
+  private async assertNotSealed(
+    documentId: string | undefined,
+    surface: string,
+    requestId?: string
+  ): Promise<void> {
     if (documentId === undefined) return;
     const head = await this.store.getHead(documentId);
-    if (head?.isTemplate) throw new DocumentTemplateModeError(documentId);
+    if (!head?.isTemplate) return;
+    // Warn, not debug. A request reaching a sealed Document means a caller holds
+    // an ID it should never have been handed, and that is worth seeing without
+    // turning debug on.
+    this.deps.logger.warn("document.template-mode.refused", {
+      documentId,
+      surface,
+      ...(requestId !== undefined ? { requestId } : {})
+    });
+    throw new DocumentTemplateModeError(documentId);
   }
 
   // ─── Templates runtime ──────────────────────────────────────────────────────
@@ -418,11 +436,24 @@ class DocumentService implements DocumentCapability {
     name?: string;
     idempotencyKey: string;
   }): Promise<{ resourceId: string }> {
+    const startedAt = performance.now();
     // The Templates key *is* the create-receipt key, so a retried registration
     // replays this copy instead of making a second one. That is the whole retry
     // story for the cross-capability call.
     const prior = await this.store.getCreateSubmission(input.idempotencyKey);
-    if (prior) return { resourceId: prior.documentId };
+    if (prior) {
+      this.deps.logger.info("document.duplicate.replayed", {
+        sourceDocumentId: input.sourceResourceId,
+        documentId: prior.documentId,
+        idempotencyKey: input.idempotencyKey
+      });
+      return { resourceId: prior.documentId };
+    }
+    this.deps.logger.debug("document.duplicate.started", {
+      sourceDocumentId: input.sourceResourceId,
+      idempotencyKey: input.idempotencyKey,
+      renamed: input.name !== undefined
+    });
 
     const { head: source, snapshot: sourceSnapshot } =
       await this.loadSnapshot(input.sourceResourceId);
@@ -509,17 +540,41 @@ class DocumentService implements DocumentCapability {
 
     this.deps.logger.info("document.duplicated", {
       sourceDocumentId: source.id,
+      sourceRevision: source.revision,
       documentId,
-      promptOutputs: declared.length
+      promptOutputs: declared.length,
+      contextVariables: snapshot.contextVariables.length,
+      // How many copied variables have no target. Nonzero is expected when
+      // copying a template and a red flag when copying anything else.
+      unboundVariables: snapshot.contextVariables.filter((v) => !v.target).length,
+      renamed: input.name !== undefined,
+      idempotencyKey: input.idempotencyKey,
+      durationMs: Math.round(performance.now() - startedAt)
     });
     return { resourceId: documentId };
   }
 
   async markAsTemplate(input: { resourceId: string }): Promise<void> {
     const head = await this.store.getHead(input.resourceId);
-    if (!head) throw new DocumentNotFoundError(input.resourceId);
+    if (!head) {
+      this.deps.logger.warn("document.mark-as-template.not-found", {
+        documentId: input.resourceId
+      });
+      throw new DocumentNotFoundError(input.resourceId);
+    }
+    if (head.isTemplate) {
+      // Not an error — the operation is a set-to-true — but worth seeing,
+      // because a second call means a retry got this far twice.
+      this.deps.logger.debug("document.mark-as-template.already-sealed", {
+        documentId: input.resourceId
+      });
+      return;
+    }
     await this.store.markAsTemplate(input.resourceId);
-    this.deps.logger.info("document.marked-as-template", { documentId: input.resourceId });
+    this.deps.logger.info("document.marked-as-template", {
+      documentId: input.resourceId,
+      revision: head.revision
+    });
   }
 
   /**
@@ -549,7 +604,19 @@ class DocumentService implements DocumentCapability {
       // A binding naming a variable this Document does not have is a caller
       // error, not something to ignore: the template's declaration and its
       // backing content would silently disagree from then on.
-      if (!variable) throw new DocumentContextVariableNotFoundError(input.resourceId, name);
+      if (!variable) {
+        // The declaration and the backing content are about to disagree
+        // permanently if this is ignored, so it is an error and it is logged as
+        // one — with what the Document *does* have, because the usual cause is a
+        // renamed variable rather than a typo.
+        this.deps.logger.warn("document.apply-bindings.unknown-variable", {
+          documentId: input.resourceId,
+          requested: name,
+          available: snapshot.contextVariables.map((candidate) => candidate.name),
+          idempotencyKey: input.idempotencyKey
+        });
+        throw new DocumentContextVariableNotFoundError(input.resourceId, name);
+      }
       operations.push({
         type: "context-variable.update",
         variable: {
@@ -560,8 +627,15 @@ class DocumentService implements DocumentCapability {
       });
       changed.add(variable.id);
     }
-    if (operations.length === 0) return;
+    if (operations.length === 0) {
+      this.deps.logger.debug("document.apply-bindings.empty", {
+        documentId: input.resourceId,
+        idempotencyKey: input.idempotencyKey
+      });
+      return;
+    }
 
+    const startedAt = performance.now();
     await this.mutate({
       documentId: input.resourceId,
       expectedRevision: head.revision,
@@ -572,17 +646,43 @@ class DocumentService implements DocumentCapability {
     });
 
     const { snapshot: bound } = await this.loadSnapshot(input.resourceId);
+    let rebound = 0;
+    let stillUnbound = 0;
     for (const block of collectPromptBlocks(bound)) {
       if (block.context.kind !== "variable" || !changed.has(block.context.variableId)) continue;
       const output = await this.deps.derivedOutputs.get(block.output.outputId);
-      if (!output) continue;
+      if (!output) {
+        // The Block references an output that no longer exists. Not fatal here
+        // — the rebind is best-effort and the Block is already broken — but it
+        // is exactly the orphan class the GC sweep looks for.
+        this.deps.logger.warn("document.apply-bindings.missing-output", {
+          documentId: input.resourceId,
+          blockId: block.id,
+          outputId: block.output.outputId
+        });
+        continue;
+      }
+      const contextEntries = resolvePromptContextIfBound(bound, block.context);
+      if (contextEntries.length === 0) stillUnbound += 1;
       await this.deps.derivedOutputs.updateDefinition(block.output.outputId, {
         prompt: output.definition.prompt,
-        contextEntries: resolvePromptContextIfBound(bound, block.context),
+        contextEntries,
         stabilisationText: output.definition.stabilisationText,
         expectedDefinitionRevision: output.definition.definitionRevision
       }, { idempotencyKey: `${input.idempotencyKey}:rebind:${block.id}` });
+      rebound += 1;
     }
+
+    this.deps.logger.info("document.bindings-applied", {
+      documentId: input.resourceId,
+      variables: operations.length,
+      // Bound and unbound counted separately: an unbound result is normal on a
+      // template and means a Prompt Block that cannot run until instantiation.
+      promptBlocksRebound: rebound,
+      promptBlocksLeftUnbound: stillUnbound,
+      idempotencyKey: input.idempotencyKey,
+      durationMs: Math.round(performance.now() - startedAt)
+    });
   }
 
   /** Pass-through edit. The operations are the caller's, decoded by Templates' caller. */
@@ -593,8 +693,17 @@ class DocumentService implements DocumentCapability {
   }): Promise<void> {
     const operations = input.operations as DocumentOperation[];
     if (!Array.isArray(operations) || operations.length === 0) {
+      // The payload crossed the port as `unknown`, so this is the first place
+      // anything checks its shape. Log what arrived — a malformed template edit
+      // is otherwise invisible between two capabilities.
+      this.deps.logger.warn("document.template-submit.invalid-operations", {
+        documentId: input.resourceId,
+        received: Array.isArray(input.operations) ? "empty array" : typeof input.operations,
+        idempotencyKey: input.idempotencyKey
+      });
       throw new DocumentOperationError("A template submission requires at least one operation");
     }
+    const startedAt = performance.now();
     const { head } = await this.loadSnapshot(input.resourceId);
     await this.mutate({
       documentId: input.resourceId,
@@ -606,14 +715,37 @@ class DocumentService implements DocumentCapability {
       // only path here, so the usual public-surface restriction does not apply.
       allowPromptOperations: true
     });
+    this.deps.logger.info("document.template-submitted", {
+      documentId: input.resourceId,
+      priorRevision: head.revision,
+      operations: operations.length,
+      operationTypes: [...new Set(operations.map((operation) => operation.type))],
+      idempotencyKey: input.idempotencyKey,
+      durationMs: Math.round(performance.now() - startedAt)
+    });
+  }
+
+  async listSealedResources(): Promise<Array<{ resourceId: string; sealedAt: string }>> {
+    return this.store.listSealedResources();
   }
 
   async load(input: { resourceId: string }): Promise<unknown> {
+    const startedAt = performance.now();
     const { head, snapshot } = await this.loadSnapshot(input.resourceId);
+    this.deps.logger.debug("document.template-loaded", {
+      documentId: input.resourceId,
+      revision: head.revision,
+      isTemplate: head.isTemplate,
+      durationMs: Math.round(performance.now() - startedAt)
+    });
     return { head, snapshot };
   }
 
   async logicalDelete(input: { resourceId: string; idempotencyKey: string }): Promise<void> {
+    this.deps.logger.info("document.template-logical-delete", {
+      documentId: input.resourceId,
+      idempotencyKey: input.idempotencyKey
+    });
     await this.deleteDocument({
       requestId: internalRequestId("template-delete", input.idempotencyKey),
       origin: "automation",
@@ -622,6 +754,10 @@ class DocumentService implements DocumentCapability {
   }
 
   async purge(input: { resourceId: string; idempotencyKey: string }): Promise<void> {
+    this.deps.logger.info("document.template-purge", {
+      documentId: input.resourceId,
+      idempotencyKey: input.idempotencyKey
+    });
     await this.purgeDocument({
       requestId: internalRequestId("template-purge", input.idempotencyKey),
       origin: "automation",

@@ -52,8 +52,15 @@ For a wire-valid command whose domain preconditions hold:
   addresses a variable by ID, so reusing a deleted one would silently re-point a
   Block in retained history at a different variable.
 - A Prompt Block always carries exactly one context. A `variable` context must
-  resolve to a variable that exists; deleting a referenced variable is refused
-  rather than cascaded.
+  resolve to a variable that exists.
+- **Deleting a bound variable cascades and changes no grounding.** Every
+  referencing Block is re-pointed at the variable's current target — the same
+  thing it already resolved to — so deletion removes a level of indirection
+  rather than the grounding underneath it. The inverse restores the variable
+  *and* re-points the Blocks back at it.
+- Deleting an **unbound** referenced variable is refused, because there is
+  nothing to substitute. Only reachable on a template, where an unbound variable
+  is a declared parameter.
 - A Prompt Block's `appliedRevision` is **non-negative**. `0` means declared but
   never answered, which is the state every Prompt Block in a fresh copy is in.
   `prompt.apply-derived-output` still requires a positive revision: applying

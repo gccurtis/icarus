@@ -126,6 +126,15 @@ export const startBackend = async (): Promise<void> => {
         bindResourceRetentionPort("document", document),
         bindResourceRetentionPort("persona", personas),
         bindResourceRetentionPort("templates", templates),
+        // Rides the retention sweep rather than owning a timer: it is the same
+        // shape of work — conservative, cutoff-driven, reaping what nothing
+        // references — and a second scheduler would be a second thing to
+        // configure, observe, and shut down. The retention cutoff doubles as the
+        // grace period that tells an orphan from a registration in flight.
+        bindResourceRetentionPort("templates-orphans", {
+          pruneHistory: () => 0,
+          purgeExpired: (cutoff) => templates.collectOrphanedResources(cutoff)
+        }),
         bindResourceRetentionPort("investigation", investigation),
         bindResourceRetentionPort("derived-outputs", derivedOutputs),
         bindResourceRetentionPort("comments", comments),

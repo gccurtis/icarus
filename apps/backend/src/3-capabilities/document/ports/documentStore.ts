@@ -114,6 +114,9 @@ export interface DocumentStore {
    */
   markAsTemplate(documentId: string): Promise<void>;
 
+  /** Sealed rows with their seal time, for the Templates orphan sweep only. */
+  listSealedResources(): Promise<Array<{ resourceId: string; sealedAt: string }>>;
+
   commitCreation(commit: DocumentCreationCommit): Promise<void>;
   commitMutation(commit: DocumentMutationCommit): Promise<boolean>;
 

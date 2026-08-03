@@ -1,4 +1,4 @@
-# General updates — backend TODO
+| 16 | [Garbage collection for orphaned resources](#16--garbage-collection-for-orphaned-resources) | 16a ✅ **DONE**; 16b open || 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | ✅ **DONE 2026-08-02** || 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | ✅ **DONE 2026-08-02** |# General updates — backend TODO
 
 Cross-capability work that is agreed but not scheduled. **One file; check here first.**
 
@@ -26,9 +26,9 @@ Items 15 and 16 are **Phase C** of the Templates/Document work and are ticked in
 | 13 | [Deletion as a revision, not a flag](#13--deletion-as-a-revision-not-a-flag) | ✅ **DONE 2026-08-02** |
 | 14 | [Document deletion](#14--document-deletion) | ✅ **DONE 2026-08-02** |
 | 15 | [Live project-scoped Context](#15--live-project-scoped-context) | agreed — needed for exclusions |
-| 16 | [Garbage collection for orphaned resources](#16--garbage-collection-for-orphaned-resources) | agreed — explore |
+| 16 | [Garbage collection for orphaned resources](#16--garbage-collection-for-orphaned-resources) | 16a ✅ **DONE 2026-08-02**; 16b open |
 | ~~17~~ | Remove command claims from Templates | **moved** → [`templates-rework-plan.md`](templates-rework-plan.md) step 1 |
-| 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | agreed — sweep needed |
+| 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | ✅ **DONE 2026-08-02** |
 | 19 | [Structured Data revisions should propagate to dependents](#19--structured-data-revisions-should-propagate-to-dependents) | agreed — explore |
 | 20 | [Quoted names — decide whether we actually want them](#20--quoted-names--decide-whether-we-actually-want-them) | **decision needed** — default no |
 | 21 | [Log content in dev, shape in production, behind a label](#21--log-content-in-dev-shape-in-production-behind-a-label) | agreed — wanted soon |
@@ -46,6 +46,9 @@ something**, recorded here so the trade stays visible instead of being rediscove
 surprise. Anything that stops being worth its price belongs in the numbered list above.
 
 ### AR-1 · Registration can leak an orphaned backing resource
+
+> ✅ **CLOSED 2026-08-02** — see the bottom of this entry. Kept in full because the trade it
+> describes is why the leak existed at all, and that reasoning still governs the sweep.
 
 **What it is.** `template.register` calls `duplicate` → `markAsTemplate` → `applyBindings`
 and *then* writes its catalog row. A crash between the copy and the catalog write leaves a
@@ -68,12 +71,16 @@ the resource replays its own copy on the same idempotency key, and the catalog w
 completes. So the exposure is "process died mid-command **and** the client gave up", not
 "process died mid-command".
 
-**What would close it.** [Item 16a](#16--garbage-collection-for-orphaned-resources) — a
-conservative interval sweep. Not scheduled.
+**CLOSED 2026-08-02.** `TemplateCapability.collectOrphanedResources` rides the existing
+retention scheduler and diffs what each kind reports sealed against what the catalog claims.
+The retention cutoff doubles as the grace period, which is what tells an orphan from a
+registration in flight. History counts as a claim, so a deleted-but-unpurged template keeps
+its copy. One failing purge does not stop the sweep.
 
-**When to revisit.** If registration ever becomes something automation drives in bulk. One
-user clicking "make this a template" and walking away is a rounding error; a job registering
-hundreds is not.
+The seam that made it possible: `TemplatableResource.listSealedResources()`. **That is not a
+template listing** — `template.list` is still the only way anyone asks what templates exist.
+It answers "which of your rows did I tell you to seal", which only Templates can ask and only
+so it can compare that against its own catalog.
 
 ---
 
@@ -93,20 +100,22 @@ const escapeLikeTerm = (term: string): string =>
 
 `\` is escaped first, or it would escape the escapes the replacement adds.
 
-**Known unfixed.** `general-files/persistence/sqliteGeneralFileRepository.ts` — the
-`by-name-contains`, `by-name-starts-with`, and `by-name-ends-with` filters all interpolate
-the raw value into a `LIKE ?` parameter. A filename containing `_` is common enough that
-this is a live wrong-results bug, not a theoretical one.
+**Fixed in General Files too.** All three name filters escape and declare `ESCAPE`. This was
+a live wrong-results bug, not a theoretical one: a filename containing `_` is common.
 
 **The sweep.** Grep for `LIKE` across `src/` and check each site for three things: is the
 pattern built from caller-supplied text, is that text escaped, and is `ESCAPE` declared.
 A site that builds its pattern from a fixed vocabulary is fine and should be marked so
 rather than left ambiguous.
 
-**Worth deciding while sweeping:** whether this belongs in a shared helper. It is four lines
-and every capability owns its own persistence, so duplicating it is defensible — but four
-capabilities silently disagreeing about escaping is exactly how this happened. A single
-`escapeLikeTerm` in `0-utils/persistence/` is the obvious counter-proposal.
+**Resolved as a shared helper**: `0-utils/persistence/likePattern.ts`. This is the one place
+the "capabilities own their own storage" rule gives way, and the reason is the history above —
+Templates and General Files each grew a name filter and disagreed, so the same query returned
+different results depending on which capability answered it. Four copies of a four-line
+function is cheap; four copies that disagree is a class of bug nobody goes looking for.
+
+**Still worth a sweep** for any `LIKE` added later: check that the pattern is escaped and that
+`ESCAPE` is declared, or that the pattern comes from a fixed vocabulary.
 
 ---
 

@@ -17,6 +17,7 @@ import type {
   DocumentSnapshot,
   DocumentStyle,
   ListItem,
+  PromptBlock,
   PromptContext,
   RowLayout,
   TableCell,
@@ -123,6 +124,22 @@ export const resolvePromptContextIfBound = (
   const variable = snapshot.contextVariables
     .find((candidate) => candidate.id === context.variableId);
   return variable?.target ? [clone(variable.target)] : [];
+};
+
+/** Live Prompt Blocks pointing at one variable, as the Blocks themselves. */
+const referencingPromptBlocks = (
+  snapshot: DocumentSnapshot,
+  variableId: string
+): PromptBlock[] => {
+  const blocks: PromptBlock[] = [];
+  forEachBlock(snapshot, (block) => {
+    if (block.kind === "prompt" &&
+        block.context.kind === "variable" &&
+        block.context.variableId === variableId) {
+      blocks.push(block);
+    }
+  });
+  return blocks;
 };
 
 const requireAvailableVariableName = (
@@ -503,22 +520,27 @@ const applyOne = (
       if (index < 0) {
         throw new DocumentOperationError(`Context Variable not found: ${operation.variableId}`);
       }
-      // Refused rather than cascaded. Re-pointing the Blocks is a decision only
-      // the caller can make, and cascading would silently change what those
-      // prompts are grounded on — across a capability boundary, since each
-      // Block's Derived Output definition would need rewriting too.
-      const referencing: string[] = [];
-      forEachBlock(snapshot, (block) => {
-        if (block.kind === "prompt" &&
-            block.context.kind === "variable" &&
-            block.context.variableId === operation.variableId) {
-          referencing.push(block.id);
-        }
-      });
+      const removed = snapshot.contextVariables[index];
+      const referencing = referencingPromptBlocks(snapshot, operation.variableId);
+
+      // **Cascade, and it changes nothing.** A referencing Block is re-pointed
+      // at the variable's *current target* — the same thing it already resolved
+      // to — so deleting a variable removes a level of indirection rather than
+      // the grounding underneath it. Refusing instead would push the caller into
+      // doing exactly this by hand, one `prompt.set-context` at a time.
       if (referencing.length > 0) {
-        throw new DocumentOperationError(
-          `Context Variable ${operation.variableId} is referenced by Prompt Blocks: ${referencing.join(", ")}`
-        );
+        if (!removed.target) {
+          // The one case with nothing to substitute. Only reachable on a
+          // template, where an unbound variable is a declared parameter, and
+          // there deletion really would strand the Blocks with no grounding.
+          throw new DocumentOperationError(
+            `Context Variable ${removed.id} is unbound and referenced by Prompt Blocks: ` +
+            `${referencing.map((block) => block.id).join(", ")}`
+          );
+        }
+        for (const block of referencing) {
+          block.context = { kind: "direct", target: clone(removed.target) };
+        }
       }
       snapshot.contextVariables.splice(index, 1);
       return;
@@ -875,7 +897,19 @@ const inverseFor = (
       if (!removed) {
         throw new DocumentOperationError(`Context Variable not found: ${operation.variableId}`);
       }
-      return [{ type: "context-variable.create", variable: clone(removed) }];
+      // The variable comes back first, then every Block the cascade re-pointed
+      // goes back to referencing it. Without the second half the inverse would
+      // restore the variable and leave the Blocks pointing at a literal target —
+      // the same grounding, but no longer a parameter, which is a different
+      // Document.
+      return [
+        { type: "context-variable.create", variable: clone(removed) },
+        ...referencingPromptBlocks(before, operation.variableId).map((block) => ({
+          type: "prompt.set-context" as const,
+          blockId: block.id,
+          context: { kind: "variable" as const, variableId: operation.variableId }
+        }))
+      ];
     }
     case "style.create":
       return [{
