@@ -12,14 +12,23 @@ import {
   INITIAL_SLIDE_ID,
   INITIAL_TITLE_SLOT_ID,
   createSlidesCapability,
+  promptSites,
   type SlideCommandResult,
   type SlideElement,
   type SlideInternalJobIntent,
   type SlideOperation,
   type SlideOptions,
+  type PromptCreateTarget,
+  type PromptSite,
+  type SlideDerivedOutputs,
   type SlideQueryResult,
   type SlidesCapability
 } from "../../src/3-capabilities/slides/index.js";
+import type {
+  DerivedOutput,
+  DerivedOutputRevision,
+  DerivedRefreshResult
+} from "../../src/3-capabilities/derived-outputs/index.js";
 import {
   CompensationConflictError,
   DeckNotFoundError,
@@ -53,10 +62,68 @@ const SLIDE = { kind: "slide", slideId: INITIAL_SLIDE_ID } as const;
 const MASTER = { kind: "master", masterId: INITIAL_MASTER_ID } as const;
 const LAYOUT = { kind: "layout", layoutId: INITIAL_LAYOUT_ID } as const;
 
+/**
+ * A Derived Outputs double that answers without a model.
+ *
+ * `headRevision` is what the whole pipeline turns on — 0 means declared but
+ * never answered, and a value at or below the frozen one means unchanged — so
+ * the double lets a test drive it directly.
+ */
+class DerivedOutputsDouble implements SlideDerivedOutputs {
+  readonly declared: string[] = [];
+  readonly refreshed: string[] = [];
+  readonly deleted: string[] = [];
+  /** Revision handed to the next refresh of a given output; default 1. */
+  nextHeadRevision = 1;
+  private counter = 0;
+  private readonly outputs = new Map<string, { id: string; headRevision: number }>();
+
+  async declare(): Promise<never extends never ? DerivedOutput : never> {
+    const id = `output-${(this.counter += 1)}`;
+    this.declared.push(id);
+    this.outputs.set(id, { id, headRevision: 0 });
+    return { id, headRevision: 0 } as unknown as DerivedOutput;
+  }
+
+  async get(id: string): Promise<DerivedOutput | null> {
+    const output = this.outputs.get(id);
+    return output ? ({ ...output } as unknown as DerivedOutput) : null;
+  }
+
+  async getRevision(id: string, revision: number): Promise<DerivedOutputRevision | null> {
+    if (!this.outputs.has(id)) return null;
+    return { outputId: id, revision, text: `text for ${id}@${revision}` } as
+      unknown as DerivedOutputRevision;
+  }
+
+  async updateDefinition(id: string): Promise<DerivedOutput> {
+    const output = this.outputs.get(id);
+    if (!output) throw Object.assign(new Error("gone"), { name: "DerivedOutputNotFoundError" });
+    return { ...output } as unknown as DerivedOutput;
+  }
+
+  async refresh(id: string): Promise<DerivedRefreshResult> {
+    this.refreshed.push(id);
+    const output = this.outputs.get(id);
+    if (!output) throw Object.assign(new Error("gone"), { name: "DerivedOutputNotFoundError" });
+    output.headRevision = this.nextHeadRevision;
+    return { output: { ...output } } as unknown as DerivedRefreshResult;
+  }
+
+  async delete(id: string): Promise<void> {
+    this.deleted.push(id);
+  }
+
+  async purge(id: string): Promise<void> {
+    this.outputs.delete(id);
+  }
+}
+
 interface Harness {
   slides: SlidesCapability;
   logs: CapturingLogger;
   dispatched: SlideInternalJobIntent[];
+  derivedOutputs: DerivedOutputsDouble;
 }
 
 const harness = (options: SlideOptions = OPTIONS): Harness => {
@@ -69,12 +136,50 @@ const harness = (options: SlideOptions = OPTIONS): Harness => {
       dispatched.push(intent);
     }
   } as InternalJobsRuntime<SlideInternalJobIntent>;
+  const derivedOutputs = new DerivedOutputsDouble();
   const slides = createSlidesCapability(
     store,
-    { richText: createRichText(DEFAULT_CONFIG, logs), jobs, logger: logs },
+    { richText: createRichText(DEFAULT_CONFIG, logs), jobs, logger: logs, derivedOutputs },
     options
   );
-  return { slides, logs, dispatched };
+  return { slides, logs, dispatched, derivedOutputs };
+};
+
+/** Drive an attempt through both stages the way the job queue would. */
+const runPromptCreate = async (slides: SlidesCapability, attemptId: string): Promise<void> => {
+  await slides.computePromptCreation(attemptId);
+  await slides.settlePromptCreation(attemptId);
+};
+
+const requestPromptCreate = async (
+  slides: SlidesCapability,
+  deckId: string,
+  expectedRevision: number,
+  target: PromptCreateTarget,
+  prompt = "Summarise the quarter"
+) => {
+  const result = await slides.command({
+    origin: "interactive",
+    command: {
+      type: "prompt.create.request",
+      deckId,
+      expectedRevision,
+      target,
+      prompt,
+      contextEntries: [],
+      stabilisationText: ""
+    }
+  });
+  assert.equal(result.type, "prompt.create-requested");
+  return result as Extract<SlideCommandResult, { type: "prompt.create-requested" }>;
+};
+
+const attemptOf = async (slides: SlidesCapability, deckId: string, attemptId: string) => {
+  const result = await slides.query({
+    query: { type: "deck.attempt", deckId, attemptId }
+  });
+  assert.equal(result.type, "deck.attempt");
+  return (result as Extract<SlideQueryResult, { type: "deck.attempt" }>).attempt;
 };
 
 const createDeck = async (slides: SlidesCapability, title = "Quarterly review") => {
@@ -625,20 +730,22 @@ test("the public submit path cannot forge a prompt source", async () => {
 test("commands not yet implemented are refused by name", async () => {
   const { slides } = harness();
   const head = await createDeck(slides);
+  // Formula evaluation is the remaining gap. Refusing by name tells the caller
+  // it is unbuilt rather than mistyped.
   await assert.rejects(
     () =>
       slides.command({
         origin: "interactive",
         command: {
-          type: "prompt.refresh.request",
+          type: "formula.evaluate.request",
           deckId: head.id,
-          site: { kind: "element-body", container: SLIDE, elementId: "a" },
-          expectedRevision: 1
+          target: { kind: "element-body", container: SLIDE, elementId: "a" },
+          formulaAtomId: "atom-1"
         }
       }),
     (error: unknown) =>
       error instanceof SlideOperationError &&
-      /not implemented yet: prompt\.refresh\.request/.test((error as Error).message)
+      /not implemented yet: formula\.evaluate\.request/.test((error as Error).message)
   );
 });
 
@@ -750,4 +857,344 @@ test("a rejected rebase is logged with what conflicted", async () => {
   );
   assert.ok(refused, "a refused rebase must say what conflicted");
   assert.deepEqual((refused?.data as { conflictingIds: string[] }).conflictingIds, ["a"]);
+});
+
+// ── Prompt sources: the four ways settlement goes stale ──────────────────
+//
+// Written before the happy path deliberately. Each one is a legitimate edit
+// landing between freeze and settlement, so the attempt must go *stale* — not
+// fail, not retry, and never overwrite the edit that beat it.
+
+const promptedSite = (elementId: string): PromptSite => ({
+  kind: "element-body",
+  container: SLIDE,
+  elementId
+});
+
+/** A Deck with one authored text element ready to be converted to a prompt. */
+const deckWithText = async (h: Harness, elementId = "a") => {
+  const head = await createDeck(h.slides);
+  await submit(h.slides, head.id, 1, [
+    { type: "element.insert", container: SLIDE, element: textElement(elementId, 0, "Authored") }
+  ]);
+  return head;
+};
+
+test("settlement is stale when the site no longer resolves to a text surface", async () => {
+  const h = harness();
+  const head = await deckWithText(h);
+  const { attemptId } = await requestPromptCreate(h.slides, head.id, 2, {
+    kind: "existing",
+    site: promptedSite("a")
+  });
+  await h.slides.computePromptCreation(attemptId);
+
+  // The element is deleted while the model is running.
+  await submit(h.slides, head.id, 2, [
+    { type: "element.delete", container: SLIDE, elementId: "a" }
+  ]);
+  await h.slides.settlePromptCreation(attemptId);
+
+  const attempt = await attemptOf(h.slides, head.id, attemptId);
+  assert.equal(attempt.state, "stale");
+  assert.match(attempt.diagnostic?.message ?? "", /no longer resolves/);
+  // And the output it had reserved is given back rather than left bound.
+  assert.equal((await load(h.slides, head.id)).promptRevisions.length, 0);
+});
+
+const requestRefresh = async (
+  slides: SlidesCapability,
+  deckId: string,
+  site: PromptSite,
+  expectedRevision: number
+): Promise<string> => {
+  const result = await slides.command({
+    origin: 'interactive',
+    command: { type: 'prompt.refresh.request', deckId, site, expectedRevision }
+  });
+  assert.equal(result.type, 'prompt.refresh-requested');
+  return (result as Extract<SlideCommandResult, { type: 'prompt.refresh-requested' }>).attemptId;
+};
+
+const history = async (slides: SlidesCapability, deckId: string) => {
+  const result = await slides.query({ query: { type: 'deck.history', deckId, limit: 100 } });
+  assert.equal(result.type, 'deck.history');
+  return (result as Extract<SlideQueryResult, { type: 'deck.history' }>).items;
+};
+
+/** Undo the ChangeSet at `revision`, from the head at `expectedRevision`. */
+const undo = async (
+  slides: SlidesCapability,
+  deckId: string,
+  targetChangeSetId: string,
+  expectedRevision: number,
+  intent: "undo" | "redo" = "undo"
+) => {
+  const result = await slides.command({
+    origin: "interactive",
+    command: { type: "deck.compensate", deckId, targetChangeSetId, intent, expectedRevision }
+  });
+  assert.equal(result.type, "deck.changed");
+  return (result as Extract<SlideCommandResult, { type: "deck.changed" }>).changeSet;
+};
+
+test("creation settlement is stale when something else prompted the site first", async () => {
+  const h = harness();
+  const head = await deckWithText(h);
+
+  // A prompt is created at the site, then undone, so the site is authored text
+  // again and a fresh creation is legitimately allowed.
+  const first = await requestPromptCreate(h.slides, head.id, 2, {
+    kind: "existing",
+    site: promptedSite("a")
+  });
+  await runPromptCreate(h.slides, first.attemptId);
+  const creationChangeSet = (await history(h.slides, head.id)).find((c) => c.revision === 3);
+  assert.ok(creationChangeSet);
+  const undoChangeSet = await undo(h.slides, head.id, creationChangeSet.id, 3);
+
+  // A second creation freezes and computes against the now-authored site...
+  const second = await requestPromptCreate(h.slides, head.id, 4, {
+    kind: "existing",
+    site: promptedSite("a")
+  });
+  await h.slides.computePromptCreation(second.attemptId);
+
+  // ...and a redo puts the original prompt back before it can settle. Redo is
+  // compensating the undo, not re-applying the original.
+  await undo(h.slides, head.id, undoChangeSet.id, 4, "redo");
+  await h.slides.settlePromptCreation(second.attemptId);
+
+  const attempt = await attemptOf(h.slides, head.id, second.attemptId);
+  assert.equal(attempt.state, "stale");
+  assert.match(attempt.diagnostic?.message ?? "", /already holds a prompt source/);
+  // The site keeps the output the redo restored, not the one that lost.
+  const sources = promptSites((await load(h.slides, head.id)).snapshot);
+  assert.deepEqual(sources.map((entry) => entry.outputId), [h.derivedOutputs.declared[0]]);
+});
+
+test("refresh settlement is stale when the site holds a different output", async () => {
+  const h = harness();
+  const head = await deckWithText(h);
+  const first = await requestPromptCreate(h.slides, head.id, 2, {
+    kind: "existing",
+    site: promptedSite("a")
+  });
+  await runPromptCreate(h.slides, first.attemptId);
+
+  // A refresh freezes against output-1 and computes a candidate...
+  const refreshId = await requestRefresh(h.slides, head.id, promptedSite("a"), 3);
+  h.derivedOutputs.nextHeadRevision = 2;
+  await h.slides.computePromptRefresh(refreshId);
+
+  // ...then the whole prompt is undone and recreated, which declares a new one.
+  const creationChangeSet = (await history(h.slides, head.id)).find((c) => c.revision === 3);
+  assert.ok(creationChangeSet);
+  await undo(h.slides, head.id, creationChangeSet.id, 3);
+  const second = await requestPromptCreate(h.slides, head.id, 4, {
+    kind: "existing",
+    site: promptedSite("a")
+  });
+  await runPromptCreate(h.slides, second.attemptId);
+  assert.notEqual(h.derivedOutputs.declared[1], h.derivedOutputs.declared[0]);
+
+  await h.slides.settlePromptRefresh(refreshId);
+  const attempt = await attemptOf(h.slides, head.id, refreshId);
+  assert.equal(attempt.state, "stale");
+  assert.match(attempt.diagnostic?.message ?? "", /different Derived Output/);
+});
+
+test("refresh settlement is stale when the site moved off the frozen revision", async () => {
+  // The case that is easy to miss: same site, same output, but the applied
+  // revision has advanced underneath — a second refresh got there first.
+  const h = harness();
+  const head = await deckWithText(h);
+  const created = await requestPromptCreate(h.slides, head.id, 2, {
+    kind: "existing",
+    site: promptedSite("a")
+  });
+  await runPromptCreate(h.slides, created.attemptId);
+
+  const stale = await requestRefresh(h.slides, head.id, promptedSite("a"), 3);
+  h.derivedOutputs.nextHeadRevision = 2;
+  await h.slides.computePromptRefresh(stale);
+
+  // A second refresh settles first, moving appliedRevision 1 -> 2.
+  await h.slides.settlePromptRefresh(stale);
+  assert.equal((await attemptOf(h.slides, head.id, stale)).state, "settled");
+
+  const later = await requestRefresh(h.slides, head.id, promptedSite("a"), 4);
+  h.derivedOutputs.nextHeadRevision = 3;
+  await h.slides.computePromptRefresh(later);
+  // Now undo that first settlement, putting the site back to revision 1 while
+  // the second attempt is still frozen against 2.
+  const settlement = (await history(h.slides, head.id)).find((c) => c.revision === 4);
+  assert.ok(settlement);
+  await undo(h.slides, head.id, settlement.id, 4);
+
+  await h.slides.settlePromptRefresh(later);
+  const attempt = await attemptOf(h.slides, head.id, later);
+  assert.equal(attempt.state, "stale");
+  assert.match(attempt.diagnostic?.message ?? "", /moved off the revision/);
+});
+
+// ── Prompt sources: the happy path ───────────────────────────────────────
+
+test("a prompt converts an authored surface and resolves its text on load", async () => {
+  const h = harness();
+  const head = await deckWithText(h);
+  const { attemptId, site } = await requestPromptCreate(h.slides, head.id, 2, {
+    kind: "existing",
+    site: promptedSite("a")
+  });
+  // The site comes back on the 202 so the caller knows where it landed.
+  assert.deepEqual(site, promptedSite("a"));
+  // Nothing is written into the Deck at request time.
+  assert.equal((await load(h.slides, head.id)).head.revision, 2);
+
+  await runPromptCreate(h.slides, attemptId);
+
+  const attempt = await attemptOf(h.slides, head.id, attemptId);
+  assert.equal(attempt.state, "settled");
+  const loaded = await load(h.slides, head.id);
+  assert.equal(loaded.head.revision, 3);
+
+  // The snapshot holds a reference and nothing else — generated text never
+  // enters it — and the text arrives alongside, fetched on read.
+  const element = loaded.snapshot.slides[INITIAL_SLIDE_ID].elements.a;
+  assert.equal(element.kind, "text");
+  assert.deepEqual((element as { body: unknown }).body, {
+    kind: "prompt",
+    output: { outputId: h.derivedOutputs.declared[0], appliedRevision: 1 }
+  });
+  assert.equal(loaded.promptRevisions.length, 1);
+});
+
+test("a new-text-element target allocates its own element and proves placement first", async () => {
+  const h = harness();
+  const head = await createDeck(h.slides);
+  const { attemptId, site } = await requestPromptCreate(h.slides, head.id, 1, {
+    kind: "new-text-element",
+    container: SLIDE,
+    placement: { kind: "free", frame: frame() }
+  });
+  // The caller named placement, never an identifier.
+  assert.match(site.elementId, /^[0-9a-f-]{36}$/);
+
+  await runPromptCreate(h.slides, attemptId);
+  const loaded = await load(h.slides, head.id);
+  const element = loaded.snapshot.slides[INITIAL_SLIDE_ID].elements[site.elementId];
+  assert.equal(element.kind, "text");
+  assert.equal((element as { body: { kind: string } }).body.kind, "prompt");
+
+  // A placement that cannot hold a text element fails before any model call.
+  await assert.rejects(
+    () =>
+      requestPromptCreate(h.slides, head.id, 2, {
+        kind: "new-text-element",
+        container: SLIDE,
+        placement: { kind: "free", frame: frame() },
+        parentGroupId: "no-such-group"
+      }),
+    SlideOperationError
+  );
+  assert.equal(h.derivedOutputs.declared.length, 1);
+});
+
+test("a refresh that re-derives the same answer is unchanged, not a new revision", async () => {
+  const h = harness();
+  const head = await deckWithText(h);
+  const created = await requestPromptCreate(h.slides, head.id, 2, {
+    kind: "existing",
+    site: promptedSite("a")
+  });
+  await runPromptCreate(h.slides, created.attemptId);
+
+  const refreshId = await requestRefresh(h.slides, head.id, promptedSite("a"), 3);
+  // The output re-derives to the revision already applied.
+  h.derivedOutputs.nextHeadRevision = 1;
+  await h.slides.computePromptRefresh(refreshId);
+
+  assert.equal((await attemptOf(h.slides, head.id, refreshId)).state, "unchanged");
+  // No settle was dispatched, and the Deck did not take a revision for nothing.
+  assert.equal((await load(h.slides, head.id)).head.revision, 3);
+  assert.equal(
+    h.dispatched.filter((intent) => intent.type === "slides.prompt.refresh.settle").length,
+    0
+  );
+});
+
+test("a second refresh while one is in flight is the same request", async () => {
+  const h = harness();
+  const head = await deckWithText(h);
+  const created = await requestPromptCreate(h.slides, head.id, 2, {
+    kind: "existing",
+    site: promptedSite("a")
+  });
+  await runPromptCreate(h.slides, created.attemptId);
+
+  const first = await requestRefresh(h.slides, head.id, promptedSite("a"), 3);
+  const second = await requestRefresh(h.slides, head.id, promptedSite("a"), 3);
+  assert.equal(second, first);
+});
+
+test("undo detaches the output and redo re-attaches it", async () => {
+  const h = harness();
+  const head = await deckWithText(h);
+  const created = await requestPromptCreate(h.slides, head.id, 2, {
+    kind: "existing",
+    site: promptedSite("a")
+  });
+  await runPromptCreate(h.slides, created.attemptId);
+  const outputId = h.derivedOutputs.declared[0];
+
+  const creation = (await history(h.slides, head.id)).find((c) => c.revision === 3);
+  assert.ok(creation);
+  const undone = await undo(h.slides, head.id, creation.id, 3);
+
+  // Deleting a prompt source detaches rather than destroys: compensation can
+  // put the source back, so the output has to still be there to re-attach.
+  assert.equal(promptSites((await load(h.slides, head.id)).snapshot).length, 0);
+  assert.deepEqual(h.derivedOutputs.deleted, []);
+
+  await undo(h.slides, head.id, undone.id, 4, "redo");
+  const restored = promptSites((await load(h.slides, head.id)).snapshot);
+  assert.deepEqual(restored.map((entry) => entry.outputId), [outputId]);
+});
+
+test("the public submit path still cannot forge a prompt source", async () => {
+  const h = harness();
+  const head = await deckWithText(h);
+  await assert.rejects(
+    () =>
+      submit(h.slides, head.id, 2, [
+        {
+          type: "prompt.apply-derived-output",
+          site: promptedSite("a"),
+          output: { outputId: "forged", appliedRevision: 1 }
+        }
+      ]),
+    (error: unknown) =>
+      error instanceof SlideOperationError &&
+      /created through prompt\.create\.request/.test((error as Error).message)
+  );
+});
+
+test("recovery re-dispatches a proposed attempt to settle, not to recompute", async () => {
+  const h = harness();
+  const head = await deckWithText(h);
+  const { attemptId } = await requestPromptCreate(h.slides, head.id, 2, {
+    kind: "existing",
+    site: promptedSite("a")
+  });
+  await h.slides.computePromptCreation(attemptId);
+  assert.equal((await attemptOf(h.slides, head.id, attemptId)).state, "proposed");
+
+  h.dispatched.length = 0;
+  assert.equal(await h.slides.recoverPendingAttempts(), 1);
+  // Recomputing would spend a second model call for an answer already in hand.
+  assert.deepEqual(
+    h.dispatched.map((intent) => intent.type),
+    ["slides.prompt.create.settle"]
+  );
 });

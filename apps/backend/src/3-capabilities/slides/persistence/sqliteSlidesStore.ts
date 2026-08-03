@@ -28,6 +28,7 @@ import { InvalidDeckCursorError, SlideIdentityReuseError } from "../domain/error
 import type {
   DeckCreationCommit,
   DeckMutationCommit,
+  PromptCreationFailureCommit,
   PromptOwnershipTransition,
   SlidesStore,
   StageClaimResult
@@ -717,8 +718,30 @@ export class SQLiteSlidesStore implements SlidesStore {
       .prepare(`
         SELECT * FROM ${this.tables.attempts}
         WHERE deck_id = ? AND site_key = ? AND kind = 'prompt-create'
+        ORDER BY updated_at DESC, id DESC
+        LIMIT 1
       `)
       .get(deckId, promptSiteKey(site)) as SQLiteRow | undefined;
+    return row ? rowToAttempt(row) : undefined;
+  }
+
+  async getLivePromptAttemptBySite(
+    deckId: string,
+    kind: SlideAttempt["kind"],
+    site: PromptSite
+  ): Promise<SlideAttempt | undefined> {
+    const placeholders = TERMINAL_ATTEMPT_STATES.map(() => "?").join(", ");
+    const row = this.db
+      .prepare(`
+        SELECT * FROM ${this.tables.attempts}
+        WHERE deck_id = ? AND kind = ? AND site_key = ?
+          AND state NOT IN (${placeholders})
+        ORDER BY updated_at DESC, id DESC
+        LIMIT 1
+      `)
+      .get(deckId, kind, promptSiteKey(site), ...TERMINAL_ATTEMPT_STATES) as
+      | SQLiteRow
+      | undefined;
     return row ? rowToAttempt(row) : undefined;
   }
 
@@ -840,6 +863,25 @@ export class SQLiteSlidesStore implements SlidesStore {
     });
   }
 
+  async failPromptCreationStage(commit: PromptCreationFailureCommit): Promise<void> {
+    if (commit.attempt.id !== commit.receipt.attemptId) {
+      throw new Error("Prompt-creation failure commit names two different attempts");
+    }
+    // One transaction because the two rows are one fact. A `failed` receipt
+    // beside a still-computing attempt is recovered forever; the reverse hides
+    // the failure from the stage ledger entirely.
+    this.db.transaction(() => {
+      this.finishStageRow(commit.receipt, "failed");
+      this.updateAttemptRow(commit.attempt);
+    })();
+    this.logger.warn("slides.store.prompt-create.stage-failed", {
+      attemptId: commit.attempt.id,
+      deckId: commit.attempt.deckId,
+      stage: commit.receipt.stage,
+      diagnosticCode: commit.attempt.diagnostic?.code
+    });
+  }
+
   async recoverInterruptedStages(recoveredAt: string): Promise<number> {
     const recovered = this.db
       .prepare(`
@@ -875,10 +917,15 @@ export class SQLiteSlidesStore implements SlidesStore {
     deckId: string,
     site: PromptSite
   ): Promise<PromptOutputOwnership | undefined> {
+    // Detached rows are kept and share the site key with whatever holds it now,
+    // so the live row wins. Only one can exist — the partial unique index says
+    // so — and the newest detached row is the answer when none does.
     const row = this.db
       .prepare(`
         SELECT * FROM ${this.tables.promptOutputs}
         WHERE deck_id = ? AND site_key = ?
+        ORDER BY (state = 'detached') ASC, updated_at DESC, output_id DESC
+        LIMIT 1
       `)
       .get(deckId, promptSiteKey(site)) as SQLiteRow | undefined;
     return row ? rowToPromptOutputOwnership(row) : undefined;
@@ -1176,6 +1223,40 @@ export class SQLiteSlidesStore implements SlidesStore {
       .get(transition.outputId) as SQLiteRow | undefined;
 
     const siteKey = promptSiteKey(transition.site);
+
+    // Attaching is exclusive: the Deck now says this site holds this output, and
+    // the Deck is the authority. Anything else still claiming the site loses it
+    // here rather than colliding on the partial unique index.
+    //
+    // This is not hypothetical. Undo a prompt creation, start a new one at the
+    // same site, then redo: the redo re-attaches the original while the new
+    // creation's output is still pending. The redo is a user action and wins;
+    // the in-flight attempt is told at settlement that its site was taken.
+    if (transition.state === "attached") {
+      const displaced = this.db
+        .prepare(`
+          UPDATE ${this.tables.promptOutputs}
+          SET state = 'detached',
+              detached_revision = COALESCE(detached_revision, ?),
+              updated_at = ?
+          WHERE deck_id = ? AND site_key = ? AND output_id != ? AND state != 'detached'
+        `)
+        .run(
+          transition.attachedRevision ?? null,
+          transition.at,
+          transition.deckId,
+          siteKey,
+          transition.outputId
+        ).changes;
+      if (displaced > 0) {
+        this.logger.info("slides.store.prompt-output.displaced", {
+          deckId: transition.deckId,
+          siteKey,
+          attachedOutputId: transition.outputId,
+          displacedCount: displaced
+        });
+      }
+    }
     if (!existing) {
       this.db
         .prepare(`

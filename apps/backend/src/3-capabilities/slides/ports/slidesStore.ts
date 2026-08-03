@@ -46,6 +46,16 @@ export interface DeckMutationCommit {
   promptOwnershipTransitions?: PromptOwnershipTransition[];
 }
 
+/**
+ * A prompt-create stage that failed has two rows to flip, and flipping only one
+ * strands the attempt: a `failed` receipt beside a `computing` attempt is
+ * recovered forever, and the reverse hides the failure from the stage ledger.
+ */
+export interface PromptCreationFailureCommit {
+  attempt: SlideAttempt;
+  receipt: SlideStageReceipt;
+}
+
 export type StageClaimResult = "claimed" | "running" | "completed";
 
 /**
@@ -126,6 +136,17 @@ export interface SlidesStore {
     deckId: string,
     site: PromptSite
   ): Promise<SlideAttempt | undefined>;
+  /**
+   * The newest attempt of `kind` at `site` that has not reached a terminal
+   * state. This is what deduplicates a repeated request now that there is no
+   * request id: a second "refresh this site" while one is in flight is the same
+   * request, whatever the caller called it.
+   */
+  getLivePromptAttemptBySite(
+    deckId: string,
+    kind: SlideAttempt["kind"],
+    site: PromptSite
+  ): Promise<SlideAttempt | undefined>;
   listRecoverableAttempts(): Promise<SlideAttempt[]>;
   createAttempt(attempt: SlideAttempt): Promise<void>;
   updateAttempt(attempt: SlideAttempt): Promise<void>;
@@ -133,6 +154,7 @@ export interface SlidesStore {
   claimStage(receipt: SlideStageReceipt): Promise<StageClaimResult>;
   completeStage(receipt: SlideStageReceipt): Promise<void>;
   failStage(receipt: SlideStageReceipt): Promise<void>;
+  failPromptCreationStage(commit: PromptCreationFailureCommit): Promise<void>;
   recoverInterruptedStages(recoveredAt: string): Promise<number>;
 
   // ── Prompt-output ownership ────────────────────────────────────────────

@@ -3,12 +3,17 @@ import type { SlideInternalJobIntent, SlidesCapability } from "#slides";
 import { createSlidesInternalJob } from "./createSlidesJobs.js";
 
 /**
- * Only the intents Phase 4 can dispatch. The prompt and formula types exist in
- * the union already, but registering a handler that throws would turn a missing
- * feature into a runtime error on a queue; leaving them unregistered means the
- * scheduler refuses the dispatch at admission instead.
+ * The formula types exist in the union already, but registering a handler that
+ * throws would turn a missing feature into a runtime error on a queue; leaving
+ * them unregistered means the scheduler refuses the dispatch at admission.
  */
-const TYPES: SlideInternalJobIntent["type"][] = ["slides.compact"];
+const TYPES: SlideInternalJobIntent["type"][] = [
+  "slides.compact",
+  "slides.prompt.create.compute",
+  "slides.prompt.create.settle",
+  "slides.prompt.refresh.compute",
+  "slides.prompt.refresh.settle"
+];
 
 export const registerSlidesInternalJobs = (
   jobs: InternalJobsRegistrar<SlideInternalJobIntent>,

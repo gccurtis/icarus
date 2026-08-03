@@ -835,3 +835,69 @@ test("every mutating store method emits an event", async () => {
   // Event names follow the house grammar: <capability>.<noun-path>.<verb>.
   for (const name of names) assert.match(name, /^slides\.store\.[a-z-]+(\.[a-z-]+)+$/);
 });
+
+// ── Prompt-output ownership is per live site, not per site ever ──────────
+
+test("a detached output frees its site for a new one", async () => {
+  const { store } = newStore();
+  await store.commitCreation(creationCommit("deck-resite"));
+  const register = (outputId: string) =>
+    store.registerPendingPromptOutput({
+      outputId,
+      deckId: "deck-resite",
+      site,
+      state: "pending",
+      createdAt: timestamp(1),
+      updatedAt: timestamp(1)
+    });
+
+  await register("output-1");
+  await store.updatePromptOutputOwnership({
+    outputId: "output-1",
+    deckId: "deck-resite",
+    site,
+    state: "detached",
+    detachedRevision: 2,
+    at: timestamp(2)
+  });
+
+  // The invariant is one output per *live* site. A detached row is the record
+  // of an output that was given back, and it must not reserve the site.
+  await register("output-2");
+  assert.equal((await store.getPromptOutputOwnershipBySite("deck-resite", site))?.outputId, "output-2");
+  // Still only one of them is live.
+  assert.deepEqual(
+    (await store.listPromptOutputsForDeck("deck-resite"))
+      .filter((o) => o.state !== "detached")
+      .map((o) => o.outputId),
+    ["output-2"]
+  );
+});
+
+test("attaching an output displaces anything else still claiming the site", async () => {
+  const { store, logs } = newStore();
+  await store.commitCreation(creationCommit("deck-displace"));
+  await store.registerPendingPromptOutput({
+    outputId: "output-pending",
+    deckId: "deck-displace",
+    site,
+    state: "pending",
+    createdAt: timestamp(1),
+    updatedAt: timestamp(1)
+  });
+
+  // A redo re-attaches an earlier output at a site an in-flight creation is
+  // still holding. The Deck is the authority, so the pending one loses.
+  await store.updatePromptOutputOwnership({
+    outputId: "output-restored",
+    deckId: "deck-displace",
+    site,
+    state: "attached",
+    attachedRevision: 3,
+    at: timestamp(3)
+  });
+
+  assert.equal((await store.getPromptOutputOwnership("output-pending"))?.state, "detached");
+  assert.equal((await store.getPromptOutputOwnershipBySite("deck-displace", site))?.outputId, "output-restored");
+  assert.ok(logs.records.some((e) => e.message === "slides.store.prompt-output.displaced"));
+});

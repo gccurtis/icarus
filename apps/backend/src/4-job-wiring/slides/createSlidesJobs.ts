@@ -14,10 +14,36 @@ export const createSlidesInternalJob = (
         queueType: "serial",
         work: () => slides.compact(intent.deckId)
       };
+    // Compute is concurrent because it only talks to Derived Outputs; settle is
+    // serial because it writes a revision against the head, exactly like any
+    // other mutation.
+    case "slides.prompt.create.compute":
+      return {
+        name: "slides.prompt.create.compute",
+        queueType: "concurrent",
+        work: () => slides.computePromptCreation(intent.attemptId)
+      };
+    case "slides.prompt.create.settle":
+      return {
+        name: "slides.prompt.create.settle",
+        queueType: "serial",
+        work: () => slides.settlePromptCreation(intent.attemptId)
+      };
+    case "slides.prompt.refresh.compute":
+      return {
+        name: "slides.prompt.refresh.compute",
+        queueType: "concurrent",
+        work: () => slides.computePromptRefresh(intent.attemptId)
+      };
+    case "slides.prompt.refresh.settle":
+      return {
+        name: "slides.prompt.refresh.settle",
+        queueType: "serial",
+        work: () => slides.settlePromptRefresh(intent.attemptId)
+      };
     default:
-      // The prompt and formula stages arrive with Phases 5 and 6. Their intent
-      // types already exist in the union, so this is a gap rather than a
-      // fallthrough, and it says so.
+      // Formula evaluation arrives with Phase 6. Its intent types already exist
+      // in the union, so this is a gap rather than a fallthrough, and it says so.
       throw new Error(`Slides internal job is not implemented yet: ${intent.type}`);
   }
 };

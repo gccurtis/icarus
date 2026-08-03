@@ -326,6 +326,23 @@ The site is what `prompt_outputs` records alongside the output, what refresh and
 update-definition name, and what settlement re-resolves to decide whether an
 attempt is still live.
 
+The site is also the **dedupe key**. There is no request id, so two requests to
+prompt or refresh the same place are the same request however they were
+labelled, and `getLivePromptAttemptBySite` is what says so.
+
+Both of the site-keyed unique indexes are **partial on non-terminal state** —
+one live output per site, one live creation attempt per site, not one ever. A
+detached output and a finished attempt are history: undoing a prompt creation
+has to leave the site promptable again. Reusing a finished attempt row instead
+does not work, because its stage receipts survive it and a `completed` receipt
+turns the next claim into a silent no-op.
+
+Attaching is exclusive. When a mutation binds an output to a site, anything else
+still claiming that site is detached in the same transaction — the Deck is the
+authority on what a site holds. The case that forces this is undo, a new
+creation at the same site, then redo: the redo re-attaches the original while
+the new attempt's output is still pending, and one of them has to lose.
+
 ## Commands and queries
 
 Two endpoints, matching Document: `POST /slides/command` (serial) and

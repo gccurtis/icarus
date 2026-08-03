@@ -217,9 +217,15 @@ export const initializeSlidesSchema = (
     CREATE INDEX IF NOT EXISTS ${tables.attempts}_site
       ON ${tables.attempts}(deck_id, site_key, updated_at DESC);
 
+    -- One *live* prompt-create attempt per site. Partial for the same reason
+    -- the prompt-output index is: a terminal attempt is history, and a site
+    -- whose creation failed — or whose prompt was later undone — has to be
+    -- promptable again. Reusing the finished row instead would leave its stage
+    -- receipts behind, and a completed receipt makes the next claim a no-op.
     CREATE UNIQUE INDEX IF NOT EXISTS ${tables.attempts}_prompt_create_site
       ON ${tables.attempts}(deck_id, site_key)
-      WHERE kind = 'prompt-create';
+      WHERE kind = 'prompt-create'
+        AND state NOT IN ('settled', 'unchanged', 'stale', 'failed');
 
     CREATE TABLE IF NOT EXISTS ${tables.promptOutputs} (
       output_id            TEXT PRIMARY KEY,
@@ -233,14 +239,20 @@ export const initializeSlidesSchema = (
       detached_revision    INTEGER CHECK (detached_revision > 0),
       created_at           TEXT NOT NULL,
       updated_at           TEXT NOT NULL,
-      -- One dedicated Derived Output per live prompt site, in SQL rather than
-      -- in the service, so a concurrent settle cannot double-bind a site.
-      UNIQUE (deck_id, site_key),
       CHECK (state != 'attached' OR attached_revision IS NOT NULL),
       FOREIGN KEY (deck_id) REFERENCES ${tables.decks}(id) ON DELETE CASCADE,
       FOREIGN KEY (creation_attempt_id) REFERENCES ${tables.attempts}(id)
         ON DELETE SET NULL
     );
+
+    -- One dedicated Derived Output per *live* prompt site, in SQL rather than in
+    -- the service, so a concurrent settle cannot double-bind a site. Partial on
+    -- purpose: a detached row is a record of an output that was given back, and
+    -- it must not reserve the site forever. Undoing a prompt creation detaches,
+    -- and the site has to be promptable again afterwards.
+    CREATE UNIQUE INDEX IF NOT EXISTS ${tables.promptOutputs}_live_site
+      ON ${tables.promptOutputs}(deck_id, site_key)
+      WHERE state != 'detached';
 
     CREATE INDEX IF NOT EXISTS ${tables.promptOutputs}_detached
       ON ${tables.promptOutputs}(state, updated_at, output_id)

@@ -66,6 +66,7 @@ export {
 
 export type { SlidesStore } from "./ports/slidesStore.js";
 export type { SlideActivityPublisher } from "./ports/activityPublisher.js";
+export type { SlideDerivedOutputs } from "./ports/derivedOutputs.js";
 export { SQLiteSlidesStore } from "./persistence/sqliteSlidesStore.js";
 
 export { decodeSlideCommand } from "./wire/commandSchemas.js";

@@ -122,7 +122,14 @@ export const startBackend = async (): Promise<void> => {
     );
     registerDocumentInternalJobs(documentJobs, document);
     const slidesJobs = new SchedulerInternalJobsRuntime<SlideInternalJobIntent>(scheduler);
-    const slides = createSlidesInstance(config, richText, activity, slidesJobs, logger);
+    const slides = createSlidesInstance(
+      config,
+      richText,
+      activity,
+      derivedOutputs,
+      slidesJobs,
+      logger
+    );
     registerSlidesInternalJobs(slidesJobs, slides);
     // Templates is constructed after the resource capabilities so their runtime
     // objects can be registered into it without a constructor cycle.
@@ -220,6 +227,10 @@ export const startBackend = async (): Promise<void> => {
     logger.info("document.attempts.recovered", { count: recoveredDocumentAttempts });
     const recoveredDocumentActivity = await document.publishPendingActivity();
     logger.info("document.activity.recovered", { count: recoveredDocumentActivity });
+    const recoveredSlideAttempts = await slides.recoverPendingAttempts();
+    logger.info("slides.attempts.recovered", { count: recoveredSlideAttempts });
+    const recoveredSlideActivity = await slides.publishPendingActivity();
+    logger.info("slides.activity.recovered", { count: recoveredSlideActivity });
     const recoveredCommentActivity = await comments.publishPendingActivity();
     logger.info("comments.activity.recovered", { count: recoveredCommentActivity });
     const recoveredTemplateActivity = await templates.publishPendingActivity();

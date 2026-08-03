@@ -12,6 +12,7 @@ import {
   SQLiteSlidesStore,
   type DeckCommittedTransaction,
   type SlideActivityPublisher,
+  type SlideDerivedOutputs,
   type SlideInternalJobIntent,
   type SlidesCapability
 } from "#slides";
@@ -55,6 +56,7 @@ export const createSlidesInstance = (
   config: BackendConfig,
   richText: RichText,
   activity: ActivityCapability,
+  derivedOutputs: SlideDerivedOutputs,
   jobs: InternalJobsRuntime<SlideInternalJobIntent>,
   logger: Logger
 ): SlidesCapability => {
@@ -64,6 +66,7 @@ export const createSlidesInstance = (
     {
       richText,
       activityPublisher: createSlidesActivityPublisher(activity),
+      derivedOutputs,
       jobs,
       logger,
       attribution: { actorId: config.userId }

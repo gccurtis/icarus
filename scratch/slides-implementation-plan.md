@@ -240,6 +240,54 @@ alone; the diff of prompt references before/after each mutation drives the
 transitions, and re-attaches on undo. Follow
 `documentService.promptOwnershipTransitions` literally.
 
+### What Phase 5 actually cost, and the four defects the tests found
+
+Done (2026-08-03). Writing the staleness tests first was the right call — every
+one of these came out of a test that was supposed to be about something else.
+
+**1. The placement dry-run could not be empty.** Document probes a placement
+with a throwaway `divider`, which carries no content. Every Slides element that
+can hold a prompt holds Rich Content, and Rich Content must have at least one
+atom, so the probe needs a body. `placementProbeBody` supplies one and it dies
+with the cloned snapshot.
+
+**2. `prompt_outputs` reserved a site forever.** The comment said "one dedicated
+Derived Output per *live* prompt site"; the constraint said per site *ever*. Undo
+a prompt creation and the site could never be prompted again. Now a partial
+unique index on `state != 'detached'`, which is what the comment always claimed.
+
+**3. The same bug in `attempts`.** `attempts_prompt_create_site` was unique per
+site across all states, so a failed creation poisoned the site. Reusing the
+finished attempt row instead — which is what this first tried — is worse: its
+stage receipts survive, and a `completed` receipt makes the next `claimStage` a
+no-op, so the retry silently does nothing. The index is now partial on
+non-terminal states and a retry gets a fresh row.
+
+**4. Attaching had to become exclusive.** Undo a creation, start a new one at the
+same site, then redo: the redo re-attaches the original while the new attempt's
+output is still `pending`, and the two collide on the partial index. The Deck is
+the authority, so `updatePromptOutputOwnershipRow` now detaches anything else
+claiming the site in the same transaction, and the in-flight attempt is told at
+settlement that its site was taken.
+
+Two smaller corrections: a settled creation is retryable once it has been undone
+(the snapshot is the authority on whether a site is free, not the attempt row),
+and `allowPromptOperations` was never needed — the forge guard lives in
+`submitDeck`, so compensation and settlement were already unaffected.
+
+**Dedupe without request ids.** Creation and refresh both key on the *site*: two
+requests to prompt the same place are the same request however they were
+labelled. `getLivePromptAttemptBySite` is the lookup, and it is only ever the
+non-terminal one.
+
+**Verified live**, against a real model through Derived Outputs. A prompt into a
+`new-text-element` settled, the element's body holds a reference and no text,
+`deck.load` resolved the revision on read, `deck.outline` correctly showed
+nothing for it, a refresh settled, and a second refresh while one was in flight
+returned the same attempt id. The one failure in the run was the right one:
+`contextEntries: []` is refused by `bbc6673`'s empty-scope rule, and the attempt
+recorded `failed` with that diagnostic through the atomic failure path.
+
 ## Phase 6 — Formula atoms
 
 Follows Document exactly: the reducer reports changed atoms, the service creates
@@ -302,9 +350,10 @@ enforced this already existed.
 
 ## Status
 
-**Phases 1–4 are complete** (2026-08-02). The capability is wired into the
-composition root and serving `POST /slides/command` and `POST /slides/query`:
-61 domain, 27 persistence, 25 wire and 22 application tests.
+**Phases 1–5 are complete** (Phase 5 on 2026-08-03). The capability is wired
+into the composition root and serving `POST /slides/command` and
+`POST /slides/query`: 67 domain, 29 persistence, 26 wire, 33 application and 3
+wiring tests. Phases 6 and 7 are unstarted.
 
 Work happens in a worktree at `/home/jakul/cyberia/icarus-slides` to keep other
 agents' uncommitted files out of the way; every commit still lands on `main`.
@@ -316,7 +365,6 @@ stack overflow. Both are worth knowing about before Phase 2, because the first
 means **cell array order is derived, not authored**, and the second means
 **acyclicity is reachability from the container root**, never an ancestor walk.
 
-Phases 2–7 are unstarted.
 
 Extend `http-smoke.mjs` from phase 4 onward. The composition-root import test in
 `runtime-wiring.test.ts` catches an unresolvable barrel immediately.
