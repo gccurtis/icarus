@@ -11,6 +11,13 @@ import {
 import { canonicalizeSnapshot } from "../../src/3-capabilities/document/domain/canonical.js";
 import { digestFormulaExpression } from "../../src/3-capabilities/document/domain/canonical.js";
 import {
+  formulaAtomDisplayText,
+  hasRenderingIntent,
+  NON_RENDERING_DISPLAY_TEXT,
+} from "../../src/3-capabilities/document/domain/formulaDisplay.js";
+import { makeNumber, makeTable, makeText, NULL_VALUE } from "../../src/0-platform/formula/value.js";
+import { fromInt } from "../../src/0-platform/formula/rational.js";
+import {
   DocumentOperationError,
   DocumentValidationError,
 } from "../../src/3-capabilities/document/domain/errors.js";
@@ -988,4 +995,35 @@ test("Image and Chart dimensions are canonical, validated, and reversible", () =
     }], runtime, LIMITS),
     (error) => error instanceof DocumentValidationError && /image image height/.test(error.message),
   );
+});
+
+test("a formula value with rendering intent gets a signifier, not a serialized table", async (t) => {
+  const table = makeTable(["region", "total"], [[makeText("west"), makeNumber(fromInt(40n))]]);
+  const chart = makeTable(["region", "total"], [[makeText("west"), makeNumber(fromInt(40n))]], "bar");
+
+  await t.test("ordinary values keep Formula's own text form", () => {
+    assert.equal(formulaAtomDisplayText(makeNumber(fromInt(42n))), "42");
+    assert.equal(formulaAtomDisplayText(makeText("west")), "west");
+    assert.equal(formulaAtomDisplayText(NULL_VALUE), "null");
+  });
+
+  await t.test("a table with no rendering intent still formats inline", () => {
+    assert.equal(formulaAtomDisplayText(table), '[{"region": "west", "total": 40}]');
+    assert.equal(hasRenderingIntent(table), false);
+  });
+
+  await t.test("a chart is replaced by the signifier rather than dumped inline", () => {
+    assert.equal(hasRenderingIntent(chart), true);
+    assert.equal(formulaAtomDisplayText(chart), NON_RENDERING_DISPLAY_TEXT);
+    assert.equal(formulaAtomDisplayText(chart), "UNKNOWN");
+    // The value itself is untouched — only how it reads in a line of prose.
+    assert.equal(chart.kind === "table" ? chart.display : undefined, "bar");
+    assert.equal(chart.table.rows.length, 1);
+  });
+
+  await t.test("every display kind is treated the same way", () => {
+    for (const kind of ["table", "bar", "line", "area", "scatter", "pie"] as const) {
+      assert.equal(formulaAtomDisplayText(makeTable(["a"], [[makeText("x")]], kind)), "UNKNOWN");
+    }
+  });
 });

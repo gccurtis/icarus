@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FormulaDiagnostic, FormulaEngine } from "#formula";
-import { formatFormulaValue, toWire } from "#formula";
+import { toWire } from "#formula";
+import { formulaAtomDisplayText } from "../domain/formulaDisplay.js";
 import type { Logger } from "#platform/observability/logger.js";
 import type { RichText, RichTextOperation } from "#rich-text";
 import {
@@ -1197,7 +1198,7 @@ class DocumentService implements DocumentCapability {
             atomId: attempt.atomId,
             settlement: {
               acceptedValue: toWire(evaluated.value.value),
-              displayText: formatFormulaValue(evaluated.value.value)
+              displayText: formulaAtomDisplayText(evaluated.value.value)
             }
           }];
         }
