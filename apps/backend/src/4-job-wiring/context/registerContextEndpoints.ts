@@ -26,6 +26,16 @@ function parseEntries(raw: unknown): ContextEntry[] {
     .filter(e => e.id && e.kind);
 }
 
+/**
+ * Distinguishes "no excludes field" from "an empty excludes field", because
+ * `update` reads them differently: omitted leaves the existing exclusions
+ * alone, `[]` clears them. Collapsing the two would make it impossible to
+ * replace entries without also silently widening the scope.
+ */
+function parseExcludes(raw: unknown): ContextEntry[] | undefined {
+  return raw === undefined ? undefined : parseEntries(raw);
+}
+
 function parseOperand(raw: unknown): ContextOperand {
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
     const obj = raw as Record<string, unknown>;
@@ -63,7 +73,13 @@ export function registerContextEndpoints(
         const record = await ctx.declare(
           String(body.displayName ?? ""),
           parseEntries(body.entries),
-          { description: parseDescription(body.description), private: parsePrivate(body.private) }
+          {
+            description: parseDescription(body.description),
+            private: parsePrivate(body.private),
+            ...(parseExcludes(body.excludes) !== undefined
+              ? { excludes: parseExcludes(body.excludes) }
+              : {})
+          }
         );
         return { statusCode: 201, body: record };
       } catch (e) { return contextErrorResponse(e); }
@@ -112,10 +128,12 @@ export function registerContextEndpoints(
     work: async () => {
       try {
         const body = request.body as Record<string, unknown>;
+        const excludes = parseExcludes(body.excludes);
         const record = await ctx.update(
           String(body.id ?? ""),
           parseEntries(body.entries),
-          Number(body.expectedRevision)
+          Number(body.expectedRevision),
+          excludes !== undefined ? { excludes } : {}
         );
         return { statusCode: 200, body: record };
       } catch (e) { return contextErrorResponse(e); }

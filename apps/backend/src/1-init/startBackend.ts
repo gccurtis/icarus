@@ -89,6 +89,12 @@ export const startBackend = async (): Promise<void> => {
     );
     resourceRegistry.registerGeneralFiles(generalFiles);
     resourceRegistry.registerConnector(connector);
+    // Closes the loop the other way: the registry already resolves Context's
+    // leaves, and now Context can ask it what the project holds so a
+    // `{ kind: "project" }` entry means the live membership rather than a
+    // snapshot. Registered after the resource capabilities exist, so the first
+    // enumeration is already complete.
+    contextManager.setProjectMembership(resourceRegistry);
     const derivedOutputs = createDerivedOutputServiceInstance(
       config,
       knowledge,

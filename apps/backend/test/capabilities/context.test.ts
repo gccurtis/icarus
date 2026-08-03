@@ -62,7 +62,7 @@ test("declare defaults private to false", async () => {
   assert.equal((await ctx.get(record.id))?.private, false);
 });
 
-test("composeNamed persists union and difference results under the caller's name", async () => {
+test("composeNamed persists a rule, not a snapshot, and resolves to the composed set", async () => {
   const ctx = createFixture();
   const a = await ctx.declare("A", [
     { id: "doc-1", kind: "document" },
@@ -72,7 +72,15 @@ test("composeNamed persists union and difference results under the caller's name
 
   const union = await ctx.composeNamed("union", { contextId: a.id }, { contextId: b.id }, "A or B");
   assert.equal(union.displayName, "A or B");
-  assert.deepEqual(union.entries.map((entry) => entry.id), ["doc-1", "doc-2"]);
+  // References, not copies. This is what keeps the composition live.
+  assert.deepEqual(union.entries, [
+    { id: a.id, kind: "context" },
+    { id: b.id, kind: "context" }
+  ]);
+  assert.deepEqual(
+    (await ctx.resolve([{ id: union.id, kind: "context" }])).map((entry) => entry.id).sort(),
+    ["doc-1", "doc-2"]
+  );
 
   const difference = await ctx.composeNamed(
     "difference",
@@ -81,12 +89,36 @@ test("composeNamed persists union and difference results under the caller's name
     "A without B",
     { private: true }
   );
-  assert.deepEqual(difference.entries.map((entry) => entry.id), ["doc-1"]);
+  // The right operand becomes an exclusion rather than being subtracted now.
+  assert.deepEqual(difference.entries, [{ id: a.id, kind: "context" }]);
+  assert.deepEqual(difference.excludes, [{ id: "doc-2", kind: "document" }]);
   assert.equal(difference.private, true);
+  assert.deepEqual(
+    (await ctx.resolve([{ id: difference.id, kind: "context" }])).map((entry) => entry.id),
+    ["doc-1"]
+  );
+
+  // The point of the whole exercise: A grows, and both compositions grow with
+  // it. A materialised result would still be answering with yesterday's set.
+  await ctx.update(a.id, [
+    { id: "doc-1", kind: "document" },
+    { id: "doc-2", kind: "document" },
+    { id: "doc-3", kind: "document" }
+  ], a.revision);
+
+  assert.deepEqual(
+    (await ctx.resolve([{ id: union.id, kind: "context" }])).map((entry) => entry.id).sort(),
+    ["doc-1", "doc-2", "doc-3"]
+  );
+  assert.deepEqual(
+    (await ctx.resolve([{ id: difference.id, kind: "context" }])).map((entry) => entry.id).sort(),
+    ["doc-1", "doc-3"],
+    "the exclusion still holds, and the addition still lands"
+  );
 
   // Both results are real, addressable records rather than transient values.
-  assert.equal((await ctx.get(union.id))?.entries.length, 2);
-  assert.equal((await ctx.get(difference.id))?.entries.length, 1);
+  assert.ok(await ctx.get(union.id));
+  assert.ok(await ctx.get(difference.id));
 });
 
 test("update increments the revision and rejects a stale expected revision", async () => {
@@ -260,7 +292,7 @@ test("declare and update reject entry arrays over maxEntriesPerContext with a ty
   );
 });
 
-test("composeNamed rejects an empty displayName and a combined result over maxEntriesPerContext", async () => {
+test("composeNamed rejects an empty displayName and an operand list over maxEntriesPerContext", async () => {
   const ctx = createFixture({ maxEntriesPerContext: 2 });
   const a = await ctx.declare("A", [
     { id: "doc-1", kind: "document" },
@@ -277,8 +309,25 @@ test("composeNamed rejects an empty displayName and a combined result over maxEn
     }
   );
 
+  // A union of two context references stores two entries, which is within the
+  // limit even though their expansion is not. The limit bounds what the record
+  // holds; it cannot bound a resolve-time expansion, and pretending otherwise
+  // was only possible while composition materialised its result.
+  const union = await ctx.composeNamed("union", { contextId: a.id }, { contextId: b.id }, "A or B");
+  assert.equal(union.entries.length, 2);
+
+  // Inline operands are stored verbatim, so those the limit still catches.
   await assert.rejects(
-    () => ctx.composeNamed("union", { contextId: a.id }, { contextId: b.id }, "A or B"),
+    () => ctx.composeNamed(
+      "union",
+      { entries: [
+        { id: "doc-4", kind: "document" },
+        { id: "doc-5", kind: "document" },
+        { id: "doc-6", kind: "document" }
+      ] },
+      { entries: [] },
+      "Too many"
+    ),
     (error: unknown) => {
       assert.ok(error instanceof ContextValidationError);
       assert.equal(error.field, "entries");
@@ -312,4 +361,173 @@ test("registerContextEndpoints maps ContextValidationError to 400 context_invali
     statusCode: 400,
     body: { error: "context_invalid", message: "entries: count 3 exceeds maxEntriesPerContext (2)", field: "entries" }
   });
+});
+
+// ─── Live project scope and exclusions ───────────────────────────────────────
+
+const PROJECT = { id: "*", kind: "project" };
+
+test("a project entry expands to the live membership, and tracks it", async () => {
+  const ctx = createFixture();
+  let membership = [
+    { id: "file-1", kind: "general::file::markdown" },
+    { id: "conn-1", kind: "connector::directory::local" }
+  ];
+  ctx.setProjectMembership({ listProjectEntries: async () => membership });
+
+  assert.deepEqual(
+    (await ctx.resolve([PROJECT])).map((entry) => entry.id).sort(),
+    ["conn-1", "file-1"]
+  );
+
+  // The whole point: the record said "the project", not "these two things".
+  membership = [...membership, { id: "file-2", kind: "general::file::markdown" }];
+  assert.deepEqual(
+    (await ctx.resolve([PROJECT])).map((entry) => entry.id).sort(),
+    ["conn-1", "file-1", "file-2"]
+  );
+});
+
+test("a stored context can name the project, less named resources", async () => {
+  const ctx = createFixture();
+  let membership = [
+    { id: "file-1", kind: "general::file::markdown" },
+    { id: "file-2", kind: "general::file::markdown" },
+    { id: "file-3", kind: "general::file::markdown" }
+  ];
+  ctx.setProjectMembership({ listProjectEntries: async () => membership });
+
+  const record = await ctx.declare("Everything but two", [PROJECT], {
+    excludes: [
+      { id: "file-2", kind: "general::file::markdown" },
+      // Deliberately the *wrong* kind spelling for the same resource. An
+      // exclusion that only matched on kind:id would silently fail to subtract
+      // this, which is the failure mode that leaks what someone excluded.
+      { id: "file-3", kind: "general-file" }
+    ]
+  });
+
+  assert.deepEqual(
+    (await ctx.resolve([{ id: record.id, kind: "context" }])).map((entry) => entry.id),
+    ["file-1"]
+  );
+
+  // Still live on the include side, and the exclusions still hold.
+  membership = [...membership, { id: "file-4", kind: "general::file::markdown" }];
+  assert.deepEqual(
+    (await ctx.resolve([{ id: record.id, kind: "context" }])).map((entry) => entry.id).sort(),
+    ["file-1", "file-4"]
+  );
+});
+
+test("an exclusion naming a context subtracts that context's current contents", async () => {
+  const ctx = createFixture();
+  const secret = await ctx.declare("Secret", [{ id: "doc-2", kind: "document" }]);
+  const all = await ctx.declare("All", [
+    { id: "doc-1", kind: "document" },
+    { id: "doc-2", kind: "document" },
+    { id: "doc-3", kind: "document" }
+  ]);
+  const visible = await ctx.declare("Visible", [{ id: all.id, kind: "context" }], {
+    excludes: [{ id: secret.id, kind: "context" }]
+  });
+
+  assert.deepEqual(
+    (await ctx.resolve([{ id: visible.id, kind: "context" }])).map((entry) => entry.id).sort(),
+    ["doc-1", "doc-3"]
+  );
+
+  // Adding to the excluded context removes more, without touching Visible.
+  await ctx.update(secret.id, [
+    { id: "doc-2", kind: "document" },
+    { id: "doc-3", kind: "document" }
+  ], secret.revision);
+  assert.deepEqual(
+    (await ctx.resolve([{ id: visible.id, kind: "context" }])).map((entry) => entry.id),
+    ["doc-1"]
+  );
+});
+
+test("with no membership port a project entry resolves to nothing, not everything", async () => {
+  const ctx = createFixture();
+  // Failing open would silently ground a caller on the whole corpus. Failing
+  // closed produces an empty result they can actually see.
+  assert.deepEqual(await ctx.resolve([PROJECT]), []);
+});
+
+test("a membership port that throws resolves to nothing, not everything", async () => {
+  const ctx = createFixture();
+  ctx.setProjectMembership({
+    listProjectEntries: async () => { throw new Error("enumeration failed"); }
+  });
+  assert.deepEqual(await ctx.resolve([PROJECT]), []);
+});
+
+test("a context reached by two routes resolves identically on both", async () => {
+  // The regression the per-record exclusion model could have introduced: a
+  // global "already seen, skip" cycle guard would hand the second route an
+  // empty set instead of the same one.
+  const ctx = createFixture();
+  const leaf = await ctx.declare("Leaf", [{ id: "doc-1", kind: "document" }]);
+  const left = await ctx.declare("Left", [{ id: leaf.id, kind: "context" }]);
+  const right = await ctx.declare("Right", [{ id: leaf.id, kind: "context" }]);
+
+  assert.deepEqual(
+    (await ctx.resolve([
+      { id: left.id, kind: "context" },
+      { id: right.id, kind: "context" }
+    ])).map((entry) => entry.id),
+    ["doc-1"]
+  );
+
+  // And a diamond where one arm excludes: the other arm must be unaffected.
+  const filtered = await ctx.declare("Filtered", [{ id: leaf.id, kind: "context" }], {
+    excludes: [{ id: "doc-1", kind: "document" }]
+  });
+  assert.deepEqual(await ctx.resolve([{ id: filtered.id, kind: "context" }]), []);
+  assert.deepEqual(
+    (await ctx.resolve([
+      { id: filtered.id, kind: "context" },
+      { id: right.id, kind: "context" }
+    ])).map((entry) => entry.id),
+    ["doc-1"],
+    "Filtered excluding it does not remove it from Right"
+  );
+});
+
+test("a cycle through excludes terminates, and withholds rather than leaks", async () => {
+  const ctx = createFixture();
+  const a = await ctx.declare("Cycle A", [{ id: "doc-1", kind: "document" }]);
+  const b = await ctx.declare("Cycle B", [{ id: a.id, kind: "context" }]);
+  // A now points back at B, through its exclusion list.
+  await ctx.update(a.id, [{ id: "doc-1", kind: "document" }], a.revision, {
+    excludes: [{ id: b.id, kind: "context" }]
+  });
+
+  // It terminates — and A resolves to nothing rather than to doc-1. The cycle
+  // means we cannot tell what A was supposed to keep out, and on an exclusion
+  // "we don't know" has to mean "keep it out", not "let it through".
+  assert.deepEqual(await ctx.resolve([{ id: b.id, kind: "context" }]), []);
+  assert.deepEqual(await ctx.resolve([{ id: a.id, kind: "context" }]), []);
+});
+
+test("excludes round-trip through the store and update replaces them only when supplied", async () => {
+  const ctx = createFixture();
+  const record = await ctx.declare("Scoped", [{ id: "doc-1", kind: "document" }], {
+    excludes: [{ id: "doc-2", kind: "document" }]
+  });
+  assert.deepEqual((await ctx.get(record.id))?.excludes, [{ id: "doc-2", kind: "document" }]);
+
+  // Omitted: left alone. Replacing entries says nothing about exclusions, and
+  // reading silence as "clear them" would quietly widen the scope.
+  const kept = await ctx.update(record.id, [{ id: "doc-9", kind: "document" }], 1);
+  assert.deepEqual(kept.excludes, [{ id: "doc-2", kind: "document" }]);
+  assert.deepEqual((await ctx.get(record.id))?.excludes, [{ id: "doc-2", kind: "document" }]);
+
+  // Explicitly empty: cleared.
+  const cleared = await ctx.update(record.id, [{ id: "doc-9", kind: "document" }], 2, {
+    excludes: []
+  });
+  assert.equal(cleared.excludes, undefined);
+  assert.equal((await ctx.get(record.id))?.excludes, undefined);
 });
