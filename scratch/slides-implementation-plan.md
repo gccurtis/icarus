@@ -129,25 +129,50 @@ has to be a string because the rule it enforces — one dedicated output per liv
 site — is a SQL `UNIQUE`, and the container has to be in it because two planes
 may hold elements with the same ID.
 
-*The store logs.* No other store in this backend does; logging is application
--layer everywhere else. Changed here on purpose: several facts are visible only
-from inside the transaction — which compare-and-set lost, which identity was
-refused — and those are exactly the "right answer, wrong process" cases. Cost is
-controlled by level: statement detail is `debug`, `info` is durable commits,
-`warn` is a caller's problem, `error` is impossible state. **No authored content
-is ever logged** — identifiers, counts, revisions and digests only, which is the
-rule Comments, Persona and Derived Outputs already state in their docs. A test
-asserts the Deck title never appears in any log line.
+*The store logs.* No other store in this backend does; logging is
+application-layer everywhere else. Changed here on purpose: several facts are
+visible only from inside the transaction — which compare-and-set lost, which
+identity was refused — and those are exactly the "right answer, wrong process"
+cases. Cost is controlled by level: statement detail is `debug`, `info` is
+durable commits, `warn` is a caller's problem, `error` is impossible state.
 
-Gate: `slides-persistence.test.ts` — 24 tests.
+**Authored content is logged, under a reserved `content` key.** A payload is
+`{ ...shape, content?: { ...authored } }`. Outside it: identifiers, counts,
+revisions, digests, kinds. Inside it: the Deck title, the operations and their
+inverses, the snapshot at creation, the prompt text on an attempt. Splitting on
+one reserved key is what makes the planned shape-only logger flag a single line
+in the sink rather than an audit of every call site — so the rule that keeps it
+true is that **nothing outside `content` may carry authored text**. A test
+plants a marker in every authored field and asserts it appears nowhere else.
+
+Gate: `slides-persistence.test.ts` — 26 tests.
 
 ## Phase 3 — Wire
 
 `valueSchemas.ts` with `exactKeys` and a wire budget; `operationSchemas.ts` with
-an `OPERATION_KEYS` table so decoder and union cannot drift; `commandSchemas.ts`
-decoding `{ requestId, origin, command }`; `querySchemas.ts`.
+an `OPERATION_KEYS` table typed `Record<SlideOperation["type"], …>` so decoder
+and union cannot drift; `commandSchemas.ts` decoding
+`{ requestId, origin, command }`; `querySchemas.ts`.
 
-Gate: `slides-wire.test.ts`.
+The Rich Text decoders are hand-written here rather than shared with Document.
+That is the convention rather than an oversight: `exactKeys` is defined four
+times across four capabilities, each throwing its own error class, because a
+capability owns its wire layer. Worth extracting to `0-platform` one day, not
+worth touching shared files for while several agents are in the tree.
+
+Two divergences from Document. Lengths are finite positives rather than
+integers, because slide geometry is in points and half-point positions are
+ordinary where Document's twips are integral. And the history page bound is a
+named constant, where Document inlines `1..1000`.
+
+**A decoded operation is a validated clone of the input, not a reconstruction.**
+The value decoders build clean objects, but `decodeSlideOperation` returns
+`structuredClone(operation)` and discards them, exactly as Document does — so
+for operations the decoders are validation side-effects only. Their constructed
+output matters for commands, which do return it. Do not write a test that thinks
+otherwise; one here did, and passed for the wrong reason.
+
+Gate: `slides-wire.test.ts` — 25 tests.
 
 ## Phase 4 — Service and composition: first working slice
 
@@ -230,8 +255,9 @@ it, and a transient error in `formula/wire.ts` appeared and cleared the same way
 
 ## Status
 
-**Phases 1 and 2 are complete** (2026-08-02): eleven `domain/` files and four
-`ports/` + `persistence/` files, 61 domain tests and 24 persistence tests.
+**Phases 1, 2 and 3 are complete** (2026-08-02): eleven `domain/` files, four
+`ports/` + `persistence/` files and four `wire/` files — 61 domain, 26
+persistence and 25 wire tests.
 
 Work happens in a worktree at `/home/jakul/cyberia/icarus-slides` to keep other
 agents' uncommitted files out of the way; every commit still lands on `main`.
