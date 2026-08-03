@@ -75,7 +75,6 @@ const OPERATION_KEYS: Record<SlideOperation["type"], readonly string[]> = {
   "slide.move": ["type", "slideId", "afterSlideId"],
   "slide.delete": ["type", "slideId"],
   "slide.set-layout": ["type", "slideId", "layoutId"],
-  "slide.set-title": ["type", "slideId", "title"],
   "slide.set-background": ["type", "slideId", "background"],
   "element.insert": ["type", "container", "element"],
   "element.replace": ["type", "container", "element"],
@@ -237,10 +236,6 @@ export const decodeSlideOperation = (value: unknown): SlideOperation => {
     case "slide.set-layout":
       requireIdentifier(operation.slideId, `${type}.slideId`);
       requireIdentifier(operation.layoutId, `${type}.layoutId`);
-      break;
-    case "slide.set-title":
-      requireIdentifier(operation.slideId, `${type}.slideId`);
-      if (operation.title !== undefined) requireText(operation.title, `${type}.title`);
       break;
     case "slide.set-background":
       requireIdentifier(operation.slideId, `${type}.slideId`);

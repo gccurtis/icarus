@@ -7,7 +7,6 @@ import {
 } from "../../src/0-platform/rich-text/index.js";
 import {
   canonicalizeSnapshot,
-  digestSnapshot,
 } from "../../src/3-capabilities/slides/domain/canonical.js";
 import {
   ancestorsOf,
@@ -1704,7 +1703,10 @@ test("style resolution walks the basedOn chain nearest ancestor last", () => {
 
 // ── Canonical form ───────────────────────────────────────────────────────
 
-test("the semantic digest ignores key order and is stable across equal snapshots", () => {
+test("canonical bytes ignore key order and distinguish content", () => {
+  const bytes = (snapshot: DeckSnapshot) =>
+    Buffer.from(canonicalizeSnapshot(snapshot)).toString("utf8");
+
   const left = blankSnapshot();
   const right: DeckSnapshot = {
     ...blankSnapshot(),
@@ -1712,11 +1714,11 @@ test("the semantic digest ignores key order and is stable across equal snapshots
     lifecycle: "active",
     title: "Domain test deck",
   };
-  assert.equal(digestSnapshot(left), digestSnapshot(right));
+  assert.equal(bytes(left), bytes(right));
 
   const changed = blankSnapshot();
   changed.title = "Different";
-  assert.notEqual(digestSnapshot(left), digestSnapshot(changed));
+  assert.notEqual(bytes(left), bytes(changed));
 });
 
 test("a container edit is invisible to other containers", () => {

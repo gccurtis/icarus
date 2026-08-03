@@ -543,12 +543,6 @@ const applyOne = (
       requireLayout(snapshot, operation.layoutId);
       requireSlide(snapshot, operation.slideId).layoutId = operation.layoutId;
       return;
-    case "slide.set-title": {
-      const slide = requireSlide(snapshot, operation.slideId);
-      if (operation.title === undefined) delete slide.title;
-      else slide.title = operation.title;
-      return;
-    }
     case "slide.set-background": {
       const slide = requireSlide(snapshot, operation.slideId);
       if (operation.background === undefined) delete slide.background;
@@ -1193,14 +1187,6 @@ const inverseFor = (
           layoutId: before.slides[operation.slideId].layoutId
         }
       ];
-    case "slide.set-title": {
-      const title = before.slides[operation.slideId].title;
-      return [
-        title === undefined
-          ? { type: "slide.set-title", slideId: operation.slideId }
-          : { type: "slide.set-title", slideId: operation.slideId, title }
-      ];
-    }
     case "slide.set-background": {
       const background = before.slides[operation.slideId].background;
       return [
@@ -1732,7 +1718,6 @@ const operationIds = (snapshot: DeckSnapshot, operation: SlideOperation): string
       ids.add(CONTAINER_ORDER_SENTINEL);
       break;
     case "slide.set-layout":
-    case "slide.set-title":
     case "slide.set-background":
       ids.add(operation.slideId);
       break;

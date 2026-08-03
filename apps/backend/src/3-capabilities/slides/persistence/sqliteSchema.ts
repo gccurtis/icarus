@@ -65,7 +65,6 @@ export const initializeSlidesSchema = (
         CHECK (lifecycle IN ('active', 'archived', 'trashed')),
       revision         INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
       base_seq         INTEGER NOT NULL DEFAULT 1 CHECK (base_seq >= 1),
-      semantic_digest  TEXT NOT NULL,
       created_at       TEXT NOT NULL,
       updated_at       TEXT NOT NULL,
       CHECK (base_seq <= revision),
@@ -133,7 +132,6 @@ export const initializeSlidesSchema = (
       base_seq               INTEGER NOT NULL CHECK (base_seq >= 1),
       representation_version INTEGER NOT NULL CHECK (representation_version = 1),
       snapshot_json          BLOB NOT NULL,
-      semantic_digest        TEXT NOT NULL,
       created_at             TEXT NOT NULL,
       PRIMARY KEY (deck_id, base_seq),
       FOREIGN KEY (deck_id) REFERENCES ${tables.resources}(id) ON DELETE CASCADE
@@ -159,7 +157,6 @@ export const initializeSlidesSchema = (
       compensation_intent                TEXT
         CHECK (compensation_intent IN ('undo', 'redo')),
       compensation_target_change_set_id  TEXT,
-      semantic_digest                    TEXT NOT NULL,
       created_at                         TEXT NOT NULL,
       UNIQUE (deck_id, seq),
       UNIQUE (deck_id, revision),
@@ -196,8 +193,6 @@ export const initializeSlidesSchema = (
       origin                TEXT NOT NULL
         CHECK (origin IN ('interactive', 'agent', 'automation')),
       operation_types       BLOB NOT NULL,
-      -- The Deck source digest, never an Activity ledger digest.
-      semantic_digest       TEXT NOT NULL,
       compensation_intent   TEXT
         CHECK (compensation_intent IN ('undo', 'redo')),
       compensation_target_change_set_id TEXT,

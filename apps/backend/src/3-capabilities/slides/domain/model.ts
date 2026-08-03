@@ -19,7 +19,6 @@ export interface DeckHead {
   lifecycle: DeckLifecycle;
   revision: number;
   baseSeq: number;
-  semanticDigest: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -173,8 +172,6 @@ export type ElementContainerKind = ElementContainerRef["kind"];
 export interface Slide {
   id: string;
   layoutId: string;
-  /** Plain metadata, not Rich Content. */
-  title?: string;
   /** Overrides the Layout's when present. */
   background?: SlideBackground;
   /** Authored only. Notes are the author's own aside, never generated. */
@@ -459,7 +456,6 @@ export type SlideOperation =
   | { type: "slide.move"; slideId: string; afterSlideId?: string }
   | { type: "slide.delete"; slideId: string }
   | { type: "slide.set-layout"; slideId: string; layoutId: string }
-  | { type: "slide.set-title"; slideId: string; title?: string }
   | { type: "slide.set-background"; slideId: string; background?: SlideBackground }
   | {
       type: "element.insert";
@@ -591,7 +587,6 @@ export interface DeckBase {
   deckId: string;
   baseSeq: number;
   snapshot: DeckSnapshot;
-  semanticDigest: string;
   createdAt: string;
 }
 
@@ -612,7 +607,6 @@ export interface DeckChangeSet {
     intent: "undo" | "redo";
     targetChangeSetId: string;
   };
-  semanticDigest: string;
   createdAt: string;
 }
 
@@ -636,8 +630,6 @@ export interface DeckCommittedTransaction {
   /** Slides keeps its own origin vocabulary; the 1-init adapter maps it. */
   origin: SlideOrigin;
   operationTypes: string[];
-  /** The Deck snapshot digest, not the Activity transaction digest. */
-  sourceSemanticDigest: string;
   compensation?: {
     intent: "undo" | "redo";
     targetChangeSetId: string;

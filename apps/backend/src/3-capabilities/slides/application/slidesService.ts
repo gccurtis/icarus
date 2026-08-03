@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { RichText } from "#rich-text";
 import type { Logger } from "#platform/observability/logger.js";
 import type { InternalJobsRuntime } from "#utils/jobs/internalRuntime.js";
-import { canonicalDigest, digestSnapshot } from "../domain/canonical.js";
+import { canonicalDigest } from "../domain/canonical.js";
 import {
   CompensationConflictError,
   DeckNotFoundError,
@@ -247,14 +247,12 @@ class SlidesService implements SlidesCapability {
     if (!validation.ok) throw new SlideValidationError(validation.diagnostics);
 
     const timestamp = this.now();
-    const semanticDigest = digestSnapshot(snapshot);
     const head: DeckHead = {
       id: deckId,
       title: snapshot.title,
       lifecycle: snapshot.lifecycle,
       revision: 1,
       baseSeq: 1,
-      semanticDigest,
       createdAt: timestamp,
       updatedAt: timestamp
     };
@@ -269,7 +267,6 @@ class SlidesService implements SlidesCapability {
         : {}),
       origin: request.origin,
       operationTypes: ["deck.create"],
-      sourceSemanticDigest: semanticDigest,
       occurredAt: timestamp
     });
 
@@ -281,7 +278,6 @@ class SlidesService implements SlidesCapability {
         deckId,
         baseSeq: 1,
         snapshot,
-        semanticDigest,
         createdAt: timestamp
       },
       // Both receipts, one transaction. The create receipt makes the create
@@ -441,7 +437,6 @@ class SlidesService implements SlidesCapability {
         : {}),
       origin: request.origin,
       operationTypes: ["deck.delete"],
-      sourceSemanticDigest: head.semanticDigest,
       occurredAt: timestamp
     });
     const deletedRevision = await this.store.deleteDeck(
@@ -505,6 +500,27 @@ class SlidesService implements SlidesCapability {
     if (input.expectedRevision < current.head.revision) {
       const authored = (await this.loadSnapshot(input.deckId, input.expectedRevision)).snapshot;
       const touched = computeTouchedIds(authored, input.operations);
+      // Rebase overrides the revision check, so it must never do so on no
+      // evidence. An operation that claims to touch nothing has told us nothing
+      // about whether it still makes sense, and admitting it means the last
+      // writer wins silently. Failing closed here means a future operation that
+      // forgets to claim an ID degrades to "must be current" rather than
+      // "always wins" — which is the failure mode that hid the rename bug.
+      if (touched.length === 0) {
+        this.deps.logger.warn("slides.mutation.rebase-refused", {
+          deckId: input.deckId,
+          requestId: input.requestId,
+          authoredRevision: input.expectedRevision,
+          headRevision: current.head.revision,
+          reason: "no-touched-ids",
+          operationTypes: input.operations.map((operation) => operation.type)
+        });
+        throw new RevisionConflictError(
+          input.deckId,
+          input.expectedRevision,
+          current.head.revision
+        );
+      }
       const intervening = await this.store.getChangeSets(
         input.deckId,
         input.expectedRevision,
@@ -544,7 +560,6 @@ class SlidesService implements SlidesCapability {
     );
     const revision = current.head.revision + 1;
     applied.snapshot.revision = revision;
-    const semanticDigest = digestSnapshot(applied.snapshot);
     const timestamp = this.now();
     const changeSetId = randomUUID();
 
@@ -562,7 +577,6 @@ class SlidesService implements SlidesCapability {
       inverseOperations: applied.inverse,
       touchedIds: applied.touchedIds,
       ...(input.compensation ? { compensation: input.compensation } : {}),
-      semanticDigest,
       createdAt: timestamp
     };
     const head: DeckHead = {
@@ -570,7 +584,6 @@ class SlidesService implements SlidesCapability {
       title: applied.snapshot.title,
       lifecycle: applied.snapshot.lifecycle,
       revision,
-      semanticDigest,
       updatedAt: timestamp
     };
     const result: SlideCommandResult = { type: "deck.changed", changeSet };
@@ -599,7 +612,6 @@ class SlidesService implements SlidesCapability {
         ...(input.actorId ? { actorId: input.actorId } : {}),
         origin: input.origin,
         operationTypes: input.operations.map((operation) => operation.type),
-        sourceSemanticDigest: semanticDigest,
         ...(input.compensation ? { compensation: input.compensation } : {}),
         occurredAt: timestamp
       })
@@ -647,7 +659,6 @@ class SlidesService implements SlidesCapability {
       deckId,
       baseSeq: cutoffRevision,
       snapshot: cutoff.snapshot,
-      semanticDigest: digestSnapshot(cutoff.snapshot),
       createdAt
     });
     if (!cutoffAppended) {
@@ -662,7 +673,6 @@ class SlidesService implements SlidesCapability {
           deckId,
           baseSeq: current.head.revision,
           snapshot: current.snapshot,
-          semanticDigest: current.head.semanticDigest,
           createdAt
         });
     if (appended) {

@@ -38,7 +38,6 @@ export const rowToHead = (row: SQLiteRow): DeckHead => ({
   lifecycle: row.lifecycle as DeckHead["lifecycle"],
   revision: Number(row.revision),
   baseSeq: Number(row.base_seq),
-  semanticDigest: row.semantic_digest as string,
   createdAt: row.created_at as string,
   updatedAt: row.updated_at as string
 });
@@ -48,7 +47,6 @@ export const rowToBase = (row: SQLiteRow): DeckBase => ({
   deckId: row.deck_id as string,
   baseSeq: Number(row.base_seq),
   snapshot: decodeJson<DeckBase["snapshot"]>(row.snapshot_json),
-  semanticDigest: row.semantic_digest as string,
   createdAt: row.created_at as string
 });
 
@@ -79,7 +77,6 @@ export const rowToChangeSet = (row: SQLiteRow): DeckChangeSet => {
           }
         }
       : {}),
-    semanticDigest: row.semantic_digest as string,
     createdAt: row.created_at as string
   };
 };
@@ -126,7 +123,6 @@ export const rowToCommittedTransaction = (row: SQLiteRow): DeckCommittedTransact
     : {}),
   origin: row.origin as DeckCommittedTransaction["origin"],
   operationTypes: decodeJson<string[]>(row.operation_types),
-  sourceSemanticDigest: row.semantic_digest as string,
   ...((row.compensation_intent as string | null) !== null &&
   (row.compensation_target_change_set_id as string | null) !== null
     ? {

@@ -39,7 +39,6 @@ const toActivityTransaction = (
   occurredAt: transaction.occurredAt,
   metadata: {
     operationTypes: transaction.operationTypes,
-    sourceSemanticDigest: transaction.sourceSemanticDigest,
     ...(transaction.compensation ? { compensation: transaction.compensation } : {})
   }
 });

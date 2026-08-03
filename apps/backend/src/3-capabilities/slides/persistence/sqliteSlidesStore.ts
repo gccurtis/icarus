@@ -432,7 +432,6 @@ export class SQLiteSlidesStore implements SlidesStore {
       slideCount: commit.base.snapshot.slideOrder.length,
       masterCount: Object.keys(commit.base.snapshot.masters).length,
       layoutCount: Object.keys(commit.base.snapshot.layouts).length,
-      semanticDigest: commit.head.semanticDigest,
       sourceTransactionId: commit.transaction.sourceTransactionId
     });
     this.logger.debug(
@@ -493,8 +492,7 @@ export class SQLiteSlidesStore implements SlidesStore {
       const updated = this.db
         .prepare(`
           UPDATE ${this.tables.decks}
-          SET title = ?, lifecycle = ?, revision = ?, base_seq = ?,
-              semantic_digest = ?, updated_at = ?
+          SET title = ?, lifecycle = ?, revision = ?, base_seq = ?, updated_at = ?
           WHERE id = ? AND revision = ?
         `)
         .run(
@@ -502,7 +500,6 @@ export class SQLiteSlidesStore implements SlidesStore {
           commit.head.lifecycle,
           commit.head.revision,
           commit.head.baseSeq,
-          commit.head.semanticDigest,
           commit.head.updatedAt,
           deckId,
           commit.expectedRevision
@@ -555,8 +552,7 @@ export class SQLiteSlidesStore implements SlidesStore {
       attemptsCreated: commit.attempts?.length ?? 0,
       attemptsUpdated: commit.attemptUpdates?.length ?? 0,
       promptTransitions: commit.promptOwnershipTransitions?.length ?? 0,
-      compensationIntent: commit.changeSet.compensation?.intent,
-      semanticDigest: commit.changeSet.semanticDigest
+      compensationIntent: commit.changeSet.compensation?.intent
     });
     // The operations are what changed, and they carry the text that changed.
     this.logger.debug(
@@ -598,8 +594,7 @@ export class SQLiteSlidesStore implements SlidesStore {
       this.logger.info("slides.store.base.appended", {
         deckId,
         baseSeq: base.baseSeq,
-        headRevision: expectedHeadRevision,
-        semanticDigest: base.semanticDigest
+        headRevision: expectedHeadRevision
       });
     } else {
       this.logger.debug("slides.store.base.skipped", {
@@ -1097,9 +1092,8 @@ export class SQLiteSlidesStore implements SlidesStore {
     this.db
       .prepare(`
         INSERT INTO ${this.tables.decks}
-          (id, title, lifecycle, revision, base_seq, semantic_digest,
-           created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          (id, title, lifecycle, revision, base_seq, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         head.id,
@@ -1107,7 +1101,6 @@ export class SQLiteSlidesStore implements SlidesStore {
         head.lifecycle,
         head.revision,
         head.baseSeq,
-        head.semanticDigest,
         head.createdAt,
         head.updatedAt
       );
@@ -1117,15 +1110,13 @@ export class SQLiteSlidesStore implements SlidesStore {
     this.db
       .prepare(`
         INSERT INTO ${this.tables.bases}
-          (deck_id, base_seq, representation_version, snapshot_json,
-           semantic_digest, created_at)
-        VALUES (?, ?, 1, ?, ?, ?)
+          (deck_id, base_seq, representation_version, snapshot_json, created_at)
+        VALUES (?, ?, 1, ?, ?)
       `)
       .run(
         base.deckId,
         base.baseSeq,
         encodeJson(base.snapshot),
-        base.semanticDigest,
         base.createdAt
       );
   }
@@ -1137,8 +1128,8 @@ export class SQLiteSlidesStore implements SlidesStore {
           (id, deck_id, client_request_id, request_digest, authored_revision,
            prior_revision, revision, seq, origin, operations_json,
            inverse_operations_json, touched_ids_json, compensation_intent,
-           compensation_target_change_set_id, semantic_digest, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           compensation_target_change_set_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         changeSet.id,
@@ -1155,7 +1146,6 @@ export class SQLiteSlidesStore implements SlidesStore {
         encodeJson(changeSet.touchedIds),
         changeSet.compensation?.intent ?? null,
         changeSet.compensation?.targetChangeSetId ?? null,
-        changeSet.semanticDigest,
         changeSet.createdAt
       );
   }
@@ -1200,10 +1190,10 @@ export class SQLiteSlidesStore implements SlidesStore {
         INSERT INTO ${this.tables.transactionOutbox}
           (source_transaction_id, source_request_id, transaction_kind, deck_id,
            resource_root_id, revision, change_set_id, source_change_set_id,
-           actor_id, origin, operation_types, semantic_digest,
+           actor_id, origin, operation_types,
            compensation_intent, compensation_target_change_set_id,
            occurred_at, published_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
         ON CONFLICT(source_transaction_id) DO NOTHING
       `)
       .run(
@@ -1218,7 +1208,6 @@ export class SQLiteSlidesStore implements SlidesStore {
         transaction.actorId ?? null,
         transaction.origin,
         encodeJson(transaction.operationTypes),
-        transaction.sourceSemanticDigest,
         transaction.compensation?.intent ?? null,
         transaction.compensation?.targetChangeSetId ?? null,
         transaction.occurredAt

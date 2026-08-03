@@ -22,11 +22,13 @@ export const canonicalize = (value: unknown): Uint8Array =>
 export const canonicalDigest = (value: unknown): string =>
   createHash("sha256").update(canonicalize(value)).digest("hex");
 
+/**
+ * Canonical bytes for a snapshot. Used to compare two snapshots for exact
+ * equality — a byte compare, not a digest: nothing here needs a short stable
+ * name for a snapshot, and a hash of one only adds a second thing to keep true.
+ */
 export const canonicalizeSnapshot = (snapshot: DeckSnapshot): Uint8Array =>
   canonicalize(snapshot);
-
-export const digestSnapshot = (snapshot: DeckSnapshot): string =>
-  canonicalDigest(snapshot);
 
 export const digestFormulaExpression = (expression: string): string =>
   createHash("sha256").update(expression, "utf8").digest("hex");

@@ -30,8 +30,7 @@ export {
   canonicalize,
   canonicalDigest,
   canonicalizeSnapshot,
-  digestFormulaExpression,
-  digestSnapshot
+  digestFormulaExpression
 } from "./domain/canonical.js";
 export { validateSnapshot, SLIDE_ELEMENT_KINDS } from "./domain/validation.js";
 export {
