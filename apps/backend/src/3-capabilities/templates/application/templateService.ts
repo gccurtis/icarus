@@ -205,6 +205,15 @@ class TemplateService implements TemplateCapability {
       return { type: "template.content", template, content };
     }
     const page = this.store.list(query);
+    if (query.search !== undefined || query.kinds !== undefined) {
+      // The term and what it matched. A search returning nothing is the case
+      // worth seeing, and counts alone cannot tell you why.
+      this.dependencies.logger.debug("templates.list.filtered", {
+        search: query.search,
+        kinds: query.kinds,
+        matched: page.items.map((record) => record.name)
+      }, { detail: "content" });
+    }
     this.dependencies.logger.debug("templates.query.completed", {
       type: query.type,
       ...(query.kinds !== undefined ? { kinds: query.kinds } : {}),
@@ -337,6 +346,12 @@ class TemplateService implements TemplateCapability {
       throw new TemplateAlreadyExistsError(templateId);
     }
 
+    this.dependencies.logger.debug("templates.register.detail", {
+      templateId,
+      name: template.name,
+      description: template.description,
+      contextBindings: template.contextBindings
+    }, { detail: "content" });
     this.dependencies.logger.info("templates.registered", {
       templateId,
       kind: template.kind,
@@ -439,6 +454,15 @@ class TemplateService implements TemplateCapability {
       );
     }
 
+    this.dependencies.logger.debug("templates.update.detail", {
+      templateId: template.id,
+      priorName: current.name,
+      name: template.name,
+      description: template.description,
+      priorBindings: current.contextBindings,
+      contextBindings: template.contextBindings,
+      resourceOperations: command.resourceOperations
+    }, { detail: "content" });
     this.dependencies.logger.info("templates.updated", {
       templateId: template.id,
       kind: template.kind,
@@ -489,6 +513,14 @@ class TemplateService implements TemplateCapability {
       });
     }
 
+    this.dependencies.logger.debug("templates.instantiate.detail", {
+      templateId: template.id,
+      templateName: template.name,
+      instanceName: command.name,
+      // The arguments themselves. Which Context each parameter got is the
+      // question you actually have when an instance reads wrong.
+      contextBindings: command.contextBindings
+    }, { detail: "content" });
     this.dependencies.logger.info("templates.instantiated", {
       templateId: template.id,
       kind: template.kind,

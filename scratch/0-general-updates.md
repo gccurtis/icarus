@@ -1,4 +1,4 @@
-| 16 | [Garbage collection for orphaned resources](#16--garbage-collection-for-orphaned-resources) | 16a ✅ **DONE**; 16b open || 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | ✅ **DONE 2026-08-02** || 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | ✅ **DONE 2026-08-02** |# General updates — backend TODO
+# General updates — backend TODO
 
 Cross-capability work that is agreed but not scheduled. **One file; check here first.**
 
@@ -31,7 +31,8 @@ Items 15 and 16 are **Phase C** of the Templates/Document work and are ticked in
 | 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | ✅ **DONE 2026-08-02** |
 | 19 | [Structured Data revisions should propagate to dependents](#19--structured-data-revisions-should-propagate-to-dependents) | agreed — explore |
 | 20 | [Quoted names — decide whether we actually want them](#20--quoted-names--decide-whether-we-actually-want-them) | **decision needed** — default no |
-| 21 | [Log content in dev, shape in production, behind a label](#21--log-content-in-dev-shape-in-production-behind-a-label) | agreed — wanted soon |
+| 21 | [Log content in dev, shape in production, behind a label](#21--log-content-in-dev-shape-in-production-behind-a-label) | ✅ **DONE 2026-08-02** — mechanism landed; migration ongoing |
+| 22 | [Audit what we do with caller-supplied strings](#22--audit-what-we-do-with-caller-supplied-strings) | agreed — explore |
 | R | [Reference: delegated command claims](#reference--delegated-command-claims-removed-2026-08-02) | ✅ **REMOVED 2026-08-02** |
 
 Items 7–10 correct Templates, which is **already implemented and green** (254 tests). They
@@ -1131,6 +1132,32 @@ the shared `Logger` while several capabilities are in flight invites conflicts
 for no benefit. That work logs shape only for now and will migrate with everyone
 else.
 
+### ✅ Mechanism landed 2026-08-02
+
+The additive half is done, exactly as specified above:
+
+- `LogDetail = "shape" | "content"` and an optional third argument
+  `{ detail }` on all four `Logger` methods. The third-argument form won, for
+  the reason given above — `data` stays clean and every existing call site keeps
+  compiling untouched.
+- **Unlabelled means `shape`**, so no existing record changed meaning. Turning
+  production on cannot silently start dropping things nobody labelled.
+- `logging.detail` in configuration, defaulting to `content`. An unrecognised
+  value resolves to `content`, so a typo fails toward *more* logging — the safe
+  direction while this is a development setting.
+- A content-labelled record in `shape` mode is **dropped whole, not redacted**.
+  A half-redacted record is worse than an absent one: it looks complete.
+- The label is written into the entry, so a reader can filter after the fact
+  rather than only at write time.
+
+Covered by `test/capabilities/logging-detail.test.ts`, which also pins the
+production behaviour rather than deleting it.
+
+**Migration is per capability and ongoing.** Templates and Document now log
+content — names, descriptions, bindings, prompt text, resolved context entries,
+submitted operations, and what a search matched. Everything else still logs shape
+only and adopts when it is touched.
+
 ---
 
 ## Reference · Delegated command claims (removed 2026-08-02)
@@ -1219,3 +1246,44 @@ _why_ Document's own claim turned out to be removable too, not just Persona's:
   accepted, narrow case per above, rather than solved with equivalent ordering machinery,
   because the acceptable fallback (a clear "not found" error on an already-rare compound
   condition) is cheaper than the mechanism would be.
+
+---
+
+## 22 · Audit what we do with caller-supplied strings
+
+**Agreed — explore.** [Item 18](#18--like-wildcards-are-not-escaped-in-text-search) was one
+instance of a general shape: a caller-supplied string reaches a place that gives some
+character a meaning, and nobody escaped it. That one was `LIKE` wildcards. It is unlikely to
+be the only one.
+
+**Why this is worth a pass rather than a fix.** The bug was not "we forgot to escape". It was
+that two capabilities each wrote a filter, one escaped and one did not, and nothing compared
+them — so the same question returned different answers depending on who answered it. Finding
+the next one means looking for the *pattern*, not the symptom.
+
+### What to look at
+
+- **SQL** — `LIKE` is done. Check `GLOB` (a different wildcard vocabulary: `*`, `?`, `[…]`),
+  `REGEXP` if it is ever registered, and any `json_extract` path built from input. Table and
+  column names are interpolated in this codebase, but only from `projectId` hashes and
+  literals; confirm that stays true.
+- **Regex construction.** Anywhere a `RegExp` is built from a caller string, an unescaped `.`
+  or `(` changes what matches, and a pathological pattern is a denial of service against our
+  own worker.
+- **Identifier round-tripping.** Names that are trimmed, case-folded, or normalised on the way
+  in but compared raw later, or vice versa — the two Context Variable resolvers were nearly
+  this bug.
+- **Formula and expression text.** Structured Data and Document both accept expressions; those
+  have their own parsers, so the question is whether anything *else* re-interprets that text.
+- **Path construction.** File names from callers reaching `join()`. General Files stores
+  content in SQLite rather than on disk, so this may be empty — worth confirming rather than
+  assuming.
+- **Log and error messages.** A name containing a newline can forge a log line, since records
+  are JSON-per-line. `JSON.stringify` handles it, but only where we actually stringify.
+
+### The output
+
+Not a fix list — a **table of every place caller text acquires meaning**, with what escapes it
+and where that escaping lives. Item 18's answer was a shared helper in `0-utils/persistence/`;
+some of these will want the same, and some are genuinely local. The value is knowing which is
+which.

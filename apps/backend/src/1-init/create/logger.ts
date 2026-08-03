@@ -61,5 +61,11 @@ export const createLogger = (config: BackendConfig): Logger => {
     });
   };
 
-  return new FileLogger(dir, config.logging.level as LogLevel, writeEntry, closeWriter);
+  return new FileLogger(
+    dir,
+    config.logging.level as LogLevel,
+    writeEntry,
+    closeWriter,
+    config.logging.detail
+  );
 };

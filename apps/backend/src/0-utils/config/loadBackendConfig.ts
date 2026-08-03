@@ -116,6 +116,12 @@ export interface BackendConfig {
     enabled: boolean;
     level: string;
     directory: string;
+    /**
+     * Which detail labels are written. `content` (the default) writes
+     * everything and is what development wants; `shape` drops content-labelled
+     * records. One value, rather than an audit of every call site.
+     */
+    detail: "shape" | "content";
   };
   intelligence: IntelligenceConfig;
   formula: FormulaConfig;
@@ -169,7 +175,9 @@ const DEFAULT_CONFIG: BackendConfig = {
   logging: {
     enabled: true,
     level: "info",
-    directory: "logs"
+    directory: "logs",
+    // Developer-friendly by default. Production flips this one value.
+    detail: "content"
   },
   intelligence: {
     providers: {
@@ -446,7 +454,15 @@ export const loadBackendConfig = async (configPath = defaultConfigPath): Promise
         logging.directory,
         DEFAULT_CONFIG.logging.directory,
         "logging.directory"
-      )
+      ),
+      // Anything that is not exactly "shape" means write everything. An
+      // unrecognised value therefore fails open toward more logging, which is
+      // the safe direction while this is a development setting.
+      detail: parseString(
+        logging.detail,
+        DEFAULT_CONFIG.logging.detail,
+        "logging.detail"
+      ) === "shape" ? "shape" : "content"
     },
     intelligence: {
       providers: {

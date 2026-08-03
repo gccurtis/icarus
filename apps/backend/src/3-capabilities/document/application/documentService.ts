@@ -481,6 +481,14 @@ class DocumentService implements DocumentCapability {
       // appliedRevision 0: declared, never answered. Legal since change 0, and
       // the reason it had to be — every Prompt Block in a fresh copy is here.
       block.output = { outputId: output.id, appliedRevision: 0 };
+      this.deps.logger.debug("document.duplicate.output-declared", {
+        sourceDocumentId: input.sourceResourceId,
+        blockId: block.id,
+        priorOutputId: source?.id,
+        outputId: output.id,
+        prompt: source?.definition.prompt,
+        contextEntries: resolvePromptContextIfBound(snapshot, block.context)
+      }, { detail: "content" });
       declared.push({
         outputId: output.id,
         documentId,
@@ -575,6 +583,10 @@ class DocumentService implements DocumentCapability {
       documentId: input.resourceId,
       revision: head.revision
     });
+    this.deps.logger.debug("document.marked-as-template.detail", {
+      documentId: input.resourceId,
+      title: head.title
+    }, { detail: "content" });
   }
 
   /**
@@ -649,7 +661,8 @@ class DocumentService implements DocumentCapability {
     let rebound = 0;
     let stillUnbound = 0;
     for (const block of collectPromptBlocks(bound)) {
-      if (block.context.kind !== "variable" || !changed.has(block.context.variableId)) continue;
+      const context = block.context;
+      if (context.kind !== "variable" || !changed.has(context.variableId)) continue;
       const output = await this.deps.derivedOutputs.get(block.output.outputId);
       if (!output) {
         // The Block references an output that no longer exists. Not fatal here
@@ -664,6 +677,17 @@ class DocumentService implements DocumentCapability {
       }
       const contextEntries = resolvePromptContextIfBound(bound, block.context);
       if (contextEntries.length === 0) stillUnbound += 1;
+      // What this prompt is now grounded on, by name and target. The single
+      // most useful line when a template produces an answer nobody expected.
+      this.deps.logger.debug("document.prompt.rebound", {
+        documentId: input.resourceId,
+        blockId: block.id,
+        outputId: block.output.outputId,
+        variable: bound.contextVariables
+          .find((candidate) => candidate.id === context.variableId)?.name,
+        contextEntries,
+        prompt: output.definition.prompt
+      }, { detail: "content" });
       await this.deps.derivedOutputs.updateDefinition(block.output.outputId, {
         prompt: output.definition.prompt,
         contextEntries,
@@ -673,6 +697,11 @@ class DocumentService implements DocumentCapability {
       rebound += 1;
     }
 
+    this.deps.logger.debug("document.bindings-applied.detail", {
+      documentId: input.resourceId,
+      bindings: input.contextBindings,
+      variables: bound.contextVariables
+    }, { detail: "content" });
     this.deps.logger.info("document.bindings-applied", {
       documentId: input.resourceId,
       variables: operations.length,
@@ -715,6 +744,10 @@ class DocumentService implements DocumentCapability {
       // only path here, so the usual public-surface restriction does not apply.
       allowPromptOperations: true
     });
+    this.deps.logger.debug("document.template-submit.operations", {
+      documentId: input.resourceId,
+      operations
+    }, { detail: "content" });
     this.deps.logger.info("document.template-submitted", {
       documentId: input.resourceId,
       priorRevision: head.revision,
