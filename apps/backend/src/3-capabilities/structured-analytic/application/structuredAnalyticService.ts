@@ -149,7 +149,18 @@ export const createStructuredAnalyticService = (
 
   interface ResolvedInput {
     readonly key: string;
+    /** Post-heal. `name` here is already the current one. */
     readonly input: AnalyticInput;
+    /**
+     * The name as stored before this pull, kept because `input.name` is the
+     * healed one — without it a rename record cannot say what the name *was*,
+     * which is the only reason the record exists.
+     *
+     * Not the same as `key`: after a first rename the key is pinned as `as` and
+     * stops tracking the name, so a second rename would report the original
+     * name rather than the one actually being replaced.
+     */
+    readonly previousName: string;
     readonly metadata: ProjectEntryMetadata;
     readonly status: AnalyticSourceStatus;
   }
@@ -177,7 +188,7 @@ export const createStructuredAnalyticService = (
           input.entryId !== undefined && input.entryId !== byName.entryId
             ? "retargeted"
             : "ok";
-        resolved.push({ key, input, metadata: byName, status });
+        resolved.push({ key, input, previousName: input.name, metadata: byName, status });
         continue;
       }
 
@@ -197,6 +208,7 @@ export const createStructuredAnalyticService = (
         resolved.push({
           key,
           input: { ...input, name: byId.displayName, as: input.as ?? key },
+          previousName: input.name,
           metadata: byId,
           status: "renamed"
         });
@@ -269,7 +281,7 @@ export const createStructuredAnalyticService = (
           persisted,
           healed: renamed.map(source => ({
             input: source.key,
-            from: source.input.name,
+            from: source.previousName,
             to: source.metadata.displayName,
             entryId: source.metadata.entryId
           }))

@@ -511,6 +511,43 @@ test("a renamed source heals without becoming an edit", async (t) => {
     assert.deepEqual(refs, ["Orders"]);
   });
 
+  // The record exists to say what a name *was*. It first shipped reporting the
+  // healed name on both sides — `from` and `to` identical — which is the one
+  // thing it must never do. Found by reading a real log, not by a test.
+  await t.test("the heal record names both the old and the new name", async () => {
+    const { h, analytic } = await renamed();
+    await h.service.query({ type: "analytic.pull", id: analytic.id });
+
+    const entry = h.logger.entries.find(
+      e => e.message === "structured-analytic.pull.names-healed"
+    );
+    assert.ok(entry);
+    const healed = (entry.data as { healed: Array<Record<string, unknown>> }).healed;
+    assert.equal(healed.length, 1);
+    assert.equal(healed[0].from, "Orders", "the name being replaced");
+    assert.equal(healed[0].to, "Sales Orders", "the name replacing it");
+    assert.notEqual(healed[0].from, healed[0].to);
+    assert.equal((entry.data as { persisted: boolean }).persisted, true);
+  });
+
+  // `previousName` is not the same as the input key: after the first rename the
+  // key is pinned as `as` and stops tracking the name, so reporting the key
+  // here would name the original rather than the one actually replaced.
+  await t.test("a second rename reports the intermediate name, not the original", async () => {
+    const { h, analytic } = await renamed();
+    await h.service.query({ type: "analytic.pull", id: analytic.id });
+    h.project.entries[0].displayName = "Q4 Orders";
+    await h.service.query({ type: "analytic.pull", id: analytic.id });
+
+    const entry = h.logger.entries.filter(
+      e => e.message === "structured-analytic.pull.names-healed"
+    ).at(-1);
+    const healed = (entry?.data as { healed: Array<Record<string, unknown>> }).healed;
+    assert.equal(healed[0].from, "Sales Orders", "not 'Orders', which is now the key");
+    assert.equal(healed[0].to, "Q4 Orders");
+    assert.equal(healed[0].input, "Orders", "the key, reported separately");
+  });
+
   await t.test("a second rename does not re-pin, because `as` already holds", async () => {
     const { h, analytic } = await renamed();
     await h.service.query({ type: "analytic.pull", id: analytic.id });
