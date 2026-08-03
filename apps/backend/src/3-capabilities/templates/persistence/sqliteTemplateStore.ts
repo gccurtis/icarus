@@ -11,11 +11,17 @@ import {
   pruneHistoryBefore,
   purgeResourceHistory
 } from "#utils/persistence/resourceHistory.js";
-import type { TemplateCommittedTransaction, TemplateRecord } from "../domain/model.js";
+import { InvalidTemplateCursorError } from "../domain/errors.js";
 import type {
-  TemplateClaimOutcome,
-  TemplateCommandClaim,
+  TemplateCommittedTransaction,
+  TemplateListFilter,
+  TemplateRecord
+} from "../domain/model.js";
+import type {
+  TemplateCommandReceipt,
+  TemplateCreateCommit,
   TemplateFinalizeCommit,
+  TemplateListPage,
   TemplateStore,
   TemplateUpdateCommit
 } from "../ports/templateStore.js";
@@ -25,8 +31,8 @@ import {
   type TemplateTableNames
 } from "./sqliteSchema.js";
 import {
-  decodeJson,
   encodeJson,
+  rowToReceipt,
   rowToTransaction,
   rowToTemplate,
   type SQLiteRow
@@ -34,6 +40,54 @@ import {
 
 const DEFAULT_OUTBOX_LIMIT = 100;
 const MAX_OUTBOX_LIMIT = 1_000;
+
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 200;
+
+const CURSOR_KIND = "template-catalog";
+
+interface CatalogCursor {
+  readonly kind: typeof CURSOR_KIND;
+  readonly createdAt: string;
+  readonly id: string;
+}
+
+const boundedLimit = (value: number | undefined): number =>
+  value === undefined
+    ? DEFAULT_PAGE_SIZE
+    : Math.min(Math.max(1, Math.trunc(value)), MAX_PAGE_SIZE);
+
+/**
+ * `%` and `_` are LIKE wildcards, so a term containing either has to be escaped
+ * or it stops being a substring search. `\` is escaped first, or it would
+ * escape the escapes this adds.
+ */
+const escapeLikeTerm = (term: string): string =>
+  term.replace(/[\\%_]/g, (character) => `\\${character}`);
+
+const encodeCursor = (cursor: Omit<CatalogCursor, "kind">): string =>
+  Buffer.from(JSON.stringify({ kind: CURSOR_KIND, ...cursor }), "utf8").toString("base64url");
+
+/**
+ * The `kind` tag is what makes a cursor from another capability's listing fail
+ * loudly here instead of decoding into a plausible-looking position.
+ */
+const decodeCursor = (cursor: string): CatalogCursor => {
+  let decoded: Partial<CatalogCursor>;
+  try {
+    decoded = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as Partial<CatalogCursor>;
+  } catch {
+    throw new InvalidTemplateCursorError();
+  }
+  if (
+    decoded.kind !== CURSOR_KIND ||
+    typeof decoded.createdAt !== "string" ||
+    typeof decoded.id !== "string"
+  ) {
+    throw new InvalidTemplateCursorError();
+  }
+  return { kind: CURSOR_KIND, createdAt: decoded.createdAt, id: decoded.id };
+};
 
 const UNIQUE_VIOLATION = "SQLITE_CONSTRAINT_PRIMARYKEY";
 const UNIQUE_INDEX_VIOLATION = "SQLITE_CONSTRAINT_UNIQUE";
@@ -61,89 +115,75 @@ export class SQLiteTemplateStore implements TemplateStore {
     return row ? rowToTemplate(row) : undefined;
   }
 
-  list(kind?: string): TemplateRecord[] {
-    const sql = kind === undefined
-      ? `SELECT * FROM ${this.tables.templates}
-         WHERE state = 'ready'
-         ORDER BY created_at, id`
-      : `SELECT * FROM ${this.tables.templates}
-         WHERE state = 'ready' AND kind = ?
-         ORDER BY created_at, id`;
-    const rows = (kind === undefined
-      ? this.db.prepare(sql).all()
-      : this.db.prepare(sql).all(kind)) as SQLiteRow[];
-    return rows.map(rowToTemplate);
-  }
+  list(filter: TemplateListFilter = {}): TemplateListPage {
+    const pageSize = boundedLimit(filter.limit);
+    const clauses: string[] = [];
+    const parameters: unknown[] = [];
 
-  claimCommand(claim: TemplateCommandClaim): TemplateClaimOutcome {
-    const existing = this.db
-      .prepare(`SELECT * FROM ${this.tables.commandClaims} WHERE request_id = ?`)
-      .get(claim.requestId) as SQLiteRow | undefined;
-
-    if (existing) {
-      return {
-        state: existing.state === "completed" ? "completed" : "pending",
-        requestDigest: existing.request_digest as string,
-        commandType: existing.command_type as TemplateCommandClaim["commandType"],
-        ...((existing.template_id as string | null) !== null
-          ? { templateId: existing.template_id as string }
-          : {}),
-        ...((existing.result_json as Buffer | null) !== null
-          ? { result: decodeJson<unknown>(existing.result_json) }
-          : {})
-      };
+    if (filter.kinds !== undefined) {
+      // An explicit empty list means "no kinds", which matches nothing. Left as
+      // a real answer rather than normalised to "every kind": a caller that
+      // filtered everything out should see nothing, not the whole catalog.
+      if (filter.kinds.length === 0) return { items: [] };
+      clauses.push(`kind IN (${filter.kinds.map(() => "?").join(", ")})`);
+      parameters.push(...filter.kinds);
+    }
+    if (filter.search !== undefined && filter.search.length > 0) {
+      // NOCASE on both, and the term is escaped: without ESCAPE a search for
+      // "50%" or "a_b" would silently become a wildcard and match far too much.
+      clauses.push(
+        `(name LIKE ? ESCAPE '\\' COLLATE NOCASE
+          OR (description IS NOT NULL AND description LIKE ? ESCAPE '\\' COLLATE NOCASE))`
+      );
+      const term = `%${escapeLikeTerm(filter.search)}%`;
+      parameters.push(term, term);
+    }
+    if (filter.cursor !== undefined) {
+      const after = decodeCursor(filter.cursor);
+      clauses.push("(created_at > ? OR (created_at = ? AND id > ?))");
+      parameters.push(after.createdAt, after.createdAt, after.id);
     }
 
-    this.db
+    const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
+    const rows = this.db
       .prepare(
-        `INSERT INTO ${this.tables.commandClaims}
-           (request_id, request_digest, command_type, template_id, state,
-            result_json, created_at, updated_at)
-         VALUES (?, ?, ?, NULL, 'pending', NULL, ?, ?)`
+        `SELECT * FROM ${this.tables.templates}
+         ${where}
+         ORDER BY created_at, id
+         LIMIT ?`
       )
-      .run(
-        claim.requestId,
-        claim.requestDigest,
-        claim.commandType,
-        claim.createdAt,
-        claim.createdAt
-      );
+      // One extra row rather than a second COUNT query: its presence is the
+      // only thing "is there another page" needs to know.
+      .all(...parameters, pageSize + 1) as SQLiteRow[];
 
-    return {
-      state: "claimed",
-      requestDigest: claim.requestDigest,
-      commandType: claim.commandType
-    };
+    const hasMore = rows.length > pageSize;
+    const items = (hasMore ? rows.slice(0, pageSize) : rows).map(rowToTemplate);
+    const last = items[items.length - 1];
+    return hasMore && last
+      ? { items, nextCursor: encodeCursor({ createdAt: last.createdAt, id: last.id }) }
+      : { items };
   }
 
-  bindClaimTemplateId(requestId: string, templateId: string, at: string): void {
-    this.db
-      .prepare(
-        `UPDATE ${this.tables.commandClaims}
-         SET template_id = ?, updated_at = ?
-         WHERE request_id = ?`
-      )
-      .run(templateId, at, requestId);
+  getReceipt(requestId: string): TemplateCommandReceipt | undefined {
+    const row = this.db
+      .prepare(`SELECT * FROM ${this.tables.commandReceipts} WHERE request_id = ?`)
+      .get(requestId) as SQLiteRow | undefined;
+    return row ? rowToReceipt(row) : undefined;
   }
 
-  completeClaim(requestId: string, result: unknown, at: string): void {
-    this.db
-      .prepare(
-        `UPDATE ${this.tables.commandClaims}
-         SET state = 'completed', result_json = ?, updated_at = ?
-         WHERE request_id = ?`
-      )
-      .run(encodeJson(result), at, requestId);
+  recordReceipt(receipt: TemplateCommandReceipt): void {
+    this.insertReceipt(receipt);
   }
 
-  reserve(record: TemplateRecord): boolean {
-    try {
+  create(commit: TemplateCreateCommit): boolean {
+    const run = this.db.transaction((input: TemplateCreateCommit) => {
+      const record = input.record;
       this.db
         .prepare(
           `INSERT INTO ${this.tables.templates}
              (id, kind, resource_id, name, description, context_bindings_json,
-              state, revision, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+              revision, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           record.id,
@@ -152,11 +192,18 @@ export class SQLiteTemplateStore implements TemplateStore {
           record.name,
           record.description ?? null,
           encodeJson(record.contextBindings),
-          record.state,
           record.revision,
           record.createdAt,
           record.updatedAt
         );
+      this.insertReceipt(input.receipt);
+      this.insertTransaction(input.transaction);
+    });
+    // The catch is outside the transaction on purpose: better-sqlite3 rolls the
+    // whole thing back and rethrows, so by the time we see the violation none of
+    // the three writes survives.
+    try {
+      run(commit);
       return true;
     } catch (error) {
       if (isUniqueViolation(error)) return false;
@@ -180,7 +227,7 @@ export class SQLiteTemplateStore implements TemplateStore {
   update(commit: TemplateUpdateCommit): boolean {
     const run = this.db.transaction((input: TemplateUpdateCommit): boolean => {
       const row = this.db.prepare(
-        `SELECT * FROM ${this.tables.templates} WHERE id = ? AND state = 'ready'`
+        `SELECT * FROM ${this.tables.templates} WHERE id = ?`
       ).get(input.record.id) as SQLiteRow | undefined;
       if (!row) return false;
 
@@ -212,26 +259,17 @@ export class SQLiteTemplateStore implements TemplateStore {
         input.record.id
       );
 
+      this.insertReceipt(input.receipt);
       this.insertTransaction(input.transaction);
       return true;
     });
     return run(commit);
   }
 
-  markReady(commit: TemplateFinalizeCommit): void {
-    const run = this.db.transaction((input: TemplateFinalizeCommit) => {
-      this.db
-        .prepare(`UPDATE ${this.tables.templates} SET state = 'ready', updated_at = ? WHERE id = ?`)
-        .run(input.at, input.templateId);
-      this.insertTransaction(input.transaction);
-    });
-    run(commit);
-  }
-
   delete(commit: TemplateFinalizeCommit): void {
     const run = this.db.transaction((input: TemplateFinalizeCommit) => {
       const row = this.db.prepare(
-        `SELECT * FROM ${this.tables.templates} WHERE id = ? AND state = 'ready'`
+        `SELECT * FROM ${this.tables.templates} WHERE id = ?`
       ).get(input.templateId) as SQLiteRow | undefined;
       if (!row) return;
       const snapshot = rowToTemplate(row);
@@ -249,15 +287,10 @@ export class SQLiteTemplateStore implements TemplateStore {
         recordedAt: input.at
       });
       this.db.prepare(`DELETE FROM ${this.tables.templates} WHERE id = ?`).run(input.templateId);
+      this.insertReceipt(input.receipt);
       this.insertTransaction(input.transaction);
     });
     run(commit);
-  }
-
-  deleteReservation(id: string): void {
-    this.db
-      .prepare(`DELETE FROM ${this.tables.templates} WHERE id = ? AND state = 'reserving'`)
-      .run(id);
   }
 
   latestSnapshot(id: string): TemplateRecord | undefined {
@@ -313,6 +346,29 @@ export class SQLiteTemplateStore implements TemplateStore {
          SET published_at = ? WHERE source_transaction_id = ?`
       )
       .run(publishedAt, sourceTransactionId);
+  }
+
+  /**
+   * OR IGNORE for the same reason as insertTransaction below: a command that
+   * committed its receipt inside its own transaction is written again by the
+   * service's generic path, and the second write must be a no-op rather than a
+   * primary-key violation. First write wins, which is also the right answer for
+   * a divergent reuse — the committed result is the authoritative one.
+   */
+  private insertReceipt(receipt: TemplateCommandReceipt): void {
+    this.db
+      .prepare(
+        `INSERT OR IGNORE INTO ${this.tables.commandReceipts}
+           (request_id, request_digest, command_type, result_json, created_at)
+         VALUES (?, ?, ?, ?, ?)`
+      )
+      .run(
+        receipt.requestId,
+        receipt.requestDigest,
+        receipt.commandType,
+        encodeJson(receipt.result),
+        receipt.createdAt
+      );
   }
 
   /**

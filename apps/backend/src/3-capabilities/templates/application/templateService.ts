@@ -4,6 +4,7 @@ import { digestTemplateCommand } from "../domain/canonical.js";
 import {
   StaleTemplateRevisionError,
   TemplateAlreadyExistsError,
+  TemplateBindingMismatchError,
   TemplateIdempotencyMismatchError,
   TemplateNameConflictError,
   TemplateNotFoundError,
@@ -14,14 +15,18 @@ import type {
   TemplateCommandRequest,
   TemplateCommandResult,
   TemplateCommittedTransaction,
+  TemplateContextBindings,
   TemplateOrigin,
   TemplateQueryRequest,
   TemplateQueryResult,
   TemplateRecord
 } from "../domain/model.js";
 import type { TemplateActivityPublisher } from "../ports/activityPublisher.js";
-import type { TemplateResourceAdapter, TemplateResourceRegistry } from "../ports/resourceAdapter.js";
-import type { TemplateStore } from "../ports/templateStore.js";
+import type {
+  TemplatableResource,
+  TemplatableResourceRegistry
+} from "../ports/templatableResource.js";
+import type { TemplateCommandReceipt, TemplateStore } from "../ports/templateStore.js";
 
 export interface TemplateCapability {
   command(request: TemplateCommandRequest): Promise<TemplateCommandResult>;
@@ -33,7 +38,7 @@ export interface TemplateCapability {
 }
 
 export interface TemplateDependencies {
-  readonly adapters: TemplateResourceRegistry;
+  readonly resources: TemplatableResourceRegistry;
   readonly logger: Logger;
   readonly activityPublisher?: TemplateActivityPublisher;
   readonly attribution?: { readonly actorId?: string };
@@ -45,9 +50,42 @@ export interface TemplateClock {
 
 const systemClock: TemplateClock = { now: () => new Date().toISOString() };
 
-/** Deterministic per request, so a resumed claim replays the adapter's own attempt. */
-const adapterKey = (command: TemplateCommand["type"], requestId: string): string =>
+/**
+ * Deterministic per request, so a retry presents the resource the same key and
+ * replays its own completed attempt rather than performing a second one. This is
+ * the whole of the idempotency story on the far side of the boundary: nothing is
+ * claimed or frozen here, so the key has to carry it.
+ *
+ * One key per command, shared by every call the command makes. A command's calls
+ * are steps in one procedure, not independent operations, so they replay
+ * together or not at all — and a resource that keys `duplicate` off its own
+ * create receipt gets the same key on the retry that produced the copy.
+ */
+const resourceKey = (command: TemplateCommand["type"], requestId: string): string =>
   `templates:${command.slice("template.".length)}:${requestId}`;
+
+/**
+ * A template is a resource as a function of its declared parameters, so an
+ * instantiation is a call to that function: every parameter is supplied, and
+ * nothing else is.
+ *
+ * A declared `target` is the default the *template* was built with, not a
+ * fallback for an omitted argument. Instantiation never falls back to it, which
+ * is what makes "no instance holds an unbound variable" true by construction
+ * rather than by hoping the declaration had defaults.
+ */
+const assertBindingsMatchDeclaration = (
+  template: TemplateRecord,
+  supplied: TemplateContextBindings
+): void => {
+  const declared = new Set(Object.keys(template.contextBindings));
+  const given = new Set(Object.keys(supplied));
+  const missing = [...declared].filter((name) => !given.has(name));
+  const unexpected = [...given].filter((name) => !declared.has(name));
+  if (missing.length > 0 || unexpected.length > 0) {
+    throw new TemplateBindingMismatchError(template.id, missing, unexpected);
+  }
+};
 
 class TemplateService implements TemplateCapability {
   constructor(
@@ -61,29 +99,31 @@ class TemplateService implements TemplateCapability {
     return this.clock.now();
   }
 
+  /**
+   * Receipt lookup, then work, then receipt. Nothing is written before the work
+   * runs, so a command that fails leaves no trace to reconcile — the retry is
+   * simply the command again.
+   *
+   * A failed attempt therefore starts over rather than resuming, and that is the
+   * trade this shape makes. What makes it safe is that every external call is
+   * keyed by the request: the resource replays its own completed attempt, so
+   * "start over" reaches the same place without doing the work twice.
+   */
   async command(request: TemplateCommandRequest): Promise<TemplateCommandResult> {
     const { requestId, origin, command } = request;
     const digest = digestTemplateCommand(command);
-    const claim = this.store.claimCommand({
-      requestId,
-      requestDigest: digest,
-      commandType: command.type,
-      createdAt: this.now()
-    });
 
-    if (claim.requestDigest !== digest || claim.commandType !== command.type) {
-      throw new TemplateIdempotencyMismatchError(requestId);
-    }
-    if (claim.state === "completed") {
-      return claim.result as TemplateCommandResult;
+    const prior = this.store.getReceipt(requestId);
+    if (prior) {
+      if (prior.requestDigest !== digest || prior.commandType !== command.type) {
+        throw new TemplateIdempotencyMismatchError(requestId);
+      }
+      return prior.result as TemplateCommandResult;
     }
 
-    // "pending" means a prior attempt did not finish. Resuming is safe because
-    // the allocated identity is already frozen on the claim and every adapter
-    // call is keyed by the request.
     let result: TemplateCommandResult;
     try {
-      result = await this.execute(requestId, origin, command, claim.templateId);
+      result = await this.execute(requestId, digest, origin, command);
     } catch (error) {
       this.dependencies.logger.warn("templates.command.failed", {
         type: command.type,
@@ -93,7 +133,10 @@ class TemplateService implements TemplateCapability {
       });
       throw error;
     }
-    this.store.completeClaim(requestId, result, this.now());
+    // Commands that change local state commit their own receipt inside the same
+    // transaction. This covers the ones that do not — instantiate and purge —
+    // and is a no-op for the rest.
+    this.store.recordReceipt(this.receipt(requestId, digest, command.type, result));
     return result;
   }
 
@@ -101,7 +144,7 @@ class TemplateService implements TemplateCapability {
     const startedAt = performance.now();
     const { query } = request;
     if (query.type === "template.get") {
-      const template = this.requireReady(query.templateId);
+      const template = this.requireTemplate(query.templateId);
       this.dependencies.logger.debug("templates.query.completed", {
         type: query.type,
         templateId: template.id,
@@ -111,12 +154,12 @@ class TemplateService implements TemplateCapability {
     }
     if (query.type === "template.load") {
       // Deliberately not folded into template.get: a catalog listing is a
-      // single store read and must not pay for an adapter round trip. This
-      // query exists because registration seals the owning capability's own
-      // read surface, leaving Templates as the only way to the content.
-      const template = this.requireReady(query.templateId);
-      const content = await this.requireAdapter(template.kind).readTemplateCopy({
-        templateId: template.id
+      // single store read and must not pay for a round trip to the resource.
+      // This query exists because registration seals the owning capability's
+      // own read surface, leaving Templates as the only way to the content.
+      const template = this.requireTemplate(query.templateId);
+      const content = await this.requireResource(template.kind).load({
+        resourceId: template.resourceId
       });
       this.dependencies.logger.debug("templates.query.completed", {
         type: query.type,
@@ -126,14 +169,20 @@ class TemplateService implements TemplateCapability {
       });
       return { type: "template.content", template, content };
     }
-    const templates = this.store.list(query.kind);
+    const page = this.store.list(query);
     this.dependencies.logger.debug("templates.query.completed", {
       type: query.type,
-      kind: query.kind,
-      count: templates.length,
+      ...(query.kinds !== undefined ? { kinds: query.kinds } : {}),
+      ...(query.search !== undefined ? { searched: true } : {}),
+      count: page.items.length,
+      hasMore: page.nextCursor !== undefined,
       durationMs: Math.round(performance.now() - startedAt)
     });
-    return { type: "template.records", templates };
+    return {
+      type: "template.records",
+      templates: page.items,
+      ...(page.nextCursor !== undefined ? { nextCursor: page.nextCursor } : {})
+    };
   }
 
   async publishPendingActivity(limit?: number): Promise<number> {
@@ -164,114 +213,113 @@ class TemplateService implements TemplateCapability {
 
   private async execute(
     requestId: string,
+    digest: string,
     origin: TemplateOrigin,
-    command: TemplateCommand,
-    frozenTemplateId: string | undefined
+    command: TemplateCommand
   ): Promise<TemplateCommandResult> {
     switch (command.type) {
       case "template.register":
-        return this.register(requestId, origin, command, frozenTemplateId);
+        return this.register(requestId, digest, origin, command);
       case "template.update":
-        return this.update(requestId, origin, command);
+        return this.update(requestId, digest, origin, command);
       case "template.instantiate":
         return this.instantiate(requestId, command);
       case "template.delete":
-        return this.remove(requestId, origin, command);
+        return this.remove(requestId, digest, origin, command);
       case "template.purge":
         return this.purge(requestId, command);
     }
   }
 
+  /**
+   * Templates owns the whole procedure: copy, seal, bind, then record. The
+   * resource is driven, not asked — it neither knows nor decides that it is
+   * becoming a template.
+   *
+   * Both refusals — unsupported kind and name conflict — precede the first
+   * external call, so a rejected registration never leaves a backing copy
+   * behind. That ordering is the reason the name is checked here rather than
+   * being left to the unique index, which cannot report until the row is
+   * written and the row is now written last.
+   */
   private async register(
     requestId: string,
+    digest: string,
     origin: TemplateOrigin,
-    command: Extract<TemplateCommand, { type: "template.register" }>,
-    frozenTemplateId: string | undefined
+    command: Extract<TemplateCommand, { type: "template.register" }>
   ): Promise<TemplateCommandResult> {
-    const adapter = this.requireAdapter(command.source.kind);
-
-    // Allocate once, then make the identity durable before the adapter runs.
-    // A crash mid-copy must have a row to resume from, and a retry must not
-    // mint a second identity or a second backing resource.
-    const templateId = frozenTemplateId ?? this.createId();
-    const createdAt = this.now();
-    if (!frozenTemplateId) {
-      this.store.bindClaimTemplateId(requestId, templateId, createdAt);
+    const resource = this.requireResource(command.kind);
+    if (this.store.nameTaken(command.kind, command.name)) {
+      throw new TemplateNameConflictError(command.kind, command.name);
     }
 
-    const record: TemplateRecord = {
+    const idempotencyKey = resourceKey(command.type, requestId);
+    // The resource names its own row. Templates names the catalog entry, below,
+    // and only after the copy exists — so there is no identity to freeze across
+    // the call and nothing to release when it fails.
+    const { resourceId } = await resource.duplicate({
+      sourceResourceId: command.resourceId,
+      idempotencyKey
+    });
+    await resource.markAsTemplate({ resourceId });
+    if (Object.keys(command.contextBindings).length > 0) {
+      await resource.applyBindings({
+        resourceId,
+        contextBindings: command.contextBindings,
+        idempotencyKey
+      });
+    }
+
+    const templateId = this.createId();
+    const createdAt = this.now();
+    const template: TemplateRecord = {
       id: templateId,
-      kind: command.source.kind,
-      resourceId: templateId,
+      kind: command.kind,
+      resourceId,
       name: command.name,
       ...(command.description !== undefined ? { description: command.description } : {}),
       contextBindings: command.contextBindings,
-      state: "reserving",
       revision: 1,
       createdAt,
       updatedAt: createdAt
     };
+    const result: TemplateCommandResult = { type: "template.registered", template };
 
-    const existing = this.store.get(templateId);
-    if (!existing) {
-      // Checked before reserve() so the caller gets the specific conflict. The
-      // unique index is still the authority; this only tells the two apart,
-      // and both fail before the adapter runs, so no backing copy is created.
-      if (this.store.nameTaken(record.kind, record.name)) {
-        throw new TemplateNameConflictError(record.kind, record.name);
-      }
-      if (!this.store.reserve(record)) {
-        throw new TemplateAlreadyExistsError(templateId);
-      }
+    if (!this.store.create({
+      record: template,
+      receipt: this.receipt(requestId, digest, command.type, result, createdAt),
+      transaction: this.transaction("template.registered", template, createdAt, requestId, origin)
+    })) {
+      throw new TemplateAlreadyExistsError(templateId);
     }
-
-    try {
-      await adapter.createTemplateCopy({
-        sourceResourceId: command.source.resourceId,
-        templateId,
-        contextBindings: command.contextBindings,
-        idempotencyKey: adapterKey(command.type, requestId)
-      });
-    } catch (error) {
-      // Release the reservation so a failed registration does not burn the ID.
-      this.store.deleteReservation(templateId);
-      throw error;
-    }
-
-    const readyAt = this.now();
-    const template: TemplateRecord = { ...record, state: "ready", updatedAt: readyAt };
-    this.store.markReady({
-      templateId,
-      at: readyAt,
-      transaction: this.transaction("template.registered", template, readyAt, requestId, origin)
-    });
 
     this.dependencies.logger.info("templates.registered", {
       templateId,
       kind: template.kind,
       requestId
     });
-    return { type: "template.registered", template };
+    return result;
   }
 
   /**
    * The only path that changes a registered template. Both halves run in one
-   * command: the backing content through the adapter, the declaration in the
+   * command: the backing content through the resource, the declaration in the
    * catalog. Two writable statements about one template would otherwise drift.
    *
-   * Adapter first, catalog second — the same ordering as register. A failure
-   * before the local commit leaves the catalog untouched and the command
-   * retryable on its still-pending claim.
+   * Resource first, catalog second — the same ordering as register. A failure
+   * before the local commit leaves the catalog untouched and no receipt behind,
+   * so the retry is the same command against the same state.
    */
   private async update(
     requestId: string,
+    digest: string,
     origin: TemplateOrigin,
     command: Extract<TemplateCommand, { type: "template.update" }>
   ): Promise<TemplateCommandResult> {
-    const current = this.requireReady(command.templateId);
-    const adapter = this.requireAdapter(current.kind);
+    const current = this.requireTemplate(command.templateId);
+    const resource = this.requireResource(current.kind);
 
-    // Fail the whole command before the adapter runs, so a rejected rename
+    // Fail the whole command before the resource runs, so a rejected rename
     // never leaves edited content behind an unchanged declaration.
     if (current.revision !== command.expectedRevision) {
       throw new StaleTemplateRevisionError(
@@ -285,14 +333,23 @@ class TemplateService implements TemplateCapability {
       throw new TemplateNameConflictError(current.kind, name);
     }
 
-    if (command.resourceOperations !== undefined || command.contextBindings !== undefined) {
-      await adapter.updateTemplateCopy({
-        templateId: current.id,
+    // Two calls rather than one, because they are two different statements: the
+    // declaration says which variables are parameters, the operations say what
+    // the content is. Bindings first, so a content edit that references a
+    // freshly bound variable sees it.
+    const idempotencyKey = resourceKey(command.type, requestId);
+    if (command.contextBindings !== undefined) {
+      await resource.applyBindings({
+        resourceId: current.resourceId,
+        contextBindings: command.contextBindings,
+        idempotencyKey
+      });
+    }
+    if (command.resourceOperations !== undefined) {
+      await resource.submit({
+        resourceId: current.resourceId,
         operations: command.resourceOperations,
-        ...(command.contextBindings !== undefined
-          ? { contextBindings: command.contextBindings }
-          : {}),
-        idempotencyKey: adapterKey(command.type, requestId)
+        idempotencyKey
       });
     }
 
@@ -311,11 +368,13 @@ class TemplateService implements TemplateCapability {
       revision: current.revision + 1,
       updatedAt
     };
+    const result: TemplateCommandResult = { type: "template.updated", template };
 
     const committed = this.store.update({
       record: template,
       expectedRevision: current.revision,
       at: updatedAt,
+      receipt: this.receipt(requestId, digest, command.type, result, updatedAt),
       transaction: this.transaction("template.updated", template, updatedAt, requestId, origin)
     });
     if (!committed) {
@@ -334,30 +393,41 @@ class TemplateService implements TemplateCapability {
       revision: template.revision,
       requestId
     });
-    return { type: "template.updated", template };
+    return result;
   }
 
+  /**
+   * The mirror of register, one call shorter: copy and bind, but no
+   * `markAsTemplate`. An instance is an ordinary resource of its kind, and the
+   * only difference between the two procedures is that one seals and the other
+   * does not.
+   */
   private async instantiate(
     requestId: string,
     command: Extract<TemplateCommand, { type: "template.instantiate" }>
   ): Promise<TemplateCommandResult> {
-    const template = this.requireReady(command.templateId);
-    const adapter = this.requireAdapter(template.kind);
+    const template = this.requireTemplate(command.templateId);
+    const resource = this.requireResource(template.kind);
+    assertBindingsMatchDeclaration(template, command.contextBindings);
 
-    await adapter.instantiateTemplate({
-      templateId: template.id,
-      destinationResourceId: command.destinationResourceId,
-      instantiation: {
-        ...(command.title !== undefined ? { title: command.title } : {}),
-        contextBindings: command.contextBindings
-      },
-      idempotencyKey: adapterKey(command.type, requestId)
+    const idempotencyKey = resourceKey(command.type, requestId);
+    const created = await resource.duplicate({
+      sourceResourceId: template.resourceId,
+      ...(command.name !== undefined ? { name: command.name } : {}),
+      idempotencyKey
     });
+    if (Object.keys(command.contextBindings).length > 0) {
+      await resource.applyBindings({
+        resourceId: created.resourceId,
+        contextBindings: command.contextBindings,
+        idempotencyKey
+      });
+    }
 
     this.dependencies.logger.info("templates.instantiated", {
       templateId: template.id,
       kind: template.kind,
-      destinationResourceId: command.destinationResourceId,
+      resourceId: created.resourceId,
       requestId
     });
 
@@ -366,27 +436,34 @@ class TemplateService implements TemplateCapability {
     return {
       type: "template.instantiated",
       template,
-      resource: { kind: template.kind, resourceId: command.destinationResourceId }
+      resource: { kind: template.kind, resourceId: created.resourceId }
     };
   }
 
   private async remove(
     requestId: string,
+    digest: string,
     origin: TemplateOrigin,
     command: Extract<TemplateCommand, { type: "template.delete" }>
   ): Promise<TemplateCommandResult> {
-    const template = this.requireReady(command.templateId);
-    const adapter = this.requireAdapter(template.kind);
+    const template = this.requireTemplate(command.templateId);
+    const resource = this.requireResource(template.kind);
 
-    await adapter.logicalDeleteTemplateCopy({
-      templateId: template.id,
-      idempotencyKey: adapterKey(command.type, requestId)
+    await resource.logicalDelete({
+      resourceId: template.resourceId,
+      idempotencyKey: resourceKey(command.type, requestId)
     });
 
     const deletedAt = this.now();
+    const result: TemplateCommandResult = {
+      type: "template.deleted",
+      templateId: template.id,
+      revision: template.revision + 1
+    };
     this.store.delete({
       templateId: template.id,
       at: deletedAt,
+      receipt: this.receipt(requestId, digest, command.type, result, deletedAt),
       transaction: this.transaction("template.deleted", template, deletedAt, requestId, origin)
     });
 
@@ -395,11 +472,7 @@ class TemplateService implements TemplateCapability {
       kind: template.kind,
       requestId
     });
-    return {
-      type: "template.deleted",
-      templateId: template.id,
-      revision: template.revision + 1
-    };
+    return result;
   }
 
   private async purge(
@@ -411,9 +484,9 @@ class TemplateService implements TemplateCapability {
     const template = this.store.latestSnapshot(command.templateId);
     if (!template) this.store.purge(command.templateId);
     const retained = template as TemplateRecord;
-    await this.requireAdapter(retained.kind).purgeTemplateCopy({
-      templateId: retained.id,
-      idempotencyKey: adapterKey(command.type, requestId)
+    await this.requireResource(retained.kind).purge({
+      resourceId: retained.resourceId,
+      idempotencyKey: resourceKey(command.type, requestId)
     });
     this.store.purge(retained.id);
     this.dependencies.logger.info("templates.purged", {
@@ -424,12 +497,21 @@ class TemplateService implements TemplateCapability {
     return { type: "template.purged", templateId: retained.id };
   }
 
+  private receipt(
+    requestId: string,
+    requestDigest: string,
+    commandType: TemplateCommand["type"],
+    result: TemplateCommandResult,
+    createdAt: string = this.now()
+  ): TemplateCommandReceipt {
+    return { requestId, requestDigest, commandType, result, createdAt };
+  }
+
   /**
    * The source transaction ID is derived from the request rather than freshly
-   * generated, so it is stable across retries. A crash between the catalog
-   * commit and claim completion re-runs this command; a random ID would write
-   * a second transaction. Paired with the outbox's INSERT OR IGNORE, a request
-   * yields at most one source transaction per kind.
+   * generated, so it is stable across retries. Paired with the outbox's
+   * INSERT OR IGNORE, a request yields at most one source transaction per kind
+   * even if the command is re-run.
    */
   private transaction(
     kind: TemplateCommittedTransaction["kind"],
@@ -460,8 +542,8 @@ class TemplateService implements TemplateCapability {
     for (const templateId of this.store.expiredDeleted(cutoff)) {
       const template = this.store.latestSnapshot(templateId);
       if (!template) continue;
-      await this.requireAdapter(template.kind).purgeTemplateCopy({
-        templateId,
+      await this.requireResource(template.kind).purge({
+        resourceId: template.resourceId,
         idempotencyKey: `templates:retention-purge:${templateId}`
       });
       this.store.purge(templateId);
@@ -470,18 +552,15 @@ class TemplateService implements TemplateCapability {
     return count;
   }
 
-  private requireAdapter(kind: string): TemplateResourceAdapter {
-    const adapter = this.dependencies.adapters.get(kind);
-    if (!adapter) throw new TemplateUnsupportedKindError(kind);
-    return adapter;
+  private requireResource(kind: string): TemplatableResource {
+    const resource = this.dependencies.resources.get(kind);
+    if (!resource) throw new TemplateUnsupportedKindError(kind);
+    return resource;
   }
 
-  /** A reserving record is not yet a template, so it reads as absent. */
-  private requireReady(templateId: string): TemplateRecord {
+  private requireTemplate(templateId: string): TemplateRecord {
     const template = this.store.get(templateId);
-    if (!template || template.state !== "ready") {
-      throw new TemplateNotFoundError(templateId);
-    }
+    if (!template) throw new TemplateNotFoundError(templateId);
     return template;
   }
 }

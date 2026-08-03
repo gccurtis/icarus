@@ -1,11 +1,12 @@
 import type {
+  TemplateCommandType,
   TemplateCommittedTransaction,
   TemplateContextBindings,
   TemplateTransactionKind,
   TemplateOrigin,
-  TemplateRecord,
-  TemplateRecordState
+  TemplateRecord
 } from "../domain/model.js";
+import type { TemplateCommandReceipt } from "../ports/templateStore.js";
 
 export type SQLiteRow = Record<string, unknown>;
 
@@ -30,10 +31,17 @@ export const rowToTemplate = (row: SQLiteRow): TemplateRecord => ({
     ? { description: row.description as string }
     : {}),
   contextBindings: decodeJson<TemplateContextBindings>(row.context_bindings_json),
-  state: row.state as TemplateRecordState,
   revision: Number(row.revision),
   createdAt: row.created_at as string,
   updatedAt: row.updated_at as string
+});
+
+export const rowToReceipt = (row: SQLiteRow): TemplateCommandReceipt => ({
+  requestId: row.request_id as string,
+  requestDigest: row.request_digest as string,
+  commandType: row.command_type as TemplateCommandType,
+  result: decodeJson<unknown>(row.result_json),
+  createdAt: row.created_at as string
 });
 
 export const rowToTransaction = (row: SQLiteRow): TemplateCommittedTransaction => ({

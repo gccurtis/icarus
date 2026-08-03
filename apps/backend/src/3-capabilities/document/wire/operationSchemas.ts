@@ -3,6 +3,8 @@ import {
   DOCUMENT_WIRE_LIMITS,
   DocumentWireError,
   assertDocumentWireInput,
+  decodeContextVariable,
+  decodePromptContext,
   decodeDimensions,
   decodeDocumentBlock,
   decodeDocumentRow,
@@ -53,6 +55,10 @@ const OPERATION_KEYS: Record<DocumentOperation["type"], readonly string[]> = {
   "style.update": ["type", "styleId", "style"],
   "style.delete": ["type", "styleId", "replacementStyleId"],
   "style.set-default": ["type", "blockKind", "styleId"],
+  "prompt.set-context": ["type", "blockId", "context"],
+  "context-variable.create": ["type", "variable"],
+  "context-variable.update": ["type", "variable"],
+  "context-variable.delete": ["type", "variableId"],
   "style.apply-inline": ["type", "blockId", "styleId", "markId", "range", "resolvedProperties"],
   "row.insert": ["type", "row", "afterRowId"],
   "row.move": ["type", "rowId", "afterRowId"],
@@ -127,6 +133,17 @@ export const decodeDocumentOperation = (value: unknown): DocumentOperation => {
     case "style.set-default":
       requireEnum(operation.blockKind, BLOCK_KINDS, `${type}.blockKind`);
       requireIdentifier(operation.styleId, `${type}.styleId`);
+      break;
+    case "prompt.set-context":
+      requireIdentifier(operation.blockId, `${type}.blockId`);
+      decodePromptContext(operation.context, `${type}.context`);
+      break;
+    case "context-variable.create":
+    case "context-variable.update":
+      decodeContextVariable(operation.variable, `${type}.variable`);
+      break;
+    case "context-variable.delete":
+      requireIdentifier(operation.variableId, `${type}.variableId`);
       break;
     case "style.apply-inline":
       requireIdentifier(operation.blockId, `${type}.blockId`);

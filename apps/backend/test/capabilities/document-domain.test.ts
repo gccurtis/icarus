@@ -12,6 +12,7 @@ import { canonicalizeSnapshot } from "../../src/3-capabilities/document/domain/c
 import { digestFormulaExpression } from "../../src/3-capabilities/document/domain/canonical.js";
 import {
   DocumentOperationError,
+  DocumentUnboundContextVariableError,
   DocumentValidationError,
 } from "../../src/3-capabilities/document/domain/errors.js";
 import {
@@ -31,6 +32,7 @@ import type {
   DocumentOperation,
   DocumentRow,
   DocumentSnapshot,
+  PromptContext,
   TextBlock,
 } from "../../src/3-capabilities/document/domain/model.js";
 import {
@@ -38,6 +40,8 @@ import {
   computeTouchedIds,
 } from "../../src/3-capabilities/document/domain/reducer.js";
 import { canRebase } from "../../src/3-capabilities/document/domain/rebase.js";
+import { validateSnapshot } from "../../src/3-capabilities/document/domain/validation.js";
+import { resolvePromptContext } from "../../src/3-capabilities/document/domain/reducer.js";
 import { projectDocumentDependencies } from "../../src/3-capabilities/document/projections/dependencies.js";
 import { projectDocumentOutline } from "../../src/3-capabilities/document/projections/outline.js";
 import { projectDocumentPlainText } from "../../src/3-capabilities/document/projections/plainText.js";
@@ -988,4 +992,200 @@ test("Image and Chart dimensions are canonical, validated, and reversible", () =
     }], runtime, LIMITS),
     (error) => error instanceof DocumentValidationError && /image image height/.test(error.message),
   );
+});
+
+test("a Prompt Block may be declared but never answered", async (t) => {
+  const runtime = richText();
+  const promptAt = (appliedRevision: number): DocumentSnapshot =>
+    snapshotWithRows(row("prompt-row", [{
+      id: "prompt-block",
+      kind: "prompt",
+      styleId: NORMAL_STYLE,
+      output: { outputId: "output-1", appliedRevision },
+    }]));
+
+  await t.test("appliedRevision 0 is valid and means never answered", () => {
+    // `declare` returns headRevision 0, and only a refresh moves it to 1. A
+    // positive-only rule made "a prompt that has not run yet" unrepresentable,
+    // which is the state every Prompt Block in a freshly duplicated Document is
+    // in — so duplication could not produce a valid snapshot at all.
+    const result = validateSnapshot(promptAt(0), runtime, LIMITS);
+    assert.equal(result.ok, true, result.diagnostics.join("; "));
+  });
+
+  await t.test("an answered revision is still valid", () => {
+    assert.equal(validateSnapshot(promptAt(3), runtime, LIMITS).ok, true);
+  });
+
+  await t.test("a negative or fractional revision is still refused", () => {
+    for (const appliedRevision of [-1, 1.5]) {
+      const result = validateSnapshot(promptAt(appliedRevision), runtime, LIMITS);
+      assert.equal(result.ok, false);
+      assert.ok(
+        result.diagnostics.some((entry) => /invalid Derived Output reference/.test(entry)),
+      );
+    }
+  });
+
+  await t.test("applying revision 0 to a block is still refused", () => {
+    // Relaxing the *snapshot* rule does not relax the *operation* rule.
+    // `prompt.apply-derived-output` carries a generated revision, and revision 0
+    // would mean un-answering a prompt, which is not a thing that happens.
+    assert.throws(
+      () => applyOperations(promptAt(1), [{
+        type: "prompt.apply-derived-output",
+        blockId: "prompt-block",
+        output: { outputId: "output-1", appliedRevision: 0 },
+      }], runtime, LIMITS),
+      (error) => error instanceof DocumentOperationError
+        && /revision must be positive/.test(error.message),
+    );
+  });
+});
+
+test("Context Variables are named parameters a Prompt Block can point at", async (t) => {
+  const runtime = richText();
+  const withVariables = (
+    variables: Array<{ id: string; name: string; target?: { id: string; kind: string } }>,
+    context: PromptContext = { kind: "direct", target: { id: "ctx-1", kind: "context" } },
+  ): DocumentSnapshot => ({
+    ...snapshotWithRows(row("prompt-row", [{
+      id: "prompt-block",
+      kind: "prompt",
+      styleId: NORMAL_STYLE,
+      context,
+      output: { outputId: "output-1", appliedRevision: 0 },
+    }])),
+    contextVariables: variables,
+  });
+
+  await t.test("a variable is created, renamed, and rebound through one update", () => {
+    const source = withVariables([]);
+    const created = applyOperations(source, [{
+      type: "context-variable.create",
+      variable: { id: "var-1", name: "Region" },
+    }], runtime, LIMITS);
+    assert.deepEqual(created.snapshot.contextVariables, [{ id: "var-1", name: "Region" }]);
+
+    // Rename and rebind are the same operation, so the inverse is one prior
+    // value rather than a field-by-field diff.
+    const updated = applyOperations(created.snapshot, [{
+      type: "context-variable.update",
+      variable: { id: "var-1", name: "Market", target: { id: "ctx-9", kind: "context" } },
+    }], runtime, LIMITS);
+    assert.deepEqual(updated.snapshot.contextVariables, [
+      { id: "var-1", name: "Market", target: { id: "ctx-9", kind: "context" } },
+    ]);
+
+    const restored = applyOperations(updated.snapshot, updated.inverse, runtime, LIMITS);
+    assert.deepEqual(
+      canonicalizeSnapshot(restored.snapshot),
+      canonicalizeSnapshot(created.snapshot),
+    );
+  });
+
+  await t.test("names are unique case-insensitively, because bindings address them by name", () => {
+    // Whoever writes a template binding cannot know the author's casing, so two
+    // variables differing only in case would make that binding ambiguous.
+    const source = applyOperations(withVariables([]), [{
+      type: "context-variable.create",
+      variable: { id: "var-1", name: "Region" },
+    }], runtime, LIMITS).snapshot;
+
+    assert.throws(
+      () => applyOperations(source, [{
+        type: "context-variable.create",
+        variable: { id: "var-2", name: "  region  " },
+      }], runtime, LIMITS),
+      (error) => error instanceof DocumentOperationError && /name is taken/.test(error.message),
+    );
+  });
+
+  await t.test("two edits claiming one name conflict at rebase, not at apply", () => {
+    // Without the name in the footprint they would touch disjoint IDs, rebase
+    // cleanly, and the loser would fail later as a validation error.
+    const source = withVariables([]);
+    const left = computeTouchedIds(source, [{
+      type: "context-variable.create",
+      variable: { id: "var-1", name: "Region" },
+    }]);
+    const right = computeTouchedIds(source, [{
+      type: "context-variable.create",
+      variable: { id: "var-2", name: "REGION" },
+    }]);
+    assert.ok(left.some((id) => right.includes(id)), "the shared name is a shared footprint");
+  });
+
+  await t.test("a referenced variable cannot be deleted", () => {
+    // Refused rather than cascaded: re-pointing the Blocks is a decision only
+    // the caller can make.
+    const source = withVariables(
+      [{ id: "var-1", name: "Region", target: { id: "ctx-1", kind: "context" } }],
+      { kind: "variable", variableId: "var-1" },
+    );
+    assert.throws(
+      () => applyOperations(source, [{
+        type: "context-variable.delete",
+        variableId: "var-1",
+      }], runtime, LIMITS),
+      (error) => error instanceof DocumentOperationError
+        && /referenced by Prompt Blocks: prompt-block/.test(error.message),
+    );
+
+    // Re-point first, then delete.
+    const repointed = applyOperations(source, [
+      { type: "prompt.set-context", blockId: "prompt-block", context: { kind: "direct", target: { id: "ctx-2", kind: "context" } } },
+      { type: "context-variable.delete", variableId: "var-1" },
+    ], runtime, LIMITS);
+    assert.deepEqual(repointed.snapshot.contextVariables, []);
+  });
+
+  await t.test("a Prompt Block cannot point at a variable that does not exist", () => {
+    assert.throws(
+      () => applyOperations(withVariables([]), [{
+        type: "prompt.set-context",
+        blockId: "prompt-block",
+        context: { kind: "variable", variableId: "nope" },
+      }], runtime, LIMITS),
+      (error) => error instanceof DocumentOperationError
+        && /Context Variable not found/.test(error.message),
+    );
+  });
+
+  await t.test("resolution is one target in, one target out", () => {
+    const direct = withVariables([]);
+    assert.deepEqual(
+      resolvePromptContext(direct, { kind: "direct", target: { id: "ctx-1", kind: "context" } }),
+      [{ id: "ctx-1", kind: "context" }],
+    );
+
+    const bound = withVariables([
+      { id: "var-1", name: "Region", target: { id: "ctx-7", kind: "context" } },
+    ]);
+    assert.deepEqual(
+      resolvePromptContext(bound, { kind: "variable", variableId: "var-1" }),
+      [{ id: "ctx-7", kind: "context" }],
+    );
+  });
+
+  await t.test("an unbound variable refuses to resolve rather than grounding on everything", () => {
+    // Resolving to [] would hand Knowledge the zero-length array it reads as
+    // whole-project retrieval — a wrong answer instead of a refused one.
+    const unbound = withVariables([{ id: "var-1", name: "Main topic" }]);
+    assert.throws(
+      () => resolvePromptContext(unbound, { kind: "variable", variableId: "var-1" }),
+      (error) => error instanceof DocumentUnboundContextVariableError
+        && error.variableName === "Main topic",
+    );
+  });
+
+  await t.test("variable IDs join the non-reuse ledger", () => {
+    // A Prompt Block addresses a variable by ID, so reusing a deleted one would
+    // silently re-point a Block in retained history at a different variable.
+    const identities = collectDocumentIdentities(
+      withVariables([{ id: "var-1", name: "Region" }]),
+    );
+    assert.ok(identities.some((identity) =>
+      identity.kind === "context-variable" && identity.id === "var-1"));
+  });
 });

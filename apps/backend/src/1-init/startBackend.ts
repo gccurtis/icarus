@@ -27,7 +27,7 @@ import { createActivityInstance } from "#init/create/activity.js";
 import { createCommentsInstance } from "#init/create/comments.js";
 import { createInvestigationRuntimeInstance } from "#init/create/investigation.js";
 import {
-  createTemplateAdapterRegistry,
+  createTemplateResourceRegistry,
   createTemplatesInstance
 } from "#init/create/templates.js";
 import { SchedulerInternalJobsRuntime } from "#utils/jobs/internalRuntime.js";
@@ -110,12 +110,14 @@ export const startBackend = async (): Promise<void> => {
       logger
     );
     registerDocumentInternalJobs(documentJobs, document);
-    // Templates is constructed after the resource capabilities so adapters can
-    // be registered into it without a constructor cycle. The registry is empty
-    // until a resource kind supplies an adapter; until then the three mutating
-    // commands answer unsupported_kind and the catalog queries still work.
-    const templateAdapters = createTemplateAdapterRegistry();
-    const templates = createTemplatesInstance(config, templateAdapters, activity, logger);
+    // Templates is constructed after the resource capabilities so their runtime
+    // objects can be registered into it without a constructor cycle.
+    const templateResources = createTemplateResourceRegistry();
+    // One line, no adapter: DocumentCapability satisfies TemplatableResource
+    // structurally. This is the only place that sees both, which is what keeps
+    // Templates and Document from importing each other.
+    templateResources.register(document);
+    const templates = createTemplatesInstance(config, templateResources, activity, logger);
     // Parent resources precede their owned resources so retention can cascade
     // through ownership before a generic child sweep sees the same history.
     const retentionScheduler = new ResourceRetentionScheduler(

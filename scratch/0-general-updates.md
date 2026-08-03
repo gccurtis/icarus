@@ -6,6 +6,9 @@ Consolidates and replaces `resource-id-allocation.md`, `delegated-command-claims
 `context-persona-update.md`, `templates-corrections-plan.md`, and
 `templates-review-responses.md`. Nothing here is in progress.
 
+Items 15 and 16 are **Phase C** of the Templates/Document work and are ticked in
+[`0-templates-checklist.md`](0-templates-checklist.md), not here.
+
 | # | Item | Status |
 |---|---|---|
 | 1 | [Delete Slide](#1--delete-slide) | ✅ **DONE 2026-08-01** |
@@ -25,10 +28,84 @@ Consolidates and replaces `resource-id-allocation.md`, `delegated-command-claims
 | 15 | [Live project-scoped Context](#15--live-project-scoped-context) | agreed — needed for exclusions |
 | 16 | [Garbage collection for orphaned resources](#16--garbage-collection-for-orphaned-resources) | agreed — explore |
 | ~~17~~ | Remove command claims from Templates | **moved** → [`templates-rework-plan.md`](templates-rework-plan.md) step 1 |
+| 18 | [LIKE wildcards are not escaped in text search](#18--like-wildcards-are-not-escaped-in-text-search) | agreed — sweep needed |
+| 19 | [Structured Data revisions should propagate to dependents](#19--structured-data-revisions-should-propagate-to-dependents) | agreed — explore |
+| 20 | [Quoted names — decide whether we actually want them](#20--quoted-names--decide-whether-we-actually-want-them) | **decision needed** — default no |
 | R | [Reference: delegated command claims](#reference--delegated-command-claims-removed-2026-08-02) | ✅ **REMOVED 2026-08-02** |
 
 Items 7–10 correct Templates, which is **already implemented and green** (254 tests). They
 are fixes to shipped code, not new build-out.
+
+---
+
+## Accepted risks — things we chose, and must not forget
+
+Not bugs and not TODOs. Each of these is a **known cost accepted in exchange for
+something**, recorded here so the trade stays visible instead of being rediscovered as a
+surprise. Anything that stops being worth its price belongs in the numbered list above.
+
+### AR-1 · Registration can leak an orphaned backing resource
+
+**What it is.** `template.register` calls `duplicate` → `markAsTemplate` → `applyBindings`
+and *then* writes its catalog row. A crash between the copy and the catalog write leaves a
+sealed backing resource that no `TemplateRecord.resourceId` points at.
+
+**Why it is worse than it sounds.** The orphan is not merely hidden, it is **unreachable**.
+The owning capability refuses every request naming a sealed resource, and `template.list`
+only knows catalog rows — which is exactly what this one lacks. No query in the system can
+see it. Only a sweep can.
+
+**Why we took it.** The alternative is what Templates used to do: reserve a catalog row
+before the external call so the identity survives it. That bought a resumable mid-procedure
+crash and cost a `state` column, two lifecycle methods (`markReady`, `deleteReservation`), a
+promote/release pair, and a second durable idempotency mechanism alongside the receipt
+table. It also leaked in the other direction — a `reserving` row pointing at a copy that may
+or may not exist.
+
+**What bounds it.** Only a crash that is *never retried* leaks. A retry re-runs the command,
+the resource replays its own copy on the same idempotency key, and the catalog write
+completes. So the exposure is "process died mid-command **and** the client gave up", not
+"process died mid-command".
+
+**What would close it.** [Item 16a](#16--garbage-collection-for-orphaned-resources) — a
+conservative interval sweep. Not scheduled.
+
+**When to revisit.** If registration ever becomes something automation drives in bulk. One
+user clicking "make this a template" and walking away is a rounding error; a job registering
+hundreds is not.
+
+---
+
+## 18 · LIKE wildcards are not escaped in text search
+
+**Agreed — a sweep is needed.** `%` and `_` are LIKE wildcards. A search term containing
+either stops being a substring search and silently becomes a pattern: searching for `50%`
+matches every row, and `a_b` matches `axb`.
+
+**Fixed in Templates.** `template.list` escapes `\`, `%`, and `_` in the term and passes
+`ESCAPE '\'`:
+
+```ts
+const escapeLikeTerm = (term: string): string =>
+  term.replace(/[\\%_]/g, (character) => `\\${character}`);
+```
+
+`\` is escaped first, or it would escape the escapes the replacement adds.
+
+**Known unfixed.** `general-files/persistence/sqliteGeneralFileRepository.ts` — the
+`by-name-contains`, `by-name-starts-with`, and `by-name-ends-with` filters all interpolate
+the raw value into a `LIKE ?` parameter. A filename containing `_` is common enough that
+this is a live wrong-results bug, not a theoretical one.
+
+**The sweep.** Grep for `LIKE` across `src/` and check each site for three things: is the
+pattern built from caller-supplied text, is that text escaped, and is `ESCAPE` declared.
+A site that builds its pattern from a fixed vocabulary is fine and should be marked so
+rather than left ambiguous.
+
+**Worth deciding while sweeping:** whether this belongs in a shared helper. It is four lines
+and every capability owns its own persistence, so duplicating it is defensible — but four
+capabilities silently disagreeing about escaping is exactly how this happened. A single
+`escapeLikeTerm` in `0-utils/persistence/` is the obvious counter-proposal.
 
 ---
 
@@ -196,10 +273,12 @@ the command claim before any external call, and returns it. See
   change is needed.
 - **Idempotency.** Document's receipts are keyed `(document_id, request_id)`. With an
   allocated ID there is no `document_id` at claim time for a create, so create needs a
-  request-keyed claim that stores the allocated ID — exactly the
-  `template_command_claims.template_id` pattern in
-  [`templates-implementation-plan.md`](templates-implementation-plan.md). Non-create commands
-  still address an existing resource and are unaffected.
+  request-keyed claim that stores the allocated ID — the
+  `template_command_claims.template_id` pattern Templates used at the time.
+  (Templates has since dropped claims entirely; see
+  [`templates-rework-plan.md`](templates-rework-plan.md) step 1. This item records what was
+  compared when the decision was made.) Non-create commands still address an existing
+  resource and are unaffected.
 
   Comments offers a simpler variant worth comparing — receipts keyed on `request_id` alone:
 
@@ -885,9 +964,13 @@ query, so neither is currently recoverable.
 
 **16a · Template-mode Documents with no catalog row.** Registration creates the backing
 Document first and writes the Templates catalog row second. A crash in between leaves an
-`isTemplate` Document that no `TemplateRecord.resourceId` points at. It is invisible —
-`document.list` excludes template-mode rows and `document.listTemplates` would show it with
-no way to act on it.
+`isTemplate` Document that no `TemplateRecord.resourceId` points at. It is **completely
+unreachable**: `document.list` excludes template-mode rows, every other Document endpoint
+refuses a sealed document, and `template.list` only knows about catalog rows — which is
+precisely what this one lacks. Nothing but a sweep can see it.
+
+Created deliberately. The trade and its bounds are [AR-1](#ar-1--registration-can-leak-an-orphaned-backing-resource);
+this item is the fix that would close it.
 
 **16b · Derived Outputs with no Prompt Block.** An output declared for a Prompt Block whose
 creation then failed, or whose Document was copied and the copy abandoned. Document already
@@ -903,6 +986,88 @@ half-finished create would delete live state.
 
 Both leaks are benign today (invisible rows, no correctness impact), which is why this is
 exploration rather than a fix.
+
+---
+
+## 19 · Structured Data revisions should propagate to dependents
+
+**Explore.** A Structured Data entry's `revision` advances when *that entry* is edited. It
+does not advance when something it depends on changes.
+
+```text
+Orders          revision 12    ← someone appends rows, now revision 13
+Total = SUM(Orders.amount)     ← revision 4, unchanged, value completely different
+```
+
+So a derived entry's revision is not a change signal. Anything that caches a value keyed by
+revision — a Structured Analytic pull receipt or freshness check, a document snapshot, any
+future materialization — reports "unchanged" while the number on screen has moved.
+
+**Why not a digest.** A value digest detects the change but cannot explain it: it says
+"different from what you had" without saying what it was, why, or where to look. A revision
+is an *address* — a point in that entry's history you can go and inspect — and that property
+is only true if revisions move when values do. This is why digests were removed from the
+Structured Analytic pull receipt rather than added to it.
+
+**The change.** When an entry's revision advances, advance the revision of every entry
+transitively dependent on it, in the same transaction.
+
+The dependency graph mostly exists already. Formula computes symbolic and observed
+dependencies (`0-platform/formula/dependencies.ts`), and the resolver tracks which entries
+wait on which during its fixpoint passes (`waitingDependencies` in
+`1-init/create/formula-name-resolver.ts`). What is missing is persisting that edge set on the
+Structured Data side so a write can walk it without a full resolve.
+
+**Consequences to settle before building:**
+
+- **Write amplification.** Editing a widely-referenced table bumps many rows in one
+  transaction. Bounded by the graph, but worth measuring.
+- **Cycles.** Formula already rejects cyclic bindings (`cycle_error`), so the graph is a
+  DAG — but the propagation walk needs its own guard rather than trusting that.
+- **History volume.** Every capability now archives a snapshot per revision (item 13). A
+  propagated bump writes history for an entry whose *authored* content did not change, which
+  is arguably noise. That may argue for separating "authored revision" from "value revision",
+  at which point receipts should carry the value revision.
+- **It fixes a latent cache bug.** `buildSnapshot()` caches on a signature built from
+  `id:revision:displayName:kind`. Today a derived entry's value can change without its
+  revision moving, so that signature can miss a real change. Propagation makes the signature
+  correct — a second, independent argument for this change.
+
+**Who is waiting on it.** Structured Analytic's `analytic.check` is a reliable *changed*
+detector and an imperfect *unchanged* one until this lands. That is a documented limitation
+there, not a blocker.
+
+---
+
+## 20 · Quoted names — decide whether we actually want them
+
+**Explore, and the default answer is no.**
+
+Structured Data restricts display names to `FORMULA_IDENTIFIER`
+(`^[A-Za-z_][A-Za-z0-9_]*$`), so a table cannot be called `Q3 Orders` at all. Formula in turn
+has no syntax for referencing a name that is not a bare identifier.
+
+The Structured Analytic work added the **lexer half** — a backtick form, `` `Q3 Orders`.region ``,
+which lexes to an ordinary identifier carrying the decoded text and needs no parser, binder, or
+resolver change. It is currently **inert**: nothing can create a name that requires it.
+
+**The open question is the other half, and it is a product question, not a technical one:**
+should a project be able to name data anything it likes?
+
+Arguments against, which is why this is parked rather than scheduled:
+
+- Every name becomes something an author may have to quote, and forgetting the backticks is a
+  confusing error rather than an obvious one.
+- The identifier rule is a useful forcing function: names that are legal identifiers are legal
+  everywhere — formulas, compiled analytics, saved entries — with no escaping story.
+- Relaxing it is one-way in practice. Once names with spaces exist, tightening the rule breaks
+  existing projects.
+
+If the answer stays no, the lexer half should be **removed** rather than left as dead syntax —
+it is a handful of lines in `lexer.ts` plus its tests. If the answer becomes yes, relaxing
+`FORMULA_IDENTIFIER` is the only remaining change, because the lexer half already landed.
+
+Either way this is a decision to make deliberately, not to discover.
 
 ---
 

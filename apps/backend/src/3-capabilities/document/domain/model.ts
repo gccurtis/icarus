@@ -18,6 +18,12 @@ export interface DocumentHead {
   id: string;
   title: string;
   lifecycle: DocumentLifecycle;
+  /**
+   * Set once by `markAsTemplate` and never cleared. On the head rather than the
+   * snapshot because mode does not vary by revision — a Document is a template
+   * or it is not, and rewinding history must not un-seal it.
+   */
+  isTemplate: boolean;
   revision: number;
   baseSeq: number;
   semanticDigest: string;
@@ -25,13 +31,34 @@ export interface DocumentHead {
   updatedAt: string;
 }
 
+/**
+ * A named, stable handle a Prompt Block points at instead of a literal context.
+ * This is what makes a Document parameterisable, and therefore templatable.
+ *
+ * The ID/name split is what makes a rename cosmetic: Prompt Blocks reference
+ * `id`, while users and template bindings work in `name`. Renaming a variable
+ * therefore cannot break a Block, and copying a Document preserves both.
+ */
+export interface DocumentContextVariable {
+  id: string;
+  /** Trimmed, non-empty, and case-insensitively unique within the Document. */
+  name: string;
+  /** Omitted means unbound — legal only while the Document is a template. */
+  target?: ContextEntry;
+}
+
 export interface DocumentSnapshot {
-  representationVersion: 1;
   revision: number;
   title: string;
   lifecycle: DocumentLifecycle;
   pageLayout: DocumentPageLayout;
   styles: DocumentStyleRegistry;
+  /**
+   * In the snapshot rather than a side table, deliberately: a side table would
+   * be state that history could not reconstruct, so a Base rewind would restore
+   * old Blocks against current variables.
+   */
+  contextVariables: DocumentContextVariable[];
   rows: DocumentRow[];
 }
 
@@ -132,9 +159,29 @@ export interface QuoteBlock extends BlockBase {
   content: RichContent;
 }
 
+/**
+ * What a Prompt Block is grounded on. **One target, not a list.**
+ *
+ * A list can only union. There is no way to say "these sources except those" in
+ * an array of entries, and exclusion is a thing people want. A Context *can* say
+ * it, so a Prompt Block that points at one Context inherits every composition
+ * Context can express — now and as Context grows. The caller composes first and
+ * points second.
+ */
+export type PromptContext =
+  | { kind: "direct"; target: ContextEntry }
+  | { kind: "variable"; variableId: string };
+
 export interface PromptBlock extends BlockBase {
   kind: "prompt";
   output: DerivedOutputRef;
+  /**
+   * Required. A Prompt Block always has a context, which is what makes the old
+   * empty-scope guard unnecessary rather than merely removed: with exactly one
+   * target, a scope can never collapse to the zero-length array that
+   * `Knowledge.resolveScope` reads as whole-project retrieval.
+   */
+  context: PromptContext;
 }
 
 export interface DividerBlock extends BlockBase {
@@ -292,6 +339,21 @@ export type DocumentOperation =
   | { type: "style.update"; styleId: string; style: DocumentStyle }
   | { type: "style.delete"; styleId: string; replacementStyleId: string }
   | { type: "style.set-default"; blockKind: DocumentBlockKind; styleId: string }
+  /**
+   * Re-points a Prompt Block. An operation rather than a side effect, so the
+   * change participates in history, rebase, undo, and copying like everything
+   * else about a Block.
+   */
+  | { type: "prompt.set-context"; blockId: string; context: PromptContext }
+  | { type: "context-variable.create"; variable: DocumentContextVariable }
+  /**
+   * Replaces the whole variable at the same ID. Not a patch: a rename and a
+   * rebind are the same operation, so an inverse is one prior value rather than
+   * a field-by-field diff.
+   */
+  | { type: "context-variable.update"; variable: DocumentContextVariable }
+  /** Refused while any live Prompt Block references it — see the reducer. */
+  | { type: "context-variable.delete"; variableId: string }
   | {
       type: "style.apply-inline";
       blockId: string;
@@ -367,7 +429,6 @@ export type DocumentOperation =
   | { type: "visual.set-dimensions"; blockId: string; dimensions: VisualDimensions };
 
 export interface DocumentBase {
-  representationVersion: 1;
   documentId: string;
   baseSeq: number;
   snapshot: DocumentSnapshot;
@@ -489,7 +550,8 @@ export interface PromptCreationAttempt extends AttemptBase {
   placement: BlockPlacement;
   definition: {
     prompt: string;
-    contextEntries: ContextEntry[];
+    /** The Block's own context, resolved to concrete entries at compute time. */
+    context: PromptContext;
     stabilisationText: string;
   };
   candidateOutputId?: string;
@@ -592,7 +654,8 @@ export type DocumentCommand =
       presentation?: BlockPresentationOverride;
       placement: BlockPlacement;
       prompt: string;
-      contextEntries: ContextEntry[];
+      /** Exactly one target — a Context, or a variable naming one. */
+      context: PromptContext;
       stabilisationText: string;
     }
   | {
@@ -601,7 +664,11 @@ export type DocumentCommand =
       promptBlockId: string;
       expectedDefinitionRevision: number;
       prompt: string;
-      contextEntries: ContextEntry[];
+      /**
+       * No context here. The Block already has one, and letting a caller pass
+       * entries alongside it created two answers to "what is this grounded on"
+       * that nothing reconciled. Re-pointing is `prompt.set-context`.
+       */
       stabilisationText: string;
     }
   | {

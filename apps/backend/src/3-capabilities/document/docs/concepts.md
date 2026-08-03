@@ -1,4 +1,6 @@
-# Document concepts
+| Prompt Block | Exact reference to one dedicated Derived Output identity and applied revision, plus exactly one context. |
+| Context Variable | A named, stable handle a Prompt Block points at instead of a literal context. What makes a Document parameterisable, and therefore templatable. |
+| Template mode | A Document `markAsTemplate` has sealed. Its whole public surface is refused, reads included; Templates is the only way in. |# Document concepts
 
 ## High-level model
 
@@ -129,3 +131,37 @@ idempotency key; Document neither selects nor stores the Activity ledger ID.
 Document therefore does not depend on Activity's runtime or storage. Exact
 pagination/render layout is also intentionally absent; page layout only
 establishes authored dimensions and usable-width validation.
+
+## Context Variables and template mode
+
+A **Context Variable** is `{ id, name, target? }` on the snapshot. Prompt Blocks
+reference `id`; users and template bindings work in `name`. That split is what
+makes a rename cosmetic — renaming cannot break a Block — and what lets a copy
+preserve both.
+
+A Prompt Block carries **exactly one** `PromptContext`: either a `direct` target
+or a `variable` reference. One rather than a list because a list can only union,
+and there is no way to say "these sources except those" in an array of entries.
+A Context can say it, so pointing at one Context inherits every composition
+Context can express. The caller composes first and points second.
+
+Resolution has no algorithm: `direct` yields its target, `variable` yields the
+variable's. An **unbound** variable refuses to resolve rather than yielding
+nothing — yielding `[]` would hand Knowledge the zero-length array it reads as
+whole-project retrieval, so a half-configured prompt would silently ground itself
+on everything.
+
+Unbound variables exist only on **template-mode** Documents, where declaring a
+parameter with no default is the point. Templates requires instantiation to bind
+every declared parameter, so an ordinary Document cannot hold one.
+
+**Template mode is one-way and sealing is total.** `markAsTemplate` sets
+`isTemplate` on the head; nothing clears it. Every public command *and* query
+naming a sealed Document is refused with `DocumentTemplateModeError`, and
+`document.list` excludes it. The check is written **once, on the document**, not
+enumerated per command — so a command added later is sealed by default rather
+than by someone remembering.
+
+Templates reaches past that seal because it holds Document's runtime object and
+calls `duplicate` / `applyBindings` / `submit` / `load` directly. Those are the
+internal path, which is what "sealed to the public surface" means.

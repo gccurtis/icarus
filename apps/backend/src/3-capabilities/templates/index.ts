@@ -10,14 +10,13 @@ export * from "./domain/errors.js";
 export { canonicalDigest, digestTemplateCommand } from "./domain/canonical.js";
 
 export type {
-  TemplateResourceAdapter,
-  TemplateResourceRegistry
-} from "./ports/resourceAdapter.js";
+  TemplatableResource,
+  TemplatableResourceRegistry
+} from "./ports/templatableResource.js";
 export type { TemplateActivityPublisher } from "./ports/activityPublisher.js";
 export type {
-  TemplateClaimOutcome,
-  TemplateClaimState,
-  TemplateCommandClaim,
+  TemplateCommandReceipt,
+  TemplateCreateCommit,
   TemplateFinalizeCommit,
   TemplateStore,
   TemplateUpdateCommit

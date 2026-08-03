@@ -5,43 +5,44 @@ All types live in [`domain/model.ts`](../domain/model.ts) unless noted.
 ## Record
 
 ```ts
-type TemplateRecordState = "reserving" | "ready";
-
 interface TemplateRecord {
   readonly id: string;            // allocated by Templates
   readonly kind: string;
-  readonly resourceId: string;    // equals `id` in version 1
+  readonly resourceId: string;    // allocated by the owning capability — never `id`
   readonly name: string;          // catalog label, unique per kind among live records
   readonly description?: string;  // catalog annotation
   readonly contextBindings: TemplateContextBindings;  // the declared parameters
-  readonly state: TemplateRecordState;
   readonly revision: number;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
 
+/** Only ever a *result* shape — nothing on the wire names a resource this way. */
 interface TemplateResourceRef {
   readonly kind: string;
   readonly resourceId: string;
 }
 ```
 
+There is no `state`. A row exists only once its backing copy does, so every row
+is a usable template; the old `reserving`/`ready` pair existed to hold an
+identity across an external call that now happens first.
+
+`resourceId` is whatever `duplicate` returned. It is not the Template ID and is
+not required to resemble it — see [concepts](concepts.md) → Identity.
+
 `name` is the template's own label and the only thing a rename touches. The
-backing resource's title is sealed with the resource (see
-[concepts](concepts.md) → Bindings), so the catalog cannot borrow it as the thing
-a user renames. Nor could Templates read it: `readTemplateCopy` returns content
-as `unknown`, and Templates grows no per-kind types with which to find a title
+backing copy's title is sealed with the copy, so the catalog cannot borrow it as
+the thing a user renames. Nor could Templates read it: `load` returns content as
+`unknown`, and Templates grows no per-kind types with which to find a title
 inside it. So `name` is required at registration — there is no default available.
 
-`description` is not a copy of anything the backing resource holds either. It
-answers "what is this template for", which is a statement about the catalog
-entry.
+`description` is not a copy of anything the backing copy holds either. It answers
+"what is this template for", which is a statement about the catalog entry.
 
 `contextBindings` is the template's declared parameter list, and part of what
 identifies the template — see [concepts](concepts.md) → Bindings. It is stored
-here because this is the only place it exists; the backing resource separately
-holds each variable's applied target, which is a different statement, and the
-adapter owns that side's resource-specific meaning.
+here because this is the only place it exists.
 
 ## Bindings
 
@@ -53,23 +54,23 @@ interface TemplateContextBinding {
 }
 
 type TemplateContextBindings = Readonly<Record<string, TemplateContextBinding>>;
-
-interface TemplateInstantiationInput {
-  readonly title?: string;
-  readonly contextBindings: TemplateContextBindings;   // normalised, never undefined
-}
 ```
 
-`contextBindings` is optional on the wire and required in the domain: the
-decoder normalises an absent field to `{}` so nothing downstream branches on
-`undefined`.
+`contextBindings` is optional on the wire and required in the domain: the decoder
+normalises an absent field to `{}` so nothing downstream branches on `undefined`.
 
 There are **two** binding decoders, and the split is deliberate. Registration
 *declares* a parameter, so `decodeDeclaredBindings` accepts
-`["target", "description"]`. Instantiation *supplies an argument*, so
-`decodeBindingArguments` accepts `["target"]` only — a `description` there is a
-400 rather than a silently ignored field, which is the class of bug the split
-exists to remove.
+`["target", "description"]` with both optional. Instantiation *supplies an
+argument*, so `decodeBindingArguments` accepts `["target"]` only and **requires**
+it.
+
+Both restrictions are refusals rather than silent drops. A `description` at
+instantiation is a 400 because silently ignoring an accepted field is the class
+of bug the split exists to remove. An omitted `target` is a 400 because at
+registration it means "a parameter with no default", while here it would leave
+the instance holding an unbound variable — the same shape meaning two different
+things, one of which is not allowed.
 
 `ContextEntry` is `{ id, kind }`, re-exported as a type only. `kind` is
 load-bearing downstream: a binding may target a Context or a directly usable
@@ -88,7 +89,8 @@ type TemplateOrigin = "user" | "agent" | "automation" | "system";
 
 type TemplateCommand =
   | { type: "template.register";
-      source: TemplateResourceRef;         // no templateId: Templates allocates it
+      kind: string;                        // selects the runtime
+      resourceId: string;                  // addresses one of its resources
       name: string;                        // required — see the Record section
       description?: string;
       contextBindings: TemplateContextBindings }
@@ -100,10 +102,10 @@ type TemplateCommand =
       contextBindings?: TemplateContextBindings;   // replaces wholesale when present
       resourceOperations?: unknown }       // content edits, opaque here
   | { type: "template.instantiate";
-      templateId: string;
-      destinationResourceId: string;
-      title?: string;
-      contextBindings: TemplateContextBindings }
+      templateId: string;                  // no destination: the resource allocates it
+      name?: string;                       // the INSTANCE's name — see below
+      contextBindings: TemplateContextBindings }   // exactly the declared keys,
+                                                   // each with a target
   | { type: "template.delete"; templateId: string }
   | { type: "template.purge"; templateId: string };
 
@@ -114,56 +116,86 @@ type TemplateCommandResult =
   | { type: "template.deleted"; templateId: string; revision: number }
   | { type: "template.purged"; templateId: string };
 
+interface TemplateListFilter {
+  readonly kinds?: readonly string[];   // any-of; `[]` matches nothing
+  readonly search?: string;             // case-insensitive substring, name + description
+  readonly limit?: number;
+  readonly cursor?: string;             // opaque; only a previous `nextCursor`
+}
+
 type TemplateQuery =
-  | { type: "template.get"; templateId: string }     // the catalog record
-  | { type: "template.list"; kind?: string }
-  | { type: "template.load"; templateId: string };   // the backing content
+  | { type: "template.get"; templateId: string }          // the catalog record
+  | ({ type: "template.list" } & TemplateListFilter)
+  | { type: "template.load"; templateId: string };        // the backing content
 
 type TemplateQueryResult =
   | { type: "template.record"; template: TemplateRecord }
-  | { type: "template.records"; templates: readonly TemplateRecord[] }
+  | { type: "template.records"; templates: readonly TemplateRecord[]; nextCursor?: string }
   | { type: "template.content"; template: TemplateRecord; content: unknown };
 ```
 
-`template.update` is the only path that changes a registered template. It
-carries both halves — the catalog declaration and the backing content — in one
-command, so the two statements about a template cannot diverge. `expectedRevision`
-is a compare-and-swap and the first one in this capability: everything else here
-either creates or removes.
+`template.register` names its source flat rather than as a nested ref: `kind`
+selects the runtime and `resourceId` addresses one of its resources, which are
+two different jobs. Nesting them implied a shared identity they never had.
+
+`template.update` is the only path that changes a registered template. It carries
+both halves — the catalog declaration and the resource's own state — in one
+command, so the two statements about a template cannot diverge.
+`expectedRevision` is a compare-and-swap and the only one in this capability:
+everything else either creates or removes.
+
+`template.instantiate` names no destination, because the owning capability
+allocates the instance's ID and hands it back. Its `contextBindings` must be
+exactly the declared parameter set, **each with a `target`** — see
+[concepts](concepts.md).
+
+Its `name` is the **instance's**, not the template's. Three names meet here and
+none of them is the other: the Template record's `name` is the catalog label, the
+sealed backing copy's title is inherited from the registration source and
+unreachable, and this one is what the new resource is called. Omitting it
+inherits the backing copy's title, the only default available.
+
+`template.list` is the **only** template listing in the system, so it is shaped
+as a picker: filter by kind, type-ahead over name and description, paginate.
 
 `template.get` and `template.load` are separate so a picker listing a catalog
 stays a single store read. `load` exists at all because registration seals the
-owning capability's own read surface; see [concepts](concepts.md).
+owning capability's own read surface.
 
 ## Ports
 
 `TemplateStore` ([`ports/templateStore.ts`](../ports/templateStore.ts)) is
-synchronous because SQLite is. Beyond ordinary reads it carries the claim
-protocol — `claimCommand`, `bindClaimTemplateId`, `completeClaim` — and the
-reservation lifecycle — `reserve`, `nameTaken`, `markReady`, `update`, `delete`,
-`deleteReservation` — plus retained-history purge and retention operations.
-`markReady` and `delete` each take a `TemplateFinalizeCommit` so the catalog
-change and its Activity transaction commit in one transaction.
+synchronous because SQLite is. Beyond ordinary reads it carries the receipt pair
+— `getReceipt`, `recordReceipt` — and the write set: `create`, `nameTaken`,
+`update`, `delete`, plus retained-history purge and retention operations.
 
-`update` takes a `TemplateUpdateCommit` and does three things atomically:
-compare-and-swap on `expectedRevision`, archive the record being replaced into
-history at its old revision, and append the transaction. The archive is not
-optional bookkeeping — every other revision transition here leaves a history
-record, and an update that skipped it would make `latestSnapshot` report
-pre-update state as though it were current.
+`create`, `update`, and `delete` each take a commit struct carrying **the
+receipt** alongside the change and its Activity transaction, so all of it lands
+in one SQLite transaction. That is not tidiness. A catalog row committed without
+its receipt would make a retry re-run the whole command and then collide with the
+name it wrote itself a moment earlier — reporting a conflict against the caller
+for the store's own half-finished write.
 
-`nameTaken` exists so the service can tell a name collision from an identity
-collision: `reserve` returns a single `false` for any unique violation, but the
-two are different errors to a caller. The unique index remains the authority.
+`recordReceipt` is `INSERT OR IGNORE`, because the service also writes it through
+a generic path after every command. First write wins.
 
-`TemplateResourceAdapter` ([`ports/resourceAdapter.ts`](../ports/resourceAdapter.ts))
-has create, instantiate, update, logical-delete, and purge methods, all
-returning `Promise<void>` with deterministic idempotency keys — plus
-`readTemplateCopy`, which returns `unknown` and takes no key because it is a
-read. `TemplateResourceRegistry` exposes only `get(kind)`.
+`update` additionally archives the record being replaced into history at its old
+revision. That is not optional bookkeeping — every other revision transition here
+leaves a history record, and an update that skipped it would make
+`latestSnapshot` report pre-update state as though it were current.
 
-`TemplateActivityPublisher` ([`ports/activityPublisher.ts`](../ports/activityPublisher.ts))
-has a single `publish(transaction)`.
+`nameTaken` exists so a collision is refused *before* any resource call. The
+unique index remains the authority, but it cannot report until the row is written
+and the row is now written last.
+
+`TemplatableResource`
+([`ports/templatableResource.ts`](../ports/templatableResource.ts)) is satisfied
+structurally by a capability's own runtime — there is no adapter object.
+`TemplatableResourceRegistry` exposes only `get(kind)`.
+
+`TemplateActivityPublisher`
+([`ports/activityPublisher.ts`](../ports/activityPublisher.ts)) has a single
+`publish(transaction)`.
 
 ## Source transactions
 
@@ -187,8 +219,8 @@ interface TemplateCommittedTransaction {
 
 `origin` is required on the command envelope rather than on the command itself.
 It is deliberately excluded from the command digest, so an exact retry from a
-different origin replays rather than conflicts. Source transactions persist the origin that
-committed the catalog change and pass it directly to Activity.
+different origin replays rather than conflicts. Source transactions persist the
+origin that committed the catalog change and pass it directly to Activity.
 
 ## Errors
 
@@ -202,18 +234,32 @@ One class per distinguishable failure, in
 | `TemplateNameConflictError` | 409 `name_conflict` |
 | `StaleTemplateRevisionError` | 409 `revision_conflict` |
 | `TemplateIdempotencyMismatchError` | 409 `idempotency_mismatch` |
+| `TemplateBindingMismatchError` | 400 `binding_mismatch` |
+| `InvalidTemplateCursorError` | 400 `invalid_cursor` |
 | `TemplateUnsupportedKindError` | 400 `unsupported_kind` |
 | `TemplateWireError` | 400 `validation_error` |
 
-The three 409s stay distinct because a caller does something different with
-each: a revision conflict is retried after re-reading, a name conflict needs a
+The three 409s stay distinct because a caller does something different with each:
+a revision conflict is retried after re-reading, a name conflict needs a
 different name, and an idempotency mismatch means the request ID was reused for
 different content.
+
+`TemplateBindingMismatchError` carries `missing` and `unexpected` as arrays, not
+only in its message. A client fixing the call needs the names, and parsing them
+back out of prose is not an interface.
+
+`InvalidTemplateCursorError` is separate from `TemplateWireError` because the fix
+differs: restart the listing rather than correct the request's shape. The wire
+layer only checks a cursor is a plausibly-sized string; whether it is a cursor
+*this store issued* is the store's question, and its answer is keyed on a `kind`
+tag so a cursor from another capability's listing fails loudly instead of
+decoding into a plausible-looking position.
 
 `TemplateNameConflictError` carries `templateName`, not `name` — a parameter
 property called `name` would be clobbered by the `this.name` assignment every
 error class here makes, silently losing the value a caller needs.
 
-There is deliberately no resource-mismatch error, because the *mutating* adapter
-methods return nothing to disagree with. `readTemplateCopy` does return
-something, but Templates passes it straight through without interpreting it.
+There is deliberately no resource-mismatch error. `duplicate` returns an ID and
+`load` returns content, but Templates records the first and passes the second
+straight through; neither is checked against an expectation, because Templates
+never had one.

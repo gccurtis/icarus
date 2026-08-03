@@ -1,37 +1,44 @@
 import type {
   TemplateCommandType,
   TemplateCommittedTransaction,
+  TemplateListFilter,
   TemplateRecord
 } from "../domain/model.js";
 
-/**
- * `pending` is returned when a prior attempt on this request never completed —
- * for example a crash between the adapter call and the catalog finalisation.
- * The caller resumes it rather than starting over, which is safe because the
- * allocated identity and the adapter idempotency key both derive from the
- * request.
- */
-export type TemplateClaimState = "claimed" | "pending" | "completed";
+export interface TemplateListPage {
+  readonly items: TemplateRecord[];
+  /** Absent on the last page. */
+  readonly nextCursor?: string;
+}
 
-export interface TemplateCommandClaim {
+/**
+ * What a completed command returned. An exact retry replays it; a request ID
+ * reused with different content is a mismatch.
+ *
+ * Nothing is written here ahead of the work. That is the whole difference from
+ * the claim this replaced: a claim had to exist *before* the external call so
+ * it could carry a frozen identity across it, which meant a pending state, a
+ * promote step, and a release step. A receipt records what happened, so it only
+ * ever exists after it has.
+ */
+export interface TemplateCommandReceipt {
   readonly requestId: string;
   readonly requestDigest: string;
   readonly commandType: TemplateCommandType;
+  readonly result: unknown;
   readonly createdAt: string;
 }
 
-export interface TemplateClaimOutcome {
-  readonly state: TemplateClaimState;
-  readonly requestDigest: string;
-  readonly commandType: TemplateCommandType;
-  /** The identity frozen by a prior attempt, when one got that far. */
-  readonly templateId?: string;
-  readonly result?: unknown;
+export interface TemplateCreateCommit {
+  readonly record: TemplateRecord;
+  readonly receipt: TemplateCommandReceipt;
+  readonly transaction: TemplateCommittedTransaction;
 }
 
 export interface TemplateFinalizeCommit {
   readonly templateId: string;
   readonly at: string;
+  readonly receipt: TemplateCommandReceipt;
   readonly transaction: TemplateCommittedTransaction;
 }
 
@@ -41,6 +48,7 @@ export interface TemplateUpdateCommit {
   /** Compare-and-swap target: the revision the caller believes is current. */
   readonly expectedRevision: number;
   readonly at: string;
+  readonly receipt: TemplateCommandReceipt;
   readonly transaction: TemplateCommittedTransaction;
 }
 
@@ -53,25 +61,36 @@ export interface TemplateUpdateCommit {
  */
 export interface TemplateStore {
   get(id: string): TemplateRecord | undefined;
-  /** Ready, live records only, ordered by (createdAt, id). */
-  list(kind?: string): TemplateRecord[];
+  /** Live records, ordered by (createdAt, id), filtered and paginated. */
+  list(filter?: TemplateListFilter): TemplateListPage;
 
-  claimCommand(claim: TemplateCommandClaim): TemplateClaimOutcome;
-  /** Freezes the allocated identity on the claim before any adapter call. */
-  bindClaimTemplateId(requestId: string, templateId: string, at: string): void;
-  completeClaim(requestId: string, result: unknown, at: string): void;
+  getReceipt(requestId: string): TemplateCommandReceipt | undefined;
+  /**
+   * First write wins. Commands that commit their own receipt inside a
+   * transaction call this again through the generic path, and the duplicate is
+   * ignored rather than raising.
+   */
+  recordReceipt(receipt: TemplateCommandReceipt): void;
 
-  /** False when the id, the (kind, resourceId) pair, or the (kind, name) pair is taken. */
-  reserve(record: TemplateRecord): boolean;
+  /**
+   * Writes the catalog row, its receipt, and its Activity transaction in one
+   * SQLite transaction. False when the id or the (kind, resourceId) pair is
+   * taken; nothing is written.
+   *
+   * The three are inseparable. A row committed without its receipt would make a
+   * retry re-run the whole command and then collide with the name it wrote
+   * itself a moment earlier — a conflict reported against the caller for the
+   * store's own half-finished write.
+   */
+  create(commit: TemplateCreateCommit): boolean;
   /** True when a live record of this kind already carries this name. */
   nameTaken(kind: string, name: string, exceptId?: string): boolean;
-  /** Marks a reservation ready and writes its Activity transaction atomically. */
-  markReady(commit: TemplateFinalizeCommit): void;
   /**
    * Compare-and-swap replacement. Archives the record being replaced into
    * history at its current revision, writes the replacement, and appends the
-   * Activity transaction — all in one SQLite transaction. False when the row is
-   * missing or its revision is not `expectedRevision`; nothing is written.
+   * receipt and the Activity transaction — all in one SQLite transaction. False
+   * when the row is missing or its revision is not `expectedRevision`; nothing
+   * is written.
    *
    * The archive is not optional bookkeeping: every other revision transition in
    * this capability leaves a history record, and an update that skipped it
@@ -79,10 +98,8 @@ export interface TemplateStore {
    * current.
    */
   update(commit: TemplateUpdateCommit): boolean;
-  /** Archives and removes current state while writing Activity atomically. */
+  /** Archives and removes current state, with the receipt and Activity, atomically. */
   delete(commit: TemplateFinalizeCommit): void;
-  /** Releases a reservation whose adapter call failed. */
-  deleteReservation(id: string): void;
 
   latestSnapshot(id: string): TemplateRecord | undefined;
   purge(id: string): void;

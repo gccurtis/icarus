@@ -105,11 +105,11 @@ export const createBlankSnapshot = (input: {
   pageLayout?: DocumentPageLayout;
   styles?: DocumentStyleRegistry;
 }): DocumentSnapshot => ({
-  representationVersion: 1,
   revision: 1,
   title: input.title,
   lifecycle: "active",
   pageLayout: structuredClone(input.pageLayout ?? DEFAULT_DOCUMENT_PAGE_LAYOUT),
   styles: structuredClone(input.styles ?? createDefaultDocumentStyles()),
+  contextVariables: [],
   rows: []
 });

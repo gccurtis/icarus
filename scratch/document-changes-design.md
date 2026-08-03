@@ -79,17 +79,18 @@ deletion:
 
 ```text
 1. receipt lookup on requestId          -> replay if present
-2. resolve the adapter for source.kind  -> unsupported_kind
+2. resolve the runtime for kind         -> unsupported_kind
 3. name conflict check                  -> name_conflict
-4. adapter.createTemplateCopy({ sourceResourceId, contextBindings, idempotencyKey })
-                                        -> returns the Document ID it allocated
-5. insert the catalog row (one write, already ready)
-6. record the receipt
+4. resource.duplicate({ sourceResourceId, idempotencyKey })
+                                        -> returns the ID it allocated
+5. resource.markAsTemplate({ resourceId })
+6. resource.applyBindings({ resourceId, contextBindings, idempotencyKey })
+7. one transaction: catalog row + receipt + outbox transaction
 ```
 
-**The honest cost.** A crash between 4 and 5 leaves a backing Document that no
+**The honest cost.** A crash between 4 and 7 leaves a backing Document that no
 catalog row references. A retry re-calls step 4, Document replays the same
-document from its create receipt, and step 5 completes. If the caller never
+document from its create receipt, and steps 5–7 complete. If the caller never
 retries, the orphan stays.
 
 That is a leak — but the old design leaked too, just on the other side: a
@@ -231,13 +232,6 @@ attempt per affected live Prompt Block, which updates only `contextEntries` on
 the Derived Output definition under an expected definition revision. Rebinding
 makes the output stale; it never silently triggers model work.
 
-> **Consequence worth confirming.** An unbound variable now grounds a Prompt on
-> the whole project rather than refusing to run. That is consistent — "no
-> context" means the same thing everywhere — but it is silent where the previous
-> design was loud. The alternative is to keep an explicit unbound variable
-> distinct from an omitted context and refuse it. I have written it the silent
-> way per your call; say if you want the distinction back.
-
 ---
 
 ## Change 4 · `isTemplate` and sealing
@@ -254,7 +248,13 @@ On the head, not the snapshot: mode never changes and does not vary by revision.
 **Registration seals the backing Document.** Every `DocumentCommand` *and* every
 `DocumentQuery` naming an `isTemplate` document is refused with one typed error
 (`DocumentTemplateModeError` → 409). `document.list` excludes them.
-`document.listTemplates` is the single exception — it lists, it does not read.
+
+**There is no exception.** An earlier draft kept `document.listTemplates` open on
+the grounds that listing is not reading. It is gone: `template.list` is the only
+template listing in the system, and it grows kind and search filters
+([rework plan step 5](templates-rework-plan.md#step-5--rework-templatelist-into-a-search)).
+Document does not answer questions about templates at all — it does not know the
+word.
 
 Implement the check **once, on the document, not per command**, so a command
 added later is sealed by default. That is the entire value of the rule.
@@ -266,20 +266,31 @@ Both go through the adapter, which uses Document's internal path.
 
 ## Change 5 · Copy
 
-Both directions do the same thing: take one frozen source revision, produce a
-new Document at revision 0. **Document allocates the new ID and returns it.**
+`duplicate` takes one frozen source revision and produces a new Document at
+revision 0. **Document allocates the new ID and returns it.**
 
 ```text
-1. load the source snapshot at its current head revision
-2. check source mode (register: normal; instantiate: template)
-3. apply bindings to the copied contextVariables, by name:
-     absent key          -> keep the source's target
-     key with target     -> that target
-     key without target  -> unbound
+1. create-receipt lookup on the idempotency key  -> replay if present
+2. load the source snapshot at its current head revision
+3. copy it verbatim, including contextVariables and their targets
 4. per Prompt Block: declare a new Derived Output and rewrite the Block's ref
 5. one atomic commit: head, revision-0 Base, identity ledger, ownership rows,
    create receipt, and the document.created transaction
 ```
+
+**One method, both directions.** Registration and instantiation call the same
+`duplicate`; what differs is what Templates does *after* it —
+`markAsTemplate` on one path, not on the other. That is why there is no
+`isTemplate` argument and no mode check here: `duplicate` neither reads nor
+writes template mode, so a source in either mode copies the same way, and a
+resource capability can offer duplication for its own reasons later without
+inheriting anything template-shaped.
+
+**Bindings are not applied here.** `applyBindings` is a separate call Templates
+makes after the copy, on both paths. Applying them by name against the copied
+variables — absent key keeps the source's target, key with target takes it, key
+without target unbinds — is unchanged as a *rule*; only where it runs moved.
+A binding naming a variable the Document does not have is rejected.
 
 ### Why a copy needs new Derived Outputs at all
 
@@ -303,7 +314,10 @@ const output = await derivedOutputs.declare({
 ```
 
 Step 4 is the same call, once per Prompt Block, keyed
-`${idempotencyKey}:${blockId}`, with the destination's resolved context.
+`${idempotencyKey}:${blockId}`, with the context the **source** resolved to —
+because `duplicate` is a verbatim copy and bindings have not been applied yet.
+`applyBindings` re-points the affected outputs afterwards, by the same
+rebinding path change 3 already describes.
 
 **But a fresh `declare` alone is not sufficient, and this is the thing the
 walkthrough turned up.** `domain/validation.ts:196` requires:
@@ -360,11 +374,11 @@ restate both. Skipped.
 |---|---|
 | Page layout, styles, Rows, Blocks, lists, tables, Rich Content | Copy the frozen snapshot |
 | Row/Block/style/list/table/atom/mark IDs | Preserve — every meaningful address is `(documentId, internalId)`, so preserving makes a copy exact |
-| Context Variable IDs and names | Preserve; apply bindings to targets |
+| Context Variable IDs, names, and targets | Preserve verbatim. `applyBindings` changes targets afterwards, not the copy |
 | Formula atoms and last accepted results | Copy as authored snapshot state |
 | Media and resource references | Preserve as references; never duplicate targets |
 | Prompt Derived Outputs | **New** output per Block; rewrite every reference |
-| Title | Registration copies it; instantiation uses the supplied title, else the template's |
+| Title | `duplicate`'s optional `name`, else the source's. Registration never supplies one; instantiation passes the caller's |
 | History, receipts, attempts, stage receipts, outbox rows | Not copied. Destination starts at revision 0 |
 | Identity ledger | Rebuilt from the copied snapshot as revision-0 claims |
 | Comments, Activity history, Presence | Not copied |
@@ -373,57 +387,41 @@ restate both. Skipped.
 
 ## Change 6 · Satisfying the Templates resource port
 
-> **Reworked 2026-08-02.** Templates now receives Document's **runtime object**
-> and drives it, rather than receiving a hand-written adapter. Document exposes
-> a small set of methods; `DocumentCapability` satisfies
-> `TemplatableResource` **structurally**, with no wrapper object in `1-init`.
-> Migration: [`templates-rework-plan.md`](templates-rework-plan.md).
->
-> What Document must expose:
->
-> | Method | Does |
-> |---|---|
-> | `duplicate` | **Pure copy.** New ID, same content, new Derived Outputs with the same prompts, Context Variables copied exactly. No template awareness, no bindings |
-> | `markAsTemplate` | Sets `isTemplate`; the Document goes private |
-> | `submit` | Pass-through edits, including applying bindings |
-> | `load` | Pass-through read |
-> | `logicalDelete` / `purge` | Removal |
->
-> Three consequences for the rest of this document:
->
-> - **`document.listTemplates` is removed.** `template.list` is the only
->   template listing in the system, and it grows kind and search filters.
-> - **Bindings are not applied during duplication.** `duplicate` is pure; the
->   binding application in change 5's step 3 becomes a `submit` after the copy.
-> - **`isTemplate` is set by a separate `markAsTemplate` call**, not at creation.
->   It remains one-way: nothing un-marks a Document.
-
-### The superseded adapter form
-
-Six methods on `DocumentCapability`; one object literal in `1-init`; one
-`register` call in `startBackend.ts`. **Neither capability imports the other** —
-Templates declares the port, Document has the methods, `1-init` is the only
-place that sees both. Exactly what `createDocumentActivityPublisher` already
-does for Activity.
+Templates receives Document's **runtime object** and drives it. There is no
+adapter object and no wrapper in `1-init` — `DocumentCapability` satisfies
+`TemplatableResource` **structurally**, and registration is one line:
 
 ```ts
-const documentTemplateAdapter: TemplateResourceAdapter = {
-  kind: "document",
-  createTemplateCopy: (input) => document.createTemplateCopy(input),   // returns the new ID
-  instantiateTemplate: (input) => document.instantiateTemplate(input), // returns the new ID
-  updateTemplateCopy: (input) => document.updateTemplateCopy(input),
-  readTemplateCopy: (input) => document.readTemplateCopy(input),
-  logicalDeleteTemplateCopy: (input) => document.logicalDeleteTemplateCopy(input),
-  purgeTemplateCopy: (input) => document.purgeTemplateCopy(input)
-};
-templateAdapters.register(documentTemplateAdapter);
+templateResources.register(document);
 ```
 
-`updateTemplateCopy` accepts a **full `DocumentOperation[]`** — text, blocks,
-headings, layout, styles, everything content-related. A template is fully
-editable through it. The one thing it does not carry is a rename: the Document's
-title is not addressable, and `template.update` renames the catalog record
-instead.
+**Neither capability imports the other.** Templates declares the port, Document
+happens to have the methods, `1-init` is the only place that sees both. Same
+shape as `ContextManager` satisfying `PersonaContextPort`.
+
+What Document must expose:
+
+| Method | Does |
+|---|---|
+| `duplicate` | **Pure copy.** New ID, same content, new Derived Outputs with the same prompts, Context Variables copied verbatim. No template awareness, no bindings. Optional `name` |
+| `markAsTemplate` | Sets `isTemplate`; the Document goes private. One-way — nothing un-marks it |
+| `applyBindings` | Binds Context Variables by name, per change 5's rule. Rejects a name the Document does not have |
+| `submit` | Pass-through edits: a full `DocumentOperation[]` |
+| `load` | Pass-through read |
+| `logicalDelete` / `purge` | Removal |
+
+`submit` carries **everything content-related** — text, blocks, headings, layout,
+styles — so a template is fully editable through `template.update`. The one thing
+it does not carry is a rename: the Document's title is not addressable once
+sealed, and `template.update` renames the catalog record instead.
+
+**Why `applyBindings` is its own method rather than a `submit` payload.**
+`submit`'s operations are `unknown` at the Templates boundary, and only Document
+knows what a context-variable operation looks like. Templates holds bindings in
+its own decoded vocabulary and cannot translate them without learning Document's
+operation union — which is the one thing the port exists to prevent. Full
+reasoning in
+[rework plan step 2](templates-rework-plan.md#step-2--replace-the-adapter-port-with-a-resource-runtime-port).
 
 ---
 
@@ -441,7 +439,8 @@ POST /templates/command          # serial queue
   "origin": "user",
   "command": {
     "type": "template.register",
-    "source": { "kind": "document", "resourceId": "doc-abc" },
+    "kind": "document",
+    "resourceId": "doc-abc",
     "name": "Quarterly report",
     "contextBindings": {
       "Main topic": {},                                          // declared, no default
@@ -457,69 +456,78 @@ POST /templates/command          # serial queue
 1. decode strictly at the wire boundary
 2. receipt lookup on "req-1"                    -> none, continue
                                                    (a replay returns here)
-3. adapters.get("document")                     -> the Document adapter
+3. resources.get("document")                    -> Document's runtime object
                                                    else unsupported_kind, no writes
 4. nameTaken("document", "Quarterly report")    -> false
                                                    else name_conflict, no writes
-5. templateId = randomUUID()                    -> "tpl-xyz"
-                                                   Templates' OWN catalog identity
-6. adapter.createTemplateCopy({
+5. document.duplicate({
      sourceResourceId: "doc-abc",
-     contextBindings,
      idempotencyKey: "templates:register:req-1"
-   })                                           -> returns "doc-def"
+   })                                           -> { resourceId: "doc-def" }
+6. document.markAsTemplate({ resourceId: "doc-def" })
+7. document.applyBindings({
+     resourceId: "doc-def", contextBindings,
+     idempotencyKey: "templates:register:req-1"
+   })
 ```
 
-Note what is *not* here: no claim, no reservation, no `reserving` row, and
-`templateId` is not passed to Document. Templates names its catalog entry;
-Document names the document.
+Note what is *not* here: no claim, no reservation, no `reserving` row, and **no
+`templateId` yet**. Templates has not allocated its catalog identity, because it
+has nothing to freeze it against — the row is written after the resource
+returns, not before.
 
-### In Document — `createTemplateCopy`
+### In Document — `duplicate`
 
 ```text
 a. getCreateSubmission("templates:register:req-1")
      present -> return the head recorded last time. This is the whole retry
-                story; the adapter key IS the create-receipt key
+                story; the Templates key IS the create-receipt key
 b. load head + snapshot for "doc-abc" at its current revision
-c. reject if source.isTemplate                  -> cannot template a template
-d. newDocumentId = randomUUID()                 -> "doc-def"
+c. newDocumentId = randomUUID()                 -> "doc-def"
                                                    Document names its own row
-e. copy the snapshot; apply bindings to contextVariables BY NAME:
-     "Main topic" present, no target  -> unbound   (a declared parameter)
-     "Region"     present, has target -> ctx-1     (a default)
-     any variable not named           -> keep the source's target
-     any binding name not in the doc  -> reject the whole copy
-f. per Prompt Block:
-     resolve its context against the copied variables
-     declare({ prompt, contextEntries: [resolved], stabilisationText },
+d. copy the snapshot verbatim — contextVariables and their targets included.
+   No bindings here; duplicate does not know what a template is
+e. per Prompt Block:
+     declare({ prompt, contextEntries: [what the SOURCE resolved to],
+               stabilisationText },
              { idempotencyKey: "templates:register:req-1:<blockId>" })
      rewrite block.output = { outputId: <new>, appliedRevision: 0 }
-     ^ this is the appliedRevision decision — see change 5
-g. one atomic commit:
-     head { id: "doc-def", isTemplate: true, revision: 0 }
+     ^ this is change 0
+f. one atomic commit:
+     head { id: "doc-def", isTemplate: false, revision: 0 }
      revision-0 Base holding the copied snapshot
      identity ledger rebuilt from that snapshot
      prompt_outputs ownership rows for the new outputs
      create receipt keyed "templates:register:req-1"
      document.created transaction in the outbox
-h. return the head
+g. return { resourceId: "doc-def" }
 ```
 
-Step (f) is where a Prompt Block whose variable is unbound lands. On a
-**template** that is expected — `Main topic` has no target, so its Block cannot
-resolve, and under the current constraint it also cannot be declared with a
-concrete context. This is the same knot as `appliedRevision`, and (a) unties
-both: declare with whatever the source resolved to, leave `appliedRevision: 0`,
-and let the instance's binding drive the first real refresh.
+Then `markAsTemplate` flips `isTemplate` and seals it, and `applyBindings`
+walks the copied variables by name:
+
+```text
+"Main topic" present, no target  -> unbound   (a declared parameter)
+"Region"     present, has target -> ctx-1     (a default)
+any variable not named           -> keep the source's target
+any binding name not in the doc  -> reject
+```
+
+Unbinding `Main topic` leaves its Prompt Block unresolvable, which on a
+**template** is exactly right — that is what declaring a parameter with no
+default means. It is representable only because `appliedRevision: 0` is legal:
+the block was declared with whatever the source resolved to and has never been
+answered, and the instance's binding drives the first real refresh.
 
 ### Back in Templates
 
 ```text
-7. insert the catalog row — one write, already usable:
-     { id: "tpl-xyz", kind: "document", resourceId: "doc-def",
-       name: "Quarterly report", contextBindings, revision: 1 }
-8. record the receipt for "req-1" holding this result
-9. append the template.registered transaction to the outbox
+8. templateId = randomUUID()                    -> "tpl-xyz"
+9. one SQLite transaction:
+     catalog row { id: "tpl-xyz", kind: "document", resourceId: "doc-def",
+                   name: "Quarterly report", contextBindings, revision: 1 }
+     receipt for "req-1" holding this result
+     template.registered transaction in the outbox
 ```
 
 `id` and `resourceId` differ, deliberately. The catalog row is Templates'; the
@@ -529,27 +537,34 @@ document is Document's; each named its own.
 
 | Crash after | Effect of a retry |
 |---|---|
-| step 5 | Nothing was written. Retry allocates a new `templateId` and proceeds |
-| step 6, before Document commits | Document's create receipt is absent; the copy runs again cleanly. Any `declare` calls already made return the same outputs on their keys |
-| step 6, after Document commits | Document replays the same head from its create receipt. No second document, no second output |
-| step 7 | The catalog row exists; the receipt does not. Retry re-calls the adapter, gets the same document back, and hits a name conflict — see below |
+| step 4 | Nothing was written. Retry re-runs cleanly |
+| step 5, before Document commits | Document's create receipt is absent; the copy runs again cleanly. Any `declare` calls already made return the same outputs on their keys |
+| step 5, after Document commits | Document replays the same head from its create receipt. No second document, no second output |
+| step 6 or 7 | Both are idempotent on their own — `markAsTemplate` is a set-to-true, `applyBindings` is keyed. The retry replays step 5 and re-runs them |
+| step 9 | Impossible to observe partially: all three writes are one transaction. Either the receipt is there (replay returns the result) or nothing is (the retry re-runs 5–9, with 5 replaying) |
 
-That last row is the one sharp edge. The fix is to make step 7 and step 8 a
-single SQLite transaction, which they can be — both are Templates-local writes.
-Then either both happened (replay returns the result) or neither did (the retry
-re-runs 6–8 cleanly, with 6 replaying).
+**Step 9 being one transaction is what makes the table above boring**, and it is
+the reason it is one. Split it — catalog row committed, receipt not — and the
+retry would replay the duplicate, get the same document back, and then collide
+with the name it wrote itself a moment earlier.
+
+The one leak that survives: a crash between 5 and 9 that is **never retried**
+leaves `doc-def` with no catalog row pointing at it. Tracked as
+[general-updates AR-1](0-general-updates.md#ar-1--registration-can-leak-an-orphaned-backing-resource).
 
 ### Instantiating it later
 
-Same shape, mirrored:
+Same shape, one method shorter:
 
 ```text
 POST /templates/command  { type: "template.instantiate", templateId: "tpl-xyz",
-                           title?, contextBindings: { "Main topic": {...}, "Region": {...} } }
+                           name?, contextBindings: { "Main topic": {...}, "Region": {...} } }
 
-Templates: receipt -> adapter -> record receipt
-Document:  load "doc-def" (template mode), copy, apply bindings, allocate
-           "doc-ghi", declare outputs, commit at revision 0, isTemplate: false
+Templates: receipt -> load record -> reject unless EVERY declared binding is
+           supplied -> duplicate -> applyBindings -> record receipt
+           (no markAsTemplate: an instance is an ordinary Document)
+Document:  copy "doc-def" verbatim, allocate "doc-ghi", declare outputs,
+           commit at revision 0 with isTemplate: false
            -> returns "doc-ghi"
 Templates: returns { template, resource: { kind: "document", resourceId: "doc-ghi" } }
 ```
@@ -561,16 +576,18 @@ declared variable must be bound here, or the instantiation is rejected.
 
 ### Templates
 
-Driven by rules 1 and 2, all deletions except the last two:
+All of Phase A, specified in
+[`templates-rework-plan.md`](templates-rework-plan.md) and not repeated here.
+The parts that exist *because of* rules 1 and 2:
 
 - claims → receipts (see the table above);
 - `reserving` state, `markReady`, `deleteReservation` removed;
 - `CHECK (resource_id = id)` removed; `resourceId` is Document's allocated ID;
 - `template.instantiate` **drops `destinationResourceId`** — Document allocates
   it — and `template.instantiated` returns the created resource ref;
-- `TemplateResourceAdapter.createTemplateCopy` / `instantiateTemplate` **return
-  the allocated ID** instead of `void`. This is why the return type mattered:
-  free now, breaking the moment a second adapter exists.
+- `duplicate` **returns** the allocated ID. The old adapter's `void` returns were
+  only correct while Templates supplied the destination; under rule 2 it does
+  not, so there is something to hand back.
 
 ### Context — live project scope
 
@@ -609,28 +626,29 @@ sentinel.
 ## Order
 
 ```text
+0 appliedRevision: 0             ← independent, trivial
 1 remove representationVersion   ← independent, trivial
-2 Context Variables ────┬──> 3 Prompt context ──┬──> 5 Copy ──> 6 Adapter
+2 Context Variables ────┬──> 3 Prompt context ──┬──> 5 Copy ──> 6 Runtime port
                         │                       │
 4 isTemplate + sealing ─┴───────────────────────┘
 
-Templates claim removal ────────────────────────────> 5
+Phase A (Templates rework) ─────────────────────────> 5
 Context live project scope ─────────────────────────> 3 (for exclusions)
 ```
 
+- **0 before 5** — `duplicate` produces snapshots that fail validation without it.
 - **2 before 3** — a `variable` context references a variable.
-- **2, 3, 4 before 5** — copying applies bindings and re-declares outputs, and
-  the copy is what sets `isTemplate`.
-- **5 before 6** — the adapter is a call-through with nothing to call otherwise.
-- **Templates claim removal before 5** — otherwise the copy path is built
-  against a mechanism being deleted. This is the sequencing mistake I nearly
-  made.
-- **Context live scope is only needed for exclusions.** Changes 2–6 work without
+- **2, 3, 4 before 5** — the copy re-declares outputs against variables, and
+  `markAsTemplate` needs the flag to exist.
+- **5 before 6** — the port is a call-through with nothing to call otherwise.
+- **All of Phase A before 5** — otherwise the copy path is built against a
+  mechanism being deleted. This is the sequencing mistake I nearly made.
+- **Context live scope is only needed for exclusions.** Changes 0–6 work without
   it; a template just cannot express "everything except" until it lands.
 
-1, 2, 3, 4, and the Templates claim removal each leave the tree green alone.
-**5 and 6 do not** — a copy path with no adapter is untested surface, so they
-land together.
+0, 1, 2, 3, 4, and all of Phase A each leave the tree green alone. **5 and 6 do
+not** — a copy path with nothing calling it is untested surface, so they land
+together.
 
 ## What none of this changes
 
@@ -654,18 +672,20 @@ template edit can kick off model work. Accepted rather than restricted.
 **`appliedRevision: 0` is allowed.** Decided 2026-08-02. `domain/validation.ts:196`
 relaxes from `isPositiveInteger` to a non-negative check, and `0` means
 *declared, never answered*. A template whose prompts have never run is a normal
-state and the model can now say so. This is change 0 below, and it is a
+state and the model can now say so. This is change 0 above, and it is a
 prerequisite for `duplicate`.
+
+**Bindings cross the port as bindings, not as operations.** `applyBindings` is a
+typed method rather than a `submit` payload — change 6 has the reasoning.
 
 ## Nothing open
 
-Every question is settled. Ordering and progress live in
-[`templates-rework-plan.md`](templates-rework-plan.md) → Checklist, Phase B.
-Two items remain deferred and tracked in
-[`0-general-updates.md`](0-general-updates.md): live project-scoped Context
-(item 15) and orphan garbage collection (item 16).
+Every question is settled. Progress is ticked in
+[`0-templates-checklist.md`](0-templates-checklist.md) → Phase B.
 
-Tracked separately in [`0-general-updates.md`](0-general-updates.md):
-**item 15** (live project-scoped Context, needed for exclusions), **item 16**
-(garbage collection for orphaned backing Documents and Derived Outputs), and
-**item 17** (removing command claims from Templates).
+Two items are deferred and tracked in
+[`0-general-updates.md`](0-general-updates.md): **item 15** (live project-scoped
+Context, needed for exclusions) and **item 16** (garbage collection for orphaned
+backing Documents and Derived Outputs). Removing Templates' command claims was
+item 17; it now lives in
+[rework plan step 1](templates-rework-plan.md#step-1--clear-the-database-and-drop-the-claim-machinery).

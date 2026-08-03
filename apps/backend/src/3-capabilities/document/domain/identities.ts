@@ -17,7 +17,8 @@ export type DocumentIdentityKind =
   | "table-cell"
   | "table-merge"
   | "rich-text-atom"
-  | "rich-text-mark";
+  | "rich-text-mark"
+  | "context-variable";
 
 export interface DocumentIdentity {
   kind: DocumentIdentityKind;
@@ -67,6 +68,13 @@ export const collectDocumentIdentities = (
     kind: "style",
     id: style.id
   }));
+
+  // Governed by the non-reuse rule like any other structural ID. A Prompt Block
+  // addresses a variable by ID, so reusing a deleted one would silently
+  // re-point a Block in retained history at a different variable.
+  for (const variable of snapshot.contextVariables) {
+    identities.push({ kind: "context-variable", id: variable.id });
+  }
 
   const collectRows = (rows: DocumentRow[]): void => {
     for (const row of rows) {

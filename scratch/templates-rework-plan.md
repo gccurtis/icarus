@@ -23,8 +23,10 @@ owns the whole procedure and passes commands through to resources it has sealed.
 - **Document is not built in this plan.** This plan makes Templates ready to
   receive a resource runtime. Document's side —`duplicate`, `markAsTemplate`,
   Context Variables — is [`document-changes-design.md`](document-changes-design.md).
-- **One decision is still open** and blocks step 6: whether a Prompt Block may
-  hold `appliedRevision: 0`. See that document.
+- **Nothing in this plan is open.** `appliedRevision: 0` was the last question
+  and it is settled; it constrains Document's `duplicate`, not Templates.
+- **Progress is ticked in** [`0-templates-checklist.md`](0-templates-checklist.md),
+  not here.
 
 ### The model, stated once
 
@@ -33,9 +35,10 @@ caller ──POST /templates/command──> Templates ──> resource runtime (
                                         │
                                         ├─ duplicate()      -> new resource ID
                                         ├─ markAsTemplate() -> resource goes private
+                                        ├─ applyBindings()  -> binds its variables
                                         ├─ submit()         -> pass-through edits
                                         ├─ load()           -> pass-through reads
-                                        └─ delete()/purge()
+                                        └─ logicalDelete()/purge()
 ```
 
 - Templates knows kinds. Resources know nothing about Templates.
@@ -90,7 +93,7 @@ was handing its own ID down as the destination.
 
 **What this costs:** a crash between the resource call and the catalog write
 leaves an orphan backing resource. Tracked as
-[general-updates 16a](0-general-updates.md#16--garbage-collection-for-orphaned-resources).
+[general-updates AR-1](0-general-updates.md#ar-1--registration-can-leak-an-orphaned-backing-resource).
 
 *(This step absorbs what was general-updates item 17, now removed from that
 file.)*
@@ -107,11 +110,20 @@ file.)*
      /** Pure copy. New ID, same content. No template awareness, no bindings. */
      duplicate(input: {
        sourceResourceId: string;
+       /** What to call the copy. Omitted keeps the source's own name. */
+       name?: string;
        idempotencyKey: string;
      }): Promise<{ resourceId: string }>;
 
      /** Seals the resource: private, unreachable through its own endpoints. */
      markAsTemplate(input: { resourceId: string }): Promise<void>;
+
+     /** Binds the resource's own variables. Typed, not opaque — see below. */
+     applyBindings(input: {
+       resourceId: string;
+       contextBindings: TemplateContextBindings;
+       idempotencyKey: string;
+     }): Promise<void>;
 
      /** Pass-through edit. Opaque to Templates; the kind interprets it. */
      submit(input: {
@@ -132,8 +144,30 @@ file.)*
    }
    ```
 
-3. Keep the registry shape in `1-init/create/templates.ts`; only the value type
-   changes.
+3. Rename in `1-init/create/templates.ts`: `createTemplateAdapterRegistry` →
+   `createTemplateResourceRegistry`, `RuntimeTemplateAdapterRegistry` →
+   `RuntimeTemplateResourceRegistry`. `startBackend.ts:117` follows. The registry
+   *shape* is unchanged — only its value type and the words.
+4. `TemplateDependencies.adapters` → `resources`, and
+   `TemplateUnsupportedKindError`'s message says *runtime*, not *adapter*.
+
+**Why `applyBindings` is a method and not a `submit` call.** An earlier draft of
+this plan said bindings were applied by calling `submit`. That is not
+implementable: `submit` carries `operations: unknown`, and only the owning kind
+knows what a context-variable operation looks like. Templates would have to
+construct one, which is exactly the per-kind knowledge the whole design keeps out
+of it.
+
+A typed method is also the honest shape. Bindings arrive in Templates' own
+vocabulary — decoded strictly at its wire boundary, stored on its record — so
+handing them across the port unchanged is a pass-through, while turning them into
+operations would be a translation Templates is not entitled to make. This is the
+same argument `templates-design.md` already makes for
+`TemplateInstantiationInput` being typed rather than `arguments?: unknown`:
+Context Variables are resource-level structure, not a Document peculiarity.
+
+`submit` stays for caller-supplied content edits, where `unknown` is correct
+because the caller — not Templates — authored the payload.
 
 **Why a port at all, if we are "passing the runtime object":** the port is only
 the *type* of the value in the registry. There is **no adapter object** — that is
@@ -172,30 +206,38 @@ New command shape — `source` becomes a flat `kind` + `resourceId`:
 }
 ```
 
+`TemplateResourceRef` survives, but only as the shape of the
+`template.instantiated` **result**. It is no longer a command input.
+
 Procedure:
 
-1. Receipt lookup on `requestId`; replay on hit.
+1. Receipt lookup on `requestId`; replay on hit, mismatch on a differing digest.
 2. `registry.get(kind)` → `TemplatableResource`, else `unsupported_kind`.
 3. `nameTaken(kind, name)` → else `name_conflict`. Both checks precede any
    external call.
 4. `resource.duplicate({ sourceResourceId: resourceId, idempotencyKey })`
    → `{ resourceId: backingId }`.
 5. `resource.markAsTemplate({ resourceId: backingId })`.
-6. If `contextBindings` is non-empty, `resource.submit(...)` to apply them to the
-   backing copy.
-7. Allocate `templateId`; insert the catalog row and the receipt **in one SQLite
-   transaction**, with `resourceId: backingId`.
-8. Append the `template.registered` transaction.
+6. If `contextBindings` is non-empty,
+   `resource.applyBindings({ resourceId: backingId, contextBindings, idempotencyKey })`.
+7. Allocate `templateId`; insert the catalog row, the receipt, and the
+   `template.registered` transaction **in one SQLite transaction**, with
+   `resourceId: backingId`. ✅ *`store.create` already does this — it landed in
+   step 1, where removing the claim made the window it closes unsurvivable.*
 
 **Why bindings are applied in step 6 rather than during duplication:**
 `duplicate` stays a pure copy with no knowledge of templates or bindings. That
 keeps it reusable — a resource capability can offer duplication for its own
-reasons — and it means binding application uses the same pass-through path that
-`template.update` already needs.
+reasons — and it means registration and instantiation apply bindings by the same
+call rather than by two different mechanisms.
 
-**Why steps 7's two writes are one transaction:** if the catalog row commits and
+**Why step 7's three writes are one transaction:** if the catalog row commits and
 the receipt does not, a retry re-runs step 4 (replayed by the resource), then
 fails at step 3 with a name conflict against the row it just wrote.
+
+**`TemplateAlreadyExistsError` stays.** `reserve()` is gone, but the insert can
+still lose on `UNIQUE (kind, resource_id)` — two registrations of the same source
+racing past the name check with different names. The error keeps its 409.
 
 ### Step 4 · Rework `template.instantiate`
 
@@ -207,14 +249,27 @@ fails at step 3 with a name conflict against the row it just wrote.
 1. Receipt lookup; replay on hit.
 2. Load the template record; `registry.get(record.kind)`.
 3. **Reject unless every declared binding key is supplied.** A partial
-   instantiation is an error, not a resource with unbound variables.
-4. `resource.duplicate({ sourceResourceId: record.resourceId, idempotencyKey })`
+   instantiation is an error, not a resource with unbound variables. New typed
+   failure: `IncompleteTemplateBindingsError` → 400, naming the missing keys.
+4. `resource.duplicate({ sourceResourceId: record.resourceId, name?, idempotencyKey })`
    → the new instance's ID.
-5. `resource.submit(...)` to apply the instance's bindings.
+5. `resource.applyBindings(...)` with the instance's arguments.
 6. **No `markAsTemplate`** — an instance is a normal resource.
 7. Record the receipt; return `{ template, resource: { kind, resourceId } }`.
 
 `destinationResourceId` is **removed from the wire.** The resource allocates it.
+
+**`title` became `name`.** What instantiation takes is the *instance's* name, and
+calling it `title` invited it to be confused with the template's. Three names
+meet here and none is the other: the Template record's `name` (the catalog
+label), the sealed backing copy's inherited title (unreachable), and this one.
+It reaches the resource through `duplicate`, which is the only thing that names a
+copy.
+
+**Each argument must carry a `target`.** At registration an omitted target
+declares a parameter with no default; at instantiation it would leave the
+instance holding an unbound variable, which is the state the rule exists to
+prevent. Rejected at the wire.
 
 ### Step 5 · Rework `template.list` into a search
 
@@ -223,10 +278,18 @@ fails at step 3 with a name conflict against the row it just wrote.
   kinds?: string[];        // any-of
   search?: string;         // case-insensitive substring over name + description
   limit?: number; cursor?: string }
+
+// result
+{ type: "template.records"; templates: TemplateRecord[]; nextCursor?: string }
 ```
 
 This is now the only way to discover templates of any kind, so it has to be
 usable as a picker: filter by kind, type-ahead over name and description.
+
+Pagination follows `document.list` — an opaque encoded cursor over the existing
+`(created_at, id)` order, with a capability-private `encodeCursor`/`decodeCursor`
+pair. Every paginating capability defines its own; there is no shared helper, and
+introducing one is not this plan's job.
 
 **Consequence:** `document.listTemplates` is removed from the Document plan
 entirely. Resource capabilities do not list templates.
@@ -234,23 +297,31 @@ entirely. Resource capabilities do not list templates.
 ### Step 6 · `template.update` and `template.load` become pass-throughs
 
 - `template.update` → catalog fields on the record, `resource.submit(...)` for
-  `resourceOperations`, both under the existing CAS. Already built; only the
-  call target changes.
+  `resourceOperations`, `resource.applyBindings(...)` when `contextBindings`
+  changed, all under the existing CAS. Already built; the call targets split in
+  two.
 - `template.load` → `resource.load(...)`. Already built; only the call target
   changes.
+- `template.delete` / `template.purge` → `logicalDelete` / `purge`. Same.
 
-**Blocked on the open `appliedRevision` decision** only insofar as Document's
-`duplicate` cannot produce a valid Prompt-bearing copy until it is settled.
-Templates' side of both commands is independent of it.
+`appliedRevision: 0` is settled (Document change 0), so nothing here waits on it.
+Document's `duplicate` needs it; Templates' side of these commands never did.
 
 ### Step 7 · Documentation
 
-1. `templates/docs/` — six files: the runtime port, the register/instantiate
-   procedures, the search-shaped list, receipts instead of claims, no
-   `reserving` state.
-2. `templates-design.md` — replace the "Resource adapter registry" section
-   rather than leaving the superseded note added on 2026-08-02.
-3. `0-general-updates.md` — mark item 17 done.
+1. `templates/docs/README.md` — the status block is the most stale page in the
+   capability. It describes an adapter registry, cites
+   `scratch/document-design/templates-and-context-variables.md` (deleted), and
+   lists `ports/resourceAdapter.ts` in its implementation map.
+2. `templates/docs/{concepts,types,runtime,flows,invariants}.md` — the runtime
+   port, the register/instantiate procedures, the search-shaped list, receipts
+   instead of claims, no `reserving` state. `concepts.md`'s "adapter methods
+   return void" rule and `invariants.md`'s "nothing to disagree with" line both
+   go: `duplicate` and `load` return values now.
+3. `templates-design.md` — **replace** the superseded-note-plus-old-content in
+   *Resource runtime registry*, *Commands and queries*, and *Persistence and
+   idempotency*, rather than leaving a note on top of stale text.
+4. Tick A1–A7 in [`0-templates-checklist.md`](0-templates-checklist.md).
 
 ---
 
@@ -282,15 +353,18 @@ receipt-replay tests.
 ## Test changes
 
 - **Delete:** pending-claim resumption, frozen-ID reuse, `reserving`-record
-  invisibility, `deleteReservation`-on-failure.
+  invisibility, `deleteReservation`-on-failure, and the fixture's `observedState`
+  probe — there is no longer a mid-command state to observe.
 - **Rewrite:** every `registerCommand` fixture (`source` → `kind` +
   `resourceId`); the fake adapter becomes a fake resource runtime with
-  `duplicate` returning an allocated ID.
+  `duplicate` returning an allocated ID; the crash-window test currently
+  interposes on `completeClaim` and must interpose on the receipt write instead.
 - **Add:** receipt replay on exact retry; digest mismatch on divergent reuse;
   `duplicate` called once per register; `markAsTemplate` called on register and
-  **not** on instantiate; partial instantiation bindings rejected; list filters
-  by kind and by search over name and description; catalog row and receipt
-  committed together.
+  **not** on instantiate; `resourceId` differs from `id`; partial instantiation
+  bindings rejected; list filters by kind and by search over name and
+  description, and paginates; catalog row, receipt, and transaction committed
+  together.
 
 ## Settled
 
@@ -326,60 +400,10 @@ plan.
 
 ## Checklist
 
-### Phase A — Templates rework (this plan)
-
-- [ ] **1. Claims → receipts**
-  - [ ] delete `data/templates.db`
-  - [ ] drop `command_claims`, `claimCommand`, `bindClaimTemplateId`, `completeClaim`
-  - [ ] drop `TemplateClaimState`, `TemplateCommandClaim`, `TemplateClaimOutcome`
-  - [ ] add `command_receipts` (`request_id` PK, digest, result, created_at)
-  - [ ] `command()` becomes receipt-lookup → execute → record
-  - [ ] drop `TemplateRecordState`, the `state` column, the `_ready` index
-  - [ ] drop `markReady`, `deleteReservation`
-  - [ ] drop `CHECK (resource_id = id)`
-  - [ ] green
-- [ ] **2. Runtime port**
-  - [ ] delete `TemplateResourceAdapter`
-  - [ ] add `ports/templatableResource.ts` — `duplicate`, `markAsTemplate`, `submit`, `load`, `logicalDelete`, `purge`
-  - [ ] retype the registry in `1-init/create/templates.ts`
-  - [ ] green
-- [ ] **3. `template.register`**
-  - [ ] wire: `source` → flat `kind` + `resourceId`
-  - [ ] procedure: receipt → kind → name check → `duplicate` → `markAsTemplate` → `submit` bindings
-  - [ ] catalog row + receipt in **one** transaction
-  - [ ] green
-- [ ] **4. `template.instantiate`**
-  - [ ] drop `destinationResourceId` from the wire
-  - [ ] reject unless every declared binding is supplied
-  - [ ] `duplicate` → `submit` bindings, no `markAsTemplate`
-  - [ ] return the resource ID the runtime allocated
-  - [ ] green
-- [ ] **5. `template.list` → search**
-  - [ ] `kinds?`, `search?` over name + description
-  - [ ] green
-- [ ] **6. Pass-throughs**
-  - [ ] `template.update` → `resource.submit`
-  - [ ] `template.load` → `resource.load`
-  - [ ] green
-- [ ] **7. Docs** — `templates/docs/` ×6, `templates-design.md` section replaced
-
-### Phase B — Document changes
-
-Tracked in [`document-changes-design.md`](document-changes-design.md); repeated
-here only as the ordering.
-
-- [ ] **0. Relax `appliedRevision` validation** — allow `0`, decided
-- [ ] **1. Remove `representationVersion`**
-- [ ] **2. Context Variables**
-- [ ] **3. Prompt Blocks take exactly one context**
-- [ ] **4. `isTemplate` + sealing**
-- [ ] **5. `duplicate`, `markAsTemplate`, `submit`, `load`**
-- [ ] **6. Register Document's runtime with Templates** ← first end-to-end template
-
-### Phase C — Deferred, tracked in `0-general-updates.md`
-
-- [ ] **15.** Live project-scoped Context — unblocks exclusions in bindings
-- [ ] **16.** Garbage collection for orphaned backing resources and outputs
+Tracked in [`0-templates-checklist.md`](0-templates-checklist.md), together with
+the Document changes that follow and the two deferred items. It lives there
+rather than here because it spans all three plans — and because a checklist kept
+in two places is a checklist kept in neither.
 
 ## Sequencing note
 

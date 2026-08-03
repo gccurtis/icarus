@@ -125,7 +125,6 @@ export const validateSnapshot = (
   limits: DocumentLimits
 ): DocumentValidationResult => {
   const diagnostics: string[] = [];
-  if (snapshot.representationVersion !== 1) diagnostics.push("unsupported representation version");
   if (!Number.isSafeInteger(snapshot.revision) || snapshot.revision < 0) {
     diagnostics.push("revision must be a non-negative integer");
   }
@@ -147,6 +146,22 @@ export const validateSnapshot = (
   };
 
   for (const styleId of styleIds) claimId(styleId, "style");
+
+  const variableIds = new Set<string>();
+  const variableNames = new Set<string>();
+  for (const variable of snapshot.contextVariables) {
+    claimId(variable.id, "Context Variable");
+    variableIds.add(variable.id);
+    const name = variable.name.trim();
+    if (!name) diagnostics.push(`Context Variable ${variable.id} must have a name`);
+    // Case-insensitively unique, because a template binding addresses these by
+    // name and whoever writes that binding cannot know the author's casing.
+    const normalized = name.toLocaleLowerCase();
+    if (variableNames.has(normalized)) {
+      diagnostics.push(`duplicate Context Variable name: ${variable.name}`);
+    }
+    variableNames.add(normalized);
+  }
 
   function validateListItems(
     items: ListItem[],
@@ -193,7 +208,13 @@ export const validateSnapshot = (
       for (const atom of block.content.atoms) claimId(atom.id, "Rich Text atom");
       for (const mark of block.content.marks) claimId(mark.id, "Rich Text mark");
     } else if (block.kind === "prompt") {
-      if (!block.output.outputId || !isPositiveInteger(block.output.appliedRevision)) {
+      // Non-negative, not positive: 0 means *declared, never answered*. A
+      // Prompt Block acquires its output from `declare`, which returns
+      // headRevision 0, and only a later refresh moves it to 1. Requiring a
+      // positive revision here made "a prompt that has not run yet"
+      // unrepresentable — which is exactly what every block in a freshly
+      // duplicated document is.
+      if (!block.output.outputId || !isNonNegativeInteger(block.output.appliedRevision)) {
         diagnostics.push(`Prompt Block ${block.id} has an invalid Derived Output reference`);
       }
       if (promptOutputIds.has(block.output.outputId)) {

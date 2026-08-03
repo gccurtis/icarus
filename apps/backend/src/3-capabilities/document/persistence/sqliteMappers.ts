@@ -35,6 +35,7 @@ export const rowToHead = (row: SQLiteRow): DocumentHead => ({
   id: row.id as string,
   title: row.title as string,
   lifecycle: row.lifecycle as DocumentHead["lifecycle"],
+  isTemplate: Number(row.is_template) === 1,
   revision: Number(row.revision),
   baseSeq: Number(row.base_seq),
   semanticDigest: row.semantic_digest as string,
@@ -43,7 +44,6 @@ export const rowToHead = (row: SQLiteRow): DocumentHead => ({
 });
 
 export const rowToBase = (row: SQLiteRow): DocumentBase => ({
-  representationVersion: 1,
   documentId: row.document_id as string,
   baseSeq: Number(row.base_seq),
   snapshot: decodeJson<DocumentBase["snapshot"]>(row.snapshot_json),

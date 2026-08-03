@@ -9,9 +9,13 @@ export const TEMPLATE_WIRE_LIMITS = {
   maxIdentifierBytes: 512,
   maxNameBytes: 512,
   maxDescriptionBytes: 4_096,
-  maxTitleBytes: 4_096,
   maxBindings: 256,
-  maxBindingNameBytes: 512
+  maxBindingNameBytes: 512,
+  maxSearchBytes: 512,
+  maxCursorBytes: 1_024,
+  /** Filtering by more kinds than exist is a malformed request, not a broad one. */
+  maxKinds: 64,
+  maxPageLimit: 200
 } as const;
 
 const byteLength = (value: string): number => Buffer.byteLength(value, "utf8");
@@ -127,14 +131,24 @@ const decodeDeclaredBinding = (value: unknown, label: string): TemplateContextBi
 };
 
 /**
- * Instantiation: supplies an argument, not a declaration. A `description` here
- * is rejected rather than ignored — silently dropping an accepted field is the
- * class of bug this split exists to remove.
+ * Instantiation: supplies an argument, not a declaration. Two differences from
+ * the declared form, both deliberate.
+ *
+ * A `description` is rejected rather than ignored — silently dropping an
+ * accepted field is the class of bug this split exists to remove.
+ *
+ * A `target` is **required**. At registration an omitted target declares a
+ * parameter with no default; here it would leave the instance holding an unbound
+ * variable, which is the state the whole binding rule exists to prevent. An
+ * instantiator names every parameter and says what each one points at.
  */
 const decodeBindingArgument = (value: unknown, label: string): TemplateContextBinding => {
   const binding = record(value, label);
   exactKeys(binding, ["target"], label);
-  return decodeTarget(binding, label);
+  if (binding.target === undefined) {
+    throw new TemplateWireError(`${label} must supply a target`);
+  }
+  return { target: decodeContextEntry(binding.target, `${label} target`) };
 };
 
 const decodeBindings = (
@@ -175,6 +189,51 @@ export const decodeBindingArguments = (
   value: unknown,
   label: string
 ): TemplateContextBindings => decodeBindings(value, label, decodeBindingArgument);
+
+/**
+ * Duplicates are rejected rather than de-duplicated, on the same principle as
+ * `exactKeys`: a request that asks for the same kind twice means something the
+ * caller did not intend, and silently tidying it hides that.
+ */
+export const requireIdentifierList = (
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): string[] => {
+  const candidate = value[key];
+  if (!Array.isArray(candidate)) {
+    throw new TemplateWireError(`${label} must be an array`);
+  }
+  if (candidate.length > TEMPLATE_WIRE_LIMITS.maxKinds) {
+    throw new TemplateWireError(`${label} exceeds the size limit`);
+  }
+  const items = candidate.map((entry, index) =>
+    requireIdentifier({ entry }, "entry", `${label}[${index}]`)
+  );
+  if (new Set(items).size !== items.length) {
+    throw new TemplateWireError(`${label} contains a duplicate`);
+  }
+  return items;
+};
+
+export const requirePageLimit = (
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): number => {
+  const candidate = value[key];
+  if (
+    typeof candidate !== "number" ||
+    !Number.isSafeInteger(candidate) ||
+    candidate < 1 ||
+    candidate > TEMPLATE_WIRE_LIMITS.maxPageLimit
+  ) {
+    throw new TemplateWireError(
+      `${label} must be an integer between 1 and ${TEMPLATE_WIRE_LIMITS.maxPageLimit}`
+    );
+  }
+  return candidate;
+};
 
 /**
  * Strict rather than `Number(...)`: an absent field would otherwise coerce to

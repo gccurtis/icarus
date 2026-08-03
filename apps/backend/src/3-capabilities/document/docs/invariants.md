@@ -37,8 +37,27 @@ For a wire-valid command whose domain preconditions hold:
 
 ## Aggregate and representation invariants
 
-- `representationVersion === 1`; revision is a non-negative safe integer.
+- Revision is a non-negative safe integer. There is no representation version:
+  the shape is whatever the code says, and the database is deleted when it
+  changes, so a version field only ever named a version that never coexisted
+  with another.
 - Title is non-empty; lifecycle is closed.
+- `isTemplate` is set once by `markAsTemplate` and never cleared. It lives on the
+  head rather than the snapshot because mode does not vary by revision —
+  rewinding history must not un-seal a Document.
+- Context Variable names are non-empty and case-insensitively unique within a
+  Document, because a template binding addresses them **by name** and whoever
+  writes that binding cannot know the author's casing.
+- Variable IDs join the retained-history non-reuse ledger. A Prompt Block
+  addresses a variable by ID, so reusing a deleted one would silently re-point a
+  Block in retained history at a different variable.
+- A Prompt Block always carries exactly one context. A `variable` context must
+  resolve to a variable that exists; deleting a referenced variable is refused
+  rather than cascaded.
+- A Prompt Block's `appliedRevision` is **non-negative**. `0` means declared but
+  never answered, which is the state every Prompt Block in a fresh copy is in.
+  `prompt.apply-derived-output` still requires a positive revision: applying
+  revision 0 would mean un-answering.
 - Page dimensions are positive integers, margins non-negative, margins leave
   positive usable space, and orientation agrees with dimensions.
 - Exactly one heading Style exists for each level 1–6.
@@ -187,3 +206,24 @@ but not a proof against every SQLite/process-failure interleaving.
 - live media resolution or chart execution;
 - client-controlled actor attribution (wire does not admit `actorId`);
 - capability-level shutdown/closing of its store.
+
+## Template-mode invariants
+
+- Every public command and query naming an `isTemplate` Document is refused,
+  reads included. `document.list` excludes it rather than erroring.
+- The refusal is checked once on the document, not per command type.
+- `duplicate` is a **pure copy**: new ID, same content, Context Variables and
+  their targets verbatim. It applies no bindings and sets no template flag, which
+  is what lets registration and instantiation be the same call with different
+  follow-up.
+- A copy's Prompt Blocks get **new** Derived Outputs — one live Block owns one
+  dedicated output, so a copy cannot point at the source's — declared at
+  `appliedRevision: 0` and owned from birth in the same commit.
+- `duplicate` replays on its idempotency key: the Templates key *is* the
+  create-receipt key, so a retried registration yields one copy.
+- `applyBindings` commits the variable change before re-pointing Derived Output
+  definitions. A crash in between leaves the declaration correct and an output
+  stale — which the next refresh corrects — rather than an output grounded on a
+  target the Document does not hold.
+- A binding naming a variable the Document does not have is refused, or the
+  Template record's declaration and its backing content would silently disagree.

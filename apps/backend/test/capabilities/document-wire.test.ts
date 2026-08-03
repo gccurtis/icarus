@@ -184,9 +184,9 @@ test("unknown fields are rejected at every nested Document boundary", () => {
     styleId: "document-style-normal",
     placement: { kind: "new-row", rowId: "prompt-row" },
     prompt: "Question?",
-    contextEntries: [{ id: "resource-1", kind: "document", surprise: true }],
+    context: { kind: "direct", target: { id: "resource-1", kind: "document", surprise: true } },
     stabilisationText: "",
-  })), /contextEntries\[0\] contains unknown fields: surprise/);
+  })), /context.target contains unknown fields: surprise/);
 });
 
 test("missing fields, invalid discriminants, wrong primitive types, and non-finite numbers are rejected", () => {
@@ -240,7 +240,6 @@ test("missing fields, invalid discriminants, wrong primitive types, and non-fini
     promptBlockId: "prompt-1",
     expectedDefinitionRevision: 1,
     prompt: "Question?",
-    contextEntries: [],
   })), /stabilisationText must be a string/);
   rejectsWire(() => decodeDocumentQuery({
     requestId: "request-1",

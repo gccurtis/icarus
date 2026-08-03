@@ -31,10 +31,12 @@ import {
 } from "../../src/3-capabilities/document/application/documentService.js";
 import {
   CompensationConflictError,
+  DocumentContextVariableNotFoundError,
   DocumentIdentityReuseError,
   DocumentOperationError,
   HistoryPrunedError,
   IdempotencyMismatchError,
+  DocumentTemplateModeError,
   RevisionConflictError
 } from "../../src/3-capabilities/document/domain/errors.js";
 import type {
@@ -42,6 +44,7 @@ import type {
   DocumentCommandRequest,
   DocumentCommandResult,
   DocumentCommittedTransaction,
+  DocumentHead,
   DocumentInternalJobIntent,
   DocumentOperation,
   DocumentOptions,
@@ -586,7 +589,7 @@ test("a capacity-rejected internal intent is redriven in-process", async () => {
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "dispatch-redrive-row" },
     prompt: "Retry this admission",
-    contextEntries: [],
+    context: { kind: "direct", target: { id: "ctx-1", kind: "context" } },
     stabilisationText: ""
   }));
   assert.equal(requested.type, "prompt.create-requested");
@@ -1062,7 +1065,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "prompt-row-1" },
     prompt: "First question",
-    contextEntries: [{ id: "source-a", kind: "document" }],
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } },
     stabilisationText: ""
   });
   const firstRequested = await harness.document.command(requestFirst);
@@ -1077,7 +1080,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
       styleId: NORMAL_STYLE,
       placement: { kind: "new-row", rowId: "competing-row" },
       prompt: "Competing question",
-      contextEntries: [],
+      context: { kind: "direct", target: { id: "source-a", kind: "document" } },
       stabilisationText: ""
     })),
     (error: unknown) =>
@@ -1109,7 +1112,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
     promptBlockId: "prompt-block-1",
     expectedDefinitionRevision: 1,
     prompt: "First revised question",
-    contextEntries: [{ id: "source-a", kind: "document" }],
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } },
     stabilisationText: "First answer"
   });
   const firstDefinition = await harness.document.command(firstDefinitionRequest);
@@ -1123,7 +1126,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
     promptBlockId: "prompt-block-1",
     expectedDefinitionRevision: 2,
     prompt: "First final question",
-    contextEntries: [{ id: "source-a", kind: "document" }],
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } },
     stabilisationText: "Second answer"
   }));
   assert.equal(secondDefinition.type, "prompt.definition-updated");
@@ -1141,7 +1144,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
       promptBlockId: "prompt-block-1",
       expectedDefinitionRevision: 1,
       prompt: "Divergent retry",
-      contextEntries: [],
+      context: { kind: "direct", target: { id: "source-a", kind: "document" } },
       stabilisationText: ""
     })),
     (error: unknown) => error instanceof IdempotencyMismatchError
@@ -1159,7 +1162,7 @@ test("Prompt creation gives every Block a dedicated output, refresh adopts an ex
       afterRowId: "prompt-row-1"
     },
     prompt: "Second question",
-    contextEntries: [{ id: "source-b", kind: "document" }],
+    context: { kind: "direct", target: { id: "source-b", kind: "document" } },
     stabilisationText: "Prior wording"
   }));
   assert.equal(secondRequested.type, "prompt.create-requested");
@@ -1229,7 +1232,7 @@ test("the attempt lifecycle is logged end-to-end for prompt creation and refresh
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "lifecycle-row" },
     prompt: "Lifecycle question",
-    contextEntries: [],
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } },
     stabilisationText: ""
   }));
   assert.equal(requested.type, "prompt.create-requested");
@@ -1302,7 +1305,7 @@ test("prompt.update-definition survives a crash before its local receipt commits
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "crash-prompt-row" },
     prompt: "Original prompt",
-    contextEntries: [],
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } },
     stabilisationText: ""
   }));
   assert.equal(creation.type, "prompt.create-requested");
@@ -1321,7 +1324,7 @@ test("prompt.update-definition survives a crash before its local receipt commits
     promptBlockId: "crash-prompt-block",
     expectedDefinitionRevision: 1,
     prompt: "Updated exactly once",
-    contextEntries: [{ id: "source-a", kind: "document" }],
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } },
     stabilisationText: "Prior answer"
   });
   await assert.rejects(
@@ -1380,7 +1383,7 @@ test("prompt.update-definition fails cleanly if its Prompt Block is deleted duri
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "crash-prompt-row-delete" },
     prompt: "Original prompt",
-    contextEntries: [],
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } },
     stabilisationText: ""
   }));
   assert.equal(creation.type, "prompt.create-requested");
@@ -1394,7 +1397,7 @@ test("prompt.update-definition fails cleanly if its Prompt Block is deleted duri
     promptBlockId: "crash-prompt-block-delete",
     expectedDefinitionRevision: 1,
     prompt: "Updated exactly once",
-    contextEntries: [],
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } },
     stabilisationText: ""
   });
   await assert.rejects(
@@ -1434,7 +1437,7 @@ test("a transient Prompt creation exception retries without abandoning its dedic
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "transient-prompt-row" },
     prompt: "This refresh fails once",
-    contextEntries: [],
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } },
     stabilisationText: ""
   }));
   assert.equal(requested.type, "prompt.create-requested");
@@ -1476,7 +1479,7 @@ test("failed initial Prompt refresh records a detached dedicated output", async 
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "failed-prompt-row" },
     prompt: "This refresh will fail",
-    contextEntries: [],
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } },
     stabilisationText: ""
   }));
   assert.equal(requested.type, "prompt.create-requested");
@@ -1529,7 +1532,7 @@ test("Prompt creation settlement detaches its output after an identity conflict 
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "conflicted-prompt-row" },
     prompt: "This Prompt cannot claim its Block identity",
-    contextEntries: [],
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } },
     stabilisationText: ""
   }));
   assert.equal(requested.type, "prompt.create-requested");
@@ -1659,7 +1662,7 @@ test("deleting a document clears its owned state and frees its create request", 
     styleId: NORMAL_STYLE,
     placement: { kind: "new-row", rowId: "purged-prompt-row" },
     prompt: "Question?",
-    contextEntries: []
+    context: { kind: "direct", target: { id: "source-a", kind: "document" } }
   }));
   assert.equal(requested.type, "prompt.create-requested");
   if (requested.type !== "prompt.create-requested") throw new Error("expected attempt");
@@ -1717,4 +1720,193 @@ test("deleting a document clears its owned state and frees its create request", 
   assert.ok(await harness.store.getHead(replayed.head.id));
 
   harness.store.close();
+});
+
+// ─── Templates runtime ────────────────────────────────────────────────────────
+
+test("Document satisfies the Templates runtime contract end to end", async (t) => {
+  const seedDocument = async (harness: Harness): Promise<string> => {
+    const created = await harness.document.command(command("seed-create", {
+      type: "document.create",
+      title: "Quarterly report"
+    }));
+    assert.equal(created.type, "document.created");
+    if (created.type !== "document.created") throw new Error("unreachable");
+    const documentId = created.head.id;
+
+    await harness.document.command(command("seed-variable", {
+      type: "document.submit",
+      documentId,
+      expectedRevision: 1,
+      operations: [
+        { type: "context-variable.create", variable: { id: "var-region", name: "Region" } },
+        {
+          type: "context-variable.create",
+          variable: {
+            id: "var-topic",
+            name: "Main topic",
+            target: { id: "ctx-default", kind: "context" }
+          }
+        }
+      ]
+    }));
+    return documentId;
+  };
+
+  await t.test("duplicate copies content and declares fresh outputs, unanswered", async () => {
+    const harness = createHarness();
+    const documentId = await seedDocument(harness);
+
+    const copy = await harness.document.duplicate({
+      sourceResourceId: documentId,
+      idempotencyKey: "templates:register:req-1"
+    });
+    assert.notEqual(copy.resourceId, documentId, "the copy names itself");
+
+    const loaded = await harness.document.load({ resourceId: copy.resourceId });
+    const { head, snapshot } = loaded as { head: DocumentHead; snapshot: DocumentSnapshot };
+    // Variables and their targets copy verbatim — duplicate knows nothing about
+    // bindings, so the copy starts from whatever the source held.
+    assert.deepEqual(snapshot.contextVariables, [
+      { id: "var-region", name: "Region" },
+      { id: "var-topic", name: "Main topic", target: { id: "ctx-default", kind: "context" } }
+    ]);
+    // A copy is an ordinary Document until told otherwise.
+    assert.equal(head.isTemplate, false);
+    assert.equal(head.title, "Quarterly report", "an omitted name keeps the source's title");
+  });
+
+  await t.test("duplicate replays on its key rather than making a second copy", async () => {
+    const harness = createHarness();
+    const documentId = await seedDocument(harness);
+    const first = await harness.document.duplicate({
+      sourceResourceId: documentId,
+      idempotencyKey: "templates:register:req-1"
+    });
+    const replay = await harness.document.duplicate({
+      sourceResourceId: documentId,
+      idempotencyKey: "templates:register:req-1"
+    });
+    assert.deepEqual(replay, first, "the Templates key is the create-receipt key");
+  });
+
+  await t.test("a supplied name renames the copy and nothing else", async () => {
+    const harness = createHarness();
+    const documentId = await seedDocument(harness);
+    const copy = await harness.document.duplicate({
+      sourceResourceId: documentId,
+      name: "Q3 report",
+      idempotencyKey: "templates:instantiate:req-2"
+    });
+    const { head } = await harness.document.load({ resourceId: copy.resourceId }) as
+      { head: DocumentHead };
+    assert.equal(head.title, "Q3 report");
+
+    // The source is untouched by being copied.
+    const source = await harness.document.query({
+      requestId: "read-source",
+      query: { type: "document.load", documentId }
+    });
+    assert.equal(source.type === "document.loaded" ? source.head.title : "", "Quarterly report");
+  });
+
+  await t.test("markAsTemplate seals the copy against its own public surface", async () => {
+    const harness = createHarness();
+    const documentId = await seedDocument(harness);
+    const copy = await harness.document.duplicate({
+      sourceResourceId: documentId,
+      idempotencyKey: "templates:register:req-1"
+    });
+    await harness.document.markAsTemplate({ resourceId: copy.resourceId });
+
+    // Reads included, not a chosen subset.
+    await assert.rejects(
+      harness.document.query({
+        requestId: "read-sealed",
+        query: { type: "document.load", documentId: copy.resourceId }
+      }),
+      (error: unknown) => error instanceof DocumentTemplateModeError
+    );
+    await assert.rejects(
+      harness.document.command(command("edit-sealed", {
+        type: "document.submit",
+        documentId: copy.resourceId,
+        expectedRevision: 1,
+        operations: [{ type: "document.rename", title: "Sneaky" }]
+      })),
+      (error: unknown) => error instanceof DocumentTemplateModeError
+    );
+
+    // Templates still gets through, because it holds the runtime object rather
+    // than going over the public surface.
+    const loaded = await harness.document.load({ resourceId: copy.resourceId });
+    assert.ok(loaded);
+
+    // And a sealed Document is absent from the ordinary listing.
+    const listed = await harness.document.query({
+      requestId: "list-after-seal",
+      query: { type: "document.list" }
+    });
+    const ids = listed.type === "document.listed" ? listed.items.map((head) => head.id) : [];
+    assert.ok(ids.includes(documentId));
+    assert.equal(ids.includes(copy.resourceId), false);
+  });
+
+  await t.test("applyBindings binds variables by name and refuses unknown ones", async () => {
+    const harness = createHarness();
+    const documentId = await seedDocument(harness);
+    const copy = await harness.document.duplicate({
+      sourceResourceId: documentId,
+      idempotencyKey: "templates:register:req-1"
+    });
+
+    await harness.document.applyBindings({
+      resourceId: copy.resourceId,
+      contextBindings: {
+        // Case-insensitive, because whoever writes a binding cannot know the
+        // author's casing.
+        "  region  ": { target: { id: "ctx-emea", kind: "context" } },
+        // No target: explicitly unbound, which is what declaring a parameter
+        // with no default means.
+        "Main topic": {}
+      },
+      idempotencyKey: "templates:register:req-1"
+    });
+
+    const { snapshot } = await harness.document.load({ resourceId: copy.resourceId }) as
+      { snapshot: DocumentSnapshot };
+    assert.deepEqual(snapshot.contextVariables, [
+      { id: "var-region", name: "Region", target: { id: "ctx-emea", kind: "context" } },
+      { id: "var-topic", name: "Main topic" }
+    ]);
+
+    await assert.rejects(
+      harness.document.applyBindings({
+        resourceId: copy.resourceId,
+        contextBindings: { Nonexistent: { target: { id: "ctx-1", kind: "context" } } },
+        idempotencyKey: "templates:register:req-2"
+      }),
+      (error: unknown) => error instanceof DocumentContextVariableNotFoundError
+    );
+  });
+
+  await t.test("submit edits a sealed template through the internal path", async () => {
+    const harness = createHarness();
+    const documentId = await seedDocument(harness);
+    const copy = await harness.document.duplicate({
+      sourceResourceId: documentId,
+      idempotencyKey: "templates:register:req-1"
+    });
+    await harness.document.markAsTemplate({ resourceId: copy.resourceId });
+
+    await harness.document.submit({
+      resourceId: copy.resourceId,
+      operations: [{ type: "document.rename", title: "Renamed through Templates" }],
+      idempotencyKey: "templates:update:req-9"
+    });
+
+    const { head } = await harness.document.load({ resourceId: copy.resourceId }) as
+      { head: DocumentHead };
+    assert.equal(head.title, "Renamed through Templates");
+  });
 });

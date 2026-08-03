@@ -1,9 +1,11 @@
+import type { ContextEntry } from "#context";
 import type { RichText, RichTextOperation, TextStyleProperties } from "#rich-text";
 import { canonicalDigest } from "./canonical.js";
 import {
   DocumentOperationError,
   DocumentPlacementError,
   DocumentStyleReferenceError,
+  DocumentUnboundContextVariableError,
   DocumentValidationError
 } from "./errors.js";
 import type {
@@ -15,6 +17,7 @@ import type {
   DocumentSnapshot,
   DocumentStyle,
   ListItem,
+  PromptContext,
   RowLayout,
   TableCell,
   DocumentTable
@@ -62,6 +65,80 @@ const requireStyle = (snapshot: DocumentSnapshot, styleId: string): DocumentStyl
   const style = snapshot.styles.styles.find((candidate) => candidate.id === styleId);
   if (!style) throw new DocumentStyleReferenceError(styleId);
   return style;
+};
+
+/**
+ * Case-insensitively, because a template binding addresses variables **by name**
+ * and the person typing that binding has no way to know which casing the author
+ * used. Two variables differing only in case would make a binding ambiguous.
+ */
+export const normalizeVariableName = (name: string): string =>
+  name.trim().toLocaleLowerCase();
+
+/**
+ * The whole of context resolution. There is no algorithm here on purpose —
+ * one target in, one target out — which is what replacing the entry *list* with
+ * a single `PromptContext` bought.
+ *
+ * An unbound variable **throws** rather than resolving to nothing. Resolving to
+ * `[]` would hand `Knowledge.resolveScope` the zero-length array it reads as
+ * whole-project retrieval, so a prompt nobody finished configuring would
+ * silently ground itself on everything — a wrong answer instead of a refused
+ * one. Unbound variables only exist on template-mode Documents, because
+ * instantiation must bind every declared parameter, so on an ordinary Document
+ * this cannot fire.
+ */
+export const resolvePromptContext = (
+  snapshot: DocumentSnapshot,
+  context: PromptContext
+): ContextEntry[] => {
+  if (context.kind === "direct") return [clone(context.target)];
+  const variable = snapshot.contextVariables
+    .find((candidate) => candidate.id === context.variableId);
+  if (!variable) {
+    throw new DocumentOperationError(`Context Variable not found: ${context.variableId}`);
+  }
+  if (!variable.target) {
+    throw new DocumentUnboundContextVariableError(variable.id, variable.name);
+  }
+  return [clone(variable.target)];
+};
+
+/**
+ * The lenient form, used **only** while copying.
+ *
+ * A template legitimately holds unbound parameters, and a copy has to declare a
+ * Derived Output for every Prompt Block regardless — one live Block owns one
+ * dedicated output, so there is no "skip this one" option. Declaring with no
+ * entries is safe here precisely because nothing refreshes it in that state:
+ * registration seals the copy, and instantiation calls `applyBindings` before
+ * the instance is usable. The strict resolver guards the moment work would
+ * actually be grounded.
+ */
+export const resolvePromptContextIfBound = (
+  snapshot: DocumentSnapshot,
+  context: PromptContext
+): ContextEntry[] => {
+  if (context.kind === "direct") return [clone(context.target)];
+  const variable = snapshot.contextVariables
+    .find((candidate) => candidate.id === context.variableId);
+  return variable?.target ? [clone(variable.target)] : [];
+};
+
+const requireAvailableVariableName = (
+  snapshot: DocumentSnapshot,
+  name: string,
+  exceptId?: string
+): void => {
+  const normalized = normalizeVariableName(name);
+  if (normalized.length === 0) {
+    throw new DocumentOperationError("Context Variable name must not be empty");
+  }
+  const taken = snapshot.contextVariables.some(
+    (variable) =>
+      variable.id !== exceptId && normalizeVariableName(variable.name) === normalized
+  );
+  if (taken) throw new DocumentOperationError(`Context Variable name is taken: ${name}`);
 };
 
 export const resolveDocumentStyle = (
@@ -390,6 +467,62 @@ const applyOne = (
     case "layout.set-page":
       snapshot.pageLayout = clone(operation.layout);
       return;
+    case "prompt.set-context": {
+      const block = requireBlock(snapshot, operation.blockId).block;
+      if (block.kind !== "prompt") {
+        throw new DocumentOperationError(`Block ${block.id} is not a Prompt Block`);
+      }
+      const context = operation.context;
+      if (context.kind === "variable" &&
+          !snapshot.contextVariables.some((v) => v.id === context.variableId)) {
+        throw new DocumentOperationError(`Context Variable not found: ${context.variableId}`);
+      }
+      block.context = clone(context);
+      return;
+    }
+    case "context-variable.create":
+      if (snapshot.contextVariables.some((variable) => variable.id === operation.variable.id)) {
+        throw new DocumentOperationError(`Context Variable already exists: ${operation.variable.id}`);
+      }
+      requireAvailableVariableName(snapshot, operation.variable.name);
+      snapshot.contextVariables.push(clone(operation.variable));
+      return;
+    case "context-variable.update": {
+      const index = snapshot.contextVariables
+        .findIndex((variable) => variable.id === operation.variable.id);
+      if (index < 0) {
+        throw new DocumentOperationError(`Context Variable not found: ${operation.variable.id}`);
+      }
+      requireAvailableVariableName(snapshot, operation.variable.name, operation.variable.id);
+      snapshot.contextVariables[index] = clone(operation.variable);
+      return;
+    }
+    case "context-variable.delete": {
+      const index = snapshot.contextVariables
+        .findIndex((variable) => variable.id === operation.variableId);
+      if (index < 0) {
+        throw new DocumentOperationError(`Context Variable not found: ${operation.variableId}`);
+      }
+      // Refused rather than cascaded. Re-pointing the Blocks is a decision only
+      // the caller can make, and cascading would silently change what those
+      // prompts are grounded on — across a capability boundary, since each
+      // Block's Derived Output definition would need rewriting too.
+      const referencing: string[] = [];
+      forEachBlock(snapshot, (block) => {
+        if (block.kind === "prompt" &&
+            block.context.kind === "variable" &&
+            block.context.variableId === operation.variableId) {
+          referencing.push(block.id);
+        }
+      });
+      if (referencing.length > 0) {
+        throw new DocumentOperationError(
+          `Context Variable ${operation.variableId} is referenced by Prompt Blocks: ${referencing.join(", ")}`
+        );
+      }
+      snapshot.contextVariables.splice(index, 1);
+      return;
+    }
     case "style.create":
       if (snapshot.styles.styles.some((style) => style.id === operation.style.id)) {
         throw new DocumentOperationError(`Style already exists: ${operation.style.id}`);
@@ -712,6 +845,38 @@ const inverseFor = (
       return [{ type: "document.set-lifecycle", lifecycle: before.lifecycle }];
     case "layout.set-page":
       return [{ type: "layout.set-page", layout: clone(before.pageLayout) }];
+    case "prompt.set-context": {
+      const block = findBlock(before, operation.blockId)?.block;
+      if (!block || block.kind !== "prompt") {
+        throw new DocumentOperationError(`Prompt Block not found: ${operation.blockId}`);
+      }
+      return [{
+        type: "prompt.set-context",
+        blockId: operation.blockId,
+        context: clone(block.context)
+      }];
+    }
+    case "context-variable.create":
+      return [{ type: "context-variable.delete", variableId: operation.variable.id }];
+    case "context-variable.update": {
+      // The whole prior variable, because the operation replaces the whole
+      // thing. A field-level inverse would have to know which fields changed,
+      // and "rename" and "rebind" are the same operation here.
+      const previous = before.contextVariables
+        .find((variable) => variable.id === operation.variable.id);
+      if (!previous) {
+        throw new DocumentOperationError(`Context Variable not found: ${operation.variable.id}`);
+      }
+      return [{ type: "context-variable.update", variable: clone(previous) }];
+    }
+    case "context-variable.delete": {
+      const removed = before.contextVariables
+        .find((variable) => variable.id === operation.variableId);
+      if (!removed) {
+        throw new DocumentOperationError(`Context Variable not found: ${operation.variableId}`);
+      }
+      return [{ type: "context-variable.create", variable: clone(removed) }];
+    }
     case "style.create":
       return [{
         type: "style.delete",
@@ -1073,6 +1238,14 @@ const operationIds = (
       break;
     case "style.set-default":
       ids.add(`$document:default-style:${operation.blockKind}`);
+      break;
+    case "context-variable.create":
+    case "context-variable.update":
+      // The *name* is a conflict footprint, not just the ID. Two concurrent
+      // edits claiming one name touch disjoint IDs, so without this they would
+      // both rebase cleanly and the loser would fail at apply time — a conflict
+      // reported as a validation error, one layer too late.
+      ids.add(`$document:context-variable-name:${normalizeVariableName(operation.variable.name)}`);
       break;
     case "style.delete": {
       for (const style of snapshot.styles.styles) {

@@ -103,3 +103,60 @@ export class DocumentStaleAttemptError extends Error {
     this.name = "DocumentStaleAttemptError";
   }
 }
+
+/**
+ * A Prompt Block points at a Context Variable that has no target.
+ *
+ * Only reachable on a **template-mode** Document, where declaring a parameter
+ * with no default is the point. Instantiation must bind every declared
+ * parameter, so an ordinary Document cannot hold one — which is why this is an
+ * error rather than a fallback: there is no legitimate case where a prompt
+ * should run against nothing.
+ */
+export class DocumentUnboundContextVariableError extends Error {
+  constructor(
+    public readonly variableId: string,
+    public readonly variableName: string
+  ) {
+    super(`Context Variable '${variableName}' is unbound and cannot ground a Prompt`);
+    this.name = "DocumentUnboundContextVariableError";
+  }
+}
+
+/**
+ * Every public command and query naming a template-mode Document is refused
+ * with this, reads included.
+ *
+ * Checked **once, on the document**, rather than enumerated per command — that
+ * is the entire value of the rule. A command or query added later is sealed by
+ * default instead of by someone remembering to add it to a list.
+ *
+ * A backing copy is not a Document a user owns any more. It exists so
+ * instantiation has something to copy, and Templates reaches it by holding
+ * Document's runtime object rather than going through this surface.
+ */
+export class DocumentTemplateModeError extends Error {
+  constructor(public readonly documentId: string) {
+    super(
+      `Document '${documentId}' is a template. Use the Templates capability to read or edit it.`
+    );
+    this.name = "DocumentTemplateModeError";
+  }
+}
+
+/**
+ * A template binding names a Context Variable the Document does not have.
+ *
+ * Refused rather than ignored: the Template record's declaration and the backing
+ * Document's variables would silently disagree from then on, and the catalog
+ * would go on advertising a parameter that binds nothing.
+ */
+export class DocumentContextVariableNotFoundError extends Error {
+  constructor(
+    public readonly documentId: string,
+    public readonly variableName: string
+  ) {
+    super(`Document '${documentId}' has no Context Variable named '${variableName}'`);
+    this.name = "DocumentContextVariableNotFoundError";
+  }
+}

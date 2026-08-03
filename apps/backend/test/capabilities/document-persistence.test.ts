@@ -44,6 +44,7 @@ const creationCommit = (
     id: documentId,
     title,
     lifecycle: "active",
+    isTemplate: false,
     revision: 1,
     baseSeq: 1,
     semanticDigest: `digest-${documentId}-0`,
@@ -54,7 +55,6 @@ const creationCommit = (
     head,
     identities: collectDocumentIdentities(snapshot),
     base: {
-      representationVersion: 1,
       documentId,
       baseSeq: 1,
       snapshot,
@@ -168,7 +168,7 @@ const promptCreationAttempt = (
   placement: { kind: "new-row", rowId: `row-${id}` },
   definition: {
     prompt: "Ground this answer",
-    contextEntries: [{ id: "source-1", kind: "document" }],
+    context: { kind: "direct", target: { id: "source-1", kind: "document" } },
     stabilisationText: ""
   },
   createdAt: timestamp(1),
@@ -200,7 +200,6 @@ const baseForHead = (
   initial: DocumentSnapshot,
   head: DocumentHead
 ): DocumentBase => ({
-  representationVersion: 1,
   documentId: head.id,
   baseSeq: head.revision,
   snapshot: {

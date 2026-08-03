@@ -1,11 +1,38 @@
 import { TemplateWireError } from "../domain/errors.js";
 import type { TemplateQuery, TemplateQueryRequest } from "../domain/model.js";
-import { exactKeys, record, requireIdentifier } from "./valueSchemas.js";
+import {
+  exactKeys,
+  optionalText,
+  record,
+  requireIdentifier,
+  requireIdentifierList,
+  requirePageLimit,
+  TEMPLATE_WIRE_LIMITS
+} from "./valueSchemas.js";
 
 const QUERY_KEYS: Record<TemplateQuery["type"], readonly string[]> = {
   "template.get": ["type", "templateId"],
-  "template.list": ["type", "kind"],
+  "template.list": ["type", "kinds", "search", "limit", "cursor"],
   "template.load": ["type", "templateId"]
+};
+
+/**
+ * Opaque to a caller, so this only checks it is a plausibly-sized string. The
+ * store decides whether it is a cursor *it* issued.
+ */
+const requireCursor = (
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): string => {
+  const candidate = value[key];
+  if (typeof candidate !== "string" || candidate.length === 0) {
+    throw new TemplateWireError(`${label} must be a non-empty string`);
+  }
+  if (Buffer.byteLength(candidate, "utf8") > TEMPLATE_WIRE_LIMITS.maxCursorBytes) {
+    throw new TemplateWireError(`${label} exceeds the size limit`);
+  }
+  return candidate;
 };
 
 const decodeQuery = (value: unknown): TemplateQuery => {
@@ -23,13 +50,31 @@ const decodeQuery = (value: unknown): TemplateQuery => {
         type: "template.get",
         templateId: requireIdentifier(query, "templateId", "Template templateId")
       };
-    case "template.list":
+    case "template.list": {
+      const search = optionalText(
+        query,
+        "search",
+        "Template search",
+        TEMPLATE_WIRE_LIMITS.maxSearchBytes
+      );
       return {
         type: "template.list",
-        ...(query.kind !== undefined
-          ? { kind: requireIdentifier(query, "kind", "Template kind") }
+        ...(query.kinds !== undefined
+          ? { kinds: requireIdentifierList(query, "kinds", "Template kinds") }
+          : {}),
+        // Trimmed, because a search of only whitespace is a search for nothing
+        // and should list everything rather than nothing.
+        ...(search !== undefined && search.trim().length > 0
+          ? { search: search.trim() }
+          : {}),
+        ...(query.limit !== undefined
+          ? { limit: requirePageLimit(query, "limit", "Template limit") }
+          : {}),
+        ...(query.cursor !== undefined
+          ? { cursor: requireCursor(query, "cursor", "Template cursor") }
           : {})
       };
+    }
     case "template.load":
       return {
         type: "template.load",

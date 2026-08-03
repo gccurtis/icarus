@@ -9,7 +9,7 @@ import {
   requireString
 } from "./operationSchemas.js";
 import {
-  decodeContextEntries,
+  decodePromptContext,
   decodePageLayout,
   decodePlacement,
   decodePresentation,
@@ -81,7 +81,7 @@ export const decodeDocumentCommand = (value: unknown): DocumentCommandRequest =>
       break;
     }
     case "prompt.create.request":
-      exactKeys(raw, ["type", "documentId", "expectedRevision", "blockId", "styleId", "presentation", "placement", "prompt", "contextEntries", "stabilisationText"], type);
+      exactKeys(raw, ["type", "documentId", "expectedRevision", "blockId", "styleId", "presentation", "placement", "prompt", "context", "stabilisationText"], type);
       command = {
         type,
         documentId: requireIdentifier(raw.documentId, "documentId"),
@@ -91,19 +91,20 @@ export const decodeDocumentCommand = (value: unknown): DocumentCommandRequest =>
         ...(raw.presentation !== undefined ? { presentation: decodePresentation(raw.presentation, "presentation") } : {}),
         placement: decodePlacement(raw.placement, "placement"),
         prompt: requireString(raw.prompt, "prompt"),
-        contextEntries: decodeContextEntries(raw.contextEntries, "contextEntries"),
+        context: decodePromptContext(raw.context, "context"),
         stabilisationText: requireText(raw.stabilisationText, "stabilisationText")
       };
       break;
     case "prompt.update-definition":
-      exactKeys(raw, ["type", "documentId", "promptBlockId", "expectedDefinitionRevision", "prompt", "contextEntries", "stabilisationText"], type);
+      // No contextEntries: the Block already carries its context, and accepting
+      // entries here gave two answers to "what is this grounded on".
+      exactKeys(raw, ["type", "documentId", "promptBlockId", "expectedDefinitionRevision", "prompt", "stabilisationText"], type);
       command = {
         type,
         documentId: requireIdentifier(raw.documentId, "documentId"),
         promptBlockId: requireIdentifier(raw.promptBlockId, "promptBlockId"),
         expectedDefinitionRevision: requireNonNegativeInteger(raw.expectedDefinitionRevision, "expectedDefinitionRevision"),
         prompt: requireString(raw.prompt, "prompt"),
-        contextEntries: decodeContextEntries(raw.contextEntries, "contextEntries"),
         stabilisationText: requireText(raw.stabilisationText, "stabilisationText")
       };
       break;
