@@ -601,20 +601,6 @@ test("the public submit path cannot forge a prompt source", async () => {
   }
 });
 
-test("a request ID in the reserved internal namespace is refused", async () => {
-  const { slides } = harness();
-  await assert.rejects(
-    () =>
-      slides.command({
-        requestId: "$slides-internal$:forged",
-        origin: "interactive",
-        command: { type: "deck.create", title: "Sneaky" }
-      }),
-    (error: unknown) =>
-      error instanceof SlideOperationError && /reserved Slides namespace/.test((error as Error).message)
-  );
-});
-
 test("commands not yet implemented are refused by name", async () => {
   const { slides } = harness();
   const head = await createDeck(slides);

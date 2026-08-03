@@ -61,13 +61,6 @@ export interface SlidesCapability {
   publishPendingActivity(limit?: number): Promise<number>;
 }
 
-/**
- * Reserved for the request IDs the capability generates for itself when a
- * settle stage submits on a caller's behalf. Claimed now rather than in Phase 5
- * so a caller cannot already be depending on the namespace by then.
- */
-const INTERNAL_REQUEST_PREFIX = "$slides-internal$:";
-
 /** Operations that would write a `prompt` text source through the public path. */
 const introducesPromptSource = (operation: SlideOperation): boolean => {
   if (operation.type === "prompt.apply-derived-output") return true;
@@ -117,9 +110,6 @@ class SlidesService implements SlidesCapability {
   }
 
   async command(request: SlideCommandRequest): Promise<SlideCommandResult> {
-    if (request.requestId.startsWith(INTERNAL_REQUEST_PREFIX)) {
-      throw new SlideOperationError("Request ID uses a reserved Slides namespace");
-    }
     const startedAt = Date.now();
     this.deps.logger.debug("slides.command.started", {
       requestId: request.requestId,
