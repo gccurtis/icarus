@@ -634,17 +634,16 @@ test("title, description, and the options themselves are validated", async (t) =
 
 // ─── Observability ────────────────────────────────────────────────────────────
 
-/** Every distinctive string in `base()`, so a leak can be located by name. */
-const BASE_CONTENT = ["Orders", "Reps", "region", "amount", "repId", "closed", "Total"];
-
-test("validation logs content, and labels it so production can drop it", async (t) => {
-  await t.test("an accepted definition logs counts, enums, and a duration", () => {
+test("validation logs everything it saw", async (t) => {
+  await t.test("an accepted definition logs its summary and the definition itself", () => {
     const logger = new CapturingLogger();
-    validateAnalyticDefinition(base(), OPTIONS, logger);
+    const definition = validateAnalyticDefinition(base(), OPTIONS, logger);
 
     const entry = logger.entries.find(e => e.message === "structured-analytic.definition.validated");
     assert.ok(entry, "expected a validated event");
     assert.equal(entry.level, "debug");
+    assert.equal(entry.detail, "content");
+
     const data = entry.data as Record<string, unknown>;
     assert.equal(data.inputCount, 2);
     assert.equal(data.joinCount, 1);
@@ -657,130 +656,45 @@ test("validation logs content, and labels it so production can drop it", async (
     assert.equal(data.displayKind, "bar");
     assert.equal(data.selfJoinCount, 0);
     assert.equal(typeof data.durationMs, "number");
+    assert.deepEqual(data.definition, definition);
   });
 
-  await t.test("an accepted definition also logs the definition itself", () => {
-    const logger = new CapturingLogger();
-    const definition = validateAnalyticDefinition(base(), OPTIONS, logger);
-
-    const entry = logger.entries.find(
-      e => e.message === "structured-analytic.definition.validated.detail"
-    );
-    assert.ok(entry);
-    assert.equal(entry.detail, "content", "a record carrying the definition must say so");
-    assert.deepEqual((entry.data as Record<string, unknown>).definition, definition);
-  });
-
-  // A content-labelled record is dropped WHOLE, not field by field. Folding the
-  // counts into it would mean a successful validation logged nothing at all in
-  // a shape-only build — which is what this file's comments claimed it avoided.
-  await t.test("dropping content still leaves the acceptance visible", () => {
-    const logger = new CapturingLogger();
-    validateAnalyticDefinition(base(), OPTIONS, logger);
-
-    const kept = logger.shapeEntries.filter(e => e.message.startsWith("structured-analytic"));
-    assert.equal(kept.length, 1);
-    const data = kept[0].data as Record<string, unknown>;
-    assert.equal(data.inputCount, 2);
-    assert.equal(data.displayKind, "bar");
-    assert.equal(typeof data.durationMs, "number");
-    assert.equal(data.definition, undefined, "the definition belongs to the content record");
-  });
-
-  await t.test("a rejected definition logs the rule that fired, at warn", () => {
-    const logger = new CapturingLogger();
-    assert.throws(() => validateAnalyticDefinition({ ...base(), inputs: [] }, OPTIONS, logger));
-
-    const entry = logger.entries.find(e => e.message === "structured-analytic.definition.rejected");
-    assert.ok(entry, "expected a rejected event");
-    assert.equal(entry.level, "warn");
-    assert.equal(entry.detail, undefined, "the fact of a rejection must survive shape-only");
-    const data = entry.data as Record<string, unknown>;
-    assert.equal(data.field, "inputs");
-    assert.equal(data.errorName, "AnalyticValidationError");
-  });
-
-  await t.test("a rejected definition logs the payload that broke it, separately", () => {
+  await t.test("a rejected definition logs the rule, the reason, and the payload", () => {
     const logger = new CapturingLogger();
     const bad = { ...base(), limit: 0 };
     assert.throws(() => validateAnalyticDefinition(bad, OPTIONS, logger));
 
-    const entry = logger.entries.find(
-      e => e.message === "structured-analytic.definition.rejected.detail"
-    );
-    assert.ok(entry, "expected a rejected detail event");
+    const entry = logger.entries.find(e => e.message === "structured-analytic.definition.rejected");
+    assert.ok(entry, "expected a rejected event");
+    assert.equal(entry.level, "warn");
     assert.equal(entry.detail, "content");
+
     const data = entry.data as Record<string, unknown>;
     assert.equal(data.field, "limit");
-    assert.deepEqual(data.rejected, bad, "the offending payload is logged verbatim");
+    assert.equal(data.errorName, "AnalyticValidationError");
     assert.match(String(data.reason), /positive integer/);
+    // Verbatim: reproducing a client's bad request must not require asking them
+    // what they sent.
+    assert.deepEqual(data.rejected, bad);
+    assert.equal(typeof data.durationMs, "number");
   });
 
-  await t.test("dropping content still leaves the rejection visible", () => {
-    const logger = new CapturingLogger();
-    assert.throws(() => validateAnalyticDefinition({ ...base(), limit: 0 }, OPTIONS, logger));
-
-    // What a shape-only build would have written.
-    const kept = logger.shapeEntries.filter(e => e.message.startsWith("structured-analytic"));
-    assert.equal(kept.length, 1);
-    assert.equal((kept[0].data as Record<string, unknown>).field, "limit");
-  });
-
-  await t.test("shape-labelled records carry no name, field, or filter value", () => {
-    const logger = new CapturingLogger();
-    validateAnalyticDefinition(base(), OPTIONS, logger);
-    assert.throws(() => validateAnalyticDefinition({ ...base(), limit: 0 }, OPTIONS, logger));
-
-    const serialized = JSON.stringify(logger.shapeEntries);
-    for (const leaked of BASE_CONTENT) {
-      assert.equal(serialized.includes(leaked), false, `shape record leaked ${leaked}`);
-    }
-  });
-
-  // The probe above cannot detect the likeliest leak: `limit: 0` fails with a
-  // content-free message. Several rules quote the offending name into their
-  // message, so adding `reason` to the shape record would leak — and only a
-  // rejection of this kind catches it.
-  await t.test("a rejection whose message quotes a name still keeps it out of shape", () => {
-    const logger = new CapturingLogger();
-    assert.throws(() => validateAnalyticDefinition({
-      ...base(),
-      joins: [{ kind: "left", left: "Orders", right: "Orders", on: [{ leftField: "a", rightField: "b" }] }]
-    }, OPTIONS, logger));
-
-    const rejection = logger.shapeEntries.find(
-      e => e.message === "structured-analytic.definition.rejected"
-    );
-    assert.ok(rejection);
-    // Proves the message really does quote content, so the probe is meaningful.
-    const detail = logger.contentEntries.find(
-      e => e.message === "structured-analytic.definition.rejected.detail"
-    );
-    assert.match(String((detail?.data as Record<string, unknown>).reason), /Reps/);
-    assert.equal(JSON.stringify(rejection).includes("Reps"), false);
-  });
-
-  await t.test("content-labelled records do carry it — that is the point", () => {
+  await t.test("every name a definition mentions reaches the log", () => {
     const logger = new CapturingLogger();
     validateAnalyticDefinition(base(), OPTIONS, logger);
 
-    const serialized = JSON.stringify(logger.contentEntries);
-    for (const expected of BASE_CONTENT) {
-      assert.equal(serialized.includes(expected), true, `content record omitted ${expected}`);
+    const serialized = JSON.stringify(logger.entries);
+    for (const authored of ["Orders", "Reps", "region", "amount", "repId", "closed", "Total"]) {
+      assert.equal(serialized.includes(authored), true, `the log omitted ${authored}`);
     }
   });
 
-  await t.test("resolved limits are logged once, in full, and survive shape-only", () => {
+  await t.test("a rejection logs the offending payload even when it is malformed", () => {
     const logger = new CapturingLogger();
-    validateAnalyticLimits(OPTIONS, logger);
+    assert.throws(() => validateAnalyticDefinition({ inputs: "not an array" }, OPTIONS, logger));
 
-    const entry = logger.entries.find(e => e.message === "structured-analytic.limits.resolved");
-    assert.ok(entry);
-    assert.equal(entry.level, "info");
-    assert.deepEqual(entry.data, { ...OPTIONS });
-    // Eight operator-set integers are shape by the platform's own taxonomy, and
-    // the build where you cannot re-run this locally is the one that needs it.
-    assert.equal(entry.detail, undefined);
+    const entry = logger.entries.find(e => e.message === "structured-analytic.definition.rejected");
+    assert.deepEqual((entry?.data as Record<string, unknown>).rejected, { inputs: "not an array" });
   });
 
   await t.test("the logger is optional, so the domain stays callable as a pure function", () => {
@@ -801,6 +715,7 @@ test("validation logs content, and labels it so production can drop it", async (
     assert.equal(shape.hasLimit, false);
   });
 });
+
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 

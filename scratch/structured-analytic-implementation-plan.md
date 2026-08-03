@@ -221,10 +221,40 @@ Exit: a test per rule, each with a valid and an invalid literal.
 
 ---
 
-## Phase 3 — The compiler
+## Phase 3 — The compiler ✅ DONE
 
-`domain/compile.ts` — pure. Definition in; `FormulaExpression` plus a column map
-out.
+`domain/compile.ts`. `compileToSource` is pure — definition in, Formula source
+out — and `compileDefinition` parses that source through the engine, which is
+the check that makes a definition that cannot be lowered fail at save.
+
+**Decisions made while building it:**
+
+- **Source text, not hand-built AST.** The compiler emits source and the engine
+  parses it. Golden tests are then readable text that diffs usefully, and a
+  compiler bug that emits unparseable source is caught by the parser rather than
+  by hand-constructing nodes with spans and digests.
+- **Qualification is conditional.** `JOIN` is the only thing that prefixes, so a
+  single-input analytic compiles to bare field names. `leftAs` is emitted only
+  on the first join; after that the accumulated side is already prefixed.
+  A chained join's `on.left` is qualified and its `on.right` is not, because
+  `JOIN` resolves `on` against each side before qualifying its output.
+- **Output-name collisions are refused at compile.** Two placements can each be
+  valid and still both produce `region`. `GROUP` would reject that at evaluation
+  time, on every pull; the compiler rejects it once, at save, naming both
+  placement ids.
+- **The language version is pinned in the compiler**, not taken from the caller:
+  this file writes one dialect and must not compile against semantics it was
+  never written for.
+- **No column map is returned.** The plan called for one, but it is not needed:
+  `GROUP` names every output column with `as`, so the compiled field names *are*
+  the placement names. The service's permutation from compiled order (keys, then
+  aggregates) to pull order (Rows, then Columns) is derivable from the
+  definition alone.
+
+Tested by `test/capabilities/structured-analytic-compile.test.ts` — golden
+expression text for the pipeline shapes, plus end-to-end evaluation against real
+tables, because source that looks right but does not run is the failure a golden
+alone would miss.
 
 ```text
 inputs   → ASTABLE(<name>, "<inputKey>")     one per input, backtick-quoted

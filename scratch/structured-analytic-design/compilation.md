@@ -100,7 +100,7 @@ Total closed revenue by region, as a bar, top 10:
                 "operator": "equals",
                 "value": { "kind": "text", "value": "closed" } }],
   "columns": [{ "id": "p1", "field": { "input": "Orders", "field": "region" },
-                "aggregation": "none" }],
+                "aggregation": "none", "label": "Region" }],
   "rows":    [{ "id": "p2", "field": { "input": "Orders", "field": "amount" },
                 "aggregation": "sum", "label": "Total" }],
   "sorts":   [{ "placementId": "p2", "direction": "desc" }],
@@ -149,7 +149,24 @@ literals, so nothing has to be identifier-safe.
 The final table's field names are therefore the **placement label, or the source
 field name when there is no label** — the same names the pull reports in
 `AnalyticResultField`. A saved compiled analytic has usable columns without any
-rename step.
+rename step. (The example above labels its Columns placement `Region` for
+exactly this reason; without the label the column would be `region`.)
+
+Two placements can be individually valid and still both resolve to one output
+name — `Orders.region` and `Reps.region`, both unlabelled. `GROUP` would refuse
+that at evaluation time, so **the compiler refuses it at compile time instead**,
+naming both placement ids and suggesting a label. A definition that can never
+evaluate should fail once, when it is saved, not on every pull afterwards.
+
+### Qualification is conditional
+
+`JOIN` is the only thing that prefixes, so **a single-input analytic has no
+qualified names at all** — its references compile to the bare field name. The
+compiler emits `leftAs` only on the first join, because from the second onward
+the accumulated left side already carries prefixes; a second `leftAs` would
+double them. For the same reason a chained join's `on.left` is qualified while
+its `on.right` never is: `JOIN` resolves `on` names against each side *before*
+qualifying its output.
 
 ## The Formula builtins
 

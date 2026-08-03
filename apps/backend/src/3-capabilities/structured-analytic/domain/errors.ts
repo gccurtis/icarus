@@ -39,6 +39,21 @@ export class AnalyticConfigurationError extends Error {
   }
 }
 
+/**
+ * The definition is structurally valid but cannot be lowered into a Formula
+ * expression — two placements colliding on an output column name, for instance.
+ *
+ * Save-time, like `AnalyticValidationError`, and mapped alongside it: a
+ * definition that could never evaluate should be refused once, when it is
+ * saved, rather than failing on every pull forever after.
+ */
+export class AnalyticCompilationError extends Error {
+  constructor(public readonly reason: string) {
+    super(reason);
+    this.name = "AnalyticCompilationError";
+  }
+}
+
 /** Rejected by the strict wire decoder before the domain sees it. */
 export class AnalyticWireError extends Error {
   constructor(message: string) {

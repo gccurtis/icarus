@@ -282,11 +282,11 @@ const validateDisplayContract = (
 };
 
 /**
- * A definition reduced to counts and enums, with no content in it.
+ * A definition reduced to counts and enums.
  *
- * This is the summary a reader wants first — "six inputs, one self-join, two
- * measures, rendered as a bar" — and it is what survives into a build that logs
- * shape only. The definition itself is logged alongside it, labelled `content`.
+ * Not a privacy device — it is the summary a reader wants before the detail:
+ * "six inputs, one self-join, two measures, rendered as a bar". It rides along
+ * in the same record as the definition itself.
  */
 export interface AnalyticDefinitionShape {
   readonly inputCount: number;
@@ -330,55 +330,37 @@ export const validateAnalyticDefinition = (
   const startedAt = performance.now();
   try {
     const definition = validateDefinitionInternal(value, options);
-    // Two records, for the same reason the rejection path emits two: a
-    // content-labelled record is dropped *whole* in a shape-only build, so
-    // folding the counts into it would mean a successful validation logged
-    // nothing at all there.
-    const durationMs = Math.round(performance.now() - startedAt);
-    logger?.debug("structured-analytic.definition.validated", {
-      ...describeDefinition(definition),
-      durationMs
-    });
-    // The recipe the compiler will turn into a Formula expression. Having it
-    // verbatim is what lets a surprising pull be traced back to what was saved.
+    // One record with everything in it: the summary counts and the definition
+    // the compiler will turn into a Formula expression. Having it verbatim is
+    // what lets a surprising pull be traced back to exactly what was saved.
     logger?.debug(
-      "structured-analytic.definition.validated.detail",
-      { definition },
+      "structured-analytic.definition.validated",
+      {
+        ...describeDefinition(definition),
+        definition,
+        durationMs: Math.round(performance.now() - startedAt)
+      },
       { detail: "content" }
     );
     return definition;
   } catch (error) {
     // A rejection is an expected 400, not a fault — but it is the single most
-    // useful line in the log, so it carries the rule that fired, the message,
+    // useful line in the log, so it carries the rule that fired, the reason,
     // and the payload that broke it. Reproducing a client's bad request should
     // never require asking the client what they sent.
-    //
-    // Two records on purpose: the shape-labelled one says a rejection happened
-    // and which rule caught it, and survives into production. The content one
-    // carries the payload. Dropping content must not lose the fact.
-    const durationMs = Math.round(performance.now() - startedAt);
-    const field = error instanceof AnalyticValidationError ? error.field : "unknown";
-    const errorName = error instanceof Error ? error.name : "UnknownError";
-    // No `reason` here: several rules quote the offending name into their
-    // message ("names no declared input: Orders"), so the message is content
-    // even though the field is not.
-    logger?.warn("structured-analytic.definition.rejected", {
-      field,
-      errorName,
-      durationMs
-    });
     logger?.warn(
-      "structured-analytic.definition.rejected.detail",
+      "structured-analytic.definition.rejected",
       {
-        field,
-        errorName,
+        field: error instanceof AnalyticValidationError ? error.field : "unknown",
+        errorName: error instanceof Error ? error.name : "UnknownError",
         reason:
           error instanceof AnalyticValidationError
             ? error.reason
             : error instanceof Error
               ? error.message
               : String(error),
-        rejected: value
+        rejected: value,
+        durationMs: Math.round(performance.now() - startedAt)
       },
       { detail: "content" }
     );
@@ -610,8 +592,5 @@ export const validateAnalyticLimits = (
       throw new AnalyticConfigurationError(key, "must be a positive safe integer");
     }
   }
-  // Shape, not content: eight operator-set integers, and the reason to log them
-  // is to answer "which configuration is this process running" in the build
-  // where you cannot simply re-run it locally.
-  logger?.info("structured-analytic.limits.resolved", { ...limits });
+  logger?.info("structured-analytic.limits.resolved", { ...limits }, { detail: "content" });
 };
