@@ -12,6 +12,7 @@ import {
   pruneHistoryBefore,
   purgeResourceHistory
 } from "#utils/persistence/resourceHistory.js";
+import { NoopLogger, type Logger } from "#platform/observability/logger.js";
 import type { AnalyticDefinition, StructuredAnalytic } from "../domain/model.js";
 import type { StructuredAnalyticStore } from "../ports/structuredAnalyticStore.js";
 import {
@@ -118,12 +119,26 @@ const rowToAnalytic = (row: SQLiteRow): StructuredAnalytic => ({
 export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
   private readonly db: DatabaseConnection;
   private readonly tables: StructuredAnalyticTableNames;
+  private readonly logger: Logger;
 
-  constructor(databasePath: string, projectId: string) {
+  /**
+   * The logger is optional so a test can construct a store without one, but
+   * production always passes it: what a store actually wrote is the ground
+   * truth every other log record is describing indirectly, and the bugs found
+   * in this file so far were all about a write that did not happen, or happened
+   * to the wrong revision.
+   */
+  constructor(databasePath: string, projectId: string, logger: Logger = new NoopLogger()) {
     mkdirSync(dirname(databasePath), { recursive: true });
     this.db = new Database(databasePath);
     this.tables = createStructuredAnalyticTableNames(projectId);
     initializeStructuredAnalyticSchema(this.db, this.tables);
+    this.logger = logger;
+    this.logger.info(
+      "structured-analytic.store.opened",
+      { databasePath, projectId, tables: this.tables },
+      { detail: "content" }
+    );
   }
 
   close(): void {
@@ -165,6 +180,11 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
       analytic.id
     );
     if (nextFree !== 1) {
+      this.logger.error(
+        "structured-analytic.store.insert.id-retired",
+        { analyticId: analytic.id, survivingRevisions: nextFree - 1, analytic },
+        { detail: "content" }
+      );
       throw new AnalyticIdRetiredError(analytic.id, nextFree - 1);
     }
 
@@ -184,6 +204,8 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
       analytic.createdAt,
       analytic.updatedAt
     );
+
+    this.logger.info("structured-analytic.store.inserted", { analytic }, { detail: "content" });
   }
 
   update(analytic: StructuredAnalytic, expectedRevision: number): boolean {
@@ -245,7 +267,29 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
     // apply. The caller would get a raw SqliteError in exactly the situation
     // the boolean exists to describe. Derived Outputs takes the write lock up
     // front for the same reason.
-    return run.immediate(analytic, expectedRevision);
+    const applied = run.immediate(analytic, expectedRevision);
+    // Both outcomes, at the level each deserves: a lost CAS is an ordinary
+    // concurrent-edit outcome, but it is also the first thing anyone asks about
+    // when an edit "did not save".
+    if (applied) {
+      this.logger.info(
+        "structured-analytic.store.updated",
+        { analyticId: analytic.id, expectedRevision, revision: analytic.revision, analytic },
+        { detail: "content" }
+      );
+    } else {
+      this.logger.warn(
+        "structured-analytic.store.update.cas-missed",
+        {
+          analyticId: analytic.id,
+          expectedRevision,
+          actualRevision: this.get(analytic.id)?.revision ?? null,
+          attempted: analytic
+        },
+        { detail: "content" }
+      );
+    }
+    return applied;
   }
 
   delete(id: string, expectedRevision: number, deletedAt: string): boolean {
@@ -277,7 +321,20 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
       ).run(target, expected);
       return result.changes === 1;
     });
-    return run.immediate(id, expectedRevision, deletedAt);
+    const applied = run.immediate(id, expectedRevision, deletedAt);
+    this.logger.info(
+      applied
+        ? "structured-analytic.store.deleted"
+        : "structured-analytic.store.delete.cas-missed",
+      {
+        analyticId: id,
+        expectedRevision,
+        deletedAt,
+        ...(applied ? {} : { actualRevision: this.get(id)?.revision ?? null })
+      },
+      { detail: "content" }
+    );
+    return applied;
   }
 
   /**
@@ -295,7 +352,18 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
           SET definition_json = ?
         WHERE id = ? AND revision = ?`
     ).run(JSON.stringify(definition), id, expectedRevision);
-    return result.changes === 1;
+    const healed = result.changes === 1;
+    // A repair leaves no history and no revision bump by design, so this record
+    // is the *only* evidence it happened. Without it a definition would appear
+    // to change with nothing anywhere explaining why.
+    this.logger.info(
+      healed
+        ? "structured-analytic.store.repaired"
+        : "structured-analytic.store.repair.cas-missed",
+      { analyticId: id, expectedRevision, definition },
+      { detail: "content" }
+    );
+    return healed;
   }
 
   // ── History and retention ───────────────────────────────────────────────
@@ -320,10 +388,24 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
     // analytic that has ordinary snapshot history reports
     // `ResourceHistoryNotFoundError` — a 404 saying nothing is there — instead
     // of `ResourceNotDeletedError`, the 409 that says delete it first.
-    if (this.get(id)) throw new ResourceNotDeletedError(RESOURCE_KIND, id);
+    if (this.get(id)) {
+      this.logger.warn("structured-analytic.store.purge.still-live", { analyticId: id });
+      throw new ResourceNotDeletedError(RESOURCE_KIND, id);
+    }
+    // Captured before the purge, because afterwards there is nothing left to
+    // say what was destroyed.
+    const discarded = getResourceHistory<StructuredAnalytic>(
+      this.db, this.tables.history, RESOURCE_KIND, id
+    );
     if (!purgeResourceHistory(this.db, this.tables.history, RESOURCE_KIND, id)) {
+      this.logger.warn("structured-analytic.store.purge.no-history", { analyticId: id });
       throw new ResourceHistoryNotFoundError(RESOURCE_KIND, id);
     }
+    this.logger.info(
+      "structured-analytic.store.purged",
+      { analyticId: id, discardedRecords: discarded.length, discarded },
+      { detail: "content" }
+    );
   }
 
   pruneHistory(cutoff: string): number {
@@ -332,7 +414,7 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
     // state unreachable here, so this is belt-and-braces — one indexed lookup
     // per expired resource, and the phase it guards silently becomes correct
     // rather than dead if that invariant ever moves.
-    return pruneHistoryBefore(
+    const removed = pruneHistoryBefore(
       this.db,
       this.tables.history,
       cutoff,
@@ -340,14 +422,26 @@ export class SQLiteStructuredAnalyticStore implements StructuredAnalyticStore {
         `SELECT 1 FROM ${this.tables.analytics} WHERE id = ?`
       ).get(id))
     );
+    // Retention deletes without asking anyone, on a timer. A count and the
+    // cutoff that produced it is the least this can leave behind.
+    this.logger.info("structured-analytic.store.history-pruned", { cutoff, removed });
+    return removed;
   }
 
   expiredDeleted(cutoff: string): string[] {
     // The shared helper sweeps a whole history table without filtering by kind.
     // This table only ever holds one kind, so the filter is belt-and-braces —
     // but it is what keeps the return type honest as `string[]` of analytic ids.
-    return listExpiredDeletedResources(this.db, this.tables.history, cutoff)
+    const expired = listExpiredDeletedResources(this.db, this.tables.history, cutoff)
       .filter(resource => resource.resourceKind === RESOURCE_KIND)
       .map(resource => resource.resourceId);
+    if (expired.length > 0) {
+      this.logger.info(
+        "structured-analytic.store.expired-deleted",
+        { cutoff, analyticIds: expired },
+        { detail: "content" }
+      );
+    }
+    return expired;
   }
 }

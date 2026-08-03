@@ -305,7 +305,7 @@ current resources, and the repair losing cleanly to a concurrent edit.
 
 ---
 
-## Phase 5 — Project data ports and adapters
+## Phase 5 — Project data ports and adapters ✅ DONE
 
 `ports/projectData.ts`: `snapshot()` and `metadata()`.
 `ports/structuredDataWriter.ts`: `declareFormula()` and `declareTable()`.
@@ -320,7 +320,7 @@ side maps a taken display name onto 409 `name_conflict`.
 
 ---
 
-## Phase 6 — Application service
+## Phase 6 — Application service ✅ DONE
 
 `application/structuredAnalyticService.ts`: total `command`/`query` switches,
 plus `pruneHistory` and `purgeExpired`.

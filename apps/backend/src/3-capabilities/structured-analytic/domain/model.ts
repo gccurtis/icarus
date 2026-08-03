@@ -364,7 +364,7 @@ export interface AnalyticCheckSource {
   readonly input: string;
   readonly name: string;
   readonly entryId?: string;
-  readonly revision?: number | string;
+  readonly revision?: number;
   readonly status: AnalyticCheckStatus;
 }
 
