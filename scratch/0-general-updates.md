@@ -34,6 +34,7 @@ Items 15 and 16 are **Phase C** of the Templates/Document work and are ticked in
 | 21 | [Log content in dev, shape in production, behind a label](#21--log-content-in-dev-shape-in-production-behind-a-label) | ✅ **DONE 2026-08-02** — mechanism landed; migration ongoing |
 | 22 | [Audit what we do with caller-supplied strings](#22--audit-what-we-do-with-caller-supplied-strings) | agreed — explore |
 | 23 | [Test files are not typechecked](#23--test-files-are-not-typechecked) | agreed — small change, expect a backlog |
+| 24 | [Structured Data's tests are thinner than its blast radius](#24--structured-datas-tests-are-thinner-than-its-blast-radius) | agreed — two live defects first |
 | R | [Reference: delegated command claims](#reference--delegated-command-claims-removed-2026-08-02) | ✅ **REMOVED 2026-08-02** |
 
 Items 7–10 correct Templates, which is **already implemented and green** (254 tests). They
@@ -1409,3 +1410,80 @@ reasonable staging tactics.
 malformed — the whole point of a validator test is to hand it garbage — so those want
 `unknown` and a cast at the call site, not a satisfied interface. The valuable typing is
 on helpers, doubles, and expected-value objects, not on hostile inputs.
+
+---
+
+## 24 · Structured Data's tests are thinner than its blast radius
+
+**Status:** agreed — the two live defects first, then coverage
+
+Structured Data is the authority for every Formula-visible name in the project, so a
+silent defect there is wrong numbers everywhere downstream. It has **one** test file,
+`structured-data-formula.test.ts`, 18 tests — and three of those never touch the
+capability at all (they build an empty snapshot and then test the Formula engine), so
+it is really 15.
+
+Audited 2026-08-03. Each claim below was verified against the source, not inferred.
+
+### Two live defects, not coverage gaps
+
+**The `query` scope filter is dead by construction.** `structured-data.ts:171` filters
+on `e.contextEntries`, but `declare` hard-codes `contextEntries: []` at both `:209` and
+`:234`, and **no method ever writes it non-empty**. So a non-empty `scope` can only ever
+return zero entries. It is reachable over HTTP —
+`registerStructuredDataEndpoints.ts:193` passes `body.scope` straight through — so a
+caller filtering by scope gets a confident empty list rather than an error. Either
+populate `contextEntries` or delete the branch; leaving it is the worst option.
+
+**The resolver's snapshot cache is one line from serving stale values project-wide.**
+`formula-name-resolver.ts:127` keys the cache on
+`${e.id}:${e.revision}:${e.displayName}:${e.kind}`. That is correct today. But no test
+ever mutates an entry's *content* and rebuilds the snapshot on the same resolver — the
+only two double-build tests change a display name and an id. Drop `revision` from that
+signature and every existing test still passes, while every `updateBody`, `appendRows`,
+and `replaceSchema` in production serves the pre-edit value until an unrelated rename
+happens to bust the cache.
+
+### Zero tests, verified by grep across the whole test directory
+
+`updateBody`, `appendRows`, `deleteRows`, `getByName`, and `rowCount` do not appear in
+**any** test file. `query`, `pruneHistory`, and `purgeExpired` are likewise unexercised.
+
+`updateBody` is the primary edit path for every variable and function. `appendRows` and
+`deleteRows` are the only mutation path for collection data. `pruneHistory` and
+`purgeExpired` run on a schedule against real history — `startBackend.ts` binds
+Structured Data as a retention port — and the sibling Structured Analytic store has
+explicit regression tests for the exact hazard they share.
+
+`rowCount` is denormalized and never read by a test; `invariants.md:9` claims
+`rowCount === rows.length`. Hard-coding it to `0` breaks nothing.
+
+### Claimed invariants with no enforcing test
+
+From the capability's own `invariants.md`: `rowCount` accuracy; an authored null staying
+a Formula null; missing row keys becoming null; number finiteness and the safe-integer
+bound; record cardinality at append/delete; **all five configured limits**; ids surviving
+rename; retention behaviour; and — the only scoping claim the capability makes — that
+two `ownerId`s on one database file stay isolated.
+
+### The highest-value tests, in order
+
+1. **Content edit is visible in a rebuilt snapshot.** Declare `rate = 1`, build, assert
+   1; `updateBody` to `2`, rebuild on the *same* resolver, assert 2. One test that pins
+   `updateBody` and kills the cache hazard together.
+2. **Full round-trip of a declared entry** — every literal kind, an explicit null, and a
+   missing key, then `deepEqual` the whole entry including `rowCount`, timestamps, and
+   `revision === 1`. Literal cells currently never round-trip at all; numbers go through
+   `fromDecimalString(String(v))` unverified.
+3. **Row mutation arithmetic** — `rowCount` after append and delete, prior rows retained
+   in order, empty-array append still bumping the revision, out-of-range indices refused.
+4. **Retention**, mirroring `structured-analytic-store.test.ts`.
+5. **Store scoping** — two different `ownerId`s on one file seeing only their own.
+
+### One asymmetry worth knowing
+
+`validateDisplayName` correctly refuses a name that *is* a Formula builtin, and asks the
+engine rather than keeping a copied list — that seam is genuinely covered. The reverse
+is not: an entry created before a name became a builtin silently stops resolving, and
+`bindingView` still hands it to the resolver. If that should be detectable, the
+assertion belongs on `buildSnapshot`.
