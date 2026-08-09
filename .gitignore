@@ -11,7 +11,10 @@ coverage/
 logs/*.log
 
 # Backend runtime artifacts
-apps/backend/data/*.db
-apps/backend/data/*.db-shm
-apps/backend/data/*.db-wal
-apps/backend/logs/*.log
+archive/apps/backend/data/*.db
+archive/apps/backend/data/*.db-shm
+archive/apps/backend/data/*.db-wal
+archive/apps/backend/logs/*.log
+
+# Agent worktrees
+.claude/worktrees/
