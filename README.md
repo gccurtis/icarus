@@ -1,67 +1,27 @@
 # Icarus
 
-TypeScript monorepo with strict frontend/backend separation and shared contracts.
+Reset in progress. Everything that came before is preserved under [`archive/`](archive/).
 
-## Structure
+## archive/
 
-- `apps/backend`: backend API (Fastify)
-- `apps/frontend`: frontend app (Vite)
-- `packages/shared`: shared types/contracts
-- `infra/devshell`: Nix flake dev environment
-- `docs`: project docs — [`phase-2/`](docs/phase-2/README.md) is current, `phase-1/` is a frozen archive
+The previous system, moved wholesale on 2026-08-09 and left runnable in place. Nothing was
+deleted; every file is still in git history at its original path.
 
-## Documentation
+| Path | What it is |
+| --- | --- |
+| `archive/apps/backend` | The backend service — 13 capabilities, 251 TypeScript files, 535 passing tests |
+| `archive/apps/frontend` | Vite client (a stub) |
+| `archive/packages/shared` | Cross-runtime contracts (one interface) |
+| `archive/docs/phase-2` | Documentation written against commit `ef6d462`, **stale** — it predates the Slides Phase 3–5 work that is on `main` |
+| `archive/docs/phase-1` | The documentation tier that preceded phase-2, already an archive when it was moved |
+| `archive/scratch` | Design drafts |
+| `archive/infra/devshell` | Nix flake dev environment |
+| `archive/package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `flake.nix` | Workspace and toolchain config, moved with the code so the archive stays self-contained |
 
-**[`docs/phase-2/`](docs/phase-2/README.md) is the current documentation.** It was written by
-reading the backend source and is verified against it; start at its
-[README](docs/phase-2/README.md) for the reading order.
+To run the archived backend, work from `archive/` rather than the repository root — the
+workspace globs, the nix flake and the `#alias` imports all resolve relative to it.
 
-[`docs/phase-1/`](docs/phase-1/README.md) is a frozen archive of the tree that preceded it. It
-records design intent and history. **It does not describe the current system and must not be
-cited as one** — see its [README](docs/phase-1/README.md) for what is and is not reliable.
+## Root
 
-Each backend module also carries a documentation package beside its code, at
-`apps/backend/src/**/docs/`. Those are live and take precedence over any design page where the
-two differ.
-
-## NixOS / Nix usage
-
-From repo root:
-
-```bash
-nix develop
-pnpm install
-```
-
-If you want to target the nested flake directly:
-
-```bash
-nix develop ./infra/devshell
-```
-
-## Development
-
-Run all packages (shared watcher + backend + frontend):
-
-```bash
-pnpm dev
-```
-
-Run only backend:
-
-```bash
-pnpm dev:backend
-```
-
-Run only frontend:
-
-```bash
-pnpm dev:frontend
-```
-
-## Build
-
-```bash
-pnpm build
-```
-
+The repository root is intentionally bare. There is no workspace, no build, and no test command
+here until the replacement is created.
