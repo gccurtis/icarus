@@ -4,7 +4,7 @@
 
 The Icarus backend is a TypeScript domain application over Supabase and DBOS. It should contain the behavior unique to Icarus and delegate general infrastructure to established systems.
 
-Supabase provides PostgreSQL, Auth, row-level security, Storage, Realtime, and local development infrastructure. DBOS provides durable workflows, retries, idempotent workflow identities, and serial or bounded-concurrent queues. The backend does not recreate a general web server framework, persistence abstraction, migration engine, or job scheduler.
+Supabase provides PostgreSQL, row-level security, Storage, Realtime, optional future Auth integration, and local development infrastructure. DBOS provides durable workflows, retries, idempotent workflow identities, and serial or bounded-concurrent queues. The backend does not recreate a general web server framework, persistence abstraction, migration engine, or job scheduler.
 
 ## Directory template
 
@@ -77,6 +77,8 @@ export function createGeneralFilesRuntime(
 
 The runtime is a small coordinating object, not a service container. Its dependencies are explicit narrow interfaces to lower-level capabilities or external infrastructure.
 
+The initial application receives `userId` and `projectId` from a trusted bootstrap binding. There is no sign-in or project-selection surface in the first build. Future identity infrastructure may establish the same context, but public capability signatures do not change.
+
 ## Procedure contract
 
 Every public procedure documents:
@@ -94,8 +96,8 @@ Every public procedure documents:
 A mutation follows one consistent path:
 
 ```text
-authenticate request
-→ establish project context
+load trusted bound request context
+→ preserve user and project scope
 → authorize capability action
 → validate domain input
 → begin transaction
@@ -164,7 +166,7 @@ The workflow input contains serializable identifiers and values, never a live st
 | Library or platform | Purpose | Boundary |
 | --- | --- | --- |
 | TypeScript on Node.js | Capability and workflow implementation | One language across frontend and backend |
-| Supabase OSS | PostgreSQL, Auth, RLS, Storage, Realtime, local stack | Infrastructure substrate, not domain owner |
+| Supabase OSS | PostgreSQL, RLS, Storage, Realtime, optional Auth, local stack | Infrastructure substrate, not domain owner |
 | `@supabase/supabase-js` | Typed Supabase access | Browser/user client and appropriate server access |
 | Supabase generated types | Database value types | Generated; never hand-maintained in parallel |
 | DBOS TypeScript SDK | Durable workflows, retries, queues, workflow identities | Only operations that need durability or ordering |
