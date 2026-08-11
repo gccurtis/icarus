@@ -1,21 +1,16 @@
 import type { FastifyInstance } from "fastify";
-import type { JobRegistry } from "#workflows/registry.js";
-import { JobScheduler, QueueCapacityError } from "#workflows/scheduler.js";
-import type {
-  IncomingRequest,
-  RequestEnvelope
-} from "#api/context.js";
+import type { IncomingRequest, RequestEnvelope } from "#api/context.js";
+import type { RouteRegistry } from "#api/routes/registry.js";
 import type { Logger } from "#capabilities/observability/logger.js";
 import { errorFields } from "#api/errors.js";
 
 export interface RegisterHttpTransportDeps {
-  scheduler: JobScheduler;
-  registry: JobRegistry;
+  registry: RouteRegistry;
   logger: Logger;
 }
 
-// Convert Fastify-shaped request data into the framework-neutral request used
-// as input to the endpoint registry and its job factories.
+// Convert Fastify-shaped request data into the framework-neutral request passed
+// to route handlers, so nothing downstream depends on Fastify types.
 const buildEnvelope = (request: IncomingRequest): RequestEnvelope => ({
   requestId: request.id,
   method: request.method,
@@ -30,92 +25,63 @@ export const registerHttpTransport = (
   app: FastifyInstance,
   deps: RegisterHttpTransportDeps
 ): void => {
-  // Fastify registration happens once during startup. Every HTTP endpoint then
-  // enters this same handler; endpoint-specific behavior lives in job wiring.
-  app.all(
-    "/*",
-    async (request, reply) => {
-      const startedAt = performance.now();
-      const envelope = buildEnvelope({
-        id: request.id,
-        method: request.method,
-        url: request.url,
-        params: request.params,
-        query: request.query,
-        headers: request.headers as Record<string, unknown>,
-        body: request.body
+  // Fastify registration happens once during startup. Every HTTP endpoint enters
+  // this same handler, which looks up the route and calls it directly.
+  app.all("/*", async (request, reply) => {
+    const startedAt = performance.now();
+    const envelope = buildEnvelope({
+      id: request.id,
+      method: request.method,
+      url: request.url,
+      params: request.params,
+      query: request.query,
+      headers: request.headers as Record<string, unknown>,
+      body: request.body
+    });
+
+    const handler = deps.registry.find(envelope);
+    if (!handler) {
+      deps.logger.warn("http.route.not-found", {
+        requestId: envelope.requestId,
+        method: envelope.method,
+        path: envelope.path,
+        statusCode: 404,
+        durationMs: Math.round(performance.now() - startedAt)
       });
-
-      // Registry lookup maps the received method/path to a fresh concrete job.
-      if (!deps.registry.has(envelope)) {
-        deps.logger.warn("http.route.not-found", {
-          requestId: envelope.requestId,
-          method: envelope.method,
-          path: envelope.path,
-          statusCode: 404,
-          durationMs: Math.round(performance.now() - startedAt)
-        });
-        reply.code(404);
-        return {
-          error: `No job registered for endpoint '${envelope.method} ${envelope.path}'`,
-          registeredEndpoints: deps.registry.listEndpoints()
-        };
-      }
-
-      const job = deps.registry.createJob(envelope);
-
-      try {
-        // enqueue() maps job.queueType to the serial or concurrent queue. This
-        // await resolves when the job produces its response—not necessarily
-        // when deferred follow-up work finishes.
-        const execution = await deps.scheduler.enqueue(job);
-        const { statusCode, headers, body } = execution.response;
-
-        if (headers) {
-          reply.headers(headers);
-        }
-
-        deps.logger.info("http.request.completed", {
-          requestId: envelope.requestId,
-          jobId: execution.jobId,
-          jobName: execution.jobName,
-          queueType: execution.queueType,
-          method: envelope.method,
-          path: envelope.path,
-          statusCode,
-          durationMs: Math.round(performance.now() - startedAt)
-        });
-        return reply.code(statusCode).send(body);
-      } catch (error) {
-        // Infrastructure errors choose their status here. Successful endpoint
-        // status codes and bodies are always chosen by the job work function.
-        if (error instanceof QueueCapacityError) {
-          deps.logger.warn("http.request.rejected", {
-            requestId: envelope.requestId,
-            method: envelope.method,
-            path: envelope.path,
-            statusCode: 429,
-            queueType: error.queueType,
-            durationMs: Math.round(performance.now() - startedAt),
-            ...errorFields(error)
-          });
-          reply.code(429);
-          return {
-            error: error.message,
-            queueType: error.queueType
-          };
-        }
-
-        deps.logger.error("http.request.failed", {
-          requestId: envelope.requestId,
-          method: envelope.method,
-          path: envelope.path,
-          statusCode: 500,
-          durationMs: Math.round(performance.now() - startedAt),
-          ...errorFields(error)
-        });
-        throw error;
-      }
+      reply.code(404);
+      return {
+        error: `No route registered for '${envelope.method} ${envelope.path}'`,
+        registeredRoutes: deps.registry.list()
+      };
     }
-  );
+
+    try {
+      const { statusCode, headers, body } = await handler(envelope);
+
+      if (headers) {
+        reply.headers(headers);
+      }
+
+      deps.logger.info("http.request.completed", {
+        requestId: envelope.requestId,
+        method: envelope.method,
+        path: envelope.path,
+        statusCode,
+        durationMs: Math.round(performance.now() - startedAt)
+      });
+      return reply.code(statusCode).send(body);
+    } catch (error) {
+      // A handler that throws is a fault, not an outcome. Successful status
+      // codes and bodies are always chosen by the handler itself.
+      deps.logger.error("http.request.failed", {
+        requestId: envelope.requestId,
+        method: envelope.method,
+        path: envelope.path,
+        statusCode: 500,
+        durationMs: Math.round(performance.now() - startedAt),
+        ...errorFields(error)
+      });
+      throw error;
+    }
+  });
 };

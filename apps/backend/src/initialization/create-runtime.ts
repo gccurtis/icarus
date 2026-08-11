@@ -1,20 +1,18 @@
 import { createConfig } from "#initialization/runtimes/config.js";
 import { createApp } from "#initialization/runtimes/app.js";
 import { createLogger } from "#initialization/runtimes/logger.js";
-import { createScheduler } from "#initialization/runtimes/scheduler.js";
 import { createRegistry } from "#initialization/runtimes/registry.js";
 import { registerHttpTransport } from "#api/registerHttpTransport.js";
 
 /**
  * Composes the backend in dependency order.
  *
- * Only the transport spine is wired right now: configuration, logging, the job
- * scheduler, the endpoint registry, and Fastify. No capability is constructed,
- * so the only endpoints served are the built-in operational ones.
+ * Only the transport spine is wired: configuration, logging, the route table, and
+ * Fastify. No capability is constructed, and there is no job queue.
  *
- * The previous composition — 23 runtime initializations and 11 route groups — is
- * preserved verbatim under `reference/`. Capabilities come back one at a time,
- * and each one adds its construction here.
+ * The previous composition — 23 runtime initializations, 11 route groups, and a
+ * hand-written scheduler — is preserved verbatim under `reference/`. Capabilities
+ * come back one at a time, and each adds its construction here.
  */
 export const startBackend = async (): Promise<void> => {
   const config = await createConfig();
@@ -22,10 +20,9 @@ export const startBackend = async (): Promise<void> => {
   const startedAt = performance.now();
   try {
     const app = createApp();
-    const scheduler = createScheduler(config, logger);
-    const registry = createRegistry(scheduler);
+    const registry = createRegistry();
 
-    registerHttpTransport(app, { scheduler, registry, logger });
+    registerHttpTransport(app, { registry, logger });
 
     await app.listen({
       host: config.server.host,

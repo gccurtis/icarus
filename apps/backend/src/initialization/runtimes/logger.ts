@@ -1,7 +1,7 @@
 import { mkdirSync, createWriteStream } from "node:fs";
 import type { WriteStream } from "node:fs";
 import { join } from "node:path";
-import type { BackendConfig } from "#initialization/configuration.js";
+import type { BackendConfig } from "#initialization/configuration/index.js";
 import { FileLogger, NoopLogger } from "#capabilities/observability/logger.js";
 import type { Logger, LogEntry } from "#capabilities/observability/logger.js";
 import type { LogLevel } from "#capabilities/observability/logger.js";

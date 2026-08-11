@@ -1,10 +1,10 @@
-import { JobRegistry } from "#workflows/registry.js";
-import { JobScheduler } from "#workflows/scheduler.js";
-import { registerEndpointMappings } from "#api/routes/internal/registerEndpointMappings.js";
+import { RouteRegistry } from "#api/routes/registry.js";
+import { registerBuiltInRoutes } from "#api/routes/registerBuiltInRoutes.js";
 
-export const createRegistry = (scheduler: JobScheduler): JobRegistry => {
-  // Build one process-wide endpoint registry, then load every job-wiring group.
-  const registry = new JobRegistry();
-  registerEndpointMappings(registry, scheduler);
+export const createRegistry = (): RouteRegistry => {
+  // Build one process-wide route table, then load each route group. A capability
+  // returning from reference/ adds its own registration call here.
+  const registry = new RouteRegistry();
+  registerBuiltInRoutes(registry);
   return registry;
 };
