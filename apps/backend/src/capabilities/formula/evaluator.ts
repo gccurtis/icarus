@@ -10,12 +10,13 @@ import { extractDependencies, type ObservedDependency } from "./dependencies.js"
 import {
   NULL_VALUE, TRUE_VALUE, FALSE_VALUE,
   makeNumber, makeText, makeLogic, makeList, makeRecord, makeTable, EMPTY_TABLE,
-  NullValue, NumberValue, TextValue, LogicValue, ListValue, RecordValue, TableValue, FunctionValue
+  type NullValue, type NumberValue, type TextValue, type LogicValue,
+  type ListValue, type RecordValue, type TableValue, type FunctionValue
 } from "./value.js";
 import {
   ZERO, ONE, fromInt, fromDecimalString,
   add, sub, mul, div, mod, negate, absR, compare, eq, isZero, powR,
-  CanonicalRational
+  type CanonicalRational
 } from "./rational.js";
 import {
   typeError, divideByZero, unknownIdentifier, limitExceeded, invalidIndex,

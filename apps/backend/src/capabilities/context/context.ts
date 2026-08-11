@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import type { Logger } from "#capabilities/observability/logger.js";
 import type { ContextEntry, KnowledgeResourceResolver } from "#capabilities/knowledge/types.js";
 import type { ContextStore } from "./store.js";
-import { ContextRecord, ContextNotFoundError, ContextConflictError, StaleContextError, ContextValidationError } from "./types.js";
+import { type ContextRecord, ContextNotFoundError, ContextConflictError, StaleContextError, ContextValidationError } from "./types.js";
 import {
   ResourceHistoryNotFoundError,
   ResourceNotDeletedError

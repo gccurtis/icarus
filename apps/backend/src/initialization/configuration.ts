@@ -250,7 +250,9 @@ const DEFAULT_CONFIG: BackendConfig = {
 };
 
 const moduleDir = dirname(fileURLToPath(import.meta.url));
-const defaultConfigPath = resolve(moduleDir, "../../../etc/configuration.yaml");
+// Two levels up from src/initialization (and dist/initialization, which has the
+// same depth) is the package root, where etc/ lives.
+const defaultConfigPath = resolve(moduleDir, "../../etc/configuration.yaml");
 
 const parseNumber = (value: unknown, fallback: number, fieldName: string): number => {
   if (value === undefined) {

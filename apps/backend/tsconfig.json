@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
@@ -8,44 +8,112 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-
     "rootDir": "src",
     "outDir": "dist",
-    "lib": ["ES2022"],
-    "types": ["node"],
+    "lib": [
+      "ESNext"
+    ],
+    "types": [
+      "node"
+    ],
     "paths": {
-      "#capabilities/*": ["./src/capabilities/*"],
-      "#initialization/*": ["./src/initialization/*"],
-      "#api/*": ["./src/api/*"],
-      "#workflows/*": ["./src/workflows/*"],
-      "#shared/*": ["./src/shared/*"],
-      "#formula": ["./src/capabilities/formula/index.ts"],
-      "#formula/*": ["./src/capabilities/formula/*"],
-      "#structured-data": ["./src/capabilities/structured-data/index.ts"],
-      "#structured-data/*": ["./src/capabilities/structured-data/*"],
-      "#context": ["./src/capabilities/context/index.ts"],
-      "#context/*": ["./src/capabilities/context/*"],
-      "#rich-text": ["./src/capabilities/rich-text/index.ts"],
-      "#rich-text/*": ["./src/capabilities/rich-text/*"],
-      "#derived-outputs": ["./src/capabilities/derived-outputs/index.ts"],
-      "#derived-outputs/*": ["./src/capabilities/derived-outputs/*"],
-      "#activity": ["./src/capabilities/activity/index.ts"],
-      "#activity/*": ["./src/capabilities/activity/*"],
-      "#persona": ["./src/capabilities/persona/index.ts"],
-      "#persona/*": ["./src/capabilities/persona/*"],
-      "#comments": ["./src/capabilities/comments/index.ts"],
-      "#comments/*": ["./src/capabilities/comments/*"],
-      "#templates": ["./src/capabilities/templates/index.ts"],
-      "#templates/*": ["./src/capabilities/templates/*"],
-      "#document": ["./src/capabilities/document/index.ts"],
-      "#document/*": ["./src/capabilities/document/*"],
-      "#general-files": ["./src/capabilities/general-files/index.ts"],
-      "#general-files/*": ["./src/capabilities/general-files/*"],
-      "#connector": ["./src/capabilities/connector/index.ts"],
-      "#connector/*": ["./src/capabilities/connector/*"],
-      "#investigation": ["./src/capabilities/investigation/index.ts"],
-      "#investigation/*": ["./src/capabilities/investigation/*"]
-    }
+      "#capabilities/*": [
+        "./src/capabilities/*"
+      ],
+      "#initialization/*": [
+        "./src/initialization/*"
+      ],
+      "#api/*": [
+        "./src/api/*"
+      ],
+      "#workflows/*": [
+        "./src/workflows/*"
+      ],
+      "#shared/*": [
+        "./src/shared/*"
+      ],
+      "#formula": [
+        "./src/capabilities/formula/index.ts"
+      ],
+      "#formula/*": [
+        "./src/capabilities/formula/*"
+      ],
+      "#structured-data": [
+        "./src/capabilities/structured-data/index.ts"
+      ],
+      "#structured-data/*": [
+        "./src/capabilities/structured-data/*"
+      ],
+      "#context": [
+        "./src/capabilities/context/index.ts"
+      ],
+      "#context/*": [
+        "./src/capabilities/context/*"
+      ],
+      "#rich-text": [
+        "./src/capabilities/rich-text/index.ts"
+      ],
+      "#rich-text/*": [
+        "./src/capabilities/rich-text/*"
+      ],
+      "#derived-outputs": [
+        "./src/capabilities/derived-outputs/index.ts"
+      ],
+      "#derived-outputs/*": [
+        "./src/capabilities/derived-outputs/*"
+      ],
+      "#activity": [
+        "./src/capabilities/activity/index.ts"
+      ],
+      "#activity/*": [
+        "./src/capabilities/activity/*"
+      ],
+      "#persona": [
+        "./src/capabilities/persona/index.ts"
+      ],
+      "#persona/*": [
+        "./src/capabilities/persona/*"
+      ],
+      "#comments": [
+        "./src/capabilities/comments/index.ts"
+      ],
+      "#comments/*": [
+        "./src/capabilities/comments/*"
+      ],
+      "#templates": [
+        "./src/capabilities/templates/index.ts"
+      ],
+      "#templates/*": [
+        "./src/capabilities/templates/*"
+      ],
+      "#document": [
+        "./src/capabilities/document/index.ts"
+      ],
+      "#document/*": [
+        "./src/capabilities/document/*"
+      ],
+      "#general-files": [
+        "./src/capabilities/general-files/index.ts"
+      ],
+      "#general-files/*": [
+        "./src/capabilities/general-files/*"
+      ],
+      "#connector": [
+        "./src/capabilities/connector/index.ts"
+      ],
+      "#connector/*": [
+        "./src/capabilities/connector/*"
+      ],
+      "#investigation": [
+        "./src/capabilities/investigation/index.ts"
+      ],
+      "#investigation/*": [
+        "./src/capabilities/investigation/*"
+      ]
+    },
+    "verbatimModuleSyntax": true
   },
-  "include": ["src/**/*.ts"]
+  "include": [
+    "src/**/*.ts"
+  ]
 }

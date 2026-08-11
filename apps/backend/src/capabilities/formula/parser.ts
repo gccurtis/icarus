@@ -9,7 +9,7 @@ import type {
   ConditionOperator,
   RecordFieldNode
 } from "./ast.js";
-import { FormulaDiagnostic, parseError } from "./diagnostics.js";
+import { type FormulaDiagnostic, parseError } from "./diagnostics.js";
 import type { FormulaLimits } from "./limits.js";
 
 let _nodeCounter = 0;

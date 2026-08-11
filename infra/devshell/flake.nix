@@ -13,8 +13,11 @@
         in {
           default = pkgs.mkShell {
             packages = with pkgs; [
-              # Node.js runtime + package manager
-              nodejs_22
+              # Node.js runtime + package manager. The version here is the single
+              # source of truth: each package's `packageManager` field must match
+              # the pnpm below, or pnpm self-switches to a downloaded copy and the
+              # pin stops meaning anything.
+              nodejs_26
               pnpm
 
               # Nix tooling

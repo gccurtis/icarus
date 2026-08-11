@@ -7,12 +7,13 @@ import type { SourceSpan } from "./tokens.js";
 import {
   NULL_VALUE, TRUE_VALUE, FALSE_VALUE,
   makeNumber, makeText, makeLogic, makeList, makeRecord, makeTable, EMPTY_TABLE,
-  NumberValue, TextValue, LogicValue, ListValue, RecordValue, TableValue, FunctionValue
+  type NumberValue, type TextValue, type LogicValue, type ListValue,
+  type RecordValue, type TableValue, type FunctionValue
 } from "./value.js";
 import {
   ZERO, ONE, fromInt, fromDecimalString,
   add, sub, mul, div, mod, negate, absR, compare, eq, isZero, isInteger,
-  floorR, ceilR, roundR, powR, CanonicalRational
+  floorR, ceilR, roundR, powR, type CanonicalRational
 } from "./rational.js";
 import {
   typeError, wrongArity, divideByZero, invalidTable, limitExceeded, numericError
