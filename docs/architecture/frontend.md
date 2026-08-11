@@ -143,7 +143,7 @@ Carbon components retain their expected operational icons so their behavior rema
 | Tailwind CSS v4 | Token-bound layout and utilities | No arbitrary design values in feature code |
 | Lucide React | Default product icons | Named, tree-shaken imports |
 | IBM Plex Sans / Mono | Self-hosted product typography | Loaded centrally, never per feature |
-| `@supabase/supabase-js` | Authenticated reads, realtime, storage, and allowed mutations | RLS remains authoritative |
+| `@supabase/supabase-js` | Project-scoped reads, realtime, storage, and allowed mutations | RLS remains authoritative |
 | TanStack Query | Server-state caching, invalidation, and refetch | No canonical project state in client memory |
 | Vitest + Testing Library | Unit and component tests | Tests behavior and accessibility |
 | Playwright | Browser and cross-system flows | Root end-to-end suite |
