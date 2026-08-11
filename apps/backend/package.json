@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "packageManager": "pnpm@11.20.0",
   "imports": {
     "#capabilities/*": {
       "development": "./src/capabilities/*",
@@ -169,15 +168,15 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
-    "dotenv": "^17.4.2",
-    "fastify": "^5.11.3",
-    "yaml": "^2.9.0"
+    "better-sqlite3": "latest",
+    "dotenv": "latest",
+    "fastify": "latest",
+    "yaml": "latest"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^9.6.0",
-    "@types/node": "^26.2.0",
-    "tsx": "^4.23.12",
-    "typescript": "^7.0.2"
+    "@types/better-sqlite3": "latest",
+    "@types/node": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
   }
 }

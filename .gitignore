@@ -18,3 +18,7 @@ apps/backend/logs/*.log
 
 # Agent worktrees
 .claude/worktrees/
+
+# Nothing is pinned: lockfiles are regenerable local caches, not committed state.
+flake.lock
+pnpm-lock.yaml

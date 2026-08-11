@@ -13,11 +13,15 @@
         in {
           default = pkgs.mkShell {
             packages = with pkgs; [
-              # Node.js runtime + package manager. The version here is the single
-              # source of truth: each package's `packageManager` field must match
-              # the pnpm below, or pnpm self-switches to a downloaded copy and the
-              # pin stops meaning anything.
-              nodejs_26
+              # Node.js runtime + package manager, both unpinned.
+              #
+              # `nodejs_latest` rather than `nodejs`: the bare attribute is the
+              # conservative default (24.x), so asking for "no pin" by name would
+              # silently move backwards. `_latest` floats forwards instead.
+              #
+              # No package.json `packageManager` field exists, so this pnpm is the
+              # only one in play — nothing self-switches to a downloaded copy.
+              nodejs_latest
               pnpm
 
               # Nix tooling
