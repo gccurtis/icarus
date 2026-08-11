@@ -1,0 +1,10 @@
+# Structured Data limits.
+
+structuredData:
+  maxDisplayNameBytes: 256
+  maxEntries: 10000
+  maxFieldsPerCollection: 256
+  maxRowsPerCollection: 100000
+  maxBodyBytes: 65536
+
+# Rich Text limits.

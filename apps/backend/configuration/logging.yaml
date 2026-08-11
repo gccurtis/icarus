@@ -1,0 +1,9 @@
+# Structured logging.
+
+logging:
+  # Set to false to disable all file logging at runtime (all log calls become no-ops).
+  enabled: true
+  # Minimum level to record. One of: debug | info | warn | error
+  level: debug
+  # Directory to write daily log files into, relative to the process working directory.
+  directory: logs

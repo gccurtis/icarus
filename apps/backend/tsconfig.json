@@ -17,11 +17,11 @@
       "node"
     ],
     "paths": {
+      "#configuration/*": [
+        "./configuration/*"
+      ],
       "#package.json": [
         "./package.json"
-      ],
-      "#etc/*": [
-        "./etc/*"
       ],
       "#capabilities/*": [
         "./src/capabilities/*"

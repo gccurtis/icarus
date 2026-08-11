@@ -25,3 +25,4 @@ pnpm-lock.yaml
 
 # Local configuration overrides — real secrets live here
 *.local.yaml
+**/configuration/local.yaml

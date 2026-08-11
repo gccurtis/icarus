@@ -40,7 +40,7 @@ built here.
   promise replay of a completed response; `create` is also not replayed. Add receipts if
   a real need appears.
 - **Limits live in [`domain/validation.ts`](../domain/validation.ts)** as
-  `DEFAULT_PERSONA_LIMITS`, not in `etc/configuration.yaml`, matching Comments. Adding a
+  `DEFAULT_PERSONA_LIMITS`, not in `configuration/`, matching Comments. Adding a
   `persona:` config section later is a ~3-line change in `loadBackendConfig.ts` plus an
   override passed through `initialization/runtimes/persona.ts`.
 - **No Activity publication.** Doing it correctly needs an outbox row written in the

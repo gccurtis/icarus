@@ -12,7 +12,7 @@ const config = resolve(dirname(fileURLToPath(import.meta.url)), "../../etc/confi
 
 // yes
 import { parseNumber } from "#initialization/configuration/parse.js";
-const config = etcFile("configuration.yaml");
+const config = configurationFile("server.yaml");
 ```
 
 ### Why
@@ -37,7 +37,7 @@ cannot tell you that a file moved out from under one.
 | Alias | Points at |
 | --- | --- |
 | `#initialization/*`, `#api/*`, `#capabilities/*` | the matching directory under `src/` (or `dist/`) |
-| `#etc/*` | `etc/` — checked-in configuration data, never compiled |
+| `#configuration/*` | `configuration/` — checked-in YAML, never compiled |
 | `#package.json` | the package manifest, used only as a package-root anchor |
 
 Filesystem paths come from [`src/initialization/paths.ts`](src/initialization/paths.ts), which
@@ -59,25 +59,31 @@ dependencies — it is plain Node.
 3. **`package.json` imports and `tsconfig.json` paths declare the same aliases.** Node resolves one
    and TypeScript the other, so a mismatch compiles cleanly and fails at runtime.
 
-Check 3 found a real defect on its first run: `#etc/*` and `#package.json` had been added to
-`package.json` only. `tsc` was silent because both are used solely as runtime strings passed to
-`import.meta.resolve`, never as import specifiers — exactly the blind spot the check exists for.
+Check 3 found a real defect on its first run: the configuration and package-root aliases had been
+added to `package.json` only. `tsc` was silent because both are used solely as runtime strings passed
+to `import.meta.resolve`, never as import specifiers — exactly the blind spot the check exists for.
 
 ## Configuration
 
-Two files, both under `etc/`:
+[`configuration/`](configuration/README.md) holds one YAML file per section. Every `*.yaml` in it is
+merged into a single object, with `local.yaml` applied last.
 
-| File | Tracked | Purpose |
-| --- | --- | --- |
-| `configuration.yaml` | yes | Every setting, with a placeholder where a secret belongs |
-| `configuration.local.yaml` | **no** — git-ignored | Real secrets and local overrides |
+```text
+configuration/
+├── server.yaml           server, workerPool, queue
+├── logging.yaml
+├── project.yaml          projectId, userId
+├── intelligence.yaml     providers and routing
+├── formula.yaml  structured-data.yaml  rich-text.yaml
+├── context.yaml  document.yaml  retention.yaml
+└── local.yaml            GIT-IGNORED — real secrets
+```
 
-The local file is **merged over** the tracked one: objects merge key by key, while arrays and scalars
-replace outright, so overriding a list of routes replaces it rather than appending. Only the values
-you want to change need to appear. Its absence is not an error, so a fresh checkout runs on the
-tracked file alone.
+Objects merge key by key, while arrays and scalars replace outright, so overriding a list of routes
+replaces it rather than appending. Only changed values need to appear in `local.yaml`, and its
+absence is not an error.
 
-Put the real OpenRouter key in `configuration.local.yaml`:
+Put the real OpenRouter key there:
 
 ```yaml
 intelligence:
@@ -87,7 +93,10 @@ intelligence:
 ```
 
 `OPENROUTER_API_KEY` in the environment still works, but only while the resolved value is still the
-placeholder — so a key set in the local file takes precedence over one in the environment.
+placeholder — so a key in `local.yaml` takes precedence over one in the environment.
+
+Only `server` and `logging` are read by anything today; the rest describe capabilities in
+`reference/` and are kept so a returning capability finds its configuration written.
 
 ## Current state
 

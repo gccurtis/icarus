@@ -1,0 +1,7 @@
+# Context manager.
+
+context:
+  maxEntriesPerContext: 100000
+  maxResolveDepth: 10
+
+# Document history retention and canonical content limits.

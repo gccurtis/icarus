@@ -1,6 +1,7 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
+import { join } from "node:path";
 import { parse } from "yaml";
-import { etcFile } from "#initialization/paths.js";
+import { configurationDirectory } from "#initialization/paths.js";
 import type { BackendConfig } from "#initialization/configuration/types.js";
 import { OPENROUTER_API_KEY_PLACEHOLDER } from "#initialization/configuration/types.js";
 import { DEFAULT_CONFIG } from "#initialization/configuration/defaults.js";
@@ -13,14 +14,11 @@ import {
 export * from "#initialization/configuration/types.js";
 export { DEFAULT_CONFIG } from "#initialization/configuration/defaults.js";
 
-// Resolved through the imports map, so this file's own depth is irrelevant.
-const defaultConfigPath = etcFile("configuration.yaml");
-
 /**
  * Local overrides. Git-ignored, so this is where a real secret belongs. Absent on
  * a fresh checkout, which is not an error.
  */
-const localConfigPath = etcFile("configuration.local.yaml");
+const LOCAL_FILE = "local.yaml";
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -55,17 +53,41 @@ const readYaml = async (path: string): Promise<Record<string, unknown> | undefin
   return (parse(source) as Record<string, unknown> | null) ?? {};
 };
 
-export const loadBackendConfig = async (
-  configPath = defaultConfigPath,
-  overridePath: string | undefined = localConfigPath
-): Promise<BackendConfig> => {
-  const base = await readYaml(configPath);
-  if (base === undefined) {
-    throw new Error(`Configuration file not found: ${configPath}`);
+/**
+ * Merges every `*.yaml` in `configuration/` into one raw object.
+ *
+ * Files are read in sorted order for determinism, and `local.yaml` is applied
+ * last so it always wins. Top-level keys do not overlap between the section
+ * files, so their order is otherwise immaterial. Dropping a new section file into
+ * the directory is all it takes to have it loaded — a capability returning from
+ * `reference/` brings its own.
+ */
+const readConfigurationDirectory = async (
+  directory: string
+): Promise<Record<string, unknown>> => {
+  const entries = (await readdir(directory))
+    .filter((name) => name.endsWith(".yaml"))
+    .sort();
+
+  const sections = entries.filter((name) => name !== LOCAL_FILE);
+  if (sections.length === 0) {
+    throw new Error(`No configuration sections found in ${directory}`);
   }
 
-  const overlay = overridePath === undefined ? undefined : await readYaml(overridePath);
-  const parsed = overlay === undefined ? base : merge(base, overlay);
+  let merged: Record<string, unknown> = {};
+  for (const name of [...sections, ...entries.filter((name) => name === LOCAL_FILE)]) {
+    const section = await readYaml(join(directory, name));
+    if (section !== undefined) {
+      merged = merge(merged, section);
+    }
+  }
+  return merged;
+};
+
+export const loadBackendConfig = async (
+  directory = configurationDirectory
+): Promise<BackendConfig> => {
+  const parsed = await readConfigurationDirectory(directory);
 
   const server = (parsed.server as Record<string, unknown> | undefined) ?? {};
   const workerPool = (parsed.workerPool as Record<string, unknown> | undefined) ?? {};

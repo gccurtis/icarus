@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "imports": {
+    "#configuration/*": "./configuration/*",
     "#package.json": "./package.json",
-    "#etc/*": "./etc/*",
     "#capabilities/*": {
       "development": "./src/capabilities/*",
       "types": "./src/capabilities/*",

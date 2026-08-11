@@ -27,7 +27,7 @@ These pages describe the code currently under [`capabilities/intelligence`](../)
 | [`openrouter/provider.ts`](../openrouter/provider.ts) | OpenRouter wire translation, HTTP, timeout, response normalization |
 | [`create/intelligence.ts`](../../../initialization/runtimes/intelligence.ts) | Production construction and provider registration |
 | [`loadBackendConfig.ts`](../../../initialization/configuration.ts) | Configuration parsing and default route matrix |
-| [`configuration.yaml`](../../../../etc/configuration.yaml) | Committed provider, inference, reasoning, and embedding routes |
+| [`intelligence.yaml`](../../../../configuration/intelligence.yaml) | Committed provider, inference, reasoning, and embedding routes |
 | [`create-runtime.ts`](../../../initialization/create-runtime.ts) | Process-level composition and injection |
 
 ## Public runtime surface

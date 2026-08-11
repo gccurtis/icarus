@@ -17,9 +17,17 @@ import { fileURLToPath } from "node:url";
 /** `apps/backend`, anchored on the one file guaranteed to sit at a package root. */
 export const packageRoot: string = dirname(fileURLToPath(import.meta.resolve("#package.json")));
 
-/** A checked-in configuration file under `etc/`. */
-export const etcFile = (name: string): string =>
-  fileURLToPath(import.meta.resolve(`#etc/${name}`));
+/** A checked-in file under `configuration/`. Existence is not checked. */
+export const configurationFile = (name: string): string =>
+  fileURLToPath(import.meta.resolve(`#configuration/${name}`));
+
+/**
+ * The `configuration/` directory, for listing its files.
+ *
+ * Derived from a resolved alias rather than from this module's location, so it
+ * follows the same rule as everything else here.
+ */
+export const configurationDirectory: string = dirname(configurationFile("server.yaml"));
 
 /**
  * The repository-root `.env`, two levels above this package.

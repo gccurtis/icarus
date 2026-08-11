@@ -1,35 +1,10 @@
-# Backend runtime configuration.
-# Keep environment-specific overrides in separate files if needed.
-
-server:
-  # Interface to bind.
-  host: 0.0.0.0
-  # HTTP port for Fastify.
-  port: 4000
-
-workerPool:
-  # Max number of concurrent jobs running at the same time.
-  concurrentWorkers: 4
-
-queue:
-  # Max jobs waiting in the serial queue.
-  serialMaxSize: 1000
-  # Max jobs waiting in the concurrent queue.
-  concurrentMaxSize: 1000
-
-logging:
-  # Set to false to disable all file logging at runtime (all log calls become no-ops).
-  enabled: true
-  # Minimum level to record. One of: debug | info | warn | error
-  level: debug
-  # Directory to write daily log files into, relative to the process working directory.
-  directory: logs
+# Model providers and routing. The real API key belongs in local.yaml.
 
 intelligence:
   providers:
     openrouter:
       # Do not put a real key here — this file is tracked.
-      # Put it in etc/configuration.local.yaml, which is git-ignored and is
+      # Put it in local.yaml in this directory, which is git-ignored and is
       # merged over this file. OPENROUTER_API_KEY in the environment also works,
       # but only while this value is still the placeholder below.
       apiKey: replace-with-openrouter-api-key
@@ -155,61 +130,3 @@ intelligence:
     model: openai/text-embedding-3-small
 
 # Formula engine limits — all values are required; none are hardcoded in the engine.
-formula:
-  maxSourceBytes: 65536
-  maxTokens: 4096
-  maxNodes: 2048
-  maxDepth: 64
-  maxSteps: 1000000
-  maxCallDepth: 32
-  maxFields: 256
-  maxRows: 100000
-  maxCells: 1000000
-  maxOutputBytes: 1048576
-  maxIntegerBits: 4096
-  maxPowerMagnitude: 1000
-  maxRoundingPlaces: 20
-
-# Structured Data limits.
-structuredData:
-  maxDisplayNameBytes: 256
-  maxEntries: 10000
-  maxFieldsPerCollection: 256
-  maxRowsPerCollection: 100000
-  maxBodyBytes: 65536
-
-# Rich Text limits.
-richText:
-  maxAtomsPerContent: 10000
-  maxMarksPerContent: 5000
-  maxMarkRangeSpan: 1000
-
-# Context capability limits.
-context:
-  maxEntriesPerContext: 100000
-  maxResolveDepth: 10
-
-# Document history retention and canonical content limits.
-document:
-  history:
-    retainedBaseCount: 5
-    retainedChangeSetCount: 1000
-    retainedTerminalAttemptCount: 1000
-  limits:
-    maxRowsPerDocument: 10000
-    maxBlocksPerRow: 32
-    maxStylesPerDocument: 256
-    maxNestingDepth: 16
-    maxAtomsPerBlockContent: 10000
-    maxTableRows: 1000
-    maxTableColumns: 256
-
-# Resource revision-history retention. This does not prune Activity,
-# transaction outboxes, command receipts, or delegated claims.
-retention:
-  revisionRetentionDays: 30
-  sweepIntervalHours: 24
-
-# Project and user identifiers.
-projectId: default
-userId: default-user
