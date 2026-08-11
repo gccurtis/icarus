@@ -1,0 +1,4 @@
+allowBuilds:
+  canvas: true
+minimumReleaseAgeExclude:
+  - '@iconify/json@2.2.502'

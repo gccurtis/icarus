@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# SvelteKit / Vite build output
+.svelte-kit/
+build/
+dist/
+vite.config.ts.timestamp-*
+vite.config.js.timestamp-*
+
+# direnv / nix
+.direnv/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Managed local development stack
+.taurus-dev/
+
+# Logs & OS cruft
+*.log
+.DS_Store
+
+# Playwright E2E
+/test-results/
+/playwright-report/
+/e2e/screenshots/

@@ -1,0 +1,9 @@
+source_capability	target_capability	classification	rationale
+core/capability/agent	core/capability/document	sanctioned-composition	Agent is an application composition tier for document tools
+core/capability/agent	core/capability/intelligence	sanctioned-composition	Agent orchestrates model inference through the intelligence port
+core/capability/agent	core/capability/knowledge	sanctioned-composition	Agent orchestrates retrieval through the knowledge port
+core/capability/agent	core/capability/notification	sanctioned-composition	Agent emits transient task completion notices
+core/capability/agent	core/capability/persona	sanctioned-composition	Agent snapshots persona behavior for runs
+core/capability/formula/names	core/capability/formula	sanctioned-library	Name evaluation delegates to the pure formula library
+core/capability/knowledge	core/capability/intelligence	sanctioned-port-type	Knowledge publishes retrieval tools with Intelligence ToolBinding and ToolError value types
+core/capability/resource	core/capability/intelligence	sanctioned-port-type	Resource publishes caller-bound exact-read ToolBinding and ToolError value types

@@ -1,0 +1,41 @@
+module	version	license	linkage	purpose	security_update_owner	source
+github.com/davecgh/go-spew	v1.1.1	ISC	module-graph-only	transitive test/debug formatting	backend maintainers	https://github.com/davecgh/go-spew
+github.com/dustin/go-humanize	v1.0.1	MIT	linked-production	SQLite size and diagnostic formatting	backend maintainers	https://github.com/dustin/go-humanize
+github.com/google/pprof	v0.0.0-20250317173921-a4b03ec1a45e	Apache-2.0	module-graph-only	transitive tool graph	backend maintainers	https://github.com/google/pprof
+github.com/google/uuid	v1.6.0	BSD-3-Clause	linked-production	SQLite driver transitive UUID support	backend maintainers	https://github.com/google/uuid
+github.com/hashicorp/golang-lru/v2	v2.0.7	MPL-2.0	module-graph-only	transitive tool graph; not linked into shipped binaries	backend maintainers	https://github.com/hashicorp/golang-lru
+github.com/labstack/echo/v4	v4.15.4	MIT	linked-production	HTTP router and middleware	backend maintainers	https://github.com/labstack/echo
+github.com/labstack/gommon	v0.5.0	MIT	linked-production	Echo support library	backend maintainers	https://github.com/labstack/gommon
+github.com/mattn/go-colorable	v0.1.15	MIT	linked-production	terminal output support through Echo	backend maintainers	https://github.com/mattn/go-colorable
+github.com/mattn/go-isatty	v0.0.22	MIT	linked-production	terminal detection through Echo	backend maintainers	https://github.com/mattn/go-isatty
+github.com/ncruces/go-strftime	v1.0.0	MIT	linked-production	SQLite time formatting support	backend maintainers	https://github.com/ncruces/go-strftime
+github.com/pmezard/go-difflib	v1.0.0	BSD-3-Clause	module-graph-only	transitive test diff support	backend maintainers	https://github.com/pmezard/go-difflib
+github.com/remyoudompheng/bigfft	v0.0.0-20230129092748-24d4a6f8daec	BSD-3-Clause	linked-production	SQLite numeric support	backend maintainers	https://github.com/remyoudompheng/bigfft
+github.com/stretchr/testify	v1.11.1	MIT	module-graph-only	transitive test assertions	backend maintainers	https://github.com/stretchr/testify
+github.com/valyala/bytebufferpool	v1.0.0	MIT	linked-production	Echo response buffer support	backend maintainers	https://github.com/valyala/bytebufferpool
+github.com/valyala/fasttemplate	v1.2.2	MIT	linked-production	Echo template support	backend maintainers	https://github.com/valyala/fasttemplate
+golang.org/x/crypto	v0.53.0	BSD-3-Clause	linked-production	password hashing and cryptographic support	backend maintainers	https://go.googlesource.com/crypto
+golang.org/x/mod	v0.37.0	BSD-3-Clause	module-graph-only	transitive Go tool graph	backend maintainers	https://go.googlesource.com/mod
+golang.org/x/net	v0.56.0	BSD-3-Clause	linked-production	HTTP and networking support	backend maintainers	https://go.googlesource.com/net
+golang.org/x/sync	v0.21.0	BSD-3-Clause	module-graph-only	transitive Go tool graph	backend maintainers	https://go.googlesource.com/sync
+golang.org/x/sys	v0.46.0	BSD-3-Clause	linked-production	operating-system calls	backend maintainers	https://go.googlesource.com/sys
+golang.org/x/term	v0.44.0	BSD-3-Clause	module-graph-only	transitive Go tool graph	backend maintainers	https://go.googlesource.com/term
+golang.org/x/text	v0.38.0	BSD-3-Clause	linked-production	Unicode and network text processing	backend maintainers	https://go.googlesource.com/text
+golang.org/x/time	v0.15.0	BSD-3-Clause	linked-production	rate limiting	backend maintainers	https://go.googlesource.com/time
+golang.org/x/tools	v0.47.0	BSD-3-Clause	module-graph-only	transitive Go tool graph	backend maintainers	https://go.googlesource.com/tools
+gopkg.in/check.v1	v0.0.0-20161208181325-20d25e280405	BSD-2-Clause	module-graph-only	transitive test framework	backend maintainers	https://github.com/go-check/check
+gopkg.in/yaml.v3	v3.0.1	MIT OR Apache-2.0	linked-production	configuration parsing	backend maintainers	https://github.com/go-yaml/yaml
+modernc.org/cc/v4	v4.29.0	BSD-3-Clause	module-graph-only	SQLite generator tool graph	backend maintainers	https://gitlab.com/cznic/cc
+modernc.org/ccgo/v4	v4.34.6	BSD-3-Clause	module-graph-only	SQLite generator tool graph	backend maintainers	https://gitlab.com/cznic/ccgo
+modernc.org/fileutil	v1.4.0	BSD-3-Clause	module-graph-only	modernc tool graph	backend maintainers	https://gitlab.com/cznic/fileutil
+modernc.org/gc/v2	v2.6.5	BSD-3-Clause	module-graph-only	modernc generator tool graph	backend maintainers	https://gitlab.com/cznic/gc
+modernc.org/gc/v3	v3.1.4	BSD-3-Clause	module-graph-only	modernc generator tool graph	backend maintainers	https://gitlab.com/cznic/gc
+modernc.org/goabi0	v0.2.0	BSD-3-Clause	module-graph-only	modernc generator ABI support	backend maintainers	https://gitlab.com/cznic/goabi0
+modernc.org/libc	v1.74.1	BSD-3-Clause	linked-production	pure-Go libc used by SQLite	backend maintainers	https://gitlab.com/cznic/libc
+modernc.org/mathutil	v1.7.1	BSD-3-Clause	linked-production	numeric support used by SQLite	backend maintainers	https://gitlab.com/cznic/mathutil
+modernc.org/memory	v1.11.0	BSD-3-Clause	linked-production	memory mapping used by SQLite	backend maintainers	https://gitlab.com/cznic/memory
+modernc.org/opt	v0.2.0	BSD-3-Clause	module-graph-only	modernc generator option support	backend maintainers	https://gitlab.com/cznic/opt
+modernc.org/sortutil	v1.2.1	BSD-3-Clause	module-graph-only	modernc generator sorting support	backend maintainers	https://gitlab.com/cznic/sortutil
+modernc.org/sqlite	v1.54.0	BSD-3-Clause	linked-production	pure-Go embedded SQLite driver	backend maintainers	https://gitlab.com/cznic/sqlite
+modernc.org/strutil	v1.2.1	BSD-3-Clause	module-graph-only	modernc generator string support	backend maintainers	https://gitlab.com/cznic/strutil
+modernc.org/token	v1.1.0	BSD-3-Clause	module-graph-only	modernc generator token support	backend maintainers	https://gitlab.com/cznic/token

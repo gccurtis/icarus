@@ -1,0 +1,53 @@
+{
+  "name": "taurus-alpha",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Front-end cockpit for the Taurus Omega engine",
+  "scripts": {
+    "dev": "vite dev",
+    "dev:omega": "cd \"${TAURUS_OMEGA_DIR:-../taurus-omega}\" && nix develop --command go run ./core",
+    "dev:all": "bash scripts/dev.sh",
+    "dev:start": "bash scripts/dev-stack.sh start",
+    "dev:stop": "bash scripts/dev-stack.sh stop",
+    "dev:restart": "bash scripts/dev-stack.sh restart",
+    "dev:status": "bash scripts/dev-stack.sh status",
+    "dev:logs": "bash scripts/dev-stack.sh logs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@lucide/svelte": "^1.25.0",
+    "fabric": "^7.4.0",
+    "prosemirror-commands": "^1.7.1",
+    "prosemirror-history": "^1.5.0",
+    "prosemirror-keymap": "^1.2.3",
+    "prosemirror-model": "^1.25.11",
+    "prosemirror-state": "^1.4.4",
+    "prosemirror-view": "^1.42.1"
+  },
+  "devDependencies": {
+    "@iconify/json": "^2.2.502",
+    "@playwright/test": "1.61.1",
+    "@sveltejs/adapter-auto": "^7.0.1",
+    "@sveltejs/kit": "^2.70.1",
+    "@sveltejs/vite-plugin-svelte": "^7.2.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.1.1",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "svelte": "^5.56.6",
+    "svelte-check": "^4.7.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "unplugin-icons": "^23.0.1",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
+  }
+}

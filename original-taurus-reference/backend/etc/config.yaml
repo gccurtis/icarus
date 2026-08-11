@@ -1,0 +1,560 @@
+# Taurus Omega — default configuration manifest.
+#
+# This is the single source of runtime configuration for the core. Every setting
+# has a built-in default (see core/config); the values below overlay those
+# defaults. Any key you omit keeps its default, so this file may be trimmed down
+# to only the settings you want to change.
+#
+# The core reads this file from etc/config.yaml by default. Point it elsewhere
+# with the TAURUS_OMEGA_CONFIG environment variable.
+
+# Composition path: "prod" (safe default in code) or "dev". The core always
+# serves HTTPS. In dev, a self-signed certificate is generated under var/ when
+# none is configured; in prod, server.tls.cert and server.tls.key are required
+# and the server refuses to start without them. This checked-in manifest runs in
+# dev; a real deployment uses a manifest with `mode: prod` and a real certificate.
+mode: dev
+
+server:
+  # Address the HTTPS server listens on (host:port; the host is optional).
+  #
+  # 8443 rather than 8080: the core always serves HTTPS, and 8080 is the port
+  # every other local HTTP service reaches for first — on a developer machine
+  # already running one, the core simply fails to bind. The built-in default in
+  # config.Default() is still :8080; this manifest is what a dev actually runs.
+  addr: ":8443"
+
+  # TLS certificate the server presents. In dev these may be left blank — a
+  # self-signed pair is generated under var/. In prod both are required.
+  tls:
+    cert: ""
+    key: ""
+
+logging:
+  # Capture each request and its response as a structured log record. Values of
+  # sensitive fields (e.g. password) are redacted before logging.
+  requests: true
+
+storage:
+  # Path to the SQLite database file (created if missing, along with its parent
+  # directory). Holds users and sessions, so both survive a restart.
+  dsn: "var/taurus-omega.db"
+
+access:
+  # How long a session stays valid, as a Go duration string (e.g. "24h" = 1 day).
+  session_ttl: "24h"
+
+documents:
+  # Re-base a document once this many change sets are pending — folding them into
+  # a new base so reads stay fast. The change sets themselves are kept.
+  rebase_threshold: 50
+  # Maximum change sets kept per document; older ones (already folded into the
+  # base) are pruned beyond this. 0 keeps all history. Pruning is carried out by
+  # the jobs system.
+  history_limit: 0
+  # Defaults for new documents, in whole typographic points (1/72 inch). The
+  # effective values are copied into each document so later config changes do
+  # not silently change its page breaks.
+  layout:
+    page_width: 612
+    page_height: 792
+    margin_top: 72
+    margin_right: 72
+    margin_bottom: 72
+    margin_left: 72
+    max_font_height: 24
+    min_row_padding: 4
+    char_width: 8
+  # Prompt-block resolution: the semantic casts for planning retrieval and
+  # synthesizing the answer (resolved through the reasoning cast table), and the
+  # retrieval bounds.
+  prompt:
+    plan_cast:      { purpose: general, strength: high, speed: medium, cost: medium }
+    synthesis_cast: { purpose: general, strength: high, speed: medium, cost: medium }
+    retrieval_top_k: 5
+    max_queries: 4
+    # The plan and synthesis prompt templates default to the built-in prompts,
+    # documented in docs/architecture/workflows/prompt-resolution.md. To tune them
+    # without a code change, override system/user here (Go text/template syntax):
+    #   plan:      { system: "...{{.MaxQueries}}...", user: "Prompt:\n{{.Instruction}}" }
+    #   synthesis: { system: "...", user: "...{{.Instruction}}...{{.PreviousResponse}}...{{range .Evidence}}..." }
+
+jobs:
+  # Background-jobs worker pool. Jobs (e.g. re-basing a document) run off the
+  # request path. workers is how many run concurrently; poll_interval is how long
+  # a worker waits before checking an empty queue again; max_attempts is how many
+  # times a failing job is retried (with exponential backoff) before it is failed.
+  workers: 2
+  poll_interval: "1s"
+  max_attempts: 5
+
+limits:
+  # How much memory indexing may spend, as a byte size: "8GiB", "512MB", or a
+  # bare byte count. Empty derives it as 25% of system RAM (read from
+  # /proc/meminfo; other platforms take a fixed 2 GiB, which is 25% of the
+  # smallest machine we expect to run on).
+  #
+  # It is the input the ingest caps below are computed from, not something the
+  # process measures itself against — nothing here watches the heap. Its job is
+  # to make one machine's caps fit that machine: the same hand-picked constant
+  # was simultaneously too large for a 1 GB container and a fraction of what a
+  # 128 GB host could use, and being wrong the first way is an OOM kill.
+  #
+  # The startup log always states what it resolved to and how ("25% of 32.0 GiB
+  # system RAM = 8.0 GiB"), because a bound that differs per host and cannot be
+  # accounted for is harder to operate than a fixed one that is merely wrong.
+  memory_budget: ""
+
+knowledge:
+  # The retrieval lattice. Windows are sentence-aligned chunks of ~target_runes
+  # runes (~4 runes per token); clustering draws its per-level threshold from the
+  # similarity distribution at the given percentile, never below the floor.
+  #
+  # Everything below is TUNING — caps, limits, calibration. Mechanics carry no
+  # flags: clustering picks its construction by pool size, retrieval descends
+  # and probes by index presence, and comparisons against reference algorithms
+  # live in tests (RetrieveExact, the differential clique oracles) or across
+  # git history, never in configuration.
+  window:
+    target_runes: 4000
+    overlap_runes: 400
+  cluster:
+    percentile: 0.75
+    floor: 0.30
+    # max_pool is the CROSSOVER between the two clustering constructions, not a
+    # ceiling: a pool that fits inside it is clustered exactly over the complete
+    # n×n similarity matrix (n²·8 bytes, independent of vector dimension), and a
+    # larger pool is clustered over a k-nearest-neighbour graph — ~100MB of edges
+    # instead of 320GB of matrix at 200k artifacts. No pool is ever refused;
+    # nothing here is a mode switch.
+    #
+    # Candidates in the sparse construction are found approximately (a PCA
+    # projection and an IVF cell search) but every similarity kept is an exact
+    # full-dimension dot product, so a miss costs recall, never correctness.
+    #
+    # It sits where the two constructions cost the same. Measured
+    # (BenchmarkCrossover, 1536 dimensions, both constructions over the same
+    # pools):
+    #
+    #     n        exact    sparse
+    #     500      0.12s     0.70s
+    #   1,000      0.42s     1.20s
+    #   2,000      1.83s     1.70s   <- they cross here
+    #   3,000      4.46s     2.60s
+    #   4,000      8.34s     3.03s
+    #
+    # It was 4,000, which came from a memory budget (~128MB of matrix) and had
+    # never been timed. Two things move together at this boundary, which is why
+    # one number governs both: above it the sparse construction is faster AND
+    # persists a level index, so the next rebuild repairs the level locally
+    # instead of reconstructing it (15.7x on a 1% delta at 20k). Below it the
+    # exact construction is faster and there is nothing worth persisting — an
+    # index for a small pool costs more to build than the ascent it would
+    # accelerate. At 4,000 the 2,000-4,000 band therefore got the slower
+    # construction, no index, and no incremental clustering at all.
+    max_pool: 2000
+    # Tuning for the sparse construction. These calibrate quality against cost;
+    # they do not select mechanics.
+    neighbors:
+      # Neighbours kept per artifact. Also caps cluster size: a clique cannot
+      # exceed its members' degree, so ~k is the largest cluster that can form.
+      # Clusters naturally LARGER than k fragment at their level and reunite
+      # one level up (their fragments' centroids are near-identical).
+      k: 32
+      # IVF cells for candidate search; 0 derives sqrt(pool).
+      cells: 0
+      # Projection dimensions for candidate scoring; 0 means the default (128),
+      # negative disables projection so candidates are scored full-dimension.
+      pca_dims: 128
+      # Local repair bounds. A rebuild treats a level as a LOCAL EVENT — repair
+      # the persisted graph through its cells, keep the pinned threshold — only
+      # while the changed fraction stays under repair_max_fraction AND the
+      # pinned threshold's measured drift from the pool's current percentile
+      # stays under repair_max_drift. Past either, the level CONSOLIDATES:
+      # refit projection, re-quantize cells, re-pin the threshold. 0 takes the
+      # default; a negative repair_max_fraction disables repair entirely.
+      repair_max_fraction: 0.2
+      repair_max_drift: 0.02
+  # Retrieval is directed descent, always: walk the cluster tree toward the
+  # query and keep what falls inside the beam. The exact scan survives as
+  # RetrieveExact — the reference oracle tests hold descent to — and as the
+  # in-production fallback when descent surfaces nothing. These two numbers are
+  # tuning, not a mode.
+  descent:
+    beam: 3
+    threshold: 0.35
+    # Descent enters through the persisted corpus index whenever one is stored
+    # (a project whose corpus runs sparse): the query is projected through the
+    # stored basis and only the nearest cells' members are scored at entry,
+    # plus everything the index does not cover. A project with no index — one
+    # clustering exactly, under the crossover — scans its whole entry frontier,
+    # which at that size is cheap. Presence of the index is the decision; there
+    # is no flag.
+  ingest:
+    # How many windows one sync accumulates before embedding, clustering and
+    # writing them and moving on. 0 derives it from limits.memory_budget, which
+    # on any ordinary machine lands on 2000 (~40MB in flight at 1536 dims) and on
+    # a small container lands lower.
+    #
+    # The derivation only ever shrinks that figure, never raises it. A bigger
+    # slice is not a faster sync — embeddings chunk at the provider's batch size
+    # however many windows are resident — it is only a larger unit of work to
+    # lose when a sync fails partway.
+    #
+    # It bounds a sync's peak memory to the slice rather than the whole sync,
+    # which is what lets a sync be larger than RAM. It also decides what a failed
+    # sync leaves behind: the slices committed before the failure stay committed,
+    # and the retry skips them instead of re-embedding from zero at provider
+    # rates.
+    #
+    # It is a commit cadence, never an admission limit — a single source with more
+    # windows than the budget is still ingested whole. Lower it where memory is
+    # tight; below a few hundred, embedding requests start to be smaller than the
+    # provider's per-request batch allows and the sync makes more calls than it
+    # needs to.
+    commit_window_budget: 0
+
+    # The most artifacts — windows plus nodes — one Project's lattice may hold.
+    # 0 derives it from limits.memory_budget as budget / 12KB, the size of one
+    # 1536-dim float64 vector; negative means unbounded.
+    #
+    # This is the one durable-artifact bound that REFUSES. Everything else here is a
+    # cadence, but the corpus rebuild holds every frontier vector at once, so the
+    # ceiling is the machine's memory whether or not it is configured — and
+    # reaching it unconfigured means the OOM killer, mid-sync, with nobody told a
+    # bound existed. Configured, each exact source/corpus publication is refused
+    # before it crosses the ceiling; a prior completed slice, if any, remains
+    # visible as explicit partial progress. The response names the setting that
+    # would let it through (knowledge.project_artifact_limit).
+    #
+    # It is checked from exact candidate windows and nodes in the transaction
+    # that publishes each complete slice; provider size projections may save a
+    # read, but never decide admission.
+    max_artifacts: 0
+
+    # Actual decoded-byte caps, applied while every source is streamed. These
+    # remain active when a provider omits, understates, or changes its Size.
+    # Zero uses the safe Knowledge defaults (64 MiB/source, 512 MiB/run);
+    # negative is an explicit opt-out.
+    max_source_bytes: 0
+    max_run_bytes: 0
+
+# External-source connectors.
+connectors:
+  # The sync loop's budget. Sync is reconciliation, not a queue: the decision to
+  # sync comes from comparing the source's fingerprint to the stored one, so on
+  # its own it has no memory of having tried. A connector whose provider is broken
+  # would therefore re-read its whole source and re-embed every window on every
+  # detect_interval, indefinitely, at provider rates. These numbers are what stop
+  # that.
+  sync:
+    # Consecutive failures tolerated before automatic syncing stops and the
+    # connector reports needing attention. Small on purpose: retries cost embedding
+    # tokens, and a sync that has failed three times is not waiting on a blip. An
+    # explicit POST /connectors/{id}/sync always tries again and restarts the count.
+    max_attempts: 3
+    # Delay after the first failure, doubling per attempt (30s, 60s, …).
+    backoff: "30s"
+    # Cap on that doubling, so a long outage settles into a cheap steady poll
+    # rather than an ever-lengthening one.
+    max_backoff: "15m"
+    # How often the background detector re-checks every connector's source for
+    # changes. An unchanged source costs one fingerprint comparison, so this can be
+    # brisk; a connector in backoff is skipped without being read at all.
+    detect_interval: "2s"
+
+# Agent personas, prompts, and output schemas for the Ask / Plan / Action
+# workflows. Empty prompts and schemas fall back to built-in defaults so the
+# committed manifest only needs to set the persona identity.
+agents:
+  # Chat attachment bounds. Per-file size is enforced by the file capability;
+  # max_directory_files caps how many files one directory-manifest upload carries
+  # (0 = unbounded).
+  attachments:
+    max_directory_files: 256
+  default_persona:
+    name: General
+    description: General-purpose Project assistant
+    focus: ""
+    instructions: Be a helpful, accurate Project assistant. When Project evidence or tool results are available, ground your answer in them and cite what you use; otherwise answer from your own knowledge. Report uncertainty, and describe only effects confirmed by tools.
+    context_references: []
+    default_verification: ""
+    output_preferences: ""
+
+intelligence:
+  # The intelligence service is the single boundary to model providers. Callers
+  # request a semantic cast — (purpose, strength, speed, cost) — and never name a
+  # model; the cast tables below map each cast to a concrete provider and model,
+  # per endpoint kind (reasoning / inference / embedding).
+  providers:
+    openrouter:
+      # API key for OpenRouter. Leave this BLANK here — this manifest is
+      # committed. Put the real key in the gitignored etc/config.local.yaml,
+      # which is overlaid on top of this file at startup.
+      api_key: ""
+      # API root. Leave blank to use OpenRouter's default
+      # (https://openrouter.ai/api/v1).
+      base_url: "https://openrouter.ai/api/v1"
+      # Bound on a single provider call. Response speed is part of whether a model
+      # is usable for interactive work, so a model that cannot answer inside this
+      # budget is cut rather than accommodated — claude-haiku-4.5 fails the live
+      # demo at 60s, and that is the verdict we want, not a reason to widen it.
+      timeout: "60s"
+
+  # How an embedding batch reaches the provider. A large ingest — a connector's
+  # first sync over a folder — has to embed thousands of windows, and there are
+  # only bad ways to do that in one shape: one request is too large to accept,
+  # one request per source is what a per-minute rate limit exists to stop. So a
+  # batch is split into max_batch_inputs at a time.
+  #
+  # There is no separate "batched" call: a single input is simply one chunk, so
+  # every caller is paced correctly without choosing to be.
+  embedding:
+    # Inputs per provider request. 96 windows of ~1000 tokens is ~96k tokens,
+    # comfortably inside typical per-request token caps.
+    max_batch_inputs: 96
+    # Total time one chunk may spend WAITING OUT a provider that is rate limiting
+    # or too slow to answer. An embedding cast has no fallback (a second model
+    # embeds into a different space), so the only response to either is to wait and
+    # ask the same model again.
+    #
+    # A time budget, not an attempt count. Rate limits are enforced over windows
+    # measured in minutes, so an attempt count bounds the wait only by accident:
+    # the four attempts that used to be here, at a doubling second, were seven
+    # seconds of patience against a sixty-second window. Ninety seconds says what
+    # was meant.
+    max_wait: "90s"
+    # Delay before the first paced retry, doubled per retry. It applies only when
+    # the provider does not send a Retry-After of its own — when it does, that is
+    # honoured instead, because the provider knows when its window resets and we do
+    # not. A wrong-answer retry (a short vector list) is immediate and waits not at
+    # all.
+    backoff: "1s"
+
+  # Cast tables. Each row keys a cast by (purpose, strength, speed, cost) — each
+  # of strength/speed/cost is low|medium|high, purpose is general|code for embeddings, general elsewhere — and
+  # names the provider + model that serves it. Resolution is exact-match on the
+  # cast tuple, so every one of the 27 (strength x speed x cost) combinations is
+  # listed per kind; a request that matches no row returns a clear "no model
+  # configured" error.
+  #
+  # FALLBACK: list a cast tuple MORE THAN ONCE to give it an ordered fallback
+  # chain. The first row for a tuple is the primary; each later row with the same
+  # tuple is a backup tried, in order, when an earlier one's provider call fails
+  # (a bad request, a rate limit, a provider outage) — only a client-cancelled or
+  # timed-out request is not retried. Backups can name a different model or a
+  # different provider, so a single model or provider hiccup never fails the call.
+  # (Inside a tool loop the fallback applies to the first round, before any tool
+  # runs; once a route has answered, the loop stays on it so tool side effects are
+  # never repeated.)
+  #
+  # Models here are MEASURED, not assumed. dev-test/bench-models.sh runs the
+  # whole live intelligence group per candidate and reports what passed and what
+  # the run cost; the results are in docs/records/0127-model-frontier.md, and the
+  # per-suite measurements are in docs/test-reports/intelligence-suites/.
+  #
+  # The latest full-suite ladder, four models, every number measured from
+  # per-call telemetry rather than estimated:
+  #
+  #   model            suites   tokens   time    cost/run
+  #   gpt-4.1-mini      40/40    67,363   147s   0.0316 USD
+  #   gpt-4o-mini       40/40    74,865   178s   0.0131 USD
+  #   gpt-5.1           39/40    79,206   247s   0.1779 USD
+  #   gpt-5.6-luna      40/40    86,657   215s   0.0655 USD
+  #
+  # gpt-4.1-mini is the primary: it passes everything, and it is the fastest and
+  # the most token-efficient of the four. gpt-4o-mini is cheaper per run and also
+  # passes, but takes ~20% longer and has produced the worst observed runaway (29
+  # rounds, 58 tool calls, 267,598 tokens on one Action). gpt-5.1 is 5.6x the cost
+  # for a suite it fails.
+  #
+  # Only gpt-5.6-luna emits reasoning tokens: 3,379 across 44 calls, 4% of its
+  # output. The other three emit none. Reasoning tokens are part of the
+  # completion count and bill at the completion rate, so they are already inside
+  # the cost figures above rather than additional to them.
+  #
+  # medium/high strength -> openai/gpt-4.1-mini (40/40, fastest, fewest tokens —
+  #                          see docs/test-reports/intelligence-suites/)
+  # low strength         -> openai/gpt-4.1-nano (6/8; fine where precision is not
+  #                         load-bearing — it paraphrases rather than quoting)
+  # high strength + high cost -> anthropic/claude-3.5-sonnet (the premium corner)
+  #
+  # Backups: every reasoning and inference tier lists two rows — the primary,
+  # then a backup that must be a DIFFERENT VENDOR. A same-family backup is no
+  # backup: deepseek-r1 returned "429 temporarily rate-limited upstream" 130
+  # times in one run, and a family-wide rate limit takes the sibling with it.
+  # openai/gpt-oss-120b is the usual backup because it is open-weight, so
+  # OpenRouter load-balances it across several hosts (it costs more per run than
+  # the primary, which does not matter for a route that only fires on failure).
+  #
+  # Embedding tiers get NO backup row — vectors from different models are
+  # incomparable, and the intelligence layer rejects such a config at boot. The
+  # free Nemotron model was removed: it intermittently returns an EMPTY vector
+  # list, which is a silent retrieval failure rather than a loud one.
+  #
+  # Slugs are OpenRouter slugs — confirm against its current catalogue.
+  casts:
+    reasoning:
+      - { purpose: general, strength: high  , speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: low   , cost: high  , provider: openrouter, model: "anthropic/claude-3.5-sonnet" }
+      - { purpose: general, strength: high  , speed: low   , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: medium, cost: high  , provider: openrouter, model: "anthropic/claude-3.5-sonnet" }
+      - { purpose: general, strength: high  , speed: medium, cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: high  , cost: high  , provider: openrouter, model: "anthropic/claude-3.5-sonnet" }
+      - { purpose: general, strength: high  , speed: high  , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: low   , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: low   , cost: high  , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: medium, cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: medium, cost: high  , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: high  , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: high  , cost: high  , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: low   , speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: low   , cost: high  , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: low   , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: medium, cost: high  , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: medium, cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: high  , cost: high  , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: high  , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+    inference:
+      - { purpose: general, strength: high  , speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: low   , cost: high  , provider: openrouter, model: "anthropic/claude-3.5-sonnet" }
+      - { purpose: general, strength: high  , speed: low   , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: medium, cost: high  , provider: openrouter, model: "anthropic/claude-3.5-sonnet" }
+      - { purpose: general, strength: high  , speed: medium, cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: high  , speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: high  , speed: high  , cost: high  , provider: openrouter, model: "anthropic/claude-3.5-sonnet" }
+      - { purpose: general, strength: high  , speed: high  , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: low   , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: low   , cost: high  , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: medium, cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: medium, cost: high  , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: medium, speed: high  , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: medium, speed: high  , cost: high  , provider: openrouter, model: "openai/gpt-oss-120b" }
+      - { purpose: general, strength: low   , speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: low   , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: low   , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: low   , cost: high  , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: low   , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: medium, cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: medium, cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: medium, cost: high  , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: medium, cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: high  , cost: low   , provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: high  , cost: medium, provider: openrouter, model: "openai/gpt-4.1-mini" }
+      - { purpose: general, strength: low   , speed: high  , cost: high  , provider: openrouter, model: "openai/gpt-4.1-nano" }
+      - { purpose: general, strength: low   , speed: high  , cost: high  , provider: openrouter, model: "openai/gpt-4.1-mini" }
+    embedding:
+      # ONE embedding model, everywhere, deliberately.
+      #
+      # Unlike reasoning, embedding has no meaningful tier ladder to climb: every
+      # vector we store must be comparable with every other, and two models put
+      # their vectors in different spaces. Varying the model by strength/speed/
+      # cost would mean a cast change silently made the corpus unsearchable, so
+      # all 27 general coordinates resolve to the same model on purpose. Cost is
+      # not the deciding factor — embeddings are cheap next to reasoning — so
+      # this is the quality choice, not the thrifty one.
+      #
+      # It is text-embedding-3-small. Large costs ~6.5x for a few points of
+      # benchmark quality, and its 3072 dimensions double both stored vector size
+      # and comparison work — which lands on every dot product descent takes and
+      # doubles the 6KB each window's vector already costs to store (measured:
+      # vectors run ~1.5x the source text). It must also be solid under sustained
+      # load, which is where the earlier candidates failed (on throughput, not
+      # quality): the free Nemotron returned empty vector lists, and
+      # qwen3-embedding-4b answered a full suite run with 121 HTTP 429s while
+      # handling isolated probes perfectly.
+      #
+      # Changing this invalidates every stored vector — a migration, not a swap.
+      # Free only while there is no real data.
+      #
+      - { purpose: general, strength: high  , speed: low   , cost: low   , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: high  , speed: low   , cost: medium, provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: high  , speed: low   , cost: high  , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: high  , speed: medium, cost: low   , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: high  , speed: medium, cost: medium, provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: high  , speed: medium, cost: high  , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: high  , speed: high  , cost: low   , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: high  , speed: high  , cost: medium, provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: high  , speed: high  , cost: high  , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: medium, speed: low   , cost: low   , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: medium, speed: low   , cost: medium, provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: medium, speed: low   , cost: high  , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: medium, speed: medium, cost: low   , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: medium, speed: medium, cost: medium, provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: medium, speed: medium, cost: high  , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: medium, speed: high  , cost: low   , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: medium, speed: high  , cost: medium, provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: medium, speed: high  , cost: high  , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: low   , speed: low   , cost: low   , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: low   , speed: low   , cost: medium, provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: low   , speed: low   , cost: high  , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: low   , speed: medium, cost: low   , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: low   , speed: medium, cost: medium, provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: low   , speed: medium, cost: high  , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: low   , speed: high  , cost: low   , provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: low   , speed: high  , cost: medium, provider: openrouter, model: "openai/text-embedding-3-small" }
+      - { purpose: general, strength: low   , speed: high  , cost: high  , provider: openrouter, model: "openai/text-embedding-3-small" }
+      # code embeddings — Codestral Embed. No multimodal embedding model is
+      # reachable on OpenRouter (gemini-embedding-001 is text-only), so
+      # purpose=multimodal is deferred.

@@ -1,0 +1,59 @@
+# Candidates for the model sweep. One OpenRouter slug per line.
+#
+# Every entry supports BOTH tool calling and structured outputs, checked against
+# the live catalogue — the suites need both, and a model missing either fails
+# everything for a reason that has nothing to do with its quality.
+#
+# No :batch variants. Batch endpoints trade latency for price deliberately, so
+# including one would poison the speed gradient with a number that means
+# something else.
+#
+# Roughly three generations deep, spanning the cost range from ~0.2 to ~15 USD
+# per 1M output tokens, across providers — the point is a gradient, not a winner.
+
+# --- floor: sub-0.5 output ---
+qwen/qwen3-30b-a3b-instruct-2507
+deepseek/deepseek-v4-flash
+# z-ai/glm-4.7-flash — SKIPPED, verdict already recorded. It advertises
+#   structured_outputs in the catalogue and returns an empty response to
+#   structured calls: 17 of 88 empty, plus 6 timeouts, every one rescued by the
+#   gpt-oss-120b fallback. It would have been recorded as a pass earned on
+#   another model. Re-test if the provider fixes it.
+openai/gpt-5-nano
+openai/gpt-4.1-nano
+google/gemini-2.5-flash-lite
+
+# --- cheap: 0.5 to 1.75 ---
+qwen/qwen3-235b-a22b-2507
+openai/gpt-4o-mini
+deepseek/deepseek-chat
+minimax/minimax-m2.5
+openai/gpt-4.1-mini
+z-ai/glm-4.7
+
+# --- mid: 2 to 5 ---
+openai/gpt-5-mini
+deepseek/deepseek-v3.2
+moonshotai/kimi-k2.6
+x-ai/grok-4.3
+google/gemini-3-flash-preview
+openai/gpt-5.6-luna
+anthropic/claude-haiku-4.5
+
+# --- ceiling ---
+openai/gpt-5.1
+
+# --- Anthropic classes, added after the first sweep started ---
+# claude-3.5-sonnet is deliberately absent: OpenRouter has retired it. The API
+# answers "No endpoints found", and the only 3.x model left (claude-3-haiku)
+# does not support structured outputs, so it cannot run these suites at all.
+anthropic/claude-sonnet-5
+anthropic/claude-sonnet-4.5
+anthropic/claude-opus-4.5
+
+# --- genuinely free, for the bottom of the cost gradient ---
+# These carry a real 0.00 rate in the catalogue, which is different from a model
+# missing from it — the reports now distinguish the two.
+openai/gpt-oss-20b:free
+nvidia/nemotron-3-super-120b-a12b:free
+google/gemma-4-26b-a4b-it:free

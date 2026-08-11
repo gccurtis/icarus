@@ -1,0 +1,20 @@
+# Runtime/variable state (SQLite database, etc.)
+/var/
+
+# Local config overlay: holds secrets (e.g. provider API keys) and is overlaid
+# on top of the committed etc/config.yaml at startup. Never commit it.
+/etc/config.local.yaml
+
+# Built binaries left at the repo root by `go build ./cmd/...` without -o.
+/connector-watcher
+dev-test/.bench/
+
+# Linked worktrees. Nesting them here is safe because nothing walks the repo
+# root: check-companions.sh scans `core`, check-format.sh scans `core cmd`, and
+# the Go tool skips any directory whose name begins with a dot. Keep the leading
+# dot for that last reason — `worktree/` without it would land in `./...`.
+/.worktree/
+dev-test/knowledge-scale/corpus/
+
+# Subagent worktrees, created inside the repo by the agent tooling.
+/.claude/

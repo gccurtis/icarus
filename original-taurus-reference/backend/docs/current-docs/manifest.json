@@ -1,0 +1,1774 @@
+{
+  "generated_at": "2026-07-30",
+  "project": "Taurus Yesod",
+  "scope": "active non-archived related Resources",
+  "planning_baseline": "50efd18413cc47935033889e51d58e9c828733e2",
+  "counts": {
+    "pages": 176,
+    "primary": 47,
+    "supporting": 129,
+    "work_packets": 44
+  },
+  "pages": [
+    {
+      "notion_page_id": "3acb6410e50281988386c4559a26cd22",
+      "title": "Architecture — Enterprise Control Plane",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 22:22:55Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281988386c4559a26cd22",
+      "local_path": "docs/current-docs/notion/primary/architecture-enterprise-control-plane--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502818fb987d5f5004117e3",
+      "title": "Architecture — Taurus Alpha Frontend System Index",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e502818fb987d5f5004117e3",
+      "local_path": "docs/current-docs/notion/primary/architecture-taurus-alpha-frontend-system-index--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e502812bb4e0ff2c91ff753f",
+      "title": "Architecture — Taurus Layered Application Model",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 22:22:55Z",
+      "notion_url": "https://app.notion.com/3acb6410e502812bb4e0ff2c91ff753f",
+      "local_path": "docs/current-docs/notion/primary/architecture-taurus-layered-application-model--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e5028147909ef7214406baad",
+      "title": "Architecture — User Cell & Project Subcell Runtime",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 22:22:55Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028147909ef7214406baad",
+      "local_path": "docs/current-docs/notion/primary/architecture-user-cell-and-project-subcell-runtime--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e502816585d9e96ff02921d8",
+      "title": "Deployment — Taurus Topology & Scaling Model",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 22:22:55Z",
+      "notion_url": "https://app.notion.com/3acb6410e502816585d9e96ff02921d8",
+      "local_path": "docs/current-docs/notion/primary/deployment-taurus-topology-and-scaling-model--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "392b6410e50281de8f06c206383e8d2f",
+      "title": "Design - Accessibility & Visual Legibility",
+      "role": "Primary",
+      "format": "Document",
+      "created": "2026-07-03 18:06:33Z",
+      "notion_url": "https://app.notion.com/392b6410e50281de8f06c206383e8d2f",
+      "local_path": "docs/current-docs/notion/primary/design-accessibility-and-visual-legibility--392b6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "64f538abd9ec4a8d82591c66c7e17a49",
+      "title": "Design - Color, Light & Material System",
+      "role": "Primary",
+      "format": "Document",
+      "created": "2026-07-13 08:58:19Z",
+      "notion_url": "https://app.notion.com/64f538abd9ec4a8d82591c66c7e17a49",
+      "local_path": "docs/current-docs/notion/primary/design-color-light-and-material-system--64f538abd9ec.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "392b6410e5028150b8d3fa2a8aa95895",
+      "title": "Design - Emotional & Aesthetic Doctrine",
+      "role": "Primary",
+      "format": "Document",
+      "created": "2026-07-03 18:04:00Z",
+      "notion_url": "https://app.notion.com/392b6410e5028150b8d3fa2a8aa95895",
+      "local_path": "docs/current-docs/notion/primary/design-emotional-and-aesthetic-doctrine--392b6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "e12b6939dbc444698aca18d4162bab10",
+      "title": "Design - Interaction & Disclosure System",
+      "role": "Primary",
+      "format": "Document",
+      "created": "2026-07-13 08:58:20Z",
+      "notion_url": "https://app.notion.com/e12b6939dbc444698aca18d4162bab10",
+      "local_path": "docs/current-docs/notion/primary/design-interaction-and-disclosure-system--e12b6939dbc4.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "394b6410e5028161b728e88b859beb4c",
+      "title": "Design - Marketing Surface Aesthetic",
+      "role": "Primary",
+      "format": "Document",
+      "created": "2026-07-05 15:10:07Z",
+      "notion_url": "https://app.notion.com/394b6410e5028161b728e88b859beb4c",
+      "local_path": "docs/current-docs/notion/primary/design-marketing-surface-aesthetic--394b6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "39ab6410e50281dabbf3dc3f5b07adb0",
+      "title": "Design - Motion & Feedback Language",
+      "role": "Primary",
+      "format": "Document",
+      "created": "2026-07-11 15:24:23Z",
+      "notion_url": "https://app.notion.com/39ab6410e50281dabbf3dc3f5b07adb0",
+      "local_path": "docs/current-docs/notion/primary/design-motion-and-feedback-language--39ab6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "392b6410e50281f1a374fa89a941626a",
+      "title": "Design - Visual Identity & System Index",
+      "role": "Primary",
+      "format": "Document",
+      "created": "2026-07-03 18:04:00Z",
+      "notion_url": "https://app.notion.com/392b6410e50281f1a374fa89a941626a",
+      "local_path": "docs/current-docs/notion/primary/design-visual-identity-and-system-index--392b6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "39ab6410e50281798739fa3a9e8931ac",
+      "title": "Design - Visual Language, Tokens & Resource Signatures",
+      "role": "Primary",
+      "format": "Document",
+      "created": "2026-07-11 15:21:23Z",
+      "notion_url": "https://app.notion.com/39ab6410e50281798739fa3a9e8931ac",
+      "local_path": "docs/current-docs/notion/primary/design-visual-language-tokens-and-resource-signatures--39ab6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281bf8f16ec589da555d3",
+      "title": "Design — Multi-Lattice Ingestion Architecture",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 21:25:01Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281bf8f16ec589da555d3",
+      "local_path": "docs/current-docs/notion/primary/design-multi-lattice-ingestion-architecture--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281d19635f051bb5ee6ad",
+      "title": "Design — Text Lattice Ingestion Pipeline",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 20:15:38Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281d19635f051bb5ee6ad",
+      "local_path": "docs/current-docs/notion/primary/design-text-lattice-ingestion-pipeline--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e5028134aedfe63676d5418c",
+      "title": "Export - Document to DOCX",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 05:28:13Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028134aedfe63676d5418c",
+      "local_path": "docs/current-docs/notion/primary/export-document-to-docx--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e502817fbde1f33e76f61b82",
+      "title": "Export - Document to PDF",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 13:45:14Z",
+      "notion_url": "https://app.notion.com/3acb6410e502817fbde1f33e76f61b82",
+      "local_path": "docs/current-docs/notion/primary/export-document-to-pdf--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281419ce6ed5fd51edf09",
+      "title": "Export - Slides to PDF",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 13:45:14Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281419ce6ed5fd51edf09",
+      "local_path": "docs/current-docs/notion/primary/export-slides-to-pdf--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e5028156bee8c6cca9f2ab87",
+      "title": "Export - Slides to PPTX",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 05:28:13Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028156bee8c6cca9f2ab87",
+      "local_path": "docs/current-docs/notion/primary/export-slides-to-pptx--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281ffb153c8565943f650",
+      "title": "Export - Spreadsheet to PDF",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 13:45:14Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281ffb153c8565943f650",
+      "local_path": "docs/current-docs/notion/primary/export-spreadsheet-to-pdf--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281bf9ebed3037d6cb114",
+      "title": "Export - Spreadsheet to XLSX",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 05:28:13Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281bf9ebed3037d6cb114",
+      "local_path": "docs/current-docs/notion/primary/export-spreadsheet-to-xlsx--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281b2999bce58d559d902",
+      "title": "Implementation — Control Plane, User Cell & Project Subcell Integration",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 22:22:55Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281b2999bce58d559d902",
+      "local_path": "docs/current-docs/notion/primary/implementation-control-plane-user-cell-and-project-subcell-integration--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e502811cb1d8d52f81f4c432",
+      "title": "Implementation — Multi-Lattice Ingestion & Migration Plan",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 21:25:01Z",
+      "notion_url": "https://app.notion.com/3acb6410e502811cb1d8d52f81f4c432",
+      "local_path": "docs/current-docs/notion/primary/implementation-multi-lattice-ingestion-and-migration-plan--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281229fe9eec53047607c",
+      "title": "Implementation — User Agents & Personality Library",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 19:53:31Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281229fe9eec53047607c",
+      "local_path": "docs/current-docs/notion/primary/implementation-user-agents-and-personality-library--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e502814e928ae1f10eac6f75",
+      "title": "Implementation — User Context Library",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 19:53:17Z",
+      "notion_url": "https://app.notion.com/3acb6410e502814e928ae1f10eac6f75",
+      "local_path": "docs/current-docs/notion/primary/implementation-user-context-library--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281d4a4d8ee542f91d595",
+      "title": "Implementation — User Template Library",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 19:53:49Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281d4a4d8ee542f91d595",
+      "local_path": "docs/current-docs/notion/primary/implementation-user-template-library--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281038192e08fc89b605a",
+      "title": "Import - DOCX to Document",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 05:49:08Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281038192e08fc89b605a",
+      "local_path": "docs/current-docs/notion/primary/import-docx-to-document--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e5028108b8bdc90ce4eeec9c",
+      "title": "Import - PPTX to Slides",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 05:49:08Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028108b8bdc90ce4eeec9c",
+      "local_path": "docs/current-docs/notion/primary/import-pptx-to-slides--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e5028182b958fcd202736a6c",
+      "title": "Import - XLSX to Spreadsheet",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 05:49:08Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028182b958fcd202736a6c",
+      "local_path": "docs/current-docs/notion/primary/import-xlsx-to-spreadsheet--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e5028173a1d0c6266bbe87c9",
+      "title": "Interface - Chat Editor Context Panel Lenses",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 00:48:22Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028173a1d0c6266bbe87c9",
+      "local_path": "docs/current-docs/notion/primary/interface-chat-editor-context-panel-lenses--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e502815d9ba5ebc9389ecf63",
+      "title": "Interface - Chat Editor Inspector Panel Lenses",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 01:32:57Z",
+      "notion_url": "https://app.notion.com/3acb6410e502815d9ba5ebc9389ecf63",
+      "local_path": "docs/current-docs/notion/primary/interface-chat-editor-inspector-panel-lenses--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281ae9244e2f9a57f579f",
+      "title": "Interface - Slides Editor Context Panel Lenses",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 00:48:22Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281ae9244e2f9a57f579f",
+      "local_path": "docs/current-docs/notion/primary/interface-slides-editor-context-panel-lenses--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281a7a32dd1c2551a7851",
+      "title": "Interface - Slides Editor Inspector Panel Lenses",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 01:35:33Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281a7a32dd1c2551a7851",
+      "local_path": "docs/current-docs/notion/primary/interface-slides-editor-inspector-panel-lenses--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e502814584bad00b5c03397f",
+      "title": "Interface - Spreadsheet Editor Context Panel Lenses",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 00:48:22Z",
+      "notion_url": "https://app.notion.com/3acb6410e502814584bad00b5c03397f",
+      "local_path": "docs/current-docs/notion/primary/interface-spreadsheet-editor-context-panel-lenses--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281e4b8cdce47084bc8af",
+      "title": "Interface - Spreadsheet Editor Inspector Panel Lenses",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 01:38:01Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281e4b8cdce47084bc8af",
+      "local_path": "docs/current-docs/notion/primary/interface-spreadsheet-editor-inspector-panel-lenses--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3abb6410e50281258d89d5719fa851fc",
+      "title": "Model — Chat Capability & Runtime Contract",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-28 21:13:21Z",
+      "notion_url": "https://app.notion.com/3abb6410e50281258d89d5719fa851fc",
+      "local_path": "docs/current-docs/notion/primary/model-chat-capability-and-runtime-contract--3abb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502810dae4ae1b4866d8c6d",
+      "title": "Model — Document Context",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-30 06:25:58Z",
+      "notion_url": "https://app.notion.com/3adb6410e502810dae4ae1b4866d8c6d",
+      "local_path": "docs/current-docs/notion/primary/model-document-context--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502816fbecde3c54898886b",
+      "title": "Model — Document Inspector",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-30 06:25:58Z",
+      "notion_url": "https://app.notion.com/3adb6410e502816fbecde3c54898886b",
+      "local_path": "docs/current-docs/notion/primary/model-document-inspector--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e5028106b617d05f162b5ddf",
+      "title": "Model — Identity, Organization, Project Ownership & Access",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 22:17:17Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028106b617d05f162b5ddf",
+      "local_path": "docs/current-docs/notion/primary/model-identity-organization-project-ownership-and-access--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281dfa3abd6a5ed892917",
+      "title": "Model — Media Capability & Descriptor Lattice",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 21:25:01Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281dfa3abd6a5ed892917",
+      "local_path": "docs/current-docs/notion/primary/model-media-capability-and-descriptor-lattice--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3abb6410e50281df8762c162e9a6eb13",
+      "title": "Model — Slides Capability & Runtime Contract",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-28 21:13:21Z",
+      "notion_url": "https://app.notion.com/3abb6410e50281df8762c162e9a6eb13",
+      "local_path": "docs/current-docs/notion/primary/model-slides-capability-and-runtime-contract--3abb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3abb6410e5028179a844c0af77b21ffe",
+      "title": "Model — Spreadsheet Capability & Runtime Contract",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-28 21:13:21Z",
+      "notion_url": "https://app.notion.com/3abb6410e5028179a844c0af77b21ffe",
+      "local_path": "docs/current-docs/notion/primary/model-spreadsheet-capability-and-runtime-contract--3abb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e5028157b9e4e8228237cfb8",
+      "title": "Model — Structured Data Capability & Descriptor Lattice",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 21:25:01Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028157b9e4e8228237cfb8",
+      "local_path": "docs/current-docs/notion/primary/model-structured-data-capability-and-descriptor-lattice--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281ddaa6dca8f6e1802fb",
+      "title": "Model — Workspace Capability & Runtime Contract",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-29 15:26:25Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281ddaa6dca8f6e1802fb",
+      "local_path": "docs/current-docs/notion/primary/model-workspace-capability-and-runtime-contract--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281aca831cc1b970e1586",
+      "title": "Program — Taurus Alpha Frontend Completion Work Packets",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-30 06:23:38Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281aca831cc1b970e1586",
+      "local_path": "docs/current-docs/notion/primary/program-taurus-alpha-frontend-completion-work-packets--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281e286aff541de343991",
+      "title": "Program — Taurus Omega Backend Completion Work Packets",
+      "role": "Primary",
+      "format": "Spec",
+      "created": "2026-07-30 00:10:08Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281e286aff541de343991",
+      "local_path": "docs/current-docs/notion/primary/program-taurus-omega-backend-completion-work-packets--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281bf8987c9a87e6687dd",
+      "title": "Workstreams - Taurus Product Completion",
+      "role": "Primary",
+      "format": "Document",
+      "created": "2026-07-29 02:25:42Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281bf8987c9a87e6687dd",
+      "local_path": "docs/current-docs/notion/primary/workstreams-taurus-product-completion--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028163bf85c5fe95a8a163",
+      "title": "Architecture — Application Routes, Screens & Scope Gates",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028163bf85c5fe95a8a163",
+      "local_path": "docs/current-docs/notion/supporting/architecture-application-routes-screens-and-scope-gates--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281ebb2fedff17e9ae7ff",
+      "title": "Architecture — Feature Modules, Controllers, Selectors & View Models",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:44:46Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281ebb2fedff17e9ae7ff",
+      "local_path": "docs/current-docs/notion/supporting/architecture-feature-modules-controllers-selectors-and-view-models--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281ff9601e70217f36c96",
+      "title": "Architecture — Frontend Runtime Model & Governing Invariants",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281ff9601e70217f36c96",
+      "local_path": "docs/current-docs/notion/supporting/architecture-frontend-runtime-model-and-governing-invariants--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502815497b0e1c1c60ef284",
+      "title": "Architecture — Frontend Synchronization, Replicas & Reconciliation",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e502815497b0e1c1c60ef284",
+      "local_path": "docs/current-docs/notion/supporting/architecture-frontend-synchronization-replicas-and-reconciliation--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281d887f1f53fcc2b5575",
+      "title": "Architecture — Interaction, Intent & Operation Pipeline",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281d887f1f53fcc2b5575",
+      "local_path": "docs/current-docs/notion/supporting/architecture-interaction-intent-and-operation-pipeline--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281b88424fd8694de4740",
+      "title": "Architecture — Workbench Shell, Workspace & Stage Lifecycle",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281b88424fd8694de4740",
+      "local_path": "docs/current-docs/notion/supporting/architecture-workbench-shell-workspace-and-stage-lifecycle--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e502815c8782cb126c93b787",
+      "title": "Experience — Organization Administration",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 22:17:17Z",
+      "notion_url": "https://app.notion.com/3acb6410e502815c8782cb126c93b787",
+      "local_path": "docs/current-docs/notion/supporting/experience-organization-administration--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502814fabcad526f8abf0de",
+      "title": "Implementation — Taurus Alpha Architecture Migration & Completion Basis",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e502814fabcad526f8abf0de",
+      "local_path": "docs/current-docs/notion/supporting/implementation-taurus-alpha-architecture-migration-and-completion-basis--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e5028138917ff768d9776e8e",
+      "title": "Implementation — Workspace Backend",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 15:32:49Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028138917ff768d9776e8e",
+      "local_path": "docs/current-docs/notion/supporting/implementation-workspace-backend--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281d2813fe9f261c35ac4",
+      "title": "Implementation — Workspace Frontend",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 15:32:49Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281d2813fe9f261c35ac4",
+      "local_path": "docs/current-docs/notion/supporting/implementation-workspace-frontend--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e5028122ab96eed1434bb897",
+      "title": "Settings — User & Project",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 22:17:17Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028122ab96eed1434bb897",
+      "local_path": "docs/current-docs/notion/supporting/settings-user-and-project--3acb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281a8b8edef96653bee7d",
+      "title": "System — Accessibility, Focus & Keyboard Runtime",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281a8b8edef96653bee7d",
+      "local_path": "docs/current-docs/notion/supporting/system-accessibility-focus-and-keyboard-runtime--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281d7a7a9ef751b661ff4",
+      "title": "System — AI Quarterback Frontend Runtime",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281d7a7a9ef751b661ff4",
+      "local_path": "docs/current-docs/notion/supporting/system-ai-quarterback-frontend-runtime--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028109af17d131af989809",
+      "title": "System — Context Rail & Lens Runtime",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028109af17d131af989809",
+      "local_path": "docs/current-docs/notion/supporting/system-context-rail-and-lens-runtime--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281aeae8ec87167771288",
+      "title": "System — Frontend Component Library & Composition Contract",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281aeae8ec87167771288",
+      "local_path": "docs/current-docs/notion/supporting/system-frontend-component-library-and-composition-contract--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028189b4dcf8a6c7bda400",
+      "title": "System — Inspector & Selection Runtime",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028189b4dcf8a6c7bda400",
+      "local_path": "docs/current-docs/notion/supporting/system-inspector-and-selection-runtime--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502810491c7eda475987775",
+      "title": "System — Overlay, Modal, Menu & Transient Workflow Runtime",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e502810491c7eda475987775",
+      "local_path": "docs/current-docs/notion/supporting/system-overlay-modal-menu-and-transient-workflow-runtime--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281dca00fe935ccb4b083",
+      "title": "System — Resource Editor Host & Adapter Contract",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 05:31:05Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281dca00fe935ccb4b083",
+      "local_path": "docs/current-docs/notion/supporting/system-resource-editor-host-and-adapter-contract--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3acb6410e50281dea887f4a804e87faa",
+      "title": "Work Packet — Ω-001 — Freeze Completion Baseline & Executable Contract",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:43:41Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281dea887f4a804e87faa",
+      "local_path": "docs/current-docs/notion/work-packets/omega-001-freeze-completion-baseline-and-executable-contract.md",
+      "execution_path": "docs/current-docs/work-packets/omega-001-freeze-completion-baseline-and-executable-contract.md"
+    },
+    {
+      "notion_page_id": "3acb6410e502817e9b48ca0a34cf6729",
+      "title": "Work Packet — Ω-002 — Separate exact Resource reading from Knowledge",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:48:42Z",
+      "notion_url": "https://app.notion.com/3acb6410e502817e9b48ca0a34cf6729",
+      "local_path": "docs/current-docs/notion/work-packets/omega-002-separate-exact-resource-reading-from-knowledge.md",
+      "execution_path": "docs/current-docs/work-packets/omega-002-separate-exact-resource-reading-from-knowledge.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281189f27db1c10eb228d",
+      "title": "Work Packet — Ω-003 — Close Knowledge capacity, bounded-read, and refusal safety",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:48:42Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281189f27db1c10eb228d",
+      "local_path": "docs/current-docs/notion/work-packets/omega-003-close-knowledge-capacity-bounded-read-and-refusal-safety.md",
+      "execution_path": "docs/current-docs/work-packets/omega-003-close-knowledge-capacity-bounded-read-and-refusal-safety.md"
+    },
+    {
+      "notion_page_id": "3acb6410e5028134b99ef90126e27abb",
+      "title": "Work Packet — Ω-004 — Enforce ports-and-adapters boundaries and architecture tests",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:48:42Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028134b99ef90126e27abb",
+      "local_path": "docs/current-docs/notion/work-packets/omega-004-enforce-ports-and-adapters-boundaries-and-architecture-tests.md",
+      "execution_path": "docs/current-docs/work-packets/omega-004-enforce-ports-and-adapters-boundaries-and-architecture-tests.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281a89ceefd5195698360",
+      "title": "Work Packet — Ω-005 — Establish Knowledge embedding-space lifecycle and certification",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:48:42Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281a89ceefd5195698360",
+      "local_path": "docs/current-docs/notion/work-packets/omega-005-establish-knowledge-embedding-space-lifecycle-and-certification.md",
+      "execution_path": "docs/current-docs/work-packets/omega-005-establish-knowledge-embedding-space-lifecycle-and-certification.md"
+    },
+    {
+      "notion_page_id": "3acb6410e502811e88ddf350c279c873",
+      "title": "Work Packet — Ω-006 — Validate Document marks and custom typography",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:54:56Z",
+      "notion_url": "https://app.notion.com/3acb6410e502811e88ddf350c279c873",
+      "local_path": "docs/current-docs/notion/work-packets/omega-006-validate-document-marks-and-custom-typography.md",
+      "execution_path": "docs/current-docs/work-packets/omega-006-validate-document-marks-and-custom-typography.md"
+    },
+    {
+      "notion_page_id": "3acb6410e5028134b55bcbcdc6aeefe6",
+      "title": "Work Packet — Ω-007 — Harden connector source admission, filesystem, and SSRF boundaries",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:54:56Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028134b55bcbcdc6aeefe6",
+      "local_path": "docs/current-docs/notion/work-packets/omega-007-harden-connector-source-admission-filesystem-and-ssrf-boundaries.md",
+      "execution_path": "docs/current-docs/work-packets/omega-007-harden-connector-source-admission-filesystem-and-ssrf-boundaries.md"
+    },
+    {
+      "notion_page_id": "3acb6410e5028193843bd6a0fd035b44",
+      "title": "Work Packet — Ω-008 — Make Ask-turn failures diagnosable and recoverable",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:54:56Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028193843bd6a0fd035b44",
+      "local_path": "docs/current-docs/notion/work-packets/omega-008-make-ask-turn-failures-diagnosable-and-recoverable.md",
+      "execution_path": "docs/current-docs/work-packets/omega-008-make-ask-turn-failures-diagnosable-and-recoverable.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281ab8fe4f7d97dcc0f91",
+      "title": "Work Packet — Ω-009 — Make Project reads and retrieval evidence caller-aware",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:54:56Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281ab8fe4f7d97dcc0f91",
+      "local_path": "docs/current-docs/notion/work-packets/omega-009-make-project-reads-and-retrieval-evidence-caller-aware.md",
+      "execution_path": "docs/current-docs/work-packets/omega-009-make-project-reads-and-retrieval-evidence-caller-aware.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281ff8cb3c5528c9470f6",
+      "title": "Work Packet — Ω-010 — Define redaction, pagination, Activity, and History wire contracts",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:54:56Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281ff8cb3c5528c9470f6",
+      "local_path": "docs/current-docs/notion/work-packets/omega-010-define-redaction-pagination-activity-and-history-wire-contracts.md",
+      "execution_path": "docs/current-docs/work-packets/omega-010-define-redaction-pagination-activity-and-history-wire-contracts.md"
+    },
+    {
+      "notion_page_id": "3acb6410e5028181902fd66656bb1f67",
+      "title": "Work Packet — Ω-011 — Make Project scope explicit per request",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:57:56Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028181902fd66656bb1f67",
+      "local_path": "docs/current-docs/notion/work-packets/omega-011-make-project-scope-explicit-per-request.md",
+      "execution_path": "docs/current-docs/work-packets/omega-011-make-project-scope-explicit-per-request.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281c5a79ff934a7c64058",
+      "title": "Work Packet — Ω-012 — Land the Workspace aggregate and unified undo",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:57:56Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281c5a79ff934a7c64058",
+      "local_path": "docs/current-docs/notion/work-packets/omega-012-land-the-workspace-aggregate-and-unified-undo.md",
+      "execution_path": "docs/current-docs/work-packets/omega-012-land-the-workspace-aggregate-and-unified-undo.md"
+    },
+    {
+      "notion_page_id": "3acb6410e5028126b080c561a30f01f4",
+      "title": "Work Packet — Ω-013 — Introduce the in-process User Cell and Project Subcell registries",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:57:56Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028126b080c561a30f01f4",
+      "local_path": "docs/current-docs/notion/work-packets/omega-013-introduce-the-in-process-user-cell-and-project-subcell-registries.md",
+      "execution_path": "docs/current-docs/work-packets/omega-013-introduce-the-in-process-user-cell-and-project-subcell-registries.md"
+    },
+    {
+      "notion_page_id": "3adb6410e50281618bc7f02bda0e3670",
+      "title": "Work Packet — Ω-014 — Make jobs, collaboration, and live delivery subcell-safe",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:01:21Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281618bc7f02bda0e3670",
+      "local_path": "docs/current-docs/notion/work-packets/omega-014-make-jobs-collaboration-and-live-delivery-subcell-safe.md",
+      "execution_path": "docs/current-docs/work-packets/omega-014-make-jobs-collaboration-and-live-delivery-subcell-safe.md"
+    },
+    {
+      "notion_page_id": "3adb6410e50281f79473ede39876f743",
+      "title": "Work Packet — Ω-015 — Complete the shared Resource runtime contracts",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:01:21Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281f79473ede39876f743",
+      "local_path": "docs/current-docs/notion/work-packets/omega-015-complete-the-shared-resource-runtime-contracts.md",
+      "execution_path": "docs/current-docs/work-packets/omega-015-complete-the-shared-resource-runtime-contracts.md"
+    },
+    {
+      "notion_page_id": "3adb6410e50281208968d066f28cab27",
+      "title": "Work Packet — Ω-016 — Publish Document revisions to the Text lattice automatically",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:01:21Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281208968d066f28cab27",
+      "local_path": "docs/current-docs/notion/work-packets/omega-016-publish-document-revisions-to-the-text-lattice-automatically.md",
+      "execution_path": "docs/current-docs/work-packets/omega-016-publish-document-revisions-to-the-text-lattice-automatically.md"
+    },
+    {
+      "notion_page_id": "3adb6410e50281999781e35c8dfacd05",
+      "title": "Work Packet — Ω-017 — Close the Document Project vertical slice",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:07:14Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281999781e35c8dfacd05",
+      "local_path": "docs/current-docs/notion/work-packets/omega-017-close-the-document-project-vertical-slice.md",
+      "execution_path": "docs/current-docs/work-packets/omega-017-close-the-document-project-vertical-slice.md"
+    },
+    {
+      "notion_page_id": "3adb6410e50281c0a262e8580e8f03f2",
+      "title": "Work Packet — Ω-018 — Serve Project Overview projections and bounded commands",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:07:14Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281c0a262e8580e8f03f2",
+      "local_path": "docs/current-docs/notion/work-packets/omega-018-serve-project-overview-projections-and-bounded-commands.md",
+      "execution_path": "docs/current-docs/work-packets/omega-018-serve-project-overview-projections-and-bounded-commands.md"
+    },
+    {
+      "notion_page_id": "3adb6410e5028183ba41d764039f7930",
+      "title": "Work Packet — Ω-019 — Complete the Project Agent and Task/Run runtime",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:07:14Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028183ba41d764039f7930",
+      "local_path": "docs/current-docs/notion/work-packets/omega-019-complete-the-project-agent-and-task-run-runtime.md",
+      "execution_path": "docs/current-docs/work-packets/omega-019-complete-the-project-agent-and-task-run-runtime.md"
+    },
+    {
+      "notion_page_id": "3acb6410e502812eb0f3f4aca7e329be",
+      "title": "Work Packet — Ω-020 — Freeze the cross-resource Template parameter and materialization contract",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:59:20Z",
+      "notion_url": "https://app.notion.com/3acb6410e502812eb0f3f4aca7e329be",
+      "local_path": "docs/current-docs/notion/work-packets/omega-020-freeze-the-cross-resource-template-parameter-and-materialization-contract.md",
+      "execution_path": "docs/current-docs/work-packets/omega-020-freeze-the-cross-resource-template-parameter-and-materialization-contract.md"
+    },
+    {
+      "notion_page_id": "3acb6410e5028101ad28de36426d1403",
+      "title": "Work Packet — Ω-021 — Implement the Spreadsheet aggregate, operations, and persistence",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:59:20Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028101ad28de36426d1403",
+      "local_path": "docs/current-docs/notion/work-packets/omega-021-implement-the-spreadsheet-aggregate-operations-and-persistence.md",
+      "execution_path": "docs/current-docs/work-packets/omega-021-implement-the-spreadsheet-aggregate-operations-and-persistence.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281edb7f7d5bd3c7d90a8",
+      "title": "Work Packet — Ω-022 — Complete Spreadsheet computation, overlays, templates, and API integration",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:59:20Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281edb7f7d5bd3c7d90a8",
+      "local_path": "docs/current-docs/notion/work-packets/omega-022-complete-spreadsheet-computation-overlays-templates-and-api-integration.md",
+      "execution_path": "docs/current-docs/work-packets/omega-022-complete-spreadsheet-computation-overlays-templates-and-api-integration.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281909acdce415f06e0db",
+      "title": "Work Packet — Ω-023 — Implement the Slides aggregate, operations, and persistence",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:59:20Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281909acdce415f06e0db",
+      "local_path": "docs/current-docs/notion/work-packets/omega-023-implement-the-slides-aggregate-operations-and-persistence.md",
+      "execution_path": "docs/current-docs/work-packets/omega-023-implement-the-slides-aggregate-operations-and-persistence.md"
+    },
+    {
+      "notion_page_id": "3acb6410e5028144837de6ca4b89ccbe",
+      "title": "Work Packet — Ω-024 — Complete Slides content, templates, rendering, and API integration",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:59:38Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028144837de6ca4b89ccbe",
+      "local_path": "docs/current-docs/notion/work-packets/omega-024-complete-slides-content-templates-rendering-and-api-integration.md",
+      "execution_path": "docs/current-docs/work-packets/omega-024-complete-slides-content-templates-rendering-and-api-integration.md"
+    },
+    {
+      "notion_page_id": "3acb6410e502819daf6ac7c1a67c5165",
+      "title": "Work Packet — Ω-025 — Migrate Chat to a revisioned turn-tree aggregate",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:59:38Z",
+      "notion_url": "https://app.notion.com/3acb6410e502819daf6ac7c1a67c5165",
+      "local_path": "docs/current-docs/notion/work-packets/omega-025-migrate-chat-to-a-revisioned-turn-tree-aggregate.md",
+      "execution_path": "docs/current-docs/work-packets/omega-025-migrate-chat-to-a-revisioned-turn-tree-aggregate.md"
+    },
+    {
+      "notion_page_id": "3acb6410e5028166993cc73270ff625e",
+      "title": "Work Packet — Ω-026 — Complete Chat execution, context, personas, streaming, and API integration",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:59:38Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028166993cc73270ff625e",
+      "local_path": "docs/current-docs/notion/work-packets/omega-026-complete-chat-execution-context-personas-streaming-and-api-integration.md",
+      "execution_path": "docs/current-docs/work-packets/omega-026-complete-chat-execution-context-personas-streaming-and-api-integration.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281e5a7b8f2ff2506c397",
+      "title": "Work Packet — Ω-027 — Extend Workspace history coordination to every resource",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:59:38Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281e5a7b8f2ff2506c397",
+      "local_path": "docs/current-docs/notion/work-packets/omega-027-extend-workspace-history-coordination-to-every-resource.md",
+      "execution_path": "docs/current-docs/work-packets/omega-027-extend-workspace-history-coordination-to-every-resource.md"
+    },
+    {
+      "notion_page_id": "3adb6410e5028137863ff4a2d59c1885",
+      "title": "Work Packet — Ω-028 — Introduce the typed multi-lattice ingestion router",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:08:50Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028137863ff4a2d59c1885",
+      "local_path": "docs/current-docs/notion/work-packets/omega-028-introduce-the-typed-multi-lattice-ingestion-router.md",
+      "execution_path": "docs/current-docs/work-packets/omega-028-introduce-the-typed-multi-lattice-ingestion-router.md"
+    },
+    {
+      "notion_page_id": "3adb6410e50281cc8a40c4fc26f361d9",
+      "title": "Work Packet — Ω-029 — Implement structured-data descriptors for CSV and XLSX",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:08:50Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281cc8a40c4fc26f361d9",
+      "local_path": "docs/current-docs/notion/work-packets/omega-029-implement-structured-data-descriptors-for-csv-and-xlsx.md",
+      "execution_path": "docs/current-docs/work-packets/omega-029-implement-structured-data-descriptors-for-csv-and-xlsx.md"
+    },
+    {
+      "notion_page_id": "3adb6410e50281e78526ddb3cda469e4",
+      "title": "Work Packet — Ω-030 — Implement image descriptors and OCR-derived text",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:08:50Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281e78526ddb3cda469e4",
+      "local_path": "docs/current-docs/notion/work-packets/omega-030-implement-image-descriptors-and-ocr-derived-text.md",
+      "execution_path": "docs/current-docs/work-packets/omega-030-implement-image-descriptors-and-ocr-derived-text.md"
+    },
+    {
+      "notion_page_id": "3adb6410e5028192a491c1bb4a8d9097",
+      "title": "Work Packet — Ω-031 — Expose cross-lattice retrieval and Agent tools",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:09:07Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028192a491c1bb4a8d9097",
+      "local_path": "docs/current-docs/notion/work-packets/omega-031-expose-cross-lattice-retrieval-and-agent-tools.md",
+      "execution_path": "docs/current-docs/work-packets/omega-031-expose-cross-lattice-retrieval-and-agent-tools.md"
+    },
+    {
+      "notion_page_id": "3adb6410e50281f3aa7ec34cfa2bc5a7",
+      "title": "Work Packet — Ω-032 — Complete connector/source lifecycle and upload-vs-connection semantics",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:09:07Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281f3aa7ec34cfa2bc5a7",
+      "local_path": "docs/current-docs/notion/work-packets/omega-032-complete-connector-source-lifecycle-and-upload-vs-connection-semantics.md",
+      "execution_path": "docs/current-docs/work-packets/omega-032-complete-connector-source-lifecycle-and-upload-vs-connection-semantics.md"
+    },
+    {
+      "notion_page_id": "3adb6410e502816cb7bbf4e1e525db68",
+      "title": "Work Packet — Ω-033 — Implement Google Drive and Microsoft connector adapters",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 00:09:07Z",
+      "notion_url": "https://app.notion.com/3adb6410e502816cb7bbf4e1e525db68",
+      "local_path": "docs/current-docs/notion/work-packets/omega-033-implement-google-drive-and-microsoft-connector-adapters.md",
+      "execution_path": "docs/current-docs/work-packets/omega-033-implement-google-drive-and-microsoft-connector-adapters.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281ef9dffdd761e59cb5c",
+      "title": "Work Packet — Ω-034 — Build the sandboxed conversion-worker foundation",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:47:54Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281ef9dffdd761e59cb5c",
+      "local_path": "docs/current-docs/notion/work-packets/omega-034-build-the-sandboxed-conversion-worker-foundation.md",
+      "execution_path": "docs/current-docs/work-packets/omega-034-build-the-sandboxed-conversion-worker-foundation.md"
+    },
+    {
+      "notion_page_id": "3acb6410e5028191b118e2013904db29",
+      "title": "Work Packet — Ω-035 — Implement Document DOCX import/export and PDF export",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:47:54Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028191b118e2013904db29",
+      "local_path": "docs/current-docs/notion/work-packets/omega-035-implement-document-docx-import-export-and-pdf-export.md",
+      "execution_path": "docs/current-docs/work-packets/omega-035-implement-document-docx-import-export-and-pdf-export.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281778861da73b4250b99",
+      "title": "Work Packet — Ω-036 — Implement Spreadsheet XLSX import/export and PDF export",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:47:54Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281778861da73b4250b99",
+      "local_path": "docs/current-docs/notion/work-packets/omega-036-implement-spreadsheet-xlsx-import-export-and-pdf-export.md",
+      "execution_path": "docs/current-docs/work-packets/omega-036-implement-spreadsheet-xlsx-import-export-and-pdf-export.md"
+    },
+    {
+      "notion_page_id": "3acb6410e502819cbe8ce2eab833514c",
+      "title": "Work Packet — Ω-037 — Implement Slides PPTX import/export and PDF export",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:47:54Z",
+      "notion_url": "https://app.notion.com/3acb6410e502819cbe8ce2eab833514c",
+      "local_path": "docs/current-docs/notion/work-packets/omega-037-implement-slides-pptx-import-export-and-pdf-export.md",
+      "execution_path": "docs/current-docs/work-packets/omega-037-implement-slides-pptx-import-export-and-pdf-export.md"
+    },
+    {
+      "notion_page_id": "3acb6410e5028112b3d7e37e3daa31d0",
+      "title": "Work Packet — Ω-038 — Build the user-owned library, grant, and lineage kernel",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:49:09Z",
+      "notion_url": "https://app.notion.com/3acb6410e5028112b3d7e37e3daa31d0",
+      "local_path": "docs/current-docs/notion/work-packets/omega-038-build-the-user-owned-library-grant-and-lineage-kernel.md",
+      "execution_path": "docs/current-docs/work-packets/omega-038-build-the-user-owned-library-grant-and-lineage-kernel.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281c2bd7aea5f19585153",
+      "title": "Work Packet — Ω-039 — Migrate Personality, Context, and Template libraries",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:49:09Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281c2bd7aea5f19585153",
+      "local_path": "docs/current-docs/notion/work-packets/omega-039-migrate-personality-context-and-template-libraries.md",
+      "execution_path": "docs/current-docs/work-packets/omega-039-migrate-personality-context-and-template-libraries.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281cab417e06f369b242a",
+      "title": "Work Packet — Ω-040 — Establish identity, Organization, Project ownership, and grants",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:49:09Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281cab417e06f369b242a",
+      "local_path": "docs/current-docs/notion/work-packets/omega-040-establish-identity-organization-project-ownership-and-grants.md",
+      "execution_path": "docs/current-docs/work-packets/omega-040-establish-identity-organization-project-ownership-and-grants.md"
+    },
+    {
+      "notion_page_id": "3acb6410e502810d884cd50770f5352d",
+      "title": "Work Packet — Ω-041 — Implement user/project settings, administration, entitlements, and audit",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:49:09Z",
+      "notion_url": "https://app.notion.com/3acb6410e502810d884cd50770f5352d",
+      "local_path": "docs/current-docs/notion/work-packets/omega-041-implement-user-project-settings-administration-entitlements-and-audit.md",
+      "execution_path": "docs/current-docs/work-packets/omega-041-implement-user-project-settings-administration-entitlements-and-audit.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281feba8ff4999d9d0505",
+      "title": "Work Packet — Ω-042 — Add production storage, object data, migrations, backup, and restore",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:58:23Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281feba8ff4999d9d0505",
+      "local_path": "docs/current-docs/notion/work-packets/omega-042-add-production-storage-object-data-migrations-backup-and-restore.md",
+      "execution_path": "docs/current-docs/work-packets/omega-042-add-production-storage-object-data-migrations-backup-and-restore.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281b39bedccc751b658e8",
+      "title": "Work Packet — Ω-043 — Package and operate the production single-node deployment",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:58:23Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281b39bedccc751b658e8",
+      "local_path": "docs/current-docs/notion/work-packets/omega-043-package-and-operate-the-production-single-node-deployment.md",
+      "execution_path": "docs/current-docs/work-packets/omega-043-package-and-operate-the-production-single-node-deployment.md"
+    },
+    {
+      "notion_page_id": "3acb6410e50281f5827efb0236dc64a5",
+      "title": "Work Packet — Ω-044 — Certify the backend with security, recovery, and canonical demonstrations",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-29 23:58:23Z",
+      "notion_url": "https://app.notion.com/3acb6410e50281f5827efb0236dc64a5",
+      "local_path": "docs/current-docs/notion/work-packets/omega-044-certify-the-backend-with-security-recovery-and-canonical-demonstrations.md",
+      "execution_path": "docs/current-docs/work-packets/omega-044-certify-the-backend-with-security-recovery-and-canonical-demonstrations.md"
+    },
+    {
+      "notion_page_id": "3adb6410e50281059f58e7581579de87",
+      "title": "Α-001 — Alpha Completion Census & Behavioral Baseline",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:25:48Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281059f58e7581579de87",
+      "local_path": "docs/current-docs/notion/supporting/001-alpha-completion-census-and-behavioral-baseline--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502816e8161de23d0ec440c",
+      "title": "Α-002 — Svelte 5 Module Architecture, Capability Truth & Boundary Scaffold",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:25:48Z",
+      "notion_url": "https://app.notion.com/3adb6410e502816e8161de23d0ec440c",
+      "local_path": "docs/current-docs/notion/supporting/002-svelte-5-module-architecture-capability-truth-and-boundary-scaffold--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502814aa4bfc5460a9477aa",
+      "title": "Α-003 — Omega Contract Client, Wire Mappers & Deterministic Fixtures",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:25:48Z",
+      "notion_url": "https://app.notion.com/3adb6410e502814aa4bfc5460a9477aa",
+      "local_path": "docs/current-docs/notion/supporting/003-omega-contract-client-wire-mappers-and-deterministic-fixtures--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502817b9f99f7ca6a86d962",
+      "title": "Α-004 — Unified Verification & Visual Harness",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:25:48Z",
+      "notion_url": "https://app.notion.com/3adb6410e502817b9f99f7ca6a86d962",
+      "local_path": "docs/current-docs/notion/supporting/004-unified-verification-and-visual-harness--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028100b19ec124ac610204",
+      "title": "Α-005 — Central Styling, Theme, Fonts, Icons & Asset Pipeline",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:25:48Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028100b19ec124ac610204",
+      "local_path": "docs/current-docs/notion/supporting/005-central-styling-theme-fonts-icons-and-asset-pipeline--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281dd8ccff24512ba807c",
+      "title": "Α-006 — Structural HTML, Typography, Surface & Status Primitives",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:25:48Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281dd8ccff24512ba807c",
+      "local_path": "docs/current-docs/notion/supporting/006-structural-html-typography-surface-and-status-primitives--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028107bdf9d8c9b93851aa",
+      "title": "Α-007 — Action & Display Primitives",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:25:48Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028107bdf9d8c9b93851aa",
+      "local_path": "docs/current-docs/notion/supporting/007-action-and-display-primitives--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281d8911fe1435ba73d60",
+      "title": "Α-008 — Form & Selection Primitives",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:25:48Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281d8911fe1435ba73d60",
+      "local_path": "docs/current-docs/notion/supporting/008-form-and-selection-primitives--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028101b602c377835b67ba",
+      "title": "Α-009 — Overlay & Navigation Primitives",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:06Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028101b602c377835b67ba",
+      "local_path": "docs/current-docs/notion/supporting/009-overlay-and-navigation-primitives--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502818d9a73f95b5271fea6",
+      "title": "Α-010 — Composite Patterns, Component Catalog & Visual Showcase",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:06Z",
+      "notion_url": "https://app.notion.com/3adb6410e502818d9a73f95b5271fea6",
+      "local_path": "docs/current-docs/notion/supporting/010-composite-patterns-component-catalog-and-visual-showcase--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028113aec8f89f6c0ddaf5",
+      "title": "Α-011 — Frontend Kernel, Scoped Composition & Deterministic Disposal",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:06Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028113aec8f89f6c0ddaf5",
+      "local_path": "docs/current-docs/notion/supporting/011-frontend-kernel-scoped-composition-and-deterministic-disposal--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281959ba6ea70f4037a0e",
+      "title": "Α-012 — Gateway Boundary, Authentication Transport & Error Taxonomy",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:06Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281959ba6ea70f4037a0e",
+      "local_path": "docs/current-docs/notion/supporting/012-gateway-boundary-authentication-transport-and-error-taxonomy--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028128bf04e1b373dd8dce",
+      "title": "Α-013 — User Cell Bootstrap, Session Epoch & Logout Lifecycle",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:06Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028128bf04e1b373dd8dce",
+      "local_path": "docs/current-docs/notion/supporting/013-user-cell-bootstrap-session-epoch-and-logout-lifecycle--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281639bd6e45a0bce1611",
+      "title": "Α-014 — User Cell Control-Plane Projections",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:06Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281639bd6e45a0bce1611",
+      "local_path": "docs/current-docs/notion/supporting/014-user-cell-control-plane-projections--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028111a985fec23dc8df19",
+      "title": "Α-015 — Explicit Project Admission & Scope Establishment",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:06Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028111a985fec23dc8df19",
+      "local_path": "docs/current-docs/notion/supporting/015-explicit-project-admission-and-scope-establishment--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502815ca220dc2df0e22d7e",
+      "title": "Α-016 — Per-User Project Subcell Registry & Lifecycle",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:06Z",
+      "notion_url": "https://app.notion.com/3adb6410e502815ca220dc2df0e22d7e",
+      "local_path": "docs/current-docs/notion/supporting/016-per-user-project-subcell-registry-and-lifecycle--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502815a9274f706799e3d69",
+      "title": "Α-017 — Project Synchronization Transport & Change Cursor",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:29Z",
+      "notion_url": "https://app.notion.com/3adb6410e502815a9274f706799e3d69",
+      "local_path": "docs/current-docs/notion/supporting/017-project-synchronization-transport-and-change-cursor--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028118a42ae8adeb21bb3f",
+      "title": "Α-018 — Resource Replica Hydration, Canonical State & Cache",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:29Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028118a42ae8adeb21bb3f",
+      "local_path": "docs/current-docs/notion/supporting/018-resource-replica-hydration-canonical-state-and-cache--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281269f00ed95f9ab08b4",
+      "title": "Α-019 — Optimistic Operation Queue, Idempotency & Acknowledgement",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:29Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281269f00ed95f9ab08b4",
+      "local_path": "docs/current-docs/notion/supporting/019-optimistic-operation-queue-idempotency-and-acknowledgement--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281ba8aeac72f0256427a",
+      "title": "Α-020 — Reconciliation, Rebase, Rejection & Reconnection",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:29Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281ba8aeac72f0256427a",
+      "local_path": "docs/current-docs/notion/supporting/020-reconciliation-rebase-rejection-and-reconnection--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281039dcffe3c6c16a768",
+      "title": "Α-021 — Feature Modules, Controllers, Selectors & View Models",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:29Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281039dcffe3c6c16a768",
+      "local_path": "docs/current-docs/notion/supporting/021-feature-modules-controllers-selectors-and-view-models--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028179b214e38d89b8397a",
+      "title": "Α-022 — Unified Action Registry & Omega Operation Translation",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:29Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028179b214e38d89b8397a",
+      "local_path": "docs/current-docs/notion/supporting/022-unified-action-registry-and-omega-operation-translation--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281b0831ad550a2b388e8",
+      "title": "Α-023 — Interaction, Selection, Focus, Preview & Presence Boundary",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:29Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281b0831ad550a2b388e8",
+      "local_path": "docs/current-docs/notion/supporting/023-interaction-selection-focus-preview-and-presence-boundary--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281489af5fa4d21b720c7",
+      "title": "Α-024 — Overlay, Keymap & Notification Runtimes",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:26:29Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281489af5fa4d21b720c7",
+      "local_path": "docs/current-docs/notion/supporting/024-overlay-keymap-and-notification-runtimes--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502818bbcdbe442448a333f",
+      "title": "Α-025 — Workspace, Tab & Resource-View Runtime",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:23Z",
+      "notion_url": "https://app.notion.com/3adb6410e502818bbcdbe442448a333f",
+      "local_path": "docs/current-docs/notion/supporting/025-workspace-tab-and-resource-view-runtime--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028156aba7c1722ca61e9a",
+      "title": "Α-026 — Semantic Router, Shell State Machine & Admission Guards",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:23Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028156aba7c1722ca61e9a",
+      "local_path": "docs/current-docs/notion/supporting/026-semantic-router-shell-state-machine-and-admission-guards--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502817ba8beca790bb2b883",
+      "title": "Α-027 — Sign-In, Callback, Session Recovery & Sign-Out Experience",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:23Z",
+      "notion_url": "https://app.notion.com/3adb6410e502817ba8beca790bb2b883",
+      "local_path": "docs/current-docs/notion/supporting/027-sign-in-callback-session-recovery-and-sign-out-experience--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281fc90f1eb658619f295",
+      "title": "Α-028 — User Cell Shell, Global Navigation & Project Selection",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:23Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281fc90f1eb658619f295",
+      "local_path": "docs/current-docs/notion/supporting/028-user-cell-shell-global-navigation-and-project-selection--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281ddafd7df8d7b0ebff3",
+      "title": "Α-029 — Agents, Personal Context & Templates Library Screens",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:23Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281ddafd7df8d7b0ebff3",
+      "local_path": "docs/current-docs/notion/supporting/029-agents-personal-context-and-templates-library-screens--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502818fa136f2b4f5108b21",
+      "title": "Α-030 — User Settings Experience",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:23Z",
+      "notion_url": "https://app.notion.com/3adb6410e502818fa136f2b4f5108b21",
+      "local_path": "docs/current-docs/notion/supporting/030-user-settings-experience--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281c9a771e89b521e049a",
+      "title": "Α-031 — Organization Administration Experience",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:23Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281c9a771e89b521e049a",
+      "local_path": "docs/current-docs/notion/supporting/031-organization-administration-experience--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281d7ab11dc6aff94494c",
+      "title": "Α-032 — Project Subcell Shell & Project Overview",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:23Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281d7ab11dc6aff94494c",
+      "local_path": "docs/current-docs/notion/supporting/032-project-subcell-shell-and-project-overview--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028104bc56ea4e092e77bc",
+      "title": "Α-033 — Project Settings Experience",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:40Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028104bc56ea4e092e77bc",
+      "local_path": "docs/current-docs/notion/supporting/033-project-settings-experience--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502814e96c9fc41d1b29236",
+      "title": "Α-034 — Application Chrome, Global Menus & Command Surfaces",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:40Z",
+      "notion_url": "https://app.notion.com/3adb6410e502814e96c9fc41d1b29236",
+      "local_path": "docs/current-docs/notion/supporting/034-application-chrome-global-menus-and-command-surfaces--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281f78391dd29f52e11bd",
+      "title": "Α-035 — Resource Explorer, New Tab, Search & Discovery",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:40Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281f78391dd29f52e11bd",
+      "local_path": "docs/current-docs/notion/supporting/035-resource-explorer-new-tab-search-and-discovery--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028159a309e6a822b933aa",
+      "title": "Α-036 — Tab Strip, Workspace Layout & View Mounting",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:40Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028159a309e6a822b933aa",
+      "local_path": "docs/current-docs/notion/supporting/036-tab-strip-workspace-layout-and-view-mounting--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502812ea912d33ca0e16d34",
+      "title": "Α-037 — Resource Lifecycle Modal Suite",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:40Z",
+      "notion_url": "https://app.notion.com/3adb6410e502812ea912d33ca0e16d34",
+      "local_path": "docs/current-docs/notion/supporting/037-resource-lifecycle-modal-suite--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028125a019efb07e1ffb36",
+      "title": "Α-038 — Context Rail & Lens System",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:40Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028125a019efb07e1ffb36",
+      "local_path": "docs/current-docs/notion/supporting/038-context-rail-and-lens-system--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028145be60e6875bee91fd",
+      "title": "Α-039 — Inspector & Section Provider System",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:40Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028145be60e6875bee91fd",
+      "local_path": "docs/current-docs/notion/supporting/039-inspector-and-section-provider-system--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281ceb74afe850de03ff4",
+      "title": "Α-040 — Collaboration, Comments, Activity & Presence Surfaces",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:40Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281ceb74afe850de03ff4",
+      "local_path": "docs/current-docs/notion/supporting/040-collaboration-comments-activity-and-presence-surfaces--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281cfa7a0d588a264bc07",
+      "title": "Α-041 — Editor Host, Resource Module Registry & Shared Contracts",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:58Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281cfa7a0d588a264bc07",
+      "local_path": "docs/current-docs/notion/supporting/041-editor-host-resource-module-registry-and-shared-contracts--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028141b5ceea9a4cc45604",
+      "title": "Α-042 — ProseMirror Document Adapter & Replica Bridge",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:58Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028141b5ceea9a4cc45604",
+      "local_path": "docs/current-docs/notion/supporting/042-prosemirror-document-adapter-and-replica-bridge--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281f193ced1daebcfcf76",
+      "title": "Α-043 — Document Editing Interface & Core Content Features",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:58Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281f193ced1daebcfcf76",
+      "local_path": "docs/current-docs/notion/supporting/043-document-editing-interface-and-core-content-features--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502815ba8e6f516e4cb3034",
+      "title": "Α-044 — Document Advanced Interaction, Context, Inspector & Collaboration",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:58Z",
+      "notion_url": "https://app.notion.com/3adb6410e502815ba8e6f516e4cb3034",
+      "local_path": "docs/current-docs/notion/supporting/044-document-advanced-interaction-context-inspector-and-collaboration--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028103916dde28ea82d7af",
+      "title": "Α-045 — Slides Domain Runtime, Fabric.js Adapter & Omega Object Bridge",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:58Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028103916dde28ea82d7af",
+      "local_path": "docs/current-docs/notion/supporting/045-slides-domain-runtime-fabric-js-adapter-and-omega-object-bridge--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281b3be53f3821894dc9a",
+      "title": "Α-046 — Slides Canvas, Selection, Viewport & Object Manipulation",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:58Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281b3be53f3821894dc9a",
+      "local_path": "docs/current-docs/notion/supporting/046-slides-canvas-selection-viewport-and-object-manipulation--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028180924fe360b82641f5",
+      "title": "Α-047 — Slides Shell, Thumbnails, Notes, Themes & Inspector",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:58Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028180924fe360b82641f5",
+      "local_path": "docs/current-docs/notion/supporting/047-slides-shell-thumbnails-notes-themes-and-inspector--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502817ba915c7bb3db6bc0e",
+      "title": "Α-048 — One-Grid Spreadsheet Adapter, Rendering & Virtualization",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:27:58Z",
+      "notion_url": "https://app.notion.com/3adb6410e502817ba915c7bb3db6bc0e",
+      "local_path": "docs/current-docs/notion/supporting/048-one-grid-spreadsheet-adapter-rendering-and-virtualization--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281468b8adfd3d58bf31b",
+      "title": "Α-049 — Spreadsheet Navigation, Editing, Clipboard & Formula Interface",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:16Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281468b8adfd3d58bf31b",
+      "local_path": "docs/current-docs/notion/supporting/049-spreadsheet-navigation-editing-clipboard-and-formula-interface--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028193bdfbf65f0a493613",
+      "title": "Α-050 — Spreadsheet Structure, Formatting, Inspector & Dependency UX",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:16Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028193bdfbf65f0a493613",
+      "local_path": "docs/current-docs/notion/supporting/050-spreadsheet-structure-formatting-inspector-and-dependency-ux--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502812d803dcedc917f4601",
+      "title": "Α-051 — Chat Turn Tree, Revisions & Branch Rendering",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:16Z",
+      "notion_url": "https://app.notion.com/3adb6410e502812d803dcedc917f4601",
+      "local_path": "docs/current-docs/notion/supporting/051-chat-turn-tree-revisions-and-branch-rendering--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028123ab0be5c41a94665e",
+      "title": "Α-052 — Chat Composer, Streaming, Stop/Retry & Attachments",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:16Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028123ab0be5c41a94665e",
+      "local_path": "docs/current-docs/notion/supporting/052-chat-composer-streaming-stop-retry-and-attachments--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028106b264fffc8aee2399",
+      "title": "Α-053 — Media, PDF, Code, Table & Unknown Resource Viewers",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:16Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028106b264fffc8aee2399",
+      "local_path": "docs/current-docs/notion/supporting/053-media-pdf-code-table-and-unknown-resource-viewers--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028145a6cec0e6073fe0e1",
+      "title": "Α-054 — AI Quarterback & Bottom Prompt Runtime",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:16Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028145a6cec0e6073fe0e1",
+      "local_path": "docs/current-docs/notion/supporting/054-ai-quarterback-and-bottom-prompt-runtime--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502813ca52dd0645d48d848",
+      "title": "Α-055 — Agent Execution, Supervision & Context/Template Application",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:16Z",
+      "notion_url": "https://app.notion.com/3adb6410e502813ca52dd0645d48d848",
+      "local_path": "docs/current-docs/notion/supporting/055-agent-execution-supervision-and-context-template-application--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281c482a9c67a509bb54f",
+      "title": "Α-056 — Upload, Ingestion Queue & Unknown-Type Resolution",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:16Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281c482a9c67a509bb54f",
+      "local_path": "docs/current-docs/notion/supporting/056-upload-ingestion-queue-and-unknown-type-resolution--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502815fb293d572197c3466",
+      "title": "Α-057 — Connectors, Library & External File-Picker Flows",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:38Z",
+      "notion_url": "https://app.notion.com/3adb6410e502815fb293d572197c3466",
+      "local_path": "docs/current-docs/notion/supporting/057-connectors-library-and-external-file-picker-flows--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281169c35fc3232c0ccf9",
+      "title": "Α-058 — Import Experience & Fidelity Reporting",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:38Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281169c35fc3232c0ccf9",
+      "local_path": "docs/current-docs/notion/supporting/058-import-experience-and-fidelity-reporting--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281fda012ecf6bf5a6a40",
+      "title": "Α-059 — Export, Download, Share & Conversion Receipts",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:38Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281fda012ecf6bf5a6a40",
+      "local_path": "docs/current-docs/notion/supporting/059-export-download-share-and-conversion-receipts--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281599a1efc22ff7b1dbc",
+      "title": "Α-060 — Multi-Client User Cell & Project Subcell Convergence E2E",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:38Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281599a1efc22ff7b1dbc",
+      "local_path": "docs/current-docs/notion/supporting/060-multi-client-user-cell-and-project-subcell-convergence-e2e--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502812bada7c3bab6f26af4",
+      "title": "Α-061 — Frontend Security & Data-Isolation Certification",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:38Z",
+      "notion_url": "https://app.notion.com/3adb6410e502812bada7c3bab6f26af4",
+      "local_path": "docs/current-docs/notion/supporting/061-frontend-security-and-data-isolation-certification--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281669d7ef62dd243971b",
+      "title": "Α-062 — Accessibility Certification",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:38Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281669d7ef62dd243971b",
+      "local_path": "docs/current-docs/notion/supporting/062-accessibility-certification--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028192a721cdcabc77c9fe",
+      "title": "Α-063 — Performance, Bundle, Rendering & Memory Certification",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:38Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028192a721cdcabc77c9fe",
+      "local_path": "docs/current-docs/notion/supporting/063-performance-bundle-rendering-and-memory-certification--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e5028167b363e4b192d35748",
+      "title": "Α-064 — Resilience, Fault Injection & Recovery Certification",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:38Z",
+      "notion_url": "https://app.notion.com/3adb6410e5028167b363e4b192d35748",
+      "local_path": "docs/current-docs/notion/supporting/064-resilience-fault-injection-and-recovery-certification--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502817cbd8bfdcbfade2b8d",
+      "title": "Α-065 — Visual Reconstruction, Responsive & Cross-Browser Certification",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:53Z",
+      "notion_url": "https://app.notion.com/3adb6410e502817cbd8bfdcbfade2b8d",
+      "local_path": "docs/current-docs/notion/supporting/065-visual-reconstruction-responsive-and-cross-browser-certification--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e50281a188ffed128568eee0",
+      "title": "Α-066 — Production Build, Deployment Configuration & Observability",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:53Z",
+      "notion_url": "https://app.notion.com/3adb6410e50281a188ffed128568eee0",
+      "local_path": "docs/current-docs/notion/supporting/066-production-build-deployment-configuration-and-observability--3adb6410e502.md",
+      "execution_path": null
+    },
+    {
+      "notion_page_id": "3adb6410e502813e8007ef9c301357ff",
+      "title": "Α-067 — Full Product Demonstration, Legacy Removal & Final Certification",
+      "role": "Supporting",
+      "format": "Spec",
+      "created": "2026-07-30 06:28:53Z",
+      "notion_url": "https://app.notion.com/3adb6410e502813e8007ef9c301357ff",
+      "local_path": "docs/current-docs/notion/supporting/067-full-product-demonstration-legacy-removal-and-final-certification--3adb6410e502.md",
+      "execution_path": null
+    }
+  ]
+}

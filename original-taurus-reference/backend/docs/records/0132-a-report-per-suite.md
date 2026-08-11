@@ -1,0 +1,243 @@
+# 0132 — A report per suite, and the model it selected
+
+[0131](0131-measure-every-model-call.md) made every provider call measurable.
+This increment spends that measurement: it finishes the telemetry so a report can
+be priced from it alone, discovers that the suite grouping we run against was
+wrong, replaces the single flat comparison document with one directory per
+intelligence suite, and changes the shipped model on the strength of what the
+resulting numbers say.
+
+It also corrects a failure this work had recorded as the model's fault and was
+not.
+
+## `run.sh free` was not free
+
+The runner splits suites into "intelligence" (real model calls, real money) and
+everything else. The intelligence list named **eight** suites. Fifteen were
+calling models.
+
+The seven that were missing — `action`, `agents`, `chat-attachments`, `chats`,
+`connectors`, `generate`, `notifications` — each guard on an API key, which is
+what hid it. Without a key they skip, so the grouping looked right in CI. With a
+key present, `./dev-test/run.sh free` spent money on seven suites while its own
+header promised it would not.
+
+The list is now derived from measurement rather than intent — it is every suite
+whose run emits per-call telemetry — and the re-derivation command sits in a
+comment beside it so the next person checks rather than guesses:
+
+```text
+awk '/^═══ .* ═══$/{s=$2} /call: /{if(s!="")n[s]++} END{for(k in n) print k}' RUN.log
+```
+
+The lesson worth keeping: a guard that makes a suite *runnable* without a key does
+not make it *free* with one. Those are different properties and the code only
+expressed the first.
+
+## Telemetry now carries everything a bill needs
+
+Two fields, both filling gaps that made a measured cost impossible to compute
+from the log alone.
+
+**`ToolDuration`** splits a tool loop's elapsed time into waiting on the provider
+and running our own handlers. Without the split a slow loop is unattributable: a
+model that thinks for twenty seconds and a handler that takes twenty seconds are
+the same number from outside, and they call for opposite responses. Measured
+across the suites the answer is consistently *almost none* — hundredths of a
+second against tens of seconds of model wait — which is a useful negative result.
+It says the way to make a loop cheaper is fewer rounds, not faster handlers.
+
+**`ReasoningTokens`** is the share of the completion count a reasoning model spent
+thinking, decoded from OpenRouter's `completion_tokens_details`. It is
+deliberately *not* a third category: it is part of completion tokens, bills at the
+completion rate, and adding it to a total would overstate the bill. It is reported
+because it says where the output budget went — a 200-token answer that took 2,000
+tokens to reach is a different object from one that took 200.
+
+The log line reflects that relationship rather than flattening it:
+
+```text
+call: reason.tools [task:9f2c] … — 23.041s (tools 18ms), 20508 tokens (18902 prompt, 1606 completion of which 0 reasoning), 5 round(s), 10 tool call(s)
+```
+
+Reasoning tokens print *inside* the completion count — "of which" — because
+printing them as a peer of prompt and completion invites the one arithmetic error
+this line exists to prevent.
+
+The wiring adapter now lists every `Usage` field explicitly. The two `Usage`
+types are structurally identical but nominally distinct, which is exactly where a
+dropped field hides: the adapter compiles either way and the consequence is silent
+under-reporting. That already happened once, and cost 4.5x.
+
+## A directory per suite, not one flat comparison
+
+The old `docs/test-reports/2026-07-28-model-comparison.md` is deleted. In its
+place:
+
+```text
+docs/test-reports/intelligence-suites/<suite>/
+  0-suite.md   what the suite does, step by step, with every prompt it uses
+  1.md         a measured report
+```
+
+Two reasons for the shape.
+
+**Only 13 of 40 suites belong here at all.** Twenty-five make no model calls and
+read identically for every model; including them padded the tables with rows that
+carried no information and made the pass rate look like a model score when most
+of it was not. Two more — `knowledge` and `connectors` — make only embedding
+calls, and an embedding does not change with the reasoning model under test, so
+their rows cannot discriminate either. They still run and still cost money, so
+they stay in `run.sh`'s intelligence group. That grouping answers "what does this
+spend"; this directory answers "what can this compare", and the two questions have
+different answers.
+
+**A report is a column of numbers until you know what produced them.** The
+`0-suite.md` documents are written by hand, one per suite: the fixtures, each
+step in order, what it asserts, which model calls it makes, and — the part that
+made them worth writing — how to read a failure back to a specific step. They also
+reproduce the prompts each suite exercises, so a failure can be checked against
+the instruction that was actually given.
+
+The reports are generated by `dev-test/suite-report.sh` from run logs. Its main
+table is keyed on **call type** with absolute and share columns paired:
+
+| Call type | Volume | Volume share | Time | Time share | Cost (USD) | Cost share |
+| --- | --- | --- | --- | --- | --- | --- |
+| Input | 14645 tokens | 93.5% | not separable | — | 0.005769 | 78.0% |
+| Output | 1017 tokens | 6.5% | not separable | — | 0.001627 | 22.0% |
+| Model wait | — | — | 28.83s | 99.9% | — | — |
+| Tool calls | 4 calls | — | 0.02s | 0.1% | none | — |
+| Total | 15662 tokens | 100% | 28.85s | 100% | 0.007396 | 100% |
+
+One deliberate deviation from the shape that was asked for: **input and output
+cannot be timed apart.** The provider returns one latency per call, not a
+breakdown of reading versus generating, so those cells say "not separable" and a
+Model wait row carries the whole of it. Splitting it would have meant inventing a
+ratio and presenting it as measurement.
+
+## The model changed, and the numbers say why
+
+Four models, full suite, every figure from per-call telemetry:
+
+| Model | Suites | Tokens | Time | Cost per run (USD) |
+| --- | --- | --- | --- | --- |
+| `openai/gpt-4.1-mini` | 40/40 | 67,363 | 147s | 0.0316 |
+| `openai/gpt-4o-mini` | 40/40 | 74,865 | 178s | 0.0131 |
+| `openai/gpt-5.1` | 39/40 | 79,206 | 247s | 0.1779 |
+| `openai/gpt-5.6-luna` | 40/40 | 86,657 | 215s | 0.0655 |
+
+`etc/config.yaml` now ships `openai/gpt-4.1-mini` for the medium and high
+strength reasoning and inference tiers, replacing `gpt-5.6-luna`. It passes
+everything, and it is the fastest and most token-efficient of the four.
+
+`gpt-4o-mini` is cheaper per run and also passes, which makes it a defensible
+alternative rather than a wrong answer. It is not the primary because it takes
+~20% longer and has produced the worst runaway observed anywhere in this work: one
+Action at 29 rounds, 58 tool calls, 267,598 tokens. `gpt-5.1` costs 5.6x for a
+suite it fails.
+
+**The suite `gpt-5.1` failed was our defect, not its.** It cited an attachment
+correctly and the citation was refused because our source ids carried a raw
+`0x1F` byte that does not survive a round trip through a model.
+[0133](0133-source-ids-are-ids.md) has the diagnosis and the fix; `gpt-5.1` now
+passes all 15. The cost and token figures above stand — only the pass column
+changed, and the ranking does not.
+
+Of the four, only `gpt-5.6-luna` reasons: **3,379 reasoning tokens across 44
+calls**, about 4% of its output. The other three emit none. Because reasoning
+tokens are a share of the completion count, they are already inside the cost
+figures above rather than additional to them.
+
+That number was initially reported as zero for all four, and it was wrong — see
+the correction below.
+
+## The failure that was ours, not the model's
+
+`gpt-4.1-mini` first failed a live Action, and this record's earlier draft
+attributed that to model quality. Checking the prompt showed it was not.
+
+The Action objective told the agent to read a document with `document.get` and
+then edit it. It did, correctly — and cited what it had read, because the prompt
+said to cite retrieved text and it had, in the ordinary sense of the word,
+retrieved something. Report validation rejected the citation and the task failed
+*after every effect had already landed*.
+
+Nothing in the prompt had ever said that opening your own target is different from
+retrieving a source. Three lines now say it:
+
+- a document you opened with `document.get` is not evidence — its offsets are not
+  evidence offsets — **and this holds even when the objective told you to read
+  it**, which is the exact case that misleads
+- citations are **optional** in an execution report; most Action tasks produce
+  none, because doing work is not a factual claim needing provenance
+- cite nothing rather than reaching for something to cite
+
+`gpt-4.1-mini` then passed 40/40, twice.
+
+A related gap in the same area: `document.get` returned an empty block list for a
+document that exists and is empty, and an error for one that does not — a correct
+contract that the description never stated. An agent read the empty list as "no
+such document" and reported a task blocked instead of writing into it. The
+description now says both readings outright. A tool description is part of the
+prompt, and a correct tool with an under-specified description fails exactly the
+way a buggy one does.
+
+Both of these were recorded as model failures before they were checked. The rule
+this suggests is now written at the top of
+[docs/test-reports/README.md](../test-reports/README.md): before recording a
+failure as a model's, read the prompt and confirm the behaviour being enforced was
+actually asked for.
+
+## Verification
+
+`go build ./...` and `go test ./...` green. `./scripts/check-companions.sh` and
+`./scripts/check-format.sh` clean — the latter also caught `core/wiring/wiring.go`
+having drifted out of gofmt alignment in an earlier commit, which is now fixed.
+
+The measured ladder above is the live verification: four full-suite runs against
+real providers, 40 suites each.
+
+## Still open
+
+The agent intermittently re-does finished work. The Action prompt's scope rules
+reduced it and did not eliminate it; the worst case remains the `gpt-4o-mini`
+runaway above. Root cause unknown.
+
+A 204 response carrying a body, flagged in
+[0131](0131-measure-every-model-call.md) and still not fixed.
+
+## Correction: two generator bugs, found by reading the reports back
+
+Both were in `dev-test/suite-report.sh`, and both produced reports that looked
+complete and stated something false.
+
+**Reasoning tokens were parsed as zero, always.** The log field is
+`reasoning),` — the closing paren and the separating comma are part of the
+token — and the parser matched `reasoning` exactly. So every report said no model
+reasoned, and the model comparison, this record and `etc/config.yaml` all
+repeated it. `gpt-5.6-luna` in fact emits 3,379 reasoning tokens across 44 calls.
+
+This is the worse class of instrumentation bug. A field that fails to parse and
+reports nothing gets noticed; a field that fails to parse and reports **zero**
+reads as a measurement. It was caught only by reading a raw log line beside the
+report generated from it.
+
+Cost figures are unaffected: reasoning tokens bill at the completion rate and
+were already inside the completion counts.
+
+**Embedding-only suites reported no model and no rates.** The headline model was
+picked from reasoning and inference calls only, so `knowledge` and `connectors` —
+which make embedding calls and nothing else — came out with an empty model name
+and a blank rate table.
+
+Chasing that produced the better answer: those two suites should not have a
+report at all. An embedding does not change with the reasoning model under test,
+so their numbers are identical across every model in the ladder by construction —
+the blank model name was the symptom of putting a non-comparison in a comparison.
+Both directories are removed. The generator still falls back sensibly, because it
+takes any suite name on the command line and must answer rather than emit a
+blank.
+
+Both fixes are in, and the remaining 13 reports are regenerated from the same
+four run logs.
