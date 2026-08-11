@@ -1,4 +1,13 @@
-import type { ApiHealth } from "@icarus/shared";
+/**
+ * What this frontend expects back from the backend's /health endpoint. The
+ * backend owns the payload; this is our independent declaration of it, so the
+ * two are no longer checked against each other by the compiler.
+ */
+interface ApiHealth {
+  service: "backend";
+  status: "ok";
+  timestamp: string;
+}
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status");
 

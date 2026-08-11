@@ -15,3 +15,6 @@ apps/backend/data/*.db
 apps/backend/data/*.db-shm
 apps/backend/data/*.db-wal
 apps/backend/logs/*.log
+
+# Agent worktrees
+.claude/worktrees/

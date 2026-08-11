@@ -4,7 +4,7 @@
 
 | Type | Fields and result | Source |
 | --- | --- | --- |
-| `ApiHealth` | Result with `service: "backend"`, `status: "ok"`, and ISO timestamp. Defined in the shared package. | [`healthCapability.ts`](../healthCapability.ts) |
+| `ApiHealth` | Result with `service: "backend"`, `status: "ok"`, and ISO timestamp. Owned here, because the backend produces it. | [`healthCapability.ts`](../healthCapability.ts) |
 | `EchoCapabilityInput` | `method`, `path`, and opaque `body`; result adds `processedAt`. | [`echoCapability.ts`](../echoCapability.ts) |
 | `AuditCapabilityInput` | Optional `requestId`; result returns `acceptedRequestId` and `auditedAt`. | [`auditCapability.ts`](../auditCapability.ts) |
 | `QueueStatusCapabilityInput` | `queues: JobSchedulerState` and sorted `registeredEndpoints`; the result is the same object. | [`queueStatusCapability.ts`](../queueStatusCapability.ts) |
