@@ -1,5 +1,5 @@
-import type { IntelligenceCastRouteConfig, IntelligenceTier } from "./types.js";
-import { INTELLIGENCE_TIERS } from "./types.js";
+import type { IntelligenceCastRouteConfig, IntelligenceTier } from "#initialization/configuration/types.js";
+import { INTELLIGENCE_TIERS } from "#initialization/configuration/types.js";
 
 /** Generic value coercion shared by every section. */
 export const parseNumber = (value: unknown, fallback: number, fieldName: string): number => {

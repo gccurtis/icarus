@@ -1,23 +1,20 @@
 import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
-import type { BackendConfig } from "./types.js";
-import { OPENROUTER_API_KEY_PLACEHOLDER } from "./types.js";
-import { DEFAULT_CONFIG } from "./defaults.js";
-import { parseBoolean, parseCastRoutes, parseNumber, parseString } from "./parse.js";
+import { etcFile } from "#initialization/paths.js";
+import type { BackendConfig } from "#initialization/configuration/types.js";
+import { OPENROUTER_API_KEY_PLACEHOLDER } from "#initialization/configuration/types.js";
+import { DEFAULT_CONFIG } from "#initialization/configuration/defaults.js";
+import { parseBoolean, parseCastRoutes, parseNumber, parseString } from "#initialization/configuration/parse.js";
 import {
   parseContextConfig, parseDerivedOutputConfig, parseDocumentConfig, parseFormulaConfig,
   parseRetentionConfig, parseRichTextLimitsConfig, parseStructuredDataConfig
-} from "./capabilities.js";
+} from "#initialization/configuration/capabilities.js";
 
-export * from "./types.js";
-export { DEFAULT_CONFIG } from "./defaults.js";
+export * from "#initialization/configuration/types.js";
+export { DEFAULT_CONFIG } from "#initialization/configuration/defaults.js";
 
-const moduleDir = dirname(fileURLToPath(import.meta.url));
-// Three levels up from src/initialization/configuration (and the matching depth
-// in dist/) is the package root, where etc/ lives.
-const defaultConfigPath = resolve(moduleDir, "../../../etc/configuration.yaml");
+// Resolved through the imports map, so this file's own depth is irrelevant.
+const defaultConfigPath = etcFile("configuration.yaml");
 
 export const loadBackendConfig = async (configPath = defaultConfigPath): Promise<BackendConfig> => {
   const source = await readFile(configPath, "utf-8");

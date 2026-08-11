@@ -1,8 +1,8 @@
 import type {
   ContextManagerConfig, DerivedOutputConfig, DocumentConfig, FormulaConfig,
   RetentionConfig, RichTextLimitsConfig, StructuredDataConfig
-} from "./types.js";
-import { parseBoolean, parseNumber, parseOptionalTier, parseString, parseTier } from "./parse.js";
+} from "#initialization/configuration/types.js";
+import { parseBoolean, parseNumber, parseOptionalTier, parseString, parseTier } from "#initialization/configuration/parse.js";
 
 /** Per-capability section parsing. Each moves to its capability as that
  * capability returns from `reference/`. */
