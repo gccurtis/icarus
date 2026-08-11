@@ -136,4 +136,4 @@ pnpm test
 pnpm dev
 ```
 
-The browser application must open, authenticate against local Supabase, select a project, perform one revisioned mutation, receive a private realtime invalidation, and reject a cross-project read through RLS.
+The browser application must open with a configured bound user/project context, perform one revisioned mutation, receive a private project-scoped realtime invalidation, and reject a cross-project read through RLS. No sign-in or project-selection UI is required for this slice.
