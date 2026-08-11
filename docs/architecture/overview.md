@@ -13,7 +13,7 @@ The first implementation should prove one thin vertical slice through this struc
 3. Frontend product areas are called **features**, not capabilities. A feature may present several backend capabilities without duplicating their business rules.
 4. A capability owns its domain types, public procedures, database schema, revision behavior, and optional durable workflows.
 5. Supabase owns database, authentication, project authorization, storage, and realtime infrastructure. DBOS owns durable workflow execution and queue control. Icarus does not rebuild those systems.
-6. Every data operation is explicitly scoped to an authenticated user and a project. PostgreSQL row-level security is the final isolation boundary.
+6. Every data operation is explicitly scoped to a bound user and project. PostgreSQL row-level security is the final isolation boundary.
 7. Eclipse Theia is used as a browser workbench. Electron is not part of the plan.
 8. Shared code contains stable cross-boundary values only. It does not become a second home for capability behavior.
 
@@ -116,12 +116,12 @@ Activity is a compact project feed of committed facts and references. It does no
 
 ## Project isolation
 
-Every request context includes `userId`, `projectId`, and `requestId`. The project identifier must also be present in every project-owned primary key, foreign key, query, workflow identity, storage path, and realtime topic.
+Every request context includes `userId`, `projectId`, and `requestId`. The initial application receives the bound user/project from its bootstrap configuration; it does not implement sign-in, project creation, or project selection. The project identifier must also be present in every project-owned primary key, foreign key, query, workflow identity, storage path, and realtime topic.
 
 Defense is layered:
 
-1. Supabase Auth identifies the user.
-2. API adapters construct the trusted request context.
+1. The bootstrap/integration boundary supplies the bound user and project; future authentication may establish the same context without changing capability APIs.
+2. API adapters construct and preserve the trusted request context.
 3. Capability procedures authorize the requested operation.
 4. PostgreSQL RLS and project-aware constraints reject cross-project access even if a caller or procedure is wrong.
 5. DBOS workflow IDs and queue partitions include the project scope.
