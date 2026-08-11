@@ -115,5 +115,8 @@
   },
   "include": [
     "src/**/*.ts"
+  ],
+  "exclude": [
+    "reference"
   ]
 }
