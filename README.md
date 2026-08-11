@@ -12,17 +12,11 @@ TypeScript monorepo with strict frontend/backend separation and shared contracts
 
 ## NixOS / Nix usage
 
-From repo root:
-
-```bash
-nix develop
-pnpm install
-```
-
-If you want to target the nested flake directly:
+The dev shell is defined in `infra/devshell`. From repo root:
 
 ```bash
 nix develop ./infra/devshell
+pnpm install
 ```
 
 ## Development
