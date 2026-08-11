@@ -4,14 +4,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import Database from "better-sqlite3";
-import type { Knowledge } from "../../src/0-platform/knowledge/knowledge.js";
-import type { KnowledgeScopeManifest } from "../../src/0-platform/knowledge/types.js";
-import { createApp } from "../../src/1-init/create/app.js";
-import { createResourceReader } from "../../src/1-init/create/resource-reader.js";
-import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
-import { JobScheduler } from "../../src/0-utils/jobs/scheduler.js";
-import { registerHttpTransport } from "../../src/2-transport/registerHttpTransport.js";
-import type { ContextManager } from "../../src/3-capabilities/context/context.js";
+import type { Knowledge } from "../../src/capabilities/knowledge/knowledge.js";
+import type { KnowledgeScopeManifest } from "../../src/capabilities/knowledge/types.js";
+import { createApp } from "../../src/initialization/runtimes/app.js";
+import { createResourceReader } from "../../src/initialization/runtimes/resource-reader.js";
+import { JobRegistry } from "../../src/workflows/registry.js";
+import { JobScheduler } from "../../src/workflows/scheduler.js";
+import { registerHttpTransport } from "../../src/api/registerHttpTransport.js";
+import type { ContextManager } from "../../src/capabilities/context/context.js";
 import {
   FINDING_RELATIONSHIPS,
   HYPOTHESIS_CONFIDENCE_LEVELS,
@@ -20,13 +20,13 @@ import {
   SQLiteInvestigationStore,
   createInvestigationRuntime,
   findingNeedsReview,
-} from "../../src/3-capabilities/investigation/index.js";
-import { registerInvestigationEndpoints } from "../../src/4-job-wiring/investigation/registerInvestigationEndpoints.js";
+} from "../../src/capabilities/investigation/index.js";
+import { registerInvestigationEndpoints } from "../../src/api/routes/investigation/registerInvestigationEndpoints.js";
 import { CapturingLogger, ZERO_USAGE } from "../helpers/testDoubles.js";
 import {
   ResourceHistoryNotFoundError,
   ResourceNotDeletedError
-} from "../../src/0-utils/persistence/resourceHistory.js";
+} from "../../src/shared/persistence/resourceHistory.js";
 
 type KnowledgeItem = Parameters<Knowledge["add"]>[0];
 

@@ -1,6 +1,6 @@
-import type { Logger, LogLevel } from "../../src/0-platform/observability/logger.js";
-import type { FormulaLimits } from "../../src/0-platform/formula/limits.js";
-import type { Usage } from "../../src/0-platform/intelligence/types.js";
+import type { Logger, LogLevel } from "../../src/capabilities/observability/logger.js";
+import type { FormulaLimits } from "../../src/capabilities/formula/limits.js";
+import type { Usage } from "../../src/capabilities/intelligence/types.js";
 
 export interface CapturedLog {
   level: LogLevel;

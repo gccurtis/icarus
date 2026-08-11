@@ -3,9 +3,9 @@ import { mkdtempSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { createLogger } from "../../src/1-init/create/logger.js";
-import { NoopLogger } from "../../src/0-platform/observability/logger.js";
-import type { BackendConfig } from "../../src/0-utils/config/loadBackendConfig.js";
+import { createLogger } from "../../src/initialization/runtimes/logger.js";
+import { NoopLogger } from "../../src/capabilities/observability/logger.js";
+import type { BackendConfig } from "../../src/initialization/configuration.js";
 
 const fakeConfig = (overrides: Partial<BackendConfig["logging"]>, directory: string): BackendConfig =>
   ({

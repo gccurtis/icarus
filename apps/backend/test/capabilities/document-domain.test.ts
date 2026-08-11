@@ -4,26 +4,26 @@ import {
   createRichText,
   DEFAULT_CONFIG,
   type RichContent,
-} from "../../src/0-platform/rich-text/index.js";
+} from "../../src/capabilities/rich-text/index.js";
 import {
   createBlankSnapshot,
-} from "../../src/3-capabilities/document/application/createService.js";
-import { canonicalizeSnapshot } from "../../src/3-capabilities/document/domain/canonical.js";
-import { digestFormulaExpression } from "../../src/3-capabilities/document/domain/canonical.js";
+} from "../../src/capabilities/document/application/createService.js";
+import { canonicalizeSnapshot } from "../../src/capabilities/document/domain/canonical.js";
+import { digestFormulaExpression } from "../../src/capabilities/document/domain/canonical.js";
 import {
   DocumentOperationError,
   DocumentValidationError,
-} from "../../src/3-capabilities/document/domain/errors.js";
+} from "../../src/capabilities/document/domain/errors.js";
 import {
   computeAssignedBlockWidth,
   computeUsablePageHeight,
   computeUsablePageWidth,
-} from "../../src/3-capabilities/document/domain/layout.js";
+} from "../../src/capabilities/document/domain/layout.js";
 import {
   collectDocumentIdentities,
   computeDocumentIdentityTransitions,
   type DocumentIdentity,
-} from "../../src/3-capabilities/document/domain/identities.js";
+} from "../../src/capabilities/document/domain/identities.js";
 import type {
   DocumentBlock,
   DocumentChangeSet,
@@ -32,19 +32,19 @@ import type {
   DocumentRow,
   DocumentSnapshot,
   TextBlock,
-} from "../../src/3-capabilities/document/domain/model.js";
+} from "../../src/capabilities/document/domain/model.js";
 import {
   applyOperations,
   computeTouchedIds,
-} from "../../src/3-capabilities/document/domain/reducer.js";
-import { canRebase } from "../../src/3-capabilities/document/domain/rebase.js";
-import { projectDocumentDependencies } from "../../src/3-capabilities/document/projections/dependencies.js";
-import { projectDocumentOutline } from "../../src/3-capabilities/document/projections/outline.js";
-import { projectDocumentPlainText } from "../../src/3-capabilities/document/projections/plainText.js";
+} from "../../src/capabilities/document/domain/reducer.js";
+import { canRebase } from "../../src/capabilities/document/domain/rebase.js";
+import { projectDocumentDependencies } from "../../src/capabilities/document/projections/dependencies.js";
+import { projectDocumentOutline } from "../../src/capabilities/document/projections/outline.js";
+import { projectDocumentPlainText } from "../../src/capabilities/document/projections/plainText.js";
 import {
   projectDocumentBlockStyle,
   projectDocumentTextStyling,
-} from "../../src/3-capabilities/document/projections/styling.js";
+} from "../../src/capabilities/document/projections/styling.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const NORMAL_STYLE = "document-style-normal";

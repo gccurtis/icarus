@@ -12,23 +12,23 @@ import type {
   RefreshDerivedOutputOptions,
   UpdateDefinitionRequest,
   UpdateDerivedOutputDefinitionOptions
-} from "../../src/3-capabilities/derived-outputs/domain/model.js";
-import { createFormulaEngine } from "../../src/0-platform/formula/engine.js";
-import type { FormulaResolverSnapshot } from "../../src/0-platform/formula/resolver.js";
+} from "../../src/capabilities/derived-outputs/domain/model.js";
+import { createFormulaEngine } from "../../src/capabilities/formula/engine.js";
+import type { FormulaResolverSnapshot } from "../../src/capabilities/formula/resolver.js";
 import {
   createRichText,
   DEFAULT_CONFIG as DEFAULT_RICH_TEXT_CONFIG
-} from "../../src/0-platform/rich-text/index.js";
+} from "../../src/capabilities/rich-text/index.js";
 import type {
   InternalJobsRuntime,
   JobDispatchReceipt
-} from "../../src/0-utils/jobs/internalRuntime.js";
-import { QueueCapacityError } from "../../src/0-utils/jobs/scheduler.js";
+} from "../../src/workflows/internalRuntime.js";
+import { QueueCapacityError } from "../../src/workflows/scheduler.js";
 import {
   createDocumentCapability,
   type DocumentCapability,
   type DocumentDependencies
-} from "../../src/3-capabilities/document/application/documentService.js";
+} from "../../src/capabilities/document/application/documentService.js";
 import {
   CompensationConflictError,
   DocumentIdentityReuseError,
@@ -36,7 +36,7 @@ import {
   HistoryPrunedError,
   IdempotencyMismatchError,
   RevisionConflictError
-} from "../../src/3-capabilities/document/domain/errors.js";
+} from "../../src/capabilities/document/domain/errors.js";
 import type {
   DocumentBlock,
   DocumentCommandRequest,
@@ -48,12 +48,12 @@ import type {
   DocumentSnapshot,
   DocumentSubmissionReceipt,
   TextBlock
-} from "../../src/3-capabilities/document/domain/model.js";
-import type { DocumentDerivedOutputs } from "../../src/3-capabilities/document/ports/derivedOutputs.js";
-import type { DocumentActivityPublisher } from "../../src/3-capabilities/document/ports/activityPublisher.js";
-import type { PromptCreationFailureCommit } from "../../src/3-capabilities/document/ports/documentStore.js";
-import { SQLiteDocumentStore } from "../../src/3-capabilities/document/persistence/sqliteDocumentStore.js";
-import { createDocumentInternalJob } from "../../src/4-job-wiring/document/createDocumentJobs.js";
+} from "../../src/capabilities/document/domain/model.js";
+import type { DocumentDerivedOutputs } from "../../src/capabilities/document/ports/derivedOutputs.js";
+import type { DocumentActivityPublisher } from "../../src/capabilities/document/ports/activityPublisher.js";
+import type { PromptCreationFailureCommit } from "../../src/capabilities/document/ports/documentStore.js";
+import { SQLiteDocumentStore } from "../../src/capabilities/document/persistence/sqliteDocumentStore.js";
+import { createDocumentInternalJob } from "../../src/api/routes/document/createDocumentJobs.js";
 import {
   CapturingLogger,
   TEST_FORMULA_LIMITS

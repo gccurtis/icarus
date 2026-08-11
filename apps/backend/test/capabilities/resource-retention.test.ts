@@ -8,11 +8,11 @@ import {
   insertHistorySnapshot,
   listExpiredDeletedResources,
   pruneHistoryBefore
-} from "../../src/0-utils/persistence/resourceHistory.js";
+} from "../../src/shared/persistence/resourceHistory.js";
 import {
   ResourceRetentionScheduler,
   bindResourceRetentionPort
-} from "../../src/0-utils/persistence/resourceRetentionScheduler.js";
+} from "../../src/workflows/resourceRetentionScheduler.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const fixedClock = {

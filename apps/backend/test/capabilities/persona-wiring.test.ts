@@ -3,16 +3,16 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
-import { JobScheduler } from "../../src/0-utils/jobs/scheduler.js";
-import { createApp } from "../../src/1-init/create/app.js";
-import { registerHttpTransport } from "../../src/2-transport/registerHttpTransport.js";
+import { JobRegistry } from "../../src/workflows/registry.js";
+import { JobScheduler } from "../../src/workflows/scheduler.js";
+import { createApp } from "../../src/initialization/runtimes/app.js";
+import { registerHttpTransport } from "../../src/api/registerHttpTransport.js";
 import {
   SQLitePersonaStore,
   createPersonaCapability,
   type PersonaContextPort
-} from "../../src/3-capabilities/persona/index.js";
-import { registerPersonaEndpoints } from "../../src/4-job-wiring/persona/registerPersonaEndpoints.js";
+} from "../../src/capabilities/persona/index.js";
+import { registerPersonaEndpoints } from "../../src/api/routes/persona/registerPersonaEndpoints.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const backendPackage = JSON.parse(

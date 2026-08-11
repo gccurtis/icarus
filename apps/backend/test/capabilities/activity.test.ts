@@ -10,7 +10,7 @@ import {
   SQLiteActivityStore,
   type ActivityClock,
   type ActivityTransactionInput
-} from "../../src/3-capabilities/activity/index.js";
+} from "../../src/capabilities/activity/index.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const PROJECT_ID = "activity-test-project";

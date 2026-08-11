@@ -3,25 +3,25 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import type { Knowledge } from "../../src/0-platform/knowledge/knowledge.js";
-import { ConnectorSyncScheduler } from "../../src/1-init/create/connectorSyncScheduler.js";
-import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
-import { JobScheduler } from "../../src/0-utils/jobs/scheduler.js";
-import { createConnectorService } from "../../src/3-capabilities/connector/application/connectorService.js";
+import type { Knowledge } from "../../src/capabilities/knowledge/knowledge.js";
+import { ConnectorSyncScheduler } from "../../src/initialization/runtimes/connectorSyncScheduler.js";
+import { JobRegistry } from "../../src/workflows/registry.js";
+import { JobScheduler } from "../../src/workflows/scheduler.js";
+import { createConnectorService } from "../../src/capabilities/connector/application/connectorService.js";
 import {
   ConnectorNotFoundError,
   SyncInProgressError,
-} from "../../src/3-capabilities/connector/domain/errors.js";
-import type { ConnectorProvider } from "../../src/3-capabilities/connector/domain/provider.js";
-import type { ConnectorStore } from "../../src/3-capabilities/connector/ports/repository.js";
-import { SQLiteConnectorStore } from "../../src/3-capabilities/connector/persistence/sqliteConnectorRepository.js";
-import { filesystemProvider } from "../../src/3-capabilities/connector/providers/filesystem.js";
-import { registerConnectorEndpoints } from "../../src/4-job-wiring/connector/registerConnectorEndpointMappings.js";
+} from "../../src/capabilities/connector/domain/errors.js";
+import type { ConnectorProvider } from "../../src/capabilities/connector/domain/provider.js";
+import type { ConnectorStore } from "../../src/capabilities/connector/ports/repository.js";
+import { SQLiteConnectorStore } from "../../src/capabilities/connector/persistence/sqliteConnectorRepository.js";
+import { filesystemProvider } from "../../src/capabilities/connector/providers/filesystem.js";
+import { registerConnectorEndpoints } from "../../src/api/routes/connector/registerConnectorEndpointMappings.js";
 import { CapturingLogger, ZERO_USAGE } from "../helpers/testDoubles.js";
 import {
   ResourceHistoryNotFoundError,
   ResourceNotDeletedError
-} from "../../src/0-utils/persistence/resourceHistory.js";
+} from "../../src/shared/persistence/resourceHistory.js";
 
 const createKnowledge = () => {
   const calls = { added: [] as string[], removed: [] as string[] };
@@ -51,7 +51,7 @@ const createStore = (): SQLiteConnectorStore => {
 test("the public /connector/list endpoint is registered with an absolute path", () => {
   const endpointSource = readFileSync(
     new URL(
-      "../../src/4-job-wiring/connector/registerConnectorEndpointMappings.ts",
+      "../../src/api/routes/connector/registerConnectorEndpointMappings.ts",
       import.meta.url
     ),
     "utf8"

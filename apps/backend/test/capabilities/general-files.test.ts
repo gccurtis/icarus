@@ -3,16 +3,16 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import type { Knowledge } from "../../src/0-platform/knowledge/knowledge.js";
-import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
-import { createGeneralFileService } from "../../src/3-capabilities/general-files/application/generalFileService.js";
-import { SQLiteGeneralFileStore } from "../../src/3-capabilities/general-files/persistence/sqliteGeneralFileRepository.js";
-import { registerGeneralFileEndpoints } from "../../src/4-job-wiring/general-files/registerGeneralFileEndpointMappings.js";
+import type { Knowledge } from "../../src/capabilities/knowledge/knowledge.js";
+import { JobRegistry } from "../../src/workflows/registry.js";
+import { createGeneralFileService } from "../../src/capabilities/general-files/application/generalFileService.js";
+import { SQLiteGeneralFileStore } from "../../src/capabilities/general-files/persistence/sqliteGeneralFileRepository.js";
+import { registerGeneralFileEndpoints } from "../../src/api/routes/general-files/registerGeneralFileEndpointMappings.js";
 import { CapturingLogger, ZERO_USAGE } from "../helpers/testDoubles.js";
 import {
   ResourceHistoryNotFoundError,
   ResourceNotDeletedError
-} from "../../src/0-utils/persistence/resourceHistory.js";
+} from "../../src/shared/persistence/resourceHistory.js";
 
 const createHarness = () => {
   const directory = mkdtempSync(join(tmpdir(), "icarus-general-files-"));

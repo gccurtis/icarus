@@ -1,21 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
+import { JobRegistry } from "../../src/workflows/registry.js";
 import {
   createDefaultDocumentStyles,
   DEFAULT_DOCUMENT_PAGE_LAYOUT,
-} from "../../src/3-capabilities/document/application/createService.js";
-import type { DocumentCapability } from "../../src/3-capabilities/document/application/documentService.js";
-import { DocumentIdentityReuseError } from "../../src/3-capabilities/document/domain/errors.js";
-import { decodeDocumentCommand } from "../../src/3-capabilities/document/wire/commandSchemas.js";
+} from "../../src/capabilities/document/application/createService.js";
+import type { DocumentCapability } from "../../src/capabilities/document/application/documentService.js";
+import { DocumentIdentityReuseError } from "../../src/capabilities/document/domain/errors.js";
+import { decodeDocumentCommand } from "../../src/capabilities/document/wire/commandSchemas.js";
 import {
   decodeDocumentOperation,
   decodeDocumentOperations,
   DOCUMENT_WIRE_LIMITS,
   DocumentWireError,
-} from "../../src/3-capabilities/document/wire/operationSchemas.js";
-import { decodeDocumentQuery } from "../../src/3-capabilities/document/wire/querySchemas.js";
-import { registerDocumentEndpoints } from "../../src/4-job-wiring/document/registerDocumentEndpoints.js";
+} from "../../src/capabilities/document/wire/operationSchemas.js";
+import { decodeDocumentQuery } from "../../src/capabilities/document/wire/querySchemas.js";
+import { registerDocumentEndpoints } from "../../src/api/routes/document/registerDocumentEndpoints.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const validTextBlock = () => ({

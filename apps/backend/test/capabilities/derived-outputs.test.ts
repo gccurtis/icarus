@@ -5,43 +5,43 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import Database from "better-sqlite3";
-import type { Intelligence } from "../../src/0-platform/intelligence/intelligence.js";
-import type { Usage } from "../../src/0-platform/intelligence/types.js";
-import type { Embedder } from "../../src/0-platform/knowledge/embedder.js";
-import { Knowledge } from "../../src/0-platform/knowledge/knowledge.js";
-import type { KnowledgeStore } from "../../src/0-platform/knowledge/store.js";
+import type { Intelligence } from "../../src/capabilities/intelligence/intelligence.js";
+import type { Usage } from "../../src/capabilities/intelligence/types.js";
+import type { Embedder } from "../../src/capabilities/knowledge/embedder.js";
+import { Knowledge } from "../../src/capabilities/knowledge/knowledge.js";
+import type { KnowledgeStore } from "../../src/capabilities/knowledge/store.js";
 import type {
   ContextEntry,
   KnowledgeResourceDescriptor,
   KnowledgeScopeManifest,
   Region,
   SourceRecord
-} from "../../src/0-platform/knowledge/types.js";
-import { createResourceReader } from "../../src/1-init/create/resource-reader.js";
-import type { ContextManager } from "../../src/3-capabilities/context/context.js";
-import type { ConnectorService } from "../../src/3-capabilities/connector/application/connectorService.js";
+} from "../../src/capabilities/knowledge/types.js";
+import { createResourceReader } from "../../src/initialization/runtimes/resource-reader.js";
+import type { ContextManager } from "../../src/capabilities/context/context.js";
+import type { ConnectorService } from "../../src/capabilities/connector/application/connectorService.js";
 import type {
   ConnectorEntry,
   ConnectorItemEntry
-} from "../../src/3-capabilities/connector/domain/model.js";
+} from "../../src/capabilities/connector/domain/model.js";
 import {
   createDerivedOutputService,
   type ResourceReader
-} from "../../src/3-capabilities/derived-outputs/derived-outputs.js";
+} from "../../src/capabilities/derived-outputs/derived-outputs.js";
 import {
   DerivedOutputDefinitionUpdateIdempotencyConflictError,
   DerivedOutputNotFoundError,
   DerivedOutputRefreshIdempotencyConflictError,
   StaleDefinitionRevisionError
-} from "../../src/3-capabilities/derived-outputs/domain/model.js";
-import { SQLiteDerivedOutputStore } from "../../src/3-capabilities/derived-outputs/sqlite-store.js";
-import { createGeneralFileService } from "../../src/3-capabilities/general-files/application/generalFileService.js";
-import { SQLiteGeneralFileStore } from "../../src/3-capabilities/general-files/persistence/sqliteGeneralFileRepository.js";
+} from "../../src/capabilities/derived-outputs/domain/model.js";
+import { SQLiteDerivedOutputStore } from "../../src/capabilities/derived-outputs/sqlite-store.js";
+import { createGeneralFileService } from "../../src/capabilities/general-files/application/generalFileService.js";
+import { SQLiteGeneralFileStore } from "../../src/capabilities/general-files/persistence/sqliteGeneralFileRepository.js";
 import { CapturingLogger, ZERO_USAGE } from "../helpers/testDoubles.js";
 import {
   ResourceHistoryNotFoundError,
   ResourceNotDeletedError
-} from "../../src/0-utils/persistence/resourceHistory.js";
+} from "../../src/shared/persistence/resourceHistory.js";
 
 const PROJECT_ID = "test-project";
 

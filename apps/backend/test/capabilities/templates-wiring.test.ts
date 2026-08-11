@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
-import { JobScheduler } from "../../src/0-utils/jobs/scheduler.js";
+import { JobRegistry } from "../../src/workflows/registry.js";
+import { JobScheduler } from "../../src/workflows/scheduler.js";
 import {
   StaleTemplateRevisionError,
   TemplateNameConflictError,
   type TemplateCapability,
   type TemplateCommandRequest,
   type TemplateQueryRequest
-} from "../../src/3-capabilities/templates/index.js";
-import { registerTemplateEndpoints } from "../../src/4-job-wiring/templates/registerTemplateEndpoints.js";
+} from "../../src/capabilities/templates/index.js";
+import { registerTemplateEndpoints } from "../../src/api/routes/templates/registerTemplateEndpoints.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const schedulerConfig = {

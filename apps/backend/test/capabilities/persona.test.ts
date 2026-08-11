@@ -19,12 +19,12 @@ import {
   type PersonaContextPort,
   type PersonaContextRecordRef,
   type PersonaDefinition
-} from "../../src/3-capabilities/persona/index.js";
+} from "../../src/capabilities/persona/index.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 import {
   ResourceHistoryNotFoundError,
   ResourceNotDeletedError
-} from "../../src/0-utils/persistence/resourceHistory.js";
+} from "../../src/shared/persistence/resourceHistory.js";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 

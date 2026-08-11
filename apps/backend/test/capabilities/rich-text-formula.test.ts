@@ -13,14 +13,14 @@ import {
   NULL_VALUE,
   toWire,
   type FormulaValue,
-} from "../../src/0-platform/formula/index.js";
+} from "../../src/capabilities/formula/index.js";
 import {
   createRichText,
   DEFAULT_CONFIG,
   type FormulaAtom,
   type RichContent,
   type RichTextIdFactory,
-} from "../../src/0-platform/rich-text/index.js";
+} from "../../src/capabilities/rich-text/index.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const createIds = (): RichTextIdFactory => {

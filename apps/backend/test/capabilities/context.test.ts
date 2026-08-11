@@ -3,7 +3,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
+import { JobRegistry } from "../../src/workflows/registry.js";
 import {
   ContextConflictError,
   ContextValidationError,
@@ -11,13 +11,13 @@ import {
   StaleContextError,
   createContextManager,
   type ContextManager
-} from "../../src/3-capabilities/context/index.js";
-import { registerContextEndpoints } from "../../src/4-job-wiring/context/registerContextEndpoints.js";
+} from "../../src/capabilities/context/index.js";
+import { registerContextEndpoints } from "../../src/api/routes/context/registerContextEndpoints.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 import {
   ResourceHistoryNotFoundError,
   ResourceNotDeletedError
-} from "../../src/0-utils/persistence/resourceHistory.js";
+} from "../../src/shared/persistence/resourceHistory.js";
 
 let fixtureSequence = 0;
 

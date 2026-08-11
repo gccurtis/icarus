@@ -1,7 +1,7 @@
 import { config as loadEnv } from "dotenv";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { startBackend } from "#init/startBackend.js";
+import { startBackend } from "#initialization/create-runtime.js";
 
 // Load env from cwd first, then from repo root so local root-level .env works
 // for both `pnpm --filter backend ...` and direct package execution.

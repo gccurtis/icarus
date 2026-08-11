@@ -3,23 +3,23 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { createFormulaNameResolver } from "../../src/1-init/create/formula-name-resolver.js";
-import { createFormulaEngine } from "../../src/0-platform/formula/engine.js";
-import { normalizeKey } from "../../src/0-platform/formula/resolver.js";
-import { toWire } from "../../src/0-platform/formula/wire.js";
-import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
-import { createStructuredData } from "../../src/3-capabilities/structured-data/structured-data.js";
-import { SQLiteDataStore } from "../../src/3-capabilities/structured-data/sqlite-store.js";
+import { createFormulaNameResolver } from "../../src/initialization/runtimes/formula-name-resolver.js";
+import { createFormulaEngine } from "../../src/capabilities/formula/engine.js";
+import { normalizeKey } from "../../src/capabilities/formula/resolver.js";
+import { toWire } from "../../src/capabilities/formula/wire.js";
+import { JobRegistry } from "../../src/workflows/registry.js";
+import { createStructuredData } from "../../src/capabilities/structured-data/structured-data.js";
+import { SQLiteDataStore } from "../../src/capabilities/structured-data/sqlite-store.js";
 import {
   DataEntryNotFoundError,
   StaleDataRevisionError
-} from "../../src/3-capabilities/structured-data/types.js";
-import { registerStructuredDataEndpoints } from "../../src/4-job-wiring/structured-data/registerStructuredDataEndpoints.js";
+} from "../../src/capabilities/structured-data/types.js";
+import { registerStructuredDataEndpoints } from "../../src/api/routes/structured-data/registerStructuredDataEndpoints.js";
 import { CapturingLogger, TEST_FORMULA_LIMITS } from "../helpers/testDoubles.js";
 import {
   ResourceHistoryNotFoundError,
   ResourceNotDeletedError
-} from "../../src/0-utils/persistence/resourceHistory.js";
+} from "../../src/shared/persistence/resourceHistory.js";
 
 const databasePath = (name: string): string =>
   join(mkdtempSync(join(tmpdir(), `icarus-${name}-`)), "test.db");

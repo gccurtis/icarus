@@ -5,165 +5,160 @@
   "type": "module",
   "packageManager": "pnpm@9.12.0",
   "imports": {
-    "#utils/*": {
-      "development": "./src/0-utils/*",
-      "types": "./src/0-utils/*",
-      "default": "./dist/0-utils/*"
-    },
-    "#init/*": {
-      "development": "./src/1-init/*",
-      "types": "./src/1-init/*",
-      "default": "./dist/1-init/*"
-    },
-    "#transport/*": {
-      "development": "./src/2-transport/*",
-      "types": "./src/2-transport/*",
-      "default": "./dist/2-transport/*"
-    },
     "#capabilities/*": {
-      "development": "./src/3-capabilities/*",
-      "types": "./src/3-capabilities/*",
-      "default": "./dist/3-capabilities/*"
+      "development": "./src/capabilities/*",
+      "types": "./src/capabilities/*",
+      "default": "./dist/capabilities/*"
     },
-    "#job-wiring/*": {
-      "development": "./src/4-job-wiring/*",
-      "types": "./src/4-job-wiring/*",
-      "default": "./dist/4-job-wiring/*"
+    "#initialization/*": {
+      "development": "./src/initialization/*",
+      "types": "./src/initialization/*",
+      "default": "./dist/initialization/*"
     },
-    "#platform/*": {
-      "development": "./src/0-platform/*",
-      "types": "./src/0-platform/*",
-      "default": "./dist/0-platform/*"
+    "#api/*": {
+      "development": "./src/api/*",
+      "types": "./src/api/*",
+      "default": "./dist/api/*"
+    },
+    "#workflows/*": {
+      "development": "./src/workflows/*",
+      "types": "./src/workflows/*",
+      "default": "./dist/workflows/*"
+    },
+    "#shared/*": {
+      "development": "./src/shared/*",
+      "types": "./src/shared/*",
+      "default": "./dist/shared/*"
     },
     "#formula": {
-      "development": "./src/0-platform/formula/index.ts",
-      "types": "./src/0-platform/formula/index.ts",
-      "default": "./dist/0-platform/formula/index.js"
+      "development": "./src/capabilities/formula/index.ts",
+      "types": "./src/capabilities/formula/index.ts",
+      "default": "./dist/capabilities/formula/index.js"
     },
     "#formula/*": {
-      "development": "./src/0-platform/formula/*",
-      "types": "./src/0-platform/formula/*",
-      "default": "./dist/0-platform/formula/*"
+      "development": "./src/capabilities/formula/*",
+      "types": "./src/capabilities/formula/*",
+      "default": "./dist/capabilities/formula/*"
     },
     "#structured-data": {
-      "development": "./src/3-capabilities/structured-data/index.ts",
-      "types": "./src/3-capabilities/structured-data/index.ts",
-      "default": "./dist/3-capabilities/structured-data/index.js"
+      "development": "./src/capabilities/structured-data/index.ts",
+      "types": "./src/capabilities/structured-data/index.ts",
+      "default": "./dist/capabilities/structured-data/index.js"
     },
     "#structured-data/*": {
-      "development": "./src/3-capabilities/structured-data/*",
-      "types": "./src/3-capabilities/structured-data/*",
-      "default": "./dist/3-capabilities/structured-data/*"
+      "development": "./src/capabilities/structured-data/*",
+      "types": "./src/capabilities/structured-data/*",
+      "default": "./dist/capabilities/structured-data/*"
     },
     "#context": {
-      "development": "./src/3-capabilities/context/index.ts",
-      "types": "./src/3-capabilities/context/index.ts",
-      "default": "./dist/3-capabilities/context/index.js"
+      "development": "./src/capabilities/context/index.ts",
+      "types": "./src/capabilities/context/index.ts",
+      "default": "./dist/capabilities/context/index.js"
     },
     "#context/*": {
-      "development": "./src/3-capabilities/context/*",
-      "types": "./src/3-capabilities/context/*",
-      "default": "./dist/3-capabilities/context/*"
+      "development": "./src/capabilities/context/*",
+      "types": "./src/capabilities/context/*",
+      "default": "./dist/capabilities/context/*"
     },
     "#rich-text": {
-      "development": "./src/0-platform/rich-text/index.ts",
-      "types": "./src/0-platform/rich-text/index.ts",
-      "default": "./dist/0-platform/rich-text/index.js"
+      "development": "./src/capabilities/rich-text/index.ts",
+      "types": "./src/capabilities/rich-text/index.ts",
+      "default": "./dist/capabilities/rich-text/index.js"
     },
     "#rich-text/*": {
-      "development": "./src/0-platform/rich-text/*",
-      "types": "./src/0-platform/rich-text/*",
-      "default": "./dist/0-platform/rich-text/*"
+      "development": "./src/capabilities/rich-text/*",
+      "types": "./src/capabilities/rich-text/*",
+      "default": "./dist/capabilities/rich-text/*"
     },
     "#derived-outputs": {
-      "development": "./src/3-capabilities/derived-outputs/index.ts",
-      "types": "./src/3-capabilities/derived-outputs/index.ts",
-      "default": "./dist/3-capabilities/derived-outputs/index.js"
+      "development": "./src/capabilities/derived-outputs/index.ts",
+      "types": "./src/capabilities/derived-outputs/index.ts",
+      "default": "./dist/capabilities/derived-outputs/index.js"
     },
     "#derived-outputs/*": {
-      "development": "./src/3-capabilities/derived-outputs/*",
-      "types": "./src/3-capabilities/derived-outputs/*",
-      "default": "./dist/3-capabilities/derived-outputs/*"
+      "development": "./src/capabilities/derived-outputs/*",
+      "types": "./src/capabilities/derived-outputs/*",
+      "default": "./dist/capabilities/derived-outputs/*"
     },
     "#activity": {
-      "development": "./src/3-capabilities/activity/index.ts",
-      "types": "./src/3-capabilities/activity/index.ts",
-      "default": "./dist/3-capabilities/activity/index.js"
+      "development": "./src/capabilities/activity/index.ts",
+      "types": "./src/capabilities/activity/index.ts",
+      "default": "./dist/capabilities/activity/index.js"
     },
     "#activity/*": {
-      "development": "./src/3-capabilities/activity/*",
-      "types": "./src/3-capabilities/activity/*",
-      "default": "./dist/3-capabilities/activity/*"
+      "development": "./src/capabilities/activity/*",
+      "types": "./src/capabilities/activity/*",
+      "default": "./dist/capabilities/activity/*"
     },
     "#persona": {
-      "development": "./src/3-capabilities/persona/index.ts",
-      "types": "./src/3-capabilities/persona/index.ts",
-      "default": "./dist/3-capabilities/persona/index.js"
+      "development": "./src/capabilities/persona/index.ts",
+      "types": "./src/capabilities/persona/index.ts",
+      "default": "./dist/capabilities/persona/index.js"
     },
     "#persona/*": {
-      "development": "./src/3-capabilities/persona/*",
-      "types": "./src/3-capabilities/persona/*",
-      "default": "./dist/3-capabilities/persona/*"
+      "development": "./src/capabilities/persona/*",
+      "types": "./src/capabilities/persona/*",
+      "default": "./dist/capabilities/persona/*"
     },
     "#comments": {
-      "development": "./src/3-capabilities/comments/index.ts",
-      "types": "./src/3-capabilities/comments/index.ts",
-      "default": "./dist/3-capabilities/comments/index.js"
+      "development": "./src/capabilities/comments/index.ts",
+      "types": "./src/capabilities/comments/index.ts",
+      "default": "./dist/capabilities/comments/index.js"
     },
     "#comments/*": {
-      "development": "./src/3-capabilities/comments/*",
-      "types": "./src/3-capabilities/comments/*",
-      "default": "./dist/3-capabilities/comments/*"
+      "development": "./src/capabilities/comments/*",
+      "types": "./src/capabilities/comments/*",
+      "default": "./dist/capabilities/comments/*"
     },
     "#templates": {
-      "development": "./src/3-capabilities/templates/index.ts",
-      "types": "./src/3-capabilities/templates/index.ts",
-      "default": "./dist/3-capabilities/templates/index.js"
+      "development": "./src/capabilities/templates/index.ts",
+      "types": "./src/capabilities/templates/index.ts",
+      "default": "./dist/capabilities/templates/index.js"
     },
     "#templates/*": {
-      "development": "./src/3-capabilities/templates/*",
-      "types": "./src/3-capabilities/templates/*",
-      "default": "./dist/3-capabilities/templates/*"
+      "development": "./src/capabilities/templates/*",
+      "types": "./src/capabilities/templates/*",
+      "default": "./dist/capabilities/templates/*"
     },
     "#document": {
-      "development": "./src/3-capabilities/document/index.ts",
-      "types": "./src/3-capabilities/document/index.ts",
-      "default": "./dist/3-capabilities/document/index.js"
+      "development": "./src/capabilities/document/index.ts",
+      "types": "./src/capabilities/document/index.ts",
+      "default": "./dist/capabilities/document/index.js"
     },
     "#document/*": {
-      "development": "./src/3-capabilities/document/*",
-      "types": "./src/3-capabilities/document/*",
-      "default": "./dist/3-capabilities/document/*"
+      "development": "./src/capabilities/document/*",
+      "types": "./src/capabilities/document/*",
+      "default": "./dist/capabilities/document/*"
     },
     "#general-files": {
-      "development": "./src/3-capabilities/general-files/index.ts",
-      "types": "./src/3-capabilities/general-files/index.ts",
-      "default": "./dist/3-capabilities/general-files/index.js"
+      "development": "./src/capabilities/general-files/index.ts",
+      "types": "./src/capabilities/general-files/index.ts",
+      "default": "./dist/capabilities/general-files/index.js"
     },
     "#general-files/*": {
-      "development": "./src/3-capabilities/general-files/*",
-      "types": "./src/3-capabilities/general-files/*",
-      "default": "./dist/3-capabilities/general-files/*"
+      "development": "./src/capabilities/general-files/*",
+      "types": "./src/capabilities/general-files/*",
+      "default": "./dist/capabilities/general-files/*"
     },
     "#connector": {
-      "development": "./src/3-capabilities/connector/index.ts",
-      "types": "./src/3-capabilities/connector/index.ts",
-      "default": "./dist/3-capabilities/connector/index.js"
+      "development": "./src/capabilities/connector/index.ts",
+      "types": "./src/capabilities/connector/index.ts",
+      "default": "./dist/capabilities/connector/index.js"
     },
     "#connector/*": {
-      "development": "./src/3-capabilities/connector/*",
-      "types": "./src/3-capabilities/connector/*",
-      "default": "./dist/3-capabilities/connector/*"
+      "development": "./src/capabilities/connector/*",
+      "types": "./src/capabilities/connector/*",
+      "default": "./dist/capabilities/connector/*"
     },
     "#investigation": {
-      "development": "./src/3-capabilities/investigation/index.ts",
-      "types": "./src/3-capabilities/investigation/index.ts",
-      "default": "./dist/3-capabilities/investigation/index.js"
+      "development": "./src/capabilities/investigation/index.ts",
+      "types": "./src/capabilities/investigation/index.ts",
+      "default": "./dist/capabilities/investigation/index.js"
     },
     "#investigation/*": {
-      "development": "./src/3-capabilities/investigation/*",
-      "types": "./src/3-capabilities/investigation/*",
-      "default": "./dist/3-capabilities/investigation/*"
+      "development": "./src/capabilities/investigation/*",
+      "types": "./src/capabilities/investigation/*",
+      "default": "./dist/capabilities/investigation/*"
     }
   },
   "scripts": {

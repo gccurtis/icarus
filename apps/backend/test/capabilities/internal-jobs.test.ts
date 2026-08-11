@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   SchedulerInternalJobsRuntime
-} from "../../src/0-utils/jobs/internalRuntime.js";
+} from "../../src/workflows/internalRuntime.js";
 import {
   JobScheduler,
   QueueCapacityError
-} from "../../src/0-utils/jobs/scheduler.js";
+} from "../../src/workflows/scheduler.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const schedulerConfig = {

@@ -4,12 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import Database from "better-sqlite3";
-import { createBlankSnapshot } from "../../src/3-capabilities/document/application/createService.js";
+import { createBlankSnapshot } from "../../src/capabilities/document/application/createService.js";
 import {
   DocumentIdentityReuseError,
   InvalidDocumentCursorError
-} from "../../src/3-capabilities/document/domain/errors.js";
-import { collectDocumentIdentities } from "../../src/3-capabilities/document/domain/identities.js";
+} from "../../src/capabilities/document/domain/errors.js";
+import { collectDocumentIdentities } from "../../src/capabilities/document/domain/identities.js";
 import type {
   DocumentAttempt,
   DocumentBase,
@@ -19,12 +19,12 @@ import type {
   DocumentStageReceipt,
   PromptCreationAttempt,
   PromptRefreshAttempt
-} from "../../src/3-capabilities/document/domain/model.js";
+} from "../../src/capabilities/document/domain/model.js";
 import type {
   DocumentCreationCommit,
   DocumentMutationCommit
-} from "../../src/3-capabilities/document/ports/documentStore.js";
-import { SQLiteDocumentStore } from "../../src/3-capabilities/document/persistence/sqliteDocumentStore.js";
+} from "../../src/capabilities/document/ports/documentStore.js";
+import { SQLiteDocumentStore } from "../../src/capabilities/document/persistence/sqliteDocumentStore.js";
 
 const timestamp = (offset: number): string =>
   new Date(Date.UTC(2026, 0, 1, 0, 0, offset)).toISOString();

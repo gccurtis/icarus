@@ -3,7 +3,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { toCommentActivityTransaction } from "../../src/1-init/create/comments.js";
+import { toCommentActivityTransaction } from "../../src/initialization/runtimes/comments.js";
 import {
   CommentIdempotencyMismatchError,
   CommentNotFoundError,
@@ -12,11 +12,11 @@ import {
   createCommentsCapability,
   type CommentCommittedTransaction,
   type CommentClock
-} from "../../src/3-capabilities/comments/index.js";
+} from "../../src/capabilities/comments/index.js";
 import {
   ResourceHistoryNotFoundError,
   ResourceNotDeletedError
-} from "../../src/0-utils/persistence/resourceHistory.js";
+} from "../../src/shared/persistence/resourceHistory.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const createFixture = (projectId = "comments-test-project") => {

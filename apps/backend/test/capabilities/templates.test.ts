@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import Database from "better-sqlite3";
-import { toTemplateActivityTransaction } from "../../src/1-init/create/templates.js";
-import { loadBackendConfig } from "../../src/0-utils/config/loadBackendConfig.js";
+import { toTemplateActivityTransaction } from "../../src/initialization/runtimes/templates.js";
+import { loadBackendConfig } from "../../src/initialization/configuration.js";
 import {
   SQLiteTemplateStore,
   StaleTemplateRevisionError,
@@ -25,14 +25,14 @@ import {
   type TemplateOrigin,
   type TemplateResourceAdapter,
   type TemplateStore
-} from "../../src/3-capabilities/templates/index.js";
-import { createTemplateTableNames } from "../../src/3-capabilities/templates/persistence/sqliteSchema.js";
+} from "../../src/capabilities/templates/index.js";
+import { createTemplateTableNames } from "../../src/capabilities/templates/persistence/sqliteSchema.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 import {
   ResourceHistoryNotFoundError,
   ResourceNotDeletedError,
   getResourceHistory
-} from "../../src/0-utils/persistence/resourceHistory.js";
+} from "../../src/shared/persistence/resourceHistory.js";
 
 // ─── Fake adapter ─────────────────────────────────────────────────────────────
 

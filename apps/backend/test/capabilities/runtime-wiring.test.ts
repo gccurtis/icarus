@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
-import { createApp } from "../../src/1-init/create/app.js";
-import { JobScheduler } from "../../src/0-utils/jobs/scheduler.js";
-import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
-import { registerHttpTransport } from "../../src/2-transport/registerHttpTransport.js";
-import { OpenRouterProvider } from "../../src/0-platform/intelligence/openrouter/provider.js";
+import { createApp } from "../../src/initialization/runtimes/app.js";
+import { JobScheduler } from "../../src/workflows/scheduler.js";
+import { JobRegistry } from "../../src/workflows/registry.js";
+import { registerHttpTransport } from "../../src/api/registerHttpTransport.js";
+import { OpenRouterProvider } from "../../src/capabilities/intelligence/openrouter/provider.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const backendPackage = JSON.parse(
@@ -54,7 +54,7 @@ test("the backend dev command selects TypeScript source imports instead of stale
 // `pnpm typecheck` alongside `pnpm test` rather than treating this as a
 // substitute for it.
 test("the composition root's module graph resolves", async () => {
-  const composition = await import("#init/startBackend.js");
+  const composition = await import("#initialization/create-runtime.js");
 
   assert.equal(
     typeof composition.startBackend,
@@ -202,7 +202,7 @@ test("provider HTTP failures do not leak response bodies into diagnostics", asyn
 test("startup and deferred job failures do not bypass the shared Logger", () => {
   for (const relativePath of [
     "../../src/index.ts",
-    "../../src/0-utils/jobs/scheduler.ts"
+    "../../src/workflows/scheduler.ts"
   ]) {
     const source = readFileSync(new URL(relativePath, import.meta.url), "utf8");
     assert.doesNotMatch(source, /console\.(?:debug|info|log|warn|error)\s*\(/);
@@ -211,7 +211,7 @@ test("startup and deferred job failures do not bypass the shared Logger", () => 
 
 test("recurring Connector sync starts only after the HTTP listener binds", () => {
   const source = readFileSync(
-    new URL("../../src/1-init/startBackend.ts", import.meta.url),
+    new URL("../../src/initialization/create-runtime.ts", import.meta.url),
     "utf8"
   );
   const listenAt = source.indexOf("await app.listen");

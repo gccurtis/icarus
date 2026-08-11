@@ -1,16 +1,16 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { createApp } from "../../src/1-init/create/app.js";
-import { JobRegistry } from "../../src/0-utils/jobs/registry.js";
-import { JobScheduler } from "../../src/0-utils/jobs/scheduler.js";
-import { registerHttpTransport } from "../../src/2-transport/registerHttpTransport.js";
-import { registerActivityEndpoints } from "../../src/4-job-wiring/activity/registerActivityEndpoints.js";
+import { createApp } from "../../src/initialization/runtimes/app.js";
+import { JobRegistry } from "../../src/workflows/registry.js";
+import { JobScheduler } from "../../src/workflows/scheduler.js";
+import { registerHttpTransport } from "../../src/api/registerHttpTransport.js";
+import { registerActivityEndpoints } from "../../src/api/routes/activity/registerActivityEndpoints.js";
 import type {
   ActivityCapability,
   ActivityQuery,
   ActivityTransactionInput
-} from "../../src/3-capabilities/activity/index.js";
+} from "../../src/capabilities/activity/index.js";
 import { CapturingLogger } from "../helpers/testDoubles.js";
 
 const backendPackage = JSON.parse(
