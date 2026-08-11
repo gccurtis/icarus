@@ -28,7 +28,10 @@ logging:
 intelligence:
   providers:
     openrouter:
-      # Replace with a real key or override via OPENROUTER_API_KEY in runtime env.
+      # Do not put a real key here — this file is tracked.
+      # Put it in etc/configuration.local.yaml, which is git-ignored and is
+      # merged over this file. OPENROUTER_API_KEY in the environment also works,
+      # but only while this value is still the placeholder below.
       apiKey: replace-with-openrouter-api-key
       baseUrl: https://openrouter.ai/api/v1
       timeoutMs: 30000

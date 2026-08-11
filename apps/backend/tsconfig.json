@@ -17,6 +17,12 @@
       "node"
     ],
     "paths": {
+      "#package.json": [
+        "./package.json"
+      ],
+      "#etc/*": [
+        "./etc/*"
+      ],
       "#capabilities/*": [
         "./src/capabilities/*"
       ],

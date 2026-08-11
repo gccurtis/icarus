@@ -167,7 +167,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "lint": "node scripts/lint-paths.mjs"
   },
   "dependencies": {
     "better-sqlite3": "latest",

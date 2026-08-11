@@ -16,9 +16,56 @@ export { DEFAULT_CONFIG } from "#initialization/configuration/defaults.js";
 // Resolved through the imports map, so this file's own depth is irrelevant.
 const defaultConfigPath = etcFile("configuration.yaml");
 
-export const loadBackendConfig = async (configPath = defaultConfigPath): Promise<BackendConfig> => {
-  const source = await readFile(configPath, "utf-8");
-  const parsed = parse(source) as Record<string, unknown>;
+/**
+ * Local overrides. Git-ignored, so this is where a real secret belongs. Absent on
+ * a fresh checkout, which is not an error.
+ */
+const localConfigPath = etcFile("configuration.local.yaml");
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/**
+ * Overlay wins. Objects merge key by key; arrays and scalars replace outright, so
+ * overriding a list of routes replaces it rather than appending to it.
+ */
+const merge = (
+  base: Record<string, unknown>,
+  overlay: Record<string, unknown>
+): Record<string, unknown> => {
+  const result: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(overlay)) {
+    const existing = result[key];
+    result[key] = isPlainObject(existing) && isPlainObject(value) ? merge(existing, value) : value;
+  }
+  return result;
+};
+
+/** Reads a YAML file, treating "not there" as absent rather than as a failure. */
+const readYaml = async (path: string): Promise<Record<string, unknown> | undefined> => {
+  let source: string;
+  try {
+    source = await readFile(path, "utf-8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return undefined;
+    }
+    throw error;
+  }
+  return (parse(source) as Record<string, unknown> | null) ?? {};
+};
+
+export const loadBackendConfig = async (
+  configPath = defaultConfigPath,
+  overridePath: string | undefined = localConfigPath
+): Promise<BackendConfig> => {
+  const base = await readYaml(configPath);
+  if (base === undefined) {
+    throw new Error(`Configuration file not found: ${configPath}`);
+  }
+
+  const overlay = overridePath === undefined ? undefined : await readYaml(overridePath);
+  const parsed = overlay === undefined ? base : merge(base, overlay);
 
   const server = (parsed.server as Record<string, unknown> | undefined) ?? {};
   const workerPool = (parsed.workerPool as Record<string, unknown> | undefined) ?? {};

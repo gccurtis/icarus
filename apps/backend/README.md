@@ -49,11 +49,45 @@ One exception is unavoidable: the repository-root `.env` sits outside this packa
 target may not escape its own package. It is anchored to `packageRoot` instead of to a module, so it
 survives files moving and only changes if the package itself relocates.
 
-### Not currently enforced
+### Enforced by `pnpm lint`
 
-No linter is selected, so nothing fails a build when this rule is broken. Until one is, the check is
-`grep -rn 'from "\.' src` and `grep -rn 'import.meta.url' src` — both should return nothing outside
-`paths.ts`.
+[`scripts/lint-paths.mjs`](scripts/lint-paths.mjs) fails the three ways this can go wrong. No
+dependencies — it is plain Node.
+
+1. **No relative imports** anywhere under `src/`.
+2. **No `import.meta.url`** outside `paths.ts`.
+3. **`package.json` imports and `tsconfig.json` paths declare the same aliases.** Node resolves one
+   and TypeScript the other, so a mismatch compiles cleanly and fails at runtime.
+
+Check 3 found a real defect on its first run: `#etc/*` and `#package.json` had been added to
+`package.json` only. `tsc` was silent because both are used solely as runtime strings passed to
+`import.meta.resolve`, never as import specifiers — exactly the blind spot the check exists for.
+
+## Configuration
+
+Two files, both under `etc/`:
+
+| File | Tracked | Purpose |
+| --- | --- | --- |
+| `configuration.yaml` | yes | Every setting, with a placeholder where a secret belongs |
+| `configuration.local.yaml` | **no** — git-ignored | Real secrets and local overrides |
+
+The local file is **merged over** the tracked one: objects merge key by key, while arrays and scalars
+replace outright, so overriding a list of routes replaces it rather than appending. Only the values
+you want to change need to appear. Its absence is not an error, so a fresh checkout runs on the
+tracked file alone.
+
+Put the real OpenRouter key in `configuration.local.yaml`:
+
+```yaml
+intelligence:
+  providers:
+    openrouter:
+      apiKey: sk-or-...
+```
+
+`OPENROUTER_API_KEY` in the environment still works, but only while the resolved value is still the
+placeholder — so a key set in the local file takes precedence over one in the environment.
 
 ## Current state
 
@@ -68,6 +102,7 @@ back.
 
 ```sh
 pnpm dev          # tsx watch on src/
+pnpm lint         # the path rules above
 pnpm typecheck
 pnpm build        # tsc -> dist/
 pnpm start        # node dist/
