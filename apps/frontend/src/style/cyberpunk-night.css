@@ -1,0 +1,102 @@
+/**
+ * Cyberpunk Night — the dark alternate.
+ *
+ * One unlayered block. Unlayered CSS beats @layer theme, so these override the
+ * defaults @theme emitted into :root (verified against a real build).
+ *
+ * Same role names, rebound to the other end of each ramp: the light theme reads
+ * down from the middle, this reads out from both ends. That is why the palette
+ * carries seven steps for five role steps.
+ */
+
+[data-theme="cyberpunk-night"] {
+  color-scheme: dark;
+
+  /* Semantic roles */
+  --color-success-muted: var(--palette-green-deep);
+  --color-success-light: var(--palette-green-strong);
+  --color-success-normal: var(--palette-green-light);
+  --color-success-emphasized: var(--palette-green-muted);
+  --color-success-strong: var(--palette-green-faded);
+
+  --color-danger-muted: var(--palette-red-deep);
+  --color-danger-light: var(--palette-red-strong);
+  --color-danger-normal: var(--palette-red-light);
+  --color-danger-emphasized: var(--palette-red-muted);
+  --color-danger-strong: var(--palette-red-faded);
+
+  --color-attention-muted: var(--palette-amber-deep);
+  --color-attention-light: var(--palette-amber-strong);
+  --color-attention-normal: var(--palette-amber-light);
+  --color-attention-emphasized: var(--palette-amber-muted);
+  --color-attention-strong: var(--palette-amber-faded);
+
+  --color-intelligence-muted: var(--palette-violet-deep);
+  --color-intelligence-light: var(--palette-violet-strong);
+  --color-intelligence-normal: var(--palette-violet-light);
+  --color-intelligence-emphasized: var(--palette-violet-muted);
+  --color-intelligence-strong: var(--palette-violet-faded);
+
+  --color-interactive-muted: var(--palette-blue-deep);
+  --color-interactive-light: var(--palette-blue-strong);
+  --color-interactive-normal: var(--palette-blue-light);
+  --color-interactive-emphasized: var(--palette-blue-muted);
+  --color-interactive-strong: var(--palette-blue-faded);
+
+  --color-active-muted: var(--palette-cyan-deep);
+  --color-active-light: var(--palette-cyan-strong);
+  --color-active-normal: var(--palette-cyan-light);
+  --color-active-emphasized: var(--palette-cyan-muted);
+  --color-active-strong: var(--palette-cyan-faded);
+
+  --color-inactive-muted: var(--palette-grey-deep);
+  --color-inactive-light: var(--palette-grey-strong);
+  --color-inactive-normal: var(--palette-grey-light);
+  --color-inactive-emphasized: var(--palette-grey-muted);
+  --color-inactive-strong: var(--palette-grey-faded);
+
+  /* Default (brand) roles */
+  --color-primary-muted: var(--palette-blue-deep);
+  --color-primary-light: var(--palette-blue-strong);
+  --color-primary-normal: var(--palette-blue-light);
+  --color-primary-emphasized: var(--palette-blue-muted);
+  --color-primary-strong: var(--palette-blue-faded);
+
+  --color-secondary-muted: var(--palette-violet-deep);
+  --color-secondary-light: var(--palette-violet-strong);
+  --color-secondary-normal: var(--palette-violet-light);
+  --color-secondary-emphasized: var(--palette-violet-muted);
+  --color-secondary-strong: var(--palette-violet-faded);
+
+  --color-accent-1-muted: var(--palette-teal-deep);
+  --color-accent-1-light: var(--palette-teal-strong);
+  --color-accent-1-normal: var(--palette-teal-light);
+  --color-accent-1-emphasized: var(--palette-teal-muted);
+  --color-accent-1-strong: var(--palette-teal-faded);
+
+  --color-accent-2-muted: var(--palette-pink-deep);
+  --color-accent-2-light: var(--palette-pink-strong);
+  --color-accent-2-normal: var(--palette-pink-light);
+  --color-accent-2-emphasized: var(--palette-pink-muted);
+  --color-accent-2-strong: var(--palette-pink-faded);
+
+  /* Surfaces, ink, borders — docs/style/catalog/surfaces.md */
+  --surface-canvas: var(--palette-black-strong);
+  --surface-work: var(--palette-black-emphasized);
+  --surface-panel: var(--palette-black-normal);
+  --surface-elevated: var(--palette-black-light);
+  --ink-primary: var(--palette-white-light);
+  --ink-secondary: var(--palette-white-strong);
+  --ink-muted: var(--palette-grey-light);
+  --ink-on-fill: var(--palette-black-strong);
+  --border-subtle: var(--palette-black-muted);
+  --border-strong: var(--palette-black-faded);
+
+  /* Selection — derived, tracks the engaged hue */
+  --surface-selection: color-mix(in srgb, var(--color-active-normal) 22%, transparent);
+
+  /* Elevation — shadow barely registers on a dark ground; the border in each
+   * surface recipe is what actually carries separation here. */
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-overlay: 0 16px 40px -12px rgb(0 0 0 / 0.6);
+}

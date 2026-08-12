@@ -1,6 +1,6 @@
 import { runEchoCapability } from "#capabilities/built-in/echoCapability.js";
 import { runHealthCapability } from "#capabilities/built-in/healthCapability.js";
-import type { RouteRegistry } from "#api/routes/registry.js";
+import type { RouteRegistry } from "#registry/registry.js";
 
 /**
  * The operational routes the backend serves with no capability wired.

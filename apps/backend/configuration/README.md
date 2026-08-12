@@ -49,9 +49,13 @@ intelligence:
 
 Its absence is not an error — a fresh checkout runs on the section files alone.
 
-`OPENROUTER_API_KEY` in the environment also works, but only while the resolved value is still the
-placeholder in `intelligence.yaml`. A key set here therefore takes precedence over one in the
+`OPENROUTER_API_KEY` exported in the environment also works, but only while the resolved value is
+still the placeholder in `intelligence.yaml`. A key set here therefore takes precedence over one in the
 environment.
+
+It is read straight from `process.env`. No `.env` file is loaded — the backend has no dotenv
+dependency — so the variable has to be genuinely exported, the way a container or a systemd unit would
+provide it.
 
 ## How this directory is found
 

@@ -24,6 +24,22 @@
               nodejs_latest
               pnpm
 
+              # Language servers. Top-level attributes — the `nodePackages.*`
+              # spellings for these are gone from nixpkgs.
+              #
+              # svelte-language-server's binary is `svelteserver`.
+              svelte-language-server
+              typescript-language-server
+              tailwindcss-language-server
+
+              # html / css / json / eslint servers in one derivation.
+              vscode-langservers-extracted
+              emmet-language-server
+
+              # css, json, yaml, markdown. `.svelte` formatting comes from
+              # svelte-language-server, which carries its own prettier.
+              prettier
+
               # Nix tooling
               nil
               nixfmt
@@ -46,6 +62,7 @@
 
             shellHook = ''
               echo "Icarus dev shell ready: node $(node --version), pnpm $(pnpm --version)"
+              echo "Language servers: svelteserver, typescript-language-server, tailwindcss-language-server, vscode-{html,css,json,eslint}-language-server, emmet-language-server"
             '';
           };
         });

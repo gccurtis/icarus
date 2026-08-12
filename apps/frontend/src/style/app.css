@@ -1,0 +1,68 @@
+/**
+ * The single style entry. Import this once, from the app's initialization.
+ *
+ * Load order matters: Tailwind first, then the palette everything resolves to,
+ * then the default theme, then the override, then the theme-independent tokens
+ * and the bridge.
+ *
+ * Spec: docs/style/ — each file below maps to one catalog document.
+ */
+
+/* Self-hosted, per docs/style/catalog/typography.md: no CDN, no runtime request
+ * to a third party. Weights are only those the doc declares — 400/500/600 sans,
+ * 400/500 mono. */
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+@import "tailwindcss";
+
+@import "./palette.css"; /* catalog/palette.md — private, generates no utilities */
+@import "./celestial.css"; /* catalog/color-system.md — default theme */
+@import "./cyberpunk-night.css"; /* catalog/color-system.md — dark override */
+@import "./shared.css"; /* typography.md, spacing.md, surfaces.md, motion.md */
+@import "./shadcn-bridge.css"; /* role → utility, and shadcn's contract */
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body-leading);
+  }
+
+  body {
+    background-color: var(--surface-canvas);
+    color: var(--ink-primary);
+    /* Explicit rather than inherited: a transparent body would borrow whatever
+     * the host paints behind it. */
+    min-height: 100vh;
+  }
+
+  /* docs/style/catalog/surfaces.md → Selection. Held while an editor is blurred
+   * so a selection stays visible when focus moves to an inspector or drawer. */
+  ::selection {
+    background-color: var(--surface-selection);
+  }
+
+  /* docs/style/theory/accessibility.md → Required in the first stylesheet.
+   * Every interactive element, not just the ones we remember to style. */
+  :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-interactive-normal);
+    outline-offset: 2px;
+  }
+
+  /* Reduced motion removes choreography, never information. State stays
+   * explicit; only the movement collapses. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

@@ -45,9 +45,9 @@ resolves them through that same map using `import.meta.resolve`. Every value it 
 no matter which module asks, how deep it sits, or what the working directory is — verified by booting
 from `src/`, from `dist/`, and with `cwd=/tmp`.
 
-One exception is unavoidable: the repository-root `.env` sits outside this package, and an imports-map
-target may not escape its own package. It is anchored to `packageRoot` instead of to a module, so it
-survives files moving and only changes if the package itself relocates.
+The rule has no exceptions left. The one path that could not be an alias was the repository-root
+`.env`, because an imports-map target may not escape its own package — and nothing outside this
+package is read any more.
 
 ### Enforced by `pnpm lint`
 
@@ -92,11 +92,49 @@ intelligence:
       apiKey: sk-or-...
 ```
 
-`OPENROUTER_API_KEY` in the environment still works, but only while the resolved value is still the
-placeholder — so a key in `local.yaml` takes precedence over one in the environment.
+`OPENROUTER_API_KEY` exported in the environment still works, but only while the resolved value is
+still the placeholder — so a key in `local.yaml` takes precedence over one in the environment. It is
+read straight from `process.env`; there is no dotenv and no `.env` file is loaded, so the variable has
+to be genuinely exported (as a container or unit file would do).
 
 Only `server` and `logging` are read by anything today; the rest describe capabilities in
 `reference/` and are kept so a returning capability finds its configuration written.
+
+## Entry point
+
+[`src/main.ts`](src/main.ts) is two statements: start the backend, print where it is listening.
+[`createRuntime`](src/initialization/create-runtime.ts) builds it and returns a `Runtime` —
+`{ config, logger, address, close() }` — rather than taking the process over, so composition stays
+callable by something that is not a server process.
+
+### There is no signal handling, on purpose
+
+Ctrl-C already stops the process. A handler can only change what happens *on the way out*: flush the
+log, drain in-flight requests. On this spine, that was measured to be nothing.
+
+2000 keep-alive requests, then SIGINT the instant the last response landed, comparing an entry point
+with no handler at all against one with a full graceful shutdown:
+
+| | exit | log entries on disk | lost |
+| --- | --- | --- | --- |
+| no handler | 130 | 2001 / 2001 | 0 |
+| graceful shutdown | 0 | 2001 / 2001 | 0 |
+
+A file write stream is already on disk by the time a signal arrives unless writes are outpacing the
+disk at that exact moment. Nothing here holds a transaction, and no route runs long enough to be
+in flight when the signal lands.
+
+Taking the signal over is also not free — it means owning what follows. A shutdown that blocks needs a
+second signal to force past it (verifiably real: a socket holding an unfinished request stops
+`app.close()` from returning), and a teardown that throws needs its own failure path. Most of that
+machinery exists only to pay for the first piece of it.
+
+**What changes the answer:** a capability returning from `reference/` that holds something a kill would
+corrupt — an open transaction, a half-written file. `Runtime.close()` is the seam, and it already stops
+serving before flushing so the shutdown's own entries survive. Nothing calls it yet.
+
+A failed start throws: Node prints the error and exits 1, and `createRuntime` records
+`backend.start.failed` and flushes the log before rethrowing, so the log file keeps the reason too.
 
 ## Current state
 
@@ -110,12 +148,43 @@ back.
 ## Commands
 
 ```sh
-pnpm dev          # tsx watch on src/
+pnpm dev          # tsx watch on src/main.ts
 pnpm lint         # the path rules above
 pnpm typecheck
 pnpm build        # tsc -> dist/
-pnpm start        # node dist/
+pnpm start        # node dist/main.js
 ```
 
 There is no `test` script. The suite was deleted; `typecheck` plus booting the server are the only
 gates, which is why the two path bugs above reached `main`.
+
+### Your editor is not running this compiler
+
+`typescript` is unpinned, which resolves to 7.x — the native Go compiler. It ships `tsc` and nothing
+else: there is no `tsserver.js`, so no editor can load it, and "Use Workspace Version" cannot work.
+Editors therefore use their own bundled TypeScript, a different major version from the one `pnpm
+typecheck` runs.
+
+So an error in the editor that `pnpm typecheck` does not reproduce is possible by construction. The
+first question is which compiler is talking. To make the editor's compiler check the whole project
+the way `tsc` does:
+
+```sh
+# point at the editor's bundled TypeScript — for VS Code, under resources/app/extensions
+node -e '
+  const ts = require(process.argv[1]), p = require("node:path");
+  const c = ts.getParsedCommandLineOfConfigFile(p.resolve("tsconfig.json"), {}, {...ts.sys,
+    onUnRecoverableConfigFileDiagnostic: console.log});
+  const prog = ts.createProgram(c.fileNames, c.options);
+  const d = [...prog.getOptionsDiagnostics(), ...prog.getSemanticDiagnostics()];
+  console.log(ts.version, c.fileNames.length + " files", d.length + " diagnostics");
+  for (const x of d) console.log(" TS" + x.code, ts.flattenDiagnosticMessageText(x.messageText, " "));
+' /path/to/editor/typescript/lib/typescript.js
+```
+
+Both compilers were verified to agree on this tree: 20 files, 0 diagnostics each. A stale TS server
+after a file rename or a `pnpm install` is the likelier explanation for a disagreement — restart it
+before believing it.
+
+Note that aliases resolve through `paths` here, not through `package.json` `imports`; the imports map
+is what Node uses at runtime. That is why lint rule 3 checks the two against each other.

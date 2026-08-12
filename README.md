@@ -33,7 +33,7 @@ cd apps/frontend && pnpm install
 ## Development
 
 ```bash
-cd apps/backend  && pnpm dev     # tsx watch on src/index.ts
+cd apps/backend  && pnpm dev     # tsx watch on src/main.ts
 cd apps/frontend && pnpm dev     # vite
 ```
 
@@ -65,5 +65,9 @@ other side's type-check. Endpoint contracts have to be kept in step by test or c
 
 ## Configuration
 
-Local secrets live in `.env` at the repository root, which is git-ignored. The backend loads it from
-its own directory upward, so the root location is intentional.
+Each app configures itself. The backend reads every `*.yaml` under
+[`apps/backend/configuration/`](apps/backend/configuration/README.md) and merges them, with real
+secrets in that directory's git-ignored `local.yaml`.
+
+The repository-root `.env` is no longer read by anything. The backend used to load it via dotenv, for
+a single variable that `local.yaml` now supplies.

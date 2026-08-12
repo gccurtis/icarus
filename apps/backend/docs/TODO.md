@@ -1,0 +1,14 @@
+- [ ] Setup initial web server with health endpoint and perform curl test.
+- [ ] Implement observability capability
+- [ ] Implement job scheduling capability
+- [ ] Implement persistence capability
+- [ ] Implement project capability
+- [ ] Implement context capability
+- [ ] Implement intelligence capability
+- [ ] Implement knowledge capability
+- [ ] Implement structured data capability
+- [ ] Implement formula capability
+- [ ] Implement rich content capability
+- [ ] Implement document capability
+- [ ] Implement slide capability
+- [ ] Implement spreadsheet capability

@@ -1,0 +1,111 @@
+/**
+ * Celestial Light — the default theme.
+ *
+ * Two blocks, and the split is forced by Tailwind rather than chosen:
+ *
+ *   @theme  — only variables in a Tailwind namespace survive here. Tailwind
+ *             DROPS unknown namespaces silently (verified: --z-* and
+ *             --duration-* vanished from a real build). --color-* and
+ *             --shadow-* are namespaces, so these generate utilities.
+ *   :root   — --surface-*, --ink-*, --border-* are not Tailwind namespaces.
+ *             They must be declared here or they disappear. shadcn-bridge.css
+ *             aliases them into --color-* so utilities exist.
+ *
+ * Plain @theme, NOT @theme inline: inline resolves var() at build time, which
+ * would point every utility straight at the palette and leave the runtime
+ * [data-theme] switch doing nothing.
+ */
+
+@theme {
+  /* Semantic roles */
+  --color-success-muted: var(--palette-green-faded);
+  --color-success-light: var(--palette-green-muted);
+  --color-success-normal: var(--palette-green-normal);
+  --color-success-emphasized: var(--palette-green-emphasized);
+  --color-success-strong: var(--palette-green-strong);
+
+  --color-danger-muted: var(--palette-red-faded);
+  --color-danger-light: var(--palette-red-muted);
+  --color-danger-normal: var(--palette-red-normal);
+  --color-danger-emphasized: var(--palette-red-emphasized);
+  --color-danger-strong: var(--palette-red-strong);
+
+  --color-attention-muted: var(--palette-amber-faded);
+  --color-attention-light: var(--palette-amber-muted);
+  --color-attention-normal: var(--palette-amber-normal);
+  --color-attention-emphasized: var(--palette-amber-emphasized);
+  --color-attention-strong: var(--palette-amber-strong);
+
+  --color-intelligence-muted: var(--palette-violet-faded);
+  --color-intelligence-light: var(--palette-violet-muted);
+  --color-intelligence-normal: var(--palette-violet-normal);
+  --color-intelligence-emphasized: var(--palette-violet-emphasized);
+  --color-intelligence-strong: var(--palette-violet-strong);
+
+  --color-interactive-muted: var(--palette-blue-faded);
+  --color-interactive-light: var(--palette-blue-muted);
+  --color-interactive-normal: var(--palette-blue-normal);
+  --color-interactive-emphasized: var(--palette-blue-emphasized);
+  --color-interactive-strong: var(--palette-blue-strong);
+
+  --color-active-muted: var(--palette-cyan-faded);
+  --color-active-light: var(--palette-cyan-muted);
+  --color-active-normal: var(--palette-cyan-normal);
+  --color-active-emphasized: var(--palette-cyan-emphasized);
+  --color-active-strong: var(--palette-cyan-strong);
+
+  --color-inactive-muted: var(--palette-grey-faded);
+  --color-inactive-light: var(--palette-grey-muted);
+  --color-inactive-normal: var(--palette-grey-normal);
+  --color-inactive-emphasized: var(--palette-grey-emphasized);
+  --color-inactive-strong: var(--palette-grey-strong);
+
+  /* Default (brand) roles */
+  --color-primary-muted: var(--palette-blue-faded);
+  --color-primary-light: var(--palette-blue-muted);
+  --color-primary-normal: var(--palette-blue-normal);
+  --color-primary-emphasized: var(--palette-blue-emphasized);
+  --color-primary-strong: var(--palette-blue-strong);
+
+  --color-secondary-muted: var(--palette-violet-faded);
+  --color-secondary-light: var(--palette-violet-muted);
+  --color-secondary-normal: var(--palette-violet-normal);
+  --color-secondary-emphasized: var(--palette-violet-emphasized);
+  --color-secondary-strong: var(--palette-violet-strong);
+
+  --color-accent-1-muted: var(--palette-teal-faded);
+  --color-accent-1-light: var(--palette-teal-muted);
+  --color-accent-1-normal: var(--palette-teal-normal);
+  --color-accent-1-emphasized: var(--palette-teal-emphasized);
+  --color-accent-1-strong: var(--palette-teal-strong);
+
+  --color-accent-2-muted: var(--palette-pink-faded);
+  --color-accent-2-light: var(--palette-pink-muted);
+  --color-accent-2-normal: var(--palette-pink-normal);
+  --color-accent-2-emphasized: var(--palette-pink-emphasized);
+  --color-accent-2-strong: var(--palette-pink-strong);
+
+  /* Elevation — the one geometry family that varies by theme */
+  --shadow-panel: 0 1px 2px rgb(29 35 41 / 0.06);
+  --shadow-overlay: 0 12px 32px -8px rgb(29 35 41 / 0.18);
+}
+
+:root,
+[data-theme="celestial"] {
+  color-scheme: light;
+
+  /* Surfaces, ink, borders — docs/style/catalog/surfaces.md */
+  --surface-canvas: var(--palette-white-light);
+  --surface-work: var(--palette-white-muted);
+  --surface-panel: var(--palette-white-normal);
+  --surface-elevated: var(--palette-white-faded);
+  --ink-primary: var(--palette-grey-strong);
+  --ink-secondary: var(--palette-grey-emphasized);
+  --ink-muted: var(--palette-grey-normal);
+  --ink-on-fill: var(--palette-white-muted);
+  --border-subtle: var(--palette-white-strong);
+  --border-strong: var(--palette-white-deep);
+
+  /* Selection — derived, tracks the engaged hue */
+  --surface-selection: color-mix(in srgb, var(--color-active-normal) 22%, transparent);
+}

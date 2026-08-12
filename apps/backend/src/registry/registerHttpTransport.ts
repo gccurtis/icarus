@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { IncomingRequest, RequestEnvelope } from "#api/context.js";
-import type { RouteRegistry } from "#api/routes/registry.js";
+import type { RouteRegistry } from "#registry/registry.js";
 import type { Logger } from "#capabilities/observability/logger.js";
 import { errorFields } from "#api/errors.js";
 
