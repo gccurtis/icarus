@@ -1,0 +1,147 @@
+/**
+ * Roles — which purpose each job-role serves.
+ *
+ * The only color layer a component may reach for. Every token here names a
+ * job, never an intensity and never a hue: `--color-success-text`, not
+ * `--color-success-strong` and not `--color-green-700`.
+ *
+ * Written once. It survives a theme swap because the theme owns the values,
+ * and it survives a set swap because identity resolves through an anchor.
+ *
+ * Two kinds of binding, and the difference is the whole point:
+ *   - MEANING is fixed here. Success is green, danger is red, attention is
+ *     amber, in every theme and every set. A theme still owns what its green
+ *     IS; it does not own what green MEANS.
+ *   - IDENTITY resolves through an anchor, so a set decides it. `interactive`
+ *     is the primary anchor, `intelligence` the secondary, `active` the
+ *     tertiary — which is what keeps the brand hues and the action hues from
+ *     ever drifting apart.
+ *
+ * Spec: docs/style/system/color/roles.md
+ *
+ * `static` is load-bearing. Tailwind tree-shakes @theme variables it cannot
+ * see referenced by a generated utility, and a `var(--color-success-surface)`
+ * written in a style attribute, a custom CSS block, or a canvas call is
+ * invisible to it. Without `static` this file silently emitted 20 of its 77
+ * tokens and every unused role — all four brand roles, all of intelligence —
+ * resolved to nothing at runtime.
+ *
+ * The role layer is the system's public vocabulary, so it is declared in full
+ * whether or not this build happens to use each token. The layers below it
+ * (--palette-*, --hue-*, --anchor-*) live outside @theme entirely and were
+ * never subject to this.
+ */
+
+@theme static {
+  /* ---- Meaning. Fixed here; a set may not move these. ---- */
+
+  /* success — applied, accepted, valid, safe */
+  --color-success-surface: var(--hue-green-surface);
+  --color-success-surface-hover: var(--hue-green-surface-hover);
+  --color-success-border: var(--hue-green-border);
+  --color-success-fill: var(--hue-green-fill);
+  --color-success-fill-hover: var(--hue-green-fill-hover);
+  --color-success-text: var(--hue-green-text);
+  --color-success-on-fill: var(--hue-green-on-fill);
+
+  /* danger — failed, rejected, destructive, denied */
+  --color-danger-surface: var(--hue-red-surface);
+  --color-danger-surface-hover: var(--hue-red-surface-hover);
+  --color-danger-border: var(--hue-red-border);
+  --color-danger-fill: var(--hue-red-fill);
+  --color-danger-fill-hover: var(--hue-red-fill-hover);
+  --color-danger-text: var(--hue-red-text);
+  --color-danger-on-fill: var(--hue-red-on-fill);
+
+  /* attention — human judgment required; stale; pending review */
+  --color-attention-surface: var(--hue-amber-surface);
+  --color-attention-surface-hover: var(--hue-amber-surface-hover);
+  --color-attention-border: var(--hue-amber-border);
+  --color-attention-fill: var(--hue-amber-fill);
+  --color-attention-fill-hover: var(--hue-amber-fill-hover);
+  --color-attention-text: var(--hue-amber-text);
+  --color-attention-on-fill: var(--hue-amber-on-fill);
+
+  /* inactive — unavailable, disabled, or out of scope */
+  --color-inactive-surface: var(--hue-grey-surface);
+  --color-inactive-surface-hover: var(--hue-grey-surface-hover);
+  --color-inactive-border: var(--hue-grey-border);
+  --color-inactive-fill: var(--hue-grey-fill);
+  --color-inactive-fill-hover: var(--hue-grey-fill-hover);
+  --color-inactive-text: var(--hue-grey-text);
+  --color-inactive-on-fill: var(--hue-grey-on-fill);
+
+  /* ---- Identity. Resolved through an anchor; a set decides. ---- */
+
+  /* interactive — can be acted upon: controls, links, focus */
+  --color-interactive-surface: var(--anchor-primary-surface);
+  --color-interactive-surface-hover: var(--anchor-primary-surface-hover);
+  --color-interactive-border: var(--anchor-primary-border);
+  --color-interactive-fill: var(--anchor-primary-fill);
+  --color-interactive-fill-hover: var(--anchor-primary-fill-hover);
+  --color-interactive-text: var(--anchor-primary-text);
+  --color-interactive-on-fill: var(--anchor-primary-on-fill);
+
+  /* active — currently engaged, selected, live, resolving */
+  --color-active-surface: var(--anchor-tertiary-surface);
+  --color-active-surface-hover: var(--anchor-tertiary-surface-hover);
+  --color-active-border: var(--anchor-tertiary-border);
+  --color-active-fill: var(--anchor-tertiary-fill);
+  --color-active-fill-hover: var(--anchor-tertiary-fill-hover);
+  --color-active-text: var(--anchor-tertiary-text);
+  --color-active-on-fill: var(--anchor-tertiary-on-fill);
+
+  /* intelligence — derived work: prompts, memory, formulas */
+  --color-intelligence-surface: var(--anchor-secondary-surface);
+  --color-intelligence-surface-hover: var(--anchor-secondary-surface-hover);
+  --color-intelligence-border: var(--anchor-secondary-border);
+  --color-intelligence-fill: var(--anchor-secondary-fill);
+  --color-intelligence-fill-hover: var(--anchor-secondary-fill-hover);
+  --color-intelligence-text: var(--anchor-secondary-text);
+  --color-intelligence-on-fill: var(--anchor-secondary-on-fill);
+
+  /* ---- Brand. What the product wears when nothing is more specific. ---- */
+
+  /* primary — shares the interactive anchor, deliberately */
+  --color-primary-surface: var(--anchor-primary-surface);
+  --color-primary-surface-hover: var(--anchor-primary-surface-hover);
+  --color-primary-border: var(--anchor-primary-border);
+  --color-primary-fill: var(--anchor-primary-fill);
+  --color-primary-fill-hover: var(--anchor-primary-fill-hover);
+  --color-primary-text: var(--anchor-primary-text);
+  --color-primary-on-fill: var(--anchor-primary-on-fill);
+
+  /* secondary — shares the intelligence anchor, deliberately */
+  --color-secondary-surface: var(--anchor-secondary-surface);
+  --color-secondary-surface-hover: var(--anchor-secondary-surface-hover);
+  --color-secondary-border: var(--anchor-secondary-border);
+  --color-secondary-fill: var(--anchor-secondary-fill);
+  --color-secondary-fill-hover: var(--anchor-secondary-fill-hover);
+  --color-secondary-text: var(--anchor-secondary-text);
+  --color-secondary-on-fill: var(--anchor-secondary-on-fill);
+
+  /* accent-1 — categorical work; claimed by no meaning role */
+  --color-accent-1-surface: var(--anchor-accent-1-surface);
+  --color-accent-1-surface-hover: var(--anchor-accent-1-surface-hover);
+  --color-accent-1-border: var(--anchor-accent-1-border);
+  --color-accent-1-fill: var(--anchor-accent-1-fill);
+  --color-accent-1-fill-hover: var(--anchor-accent-1-fill-hover);
+  --color-accent-1-text: var(--anchor-accent-1-text);
+  --color-accent-1-on-fill: var(--anchor-accent-1-on-fill);
+
+  /* accent-2 — categorical work; claimed by no meaning role */
+  --color-accent-2-surface: var(--anchor-accent-2-surface);
+  --color-accent-2-surface-hover: var(--anchor-accent-2-surface-hover);
+  --color-accent-2-border: var(--anchor-accent-2-border);
+  --color-accent-2-fill: var(--anchor-accent-2-fill);
+  --color-accent-2-fill-hover: var(--anchor-accent-2-fill-hover);
+  --color-accent-2-text: var(--anchor-accent-2-text);
+  --color-accent-2-on-fill: var(--anchor-accent-2-on-fill);
+}
+
+/* --surface-* is not a Tailwind namespace, so this cannot live in @theme.
+ * Selection is derived rather than authored, so it tracks the engaged hue
+ * whatever the theme and whichever set is active. */
+:root {
+  --surface-selection: color-mix(in srgb, var(--color-active-border) 22%, transparent);
+}

@@ -1,0 +1,92 @@
+/**
+ * Bridge — exposes our tokens as Tailwind utilities, and satisfies the token
+ * contract shadcn components hard-code.
+ *
+ * Two jobs:
+ *
+ *  1. --surface-*, --ink-*, and --border-* are not Tailwind namespaces, so they
+ *     generate no utilities on their own. Aliasing them into --color-* gives us
+ *     bg-surface-work, text-ink-muted, border-border-subtle, and so on.
+ *
+ *  2. shadcn components are written against a fixed vocabulary (bg-primary,
+ *     text-muted-foreground, border-input, ring-ring…). Aliasing that vocabulary
+ *     onto our roles means the components work unmodified and stay updatable —
+ *     the alternative was rewriting every component's class list, which would
+ *     have to be redone on every upgrade.
+ *
+ * Every alias is a var() reference, so all of it follows a theme swap and a set
+ * swap at runtime. Nothing here introduces a color or picks an intensity.
+ */
+
+@theme {
+  /* ── Our planes, seams, and text, exposed as utilities ───────────── */
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-work: var(--surface-work);
+  --color-surface-panel: var(--surface-panel);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-panel-hover: var(--surface-panel-hover);
+  --color-surface-selection: var(--surface-selection);
+
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-on-fill: var(--ink-on-fill);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  /* ── shadcn's contract, mapped onto our slots ────────────────────── */
+  --color-background: var(--surface-canvas);
+  --color-foreground: var(--ink-primary);
+
+  --color-card: var(--surface-panel);
+  --color-card-foreground: var(--ink-primary);
+  --color-popover: var(--surface-elevated);
+  --color-popover-foreground: var(--ink-primary);
+
+  /* Interactive is shadcn's "primary" — the affordance role. A solid control
+   * takes the `fill` slot and the text on it takes `on-fill`; that pairing is
+   * what guarantees 4.5:1 without a per-hue exception. */
+  --color-primary: var(--color-interactive-fill);
+  --color-primary-foreground: var(--color-interactive-on-fill);
+  /* shadcn has no hover token — it dims the fill with `bg-primary/90`. That
+   * computes a color rather than naming one, so it cannot follow a theme that
+   * wants a different hover relationship. The `fill-hover` slot is the named
+   * version, and it moves in the right direction in both polarities: darker on
+   * a light ground, lighter on a dark one, which an opacity step cannot do. */
+  --color-primary-hover: var(--color-interactive-fill-hover);
+
+  /* shadcn's "secondary" is a quiet filled control, not a brand color, so it
+   * takes a surface rather than our brand anchor. */
+  --color-secondary: var(--surface-panel);
+  --color-secondary-foreground: var(--ink-primary);
+  /* A plane, not a role fill, so its hover is the neutral hover plane rather
+   * than a `fill-hover` slot. Each theme decides which direction "closer to
+   * the pointer" runs. */
+  --color-secondary-hover: var(--surface-panel-hover);
+
+  --color-muted: var(--surface-panel);
+  --color-muted-foreground: var(--ink-muted);
+
+  /* "accent" is shadcn's hover wash. The `surface` slot of interactive is
+   * exactly that: the quietest step of the affordance hue, sitting behind
+   * content rather than on top of it. */
+  --color-accent: var(--color-interactive-surface);
+  --color-accent-foreground: var(--ink-primary);
+
+  --color-destructive: var(--color-danger-fill);
+  --color-destructive-foreground: var(--color-danger-on-fill);
+  --color-destructive-hover: var(--color-danger-fill-hover);
+
+  --color-border: var(--border-subtle);
+  --color-input: var(--border-subtle);
+  --color-ring: var(--color-interactive-border);
+
+  /* shadcn sizes corners with rounded-sm/md/lg/xl. Pointing those at our three
+   * radii makes its components speak our corner language instead of Tailwind's
+   * defaults. */
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-panel);
+  --radius-xl: var(--radius-overlay);
+}

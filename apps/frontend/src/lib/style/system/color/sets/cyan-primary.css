@@ -1,0 +1,57 @@
+/**
+ * cyan-primary — a semantic set.
+ *
+ * An enumeration. It fills five identity anchors from the hues the active
+ * theme provides and decides nothing about what those anchors are used for.
+ * Meaning — green, red, amber, grey — is not a set's to assign and is absent
+ * here by construction.
+ *
+ * Spec: docs/style/system/color/semantic-sets/cyan-primary.md
+ */
+
+[data-set="cyan-primary"] {
+  /* cyan */
+  --anchor-primary-surface: var(--hue-cyan-surface);
+  --anchor-primary-surface-hover: var(--hue-cyan-surface-hover);
+  --anchor-primary-border: var(--hue-cyan-border);
+  --anchor-primary-fill: var(--hue-cyan-fill);
+  --anchor-primary-fill-hover: var(--hue-cyan-fill-hover);
+  --anchor-primary-text: var(--hue-cyan-text);
+  --anchor-primary-on-fill: var(--hue-cyan-on-fill);
+
+  /* violet */
+  --anchor-secondary-surface: var(--hue-violet-surface);
+  --anchor-secondary-surface-hover: var(--hue-violet-surface-hover);
+  --anchor-secondary-border: var(--hue-violet-border);
+  --anchor-secondary-fill: var(--hue-violet-fill);
+  --anchor-secondary-fill-hover: var(--hue-violet-fill-hover);
+  --anchor-secondary-text: var(--hue-violet-text);
+  --anchor-secondary-on-fill: var(--hue-violet-on-fill);
+
+  /* pink */
+  --anchor-tertiary-surface: var(--hue-pink-surface);
+  --anchor-tertiary-surface-hover: var(--hue-pink-surface-hover);
+  --anchor-tertiary-border: var(--hue-pink-border);
+  --anchor-tertiary-fill: var(--hue-pink-fill);
+  --anchor-tertiary-fill-hover: var(--hue-pink-fill-hover);
+  --anchor-tertiary-text: var(--hue-pink-text);
+  --anchor-tertiary-on-fill: var(--hue-pink-on-fill);
+
+  /* teal */
+  --anchor-accent-1-surface: var(--hue-teal-surface);
+  --anchor-accent-1-surface-hover: var(--hue-teal-surface-hover);
+  --anchor-accent-1-border: var(--hue-teal-border);
+  --anchor-accent-1-fill: var(--hue-teal-fill);
+  --anchor-accent-1-fill-hover: var(--hue-teal-fill-hover);
+  --anchor-accent-1-text: var(--hue-teal-text);
+  --anchor-accent-1-on-fill: var(--hue-teal-on-fill);
+
+  /* orange */
+  --anchor-accent-2-surface: var(--hue-orange-surface);
+  --anchor-accent-2-surface-hover: var(--hue-orange-surface-hover);
+  --anchor-accent-2-border: var(--hue-orange-border);
+  --anchor-accent-2-fill: var(--hue-orange-fill);
+  --anchor-accent-2-fill-hover: var(--hue-orange-fill-hover);
+  --anchor-accent-2-text: var(--hue-orange-text);
+  --anchor-accent-2-on-fill: var(--hue-orange-on-fill);
+}

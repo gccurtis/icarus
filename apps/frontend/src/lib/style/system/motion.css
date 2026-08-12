@@ -1,0 +1,27 @@
+/**
+ * Motion — theme-independent.
+ *
+ * One curve for the whole system: it leaves quickly and arrives gently, which
+ * reads as responsive on the way out and calm on the way in. A second curve
+ * would imply a second kind of causation, and there is not one.
+ *
+ * Spec: docs/style/system/motion/component.md
+ */
+
+:root {
+  /* Doc name is --motion-*; Tailwind's namespace is --transition-duration-*
+   * (verified: --duration-* generates nothing). Declared once here. */
+  --motion-micro: 100ms; /* 80–120ms  — press feedback, hover, toggle */
+  --motion-small: 150ms; /* 120–180ms — small transitions, tooltips */
+  --motion-panel: 220ms; /* 180–240ms — panel collapse, drawer, tab change */
+  --motion-overlay: 260ms; /* 200–280ms — modals, popovers, overlays */
+}
+
+@theme {
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --transition-duration-micro: var(--motion-micro);
+  --transition-duration-small: var(--motion-small);
+  --transition-duration-panel: var(--motion-panel);
+  --transition-duration-overlay: var(--motion-overlay);
+}

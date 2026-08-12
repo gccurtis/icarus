@@ -1,0 +1,17 @@
+<!doctype html>
+<!--
+  data-theme is set here rather than by script: the attribute has to be present
+  in the first paint, or the page flashes the default theme before the app
+  mounts. The semantic set needs no attribute — blue-primary binds to bare
+  :root. See lib/style/app.css.
+-->
+<html lang="en" data-theme="celestial">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    %sveltekit.head%
+  </head>
+  <body>
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
+</html>

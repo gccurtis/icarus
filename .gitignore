@@ -1,5 +1,7 @@
 node_modules/
 dist/
+build/
+.svelte-kit/
 .pnpm-store/
 .env
 .env.*
@@ -14,6 +16,7 @@ logs/*.log
 apps/backend/data/*.db
 apps/backend/data/*.db-shm
 apps/backend/data/*.db-wal
+apps/backend/data/pglite/
 apps/backend/logs/*.log
 
 # Agent worktrees

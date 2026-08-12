@@ -4,11 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
+    "dev": "vite dev",
+    "build": "pnpm typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "svelte-check --tsconfig ./tsconfig.json",
-    "clean": "rm -rf dist"
+    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "clean": "rm -rf build .svelte-kit"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "latest",
@@ -19,6 +19,8 @@
     "tailwind-variants": "latest"
   },
   "devDependencies": {
+    "@sveltejs/adapter-static": "latest",
+    "@sveltejs/kit": "latest",
     "@sveltejs/vite-plugin-svelte": "latest",
     "@tailwindcss/vite": "latest",
     "@types/node": "latest",

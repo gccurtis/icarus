@@ -1,0 +1,23 @@
+/**
+ * Shape — theme-independent.
+ *
+ * Corners and depth. Squared precision for grids and page seams; modest radii
+ * for controls and live objects; larger radii only for things that genuinely
+ * float. Soft, not bubbly.
+ *
+ * Shadow is the one geometry family made of color, so it is split: the theme
+ * declares `--shadow-tint` from its own palette, and the offsets, blur, and
+ * opacity live here. That keeps the geometry identical across themes while the
+ * color still follows a theme swap.
+ *
+ * Spec: docs/style/system/shape.md
+ */
+
+@theme {
+  --radius-control: 0.375rem; /* 6px  — buttons, inputs, chips, tags */
+  --radius-panel: 0.625rem; /* 10px — panels, cards, live-object blocks */
+  --radius-overlay: 1rem; /* 16px — modals, popovers, drawers */
+
+  --shadow-panel: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 6%, transparent);
+  --shadow-overlay: 0 12px 32px -8px color-mix(in srgb, var(--shadow-tint) 18%, transparent);
+}

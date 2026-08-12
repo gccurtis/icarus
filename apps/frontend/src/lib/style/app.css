@@ -1,0 +1,98 @@
+/**
+ * The single style entry. Import this once, from the app's initialization.
+ *
+ * Two axes compose here: a chromatic theme supplies the material, a semantic
+ * set assigns identity to it, and everything between is theme-independent.
+ *
+ *   theme    →  slots   →  set      →  roles      →  component
+ *   what     which      which hue    which job    picks a job,
+ *   colors   intensity  is primary   each role    never a color
+ *   exist    per job                 serves
+ *
+ * Load order is presentational, not functional: custom properties resolve at
+ * computed-value time, so a later file may be referenced by an earlier one.
+ * The order below reads as the resolution chain so the cascade matches the
+ * mental model.
+ *
+ * Spec: docs/style/ — each file below maps to one document.
+ */
+
+/* Self-hosted, per docs/style/system/typography/component.md: no CDN, no
+ * runtime request to a third party. Weights are only those the doc declares —
+ * 400/500/600 sans, 400/500 mono. */
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+@import "tailwindcss";
+
+/* 1 · themes — the only literal color values, and the only color-scheme.
+ *
+ * Order is load-bearing here, unlike everywhere else in this file. The default
+ * theme binds to bare `:root` and the alternates bind to `[data-theme=…]`;
+ * both are specificity (0,1,0), so when an attribute is set the tie is broken
+ * by source order. Alternates must come after the default. */
+@import "./themes/celestial.css"; /* default, bound to :root */
+@import "./themes/cyberpunk.css";
+
+/* 2–4 · theme-independent color: intensity per job, identity, then purpose.
+ * Sets follow the same ordering rule as themes. */
+@import "./system/color/slots.css";
+@import "./system/color/sets/blue-primary.css"; /* default, bound to :root */
+@import "./system/color/sets/cyan-primary.css";
+@import "./system/color/sets/pink-primary.css";
+@import "./system/color/roles.css";
+
+/* Everything that does not vary by theme at all */
+@import "./system/typography.css";
+@import "./system/spacing.css";
+@import "./system/shape.css";
+@import "./system/motion.css";
+
+@import "./shadcn-bridge.css"; /* role → utility, and shadcn's contract */
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body-leading);
+  }
+
+  body {
+    background-color: var(--surface-canvas);
+    color: var(--ink-primary);
+    /* Explicit rather than inherited: a transparent body would borrow whatever
+     * the host paints behind it. */
+    min-height: 100vh;
+  }
+
+  /* docs/style/system/shape.md → Selection. Held while an editor is blurred so
+   * a selection stays visible when focus moves to an inspector or drawer. */
+  ::selection {
+    background-color: var(--surface-selection);
+  }
+
+  /* docs/style/system/accessibility/component.md → Required in the first
+   * stylesheet. Every interactive element, not just the ones we remember to
+   * style. The `border` slot is the 3:1 non-text step, which is what a focus
+   * perimeter has to clear. */
+  :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-interactive-border);
+    outline-offset: 2px;
+  }
+
+  /* Reduced motion removes choreography, never information. State stays
+   * explicit; only the movement collapses. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

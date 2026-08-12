@@ -1,0 +1,20 @@
+/**
+ * Spacing — theme-independent.
+ *
+ * The scale is 4px based with 8px as the primary step; every value is a
+ * multiple of 4px. Only the named structural dimensions need tokens, because
+ * they are referenced from more than one place: the element that *is* the top
+ * bar, and everything that has to offset itself by its height.
+ *
+ * Spec: docs/style/system/spacing.md
+ */
+
+@theme {
+  /* ── Shell geometry ── */
+  --spacing-topbar: 2.75rem; /* 44px */
+  --spacing-tabstrip: 2.25rem; /* 36px */
+  --spacing-rail: 2.75rem; /* 44px */
+  --spacing-status: 1.5rem; /* 24px */
+  --spacing-composer: 3rem; /* 48px */
+
+}
