@@ -1,6 +1,8 @@
 # Capability Directory Re-Design
 
-**Status:** Proposed. Nothing in `src/` has moved yet.
+**Status:** Adopted. Every built capability is on the template, and `pnpm lint`
+enforces it. This document is the standard, not a proposal — read it before
+adding a capability, a runtime method, or an endpoint.
 **Design record:** [`docs/superpowers/specs/2026-08-13-capability-directory-template-design.md`](../../../docs/superpowers/specs/2026-08-13-capability-directory-template-design.md)
 **Document templates:** [`docs/templates/`](templates/README.md)
 
@@ -18,7 +20,7 @@ authoritative:
 3. **Platform** — bare files with no shared shape: `configuration.ts`,
    `database.ts`, `logger.ts`, `context.ts`, `register-http-transport.ts`.
 4. **The Document plan** —
-   [`docs/capability/resource-general/document/implementation-plan.md`](capability/resource-general/document/implementation-plan.md)
+   [`document/docs/implementation-plan.md`](../src/capabilities/resource-general/document/docs/implementation-plan.md)
    already prescribes most of this template, written for one capability and
    never generalized.
 
@@ -172,12 +174,16 @@ contains belongs in that directory.
 
 Templates for all eleven document kinds are in
 [`docs/templates/`](templates/README.md), which maps each template to its
-destination and the name it takes there. The existing
-`capability-overview-template.md` is their source: its sections are split across
-the set rather than duplicated, so `overview.md` keeps orientation — boundary,
-file tree, dependency ports, and the runtime-object, public-API, and
-data-ownership tables — while the detail lives in the document for the directory
-it describes.
+destination and the name it takes there. They were split out of the former
+`docs/capability/capability-overview-template.md`, which packed all of it into
+one file: its sections are distributed across the set rather than duplicated, so
+`overview.md` keeps orientation — boundary, file tree, dependency ports, and the
+runtime-object, public-API, and data-ownership tables — while the detail lives in
+the document for the directory it describes.
+
+`docs/capability/` no longer exists. Every design it held now lives inside the
+capability it describes; the superseded overviews remain in git history at the
+commit that adopted the template.
 
 ## Naming and Import Rules
 
@@ -383,9 +389,11 @@ to each other, never to the filesystem. Rule 10 closes that.
 - Each capability's `bruno/` needs its own `bruno.json`, because a collection is
   rooted at the directory containing that file.
 
-## What Changes for Existing Capabilities
+## What Changed for Existing Capabilities
 
-Runtime behavior is unchanged throughout. Two public shapes change deliberately:
+This is the record of the migration, kept because it explains why several files
+are where they are. Runtime behavior was unchanged throughout, verified by the
+existing tests. Two public shapes changed deliberately:
 `registerHttpTransport` becomes a method on the Web Server runtime object, and
 `RouteWork` is renamed `EndpointJob`.
 
