@@ -1,13 +1,27 @@
-import { createConfiguration } from "#capabilities/platform/configuration/configuration.js";
-import { createDatabase } from "#capabilities/platform/persistence/database.js";
-import { createObservabilityRuntime } from "#capabilities/platform/observability/runtime-constructors/observability.js";
+// Every capability is reached through its index. Nothing here knows how a
+// capability is laid out inside, which is the point of the template.
+import {
+  createConfiguration,
+  type Configuration
+} from "#configuration";
+import {
+  createDatabase,
+  type DatabaseRuntime
+} from "#persistence";
+import {
+  createObservabilityRuntime,
+  type ObservabilityRuntime
+} from "#observability";
+import {
+  createWebServer,
+  errorFields
+} from "#web-server";
 import { createRegistry } from "#registry/registry-constructor.js";
-import { createFastifyWebServer } from "#capabilities/platform/web-server/runtime-constructors/fastify.js";
-import { registerHttpTransport } from "#capabilities/platform/web-server/register-http-transport.js";
-import { errorFields } from "#capabilities/platform/web-server/errors.js";
-import type { ObservabilityRuntime } from "#capabilities/platform/observability/runtime.js";
-import type { Configuration } from "#capabilities/platform/configuration/configuration.js";
-import type { DatabaseRuntime } from "#capabilities/platform/persistence/database.js";
+import { createDataManager, type DataManager } from "#data-manager";
+import {
+  createRichContentRuntime,
+  type RichContentRuntime
+} from "#rich-content";
 
 const runtime = await buildRuntime();
 
@@ -30,6 +44,8 @@ interface Runtime {
   readonly config: Configuration;
   readonly database: DatabaseRuntime;
   readonly observability: ObservabilityRuntime;
+  readonly dataManager: DataManager;
+  readonly richContent: RichContentRuntime;
   readonly address: string;
   close(): Promise<void>;
 }
@@ -46,12 +62,14 @@ async function buildRuntime(): Promise<Runtime> {
     const port = requiredPort(config);
     database = await createDatabase();
     const runtimeDatabase = database;
-    const app = createFastifyWebServer();
+    const dataManager = createDataManager();
+    const richContent = await createRichContentRuntime(runtimeDatabase.database);
+    const webServer = createWebServer();
     const registry = createRegistry();
 
-    registerHttpTransport(app, { registry, logger });
+    webServer.registerTransport(registry, logger);
 
-    const address = await app.listen({ host, port });
+    const address = await webServer.listen({ host, port });
 
     logger.info("backend.started", {
       address,
@@ -63,10 +81,12 @@ async function buildRuntime(): Promise<Runtime> {
       config,
       database: runtimeDatabase,
       observability,
+      dataManager,
+      richContent,
       address,
       close: async (): Promise<void> => {
         try {
-          await app.close();
+          await webServer.close();
         } finally {
           try {
             await runtimeDatabase.close();

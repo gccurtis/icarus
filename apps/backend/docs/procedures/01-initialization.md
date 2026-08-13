@@ -14,6 +14,11 @@ This is the live startup path for each backend process.
       - returns the one `ObservabilityRuntime` for this backend runtime
     - validates `server.host` and `server.port`
     - [`createDatabase()`](../../src/capabilities/platform/persistence/database.ts)
+    - [`createRichContentRuntime()`](../../src/capabilities/resources/support/rich-content/runtime-constructors/rich-content.ts)
+      - receives the shared Kysely/PGlite database
+      - creates the capability-owned store and `rich_content` table if absent
+      - creates the runtime's UUID-backed ID factory
+      - returns one persisted `RichContentRuntime` for this backend runtime
     - [`createFastifyWebServer()`](../../src/capabilities/platform/web-server/runtime-constructors/fastify.ts)
       - creates Fastify with its built-in logger disabled
     - [`createRegistry()`](../../src/registry/registry-constructor.ts)
@@ -24,7 +29,7 @@ This is the live startup path for each backend process.
       - normalizes Fastify requests, finds a route work function, and invokes it directly
     - awaits `app.listen({ host, port })`
     - logs `backend.started`
-    - returns `Runtime { config, database, observability, address, close }`
+    - returns `Runtime { config, database, observability, richContent, address, close }`
   - registers graceful-shutdown handlers
 
 ## Failure branches

@@ -1,9 +1,9 @@
-import { registerBuiltInRoutes } from "#registry/registrations/built-in.js";
+import { registerBuiltInEndpoints } from "#built-in";
 import { RouteRegistry } from "#registry/registry.js";
 
-/** Creates the one route registry for one backend runtime. */
+/** Creates the one endpoint registry for one backend runtime. */
 export const createRegistry = (): RouteRegistry => {
   const registry = new RouteRegistry();
-  registerBuiltInRoutes(registry);
+  registerBuiltInEndpoints(registry);
   return registry;
 };

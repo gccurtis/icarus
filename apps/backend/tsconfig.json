@@ -17,8 +17,11 @@
       "node"
     ],
     "paths": {
-      "#configuration/*": [
+      "#config-files/*": [
         "./configuration/*"
+      ],
+      "#configuration/*": [
+        "./src/capabilities/platform/configuration/*"
       ],
       "#package.json": [
         "./package.json"
@@ -35,83 +38,158 @@
       "#shared/*": [
         "./src/shared/*"
       ],
-      "#formula": [
-        "./src/capabilities/formula/index.ts"
+      "#automations": [
+        "./src/capabilities/agentic/automations/index.ts"
       ],
-      "#formula/*": [
-        "./src/capabilities/formula/*"
+      "#automations/*": [
+        "./src/capabilities/agentic/automations/*"
       ],
-      "#structured-data": [
-        "./src/capabilities/structured-data/index.ts"
+      "#built-in": [
+        "./src/capabilities/built-in/index.ts"
       ],
-      "#structured-data/*": [
-        "./src/capabilities/structured-data/*"
-      ],
-      "#context": [
-        "./src/capabilities/context/index.ts"
-      ],
-      "#context/*": [
-        "./src/capabilities/context/*"
-      ],
-      "#rich-text": [
-        "./src/capabilities/rich-text/index.ts"
-      ],
-      "#rich-text/*": [
-        "./src/capabilities/rich-text/*"
-      ],
-      "#derived-outputs": [
-        "./src/capabilities/derived-outputs/index.ts"
-      ],
-      "#derived-outputs/*": [
-        "./src/capabilities/derived-outputs/*"
-      ],
-      "#activity": [
-        "./src/capabilities/activity/index.ts"
-      ],
-      "#activity/*": [
-        "./src/capabilities/activity/*"
-      ],
-      "#persona": [
-        "./src/capabilities/persona/index.ts"
-      ],
-      "#persona/*": [
-        "./src/capabilities/persona/*"
+      "#built-in/*": [
+        "./src/capabilities/built-in/*"
       ],
       "#comments": [
-        "./src/capabilities/comments/index.ts"
+        "./src/capabilities/collaboration/comments/index.ts"
       ],
       "#comments/*": [
-        "./src/capabilities/comments/*"
+        "./src/capabilities/collaboration/comments/*"
       ],
-      "#templates": [
-        "./src/capabilities/templates/index.ts"
-      ],
-      "#templates/*": [
-        "./src/capabilities/templates/*"
-      ],
-      "#document": [
-        "./src/capabilities/document/index.ts"
-      ],
-      "#document/*": [
-        "./src/capabilities/document/*"
-      ],
-      "#general-files": [
-        "./src/capabilities/general-files/index.ts"
-      ],
-      "#general-files/*": [
-        "./src/capabilities/general-files/*"
+      "#configuration": [
+        "./src/capabilities/platform/configuration/index.ts"
       ],
       "#connector": [
-        "./src/capabilities/connector/index.ts"
+        "./src/capabilities/resource-special/connector/index.ts"
       ],
       "#connector/*": [
-        "./src/capabilities/connector/*"
+        "./src/capabilities/resource-special/connector/*"
       ],
-      "#investigation": [
-        "./src/capabilities/investigation/index.ts"
+      "#context": [
+        "./src/capabilities/resource-special/context/index.ts"
       ],
-      "#investigation/*": [
-        "./src/capabilities/investigation/*"
+      "#context/*": [
+        "./src/capabilities/resource-special/context/*"
+      ],
+      "#data-manager": [
+        "./src/capabilities/data/manager/index.ts"
+      ],
+      "#data-manager/*": [
+        "./src/capabilities/data/manager/*"
+      ],
+      "#document": [
+        "./src/capabilities/resource-general/document/index.ts"
+      ],
+      "#document/*": [
+        "./src/capabilities/resource-general/document/*"
+      ],
+      "#formula": [
+        "./src/capabilities/data/formula/index.ts"
+      ],
+      "#formula/*": [
+        "./src/capabilities/data/formula/*"
+      ],
+      "#general-files": [
+        "./src/capabilities/resource-special/general-files/index.ts"
+      ],
+      "#general-files/*": [
+        "./src/capabilities/resource-special/general-files/*"
+      ],
+      "#hypothesis": [
+        "./src/capabilities/investigation/hypothesis/index.ts"
+      ],
+      "#hypothesis/*": [
+        "./src/capabilities/investigation/hypothesis/*"
+      ],
+      "#intelligence": [
+        "./src/capabilities/platform/intelligence/index.ts"
+      ],
+      "#intelligence/*": [
+        "./src/capabilities/platform/intelligence/*"
+      ],
+      "#lattice": [
+        "./src/capabilities/knowledge/lattice/index.ts"
+      ],
+      "#lattice/*": [
+        "./src/capabilities/knowledge/lattice/*"
+      ],
+      "#observability": [
+        "./src/capabilities/platform/observability/index.ts"
+      ],
+      "#observability/*": [
+        "./src/capabilities/platform/observability/*"
+      ],
+      "#output": [
+        "./src/capabilities/knowledge/output/index.ts"
+      ],
+      "#output/*": [
+        "./src/capabilities/knowledge/output/*"
+      ],
+      "#persistence": [
+        "./src/capabilities/platform/persistence/index.ts"
+      ],
+      "#persistence/*": [
+        "./src/capabilities/platform/persistence/*"
+      ],
+      "#persona": [
+        "./src/capabilities/agentic/persona/index.ts"
+      ],
+      "#persona/*": [
+        "./src/capabilities/agentic/persona/*"
+      ],
+      "#project": [
+        "./src/capabilities/collaboration/project/index.ts"
+      ],
+      "#project/*": [
+        "./src/capabilities/collaboration/project/*"
+      ],
+      "#question": [
+        "./src/capabilities/investigation/question/index.ts"
+      ],
+      "#question/*": [
+        "./src/capabilities/investigation/question/*"
+      ],
+      "#research": [
+        "./src/capabilities/investigation/research/index.ts"
+      ],
+      "#research/*": [
+        "./src/capabilities/investigation/research/*"
+      ],
+      "#rich-content": [
+        "./src/capabilities/resource-support/rich-content/index.ts"
+      ],
+      "#rich-content/*": [
+        "./src/capabilities/resource-support/rich-content/*"
+      ],
+      "#slide": [
+        "./src/capabilities/resource-general/slide/index.ts"
+      ],
+      "#slide/*": [
+        "./src/capabilities/resource-general/slide/*"
+      ],
+      "#spreadsheet": [
+        "./src/capabilities/resource-general/spreadsheet/index.ts"
+      ],
+      "#spreadsheet/*": [
+        "./src/capabilities/resource-general/spreadsheet/*"
+      ],
+      "#task": [
+        "./src/capabilities/agentic/task/index.ts"
+      ],
+      "#task/*": [
+        "./src/capabilities/agentic/task/*"
+      ],
+      "#templates": [
+        "./src/capabilities/resource-support/templates/index.ts"
+      ],
+      "#templates/*": [
+        "./src/capabilities/resource-support/templates/*"
+      ],
+      "#web-server": [
+        "./src/capabilities/platform/web-server/index.ts"
+      ],
+      "#web-server/*": [
+        "./src/capabilities/platform/web-server/*"
       ]
     },
     "verbatimModuleSyntax": true

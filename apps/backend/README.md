@@ -6,6 +6,7 @@ The Icarus backend package.
 
 ```sh
 pnpm dev
+pnpm test
 pnpm lint
 pnpm typecheck
 pnpm build
@@ -20,6 +21,8 @@ pnpm start
   input files.
 - [`docs/procedures/`](docs/procedures/) explains the executable lifecycle and
   infrastructure procedures.
+- [`docs/capability/`](docs/capability/) documents current capability designs
+  and implementations.
 - [`reference/`](reference/README.md) contains archived material; it is not
   part of the live backend.
 

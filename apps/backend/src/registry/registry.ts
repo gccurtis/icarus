@@ -1,47 +1,48 @@
 import type {
   RequestEndpoint,
   RequestEnvelope
-} from "#capabilities/platform/web-server/context.js";
+} from "#web-server";
 
-/** What a route work function returns. It chooses its own status code. */
-export interface RouteResponse {
+/** What an endpoint job returns. It chooses its own status code. */
+export interface EndpointJobResponse {
   statusCode: number;
   headers?: Record<string, string>;
   body?: unknown;
 }
 
 /**
- * A route work function receives a framework-neutral request and produces a
- * response. The current web-server transport invokes it directly.
+ * An endpoint job receives a framework-neutral request and produces a response.
+ * It is the unit a capability registers against one endpoint identity. The
+ * current web-server transport invokes it directly.
  */
-export type RouteWork = (request: RequestEnvelope) => Promise<RouteResponse>;
+export type EndpointJob = (request: RequestEnvelope) => Promise<EndpointJobResponse>;
 
 const keyOf = (endpoint: RequestEndpoint): string => `${endpoint.method} ${endpoint.path}`;
 
 /**
- * The runtime-scoped route table: endpoint identity to route work function.
+ * The runtime-scoped endpoint table: endpoint identity to endpoint job.
  *
  * It has no Fastify dependency. The web-server transport owns framework
- * translation and direct work execution.
+ * translation and direct job execution.
  */
 export class RouteRegistry {
-  private readonly works = new Map<string, RouteWork>();
+  private readonly jobs = new Map<string, EndpointJob>();
 
   /** @throws if the endpoint is already registered, which is always a wiring bug. */
-  register(endpoint: RequestEndpoint, work: RouteWork): void {
+  register(endpoint: RequestEndpoint, job: EndpointJob): void {
     const key = keyOf(endpoint);
-    if (this.works.has(key)) {
-      throw new Error(`Route already registered: ${key}`);
+    if (this.jobs.has(key)) {
+      throw new Error(`Endpoint job already registered: ${key}`);
     }
-    this.works.set(key, work);
+    this.jobs.set(key, job);
   }
 
-  find(endpoint: RequestEndpoint): RouteWork | undefined {
-    return this.works.get(keyOf(endpoint));
+  find(endpoint: RequestEndpoint): EndpointJob | undefined {
+    return this.jobs.get(keyOf(endpoint));
   }
 
-  /** Every registered route, sorted. Reported in a 404 body so the surface is discoverable. */
+  /** Every registered endpoint, sorted. Reported in a 404 body so the surface is discoverable. */
   list(): string[] {
-    return [...this.works.keys()].sort();
+    return [...this.jobs.keys()].sort();
   }
 }
