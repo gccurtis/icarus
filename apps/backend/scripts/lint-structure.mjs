@@ -28,7 +28,8 @@ const MIGRATED = [
   "platform/configuration",
   "platform/observability",
   "platform/persistence",
-  "platform/web-server"
+  "platform/web-server",
+  "resource-support/rich-content"
 ];
 
 const ALLOWED_DIRS = new Set([
