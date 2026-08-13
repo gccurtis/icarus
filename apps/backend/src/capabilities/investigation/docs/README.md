@@ -69,7 +69,7 @@ flowchart LR
 
 - Platform [`Knowledge`](../../../capabilities/knowledge/knowledge.ts) for accepted
   Finding ingestion and removal.
-- Platform [`Logger`](../../../capabilities/observability/logger.ts) for runtime,
+- Platform [`Logger`](../../../capabilities/platform/observability/logger.ts) for runtime,
   endpoint, Knowledge, and startup telemetry.
 - The shared job registry and scheduler for inline serial/concurrent endpoint
   execution.

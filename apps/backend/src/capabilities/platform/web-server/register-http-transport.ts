@@ -1,8 +1,11 @@
 import type { FastifyInstance } from "fastify";
-import type { IncomingRequest, RequestEnvelope } from "#api/context.js";
+import type {
+  IncomingRequest,
+  RequestEnvelope
+} from "#capabilities/platform/web-server/context.js";
 import type { RouteRegistry } from "#registry/registry.js";
-import type { Logger } from "#capabilities/observability/logger.js";
-import { errorFields } from "#api/errors.js";
+import type { Logger } from "#capabilities/platform/observability/logger.js";
+import { errorFields } from "#capabilities/platform/web-server/errors.js";
 
 export interface RegisterHttpTransportDeps {
   registry: RouteRegistry;
@@ -10,7 +13,7 @@ export interface RegisterHttpTransportDeps {
 }
 
 // Convert Fastify-shaped request data into the framework-neutral request passed
-// to route handlers, so nothing downstream depends on Fastify types.
+// to route work, so nothing downstream depends on Fastify types.
 const buildEnvelope = (request: IncomingRequest): RequestEnvelope => ({
   requestId: request.id,
   method: request.method,
@@ -26,7 +29,7 @@ export const registerHttpTransport = (
   deps: RegisterHttpTransportDeps
 ): void => {
   // Fastify registration happens once during startup. Every HTTP endpoint enters
-  // this same handler, which looks up the route and calls it directly.
+  // this same handler, which looks up the route and calls its work directly.
   app.all("/*", async (request, reply) => {
     const startedAt = performance.now();
     const envelope = buildEnvelope({
@@ -39,8 +42,8 @@ export const registerHttpTransport = (
       body: request.body
     });
 
-    const handler = deps.registry.find(envelope);
-    if (!handler) {
+    const work = deps.registry.find(envelope);
+    if (!work) {
       deps.logger.warn("http.route.not-found", {
         requestId: envelope.requestId,
         method: envelope.method,
@@ -56,7 +59,7 @@ export const registerHttpTransport = (
     }
 
     try {
-      const { statusCode, headers, body } = await handler(envelope);
+      const { statusCode, headers, body } = await work(envelope);
 
       if (headers) {
         reply.headers(headers);
@@ -71,8 +74,8 @@ export const registerHttpTransport = (
       });
       return reply.code(statusCode).send(body);
     } catch (error) {
-      // A handler that throws is a fault, not an outcome. Successful status
-      // codes and bodies are always chosen by the handler itself.
+      // A work function that throws is a fault, not an outcome. Successful
+      // status codes and bodies are always selected by the work itself.
       deps.logger.error("http.request.failed", {
         requestId: envelope.requestId,
         method: envelope.method,

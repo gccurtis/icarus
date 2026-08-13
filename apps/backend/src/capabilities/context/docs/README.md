@@ -23,7 +23,7 @@ Context owns context identity, names, membership, descriptions, revision metadat
 ## Runtime dependencies
 
 - A configuration-bound [`SQLiteContextStore`](../sqlite-store.ts).
-- The shared [`Logger`](../../../capabilities/observability/logger.ts).
+- The shared [`Logger`](../../../capabilities/platform/observability/logger.ts).
 - `ContextEntry` and the `KnowledgeResourceResolver` structural contract from [Knowledge types](../../../capabilities/knowledge/types.ts).
 - The request registry and in-memory scheduler at the HTTP boundary.
 - The [runtime resource registry](../../../initialization/runtimes/resource-reader.ts), which consumes `ContextManager.resolve` and maps known General File and Connector leaves to Knowledge source IDs.

@@ -23,7 +23,7 @@ These documents describe current source behavior. Connector owns connector/item 
 - Project-bound [`SQLiteConnectorStore`](../persistence/sqliteConnectorRepository.ts).
 - [`Knowledge`](../../../capabilities/knowledge/knowledge.ts) for prose add/upsert/remove.
 - Provider map, currently containing only [`filesystemProvider`](../providers/filesystem.ts).
-- Shared [`Logger`](../../../capabilities/observability/logger.ts).
+- Shared [`Logger`](../../../capabilities/platform/observability/logger.ts).
 - Job scheduler for HTTP work and recurring sync enqueue.
 - The [runtime resource registry](../../../initialization/runtimes/resource-reader.ts) for Context→source mapping and Derived Output reads.
 

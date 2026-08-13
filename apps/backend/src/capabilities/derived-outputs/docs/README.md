@@ -30,7 +30,7 @@ These pages describe the current code. Historical designs proposing a different 
 - Platform [`Intelligence`](../../../capabilities/intelligence/intelligence.ts) for structured planning and tool-using synthesis.
 - The composition-layer [`RuntimeResourceRegistry`](../../../initialization/runtimes/resource-reader.ts), implementing both Knowledge resolution and scoped resource list/read.
 - Context, General Files, and Connector indirectly through that registry.
-- Shared [`Logger`](../../../capabilities/observability/logger.ts).
+- Shared [`Logger`](../../../capabilities/platform/observability/logger.ts).
 - Job registry/scheduler at endpoint boundaries.
 
 ## Source map

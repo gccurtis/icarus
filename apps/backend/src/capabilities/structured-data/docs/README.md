@@ -26,7 +26,7 @@ These documents describe current source behavior, including narrower runtime val
 ## Dependencies
 
 - Project-scoped [`SQLiteDataStore`](../sqlite-store.ts).
-- Shared [`Logger`](../../../capabilities/observability/logger.ts).
+- Shared [`Logger`](../../../capabilities/platform/observability/logger.ts).
 - [`ContextEntry`](../../context/types.ts) as stored relevance metadata and a query filter atom.
 - Platform [`Formula`](../../../capabilities/formula/index.ts) plus the composition-layer Formula resolver for evaluated-value endpoints.
 - The shared endpoint registry and concurrent queue.

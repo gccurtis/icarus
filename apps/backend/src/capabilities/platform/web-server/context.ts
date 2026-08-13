@@ -5,7 +5,7 @@ export interface RequestEndpoint {
 
 /**
  * Transport data captured from the framework request before it is normalized.
- * Keeping this type here prevents job wiring from depending on Fastify types.
+ * Keeping this type here prevents route work from depending on Fastify types.
  */
 export interface IncomingRequest {
   id: string;
@@ -17,7 +17,7 @@ export interface IncomingRequest {
   body: unknown;
 }
 
-/** The framework-neutral request passed to a registered job factory. */
+/** The framework-neutral request passed to a registered route work function. */
 export interface RequestEnvelope extends RequestEndpoint {
   requestId?: string;
   params: Record<string, unknown>;

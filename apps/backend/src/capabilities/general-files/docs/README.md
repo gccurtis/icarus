@@ -29,7 +29,7 @@ embeddings, lattice state, and retrieval.
 ## Dependencies
 
 - [`Knowledge`](../../../capabilities/knowledge/knowledge.ts) for prose-source add/upsert and removal.
-- The shared [`Logger`](../../../capabilities/observability/logger.ts).
+- The shared [`Logger`](../../../capabilities/platform/observability/logger.ts).
 - Project identity from backend configuration, bound into SQLite at construction.
 - The serial/concurrent job scheduler at the endpoint boundary.
 - The [runtime resource registry](../../../initialization/runtimes/resource-reader.ts), which exposes current prose files to Derived Output scope/list/read tools.

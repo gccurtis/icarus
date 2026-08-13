@@ -1,5 +1,6 @@
-- [ ] Setup initial web server with health endpoint and perform curl test.
-- [ ] Implement observability capability
+- [x] Verify `GET /health` with curl.
+- [x] Implement Pino structured logging capability
+- [ ] Add OpenTelemetry traces and metrics after selecting exporters and instrumentation scope
 - [ ] Implement job scheduling capability
 - [ ] Implement persistence capability
 - [ ] Implement project capability

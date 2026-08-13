@@ -2,7 +2,7 @@
 
 ## Construction
 
-[`createRegistry`](../../../initialization/runtimes/registry.ts) constructs one
+[`createRegistry`](../../../registry/registry-constructor.ts) constructs one
 `JobRegistry` and calls
 [`registerEndpointMappings`](../../../api/routes/internal/registerEndpointMappings.ts).
 That fan-out currently calls only

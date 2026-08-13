@@ -23,14 +23,11 @@
       "#package.json": [
         "./package.json"
       ],
+      "#registry/*": [
+        "./src/registry/*"
+      ],
       "#capabilities/*": [
         "./src/capabilities/*"
-      ],
-      "#initialization/*": [
-        "./src/initialization/*"
-      ],
-      "#api/*": [
-        "./src/api/*"
       ],
       "#workflows/*": [
         "./src/workflows/*"

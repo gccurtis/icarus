@@ -6,25 +6,15 @@
   "imports": {
     "#configuration/*": "./configuration/*",
     "#package.json": "./package.json",
-    "#capabilities/*": {
-      "development": "./src/capabilities/*",
-      "types": "./src/capabilities/*",
-      "default": "./dist/capabilities/*"
-    },
-    "#initialization/*": {
-      "development": "./src/initialization/*",
-      "types": "./src/initialization/*",
-      "default": "./dist/initialization/*"
-    },
-    "#api/*": {
-      "development": "./src/api/*",
-      "types": "./src/api/*",
-      "default": "./dist/api/*"
-    },
     "#registry/*": {
       "development": "./src/registry/*",
       "types": "./src/registry/*",
       "default": "./dist/registry/*"
+    },
+    "#capabilities/*": {
+      "development": "./src/capabilities/*",
+      "types": "./src/capabilities/*",
+      "default": "./dist/capabilities/*"
     },
     "#workflows/*": {
       "development": "./src/workflows/*",
@@ -176,12 +166,14 @@
     "lint": "node scripts/lint-paths.mjs"
   },
   "dependencies": {
-    "better-sqlite3": "latest",
+    "@electric-sql/pglite": "^0.5.4",
     "fastify": "latest",
+    "kysely": "^0.29.5",
+    "pg-boss": "^12.27.0",
+    "pino": "^10.3.1",
     "yaml": "latest"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "latest",
     "@types/node": "latest",
     "tsx": "latest",
     "typescript": "latest"

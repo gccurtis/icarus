@@ -2,13 +2,7 @@ import { runEchoCapability } from "#capabilities/built-in/echoCapability.js";
 import { runHealthCapability } from "#capabilities/built-in/healthCapability.js";
 import type { RouteRegistry } from "#registry/registry.js";
 
-/**
- * The operational routes the backend serves with no capability wired.
- *
- * Two of the original four are in `reference/`: `/health/queues` reported job
- * queue state, and `/audit` existed to exercise deferred serial execution. Both
- * described a job system that no longer runs.
- */
+/** Registers the operational routes available without another capability wired. */
 export const registerBuiltInRoutes = (registry: RouteRegistry): void => {
   registry.register({ method: "GET", path: "/health" }, async () => ({
     statusCode: 200,
