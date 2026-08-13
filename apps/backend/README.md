@@ -29,7 +29,7 @@ pnpm start
 - [`configuration/configuration.md`](configuration/configuration.md) explains
   how configuration is read, beside the files it reads.
 - [`docs/reference/`](docs/reference/README.md) and
-  [`reference/`](reference/README.md) are archived material; neither is part of
+  [`reference/`](../../reference/README.md) are archived material; neither is part of
   the live backend.
 
 ## Capabilities

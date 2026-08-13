@@ -219,7 +219,7 @@ other capability's alias.
 `RouteWork` becomes `EndpointJob` and `RouteResponse` becomes
 `EndpointJobResponse` in [`src/registry/registry.ts`](../../src/registry/registry.ts),
 so the directory name, the prose, and the type agree. This matches the
-vocabulary in [`reference/workflows/registry.ts`](../../reference/workflows/registry.ts),
+vocabulary in [`reference/workflows/registry.ts`](../../../../reference/workflows/registry.ts),
 where the same map held `JobFactory` values.
 
 `src/registry/registrations/built-in.ts` is deleted; registration moves into the

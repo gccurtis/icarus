@@ -3,9 +3,10 @@
 A complete, frozen copy of the backend implementation as it stood before the rebuild began:
 **221 TypeScript files, 114 documentation files, 101 directories.**
 
-Nothing here is compiled, type-checked, imported, or executed. `tsconfig.json` excludes this
-directory, so `pnpm typecheck` and `pnpm build` do not see it. It is a place to read from and copy
-out of — not a second source tree.
+Nothing here is compiled, type-checked, imported, or executed. It sits at the repository root
+rather than inside `apps/backend/`, so no package's tooling reaches it at all — it is outside the
+backend's `include`, not merely excluded from it. It is a place to read from and copy out of, not a
+second source tree.
 
 ## Why it exists
 

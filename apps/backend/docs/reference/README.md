@@ -21,7 +21,7 @@ See [`../capability-directory/capability-directory.md`](../capability-directory/
 
 Each entry is the six-file set — `README`, `concepts`, `flows`, `invariants`,
 `runtime`, `types` — that documented the implementation now frozen in
-[`reference/`](../../reference/README.md).
+[`reference/`](../../../../reference/README.md).
 
 | Capability | Why it is here |
 | ---------- | -------------- |
