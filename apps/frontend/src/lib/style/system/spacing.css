@@ -2,19 +2,23 @@
  * Spacing — theme-independent.
  *
  * The scale is 4px based with 8px as the primary step; every value is a
- * multiple of 4px. Only the named structural dimensions need tokens, because
- * they are referenced from more than one place: the element that *is* the top
- * bar, and everything that has to offset itself by its height.
+ * multiple of 4px, and nothing lands off-grid.
+ *
+ * No named structural dimensions. A token here may name a *dimension*; it may
+ * not name a zone. `--spacing-inspector` and `--spacing-topbar` described the
+ * application rather than the design system, which docs/style/README.md forbids
+ * outright: "Nothing here names an application, a feature, or a screen." The
+ * shell binds its own zones to these steps at the layout layer, where naming a
+ * zone is correct.
  *
  * Spec: docs/style/system/spacing.md
  */
 
-@theme {
-  /* ── Shell geometry ── */
-  --spacing-topbar: 2.75rem; /* 44px */
-  --spacing-tabstrip: 2.25rem; /* 36px */
-  --spacing-rail: 2.75rem; /* 44px */
-  --spacing-status: 1.5rem; /* 24px */
-  --spacing-composer: 3rem; /* 48px */
-
+/* `static`: component <style> blocks build their own geometry from this unit,
+ * where the scanner cannot see it. */
+@theme static {
+  /* The base unit every step multiplies. Declared rather than inherited from
+   * Tailwind's default, so the 4px grid is a stated decision of this system and
+   * not an accident of the framework: p-2 is 8px, p-6 is 24px. */
+  --spacing: 0.25rem;
 }
