@@ -7,7 +7,7 @@ internal links point at files that have since moved or been deleted.
 
 The current design of a capability lives inside the capability itself:
 `overview.md` at its root, and a document named after every directory below it.
-See [`../capability-directory-redesign.md`](../capability-directory-redesign.md).
+See [`../capability-directory/capability-directory.md`](../capability-directory/capability-directory.md).
 
 ## Archived Capabilities
 

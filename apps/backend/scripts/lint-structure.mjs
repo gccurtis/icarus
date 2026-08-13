@@ -1,18 +1,15 @@
 #!/usr/bin/env node
 /**
  * Enforces the capability directory template. No dependencies — just Node.
- * See docs/capability-directory-redesign.md, which this script is the
+ * See docs/capability-directory/capability-directory.md, which this script is the
  * machine-checked half of.
  *
  * The template exists so review is mechanical: a directory name means the same
  * thing wherever it appears, and every directory explains itself in a document
  * named after it. Both of those are only true if something checks.
  *
- * MIGRATED lists the capabilities already moved onto the template. It exists so
- * the rules can be enforced from the first migrated capability onward instead of
- * waiting for the last one — a capability is appended as its migration lands,
- * and the list is deleted once every capability is on the template, at which
- * point the whole tree is scanned.
+ * Capabilities are discovered by walking src/capabilities, so a capability
+ * nobody remembered to register is still checked.
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -247,7 +244,7 @@ for (const capability of capabilities) {
   }
   for (const dir of dirsIn(capabilityRoot)) {
     if (!ALLOWED_DIRS.has(dir)) {
-      fail(join(capabilityRoot, dir), `unknown capability directory '${dir}' — see docs/capability-directory-redesign.md`);
+      fail(join(capabilityRoot, dir), `unknown capability directory '${dir}' — see docs/capability-directory/capability-directory.md`);
     }
   }
 
@@ -293,7 +290,7 @@ for (const capability of capabilities) {
 if (failures.length > 0) {
   console.error(`lint-structure: ${failures.length} problem${failures.length === 1 ? "" : "s"}\n`);
   for (const failure of failures) console.error(`  ${failure}`);
-  console.error("\nSee apps/backend/docs/capability-directory-redesign.md.");
+  console.error("\nSee apps/backend/docs/capability-directory/capability-directory.md.");
   process.exit(1);
 }
 

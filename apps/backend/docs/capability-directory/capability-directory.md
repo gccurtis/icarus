@@ -3,8 +3,8 @@
 **Status:** Adopted. Every built capability is on the template, and `pnpm lint`
 enforces it. This document is the standard, not a proposal — read it before
 adding a capability, a runtime method, or an endpoint.
-**Design record:** [`docs/superpowers/specs/2026-08-13-capability-directory-template-design.md`](../../../docs/superpowers/specs/2026-08-13-capability-directory-template-design.md)
-**Document templates:** [`docs/templates/`](templates/README.md)
+**Design record:** [`docs/superpowers/specs/2026-08-13-capability-directory-template-design.md`](../../../../docs/superpowers/specs/2026-08-13-capability-directory-template-design.md)
+**Document templates:** [`docs/capability-directory/templates/`](templates/templates.md)
 
 ## Why
 
@@ -20,7 +20,7 @@ authoritative:
 3. **Platform** — bare files with no shared shape: `configuration.ts`,
    `database.ts`, `logger.ts`, `context.ts`, `register-http-transport.ts`.
 4. **The Document plan** —
-   [`document/docs/implementation-plan.md`](../src/capabilities/resource-general/document/docs/implementation-plan.md)
+   [`document/docs/implementation-plan.md`](../../src/capabilities/resource-general/document/docs/implementation-plan.md)
    already prescribes most of this template, written for one capability and
    never generalized.
 
@@ -173,7 +173,7 @@ an algorithm derivation, a migration note. Anything describing what a directory
 contains belongs in that directory.
 
 Templates for all eleven document kinds are in
-[`docs/templates/`](templates/README.md), which maps each template to its
+[`docs/capability-directory/templates/`](templates/templates.md), which maps each template to its
 destination and the name it takes there. They were split out of the former
 `docs/capability/capability-overview-template.md`, which packed all of it into
 one file: its sections are distributed across the set rather than duplicated, so
@@ -217,9 +217,9 @@ other capability's alias.
 ## Endpoint-Job Naming
 
 `RouteWork` becomes `EndpointJob` and `RouteResponse` becomes
-`EndpointJobResponse` in [`src/registry/registry.ts`](../src/registry/registry.ts),
+`EndpointJobResponse` in [`src/registry/registry.ts`](../../src/registry/registry.ts),
 so the directory name, the prose, and the type agree. This matches the
-vocabulary in [`reference/workflows/registry.ts`](../reference/workflows/registry.ts),
+vocabulary in [`reference/workflows/registry.ts`](../../reference/workflows/registry.ts),
 where the same map held `JobFactory` values.
 
 `src/registry/registrations/built-in.ts` is deleted; registration moves into the
@@ -228,8 +228,8 @@ capability owning the endpoint, and `createRegistry()` calls it.
 ## Generators
 
 Three dependency-free Node scripts beside
-[`scripts/lint-paths.mjs`](../scripts/lint-paths.mjs). Each copies from
-`docs/templates/` with placeholders substituted, so generated output passes lint
+[`scripts/lint-paths.mjs`](../../scripts/lint-paths.mjs). Each copies from
+`docs/capability-directory/templates/` with placeholders substituted, so generated output passes lint
 immediately. None of them creates an empty directory — the template says an
 unused directory is absent, and a generator that violated that would train
 people to ignore it.
@@ -310,10 +310,10 @@ cost a deliberate `mkdir` and a written justification in
 `pnpm lint` runs two dependency-free Node scripts, both reporting in the same
 `path  message` format:
 
-- [`scripts/lint-paths.mjs`](../scripts/lint-paths.mjs) — how files refer to each
+- [`scripts/lint-paths.mjs`](../../scripts/lint-paths.mjs) — how files refer to each
   other: no relative imports, no `import.meta.url` outside `paths.ts`, the two
   alias maps agree, and every alias import resolves on disk (rules 9–11).
-- [`scripts/lint-structure.mjs`](../scripts/lint-structure.mjs) — the shape of a
+- [`scripts/lint-structure.mjs`](../../scripts/lint-structure.mjs) — the shape of a
   capability: rules 1–8, 12, and 13.
 
 They are separate because they answer different questions and are read at
@@ -341,7 +341,7 @@ migration lands, and the list is deleted once the whole tree conforms.
 Example output:
 
 ```text
-src/capabilities/resource-support/rich-content/domain  unknown capability directory 'domain' — see docs/capability-directory-redesign.md
+src/capabilities/resource-support/rich-content/domain  unknown capability directory 'domain' — see docs/capability-directory/capability-directory.md
 src/capabilities/resource-support/rich-content/runtime-api/split  missing document 'split.md'
 src/capabilities/data/manager/manager.ts  only overview.md, index.ts, and errors.ts belong at a capability root
 package.json  imports declares "#formula", which resolves to src/capabilities/formula/index.ts — no such path
@@ -353,7 +353,7 @@ package.json  imports declares "#formula", which resolves to src/capabilities/fo
 `definition.ts` and compares method names to directory names. A type-aware check
 would need the TypeScript compiler API, which `lint-paths.mjs` deliberately
 avoids having any dependency on. Sloppy renames can defeat it; the
-[review checklist](templates/reviewing-a-capability.md) covers the gap.
+[review checklist](reviewing-a-capability.md) covers the gap.
 
 **Rule 12 can require a document to exist; it cannot require it to be worth
 reading.** A stale document is worse than none. The mitigation is placement: a
@@ -410,13 +410,13 @@ existing tests. Two public shapes changed deliberately:
 A capability directory exists as soon as a design exists, containing `docs/` and
 nothing else. Scaffolding with no design is deleted.
 
-`src/main.ts` and [`docs/procedures/01-initialization.md`](procedures/01-initialization.md)
+`src/main.ts` and [`docs/procedures/01-initialization.md`](../01-initialization.md)
 are updated last, once every path is settled — the latter references eight source
 paths that move.
 
 ## Reviewing
 
-[`docs/templates/reviewing-a-capability.md`](templates/reviewing-a-capability.md)
+[`docs/capability-directory/reviewing-a-capability.md`](reviewing-a-capability.md)
 is the checklist. Its first section is entirely machine-checked, so a green
 `pnpm lint` lets a reviewer skip to the judgment items: whether a document says
 anything, whether a `shared/` procedure really has two callers, whether an

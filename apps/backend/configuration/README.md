@@ -1,6 +1,6 @@
 # Configuration
 
-[`createConfiguration()`](../src/capabilities/platform/configuration/configuration.ts)
+[`createConfiguration()`](../src/capabilities/platform/configuration/runtime-objects/configuration/constructor.ts)
 reads this directory once during backend startup and returns an immutable
 configuration snapshot.
 
@@ -34,9 +34,9 @@ Further mutation cannot change values returned by `get()`.
 ## Current consumers
 
 - [`main.ts`](../src/main.ts) validates `server.host` and `server.port`.
-- [`observability.ts`](../src/capabilities/platform/observability/runtime-constructors/observability.ts)
+- [`observability.ts`](../src/capabilities/platform/observability/runtime-objects/observability/constructor.ts)
   validates `logging.enabled`, then validates `logging.level` when logging is
   enabled.
 
-See [the configuration procedure](../docs/procedures/02-configuration.md) for
+See [the configuration procedure](../docs/02-configuration.md) for
 the complete reading, merge, and lookup tree.

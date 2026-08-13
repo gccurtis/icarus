@@ -3,7 +3,7 @@
  * Scaffolds one endpoint directory. No dependencies — just Node, like the lint
  * scripts this exists to satisfy.
  *
- * See docs/capability-directory-redesign.md. An endpoint is a directory holding
+ * See docs/capability-directory/capability-directory.md. An endpoint is a directory holding
  * its document, `job.ts`, and — when it admits input — `wire/`.
  *
  * `procedures/` is never generated. A job starts as a pass-through, and that
@@ -34,7 +34,7 @@ const stopIfFailed = (name) => {
   if (problems.length === 0) return;
   console.error(`${name}: ${problems.length} problem${problems.length === 1 ? "" : "s"}\n`);
   for (const problem of problems) console.error(`  ${problem}`);
-  console.error("\nSee apps/backend/docs/capability-directory-redesign.md.");
+  console.error("\nSee apps/backend/docs/capability-directory/capability-directory.md.");
   process.exit(1);
 };
 
@@ -208,14 +208,14 @@ const render = (templateName, values, edit = (text) => text) => {
 
   text = text.replace(/```ts\n[\s\S]*?\n```/g, (block) =>
     block.includes("{{")
-      ? `TODO: write the declaration this section describes — docs/templates/${templateName} shows the shape.`
+      ? `TODO: write the declaration this section describes — docs/capability-directory/templates/${templateName} shows the shape.`
       : block
   );
 
   text = text.replace(PLACEHOLDER, (_, inner) => todo(inner));
 
   if (text.includes("{{") || text.includes("}}")) {
-    fail(`docs/templates/${templateName}`, "a placeholder survived rendering — this is a generator bug");
+    fail(`docs/capability-directory/templates/${templateName}`, "a placeholder survived rendering — this is a generator bug");
   }
   return reflow(text);
 };

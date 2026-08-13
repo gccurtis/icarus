@@ -41,13 +41,13 @@ apps/backend/
 ```
 
 There is no default-value module, schema module, per-capability configuration
-parser, or configuration wrapper. [`configuration.ts`](../../src/capabilities/platform/configuration/configuration.ts)
+parser, or configuration wrapper. [`configuration.ts`](../src/capabilities/platform/configuration/runtime-objects/configuration/constructor.ts)
 owns file reading, YAML translation, merging, snapshot freezing, and lookup.
 
 ## Construction tree
 
-- [`createConfiguration()`](../../src/capabilities/platform/configuration/configuration.ts)
-  - locates [`configuration/`](../../configuration/README.md) through the
+- [`createConfiguration()`](../src/capabilities/platform/configuration/runtime-objects/configuration/constructor.ts)
+  - locates [`configuration/`](../configuration/README.md) through the
     `#configuration/*` package alias
   - reads directory entries
   - keeps files whose names end in `.yaml`
@@ -145,7 +145,7 @@ if (typeof rawPort !== "number" || !Number.isInteger(rawPort)) {
 ```
 
 The live consumers are
-[`main.ts`](../../src/main.ts)
+[`main.ts`](../src/main.ts)
 for `server.host` and `server.port`, and
-[`observability.ts`](../../src/capabilities/platform/observability/runtime-constructors/observability.ts)
+[`observability.ts`](../src/capabilities/platform/observability/runtime-objects/observability/constructor.ts)
 for `logging.enabled`, plus `logging.level` when logging is enabled.

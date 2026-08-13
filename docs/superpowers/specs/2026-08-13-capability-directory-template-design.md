@@ -2,7 +2,16 @@
 
 **Date:** 2026-08-13
 **Scope:** `apps/backend`
-**Status:** Design approved; implementation plan not yet written.
+**Status:** Implemented. This is the design record as approved; the living
+standard is
+[`apps/backend/docs/capability-directory/capability-directory.md`](../../../apps/backend/docs/capability-directory/capability-directory.md),
+which is what to read and keep current. Four things changed during
+implementation and are recorded there rather than here: imports use each
+capability's direct alias (`#web-server`) instead of `#capabilities/...`; rule 10
+checks the specifiers a file actually imports rather than every declared alias;
+`docs/capability/` was dissolved entirely instead of merely being drained; and
+the `IdFactory` extraction listed below as a non-goal was subsequently requested
+and built as the `platform/id-factory` capability.
 
 ## Problem
 
@@ -18,7 +27,7 @@ of them is authoritative:
 3. **Platform** — bare files with no shared shape: `configuration.ts`,
    `database.ts`, `logger.ts`, `runtime.ts`, `context.ts`,
    `register-http-transport.ts`.
-4. **The Document plan** — `docs/capability/resource-general/document/implementation-plan.md`
+4. **The Document plan** — `the Document capability implementation plan`
    already prescribes `types/`, `procedures/<method>/`, `persistence/`,
    `work/endpoints/<name>/wire/`, `registrations/`, and a co-located `test/`.
    It was written for one capability and never generalized.
@@ -263,7 +272,7 @@ restate the code.
 
 ### Template directory
 
-`apps/backend/docs/templates/` holds one template per document kind, plus a
+`apps/backend/docs/capability-directory/templates/` holds one template per document kind, plus a
 `README.md` mapping each template to its destination and the name it takes
 there:
 
@@ -287,7 +296,7 @@ The generators copy from here, so a new capability, method, or endpoint arrives
 with every required document already stubbed in the right place.
 
 **These twelve files plus the README are written.** They exist at
-`apps/backend/docs/templates/` and are the concrete artifact to review before
+`apps/backend/docs/capability-directory/templates/` and are the concrete artifact to review before
 approving this spec — the structure is only as good as the documents it
 demands.
 
@@ -388,7 +397,7 @@ path is relative to `src/capabilities`, e.g. `resource-general/slide` — create
 - `test/{unit,regression,non-functional}/` and `test/bruno/bruno.json`;
 - `persistence/` only with `--persisted`, `endpoints/` only with `--endpoints`.
 
-Every document is copied from `docs/templates/` with its placeholders
+Every document is copied from `docs/capability-directory/templates/` with its placeholders
 substituted, so a generated capability passes rules 12 and 13 immediately.
 
 Because a runtime-api method now costs three files and an endpoint four, two
@@ -428,7 +437,7 @@ every path is settled.
 
 ## Review checklist
 
-The payoff. Written to `docs/templates/reviewing-a-capability.md` and linked
+The payoff. Written to `docs/capability-directory/reviewing-a-capability.md` and linked
 from `apps/backend/README.md`:
 
 1. `overview.md` describes the boundary, the runtime objects, the public API,

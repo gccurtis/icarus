@@ -20,12 +20,13 @@ pnpm start
   the same shape; start at its `overview.md`.
 - [`configuration/`](configuration/README.md) contains runtime configuration
   input files.
-- [`docs/capability-directory-redesign.md`](docs/capability-directory-redesign.md)
+- [`docs/capability-directory/capability-directory.md`](docs/capability-directory/capability-directory.md)
   is the directory standard: the template, the generators, and the lint rules.
-- [`docs/templates/`](docs/templates/README.md) holds the document templates and
-  [the review checklist](docs/templates/reviewing-a-capability.md).
-- [`docs/procedures/`](docs/procedures/) explains the executable lifecycle and
-  infrastructure procedures.
+- [`docs/capability-directory/templates/`](docs/capability-directory/templates/templates.md) holds the document templates and
+  [the review checklist](docs/capability-directory/reviewing-a-capability.md).
+- [`docs/01-initialization.md`](docs/01-initialization.md) and
+  [`docs/02-configuration.md`](docs/02-configuration.md) explain the executable
+  lifecycle and infrastructure procedures.
 - [`docs/reference/`](docs/reference/README.md) and
   [`reference/`](reference/README.md) are archived material; neither is part of
   the live backend.
