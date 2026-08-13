@@ -17,7 +17,9 @@
   --motion-overlay: 260ms; /* 200–280ms — modals, popovers, overlays */
 }
 
-@theme {
+/* `static`: a component writing its own transition or keyframes in a <style>
+ * block references these directly, out of the scanner's sight. */
+@theme static {
   --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   --transition-duration-micro: var(--motion-micro);

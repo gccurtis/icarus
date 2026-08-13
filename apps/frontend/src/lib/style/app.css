@@ -44,6 +44,7 @@
 @import "./system/color/sets/cyan-primary.css";
 @import "./system/color/sets/pink-primary.css";
 @import "./system/color/roles.css";
+@import "./system/color/utilities.css"; /* our planes, ink, and seams → utilities */
 
 /* Everything that does not vary by theme at all */
 @import "./system/typography.css";
@@ -51,7 +52,7 @@
 @import "./system/shape.css";
 @import "./system/motion.css";
 
-@import "./shadcn-bridge.css"; /* role → utility, and shadcn's contract */
+@import "./shadcn-bridge.css"; /* only what shadcn hard-codes */
 
 @layer base {
   html {

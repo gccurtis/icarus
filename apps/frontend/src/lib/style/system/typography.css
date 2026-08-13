@@ -22,7 +22,10 @@
   --text-mono-leading: 1.25rem; /* 13/20 */
 }
 
-@theme {
+/* `static`: a component may reach for var(--text-body-sm) or var(--font-mono)
+ * inside its own <style> block, which Tailwind's scanner cannot see. Without it
+ * the token is dropped from the build and resolves to nothing at runtime. */
+@theme static {
   /* Self-hosted; no CDN and no runtime font request to a third party. */
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", monospace;

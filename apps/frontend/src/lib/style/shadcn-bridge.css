@@ -1,41 +1,26 @@
 /**
- * Bridge — exposes our tokens as Tailwind utilities, and satisfies the token
- * contract shadcn components hard-code.
+ * Bridge — satisfies the token contract shadcn components hard-code.
  *
- * Two jobs:
+ * shadcn components are written against a fixed vocabulary (`bg-primary`,
+ * `text-muted-foreground`, `border-input`, `ring-ring`…). Defining that
+ * vocabulary in terms of our own slots means the components work unmodified and
+ * stay updatable; the alternative was rewriting every component's class list,
+ * which would have to be redone on every upgrade.
  *
- *  1. --surface-*, --ink-*, and --border-* are not Tailwind namespaces, so they
- *     generate no utilities on their own. Aliasing them into --color-* gives us
- *     bg-surface-work, text-ink-muted, border-border-subtle, and so on.
+ * This file has one job. Exposing the system's own tokens as utilities used to
+ * happen here too, which made the design system's color vocabulary depend on a
+ * compatibility shim — that now lives in system/color/utilities.css. Delete
+ * this file and shadcn's components break; nothing of ours does.
  *
- *  2. shadcn components are written against a fixed vocabulary (bg-primary,
- *     text-muted-foreground, border-input, ring-ring…). Aliasing that vocabulary
- *     onto our roles means the components work unmodified and stay updatable —
- *     the alternative was rewriting every component's class list, which would
- *     have to be redone on every upgrade.
+ * Every value here is a var() reference into a layer that already exists, so
+ * all of it follows a theme swap and a set swap at runtime. Nothing here
+ * introduces a color or picks an intensity.
  *
- * Every alias is a var() reference, so all of it follows a theme swap and a set
- * swap at runtime. Nothing here introduces a color or picks an intensity.
+ * `static` because a component may combine these in CSS of its own, where
+ * Tailwind's scanner cannot see the reference.
  */
 
-@theme {
-  /* ── Our planes, seams, and text, exposed as utilities ───────────── */
-  --color-surface-canvas: var(--surface-canvas);
-  --color-surface-work: var(--surface-work);
-  --color-surface-panel: var(--surface-panel);
-  --color-surface-elevated: var(--surface-elevated);
-  --color-surface-panel-hover: var(--surface-panel-hover);
-  --color-surface-selection: var(--surface-selection);
-
-  --color-ink-primary: var(--ink-primary);
-  --color-ink-secondary: var(--ink-secondary);
-  --color-ink-muted: var(--ink-muted);
-  --color-ink-on-fill: var(--ink-on-fill);
-
-  --color-border-subtle: var(--border-subtle);
-  --color-border-strong: var(--border-strong);
-
-  /* ── shadcn's contract, mapped onto our slots ────────────────────── */
+@theme static {
   --color-background: var(--surface-canvas);
   --color-foreground: var(--ink-primary);
 

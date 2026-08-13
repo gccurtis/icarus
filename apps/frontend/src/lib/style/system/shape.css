@@ -13,7 +13,9 @@
  * Spec: docs/style/system/shape.md
  */
 
-@theme {
+/* `static`: components compose radii and shadows in their own <style> blocks,
+ * where the scanner cannot see the reference. */
+@theme static {
   --radius-control: 0.375rem; /* 6px  — buttons, inputs, chips, tags */
   --radius-panel: 0.625rem; /* 10px — panels, cards, live-object blocks */
   --radius-overlay: 1rem; /* 16px — modals, popovers, drawers */
