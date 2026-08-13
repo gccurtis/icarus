@@ -11,7 +11,7 @@ The first increment registers two exact routes:
 
 Fixed paths match the current exact-key
 [`RouteRegistry`](../../../../../src/registry/registry.ts). The
-[Fastify transport](../../../../../src/capabilities/platform/web-server/register-http-transport.ts)
+[Fastify transport](../../../platform/web-server/runtime-api/register-transport/register-transport.ts)
 continues to translate HTTP into a framework-neutral request envelope and
 execute registered work directly.
 
@@ -116,23 +116,22 @@ Expected errors contain stable, non-sensitive messages. Unexpected failures are
 not converted by Document work; they follow the existing Web Server fault path
 and observability logging.
 
-## Work Functions
+## Endpoint Jobs
 
-The capability owns transport-neutral work factories:
+The capability owns transport-neutral endpoint jobs. An endpoint job is the unit
+registered against one endpoint identity — the project's term for what the
+registry holds.
 
 ```ts
-export const createDocumentCommandWork = (
-  runtime: DocumentRuntime
-): RouteWork => ...;
+export const documentCommandJob = (runtime: DocumentRuntime): EndpointJob => ...;
 
-export const createDocumentQueryWork = (
-  runtime: DocumentRuntime
-): RouteWork => ...;
+export const documentQueryJob = (runtime: DocumentRuntime): EndpointJob => ...;
 ```
 
-They depend on `RequestEnvelope` and `RouteResponse`, not Fastify. Decoding,
-dispatch, and expected error mapping belong here; database and domain logic do
-not.
+They depend on `RequestEnvelope` and `EndpointJobResponse` from
+[`#registry/registry.js`](../../../../../src/registry/registry.ts), not on
+Fastify. Decoding, dispatch, and expected error mapping belong here; database and
+domain logic do not.
 
 ### What `wire` Means
 
@@ -150,41 +149,45 @@ For each endpoint, its `wire/` directory:
 It lives under the endpoint it supports:
 
 ```text
-work/endpoints/command/
-├── work.ts
+endpoints/documents-command/
+├── documents-command.md
+├── job.ts
 └── wire/
     ├── request.ts
     ├── decode.ts
     └── response.ts
 ```
 
-If an endpoint remains simple enough to keep these concerns clear in one file,
-the files may start combined inside its directory and split only as needed.
+`wire/` carries no document of its own; the endpoint's document describes it.
 
 ## Registration
 
-A new registration file wires those work functions into the runtime-scoped
-registry:
+`endpoints/register.ts` wires the jobs into the runtime-scoped registry.
+Registration lives in the capability that owns the endpoint, not in
+`src/registry/`:
 
 ```ts
-// src/capabilities/resources/general/document/registrations/endpoints.ts
+// src/capabilities/resource-general/document/endpoints/register.ts
 export const registerDocumentEndpoints = (
   registry: RouteRegistry,
   document: DocumentRuntime
 ): void => {
   registry.register(
     { method: "POST", path: "/documents/command" },
-    createDocumentCommandWork(document)
+    documentCommandJob(document)
   );
   registry.register(
     { method: "POST", path: "/documents/query" },
-    createDocumentQueryWork(document)
+    documentQueryJob(document)
   );
 };
 ```
 
-The current [built-in registration](../../../../../src/registry/registrations/built-in.ts)
-continues to own health and echo routes.
+`index.ts` re-exports `registerDocumentEndpoints`, and `main.ts` calls it once
+before the server listens. Built-in is the one capability registered from inside
+`createRegistry()`, because its endpoints must exist before any other capability
+is wired — see
+[its endpoints document](../../../built-in/endpoints/endpoints.md).
 
 ## Startup Procedure
 

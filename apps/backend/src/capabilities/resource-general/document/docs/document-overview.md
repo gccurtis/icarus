@@ -102,7 +102,7 @@ Document owns:
 - Document persistence and structural invariants;
 - the composed Display Document projection.
 
-[Rich Content](../../support/rich-content/README.md) owns:
+[Rich Content](../../../resource-support/rich-content/overview.md) owns:
 
 - Rich Content, atom, mark, and list IDs;
 - canonical text and line-break atoms;
@@ -142,12 +142,12 @@ ownership-changing operations.
 
 | Capability | Usage |
 | ---------- | ----- |
-| [Rich Content](../../support/rich-content/README.md) | Creates, displays, mutates, partitions, combines, and destroys content owned by Document Blocks. |
+| [Rich Content](../../../resource-support/rich-content/overview.md) | Creates, displays, mutates, partitions, combines, and destroys content owned by Document Blocks. |
 
 Document does not depend on Formula, Derived Outputs, Intelligence, or a work
 queue in this increment. Its route registration integrates with the existing
 [registry](../../../../../src/registry/registry.ts) and
-[web-server transport](../../../../../src/capabilities/platform/web-server/register-http-transport.ts).
+[web-server transport](../../../platform/web-server/runtime-api/register-transport/register-transport.ts).
 
 ## Runtime Singleton
 

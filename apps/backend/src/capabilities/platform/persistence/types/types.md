@@ -34,7 +34,7 @@ Augmentation targets this file, because declaration merging applies to the
 module that declares the interface, not to `index.ts` which re-exports it:
 
 ```ts
-declare module "#capabilities/platform/persistence/types/database.js" {
+declare module "#persistence/types/database.js" {
   interface BackendDatabase {
     rich_content: RichContentTable;
   }

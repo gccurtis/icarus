@@ -16,11 +16,6 @@
       "types": "./src/registry/*",
       "default": "./dist/registry/*"
     },
-    "#capabilities/*": {
-      "development": "./src/capabilities/*",
-      "types": "./src/capabilities/*",
-      "default": "./dist/capabilities/*"
-    },
     "#workflows/*": {
       "development": "./src/workflows/*",
       "types": "./src/workflows/*",
@@ -291,10 +286,13 @@
     "dev": "tsx watch --conditions=development src/main.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
-    "test": "node --conditions=development --import tsx --test \"test/*.test.ts\" \"src/capabilities/**/test/**/*.test.ts\"",
+    "test": "node --conditions=development --import tsx --test \"src/capabilities/**/test/**/*.test.ts\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "clean": "rm -rf dist",
-    "lint": "node scripts/lint-paths.mjs && node scripts/lint-structure.mjs"
+    "lint": "node scripts/lint-paths.mjs && node scripts/lint-structure.mjs",
+    "new-capability": "node scripts/new-capability.mjs",
+    "new-runtime-api": "node scripts/new-runtime-api.mjs",
+    "new-endpoint": "node scripts/new-endpoint.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",

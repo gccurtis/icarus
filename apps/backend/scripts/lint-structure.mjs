@@ -21,16 +21,15 @@ import { fileURLToPath } from "node:url";
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const capabilitiesRoot = join(packageRoot, "src", "capabilities");
 
-/** Paths relative to src/capabilities. Append one per migration. */
-const MIGRATED = [
-  "built-in",
-  "data/manager",
-  "platform/configuration",
-  "platform/observability",
-  "platform/persistence",
-  "platform/web-server",
-  "resource-support/rich-content"
-];
+/**
+ * Capabilities are discovered, not listed.
+ *
+ * While the tree was being migrated this was an allowlist, so the rules could be
+ * enforced from the first migrated capability rather than only after the last.
+ * Every capability is on the template now, and an allowlist would go stale the
+ * first time someone added a capability and forgot to register it — which is
+ * exactly the kind of omission a linter exists to catch.
+ */
 
 const ALLOWED_DIRS = new Set([
   "docs",
@@ -197,10 +196,47 @@ const checkEndpoints = (capabilityRoot) => {
   }
 };
 
-for (const capability of MIGRATED) {
+/**
+ * A directory under src/capabilities is a capability when it holds files —
+ * every capability has at least `index.ts` or `overview.md` at its root. One
+ * holding nothing but other directories is a grouping directory (`platform/`,
+ * `resource-support/`) and is recursed into.
+ *
+ * The tempting shortcut — "it is a capability if a child is named like a
+ * template directory" — is wrong: `platform/` has a child named `persistence/`,
+ * which is also the name of a template directory.
+ *
+ * The one capability with no root files is a designed-but-unbuilt one, whose
+ * single `docs/` child the caller recognizes and skips.
+ */
+const discover = (dir, prefix = "", found = []) => {
+  for (const name of dirsIn(dir)) {
+    const path = join(dir, name);
+    const relativePath = prefix ? `${prefix}/${name}` : name;
+    const children = dirsIn(path);
+    const isCapability =
+      filesIn(path).length > 0 || (children.length === 1 && children[0] === "docs");
+    if (isCapability) found.push(relativePath);
+    else discover(path, relativePath, found);
+  }
+  return found;
+};
+
+const capabilities = discover(capabilitiesRoot);
+const unbuilt = [];
+
+for (const capability of capabilities) {
   const capabilityRoot = join(capabilitiesRoot, capability);
-  if (!existsSync(capabilityRoot)) {
-    failures.push(`src/capabilities/${capability}  listed in MIGRATED but does not exist`);
+
+  // Designed but unbuilt: the standard says such a capability is a directory
+  // holding its docs/ and nothing else, so there is no structure to check yet.
+  const children = dirsIn(capabilityRoot);
+  if (
+    filesIn(capabilityRoot).length === 0 &&
+    children.length === 1 &&
+    children[0] === "docs"
+  ) {
+    unbuilt.push(capability);
     continue;
   }
 
@@ -234,8 +270,8 @@ for (const capability of MIGRATED) {
   checkEndpoints(capabilityRoot);
 }
 
-// Rule 8 applies to the whole source tree, not only migrated capabilities:
-// nothing has to move for a name to be correct.
+// Rule 8 applies to the whole source tree, capability or not: nothing has to
+// move for a name to be correct.
 (function checkNames(dir) {
   if (!existsSync(dir)) return;
   for (const entry of entries(dir)) {
@@ -261,7 +297,8 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-const scanned = MIGRATED.length;
 console.log(
-  `lint-structure: ${scanned} capabilit${scanned === 1 ? "y" : "ies"} on the template; names clean`
+  `lint-structure: ${capabilities.length - unbuilt.length} capabilit${
+    capabilities.length - unbuilt.length === 1 ? "y" : "ies"
+  } on the template; ${unbuilt.length} designed but unbuilt; names clean`
 );

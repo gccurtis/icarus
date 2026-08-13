@@ -29,9 +29,6 @@
       "#registry/*": [
         "./src/registry/*"
       ],
-      "#capabilities/*": [
-        "./src/capabilities/*"
-      ],
       "#workflows/*": [
         "./src/workflows/*"
       ],
