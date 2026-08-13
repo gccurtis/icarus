@@ -1,18 +1,23 @@
-# Aesthetic mandate
+# Mandate
 
-> **Committed stance.** Discipline rather than values. The values this argues
-> for are enumerated in [`catalog/`](../catalog/palette.md) and composed in
-> [`component/`](../component/components-and-states.md).
+> **Committed stance.** Discipline rather than values. This governs both
+> directories: a theme must satisfy it with color, the system must satisfy it
+> with everything else.
 
 The interface should feel like an angelic citadel in the clouds operated through
 astro-tech: a clear chamber for thought, powerful enough to coordinate documents,
 data, derived values, agents, and live outputs, yet arranged so complexity feels
 mentally weightless.
 
+This is a discipline for light, structure, elevation, legibility, restraint, and
+quiet power — not literal religious imagery or ornamental futurism. How one
+theme interprets it in color is [Celestial → theory](themes/celestial/theory.md);
+a different theme may interpret it differently and still be correct.
+
 ## Aesthetic thesis
 
-- **Luminous order:** pearl and off-white surfaces, low-glare depth, restrained
-  blue-violet light.
+- **Luminous order:** low-glare depth and restrained light, whatever end of the
+  range a theme reads from.
 - **Architectural clarity:** strong spatial zones, calm boundaries, predictable
   panels, repeatable hierarchy.
 - **Instrument precision:** crisp controls, exact focus, readable data, complete
@@ -52,9 +57,10 @@ mentally weightless.
   level.
 - **Star map:** restrained semantic color provides orientation. Color is how a
   user navigates meaning, which is why it is rationed — see
-  [color usage laws](../catalog/color-system.md#usage-laws).
+  [color usage laws](system/color/roles.md#usage-laws).
 - **Instrument:** every interaction has a complete set of states, and every state
-  has a name — see [the state matrix](../component/components-and-states.md#state-matrix).
+  has a name — see
+  [the state matrix](system/interaction/component.md#state-matrix).
 
 ## Uncertainty is part of the aesthetic
 

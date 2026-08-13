@@ -5,11 +5,6 @@ the kind where a user reads far more than they click, where the system produces
 derived content the user must be able to trust, and where depth has to be
 available without being imposed.
 
-The mandate is an **angelic citadel built from astro-tech**: luminous, calm,
-precise, structurally obvious, and easy to think in. This is a discipline for
-light, structure, elevation, legibility, restraint, and quiet power — not
-literal religious imagery or ornamental futurism.
-
 Nothing here names an application, a feature, or a screen. The system is
 expressed in design dimensions so it stays true regardless of what is built on
 top of it.
@@ -34,106 +29,133 @@ rituals, hidden gestures, or memorized commands.
 6. **Trust is visible.** Derived and agentic work is attributable, inspectable,
    reversible, and explicit about state.
 
+The stance these serve is the [mandate](mandate.md).
+
+## Two axes
+
+Color is the only dimension that varies, and it varies along two independent
+axes. Everything else — type, spacing, shape, motion, layout, interaction — is
+the same in every combination.
+
+| Axis | Decides | Lives in | Switch with |
+| --- | --- | --- | --- |
+| **Chromatic theme** | What colors exist, at what intensities, and which end of the range the interface reads from | [`themes/`](themes/) | `data-theme` |
+| **Semantic set** | Which hue is primary, secondary, tertiary, and the two accents | [`system/color/semantic-sets/`](system/color/semantic-sets/) | `data-set` |
+
+The default composition is **Celestial × blue-primary**, bound to bare `:root`,
+so a page that sets no attribute gets it. Two themes and three sets ship today —
+six looks from one component tree, with no component changing between any of
+them.
+
+```js
+document.documentElement.dataset.theme = "cyberpunk";   // celestial | cyberpunk
+document.documentElement.dataset.set   = "pink-primary"; // blue- | cyan- | pink-primary
+```
+
+Both axes are live in the app header. Because the alternates bind to
+`[data-theme=…]` and `[data-set=…]` at the same specificity as the defaults'
+bare `:root`, the alternates are imported **after** the defaults — source order
+breaks the tie.
+
+The axes are independent by construction: a theme never names a job, and a set
+never names a value. Neither can drift into the other's territory, because
+neither has the vocabulary to.
+
+## The resolution chain
+
+Four layers. Each answers exactly one question, and a component only ever sees
+the last one.
+
+| Layer | Owns | Answers |
+| --- | --- | --- |
+| **1 · palette** *(theme)* | `--palette-green-normal: #2E9160` | What colors exist, at what intensities |
+| **2 · slots** | `--hue-green-fill` | Which intensity does each job, given the ground |
+| **3 · anchors** *(set)* | `--anchor-primary-fill` | Which hue is primary, secondary, tertiary |
+| **4 · roles** | `--color-interactive-fill` | Which purpose each job-role serves |
+
+Only layer 1 changes with the theme; only layer 3 changes with the set. Layers 2
+and 4 are written once and never re-declared.
+
+**A component picks a job, never a color and never an intensity.** It reaches
+for `--color-success-text`; it may not reach for `--color-success-strong`,
+`--hue-green-text`, or `--palette-green-strong`. The first does not exist, and
+the last two generate no utilities, so the rule is enforced by the build rather
+than by review.
+
 ## Documents
 
-Three tiers, ordered from why to what to how. A document's directory tells you
-what kind of claim it makes, and a reader can usually stay in one tier.
+### [`themes/`](themes/) — the chromatic material
 
-### `theory/` — what the system believes
+A theme is a palette, a `color-scheme`, and its choice of which achromatic
+family carries planes and which carries text. It contains no job names at all.
+The [contract](themes/README.md) is what a new theme must satisfy.
 
-Descriptive. No token values, no compositions. These are the arguments the rest
-of the system has to satisfy, and the place to look when deciding whether
-something is allowed rather than how to build it.
-
-| Doc | Covers |
+| Theme | |
 | --- | --- |
-| [Aesthetic mandate](theory/aesthetic-mandate.md) | Thesis, metaphors, design laws, review test |
-| [Interaction and disclosure](theory/interaction-and-disclosure.md) | Disclosure ladder, grouping test, visible paths |
-| [Accessibility](theory/accessibility.md) | WCAG 2.2 AA target, focus, keyboard, contrast, cognitive load |
+| [Celestial → theory](themes/celestial/theory.md) | Pearl, illuminated stone, restrained blue-violet light |
+| [Celestial → palette](themes/celestial/palette.md) | `color-scheme: light`. Thirteen ramps, seven steps each |
+| [Cyberpunk → theory](themes/cyberpunk/theory.md) | Neon signage over a blue-black city, lit from within |
+| [Cyberpunk → palette](themes/cyberpunk/palette.md) | `color-scheme: dark`. Authored for a dark ground, not mirrored |
 
-### `catalog/` — what the values are
+### [`system/`](system/) — theme-independent
 
-Enumeration. Each document owns one token family and lists it exhaustively.
-These are the implementable specification: everything a stylesheet must declare
-appears in exactly one catalog table.
+Where a dimension has both a feeling and a value table, it splits `theory.md`
+from `component.md`. Where its theory is a few sentences, it stays one file —
+`spacing` and `shape` do.
 
-| Doc | Covers |
+| Module | Covers |
 | --- | --- |
-| [Palette](catalog/palette.md) | Thirteen color ramps, seven steps each. The only literal color values |
-| [Color system](catalog/color-system.md) | Palette → meaning: semantic, brand, and ink roles |
-| [Surfaces](catalog/surfaces.md) | Surface and border colors, radii, shadows, selection |
-| [Typography](catalog/typography.md) | Fonts, type scale, hierarchy laws, copy voice |
-| [Spacing](catalog/spacing.md) | The 4px scale, shell geometry, panel width bounds |
-| [Motion](catalog/motion.md) | Easing, durations, choreography, reduced motion |
+| [color/slots](system/color/slots.md) | The seven purpose slots and the light/dark step table |
+| [color/roles](system/color/roles.md) | The eleven roles × seven slots, and the usage laws |
+| [color/semantic-sets](system/color/semantic-sets/README.md) | What a set may and may not decide |
+| color/utilities | Where the theme's planes, ink, and seams are exposed to consumers. No document yet — see `system/color/utilities.css` |
+| [typography](system/typography/) | Fonts and scale · hierarchy laws and copy voice |
+| [motion](system/motion/) | Easing, durations, choreography · motion laws |
+| [interaction](system/interaction/) | State matrix and iconography · disclosure |
+| [accessibility](system/accessibility/) | Hard requirements · stance and review gates |
+| [spacing](system/spacing.md) | The 4px scale and its one declared base unit |
+| [shape](system/shape.md) | Radii, borders, elevation, surface recipes |
 
-### `component/` — how they combine
-
-Composition. Where several token families meet and produce something concrete: a
-panel, a shell, a control with twelve states. More specific than theory, less
-atomic than catalog.
-
-| Doc | Covers |
-| --- | --- |
-| [Layout](component/layout.md) | Shell zones, resize and collapse behavior, drawer rules |
-| [Surface recipes](component/surface-recipes.md) | Elevation levels, named surface compositions, scrolling |
-| [Components and states](component/components-and-states.md) | Component principles, iconography, the full state matrix |
-
-Where an implementation and a catalog table disagree, that is a bug in one of
-them — fix it and say which one was wrong. Where an implementation contradicts
-theory, the implementation is wrong.
+Where an implementation and a table disagree, that is a bug in one of them — fix
+it and say which one was wrong. Where an implementation contradicts theory, the
+implementation is wrong.
 
 ## Expression
 
-Tokens are declared as **CSS custom properties and nothing else**. No document
-here names a utility class, a CSS framework, or a UI framework. Token names are
-grouped by namespace so they read as plain CSS and stay portable into a
-framework's theme layer without renaming:
+Tokens are declared as **CSS custom properties and nothing else**, so nothing in
+the system depends on a particular framework to express it.
 
-| Namespace | Holds |
-| --- | --- |
-| `--palette-*` | Color primitives. The only literal color values in the system |
-| `--color-*` | Brand and semantic color roles, resolved from the palette |
-| `--surface-*` `--ink-*` `--border-*` | Applied color roles: planes, text, seams |
-| `--text-*` | Type steps — size and line height |
-| `--font-*` | Font families |
-| `--spacing-*` | Rhythm and shell geometry |
-| `--radius-*` `--shadow-*` | Corner and elevation |
-| `--motion-*` `--ease-*` | Duration and easing |
+Where a build mechanism is load-bearing it is named rather than hidden. Which
+`@theme` variables survive into the stylesheet decides whether a token resolves
+at all at runtime, which is why [color/roles](system/color/roles.md) documents
+it and why every public namespace is declared `static`.
+
+| Namespace | Layer | Holds |
+| --- | --- | --- |
+| `--palette-*` | 1 | Color primitives. The only literal color values |
+| `--surface-*` `--ink-*` `--border-*` | 1 | Planes, text, and seams — the theme's own choice |
+| `--hue-*` | 2 | A hue's seven job slots |
+| `--anchor-*` | 3 | The five identity anchors a set fills |
+| `--color-*` | 4 | The roles. The only color layer a component may use |
+| `--text-*` `--font-*` | — | Type steps and families |
+| `--spacing` | — | The 4px base unit every step multiplies |
+| `--radius-*` `--shadow-*` | — | Corner and elevation |
+| `--motion-*` `--ease-*` | — | Duration and easing |
 
 Three rules make the system work regardless of implementation:
 
-- **Every value is declared once.** Color values live in the
-  [palette](catalog/palette.md); every other dimension declares its values in its
-  own catalog table. A hard-coded hex, pixel, or duration at a call site is a
-  defect.
+- **Every value is declared once.** Color values live in a theme's palette;
+  every other dimension declares its values in its own table. A hard-coded hex,
+  pixel, or duration at a call site is a defect.
 - **Consumers reference roles, never primitives.** A component reaches for
-  `--color-success-normal` or `--ink-secondary`, never `--palette-green-normal`.
-  The palette exists so the roles have something to resolve to.
-- **Only color varies by theme.** Type, spacing, radius, shadow geometry, and
-  motion are identical in both themes, so a theme layer contains nothing but
-  color mappings.
-
-## Theme posture
-
-Two themes, both first-class and both complete — every semantic token resolves in
-each:
-
-- **Celestial Light** — the default, bound to `:root`.
-- **Cyberpunk Night** — the dark alternate, activated by
-  `data-theme="cyberpunk-night"` on the root element.
-
-Mechanics are specified in
-[Color system → Theming mechanics](catalog/color-system.md#theming-mechanics).
-
-> The name *Cyberpunk Night* sits in tension with the mandate's law that the
-> interface must not feel like saturated cyberpunk (see
-> [Aesthetic mandate](theory/aesthetic-mandate.md#it-should-not-feel-like)). The
-> name is deliberate; the law still governs the values. The dark theme is a
-> dimensional, low-glare night surface, not a neon one.
+  `--color-success-text` or `--ink-secondary`. The layers below exist so the
+  roles have something to resolve to.
+- **Only color varies.** Type, spacing, radius, shadow geometry, and motion are
+  identical in every theme and every set.
 
 ## How to change styling
 
-1. Change the token in the stylesheet that declares the theme layers.
+1. Change the token in the layer that owns it — the chain above says which.
 2. Update the matching value in the document here, so this spec stays true.
 3. If the change reverses a stated law rather than tuning a value, say so in the
    commit message. Laws are meant to be expensive to change.

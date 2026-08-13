@@ -1,6 +1,7 @@
-# Interaction and disclosure
+# Interaction — theory
 
-> **Committed stance.** Discipline rather than values.
+> **Committed stance.** Discipline rather than values. What a component must
+> implement is [component](component.md).
 
 The system exposes the right surface at the right time and groups secondary
 capability under abstractions a user can predict. **Power must not require
@@ -22,13 +23,11 @@ domain model is decomposed in order to find the control that acts on it.
 Common actions stay within **one hidden layer at most**. Rare actions never
 require a maze.
 
-Rung 4 splits by intent, and the split is not cosmetic:
-
-- A **drawer** is for inspection and work on one object while the surrounding
-  work stays visible. It is non-modal. The user can still see what they were
-  doing.
-- A **modal** is for a decision that must not be made accidentally, and for
-  nothing else. It interrupts, so it must earn the interruption.
+Rung 4 splits by intent, and the split is not cosmetic — a drawer is a place to
+work beside what you were doing, a modal is an interruption that must earn
+itself. The distinction is ultimately a claim about where things live, so it
+belongs to a layout module — which does not currently exist. Until one does,
+the two sentences above are the whole specification.
 
 ## Grouping test
 
@@ -81,7 +80,7 @@ Depth that cannot be skipped is not depth; it is friction.
 
 Differentiate every state a surface can be in, and never with color alone. The
 complete vocabulary and the required cues are in
-[the state matrix](../component/components-and-states.md#state-matrix).
+[the state matrix](component.md#state-matrix).
 
 ## Search as rescue
 

@@ -1,7 +1,8 @@
-# Components and states
+# Interaction — component
 
-> **Committed stance.** Discipline rather than values. This is what every
-> component must satisfy, whatever library ultimately provides it.
+> **Committed stance.** What every component must satisfy, whatever library
+> ultimately provides it. The disclosure discipline it sits inside is
+> [theory](theory.md).
 
 A component is an instrument. Instruments are judged on whether they report their
 condition honestly, so the state matrix below is the part of this document that
@@ -32,7 +33,7 @@ matters most.
   control is legitimate for a dense, repeated affordance whose meaning is
   established elsewhere on the same screen.
 - **Never icon-only for meaningful live state.** A state a user must act on gets
-  words. This is the [color law](../catalog/color-system.md#usage-laws) applied to glyphs:
+  words. This is the [color law](../color/roles.md#usage-laws) applied to glyphs:
   a symbol alone is as ambiguous as a hue alone.
 - **Every icon has an accessible name**, whether or not it shows a visible label.
 - **One family, one stroke weight, one grid.** Mixed icon sets read as
@@ -47,20 +48,27 @@ matters most.
 Every interactive element implements the first six. Elements representing work,
 derived content, or agentic output implement the rest as well.
 
+Every token below names a [slot](../color/slots.md), never an intensity.
+
 | State | Meaning | Required cues |
 | --- | --- | --- |
 | **Idle** | At rest, available | Neutral boundary, no fill |
-| **Hover** | Pointer is over it | A border or background shift only — never a change in size or position |
-| **Focus** | Keyboard focus | `focus-ring`: 2px `--color-interactive-normal`, 2px offset. Always visible, never suppressed |
-| **Selected** | This is the current object | `--color-active-emphasized` on the control, label, or marker; persistent; distinguishable from hover with color removed |
+| **Hover** | Pointer is over it | A border or background shift only — `--color-*-surface-hover` behind content, `--color-*-fill-hover` on a solid. Never a change in size or position |
+| **Focus** | Keyboard focus | `focus-ring`: 2px `--color-interactive-border`, 2px offset. Always visible, never suppressed |
+| **Selected** | This is the current object | `--color-active-text` on the label, `--color-active-border` on the control or marker; persistent; distinguishable from hover with color removed |
 | **Active** | Being pressed right now | Momentary feedback at `--motion-micro` |
-| **Disabled** | Unavailable | Reduced contrast **plus a reason** on hover or focus. Never a silently dead control |
+| **Disabled** | Unavailable | `--color-inactive-text` **plus a reason** on hover or focus. Never a silently dead control |
 | **Pending** | Queued, not started | Copy naming the queue position or wait. No motion |
-| **Resolving** | Working now | `--color-active-normal` + progress + copy naming the current stage |
-| **Applied** | Committed and in effect | `--color-success-normal` + icon + copy |
-| **Failed** | Did not complete | `--color-danger-normal` + icon + copy + a recovery action |
-| **Needs review** | Waiting on human judgment | `--color-attention-normal` + icon + copy + an explicit review affordance |
-| **Stale** | Its source moved underneath it | `--color-attention-normal` + copy naming what changed + a refresh path |
+| **Resolving** | Working now | `--color-active-text` + progress + copy naming the current stage |
+| **Applied** | Committed and in effect | `--color-success-text` + icon + copy |
+| **Failed** | Did not complete | `--color-danger-text` + icon + copy + a recovery action |
+| **Needs review** | Waiting on human judgment | `--color-attention-text` + icon + copy + an explicit review affordance |
+| **Stale** | Its source moved underneath it | `--color-attention-text` + copy naming what changed + a refresh path |
+
+Where a state needs a ground rather than a glyph — a whole row marked stale, a
+badge rather than a label — it takes the matching `-surface` slot behind the
+content and keeps the `-text` slot on top of it. A state that puts a content
+slot behind a surface slot has the ramp backwards.
 
 Dense grids and editors combine several of these cues at once — outline,
 background, handle, row or column highlight, label, and the inspector title —
@@ -77,7 +85,7 @@ because in a grid a single cue is lost among its neighbours.
 - **Disabled explains itself.** A control that cannot be used says what would
   make it usable. This is the most common failure in dense interfaces and the
   cheapest to fix.
-- **Failure offers a way forward.** `--color-danger-normal` without a recovery
+- **Failure offers a way forward.** `--color-danger-text` without a recovery
   action is an accusation, not a state.
 - **Needs review is not a warning.** Amber here means the system did its part and
   is now deferring to a person. The copy should read as a handoff, not an error.
