@@ -36,8 +36,8 @@ apps/backend/
 │     └─ runtime-constructors/
 │        └─ observability.ts                    validates logging keys
 │
-└─ docs/procedures/
-   └─ 02-configuration.md                       this procedure
+└─ configuration/
+   └─ configuration.md                          this procedure
 ```
 
 There is no default-value module, schema module, per-capability configuration
@@ -47,7 +47,7 @@ owns file reading, YAML translation, merging, snapshot freezing, and lookup.
 ## Construction tree
 
 - [`createConfiguration()`](../src/capabilities/platform/configuration/runtime-objects/configuration/constructor.ts)
-  - locates [`configuration/`](../configuration/README.md) through the
+  - locates [`configuration/`](README.md) through the
     `#configuration/*` package alias
   - reads directory entries
   - keeps files whose names end in `.yaml`

@@ -16,6 +16,7 @@ import {
   createWebServer,
   errorFields
 } from "#web-server";
+import { createIdFactory } from "#id-factory";
 import { createRegistry } from "#registry/registry-constructor.js";
 import { createDataManager, type DataManager } from "#data-manager";
 import {
@@ -63,7 +64,11 @@ async function buildRuntime(): Promise<Runtime> {
     database = await createDatabase();
     const runtimeDatabase = database;
     const dataManager = createDataManager();
-    const richContent = await createRichContentRuntime(runtimeDatabase.database);
+    // One generator of collision-resistant values per runtime. Capabilities keep
+    // their own identity semantics — Rich Content decides when a content, atom,
+    // mark, or list ID is allocated; this only produces the value.
+    const ids = createIdFactory();
+    const richContent = await createRichContentRuntime(runtimeDatabase.database, ids);
     const webServer = createWebServer();
     const registry = createRegistry();
 

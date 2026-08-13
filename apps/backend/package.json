@@ -131,6 +131,16 @@
       "types": "./src/capabilities/investigation/hypothesis/*",
       "default": "./dist/capabilities/investigation/hypothesis/*"
     },
+    "#id-factory": {
+      "development": "./src/capabilities/platform/id-factory/index.ts",
+      "types": "./src/capabilities/platform/id-factory/index.ts",
+      "default": "./dist/capabilities/platform/id-factory/index.js"
+    },
+    "#id-factory/*": {
+      "development": "./src/capabilities/platform/id-factory/*",
+      "types": "./src/capabilities/platform/id-factory/*",
+      "default": "./dist/capabilities/platform/id-factory/*"
+    },
     "#intelligence": {
       "development": "./src/capabilities/platform/intelligence/index.ts",
       "types": "./src/capabilities/platform/intelligence/index.ts",

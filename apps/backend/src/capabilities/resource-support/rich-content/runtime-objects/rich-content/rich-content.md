@@ -51,18 +51,19 @@ authority, and nothing is cached between calls.
 
 ## Constructor
 
-`createRichContentRuntime(database)` in [`constructor.ts`](constructor.ts).
+`createRichContentRuntime(database, ids)` in [`constructor.ts`](constructor.ts).
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
 | `database` | `Kysely<BackendDatabase>` | The shared client from Platform Persistence. Rich Content owns the table it creates on this client, not the client. |
+| `ids` | `IdFactory` | The shared generator from Platform ID Factory. Rich Content owns what its IDs mean; it takes only the values from here. |
 
 ### Construction Steps
 
 ```text
 1. Construct PGliteRichContentStore over the supplied database.
 2. Await store.initialize(), creating rich_content if it does not exist.
-3. Create the UUID-backed ID factory.
+3. Build the semantic RichContentIdFactory over the supplied IdFactory.
 4. Return a PersistedRichContentRuntime holding both.
 ```
 

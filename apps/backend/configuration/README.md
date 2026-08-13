@@ -38,5 +38,5 @@ Further mutation cannot change values returned by `get()`.
   validates `logging.enabled`, then validates `logging.level` when logging is
   enabled.
 
-See [the configuration procedure](../docs/02-configuration.md) for
+See [the configuration procedure](configuration.md) for
 the complete reading, merge, and lookup tree.

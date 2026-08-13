@@ -410,7 +410,7 @@ existing tests. Two public shapes changed deliberately:
 A capability directory exists as soon as a design exists, containing `docs/` and
 nothing else. Scaffolding with no design is deleted.
 
-`src/main.ts` and [`docs/procedures/01-initialization.md`](../01-initialization.md)
+`src/main.ts` and [`src/initialization.md`](../../src/initialization.md)
 are updated last, once every path is settled — the latter references eight source
 paths that move.
 
