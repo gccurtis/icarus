@@ -3,7 +3,9 @@
 ## Status
 
 This directory describes the planned first Document capability increment. No
-Document runtime is implemented today.
+Document runtime is implemented today: `document/` holds `docs/` and nothing
+else, which is what a capability looks like when a design exists and code does
+not.
 
 The first increment explicitly excludes formulas, formula atoms, prompt
 blocks, Derived Outputs, and background execution.
@@ -20,12 +22,23 @@ Read the design in this order:
    and block-layout styling.
 5. [Runtime procedures](runtime-procedures.md) defines the public APIs and
    mutation flows.
-6. [HTTP endpoints](endpoints.md) defines request admission, work functions,
-   response mapping, and route registration.
+6. [Endpoints](endpoints.md) defines request admission, endpoint jobs, status
+   mapping, and registration.
 7. [Persistence](persistence.md) defines tables, transactions, revision gates,
    and cross-capability atomicity.
 8. [Implementation plan](implementation-plan.md) defines the expected file tree
    and build order.
+
+All eight sit in `docs/` because the directories they describe do not exist yet.
+Under
+[the capability directory standard](../../../../../docs/capability-directory/capability-directory.md)
+every directory carries a document named after itself and sitting inside it, so
+each of these moves as its directory lands: this overview becomes `overview.md`
+at the capability root, `endpoints.md` becomes `endpoints/endpoints.md`,
+`persistence.md` becomes `persistence/persistence.md`, and the per-method trees
+in `runtime-procedures.md` become the twenty-two `runtime-api/<method>/` method
+documents. `model.md`, `layout.md`, `styles.md`, and `implementation-plan.md`
+stay in `docs/`: each belongs to no single directory.
 
 ## Purpose
 
@@ -90,9 +103,10 @@ The first increment does not support:
 
 Document owns:
 
-- Document, Row, Block, and Document Style IDs;
-- when each of those IDs is created and destroyed, while their UUID values come
-  from the centralized runtime ID factory;
+- Document, Row, Block, and Document Style IDs — their kinds, their names, their
+  prefixes, and when each is created and destroyed. Only the underlying values
+  come from elsewhere, through
+  [Platform ID Factory](../../../platform/id-factory/overview.md);
 - mutable page geometry and layout-estimation policy;
 - Row and Block ordering;
 - normalized Block widths;
@@ -143,18 +157,31 @@ ownership-changing operations.
 | Capability | Usage |
 | ---------- | ----- |
 | [Rich Content](../../../resource-support/rich-content/overview.md) | Creates, displays, mutates, partitions, combines, and destroys content owned by Document Blocks. |
+| [Platform ID Factory](../../../platform/id-factory/overview.md) | Supplies the collision-resistant values behind Document, Row, Block, and Style IDs. Document names the kinds. |
+| Platform Persistence | Supplies the shared Kysely/PGlite database the capability-owned store runs against. Document owns its five tables; Platform Persistence owns the client. |
+
+Each is reached through its bare alias — `#rich-content`, `#id-factory`,
+`#persistence` — never through a path inside it.
 
 Document does not depend on Formula, Derived Outputs, Intelligence, or a work
-queue in this increment. Its route registration integrates with the existing
+queue in this increment. Its endpoint registration integrates with the existing
 [registry](../../../../../src/registry/registry.ts) and
-[web-server transport](../../../platform/web-server/runtime-api/register-transport/register-transport.ts).
+[web-server transport](../../../platform/web-server/runtime-api/register-transport/register-transport.md).
 
-## Runtime Singleton
+## Runtime Objects
 
-`DocumentRuntime` will be created once per backend runtime after Rich Content.
-It coordinates Document persistence with the Rich Content public runtime and a
-narrow Rich Content transaction-participation port. The runtime is the only
-public Document object; stores and transaction participants remain private.
+`DocumentRuntime` will be created once per backend runtime after Rich Content,
+by `runtime-objects/document/constructor.ts` — the only place that performs
+Document startup work. It coordinates Document persistence with the Rich Content
+public runtime and a narrow Rich Content transaction-participation port. It is
+the only Document object `index.ts` exports; the store, the transaction
+participant, and the internal ID factory stay inside the capability.
+
+The internal `DocumentIdFactory` is the second runtime object. It names the ID
+kinds Document allocates and takes their values from Platform ID Factory. It
+is never re-exported, so no consumer can hold one or substitute one — which is
+exactly what lets a test supply a counting factory. See
+[the implementation plan](implementation-plan.md).
 
 The initial HTTP API consists of `POST /documents/command` and
-`POST /documents/query`. See [HTTP endpoints](endpoints.md).
+`POST /documents/query`. See [Endpoints](endpoints.md).

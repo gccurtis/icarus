@@ -1,5 +1,13 @@
 # Document Runtime Procedures
 
+The interface below is declared in `runtime-objects/document/definition.ts`,
+where each method is a thin delegation. Every one of the twenty-two gets a
+`runtime-api/<method>/` directory named after it in kebab-case, holding an entry
+file of the same name that owns that method's complete orchestration — and each
+procedure tree in this document becomes that directory's method document. The
+mapping from method to directory, and the supporting procedures each one is
+expected to need, are in [the implementation plan](implementation-plan.md).
+
 ## Runtime API
 
 ```ts
@@ -40,9 +48,10 @@ export interface DocumentRuntime {
 }
 ```
 
-The methods are grouped by responsibility even if the first implementation
-uses one class. They are exposed through the concrete command and query routes
-defined in [HTTP endpoints](endpoints.md).
+The methods are grouped by responsibility even though one class implements them
+all. They reach a caller over HTTP through the two endpoints in
+[Endpoints](endpoints.md): the command union has one arm per mutator, and the
+query union exposes `display` alone.
 
 ## Revision Inputs
 
@@ -390,6 +399,10 @@ delete(documentId, expectedDocumentVersion, contentRevisions)
 ```
 
 ## Errors
+
+The error class and this code union live in `errors.ts` at the capability root
+rather than in `types/`, because a consumer catching an error is using the public
+contract.
 
 ```ts
 export type DocumentErrorCode =

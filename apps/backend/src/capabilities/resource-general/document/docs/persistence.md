@@ -1,5 +1,27 @@
 # Document Persistence and Transactions
 
+Design document for `persistence/`. It becomes `persistence/persistence.md` when
+that directory lands.
+
+`persistence/` holds storage concerns only. It does not admit requests and does
+not decide Document behavior: `runtime-api` entries start and coordinate the
+transactions described below, and the store executes what they ask for. Lint
+rule 4 keeps the directory to exactly four files.
+
+| File | Holds |
+| ---- | ----- |
+| `persistence.md` | This document: the tables, the keys, and the concurrency discipline. |
+| `schema.ts` | The five Kysely table types, their registration on `BackendDatabase`, and initialization. |
+| `stored-types.ts` | Rows exactly as stored, distinct from the canonical types in `types/`. |
+| `store.ts` | The table interface: ordered reads, the Document compare-and-swap, and transaction-scoped writes. |
+
+`schema.ts` carries the one permitted exception to the bare-alias import rule.
+Kysely declaration merging must name the module that *declares* the interface, so
+it targets `#persistence/types/database.js`; a `declare module` naming
+`#persistence` would augment the re-export and the tables would never appear on
+the database type. `store.ts` imports `BackendDatabase` from `#persistence` as
+normal, and every Rich Content type named below arrives through `#rich-content`.
+
 ## Tables
 
 Document owns five normalized tables. Rich Content continues to own

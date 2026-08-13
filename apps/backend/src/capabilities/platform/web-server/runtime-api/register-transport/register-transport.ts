@@ -25,7 +25,7 @@ export const registerHttpTransport = (
   logger: Logger
 ): void => {
   // Fastify registration happens once during startup. Every HTTP endpoint enters
-  // this same handler, which looks up the route and calls its work directly.
+  // this same handler, which looks up the endpoint and calls its job directly.
   app.all("/*", async (request, reply) => {
     const startedAt = performance.now();
     const envelope = buildEnvelope({
@@ -38,8 +38,8 @@ export const registerHttpTransport = (
       body: request.body
     });
 
-    const work = registry.find(envelope);
-    if (!work) {
+    const job = registry.find(envelope);
+    if (!job) {
       logger.warn("http.route.not-found", {
         requestId: envelope.requestId,
         method: envelope.method,
@@ -55,7 +55,7 @@ export const registerHttpTransport = (
     }
 
     try {
-      const { statusCode, headers, body } = await work(envelope);
+      const { statusCode, headers, body } = await job(envelope);
 
       if (headers) {
         reply.headers(headers);
@@ -70,8 +70,8 @@ export const registerHttpTransport = (
       });
       return reply.code(statusCode).send(body);
     } catch (error) {
-      // A work function that throws is a fault, not an outcome. Successful
-      // status codes and bodies are always selected by the work itself.
+      // An endpoint job that throws is a fault, not an outcome. Successful
+      // status codes and bodies are always selected by the job itself.
       logger.error("http.request.failed", {
         requestId: envelope.requestId,
         method: envelope.method,

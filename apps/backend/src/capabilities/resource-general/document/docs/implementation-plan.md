@@ -3,7 +3,7 @@
 > **Rewritten to the directory standard.** The tree this plan first prescribed —
 > `procedures/`, `work/endpoints/`, `registrations/`, `runtime-constructors/`,
 > `runtime.ts` — was written before
-> [`docs/capability-directory-redesign.md`](../../../../../docs/capability-directory-redesign.md)
+> [`docs/capability-directory/capability-directory.md`](../../../../../docs/capability-directory/capability-directory.md)
 > existed, and none of those names survives anywhere under `src/capabilities`.
 > Every path below is now the standard's, and `pnpm lint` enforces it from the
 > moment step 1 lists this capability as migrated. The design is unchanged: the
@@ -16,13 +16,13 @@
 | `runtime-constructors/document.ts` | `runtime-objects/document/constructor.ts` |
 | `work/endpoints/<name>/work.ts` | `endpoints/<name>/job.ts` |
 | `registrations/endpoints.ts` | `endpoints/register.ts` |
-| `shared/identity/` | deferred; an internal `runtime-objects/id-factory/` |
+| `shared/identity/` | `#id-factory` for values; an internal `runtime-objects/id-factory/` for kinds |
 | `test/procedures/*.test.ts` | `test/unit/runtime-api/<method>/<method>.test.ts` |
 | `RouteWork`, `RouteResponse` | `EndpointJob`, `EndpointJobResponse` |
 
-[`endpoints.md`](endpoints.md) still spells several of the left-hand names. Its
-command and query envelopes, admission rules, and status mapping are current;
-read its paths from here.
+[`endpoints.md`](endpoints.md) has since been brought to the same names. It owns
+the command and query envelopes, the admission rules, and the status mapping;
+this plan owns the build order that produces them.
 
 ## Architectural Shape
 
@@ -55,7 +55,7 @@ src/capabilities/resource-general/document/
 ├── overview.md
 ├── index.ts
 ├── errors.ts
-├── docs/                            # these eight design documents
+├── docs/                            # model, layout, styles, and this plan
 ├── types/
 │   ├── types.md
 │   ├── ids.ts
@@ -160,45 +160,58 @@ worth stating rather than discovering at step 4. Two things make it bearable:
 
 ## ID Factory
 
-**The shared extraction is deferred and unbuilt.** This plan originally proposed
-one UUID-backed `IdFactory` under `shared/identity/`, constructed per backend
-runtime and injected into every capability. That was deferred, not settled:
-`src/shared/` does not exist, and `#shared/*` is a forward-declared alias
-pointing at nothing. Document must not be planned as though it were agreed.
+**The shared piece was extracted; the semantics were not.** This plan originally
+proposed one UUID-backed `IdFactory` under `shared/identity/` owning every
+capability's identifier vocabulary — `documentId()`, `rowId()`, `contentId()`,
+`atomId()` — constructed per backend runtime and injected everywhere.
+`src/shared/` was never built, and that larger factory was considered and
+rejected: it would make Platform the place where every capability's identity
+kinds are enumerated, so adding a Document ID kind would mean editing Platform.
 
-What exists is the pattern Document copies. Rich Content owns an **internal**
+What was extracted instead is
+[Platform ID Factory](../../../platform/id-factory/overview.md), whose entire
+interface is `create(): string` — one collision-resistant value carrying no kind,
+no prefix, and no encoded meaning. It is reached through the bare alias
+`#id-factory`. That extraction is landing while these documents are being
+written, so confirm its constructor signature at the point Document takes one
+rather than assuming it from here.
+
+Above it sits the pattern Document copies. Rich Content owns an **internal**
 runtime object at
 [`runtime-objects/id-factory/`](../../../resource-support/rich-content/runtime-objects/id-factory/id-factory.md):
-constructed inside `createRichContentRuntime`, injected into the runtime class,
-and never re-exported, so no consumer can hold one or substitute one.
-Consequently it has no `runtime-api/` directories and the method-per-directory
-rule does not apply to it.
+constructed inside `createRichContentRuntime` from the injected `IdFactory`,
+named after the four kinds Rich Content allocates, and never re-exported, so no
+consumer can hold one or substitute one. Consequently it has no `runtime-api/`
+directories and the method-per-directory rule does not apply to it.
 
-Document does the same, with its own identities:
+Document does the same, with its own identities. The two Style families keep
+separate ID domains that cannot reference each other
+([aggregate model](model.md)), so each gets its own method:
 
 ```ts
 export interface DocumentIdFactory {
   documentId(): DocumentId;
   rowId(): DocumentRowId;
   blockId(): DocumentBlockId;
-  styleId(): DocumentStyleId;
+  richContentStyleId(): RichContentStyleId;
+  blockStyleId(): DocumentBlockStyleId;
 }
 ```
 
 Capabilities still own identity semantics:
 
-- Document decides when to allocate a Document, Row, Block, or library Style ID;
+- Document decides when to allocate a Document, Row, Block, or library Style ID,
+  and which prefix each carries;
 - Rich Content decides when to allocate content, atom, mark, or list IDs;
-- a factory only generates collision-resistant values.
+- the shared factory only generates values, and a consumer may not parse one.
 
 Tests inject one deterministic implementation. Being internal is exactly what
 lets a test substitute a counting factory and assert on generated IDs without
 touching any other behavior.
 
-The duplication this leaves is two constructors, each wrapping `randomUUID()`
-with prefixed strings. That is the price of not blocking Document on a
-shared-infrastructure refactor, and it is a cheap price: when the extraction does
-happen it replaces two constructors and no procedure, because no procedure asks a
+What this leaves is two small semantic factories over one generator. That is the
+price of keeping an identifier vocabulary out of Platform, and it is the right
+one: adding a Document ID kind touches Document alone, and no procedure asks a
 factory for anything but a value.
 
 ## Runtime Objects
@@ -315,7 +328,7 @@ runtime.splitBlockIntoRows(input)
 ```
 
 Each method's document follows
-[`runtime-api-method.md`](../../../../../docs/templates/runtime-api-method.md):
+[`runtime-api-method.md`](../../../../../docs/capability-directory/templates/runtime-api-method.md):
 classification, inputs, output, failures, effects, and the procedure tree with
 `||` branches. The trees are already written in
 [`runtime-procedures.md`](runtime-procedures.md) and move into their directories
@@ -553,9 +566,10 @@ cost accounting as above, on the other side of the boundary.
   directories with `pnpm new-runtime-api`. Rule 6 checks both directions, so the
   interface and the directory set land together.
 - Add `runtime-objects/document/constructor.ts`, which receives the shared
-  database, the Rich Content runtime, and the Rich Content transaction
-  participant; constructs and initializes `DocumentStore`; creates the internal
-  ID factory; and returns one `PersistedDocumentRuntime` singleton. It is the
+  database, the `IdFactory`, the Rich Content runtime, and the Rich Content
+  transaction participant; constructs and initializes `DocumentStore`; creates
+  the internal ID factory over the injected generator; and returns one
+  `PersistedDocumentRuntime` singleton. It is the
   only place performing startup work, and it does not register endpoints —
   construction and registration remain separate startup operations.
 
@@ -630,7 +644,6 @@ cost accounting as above, on the other side of the boundary.
 
 ## Deferred Decisions
 
-- the shared `IdFactory` extraction, and with it `src/shared/`;
 - authoritative font metrics and exact glyph placement;
 - Row splitting across pages;
 - headers, footers, and page-number content;

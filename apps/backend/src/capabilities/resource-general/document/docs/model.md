@@ -1,5 +1,12 @@
 # Document Aggregate Model
 
+These declarations land in `types/`: the ID aliases in `ids.ts`, the aggregate in
+`aggregate.ts`, page geometry in `page.ts`, the Style Library and Block
+applications in `styles.ts`, and the derived projection in `display.ts`. None of
+them carries a Kysely row shape or an HTTP shape — `persistence/stored-types.ts`
+holds rows as stored, and each endpoint's `wire/` holds what arrives over the
+transport.
+
 ## Canonical Aggregate
 
 ```ts
@@ -214,10 +221,16 @@ break intent. `DisplayDocument` is derived and never stored.
 
 ## Identity and Ownership
 
-- Document requests Document, Row, Block, and Style Library IDs from the
-  centralized runtime `IdFactory`; Document owns their lifecycle and meaning.
-- Rich Content requests content, atom, mark, and list IDs from the same
-  generator; Rich Content owns their lifecycle and meaning.
+- Document allocates Document, Row, Block, and Style Library IDs through its own
+  internal `DocumentIdFactory`, which names those four kinds and takes their
+  values from
+  [Platform ID Factory](../../../platform/id-factory/overview.md). Document owns
+  their lifecycle and meaning.
+- Rich Content allocates content, atom, mark, and list IDs the same way, through
+  its own internal factory over the same generator; Rich Content owns their
+  lifecycle and meaning. The shared capability generates values and knows
+  nothing about kinds, which is what keeps one capability's identity vocabulary
+  out of another's.
 - Moving or resizing a Row or Block preserves its ID.
 - Ordinary Rich Content edits preserve the owning Block.
 - Splitting a Block destroys the source Block and source content object, then

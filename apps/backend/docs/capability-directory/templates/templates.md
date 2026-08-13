@@ -20,7 +20,7 @@ directory.
 | [endpoint.md](endpoint.md) | `endpoints/<endpoint>/` | `<endpoint>.md` |
 | [endpoint-procedures.md](endpoint-procedures.md) | `endpoints/<endpoint>/procedures/` | `procedures.md` |
 
-[reviewing-a-capability.md](reviewing-a-capability.md) is not a template. It is
+[reviewing-a-capability.md](../reviewing-a-capability.md) is not a template. It is
 the review checklist the structure exists to make possible.
 
 ## Rules
