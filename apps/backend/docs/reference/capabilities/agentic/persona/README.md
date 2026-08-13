@@ -17,8 +17,8 @@ wrapper, while purge removes both retained histories.
 ## Status and authority
 
 **Implemented and tested** across
-[`persona.test.ts`](../../../../test/capabilities/persona.test.ts) and
-[`persona-wiring.test.ts`](../../../../test/capabilities/persona-wiring.test.ts).
+`persona.test.ts` and
+`persona-wiring.test.ts`.
 
 There is **no consumer yet**. Derived Outputs is unchanged, and Agents does not exist.
 `resolve()` is exercised only by tests. The snapshot shape is the contract Agents will
@@ -39,7 +39,7 @@ built here.
   externally retried. Persona uses expected revisions for update/delete and does not
   promise replay of a completed response; `create` is also not replayed. Add receipts if
   a real need appears.
-- **Limits live in [`domain/validation.ts`](../domain/validation.ts)** as
+- **Limits live in `domain/validation.ts`** as
   `DEFAULT_PERSONA_LIMITS`, not in `configuration/`, matching Comments. Adding a
   `persona:` config section later is a ~3-line change in `loadBackendConfig.ts` plus an
   override passed through `initialization/runtimes/persona.ts`.
@@ -55,20 +55,20 @@ built here.
 
 | Concern | File |
 | --- | --- |
-| Canonical types, commands, queries | [`domain/model.ts`](../domain/model.ts) |
-| Typed errors | [`domain/errors.ts`](../domain/errors.ts) |
-| Definition and prompt digests | [`domain/canonical.ts`](../domain/canonical.ts) |
-| Deterministic rendering | [`domain/render.ts`](../domain/render.ts) |
-| Ingress validation and limits | [`domain/validation.ts`](../domain/validation.ts) |
-| The built-in fallback | [`domain/builtin.ts`](../domain/builtin.ts) |
-| Runtime, wrapper lifecycle, freeze | [`application/personaService.ts`](../application/personaService.ts) |
-| Store contract | [`ports/personaStore.ts`](../ports/personaStore.ts) |
-| The narrow Context slice | [`ports/personaContext.ts`](../ports/personaContext.ts) |
-| Table names, DDL, pragmas | [`persistence/sqliteSchema.ts`](../persistence/sqliteSchema.ts) |
-| SQLite adapter | [`persistence/sqlitePersonaStore.ts`](../persistence/sqlitePersonaStore.ts) |
-| Wire decoders | [`wire/`](../wire/) |
-| Endpoints and error mapping | [`registerPersonaEndpoints.ts`](../../../api/routes/persona/registerPersonaEndpoints.ts) |
-| Composition | [`create/persona.ts`](../../../initialization/runtimes/persona.ts) |
+| Canonical types, commands, queries | `domain/model.ts` |
+| Typed errors | `domain/errors.ts` |
+| Definition and prompt digests | `domain/canonical.ts` |
+| Deterministic rendering | `domain/render.ts` |
+| Ingress validation and limits | `domain/validation.ts` |
+| The built-in fallback | `domain/builtin.ts` |
+| Runtime, wrapper lifecycle, freeze | `application/personaService.ts` |
+| Store contract | `ports/personaStore.ts` |
+| The narrow Context slice | `ports/personaContext.ts` |
+| Table names, DDL, pragmas | `persistence/sqliteSchema.ts` |
+| SQLite adapter | `persistence/sqlitePersonaStore.ts` |
+| Wire decoders | `wire/` |
+| Endpoints and error mapping | `registerPersonaEndpoints.ts` |
+| Composition | `create/persona.ts` |
 
 ## Reading order
 

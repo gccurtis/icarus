@@ -28,11 +28,11 @@ embeddings, lattice state, and retrieval.
 
 ## Dependencies
 
-- [`Knowledge`](../../../capabilities/knowledge/knowledge.ts) for prose-source add/upsert and removal.
-- The shared [`Logger`](../../../capabilities/platform/observability/logger.ts).
+- `Knowledge` for prose-source add/upsert and removal.
+- The shared `Logger`.
 - Project identity from backend configuration, bound into SQLite at construction.
 - The serial/concurrent job scheduler at the endpoint boundary.
-- The [runtime resource registry](../../../initialization/runtimes/resource-reader.ts), which exposes current prose files to Derived Output scope/list/read tools.
+- The `runtime resource registry`, which exposes current prose files to Derived Output scope/list/read tools.
 
 There is no filesystem read, multipart parser, binary decoder, text extractor, Formula dependency, or Intelligence call in this capability. The `content` field has already been decoded into a JavaScript string by its caller.
 
@@ -40,21 +40,21 @@ There is no filesystem read, multipart parser, binary decoder, text extractor, F
 
 | Concern | Source |
 |---|---|
-| Domain model and classification | [`domain/model.ts`](../domain/model.ts) |
-| Typed application errors | [`domain/errors.ts`](../domain/errors.ts) |
-| Persistence port | [`ports/repository.ts`](../ports/repository.ts) |
-| Service and reconciliation helpers | [`application/generalFileService.ts`](../application/generalFileService.ts) |
-| SQLite current/history schema and transactions | [`persistence/sqliteGeneralFileRepository.ts`](../persistence/sqliteGeneralFileRepository.ts) |
-| Public exports | [`index.ts`](../index.ts) |
-| Composition factory | [`initialization/runtimes/generalFiles.ts`](../../../initialization/runtimes/generalFiles.ts) |
-| HTTP/job wiring | [`api/routes/general-files/registerGeneralFileEndpointMappings.ts`](../../../api/routes/general-files/registerGeneralFileEndpointMappings.ts) |
-| Resource scope/read adapter | [`initialization/runtimes/resource-reader.ts`](../../../initialization/runtimes/resource-reader.ts) |
-| Regression tests | [`test/capabilities/general-files.test.ts`](../../../../test/capabilities/general-files.test.ts) |
+| Domain model and classification | `domain/model.ts` |
+| Typed application errors | `domain/errors.ts` |
+| Persistence port | `ports/repository.ts` |
+| Service and reconciliation helpers | `application/generalFileService.ts` |
+| SQLite current/history schema and transactions | `persistence/sqliteGeneralFileRepository.ts` |
+| Public exports | `index.ts` |
+| Composition factory | `initialization/runtimes/generalFiles.ts` |
+| HTTP/job wiring | `api/routes/general-files/registerGeneralFileEndpointMappings.ts` |
+| Resource scope/read adapter | `initialization/runtimes/resource-reader.ts` |
+| Regression tests | `test/capabilities/general-files.test.ts` |
 
 ## Related material
 
-- [Original General Files design](../../../../../../scratch/general-files-design.md)
-- [Recent capability fixes](../../../../../../scratch/recent-capabilities-fixes-2026-08-01.md)
-- [Knowledge platform documentation](../../../../../../docs/platform/knowledge.md)
+- `Original General Files design`
+- `Recent capability fixes`
+- `Knowledge platform documentation`
 
 The design page contains historical prose; this package reflects current queue choices, file classifications, and compensation behavior.

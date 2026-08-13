@@ -26,19 +26,19 @@ and retries pending Activity delivery before HTTP traffic is accepted.
 
 | Layer | Authority and entry points |
 | --- | --- |
-| Public exports | [`index.ts`](../index.ts) |
-| Domain model/errors/validation | [`domain/model.ts`](../domain/model.ts), [`domain/errors.ts`](../domain/errors.ts), [`domain/validation.ts`](../domain/validation.ts) |
-| Canonical command digest | [`domain/canonical.ts`](../domain/canonical.ts) |
-| Application runtime | [`application/commentService.ts`](../application/commentService.ts) |
-| Store and Activity ports | [`ports/commentStore.ts`](../ports/commentStore.ts), [`ports/activityPublisher.ts`](../ports/activityPublisher.ts) |
-| SQLite adapter/schema | [`persistence/sqliteCommentStore.ts`](../persistence/sqliteCommentStore.ts), [`persistence/sqliteSchema.ts`](../persistence/sqliteSchema.ts) |
-| Strict wire decoders | [`wire/commandSchemas.ts`](../wire/commandSchemas.ts), [`wire/querySchemas.ts`](../wire/querySchemas.ts) |
-| Composition and routes | [`create/comments.ts`](../../../initialization/runtimes/comments.ts), [`registerCommentEndpoints.ts`](../../../api/routes/comments/registerCommentEndpoints.ts) |
+| Public exports | `index.ts` |
+| Domain model/errors/validation | `domain/model.ts`, `domain/errors.ts`, `domain/validation.ts` |
+| Canonical command digest | `domain/canonical.ts` |
+| Application runtime | `application/commentService.ts` |
+| Store and Activity ports | `ports/commentStore.ts`, `ports/activityPublisher.ts` |
+| SQLite adapter/schema | `persistence/sqliteCommentStore.ts`, `persistence/sqliteSchema.ts` |
+| Strict wire decoders | `wire/commandSchemas.ts`, `wire/querySchemas.ts` |
+| Composition and routes | `create/comments.ts`, `registerCommentEndpoints.ts` |
 
 The broader rationale is in
-[`scratch/comments-design.md`](../../../../../../scratch/comments-design.md).
+`scratch/comments-design.md`.
 These files describe the implemented contract; runtime code takes precedence.
 
 Focused coverage is in
-[`comments.test.ts`](../../../../test/capabilities/comments.test.ts) and
-[`comments-wiring.test.ts`](../../../../test/capabilities/comments-wiring.test.ts).
+`comments.test.ts` and
+`comments-wiring.test.ts`.

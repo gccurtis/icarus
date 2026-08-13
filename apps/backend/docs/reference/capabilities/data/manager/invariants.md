@@ -105,7 +105,7 @@ There are no cross-store mutations or compensation steps in the core capability.
 
 ## Regression coverage
 
-[`structured-data-formula.test.ts`](../../../../test/capabilities/structured-data-formula.test.ts)
+`structured-data-formula.test.ts`
 covers sole-source Formula resolution, case collisions, current/history
 deletion and purge, delete endpoint revision forwarding, cross-store
 update/delete CAS, collection-cell dependencies, built-ins/lambda locals,

@@ -2,7 +2,7 @@
 
 ## Construction
 
-[`createContextManagerInstance`](../../../initialization/runtimes/context.ts) opens `./data/contexts.db`, binds the configured `projectId` into `SQLiteContextStore`, and passes `config.context` plus the shared Logger to [`createContextManager`](../context.ts).
+`createContextManagerInstance` opens `./data/contexts.db`, binds the configured `projectId` into `SQLiteContextStore`, and passes `config.context` plus the shared Logger to `createContextManager`.
 
 ```mermaid
 flowchart LR
@@ -50,7 +50,7 @@ The module-private helper walks entries once, keys each as `${kind}:${id}`, and 
 
 ### Endpoint helpers
 
-[`parseEntries`](../../../api/routes/context/registerContextEndpoints.ts) treats a non-array as empty, ignores non-object elements, coerces `id` and `kind` with `String`, and drops entries with an empty result. It is transport normalization, not a complete schema validator.
+`parseEntries` treats a non-array as empty, ignores non-object elements, coerces `id` and `kind` with `String`, and drops entries with an empty result. It is transport normalization, not a complete schema validator.
 
 `contextErrorResponse` maps Context validation/not-found/conflict/revision
 errors plus purge's `not_deleted` and missing-history outcomes. Other caught
@@ -77,7 +77,7 @@ the ordinary path; a race can instead surface a SQLite error.
 
 ## Resource-registry integration
 
-[`ResourceRegistry.resolve`](../../../initialization/runtimes/resource-reader.ts) calls `ContextManager.resolve`, then:
+`ResourceRegistry.resolve` calls `ContextManager.resolve`, then:
 
 - passes `kind: "document"` leaves through as source IDs;
 - maps a live text General File to its `knowledgeSourceId`;

@@ -2,7 +2,7 @@
 
 ## Entry type algebra
 
-[`types.ts`](../types.ts) defines:
+`types.ts` defines:
 
 ```ts
 type DataKind = "variable" | "function" | "table" | "record" | "list";
@@ -12,7 +12,7 @@ type ValueKind =
   | "table" | "record" | "list" | "function" | "unknown";
 ```
 
-`ValueKind` is a broad type vocabulary. [`validation.ts`](../validation.ts) currently admits only `text`, `number`, `logic`, `table`, `record`, `list`, and `unknown` as collection field definitions. `date` and `function` are therefore representable in TypeScript but rejected at mutation ingress.
+`ValueKind` is a broad type vocabulary. `validation.ts` currently admits only `text`, `number`, `logic`, `table`, `record`, `list`, and `unknown` as collection field definitions. `date` and `function` are therefore representable in TypeScript but rejected at mutation ingress.
 
 ### Common and formula entries
 
@@ -67,7 +67,7 @@ mutations.
 
 ## Request types
 
-[`structured-data.ts`](../structured-data.ts) defines these service request families:
+`structured-data.ts` defines these service request families:
 
 | Request | Required fields |
 |---|---|
@@ -97,7 +97,7 @@ Formula value endpoints also return structured `resolution_error`, `unresolved`,
 
 ## Store contract
 
-[`DataStore`](../store.ts) is synchronous and already bound to one owner prefix:
+`DataStore` is synchronous and already bound to one owner prefix:
 
 ```ts
 interface DataStore {
@@ -119,7 +119,7 @@ current-row CAS wins. All normal reads use the current table only.
 
 ## SQLite representation
 
-[`SQLiteDataStore`](../sqlite-store.ts) uses `./data/structured-data.db`, WAL
+`SQLiteDataStore` uses `./data/structured-data.db`, WAL
 mode, current table `sd_${sha256(projectId).slice(0,16)}_entries`, and matching
 `_history` table.
 

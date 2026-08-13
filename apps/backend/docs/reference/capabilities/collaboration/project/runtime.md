@@ -17,11 +17,11 @@ The default Presence TTL is 30 seconds. `presenceTtlMs` must be a positive safe
 integer. The clock must return a parseable ISO timestamp every time it is read.
 Injecting a clock keeps lease-expiry behavior deterministic in tests.
 
-[`createActivityInstance`](../../../initialization/runtimes/activity.ts) constructs
+`createActivityInstance` constructs
 `SQLiteActivityStore(config.projectId, "./data/activity.db")` and passes it to
 the core factory. Startup creates that instance before resource kinds, then
 registers Activity routes through
-[`registerActivityEndpoints`](../../../api/routes/activity/registerActivityEndpoints.ts).
+`registerActivityEndpoints`.
 
 `SQLiteActivityStore(projectId, dbPath)` creates the containing directory,
 derives a 16-hex SHA-256 prefix from the project ID, creates that project's
@@ -112,12 +112,12 @@ database; no user ID is part of the storage partition.
 
 ## Canonical helpers
 
-[`canonicalizeMetadata`](../domain/canonical.ts) recursively accepts JSON
+`canonicalizeMetadata` recursively accepts JSON
 values, sorts object keys, omits `undefined` object members, and rejects
 non-finite numbers and non-JSON values. It ensures equivalent key order has the
 same stored representation and digest.
 
-[`digestActivityTransaction`](../domain/canonical.ts) SHA-256 hashes the
+`digestActivityTransaction` SHA-256 hashes the
 complete normalized transaction, including nulls for omitted optional fields
 and canonical metadata. It distinguishes harmless replay from reuse of one ID
 for different content.

@@ -2,7 +2,7 @@
 
 ## Construction
 
-[`createPersonaInstance`](../../../initialization/runtimes/persona.ts) opens `./data/personas.db`,
+`createPersonaInstance` opens `./data/personas.db`,
 binds the configured `projectId` into `SQLitePersonaStore`, and passes the
 already-constructed `ContextManager` through as `dependencies.context`.
 
@@ -17,7 +17,7 @@ flowchart LR
 ```
 
 Persona is constructed immediately after `contextManager` in
-[`create-runtime.ts`](../../../initialization/create-runtime.ts) — Context is its only dependency, so
+`create-runtime.ts` — Context is its only dependency, so
 nothing else needs to exist first. There is no Persona-specific recovery step or
 background worker; the backend-wide retention scheduler calls the capability's retention
 methods.
@@ -121,7 +121,7 @@ record.** `promptDigest` exists so two runs can be compared for identical prompt
 without ever writing those bytes to the log. This matches the existing rule that
 diagnostics do not echo prompts or provider responses, and there is a regression test
 asserting it
-([`persona-wiring.test.ts`](../../../../test/capabilities/persona-wiring.test.ts) →
+(`persona-wiring.test.ts` →
 "persona logs carry digests and never section text").
 
 Every command and query is logged (`persona.command` / `persona.query.completed`), plus a

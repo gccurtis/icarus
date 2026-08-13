@@ -2,11 +2,11 @@
 
 ## No direct Formula endpoint
 
-Formula does not register routes or Jobs. Every call is made inside a consumer-owned Job. The current concrete consumers composed by [`create-runtime.ts`](../../../initialization/create-runtime.ts) are Structured Data endpoint wiring and the Document capability's formula-evaluation workflow. Rich Text imports the Formula wire type but never invokes the engine.
+Formula does not register routes or Jobs. Every call is made inside a consumer-owned Job. The current concrete consumers composed by `create-runtime.ts` are Structured Data endpoint wiring and the Document capability's formula-evaluation workflow. Rich Text imports the Formula wire type but never invokes the engine.
 
 ## Structured Data endpoints
 
-All Structured Data routes in [`registerStructuredDataEndpoints.ts`](../../../api/routes/structured-data/registerStructuredDataEndpoints.ts) are concurrent, inline Jobs. Most CRUD routes do not call Formula immediately. Three value-oriented paths use the resolver/engine:
+All Structured Data routes in `registerStructuredDataEndpoints.ts` are concurrent, inline Jobs. Most CRUD routes do not call Formula immediately. Three value-oriented paths use the resolver/engine:
 
 | Endpoint | Job | Formula-related call chain |
 | --- | --- | --- |
@@ -42,14 +42,14 @@ Endpoint wiring chooses status mapping: parse/evaluation diagnostics return a cl
 
 ## Document formula evaluation
 
-Document embeds Formula atoms inside text/code/quote blocks. A `formula.evaluate.request` command enters `POST /documents/command`, whose endpoint Job is serial and inline. The command freezes document revision, block/atom identity, expression text/digest and creates a durable attempt. It dispatches two internal Jobs through [`registerDocumentInternalJobs.ts`](../../../api/routes/document/registerDocumentInternalJobs.ts):
+Document embeds Formula atoms inside text/code/quote blocks. A `formula.evaluate.request` command enters `POST /documents/command`, whose endpoint Job is serial and inline. The command freezes document revision, block/atom identity, expression text/digest and creates a durable attempt. It dispatches two internal Jobs through `registerDocumentInternalJobs.ts`:
 
 | Intent | Queue | Calls |
 | --- | --- | --- |
 | `document.formula.evaluate.compute` | concurrent | parse frozen source → build Structured Data resolver snapshot → evaluate → create Rich Text settlement operation → persist proposed attempt |
 | `document.formula.evaluate.settle` | serial | reload head → verify atom/expression/touched history → apply candidate Rich Text operation in a Document mutation |
 
-Queue assignments are created in [`createDocumentJobs.ts`](../../../api/routes/document/createDocumentJobs.ts); orchestration and Formula calls are in [`documentService.ts`](../../../capabilities/document/application/documentService.ts).
+Queue assignments are created in `createDocumentJobs.ts`; orchestration and Formula calls are in `documentService.ts`.
 
 ```mermaid
 sequenceDiagram
@@ -81,7 +81,7 @@ Successful compute calls `toWire` and `formatFormulaValue`. Parse/evaluation fai
 
 ## Rich Text boundary
 
-[`FormulaAtom`](../../rich-text/types.ts) persists expression source, an optional accepted `FormulaWireValue`, display text, and an optional diagnostic. [`formulaFromDelimitedRange`](../../rich-text/formula-authoring.ts) only extracts source and creates an atomic replacement operation. Evaluation always belongs to a host such as Document.
+`FormulaAtom` persists expression source, an optional accepted `FormulaWireValue`, display text, and an optional diagnostic. `formulaFromDelimitedRange` only extracts source and creates an atomic replacement operation. Evaluation always belongs to a host such as Document.
 
 ## Logging through the flow
 
@@ -89,4 +89,4 @@ Transport logs request ID and Job ID. Scheduler logs queue wait/lifecycle. Formu
 
 ## Other imports that are type-only
 
-Slide validation and wire schemas import `FormulaWireValue` for embedded bindings, but the current Slide runtime does not call `FormulaEngine`. No Spreadsheet implementation is composed in [`create-runtime.ts`](../../../initialization/create-runtime.ts).
+Slide validation and wire schemas import `FormulaWireValue` for embedded bindings, but the current Slide runtime does not call `FormulaEngine`. No Spreadsheet implementation is composed in `create-runtime.ts`.

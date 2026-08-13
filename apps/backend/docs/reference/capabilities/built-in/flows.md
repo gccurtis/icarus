@@ -10,7 +10,7 @@
 | `POST /audit` | `audit-deferred` | serial | deferred | `deferredWork` creates `202`; follow-up calls `runAuditCapability({ requestId })` | `202 { status: "accepted", requestId }` |
 
 All four routes are mapped in
-[`registerBuiltInEndpointMappings.ts`](../../../api/routes/registerBuiltInEndpointMappings.ts).
+`registerBuiltInEndpointMappings.ts`.
 
 ## Inline flow
 

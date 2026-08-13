@@ -1,7 +1,7 @@
 # Document type reference
 
 Canonical type authority is
-[`domain/model.ts`](../domain/model.ts). Wire decoders return these types only
+`domain/model.ts`. Wire decoders return these types only
 after strict JSON-shape admission; SQLite mappers persist/reconstruct the same
 families.
 
@@ -70,8 +70,8 @@ owned by `#rich-text`; Derived Output types by `#derived-outputs`.
 - Visuals: image source/accessibility and shared visual dimensions.
 
 The exact payload for each discriminant is in
-[`model.ts`](../domain/model.ts) and admitted by
-[`operationSchemas.ts`](../wire/operationSchemas.ts).
+`model.ts` and admitted by
+`operationSchemas.ts`.
 
 ## History, Activity transaction, and idempotency family
 
@@ -148,7 +148,7 @@ the loaded snapshot.
 creation, prompt refresh, and formula evaluation. Every intent has a stable
 idempotency key and either Document or attempt identity.
 
-[`ports/documentStore.ts`](../ports/documentStore.ts) defines atomic input
+`ports/documentStore.ts` defines atomic input
 families: `DocumentCreationCommit`, `DocumentMutationCommit`,
 `PromptOwnershipTransition`, `PromptCreationFailureCommit`, and stage-claim
 result.
@@ -163,7 +163,7 @@ result.
 
 ## Error family and HTTP mapping
 
-[`domain/errors.ts`](../domain/errors.ts) defines not-found, attempt-not-found,
+`domain/errors.ts` defines not-found, attempt-not-found,
 already-exists, revision conflict, idempotency mismatch, compensation conflict,
 history-pruned, invalid-cursor, validation, identity-reuse, placement, Style
 reference, operation, and stale-attempt errors. Endpoint wiring additionally
@@ -175,7 +175,7 @@ maps a live current row to 409 `not_deleted` and missing terminal history to 404
 
 ## Wire families and limits
 
-[`valueSchemas.ts`](../wire/valueSchemas.ts) supplies strict decoders for every
+`valueSchemas.ts` supplies strict decoders for every
 nested canonical value plus common primitive/exact-key guards. Wire limits are
 1 MiB encoded payload, 256 KiB string, 512-byte identifier, 10,000 collection
 items, 1,000 Document operations, 1,000 Rich Text operations, depth 32, and

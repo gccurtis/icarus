@@ -22,11 +22,11 @@ Context owns context identity, names, membership, descriptions, revision metadat
 
 ## Runtime dependencies
 
-- A configuration-bound [`SQLiteContextStore`](../sqlite-store.ts).
-- The shared [`Logger`](../../../capabilities/platform/observability/logger.ts).
-- `ContextEntry` and the `KnowledgeResourceResolver` structural contract from [Knowledge types](../../../capabilities/knowledge/types.ts).
+- A configuration-bound `SQLiteContextStore`.
+- The shared `Logger`.
+- `ContextEntry` and the `KnowledgeResourceResolver` structural contract from `Knowledge types`.
 - The request registry and in-memory scheduler at the HTTP boundary.
-- The [runtime resource registry](../../../initialization/runtimes/resource-reader.ts), which consumes `ContextManager.resolve` and maps known General File and Connector leaves to Knowledge source IDs.
+- The `runtime resource registry`, which consumes `ContextManager.resolve` and maps known General File and Connector leaves to Knowledge source IDs.
 
 There is no Intelligence, Formula, or network dependency in the Context manager itself.
 
@@ -34,20 +34,20 @@ There is no Intelligence, Formula, or network dependency in the Context manager 
 
 | Concern | Current source |
 |---|---|
-| Public record/error types | [`types.ts`](../types.ts) |
-| Persistence port | [`store.ts`](../store.ts) |
-| Runtime interface, implementation, and helpers | [`context.ts`](../context.ts) |
-| SQLite schema and adapter | [`sqlite-store.ts`](../sqlite-store.ts) |
-| Public exports | [`index.ts`](../index.ts) |
-| Composition factory | [`initialization/runtimes/context.ts`](../../../initialization/runtimes/context.ts) |
-| HTTP-to-job mappings | [`api/routes/context/registerContextEndpoints.ts`](../../../api/routes/context/registerContextEndpoints.ts) |
-| Cross-capability resource mapping | [`initialization/runtimes/resource-reader.ts`](../../../initialization/runtimes/resource-reader.ts) |
-| Limits and defaults | [`loadBackendConfig.ts`](../../../initialization/configuration.ts) |
+| Public record/error types | `types.ts` |
+| Persistence port | `store.ts` |
+| Runtime interface, implementation, and helpers | `context.ts` |
+| SQLite schema and adapter | `sqlite-store.ts` |
+| Public exports | `index.ts` |
+| Composition factory | `initialization/runtimes/context.ts` |
+| HTTP-to-job mappings | `api/routes/context/registerContextEndpoints.ts` |
+| Cross-capability resource mapping | `initialization/runtimes/resource-reader.ts` |
+| Limits and defaults | `loadBackendConfig.ts` |
 
 ## Related material
 
-- [Original Context design](../../../../../../scratch/context-design.md) is useful background but contains proposals that are not all implemented, including the user/project dual-scope model this capability has since dropped.
-- [Top-level Context capability page](../../../../../../docs/capabilities/context.md) describes the broader target architecture.
-- [Runtime scope](../../../../../../docs/platform/runtime-scope.md) explains why project identity is bound at startup rather than accepted from arbitrary requests. `userId` still exists in `BackendConfig` for activity attribution but no longer selects a Context table.
+- `Original Context design` is useful background but contains proposals that are not all implemented, including the user/project dual-scope model this capability has since dropped.
+- `Top-level Context capability page` describes the broader target architecture.
+- `Runtime scope` explains why project identity is bound at startup rather than accepted from arbitrary requests. `userId` still exists in `BackendConfig` for activity attribution but no longer selects a Context table.
 
 When these pages disagree with those design documents, this package intentionally reports the code that runs today.

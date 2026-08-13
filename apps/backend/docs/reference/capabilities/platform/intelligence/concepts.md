@@ -20,16 +20,16 @@ flowchart LR
 
 | Concept | Meaning | Code |
 | --- | --- | --- |
-| Cast | Requested `purpose`, `strength`, and `speed` | [`Cast`](../types.ts) |
-| Route | Exact cast key mapped to provider, model, and optional effort | [`CastRoute`](../types.ts) |
-| Inference | Text generation through `Provider.infer`; tool calls are not part of its contract | [`infer`](../intelligence.ts) |
-| Reasoning | Generation through `Provider.reason`, with optional provider tool calls | [`reason`](../intelligence.ts) |
-| Structured call | A provider call carrying a JSON Schema; Intelligence JSON-parses returned content | [`inferStructured`](../intelligence.ts), [`reasonStructured`](../intelligence.ts) |
-| Tool definition | Provider-visible name, description, and input schema | [`ToolDefinition`](../tools.ts) |
-| Tool binding | A definition paired with a local async handler | [`ToolBinding`](../tools.ts) |
-| Tool round | One provider response containing one or more tool calls, followed by local execution | [`reasonWithToolsInternal`](../intelligence.ts) |
-| Provider | Adapter that translates provider-neutral calls to one external API | [`Provider`](../provider.ts) |
-| Usage | Normalized token counts and optional USD cost | [`Usage`](../types.ts) |
+| Cast | Requested `purpose`, `strength`, and `speed` | `Cast` |
+| Route | Exact cast key mapped to provider, model, and optional effort | `CastRoute` |
+| Inference | Text generation through `Provider.infer`; tool calls are not part of its contract | `infer` |
+| Reasoning | Generation through `Provider.reason`, with optional provider tool calls | `reason` |
+| Structured call | A provider call carrying a JSON Schema; Intelligence JSON-parses returned content | `inferStructured`, `reasonStructured` |
+| Tool definition | Provider-visible name, description, and input schema | `ToolDefinition` |
+| Tool binding | A definition paired with a local async handler | `ToolBinding` |
+| Tool round | One provider response containing one or more tool calls, followed by local execution | `reasonWithToolsInternal` |
+| Provider | Adapter that translates provider-neutral calls to one external API | `Provider` |
+| Usage | Normalized token counts and optional USD cost | `Usage` |
 
 ## Routing model
 

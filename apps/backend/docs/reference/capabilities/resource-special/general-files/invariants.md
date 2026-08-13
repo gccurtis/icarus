@@ -80,7 +80,7 @@ SQLite uses WAL and `synchronous=NORMAL`. List filters are SQL-backed, but filen
 
 ## Regression coverage
 
-[`general-files.test.ts`](../../../../test/capabilities/general-files.test.ts)
+`general-files.test.ts`
 covers serial mutation job selection, content addressing/idempotence,
 content-free listing, multibyte byte size, extensionless and binary-container
 classification, atomic replacement links, current/history deletion,

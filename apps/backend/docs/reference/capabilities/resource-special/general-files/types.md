@@ -2,7 +2,7 @@
 
 ## Domain types
 
-All domain types live in [`domain/model.ts`](../domain/model.ts) and are exported from [`index.ts`](../index.ts).
+All domain types live in `domain/model.ts` and are exported from `index.ts`.
 
 ### Kinds and classifier
 
@@ -76,7 +76,7 @@ still reject a lost replacement as an ordinary `Error`.
 
 ## Store contract
 
-[`GeneralFileStore`](../ports/repository.ts) is a synchronous, project-bound persistence port:
+`GeneralFileStore` is a synchronous, project-bound persistence port:
 
 | Method | Contract |
 |---|---|
@@ -93,7 +93,7 @@ still reject a lost replacement as an ordinary `Error`.
 
 ## SQLite representation
 
-[`SQLiteGeneralFileStore`](../persistence/sqliteGeneralFileRepository.ts) opens
+`SQLiteGeneralFileStore` opens
 `./data/general-files.db` in WAL mode with `synchronous=NORMAL`. Its current
 table is `gf_${sha256(projectId).slice(0,16)}_files`; matching `_history`
 stores complete snapshots and terminal deletion records.

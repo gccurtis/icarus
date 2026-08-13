@@ -5,7 +5,7 @@
 Formula owns expression semantics. A caller owns where source came from, when it is evaluated, which resolver snapshot is admissible, whether a value is accepted, and how that accepted value is persisted. The current boundaries are:
 
 - Formula owns lexing, parsing, AST nodes, binding, exact values, evaluation, built-ins, dependency extraction, diagnostics, digests, display formatting, and wire conversion.
-- Structured Data owns declarations and rows. [`FormulaNameResolver`](../../../initialization/runtimes/formula-name-resolver.ts) is an initialization adapter that reads exactly the Structured Data instance injected into it.
+- Structured Data owns declarations and rows. `FormulaNameResolver` is an initialization adapter that reads exactly the Structured Data instance injected into it.
 - Document owns formula-evaluation attempts, frozen expressions, concurrency, staleness checks, and settlement into embedded Rich Text.
 - Rich Text owns `FormulaAtom` source/display/accepted-value fields, but it does not parse or evaluate Formula.
 - Endpoint wiring owns HTTP status codes and queue selection.
@@ -18,11 +18,11 @@ Formula performs no persistence and no network I/O.
 
 Authored `source` is lexed into tokens and parsed into a `FormulaNode` tree. A successful `FormulaExpression` retains the original source, a 32-hex-character SHA-256 prefix (`sourceDigest`), the language discriminator, and the AST root. Nodes carry generated process-local IDs and source spans.
 
-The type calls spans `startByte`/`endByte`, but [`lexer.ts`](../lexer.ts) advances JavaScript string indexes. Current offsets are therefore UTF-16 code-unit offsets; `formula/v1` identifiers are ASCII-only, so ASCII positions also equal UTF-8 byte positions. Consumers must not assume true byte offsets for non-ASCII string literal content.
+The type calls spans `startByte`/`endByte`, but `lexer.ts` advances JavaScript string indexes. Current offsets are therefore UTF-16 code-unit offsets; `formula/v1` identifiers are ASCII-only, so ASCII positions also equal UTF-8 byte positions. Consumers must not assume true byte offsets for non-ASCII string literal content.
 
 ### AST and language operations
 
-The AST covers null, number, text and logic literals; names; list and record literals; unary and binary expressions; calls and lambdas; field/index/slice access; set projection/query; and cardinality promotion. Operator precedence is encoded by the recursive-descent functions in [`parser.ts`](../parser.ts):
+The AST covers null, number, text and logic literals; names; list and record literals; unary and binary expressions; calls and lambdas; field/index/slice access; set projection/query; and cardinality promotion. Operator precedence is encoded by the recursive-descent functions in `parser.ts`:
 
 1. lambda/function form;
 2. `||`;
@@ -97,7 +97,7 @@ flowchart TD
 
 ## Built-ins
 
-[`builtins.ts`](../builtins.ts) recognizes names case-insensitively:
+`builtins.ts` recognizes names case-insensitively:
 
 - control/logic: `IF`, `NOT`, `AND`, `OR`;
 - aggregates: `SUM`, `PRODUCT`, `MIN`, `MAX`, `AVG`, `AVERAGE`, `COUNT`;

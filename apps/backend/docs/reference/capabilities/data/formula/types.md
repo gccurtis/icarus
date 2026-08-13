@@ -2,11 +2,11 @@
 
 ## Public export surface
 
-[`index.ts`](../index.ts) is the supported package surface. It exports the engine factory; request/result, value, AST, diagnostics, limits, resolver and dependency types; wire/display helpers; rational constructors; and value constructors. Lower-level lexer/parser/binder/evaluator functions are exported by their files but are not re-exported from the package index.
+`index.ts` is the supported package surface. It exports the engine factory; request/result, value, AST, diagnostics, limits, resolver and dependency types; wire/display helpers; rational constructors; and value constructors. Lower-level lexer/parser/binder/evaluator functions are exported by their files but are not re-exported from the package index.
 
 ## Engine request and result family
 
-Defined in [`engine.ts`](../engine.ts):
+Defined in `engine.ts`:
 
 | Type | Essential fields | Meaning |
 | --- | --- | --- |
@@ -25,7 +25,7 @@ The public `FormulaEngine` methods are cataloged in [runtime.md](runtime.md).
 
 ## AST family
 
-[`ast.ts`](../ast.ts) defines immutable discriminated nodes. Every node has a generated `id` and [`SourceSpan`](../tokens.ts). The union includes:
+`ast.ts` defines immutable discriminated nodes. Every node has a generated `id` and `SourceSpan`. The union includes:
 
 | Family | Node discriminants |
 | --- | --- |
@@ -37,11 +37,11 @@ The public `FormulaEngine` methods are cataloged in [runtime.md](runtime.md).
 
 `NameNode.binding` is an optional `BoundFormulaReference { kind: "binding"; bindingId; ownerRevision; valueDigest }`. Set-operation bodies are currently only `field-projection` or `condition-query`. Conditions are field comparisons, negation, or `and | or | xor` compositions.
 
-[`tokens.ts`](../tokens.ts) defines the token discriminants and `SourceSpan`. Although fields are named `startByte` and `endByte`, the lexer currently stores JavaScript string indexes.
+`tokens.ts` defines the token discriminants and `SourceSpan`. Although fields are named `startByte` and `endByte`, the lexer currently stores JavaScript string indexes.
 
 ## Runtime value family
 
-[`value.ts`](../value.ts) defines:
+`value.ts` defines:
 
 ```text
 FormulaValue
@@ -61,7 +61,7 @@ FormulaValue
 - `makeRecord` throws when field/value lengths differ and creates one row.
 - `makeTable` throws when a row length differs from the field count.
 
-`CanonicalRational` and `RationalWire` live in [`rational.ts`](../rational.ts). `makeRational` rejects a zero denominator, normalizes denominator sign, and divides by the greatest common divisor. `ZERO` is `0/1`; decimal input becomes an exact rational rather than floating point.
+`CanonicalRational` and `RationalWire` live in `rational.ts`. `makeRational` rejects a zero denominator, normalizes denominator sign, and divides by the greatest common divisor. `ZERO` is `0/1`; decimal input becomes an exact rational rather than floating point.
 
 Function types are:
 
@@ -69,11 +69,11 @@ Function types are:
 - `LambdaFunction`: parameters, AST body, normalized source, captured lexical bindings, and `identityDigest`.
 - `CapturedLexicalBinding`: name/value and an optional stable reference. The evaluator currently captures values from its local environment; snapshot references used in the body are represented in bound AST dependencies rather than copied into that local capture array.
 
-[`value-identity.ts`](../value-identity.ts) creates a JSON-compatible identity payload for every runtime kind, including function descriptors, and derives a 32-character digest.
+`value-identity.ts` creates a JSON-compatible identity payload for every runtime kind, including function descriptors, and derives a 32-character digest.
 
 ## Resolver and dependency family
 
-[`resolver.ts`](../resolver.ts) defines:
+`resolver.ts` defines:
 
 - `ProjectScope { userId, projectId }`;
 - `ResolvedFormulaBinding`: stable reference, display/normalized names, runtime value, owner revision and value digest;
@@ -82,7 +82,7 @@ Function types are:
 
 The map is normally keyed by lowercase display name. Some evaluator paths also search values by `bindingId` because an AST binding is identity-addressed.
 
-[`dependencies.ts`](../dependencies.ts) defines:
+`dependencies.ts` defines:
 
 - `SymbolicDependency { name, span }`;
 - `ObservedDependency`: stable reference/revision/digest plus a typed access descriptor;
@@ -90,11 +90,11 @@ The map is normally keyed by lowercase display name. Some evaluator paths also s
 
 Static extraction fills `symbolic` and `bound`; engine evaluation separately fills observed dependencies. The current observed implementation reports `{ kind: "value" }` only.
 
-The Structured Data adapter adds `FormulaNameResolver`, `FormulaResolutionIssue`, and `FormulaResolutionIssueCode` in [`formula-name-resolver.ts`](../../../initialization/runtimes/formula-name-resolver.ts). Its issue codes are parse, evaluation, collection shape, unresolved dependency, and cycle failures.
+The Structured Data adapter adds `FormulaNameResolver`, `FormulaResolutionIssue`, and `FormulaResolutionIssueCode` in `formula-name-resolver.ts`. Its issue codes are parse, evaluation, collection shape, unresolved dependency, and cycle failures.
 
 ## Diagnostics
 
-[`diagnostics.ts`](../diagnostics.ts) defines `FormulaDiagnostic` with a stable `code`, human message, optional span/path and scalar details. Current codes are:
+`diagnostics.ts` defines `FormulaDiagnostic` with a stable `code`, human message, optional span/path and scalar details. Current codes are:
 
 `parse_error`, `unknown_identifier`, `unknown_function`, `wrong_arity`, `type_error`, `divide_by_zero`, `numeric_error`, `invalid_index`, `index_out_of_range`, `unknown_field`, `invalid_table`, `cardinality_error`, `cycle_error`, `limit_exceeded`, `unsupported_version`, `stale_binding`, and `invalid_resolver_snapshot`.
 
@@ -102,7 +102,7 @@ Not every declared code has a current producer (`invalid_resolver_snapshot` is n
 
 ## Limits
 
-[`limits.ts`](../limits.ts) defines thirteen numeric fields. Construction receives defaults from [`BackendConfig.formula`](../../../initialization/configuration.ts); each engine request may supply a partial override.
+`limits.ts` defines thirteen numeric fields. Construction receives defaults from `BackendConfig.formula`; each engine request may supply a partial override.
 
 | Limit | Current enforcement |
 | --- | --- |
@@ -121,7 +121,7 @@ Not every declared code has a current producer (`invalid_resolver_snapshot` is n
 
 ## Wire and persistence forms
 
-[`wire.ts`](../wire.ts) defines `FormulaWireValue`: null, exact number strings, text, logic, and recursive list/record/table. Functions are deliberately absent.
+`wire.ts` defines `FormulaWireValue`: null, exact number strings, text, logic, and recursive list/record/table. Functions are deliberately absent.
 
 - `isWireSerializable` recursively rejects functions.
 - `toWire` recursively encodes and throws `TypeError` when it reaches a function.
@@ -129,4 +129,4 @@ Not every declared code has a current producer (`invalid_resolver_snapshot` is n
 
 Document/Slide wire decoders validate their embedded `FormulaWireValue` independently at their boundaries. Formula itself owns no persisted row.
 
-[`display.ts`](../display.ts) converts values to deterministic presentation-neutral text. Terminating rationals become decimals, non-terminating rationals use `numerator/denominator`, nested text is JSON-quoted, and functions become descriptors.
+`display.ts` converts values to deterministic presentation-neutral text. Terminating rationals become decimals, non-terminating rationals use `numerator/denominator`, nested text is JSON-quoted, and functions become descriptors.

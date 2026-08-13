@@ -83,7 +83,7 @@ entry.
 
 ## Formula resolution lifecycle
 
-[`FormulaNameResolver`](../../../initialization/runtimes/formula-name-resolver.ts) obtains one `bindingView`, computes an entry signature, and may return a cached snapshot when IDs/revisions/names/kinds match. Otherwise it iteratively resolves entries:
+`FormulaNameResolver` obtains one `bindingView`, computes an entry signature, and may return a cached snapshot when IDs/revisions/names/kinds match. Otherwise it iteratively resolves entries:
 
 1. parse formula bodies/cells;
 2. ask Formula for symbolic dependencies using bindings already resolved;

@@ -2,7 +2,7 @@
 
 ## Construction
 
-[`createIntelligence`](../../../initialization/runtimes/intelligence.ts) constructs one `OpenRouterProvider`, registers it by `name()` (`openrouter`), and creates one shared `Intelligence` with configuration and Logger. [`startBackend`](../../../initialization/create-runtime.ts) injects that object into Knowledge and Derived Outputs.
+`createIntelligence` constructs one `OpenRouterProvider`, registers it by `name()` (`openrouter`), and creates one shared `Intelligence` with configuration and Logger. `startBackend` injects that object into Knowledge and Derived Outputs.
 
 At construction, `createRouteMap` builds separate inference and reasoning maps. Construction can fail for invalid tiers or duplicate normalized cast keys. A route may still reference an unregistered provider; that fails when selected, not at startup.
 
@@ -39,7 +39,7 @@ The default tool limit is eight rounds. `maxRounds` is not validated: zero or a 
 
 ## Tool execution
 
-[`ToolSet`](../tools.ts) builds a name-to-handler map. `definitions()` returns new definition objects but retains the original nested `inputSchema` reference. `execute()` returns a failed result rather than throwing for unknown tools or handler failures.
+`ToolSet` builds a name-to-handler map. `definitions()` returns new definition objects but retains the original nested `inputSchema` reference. `execute()` returns a failed result rather than throwing for unknown tools or handler failures.
 
 Within one model round, `reasonWithToolsInternal`:
 

@@ -2,13 +2,13 @@
 
 ## Construction
 
-[`createDocumentInstance`](../../../initialization/runtimes/document.ts) opens a
+`createDocumentInstance` opens a
 `SQLiteDocumentStore(config.projectId, "./data/documents.db")` and calls
 `createDocumentCapability` with Rich Text, Formula, the Formula resolver,
 Derived Outputs, an Activity publisher adapter, internal jobs, Logger,
 configured Document options, and trusted `config.userId` attribution.
 
-[`createDocumentCapability`](../application/documentService.ts) returns the
+`createDocumentCapability` returns the
 private `DocumentService` behind the public `DocumentCapability` interface.
 Startup registers internal intents and public endpoints, then invokes
 `recoverPendingAttempts()` and `publishPendingActivity()` before listening.
@@ -117,7 +117,7 @@ logged but not retried.
 
 ## Default creation functions
 
-[`createService.ts`](../application/createService.ts) exports:
+`createService.ts` exports:
 
 - `DEFAULT_DOCUMENT_PAGE_LAYOUT`: US Letter portrait (12,240 × 15,840 twips),
   1,440-twip margins, decimal page numbers starting at 1;
@@ -146,7 +146,7 @@ logged but not retried.
 
 ## `DocumentStore` public API
 
-The full port is in [`documentStore.ts`](../ports/documentStore.ts). Method
+The full port is in `documentStore.ts`. Method
 families are:
 
 - current/history: `listHeads`, `getHead`, `hasResource`,

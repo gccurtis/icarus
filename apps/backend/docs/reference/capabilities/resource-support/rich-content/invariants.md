@@ -101,10 +101,10 @@ Logger calls are synchronous and unguarded. A logger implementation that throws 
 
 ## Tests proving current behavior
 
-- [`rich-text-formula.test.ts`](../../../../test/capabilities/rich-text-formula.test.ts): atomic delimiter conversion/mark remap/exact inverse, malformed/stale rejection, settlement clearing/inverse, deterministic Formula display.
-- [`document-domain.test.ts`](../../../../test/capabilities/document-domain.test.ts): style precedence independent of opaque IDs, authoritative overlay behavior, nested projections, Formula footprints, and an exact host-level Rich Text mutation inverse.
-- [`document-application.test.ts`](../../../../test/capabilities/document-application.test.ts): durable host revisions, conflict/replay and Formula/Prompt workflows.
-- [`slide-wire.test.ts`](../../../../test/capabilities/slide-wire.test.ts): strict recursive Rich Content DTOs, rejection of invalid embedded Formula values and payload budgets.
+- `rich-text-formula.test.ts`: atomic delimiter conversion/mark remap/exact inverse, malformed/stale rejection, settlement clearing/inverse, deterministic Formula display.
+- `document-domain.test.ts`: style precedence independent of opaque IDs, authoritative overlay behavior, nested projections, Formula footprints, and an exact host-level Rich Text mutation inverse.
+- `document-application.test.ts`: durable host revisions, conflict/replay and Formula/Prompt workflows.
+- `slide-wire.test.ts`: strict recursive Rich Content DTOs, rejection of invalid embedded Formula values and payload budgets.
 
 ## Explicit non-goals
 

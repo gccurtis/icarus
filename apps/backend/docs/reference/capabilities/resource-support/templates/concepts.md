@@ -40,7 +40,7 @@ an exact retry and a resumed pending claim both reuse it. Derived Outputs is the
 precedent: it allocates its own output ID and relies on a caller-supplied
 idempotency key.
 
-See [`scratch/resource-id-allocation.md`](../../../../../../scratch/resource-id-allocation.md)
+See `scratch/resource-id-allocation.md`
 for the open question of whether Document and Slide should move the same way.
 
 ## The adapter seam

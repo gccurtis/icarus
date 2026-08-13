@@ -68,7 +68,7 @@ The current implementation does not guarantee:
 
 ## Tests and change checklist
 
-Current direct coverage is limited to OpenRouter failure-body redaction in [`runtime-wiring.test.ts`](../../../../test/capabilities/runtime-wiring.test.ts). Before changing Intelligence, tests should pin:
+Current direct coverage is limited to OpenRouter failure-body redaction in `runtime-wiring.test.ts`. Before changing Intelligence, tests should pin:
 
 - purpose normalization, exact route selection, duplicate/missing route behavior;
 - successful plain and structured result normalization;

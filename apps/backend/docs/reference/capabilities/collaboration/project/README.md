@@ -33,17 +33,17 @@ Presence state; it does not become a second resource database.
 
 | Layer | Authority and entry points |
 | --- | --- |
-| Public exports | [`index.ts`](../index.ts) |
-| Transaction/query/Presence types | [`domain/model.ts`](../domain/model.ts) |
-| Canonical metadata and digest | [`domain/canonical.ts`](../domain/canonical.ts) |
-| Domain errors | [`domain/errors.ts`](../domain/errors.ts) |
-| Application runtime | [`application/activityService.ts`](../application/activityService.ts) |
-| Store contract | [`ports/activityStore.ts`](../ports/activityStore.ts) |
-| SQLite adapter/schema | [`persistence/sqliteActivityStore.ts`](../persistence/sqliteActivityStore.ts), [`persistence/sqliteSchema.ts`](../persistence/sqliteSchema.ts) |
-| Instance factory | [`create/activity.ts`](../../../initialization/runtimes/activity.ts) |
-| Public route registration | [`registerActivityEndpoints.ts`](../../../api/routes/activity/registerActivityEndpoints.ts) |
-| Startup composition | [`create-runtime.ts`](../../../initialization/create-runtime.ts) |
-| Document publisher adapter | [`create/document.ts`](../../../initialization/runtimes/document.ts), [`activityPublisher.ts`](../../document/ports/activityPublisher.ts) |
+| Public exports | `index.ts` |
+| Transaction/query/Presence types | `domain/model.ts` |
+| Canonical metadata and digest | `domain/canonical.ts` |
+| Domain errors | `domain/errors.ts` |
+| Application runtime | `application/activityService.ts` |
+| Store contract | `ports/activityStore.ts` |
+| SQLite adapter/schema | `persistence/sqliteActivityStore.ts`, `persistence/sqliteSchema.ts` |
+| Instance factory | `create/activity.ts` |
+| Public route registration | `registerActivityEndpoints.ts` |
+| Startup composition | `create-runtime.ts` |
+| Document publisher adapter | `create/document.ts`, `activityPublisher.ts` |
 
 ## Dependencies and integration boundary
 
@@ -64,15 +64,15 @@ inverse semantics.
 
 ## Related material and tests
 
-[`scratch/activity-design.md`](../../../../../../scratch/activity-design.md)
+`scratch/activity-design.md`
 records the broader design and phased intent. These in-capability docs describe
 what is wired and implemented in this tree; runtime code takes precedence when
 the two differ.
 
 Focused regression coverage is in
-[`activity.test.ts`](../../../../test/capabilities/activity.test.ts). It covers
+`activity.test.ts`. It covers
 stable-ID replay/conflict behavior, descending transaction queries/filtering,
 and Presence expiry without ledger entries. Endpoint behavior is covered by
-[`activity-wiring.test.ts`](../../../../test/capabilities/activity-wiring.test.ts);
+`activity-wiring.test.ts`;
 Document post-commit publication/recovery and self-contained transaction-outbox rows
 are covered in the Document application/persistence suites.

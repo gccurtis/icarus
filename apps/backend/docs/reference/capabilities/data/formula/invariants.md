@@ -84,9 +84,9 @@ Logger calls are synchronous interface calls. Formula does not catch logger sink
 
 ## Tests proving current behavior
 
-[`structured-data-formula.test.ts`](../../../../test/capabilities/structured-data-formula.test.ts) covers Structured Data-only resolution, case-insensitive name collisions, formula cells, built-ins/lambda locals, function identity/non-serialization, reserved built-ins, long dependency chains, output cell/byte limits, stale binding without retargeting, owner-sensitive snapshot digests, typed resolver failures, collection ingress validation, and SQLite revision races.
+`structured-data-formula.test.ts` covers Structured Data-only resolution, case-insensitive name collisions, formula cells, built-ins/lambda locals, function identity/non-serialization, reserved built-ins, long dependency chains, output cell/byte limits, stale binding without retargeting, owner-sensitive snapshot digests, typed resolver failures, collection ingress validation, and SQLite revision races.
 
-[`rich-text-formula.test.ts`](../../../../test/capabilities/rich-text-formula.test.ts) covers deterministic display formatting and Formula wire settlement in Rich Text. [`document-application.test.ts`](../../../../test/capabilities/document-application.test.ts) exercises the host's durable workflows; Formula-specific internal queue classification is represented in [`createDocumentJobs.ts`](../../../api/routes/document/createDocumentJobs.ts).
+`rich-text-formula.test.ts` covers deterministic display formatting and Formula wire settlement in Rich Text. `document-application.test.ts` exercises the host's durable workflows; Formula-specific internal queue classification is represented in `createDocumentJobs.ts`.
 
 ## Explicit non-goals/current omissions
 

@@ -22,25 +22,25 @@ flowchart LR
   Engine --> RichText["FormulaWireValue in Formula atoms"]
 ```
 
-Construction is in [`create/formula.ts`](../../../initialization/runtimes/formula.ts) and [`create-runtime.ts`](../../../initialization/create-runtime.ts). The Structured Data adapter is [`create/formula-name-resolver.ts`](../../../initialization/runtimes/formula-name-resolver.ts). The public export surface is [`index.ts`](../index.ts).
+Construction is in `create/formula.ts` and `create-runtime.ts`. The Structured Data adapter is `create/formula-name-resolver.ts`. The public export surface is `index.ts`.
 
 ## Dependency and source map
 
 | Concern | Code authority | Role |
 | --- | --- | --- |
-| Public runtime | [`engine.ts`](../engine.ts), [`index.ts`](../index.ts) | Five-method `FormulaEngine`, request/result types, exports |
-| Language shape | [`tokens.ts`](../tokens.ts), [`ast.ts`](../ast.ts), [`lexer.ts`](../lexer.ts), [`parser.ts`](../parser.ts) | Tokens, spans, AST, grammar and parse limits |
-| Name binding | [`resolver.ts`](../resolver.ts), [`binder.ts`](../binder.ts) | Immutable snapshot contract and stable binding validation |
-| Evaluation | [`evaluator.ts`](../evaluator.ts), [`builtins.ts`](../builtins.ts) | Evaluation environment, operators, functions and built-ins |
-| Values | [`value.ts`](../value.ts), [`rational.ts`](../rational.ts) | Eight value kinds and canonical rational arithmetic |
-| Identity and dependencies | [`dependencies.ts`](../dependencies.ts), [`value-identity.ts`](../value-identity.ts) | Symbolic/bound/observed dependencies and digests |
-| Diagnostics and bounds | [`diagnostics.ts`](../diagnostics.ts), [`limits.ts`](../limits.ts) | Stable diagnostic vocabulary and configured limit shape |
-| Persistence seams | [`wire.ts`](../wire.ts), [`display.ts`](../display.ts) | JSON-safe values and deterministic presentation-neutral text |
-| Structured Data adapter | [`formula-name-resolver.ts`](../../../initialization/runtimes/formula-name-resolver.ts) | Resolves project Structured Data declarations into a snapshot |
-| Concrete endpoint consumer | [`registerStructuredDataEndpoints.ts`](../../../api/routes/structured-data/registerStructuredDataEndpoints.ts) | Value lookup and ad-hoc evaluation routes |
-| Durable consumer | [`documentService.ts`](../../../capabilities/document/application/documentService.ts) | Concurrent Formula compute and serial Rich Text settlement |
+| Public runtime | `engine.ts`, `index.ts` | Five-method `FormulaEngine`, request/result types, exports |
+| Language shape | `tokens.ts`, `ast.ts`, `lexer.ts`, `parser.ts` | Tokens, spans, AST, grammar and parse limits |
+| Name binding | `resolver.ts`, `binder.ts` | Immutable snapshot contract and stable binding validation |
+| Evaluation | `evaluator.ts`, `builtins.ts` | Evaluation environment, operators, functions and built-ins |
+| Values | `value.ts`, `rational.ts` | Eight value kinds and canonical rational arithmetic |
+| Identity and dependencies | `dependencies.ts`, `value-identity.ts` | Symbolic/bound/observed dependencies and digests |
+| Diagnostics and bounds | `diagnostics.ts`, `limits.ts` | Stable diagnostic vocabulary and configured limit shape |
+| Persistence seams | `wire.ts`, `display.ts` | JSON-safe values and deterministic presentation-neutral text |
+| Structured Data adapter | `formula-name-resolver.ts` | Resolves project Structured Data declarations into a snapshot |
+| Concrete endpoint consumer | `registerStructuredDataEndpoints.ts` | Value lookup and ad-hoc evaluation routes |
+| Durable consumer | `documentService.ts` | Concurrent Formula compute and serial Rich Text settlement |
 
-Formula depends only on Node cryptography, configuration values, and the [`Logger`](../../observability/logger.ts). It does not import Structured Data; the initialization-layer adapter points from Structured Data toward Formula.
+Formula depends only on Node cryptography, configuration values, and the `Logger`. It does not import Structured Data; the initialization-layer adapter points from Structured Data toward Formula.
 
 ## Navigation
 
@@ -52,6 +52,6 @@ Formula depends only on Node cryptography, configuration values, and the [`Logge
 
 ## Related references
 
-- [Repository-level Formula reference](../../../../../../docs/platform/formula.md) — useful design background, but it contains target behavior that is not all implemented.
-- [Structured Data/Formula tests](../../../../test/capabilities/structured-data-formula.test.ts)
-- [Rich Text/Formula tests](../../../../test/capabilities/rich-text-formula.test.ts)
+- `Repository-level Formula reference` — useful design background, but it contains target behavior that is not all implemented.
+- `Structured Data/Formula tests`
+- `Rich Text/Formula tests`

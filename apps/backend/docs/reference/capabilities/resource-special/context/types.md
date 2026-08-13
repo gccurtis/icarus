@@ -2,11 +2,11 @@
 
 ## Public type family
 
-The public surface is exported by [`index.ts`](../index.ts).
+The public surface is exported by `index.ts`.
 
 ### `ContextEntry`
 
-`ContextEntry` is defined by [Knowledge](../../../capabilities/knowledge/types.ts) and re-exported by Context to avoid a second reference atom.
+`ContextEntry` is defined by `Knowledge` and re-exported by Context to avoid a second reference atom.
 
 ```ts
 interface ContextEntry {
@@ -52,7 +52,7 @@ Used only by `composeNamed`. A `contextId` operand is resolved by loading that c
 
 ### Configuration
 
-[`ContextManagerConfig`](../context.ts) has `maxEntriesPerContext` and `maxResolveDepth`. Current defaults are 100,000 and 10 in [`loadBackendConfig.ts`](../../../initialization/configuration.ts).
+`ContextManagerConfig` has `maxEntriesPerContext` and `maxResolveDepth`. Current defaults are 100,000 and 10 in `loadBackendConfig.ts`.
 
 ## Error family
 
@@ -70,9 +70,9 @@ There are no implemented cycle/depth error classes. Resolution silently omits cy
 
 ## Runtime and store interfaces
 
-[`ContextManager`](../context.ts) is asynchronous at its boundary even though the current store is synchronous. Its full methods are documented in [Runtime](runtime.md).
+`ContextManager` is asynchronous at its boundary even though the current store is synchronous. Its full methods are documented in [Runtime](runtime.md).
 
-[`ContextStore`](../store.ts) exposes:
+`ContextStore` exposes:
 
 ```ts
 interface ContextStore {
@@ -95,7 +95,7 @@ method.
 
 ## SQLite representation
 
-[`SQLiteContextStore`](../sqlite-store.ts) opens `./data/contexts.db` in WAL mode. It derives one trusted 16-hex prefix:
+`SQLiteContextStore` opens `./data/contexts.db` in WAL mode. It derives one trusted 16-hex prefix:
 
 - `ctx_${sha256(projectId).slice(0,16)}_contexts` — current records only
 - `ctx_${sha256(projectId).slice(0,16)}_history` — superseded snapshots and terminal deletion records

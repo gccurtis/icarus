@@ -1,6 +1,6 @@
 # Templates types
 
-All types live in [`domain/model.ts`](../domain/model.ts) unless noted.
+All types live in `domain/model.ts` unless noted.
 
 ## Record
 
@@ -137,7 +137,7 @@ owning capability's own read surface; see [concepts](concepts.md).
 
 ## Ports
 
-`TemplateStore` ([`ports/templateStore.ts`](../ports/templateStore.ts)) is
+`TemplateStore` (`ports/templateStore.ts`) is
 synchronous because SQLite is. Beyond ordinary reads it carries the claim
 protocol — `claimCommand`, `bindClaimTemplateId`, `completeClaim` — and the
 reservation lifecycle — `reserve`, `nameTaken`, `markReady`, `update`, `delete`,
@@ -156,13 +156,13 @@ pre-update state as though it were current.
 collision: `reserve` returns a single `false` for any unique violation, but the
 two are different errors to a caller. The unique index remains the authority.
 
-`TemplateResourceAdapter` ([`ports/resourceAdapter.ts`](../ports/resourceAdapter.ts))
+`TemplateResourceAdapter` (`ports/resourceAdapter.ts`)
 has create, instantiate, update, logical-delete, and purge methods, all
 returning `Promise<void>` with deterministic idempotency keys — plus
 `readTemplateCopy`, which returns `unknown` and takes no key because it is a
 read. `TemplateResourceRegistry` exposes only `get(kind)`.
 
-`TemplateActivityPublisher` ([`ports/activityPublisher.ts`](../ports/activityPublisher.ts))
+`TemplateActivityPublisher` (`ports/activityPublisher.ts`)
 has a single `publish(transaction)`.
 
 ## Source transactions
@@ -193,7 +193,7 @@ committed the catalog change and pass it directly to Activity.
 ## Errors
 
 One class per distinguishable failure, in
-[`domain/errors.ts`](../domain/errors.ts):
+`domain/errors.ts`:
 
 | Error | HTTP |
 |---|---|

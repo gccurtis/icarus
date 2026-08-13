@@ -19,16 +19,16 @@ half is built; the enforcement half is Document work.
 The first adapter will be Document, and it requires work that does not exist
 yet: Document representation v2, Context Variables, `isTemplate` persistence,
 durable copy attempts, and a new `DerivedOutputs.clone`. That design lives in
-[`scratch/document-design/templates-and-context-variables.md`](../../../../../../scratch/document-design/templates-and-context-variables.md)
+`scratch/document-design/templates-and-context-variables.md`
 and must be read as intent, **not** as implemented behaviour.
 
 A green Templates test run therefore means "Templates upholds its half of the
 adapter contract". It does not mean a user can create a template.
 
 Design intent for the capability itself is in
-[`scratch/templates-design.md`](../../../../../../scratch/templates-design.md);
+`scratch/templates-design.md`;
 the build plan is in
-[`scratch/templates-implementation-plan.md`](../../../../../../scratch/templates-implementation-plan.md).
+`scratch/templates-implementation-plan.md`.
 
 ## What it owns
 
@@ -45,21 +45,21 @@ tables.
 
 | Concern | File |
 | --- | --- |
-| Public barrel | [`index.ts`](../index.ts) |
-| Canonical types, commands, queries, source transactions | [`domain/model.ts`](../domain/model.ts) |
-| Typed failure modes | [`domain/errors.ts`](../domain/errors.ts) |
-| Canonical digest for replay | [`domain/canonical.ts`](../domain/canonical.ts) |
-| Commands, queries, outbox drain | [`application/templateService.ts`](../application/templateService.ts) |
-| Persistence contract | [`ports/templateStore.ts`](../ports/templateStore.ts) |
-| Per-kind copy contract | [`ports/resourceAdapter.ts`](../ports/resourceAdapter.ts) |
-| Narrow Activity port | [`ports/activityPublisher.ts`](../ports/activityPublisher.ts) |
-| Table names and DDL | [`persistence/sqliteSchema.ts`](../persistence/sqliteSchema.ts) |
-| SQLite adapter | [`persistence/sqliteTemplateStore.ts`](../persistence/sqliteTemplateStore.ts) |
-| Row/domain mapping | [`persistence/sqliteMappers.ts`](../persistence/sqliteMappers.ts) |
-| Strict ingress decoding | [`wire/`](../wire/) |
-| Construction and Activity adaptation | [`initialization/runtimes/templates.ts`](../../../initialization/runtimes/templates.ts) |
-| Endpoints and error mapping | [`api/routes/templates/registerTemplateEndpoints.ts`](../../../api/routes/templates/registerTemplateEndpoints.ts) |
-| Tests | [`test/capabilities/templates.test.ts`](../../../../test/capabilities/templates.test.ts) |
+| Public barrel | `index.ts` |
+| Canonical types, commands, queries, source transactions | `domain/model.ts` |
+| Typed failure modes | `domain/errors.ts` |
+| Canonical digest for replay | `domain/canonical.ts` |
+| Commands, queries, outbox drain | `application/templateService.ts` |
+| Persistence contract | `ports/templateStore.ts` |
+| Per-kind copy contract | `ports/resourceAdapter.ts` |
+| Narrow Activity port | `ports/activityPublisher.ts` |
+| Table names and DDL | `persistence/sqliteSchema.ts` |
+| SQLite adapter | `persistence/sqliteTemplateStore.ts` |
+| Row/domain mapping | `persistence/sqliteMappers.ts` |
+| Strict ingress decoding | `wire/` |
+| Construction and Activity adaptation | `initialization/runtimes/templates.ts` |
+| Endpoints and error mapping | `api/routes/templates/registerTemplateEndpoints.ts` |
+| Tests | `test/capabilities/templates.test.ts` |
 
 ## Documentation map
 

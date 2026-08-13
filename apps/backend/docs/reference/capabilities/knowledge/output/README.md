@@ -25,36 +25,36 @@ These pages describe the current code. Historical designs proposing a different 
 
 ## Dependencies
 
-- Project-bound [`SQLiteDerivedOutputStore`](../sqlite-store.ts).
-- Platform [`Knowledge`](../../../capabilities/knowledge/knowledge.ts), including frozen scope manifests and source-mutation events.
-- Platform [`Intelligence`](../../../capabilities/intelligence/intelligence.ts) for structured planning and tool-using synthesis.
-- The composition-layer [`RuntimeResourceRegistry`](../../../initialization/runtimes/resource-reader.ts), implementing both Knowledge resolution and scoped resource list/read.
+- Project-bound `SQLiteDerivedOutputStore`.
+- Platform `Knowledge`, including frozen scope manifests and source-mutation events.
+- Platform `Intelligence` for structured planning and tool-using synthesis.
+- The composition-layer `RuntimeResourceRegistry`, implementing both Knowledge resolution and scoped resource list/read.
 - Context, General Files, and Connector indirectly through that registry.
-- Shared [`Logger`](../../../capabilities/platform/observability/logger.ts).
+- Shared `Logger`.
 - Job registry/scheduler at endpoint boundaries.
 
 ## Source map
 
 | Concern | Current source |
 |---|---|
-| Domain/output/revision/evidence/error model | [`domain/model.ts`](../domain/model.ts) |
-| Store commands and settlement result types | [`store.ts`](../store.ts) |
-| Service, prompts, validation, tools, refresh pipeline | [`derived-outputs.ts`](../derived-outputs.ts) |
-| SQLite current/root/history schema, claims, CAS settlement/invalidation, deletion, and purge | [`sqlite-store.ts`](../sqlite-store.ts) |
-| Public exports | [`index.ts`](../index.ts) |
-| Factory | [`initialization/runtimes/derived-outputs.ts`](../../../initialization/runtimes/derived-outputs.ts) |
-| Resource registry | [`initialization/runtimes/resource-reader.ts`](../../../initialization/runtimes/resource-reader.ts) |
-| Knowledge scope/events | [`knowledge.ts`](../../../capabilities/knowledge/knowledge.ts), [`types.ts`](../../../capabilities/knowledge/types.ts) |
-| Composition and event subscription | [`initialization/create-runtime.ts`](../../../initialization/create-runtime.ts) |
-| HTTP/job wiring | [`api/routes/derived-outputs/registerDerivedOutputEndpoints.ts`](../../../api/routes/derived-outputs/registerDerivedOutputEndpoints.ts) |
-| Regression tests | [`derived-outputs.test.ts`](../../../../test/capabilities/derived-outputs.test.ts) |
+| Domain/output/revision/evidence/error model | `domain/model.ts` |
+| Store commands and settlement result types | `store.ts` |
+| Service, prompts, validation, tools, refresh pipeline | `derived-outputs.ts` |
+| SQLite current/root/history schema, claims, CAS settlement/invalidation, deletion, and purge | `sqlite-store.ts` |
+| Public exports | `index.ts` |
+| Factory | `initialization/runtimes/derived-outputs.ts` |
+| Resource registry | `initialization/runtimes/resource-reader.ts` |
+| Knowledge scope/events | `knowledge.ts`, `types.ts` |
+| Composition and event subscription | `initialization/create-runtime.ts` |
+| HTTP/job wiring | `api/routes/derived-outputs/registerDerivedOutputEndpoints.ts` |
+| Regression tests | `derived-outputs.test.ts` |
 
 ## Related material
 
-- [Original Derived Outputs design](../../../../../../scratch/derived-outputs-design.md)
-- [Knowledge/Derived exploration](../../../../../../scratch/knowledge-derived.md)
-- [Context design](../../../../../../scratch/context-design.md)
-- [Recent fixes and architectural decisions](../../../../../../scratch/recent-capabilities-fixes-2026-08-01.md)
-- [Knowledge platform documentation](../../../../../../docs/platform/knowledge.md)
+- `Original Derived Outputs design`
+- `Knowledge/Derived exploration`
+- `Context design`
+- `Recent fixes and architectural decisions`
+- `Knowledge platform documentation`
 
 Use this package first when understanding what is coded; the scratch files retain useful design history but include superseded structures and terminology.

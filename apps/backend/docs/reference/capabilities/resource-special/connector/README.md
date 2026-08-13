@@ -20,36 +20,36 @@ These documents describe current source behavior. Connector owns connector/item 
 
 ## Dependencies
 
-- Project-bound [`SQLiteConnectorStore`](../persistence/sqliteConnectorRepository.ts).
-- [`Knowledge`](../../../capabilities/knowledge/knowledge.ts) for prose add/upsert/remove.
-- Provider map, currently containing only [`filesystemProvider`](../providers/filesystem.ts).
-- Shared [`Logger`](../../../capabilities/platform/observability/logger.ts).
+- Project-bound `SQLiteConnectorStore`.
+- `Knowledge` for prose add/upsert/remove.
+- Provider map, currently containing only `filesystemProvider`.
+- Shared `Logger`.
 - Job scheduler for HTTP work and recurring sync enqueue.
-- The [runtime resource registry](../../../initialization/runtimes/resource-reader.ts) for Context→source mapping and Derived Output reads.
+- The `runtime resource registry` for Context→source mapping and Derived Output reads.
 
 ## Source map
 
 | Concern | Current source |
 |---|---|
-| Connector/item/sync model | [`domain/model.ts`](../domain/model.ts) |
-| Errors | [`domain/errors.ts`](../domain/errors.ts) |
-| Provider port | [`domain/provider.ts`](../domain/provider.ts) |
-| Reader ports | [`domain/reader.ts`](../domain/reader.ts) |
-| Store port | [`ports/repository.ts`](../ports/repository.ts) |
-| Service and reconciliation | [`application/connectorService.ts`](../application/connectorService.ts) |
-| SQLite current/history schema and claims | [`persistence/sqliteConnectorRepository.ts`](../persistence/sqliteConnectorRepository.ts) |
-| Development filesystem adapter | [`providers/filesystem.ts`](../providers/filesystem.ts) |
-| Public exports | [`index.ts`](../index.ts) |
-| Factory/provider registration | [`initialization/runtimes/connector.ts`](../../../initialization/runtimes/connector.ts) |
-| Recurring scheduler | [`initialization/runtimes/connectorSyncScheduler.ts`](../../../initialization/runtimes/connectorSyncScheduler.ts) |
-| HTTP/job wiring | [`api/routes/connector/registerConnectorEndpointMappings.ts`](../../../api/routes/connector/registerConnectorEndpointMappings.ts) |
-| Scope/read registry | [`initialization/runtimes/resource-reader.ts`](../../../initialization/runtimes/resource-reader.ts) |
-| Regression tests | [`connector.test.ts`](../../../../test/capabilities/connector.test.ts) |
+| Connector/item/sync model | `domain/model.ts` |
+| Errors | `domain/errors.ts` |
+| Provider port | `domain/provider.ts` |
+| Reader ports | `domain/reader.ts` |
+| Store port | `ports/repository.ts` |
+| Service and reconciliation | `application/connectorService.ts` |
+| SQLite current/history schema and claims | `persistence/sqliteConnectorRepository.ts` |
+| Development filesystem adapter | `providers/filesystem.ts` |
+| Public exports | `index.ts` |
+| Factory/provider registration | `initialization/runtimes/connector.ts` |
+| Recurring scheduler | `initialization/runtimes/connectorSyncScheduler.ts` |
+| HTTP/job wiring | `api/routes/connector/registerConnectorEndpointMappings.ts` |
+| Scope/read registry | `initialization/runtimes/resource-reader.ts` |
+| Regression tests | `connector.test.ts` |
 
 ## Related material
 
-- [Connector design](../../../../../../scratch/connector-design.md)
-- [Recent capability fixes](../../../../../../scratch/recent-capabilities-fixes-2026-08-01.md)
-- [Knowledge platform documentation](../../../../../../docs/platform/knowledge.md)
+- `Connector design`
+- `Recent capability fixes`
+- `Knowledge platform documentation`
 
 The source is authoritative where historical design prose still describes different paths, job modes, classifications, or sync behavior.

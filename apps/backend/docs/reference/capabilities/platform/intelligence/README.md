@@ -4,7 +4,7 @@
 
 Intelligence is an implemented in-process platform runtime. It selects configured model routes, normalizes provider responses, runs bounded tool loops, and exposes embeddings. It does not register HTTP endpoints, create jobs, persist results, or validate capability-specific semantics.
 
-These pages describe the code currently under [`capabilities/intelligence`](../). The older repository-wide [platform design page](../../../../../../docs/platform/intelligence.md) is useful background, but this package is authoritative where that page describes planned APIs or behavior not present in source.
+These pages describe the code currently under [`capabilities/intelligence`](../). The older repository-wide `platform design page` is useful background, but this package is authoritative where that page describes planned APIs or behavior not present in source.
 
 ## Documentation map
 
@@ -20,15 +20,15 @@ These pages describe the code currently under [`capabilities/intelligence`](../)
 
 | Code | Responsibility |
 | --- | --- |
-| [`intelligence.ts`](../intelligence.ts) | `Intelligence`, route maps, normalized calls, structured parsing, bounded tool loop, telemetry |
-| [`types.ts`](../types.ts) | Cast, configuration, message, usage, request, and result types |
-| [`provider.ts`](../provider.ts) | Provider-neutral adapter contract |
-| [`tools.ts`](../tools.ts) | Tool definitions, bindings, results, and `ToolSet` |
-| [`openrouter/provider.ts`](../openrouter/provider.ts) | OpenRouter wire translation, HTTP, timeout, response normalization |
-| [`create/intelligence.ts`](../../../initialization/runtimes/intelligence.ts) | Production construction and provider registration |
-| [`loadBackendConfig.ts`](../../../initialization/configuration.ts) | Configuration parsing and default route matrix |
-| [`intelligence.yaml`](../../../../configuration/intelligence.yaml) | Committed provider, inference, reasoning, and embedding routes |
-| [`create-runtime.ts`](../../../initialization/create-runtime.ts) | Process-level composition and injection |
+| `intelligence.ts` | `Intelligence`, route maps, normalized calls, structured parsing, bounded tool loop, telemetry |
+| `types.ts` | Cast, configuration, message, usage, request, and result types |
+| `provider.ts` | Provider-neutral adapter contract |
+| `tools.ts` | Tool definitions, bindings, results, and `ToolSet` |
+| `openrouter/provider.ts` | OpenRouter wire translation, HTTP, timeout, response normalization |
+| `create/intelligence.ts` | Production construction and provider registration |
+| `loadBackendConfig.ts` | Configuration parsing and default route matrix |
+| `intelligence.yaml` | Committed provider, inference, reasoning, and embedding routes |
+| `create-runtime.ts` | Process-level composition and injection |
 
 ## Public runtime surface
 
@@ -39,7 +39,7 @@ Current production consumers are:
 - Derived Outputs: planning through `reasonStructured`, synthesis through `reasonWithToolsStructured`.
 - Knowledge: query and source-window embeddings through `IntelligenceEmbedder`.
 
-No direct tests cover route selection, structured parsing, tool-loop accounting, or successful OpenRouter response normalization. [`runtime-wiring.test.ts`](../../../../test/capabilities/runtime-wiring.test.ts) covers the provider-error redaction rule. Derived Outputs exercises Intelligence through fakes rather than the concrete runtime.
+No direct tests cover route selection, structured parsing, tool-loop accounting, or successful OpenRouter response normalization. `runtime-wiring.test.ts` covers the provider-error redaction rule. Derived Outputs exercises Intelligence through fakes rather than the concrete runtime.
 
 ## Reading order
 

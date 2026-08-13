@@ -44,7 +44,7 @@ The SQLite database and Knowledge database are separate authorities. A General F
 
 ## Classification
 
-The prose allowlist is owned locally by [`domain/model.ts`](../domain/model.ts): `txt`, `md`, `markdown`, `rst`, `org`, `tex`, `html`, `htm`, and `log`. The extension is the substring after the final dot in the upload filename, lowercased. No dot yields an empty extension. A trailing dot also yields empty extension.
+The prose allowlist is owned locally by `domain/model.ts`: `txt`, `md`, `markdown`, `rst`, `org`, `tex`, `html`, `htm`, and `log`. The extension is the substring after the final dot in the upload filename, lowercased. No dot yields an empty extension. A trailing dot also yields empty extension.
 
 Classification is fixed by the stored filename on upload and preserved during update because update changes only content. The Connector capability owns a separate copy of its allowlist; the two may intentionally diverge.
 

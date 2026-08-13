@@ -6,12 +6,12 @@ Rich Text registers no HTTP endpoint and creates no Job. Host capabilities decod
 
 ## Document command flow
 
-[`registerDocumentEndpoints.ts`](../../../api/routes/document/registerDocumentEndpoints.ts) exposes:
+`registerDocumentEndpoints.ts` exposes:
 
 - `POST /documents/command` → serial inline `documents.command.v1` Job;
 - `POST /documents/query` → concurrent inline `documents.query.v1` Job.
 
-The strict decoder in [`document/wire/commandSchemas.ts`](../../../capabilities/document/wire/commandSchemas.ts) accepts Document operations including `rich-text.apply`, whose payload contains `RichTextOperation[]`. [`document/domain/reducer.ts`](../../../capabilities/document/domain/reducer.ts) locates a text-bearing block and calls `richText.apply`; host validation calls `richText.validate` for embedded block content.
+The strict decoder in `document/wire/commandSchemas.ts` accepts Document operations including `rich-text.apply`, whose payload contains `RichTextOperation[]`. `document/domain/reducer.ts` locates a text-bearing block and calls `richText.apply`; host validation calls `richText.validate` for embedded block content.
 
 ```mermaid
 sequenceDiagram
@@ -32,13 +32,13 @@ sequenceDiagram
   Store-->>Client: Document command result
 ```
 
-Document also uses Rich Text for `style.apply-inline`, where the reducer resolves a saved Document Style and calls `richText.apply` with one add-mark operation. Host inverse construction is in [`document/domain/inverses.ts`](../../../capabilities/document/domain/inverses.ts).
+Document also uses Rich Text for `style.apply-inline`, where the reducer resolves a saved Document Style and calls `richText.apply` with one add-mark operation. Host inverse construction is in `document/domain/inverses.ts`.
 
 ## Document Formula flow
 
 A Formula atom may be authored via `formulaFromDelimitedRange` in editor/application code and inserted through `rich-text.apply`. The reducer compares Formula atom maps before/after Rich Text operations and records expression changes. A `formula.evaluate.request` creates a durable host attempt.
 
-[`registerDocumentInternalJobs.ts`](../../../api/routes/document/registerDocumentInternalJobs.ts) registers:
+`registerDocumentInternalJobs.ts` registers:
 
 - `document.formula.evaluate.compute` as a concurrent internal Job;
 - `document.formula.evaluate.settle` as a serial internal Job.
@@ -65,9 +65,9 @@ sequenceDiagram
 
 ## Declared Slide command flow (currently unreachable)
 
-[`registerSlideEndpoints.ts`](../../../api/routes/slide/registerSlideEndpoints.ts) declares serial `POST /slides/command` and concurrent `POST /slides/query` inline Jobs. Slide wire schemas strictly decode embedded Rich Content and operations. However, [`slide/index.ts`](../../../capabilities/slide/index.ts) references a missing `application/slideService.ts`, so startup cannot currently construct the required `SlideCapability`; these routes are not operable in the live tree.
+`registerSlideEndpoints.ts` declares serial `POST /slides/command` and concurrent `POST /slides/query` inline Jobs. Slide wire schemas strictly decode embedded Rich Content and operations. However, `slide/index.ts` references a missing `application/slideService.ts`, so startup cannot currently construct the required `SlideCapability`; these routes are not operable in the live tree.
 
-[`slide/domain/reducer.ts`](../../../capabilities/slide/domain/reducer.ts) calls Rich Text for:
+`slide/domain/reducer.ts` calls Rich Text for:
 
 - `notes.apply` on Slide notes;
 - `text.apply` on authored Text Shape content.
@@ -95,7 +95,7 @@ Document queries call host projections, and Slide provides the corresponding pur
 | Slide plain text | `plainText` for notes and text shapes |
 | Slide text styling | `fullRangeStyle` → `overlayMarks` → `resolveStyling` |
 
-Projection source is [`document/projections/`](../../../capabilities/document/projections/) and [`slide/projections/`](../../../capabilities/slide/projections/). Host whole-range style marks ensure styling segmentation covers all authored text; persisted links are appended outside `overlayMarks` so supplementary links are not lost.
+Projection source is `document/projections/` and `slide/projections/`. Host whole-range style marks ensure styling segmentation covers all authored text; persisted links are appended outside `overlayMarks` so supplementary links are not lost.
 
 ## Persistence and codec flow
 

@@ -152,10 +152,10 @@ it by creating but could sit above it if the limit were lowered later.
 
 ## Test coverage and non-goals
 
-[`persona.test.ts`](../../../../test/capabilities/persona.test.ts) covers
+`persona.test.ts` covers
 rendering, digests, validation, persistence, the built-in, and the full wrapper lifecycle
 against a fake `PersonaContextPort`;
-[`persona-wiring.test.ts`](../../../../test/capabilities/persona-wiring.test.ts) drives a
+`persona-wiring.test.ts` drives a
 real transport, registry, and scheduler.
 
 Not covered: Persona against a *real* `ContextManager` (the wrapper tests use a double),

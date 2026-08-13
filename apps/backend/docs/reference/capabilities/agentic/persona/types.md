@@ -1,6 +1,6 @@
 # Persona types and persistence
 
-The public surface is exported by [`index.ts`](../index.ts).
+The public surface is exported by `index.ts`.
 
 ## `PersonaSectionName`
 
@@ -141,7 +141,7 @@ real message logged.
 
 ## Limits
 
-[`DEFAULT_PERSONA_LIMITS`](../domain/validation.ts), overridable via
+`DEFAULT_PERSONA_LIMITS`, overridable via
 `PersonaDependencies.limits`:
 
 | Limit | Default | Applied to |

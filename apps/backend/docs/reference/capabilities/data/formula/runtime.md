@@ -2,7 +2,7 @@
 
 ## Construction and composition
 
-[`createFormulaEngine`](../engine.ts) constructs one `FormulaEngineImpl` from a complete `FormulaLimits` object and a [`Logger`](../../observability/logger.ts). [`createFormula`](../../../initialization/runtimes/formula.ts) passes `BackendConfig.formula`; [`startBackend`](../../../initialization/create-runtime.ts) creates this singleton before Structured Data's resolver and the Document capability.
+`createFormulaEngine` constructs one `FormulaEngineImpl` from a complete `FormulaLimits` object and a `Logger`. `createFormula` passes `BackendConfig.formula`; `startBackend` creates this singleton before Structured Data's resolver and the Document capability.
 
 ```mermaid
 flowchart TD
@@ -24,25 +24,25 @@ The engine stores only its base limits and logger. It has no mutable expression 
 
 Input: source, exact language discriminator, optional limit overrides. Output: `FormulaResult<FormulaExpression>`.
 
-Call chain: [`lex`](../lexer.ts) → [`parse`](../parser.ts) → source digest/node count. Unsupported versions return `unsupported_version`. Parser diagnostics produce `ok: false`; unexpected exceptions become `parse_error`. Debug logs contain duration, node count or diagnostic count—not source text. The lexer itself does not enforce limits; the parser checks source, token, node, and depth bounds.
+Call chain: `lex` → `parse` → source digest/node count. Unsupported versions return `unsupported_version`. Parser diagnostics produce `ok: false`; unexpected exceptions become `parse_error`. Debug logs contain duration, node count or diagnostic count—not source text. The lexer itself does not enforce limits; the parser checks source, token, node, and depth bounds.
 
 ### `validate(request)`
 
 Input: a previously parsed expression, optional resolver (empty snapshot by default), optional limits. Output: a successful `FormulaResult<FormulaValidation>` unless an unexpected exception occurs.
 
-It calls [`bind`](../binder.ts). Unknown/stale names are stored inside `FormulaValidation.diagnostics`, and `valid` is false; this is not an outer `FormulaResult` failure. The returned expression contains any newly embedded stable bindings. The merged limits variable is currently computed but unused.
+It calls `bind`. Unknown/stale names are stored inside `FormulaValidation.diagnostics`, and `valid` is false; this is not an outer `FormulaResult` failure. The returned expression contains any newly embedded stable bindings. The merged limits variable is currently computed but unused.
 
 ### `dependencies(request)`
 
 Input: parsed expression and optional resolver. Output: `FormulaResult<FormulaDependencyResult>`.
 
-With a resolver it binds a temporary root, then calls [`extractDependencies`](../dependencies.ts). Binding diagnostics are not checked here, so an unknown name remains a symbolic dependency rather than failing the request. Request limit overrides are currently unused. The static result has symbolic/bound dependencies and a digest; observed dependencies come only from evaluation.
+With a resolver it binds a temporary root, then calls `extractDependencies`. Binding diagnostics are not checked here, so an unknown name remains a symbolic dependency rather than failing the request. Request limit overrides are currently unused. The static result has symbolic/bound dependencies and a digest; observed dependencies come only from evaluation.
 
 ### `evaluate(request)`
 
 Input: parsed expression, required resolver snapshot, optional limit overrides. Output: `FormulaResult<FormulaEvaluation>`.
 
-It binds first and fails on any bind diagnostic. [`evaluate`](../evaluator.ts) then walks the bound AST with step, call-depth, local-environment, and observed-dependency state. Any evaluator diagnostic fails the outer result. The engine subsequently enforces recursive cell and identity-payload byte limits, extracts the bound dependency digest, and computes the evaluation digest. Success logs duration, steps, output kind/cell/byte counts; failures log counts and limit metadata.
+It binds first and fails on any bind diagnostic. `evaluate` then walks the bound AST with step, call-depth, local-environment, and observed-dependency state. Any evaluator diagnostic fails the outer result. The engine subsequently enforces recursive cell and identity-payload byte limits, extracts the bound dependency digest, and computes the evaluation digest. Success logs duration, steps, output kind/cell/byte counts; failures log counts and limit metadata.
 
 ### `explain(request)`
 
@@ -50,25 +50,25 @@ Input: expression, resolver and optional limits. Output: `FormulaExplanation` wi
 
 ## Language pipeline helpers
 
-### Lexer — [`lexer.ts`](../lexer.ts)
+### Lexer — `lexer.ts`
 
 Scans whitespace, `//` comments, quoted strings with basic escapes, decimal literals, ASCII identifiers/keywords, operators and punctuation. Invalid characters and unterminated strings become `error` tokens; the parser turns the resulting syntax into diagnostics. There is no exponent notation or non-ASCII identifier grammar.
 
-### Parser — [`parser.ts`](../parser.ts)
+### Parser — `parser.ts`
 
 Recursive-descent functions implement precedence and create immutable-looking object nodes with generated IDs. Major helper groups parse binary precedence, postfix access/calls, set bodies/conditions, index versus integer-bound slice, list/record literals, and primaries. It accumulates diagnostics rather than throwing for normal syntax errors.
 
-### Binder — [`binder.ts`](../binder.ts)
+### Binder — `binder.ts`
 
 Recursively copies nodes, extends a lowercase lambda environment, reserves built-ins, validates old bindings by stable identity, binds new names from the snapshot, and returns bound IDs plus diagnostics. It searches old bindings by `bindingId` across map values because the snapshot map is display-name keyed.
 
-### Dependency extractor — [`dependencies.ts`](../dependencies.ts)
+### Dependency extractor — `dependencies.ts`
 
 Walks AST and condition nodes twice: one lexical-environment-aware symbolic pass and one bound-reference pass. Bound references are deduplicated by ID, sorted for digesting, and hashed. Symbolic references are not deduplicated.
 
 ## Evaluation helper groups
 
-[`evaluator.ts`](../evaluator.ts) centralizes runtime semantics:
+`evaluator.ts` centralizes runtime semantics:
 
 | Group | Current behavior |
 | --- | --- |
@@ -85,22 +85,22 @@ Row fields are installed in a copied local environment during a query and restor
 
 ## Built-in helper group
 
-[`callBuiltin`](../builtins.ts) uses strict arity/type checks and returns an internal `{ value, diagnostics }`. Numeric aggregates flatten numbers through list/table cells but do not accept record aggregates. `TABLE` accepts records directly or in a list, aligns differing field order, and rejects missing fields. Conversion functions are explicit; ordinary operators do not coerce kinds.
+`callBuiltin` uses strict arity/type checks and returns an internal `{ value, diagnostics }`. Numeric aggregates flatten numbers through list/table cells but do not accept record aggregates. `TABLE` accepts records directly or in a list, aligns differing field order, and rejects missing fields. Conversion functions are explicit; ordinary operators do not coerce kinds.
 
 `BUILTIN_IMPLEMENTATION_VERSION` and lambda identity make function identity version-aware. `isBuiltinName` is also used by binding/dependency extraction and Structured Data ingress reservation.
 
 ## Numeric, identity, display, and wire helpers
 
-- [`rational.ts`](../rational.ts): normalized construction; exact arithmetic/comparison; integer power; floor/ceil/round; string wire conversion. Division/modulo by zero throw at this low level and are converted to diagnostics by evaluator/built-ins.
-- [`value.ts`](../value.ts): value constants and shape-checking constructors.
-- [`value-identity.ts`](../value-identity.ts): canonical recursive identity payload and SHA-256-prefix digest, including functions.
-- [`wire.ts`](../wire.ts): recursive JSON-safe conversion for non-function values; function conversion throws.
-- [`display.ts`](../display.ts): deterministic plain display strings without locale formatting.
-- [`diagnostics.ts`](../diagnostics.ts): constructors for stable error codes.
+- `rational.ts`: normalized construction; exact arithmetic/comparison; integer power; floor/ceil/round; string wire conversion. Division/modulo by zero throw at this low level and are converted to diagnostics by evaluator/built-ins.
+- `value.ts`: value constants and shape-checking constructors.
+- `value-identity.ts`: canonical recursive identity payload and SHA-256-prefix digest, including functions.
+- `wire.ts`: recursive JSON-safe conversion for non-function values; function conversion throws.
+- `display.ts`: deterministic plain display strings without locale formatting.
+- `diagnostics.ts`: constructors for stable error codes.
 
 ## Structured Data resolver runtime
 
-[`FormulaNameResolver`](../../../initialization/runtimes/formula-name-resolver.ts) is a separate runtime object constructed from Formula, one project-scoped `StructuredData`, Logger, user ID and project ID.
+`FormulaNameResolver` is a separate runtime object constructed from Formula, one project-scoped `StructuredData`, Logger, user ID and project ID.
 
 ### `buildSnapshot()`
 

@@ -2,9 +2,9 @@
 
 ## Construction and composition
 
-[`createDerivedOutputServiceInstance`](../../../initialization/runtimes/derived-outputs.ts) creates a project-bound SQLite store and passes it with Knowledge, Intelligence, ResourceReader, `config.derivedOutputs`, and Logger to [`createDerivedOutputService`](../derived-outputs.ts).
+`createDerivedOutputServiceInstance` creates a project-bound SQLite store and passes it with Knowledge, Intelligence, ResourceReader, `config.derivedOutputs`, and Logger to `createDerivedOutputService`.
 
-Composition order in [`create-runtime.ts`](../../../initialization/create-runtime.ts) matters:
+Composition order in `create-runtime.ts` matters:
 
 1. create Context and an initially empty runtime resource registry;
 2. inject that registry as Knowledge's resolver;

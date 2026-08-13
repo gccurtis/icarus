@@ -36,7 +36,7 @@ No external request occurs during this construction. Duplicate route errors can 
 
 ## Derived Output refresh
 
-The endpoint mapper is [`registerDerivedOutputEndpoints.ts`](../../../api/routes/derived-outputs/registerDerivedOutputEndpoints.ts). The model call chain is in [`derived-outputs.ts`](../../../capabilities/derived-outputs/derived-outputs.ts).
+The endpoint mapper is `registerDerivedOutputEndpoints.ts`. The model call chain is in `derived-outputs.ts`.
 
 ```mermaid
 sequenceDiagram
@@ -75,7 +75,7 @@ Derived Outputs validates planned queries and synthesized output after Intellige
 
 ## Knowledge embedding
 
-[`IntelligenceEmbedder`](../../knowledge/embedder.ts) deliberately narrows the dependency to `embed(inputs)`. It passes `undefined` for `AbortSignal`, so request cancellation is not currently propagated from Knowledge.
+`IntelligenceEmbedder` deliberately narrows the dependency to `embed(inputs)`. It passes `undefined` for `AbortSignal`, so request cancellation is not currently propagated from Knowledge.
 
 ```mermaid
 flowchart LR
@@ -98,8 +98,8 @@ Source ingestion sends windows in batches of 32. Retrieval sends one query. Inte
 4. An error containing only status and optional provider request ID propagates.
 5. The owning capability job decides status translation and error logging.
 
-[`runtime-wiring.test.ts`](../../../../test/capabilities/runtime-wiring.test.ts) verifies that a provider response body does not appear in the thrown diagnostic.
+`runtime-wiring.test.ts` verifies that a provider response body does not appear in the thrown diagnostic.
 
 ## Adding a provider or consumer
 
-A provider must implement [`Provider`](../provider.ts), normalize usage, honor cancellation, and avoid leaking payloads. Production construction must register it under the exact names used by routes. A consumer should inject `Intelligence` or a narrower local port, define purpose/schema/tools in its own boundary, select its own job policy, and validate all semantic output before mutation.
+A provider must implement `Provider`, normalize usage, honor cancellation, and avoid leaking payloads. Production construction must register it under the exact names used by routes. A consumer should inject `Intelligence` or a narrower local port, define purpose/schema/tools in its own boundary, select its own job policy, and validate all semantic output before mutation.

@@ -4,10 +4,10 @@
 
 | Type | Fields and result | Source |
 | --- | --- | --- |
-| `ApiHealth` | Result with `service: "backend"`, `status: "ok"`, and ISO timestamp. Owned here, because the backend produces it. | [`healthCapability.ts`](../healthCapability.ts) |
-| `EchoCapabilityInput` | `method`, `path`, and opaque `body`; result adds `processedAt`. | [`echoCapability.ts`](../echoCapability.ts) |
-| `AuditCapabilityInput` | Optional `requestId`; result returns `acceptedRequestId` and `auditedAt`. | [`auditCapability.ts`](../auditCapability.ts) |
-| `QueueStatusCapabilityInput` | `queues: JobSchedulerState` and sorted `registeredEndpoints`; the result is the same object. | [`queueStatusCapability.ts`](../queueStatusCapability.ts) |
+| `ApiHealth` | Result with `service: "backend"`, `status: "ok"`, and ISO timestamp. Owned here, because the backend produces it. | `healthCapability.ts` |
+| `EchoCapabilityInput` | `method`, `path`, and opaque `body`; result adds `processedAt`. | `echoCapability.ts` |
+| `AuditCapabilityInput` | Optional `requestId`; result returns `acceptedRequestId` and `auditedAt`. | `auditCapability.ts` |
+| `QueueStatusCapabilityInput` | `queues: JobSchedulerState` and sorted `registeredEndpoints`; the result is the same object. | `queueStatusCapability.ts` |
 
 All timestamps are created with `new Date().toISOString()`. No capability input
 decoder is defined here; health and queue status have no body, while echo and
@@ -15,7 +15,7 @@ audit consume values captured from the normalized request.
 
 ## Request types
 
-[`types/request.ts`](../../../api/context.ts) defines:
+`types/request.ts` defines:
 
 - `RequestEndpoint`: method and path used for registry keys.
 - `IncomingRequest`: framework-facing ID, method, URL, params, query, headers,
@@ -28,7 +28,7 @@ Registry keys uppercase the method and retain the exact path, for example
 
 ## Job type family
 
-[`jobs/types.ts`](../../../workflows/types.ts) is canonical:
+`jobs/types.ts` is canonical:
 
 | Type | Meaning |
 | --- | --- |

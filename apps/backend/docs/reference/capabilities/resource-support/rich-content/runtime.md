@@ -2,7 +2,7 @@
 
 ## Construction and state
 
-[`createRichText`](../engine.ts) constructs `RichTextImpl` with a `RichTextConfig` and [`Logger`](../../observability/logger.ts). [`createRichTextInstance`](../../../initialization/runtimes/rich-text.ts) combines `DEFAULT_STYLE` with `BackendConfig.richText` limits. [`startBackend`](../../../initialization/create-runtime.ts) injects the singleton into Document and attempts to inject it into Slide; the latter construction is currently blocked by the missing Slide application service module.
+`createRichText` constructs `RichTextImpl` with a `RichTextConfig` and `Logger`. `createRichTextInstance` combines `DEFAULT_STYLE` with `BackendConfig.richText` limits. `startBackend` injects the singleton into Document and attempts to inject it into Slide; the latter construction is currently blocked by the missing Slide application service module.
 
 The runtime stores only config and logger. Content is always passed in/out; the service owns no content repository. Most helpers are pure with respect to caller input, although returned arrays/objects are ordinary mutable JavaScript values.
 
@@ -34,15 +34,15 @@ Snaps mark endpoints, segments at mark boundaries, starts each segment from conf
 
 ### `validate(content)`
 
-Delegates to [`validate.ts`](../validate.ts) with configured limits. It reports empty atoms, duplicate IDs, count limits, missing endpoint atoms, selected offset problems, empty marks, empty link targets and UTF-16 surrogate splits. It logs only failed validations and does not throw for normal diagnostics.
+Delegates to `validate.ts` with configured limits. It reports empty atoms, duplicate IDs, count limits, missing endpoint atoms, selected offset problems, empty marks, empty link targets and UTF-16 surrogate splits. It logs only failed validations and does not throw for normal diagnostics.
 
 ### `normalize(content)`
 
-Delegates to [`normalize.ts`](../normalize.ts): snap non-text endpoints, remove empty marks, merge adjacent text atoms, filter dead/out-of-bounds marks, remove adjacent equivalent marks, then sort marks by atom order/start offset. It does not log or validate the result.
+Delegates to `normalize.ts`: snap non-text endpoints, remove empty marks, merge adjacent text atoms, filter dead/out-of-bounds marks, remove adjacent equivalent marks, then sort marks by atom order/start offset. It does not log or validate the result.
 
 ### `apply(content, operations)`
 
-Delegates to [`applyOperations`](../operations.ts), which `structuredClone`s input, reduces operations in order, reverses inverse order, unions affected IDs and retains the most recent dirty range. If an operation throws, the caller's original content was not mutated and no result is returned. It logs duration, input counts, operation count and operation type names.
+Delegates to `applyOperations`, which `structuredClone`s input, reduces operations in order, reverses inverse order, unions affected IDs and retains the most recent dirty range. If an operation throws, the caller's original content was not mutated and no result is returned. It logs duration, input counts, operation count and operation type names.
 
 Operation helper behavior:
 
@@ -57,39 +57,39 @@ Operation helper behavior:
 
 ### `formulaFromDelimitedRange(content, range, ids)`
 
-Delegates to [`formula-authoring.ts`](../formula-authoring.ts). It requires one text atom, integer ordered in-bounds offsets, exact `{{...}}` delimiters and a nonblank interior. It allocates Formula/trailing text IDs and returns a guarded atomic replacement operation. It does not parse Formula source.
+Delegates to `formula-authoring.ts`. It requires one text atom, integer ordered in-bounds offsets, exact `{{...}}` delimiters and a nonblank interior. It allocates Formula/trailing text IDs and returns a guarded atomic replacement operation. It does not parse Formula source.
 
 ### `clone(content, ids)`
 
-Delegates to [`clone.ts`](../clone.ts). It remaps all atom/mark IDs and mark endpoints and creates new top-level arrays/objects. Nested payloads remain shared. Missing range IDs remain unchanged rather than failing.
+Delegates to `clone.ts`. It remaps all atom/mark IDs and mark endpoints and creates new top-level arrays/objects. Nested payloads remain shared. Missing range IDs remain unchanged rather than failing.
 
 ### `plainText(atoms)`
 
-Delegates to [`plain-text.ts`](../plain-text.ts). It concatenates text, Formula/reference display text and newline for hard breaks. It does not inspect marks.
+Delegates to `plain-text.ts`. It concatenates text, Formula/reference display text and newline for hard breaks. It does not inspect marks.
 
 ### `encode(content)` and `decode(bytes)`
 
-Delegate to [`codec.ts`](../codec.ts). Encode sorts object keys recursively through a JSON replacer and returns UTF-8 bytes. Decode parses JSON and casts it; malformed JSON throws and malformed Rich Content is not diagnosed until explicit validation/host ingress.
+Delegate to `codec.ts`. Encode sorts object keys recursively through a JSON replacer and returns UTF-8 bytes. Decode parses JSON and casts it; malformed JSON throws and malformed Rich Content is not diagnosed until explicit validation/host ingress.
 
 ## Auxiliary helper groups
 
-### Styles — [`styles.ts`](../styles.ts)
+### Styles — `styles.ts`
 
 `overlay(base, over)` copies defined overlay properties. `markToProperties` maps semantic marks to concrete style values (`bold` → weight 700, `code` → code true/monospace); links map to no visual properties. `mergeStyleProperties(authoritative, supplementary)` is a named supplementary-then-authoritative overlay.
 
-### Engine range helpers — [`engine.ts`](../engine.ts)
+### Engine range helpers — `engine.ts`
 
 Helpers compute atom order, position comparisons, full ranges, snapped marks, all segment boundaries, containment, synthetic carried marks and JSON-value deduplication. Unknown atom IDs throw during position comparisons/boundary collection rather than becoming validation diagnostics.
 
-### Operation helpers — [`operations.ts`](../operations.ts)
+### Operation helpers — `operations.ts`
 
 One switch dispatches every operation. Helpers mutate the cloned working arrays. `mapReplacedTextPosition` gives boundary-aware mark remapping for atomic Formula authoring. Formula settlement reconstructs the atom while deliberately omitting old accepted value/diagnostic unless supplied in the new settlement.
 
-### Validation/normalization — [`validate.ts`](../validate.ts), [`normalize.ts`](../normalize.ts)
+### Validation/normalization — `validate.ts`, `normalize.ts`
 
 These are independent opt-in passes. Validation builds atom/mark ID sets and an atom map. Normalization uses separate passes and does not reuse validation.
 
-### ID factory — [`id-factory.ts`](../id-factory.ts)
+### ID factory — `id-factory.ts`
 
 `createRichTextIdFactory()` is available by direct module import and returns random UUID atom/mark functions. The package index exports the interface but currently does not re-export this factory.
 

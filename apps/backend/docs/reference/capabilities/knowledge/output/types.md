@@ -2,7 +2,7 @@
 
 ## Public domain family
 
-All public types originate in [`domain/model.ts`](../domain/model.ts) and are re-exported by [`index.ts`](../index.ts).
+All public types originate in `domain/model.ts` and are re-exported by `index.ts`.
 
 ### Output and definition
 
@@ -100,13 +100,13 @@ Other pipeline errors are normally caught by `refresh` and converted to a failed
 
 ## Resource and Knowledge scope ports
 
-[`ResourceReader`](../derived-outputs.ts) defines `describeSource`, `list(scope)`, and bounded `read(resourceId,kind,startLine,endLine,scope)`. `ResourceDescriptor` aliases Knowledge's `{sourceId,resourceId,resourceKind,resourceRevision?}`. `ResourceContent` adds text and byte size.
+`ResourceReader` defines `describeSource`, `list(scope)`, and bounded `read(resourceId,kind,startLine,endLine,scope)`. `ResourceDescriptor` aliases Knowledge's `{sourceId,resourceId,resourceKind,resourceRevision?}`. `ResourceContent` adds text and byte size.
 
-[`KnowledgeScopeManifest`](../../../capabilities/knowledge/types.ts) contains frozen canonical input/resolved entries, trusted descriptors, sorted admissible source IDs, context/scope SHA-256 digests, and resolution time.
+`KnowledgeScopeManifest` contains frozen canonical input/resolved entries, trusted descriptors, sorted admissible source IDs, context/scope SHA-256 digests, and resolution time.
 
 ## Store command/result types
 
-[`store.ts`](../store.ts) defines:
+`store.ts` defines:
 
 - declaration/refresh/definition-update claim records;
 - `UpdateOutputDefinitionInput` and `updated | not_found | stale` result;
@@ -118,7 +118,7 @@ These types make the exact atomic comparison inputs explicit.
 
 ## SQLite representation
 
-[`SQLiteDerivedOutputStore`](../sqlite-store.ts) opens `./data/derived-outputs.db` in WAL mode, `synchronous=NORMAL`, 5-second busy timeout, foreign keys enabled, and prefix `do_${sha256(projectId).slice(0,16)}`.
+`SQLiteDerivedOutputStore` opens `./data/derived-outputs.db` in WAL mode, `synchronous=NORMAL`, 5-second busy timeout, foreign keys enabled, and prefix `do_${sha256(projectId).slice(0,16)}`.
 
 | Table | Durable purpose |
 |---|---|

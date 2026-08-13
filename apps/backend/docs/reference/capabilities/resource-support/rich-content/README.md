@@ -6,7 +6,7 @@ Rich Text is an implemented, in-process Platform component for inline content. I
 
 Document is a concrete runtime consumer. Slide contains domain reducers, projections, validation and endpoint/internal-Job declarations that consume Rich Text, but its barrel references a missing `application/slideService.ts`; the Slide paths documented here are therefore source-level integrations, not currently operable endpoints.
 
-These pages describe the current files under [`rich-text/`](../). The older [repository Rich Text reference](../../../../../../docs/capabilities/rich-text.md) describes a larger block-owning design that is not the implemented model: current `RichContent` is just `atoms + marks`, and host capabilities own all containers.
+These pages describe the current files under [`rich-text/`](../). The older `repository Rich Text reference` describes a larger block-owning design that is not the implemented model: current `RichContent` is just `atoms + marks`, and host capabilities own all containers.
 
 ## Runtime position
 
@@ -23,23 +23,23 @@ flowchart LR
   Slides --> Stores
 ```
 
-Construction lives in [`create/rich-text.ts`](../../../initialization/runtimes/rich-text.ts), and process composition is attempted in [`create-runtime.ts`](../../../initialization/create-runtime.ts). The public package surface is [`index.ts`](../index.ts).
+Construction lives in `create/rich-text.ts`, and process composition is attempted in `create-runtime.ts`. The public package surface is `index.ts`.
 
 ## Dependency and source map
 
 | Concern | Code authority | Role |
 | --- | --- | --- |
-| Public model | [`types.ts`](../types.ts), [`index.ts`](../index.ts) | Atoms, marks, operations, outputs, `RichText` interface |
-| Runtime facade | [`engine.ts`](../engine.ts) | Factories, styling and method delegation/logging |
-| Operation reduction | [`operations.ts`](../operations.ts) | Batch apply, inverse primitives and footprints |
-| Validation/canonicalization | [`validate.ts`](../validate.ts), [`normalize.ts`](../normalize.ts) | Structural diagnostics and normalization passes |
-| Styling | [`styles.ts`](../styles.ts), [`engine.ts`](../engine.ts) | Mark-to-style mapping, overlays, resolved ranges |
-| Formula authoring | [`formula-authoring.ts`](../formula-authoring.ts) | Delimited text to atomic `FormulaAtom` replacement |
-| Utility forms | [`codec.ts`](../codec.ts), [`clone.ts`](../clone.ts), [`plain-text.ts`](../plain-text.ts), [`id-factory.ts`](../id-factory.ts) | Encoding, ID remap, text projection, UUID factory |
-| Document integration | [`document/reducer.ts`](../../../capabilities/document/domain/reducer.ts), [`documentService.ts`](../../../capabilities/document/application/documentService.ts) | Rich Text commands, Formula settlement, inverses |
-| Document projections | [`document/projections/`](../../../capabilities/document/projections/) | Plain text, outline and styling |
-| Slide integration | [`slide/reducer.ts`](../../../capabilities/slide/domain/reducer.ts), [`slide/projections/`](../../../capabilities/slide/projections/) | Notes/text mutation and projections |
-| Wire ingress | [`document/valueSchemas.ts`](../../../capabilities/document/wire/valueSchemas.ts), [`slide/valueSchemas.ts`](../../../capabilities/slide/wire/valueSchemas.ts) | Strict host-owned DTO validation |
+| Public model | `types.ts`, `index.ts` | Atoms, marks, operations, outputs, `RichText` interface |
+| Runtime facade | `engine.ts` | Factories, styling and method delegation/logging |
+| Operation reduction | `operations.ts` | Batch apply, inverse primitives and footprints |
+| Validation/canonicalization | `validate.ts`, `normalize.ts` | Structural diagnostics and normalization passes |
+| Styling | `styles.ts`, `engine.ts` | Mark-to-style mapping, overlays, resolved ranges |
+| Formula authoring | `formula-authoring.ts` | Delimited text to atomic `FormulaAtom` replacement |
+| Utility forms | `codec.ts`, `clone.ts`, `plain-text.ts`, `id-factory.ts` | Encoding, ID remap, text projection, UUID factory |
+| Document integration | `document/reducer.ts`, `documentService.ts` | Rich Text commands, Formula settlement, inverses |
+| Document projections | `document/projections/` | Plain text, outline and styling |
+| Slide integration | `slide/reducer.ts`, `slide/projections/` | Notes/text mutation and projections |
+| Wire ingress | `document/valueSchemas.ts`, `slide/valueSchemas.ts` | Strict host-owned DTO validation |
 
 Rich Text depends on Formula only for the `FormulaWireValue` type and on Observability for `Logger`. It never calls the Formula engine.
 
@@ -53,7 +53,7 @@ Rich Text depends on Formula only for the `FormulaWireValue` type and on Observa
 
 ## Executable references
 
-- [Rich Text/Formula tests](../../../../test/capabilities/rich-text-formula.test.ts)
-- [Document domain tests](../../../../test/capabilities/document-domain.test.ts)
-- [Document application tests](../../../../test/capabilities/document-application.test.ts)
-- [Slide wire tests](../../../../test/capabilities/slide-wire.test.ts)
+- `Rich Text/Formula tests`
+- `Document domain tests`
+- `Document application tests`
+- `Slide wire tests`

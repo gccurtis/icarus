@@ -36,21 +36,21 @@ queue admission, while Document persists the durable attempt/stage authority.
 
 | Layer | Authority and entry points |
 | --- | --- |
-| Public exports | [`index.ts`](../index.ts) |
-| Aggregate types | [`domain/model.ts`](../domain/model.ts) |
-| Canonical encoding/digests | [`canonical.ts`](../domain/canonical.ts) |
-| Reducer/inverses/rebase | [`reducer.ts`](../domain/reducer.ts), [`inverses.ts`](../domain/inverses.ts), [`rebase.ts`](../domain/rebase.ts) |
-| Validation/identity/layout/tree | [`validation.ts`](../domain/validation.ts), [`identities.ts`](../domain/identities.ts), [`layout.ts`](../domain/layout.ts), [`tree.ts`](../domain/tree.ts) |
-| Application runtime | [`documentService.ts`](../application/documentService.ts) |
-| Default creation | [`createService.ts`](../application/createService.ts) |
-| Store contract/adapter/schema/mappers | [`documentStore.ts`](../ports/documentStore.ts), [`sqliteDocumentStore.ts`](../persistence/sqliteDocumentStore.ts), [`sqliteSchema.ts`](../persistence/sqliteSchema.ts), [`sqliteMappers.ts`](../persistence/sqliteMappers.ts) |
-| External runtime ports | [`activityPublisher.ts`](../ports/activityPublisher.ts), [`derivedOutputs.ts`](../ports/derivedOutputs.ts), [`formulaResolver.ts`](../ports/formulaResolver.ts) |
-| Wire admission | [`commandSchemas.ts`](../wire/commandSchemas.ts), [`querySchemas.ts`](../wire/querySchemas.ts), [`operationSchemas.ts`](../wire/operationSchemas.ts), [`valueSchemas.ts`](../wire/valueSchemas.ts) |
-| Rebuildable projections | [`dependencies.ts`](../projections/dependencies.ts), [`outline.ts`](../projections/outline.ts), [`plainText.ts`](../projections/plainText.ts), [`styling.ts`](../projections/styling.ts) |
-| Instance factory | [`create/document.ts`](../../../initialization/runtimes/document.ts) |
-| Public endpoints | [`registerDocumentEndpoints.ts`](../../../api/routes/document/registerDocumentEndpoints.ts) |
-| Internal jobs | [`createDocumentJobs.ts`](../../../api/routes/document/createDocumentJobs.ts), [`registerDocumentInternalJobs.ts`](../../../api/routes/document/registerDocumentInternalJobs.ts) |
-| Startup composition | [`create-runtime.ts`](../../../initialization/create-runtime.ts) |
+| Public exports | `index.ts` |
+| Aggregate types | `domain/model.ts` |
+| Canonical encoding/digests | `canonical.ts` |
+| Reducer/inverses/rebase | `reducer.ts`, `inverses.ts`, `rebase.ts` |
+| Validation/identity/layout/tree | `validation.ts`, `identities.ts`, `layout.ts`, `tree.ts` |
+| Application runtime | `documentService.ts` |
+| Default creation | `createService.ts` |
+| Store contract/adapter/schema/mappers | `documentStore.ts`, `sqliteDocumentStore.ts`, `sqliteSchema.ts`, `sqliteMappers.ts` |
+| External runtime ports | `activityPublisher.ts`, `derivedOutputs.ts`, `formulaResolver.ts` |
+| Wire admission | `commandSchemas.ts`, `querySchemas.ts`, `operationSchemas.ts`, `valueSchemas.ts` |
+| Rebuildable projections | `dependencies.ts`, `outline.ts`, `plainText.ts`, `styling.ts` |
+| Instance factory | `create/document.ts` |
+| Public endpoints | `registerDocumentEndpoints.ts` |
+| Internal jobs | `createDocumentJobs.ts`, `registerDocumentInternalJobs.ts` |
+| Startup composition | `create-runtime.ts` |
 
 ## Configuration and storage
 
@@ -66,14 +66,14 @@ in [Invariants](invariants.md).
 
 These in-capability docs describe executable code and take precedence when a
 design page differs. Broader intent remains useful in
-[`docs/capabilities/document.md`](../../../../../../docs/capabilities/document.md)
+`docs/capabilities/document.md`
 and the
-[`scratch/document-design`](../../../../../../scratch/document-design)
+`scratch/document-design`
 package.
 
 Tests are in
-[`document-domain.test.ts`](../../../../test/capabilities/document-domain.test.ts),
-[`document-wire.test.ts`](../../../../test/capabilities/document-wire.test.ts),
-[`document-persistence.test.ts`](../../../../test/capabilities/document-persistence.test.ts),
+`document-domain.test.ts`,
+`document-wire.test.ts`,
+`document-persistence.test.ts`,
 and
-[`document-application.test.ts`](../../../../test/capabilities/document-application.test.ts).
+`document-application.test.ts`.

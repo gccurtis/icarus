@@ -45,7 +45,7 @@ This is retrieval containment, not end-user authentication. Authorization must b
 
 ## Evidence/provenance guarantees
 
-- Character spans are nonnegative safe integers with `end > start`; semantics are UTF-16 `[start,end)`.
+- Character spans are nonnegative safe integers with `end > start`; semantics are UTF-16 ``start,end)`.
 - Line spans use safe integers with `startLine ≥1` and `endLine ≥ startLine`.
 - Accepted evidence exactly matches an observed resource kind/ID/span plus trusted revision/source ID.
 - One candidate cannot be cited twice.
@@ -121,7 +121,7 @@ There is no capability-specific maximum prompt, stabilization text, answer text,
 
 ## Regression coverage
 
-[`derived-outputs.test.ts`](../../../../test/capabilities/derived-outputs.test.ts) currently covers no-evidence publication/telemetry; persisted keyed refresh replay, skipped replay, mismatch, and unkeyed repetition; keyed definition replay/mismatch and unkeyed CAS; transactional definition stale marking; current/history logical deletion and purge; Knowledge invalidation/generation fencing; one frozen manifest across all tools; real General File/Connector registry mapping/read containment; concurrent refresh winner; old-definition and late-failure races; and untrusted evidence rejection with complete usage accounting.
+[`derived-outputs.test.ts`` currently covers no-evidence publication/telemetry; persisted keyed refresh replay, skipped replay, mismatch, and unkeyed repetition; keyed definition replay/mismatch and unkeyed CAS; transactional definition stale marking; current/history logical deletion and purge; Knowledge invalidation/generation fencing; one frozen manifest across all tools; real General File/Connector registry mapping/read containment; concurrent refresh winner; old-definition and late-failure races; and untrusted evidence rejection with complete usage accounting.
 
 ## Non-goals
 

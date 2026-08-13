@@ -57,7 +57,7 @@ The `active | pending | failed` protocol guarantees visibility of uncertainty, n
 | stream chunk | 1 MiB | caller-selected chunk size |
 | line range | 10,000 lines | inclusive requested count |
 
-Offsets/counts must be safe integers. Byte range is `[start,end)`, within the reader's construction-time byte size. Line range is one-based and inclusive. Stream decoding preserves UTF-8 across chunks; a byte-range boundary may split a multibyte code point because the selected bytes are decoded independently.
+Offsets/counts must be safe integers. Byte range is ``start,end)`, within the reader's construction-time byte size. Line range is one-based and inclusive. Stream decoding preserves UTF-8 across chunks; a byte-range boundary may split a multibyte code point because the selected bytes are decoded independently.
 
 ## Provider and filesystem scope
 
@@ -95,7 +95,7 @@ Offsets/counts must be safe integers. Byte range is `[start,end)`, within the re
 
 ## Regression coverage
 
-[`connector.test.ts`](../../../../test/capabilities/connector.test.ts) covers absolute list-route registration, extensionless classification, reader bounds/stream UTF-8, prose→other Knowledge removal, failed-sync reconciliation and retry, scheduler startup discovery/recovery, deterministic re-registration before and after purge, delete/sync race safety, and inline manual-refresh errors.
+[`connector.test.ts`` covers absolute list-route registration, extensionless classification, reader bounds/stream UTF-8, prose→other Knowledge removal, failed-sync reconciliation and retry, scheduler startup discovery/recovery, deterministic re-registration before and after purge, delete/sync race safety, and inline manual-refresh errors.
 
 ## Non-goals
 

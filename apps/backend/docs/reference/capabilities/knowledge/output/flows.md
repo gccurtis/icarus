@@ -2,7 +2,7 @@
 
 ## Exhaustive HTTP endpoint table
 
-[`registerDerivedOutputEndpoints`](../../../api/routes/derived-outputs/registerDerivedOutputEndpoints.ts) registers seven inline jobs.
+`registerDerivedOutputEndpoints` registers seven inline jobs.
 
 | Method/path | Job | Queue | Input normalization | Calls | Success / notable behavior |
 |---|---|---|---|---|---|

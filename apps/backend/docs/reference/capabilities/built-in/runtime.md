@@ -2,11 +2,11 @@
 
 ## Construction
 
-[`createRegistry`](../../../registry/registry-constructor.ts) constructs one
+`createRegistry` constructs one
 `JobRegistry` and calls
-[`registerEndpointMappings`](../../../api/routes/internal/registerEndpointMappings.ts).
+`registerEndpointMappings`.
 That fan-out currently calls only
-[`registerBuiltInEndpointMappings`](../../../api/routes/registerBuiltInEndpointMappings.ts);
+`registerBuiltInEndpointMappings`;
 feature-specific endpoint groups are registered later during backend startup.
 
 ## Capability functions
@@ -40,7 +40,7 @@ none reuse concrete `Job` objects. The complete method/queue mapping is in
 
 ## `JobRegistry`
 
-Public methods in [`jobs/registry.ts`](../../../workflows/registry.ts):
+Public methods in `jobs/registry.ts`:
 
 - `register(endpoint, factory)` rejects duplicate normalized endpoint keys.
 - `has(endpoint)` checks a normalized key.
@@ -53,7 +53,7 @@ prefixes.
 
 ## `JobScheduler`
 
-Public methods in [`jobs/scheduler.ts`](../../../workflows/scheduler.ts):
+Public methods in `jobs/scheduler.ts`:
 
 - `enqueue(job)` admits and awaits eventual completion.
 - `admit(job)` checks waiting-queue capacity synchronously, creates completion

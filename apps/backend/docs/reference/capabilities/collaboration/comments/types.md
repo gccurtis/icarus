@@ -1,6 +1,6 @@
 # Comments type reference
 
-Canonical definitions are in [`domain/model.ts`](../domain/model.ts).
+Canonical definitions are in `domain/model.ts`.
 
 ## Comment and target
 

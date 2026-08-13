@@ -2,7 +2,7 @@
 
 ## Common transport behaviour
 
-[`registerPersonaEndpoints`](../../../api/routes/persona/registerPersonaEndpoints.ts)
+`registerPersonaEndpoints`
 registers exactly two exact method/path pairs. Both create a fresh inline job.
 Discriminated-union bodies, no path parameters — the backend's `getEndpointKey` is exact
 string equality on `` `${method} ${path}` ``.

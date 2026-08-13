@@ -2,7 +2,7 @@
 
 ## Common job behavior
 
-[`registerStructuredDataEndpoints`](../../../api/routes/structured-data/registerStructuredDataEndpoints.ts)
+`registerStructuredDataEndpoints`
 registers 16 inline jobs. Every one uses the concurrent queue. Scope is the one
 project instance composed at startup; no user/project selector appears in the
 path or payload.

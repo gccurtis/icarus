@@ -2,11 +2,11 @@
 
 ## Public export surface
 
-[`index.ts`](../index.ts) exports `createRichText`, the `RichText` interface, all public content/operation/result types, and default config/style/limits. Helper functions in codec, operations, styles, validation, normalization and ID factory are file-level exports but are not all package-index exports.
+`index.ts` exports `createRichText`, the `RichText` interface, all public content/operation/result types, and default config/style/limits. Helper functions in codec, operations, styles, validation, normalization and ID factory are file-level exports but are not all package-index exports.
 
 ## Content and atom family
 
-Defined in [`types.ts`](../types.ts):
+Defined in `types.ts`:
 
 | Type | Shape and role |
 | --- | --- |
@@ -40,13 +40,13 @@ No target resolution or URL policy is implemented in Rich Text.
 
 ## Formula family
 
-`FormulaAtom` imports `FormulaWireValue` from [`#formula`](../../formula/index.ts). `RichTextFormulaDiagnostic` is intentionally looser than `FormulaDiagnostic`: string code/message and an optional numeric source range. `FormulaAtomSettlement` contains optional accepted value, required display text and optional diagnostic. Omission actively clears the corresponding optional atom field during settlement.
+`FormulaAtom` imports `FormulaWireValue` from `#formula`. `RichTextFormulaDiagnostic` is intentionally looser than `FormulaDiagnostic`: string code/message and an optional numeric source range. `FormulaAtomSettlement` contains optional accepted value, required display text and optional diagnostic. Omission actively clears the corresponding optional atom field during settlement.
 
 `FormulaAuthoringResult` returns allocated atom ID, extracted source, and operations. The helper currently always returns exactly one `replace-range-with-atom` operation.
 
 ## Operation family
 
-[`RichTextOperation`](../types.ts) currently includes:
+`RichTextOperation` currently includes:
 
 | Group | Operations |
 | --- | --- |
@@ -68,7 +68,7 @@ No target resolution or URL policy is implemented in Rich Text.
 | `ResolvedStyleRange` | range, resolved properties, active mark IDs, optional links | One marked segment |
 | `ResolvedStyling` | ranges, whole plain text, collected links | Rendering projection |
 
-Validation diagnostic codes currently produced by [`validate.ts`](../validate.ts):
+Validation diagnostic codes currently produced by `validate.ts`:
 
 - `atoms-empty`, `duplicate-atom-id`, `duplicate-mark-id`;
 - `too-many-atoms`, `too-many-marks`;
@@ -80,11 +80,11 @@ Validation diagnostic codes currently produced by [`validate.ts`](../validate.ts
 
 ## Configuration and IDs
 
-`RichTextConfig` contains `defaults: TextStyleProperties` and `limits: RichTextLimits`. [`DEFAULT_STYLE`](../types.ts) supplies system font, 1em size, weight 400, false decorations/code, inherited/transparent colors, zero spacing and 1.5 line height.
+`RichTextConfig` contains `defaults: TextStyleProperties` and `limits: RichTextLimits`. `DEFAULT_STYLE` supplies system font, 1em size, weight 400, false decorations/code, inherited/transparent colors, zero spacing and 1.5 line height.
 
 Limits are atom count, mark count and mark-range span. The first two are enforced by validation. `maxMarkRangeSpan` is currently stored but never read.
 
-`RichTextIdFactory` has `atomId()` and `markId()`. [`createRichTextIdFactory`](../id-factory.ts) returns UUID generators. Hosts/tests may inject deterministic factories. Mark factory methods on `RichText` independently default to random UUIDs.
+`RichTextIdFactory` has `atomId()` and `markId()`. `createRichTextIdFactory` returns UUID generators. Hosts/tests may inject deterministic factories. Mark factory methods on `RichText` independently default to random UUIDs.
 
 ## Runtime interface
 
@@ -92,8 +92,8 @@ Limits are atom count, mark count and mark-range span. The first two are enforce
 
 ## Wire and persistence form
 
-Rich Text has no separate DTO type in this module. [`encode`](../codec.ts) sorts every plain object's keys during `JSON.stringify` and UTF-8 encodes the JSON. Array order remains significant. [`decode`](../codec.ts) decodes UTF-8 and casts parsed JSON to `RichContent` without validation.
+Rich Text has no separate DTO type in this module. `encode` sorts every plain object's keys during `JSON.stringify` and UTF-8 encodes the JSON. Array order remains significant. `decode` decodes UTF-8 and casts parsed JSON to `RichContent` without validation.
 
-Document and Slide define strict recursive ingress schemas in their own [`valueSchemas.ts`](../../../capabilities/document/wire/valueSchemas.ts) and [`valueSchemas.ts`](../../../capabilities/slide/wire/valueSchemas.ts). Hosts persist Rich Content inside their snapshots/ChangeSets rather than a Rich Text table.
+Document and Slide define strict recursive ingress schemas in their own `valueSchemas.ts` and `valueSchemas.ts`. Hosts persist Rich Content inside their snapshots/ChangeSets rather than a Rich Text table.
 
-[`clone`](../clone.ts) creates new atom/mark arrays, assigns new IDs, and remaps range endpoint IDs. It is not a full structural deep clone: nested style property/target/wire-value objects are shared because atoms/marks are spread shallowly.
+`clone` creates new atom/mark arrays, assigns new IDs, and remaps range endpoint IDs. It is not a full structural deep clone: nested style property/target/wire-value objects are shared because atoms/marks are spread shallowly.

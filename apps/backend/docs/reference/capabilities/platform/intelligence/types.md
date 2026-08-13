@@ -1,6 +1,6 @@
 # Intelligence types
 
-The public types are split across [`types.ts`](../types.ts), [`provider.ts`](../provider.ts), and [`tools.ts`](../tools.ts). They are ordinary TypeScript interfaces; the Intelligence directory contains no runtime schema validator.
+The public types are split across `types.ts`, `provider.ts`, and `tools.ts`. They are ordinary TypeScript interfaces; the Intelligence directory contains no runtime schema validator.
 
 ## Selection and configuration
 
@@ -12,7 +12,7 @@ The public types are split across [`types.ts`](../types.ts), [`provider.ts`](../
 | `OpenRouterProviderConfig` | `apiKey`, `baseUrl`, `timeoutMs` | Empty key fails at call time; URL and positive timeout are expected from config parsing |
 | `IntelligenceConfig` | provider config; inference/reasoning route arrays; embedding provider/model | Read by constructor; only route tier/duplicate validation happens inside `Intelligence` |
 
-The equivalent backend configuration interfaces and parsing logic live in [`loadBackendConfig.ts`](../../../initialization/configuration.ts). They are structurally compatible rather than imported from this package.
+The equivalent backend configuration interfaces and parsing logic live in `loadBackendConfig.ts`. They are structurally compatible rather than imported from this package.
 
 ## Messages
 
@@ -38,7 +38,7 @@ The equivalent backend configuration interfaces and parsing logic live in [`load
 | `StructuredResult` | `{ structured: unknown, usage }` | non-tool structured calls |
 | `EmbedResult` | `{ vectors, provider, model, usage }` | embeddings |
 
-Tool-loop return objects are declared inline in [`intelligence.ts`](../intelligence.ts), not as exported named types. Plain tool reasoning returns `text`; structured tool reasoning replaces it with `structured`. Both also return `messages`, `toolResults`, `rounds`, `calls`, and aggregate `usage`.
+Tool-loop return objects are declared inline in `intelligence.ts`, not as exported named types. Plain tool reasoning returns `text`; structured tool reasoning replaces it with `structured`. Both also return `messages`, `toolResults`, `rounds`, `calls`, and aggregate `usage`.
 
 ## Usage
 
@@ -83,7 +83,7 @@ Every provider operation accepts `AbortSignal | undefined`. Providers receive an
 
 ## OpenRouter wire representation
 
-[`openrouter/provider.ts`](../openrouter/provider.ts) translates:
+`openrouter/provider.ts` translates:
 
 - messages to OpenAI-compatible `role`, `content`, `tool_calls`, and `tool_call_id` objects;
 - definitions to `type: "function"` tools with `parameters`;

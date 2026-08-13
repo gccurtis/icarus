@@ -2,7 +2,7 @@
 
 ## Construction
 
-[`createGeneralFilesInstance`](../../../initialization/runtimes/generalFiles.ts) creates one `SQLiteGeneralFileStore(config.projectId, "./data/general-files.db")`, then calls [`createGeneralFileService`](../application/generalFileService.ts) with that store, the process Knowledge instance, and shared Logger.
+`createGeneralFilesInstance` creates one `SQLiteGeneralFileStore(config.projectId, "./data/general-files.db")`, then calls `createGeneralFileService` with that store, the process Knowledge instance, and shared Logger.
 
 The resulting object has no mutable cache and no close method. Its asynchronous mutations sequence synchronous SQLite statements and asynchronous Knowledge operations.
 

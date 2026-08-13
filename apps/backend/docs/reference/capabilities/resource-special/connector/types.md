@@ -2,7 +2,7 @@
 
 ## Connector model
 
-[`domain/model.ts`](../domain/model.ts) defines four `ConnectorKind` strings and these key types.
+`domain/model.ts` defines four `ConnectorKind` strings and these key types.
 
 ### Sync types
 
@@ -62,11 +62,11 @@ The prose source ID is `connector:${connectorId}:${sha256(itemKey)}`. Arbitrary 
 
 ## Provider and reader ports
 
-[`ConnectorProvider`](../domain/provider.ts) has `kind`, `label`, optional scheduled-sync opt-in, `listItems(locator)`, and `getReader(locator,itemKey)`. Providers are expected to be stateless.
+`ConnectorProvider` has `kind`, `label`, optional scheduled-sync opt-in, `listItems(locator)`, and `getReader(locator,itemKey)`. Providers are expected to be stateless.
 
 `ConnectorItem` is a provider snapshot item. Its extension may be null and byte size may be `-1` by port comment, although current SQLite item constraints require persisted byte size ≥0; the filesystem provider always supplies a non-negative size.
 
-[`ConnectorReader`](../domain/reader.ts) exposes byte size, nullable MIME type, byte-range `read`, `readAll`, async text `readStream`, and inclusive one-based `readLines`. `DirectoryReader` lists persisted items and opens an item reader.
+`ConnectorReader` exposes byte size, nullable MIME type, byte-range `read`, `readAll`, async text `readStream`, and inclusive one-based `readLines`. `DirectoryReader` lists persisted items and opens an item reader.
 
 ## Errors
 
@@ -82,7 +82,7 @@ The prose source ID is `connector:${connectorId}:${sha256(itemKey)}`. Arbitrary 
 
 ## Store contract
 
-[`ConnectorStore`](../ports/repository.ts) groups:
+`ConnectorStore` groups:
 
 - reads: `getById`, live provider+locator lookup, live list, item list;
 - snapshot writes: transactional `insert`, `update`, and current-to-history `delete`;
@@ -95,7 +95,7 @@ The prose source ID is `connector:${connectorId}:${sha256(itemKey)}`. Arbitrary 
 
 ## SQLite representation
 
-[`SQLiteConnectorStore`](../persistence/sqliteConnectorRepository.ts) opens `./data/connector.db` in WAL mode, `synchronous=NORMAL`, with foreign keys enabled. Tables use `conn_${sha256(projectId).slice(0,16)}`.
+`SQLiteConnectorStore` opens `./data/connector.db` in WAL mode, `synchronous=NORMAL`, with foreign keys enabled. Tables use `conn_${sha256(projectId).slice(0,16)}`.
 
 ### Entry table
 

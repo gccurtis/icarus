@@ -14,7 +14,7 @@ config + logger + Activity
 Templates is constructed after the resource capabilities so adapters can be
 registered into it without a constructor cycle. It receives the registry through
 the read-only `TemplateResourceRegistry` face; `RuntimeTemplateAdapterRegistry`
-in [`initialization/runtimes/templates.ts`](../../../initialization/runtimes/templates.ts) is the
+in `initialization/runtimes/templates.ts` is the
 mutable-during-composition half.
 
 `createTemplateCapability(store, dependencies, clock?, createId?)` follows
@@ -41,7 +41,7 @@ the house rule means by serialising where the store cannot enforce the
 invariant on its own. The cost is that a slow adapter copy holds the single
 serial slot; that is accepted, exactly as it is for Document.
 
-[`test/capabilities/templates-wiring.test.ts`](../../../../test/capabilities/templates-wiring.test.ts)
+`test/capabilities/templates-wiring.test.ts`
 asserts both queue choices so they cannot drift.
 
 ## Status codes

@@ -2,7 +2,7 @@
 
 ## Common transport behavior
 
-[`registerContextEndpoints`](../../../api/routes/context/registerContextEndpoints.ts)
+`registerContextEndpoints`
 registers 10 exact method/path pairs, all under `/contexts`. Every mapping
 creates a fresh `concurrent`, `inline` job. There is no scope selection in the
 path — every route addresses the one project-scoped current/history store.

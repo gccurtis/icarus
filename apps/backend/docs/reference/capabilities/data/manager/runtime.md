@@ -2,9 +2,9 @@
 
 ## Construction
 
-[`createStructuredDataInstance`](../../../initialization/runtimes/structured-data.ts) binds `config.projectId` into `SQLiteDataStore("./data/structured-data.db")`, then calls [`createStructuredData`](../structured-data.ts) with configured limits and the shared Logger. Despite an old store comment mentioning two instances, startup currently composes one project-scoped Structured Data service.
+`createStructuredDataInstance` binds `config.projectId` into `SQLiteDataStore("./data/structured-data.db")`, then calls `createStructuredData` with configured limits and the shared Logger. Despite an old store comment mentioning two instances, startup currently composes one project-scoped Structured Data service.
 
-Startup separately creates [`FormulaNameResolver`](../../../initialization/runtimes/formula-name-resolver.ts) from Formula plus this exact service. Evaluated-value endpoints receive both objects.
+Startup separately creates `FormulaNameResolver` from Formula plus this exact service. Evaluated-value endpoints receive both objects.
 
 ## Public `StructuredData` methods
 
@@ -46,7 +46,7 @@ immediately after HTTP binds and per-capability failure isolation.
 
 ## Validation helpers
 
-All are in [`validation.ts`](../validation.ts):
+All are in `validation.ts`:
 
 | Helper | Current responsibility |
 |---|---|

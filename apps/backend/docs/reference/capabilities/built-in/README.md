@@ -24,17 +24,17 @@ general administration, authentication, or audit-log subsystem.
 
 | Concern | Current source |
 | --- | --- |
-| Health function | [`healthCapability.ts`](../healthCapability.ts) |
-| Echo function | [`echoCapability.ts`](../echoCapability.ts) |
-| Audit function | [`auditCapability.ts`](../auditCapability.ts) |
-| Queue-status function | [`queueStatusCapability.ts`](../queueStatusCapability.ts) |
-| Endpoint-to-job mapping | [`registerBuiltInEndpointMappings.ts`](../../../api/routes/registerBuiltInEndpointMappings.ts) |
-| Built-in registration fan-out | [`registerEndpointMappings.ts`](../../../api/routes/internal/registerEndpointMappings.ts) |
-| Registry factory | [`create/registry.ts`](../../../initialization/runtimes/registry.ts) |
-| Job definitions and state | [`jobs/types.ts`](../../../workflows/types.ts) |
-| Endpoint registry | [`jobs/registry.ts`](../../../workflows/registry.ts) |
-| Queue scheduler | [`jobs/scheduler.ts`](../../../workflows/scheduler.ts) |
-| HTTP transport | [`registerHttpTransport.ts`](../../../api/registerHttpTransport.ts) |
+| Health function | `healthCapability.ts` |
+| Echo function | `echoCapability.ts` |
+| Audit function | `auditCapability.ts` |
+| Queue-status function | `queueStatusCapability.ts` |
+| Endpoint-to-job mapping | `registerBuiltInEndpointMappings.ts` |
+| Built-in registration fan-out | `registerEndpointMappings.ts` |
+| Registry factory | `create/registry.ts` |
+| Job definitions and state | `jobs/types.ts` |
+| Endpoint registry | `jobs/registry.ts` |
+| Queue scheduler | `jobs/scheduler.ts` |
+| HTTP transport | `registerHttpTransport.ts` |
 
 ## Dependency map
 
@@ -50,8 +50,8 @@ runtime, Formula, Knowledge, Intelligence, or resource dependencies.
 
 Queue admission, serial FIFO, capacity handling, logging, and request/job
 correlation are covered by
-[`internal-jobs.test.ts`](../../../../test/capabilities/internal-jobs.test.ts)
+`internal-jobs.test.ts`
 and
-[`runtime-wiring.test.ts`](../../../../test/capabilities/runtime-wiring.test.ts).
+`runtime-wiring.test.ts`.
 The HTTP smoke runner exercises these routes through the actual service in
-[`http-smoke.mjs`](../../../../test/smoke/http-smoke.mjs).
+`http-smoke.mjs`.

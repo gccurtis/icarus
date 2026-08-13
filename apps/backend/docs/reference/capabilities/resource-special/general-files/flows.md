@@ -2,7 +2,7 @@
 
 ## Exhaustive endpoint table
 
-All mappings are in [`registerGeneralFileEndpointMappings.ts`](../../../api/routes/general-files/registerGeneralFileEndpointMappings.ts), create inline jobs, and return JSON domain/result shapes directly.
+All mappings are in `registerGeneralFileEndpointMappings.ts`, create inline jobs, and return JSON domain/result shapes directly.
 
 | Method/path | Job | Queue | Body normalization | Service call | Success | Error mapping |
 |---|---|---|---|---|---|---|

@@ -1,6 +1,6 @@
 # Activity type reference
 
-Canonical type authority is [`domain/model.ts`](../domain/model.ts). The
+Canonical type authority is `domain/model.ts`. The
 application service validates trusted inputs before it calls the store; the
 SQLite adapter persists the same model families.
 

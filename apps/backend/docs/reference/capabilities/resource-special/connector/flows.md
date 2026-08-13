@@ -2,7 +2,7 @@
 
 ## Common HTTP behavior
 
-[`registerConnectorEndpoints`](../../../api/routes/connector/registerConnectorEndpointMappings.ts) creates inline jobs. Register, refresh, reads, get, list, and list-items use the concurrent queue. Delete and purge use the serial queue; delete also acquires the persisted sync claim, which is the cross-caller concurrency boundary.
+`registerConnectorEndpoints` creates inline jobs. Register, refresh, reads, get, list, and list-items use the concurrent queue. Delete and purge use the serial queue; delete also acquires the persisted sync claim, which is the cross-caller concurrency boundary.
 
 Typed mapping: missing 404; already exists/sync in progress 409; validation/unsupported locator/range 400; other 500. Every caught endpoint error is logged with operation and error metadata.
 

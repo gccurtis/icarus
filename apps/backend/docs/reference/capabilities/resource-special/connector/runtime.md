@@ -2,9 +2,9 @@
 
 ## Construction and provider registry
 
-[`createConnectorInstance`](../../../initialization/runtimes/connector.ts) creates `SQLiteConnectorStore(config.projectId, "./data/connector.db")`, constructs a provider map containing only `filesystemProvider`, and passes store, Knowledge, providers, and Logger to [`createConnectorService`](../application/connectorService.ts). It returns both service and store because the recurring scheduler needs the narrow persistence port.
+`createConnectorInstance` creates `SQLiteConnectorStore(config.projectId, "./data/connector.db")`, constructs a provider map containing only `filesystemProvider`, and passes store, Knowledge, providers, and Logger to `createConnectorService`. It returns both service and store because the recurring scheduler needs the narrow persistence port.
 
-Startup registers the service with the runtime resource registry and starts [`ConnectorSyncScheduler`](../../../initialization/runtimes/connectorSyncScheduler.ts) only after the HTTP listener binds.
+Startup registers the service with the runtime resource registry and starts `ConnectorSyncScheduler` only after the HTTP listener binds.
 
 ## Public service methods
 
@@ -81,7 +81,7 @@ Provider and Knowledge operations remain outside these transactions.
 
 ## Filesystem provider and reader
 
-[`filesystemProvider`](../providers/filesystem.ts) resolves the locator, stats it, returns one item for a file or direct regular-file children for a directory, and rejects other filesystem object types. Filenames determine lowercased extension/classification. Paths are not constrained to a workspace root.
+`filesystemProvider` resolves the locator, stats it, returns one item for a file or direct regular-file children for a directory, and rejects other filesystem object types. Filenames determine lowercased extension/classification. Paths are not constrained to a workspace root.
 
 `FileConnectorReader` opens/closes a handle per method:
 
