@@ -15,15 +15,21 @@ Those four are SvelteKit's primary subject matter, and the core of this product
 is a SPA with a sophisticated runtime. The routing layer is not the part worth
 maintaining ourselves.
 
-## SPA, not SSR
+## Server-rendered
 
-`src/routes/+layout.ts` sets `ssr = false` and `prerender = false`, and
-`svelte.config.js` uses `adapter-static` with `fallback: "index.html"`.
+`svelte.config.js` uses `adapter-node`, and there is no `+layout.ts` setting
+`ssr = false` — both SvelteKit defaults apply, so every route renders on the
+server and hydrates on the client.
 
-The Fastify backend on :4000 owns the API, there is no Node server in front of
-the frontend to render on, and nothing here is public enough to need SEO. The
-fallback is what makes a deep link survive a refresh without a server rewrite
-rule — the constraint that used to force hash routing. Paths are now real.
+This is a change from the original SPA design, and the reason is that the
+backend was merged into this application: capabilities run in this process, so
+there is a server to render on. See
+[the integration design](../../../docs/superpowers/specs/2026-08-13-capability-integration-design.md).
+
+Server rendering has one standing obligation: a module that runs during render
+must not touch `window`, `document`, or `localStorage` at module or
+component-init scope. Guard those with `browser` from `$app/environment`, or
+read them in an effect after mount.
 
 ## Layout
 

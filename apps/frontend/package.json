@@ -21,7 +21,7 @@
   "devDependencies": {
     "@internationalized/date": "latest",
     "@lucide/svelte": "latest",
-    "@sveltejs/adapter-static": "latest",
+    "@sveltejs/adapter-node": "latest",
     "@sveltejs/kit": "latest",
     "@sveltejs/vite-plugin-svelte": "latest",
     "@tailwindcss/vite": "latest",

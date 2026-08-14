@@ -1,4 +1,4 @@
-import adapter from "@sveltejs/adapter-static";
+import adapter from "@sveltejs/adapter-node";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 /**
@@ -7,19 +7,14 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
  * strips types without checking them. Type *checking* is `pnpm typecheck`
  * (svelte-check), not the build.
  *
- * No `kit.alias` entries: `$lib` is built in and points at `src/lib`, which is
- * the only alias the frontend needs today. Anything added here generates its
- * own TypeScript path in `.svelte-kit/tsconfig.json`, so the aliases can no
- * longer drift out of step with the compiler the way the hand-written pair in
- * vite.config.ts and tsconfig.json could.
+ * `adapter-node` rather than `adapter-static`: a static build cannot run server
+ * code at all, and everything from Phase 3 onward runs on the server. The build
+ * output is a Node server at `build/index.js`.
  */
 export default {
   preprocess: vitePreprocess(),
 
   kit: {
-    // `fallback` is what makes this a SPA rather than a prerendered site: every
-    // unmatched path is served index.html and resolved on the client, so a deep
-    // link survives a refresh with no server rewrite rule.
-    adapter: adapter({ fallback: "index.html" }),
+    adapter: adapter(),
   },
 };
