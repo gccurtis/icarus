@@ -40,6 +40,8 @@ src/lib/capabilities/<group>/<capability>/
 │   ├── api.md
 │   ├── shared/                 procedures a second function needs
 │   │   ├── shared.md
+│   │   ├── record.ts           instrumentation — every entry calls it
+│   │   ├── stated.ts           a refusal reaches the browser; a fault does not
 │   │   └── <procedure>.ts
 │   └── <function>/
 │       ├── <function>.md       carries the procedure tree
@@ -105,6 +107,37 @@ the function it supports.
 Promotion means it preserves an invariant spanning functions, not merely that two
 call sites wanted the same code.
 
+### The same execution-tree rule as model methods
+
+Capabilities already use the procedural nesting designed for model methods. The
+names differ because the public surfaces differ; the ownership rule does not.
+
+| Stateful model object | Procedural capability |
+| --- | --- |
+| `methods/<method>/` | `api/<function>/` |
+| public method entry | public capability function entry |
+| method-specific supporting method | function-specific supporting procedure |
+| `methods/shared/` | `api/shared/` |
+| method tree | procedure tree |
+
+In both forms, opening the public operation reveals its execution flow. A helper
+used only by that operation stays beneath it. A helper with its own flow becomes
+a matching directory recursively. A second public caller forces an explicit
+promotion to `shared/`; sibling operation directories never reach into one
+another.
+
+One asymmetry is intentional. Every capability function gets a directory and a
+document even when its implementation is short, because it is an independently
+auditable server API and may carry a browser boundary, admission rules, effects,
+and failures. A simple model method may remain one file because its external
+contract is already presented by the owning object. Only a model method whose
+implementation has a supporting tree becomes a directory.
+
+Capability lint already enforces recursive entry filenames and checks that paths
+named in each documented procedure tree exist. It does not yet prove the actual
+call graph matches the document or mechanically count callers before promotion;
+those remain review checks and are the useful next enforcement improvements.
+
 **SQL lives here, not in `persistence/`.** A query one function runs sits in that
 function's directory; a query two functions run is promoted to `shared/` like any
 other procedure. The generic query layer already exists and is called Kysely —
@@ -128,19 +161,33 @@ server implementation. No wire type is written by hand.
 
 ### Scope and infrastructure
 
-**Server-provided infrastructure is imported. Client-supplied identity is an
-argument.**
+**Server-provided infrastructure is imported. Identity is an argument.**
 
-Procedures import the database registry, the logger, and configuration from
-`$runtime/server/*` — those are ambient, and passing them around was ceremony.
 Every procedure takes a `Scope` as its first parameter and its own input as the
-rest.
+rest. `Scope` is `{ projectId, userId }`, and a procedure that has one does not
+check it: a `Scope` exists only because `resolveScope` produced one, and it
+produces one only for a project the asking user holds a handle to.
 
-Keeping scope out of the input type is a security property rather than tidiness:
-**the browser's payload has no slot for `projectId` or `userId`.** The remote
-wrapper derives them server-side. Were scope a field on the input type, a client
-could name a project it does not belong to, and every procedure would have to
-remember to overwrite what it was sent.
+Infrastructure divides by whether it depends on the caller.
+
+| | Reached by | Why |
+| --- | --- | --- |
+| the logger | `record` resolves it itself | one per process |
+| configuration | imported where read | one per process |
+| **the project database** | `projectDatabase(scope.projectId)` | **one per project** — there is no import that could be correct |
+
+`projectDatabase` lives on `$runtime/server/index.server`, the composition root
+that holds the registry. It is the only scoped accessor, and a second scoped
+object would get its own beside it rather than joining a bundle everyone then has
+to grow a field for.
+
+Keeping `projectId` and `userId` out of the input type is a security property
+rather than tidiness. A remote request carries a **project token** — an opaque
+handle a client instance holds in its URL — because a remote function cannot see
+the page that called it: kit serves them all from `/_app/remote/…` with empty
+route params. The token is resolved within the asking user's own handles, and one
+that is not there resolves to no project at all. Below the wrapper the token no
+longer exists.
 
 ### Admission
 
@@ -151,6 +198,26 @@ The consequence is explicit and belongs in `overview.md`: **every function with 
 `.remote.ts` is directly reachable by an untrusted browser and owns validating
 what it receives.** The set of files matching `api/*/*.remote.ts` is the audit
 list.
+
+### Two shared procedures every capability has
+
+Both draw the same line — a **decision** this capability stated with a code is
+not a **fault** — at the two places it has to be drawn.
+
+**`api/shared/record.ts`** wraps the body of every entry. It is called *inside*
+the procedure rather than around it, because a wrapper above a procedure can be
+bypassed by anything reaching the procedure directly. A code is logged at `warn`;
+anything else at `error`, so ordinary rejections never make real bugs harder to
+find. Only names, shapes, and counts go in its fields — a log outlives the row it
+describes.
+
+**`api/shared/stated.ts`** wraps the body of every remote wrapper. Without it a
+capability error thrown inside a remote function reaches the browser as
+`500 Internal Error`, because kit hides thrown values and cannot tell one of ours
+from a null dereference — leaving a view unable to distinguish "that input was
+refused" from "the server is broken". It translates a code into a `400` carrying
+it and lets faults stay opaque. **Only remote wrappers call it**; a server-side
+caller catches the error class directly and has no use for a status.
 
 ### `types/`
 

@@ -103,6 +103,10 @@ test("rejects a function directory the server door does not export", () => {
   expectOnly("surface-mismatch", "no function named 'list'");
 });
 
+test("rejects a door export with no directory, initializer or not", () => {
+  expectOnly("surface-extra-export", "exports 'archive', which has no directory");
+});
+
 test("rejects a browser door importing anything but a remote file", () => {
   expectOnly("door-imports-server", "may import only .remote.ts files");
 });

@@ -25,6 +25,7 @@ import {
   capabilitiesRoot,
   fail,
   kebabOf,
+  pascal,
   planner,
   render,
   stopIfFailed,
@@ -79,6 +80,9 @@ stopIfFailed("new-api");
 
 const functionRoot = join(root, "api", directory);
 const capabilityName = capabilityPath.split("/").at(-1);
+// The error class `new-capability` wrote at the capability root. Both shared
+// procedures branch on it, so the name has to match what is already there.
+const errorClass = `${pascal(capabilityName)}Error`;
 const write = planner();
 
 write.add(
@@ -114,7 +118,9 @@ if (flags.has("--remote")) {
   write.add(
     join(functionRoot, `${directory}.remote.ts`),
     `import { getRequestEvent, query } from "$app/server";
+import { resolveScope } from "$runtime/server/scope.server";
 import { ${functionName} as ${functionName}Procedure } from "${alias}/api/${directory}/${directory}";
+import { stated } from "${alias}/api/shared/stated";
 
 /**
  * Exposes \`${functionName}\` to the browser.
@@ -122,13 +128,29 @@ import { ${functionName} as ${functionName}Procedure } from "${alias}/api/${dire
  * Admission is \`'unchecked'\`, so the procedure this calls is the only thing
  * between a hostile payload and the database.
  *
+ * The request carries a **project token** and nothing else about authority. A
+ * remote function cannot see the page that called it — kit serves every one of
+ * them from \`/_app/remote/…\` with empty route params — so the client sends the
+ * token it holds in its URL, and \`resolveScope\` turns it into a project *within
+ * this session's user*, or into a 404. Below that line the token no longer
+ * exists.
+ *
+ * \`stated\` lets a refusal reach the browser with its code. Without it a thrown
+ * capability error arrives as \`500 Internal Error\`, because kit hides thrown
+ * values and cannot tell one of ours from a null dereference.
+ *
  * A \`.remote.ts\` may export only remote functions — the transform assigns an id
  * to every export, so a plain exported helper throws at module load. On the
  * client the body is discarded and regenerated as a fetch stub, which is why
  * importing the server tree from here is safe.
  */
-export const ${functionName} = query(async () =>
-  ${functionName}Procedure(getRequestEvent().locals.scope)
+export const ${functionName} = query(
+  "unchecked",
+  (request: { project: string }) =>
+    stated(async () => {
+      const scope = await resolveScope(getRequestEvent().locals.session, request?.project);
+      return ${functionName}Procedure(scope);
+    })
 );
 `
   );
@@ -157,7 +179,11 @@ if (!existsSync(join(sharedRoot, "shared.md"))) {
 if (!existsSync(join(sharedRoot, "record.ts"))) {
   write.add(
     join(sharedRoot, "record.ts"),
-    `/**
+    `import { serverRuntime } from "$runtime/server/index.server";
+import { errorFields } from "$runtime/server/observability/index.server";
+import { ${errorClass} } from "${alias}/errors";
+
+/**
  * Records one call: what it was asked for, and how it ended.
  *
  * Called from inside each entry rather than wrapping them, because a wrapper
@@ -165,29 +191,70 @@ if (!existsSync(join(sharedRoot, "record.ts"))) {
  * browser-reachable call that leaves no trace is the one most worth having a
  * record of.
  *
+ * The logger is resolved here rather than passed in: there is one per process
+ * and it depends on nothing the caller knows. Only the database is scoped, and
+ * only the database is a parameter.
+ *
  * Only names, shapes, and counts belong in \`fields\`. A log is copied, shipped,
  * and retained far longer than the data it describes, so authored values,
  * secrets, and personal fields stay out of it.
- *
- * TODO: send these to the logger from \`$runtime/server/observability\` once it
- * exists. Until then they go nowhere, which is worse than it looks — an
- * unrecorded rejection is indistinguishable from one that never happened.
  */
 export const record = async <T>(
   operation: string,
   fields: Record<string, unknown>,
   run: () => Promise<T>
 ): Promise<T> => {
-  void operation;
-  void fields;
+  const { logger } = await serverRuntime();
+
+  logger.debug(\`${capabilityName}.\${operation}.started\`, fields);
 
   try {
-    return await run();
+    const result = await run();
+    logger.debug(\`${capabilityName}.\${operation}.completed\`, fields);
+    return result;
   } catch (error) {
     // A failure this capability chose and stated with a code is a decision;
     // anything else is a fault. Collapsing the two makes every ordinary
     // rejection read like a bug, and real bugs stop standing out.
+    if (error instanceof ${errorClass}) {
+      logger.warn(\`${capabilityName}.\${operation}.rejected\`, { ...fields, errorCode: error.code });
+    } else {
+      logger.error(\`${capabilityName}.\${operation}.failed\`, { ...fields, ...errorFields(error) });
+    }
     throw error;
+  }
+};
+`
+  );
+}
+
+if (!existsSync(join(sharedRoot, "stated.ts"))) {
+  write.add(
+    join(sharedRoot, "stated.ts"),
+    `import { error } from "@sveltejs/kit";
+import { ${errorClass} } from "${alias}/errors";
+
+/**
+ * Lets a stated refusal reach the browser, and keeps a fault from doing so.
+ *
+ * Without this, a \`${errorClass}\` thrown inside a remote function surfaces to the
+ * client as \`500 Internal Error\` — kit hides thrown values on purpose and cannot
+ * tell one of ours from a null dereference. A view is then unable to distinguish
+ * "that input was refused" from "the server is broken", so the only honest thing
+ * it can show is the second.
+ *
+ * **Only remote wrappers call this.** A server-side caller catches
+ * \`${errorClass}\` directly and has no use for an HTTP status, which is why the
+ * translation lives at the boundary rather than in \`record\` or the procedures.
+ */
+export const stated = async <T>(run: () => Promise<T>): Promise<T> => {
+  try {
+    return await run();
+  } catch (caught) {
+    if (caught instanceof ${errorClass}) {
+      error(400, \`\${caught.code}: \${caught.message}\`);
+    }
+    throw caught;
   }
 };
 `

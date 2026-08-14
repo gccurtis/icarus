@@ -236,8 +236,14 @@ export const checkCapabilities = ({ root, base = root }) => {
     // Functions are camelCase; error classes and types are PascalCase. A door
     // exports all three, and only the functions have directories — demanding
     // `api/thing-error/` for an exported `ThingError` would be nonsense.
-    const exported = exportedNames(readFileSync(door, "utf8")).filter((name) =>
-      /^[a-z]/.test(name)
+    //
+    // `initialize<Capability>` is the one camelCase export that is not an API
+    // function. It is the capability's contract with the persistence runtime,
+    // which composes every capability's schema in one list and must reach each
+    // one through its door like anything else. It lives at
+    // persistence/initialize.ts, checked separately by the persistence rules.
+    const exported = exportedNames(readFileSync(door, "utf8")).filter(
+      (name) => /^[a-z]/.test(name) && !/^initialize[A-Z]/.test(name)
     );
     const directories = dirsIn(apiRoot).filter((name) => name !== "shared");
 

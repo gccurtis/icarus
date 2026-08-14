@@ -27,13 +27,18 @@ const clean = (root) => {
   write(root, "data/thing/overview.md", "# Thing Overview\n");
   // The door exports functions, a type, and the error class. Only the functions
   // have api/ directories — the surface check must not demand one for the rest.
+  // `initializeThing` is the one camelCase export with no api/ directory: it is
+  // the capability's contract with the persistence runtime, which reaches every
+  // capability through its door. Kept in the clean fixture so the exemption is
+  // exercised by every run rather than only by its own test.
   write(
     root,
     "data/thing/index.server.ts",
     'export { define } from "$thing/api/define/define";\n' +
       'export { list } from "$thing/api/list/list";\n' +
       'export type { Thing } from "$thing/types/thing";\n' +
-      'export { ThingError } from "$thing/errors";\n'
+      'export { ThingError } from "$thing/errors";\n' +
+      'export { initializeThing } from "$thing/persistence/initialize";\n'
   );
   write(
     root,
@@ -112,6 +117,21 @@ export const FIXTURES = {
       root,
       "data/thing/index.server.ts",
       'export { define } from "$thing/api/define/define";\n'
+    );
+  },
+
+  // The exemption is for `initialize<Capability>` and nothing else. A door
+  // exporting some other undirectoried function is still the defect the surface
+  // check exists for.
+  "surface-extra-export": (root) => {
+    clean(root);
+    write(
+      root,
+      "data/thing/index.server.ts",
+      'export { define } from "$thing/api/define/define";\n' +
+        'export { list } from "$thing/api/list/list";\n' +
+        'export { initializeThing } from "$thing/persistence/initialize";\n' +
+        'export { archive } from "$thing/persistence/initialize";\n'
     );
   },
 

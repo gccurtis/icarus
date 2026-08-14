@@ -51,10 +51,23 @@ const makePackage = () => {
     `export default { kit: { alias: ${JSON.stringify(ALIASES)} } };\n`
   );
 
+  // The server runtime a generated capability reaches: scope resolution, the
+  // composition root a procedure gets its database from, and the logger
+  // `record` writes to. Stubs rather than copies — lint resolves alias targets
+  // to real files, and does not read them.
   mkdirSync(join(root, "src", "lib", "runtime", "server", "persistence"), { recursive: true });
+  mkdirSync(join(root, "src", "lib", "runtime", "server", "observability"), { recursive: true });
   writeFileSync(
     join(root, "src", "lib", "runtime", "server", "scope.server.ts"),
     "export type Scope = { readonly projectId: string; readonly userId: string };\n"
+  );
+  writeFileSync(
+    join(root, "src", "lib", "runtime", "server", "index.server.ts"),
+    "export const serverRuntime = async () => ({});\n"
+  );
+  writeFileSync(
+    join(root, "src", "lib", "runtime", "server", "observability", "index.server.ts"),
+    "export const errorFields = () => ({});\n"
   );
   writeFileSync(
     join(root, "src", "lib", "runtime", "server", "persistence", "types.ts"),
