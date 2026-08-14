@@ -96,8 +96,7 @@ server and hydrates on the client.
 
 This is a change from the original SPA design, and the reason is that the
 backend was merged into this application: capabilities run in this process, so
-there is a server to render on. See
-[the integration design](../../../docs/superpowers/specs/2026-08-13-capability-integration-design.md).
+there is a server to render on.
 
 Server rendering has one standing obligation: a module that runs during render
 must not touch `window`, `document`, or `localStorage` at module or

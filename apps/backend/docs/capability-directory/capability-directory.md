@@ -3,7 +3,6 @@
 **Status:** Adopted. Every built capability is on the template, and `pnpm lint`
 enforces it. This document is the standard, not a proposal — read it before
 adding a capability, a runtime method, or an endpoint.
-**Design record:** [`docs/superpowers/specs/2026-08-13-capability-directory-template-design.md`](../../../../docs/superpowers/specs/2026-08-13-capability-directory-template-design.md)
 **Document templates:** [`docs/capability-directory/templates/`](templates/templates.md)
 
 ## Why
