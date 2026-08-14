@@ -81,15 +81,15 @@
       "types": "./src/capabilities/resource-special/context/*",
       "default": "./dist/capabilities/resource-special/context/*"
     },
-    "#data-manager": {
-      "development": "./src/capabilities/data/manager/index.ts",
-      "types": "./src/capabilities/data/manager/index.ts",
-      "default": "./dist/capabilities/data/manager/index.js"
+    "#name-manager": {
+      "development": "./src/capabilities/data/name-manager/index.ts",
+      "types": "./src/capabilities/data/name-manager/index.ts",
+      "default": "./dist/capabilities/data/name-manager/index.js"
     },
-    "#data-manager/*": {
-      "development": "./src/capabilities/data/manager/*",
-      "types": "./src/capabilities/data/manager/*",
-      "default": "./dist/capabilities/data/manager/*"
+    "#name-manager/*": {
+      "development": "./src/capabilities/data/name-manager/*",
+      "types": "./src/capabilities/data/name-manager/*",
+      "default": "./dist/capabilities/data/name-manager/*"
     },
     "#document": {
       "development": "./src/capabilities/resource-general/document/index.ts",

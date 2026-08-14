@@ -68,11 +68,11 @@
       "#context/*": [
         "./src/capabilities/resource-special/context/*"
       ],
-      "#data-manager": [
-        "./src/capabilities/data/manager/index.ts"
+      "#name-manager": [
+        "./src/capabilities/data/name-manager/index.ts"
       ],
-      "#data-manager/*": [
-        "./src/capabilities/data/manager/*"
+      "#name-manager/*": [
+        "./src/capabilities/data/name-manager/*"
       ],
       "#document": [
         "./src/capabilities/resource-general/document/index.ts"
