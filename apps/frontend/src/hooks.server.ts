@@ -1,26 +1,27 @@
 import type { Handle } from "@sveltejs/kit";
 import { closeServerRuntime, serverRuntime } from "$runtime/server/index.server";
-import { resolveScope } from "$runtime/server/scope.server";
+import { resolveSession } from "$runtime/server/scope.server";
 
 /**
- * Per request: build the runtime if it is not built, then resolve who is asking
- * and about which project.
+ * Per request: build the runtime if it is not built, then resolve who is asking.
  *
- * The runtime is awaited eagerly because scope resolution needs configuration,
- * and every request needs scope. There is no lazy accessor: one that is forced
- * open on the line below where it is installed would be a comment claiming a
- * saving that does not happen.
+ * **Authority only.** This runs before any handler has parsed a request body,
+ * and a call's project arrives in that body — a remote function cannot be
+ * reached by a route that names the project, because kit serves every remote
+ * call from `/_app/remote/…` with empty route params. So a scope is assembled
+ * one layer down, by the remote wrapper that holds both the session and the
+ * token; see `scope.server.ts`.
  *
- * Neither of `resolveScope`'s eventual inputs exists yet — there is no session
- * cookie to read a user from, and no `[project]` route to take a token from.
- * The seam is here rather than later because every capability procedure reads
- * `locals.scope`, and retrofitting it would touch all of them.
+ * The runtime is awaited eagerly because resolving a session needs
+ * configuration, and every request resolves one. There is no lazy accessor: one
+ * forced open on the line below where it is installed would be a comment
+ * claiming a saving that does not happen.
  */
 export const handle: Handle = async ({ event, resolve }) => {
   const runtime = await serverRuntime();
 
   event.locals.runtime = runtime;
-  event.locals.scope = await resolveScope(runtime.configuration, undefined, undefined);
+  event.locals.session = await resolveSession(event.cookies);
 
   return resolve(event);
 };

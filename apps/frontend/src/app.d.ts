@@ -1,15 +1,20 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 import type { ServerRuntime } from "$runtime/server/index.server";
-import type { Scope } from "$runtime/server/scope.server";
+import type { Session } from "$runtime/server/scope.server";
 
 declare global {
   namespace App {
     interface Locals {
       /**
-       * Who is asking, and about which project. Resolved once per request by
-       * hooks.server.ts, and the first parameter of every capability procedure.
+       * Who is asking. Resolved once per request by hooks.server.ts from the
+       * session cookie.
+       *
+       * Authority only — deliberately not a `Scope`. Which project a call is
+       * about arrives in the request body, which `handle` runs too early to
+       * read, so a remote wrapper pairs this with the token it was sent and
+       * calls `resolveScope`.
        */
-      scope: Scope;
+      session: Session;
 
       /**
        * The server runtime: configuration, the logger, and the per-project

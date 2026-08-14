@@ -1,0 +1,14 @@
+# The signed-in user and open project that exist before authentication does.
+#
+# Deleted whole when the auth capability lands — nothing outside `scope.server.ts`
+# reads these keys, and the block is nested so it is obvious what goes away
+# together rather than being three loose keys someone has to identify.
+#
+# `projectToken` is the handle a client instance carries in its URL. It is opaque
+# by contract: the server maps (userId, projectToken) to a project, and nothing
+# derives meaning from its characters. A real one is random; this one is legible
+# because a developer has to type it.
+development:
+  userId: default-user
+  projectId: default
+  projectToken: dev-project

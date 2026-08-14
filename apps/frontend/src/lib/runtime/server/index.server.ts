@@ -1,11 +1,12 @@
+import type { Kysely } from "kysely";
 import type { Configuration } from "$runtime/server/configuration/types";
 import { createConfiguration } from "$runtime/server/configuration/index.server";
 import type { Logger, Observability } from "$runtime/server/observability/index.server";
 import { createObservability, errorFields } from "$runtime/server/observability/index.server";
-import type { Persistence } from "$runtime/server/persistence/index.server";
+import type { Database, Persistence } from "$runtime/server/persistence/index.server";
 import { createPersistence } from "$runtime/server/persistence/index.server";
 
-export type { Scope } from "$runtime/server/scope.server";
+export type { Scope, Session } from "$runtime/server/scope.server";
 export type { Logger } from "$runtime/server/observability/index.server";
 export type { Database, ProjectDatabase } from "$runtime/server/persistence/index.server";
 
@@ -117,6 +118,30 @@ export const serverRuntime = (): Promise<ServerRuntime> => {
     building = undefined;
     throw error;
   }));
+};
+
+/**
+ * One project's database, for the capability procedure that asked.
+ *
+ * **The only scoped accessor there is, and the reason it is a call rather than
+ * an import.** Configuration and the logger are one per process, so code that
+ * needs them imports them; there is no `import { database }` that could be
+ * correct, because which database depends on a `scope.projectId` known only when
+ * the procedure runs.
+ *
+ * It lives here rather than in `persistence/` because that module exports a
+ * constructor — `createPersistence(configuration, logger)` — and the built
+ * instance is held by this file. An accessor inside `persistence/` would have to
+ * reach back up to the composition root, which is a cycle.
+ *
+ * A second scoped object — a per-project cache, a subscription fan-out — would
+ * get its own accessor beside this one rather than joining a bundle that then
+ * has to grow a field for everyone.
+ */
+export const projectDatabase = async (projectId: string): Promise<Kysely<Database>> => {
+  const { persistence } = await serverRuntime();
+  const { database } = await persistence.forProject(projectId);
+  return database;
 };
 
 /** Closes the runtime if one was built. Idempotent, and one-way. */
