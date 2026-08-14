@@ -15,6 +15,6 @@ work.
 
 ## Construction Order
 
-`createConfiguration()` requires nothing but the filesystem, so `main.ts`
-constructs it first. Observability, persistence, and the web server are all
+`createConfiguration()` requires nothing but the filesystem, so
+`build-runtime.ts` constructs it first. Observability, persistence, and the web server are all
 configured from the snapshot it returns.

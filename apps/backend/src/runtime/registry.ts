@@ -22,8 +22,9 @@ const keyOf = (endpoint: RequestEndpoint): string => `${endpoint.method} ${endpo
 /**
  * The runtime-scoped endpoint table: endpoint identity to endpoint job.
  *
- * It has no Fastify dependency. The web-server transport owns framework
- * translation and direct job execution.
+ * It has no Fastify dependency and imports no capability. The web-server
+ * transport owns framework translation and direct job execution; `main.ts` owns
+ * deciding what is registered.
  */
 export class RouteRegistry {
   private readonly jobs = new Map<string, EndpointJob>();
@@ -46,3 +47,13 @@ export class RouteRegistry {
     return [...this.jobs.keys()].sort();
   }
 }
+
+/**
+ * Creates the one empty endpoint registry for one backend runtime.
+ *
+ * It registers nothing. Which endpoints a process serves is a composition
+ * decision, and it is made in one readable place —
+ * [`build-runtime.ts`](build-runtime.ts) — rather than partly here and partly
+ * there.
+ */
+export const createRegistry = (): RouteRegistry => new RouteRegistry();

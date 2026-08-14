@@ -20,26 +20,41 @@ its complete procedure rather than delegating to a runtime method.
 ## Registration
 
 `registerBuiltInEndpoints(registry)` in [`register.ts`](register.ts), called from
-[`createRegistry()`](../../../registry/registry-constructor.ts) — not from
-`main.ts`, as other capabilities are. Built-in takes no constructor argument and
-depends on nothing, so registering it where the registry is built means the
-endpoint table is never empty and every runtime serves these two endpoints
-without a wiring step that could be forgotten.
+[`build-runtime.ts`](../../../runtime/runtime.md) alongside every other
+capability's registration. Built-in is the one whose call takes nothing but the
+registry: the others pass a runtime object for their jobs to close over, and
+Built-in has none.
+
+It was registered inside `createRegistry()` until the registry stopped importing
+capabilities; [`registry.md`](../../../runtime/registry.md) records why that
+moved.
 
 A duplicate endpoint key is a startup wiring error thrown by the registry.
 
 ## Error Body
 
-Neither endpoint has an expected failure: `/health` admits no input, and `/echo`
-admits any body. There is no error shape to declare. An unexpected failure is
-not converted here — the job throws, and the web server logs the fault and
-returns 500.
+Neither endpoint declares an error shape of its own, because neither has an
+expected failure: `/health` admits no input, and `/echo` admits any JSON body. An
+unexpected failure is not converted here — the job throws, and
+[the transport](../../platform/web-server/runtime-api/register-transport/register-transport.md)
+logs the fault and answers with its own shaped body. The thrown message is never
+part of it.
+
+That transport shape is also what a caller gets when the request never reaches a
+job: a body that is not JSON, a media type other than `application/json`, or a
+body over the configured limit is refused before either endpoint runs.
 
 ## Status Mapping
 
 | Outcome | Status |
 | ------- | ------ |
 | answered | 200 |
+| refused by the transport before the job | 400, 413, 415 |
+| the job threw | 500 |
+
+Only the first row belongs to this capability. The rest are listed because they
+are what a caller of these two endpoints actually sees, and they are decided
+entirely by the transport.
 
 ## Endpoint Invariants
 

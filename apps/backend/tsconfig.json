@@ -26,8 +26,11 @@
       "#package.json": [
         "./package.json"
       ],
-      "#registry/*": [
-        "./src/registry/*"
+      "#registry": [
+        "./src/runtime/registry.ts"
+      ],
+      "#runtime/*": [
+        "./src/runtime/*"
       ],
       "#workflows/*": [
         "./src/workflows/*"

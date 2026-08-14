@@ -11,9 +11,10 @@ the two endpoints a backend process must serve to be worth starting: a liveness
 answer and a request reflector.
 
 It has no runtime object, no state, and no dependency on another capability, so
-it is registered by [`createRegistry()`](../../registry/registry-constructor.ts)
-rather than by `main.ts` — the endpoint table is never empty, and the HTTP
-transport always has something to find.
+its registration takes nothing but the registry. It is still registered from
+[the composition root](../../runtime/runtime.md) like every other capability —
+the endpoint table has one filling place, and the spine imports no capability by
+name.
 
 ## Boundary
 
@@ -49,7 +50,7 @@ no failure it can report other than throwing.
 ## Dependency Ports
 
 Built-in depends on no other capability. It imports `EndpointJob` and
-`RouteRegistry` from [`#registry`](../../registry/registry.ts) and
+`RouteRegistry` from [`#registry`](../../runtime/registry.md) and
 `RequestEnvelope` from the web server's request context — the transport contract
 every capability's endpoints are written against, not a capability dependency.
 

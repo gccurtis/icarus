@@ -1,4 +1,4 @@
-import type { EndpointJob } from "#registry/registry.js";
+import type { EndpointJob } from "#registry";
 
 /**
  * The health payload this backend serves. The backend owns this shape because it

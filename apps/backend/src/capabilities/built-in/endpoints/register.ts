@@ -1,6 +1,6 @@
 import { echoJob } from "#built-in/endpoints/echo/job.js";
 import { healthJob } from "#built-in/endpoints/health/job.js";
-import type { RouteRegistry } from "#registry/registry.js";
+import type { RouteRegistry } from "#registry";
 
 /**
  * Registers the operational endpoint jobs available before any other capability

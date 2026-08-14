@@ -41,9 +41,15 @@ export interface EchoRequest {
 sent" has nothing to reject, and inventing a rule here would narrow the contract
 callers already have.
 
+One rule still applies before decoding, and it is the transport's: the body must
+be `application/json`, within the configured size limit. A `text/plain` body is
+refused with 415 rather than reflected as a bare string, which is what used to
+happen — an endpoint documented as admitting JSON was answering for a media type
+it never claimed.
+
 What decoding does enforce is scope. The job receives only `method`, `path`, and
-`body`; it has no access to headers, query, or params, so no request field can
-reach the response by accident.
+`body`; it has no access to headers or query, so no request field can reach the
+response by accident.
 
 ## Response
 
@@ -70,8 +76,12 @@ POST /echo
   4. Return 200 with that body.
 ```
 
-There is no admission failure branch and no 400. An unexpected throw is a fault
-the web server logs before returning 500.
+The job has no admission failure branch: every envelope that reaches it is one it
+can answer. A caller can still be refused before step 1 — the transport rejects a
+body that is not JSON, is not `application/json`, or is over the limit — but that
+is the transport's rule, not this endpoint's, and no code here participates in
+it. An unexpected throw is a fault the web server logs before returning its
+shaped 500.
 
 ## Tests
 

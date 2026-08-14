@@ -11,10 +11,15 @@
       "default": "./dist/capabilities/platform/configuration/*"
     },
     "#package.json": "./package.json",
-    "#registry/*": {
-      "development": "./src/registry/*",
-      "types": "./src/registry/*",
-      "default": "./dist/registry/*"
+    "#registry": {
+      "development": "./src/runtime/registry.ts",
+      "types": "./src/runtime/registry.ts",
+      "default": "./dist/runtime/registry.js"
+    },
+    "#runtime/*": {
+      "development": "./src/runtime/*",
+      "types": "./src/runtime/*",
+      "default": "./dist/runtime/*"
     },
     "#workflows/*": {
       "development": "./src/workflows/*",

@@ -24,8 +24,11 @@ pnpm start
   is the directory standard: the template, the generators, and the lint rules.
 - [`docs/capability-directory/templates/`](docs/capability-directory/templates/templates.md) holds the document templates and
   [the review checklist](docs/capability-directory/reviewing-a-capability.md).
-- [`src/initialization.md`](src/initialization.md) explains the startup path; it
-  sits beside `main.ts`, which it describes.
+- [`src/runtime/`](src/runtime/runtime.md) is the spine: the composition root
+  that constructs every capability and registers every endpoint, the endpoint
+  registry, and startup's supporting concerns. Its `runtime.md` explains the
+  startup path; [`registry.md`](src/runtime/registry.md) explains the endpoint
+  table.
 - [`configuration/configuration.md`](configuration/configuration.md) explains
   how configuration is read, beside the files it reads.
 - [`docs/reference/`](docs/reference/README.md) and

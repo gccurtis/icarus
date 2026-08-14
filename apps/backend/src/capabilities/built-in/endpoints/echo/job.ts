@@ -1,6 +1,6 @@
 import { decodeEchoRequest } from "#built-in/endpoints/echo/wire/decode.js";
 import type { EchoResponse } from "#built-in/endpoints/echo/wire/response.js";
-import type { EndpointJob } from "#registry/registry.js";
+import type { EndpointJob } from "#registry";
 
 /**
  * `POST /echo`. It reflects the admitted method, path, and body, and stamps the
