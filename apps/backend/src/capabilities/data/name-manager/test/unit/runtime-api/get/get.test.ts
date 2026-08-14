@@ -1,30 +1,29 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createNameManager } from "#name-manager";
-import { silentLogger } from "#name-manager/test/fixture.js";
+import { testNameManager } from "#name-manager/test/fixture.js";
 
-test("retrieves declarations under any casing of their authored name", () => {
-  const manager = createNameManager(silentLogger);
+test("retrieves declarations under any casing of their authored name", async () => {
+  const manager = testNameManager();
 
-  const scalar = manager.define({
+  const scalar = await manager.define({
     name: "TaxRate",
     type: { kind: "scalar", field: { name: "rate", type: { kind: "number" } } },
     value: 0.0825
   });
-  const list = manager.define({
+  const list = await manager.define({
     name: "Regions",
     type: { kind: "list", field: { name: "region", type: { kind: "text" } } },
     value: ["north", "south"]
   });
 
-  assert.deepEqual(manager.get("taxrate"), scalar);
-  assert.deepEqual(manager.get("REGIONS"), list);
+  assert.deepEqual(await manager.get("taxrate"), scalar);
+  assert.deepEqual(await manager.get("REGIONS"), list);
 });
 
-test("returns undefined for a name no declaration has claimed", () => {
-  const manager = createNameManager(silentLogger);
+test("returns undefined for a name no declaration has claimed", async () => {
+  const manager = testNameManager();
 
-  manager.define({
+  await manager.define({
     name: "OrdersCopy",
     type: {
       kind: "scalar",
@@ -33,5 +32,5 @@ test("returns undefined for a name no declaration has claimed", () => {
     value: "  FutureOrders  "
   });
 
-  assert.equal(manager.get("FutureOrders"), undefined);
+  assert.equal(await manager.get("FutureOrders"), undefined);
 });

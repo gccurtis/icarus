@@ -2,9 +2,9 @@
 
 `types/` holds the declaration model: the type algebra a caller authors, the
 values that algebra admits, and the declaration that pairs them. It holds no row
-shapes and no HTTP shapes — Name Manager persists nothing and serves no request,
-and if it ever does, those shapes belong in `persistence/` and
-`endpoints/*/wire/` rather than here.
+shapes and no HTTP shapes — stored row shapes belong in
+[`persistence/`](../persistence/persistence.md), and wire shapes would belong in
+`endpoints/*/wire/` if an endpoint is added.
 
 Nothing in this directory validates. The types state what a valid declaration
 looks like; [`runtime-api/define/`](../runtime-api/define/define.md) decides
@@ -17,7 +17,7 @@ whether an authored one is.
 | `dates.ts` | The Gregorian date carrier, in its authored and canonical forms |
 | `schema.ts` | The type algebra: scalar kinds, fields, and the four table subtypes |
 | `values.ts` | The values that algebra admits, authored and canonical |
-| `variables.ts` | A named declaration, and the catalog holding declarations |
+| `variables.ts` | Authored and canonical named declarations |
 
 The split between an *input* type and a *value* type runs through all four
 files. An input is what a caller authors; a value is what Name Manager stores
@@ -86,20 +86,7 @@ member. It makes the representation self-describing and is the extension point
 for a second calendar: the carrier keeps its fields and the discriminant selects
 the rules that validate them.
 
-## Private Types
-
-### `VariableCatalog`, `ReadonlyVariableCatalog`
-
-The declaration map itself: authored declarations keyed by the lower-cased form
-of their names, in definition order. `InMemoryNameManager` owns one and passes it
-to each [`runtime-api`](../runtime-api/runtime-api.md) entry, which is the whole
-reason the type is named.
-
-It stays private because it is the storage decision, not the contract. Only
-`define` receives the mutable `VariableCatalog`; the three accessors take
-`ReadonlyVariableCatalog`, so a read path that tried to write would not compile.
-
-### `NamedVariableBase`
+## Private Type: `NamedVariableBase`
 
 The shared shape behind the two declaration unions, unexported even within the
 capability. Naming it once keeps the eight union members from drifting apart;

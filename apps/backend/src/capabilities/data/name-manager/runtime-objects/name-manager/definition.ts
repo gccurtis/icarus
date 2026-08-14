@@ -1,40 +1,40 @@
 import { errorFields, type Logger } from "#observability";
 import { NameManagerError } from "#name-manager/errors.js";
+import type { NameManagerStore } from "#name-manager/persistence/store.js";
 import { defineVariable } from "#name-manager/runtime-api/define/define.js";
 import { getVariable } from "#name-manager/runtime-api/get/get.js";
 import { listVariables } from "#name-manager/runtime-api/list/list.js";
 import { requireVariable } from "#name-manager/runtime-api/require/require.js";
 import type {
   NamedVariable,
-  NamedVariableInput,
-  VariableCatalog
+  NamedVariableInput
 } from "#name-manager/types/variables.js";
 
 export interface NameManager {
-  define(variable: NamedVariableInput): NamedVariable;
-  get(name: string): NamedVariable | undefined;
-  require(name: string): NamedVariable;
-  list(): readonly NamedVariable[];
+  define(variable: NamedVariableInput): Promise<NamedVariable>;
+  get(name: string): Promise<NamedVariable | undefined>;
+  require(name: string): Promise<NamedVariable>;
+  list(): Promise<readonly NamedVariable[]>;
 }
 
 /**
  * Records one call: what it was asked for, and how it ended.
  *
- * Only names, shapes, and counts are recorded — never an authored value. A
- * catalog holds whatever an author put in it, and a log is copied, shipped, and
+ * Only names, shapes, and counts are recorded — never an authored value. The
+ * store holds whatever an author put in it, and a log is copied, shipped, and
  * kept far longer than the data it describes.
  */
-const record = <T>(
+const record = async <T>(
   logger: Logger,
   method: string,
   input: Record<string, unknown>,
-  run: () => T,
+  run: () => Promise<T>,
   output: (result: T) => Record<string, unknown>
-): T => {
+): Promise<T> => {
   logger.debug(`name-manager.${method}.started`, input);
 
   try {
-    const result = run();
+    const result = await run();
     logger.debug(`name-manager.${method}.completed`, { ...input, ...output(result) });
     return result;
   } catch (error) {
@@ -49,47 +49,48 @@ const record = <T>(
   }
 };
 
-export class InMemoryNameManager implements NameManager {
-  private readonly variables: VariableCatalog = new Map();
+export class PersistedNameManager implements NameManager {
+  constructor(
+    private readonly store: NameManagerStore,
+    private readonly logger: Logger
+  ) {}
 
-  constructor(private readonly logger: Logger) {}
-
-  define(input: NamedVariableInput): NamedVariable {
+  define(input: NamedVariableInput): Promise<NamedVariable> {
     return record(
       this.logger,
       "define",
       { name: input.name, kind: input.type.kind },
-      () => defineVariable(this.variables, input),
-      (variable) => ({ name: variable.name, catalogSize: this.variables.size })
-    );
-  }
-
-  get(name: string): NamedVariable | undefined {
-    return record(
-      this.logger,
-      "get",
-      { name },
-      () => getVariable(this.variables, name),
-      (variable) => ({ found: variable !== undefined })
-    );
-  }
-
-  require(name: string): NamedVariable {
-    return record(
-      this.logger,
-      "require",
-      { name },
-      () => requireVariable(this.variables, name),
+      () => defineVariable(this.store, input),
       (variable) => ({ name: variable.name })
     );
   }
 
-  list(): readonly NamedVariable[] {
+  get(name: string): Promise<NamedVariable | undefined> {
+    return record(
+      this.logger,
+      "get",
+      { name },
+      () => getVariable(this.store, name),
+      (variable) => ({ found: variable !== undefined })
+    );
+  }
+
+  require(name: string): Promise<NamedVariable> {
+    return record(
+      this.logger,
+      "require",
+      { name },
+      () => requireVariable(this.store, name),
+      (variable) => ({ name: variable.name })
+    );
+  }
+
+  list(): Promise<readonly NamedVariable[]> {
     return record(
       this.logger,
       "list",
       {},
-      () => listVariables(this.variables),
+      () => listVariables(this.store),
       (variables) => ({ count: variables.length })
     );
   }

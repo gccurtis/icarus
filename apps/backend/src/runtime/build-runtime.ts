@@ -26,6 +26,7 @@ import {
   requiredListenAddress,
   requiredWebServerOptions
 } from "#runtime/server-options.js";
+import { requiredProjectId } from "#runtime/project-options.js";
 import { closeRuntime } from "#runtime/shutdown.js";
 
 /** One built backend: the objects the process holds, and how to stop it. */
@@ -63,6 +64,7 @@ export async function buildRuntime(): Promise<Runtime> {
 
   try {
     const address = requiredListenAddress(config);
+    const projectId = requiredProjectId(config);
 
     // ---------------------------------------------------------------------
     // Runtime objects
@@ -80,7 +82,11 @@ export async function buildRuntime(): Promise<Runtime> {
     // atom, mark, or list ID is allocated; this only produces the value.
     const ids = createIdFactory();
 
-    const nameManager = createNameManager(logger);
+    const nameManager = await createNameManager(
+      openDatabase.database,
+      projectId,
+      logger
+    );
     const richContent = await createRichContentRuntime(openDatabase.database, ids, logger);
 
     webServer = createWebServer(requiredWebServerOptions(config), logger);

@@ -26,6 +26,7 @@ endpoints it owns. Exactly one place knows the whole set, and it is
 | [`registry.ts`](registry.md) | The endpoint table capabilities register into. Documented in [`registry.md`](registry.md). |
 | [`shutdown.ts`](shutdown.ts) | Releases what a backend holds, in the one safe order — on a clean stop and on a failed startup alike. |
 | [`server-options.ts`](server-options.ts) | Narrows the `server.*` keys out of configuration into a `ListenAddress` and the web server's bounds. |
+| [`project-options.ts`](project-options.ts) | Requires the opaque `projectId` namespace passed to project-scoped capabilities. |
 
 `main.ts` stays outside, one level up: it is the process, not the runtime. It
 awaits `buildRuntime()` and installs signal handlers, and that is all it does —
@@ -51,12 +52,15 @@ the process, costs nothing.
         reported through this logger
     - **runtime objects**, in dependency order
       - [`requiredListenAddress(config)`](server-options.ts) — validates `server.host` and `server.port`
+      - [`requiredProjectId(config)`](project-options.ts) — validates the project namespace
       - [`createDatabase(logger)`](../capabilities/platform/persistence/runtime-objects/database/constructor.ts) — `#persistence`
       - [`createIdFactory()`](../capabilities/platform/id-factory/runtime-objects/id-factory/constructor.ts) — `#id-factory`
         - the one generator of collision-resistant values for this runtime; every
           capability keeps its own identity semantics, deciding *when* an ID is
           allocated and what it names
-      - [`createNameManager(logger)`](../capabilities/data/name-manager/runtime-objects/name-manager/constructor.ts) — `#name-manager`
+      - [`createNameManager(database, projectId, logger)`](../capabilities/data/name-manager/runtime-objects/name-manager/constructor.ts) — `#name-manager`
+        - creates the project-scoped `name_manager_variables` table if absent
+        - uses the shared database as the authority for every declaration
       - `createRichContentRuntime(database, ids, logger)` — `#rich-content`
         - receives the shared Kysely/PGlite database and the shared ID factory
         - creates the capability-owned store and `rich_content` table if absent
@@ -78,7 +82,7 @@ the process, costs nothing.
           registered endpoint job, and invokes it directly
       - awaits `webServer.listen(address)`
       - logs `backend.started`
-    - returns `Runtime { config, database, observability, dataManager, richContent, address, close }`
+    - returns `Runtime { config, database, observability, nameManager, richContent, address, close }`
   - registers graceful-shutdown handlers
 
 Construction and registration are separate phases, and the separation is

@@ -16,12 +16,12 @@ and throwing their own error.
 
 | Input | Type | Description |
 | ----- | ---- | ----------- |
-| `catalog` | `ReadonlyVariableCatalog` | The runtime's declarations, read-only |
+| `store` | `NameManagerStore` | Project-bound persistence port used for the lookup |
 | `name` | `string` | The name to look up. Matched ignoring case and surrounding whitespace |
 
 ## Output
 
-`NamedVariable | undefined`
+`Promise<NamedVariable | undefined>`
 
 A copy of the complete declaration — name, schema, and value — or `undefined`
 when no declaration holds that name.
@@ -38,14 +38,14 @@ answered; `get("Unknown")` can.
 
 ## Effects
 
-None.
+Reads the project's database catalog; it performs no durable mutation.
 
 ## Procedure Tree
 
 ```text
-get(catalog, name)
+get(store, name)
   1. Canonicalize the lookup name.
-  2. Read the catalog at that name's key.
+  2. Query the store at that name's key.
      || no declaration is stored there
         2.a.1. Return undefined.
   3. Return a copy of the declaration.

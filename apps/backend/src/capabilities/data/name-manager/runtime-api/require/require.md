@@ -19,12 +19,12 @@ point of failure than a `TypeError` some frames later.
 
 | Input | Type | Description |
 | ----- | ---- | ----------- |
-| `catalog` | `ReadonlyVariableCatalog` | The runtime's declarations, read-only |
+| `store` | `NameManagerStore` | Project-bound persistence port used for the lookup |
 | `name` | `string` | The name that must be defined. Matched ignoring case and surrounding whitespace |
 
 ## Output
 
-`NamedVariable`
+`Promise<NamedVariable>`
 
 A copy of the complete declaration. There is no absent case.
 
@@ -37,14 +37,14 @@ A copy of the complete declaration. There is no absent case.
 
 ## Effects
 
-None.
+Reads the project's database catalog; it performs no durable mutation.
 
 ## Procedure Tree
 
 ```text
-require(catalog, name)
+require(store, name)
   1. Canonicalize the required name.
-  2. Read the catalog at that name's key.
+  2. Query the store at that name's key.
      || no declaration is stored there
         2.a.1. Fail with variable-not-found, naming the canonical name.
   3. Return a copy of the declaration.

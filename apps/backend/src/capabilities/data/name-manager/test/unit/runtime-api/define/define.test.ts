@@ -2,28 +2,27 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   NameManagerError,
-  createNameManager,
   type NamedVariableInput
 } from "#name-manager";
-import { silentLogger } from "#name-manager/test/fixture.js";
+import { testNameManager } from "#name-manager/test/fixture.js";
 
 const errorCode = (code: NameManagerError["code"]) => (error: unknown): boolean =>
   error instanceof NameManagerError && error.code === code;
 
-test("defines each table shape without wrapping scalar or list fields", () => {
-  const manager = createNameManager(silentLogger);
+test("defines each table shape without wrapping scalar or list fields", async () => {
+  const manager = testNameManager();
 
-  const scalar = manager.define({
+  const scalar = await manager.define({
     name: "TaxRate",
     type: { kind: "scalar", field: { name: "rate", type: { kind: "number" } } },
     value: 0.0825
   });
-  const list = manager.define({
+  const list = await manager.define({
     name: "Regions",
     type: { kind: "list", field: { name: "region", type: { kind: "text" } } },
     value: ["north", "south"]
   });
-  const record = manager.define({
+  const record = await manager.define({
     name: "Customer",
     type: {
       kind: "record",
@@ -34,7 +33,7 @@ test("defines each table shape without wrapping scalar or list fields", () => {
     },
     value: { name: "Ada", active: true }
   });
-  const table = manager.define({
+  const table = await manager.define({
     name: "Customers",
     type: {
       kind: "table",
@@ -58,20 +57,20 @@ test("defines each table shape without wrapping scalar or list fields", () => {
   ]);
 });
 
-test("stores formula, function, and forward-reference source without interpreting it", () => {
-  const manager = createNameManager(silentLogger);
+test("stores formula, function, and forward-reference source without interpreting it", async () => {
+  const manager = testNameManager();
 
-  const formula = manager.define({
+  const formula = await manager.define({
     name: "Total",
     type: { kind: "scalar", field: { name: "value", type: { kind: "formula" } } },
     value: "subtotal * rate"
   });
-  const fn = manager.define({
+  const fn = await manager.define({
     name: "Discount",
     type: { kind: "scalar", field: { name: "value", type: { kind: "function" } } },
     value: "this is not checked as a lambda yet"
   });
-  const reference = manager.define({
+  const reference = await manager.define({
     name: "OrdersCopy",
     type: {
       kind: "scalar",
@@ -85,10 +84,10 @@ test("stores formula, function, and forward-reference source without interpretin
   assert.equal(reference.value, "FutureOrders");
 });
 
-test("validates and canonicalizes Gregorian date values", () => {
-  const manager = createNameManager(silentLogger);
+test("validates and canonicalizes Gregorian date values", async () => {
+  const manager = testNameManager();
 
-  const date = manager.define({
+  const date = await manager.define({
     name: "ReleaseDate",
     type: { kind: "scalar", field: { name: "date", type: { kind: "date" } } },
     value: {
@@ -99,7 +98,7 @@ test("validates and canonicalizes Gregorian date values", () => {
       year: 2026
     }
   });
-  const dateTime = manager.define({
+  const dateTime = await manager.define({
     name: "ReleaseMoment",
     type: { kind: "scalar", field: { name: "date", type: { kind: "date" } } },
     value: {
@@ -135,7 +134,7 @@ test("validates and canonicalizes Gregorian date values", () => {
     millisecond: 125
   });
 
-  assert.throws(
+  await assert.rejects(
     () =>
       manager.define({
         name: "ImpossibleDate",
@@ -144,7 +143,7 @@ test("validates and canonicalizes Gregorian date values", () => {
       }),
     errorCode("invalid-value")
   );
-  assert.throws(
+  await assert.rejects(
     () =>
       manager.define({
         name: "PartialTime",
@@ -161,8 +160,8 @@ test("validates and canonicalizes Gregorian date values", () => {
   );
 });
 
-test("validates recursively nested table fields", () => {
-  const manager = createNameManager(silentLogger);
+test("validates recursively nested table fields", async () => {
+  const manager = testNameManager();
   const input: NamedVariableInput = {
     name: "Accounts",
     type: {
@@ -194,8 +193,8 @@ test("validates recursively nested table fields", () => {
     ]
   };
 
-  assert.deepEqual(manager.define(input).value, input.value);
-  assert.throws(
+  assert.deepEqual((await manager.define(input)).value, input.value);
+  await assert.rejects(
     () =>
       manager.define({
         ...input,
@@ -206,15 +205,15 @@ test("validates recursively nested table fields", () => {
   );
 });
 
-test("rejects conflicting names and rows that do not exactly match their schema", () => {
-  const manager = createNameManager(silentLogger);
-  manager.define({
+test("rejects conflicting names and rows that do not exactly match their schema", async () => {
+  const manager = testNameManager();
+  await manager.define({
     name: "Customer",
     type: { kind: "record", fields: [{ name: "name", type: { kind: "text" } }] },
     value: { name: "Ada" }
   });
 
-  assert.throws(
+  await assert.rejects(
     () =>
       manager.define({
         name: "customer",
@@ -223,7 +222,7 @@ test("rejects conflicting names and rows that do not exactly match their schema"
       }),
     errorCode("name-conflict")
   );
-  assert.throws(
+  await assert.rejects(
     () =>
       manager.define({
         name: "MissingField",
@@ -232,7 +231,7 @@ test("rejects conflicting names and rows that do not exactly match their schema"
       }),
     errorCode("invalid-schema")
   );
-  assert.throws(
+  await assert.rejects(
     () =>
       manager.define({
         name: "ExtraField",
@@ -243,19 +242,19 @@ test("rejects conflicting names and rows that do not exactly match their schema"
   );
 });
 
-test("does not share mutable declaration state with callers", () => {
-  const manager = createNameManager(silentLogger);
+test("does not share mutable declaration state with callers", async () => {
+  const manager = testNameManager();
   const input: NamedVariableInput = {
     name: "Rows",
     type: { kind: "table", fields: [{ name: "value", type: { kind: "number" } }] },
     value: [{ value: 1 }]
   };
-  const defined = manager.define(input);
+  const defined = await manager.define(input);
 
   (input.value as Array<{ value: number }>)[0]!.value = 99;
   (defined.value as Array<{ value: number }>)[0]!.value = 88;
-  const firstRead = manager.require("Rows");
+  const firstRead = await manager.require("Rows");
   (firstRead.value as Array<{ value: number }>)[0]!.value = 77;
 
-  assert.deepEqual(manager.require("Rows").value, [{ value: 1 }]);
+  assert.deepEqual((await manager.require("Rows")).value, [{ value: 1 }]);
 });

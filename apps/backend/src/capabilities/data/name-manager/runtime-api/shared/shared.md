@@ -1,8 +1,8 @@
 # Name Manager Shared Procedures
 
 Two rules span the methods here: what makes a name, and what a caller may hold.
-Both are invariants of the catalog rather than steps in any one procedure, so
-they live in one place and every method calls into them.
+Both are invariants of the catalog boundary rather than steps in any one
+procedure, so they live in one place and every method calls into them.
 
 A procedure used by exactly one method does not belong here. Name Manager's
 admission tree is the whole of `define` and stays in
@@ -51,15 +51,10 @@ Deep-clones a declaration through `structuredClone`.
 export const copyVariable = (variable: NamedVariable): NamedVariable => ...;
 ```
 
-It is called on the way in and on the way out. `define` stores the admitted
-declaration — itself built fresh from the authored input, never the input's own
-objects — and returns a copy of it; the accessors copy whatever they read. A
-caller can therefore mutate anything it holds without reaching the catalog, and
+`define` builds the admitted declaration fresh from the authored input and
+returns a copy; the accessors copy values reconstructed by the store. A caller
+can therefore mutate anything it holds without reaching persistent state, and
 two callers cannot reach each other.
-
-The copy is what makes the in-memory catalog behave like a persisted one, and it
-is why swapping in a storage adapter later changes no caller: a value fetched
-from a database is already nobody else's object.
 
 **Preserves:** no object reachable from a stored declaration is reachable from
 any caller.

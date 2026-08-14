@@ -1,10 +1,7 @@
 export { NameManagerError } from "#name-manager/errors.js";
 export type { NameManagerErrorCode } from "#name-manager/errors.js";
 export { createNameManager } from "#name-manager/runtime-objects/name-manager/constructor.js";
-export {
-  InMemoryNameManager,
-  type NameManager
-} from "#name-manager/runtime-objects/name-manager/definition.js";
+export type { NameManager } from "#name-manager/runtime-objects/name-manager/definition.js";
 export type {
   Calendar,
   DateInput,

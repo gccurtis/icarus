@@ -29,11 +29,3 @@ export type NamedVariable =
   | NamedVariableBase<ListTableType, readonly DataValue[]>
   | NamedVariableBase<RecordTableType, DataRecord>
   | NamedVariableBase<GeneralTableType, readonly DataRecord[]>;
-
-/**
- * Declarations held by one runtime, keyed by the lower-cased lookup form of the
- * authored name. Iteration order is definition order.
- */
-export type VariableCatalog = Map<string, NamedVariable>;
-
-export type ReadonlyVariableCatalog = ReadonlyMap<string, NamedVariable>;

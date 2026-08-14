@@ -1,6 +1,6 @@
 # Name Manager Overview
 
-Name Manager owns the backend's catalog of named variables.
+Name Manager owns one project's persistent catalog of named variables.
 
 It stores a variable's name, structural type, schema, and authored value so that
 other capabilities can retrieve named data without keeping a second name
@@ -19,8 +19,9 @@ author's intent.
 | record | zero or more | exactly one | the complete record |
 | table | zero or more | zero or more | the complete table |
 
-Declarations live in memory for the lifetime of one backend runtime. There is no
-persistence, no HTTP surface, and no revision history yet.
+Declarations live in the shared backend database and survive runtime
+reconstruction and process restart. There is no HTTP surface or revision history
+yet.
 
 ## Boundary
 
@@ -33,7 +34,9 @@ Name Manager owns:
 - authored literal, Formula, function, and reference values, held as authored
   text where they are source;
 - structural validation between a schema and the value stored against it;
-- Gregorian date validation and canonicalization.
+- Gregorian date validation and canonicalization;
+- project-scoped persistence, case-insensitive uniqueness, and stable definition
+  order.
 
 Consumers own:
 
@@ -41,34 +44,40 @@ Consumers own:
 - proving that function source is a lambda;
 - following references and detecting reference cycles;
 - authorization, resource scope, and display formatting;
+- selecting the project namespace passed to Name Manager at construction;
 - the projection from a stored declaration to a resolved value — retrieval
   returns the complete declaration, schema included, not the resolved value.
 
 ## File Tree
 
 ```text
-manager/
+name-manager/
 ├── overview.md
 ├── index.ts
 ├── errors.ts
 ├── types/
+├── persistence/
 ├── runtime-objects/
 ├── runtime-api/
 └── test/
 ```
 
-The capability persists nothing and registers no endpoint, so `persistence/` and
-`endpoints/` are absent. Nothing belongs to no single directory, so `docs/` is
-absent too; the archived Structured Data documents that once sat there now live
-under
+The capability registers no endpoint, so `endpoints/` is absent. Nothing belongs
+to no single directory, so `docs/` is absent too; the archived Structured Data
+documents that once sat there now live under
 [`docs/reference/capabilities/data/manager/`](../../../../docs/reference/capabilities/data/manager/README.md)
 and describe a previous build, not this one.
 
 ## Dependency Ports
 
-None. Name Manager depends on no other capability and receives no platform
-object — not the database, web server, registry, configuration, or observability
-runtime. Formula is a future consumer, not a dependency.
+| Capability | Port received | Why |
+| ---------- | ------------- | --- |
+| Platform Persistence | `Kysely<BackendDatabase>` | Stores canonical declarations in the shared PGlite database. |
+| Observability | `Logger` | Records each operation and its outcome without recording authored values. |
+
+The composition root also supplies the opaque project ID used to bind the store;
+Name Manager does not read configuration itself. Formula is a future consumer,
+not a dependency.
 
 ## Runtime Objects
 
@@ -77,7 +86,7 @@ One instance per backend runtime, constructed by
 
 | Object | Exported | Description | Document |
 | ------ | -------- | ----------- | -------- |
-| `NameManager` | yes | Owns the runtime's unique named-variable catalog and enforces its structural invariants. | [name-manager.md](runtime-objects/name-manager/name-manager.md) |
+| `NameManager` | yes | Provides async access to one project's persistent named-variable catalog and enforces its structural invariants. | [name-manager.md](runtime-objects/name-manager/name-manager.md) |
 
 ## Public API
 
@@ -104,8 +113,12 @@ One instance per backend runtime, constructed by
 - Stored and returned declarations share no mutable object reference with a
   caller, in either direction.
 - `list()` preserves definition order.
-- A failed validation adds nothing: the catalog is unchanged.
-- Declarations exist only for the lifetime of their Name Manager runtime.
+- A failed validation adds nothing, and a concurrent case-insensitive conflict
+  admits exactly one definition.
+- Every operation reads or writes the database; a second Name Manager bound to
+  the same database and project observes the same declarations.
+- Different project IDs are independent namespaces, including for name
+  uniqueness and definition order.
 
 ## Errors
 
@@ -119,7 +132,7 @@ faults; `invalid-value` marks a value that fails an otherwise valid type.
 
 Formula or lambda parsing and evaluation; reference traversal and cycle
 detection; updating, renaming, or deleting declarations; revisions and
-compare-and-swap; HTTP endpoints; persistent storage; context metadata, search,
-or authorization; non-Gregorian calendars; optional table fields; schema
-inference. Name, source, field, row, and nesting limits are deferred, not
-decided.
+compare-and-swap; HTTP endpoints; migrations from the retired process-local
+catalog; context metadata, search, or authorization; non-Gregorian calendars;
+optional table fields; schema inference. Name, source, field, row, and nesting
+limits are deferred, not decided.

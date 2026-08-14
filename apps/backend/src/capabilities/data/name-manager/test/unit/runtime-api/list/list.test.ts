@@ -1,22 +1,21 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createNameManager } from "#name-manager";
-import { silentLogger } from "#name-manager/test/fixture.js";
+import { testNameManager } from "#name-manager/test/fixture.js";
 
-test("returns every declaration in definition order", () => {
-  const manager = createNameManager(silentLogger);
+test("returns every declaration in definition order", async () => {
+  const manager = testNameManager();
 
-  manager.define({
+  await manager.define({
     name: "TaxRate",
     type: { kind: "scalar", field: { name: "rate", type: { kind: "number" } } },
     value: 0.0825
   });
-  manager.define({
+  await manager.define({
     name: "Regions",
     type: { kind: "list", field: { name: "region", type: { kind: "text" } } },
     value: ["north", "south"]
   });
-  manager.define({
+  await manager.define({
     name: "Customer",
     type: {
       kind: "record",
@@ -27,7 +26,7 @@ test("returns every declaration in definition order", () => {
     },
     value: { name: "Ada", active: true }
   });
-  manager.define({
+  await manager.define({
     name: "Customers",
     type: {
       kind: "table",
@@ -42,7 +41,7 @@ test("returns every declaration in definition order", () => {
     ]
   });
 
-  const listed = manager.list();
+  const listed = await manager.list();
 
   assert.equal(listed.length, 4);
   assert.deepEqual(
