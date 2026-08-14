@@ -18,7 +18,7 @@
 </script>
 
 <section class="flex flex-col gap-4">
-  <SectionHeading title="Palette" source="themes/celestial/palette.md" />
+  <SectionHeading title="Palette" source="styles/chromatic-themes/&lt;theme&gt;/&lt;theme&gt;.md" />
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">
     The theme's own material, ordered by lightness. This is the only layer holding literal color
     values, and the only one a theme swap replaces. It generates no utilities — a component cannot

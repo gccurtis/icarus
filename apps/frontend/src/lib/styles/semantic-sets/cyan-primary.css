@@ -1,0 +1,57 @@
+/**
+ * cyan-primary — a semantic set.
+ *
+ * An enumeration. It fills five identity anchors from the hues the active
+ * theme provides and decides nothing about what those anchors are used for.
+ * Meaning — green, red, amber, grey — is not a set's to assign and is absent
+ * here by construction.
+ *
+ * Contract: semantic-sets.md
+ */
+
+[data-set="cyan-primary"] {
+  /* cyan */
+  --semantic-primary-surface: var(--chromatic-cyan-surface);
+  --semantic-primary-surface-hover: var(--chromatic-cyan-surface-hover);
+  --semantic-primary-border: var(--chromatic-cyan-border);
+  --semantic-primary-fill: var(--chromatic-cyan-fill);
+  --semantic-primary-fill-hover: var(--chromatic-cyan-fill-hover);
+  --semantic-primary-text: var(--chromatic-cyan-text);
+  --semantic-primary-on-fill: var(--chromatic-cyan-on-fill);
+
+  /* violet */
+  --semantic-secondary-surface: var(--chromatic-violet-surface);
+  --semantic-secondary-surface-hover: var(--chromatic-violet-surface-hover);
+  --semantic-secondary-border: var(--chromatic-violet-border);
+  --semantic-secondary-fill: var(--chromatic-violet-fill);
+  --semantic-secondary-fill-hover: var(--chromatic-violet-fill-hover);
+  --semantic-secondary-text: var(--chromatic-violet-text);
+  --semantic-secondary-on-fill: var(--chromatic-violet-on-fill);
+
+  /* pink */
+  --semantic-tertiary-surface: var(--chromatic-pink-surface);
+  --semantic-tertiary-surface-hover: var(--chromatic-pink-surface-hover);
+  --semantic-tertiary-border: var(--chromatic-pink-border);
+  --semantic-tertiary-fill: var(--chromatic-pink-fill);
+  --semantic-tertiary-fill-hover: var(--chromatic-pink-fill-hover);
+  --semantic-tertiary-text: var(--chromatic-pink-text);
+  --semantic-tertiary-on-fill: var(--chromatic-pink-on-fill);
+
+  /* teal */
+  --semantic-accent-1-surface: var(--chromatic-teal-surface);
+  --semantic-accent-1-surface-hover: var(--chromatic-teal-surface-hover);
+  --semantic-accent-1-border: var(--chromatic-teal-border);
+  --semantic-accent-1-fill: var(--chromatic-teal-fill);
+  --semantic-accent-1-fill-hover: var(--chromatic-teal-fill-hover);
+  --semantic-accent-1-text: var(--chromatic-teal-text);
+  --semantic-accent-1-on-fill: var(--chromatic-teal-on-fill);
+
+  /* orange */
+  --semantic-accent-2-surface: var(--chromatic-orange-surface);
+  --semantic-accent-2-surface-hover: var(--chromatic-orange-surface-hover);
+  --semantic-accent-2-border: var(--chromatic-orange-border);
+  --semantic-accent-2-fill: var(--chromatic-orange-fill);
+  --semantic-accent-2-fill-hover: var(--chromatic-orange-fill-hover);
+  --semantic-accent-2-text: var(--chromatic-orange-text);
+  --semantic-accent-2-on-fill: var(--chromatic-orange-on-fill);
+}

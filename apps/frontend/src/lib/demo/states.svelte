@@ -2,7 +2,7 @@
   import SectionHeading from "$lib/demo/section-heading.svelte";
 
   /**
-   * docs/style/system/interaction/component.md → State matrix.
+   * docs/frontend-contracts/interaction/component.md → State matrix.
    * Every row pairs its color with copy, so the whole set stays readable with
    * color removed. Every class names a slot, never an intensity.
    */

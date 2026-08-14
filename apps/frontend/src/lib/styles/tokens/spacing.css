@@ -1,0 +1,23 @@
+/**
+ * Spacing — theme-independent.
+ *
+ * The scale is 4px based with 8px as the primary step; every value is a
+ * multiple of 4px, and nothing lands off-grid.
+ *
+ * No named structural dimensions. A token here may name a *dimension*; it may
+ * not name a zone. `--token-spacing-inspector` and `--token-spacing-topbar` described the
+ * application rather than the design system, which tokens.md forbids
+ * outright: "Nothing here names an application, a feature, or a screen." The
+ * shell binds its own zones to these steps at the layout layer, where naming a
+ * zone is correct.
+ *
+ * Contract: tokens.md
+ */
+
+/* The canonical unit; Tailwind maps its `--spacing` namespace onto this. */
+:root {
+  /* The base unit every step multiplies. Declared rather than inherited from
+   * Tailwind's default, so the 4px grid is a stated decision of this system and
+   * not an accident of the framework: p-2 is 8px, p-6 is 24px. */
+  --token-spacing-unit: 0.25rem;
+}

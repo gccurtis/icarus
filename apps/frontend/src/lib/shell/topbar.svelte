@@ -16,16 +16,16 @@
     grid-area: topbar;
     display: flex;
     align-items: center;
-    gap: var(--spacing);
-    padding-inline: calc(var(--spacing) * 3);
-    background-color: var(--surface-panel);
-    border-bottom: 1px solid var(--border-subtle);
+    gap: var(--token-spacing-unit);
+    padding-inline: calc(var(--token-spacing-unit) * 3);
+    background-color: var(--token-surface-panel);
+    border-bottom: 1px solid var(--token-border-subtle);
   }
 
   .wordmark {
-    font-size: var(--text-label);
+    font-size: var(--token-text-label);
     font-weight: 600;
     letter-spacing: 0.08em;
-    color: var(--ink-secondary);
+    color: var(--token-ink-secondary);
   }
 </style>

@@ -89,19 +89,19 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: calc(var(--spacing) * 6);
+    gap: calc(var(--token-spacing-unit) * 6);
     height: 100%;
-    padding: calc(var(--spacing) * 6);
+    padding: calc(var(--token-spacing-unit) * 6);
   }
 
   .empty,
   .note {
-    font-size: var(--text-body-sm);
-    color: var(--ink-muted);
+    font-size: var(--token-text-body-sm);
+    color: var(--token-ink-muted);
   }
 
   .failure {
-    color: var(--ink-danger, var(--ink-muted));
+    color: var(--token-ink-danger, var(--token-ink-muted));
   }
 
   .settings {
@@ -109,24 +109,24 @@
     max-width: 32rem;
     display: flex;
     flex-direction: column;
-    gap: calc(var(--spacing) * 3);
+    gap: calc(var(--token-spacing-unit) * 3);
   }
 
   h2 {
-    font-size: var(--text-body-sm);
-    color: var(--ink-muted);
+    font-size: var(--token-text-body-sm);
+    color: var(--token-ink-muted);
   }
 
   dl {
     display: grid;
     grid-template-columns: auto 1fr;
-    gap: calc(var(--spacing) * 1) calc(var(--spacing) * 3);
-    font-size: var(--text-body-sm);
+    gap: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 3);
+    font-size: var(--token-text-body-sm);
     margin: 0;
   }
 
   dt {
-    color: var(--ink-muted);
+    color: var(--token-ink-muted);
   }
 
   dd {
@@ -134,19 +134,19 @@
   }
 
   dd span {
-    color: var(--ink-muted);
+    color: var(--token-ink-muted);
   }
 
   form {
     display: flex;
-    gap: calc(var(--spacing) * 2);
+    gap: calc(var(--token-spacing-unit) * 2);
   }
 
   input {
     flex: 1;
     min-width: 0;
     font: inherit;
-    font-size: var(--text-body-sm);
-    padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+    font-size: var(--token-text-body-sm);
+    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 2);
   }
 </style>

@@ -19,17 +19,17 @@
   .placeholder {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing);
+    gap: var(--token-spacing-unit);
   }
 
   .kind {
-    font-family: var(--font-mono);
-    font-size: var(--text-mono);
-    color: var(--ink-primary);
+    font-family: var(--token-font-mono);
+    font-size: var(--token-text-mono);
+    color: var(--token-ink-primary);
   }
 
   .note {
-    font-size: var(--text-caption);
-    color: var(--ink-muted);
+    font-size: var(--token-text-caption);
+    color: var(--token-ink-muted);
   }
 </style>

@@ -1,0 +1,43 @@
+/**
+ * Typography — theme-independent.
+ *
+ * Type does not vary by theme, so nothing here is ever re-declared by one.
+ *
+ * Canonical names live in ordinary CSS. Tailwind-facing spellings live only in
+ * the Tailwind integration. Contract: tokens.md
+ */
+
+:root {
+  /* Canonical line heights. Tailwind's paired `--text-*--line-height`
+   * spelling is declared by the integration adapter. */
+  --token-text-h1-leading: 2.625rem; /* 34/42 */
+  --token-text-h2-leading: 2.25rem; /* 28/36 */
+  --token-text-h3-leading: 2rem; /* 24/32 */
+  --token-text-h4-leading: 1.75rem; /* 20/28 */
+  --token-text-body-lg-leading: 1.875rem; /* 18/30 */
+  --token-text-body-leading: 1.625rem; /* 16/26 */
+  --token-text-body-sm-leading: 1.375rem; /* 14/22 */
+  --token-text-label-leading: 1.125rem; /* 13/18 */
+  --token-text-caption-leading: 1rem; /* 12/16 */
+  --token-text-mono-leading: 1.25rem; /* 13/20 */
+}
+
+/* Complete canonical type scale. */
+:root {
+  /* Self-hosted; no CDN and no runtime font request to a third party. */
+  --token-font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --token-font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", monospace;
+
+  /* Each step is a size + leading pair. Setting one without the other is a
+   * defect, because the rhythm is the point. */
+  --token-text-h1: 2.125rem;
+  --token-text-h2: 1.75rem;
+  --token-text-h3: 1.5rem;
+  --token-text-h4: 1.25rem;
+  --token-text-body-lg: 1.125rem;
+  --token-text-body: 1rem;
+  --token-text-body-sm: 0.875rem;
+  --token-text-label: 0.8125rem;
+  --token-text-caption: 0.75rem;
+  --token-text-mono: 0.8125rem;
+}

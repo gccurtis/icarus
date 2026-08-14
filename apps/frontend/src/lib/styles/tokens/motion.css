@@ -1,0 +1,22 @@
+/**
+ * Motion — theme-independent.
+ *
+ * One curve for the whole system: it leaves quickly and arrives gently, which
+ * reads as responsive on the way out and calm on the way in. A second curve
+ * would imply a second kind of causation, and there is not one.
+ *
+ * Contract: tokens.md
+ */
+
+:root {
+  /* Canonical motion names are independent of Tailwind's duration namespace. */
+  --token-motion-micro: 100ms; /* 80–120ms  — press feedback, hover, toggle */
+  --token-motion-small: 150ms; /* 120–180ms — small transitions, tooltips */
+  --token-motion-panel: 220ms; /* 180–240ms — panel collapse, drawer, tab change */
+  --token-motion-overlay: 260ms; /* 200–280ms — modals, popovers, overlays */
+}
+
+/* Integrations translate these values into external vocabularies. */
+:root {
+  --token-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+}

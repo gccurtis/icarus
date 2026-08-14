@@ -1,0 +1,24 @@
+/**
+ * Shape — theme-independent.
+ *
+ * Corners and depth. Squared precision for grids and page seams; modest radii
+ * for controls and live objects; larger radii only for things that genuinely
+ * float. Soft, not bubbly.
+ *
+ * Shadow is the one geometry family made of color, so it is split: the theme
+ * declares a private shadow tint from its own palette, and the offsets, blur, and
+ * opacity live here. That keeps the geometry identical across themes while the
+ * color still follows a theme swap.
+ *
+ * Contract: tokens.md
+ */
+
+/* Canonical values are ordinary CSS; integrations decide how frameworks see them. */
+:root {
+  --token-radius-control: 0.375rem; /* 6px  — buttons, inputs, chips, tags */
+  --token-radius-panel: 0.625rem; /* 10px — panels, cards, live-object blocks */
+  --token-radius-overlay: 1rem; /* 16px — modals, popovers, drawers */
+
+  --token-shadow-panel: 0 1px 2px color-mix(in srgb, var(--theme-shadow-tint) 6%, transparent);
+  --token-shadow-overlay: 0 12px 32px -8px color-mix(in srgb, var(--theme-shadow-tint) 18%, transparent);
+}

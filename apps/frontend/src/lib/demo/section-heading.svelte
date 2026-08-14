@@ -1,6 +1,6 @@
 <script lang="ts">
   /** A section title plus the document that specifies it, so every claim on the
-   * page is traceable to a spec file under docs/style/. */
+   * page is traceable to the contract beside its stylesheet. */
   let { title, source }: { title: string; source: string } = $props();
 </script>
 

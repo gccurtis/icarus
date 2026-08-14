@@ -16,7 +16,7 @@
 
   /** The 4px scale, shown as multiples of the one declared token. Named zone
    * dimensions used to live here; they named an application rather than a
-   * design dimension and were removed — see docs/style/system/spacing.md. */
+   * design dimension and were removed — see styles/tokens/tokens.md. */
   const STEPS = [
     { cls: "w-1", label: "1 — 4px" },
     { cls: "w-2", label: "2 — 8px" },
@@ -36,7 +36,7 @@
 
   <h3 class="text-h4 font-semibold">Spacing scale</h3>
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">
-    One declared token, <code class="font-mono">--spacing: 0.25rem</code>, and every step is a
+    One declared token, <code class="font-mono">--token-spacing-unit: 0.25rem</code>, and every step is a
     multiple of it. Nothing lands off-grid.
   </p>
   <div class="flex flex-col gap-1">
@@ -53,7 +53,7 @@
     {#each RADII as { token, cls } (token)}
       <div class="flex flex-col items-center gap-2">
         <div class="bg-surface-panel border-border-subtle size-20 border {cls}"></div>
-        <span class="text-caption text-ink-muted font-mono">--radius-{token}</span>
+        <span class="text-caption text-ink-muted font-mono">--token-radius-{token}</span>
       </div>
     {/each}
   </div>
@@ -81,7 +81,7 @@
       <div
         class="bg-surface-panel hover:bg-interactive-surface border-border-subtle rounded-control ease-standard cursor-default border px-4 py-3 transition-colors {cls}"
       >
-        <span class="text-label font-mono">--motion-{token}</span>
+        <span class="text-label font-mono">--token-motion-{token}</span>
       </div>
     {/each}
   </div>

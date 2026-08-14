@@ -60,15 +60,15 @@
    * coincide by arithmetic. They diverge the moment either is dragged.
    */
   .shell {
-    --shell-topbar: calc(var(--spacing) * 11); /* 44px */
-    --shell-tabstrip: calc(var(--spacing) * 9); /* 36px */
+    --shell-topbar: calc(var(--token-spacing-unit) * 11); /* 44px */
+    --shell-tabstrip: calc(var(--token-spacing-unit) * 9); /* 36px */
     /* Seeds only. Both are overridden inline from preferences above; these are
      * what paints if that ever fails, and they are why the grid never collapses
      * to zero on a first frame. */
-    --shell-context: calc(var(--spacing) * 80); /* 44 rail + 276 content */
-    --shell-inspector: calc(var(--spacing) * 80); /* 320px */
-    --shell-rail: calc(var(--spacing) * 11); /* 44px — inside the context panel */
-    --shell-status: calc(var(--spacing) * 6); /* 24px */
+    --shell-context: calc(var(--token-spacing-unit) * 80); /* 44 rail + 276 content */
+    --shell-inspector: calc(var(--token-spacing-unit) * 80); /* 320px */
+    --shell-rail: calc(var(--token-spacing-unit) * 11); /* 44px — inside the context panel */
+    --shell-status: calc(var(--token-spacing-unit) * 6); /* 24px */
 
     display: grid;
     grid-template-rows:
@@ -87,7 +87,7 @@
      * the page scrolling as a whole. */
     height: 100vh;
     overflow: hidden;
-    background-color: var(--surface-canvas);
+    background-color: var(--token-surface-canvas);
   }
 
   /* The work surface is sacred: it gets the generous plane, and it is the only
@@ -97,7 +97,7 @@
     min-width: 0;
     min-height: 0;
     overflow-y: auto;
-    background-color: var(--surface-work);
-    color: var(--ink-primary);
+    background-color: var(--token-surface-work);
+    color: var(--token-ink-primary);
   }
 </style>

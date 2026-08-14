@@ -19,11 +19,11 @@
     /* One scroll context per zone: nesting scrollable regions inside a panel
      * makes position unrecoverable. */
     overflow-y: auto;
-    padding: calc(var(--spacing) * 3);
+    padding: calc(var(--token-spacing-unit) * 3);
   }
 
   .placeholder {
-    font-size: var(--text-caption);
-    color: var(--ink-muted);
+    font-size: var(--token-text-caption);
+    color: var(--token-ink-muted);
   }
 </style>

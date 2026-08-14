@@ -3,7 +3,7 @@
 
   const SLOTS = ["surface", "surface-hover", "border", "fill", "fill-hover", "text", "on-fill"];
 
-  /** Meaning is fixed in roles.css and a set may not move it. */
+  /** Meaning is fixed in tokens/color.css and a set may not move it. */
   const SEMANTIC = [
     { role: "success", hue: "green", means: "Applied, accepted, valid, safe" },
     { role: "danger", hue: "red", means: "Failed, rejected, destructive, denied" },
@@ -32,7 +32,7 @@
     resolve through the active semantic set.
   </p>
 
-  <!-- These swatches are why roles.css needs `@theme static`: a var() inside a
+  <!-- These swatches are why the Tailwind adapter registers tokens as `static`: a var() inside a
        style attribute is invisible to Tailwind's scanner, so without it most of
        the 77 role tokens are tree-shaken out of the build. -->
   <div class="flex flex-col gap-2">
@@ -49,8 +49,8 @@
         {#each SLOTS as slot (slot)}
           <div
             class="border-border-subtle rounded-control h-8 border"
-            style="background-color: var(--color-{role}-{slot})"
-            title="--color-{role}-{slot}"
+            style="background-color: var(--token-color-{role}-{slot})"
+            title="--token-color-{role}-{slot}"
           ></div>
         {/each}
         <span class="text-caption text-ink-muted">{hue} — {means}</span>
@@ -66,8 +66,8 @@
         {#each SLOTS as slot (slot)}
           <div
             class="border-border-subtle rounded-control h-8 border"
-            style="background-color: var(--color-{role}-{slot})"
-            title="--color-{role}-{slot}"
+            style="background-color: var(--token-color-{role}-{slot})"
+            title="--token-color-{role}-{slot}"
           ></div>
         {/each}
         <span class="text-caption text-ink-muted">{hue}</span>

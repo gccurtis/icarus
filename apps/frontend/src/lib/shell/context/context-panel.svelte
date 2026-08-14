@@ -26,7 +26,7 @@
     grid-area: context;
     display: flex;
     min-height: 0;
-    background-color: var(--surface-panel);
-    border-right: 1px solid var(--border-subtle);
+    background-color: var(--token-surface-panel);
+    border-right: 1px solid var(--token-border-subtle);
   }
 </style>

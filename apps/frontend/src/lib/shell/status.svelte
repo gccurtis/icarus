@@ -16,13 +16,13 @@
     grid-area: status;
     display: flex;
     align-items: center;
-    padding-inline: calc(var(--spacing) * 3);
-    background-color: var(--surface-panel);
-    border-top: 1px solid var(--border-subtle);
+    padding-inline: calc(var(--token-spacing-unit) * 3);
+    background-color: var(--token-surface-panel);
+    border-top: 1px solid var(--token-border-subtle);
   }
 
   .placeholder {
-    font-size: var(--text-caption);
-    color: var(--ink-muted);
+    font-size: var(--token-text-caption);
+    color: var(--token-ink-muted);
   }
 </style>

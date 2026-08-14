@@ -16,27 +16,27 @@
 </script>
 
 <section class="flex flex-col gap-4">
-  <SectionHeading title="Surfaces and ink" source="themes/README.md → the theme contract" />
+  <SectionHeading title="Surfaces and ink" source="styles/tokens/tokens.md" />
 
   <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
     {#each SURFACES as { token, cls, role } (token)}
       <div class="border-border-subtle rounded-panel flex flex-col gap-2 border p-4 {cls}">
-        <span class="text-label font-mono">--surface-{token}</span>
+        <span class="text-label font-mono">--token-surface-{token}</span>
         <span class="text-caption text-ink-muted">{role}</span>
       </div>
     {/each}
   </div>
 
   <div class="flex flex-col gap-1">
-    <p class="text-body text-ink-primary">--ink-primary — body and headings</p>
-    <p class="text-body text-ink-secondary">--ink-secondary — supporting text, provenance</p>
-    <p class="text-body text-ink-muted">--ink-muted — metadata a reader may skip</p>
+    <p class="text-body text-ink-primary">--token-ink-primary — body and headings</p>
+    <p class="text-body text-ink-secondary">--token-ink-secondary — supporting text, provenance</p>
+    <p class="text-body text-ink-muted">--token-ink-muted — metadata a reader may skip</p>
     <!-- on-fill is the only ink that cannot be shown on a plane: it is defined
          by what reads on a solid role fill, which is why each theme declares it
          rather than the system. -->
     <p class="text-body text-ink-primary flex flex-wrap items-center gap-2">
       <span class="bg-interactive-fill text-ink-on-fill rounded-control text-label px-2 py-0.5">
-        --ink-on-fill
+        --token-ink-on-fill
       </span>
       <span>— text and icons on a solid fill, never on a plane</span>
     </p>
@@ -47,7 +47,7 @@
     {#each BORDERS as { name, cls, use } (name)}
       <div class="flex flex-col gap-2">
         <div class="rounded-control h-8 w-56 {cls}"></div>
-        <span class="text-label font-mono">--border-{name}</span>
+        <span class="text-label font-mono">--token-border-{name}</span>
         <span class="text-caption text-ink-muted">{use}</span>
       </div>
     {/each}

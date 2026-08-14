@@ -14,7 +14,7 @@
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">
     Unmodified registry components. They reference shadcn's own vocabulary — <code
       class="font-mono">bg-primary</code
-    >, <code class="font-mono">border-input</code> — which shadcn-bridge.css aliases onto our roles,
+    >, <code class="font-mono">border-input</code> — which the shadcn integration aliases onto our tokens,
     so they can be updated without patching their imports.
   </p>
 

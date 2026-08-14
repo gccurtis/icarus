@@ -1,0 +1,161 @@
+/**
+ * Roles — which purpose each job-role serves.
+ *
+ * The only color layer a component may reach for. Every token here names a
+ * job, never an intensity and never a hue: `--token-color-success-text`, not
+ * `--token-color-success-strong` and not `--token-color-green-700`.
+ *
+ * Written once. It survives a theme swap because the theme owns the values,
+ * and it survives a set swap because identity resolves through an anchor.
+ *
+ * Two kinds of binding, and the difference is the whole point:
+ *   - MEANING is fixed here. Success is green, danger is red, attention is
+ *     amber, in every theme and every set. A theme still owns what its green
+ *     IS; it does not own what green MEANS.
+ *   - IDENTITY resolves through an anchor, so a set decides it. `interactive`
+ *     is the primary anchor, `intelligence` the secondary, `active` the
+ *     tertiary — which is what keeps the brand hues and the action hues from
+ *     ever drifting apart.
+ *
+ * Contract: tokens.md
+ *
+ * Canonical tokens are ordinary root custom properties, so their availability
+ * does not depend on Tailwind's scanner. The Tailwind integration separately
+ * registers the complete vocabulary with `@theme static`.
+ */
+
+:root {
+  /* ---- Meaning. Fixed here; a set may not move these. ---- */
+
+  /* success — applied, accepted, valid, safe */
+  --token-color-success-surface: var(--chromatic-green-surface);
+  --token-color-success-surface-hover: var(--chromatic-green-surface-hover);
+  --token-color-success-border: var(--chromatic-green-border);
+  --token-color-success-fill: var(--chromatic-green-fill);
+  --token-color-success-fill-hover: var(--chromatic-green-fill-hover);
+  --token-color-success-text: var(--chromatic-green-text);
+  --token-color-success-on-fill: var(--chromatic-green-on-fill);
+
+  /* danger — failed, rejected, destructive, denied */
+  --token-color-danger-surface: var(--chromatic-red-surface);
+  --token-color-danger-surface-hover: var(--chromatic-red-surface-hover);
+  --token-color-danger-border: var(--chromatic-red-border);
+  --token-color-danger-fill: var(--chromatic-red-fill);
+  --token-color-danger-fill-hover: var(--chromatic-red-fill-hover);
+  --token-color-danger-text: var(--chromatic-red-text);
+  --token-color-danger-on-fill: var(--chromatic-red-on-fill);
+
+  /* attention — human judgment required; stale; pending review */
+  --token-color-attention-surface: var(--chromatic-amber-surface);
+  --token-color-attention-surface-hover: var(--chromatic-amber-surface-hover);
+  --token-color-attention-border: var(--chromatic-amber-border);
+  --token-color-attention-fill: var(--chromatic-amber-fill);
+  --token-color-attention-fill-hover: var(--chromatic-amber-fill-hover);
+  --token-color-attention-text: var(--chromatic-amber-text);
+  --token-color-attention-on-fill: var(--chromatic-amber-on-fill);
+
+  /* inactive — unavailable, disabled, or out of scope */
+  --token-color-inactive-surface: var(--chromatic-grey-surface);
+  --token-color-inactive-surface-hover: var(--chromatic-grey-surface-hover);
+  --token-color-inactive-border: var(--chromatic-grey-border);
+  --token-color-inactive-fill: var(--chromatic-grey-fill);
+  --token-color-inactive-fill-hover: var(--chromatic-grey-fill-hover);
+  --token-color-inactive-text: var(--chromatic-grey-text);
+  --token-color-inactive-on-fill: var(--chromatic-grey-on-fill);
+
+  /* ---- Identity. Resolved through an anchor; a set decides. ---- */
+
+  /* interactive — can be acted upon: controls, links, focus */
+  --token-color-interactive-surface: var(--semantic-primary-surface);
+  --token-color-interactive-surface-hover: var(--semantic-primary-surface-hover);
+  --token-color-interactive-border: var(--semantic-primary-border);
+  --token-color-interactive-fill: var(--semantic-primary-fill);
+  --token-color-interactive-fill-hover: var(--semantic-primary-fill-hover);
+  --token-color-interactive-text: var(--semantic-primary-text);
+  --token-color-interactive-on-fill: var(--semantic-primary-on-fill);
+
+  /* active — currently engaged, selected, live, resolving */
+  --token-color-active-surface: var(--semantic-tertiary-surface);
+  --token-color-active-surface-hover: var(--semantic-tertiary-surface-hover);
+  --token-color-active-border: var(--semantic-tertiary-border);
+  --token-color-active-fill: var(--semantic-tertiary-fill);
+  --token-color-active-fill-hover: var(--semantic-tertiary-fill-hover);
+  --token-color-active-text: var(--semantic-tertiary-text);
+  --token-color-active-on-fill: var(--semantic-tertiary-on-fill);
+
+  /* intelligence — derived work: prompts, memory, formulas */
+  --token-color-intelligence-surface: var(--semantic-secondary-surface);
+  --token-color-intelligence-surface-hover: var(--semantic-secondary-surface-hover);
+  --token-color-intelligence-border: var(--semantic-secondary-border);
+  --token-color-intelligence-fill: var(--semantic-secondary-fill);
+  --token-color-intelligence-fill-hover: var(--semantic-secondary-fill-hover);
+  --token-color-intelligence-text: var(--semantic-secondary-text);
+  --token-color-intelligence-on-fill: var(--semantic-secondary-on-fill);
+
+  /* ---- Brand. What the product wears when nothing is more specific. ---- */
+
+  /* primary — shares the interactive anchor, deliberately */
+  --token-color-primary-surface: var(--semantic-primary-surface);
+  --token-color-primary-surface-hover: var(--semantic-primary-surface-hover);
+  --token-color-primary-border: var(--semantic-primary-border);
+  --token-color-primary-fill: var(--semantic-primary-fill);
+  --token-color-primary-fill-hover: var(--semantic-primary-fill-hover);
+  --token-color-primary-text: var(--semantic-primary-text);
+  --token-color-primary-on-fill: var(--semantic-primary-on-fill);
+
+  /* secondary — shares the intelligence anchor, deliberately */
+  --token-color-secondary-surface: var(--semantic-secondary-surface);
+  --token-color-secondary-surface-hover: var(--semantic-secondary-surface-hover);
+  --token-color-secondary-border: var(--semantic-secondary-border);
+  --token-color-secondary-fill: var(--semantic-secondary-fill);
+  --token-color-secondary-fill-hover: var(--semantic-secondary-fill-hover);
+  --token-color-secondary-text: var(--semantic-secondary-text);
+  --token-color-secondary-on-fill: var(--semantic-secondary-on-fill);
+
+  /* accent-1 — categorical work; claimed by no meaning role */
+  --token-color-accent-1-surface: var(--semantic-accent-1-surface);
+  --token-color-accent-1-surface-hover: var(--semantic-accent-1-surface-hover);
+  --token-color-accent-1-border: var(--semantic-accent-1-border);
+  --token-color-accent-1-fill: var(--semantic-accent-1-fill);
+  --token-color-accent-1-fill-hover: var(--semantic-accent-1-fill-hover);
+  --token-color-accent-1-text: var(--semantic-accent-1-text);
+  --token-color-accent-1-on-fill: var(--semantic-accent-1-on-fill);
+
+  /* accent-2 — categorical work; claimed by no meaning role */
+  --token-color-accent-2-surface: var(--semantic-accent-2-surface);
+  --token-color-accent-2-surface-hover: var(--semantic-accent-2-surface-hover);
+  --token-color-accent-2-border: var(--semantic-accent-2-border);
+  --token-color-accent-2-fill: var(--semantic-accent-2-fill);
+  --token-color-accent-2-fill-hover: var(--semantic-accent-2-fill-hover);
+  --token-color-accent-2-text: var(--semantic-accent-2-text);
+  --token-color-accent-2-on-fill: var(--semantic-accent-2-on-fill);
+}
+
+/* Selection is derived rather than authored.
+ * Selection is derived rather than authored, so it tracks the engaged hue
+ * whatever the theme and whichever set is active.
+ *
+ * Reads the anchor rather than the `active` role that sits on top of it. The
+ * resolved color is identical, but a token in the theme's own namespace
+ * referencing a role would point back up the chain — the one direction the
+ * layering does not allow. */
+:root {
+  --token-surface-canvas: var(--theme-surface-canvas);
+  --token-surface-work: var(--theme-surface-work);
+  --token-surface-panel: var(--theme-surface-panel);
+  --token-surface-elevated: var(--theme-surface-elevated);
+  --token-surface-panel-hover: var(--theme-surface-panel-hover);
+  --token-surface-selection: color-mix(
+    in srgb,
+    var(--semantic-tertiary-border) 22%,
+    transparent
+  );
+
+  --token-ink-primary: var(--theme-ink-primary);
+  --token-ink-secondary: var(--theme-ink-secondary);
+  --token-ink-muted: var(--theme-ink-muted);
+  --token-ink-on-fill: var(--theme-ink-on-fill);
+
+  --token-border-subtle: var(--theme-border-subtle);
+  --token-border-strong: var(--theme-border-strong);
+}

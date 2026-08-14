@@ -1,0 +1,177 @@
+/**
+ * Cyberpunk — a chromatic theme.
+ *
+ * The dark reading: neon signage over a blue-black city. Authored for a dark
+ * ground rather than mirrored from Celestial — the ramps are more saturated
+ * through the middle and much brighter at the light end, because that is what a
+ * dark ground demands and what a lightness-flipped light theme cannot give.
+ *
+ * Contract: cyberpunk.md
+ *
+ * Like every theme, this file names no jobs. `color-scheme: dark` is the only
+ * thing that tells the system which end of these ramps to read from, and the
+ * shared chromatic slot table does the rest.
+ */
+
+[data-theme="cyberpunk"] {
+  /* Cyberpunk reads from the dark end. Every light-dark() in the slot table
+   * re-aims off this one declaration. */
+  color-scheme: dark;
+
+  /* ---- Chromatic ------------------------------------------------------
+   * Ordered by lightness, faded → deep, exactly as in every theme.
+   *
+   * Contract, measured against THIS theme's ground (--theme-surface-work):
+   *   `normal` clears 3:1        → the `border` slot
+   *   `muted`  carries --theme-ink-on-fill at 4.5:1 → the `fill` slot
+   *   `light`  clears 7:1        → the `text` slot
+   *
+   * `faded` and `emphasized` go unused in the dark direction, exactly as
+   * `muted` and `deep` go unused in a light one.
+   */
+
+  --palette-red-faded: #ffecef;
+  --palette-red-light: #ff9fb0;
+  --palette-red-muted: #ff3d6a;
+  --palette-red-normal: #d91a4b;
+  --palette-red-emphasized: #a31038;
+  --palette-red-strong: #5e0a22;
+  --palette-red-deep: #2e0511;
+
+  --palette-orange-faded: #fff1e6;
+  --palette-orange-light: #ffc08a;
+  --palette-orange-muted: #ff8a2b;
+  --palette-orange-normal: #d9640f;
+  --palette-orange-emphasized: #a34a08;
+  --palette-orange-strong: #5e2a05;
+  --palette-orange-deep: #2e1502;
+
+  --palette-amber-faded: #fff8e6;
+  --palette-amber-light: #ffde8a;
+  --palette-amber-muted: #ffc22b;
+  --palette-amber-normal: #d99a0f;
+  --palette-amber-emphasized: #a37308;
+  --palette-amber-strong: #5e4205;
+  --palette-amber-deep: #2e2002;
+
+  --palette-yellow-faded: #fdffe6;
+  --palette-yellow-light: #f2ff8a;
+  --palette-yellow-muted: #e3ff2b;
+  --palette-yellow-normal: #b8d10f;
+  --palette-yellow-emphasized: #8a9c08;
+  --palette-yellow-strong: #4f5a05;
+  --palette-yellow-deep: #272d02;
+
+  --palette-green-faded: #e9fff0;
+  --palette-green-light: #8fffb8;
+  --palette-green-muted: #2bff88;
+  --palette-green-normal: #0fd165;
+  --palette-green-emphasized: #089c4a;
+  --palette-green-strong: #055a2b;
+  --palette-green-deep: #022d15;
+
+  --palette-teal-faded: #e6fffb;
+  --palette-teal-light: #8affee;
+  --palette-teal-muted: #2bffdd;
+  --palette-teal-normal: #0fd1b4;
+  --palette-teal-emphasized: #089c86;
+  --palette-teal-strong: #055a4d;
+  --palette-teal-deep: #022d26;
+
+  --palette-cyan-faded: #e6fdff;
+  --palette-cyan-light: #9ff5ff;
+  --palette-cyan-muted: #22d3ee;
+  --palette-cyan-normal: #0ea5c6;
+  --palette-cyan-emphasized: #0a7b96;
+  --palette-cyan-strong: #08505f;
+  --palette-cyan-deep: #052a33;
+
+  --palette-blue-faded: #eaf0ff;
+  --palette-blue-light: #a8c2ff;
+  --palette-blue-muted: #6f9dff;
+  --palette-blue-normal: #2f74e6;
+  --palette-blue-emphasized: #1445a8;
+  --palette-blue-strong: #0c2760;
+  --palette-blue-deep: #06132f;
+
+  --palette-violet-faded: #f3eaff;
+  --palette-violet-light: #c9a8ff;
+  --palette-violet-muted: #a86bff;
+  --palette-violet-normal: #8c4aec;
+  --palette-violet-emphasized: #5416a8;
+  --palette-violet-strong: #300c60;
+  --palette-violet-deep: #18062f;
+
+  --palette-pink-faded: #ffeaf8;
+  --palette-pink-light: #ffa8e0;
+  --palette-pink-muted: #ff5cc8;
+  --palette-pink-normal: #e01fa0;
+  --palette-pink-emphasized: #a81478;
+  --palette-pink-strong: #600c44;
+  --palette-pink-deep: #2f0622;
+
+  /* ---- Achromatic -----------------------------------------------------
+   * white  — cool signage light, carries text
+   * grey   — tint-free, spans the full range
+   * black  — blue-black city ground, carries the planes
+   *
+   * The names still describe the family, not the job. Cyberpunk draws its
+   * planes from `black` and its text from `white`; Celestial does the reverse
+   * with the same two names, which is the whole reason they are literal.
+   */
+
+  --palette-white-faded: #f2fbff;
+  --palette-white-light: #dceef7;
+  --palette-white-muted: #c2dcea;
+  --palette-white-normal: #a3c2d4;
+  --palette-white-emphasized: #7e9baf;
+  --palette-white-strong: #5a7387;
+  --palette-white-deep: #3b4c5c;
+
+  --palette-grey-faded: #f4f6f7;
+  --palette-grey-light: #d7dde1;
+  --palette-grey-muted: #a9b3ba;
+  --palette-grey-normal: #78838c;
+  --palette-grey-emphasized: #4e5860;
+  --palette-grey-strong: #2e363c;
+  --palette-grey-deep: #12171a;
+
+  --palette-black-faded: #554e7a;
+  --palette-black-light: #3b3563;
+  --palette-black-muted: #262145;
+  --palette-black-normal: #1b1734;
+  --palette-black-emphasized: #141027;
+  --palette-black-strong: #0d0a1b;
+  --palette-black-deep: #05030c;
+
+  /* ---- Planes, seams, and text ----------------------------------------
+   * Same jobs as Celestial, opposite end of the range. The work surface is
+   * still lifted above the canvas and the panel is still recessed below it —
+   * on a dark ground "lifted" means lighter, which is why this is a theme's
+   * decision and not a mechanical flip.
+   */
+
+  --theme-surface-canvas: var(--palette-black-emphasized);
+  --theme-surface-work: var(--palette-black-normal);
+  --theme-surface-panel: var(--palette-black-strong);
+  --theme-surface-elevated: var(--palette-black-muted);
+
+  /* One step lighter than `panel`. It coincides with `canvas` here, which is
+   * what happens when seven steps serve seven jobs; the relationship is what
+   * matters, not the distinctness. */
+  --theme-surface-panel-hover: var(--palette-black-emphasized);
+
+  --theme-border-subtle: var(--palette-black-light);
+  --theme-border-strong: var(--palette-black-faded);
+
+  --theme-ink-primary: var(--palette-white-faded);
+  --theme-ink-secondary: var(--palette-white-normal);
+  --theme-ink-muted: var(--palette-white-emphasized);
+
+  /* Dark, because `fill` resolves to the `muted` step here and every `muted`
+   * step in this palette is neon. White on neon is unreadable; this is the
+   * inverse of Celestial's choice and the reason on-fill is a theme token. */
+  --theme-ink-on-fill: var(--palette-black-deep);
+
+  --theme-shadow-tint: var(--palette-black-deep);
+}

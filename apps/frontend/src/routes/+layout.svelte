@@ -2,8 +2,8 @@
   import type { Snippet } from "svelte";
 
   // The single style entry, imported once at the root so every route inherits
-  // it. See lib/style/app.css for what it composes.
-  import "$lib/style/app.css";
+  // it. See lib/styles/app.css for the complete execution manifest.
+  import "$lib/styles/app.css";
 
   let { children }: { children: Snippet } = $props();
 </script>

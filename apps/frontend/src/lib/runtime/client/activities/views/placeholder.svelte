@@ -11,7 +11,7 @@
 
 <style>
   .placeholder {
-    font-size: var(--text-body-sm);
-    color: var(--ink-muted);
+    font-size: var(--token-text-body-sm);
+    color: var(--token-ink-muted);
   }
 </style>
