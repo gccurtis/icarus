@@ -453,20 +453,22 @@ endpoints/register.ts
 ```
 
 `index.ts` re-exports `registerDocumentEndpoints`, and
-[`main.ts`](../../../../../src/main.ts) calls it after constructing Document and
-before the web server listens. Registration lives in the capability that owns
-the endpoints; there is no `src/registry/registrations/` any more.
+[`build-runtime.ts`](../../../../../src/runtime/runtime.md) calls it after
+constructing Document and before the web server listens. Registration lives in
+the capability that owns the endpoints; there is no `src/registry/registrations/`
+any more, and the registry is one file at
+[`src/runtime/registry.ts`](../../../../../src/runtime/registry.md).
 
-Document is registered from `main.ts` rather than from `createRegistry()`
-because it needs a constructed runtime.
-[Built-in](../../../built-in/endpoints/endpoints.md) is registered inside
-`createRegistry()` instead, because it takes no argument and depends on nothing —
-which is what keeps the endpoint table from ever being empty. Document cannot
-follow it, and should not try.
+Every capability registers from the same list in the composition root, including
+[Built-in](../../../built-in/endpoints/endpoints.md) — so Document's line goes
+where every other line goes, and there is no second registration mechanism to
+choose between. The only difference is the argument: Document passes its runtime
+object for its jobs to close over, which is also why it has to be constructed
+first.
 
 The registry remains execution-agnostic, and a duplicate endpoint key remains a
 startup wiring error thrown by
-[`RouteRegistry.register`](../../../../../src/registry/registry.ts).
+[`RouteRegistry.register`](../../../../../src/runtime/registry.md).
 
 ## Capability-Local Tests
 
@@ -607,7 +609,8 @@ cost accounting as above, on the other side of the boundary.
 - Implement both jobs, and `documents-command/procedures/` with its written
   justification.
 - Register both through `endpoints/register.ts`, re-export
-  `registerDocumentEndpoints` from `index.ts`, and call it from `main.ts`.
+  `registerDocumentEndpoints` from `index.ts`, and call it from the registration
+  section of `src/runtime/build-runtime.ts`.
 
 ### 9. Verification
 

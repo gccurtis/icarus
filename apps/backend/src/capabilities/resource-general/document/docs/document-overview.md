@@ -165,7 +165,7 @@ Each is reached through its bare alias — `#rich-content`, `#id-factory`,
 
 Document does not depend on Formula, Derived Outputs, Intelligence, or a work
 queue in this increment. Its endpoint registration integrates with the existing
-[registry](../../../../../src/registry/registry.ts) and
+[registry](../../../../../src/runtime/registry.md) and
 [web-server transport](../../../platform/web-server/runtime-api/register-transport/register-transport.md).
 
 ## Runtime Objects

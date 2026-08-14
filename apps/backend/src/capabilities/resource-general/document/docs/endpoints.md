@@ -19,7 +19,7 @@ The first increment registers two exact endpoints:
 | `POST` | `/documents/query` | `endpoints/documents-query/` | Admit one tagged Document read and execute it. |
 
 Fixed paths match the exact-key
-[`RouteRegistry`](../../../../../src/registry/registry.ts). The
+[`RouteRegistry`](../../../../../src/runtime/registry.md). The
 [Fastify transport](../../../platform/web-server/runtime-api/register-transport/register-transport.md)
 translates HTTP into a framework-neutral `RequestEnvelope` and invokes the
 registered job directly.
@@ -169,7 +169,7 @@ export const documentsQueryJob = (runtime: DocumentRuntime): EndpointJob => ...;
 ```
 
 Each is typed as `EndpointJob` from
-[`#registry/registry.js`](../../../../../src/registry/registry.ts), which
+[`#registry`](../../../../../src/runtime/registry.md), which
 supplies the `RequestEnvelope` parameter and the `EndpointJobResponse` result.
 Neither job names a Fastify type. Decoding, dispatch, and expected error mapping
 belong here; database and domain logic do not.
@@ -217,14 +217,14 @@ endpoints/documents-command/
 
 `endpoints/register.ts` wires the jobs into the runtime-scoped registry.
 Registration lives in the capability that owns the endpoint, not in
-`src/registry/`:
+`src/runtime/`:
 
 ```ts
 // src/capabilities/resource-general/document/endpoints/register.ts
 import { documentsCommandJob } from "#document/endpoints/documents-command/job.js";
 import { documentsQueryJob } from "#document/endpoints/documents-query/job.js";
 import type { DocumentRuntime } from "#document/runtime-objects/document/definition.js";
-import type { RouteRegistry } from "#registry/registry.js";
+import type { RouteRegistry } from "#registry";
 
 export const registerDocumentEndpoints = (
   registry: RouteRegistry,
@@ -242,27 +242,27 @@ export const registerDocumentEndpoints = (
 ```
 
 Every specifier there is an alias: `#document/...` inside the capability, and
-`#registry/registry.js` for the registry, which is not a capability and keeps its
-own subpath alias. `#capabilities/...` is rejected by lint.
+`#registry` for the registry, which is not a capability and is one file, so its
+alias has no subpath form — it stays `#registry` wherever the spine keeps the
+file. `#capabilities/...` is rejected by lint.
 
-`index.ts` re-exports `registerDocumentEndpoints`, and `main.ts` calls it once
-before the server listens. Built-in is the one capability registered from inside
-`createRegistry()`, because its endpoints must exist before any other capability
-is wired — see
-[its endpoints document](../../../built-in/endpoints/endpoints.md).
+`index.ts` re-exports `registerDocumentEndpoints`, and the composition root calls
+it once before the server listens, in the same list as every other capability's
+registration — [Built-in](../../../built-in/endpoints/endpoints.md) included.
 
 ## Startup Procedure
 
-`buildRuntime()` in [`main.ts`](../../../../../src/main.ts):
+`buildRuntime()` in [`build-runtime.ts`](../../../../../src/runtime/runtime.md):
 
 ```text
 buildRuntime()
   1. Construct the database, the ID factory, and Rich Content.
   2. Construct DocumentRuntime.
-  3. createRegistry() registers the built-in endpoints.
-  4. registerDocumentEndpoints(registry, document).
-  5. webServer.registerTransport(registry, logger).
-  6. webServer.listen({ host, port }).
+  3. createRegistry() — an empty table.
+  4. registerBuiltInEndpoints(registry).
+  5. registerDocumentEndpoints(registry, document).
+  6. webServer.registerTransport(registry, logger).
+  7. webServer.listen(address).
 ```
 
 Registration occurs once before the server listens. Construction and
