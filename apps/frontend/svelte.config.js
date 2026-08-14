@@ -17,6 +17,20 @@ export default {
   kit: {
     adapter: adapter(),
 
+    // Remote functions are how a view reaches a capability. A `<function>.remote.ts`
+    // exports `query`/`command`/`form`, kit generates the client stub and the
+    // endpoint, and the view calls what looks like a plain async function. Without
+    // this flag those exports compile to nothing and the call fails at runtime, so
+    // it has to be on before the first capability arrives rather than with it.
+    //
+    // Still flagged experimental upstream, which is a statement about the API's
+    // stability, not its correctness. The blast radius is the `.remote.ts` files
+    // themselves — a change there does not reach `api/`, because a remote wrapper
+    // holds no logic.
+    experimental: {
+      remoteFunctions: true,
+    },
+
     // One alias per tree that code reaches across; `$lib` is built in.
     // Per-capability aliases arrive with their capabilities — an alias map full
     // of forward declarations pointing at nothing is exactly the rot the lint's
@@ -27,6 +41,7 @@ export default {
     // step, which is a rule the backend needed and this does not.
     alias: {
       $runtime: "src/lib/runtime",
+      $settings: "src/lib/capabilities/data/settings",
     },
   },
 };

@@ -7,6 +7,11 @@ import type { Logger } from "$runtime/server/observability/types";
 import type { Database } from "$runtime/server/persistence/types";
 import type { ProjectDatabase } from "$runtime/server/persistence/registry";
 import { ProjectRegistry } from "$runtime/server/persistence/registry";
+// The one place the runtime reaches into a capability, and it reaches only for
+// the door. Which tables a project database holds is a composition decision, so
+// it is made here rather than by each capability registering itself on import —
+// which would make the set depend on what happened to be loaded.
+import { initializeSettings } from "$settings/index.server";
 
 export type { Database } from "$runtime/server/persistence/types";
 export type { ProjectDatabase } from "$runtime/server/persistence/registry";
@@ -22,11 +27,14 @@ export type Initializer = (database: Kysely<Database>) => Promise<void>;
  *
  * This is the composition root for storage: the one place that knows the full
  * set of tables a project database holds. A capability that is not listed here
- * has no tables, however many it declares.
+ * has no tables, however many it declares — which is the failure this list is
+ * shaped to make loud, since a missing entry shows up as the first query against
+ * a table nobody created.
  *
- * Empty because no capability has been migrated yet.
+ * Order matters only where one capability's tables reference another's. None do
+ * yet, so this is registration order.
  */
-const INITIALIZERS: readonly Initializer[] = [];
+const INITIALIZERS: readonly Initializer[] = [initializeSettings];
 
 /** Where project databases live, resolved from the working directory. */
 const projectsDirectory = (configuration: Configuration): string => {
