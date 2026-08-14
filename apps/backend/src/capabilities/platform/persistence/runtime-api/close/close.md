@@ -2,7 +2,7 @@
 
 Lives at `runtime-api/close/close.md`.
 
-Called once, by the runtime shutdown sequence in `main.ts`, after the web server
+Called once, by the runtime shutdown sequence in `runtime/shutdown.ts`, after the web server
 has stopped accepting requests and before observability flushes. No capability
 calls it: a capability that closed the shared database would close it for
 everyone.

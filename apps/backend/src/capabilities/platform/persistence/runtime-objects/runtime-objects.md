@@ -15,8 +15,8 @@ work.
 
 ## Construction Order
 
-`createDatabase()` needs nothing but the package directory, but `main.ts`
-constructs it after configuration and observability so that a failure to open the
-database can be logged and so that shutdown can close it before the logger
+`createDatabase(logger)` needs nothing but the package directory and a logger, so
+`build-runtime.ts` constructs it after configuration and observability — a failure to open the
+database can then be logged and so that shutdown can close it before the logger
 flushes. Every capability that persists state is constructed after it, taking its
 `database` client.

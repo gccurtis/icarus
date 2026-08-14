@@ -37,9 +37,11 @@ export interface DatabaseRuntime {
 
 ## Constructor
 
-`createDatabase()` in [`constructor.ts`](constructor.ts). It takes no parameters:
-the data directory is derived from the package root, so a runtime cannot be
-pointed at another runtime's data by a caller's mistake.
+`createDatabase(logger)` in [`constructor.ts`](constructor.ts). The logger is its
+only parameter: the data directory is derived from the package root, so a runtime
+cannot be pointed at another runtime's data by a caller's mistake. Opening and
+closing are both recorded, since a slow or failed open is the startup step most
+worth seeing.
 
 ### Construction Steps
 

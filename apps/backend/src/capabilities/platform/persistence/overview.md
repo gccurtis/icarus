@@ -45,7 +45,7 @@ holds the logger.
 ## Runtime Objects
 
 One instance per backend runtime, constructed by
-[`main.ts`](../../../main.ts) during startup.
+[`build-runtime.ts`](../../../runtime/runtime.md) during startup.
 
 | Object | Exported | Description | Document |
 | ------ | -------- | ----------- | -------- |
