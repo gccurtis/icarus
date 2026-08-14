@@ -24,6 +24,12 @@
               nodejs_latest
               pnpm
 
+              # Database migrations and local development for the backend's
+              # PostgreSQL/Supabase transition. `supabase start` uses the
+              # host's Docker-compatible daemon; the daemon is not part of
+              # this development shell.
+              supabase-cli
+
               # Language servers. Top-level attributes — the `nodePackages.*`
               # spellings for these are gone from nixpkgs.
               #
@@ -58,6 +64,9 @@
               curl
               git
               gh
+
+              bruno
+              bruno-cli
             ];
 
             shellHook = ''
