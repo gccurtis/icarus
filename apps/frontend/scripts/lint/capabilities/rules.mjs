@@ -432,6 +432,57 @@ export const checkNames = ({ root, base = root }) => {
   return failures;
 };
 
+/**
+ * Nothing under `runtime/client/` may construct at module scope.
+ *
+ * These objects hold one user's state, and a module is imported on the server
+ * whether or not SSR is on — SvelteKit loads a route's component modules to link
+ * their CSS even when it renders only a shell. So a module-level instance is
+ * constructed once per process and shared by every request in it.
+ *
+ * The correct shape is a `browser`-guarded accessor that constructs lazily. This
+ * rule exists because the failure mode is a convenience singleton added "just
+ * until the shell is wired": it typechecks, it lints clean without this, and it
+ * behaves perfectly with one user.
+ *
+ * Matches a top-level binding whose value is a `new` or a `create<Name>()` call.
+ * An arrow function returning one is fine — that is the accessor — because the
+ * call has not happened yet.
+ */
+const MODULE_SCOPE_CONSTRUCTION =
+  /^(?:export\s+)?(?:const|let|var)\s+\w+\s*(?::[^=]+?)?\s*=\s*(?:new\s|create[A-Z])/;
+
+export const checkClientConstruction = ({ root, base = root }) => {
+  const failures = [];
+  const at = (absolute) => relative(base, absolute) || ".";
+
+  const walk = (dir) => {
+    if (!existsSync(dir)) return;
+    for (const entry of entries(dir)) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(path);
+        continue;
+      }
+      if (!entry.name.endsWith(".ts") || entry.name.endsWith(".test.ts")) continue;
+
+      readFileSync(path, "utf8")
+        .split("\n")
+        .forEach((line, index) => {
+          if (!MODULE_SCOPE_CONSTRUCTION.test(line)) return;
+          failures.push({
+            path: `${at(path)}:${index + 1}`,
+            message:
+              "constructs at module scope — a client object built here is shared by every request on the server. Use a browser-guarded accessor; see src/lib/runtime/client/client.md"
+          });
+        });
+    }
+  };
+
+  walk(root);
+  return failures;
+};
+
 /** A test file sits under its capability's `test/`, never beside the code it covers. */
 export const checkTestPlacement = ({ root, base = root }) => {
   const failures = [];

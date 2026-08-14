@@ -67,9 +67,16 @@ a client cannot name a project it does not belong to.
 
 ## Client
 
-Empty. The four browser modules still under `lib/capabilities/` belong here —
-they hold `$state` and cross no boundary, which makes them objects rather than
-capabilities. `pnpm lint:capabilities` reports them until they move.
+Five objects holding one user's state, and **browser-only by construction** —
+each accessor throws outside the browser, because a module is imported on the
+server whether or not SSR is on, and a module-level instance would then be
+shared by every request in the process.
+
+`/app` therefore sets `ssr = false`. That costs content in the first paint and
+nothing else: load functions, remote functions, and endpoints all still work.
+
+See [`client/client.md`](client/client.md) for why the guard rather than Svelte
+context, and what must never be written there.
 
 ## Structure
 

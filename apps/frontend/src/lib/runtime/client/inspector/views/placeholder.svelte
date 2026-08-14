@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { InspectionNode } from "$lib/capabilities/session";
+  import type { InspectionNode } from "$runtime/client/workbench";
 
   /**
    * Stand-in for an inspection kind that has no real view yet. Names what is
