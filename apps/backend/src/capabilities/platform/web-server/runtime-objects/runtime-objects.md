@@ -15,13 +15,13 @@ work.
 
 The capability exports one object and no loose functions, so the framework
 instance has exactly one holder. `FastifyWebServer` is the implementing class;
-`createWebServer()` returns it as `WebServerRuntime`, and callers never see the
-Fastify type.
+`createWebServer(options, logger)` returns it as `WebServerRuntime`, and callers
+never see the Fastify type.
 
 ## Construction Order
 
-`createWebServer()` requires nothing, but the order of its methods is fixed:
-`registerTransport(registry, logger)` runs once, after the registry and
-observability exist, and `listen(address)` runs after that with a host and port
-the caller has validated. Binding before registering would serve a window of
+`createWebServer(options, logger)` needs observability to exist and its bounds
+already narrowed from configuration. The order of its methods is then fixed:
+`registerTransport(registry)` runs once, after the registry exists, and
+`listen(address)` runs after that with a host and port the caller has validated. Binding before registering would serve a window of
 requests with no handler installed.

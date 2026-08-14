@@ -5,6 +5,11 @@ server:
   host: 0.0.0.0
   # HTTP port for Fastify.
   port: 4000
+  # Maximum accepted request body, in bytes. A larger body is refused with 413
+  # before any endpoint job sees it.
+  bodyLimitBytes: 1048576
+  # Milliseconds a request may take before the transport aborts it.
+  requestTimeoutMs: 30000
 
 workerPool:
   # Max number of concurrent jobs running at the same time.

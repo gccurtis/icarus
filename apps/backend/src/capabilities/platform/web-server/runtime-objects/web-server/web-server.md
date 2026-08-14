@@ -5,8 +5,8 @@ Lives at `runtime-objects/web-server/web-server.md`.
 ## Responsibility
 
 `WebServerRuntime` owns the backend's HTTP server for one runtime lifetime. It
-holds the Fastify instance privately, installs the single handler that dispatches
-every request through the registry, binds to an address, and stops accepting
+holds the Fastify instance privately, installs the request handling that
+dispatches through the registry, binds to an address, and stops accepting
 connections at shutdown.
 
 It deliberately does not own which endpoints exist, what any of them returns,
@@ -40,20 +40,32 @@ registers a transport holds no reference to either.
 
 ## Constructor
 
-`createWebServer()` in [`constructor.ts`](constructor.ts). It takes no
-parameters: the server is created with Fastify's own logger disabled and nothing
-else configured, because binding is a separate step and request logging belongs
-to the injected `Logger`.
+`createWebServer(options)` in [`constructor.ts`](constructor.ts). It takes a
+[`WebServerOptions`](../../types/types.md) — the body limit and request timeout —
+and creates the instance with Fastify's own logger disabled, because request
+logging belongs to the injected `Logger`.
 
 ### Construction Steps
 
 ```text
-1. Create the Fastify instance with `logger: false`.
+1. Create the Fastify instance with `logger: false` and the given bounds.
 2. Return the FastifyWebServer holding it.
 ```
 
 Nothing is registered and no socket is opened here. Both are explicit method
 calls, so the caller controls the order.
+
+The line this constructor keeps is **instance bounds at construction, request
+behavior at registration.** A body limit and a request timeout belong here
+because Fastify enforces them before a request reaches any handler — no endpoint
+job runs, so no rule `registerTransport` installs could apply. Everything that
+does depend on a request arriving — admission, dispatch, logging, fault shaping —
+is registered later and is not decided in this file.
+
+Taking them as parameters rather than reading configuration keeps this capability
+free of configuration lookup, and makes the values chosen: they were Fastify's
+defaults, inherited by omission, until the composition root started passing
+them.
 
 ## Invariants
 

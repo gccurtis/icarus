@@ -1,86 +1,79 @@
 import type { FastifyInstance } from "fastify";
-import type {
-  IncomingRequest,
-  RequestEnvelope
-} from "#web-server/types/request.js";
-import type { RouteRegistry } from "#registry/registry.js";
-import type { Logger } from "#observability";
-import { errorFields } from "#web-server/errors.js";
+import type { RequestEndpoint } from "#web-server/types/request.js";
+import type { EndpointJob, RouteRegistry } from "#registry";
+import { errorFields, type Logger } from "#observability";
+import { buildEnvelope } from "#web-server/runtime-api/register-transport/build-envelope.js";
+import {
+  endpointNotFoundBody,
+  errorResponse
+} from "#web-server/runtime-api/register-transport/error-response.js";
+import { registerRequestLogging } from "#web-server/runtime-api/register-transport/request-logging.js";
 
-// Convert Fastify-shaped request data into the framework-neutral request passed
-// to endpoint jobs, so nothing downstream depends on Fastify types.
-const buildEnvelope = (request: IncomingRequest): RequestEnvelope => ({
-  requestId: request.id,
-  method: request.method,
-  path: new URL(request.url, "http://backend.local").pathname,
-  params: (request.params as Record<string, unknown> | undefined) ?? {},
-  query: (request.query as Record<string, unknown> | undefined) ?? {},
-  headers: request.headers,
-  body: request.body
-});
+/**
+ * Finds the job answering an endpoint, falling back from `HEAD` to `GET`.
+ *
+ * The registry matches method and path exactly, and it should: it is a table of
+ * endpoint identities, not a model of HTTP. But a caller issuing `HEAD` against
+ * a resource that serves `GET` — a monitor, a proxy, a load balancer — expects
+ * an answer, and getting a 404 tells it the resource is gone. So the convention
+ * lives here, in the one place that knows this is HTTP. Fastify strips the body
+ * from the response, so the job does not need to know it was a `HEAD`.
+ */
+const findJob = (registry: RouteRegistry, endpoint: RequestEndpoint): EndpointJob | undefined =>
+  registry.find(endpoint) ??
+  (endpoint.method === "HEAD"
+    ? registry.find({ method: "GET", path: endpoint.path })
+    : undefined);
 
 export const registerHttpTransport = (
   app: FastifyInstance,
   registry: RouteRegistry,
   logger: Logger
 ): void => {
-  // Fastify registration happens once during startup. Every HTTP endpoint enters
-  // this same handler, which looks up the endpoint and calls its job directly.
+  // JSON is the only body this API accepts, so Fastify's text/plain parser is
+  // removed and every other media type is refused with 415 before a job runs.
+  // Leaving it in place meant a `text/plain` body arrived at a job as a bare
+  // string, through a decoder written on the assumption it had JSON.
+  app.removeContentTypeParser("text/plain");
+
+  registerRequestLogging(app, logger);
+
+  // Everything Fastify raises arrives here — a job that threw, and equally a
+  // body it refused to parse before routing. Both are shaped into one error
+  // format, and the thrown value's own message is never part of it.
+  app.setErrorHandler((error, request, reply) => {
+    const { statusCode, body } = errorResponse(error, request.id);
+    request.faultFields = { errorCode: body.error.code, ...errorFields(error) };
+    return reply.code(statusCode).send(body);
+  });
+
+  // Fastify registration happens once during startup. Every routed request
+  // enters this same handler, which looks up the endpoint and calls its job
+  // directly. A job that throws is not caught here: it belongs to the error
+  // handler above, which is also the only thing that can answer for a fault
+  // raised before this handler was reached.
   app.all("/*", async (request, reply) => {
-    const startedAt = performance.now();
     const envelope = buildEnvelope({
       id: request.id,
       method: request.method,
       url: request.url,
-      params: request.params,
       query: request.query,
       headers: request.headers as Record<string, unknown>,
       body: request.body
     });
 
-    const job = registry.find(envelope);
+    const job = findJob(registry, envelope);
     if (!job) {
-      logger.warn("http.route.not-found", {
-        requestId: envelope.requestId,
-        method: envelope.method,
-        path: envelope.path,
-        statusCode: 404,
-        durationMs: Math.round(performance.now() - startedAt)
-      });
-      reply.code(404);
-      return {
-        error: `No route registered for '${envelope.method} ${envelope.path}'`,
-        registeredRoutes: registry.list()
-      };
+      request.faultFields = { errorCode: "endpoint-not-found" };
+      return reply.code(404).send(endpointNotFoundBody(envelope.method, envelope.path));
     }
 
-    try {
-      const { statusCode, headers, body } = await job(envelope);
+    const { statusCode, headers, body } = await job(envelope);
 
-      if (headers) {
-        reply.headers(headers);
-      }
-
-      logger.info("http.request.completed", {
-        requestId: envelope.requestId,
-        method: envelope.method,
-        path: envelope.path,
-        statusCode,
-        durationMs: Math.round(performance.now() - startedAt)
-      });
-      return reply.code(statusCode).send(body);
-    } catch (error) {
-      // An endpoint job that throws is a fault, not an outcome. Successful
-      // status codes and bodies are always selected by the job itself.
-      logger.error("http.request.failed", {
-        requestId: envelope.requestId,
-        method: envelope.method,
-        path: envelope.path,
-        statusCode: 500,
-        durationMs: Math.round(performance.now() - startedAt),
-        ...errorFields(error)
-      });
-      throw error;
+    if (headers) {
+      reply.headers(headers);
     }
+
+    return reply.code(statusCode).send(body);
   });
 };
