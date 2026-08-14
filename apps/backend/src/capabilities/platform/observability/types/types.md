@@ -13,7 +13,8 @@ implementing it in
 | File | Holds |
 | ---- | ----- |
 | `logger.ts` | `Logger`, the application logging port, and `LogLevel` |
-| `observability-configuration.ts` | `ObservabilityConfiguration`, the two-key configuration surface the constructor reads |
+| `log-destination.ts` | `LogDestination`, where records go, and `ClosableLogStream`, what shutdown may close |
+| `observability-configuration.ts` | `ObservabilityConfiguration`, the configuration surface the constructor reads |
 
 ## Public Types
 
@@ -48,11 +49,38 @@ export type LogLevel = "debug" | "info" | "warn" | "error";
 `"silent"` is not one of them. Disabling logging is a configuration state handled
 inside the constructor, not a level a caller may pass.
 
+### Type: `LogDestination`
+
+Where the root logger writes, as read from `logging.destination`.
+
+```ts
+export type LogDestination =
+  | { readonly kind: "piped"; readonly stream: "stdout" | "stderr" }
+  | { readonly kind: "file"; readonly directory: string };
+```
+
+It is a union rather than one nullable `directory` because the two cases differ
+in what this backend is responsible for: piped means the process retains nothing
+and whatever runs it owns collection, while file means this process creates the
+file and closes it at shutdown.
+
+### Type: `ClosableLogStream`
+
+What shutdown needs from a stream this runtime opened — declared structurally,
+like `ObservabilityConfiguration` below, so Pino's stream type is not named in
+`types/`.
+
+Only a file destination produces one, and that absence is load-bearing: a piped
+runtime holds nothing closable, so shutdown *cannot* end file descriptor 1 or 2
+even by mistake. The rule is enforced by what the constructor hands over rather
+than by a check at close time.
+
 ### Type: `ObservabilityConfiguration`
 
-The configuration surface the constructor requires: `logging.enabled` and, when
-that is true, `logging.level`. It is declared structurally rather than imported
-from Configuration so this capability depends on two keys, not on a capability.
+The configuration surface the constructor requires: `logging.enabled`, and when
+that is true, `logging.level` and `logging.destination.*`. It is declared
+structurally rather than imported from Configuration so this capability depends
+on a few keys, not on a capability.
 
 ```ts
 export interface ObservabilityConfiguration {

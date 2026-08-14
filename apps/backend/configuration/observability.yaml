@@ -1,0 +1,20 @@
+# Observability: structured logging now, OpenTelemetry when exporters are chosen.
+
+logging:
+  # Set to false to disable all application log calls at runtime.
+  enabled: true
+  # Minimum level to record. One of: debug | info | warn | error
+  level: debug
+  # Where records are written. `kind` selects which of the remaining keys is
+  # read; the other is ignored, so switching back does not mean retyping a path.
+  #
+  #   piped  a standard stream. This process retains nothing; whatever runs it
+  #          owns collection and retention.
+  #   file   one file per run, named backend-<ISO timestamp>.log. The directory
+  #          is created if absent. Nothing rotates or prunes.
+  destination:
+    kind: piped
+    # Read when kind is `piped`. One of: stdout | stderr
+    stream: stdout
+    # Read when kind is `file`. Relative to the backend package directory.
+    directory: logs

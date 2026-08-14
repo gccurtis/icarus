@@ -31,12 +31,10 @@ root YAML value is not a mapping stops startup with a configuration error.
 The completed tree is recursively frozen before the snapshot is returned.
 Further mutation cannot change values returned by `get()`.
 
-## Current consumers
+## Consumers
 
-- [`main.ts`](../src/main.ts) validates `server.host` and `server.port`.
-- [`observability.ts`](../src/capabilities/platform/observability/runtime-objects/observability/constructor.ts)
-  validates `logging.enabled`, then validates `logging.level` when logging is
-  enabled.
+Each consumer validates the keys it reads and documents them. One `*.yaml` file
+per capability, named for it, keeps that easy to follow from either direction.
 
 See [the configuration procedure](configuration.md) for
 the complete reading, merge, and lookup tree.

@@ -22,27 +22,17 @@ again, or perform caller type assertions.
 ```text
 apps/backend/
 ├─ configuration/                              YAML input files
-│  ├─ server.yaml                               read by createConfiguration()
-│  ├─ logging.yaml                              read by createConfiguration()
-│  ├─ …                                        every other *.yaml file is also read
-│  └─ local.yaml                                optional; read last
+│  ├─ <capability>.yaml                         one per capability, all read
+│  ├─ local.yaml                                optional; merged last
+│  └─ configuration.md                          this procedure
 │
-├─ src/capabilities/platform/
-│  ├─ configuration/
-│  │  └─ configuration.ts                       Configuration + createConfiguration()
-│  ├─ persistence/
-│  │  └─ database.ts                            opens the shared PGlite database
-│  └─ observability/
-│     └─ runtime-constructors/
-│        └─ observability.ts                    validates logging keys
-│
-└─ configuration/
-   └─ configuration.md                          this procedure
+└─ src/capabilities/platform/configuration/    createConfiguration()
 ```
 
 There is no default-value module, schema module, per-capability configuration
-parser, or configuration wrapper. [`configuration.ts`](../src/capabilities/platform/configuration/runtime-objects/configuration/constructor.ts)
-owns file reading, YAML translation, merging, snapshot freezing, and lookup.
+parser, or configuration wrapper. The
+[capability](../src/capabilities/platform/configuration/overview.md) owns file
+reading, YAML translation, merging, snapshot freezing, and lookup.
 
 ## Construction tree
 
@@ -144,8 +134,6 @@ if (typeof rawPort !== "number" || !Number.isInteger(rawPort)) {
 }
 ```
 
-The live consumers are
-[`main.ts`](../src/main.ts)
-for `server.host` and `server.port`, and
-[`observability.ts`](../src/capabilities/platform/observability/runtime-objects/observability/constructor.ts)
-for `logging.enabled`, plus `logging.level` when logging is enabled.
+Which keys exist, and what each must be, belongs to the consumer that reads them
+and is documented there. Listing them here would put every capability's
+requirements in a file that has no way to notice when one of them changes.

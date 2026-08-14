@@ -20,7 +20,7 @@ one adapter over exactly one root logger.
 
 ## Construction Order
 
-`createObservabilityRuntime(configuration)` runs second in `main.ts`, directly
+`createObservabilityRuntime(configuration)` runs second in `build-runtime.ts`, directly
 after configuration loads and before anything that could fail in a way worth
 recording. Its `logger` is then injected into every capability constructed after
 it.

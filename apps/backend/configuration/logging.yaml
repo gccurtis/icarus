@@ -1,8 +1,0 @@
-# Structured Pino logging. Records are written to stdout as JSON; deployment
-# infrastructure is responsible for collection, storage, and retention.
-
-logging:
-  # Set to false to disable all application log calls at runtime.
-  enabled: true
-  # Minimum level to record. One of: debug | info | warn | error
-  level: debug

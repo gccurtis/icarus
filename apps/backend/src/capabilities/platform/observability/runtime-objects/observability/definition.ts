@@ -1,10 +1,11 @@
 import type { Logger as PinoRootLogger } from "pino";
 import type { LogLevel, Logger } from "#observability/types/logger.js";
-import { flushRootLogger } from "#observability/runtime-api/close/close.js";
+import type { ClosableLogStream } from "#observability/types/log-destination.js";
+import { closeRootLogger } from "#observability/runtime-api/close/close.js";
 
 /**
- * The one observability owner for one backend runtime. It is created by main,
- * passed to its consumers, and closed during runtime shutdown.
+ * The one observability owner for one backend runtime. It is created during
+ * startup, passed to its consumers, and closed during runtime shutdown.
  */
 export interface ObservabilityRuntime {
   readonly logger: Logger;
@@ -47,11 +48,19 @@ export class PinoLogger implements Logger {
 export class PinoObservabilityRuntime implements ObservabilityRuntime {
   readonly logger: Logger;
 
-  constructor(private readonly root: PinoRootLogger) {
+  /**
+   * `stream` is present only when this runtime opened a file. A piped
+   * destination passes none, which is what stops shutdown from closing a file
+   * descriptor the process did not open.
+   */
+  constructor(
+    private readonly root: PinoRootLogger,
+    private readonly stream?: ClosableLogStream
+  ) {
     this.logger = new PinoLogger(root);
   }
 
   close(): Promise<void> {
-    return flushRootLogger(this.root);
+    return closeRootLogger(this.root, this.stream);
   }
 }
