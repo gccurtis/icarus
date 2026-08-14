@@ -22,6 +22,9 @@ apps/backend/logs/*.log
 # Agent worktrees
 .claude/worktrees/
 
+# Agent scratch: subagent-driven-development ledgers, briefs, and review packages
+.superpowers/
+
 # Nothing is pinned: lockfiles are regenerable local caches, not committed state.
 flake.lock
 pnpm-lock.yaml
