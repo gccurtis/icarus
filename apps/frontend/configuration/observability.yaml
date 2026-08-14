@@ -10,11 +10,11 @@ logging:
   #
   #   piped  a standard stream. This process retains nothing; whatever runs it
   #          owns collection and retention.
-  #   file   one file per run, named backend-<ISO timestamp>.log. The directory
+  #   file   one file per run, named icarus-<ISO timestamp>.log. The directory
   #          is created if absent. Nothing rotates or prunes.
   destination:
     kind: piped
     # Read when kind is `piped`. One of: stdout | stderr
     stream: stdout
-    # Read when kind is `file`. Relative to the backend package directory.
+    # Read when kind is `file`. Relative to the process working directory.
     directory: logs

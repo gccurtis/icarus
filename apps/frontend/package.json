@@ -8,6 +8,7 @@
     "build": "pnpm typecheck && vite build",
     "preview": "vite preview",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test": "svelte-kit sync && vitest run",
     "lint:capabilities": "node scripts/lint/capabilities/lint.mjs",
     "new-capability": "node scripts/generation/capabilities/new-capability.mjs",
     "new-api": "node scripts/generation/capabilities/new-api.mjs",
@@ -41,6 +42,7 @@
     "tailwindcss": "latest",
     "tw-animate-css": "latest",
     "typescript": "~6",
-    "vite": "latest"
+    "vite": "latest",
+    "vitest": "latest"
   }
 }

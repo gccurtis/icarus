@@ -95,6 +95,18 @@ const openDestination = (
   // this module is bundled, so its own location is a build artifact's location.
   const file = join(process.cwd(), destination.directory, logFileName(new Date()));
   const stream = pino.destination({ dest: file, sync: false, mkdir: true });
+
+  // An async destination opens after this returns, so a permission or disk
+  // failure arrives out-of-band. Pino's broken-pipe filter removes itself and
+  // re-emits 'error' — and an EventEmitter with no 'error' listener throws,
+  // killing the process outside any try. Logging that we cannot log is the
+  // best available answer: the destination we would report it to is the thing
+  // that failed.
+  stream.on("error", (error: Error) => {
+    process.exitCode = 1;
+    console.error(`log destination '${file}' failed:`, error.message);
+  });
+
   return { stream, closable: stream };
 };
 

@@ -21,8 +21,8 @@ export type Scope = {
 /**
  * Resolves one request's scope.
  *
- * Both parameters are unused today and present because they are the ones that
- * survive. When the auth capability lands this looks `projectToken` up against
+ * `projectToken` is unused today and present because it is the parameter that
+ * survives. When the auth capability lands this looks it up against
  * the caller's membership rows in the control database — which makes the lookup
  * itself the authorization check, since a miss is a 404 rather than a fallback.
  * It is `async` now for the same reason: that lookup hits a database, and

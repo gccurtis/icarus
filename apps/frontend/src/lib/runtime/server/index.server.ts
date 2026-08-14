@@ -94,12 +94,42 @@ const shutdown = async (
  */
 let building: Promise<ServerRuntime> | undefined;
 
-export const serverRuntime = (): Promise<ServerRuntime> => (building ??= build());
+/**
+ * Once shutdown begins the runtime is gone for good.
+ *
+ * Clearing `building` instead would let a request arriving mid-shutdown build a
+ * *second* runtime — a second config read, a second log file, and a second
+ * PGlite instance against a directory the first is concurrently closing. That
+ * window is not theoretical: the server drains in-flight requests for up to
+ * thirty seconds after the signal, and keep-alive connections keep delivering.
+ */
+let closed = false;
 
-/** Closes the runtime if one was built. Used by the shutdown signal handlers. */
+export const serverRuntime = (): Promise<ServerRuntime> => {
+  if (closed) {
+    throw new Error("The server runtime is shutting down and cannot be rebuilt");
+  }
+
+  // A rejected promise is not `undefined`, so caching one would replay the same
+  // startup failure for the life of the process and make a fixed config file
+  // require a restart. Evicting on failure mirrors the project registry.
+  return (building ??= build().catch((error: unknown) => {
+    building = undefined;
+    throw error;
+  }));
+};
+
+/** Closes the runtime if one was built. Idempotent, and one-way. */
 export const closeServerRuntime = async (): Promise<void> => {
-  if (!building) return;
-  const runtime = await building;
-  building = undefined;
+  if (closed) return;
+  closed = true;
+
+  const pending = building;
+  if (!pending) return;
+
+  // Awaited before clearing, so nothing can observe an absent runtime and
+  // decide to build one.
+  const runtime = await pending;
   await runtime.close();
+  building = undefined;
 };

@@ -65,30 +65,45 @@ export const createPersistence = (
     await mkdir(directory, { recursive: true });
 
     const pglite = await PGlite.create(directory);
-    const database = new Kysely<Database>({ dialect: new PGliteDialect({ pglite }) });
 
-    for (const initialize of INITIALIZERS) {
-      await initialize(database);
-    }
+    // From here on the instance holds the directory, so every failure has to
+    // release it. Leaving it open would lock the directory against the retry
+    // the registry's eviction is there to allow — turning a transient failure
+    // into a permanent one.
+    try {
+      const database = new Kysely<Database>({ dialect: new PGliteDialect({ pglite }) });
 
-    logger.info("persistence.project.opened", {
-      projectId,
-      directory,
-      initializers: INITIALIZERS.length
-    });
-
-    return {
-      projectId,
-      database,
-      async close() {
-        logger.debug("persistence.project.closing", { projectId });
-        // Kysely's destroy ends the dialect's connection; PGlite's own close
-        // releases the WASM instance and its file handles. Both are needed —
-        // destroy alone leaves the directory locked against the next open.
-        await database.destroy();
-        await pglite.close();
+      for (const initialize of INITIALIZERS) {
+        await initialize(database);
       }
-    };
+
+      logger.info("persistence.project.opened", {
+        projectId,
+        directory,
+        initializers: INITIALIZERS.length
+      });
+
+      return { projectId, database, close: () => closeProject(projectId, database, pglite) };
+    } catch (error) {
+      await pglite.close().catch(() => {});
+      throw error;
+    }
+  };
+
+  const closeProject = async (
+    projectId: string,
+    database: Kysely<Database>,
+    pglite: PGlite
+  ): Promise<void> => {
+    logger.debug("persistence.project.closing", { projectId });
+
+    // Kysely's PGlite driver closes the instance itself — but only lazily, once
+    // a query has initialized the driver. So `destroy()` is sufficient for a
+    // database that was used and a no-op for one that was not, and the explicit
+    // close covers the second case. Guarded because closing twice throws, which
+    // would turn every clean shutdown into a non-zero exit.
+    await database.destroy();
+    if (!pglite.closed) await pglite.close();
   };
 
   const registry = new ProjectRegistry(openProject, logger);

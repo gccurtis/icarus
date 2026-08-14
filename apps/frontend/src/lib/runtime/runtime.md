@@ -38,10 +38,20 @@ A module's door carries `.server.ts`. Internals do not.
 
 `src/lib/runtime/server/` is **not** `$lib/server/`, so SvelteKit's path-based
 guard does not cover it — only the `*.server.*` basename pattern does, and only
-on the files that carry it. Marking the door is enough because nothing should
-reach past one; a deliberate deep import of an internal still fails the build,
-because Node built-ins cannot be bundled for a browser, just with a worse
-message than the guard's import chain.
+on the files that carry it.
+
+**Nothing stops a deep import of an internal.** `snapshot.ts`, `registry.ts`,
+`pino-logger.ts`, and the three `types.ts` files import nothing but types, so
+after erasure they have no runtime imports at all and bundle cleanly into a
+browser build. A component that imports `$runtime/server/persistence/registry`
+gets no error and no warning.
+
+That is survivable only because none of those internals reads a file or holds a
+secret today. The moment one does, the protection it appears to have will not be
+there. The fix is a lint rule — only `*.server.ts` may import from
+`runtime/server/` — and the current lint walks `lib/capabilities` alone, so it
+would need widening. Until then this is convention, and the convention is
+load-bearing.
 
 ### Scope
 

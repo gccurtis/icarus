@@ -20,14 +20,21 @@ export type OpenProject = (projectId: string) => Promise<ProjectDatabase>;
  * Rejecting rather than sanitizing: a silently rewritten id would open a
  * *different* project's database, which is the worst possible outcome for a
  * mistake this cheap to catch. `..` and separators are the attack; everything
- * else here is just keeping ids legible across filesystems.
+ * else here is keeping ids legible across filesystems.
+ *
+ * **Lowercase only, deliberately.** Case-insensitive would admit `Foo` and
+ * `foo` as distinct ids that the registry keys separately — while APFS and
+ * NTFS fold them to one directory. Two projects would then share a database,
+ * held by two single-connection instances at once. Latent on Linux, live on a
+ * macOS dev machine, and it defeats the structural scoping the whole design
+ * rests on.
  */
-const SAFE_PROJECT_ID = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
+const SAFE_PROJECT_ID = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 export const assertSafeProjectId = (projectId: string): void => {
   if (!SAFE_PROJECT_ID.test(projectId)) {
     throw new Error(
-      `Project id '${projectId}' is not usable as a directory name — expected 1-64 characters of letters, digits, hyphen, or underscore`
+      `Project id '${projectId}' is not usable as a directory name — expected 1-64 lowercase letters, digits, hyphens, or underscores, starting with a letter or digit`
     );
   }
 };
@@ -69,11 +76,6 @@ export class ProjectRegistry {
     return opening;
   }
 
-  /** Every project currently open, for shutdown and for tests that assert on it. */
-  get openProjectIds(): readonly string[] {
-    return [...this.#open.keys()];
-  }
-
   /**
    * Closes every open database.
    *
@@ -81,6 +83,8 @@ export class ProjectRegistry {
    * others open, and shutdown reports the failures rather than swallowing them.
    */
   async close(): Promise<void> {
+    // `await pending` also surfaces a project that failed to *open*, so the
+    // message below says "could not be closed" rather than blaming close.
     const closing = [...this.#open.values()].map(async (pending) => {
       const project = await pending;
       await project.close();
@@ -92,7 +96,7 @@ export class ProjectRegistry {
     if (failures.length > 0) {
       throw new AggregateError(
         failures.map((failure) => failure.reason),
-        `${failures.length} project database(s) failed to close`
+        `${failures.length} project database(s) could not be closed`
       );
     }
   }

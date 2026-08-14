@@ -12,10 +12,10 @@ declare global {
       scope: Scope;
 
       /**
-       * The server runtime, resolved lazily — a request that touches no
-       * capability builds nothing.
+       * The server runtime: configuration, the logger, and the per-project
+       * database registry. Built once for the process, not per request.
        */
-      runtime: () => Promise<ServerRuntime>;
+      runtime: ServerRuntime;
     }
     // interface Error {}
     // interface PageData {}
