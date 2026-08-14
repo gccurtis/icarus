@@ -1,6 +1,6 @@
 # Routing
 
-The frontend is a **SvelteKit application in SPA mode**. SvelteKit owns
+The frontend is a **server-rendered SvelteKit application**. SvelteKit owns
 routing, mounting, and the build; nothing here is hand-rolled.
 
 ## Why a framework
@@ -12,7 +12,7 @@ agree. Growing it would have meant re-solving, in order: params, nested routes,
 layouts that survive navigation, and a not-found path.
 
 Those four are SvelteKit's primary subject matter, and the core of this product
-is a SPA with a sophisticated runtime. The routing layer is not the part worth
+is a sophisticated client-side runtime. The routing layer is not the part worth
 maintaining ourselves.
 
 ## Server-rendered
@@ -39,7 +39,6 @@ src/
   app.d.ts              SvelteKit's App namespace
   routes/
     +layout.svelte      root layout — imports the stylesheet, renders children
-    +layout.ts          ssr = false, prerender = false
     +page.svelte        /
     demo/+page.svelte   /demo
   lib/
