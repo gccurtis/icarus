@@ -466,15 +466,32 @@ export const checkClientConstruction = ({ root, base = root }) => {
       }
       if (!entry.name.endsWith(".ts") || entry.name.endsWith(".test.ts")) continue;
 
+      // Relative to the tree being walked, not to the reporting base, so this
+      // means "the root's own index.ts" wherever that tree happens to sit.
+      const isCompositionRoot = relative(root, path) === "index.ts";
+
       readFileSync(path, "utf8")
         .split("\n")
         .forEach((line, index) => {
-          if (!MODULE_SCOPE_CONSTRUCTION.test(line)) return;
-          failures.push({
-            path: `${at(path)}:${index + 1}`,
-            message:
-              "constructs at module scope — a client object built here is shared by every request on the server. Use a browser-guarded accessor; see src/lib/runtime/client/client.md"
-          });
+          const where = `${at(path)}:${index + 1}`;
+
+          if (MODULE_SCOPE_CONSTRUCTION.test(line)) {
+            failures.push({
+              path: where,
+              message:
+                "constructs at module scope — a client object built here is shared by every request on the server. Build it in the composition root instead; see src/lib/runtime/client/client.md"
+            });
+          }
+
+          // One guard, in one place. A second `browser` check means a second
+          // way in, and the whole isolation argument rests on there being one.
+          if (!isCompositionRoot && /\bfrom\s+["']\$app\/environment["']/.test(line)) {
+            failures.push({
+              path: where,
+              message:
+                "imports $app/environment — the browser guard belongs to runtime/client/index.ts alone, so an object cannot acquire a second way to be constructed"
+            });
+          }
         });
     }
   };

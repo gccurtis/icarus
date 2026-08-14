@@ -1,4 +1,3 @@
-import { browser } from "$app/environment";
 import { decode, encode } from "$runtime/client/storage/serialize";
 import type {
   PersistedClient,
@@ -90,19 +89,14 @@ class Storage implements ClientStorage {
 export const createStorage = (initial: PersistedClient, sink: Sink): ClientStorage =>
   new Storage(initial, sink);
 
-/** The one storage for this browser. See the guard's reasoning in client.md. */
-let instance: ClientStorage | undefined;
-
-export const storage = (): ClientStorage => {
-  if (!browser) {
-    throw new Error(
-      "storage is browser-only. A route that reads it needs `ssr = false` — see " +
-        "src/lib/runtime/client/client.md."
-    );
-  }
-
-  return (instance ??= createStorage(read(), write));
-};
+/**
+ * Builds storage over `localStorage`.
+ *
+ * No guard and no cached instance here — the composition root owns both, so
+ * there is exactly one `browser` check in this tree rather than one per object.
+ * This function is simply "storage, over the browser's store".
+ */
+export const createBrowserStorage = (): ClientStorage => createStorage(read(), write);
 
 /**
  * `localStorage` throws rather than returning null when it is unavailable —

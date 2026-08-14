@@ -204,18 +204,39 @@ const clientFixture = (name, contents) => {
   return root;
 };
 
-const GUARDED = `import { browser } from "$app/environment";
+const COMPOSITION_ROOT = `import { browser } from "$app/environment";
 let instance;
-export const createWorkbench = (from) => new Workbench(from);
-export const workbench = () => {
+export const createClientRuntime = (storage) => ({
+  workbench: createWorkbench(storage)
+});
+export const clientRuntime = () => {
   if (!browser) throw new Error("browser-only");
-  return (instance ??= createWorkbench(storage()));
+  return (instance ??= createClientRuntime(createBrowserStorage()));
 };
 `;
 
-test("accepts a browser-guarded accessor", () => {
-  const root = clientFixture("guarded", { "workbench/index.ts": GUARDED });
+const OBJECT = `export const createWorkbench = (from) => new Workbench(from);\n`;
+
+test("accepts a composition root that guards, and objects that do not", () => {
+  const root = clientFixture("guarded", {
+    "index.ts": COMPOSITION_ROOT,
+    "workbench/index.ts": OBJECT
+  });
   assert.deepEqual(checkClientConstruction({ root, base: root }), []);
+});
+
+test("rejects a second browser guard outside the composition root", () => {
+  // A second check is a second way in, and the isolation argument rests on
+  // there being one.
+  const root = clientFixture("two-guards", {
+    "index.ts": COMPOSITION_ROOT,
+    "workbench/index.ts": `import { browser } from "$app/environment";\n${OBJECT}`
+  });
+  const failures = checkClientConstruction({ root, base: root });
+
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0].path, "workbench/index.ts:1");
+  assert.match(failures[0].message, /belongs to runtime\/client\/index\.ts alone/);
 });
 
 test("accepts a frozen constant and an arrow function", () => {
@@ -249,7 +270,7 @@ test("rejects a module-scope create call", () => {
   const failures = checkClientConstruction({ root, base: root });
 
   assert.equal(failures.length, 1);
-  assert.match(failures[0].message, /browser-guarded accessor/);
+  assert.match(failures[0].message, /Build it in the composition root/);
 });
 
 test("rejects an unexported module-scope construction too", () => {

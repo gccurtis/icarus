@@ -8,9 +8,10 @@ tab is active, how wide the panels are.
 These objects are **browser-only**, and construction throws anywhere else:
 
 ```ts
-export const workbench = (): WorkbenchRuntime => {
-  if (!browser) throw new Error("workbench is browser-only …");
-  return (instance ??= createWorkbench(storage()));
+// index.ts — the composition root, and the only guard in this tree
+export const clientRuntime = (): ClientRuntime => {
+  if (!browser) throw new Error("The client runtime is browser-only …");
+  return (instance ??= createClientRuntime(createBrowserStorage()));
 };
 ```
 
@@ -55,9 +56,34 @@ instead of `localStorage` — because a cookie is the only store a server render
 can read. Since `/app` does not need to server-render, the guard is the simpler
 mechanism for the same guarantee, and components import the object directly.
 
-## The objects
+## One composition root
 
-| Object | Holds `$state` | Depends on |
+`index.ts` mirrors [`runtime/server`](../server/index.server.ts) deliberately —
+same shape, learned once. Each object's directory exports a `create<Object>()`
+and its types, and **nothing constructs itself**. The root assembles them in
+dependency order and is the only place that knows the whole set.
+
+```ts
+export const createClientRuntime = (storage: ClientStorage): ClientRuntime => {
+  const preferences = createPreferences(storage);
+  const workbench = createWorkbench(storage);
+  return { storage, preferences, workbench,
+           activities: createActivities(workbench),
+           inspector: createInspector(workbench) };
+};
+```
+
+Storage is a parameter rather than something this reaches for, and that is the
+point of having a root at all: a test stands the whole graph up over a fake store
+in one call, then asserts across objects — that the inspector's write lands on
+the workbench's active tab, that switching tabs changes what the inspector sees —
+without wiring five things by hand in every test.
+
+`createClientRuntime` is not guarded. It is pure composition and runs anywhere;
+the guard belongs to the accessor, so there is **exactly one `browser` check in
+this tree**, and lint enforces that no other file imports `$app/environment`.
+
+| Object | Holds `$state` | Built over |
 | --- | --- | --- |
 | [`storage`](storage/storage.md) | no | — |
 | [`preferences`](preferences/preferences.md) | yes | storage |
@@ -67,15 +93,19 @@ mechanism for the same guarantee, and components import the object directly.
 
 The two projections hold nothing and read through the workbench, which is why
 they are plain `.ts`. They take their dependency rather than importing it, so two
-instances can exist independently — and so neither is the file that quietly
-reintroduces a singleton.
+instances can exist independently.
 
 ## What must never be written here
 
-**A module-scope `new` or `create*()` outside a guarded accessor.** The failure
-mode is a convenience singleton added "just until the shell is wired": it would
-typecheck, lint clean, and behave perfectly with one user. `pnpm
-lint:capabilities` checks for it.
+**A module-scope `new` or `create*()`.** The failure mode is a convenience
+singleton added "just until the shell is wired": it would typecheck and behave
+perfectly with one user. Build it in the composition root instead.
+
+**A second `browser` guard.** A second check is a second way in, and the whole
+isolation argument rests on there being one. Only `index.ts` may import
+`$app/environment`.
+
+`pnpm lint:capabilities` enforces both.
 
 Two smaller ones, both of which look harmless:
 

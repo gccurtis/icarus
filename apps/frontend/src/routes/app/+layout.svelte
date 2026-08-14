@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { preferences } from "$runtime/client/preferences";
+  import { clientRuntime } from "$runtime/client";
   import ContextPanel from "$lib/shell/context/context-panel.svelte";
   import Inspector from "$lib/shell/inspector.svelte";
   import Status from "$lib/shell/status.svelte";
@@ -21,19 +21,19 @@
    * components will own the drag and its bounds when they are wired.
    *
    * The two panel widths come from preferences rather than being declared in
-   * the stylesheet, so there is one source of truth per dimension. Reading it
-   * here is safe because this route sets `ssr = false`; the object is
-   * browser-only by construction. See lib/runtime/client/client.md.
+   * the stylesheet, so there is one source of truth per dimension. Reaching the
+   * runtime here is safe because this route sets `ssr = false` — the accessor
+   * throws outside the browser by design. See lib/runtime/client/client.md.
    */
   let { children }: { children: Snippet } = $props();
 
-  const remembered = preferences();
+  const { preferences } = clientRuntime();
 </script>
 
 <div
   class="shell"
-  style:--shell-context="calc(var(--shell-rail) + {remembered.panels.contextWidth}px)"
-  style:--shell-inspector="{remembered.panels.inspectorWidth}px"
+  style:--shell-context="calc(var(--shell-rail) + {preferences.panels.contextWidth}px)"
+  style:--shell-inspector="{preferences.panels.inspectorWidth}px"
 >
   <Topbar />
   <Tabstrip />
