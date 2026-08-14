@@ -52,7 +52,7 @@ document, not here.
 ## Runtime Objects
 
 One instance per backend runtime, constructed by
-[`main.ts`](../../src/main.ts) during startup.
+[`build-runtime.ts`](../../src/runtime/runtime.md) during startup.
 
 | Object | Exported | Description | Document |
 | ------ | -------- | ----------- | -------- |

@@ -134,8 +134,8 @@ transaction-scoped writes; it does not decide capability behavior. Transactions
 are started and coordinated by `runtime-api` entries.
 
 **`endpoints/register.ts`** — the capability's
-`register<Capability>Endpoints(registry, ...)`, called from `main.ts`.
-Registration only.
+`register<Capability>Endpoints(registry, ...)`, called from
+[`src/runtime/build-runtime.ts`](../../src/runtime/runtime.md). Registration only.
 
 **`endpoints/<endpoint>/`** — `job.ts`, and `wire/` when the endpoint admits
 input. `GET /health` takes no body, params, or query, so it has no `wire/`. A job
@@ -217,7 +217,7 @@ other capability's alias.
 ## Endpoint-Job Naming
 
 `RouteWork` becomes `EndpointJob` and `RouteResponse` becomes
-`EndpointJobResponse` in [`src/registry/registry.ts`](../../src/registry/registry.ts),
+`EndpointJobResponse` in [`src/runtime/registry.ts`](../../src/runtime/registry.md),
 so the directory name, the prose, and the type agree. This matches the
 vocabulary in [`reference/workflows/registry.ts`](../../../../reference/workflows/registry.ts),
 where the same map held `JobFactory` values.
@@ -264,8 +264,9 @@ slide/
 generated — it arrives with the first method.
 
 The script also prints the two follow-up edits it cannot make: adding the
-capability's construction to `src/main.ts`, and its alias to `package.json`
-imports and `tsconfig.json` paths if it needs one.
+capability's construction and endpoint registration to
+`src/runtime/build-runtime.ts`, and its alias to `package.json` imports and
+`tsconfig.json` paths if it needs one.
 
 ### `pnpm new-runtime-api <capability-path> <methodName>`
 
@@ -410,9 +411,10 @@ existing tests. Two public shapes changed deliberately:
 A capability directory exists as soon as a design exists, containing `docs/` and
 nothing else. Scaffolding with no design is deleted.
 
-`src/main.ts` and [`src/initialization.md`](../../src/initialization.md)
-are updated last, once every path is settled — the latter references eight source
-paths that move.
+`src/main.ts` and its startup document are updated last, once every path is
+settled — the latter references eight source paths that move. That document has
+since become [`src/runtime/runtime.md`](../../src/runtime/runtime.md), when the
+spine was gathered into `src/runtime/`.
 
 ## Reviewing
 

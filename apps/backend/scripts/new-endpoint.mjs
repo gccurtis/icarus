@@ -16,7 +16,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const templatesRoot = join(packageRoot, "docs", "templates");
+const templatesRoot = join(packageRoot, "docs", "capability-directory", "templates");
 
 const USAGE = `usage: pnpm new-endpoint <capability-path> <endpoint-name> [--no-wire]
 
@@ -336,11 +336,13 @@ const endpointsRoot = join(capabilityRoot, "endpoints");
 const endpointRoot = join(endpointsRoot, endpoint);
 const wireRoot = join(endpointRoot, "wire");
 
-// The endpoints document links `src/main.ts` by a path that depends on how
-// deeply the capability is grouped. The template carries one depth; only the
-// generator knows the real one, and a dangling link is what this migration
-// started by repairing.
-const mainFromEndpoints = `${"../".repeat(capabilityPath.split("/").length + 2)}main.ts`;
+// The endpoints document links the composition root's document by a path that
+// depends on how deeply the capability is grouped. The template carries one
+// depth; only the generator knows the real one, and a dangling link is what this
+// migration started by repairing.
+const runtimeDocFromEndpoints = `${"../".repeat(
+  capabilityPath.split("/").length + 2
+)}runtime/runtime.md`;
 
 const requestType = `${Endpoint}Request`;
 const responseType = `${Endpoint}Response`;
@@ -366,7 +368,10 @@ if (firstEndpoint) {
       },
       (text) =>
         text
-          .replace(/\]\((?:\.\.\/)+(?:src\/)?main\.ts\)/g, `](${mainFromEndpoints})`)
+          .replace(
+            /\]\((?:\.\.\/)+(?:src\/)?runtime\/runtime\.md\)/g,
+            `](${runtimeDocFromEndpoints})`
+          )
           .replace(
             "{{registerCapabilityEndpoints}}(registry, {{runtimeObject}})",
             `register${Capability}Endpoints(registry)`
@@ -379,14 +384,15 @@ const registerCreated = !existsSync(registerFile);
 if (registerCreated) {
   plan(
     registerFile,
-    `import type { RouteRegistry } from "#registry/registry.js";
+    `import type { RouteRegistry } from "#registry";
 
 /**
  * Every endpoint ${displayName} serves, mapped to the job that answers it.
  *
- * Registration only: no decoding, no capability behavior. \`main.ts\` calls this
- * once before the server listens, and the registry throws on a duplicate
- * endpoint because that is always a wiring bug rather than a request failure.
+ * Registration only: no decoding, no capability behavior. \`build-runtime.ts\`
+ * calls this once before the server listens, and the registry throws on a
+ * duplicate endpoint because that is always a wiring bug rather than a request
+ * failure.
  */
 export const register${Capability}Endpoints = (registry: RouteRegistry): void => {
 };
@@ -444,7 +450,7 @@ plan(
 plan(
   join(endpointRoot, "job.ts"),
   noWire
-    ? `import type { EndpointJob } from "#registry/registry.js";
+    ? `import type { EndpointJob } from "#registry";
 
 /**
  * \`${METHOD} ${path}\`
@@ -459,7 +465,7 @@ export const ${jobName}: EndpointJob = async () => {
   return { statusCode: 200, body: {} };
 };
 `
-    : `import type { EndpointJob } from "#registry/registry.js";
+    : `import type { EndpointJob } from "#registry";
 import { ${decodeName} } from "${alias}/endpoints/${endpoint}/wire/decode.js";
 import type { ${responseType} } from "${alias}/endpoints/${endpoint}/wire/response.js";
 
@@ -582,8 +588,9 @@ if (!firstEndpoint) {
 
 if (registerCreated) {
   console.log(`  src/capabilities/${capabilityPath}/index.ts
-      re-export register${Capability}Endpoints, and call it from src/main.ts before
-      the server listens. Registration is wiring, and wiring is main.ts's job.
+      re-export register${Capability}Endpoints, and call it from the registration
+      section of src/runtime/build-runtime.ts before the server listens.
+      Registration is wiring, and wiring belongs to the composition root.
 `);
 }
 

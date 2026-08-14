@@ -19,7 +19,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const templatesRoot = join(packageRoot, "docs", "templates");
+const templatesRoot = join(packageRoot, "docs", "capability-directory", "templates");
 
 const USAGE = `usage: pnpm new-runtime-api <capability-path> <methodName>
 

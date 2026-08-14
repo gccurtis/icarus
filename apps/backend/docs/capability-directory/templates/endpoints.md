@@ -17,7 +17,8 @@ decoding and no capability behavior.
 
 `{{registerCapabilityEndpoints}}(registry, {{runtimeObject}})` in
 [`register.ts`](register.ts), called once from
-[`main.ts`](../../../main.ts) before the server listens. A duplicate endpoint key
+[`build-runtime.ts`](../../../runtime/runtime.md) before the server listens, in
+the same list as every other capability's registration. A duplicate endpoint key
 is a startup wiring error thrown by the registry.
 
 ## Error Body

@@ -24,7 +24,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const templatesRoot = join(packageRoot, "docs", "templates");
+const templatesRoot = join(packageRoot, "docs", "capability-directory", "templates");
 
 const USAGE = `usage: pnpm new-capability <path/to/name> [--persisted] [--endpoints]
 
@@ -348,12 +348,14 @@ const name = camel(base);
 const displayName = title(base);
 const table = base.replace(/-/g, "_");
 
-// Documents are linked to `src/main.ts` by a path that depends on how deeply the
-// capability is grouped. The templates carry one depth; only the generator knows
-// the real one, and a dangling link is what this migration started by repairing.
-const mainFromRoot = `${"../".repeat(segments.length + 1)}main.ts`;
-const mainFromEndpoints = `${"../".repeat(segments.length + 2)}main.ts`;
-const relinkMain = (text, path) => text.replace(/\]\((?:\.\.\/)+(?:src\/)?main\.ts\)/g, `](${path})`);
+// Documents are linked to the composition root's document by a path that depends
+// on how deeply the capability is grouped. The templates carry one depth; only
+// the generator knows the real one, and a dangling link is what this migration
+// started by repairing.
+const runtimeDocFromRoot = `${"../".repeat(segments.length + 1)}runtime/runtime.md`;
+const runtimeDocFromEndpoints = `${"../".repeat(segments.length + 2)}runtime/runtime.md`;
+const relinkRuntimeDoc = (text, path) =>
+  text.replace(/\]\((?:\.\.\/)+(?:src\/)?runtime\/runtime\.md\)/g, `](${path})`);
 
 const treeEntries = ["overview.md", "index.ts", "errors.ts", "types/", "runtime-objects/"];
 if (persisted) treeEntries.push("persistence/");
@@ -380,7 +382,7 @@ const shared = {
 plan(
   join(capabilityRoot, "overview.md"),
   render("overview.md", { ...shared, "yes / internal": "yes" }, (text) => {
-    let edited = relinkMain(text, mainFromRoot);
+    let edited = relinkRuntimeDoc(text, runtimeDocFromRoot);
     // The generator knows exactly which directories it created, and the template
     // says to show only those. runtime-api/ is absent until the first method.
     edited = edited.replace(
@@ -653,7 +655,7 @@ if (withEndpoints) {
       "endpoints.md",
       { ...shared, CapabilityHttpError: `${Name}HttpError` },
       (text) =>
-        relinkMain(text, mainFromEndpoints).replace(
+        relinkRuntimeDoc(text, runtimeDocFromEndpoints).replace(
           "{{registerCapabilityEndpoints}}(registry, {{runtimeObject}})",
           `register${Name}Endpoints(registry)`
         )
@@ -662,19 +664,20 @@ if (withEndpoints) {
 
   plan(
     join(capabilityRoot, "endpoints", "register.ts"),
-    `import type { RouteRegistry } from "#registry/registry.js";
+    `import type { RouteRegistry } from "#registry";
 
 /**
  * Every endpoint ${displayName} serves, mapped to the job that answers it.
  *
- * Registration only: no decoding, no capability behavior. \`main.ts\` calls this
- * once before the server listens, and the registry throws on a duplicate
- * endpoint because that is always a wiring bug rather than a request failure.
+ * Registration only: no decoding, no capability behavior. \`build-runtime.ts\`
+ * calls this once before the server listens, and the registry throws on a
+ * duplicate endpoint because that is always a wiring bug rather than a request
+ * failure.
  */
 export const register${Name}Endpoints = (registry: RouteRegistry): void => {
   // TODO: \`pnpm new-endpoint ${capabilityPath} <endpoint-name>\` appends one
   // registration here per endpoint. Add the runtime object as a second
-  // parameter once a job needs it, and pass it from main.ts.
+  // parameter once a job needs it, and pass it from build-runtime.ts.
 };
 `
   );
@@ -707,7 +710,9 @@ const construction = persisted
 console.log(`
 Do these yourself — a generator cannot decide them:
 
-  src/main.ts  construct the capability during startup and hold it on Runtime:
+  src/runtime/build-runtime.ts  construct the capability in the runtime-objects
+      section, register its endpoints in the registration section, and hold it
+      on Runtime:
       import { create${Name}, type ${Name} } from "${alias}";
       ${construction}${
         withEndpoints
