@@ -10,10 +10,16 @@
    * 458-line component, which is past the size where a file is worth reading.
    */
   import Components from "$lib/demo/components.svelte";
+  import Controls from "$lib/demo/controls.svelte";
+  import Data from "$lib/demo/data.svelte";
+  import Disclosure from "$lib/demo/disclosure.svelte";
+  import Feedback from "$lib/demo/feedback.svelte";
   import Geometry from "$lib/demo/geometry.svelte";
+  import Overlays from "$lib/demo/overlays.svelte";
   import Palette from "$lib/demo/palette.svelte";
   import Roles from "$lib/demo/roles.svelte";
   import States from "$lib/demo/states.svelte";
+  import Structure from "$lib/demo/structure.svelte";
   import Surfaces from "$lib/demo/surfaces.svelte";
   import Typography from "$lib/demo/typography.svelte";
   import { Separator } from "$lib/simple-components/separator";
@@ -41,6 +47,18 @@
   <Typography />
   <Separator />
   <Components />
+  <Separator />
+  <Overlays />
+  <Separator />
+  <Disclosure />
+  <Separator />
+  <Controls />
+  <Separator />
+  <Feedback />
+  <Separator />
+  <Data />
+  <Separator />
+  <Structure />
   <Separator />
   <States />
   <Separator />
