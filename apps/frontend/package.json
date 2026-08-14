@@ -19,14 +19,19 @@
     "tailwind-variants": "latest"
   },
   "devDependencies": {
+    "@internationalized/date": "latest",
+    "@lucide/svelte": "latest",
     "@sveltejs/adapter-static": "latest",
     "@sveltejs/kit": "latest",
     "@sveltejs/vite-plugin-svelte": "latest",
     "@tailwindcss/vite": "latest",
     "@types/node": "latest",
+    "embla-carousel-svelte": "latest",
+    "paneforge": "latest",
     "svelte": "latest",
     "svelte-check": "latest",
     "tailwindcss": "latest",
+    "tw-animate-css": "latest",
     "typescript": "~6",
     "vite": "latest"
   }

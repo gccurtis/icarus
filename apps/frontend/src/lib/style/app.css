@@ -28,6 +28,14 @@
 
 @import "tailwindcss";
 
+/* The animation utilities the registry components are written against —
+ * `animate-in`, `fade-in-0`, `slide-in-from-bottom-2`. Tailwind v4 dropped the
+ * v3 animate plugin, and shadcn moved to this package; 94 class usages across
+ * the component set resolve to nothing without it, so every overlay appears and
+ * vanishes with no transition at all. It is a devDependency the registry's own
+ * `init` declares. */
+@import "tw-animate-css";
+
 /* 1 · themes — the only literal color values, and the only color-scheme.
  *
  * Order is load-bearing here, unlike everywhere else in this file. The default
@@ -36,6 +44,50 @@
  * by source order. Alternates must come after the default. */
 @import "./themes/celestial.css"; /* default, bound to :root */
 @import "./themes/cyberpunk.css";
+
+/* Tailwind's `dark:` variant defaults to `prefers-color-scheme`, which this
+ * system never uses: a theme is chosen with `data-theme` and declares its own
+ * `color-scheme`. Left at the default, every `dark:` class inside a vendored
+ * component follows the operating system rather than the active theme — dark
+ * overrides leaking into Celestial on a dark-mode machine, and never firing in
+ * Cyberpunk on a light-mode one. Wrong in both directions.
+ *
+ * Rebinding the variant to the themes that read from the dark end makes it mean
+ * what those components assume. The system always has a light theme and a dark
+ * theme selected, and this is the line that tells the build which is which.
+ *
+ * A new dark theme belongs in this list. That is the whole cost, and it is the
+ * only place a theme name appears outside its own file. */
+@custom-variant dark (&:where([data-theme="cyberpunk"], [data-theme="cyberpunk"] *));
+
+/**
+ * The registry's shorthand state variants, bound to what bits-ui actually emits.
+ *
+ * Components are written with `data-open:`, `data-checked:`, `data-horizontal:`
+ * and friends. Tailwind reads those as *boolean attribute* selectors —
+ * `[data-open]`, `[data-checked]` — and bits-ui emits no such attributes. It
+ * reports `data-state="open" | "closed" | "checked" | "unchecked"` and
+ * `data-orientation="horizontal" | "vertical"`.
+ *
+ * Undefined, 136 class usages compile to selectors that can never match, and
+ * every failure is silent: the slider track gets no height and disappears, the
+ * switch thumb never travels, overlays never animate open. Nothing errors.
+ *
+ * Declaring the variants here repairs all of them at once and leaves every
+ * vendored component untouched, which is worth more than the same fix smeared
+ * across thirty files.
+ */
+@custom-variant data-open (&[data-state="open"]);
+@custom-variant data-closed (&[data-state="closed"]);
+@custom-variant data-checked (&[data-state="checked"]);
+@custom-variant data-unchecked (&[data-state="unchecked"]);
+@custom-variant data-horizontal (&[data-orientation="horizontal"]);
+@custom-variant data-vertical (&[data-orientation="vertical"]);
+
+/* `active` has two spellings in the wild: sidebar sets a literal `data-active`
+ * attribute of its own, while tabs report `data-state="active"`. Match both, so
+ * neither has to be special-cased at the call site. */
+@custom-variant data-active (&:is([data-active], [data-state="active"]));
 
 /* 2–4 · theme-independent color: intensity per job, identity, then purpose.
  * Sets follow the same ordering rule as themes. */

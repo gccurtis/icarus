@@ -141,7 +141,12 @@
 
 /* --surface-* is not a Tailwind namespace, so this cannot live in @theme.
  * Selection is derived rather than authored, so it tracks the engaged hue
- * whatever the theme and whichever set is active. */
+ * whatever the theme and whichever set is active.
+ *
+ * Reads the anchor rather than the `active` role that sits on top of it. The
+ * resolved color is identical, but a token in the theme's own namespace
+ * referencing a role would point back up the chain — the one direction the
+ * layering does not allow. */
 :root {
-  --surface-selection: color-mix(in srgb, var(--color-active-border) 22%, transparent);
+  --surface-selection: color-mix(in srgb, var(--anchor-tertiary-border) 22%, transparent);
 }

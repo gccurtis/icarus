@@ -29,17 +29,18 @@
   --color-popover: var(--surface-elevated);
   --color-popover-foreground: var(--ink-primary);
 
-  /* Interactive is shadcn's "primary" — the affordance role. A solid control
-   * takes the `fill` slot and the text on it takes `on-fill`; that pairing is
-   * what guarantees 4.5:1 without a per-hue exception. */
-  --color-primary: var(--color-interactive-fill);
-  --color-primary-foreground: var(--color-interactive-on-fill);
+  /* shadcn's "primary" is the affordance — the same job our `interactive` role
+   * serves, so it draws on the same anchor. A solid control takes the `fill`
+   * slot and the text on it takes `on-fill`; that pairing is what guarantees
+   * 4.5:1 without a per-hue exception. */
+  --color-primary: var(--anchor-primary-fill);
+  --color-primary-foreground: var(--anchor-primary-on-fill);
   /* shadcn has no hover token — it dims the fill with `bg-primary/90`. That
    * computes a color rather than naming one, so it cannot follow a theme that
    * wants a different hover relationship. The `fill-hover` slot is the named
    * version, and it moves in the right direction in both polarities: darker on
    * a light ground, lighter on a dark one, which an opacity step cannot do. */
-  --color-primary-hover: var(--color-interactive-fill-hover);
+  --color-primary-hover: var(--anchor-primary-fill-hover);
 
   /* shadcn's "secondary" is a quiet filled control, not a brand color, so it
    * takes a surface rather than our brand anchor. */
@@ -53,19 +54,37 @@
   --color-muted: var(--surface-panel);
   --color-muted-foreground: var(--ink-muted);
 
-  /* "accent" is shadcn's hover wash. The `surface` slot of interactive is
-   * exactly that: the quietest step of the affordance hue, sitting behind
+  /* "accent" is shadcn's hover wash. The `surface` slot of the primary anchor
+   * is exactly that: the quietest step of the affordance hue, sitting behind
    * content rather than on top of it. */
-  --color-accent: var(--color-interactive-surface);
+  --color-accent: var(--anchor-primary-surface);
   --color-accent-foreground: var(--ink-primary);
 
-  --color-destructive: var(--color-danger-fill);
-  --color-destructive-foreground: var(--color-danger-on-fill);
-  --color-destructive-hover: var(--color-danger-fill-hover);
+  /* Destructive is red in every theme and every set. It reads the hue directly
+   * rather than our `danger` role, because meaning is fixed at the slot layer —
+   * a set cannot move it, so there is nothing for a role indirection to buy. */
+  --color-destructive: var(--hue-red-fill);
+  --color-destructive-foreground: var(--hue-red-on-fill);
+  --color-destructive-hover: var(--hue-red-fill-hover);
 
   --color-border: var(--border-subtle);
   --color-input: var(--border-subtle);
-  --color-ring: var(--color-interactive-border);
+  --color-ring: var(--anchor-primary-border);
+
+  /* shadcn's sidebar carries a token family of its own rather than reusing the
+   * page ones, so a sidebar can sit on a different plane from the content it
+   * flanks. Ours does not need to: the context panel already takes the `panel`
+   * plane, which is the same decision expressed once. Every entry below is
+   * therefore a alias onto a role that already exists — no new color, no new
+   * intensity, and the whole family follows a theme and set swap for free.
+   *
+   * Without these six the component renders with transparent backgrounds. */
+  --color-sidebar: var(--surface-panel);
+  --color-sidebar-foreground: var(--ink-primary);
+  --color-sidebar-accent: var(--anchor-primary-surface);
+  --color-sidebar-accent-foreground: var(--ink-primary);
+  --color-sidebar-border: var(--border-subtle);
+  --color-sidebar-ring: var(--anchor-primary-border);
 
   /* shadcn sizes corners with rounded-sm/md/lg/xl. Pointing those at our three
    * radii makes its components speak our corner language instead of Tailwind's
@@ -74,4 +93,34 @@
   --radius-md: var(--radius-control);
   --radius-lg: var(--radius-panel);
   --radius-xl: var(--radius-overlay);
+}
+
+/**
+ * The same values again, unprefixed.
+ *
+ * Not redundant. The block above satisfies *utilities* — `bg-sidebar-accent`
+ * compiles to `var(--color-sidebar-accent)`. But several components reach for
+ * these through **arbitrary values**, which reference the raw custom property
+ * and never the --color-* namespace:
+ *
+ *   shadow-[0_0_0_1px_var(--sidebar-border)]   sidebar-menu-button
+ *   rounded-[calc(var(--radius)-3px)]          input-group-button
+ *
+ * Without these three declarations those references resolve to nothing, and the
+ * failure is silent: an invalid shadow color simply does not paint, and a
+ * calc() on an undefined length drops the whole declaration. Nothing errors,
+ * the component just renders subtly wrong.
+ *
+ * `--radius` is shadcn's base corner, which its own scale derives from with
+ * calc(). We map the derived steps directly from our own radii, so the base was
+ * never declared — it only surfaces where a component does the arithmetic
+ * itself.
+ *
+ * Declared outside @theme: these are not Tailwind namespaces and should
+ * generate no utilities of their own.
+ */
+:root {
+  --radius: var(--radius-control);
+  --sidebar-accent: var(--anchor-primary-surface);
+  --sidebar-border: var(--border-subtle);
 }
