@@ -12,7 +12,7 @@ work.
 | `RichContentRuntime` | [`rich-content/`](rich-content/rich-content.md) | yes | The capability's eleven public methods. Holds the store and the ID factory and delegates each method to its `runtime-api` entry. |
 | `RichContentIdFactory` | [`id-factory/`](id-factory/id-factory.md) | internal | Names every content, atom, mark, and list ID, over values from Platform ID Factory. |
 
-`RichContentRuntime` is re-exported from `index.ts`; `main.ts` holds it, and
+`RichContentRuntime` is re-exported from `index.ts`; the runtime holds it, and
 every method on its interface has a `runtime-api` directory.
 
 `RichContentIdFactory` is internal. It is constructed for injection into the
@@ -25,7 +25,7 @@ what lets a test substitute a counting factory and assert on generated IDs.
 ```text
 RichContentRuntime
 ├── holds RichContentIdFactory   (created during construction, never escapes)
-│   └── holds IdFactory          (injected from main.ts, shared by the runtime)
+│   └── holds IdFactory          (injected at construction, shared by the runtime)
 └── holds RichContentStore       (created during construction, over the shared database)
 ```
 
@@ -33,14 +33,14 @@ Neither dependency is reachable from outside. A consumer that could reach the
 store would be able to write content without a revision gate.
 
 The `IdFactory` is the one dependency that arrives from outside rather than
-being built here, because `main.ts` owns the single generator every capability
-shares. Rich Content still owns what its IDs mean; it borrows only the values.
+being built here, because `build-runtime.ts` owns the single generator every
+capability shares. Rich Content still owns what its IDs mean; it borrows only the values.
 
 ## Construction Order
 
-`createRichContentRuntime(database, ids)` is the only entry point. It needs a
-Kysely client from Platform Persistence and an `IdFactory` from Platform ID
-Factory to already exist. In order:
+`createRichContentRuntime(database, ids, logger)` is the only entry point. It
+needs a Kysely client from Platform Persistence, an `IdFactory` from Platform ID
+Factory, and a `Logger` from Observability to already exist. In order:
 
 1. Construct `PGliteRichContentStore` over the supplied database.
 2. `await store.initialize()` — creates the `rich_content` table if absent.

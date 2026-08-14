@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fixture } from "#rich-content/test/fixture.js";
+import { fixture, silentLogger } from "#rich-content/test/fixture.js";
 import { PersistedRichContentRuntime } from "#rich-content/runtime-objects/rich-content/definition.js";
 
 test("persists content and renders editable display handles", async (context) => {
@@ -16,6 +16,6 @@ test("persists content and renders editable display handles", async (context) =>
   assert.equal("atoms" in display, false);
   assert.equal("marks" in display, false);
 
-  const recreated = new PersistedRichContentRuntime(store, ids);
+  const recreated = new PersistedRichContentRuntime(store, ids, silentLogger);
   assert.deepEqual(await recreated.display(created.contentId), display);
 });
