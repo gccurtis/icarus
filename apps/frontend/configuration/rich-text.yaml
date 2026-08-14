@@ -1,0 +1,8 @@
+# Rich Text limits.
+
+richText:
+  maxAtomsPerContent: 10000
+  maxMarksPerContent: 5000
+  maxMarkRangeSpan: 1000
+
+# Context capability limits.

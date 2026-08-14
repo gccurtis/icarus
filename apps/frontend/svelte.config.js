@@ -16,5 +16,17 @@ export default {
 
   kit: {
     adapter: adapter(),
+
+    // One alias per tree that code reaches across; `$lib` is built in.
+    // Per-capability aliases arrive with their capabilities — an alias map full
+    // of forward declarations pointing at nothing is exactly the rot the lint's
+    // resolve check exists to prevent.
+    //
+    // SvelteKit generates .svelte-kit/tsconfig.json paths from this, so the
+    // compiler and the bundler cannot drift. There is no second map to keep in
+    // step, which is a rule the backend needed and this does not.
+    alias: {
+      $runtime: "src/lib/runtime",
+    },
   },
 };

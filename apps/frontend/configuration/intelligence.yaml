@@ -1,0 +1,132 @@
+# Model providers and routing. The real API key belongs in local.yaml.
+
+intelligence:
+  providers:
+    openrouter:
+      # Do not put a real key here — this file is tracked.
+      # Put it in local.yaml in this directory, which is git-ignored and is
+      # merged over this file. OPENROUTER_API_KEY in the environment also works,
+      # but only while this value is still the placeholder below.
+      apiKey: replace-with-openrouter-api-key
+      baseUrl: https://openrouter.ai/api/v1
+      timeoutMs: 30000
+
+  inference:
+    routes:
+      - purpose: general
+        strength: low
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: low
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: low
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: medium
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: medium
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: medium
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: high
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: high
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+      - purpose: general
+        strength: high
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1-mini
+        effort: low
+
+  reasoning:
+    routes:
+      - purpose: general
+        strength: low
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: low
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: low
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: medium
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: medium
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: medium
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: high
+        speed: low
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: high
+        speed: medium
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+      - purpose: general
+        strength: high
+        speed: high
+        provider: openrouter
+        model: openai/gpt-4.1
+        effort: medium
+
+  embedding:
+    provider: openrouter
+    model: openai/text-embedding-3-small
+
+# Formula engine limits — all values are required; none are hardcoded in the engine.

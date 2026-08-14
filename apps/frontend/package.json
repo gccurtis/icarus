@@ -8,15 +8,23 @@
     "build": "pnpm typecheck && vite build",
     "preview": "vite preview",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "lint:capabilities": "node scripts/lint/capabilities/lint.mjs",
+    "new-capability": "node scripts/generation/capabilities/new-capability.mjs",
+    "new-api": "node scripts/generation/capabilities/new-api.mjs",
+    "test:scripts": "node --test \"scripts/*/*/test/*.test.mjs\"",
     "clean": "rm -rf build .svelte-kit"
   },
   "dependencies": {
+    "@electric-sql/pglite": "latest",
     "@fontsource/ibm-plex-mono": "latest",
     "@fontsource/ibm-plex-sans": "latest",
     "bits-ui": "latest",
     "clsx": "latest",
+    "kysely": "latest",
+    "pino": "latest",
     "tailwind-merge": "latest",
-    "tailwind-variants": "latest"
+    "tailwind-variants": "latest",
+    "yaml": "latest"
   },
   "devDependencies": {
     "@internationalized/date": "latest",

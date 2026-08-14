@@ -1,0 +1,18 @@
+# Document limits and behaviour.
+
+document:
+  history:
+    retainedBaseCount: 5
+    retainedChangeSetCount: 1000
+    retainedTerminalAttemptCount: 1000
+  limits:
+    maxRowsPerDocument: 10000
+    maxBlocksPerRow: 32
+    maxStylesPerDocument: 256
+    maxNestingDepth: 16
+    maxAtomsPerBlockContent: 10000
+    maxTableRows: 1000
+    maxTableColumns: 256
+
+# Resource revision-history retention. This does not prune Activity,
+# transaction outboxes, command receipts, or delegated claims.
