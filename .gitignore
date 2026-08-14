@@ -19,6 +19,11 @@ apps/backend/data/*.db-wal
 apps/backend/data/pglite/
 apps/backend/logs/*.log
 
+# Frontend runtime artifacts. One embedded PostgreSQL directory per project,
+# tens of megabytes each — state a run produces, never state a checkout needs.
+apps/frontend/data/
+apps/frontend/logs/*.log
+
 # Agent worktrees
 .claude/worktrees/
 

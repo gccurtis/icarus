@@ -1,0 +1,8 @@
+# Where project databases live.
+
+persistence:
+  # One directory per project, relative to the process working directory. Each
+  # holds an embedded PostgreSQL database — a project is its own database, which
+  # is what makes project scoping structural rather than a predicate every query
+  # has to remember.
+  directory: data/projects
