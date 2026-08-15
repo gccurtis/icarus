@@ -2,9 +2,24 @@
 
 **Date:** 2026-08-13
 **Scope:** the whole repository — `apps/backend`, `apps/frontend`, and the root
-**Status:** Approved design, not yet implemented. Once Phase 2 lands, the living
-standard is `docs/capability-directory/capability-directory.md` in its new root
-location; this file is the record of what was decided and why.
+**Status:** **Implemented**, all six phases. `apps/backend` is deleted and
+`apps/frontend` is now `app/`. The living standard is
+[`app/docs/capability-directory/capability-directory.md`](../../../app/docs/capability-directory/capability-directory.md);
+this file is the record of what was decided and why.
+
+**Three decisions here were reversed while building.** Each is recorded at the
+section it contradicts, and collected once below.
+
+| This document said | What was built | Why |
+| --- | --- | --- |
+| `apps/` dissolves and the app is promoted to the repository root | a single **`app/`** directory | the package moves whole, so every lint and generation script's `dirname()` depth and both `process.cwd()` derivations keep working untouched |
+| capabilities live at `<group>/<capability>` | **flat** — `capabilities/<capability>` | the group never appeared in a line of a capability's own code, because every import goes through its own alias. It was free to add and equally free to remove, and earned nothing but nesting |
+| `require` gets no remote wrapper | **every** public function has one | the get/require choice belongs to the caller, and a browser that could only reach `get` would reimplement `require` each time it needed it |
+
+The first was a change of instruction; the other two were decided during
+implementation. The capability standard, the generator, and its tests were
+updated to match, and `data/settings` was flattened to `settings` so the tree is
+consistent.
 **Supersedes:**
 [`2026-08-13-capability-directory-template-design.md`](2026-08-13-capability-directory-template-design.md).
 Its template established the vocabulary this design keeps — `types/`,
@@ -467,26 +482,35 @@ authentication lands, and the route shape is already correct.
 
 ## Repository
 
+**Reversed — see the header.** What was built keeps one directory level:
+
 ```text
 icarus/
-├── src/
-│   ├── lib/capabilities/           procedural
-│   ├── lib/runtime/{client,server}/
-│   ├── lib/style/  lib/simple-components/  lib/shell/
-│   ├── routes/
-│   ├── hooks.server.ts
-│   └── app.d.ts                    App.Locals
-├── scripts/                        lint-paths  lint-structure
-│                                   new-capability  new-api
-├── docs/capability-directory/
-├── configuration/                  YAML
-├── data/projects/<project>/        one PGlite directory per project
+├── app/
+│   ├── src/
+│   │   ├── lib/capabilities/       procedural, flat — no group directories
+│   │   ├── lib/model/{client,server}/
+│   │   ├── lib/styles/  lib/simple-components/  lib/shell/  lib/views/
+│   │   ├── routes/
+│   │   ├── hooks.server.ts
+│   │   └── app.d.ts                App.Locals
+│   ├── scripts/{lint,generation}/  four linters, five generators
+│   ├── docs/                       capability, model, view, style standards
+│   ├── configuration/              YAML
+│   ├── data/projects/<project>/    one PGlite directory per project
+│   └── package.json  svelte.config.js  vite.config.ts  tsconfig.json
+├── docs/                           repository-level design records
 ├── infra/  reference/
-└── package.json  svelte.config.js  vite.config.ts  tsconfig.json
+└── README.md
 ```
 
-`apps/` dissolves. One application, so a directory holding one thing named after
-a half it no longer is earns nothing.
+`apps/` still dissolves — there is one application, so a directory holding one
+thing named after a half it no longer is earns nothing. What changed is that the
+application keeps a name of its own rather than becoming the root: the package
+then moves **whole**, and every script's `dirname()`-counted package root and
+both `process.cwd()` path derivations keep working without a line of change.
+
+`runtime/` became `model/` separately, before this phase.
 
 ## Aliases
 
@@ -658,13 +682,29 @@ no visible snap in panel width on hydration.
 
 **Verify:** lint, typecheck, test green; capability data renders in a browser.
 
-### Phase 6 — Promote and delete
+### Phase 6 — Consolidate and delete
 
-Delete `apps/backend`. Move `apps/frontend/*` to the root and remove `apps/`.
-Move `configuration/` and the project data directory. Update `infra/devshell`,
-README, `.gitignore`.
+**What was done, which is not quite what this said.** Delete `apps/backend`.
+Move `apps/frontend` to **`app/`** — not to the root — and remove `apps/`.
+Update `infra/devshell`, README, `.gitignore`.
 
-**Verify:** everything green from the root; one `pnpm dev`.
+Moving the package whole rather than promoting its contents is what made this a
+rename plus prose edits. `configuration/` and the project data directory travel
+inside it, and nothing that resolves a path had to change: every lint and
+generation script counts `dirname()` levels up from its own position *inside* the
+package, and the configuration and persistence constructors resolve from
+`process.cwd()`, which is still the package directory.
+
+Eight configuration files carried over from the backend and read by nothing were
+deleted rather than left looking live. One of them named size limits for Rich
+Content that the capability does not enforce; that gap is now recorded in its
+`overview.md`.
+
+**Verified:** `pnpm lint`, `pnpm typecheck`, `pnpm test` (311), and
+`pnpm test:scripts` (182) all green from `app/`; `pnpm build` produces
+`build/index.js`; the running server answers `/health` `200`, redirects `/app` to
+`/app/dev-project`, opens a project database logging `initializers: 3`, and
+serves all eighteen generated remote endpoints.
 
 ## Post-integration
 

@@ -1,9 +1,33 @@
 # Name Manager and Rich Content
 
-**Status:** Design, awaiting review.
+**Status:** **Implemented.** Both capabilities are built, consumed by a route,
+and verified against the built server: a project database opens logging
+`initializers: 3`.
 **Implements:** Phase 5 of
 [the capability integration design](2026-08-13-capability-integration-design.md),
 narrowed to the two capabilities that have working code.
+
+## How the five open questions resolved
+
+| | Recommended | Decided |
+| --- | --- | --- |
+| Q1 — does `require` get a remote wrapper? | no | **yes.** Every public function of both capabilities has one. The get/require choice belongs to the caller, and a browser reaching only `get` would rebuild `require` each time |
+| Q2 — how do tests assert on generated identity? | relax, mock where identity is the point | **as recommended.** `content-1` became assertions on shape and relationship; `split` and `combineAsList` assert distinctness and destruction of the source instead |
+| Q3 — does `$runtime` → `$model` happen first? | yes | **yes**, and it had already landed in `f382085` |
+| Q4 — do the group directories survive? | keep them | **no.** Groups were removed entirely, and `data/settings` flattened to `settings`. The group never appeared in a capability's own imports, so it was free to remove |
+| Q5 — what replaces the store's project-isolation test? | one registry-level test | **as recommended.** `settings`' two-database test in `list.test.ts` covers it; Name Manager asserts it once more in its own `list.test.ts` because two projects were already installed there |
+
+Two further departures, both found while building rather than designed:
+
+- **`copyVariable` is not in `shared/`.** `currentNamedVariable` already clones at
+  the storage boundary, so `get`, `require`, and `list` copying again was pure
+  waste. It has one caller — `define`, whose return value never came from the
+  database — and lives in that function's directory.
+- **Rich Content's queries and its revision discipline are one file.**
+  `api/shared/revisions.ts` holds `loadContent`, the compare-and-swap, and both
+  transactions alongside `currentContent` and `commit`, rather than splitting the
+  four queries out. They are one concern, and separating them would put half an
+  invariant in a file that could not state it.
 
 ---
 
