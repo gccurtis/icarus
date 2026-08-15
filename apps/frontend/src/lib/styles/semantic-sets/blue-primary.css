@@ -3,14 +3,17 @@
  *
  * A set is an enumeration and nothing else. It fills five identity anchors
  * from the hues a theme provides, and decides nothing about what those anchors
- * are used for. Sets are cheap on purpose: `red-primary` is this file with
- * different hue names.
+ * are used for.
  *
- * The contract it must satisfy:
- *   - primary, secondary, and tertiary are mutually distinguishable hues, so
- *     `interactive` and `active` are never told apart by intensity alone;
- *   - accents draw from hues no meaning role claims, so brand color can never
- *     be mistaken for state.
+ * Anchors are the primary's nearest neighbours on the hue wheel, so a set stays
+ * cohesive and the same relationship holds in every set. Hues meaning reserves
+ * are not in the list, so they are skipped without a special case.
+ *
+ *   primary    blue    267°
+ *   secondary  violet  290° next ramp up
+ *   tertiary   cyan    233° next ramp down
+ *   accent-1   teal    185° two down
+ *   accent-2   pink    358° two up
  *
  * `green`, `red`, and `amber` are absent because meaning is not a set's to
  * assign — see tokens/color.css.

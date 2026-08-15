@@ -1,10 +1,22 @@
 /**
  * pink-primary — a semantic set.
  *
- * An enumeration. It fills five identity anchors from the hues the active
- * theme provides and decides nothing about what those anchors are used for.
- * Meaning — green, red, amber, grey — is not a set's to assign and is absent
- * here by construction.
+ * A set is an enumeration and nothing else. It fills five identity anchors
+ * from the hues a theme provides, and decides nothing about what those anchors
+ * are used for.
+ *
+ * Anchors are the primary's nearest neighbours on the hue wheel, so a set stays
+ * cohesive and the same relationship holds in every set. Hues meaning reserves
+ * are not in the list, so they are skipped without a special case.
+ *
+ *   primary    pink    358°
+ *   secondary  orange  51° next ramp up (wraps)
+ *   tertiary   violet  290° next ramp down
+ *   accent-1   blue    267° two down
+ *   accent-2   yellow  98° two up
+ *
+ * `green`, `red`, and `amber` are absent because meaning is not a set's to
+ * assign — see tokens/color.css.
  *
  * Contract: semantic-sets.md
  */
@@ -19,32 +31,32 @@
   --semantic-primary-text: var(--chromatic-pink-text);
   --semantic-primary-on-fill: var(--chromatic-pink-on-fill);
 
-  /* teal */
-  --semantic-secondary-surface: var(--chromatic-teal-surface);
-  --semantic-secondary-surface-hover: var(--chromatic-teal-surface-hover);
-  --semantic-secondary-border: var(--chromatic-teal-border);
-  --semantic-secondary-fill: var(--chromatic-teal-fill);
-  --semantic-secondary-fill-hover: var(--chromatic-teal-fill-hover);
-  --semantic-secondary-text: var(--chromatic-teal-text);
-  --semantic-secondary-on-fill: var(--chromatic-teal-on-fill);
-
-  /* blue */
-  --semantic-tertiary-surface: var(--chromatic-blue-surface);
-  --semantic-tertiary-surface-hover: var(--chromatic-blue-surface-hover);
-  --semantic-tertiary-border: var(--chromatic-blue-border);
-  --semantic-tertiary-fill: var(--chromatic-blue-fill);
-  --semantic-tertiary-fill-hover: var(--chromatic-blue-fill-hover);
-  --semantic-tertiary-text: var(--chromatic-blue-text);
-  --semantic-tertiary-on-fill: var(--chromatic-blue-on-fill);
+  /* orange */
+  --semantic-secondary-surface: var(--chromatic-orange-surface);
+  --semantic-secondary-surface-hover: var(--chromatic-orange-surface-hover);
+  --semantic-secondary-border: var(--chromatic-orange-border);
+  --semantic-secondary-fill: var(--chromatic-orange-fill);
+  --semantic-secondary-fill-hover: var(--chromatic-orange-fill-hover);
+  --semantic-secondary-text: var(--chromatic-orange-text);
+  --semantic-secondary-on-fill: var(--chromatic-orange-on-fill);
 
   /* violet */
-  --semantic-accent-1-surface: var(--chromatic-violet-surface);
-  --semantic-accent-1-surface-hover: var(--chromatic-violet-surface-hover);
-  --semantic-accent-1-border: var(--chromatic-violet-border);
-  --semantic-accent-1-fill: var(--chromatic-violet-fill);
-  --semantic-accent-1-fill-hover: var(--chromatic-violet-fill-hover);
-  --semantic-accent-1-text: var(--chromatic-violet-text);
-  --semantic-accent-1-on-fill: var(--chromatic-violet-on-fill);
+  --semantic-tertiary-surface: var(--chromatic-violet-surface);
+  --semantic-tertiary-surface-hover: var(--chromatic-violet-surface-hover);
+  --semantic-tertiary-border: var(--chromatic-violet-border);
+  --semantic-tertiary-fill: var(--chromatic-violet-fill);
+  --semantic-tertiary-fill-hover: var(--chromatic-violet-fill-hover);
+  --semantic-tertiary-text: var(--chromatic-violet-text);
+  --semantic-tertiary-on-fill: var(--chromatic-violet-on-fill);
+
+  /* blue */
+  --semantic-accent-1-surface: var(--chromatic-blue-surface);
+  --semantic-accent-1-surface-hover: var(--chromatic-blue-surface-hover);
+  --semantic-accent-1-border: var(--chromatic-blue-border);
+  --semantic-accent-1-fill: var(--chromatic-blue-fill);
+  --semantic-accent-1-fill-hover: var(--chromatic-blue-fill-hover);
+  --semantic-accent-1-text: var(--chromatic-blue-text);
+  --semantic-accent-1-on-fill: var(--chromatic-blue-on-fill);
 
   /* yellow */
   --semantic-accent-2-surface: var(--chromatic-yellow-surface);

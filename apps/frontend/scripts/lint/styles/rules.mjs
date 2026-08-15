@@ -79,11 +79,11 @@ export const checkStyleStructure = ({ stylesRoot, packageRoot }) => {
     return out.failures;
   }
 
-  const allowedRootFiles = new Set(["styles.md", "app.css"]);
-  for (const name of files(stylesRoot)) if (!allowedRootFiles.has(name)) {
+  const requiredRootFiles = new Set(["app.css"]);
+  for (const name of files(stylesRoot)) if (!requiredRootFiles.has(name)) {
     out.fail("STY001", join(stylesRoot, name), "unexpected root file");
   }
-  for (const required of allowedRootFiles) if (!existsSync(join(stylesRoot, required))) {
+  for (const required of requiredRootFiles) if (!existsSync(join(stylesRoot, required))) {
     out.fail("STY001", stylesRoot, `missing '${required}'`);
   }
   for (const name of dirs(stylesRoot)) if (!STAGES.includes(name)) {
@@ -142,6 +142,9 @@ export const checkStyleStructure = ({ stylesRoot, packageRoot }) => {
       }
     }
   }
+
+  const systemDocument = join(packageRoot, "docs", "styles-directory", "styles-directory.md");
+  if (!existsSync(systemDocument)) out.fail("STY002", systemDocument, "missing style-system document");
 
   const oldDocs = join(packageRoot, "docs", "style");
   if (walk(oldDocs, (path) => path.endsWith(".md")).length > 0) out.fail("STY002", oldDocs, "legacy style documentation remains");
@@ -316,7 +319,7 @@ export const checkStyleDeclarations = ({ stylesRoot, packageRoot }) => {
 
 export const checkStyleConsumers = ({ sourceRoot, stylesRoot, packageRoot }) => {
   const out = collector(packageRoot);
-  const diagnostic = join(sourceRoot, "lib", "demo", "palette.svelte");
+  const diagnostic = join(sourceRoot, "lib", "views", "demo", "components", "palette.svelte");
   for (const path of walk(sourceRoot, (candidate) => /\.(?:svelte|ts|js|css)$/.test(candidate))) {
     if (path.startsWith(stylesRoot + sep) || path.includes(`${sep}simple-components${sep}`)) continue;
     const text = source(path);

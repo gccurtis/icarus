@@ -90,6 +90,13 @@
   --color-success-surface: var(--token-color-success-surface);
   --color-success-text: var(--token-color-success-text);
   --color-surface-canvas: var(--token-surface-canvas);
+  --color-tertiary-border: var(--token-color-tertiary-border);
+  --color-tertiary-fill-hover: var(--token-color-tertiary-fill-hover);
+  --color-tertiary-fill: var(--token-color-tertiary-fill);
+  --color-tertiary-on-fill: var(--token-color-tertiary-on-fill);
+  --color-tertiary-surface-hover: var(--token-color-tertiary-surface-hover);
+  --color-tertiary-surface: var(--token-color-tertiary-surface);
+  --color-tertiary-text: var(--token-color-tertiary-text);
   --color-surface-elevated: var(--token-surface-elevated);
   --color-surface-panel-hover: var(--token-surface-panel-hover);
   --color-surface-panel: var(--token-surface-panel);
@@ -128,4 +135,17 @@
   --transition-duration-overlay: var(--token-motion-overlay);
   --transition-duration-panel: var(--token-motion-panel);
   --transition-duration-small: var(--token-motion-small);
+
+  /* The named durations above only apply where a class asks for one. A bare
+   * `transition-*` reads these two, and Tailwind's own defaults are 150ms and a
+   * symmetric curve — so every registry component animated on a timing this
+   * system never chose. Pointing the defaults at our tokens is the same
+   * translation the rest of this file performs, applied to the case where the
+   * component names no token at all.
+   *
+   * `micro` rather than `small`: the bare utility is overwhelmingly used for
+   * press, hover, and toggle feedback, which is the range motion.css scopes it
+   * to. */
+  --default-transition-duration: var(--token-motion-micro);
+  --default-transition-timing-function: var(--token-ease-standard);
 }

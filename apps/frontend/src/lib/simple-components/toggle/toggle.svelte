@@ -2,14 +2,17 @@
 	import { type VariantProps, tv } from "tailwind-variants";
 
 	export const toggleVariants = tv({
-		// Selected and hovered were both `bg-muted` — the same colour, so a pressed
-		// toggle was indistinguishable from one merely under the pointer. Selected
-		// now wears the `active` role ("currently engaged"), the same treatment a
-		// selected tab gets, and adds weight: the state matrix requires every state
-		// to stay legible with colour removed, and weight is the cue that survives.
-		// Hover takes the named neutral hover plane, which is the token that exists
-		// for exactly this and moves correctly in both light and dark.
-		base: "gap-1 rounded-lg text-sm font-medium transition-all hover:text-ink-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 aria-pressed:bg-active-surface aria-pressed:text-active-text aria-pressed:font-semibold data-[state=on]:bg-active-surface data-[state=on]:text-active-text data-[state=on]:border-active-border data-[state=on]:font-semibold dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-4 group/toggle inline-flex items-center justify-center whitespace-nowrap border border-transparent outline-none hover:bg-surface-panel-hover focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+		// Registry defaults, reaching the design system only through the shadcn
+		// bridge. `accent` resolves to the interactive anchor's surface and `muted`
+		// to the neutral panel, so selected and hovered are already different
+		// colours here — which is what the override below was written to fix, back
+		// when both were the same neutral.
+		base: "gap-1 rounded-lg text-sm font-medium transition-all hover:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 aria-pressed:bg-accent aria-pressed:text-accent-foreground data-[state=on]:bg-accent data-[state=on]:text-accent-foreground dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-4 group/toggle inline-flex items-center justify-center whitespace-nowrap border border-transparent outline-none hover:bg-muted focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+
+		// The previous first-party styling, kept for comparison. It reached past
+		// the bridge to the `active` role and added a border and weight.
+		//
+		// base: "gap-1 rounded-lg text-sm font-medium transition-all hover:text-ink-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 aria-pressed:bg-active-surface aria-pressed:text-active-text aria-pressed:font-semibold data-[state=on]:bg-active-surface data-[state=on]:text-active-text data-[state=on]:border-active-border data-[state=on]:font-semibold dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-4 group/toggle inline-flex items-center justify-center whitespace-nowrap border border-transparent outline-none hover:bg-surface-panel-hover focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
 		variants: {
 			variant: {
 				default: "bg-transparent",

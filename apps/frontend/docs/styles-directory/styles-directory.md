@@ -20,7 +20,6 @@ directory listing and `app.css`, not reconstruct it from an abstract taxonomy.
 
 ```text
 src/lib/styles/
-├── styles.md
 ├── app.css                              public door and execution manifest
 ├── chromatic-themes/
 │   ├── chromatic-themes.md              theme interface and shared slot process
@@ -310,7 +309,9 @@ and reduced-motion selectors remain visible in `app.css`.
 
 Documentation mirrors the process without creating a second architecture.
 
-- `styles.md` explains the end-to-end transformation and consumer surface.
+- `docs/styles-directory/styles-directory.md` is the single system document. It
+  defines the end-to-end transformation, directory structure, enforcement,
+  generation, and consumer surface.
 - `chromatic-themes.md` defines the theme and chromatic-slot interfaces.
 - Every theme owns `<theme>.md` because its palette and theory are substantive.
 - `semantic-sets.md` defines and compares the flat assignments.
@@ -398,8 +399,8 @@ contract.
 
 | Rule | Enforcement |
 | --- | --- |
-| `STY001 structure` | Only `styles.md`, `app.css`, and the four named stage directories exist at the root. Theme and integration directories have matching documents and required CSS. Semantic sets and token domains remain files. All authored names are kebab-case. |
-| `STY002 documentation` | Required stage, theme, and integration documents exist. No parallel implementation document remains under `docs/style/` after migration. |
+| `STY001 structure` | Only `app.css` and the four named stage directories exist at the root. Theme and integration directories have matching documents and required CSS. Semantic sets and token domains remain files. All authored names are kebab-case. |
+| `STY002 documentation` | The system document exists at `docs/styles-directory/styles-directory.md`; required stage, theme, and integration documents exist beside the code they describe. No duplicate root document or legacy implementation document remains. |
 | `STY003 public-door` | `src/routes/+layout.svelte` imports `$lib/styles/app.css` exactly once. No other file imports `styles/*.css`. |
 | `STY004 manifest` | Every authored stage CSS file is imported exactly once by `app.css`; no missing, duplicate, or transitive local imports exist. `generated.css` is the sole unreachable CSS file. |
 | `STY005 stage-order` | Imports are contiguous in prelude, chromatic-theme, semantic-set, token, integration order. The default theme/set precedes alternates; `slots.css` follows all theme files. |

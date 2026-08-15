@@ -26,8 +26,16 @@ test("STY001 structure", () => expectRule("STY001", ({ stylesRoot }) => {
   writeFileSync(join(stylesRoot, "misc.css"), ":root {}\n");
 }));
 
+test("STY001 rejects a duplicate root document", () => expectRule("STY001", ({ stylesRoot }) => {
+  writeFileSync(join(stylesRoot, "styles.md"), "# Duplicate style-system document\n");
+}));
+
 test("STY002 documentation", () => expectRule("STY002", ({ stylesRoot }) => {
   unlinkSync(join(stylesRoot, "tokens", "tokens.md"));
+}));
+
+test("STY002 requires the style-system document", () => expectRule("STY002", ({ packageRoot }) => {
+  unlinkSync(join(packageRoot, "docs", "styles-directory", "styles-directory.md"));
 }));
 
 test("STY003 public door", () => expectRule("STY003", ({ packageRoot }) => {

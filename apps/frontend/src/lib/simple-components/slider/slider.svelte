@@ -36,7 +36,7 @@ get along, so we shut typescript up by casting `value` to `never`.
 				// tall that reads as nothing at all. A track has to be legible before
 				// it can be understood as draggable, so it takes the strong seam and a
 				// little more height.
-				"rounded-full bg-border-strong data-horizontal:h-1.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-1.5 relative grow overflow-hidden"
+				"rounded-full bg-muted data-horizontal:h-1.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-1.5 relative grow overflow-hidden"
 			)}
 		>
 			<SliderPrimitive.Range
@@ -50,7 +50,7 @@ get along, so we shut typescript up by casting `value` to `never`.
 			<SliderPrimitive.Thumb
 				data-slot="slider-thumb"
 				index={thumb.index}
-				class="relative size-4 rounded-full border border-interactive-border bg-surface-elevated ring-ring/50 transition-[color,box-shadow] after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 block shrink-0 select-none disabled:pointer-events-none disabled:opacity-50"
+				class="relative size-4 rounded-full border border-primary bg-background ring-ring/50 transition-[color,box-shadow] after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 block shrink-0 select-none disabled:pointer-events-none disabled:opacity-50"
 			/>
 		{/each}
 	{/snippet}

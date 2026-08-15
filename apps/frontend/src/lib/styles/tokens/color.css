@@ -112,6 +112,15 @@
   --token-color-secondary-text: var(--semantic-secondary-text);
   --token-color-secondary-on-fill: var(--semantic-secondary-on-fill);
 
+  /* tertiary — the third identity hue; claimed by no meaning role */
+  --token-color-tertiary-surface: var(--semantic-tertiary-surface);
+  --token-color-tertiary-surface-hover: var(--semantic-tertiary-surface-hover);
+  --token-color-tertiary-border: var(--semantic-tertiary-border);
+  --token-color-tertiary-fill: var(--semantic-tertiary-fill);
+  --token-color-tertiary-fill-hover: var(--semantic-tertiary-fill-hover);
+  --token-color-tertiary-text: var(--semantic-tertiary-text);
+  --token-color-tertiary-on-fill: var(--semantic-tertiary-on-fill);
+
   /* accent-1 — categorical work; claimed by no meaning role */
   --token-color-accent-1-surface: var(--semantic-accent-1-surface);
   --token-color-accent-1-surface-hover: var(--semantic-accent-1-surface-hover);

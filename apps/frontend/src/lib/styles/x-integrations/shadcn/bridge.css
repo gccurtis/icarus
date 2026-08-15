@@ -54,10 +54,11 @@
   --color-muted: var(--token-surface-panel);
   --color-muted-foreground: var(--token-ink-muted);
 
-  /* "accent" is shadcn's hover wash. The `surface` slot of the primary anchor
-   * is exactly that: the quietest step of the affordance hue, sitting behind
-   * content rather than on top of it. */
-  --color-accent: var(--token-color-interactive-surface);
+  /* "accent" is shadcn's highlighted row — hover, focus, selected, pressed. The
+   * slot table names `surface-hover` for exactly that job; `surface` is the
+   * quieter wash that sits behind content, and using it here made every
+   * selection too faint to read as one. */
+  --color-accent: var(--token-color-interactive-surface-hover);
   --color-accent-foreground: var(--token-ink-primary);
 
   /* Destructive is red in every theme and every set. It reads the hue directly
@@ -81,7 +82,7 @@
    * Without these six the component renders with transparent backgrounds. */
   --color-sidebar: var(--token-surface-panel);
   --color-sidebar-foreground: var(--token-ink-primary);
-  --color-sidebar-accent: var(--token-color-interactive-surface);
+  --color-sidebar-accent: var(--token-color-interactive-surface-hover);
   --color-sidebar-accent-foreground: var(--token-ink-primary);
   --color-sidebar-border: var(--token-border-subtle);
   --color-sidebar-ring: var(--token-color-interactive-border);

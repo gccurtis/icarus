@@ -9,13 +9,19 @@ const realPackage = dirname(dirname(dirname(dirname(dirname(fileURLToPath(import
 export const buildFixture = () => {
   const packageRoot = mkdtempSync(join(tmpdir(), "icarus-style-lint-"));
   const stylesRoot = join(packageRoot, "src", "lib", "styles");
+  const stylesDocumentRoot = join(packageRoot, "docs", "styles-directory");
   mkdirSync(join(packageRoot, "src", "routes"), { recursive: true });
-  mkdirSync(join(packageRoot, "src", "lib", "demo"), { recursive: true });
+  mkdirSync(join(packageRoot, "src", "lib", "views", "demo", "components"), { recursive: true });
+  mkdirSync(stylesDocumentRoot, { recursive: true });
   cpSync(join(realPackage, "src", "lib", "styles"), stylesRoot, { recursive: true });
+  cpSync(
+    join(realPackage, "docs", "styles-directory", "styles-directory.md"),
+    join(stylesDocumentRoot, "styles-directory.md")
+  );
   writeFileSync(join(packageRoot, "src", "routes", "+layout.svelte"), '<script>\n  import "$lib/styles/app.css";\n</script>\n');
   writeFileSync(join(packageRoot, "src", "app.html"), '<html data-theme="celestial"></html>\n');
   writeFileSync(join(packageRoot, "components.json"), JSON.stringify({ tailwind: { css: "src/lib/styles/x-integrations/shadcn/generated.css" } }, null, 2));
-  writeFileSync(join(packageRoot, "src", "lib", "demo", "palette.svelte"), '<div style="color: var(--palette-blue-normal)"></div>\n');
+  writeFileSync(join(packageRoot, "src", "lib", "views", "demo", "components", "palette.svelte"), '<div style="color: var(--palette-blue-normal)"></div>\n');
   return { packageRoot, stylesRoot };
 };
 
