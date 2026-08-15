@@ -7,22 +7,26 @@ neighboring function.}}
 
 ## Classification
 
-- **Effect:** {{mutator / accessor}}
-- **Transaction:** {{none / one PG transaction}}
-- **Entry:** [`{{function-name}}.ts`]({{function-name}}.ts)
-- **Browser-reachable:** {{yes, via [`{{function-name}}.remote.ts`]({{function-name}}.remote.ts) / no}}
+- **Kind:** {{query — reads, subscribable, may not write / mutation — writes, one serializable transaction}}
+- **Handler:** [`{{function-name}}.ts`]({{function-name}}.ts)
+- **Registered as:** `api.capabilities.{{capabilityName}}.{{functionName}}`
+
+**Every registered function is reachable by anything holding the deployment
+URL.** There is no unexposed public function.
 
 ## Signature
 
 ```ts
 export const {{functionName}} = async (
+  ctx: {{QueryCtx / MutationCtx}},
   scope: Scope,
   {{inputName}}: {{InputType}}
 ): Promise<{{OutputType}}> => ...;
 ```
 
-`scope` is derived server-side. `{{InputType}}` carries no `projectId` or
-`userId` — a client cannot name its own authority.
+`scope` is produced by the gate before this runs. `{{InputType}}` carries no
+project — the caller's payload holds a project *token*, resolved against their
+own memberships, so a client cannot name authority it does not have.
 
 ## Inputs
 
@@ -32,13 +36,12 @@ export const {{functionName}} = async (
 
 ## Admission
 
-Include this section when a `.remote.ts` exists. Remote functions are declared
-`'unchecked'`, so this function is the only thing between a hostile payload and
-the database.
+The `args` validator in the deployment door is the security boundary — it decides
+what shape reaches this handler at all.
 
-{{What it rejects and where: unknown keys, unknown discriminants, out-of-range
-values, values that are well-formed but not permitted for this caller. Name the
-procedure that does each check.}}
+{{What this handler rejects beyond shape: values that are well-formed but not
+permitted, and the procedure that checks each one. Canonicalization belongs here
+too; it is semantics rather than admission.}}
 
 ## Output
 
@@ -52,17 +55,16 @@ procedure that does each check.}}
 | ---------- | ----- |
 | `{{error-code}}` | {{The condition that produces it}} |
 
-{{Distinguish a decision from a fault: a rejection this capability chose and
-states with a code is not the same as something that went wrong. The
-instrumentation records them differently.}}
+{{Distinguish a decision from a fault. A refusal stated with a code reaches the
+caller as a `ConvexError` payload; anything else is redacted to an opaque server
+error, which is exactly the line that should be drawn.}}
 
 ## Effects
 
-State "None" when the function is read-only and has no external effects.
+State "None" when the function is a query.
 
-- {{Canonical state mutation, if any.}}
-- {{Revision created, if any.}}
-- {{External call made, if any.}}
+- {{What it writes.}}
+- {{What it schedules, if anything.}}
 
 ## Procedure Tree
 
@@ -71,8 +73,7 @@ not update the tree is a detectable defect rather than a stale comment. Use `||`
 for conditional branches.
 
 ```text
-{{functionName}}(scope, {{input}})
-├── record()                        ../shared/record.ts
+{{functionName}}(ctx, scope, {{input}})
 ├── {{firstProcedure}}()            {{first-procedure}}.ts
 ├── {{branchingProcedure}}()        {{branching-procedure}}/{{branching-procedure}}.ts
 │   ├── {{subProcedure}}()          {{branching-procedure}}/{{sub-procedure}}.ts
@@ -80,7 +81,7 @@ for conditional branches.
 │   │   └── {{conditionalStep}}()   {{branching-procedure}}/{{conditional-step}}.ts
 │   || {{alternative condition}}
 │       └── {{alternativeStep}}()   {{branching-procedure}}/{{alternative-step}}.ts
-└── {{commit or read against the table}}
+└── {{the read or write against the table}}
 ```
 
 ## Supporting Procedures

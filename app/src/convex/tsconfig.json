@@ -12,6 +12,7 @@
     "forceConsistentCasingInFileNames": true,
     "paths": {
       "$convex/*": ["./*"],
+      "$access/*": ["../lib/capabilities/access/*"],
       "$settings/*": ["../lib/capabilities/settings/*"],
       "$model/*": ["../lib/model/*"]
     }

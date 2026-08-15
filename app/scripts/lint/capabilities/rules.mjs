@@ -16,17 +16,29 @@ import { join, relative, resolve } from "node:path";
 const ALLOWED_DIRS = new Set(["docs", "types", "api", "test"]);
 
 /**
+ * A capability has no door. Its public surface is the registration file under
+ * the deployment root, because a Convex module's path is its public name and
+ * nothing outside that directory can be called.
+ *
  * `schema.ts` is one file rather than a directory because a capability declares
- * tables and nothing else about storage — there are no queries to hold beside
- * them, and no DDL. A directory would exist to hold one file and its document.
+ * tables and nothing else about storage — no queries to hold beside them, no
+ * DDL. A directory would exist to hold one file and its document.
  */
-const ALLOWED_ROOT_FILES = new Set([
-  "overview.md",
-  "index.ts",
-  "index.server.ts",
-  "errors.ts",
-  "schema.ts"
-]);
+const ALLOWED_ROOT_FILES = new Set(["overview.md", "errors.ts", "schema.ts"]);
+
+/** Convex rejects a hyphen in a module path, so a door is named in camelCase. */
+const camelOf = (kebab) => kebab.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
+
+/** Every `.ts` beneath a directory, tests included — they may not register either. */
+const walkTypeScript = (dir) => {
+  const found = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) found.push(...walkTypeScript(path));
+    else if (entry.name.endsWith(".ts")) found.push(path);
+  }
+  return found;
+};
 
 /** Directories that carry no document: their contents are described elsewhere. */
 const UNDOCUMENTED = new Set(["test", "docs"]);
@@ -132,7 +144,7 @@ export const procedureTreePaths = (source) => {
  * the CLI, the fixture directory in a test. How files refer to each other is a
  * separate concern and lives in `checkPaths`.
  */
-export const checkCapabilities = ({ root, base = root }) => {
+export const checkCapabilities = ({ root, base = root, functionsRoot }) => {
   const failures = [];
   const at = (absolute) => relative(base, absolute) || ".";
   const fail = (absolute, message) => failures.push({ path: at(absolute), message });
@@ -177,18 +189,6 @@ export const checkCapabilities = ({ root, base = root }) => {
         checkDocumentPlacement(child, name);
       }
 
-      for (const file of filesIn(child)) {
-        if (!file.endsWith(".remote.ts")) continue;
-        if (depth > 0) {
-          fail(
-            join(child, file),
-            "a remote file belongs in a top-level api/<function>/ directory — nothing deeper crosses the boundary"
-          );
-        } else if (file !== `${name}.remote.ts`) {
-          fail(join(child, file), `remote file must be named '${name}.remote.ts'`);
-        }
-      }
-
       if (depth === 0 && !isShared) checkProcedureTree(child, name);
 
       checkApiTree(child, depth + 1);
@@ -212,50 +212,68 @@ export const checkCapabilities = ({ root, base = root }) => {
   };
 
   /**
-   * The server door and `api/` must describe the same set of functions. A
-   * function implemented inline in the door has no directory; a directory the
-   * door never exports is orphaned by a rename.
+   * The deployment door and `api/` must describe the same set of functions.
+   *
+   * The door is `<functionsRoot>/capabilities/<camelCase>.ts`, and it is the
+   * capability's entire public surface: a Convex module's path is its public
+   * name, so what is exported there is exactly what an untrusted caller can
+   * reach. A registration with no `api/` directory hides a procedure inline
+   * where nothing documents it; an `api/` directory the door never exports is
+   * unreachable code left behind by a rename.
    */
-  const checkPublicSurface = (capabilityRoot) => {
-    const door = join(capabilityRoot, "index.server.ts");
+  const checkDeploymentDoor = (capabilityRoot, capability) => {
     const apiRoot = join(capabilityRoot, "api");
-    if (!existsSync(door) || !existsSync(apiRoot)) return;
+    if (!functionsRoot || !existsSync(apiRoot)) return;
 
-    // Functions are camelCase; error classes and types are PascalCase. A door
-    // exports all three, and only the functions have directories — demanding
-    // `api/thing-error/` for an exported `ThingError` would be nonsense.
-    //
-    // Every camelCase export is a function, with no exemptions. An export that
-    // is neither an API function nor a type would need one, and would be worth
-    // arguing for on its own terms rather than assumed.
-    const exported = exportedNames(readFileSync(door, "utf8")).filter((name) =>
-      /^[a-z]/.test(name)
-    );
-    const directories = dirsIn(apiRoot).filter((name) => name !== "shared");
+    const name = camelOf(capability.split("/").at(-1));
+    const door = join(functionsRoot, "capabilities", `${name}.ts`);
 
-    for (const name of exported) {
-      if (!directories.includes(kebabOf(name))) {
-        fail(apiRoot, `index.server.ts exports '${name}', which has no directory`);
+    if (!existsSync(door)) {
+      fail(apiRoot, `no deployment door — expected capabilities/${name}.ts under the functions directory`);
+      return;
+    }
+
+    const exported = exportedNames(readFileSync(door, "utf8")).filter((n) => /^[a-z]/.test(n));
+    const directories = dirsIn(apiRoot).filter((n) => n !== "shared");
+
+    for (const fn of exported) {
+      if (!directories.includes(kebabOf(fn))) {
+        fail(door, `registers '${fn}', which has no api/${kebabOf(fn)}/ directory`);
       }
     }
     for (const directory of directories) {
-      if (!exported.some((name) => kebabOf(name) === directory)) {
-        fail(join(apiRoot, directory), `no function named '${directory}' is exported from index.server.ts`);
+      if (!exported.some((fn) => kebabOf(fn) === directory)) {
+        fail(join(apiRoot, directory), `no function named '${directory}' is registered in capabilities/${name}.ts`);
       }
     }
   };
 
   /**
-   * The browser door re-exports remote functions and nothing else. This is what
-   * keeps the server graph out of the client bundle: one plain import here drags
-   * the whole procedure tree, and everything it depends on, across the boundary.
+   * A capability holds handlers, never registrations.
+   *
+   * A Convex function is public the moment it is registered, so `query` and
+   * `mutation` are the tokens that decide what an untrusted caller can reach.
+   * Keeping them out of `capabilities/` is what makes the deployment doors the
+   * complete, readable list of that surface — one directory to audit rather than
+   * every file in the tree.
    */
-  const checkBrowserDoor = (capabilityRoot) => {
-    const door = join(capabilityRoot, "index.ts");
-    if (!existsSync(door)) return;
-    for (const specifier of importedSpecifiers(readFileSync(door, "utf8"))) {
-      if (specifier.replace(/\.ts$/, "").endsWith(".remote")) continue;
-      fail(door, `index.ts may import only .remote.ts files — "${specifier}" is not one`);
+  const checkNoRegistrations = (capabilityRoot) => {
+    for (const file of walkTypeScript(capabilityRoot)) {
+      const source = readFileSync(file, "utf8");
+      const imports = source.match(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*_generated\/server["']/s);
+      if (!imports) continue;
+
+      const values = imports[1]
+        .split(",")
+        .map((part) => part.trim())
+        .filter((part) => /^(query|mutation|action|internalQuery|internalMutation|internalAction)\b/.test(part));
+
+      if (values.length > 0) {
+        fail(
+          file,
+          `imports ${values.join(", ")} — a capability holds handlers; registration belongs in its deployment door`
+        );
+      }
     }
   };
 
@@ -303,8 +321,8 @@ export const checkCapabilities = ({ root, base = root }) => {
 
     walkDocuments(capabilityRoot, "overview", true);
     checkApi(capabilityRoot);
-    checkPublicSurface(capabilityRoot);
-    checkBrowserDoor(capabilityRoot);
+    checkDeploymentDoor(capabilityRoot, capability);
+    checkNoRegistrations(capabilityRoot);
   }
 
   return failures;

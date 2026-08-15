@@ -2,36 +2,40 @@
 /**
  * Scaffolds one capability onto the directory template.
  *
- * usage: pnpm new-capability <path/to/name> [--browser-facing]
+ * usage: pnpm new-capability <path/to/name> [--tables]
  *
- *   <path/to/name>     relative to src/lib/capabilities, e.g. data/name-manager
- *   --browser-facing   also write index.ts, the browser door
+ *   <path/to/name>     relative to src/lib/capabilities, e.g. name-manager
+ *   --tables           also write schema.ts, a table fragment
+ *
+ * It writes two things in two trees: the capability, and its deployment door
+ * under the functions directory. They cannot be one file — a Convex module's
+ * path is its public name, so the registration has to sit where Convex looks and
+ * the procedures have to sit where it does not.
  *
  * `api/` is created with its document and nothing else — a function directory
  * arrives with `new-api`, because which functions a capability offers is a
  * decision about its public surface rather than something to scaffold blindly.
- *
- * Nothing here scaffolds storage. A capability that declares tables gets a flag
- * written against whatever it declares them on, which is a decision the store
- * makes rather than this script.
  */
 import { join } from "node:path";
 import {
   KEBAB,
   aliasFor,
+  camel,
   capabilitiesRoot,
   fail,
+  functionsRoot,
   pascal,
   planner,
   render,
+  snake,
   stopIfFailed,
   title
 } from "./shared.mjs";
 
-const USAGE = `usage: pnpm new-capability <path/to/name> [--browser-facing]
+const USAGE = `usage: pnpm new-capability <path/to/name> [--tables]
 
-  <path/to/name>     relative to src/lib/capabilities, e.g. data/name-manager
-  --browser-facing   also write index.ts, the browser door`;
+  <path/to/name>     relative to src/lib/capabilities, e.g. name-manager
+  --tables           also write schema.ts, a table fragment`;
 
 const args = process.argv.slice(2);
 const flags = new Set(args.filter((arg) => arg.startsWith("--")));
@@ -43,7 +47,7 @@ if (!capabilityPath) {
 }
 
 for (const flag of flags) {
-  if (flag !== "--browser-facing") {
+  if (flag !== "--tables") {
     fail(flag, `unknown flag\n\n${USAGE}`);
   }
 }
@@ -65,7 +69,11 @@ for (const segment of segments) {
 stopIfFailed("new-capability");
 
 const name = segments.at(-1);
-const alias = await aliasFor(capabilityPath);
+
+// The precondition, not a value: it refuses when no alias points at this
+// capability, and prints the line to paste. Nothing generated here spells the
+// alias out, because nothing generated here imports across a capability.
+await aliasFor(capabilityPath);
 stopIfFailed("new-capability");
 
 const root = join(capabilitiesRoot, capabilityPath);
@@ -101,51 +109,53 @@ export class ${pascal(name)}Error extends Error {
 `
 );
 
-write.add(
-  join(root, "index.server.ts"),
-  `/**
- * The server door for ${title(name)}.
+/**
+ * The deployment door: this capability's entire public surface.
  *
- * Reached by import, from load functions, form actions, and other
- * capabilities. Every function exported here has a directory under \`api/\`, and
- * lint checks both directions.
- *
- * Views do not import this file — they import ${flags.has("--browser-facing") ? "`index.ts`" : "the browser door, which this capability does not have yet"}.
+ * It sits under the functions directory rather than in the capability because a
+ * Convex module's path *is* its public name, and camelCase because Convex
+ * rejects a hyphen in one.
  */
-export { ${pascal(name)}Error, type ${pascal(name)}ErrorCode } from "${alias}/errors";
-`
-);
-
-if (flags.has("--browser-facing")) {
-  write.add(
-    join(root, "index.ts"),
-    `/**
- * The browser door for ${title(name)}.
+write.add(
+  join(functionsRoot, "capabilities", `${camel(name)}.ts`),
+  `/**
+ * ${title(name)}' public surface — \`api.capabilities.${camel(name)}.*\`.
  *
- * Re-exports of remote functions, and nothing else. One plain import here would
- * drag this capability's server graph into the client bundle, so lint allows
- * only \`.remote.ts\` specifiers.
+ * Everything exported here is reachable by anything holding the deployment URL.
+ * Built from \`projectQuery\`/\`projectMutation\`, so each call resolves its
+ * project token to a membership before the handler runs.
  *
- * \`pnpm new-api ${capabilityPath} <functionName> --remote\` appends to this file.
+ * \`pnpm new-api ${capabilityPath} <functionName> --query|--mutation\` appends here.
  */
 export {};
 `
-  );
-}
+);
 
 write.add(join(root, "types", "types.md"), render("types.md", substitutions));
-write.add(
-  join(root, "types", "ids.ts"),
-  `/**
- * Identifiers ${title(name)} allocates.
+
+if (flags.has("--tables")) {
+  write.add(
+    join(root, "schema.ts"),
+    `import { defineTable } from "convex/server";
+import { v } from "convex/values";
+
+/**
+ * The tables ${title(name)} owns, as a fragment \`src/convex/schema.ts\` composes.
  *
- * Branded rather than bare strings so one kind of id cannot be passed where
- * another is expected — the compiler catches the swap that a string type would
- * accept silently.
+ * **\`projectId\` leads every index**, and that is the whole of project
+ * isolation: one deployment holds every project, so a read that forgets the
+ * predicate reads everyone's rows. Leading with it makes the scoped read the
+ * cheap one and an unscoped read something you have to write on purpose.
  */
-export type ${pascal(name)}Id = string & { readonly __brand: "${pascal(name)}Id" };
+export const ${camel(name)}Tables = {
+  ${snake(name)}: defineTable({
+    projectId: v.id("projects")
+    // TODO: the rest of the row.
+  }).index("by_project", ["projectId"])
+};
 `
-);
+  );
+}
 
 write.add(join(root, "api", "api.md"), render("api.md", substitutions));
 
@@ -157,7 +167,13 @@ for (const path of written) console.log(`  ${path}`);
 
 console.log(`
 What this cannot do for you:
-
-  Add functions:  pnpm new-api ${capabilityPath} <functionName>${flags.has("--browser-facing") ? " --remote" : ""}
+${
+  flags.has("--tables")
+    ? `
+  1. Compose ${camel(name)}Tables into src/convex/schema.ts.
+  2. Add functions:  pnpm new-api ${capabilityPath} <functionName> --query|--mutation`
+    : `
+  Add functions:  pnpm new-api ${capabilityPath} <functionName> --query|--mutation`
+}
 
 Then:  pnpm lint:capabilities`);

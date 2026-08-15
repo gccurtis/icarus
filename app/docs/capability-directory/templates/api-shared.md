@@ -30,28 +30,3 @@ returns}}
 
 **Fails when:** {{the conditions under which it throws, and with which error
 code}}
-
-## Procedure: `record`
-
-Every capability has this one, and it is why instrumentation lives here rather
-than wrapping the entries: a wrapper above a procedure can be bypassed, and a
-call inside it cannot.
-
-```ts
-export const record = async <T>(
-  {{operation}}: string,
-  {{fields}}: Record<string, unknown>,
-  run: () => Promise<T>
-): Promise<T> => ...;
-```
-
-**Records:** {{what it writes on start, on completion, and on failure}}
-
-**Never records:** {{the values it deliberately omits. A log is copied, shipped,
-and retained far longer than the data it describes, so authored content, secrets,
-and personal fields stay out of it — names, shapes, and counts are enough to
-diagnose with.}}
-
-**Classifies:** a failure this capability chose and stated with a code is a
-decision and is recorded as such; anything else is a fault. Collapsing the two
-means every ordinary rejection reads like a bug and real bugs stop standing out.

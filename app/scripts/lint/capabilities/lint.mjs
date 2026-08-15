@@ -41,9 +41,16 @@ const config = await import(pathToFileURL(join(packageRoot, "svelte.config.js"))
 const declared = config.default?.kit?.alias ?? {};
 const aliases = { $lib: config.default?.kit?.files?.lib ?? "src/lib", ...declared };
 
+/**
+ * The deployment root is the second half of the surface rule: a capability's
+ * public functions are registered there, not in the capability, so checking that
+ * the two agree means seeing both trees.
+ */
+const functionsRoot = join(packageRoot, "src", "convex");
+
 const scope = { root: capabilitiesRoot, base: packageRoot };
 const failures = [
-  ...checkCapabilities(scope),
+  ...checkCapabilities({ ...scope, functionsRoot }),
   ...checkPaths({ ...scope, aliases }),
   ...checkNames(scope),
   ...checkTestPlacement(scope)

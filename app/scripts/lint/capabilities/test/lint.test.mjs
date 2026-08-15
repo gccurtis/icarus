@@ -17,7 +17,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
 
-import { buildFixtures } from "./build-fixtures.mjs";
+import { buildFixtures, functionsRootFor } from "./build-fixtures.mjs";
 import {
   checkCapabilities,
   checkNames,
@@ -38,8 +38,9 @@ const fixture = (name) => join(workspace, name);
 /** Every check, over one fixture, as one list. */
 const lint = (name) => {
   const root = fixture(name);
+  const functionsRoot = functionsRootFor(root);
   return [
-    ...checkCapabilities({ root, base: root }),
+    ...checkCapabilities({ root, base: root, functionsRoot }),
     ...checkNames({ root, base: root }),
     ...checkTestPlacement({ root, base: root })
   ];
@@ -86,24 +87,20 @@ test("rejects a function directory with no entry file", () => {
   assert.ok(failures.some((f) => f.message.includes("no function named 'archive'")));
 });
 
-test("rejects a remote file not named for its directory", () => {
-  expectOnly("remote-misnamed", "must be named 'list.remote.ts'");
+test("rejects a function directory the deployment door does not register", () => {
+  expectOnly("surface-mismatch", "no function named 'list' is registered");
 });
 
-test("rejects a remote file below a top-level function directory", () => {
-  expectOnly("remote-too-deep", "nothing deeper crosses the boundary");
+test("rejects a registration with no function directory", () => {
+  expectOnly("surface-extra-export", "registers 'archive', which has no api/archive/ directory");
 });
 
-test("rejects a function directory the server door does not export", () => {
-  expectOnly("surface-mismatch", "no function named 'list'");
+test("rejects a capability with no deployment door", () => {
+  expectOnly("no-deployment-door", "no deployment door");
 });
 
-test("rejects a door export with no directory", () => {
-  expectOnly("surface-extra-export", "exports 'archive', which has no directory");
-});
-
-test("rejects a browser door importing anything but a remote file", () => {
-  expectOnly("door-imports-server", "may import only .remote.ts files");
+test("rejects a capability that registers its own function", () => {
+  expectOnly("capability-registers", "a capability holds handlers");
 });
 
 test("rejects a directory with no document", () => {

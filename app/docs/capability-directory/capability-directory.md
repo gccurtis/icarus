@@ -1,35 +1,65 @@
 # The Capability Directory
 
-> **Stale. Do not build against it.** `src/lib/capabilities/` is empty and there
-> is no store. Sections on the two doors, remote wrappers, admission, and storage
-> describe a shape nothing currently has.
->
-> What still holds is everything about organizing functions: one directory per
-> capability, the recursive entry-filename rule, promotion to `shared/` on a
-> second caller, the procedure tree that names real paths, and a document per
-> directory.
->
-> Rewritten against Convex once a capability exists on Convex — a standard
-> written for a shape nobody has used is a guess.
-
+**Status:** The standard for capabilities on Convex. Read it before adding a
+capability, a public function, or a table.
 **Document templates:** [`templates/`](templates/templates.md)
 
 ## What a capability is
 
 A capability references stored data, and it is **procedural**: types and
-functions. It has no model object.
+functions. It has no model object, and it has no door.
 
-That is a deliberate narrowing from the version of this standard the backend
-carried. A runtime object there held no state — it bound a store and a logger,
-wrapped each call in instrumentation, and delegated. On a server handling many
-users across several processes, per-request work is procedural, and the object
-was ceremony. What it genuinely did is done better without it: infrastructure is
-imported, and instrumentation is a shared procedure each entry calls, which no
-caller can bypass the way a wrapper above the procedure could.
+Objects survive where there is real lifetime, and that is not here — a Convex
+function receives its context and returns. Browser state lives in
+[`$model`](../../src/lib/model), on its own terms.
 
-Objects survive where there is real lifetime, and that is not here. Browser state
-and process-held resources live in [`$model`](../../src/lib/model), on their own
-terms.
+## A capability is written across two trees
+
+This is the one thing to understand before anything else, because every other
+rule follows from it.
+
+**A Convex module's path is its public name.** `src/convex/capabilities/settings.ts`
+exporting `list` *is* `api.capabilities.settings.list`, callable by anything that
+knows the deployment URL. So where a file sits is an API decision, and moving one
+is a breaking change.
+
+That forces the split:
+
+| | Lives in | Because |
+| --- | --- | --- |
+| **Handlers, types, tables** | `src/lib/capabilities/<name>/` | a module under the functions directory that merely exports something becomes addressable; procedures must not be reachable by accident, and `test/` must not be pushed at all |
+| **Registrations** | `src/convex/capabilities/<name>.ts` | a module only becomes a callable function by sitting there |
+
+The registration file is the capability's **entire public surface**, and it is
+the audit list: one directory holds every function an untrusted caller can reach,
+and lint checks it against `api/` in both directions.
+
+This is also Convex's own guidance — the public API "should have very short
+functions that mostly just call into" code held elsewhere. The departure is
+keeping that code out of the functions directory rather than in a `convex/model/`
+beside it, which is what keeps non-functions unaddressable.
+
+## Every function is gated
+
+`projectQuery` and `projectMutation` in
+[`$convex/functions`](../../src/convex/functions.ts) are the only things that
+build a registration, and `src/convex/functions.ts` is the only module that
+imports `query` or `mutation`.
+
+A Convex function is public the moment it is registered, and there is no request
+pipeline for a middleware to sit in. So "is this call allowed" lives in what the
+function is *made of*. A bare `query(...)` anywhere else is a defect, and lint
+says so.
+
+The wrapper declares `projectToken`, resolves it against the caller's own
+memberships, and **consumes it** — the handler's argument type has no project in
+it at all. A handler receives `ctx.scope`, and a handler holding one does not
+check it: a `Scope` exists only because the gate produced one.
+
+A capability that legitimately has no project registers with `query`/`mutation`
+directly and says why in its `overview.md`. Today exactly one does — `access`,
+whose `seed` creates the first membership the gate resolves against. That should
+read as unusual.
 
 ## The template
 
@@ -43,12 +73,12 @@ group a new capability belongs in. The flat list is the whole set, and reading i
 is how you learn what this application can do.
 
 ```text
+src/convex/capabilities/<camelCase>.ts   the public surface: every registration
 src/lib/capabilities/<capability>/
 ├── overview.md                  the capability's own document
-├── index.server.ts             server door: procedures, for load functions and other capabilities
-├── index.ts                    browser door: remote re-exports, for views
-├── errors.ts                   error type + codes; part of the public contract
-├── docs/                       supporting material belonging to no single directory
+├── schema.ts                    its table fragments; absent when it stores nothing
+├── errors.ts                    ConvexError subclass + codes; absent when it states no refusals
+├── docs/                        supporting material belonging to no single directory
 ├── types/
 │   ├── types.md
 │   └── <aggregate>.ts  inputs.ts  results.ts
@@ -56,13 +86,10 @@ src/lib/capabilities/<capability>/
 │   ├── api.md
 │   ├── shared/                 procedures a second function needs
 │   │   ├── shared.md
-│   │   ├── record.ts           instrumentation — every entry calls it
-│   │   ├── stated.ts           a refusal reaches the browser; a fault does not
 │   │   └── <procedure>.ts
 │   └── <function>/
 │       ├── <function>.md       carries the procedure tree
-│       ├── <function>.ts       the entry; owns this function's whole procedure
-│       ├── <function>.remote.ts    present ⇒ the browser may call it
+│       ├── <function>.ts       the handler; owns this function's whole procedure
 │       ├── <supporting>.ts
 │       └── <supporting>/       a procedure with sub-procedures of its own
 │           ├── <supporting>.ts
@@ -90,23 +117,24 @@ catching by name.
 
 ## Directory contracts
 
-### The two doors
+### The deployment door
 
-A capability has two public surfaces, reached differently, and they cannot be
-merged. `index.ts` would otherwise import procedures and so the whole server
-graph; a view importing the capability pulls it in, and the framework's
-server-only guard runs on the module graph at resolve time, so tree-shaking does
-not save it.
+`src/convex/capabilities/<camelCase>.ts`. It holds a registration per public
+function and nothing else.
 
-**`index.server.ts`** — reached by **import**, by server code: load functions,
-form actions, and other capabilities. It exports the procedures, the public
-types, and the error type.
+**Names there are camelCase**, alone in a kebab-case repository, because Convex
+rejects a hyphen in a module path — `name-manager` is `nameManager.ts` and answers
+to `api.capabilities.nameManager.*`.
 
-**`index.ts`** — reached by **import**, by views. It re-exports remote functions
-and nothing else. A view calls `capability.doThing(input)` and never learns a
-wire exists.
+**A registration is written, never re-exported.** Codegen types a real
+`projectQuery({...})` definition properly; a re-export through a path alias can
+degrade the generated API to `AnyApi`. It is also where the `args` validator
+lives, which is the security boundary for a public function — the shape is
+checked at the door, and canonicalization stays with the handler that owns the
+invariant.
 
-A capability no view has reached yet has only `index.server.ts`.
+A view imports `api` from `$convex/_generated/api` and subscribes. It never
+imports the capability.
 
 ### `api/`
 
@@ -165,86 +193,48 @@ and what it stores: a wrapper over the store's own interface would either fail t
 express a real multi-record transactional operation or grow parameters until it
 was a worse version of the thing it wrapped.
 
-### `<function>.remote.ts`
+### Scope
 
-**Its presence means a boundary is crossed.** Absent means the function is
-server-only — nothing to explain, no exception to record.
+**Identity is never an argument.**
 
-A remote file may export **only** remote functions: the framework's transform
-assigns an id to every export, so a plain exported function throws at module
-load. For the browser build the module body is discarded entirely and regenerated
-as a fetch stub, which is why such a file may freely import the whole server
-tree, and why it needs no `.server.` in its name.
+Every handler takes a context first — a Convex `QueryCtx` or `MutationCtx`, with
+`ctx.scope` on it — and its own input as the rest. `Scope` is
+`{ projectId, userId }`, and a handler holding one does not check it.
 
-Types flow through that regeneration, so the browser side is fully typed from the
-server implementation. No wire type is written by hand.
+A caller sends a project **token**, not a project id: an opaque handle they hold
+for that project, in their URL. `resolveScope` looks it up in
+`memberships.by_user_and_token` with the *user* leading, so a copied URL lands in
+someone else's key range and finds nothing. The lookup is the authorization, and
+there is no separate membership check to forget.
 
-### Scope and infrastructure
+Keeping the project out of the input type is that property, not tidiness. The
+gate consumes the token, so the handler's argument type has no project in it to
+read, shadow, or forward.
 
-**Server-provided infrastructure is imported. Identity is an argument.**
+Configuration and anything else one-per-process is imported where it is read.
+Anything varying with the caller arrives on `ctx`.
 
-Every procedure takes a `Scope` as its first parameter and its own input as the
-rest. `Scope` is `{ projectId, userId }`, and a procedure that has one does not
-check it: a `Scope` exists only because `resolveScope` produced one, and it
-produces one only for a project the asking user holds a handle to.
+### Errors
 
-Infrastructure divides by whether it depends on the caller.
+`errors.ts` holds a `ConvexError` subclass and its codes. A capability that
+states no refusals does not have one.
 
-| | Reached by | Why |
-| --- | --- | --- |
-| the logger | `record` resolves it itself | one per process |
-| configuration | imported where read | one per process |
+**Convex draws the refusal/fault line itself.** A thrown `ConvexError`'s payload
+is serialized to the caller; anything else is redacted to an opaque server error.
+So a code reaches a view intact and a null dereference does not, and no wrapper
+has to translate anything — which is why there is no `stated.ts` and no
+per-entry instrumentation procedure.
 
-Both are one per process, so both are imported. Anything that varies with the
-caller cannot be — there is no import that could name the right one — so it is
-reached through an accessor on `$model/server/index.server` taking what it varies
-by. Each such accessor gets its own name rather than joining a bundle everyone
-then has to grow a field for.
-
-Keeping `projectId` and `userId` out of the input type is a security property
-rather than tidiness. A remote request carries a **project token** — an opaque
-handle a client instance holds in its URL — because a remote function cannot see
-the page that called it: kit serves them all from `/_app/remote/…` with empty
-route params. The token is resolved within the asking user's own handles, and one
-that is not there resolves to no project at all. Below the wrapper the token no
-longer exists.
-
-### Admission
-
-Remote functions are declared `'unchecked'`. The capability validates its own
-input; a schema layer above it would restate what the procedure already enforces.
-
-The consequence is explicit and belongs in `overview.md`: **every function with a
-`.remote.ts` is directly reachable by an untrusted browser and owns validating
-what it receives.** The set of files matching `api/*/*.remote.ts` is the audit
-list.
-
-### Two shared procedures every capability has
-
-Both draw the same line — a **decision** this capability stated with a code is
-not a **fault** — at the two places it has to be drawn.
-
-**`api/shared/record.ts`** wraps the body of every entry. It is called *inside*
-the procedure rather than around it, because a wrapper above a procedure can be
-bypassed by anything reaching the procedure directly. A code is logged at `warn`;
-anything else at `error`, so ordinary rejections never make real bugs harder to
-find. Only names, shapes, and counts go in its fields — a log outlives the row it
-describes.
-
-**`api/shared/stated.ts`** wraps the body of every remote wrapper. Without it a
-capability error thrown inside a remote function reaches the browser as
-`500 Internal Error`, because kit hides thrown values and cannot tell one of ours
-from a null dereference — leaving a view unable to distinguish "that input was
-refused" from "the server is broken". It translates a code into a `400` carrying
-it and lets faults stay opaque. **Only remote wrappers call it**; a server-side
-caller catches the error class directly and has no use for a status.
+**A refusal should not disclose.** `access` answers "no such project" identically
+whether the project is absent or merely someone else's, because distinguishing
+them would confirm it exists.
 
 ### `types/`
 
 The canonical model and the public contract. No stored row shapes — a stored
 shape is a storage decision, and keeping it out is what stops a change in where
 data lives from reaching the public contract. Private model types live here too;
-the doors decide what leaves.
+what leaves is what a handler returns.
 
 ### Storage
 
@@ -288,13 +278,12 @@ Each function's document carries its call tree, and the tree is also the
 directory layout:
 
 ```text
-define(scope, input)
-├── record()                      shared/record.ts
+define(ctx, scope, input)
 ├── canonicalName(input.name)     shared/canonical-name.ts
 ├── canonicalType(input.type)     canonical-type/canonical-type.ts
 │   ├── scalarField()             canonical-type/scalar-field.ts
 │   └── listField()               canonical-type/list-field.ts
-└── insert into name_manager_variables
+└── ctx.db.insert("name_manager_variables", …)
 ```
 
 Because it names real paths, a rename that does not update the tree is a
@@ -303,7 +292,9 @@ detectable defect rather than a stale comment.
 ## Naming and imports
 
 - Every directory and `.ts` file is kebab-case. Compound extensions are checked
-  per dot-separated segment, so `define.remote.ts` and `store.test.ts` are valid.
+  per dot-separated segment, so `store.test.ts` is valid.
+- **Except the deployment door**, which is camelCase because Convex rejects a
+  hyphen in a module path.
 - An `api/<function>/` directory is the kebab-case form of the function it
   implements, and contains a file of the same name.
 - **Every capability owns a direct alias.** `$name-manager` is its door;
@@ -329,25 +320,21 @@ interface, never a door that re-exports it. That is a language rule, so a
 capability registering itself by declaration merging targets the declaring module
 directly.
 
-## Server-only enforcement
+## What is no longer enforced by the framework
 
-Two mechanisms, both failing the build with the full import chain: the path
-`$lib/server/**`, and the basename pattern `*.server.*` anywhere in the project.
+SvelteKit fails a build when a browser-reachable module imports one whose
+basename matches `*.server.*`. Nothing under `src/convex/` carries that marker,
+so **a view importing a capability's handler, or the deployment root, is caught
+by lint and by nothing else.**
 
-This standard relies on the second, so **`index.server.ts` is named exactly
-that**. A bare `server.ts` matches neither pattern — the pattern requires a dot
-before `server` — and a directory merely *named* `server` deeper in the tree
-buys nothing.
-
-**Mark the door, not every file.** A capability marks `index.server.ts` and
-leaves `api/` unmarked, because the bare-alias rule already forbids reaching past
-the door. What that leaves uncovered is a deliberate
-deep-import of an internal, which still fails the build — Node built-ins cannot
-be bundled for a browser — just with a worse message.
+That is a genuine loss and worth knowing rather than assuming. Two things reduce
+it: `_generated/api` is the only import a view has any reason to reach for, and
+it exports function *references* rather than implementations, so the ordinary
+path is also the safe one.
 
 ## Reviewing
 
 [`reviewing-a-capability.md`](reviewing-a-capability.md) is the checklist. Its
 first section is machine-checked, so a green `pnpm lint` lets a reviewer skip to
 the judgment items: whether a document says anything, whether a `shared/`
-procedure really has two callers, whether a `.remote.ts` should exist at all.
+procedure really has two callers, whether a function should be public at all.

@@ -7,10 +7,29 @@ is pushed to the deployment; nothing else in the repository is.
 src/convex/
 ├── convex.md
 ├── tsconfig.json      compiler options and the alias map for the Convex bundler
+├── functions.ts       projectQuery / projectMutation — the gate
 ├── schema.ts          composes one table fragment per capability
 ├── capabilities/      one file per capability: its public surface
 └── _generated/        Convex-owned; regenerated on every push
 ```
+
+## `functions.ts` is the access control story
+
+**It is the only module that imports `query` or `mutation`**, and every
+capability function is built from what it exports.
+
+That is not a convention, it is where the decision has to live. A Convex function
+is public the moment it is registered, and there is no request pipeline for a
+middleware to sit in — so "is this call allowed" belongs in what the function is
+*made of*. Lint enforces the rest: nothing under `src/lib/capabilities/` may
+import a registration builder at all.
+
+The gate declares `projectToken`, resolves it against the caller's own
+memberships, and consumes it. The handler's argument type has no project in it,
+so it cannot act on one it was not scoped to.
+
+`access` registers unscoped, and has to: `seed` creates the first membership the
+gate resolves against, so a scoped `seed` could not run until it already had.
 
 ## A file's path is its public name
 
@@ -58,8 +77,13 @@ account is involved**, and no data leaves the machine. It writes `CONVEX_DEPLOYM
 
 ```sh
 pnpm dev:convex   # pushes schema and functions, then watches
+pnpm seed         # once — creates the development user, project, and membership
 pnpm dev          # in a second terminal
 ```
+
+`pnpm seed` is not optional on a fresh deployment. The gate refuses a token with
+no membership behind it, so until it runs, every call to every capability answers
+`no-such-project` and nothing renders.
 
 `_generated/` must exist before `pnpm typecheck` runs, because the app's tsconfig includes
 `src/**/*.ts`. `npx convex codegen` produces it without a deployment.

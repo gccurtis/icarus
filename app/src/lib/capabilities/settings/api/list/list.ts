@@ -1,3 +1,4 @@
+import type { Scope } from "$access/types/access";
 import type { QueryCtx } from "$convex/_generated/server";
 import type { Setting } from "$settings/types/settings";
 
@@ -12,10 +13,10 @@ import type { Setting } from "$settings/types/settings";
  * be a public contract every caller has to satisfy in exchange for nothing. It
  * becomes `.paginate()` the day a project can hold thousands.
  */
-export const list = async (ctx: QueryCtx, projectId: string): Promise<Setting[]> => {
+export const list = async (ctx: QueryCtx, scope: Scope): Promise<Setting[]> => {
   const rows = await ctx.db
     .query("settings")
-    .withIndex("by_project_and_key", (q) => q.eq("projectId", projectId))
+    .withIndex("by_project_and_key", (q) => q.eq("projectId", scope.projectId))
     .collect();
 
   return rows.map((row) => ({ key: row.key, value: JSON.parse(row.value) as unknown }));

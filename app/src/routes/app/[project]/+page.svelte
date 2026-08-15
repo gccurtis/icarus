@@ -1,8 +1,20 @@
 <script lang="ts">
   import { useMutation, useQuery } from "convex-svelte";
 
+  import { accessRefusal } from "$access/errors";
   import { api } from "$convex/_generated/api";
   import { clientModel } from "$model/client";
+
+  /**
+   * A refusal the server chose, or an opaque fault.
+   *
+   * Convex serializes a `ConvexError`'s payload and redacts everything else, so
+   * this is the whole client side of that contract: if a payload is there, the
+   * server meant to say something and the message is worth showing. If it is
+   * not, something broke and the only honest thing to show is that it did.
+   */
+  const stated = (error: unknown): string =>
+    accessRefusal(error)?.message ?? "Something went wrong.";
 
   /**
    * /app/[project] — the work surface, with nothing open in it yet.
@@ -12,14 +24,20 @@
    * re-fetches.** `useQuery` holds a subscription, so a write anywhere — this
    * tab, another tab, another machine — arrives on its own.
    *
-   * The project comes off the model rather than out of `page`. The layout read
-   * it from the route once and built the client instance around it, so this is
-   * the same value by construction, and a view that reached for `page` itself
-   * could disagree with the workbench it is rendering.
+   * What it sends is a **project token**, never a project id. The token is a
+   * handle this user holds for this project, resolved server-side within their
+   * own memberships, so it names which project without asserting any right to
+   * it. Which project a call acts on is decided by that lookup and never by the
+   * payload.
+   *
+   * The token comes off the model rather than out of `page`. The layout read it
+   * from the route once and built the client instance around it, so this is the
+   * same value by construction, and a view that reached for `page` itself could
+   * disagree with the workbench it is rendering.
    */
-  const { project } = clientModel();
+  const { project: projectToken } = clientModel();
 
-  const settings = useQuery(api.capabilities.settings.list, () => ({ projectId: project }));
+  const settings = useQuery(api.capabilities.settings.list, () => ({ projectToken }));
   const set = useMutation(api.capabilities.settings.set);
 
   let key = $state("");
@@ -31,11 +49,11 @@
     failure = undefined;
 
     try {
-      await set({ projectId: project, key, value: JSON.stringify(value) });
+      await set({ projectToken, key, value: JSON.stringify(value) });
       key = "";
       value = "";
     } catch (error) {
-      failure = error instanceof Error ? error.message : String(error);
+      failure = stated(error);
     }
   };
 
@@ -51,9 +69,9 @@
     const next = typeof current?.value === "number" ? current.value + 1 : 1;
 
     try {
-      await set({ projectId: project, key: "demo.clicks", value: JSON.stringify(next) });
+      await set({ projectToken, key: "demo.clicks", value: JSON.stringify(next) });
     } catch (error) {
-      failure = error instanceof Error ? error.message : String(error);
+      failure = stated(error);
     }
   };
 </script>
@@ -69,7 +87,7 @@
     {#if settings.isLoading}
       <p class="note">Loading.</p>
     {:else if settings.error}
-      <p class="note failure">{settings.error.toString()}</p>
+      <p class="note failure">{stated(settings.error)}</p>
     {:else if settings.data.length === 0}
       <p class="note">None set.</p>
     {:else}

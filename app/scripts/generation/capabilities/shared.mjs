@@ -33,6 +33,13 @@ export const packageRoot =
   process.env.ICARUS_PACKAGE_ROOT ??
   dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
 export const capabilitiesRoot = join(packageRoot, "src", "lib", "capabilities");
+
+/**
+ * Convex's functions directory. A capability's registrations live here and
+ * nowhere else, because a module only becomes callable by sitting under it.
+ */
+export const functionsRoot = join(packageRoot, "src", "convex");
+
 const templatesRoot = join(packageRoot, "docs", "capability-directory", "templates");
 
 // ---------------------------------------------------------------- naming ----
@@ -48,6 +55,8 @@ export const camel = (kebab) => {
 };
 export const title = (kebab) =>
   kebab.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+/** Table names are snake_case, which is the one place a hyphen becomes an underscore. */
+export const snake = (kebab) => kebab.replace(/-/g, "_");
 export const kebabOf = (camelName) =>
   camelName.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 

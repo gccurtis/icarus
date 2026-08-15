@@ -36,7 +36,7 @@ the review checklist the structure exists to make possible.
 
 There is no template for a model object, an endpoint, or a wire format.
 Capabilities are procedural — they have no model object — and there are no
-endpoints: a function's `.remote.ts` is three lines described by the function's
-own document, and the types cross the boundary on their own. Objects live in
-[`$model`](../../../src/lib/model) and answer to
+endpoints: a function's registration is a handful of lines in the deployment
+door, described by the function's own document, and the types cross the boundary
+on their own. Objects live in [`$model`](../../../src/lib/model) and answer to
 [the model directory](../../model-directory/model-directory.md) instead.

@@ -30,7 +30,11 @@ const generators = dirname(here);
 const realPackageRoot = dirname(dirname(dirname(generators)));
 
 const CAPABILITY = "thing";
-const ALIASES = { $thing: `src/lib/capabilities/${CAPABILITY}`, $model: "src/lib/model" };
+const ALIASES = {
+  $thing: `src/lib/capabilities/${CAPABILITY}`,
+  $access: "src/lib/capabilities/access",
+  $convex: "src/convex"
+};
 
 /**
  * A package with just enough in it for the generators to run: the templates
@@ -51,21 +55,24 @@ const makePackage = () => {
     `export default { kit: { alias: ${JSON.stringify(ALIASES)} } };\n`
   );
 
-  // The server runtime a generated capability reaches: scope resolution and the
-  // logger `record` writes to. Stubs rather than copies — lint resolves alias
-  // targets to real files, and does not read them.
-  mkdirSync(join(root, "src", "lib", "model", "server", "observability"), { recursive: true });
+  // What a generated capability imports: the gate, the generated context types,
+  // and `Scope`. Stubs rather than copies — lint resolves alias targets to real
+  // files, and does not read them.
+  mkdirSync(join(root, "src", "convex", "_generated"), { recursive: true });
+  mkdirSync(join(root, "src", "convex", "capabilities"), { recursive: true });
+  mkdirSync(join(root, "src", "lib", "capabilities", "access", "types"), { recursive: true });
+
   writeFileSync(
-    join(root, "src", "lib", "model", "server", "scope.server.ts"),
+    join(root, "src", "convex", "functions.ts"),
+    "export const projectQuery = null;\nexport const projectMutation = null;\n"
+  );
+  writeFileSync(
+    join(root, "src", "convex", "_generated", "server.d.ts"),
+    "export type QueryCtx = unknown;\nexport type MutationCtx = unknown;\n"
+  );
+  writeFileSync(
+    join(root, "src", "lib", "capabilities", "access", "types", "access.ts"),
     "export type Scope = { readonly projectId: string; readonly userId: string };\n"
-  );
-  writeFileSync(
-    join(root, "src", "lib", "model", "server", "index.server.ts"),
-    "export const serverModel = () => ({ observability: { logger: {} } });\nexport const errorFields = () => ({});\n"
-  );
-  writeFileSync(
-    join(root, "src", "lib", "model", "server", "observability", "index.server.ts"),
-    "export const errorFields = () => ({});\n"
   );
 
   return root;
@@ -77,15 +84,26 @@ const run = (script, args, packageRoot) =>
     encoding: "utf8"
   });
 
-/** Every check the real lint runs, over the generated tree. */
+/**
+ * Every check the real lint runs, over the generated tree.
+ *
+ * `access` is the stub capability the generated code imports `Scope` from. It is
+ * not a capability under test and has no door, so the walk skips it — otherwise
+ * every assertion here would carry its structural failures.
+ */
 const lint = (packageRoot) => {
-  const scope = { root: join(packageRoot, "src", "lib", "capabilities"), base: packageRoot };
+  const scope = {
+    root: join(packageRoot, "src", "lib", "capabilities"),
+    base: packageRoot,
+    functionsRoot: join(packageRoot, "src", "convex")
+  };
+  const aliases = { $lib: "src/lib", ...ALIASES };
   return [
     ...checkCapabilities(scope),
-    ...checkPaths({ ...scope, aliases: { $lib: "src/lib", ...ALIASES } }),
+    ...checkPaths({ ...scope, aliases }),
     ...checkNames(scope),
     ...checkTestPlacement(scope)
-  ];
+  ].filter(({ path }) => !path.includes("capabilities/access"));
 };
 
 const workspaces = [];
@@ -105,54 +123,53 @@ test("a bare capability passes lint", () => {
   assert.deepEqual(lint(root), []);
 });
 
-test("a browser-facing capability passes lint", () => {
-  const root = generate(["new-capability.mjs", [CAPABILITY, "--browser-facing"]]);
+test("a capability with tables passes lint", () => {
+  const root = generate(["new-capability.mjs", [CAPABILITY, "--tables"]]);
   assert.deepEqual(lint(root), []);
 });
 
 test("a capability with one function passes lint", () => {
   const root = generate(
     ["new-capability.mjs", [CAPABILITY]],
-    ["new-api.mjs", [CAPABILITY, "define"]]
+    ["new-api.mjs", [CAPABILITY, "define", "--mutation"]]
   );
   assert.deepEqual(lint(root), []);
 });
 
-test("a capability with a browser-reachable function passes lint", () => {
+test("a query and a mutation are built from different builders", () => {
   const root = generate(
-    ["new-capability.mjs", [CAPABILITY, "--browser-facing"]],
-    ["new-api.mjs", [CAPABILITY, "define", "--remote"]]
+    ["new-capability.mjs", [CAPABILITY]],
+    ["new-api.mjs", [CAPABILITY, "list", "--query"]],
+    ["new-api.mjs", [CAPABILITY, "define", "--mutation"]]
   );
   assert.deepEqual(lint(root), []);
+
+  const door = readFileSync(join(root, "src/convex/capabilities/thing.ts"), "utf8");
+  assert.match(door, /export const list = projectQuery\(/);
+  assert.match(door, /export const define = projectMutation\(/);
 });
 
-test("several functions accumulate without the doors drifting", () => {
+test("several functions accumulate without the door drifting", () => {
   const root = generate(
-    ["new-capability.mjs", [CAPABILITY, "--browser-facing"]],
-    ["new-api.mjs", [CAPABILITY, "define", "--remote"]],
-    ["new-api.mjs", [CAPABILITY, "list", "--remote"]],
-    ["new-api.mjs", [CAPABILITY, "requireThing"]]
+    ["new-capability.mjs", [CAPABILITY]],
+    ["new-api.mjs", [CAPABILITY, "define", "--mutation"]],
+    ["new-api.mjs", [CAPABILITY, "list", "--query"]],
+    ["new-api.mjs", [CAPABILITY, "requireThing", "--query"]]
   );
   assert.deepEqual(lint(root), []);
 
-  const door = readFileSync(join(root, "src/lib/capabilities", CAPABILITY, "index.server.ts"), "utf8");
+  const door = readFileSync(join(root, "src/convex/capabilities/thing.ts"), "utf8");
   for (const name of ["define", "list", "requireThing"]) {
-    assert.ok(door.includes(`export { ${name} }`), `server door is missing ${name}`);
+    assert.ok(door.includes(`export const ${name} = `), `door is missing ${name}`);
+    assert.ok(door.includes(`${name}Handler`), `door does not import ${name}'s handler`);
   }
-
-  const browser = readFileSync(join(root, "src/lib/capabilities", CAPABILITY, "index.ts"), "utf8");
-  assert.ok(browser.includes("define.remote"), "browser door is missing define");
-  assert.ok(browser.includes("list.remote"), "browser door is missing list");
-  assert.ok(
-    !browser.includes("requireThing"),
-    "requireThing has no --remote, so it must not reach the browser door"
-  );
+  assert.ok(!door.includes("export {};"), "the placeholder goes once a real export lands");
 });
 
 test("a camelCase function name becomes a kebab-case directory", () => {
   const root = generate(
     ["new-capability.mjs", [CAPABILITY]],
-    ["new-api.mjs", [CAPABILITY, "applyStyle"]]
+    ["new-api.mjs", [CAPABILITY, "applyStyle", "--mutation"]]
   );
   assert.deepEqual(lint(root), []);
   assert.ok(
@@ -200,11 +217,17 @@ test("refuses to overwrite, and writes nothing when it refuses", () => {
   assert.equal(after, before, "a refused run must not have touched anything");
 });
 
-test("refuses --remote when the capability has no browser door", () => {
+// The kind decides whether the function may write, and a query that writes
+// fails at the moment someone relies on the write rather than at the door.
+test("refuses a function with no kind, and one with both", () => {
   const root = generate(["new-capability.mjs", [CAPABILITY]]);
   assert.throws(
-    () => run("new-api.mjs", [CAPABILITY, "define", "--remote"], root),
-    /--remote needs a browser door/
+    () => run("new-api.mjs", [CAPABILITY, "define"], root),
+    /exactly one of --query or --mutation/
+  );
+  assert.throws(
+    () => run("new-api.mjs", [CAPABILITY, "define", "--query", "--mutation"], root),
+    /exactly one of --query or --mutation/
   );
 });
 

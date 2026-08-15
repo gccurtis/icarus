@@ -1,3 +1,4 @@
+import type { Scope } from "$access/types/access";
 import type { MutationCtx } from "$convex/_generated/server";
 import type { Setting } from "$settings/types/settings";
 import { canonicalKey } from "$settings/types/settings";
@@ -16,7 +17,7 @@ import { canonicalKey } from "$settings/types/settings";
  */
 export const set = async (
   ctx: MutationCtx,
-  projectId: string,
+  scope: Scope,
   key: string,
   value: unknown
 ): Promise<Setting> => {
@@ -26,7 +27,7 @@ export const set = async (
   const existing = await ctx.db
     .query("settings")
     .withIndex("by_project_and_key", (q) =>
-      q.eq("projectId", projectId).eq("key", canonical)
+      q.eq("projectId", scope.projectId).eq("key", canonical)
     )
     .unique();
 
@@ -35,7 +36,7 @@ export const set = async (
   if (existing) {
     await ctx.db.patch(existing._id, written);
   } else {
-    await ctx.db.insert("settings", { projectId, key: canonical, ...written });
+    await ctx.db.insert("settings", { projectId: scope.projectId, key: canonical, ...written });
   }
 
   return { key: canonical, value };

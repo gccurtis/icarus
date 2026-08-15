@@ -20,51 +20,63 @@ const write = (root, path, contents = "") => {
 };
 
 /**
- * A compliant capability: two functions, one of them browser-reachable, a
- * promoted shared procedure, a nested supporting procedure, and tables.
+ * The deployment root for a fixture, as a sibling of its capabilities root.
+ *
+ * It has to sit outside, because `discover` walks every directory under the
+ * capabilities root and would read a `convex/` inside it as a capability.
+ */
+export const functionsRootFor = (root) => `${root}__convex`;
+
+/** The capability's public surface: what an untrusted caller can reach. */
+const writeDoor = (root, contents) =>
+  write(functionsRootFor(root), "capabilities/thing.ts", contents);
+
+const DOOR = `import { projectMutation, projectQuery } from "$convex/functions";
+export const define = projectMutation({ args: {}, handler: () => null });
+export const list = projectQuery({ args: {}, handler: () => null });
+`;
+
+/**
+ * A compliant capability: two registered functions, a promoted shared
+ * procedure, a nested supporting procedure, and a table fragment.
  */
 const clean = (root) => {
   write(root, "data/thing/overview.md", "# Thing Overview\n");
-  // The door exports functions, a type, and the error class. Only the functions
-  // have api/ directories — the surface check must not demand one for the rest.
-  write(
-    root,
-    "data/thing/index.server.ts",
-    'export { define } from "$thing/api/define/define";\n' +
-      'export { list } from "$thing/api/list/list";\n' +
-      'export type { Thing } from "$thing/types/thing";\n' +
-      'export { ThingError } from "$thing/errors";\n'
-  );
-  write(
-    root,
-    "data/thing/index.ts",
-    'export { define } from "$thing/api/define/define.remote";\n'
-  );
   write(root, "data/thing/errors.ts", "export class ThingError extends Error {}\n");
+  write(root, "data/thing/schema.ts", "export const thingTables = {};\n");
 
   write(root, "data/thing/types/types.md", "# Thing Types\n");
   write(root, "data/thing/types/thing.ts", "export interface Thing { readonly id: string }\n");
 
   write(root, "data/thing/api/api.md", "# Thing API\n");
   write(root, "data/thing/api/shared/shared.md", "# Thing Shared Procedures\n");
-  write(root, "data/thing/api/shared/record.ts", "export const record = async () => {};\n");
+  write(root, "data/thing/api/shared/find-thing.ts", "export const findThing = async () => {};\n");
 
   write(
     root,
     "data/thing/api/define/define.md",
-    "# API: `define`\n\n## Procedure Tree\n\n```text\ndefine(scope, input)\n" +
-      "├── record()            ../shared/record.ts\n" +
+    "# API: `define`\n\n## Procedure Tree\n\n```text\ndefine(ctx, input)\n" +
+      "├── findThing()         ../shared/find-thing.ts\n" +
       "└── canonical()         canonical/canonical.ts\n```\n"
   );
   write(root, "data/thing/api/define/define.ts", "export const define = async () => {};\n");
-  write(root, "data/thing/api/define/define.remote.ts", "export const define = null;\n");
   write(root, "data/thing/api/define/canonical/canonical.ts", "export const canonical = () => {};\n");
   write(root, "data/thing/api/define/canonical/guard.ts", "export const guard = () => {};\n");
 
   write(root, "data/thing/api/list/list.md", "# API: `list`\n");
-  write(root, "data/thing/api/list/list.ts", "export const list = async () => {};\n");
+  // Carries the one aliased import in the fixture, so the path rules have
+  // something real to resolve. A handler reaching its capability's own types is
+  // the most ordinary import there is.
+  write(
+    root,
+    "data/thing/api/list/list.ts",
+    'import type { Thing } from "$thing/types/thing";\n' +
+      "export const list = async (): Promise<Thing[]> => [];\n"
+  );
 
   write(root, "data/thing/test/unit/api/list/list.test.ts", "// covered elsewhere\n");
+
+  writeDoor(root, DOOR);
 };
 
 /** Each fixture is `clean` plus exactly one defect. */
@@ -86,45 +98,38 @@ export const FIXTURES = {
     write(root, "data/thing/api/archive/archive.md", "# API: `archive`\n");
   },
 
-  "remote-misnamed": (root) => {
-    clean(root);
-    write(root, "data/thing/api/list/fetch.remote.ts", "export const fetchThings = null;\n");
-  },
-
-  "remote-too-deep": (root) => {
-    clean(root);
-    write(root, "data/thing/api/define/canonical/canonical.remote.ts", "export const canonical = null;\n");
-  },
-
+  // An api/ directory the door never registers is unreachable code.
   "surface-mismatch": (root) => {
     clean(root);
-    write(
+    writeDoor(
       root,
-      "data/thing/index.server.ts",
-      'export { define } from "$thing/api/define/define";\n'
+      'import { projectMutation } from "$convex/functions";\n' +
+        "export const define = projectMutation({ args: {}, handler: () => null });\n"
     );
   },
 
-  // A door exporting a camelCase name with no directory is the defect the
-  // surface check exists for, and there are no exemptions to it.
+  // A registration with no api/ directory hides a procedure inline. There are
+  // no exemptions to this.
   "surface-extra-export": (root) => {
     clean(root);
-    write(
-      root,
-      "data/thing/index.server.ts",
-      'export { define } from "$thing/api/define/define";\n' +
-        'export { list } from "$thing/api/list/list";\n' +
-        'export { archive } from "$thing/api/define/define";\n'
-    );
+    writeDoor(root, `${DOOR}export const archive = projectMutation({ args: {}, handler: () => null });\n`);
   },
 
-  "door-imports-server": (root) => {
+  // A capability with no door at all is unreachable in its entirety.
+  "no-deployment-door": (root) => {
+    clean(root);
+    rmSync(join(functionsRootFor(root), "capabilities/thing.ts"));
+  },
+
+  // A capability holds handlers; registering inside one puts a public function
+  // where the door list does not describe it.
+  "capability-registers": (root) => {
     clean(root);
     write(
       root,
-      "data/thing/index.ts",
-      'export { define } from "$thing/api/define/define.remote";\n' +
-        'export { createThing } from "$thing/api/define/define";\n'
+      "data/thing/api/list/paginate.ts",
+      'import { query } from "$convex/_generated/server";\n' +
+        "export const paginate = query({ args: {}, handler: () => null });\n"
     );
   },
 

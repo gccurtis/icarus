@@ -22,7 +22,7 @@ import { v } from "convex/values";
  */
 export const settingsTables = {
   settings: defineTable({
-    projectId: v.string(),
+    projectId: v.id("projects"),
     key: v.string(),
     value: v.string(),
     updatedAt: v.number()

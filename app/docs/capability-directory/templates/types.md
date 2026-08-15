@@ -5,10 +5,11 @@ Lives at `types/types.md`.
 `types/` holds the canonical model and the public contract. It contains no stored
 row shapes — a stored shape is a storage decision and must not leak into the
 public contract — and no wire shapes, because there is no wire format to
-describe: types cross the boundary on their own when a function is re-exported
-through a `.remote.ts`.
+describe: Convex generates the client API from the functions it pushed, so types
+cross the boundary on their own.
 
-Private model types live here too; the doors decide which of them leave.
+Private model types live here too. What leaves is decided by what the deployment
+door's handlers return, not by a re-export list.
 
 ## Files
 
@@ -21,7 +22,7 @@ Private model types live here too; the doors decide which of them leave.
 
 ## Public Types
 
-Types re-exported through `index.server.ts`. A consumer depends on these.
+Types a handler returns, and so a caller receives. A consumer depends on these.
 
 ### Type: `{{TypeName}}`
 

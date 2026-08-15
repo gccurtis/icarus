@@ -43,6 +43,7 @@ export default {
       $convex: "src/convex",
       $model: "src/lib/model",
       $views: "src/lib/views",
+      $access: "src/lib/capabilities/access",
       $settings: "src/lib/capabilities/settings",
     },
   },

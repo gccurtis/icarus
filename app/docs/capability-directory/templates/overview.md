@@ -28,19 +28,20 @@ the capability does not have.
 ```text
 {{capability-name}}/
 ├── overview.md
-├── index.server.ts
-├── index.ts                 # Omit when no view reaches this capability yet
-├── errors.ts
+├── schema.ts                # Omit when the capability stores nothing
+├── errors.ts                # Omit when it states no refusals
 ├── docs/                    # Omit when no supporting doc exists
 ├── types/
 ├── api/
 └── test/
 ```
 
+Its registrations live at `src/convex/capabilities/{{capabilityName}}.ts` — outside
+the capability, because a Convex module's path is its public name.
+
 ## Dependency Ports
 
-List only direct capability dependencies. Infrastructure from `$model/server` —
-the logger, configuration — is imported rather than injected and is not a port.
+List only direct capability dependencies.
 
 | Capability | Usage |
 | ---------- | ----- |
@@ -48,27 +49,31 @@ the logger, configuration — is imported rather than injected and is not a port
 
 ## Public API
 
-Every function `index.server.ts` exports. The **Browser** column is the audit
-list this table exists for: a `yes` means the function is directly reachable by
-an untrusted client, and admission is `'unchecked'`, so that function is the only
-thing standing between a hostile payload and the database.
+Every function the deployment door registers. **This table is the audit list:
+everything in it is reachable by anything holding the deployment URL.** There is
+no unexposed public function.
 
-| Function | Browser | Effect | Description | Document |
-| -------- | ------- | ------ | ----------- | -------- |
-| `{{functionName}}` | {{yes / no}} | {{mutator / accessor}} | {{Behavior}} | [{{function-name}}.md](api/{{function-name}}/{{function-name}}.md) |
+| Function | Kind | Description | Document |
+| -------- | ---- | ----------- | -------- |
+| `{{functionName}}` | {{query / mutation}} | {{Behavior}} | [{{function-name}}.md](api/{{function-name}}/{{function-name}}.md) |
 
 ## Scope
 
-Every function takes `Scope` as its first parameter. State what this capability
-does with each field, and say explicitly if it ignores one.
+Every handler receives `ctx.scope`, produced by `projectQuery`/`projectMutation`
+before it runs. State what this capability does with each field, and say
+explicitly if it ignores one.
 
 | Field | Use here |
 | ----- | -------- |
-| `projectId` | {{Usually: selects the database. Say so, or say why not}} |
+| `projectId` | {{Usually: the value every index leads with. Say so, or say why not}} |
 | `userId` | {{What it scopes, or "unused — this capability's data is project-wide"}} |
 
-No input type on any function carries these fields. They are derived server-side,
-so a client cannot name a project it does not belong to.
+No input type carries these fields. A caller sends a project *token*, resolved
+against their own memberships, so a client cannot name authority it does not
+have.
+
+**A capability registering unscoped functions says why here.** That is a rare
+exception and should read as one.
 
 ## Data Ownership
 

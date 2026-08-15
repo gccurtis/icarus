@@ -13,12 +13,20 @@ each entry is here because this capability means to offer it.
 
 ## Functions
 
-| Function | Directory | Browser | Effect | Description |
-| -------- | --------- | ------- | ------ | ----------- |
-| `{{functionName}}` | [`{{function-name}}/`]({{function-name}}/{{function-name}}.md) | {{yes / no}} | {{mutator / accessor}} | {{What it does}} |
+| Function | Directory | Kind | Description |
+| -------- | --------- | ---- | ----------- |
+| `{{functionName}}` | [`{{function-name}}/`]({{function-name}}/{{function-name}}.md) | {{query / mutation}} | {{What it does}} |
 
-**Browser** means a `{{function-name}}.remote.ts` exists. Its absence is a claim
-that no view calls this function — not an oversight.
+## These are handlers, not registrations
+
+Each entry takes a Convex `QueryCtx` or `MutationCtx` first and its own input as
+the rest. It is plain TypeScript — nothing here calls `query()` or `mutation()`.
+
+The registration lives at `src/convex/capabilities/{{capabilityName}}.ts`, because
+a module only becomes a callable Convex function by sitting under the functions
+directory, and because a file's path there *is* its public name. Keeping the
+procedures out of that directory is what stops them becoming public API by
+accident.
 
 ## Shared Procedures
 
@@ -28,22 +36,12 @@ promoted yet.}}
 Promotion means the procedure preserves an invariant that spans functions — not
 merely that two call sites wanted the same code.
 
-## Instrumentation
-
-Every entry records its call through the shared instrumentation procedure. It
-lives in `shared/` rather than wrapping the entries because a wrapper above the
-procedure can be bypassed and a call inside it cannot — and a browser-reachable
-call that leaves no trace is the one you most need a record of.
-
-{{State what is recorded and, more importantly, what is deliberately not. A log
-is copied, shipped, and retained far longer than the data it describes.}}
-
 ## Common Shape
 
-{{The orchestration pattern these functions follow — for example: resolve the
-project's database from scope, read current state under an expected revision,
-build a candidate, commit under a compare-and-swap, return the result. State it
-once here so each function document can describe only what it does differently.}}
+{{The orchestration pattern these functions follow — for example: read current
+state through the scoped index, build a candidate, write it, return the result.
+State it once here so each function document can describe only what it does
+differently.}}
 
 ```text
 1. {{shared first step}}
