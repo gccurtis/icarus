@@ -17,4 +17,4 @@ if (failures.length > 0) {
 
 const countDirs = (path) => readdirSync(path, { withFileTypes: true }).filter((entry) => entry.isDirectory()).length;
 const countCss = (path) => readdirSync(path, { withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith(".css")).length;
-console.log(`style lint: ${countDirs(join(stylesRoot, "chromatic-themes"))} themes, ${countCss(join(stylesRoot, "semantic-sets"))} semantic sets, ${countCss(join(stylesRoot, "tokens"))} token domains, ${countDirs(join(stylesRoot, "x-integrations"))} integrations; graph and consumer surface clean`);
+console.log(`style lint: ${countDirs(join(stylesRoot, "chromatic-themes"))} themes, ${countCss(join(stylesRoot, "semantic-tokens"))} token domains, ${countDirs(join(stylesRoot, "x-integrations"))} integrations; graph, roles, registry, and consumer surface clean`);

@@ -1,0 +1,178 @@
+/**
+ * Color roles — which hue each job serves.
+ *
+ * The only color layer a component may reach for. Every token here names a
+ * job, never an intensity and never a hue: `--token-color-success-text`, not
+ * `--token-color-success-strong` and not `--token-color-green-700`.
+ *
+ * A role is a direct alias onto one chromatic family. The table below is the
+ * complete assignment; a hue appears nowhere else in the system.
+ *
+ *   success   green    interactive   blue     primary    blue
+ *   danger    red      active        cyan     secondary  cyan
+ *   attention amber    intelligence  violet   accent-1   pink
+ *   inactive  grey                            accent-2   teal
+ *
+ * `orange` and `yellow` are declared by the chromatic stage and assigned to no
+ * role; they are reserved.
+ *
+ * A theme owns what its green IS. It does not own what green MEANS.
+ *
+ * Contract: semantic-tokens.md
+ *
+ * Canonical tokens are ordinary root custom properties, so their availability
+ * does not depend on Tailwind's scanner. The Tailwind integration separately
+ * registers the complete vocabulary with `@theme static`.
+ */
+
+:root {
+  /* ---- Meaning ---- */
+
+  /* success — applied, accepted, valid, safe */
+  --token-color-success-surface: var(--chromatic-green-surface);
+  --token-color-success-surface-hover: var(--chromatic-green-surface-hover);
+  --token-color-success-border: var(--chromatic-green-border);
+  --token-color-success-fill: var(--chromatic-green-fill);
+  --token-color-success-fill-hover: var(--chromatic-green-fill-hover);
+  --token-color-success-text: var(--chromatic-green-text);
+  --token-color-success-on-fill: var(--chromatic-green-on-fill);
+
+  /* danger — failed, rejected, destructive, denied */
+  --token-color-danger-surface: var(--chromatic-red-surface);
+  --token-color-danger-surface-hover: var(--chromatic-red-surface-hover);
+  --token-color-danger-border: var(--chromatic-red-border);
+  --token-color-danger-fill: var(--chromatic-red-fill);
+  --token-color-danger-fill-hover: var(--chromatic-red-fill-hover);
+  --token-color-danger-text: var(--chromatic-red-text);
+  --token-color-danger-on-fill: var(--chromatic-red-on-fill);
+
+  /* attention — human judgment required; stale; pending review */
+  --token-color-attention-surface: var(--chromatic-amber-surface);
+  --token-color-attention-surface-hover: var(--chromatic-amber-surface-hover);
+  --token-color-attention-border: var(--chromatic-amber-border);
+  --token-color-attention-fill: var(--chromatic-amber-fill);
+  --token-color-attention-fill-hover: var(--chromatic-amber-fill-hover);
+  --token-color-attention-text: var(--chromatic-amber-text);
+  --token-color-attention-on-fill: var(--chromatic-amber-on-fill);
+
+  /* inactive — unavailable, disabled, or out of scope */
+  --token-color-inactive-surface: var(--chromatic-grey-surface);
+  --token-color-inactive-surface-hover: var(--chromatic-grey-surface-hover);
+  --token-color-inactive-border: var(--chromatic-grey-border);
+  --token-color-inactive-fill: var(--chromatic-grey-fill);
+  --token-color-inactive-fill-hover: var(--chromatic-grey-fill-hover);
+  --token-color-inactive-text: var(--chromatic-grey-text);
+  --token-color-inactive-on-fill: var(--chromatic-grey-on-fill);
+
+  /* ---- Identity ---- */
+
+  /* interactive — can be acted upon: controls, links, focus */
+  --token-color-interactive-surface: var(--chromatic-blue-surface);
+  --token-color-interactive-surface-hover: var(--chromatic-blue-surface-hover);
+  --token-color-interactive-border: var(--chromatic-blue-border);
+  --token-color-interactive-fill: var(--chromatic-blue-fill);
+  --token-color-interactive-fill-hover: var(--chromatic-blue-fill-hover);
+  --token-color-interactive-text: var(--chromatic-blue-text);
+  --token-color-interactive-on-fill: var(--chromatic-blue-on-fill);
+
+  /* active — currently engaged, selected, live, resolving */
+  --token-color-active-surface: var(--chromatic-cyan-surface);
+  --token-color-active-surface-hover: var(--chromatic-cyan-surface-hover);
+  --token-color-active-border: var(--chromatic-cyan-border);
+  --token-color-active-fill: var(--chromatic-cyan-fill);
+  --token-color-active-fill-hover: var(--chromatic-cyan-fill-hover);
+  --token-color-active-text: var(--chromatic-cyan-text);
+  --token-color-active-on-fill: var(--chromatic-cyan-on-fill);
+
+  /* intelligence — derived work: prompts, memory, formulas */
+  --token-color-intelligence-surface: var(--chromatic-violet-surface);
+  --token-color-intelligence-surface-hover: var(--chromatic-violet-surface-hover);
+  --token-color-intelligence-border: var(--chromatic-violet-border);
+  --token-color-intelligence-fill: var(--chromatic-violet-fill);
+  --token-color-intelligence-fill-hover: var(--chromatic-violet-fill-hover);
+  --token-color-intelligence-text: var(--chromatic-violet-text);
+  --token-color-intelligence-on-fill: var(--chromatic-violet-on-fill);
+
+  /* ---- Brand ---- */
+
+  /* primary — what the product wears when nothing is more specific */
+  --token-color-primary-surface: var(--chromatic-blue-surface);
+  --token-color-primary-surface-hover: var(--chromatic-blue-surface-hover);
+  --token-color-primary-border: var(--chromatic-blue-border);
+  --token-color-primary-fill: var(--chromatic-blue-fill);
+  --token-color-primary-fill-hover: var(--chromatic-blue-fill-hover);
+  --token-color-primary-text: var(--chromatic-blue-text);
+  --token-color-primary-on-fill: var(--chromatic-blue-on-fill);
+
+  /* secondary — the quieter alternative to primary */
+  --token-color-secondary-surface: var(--chromatic-cyan-surface);
+  --token-color-secondary-surface-hover: var(--chromatic-cyan-surface-hover);
+  --token-color-secondary-border: var(--chromatic-cyan-border);
+  --token-color-secondary-fill: var(--chromatic-cyan-fill);
+  --token-color-secondary-fill-hover: var(--chromatic-cyan-fill-hover);
+  --token-color-secondary-text: var(--chromatic-cyan-text);
+  --token-color-secondary-on-fill: var(--chromatic-cyan-on-fill);
+
+  /* accent-1 — categorical work; claimed by no meaning role */
+  --token-color-accent-1-surface: var(--chromatic-pink-surface);
+  --token-color-accent-1-surface-hover: var(--chromatic-pink-surface-hover);
+  --token-color-accent-1-border: var(--chromatic-pink-border);
+  --token-color-accent-1-fill: var(--chromatic-pink-fill);
+  --token-color-accent-1-fill-hover: var(--chromatic-pink-fill-hover);
+  --token-color-accent-1-text: var(--chromatic-pink-text);
+  --token-color-accent-1-on-fill: var(--chromatic-pink-on-fill);
+
+  /* accent-2 — categorical work; claimed by no meaning role */
+  --token-color-accent-2-surface: var(--chromatic-teal-surface);
+  --token-color-accent-2-surface-hover: var(--chromatic-teal-surface-hover);
+  --token-color-accent-2-border: var(--chromatic-teal-border);
+  --token-color-accent-2-fill: var(--chromatic-teal-fill);
+  --token-color-accent-2-fill-hover: var(--chromatic-teal-fill-hover);
+  --token-color-accent-2-text: var(--chromatic-teal-text);
+  --token-color-accent-2-on-fill: var(--chromatic-teal-on-fill);
+}
+
+/* Surfaces, ink, and borders carry no hue: they alias the theme's achromatic
+ * material directly. Selection is derived rather than authored, so it tracks
+ * the engaged hue through a theme swap. */
+:root {
+  --token-surface-canvas: var(--theme-surface-canvas);
+  --token-surface-work: var(--theme-surface-work);
+  --token-surface-panel: var(--theme-surface-panel);
+  --token-surface-elevated: var(--theme-surface-elevated);
+  --token-surface-panel-hover: var(--theme-surface-panel-hover);
+  --token-surface-selection: color-mix(
+    in srgb,
+    var(--chromatic-cyan-border) 22%,
+    transparent
+  );
+
+  --token-ink-primary: var(--theme-ink-primary);
+  --token-ink-secondary: var(--theme-ink-secondary);
+  --token-ink-muted: var(--theme-ink-muted);
+  --token-ink-on-fill: var(--theme-ink-on-fill);
+
+  --token-border-subtle: var(--theme-border-subtle);
+  --token-border-strong: var(--theme-border-strong);
+}
+
+/**
+ * Shadow color, named by what the shadow physically does.
+ *
+ * The theme owns the tint and picks it from its own achromatic material —
+ * Celestial from grey, Cyberpunk from its deepest black — so a shadow follows a
+ * theme swap without any component knowing the polarity changed. Strength is
+ * decided here, once per job, rather than computed at each call site.
+ *
+ * Geometry is not here. `shape.css` composes offsets and blur against these.
+ */
+:root {
+  /* ambient — diffuse; something rests slightly above its plane */
+  --token-shadow-ambient: color-mix(in srgb, var(--theme-shadow-tint) 6%, transparent);
+
+  /* cast — directional; something floats clear of its plane */
+  --token-shadow-cast: color-mix(in srgb, var(--theme-shadow-tint) 18%, transparent);
+
+  /* occlusion — contact; something passes beneath something else */
+  --token-shadow-occlusion: color-mix(in srgb, var(--theme-shadow-tint) 35%, transparent);
+}

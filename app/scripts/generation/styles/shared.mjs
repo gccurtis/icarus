@@ -77,20 +77,12 @@ export const transaction = () => {
 
 const localImports = (app) => cssFacts(app).imports.filter(({ specifier }) => specifier?.startsWith(".")).map(({ specifier }) => specifier);
 
-export const registerImport = ({ stage, specifier }) => {
+export const registerImport = ({ specifier }) => {
   const app = join(stylesRoot, "app.css");
   let text = readFileSync(app, "utf8");
   if (text.includes(`@import "${specifier}";`)) die(`${specifier} is already registered`);
-  const imports = localImports(app);
-  let candidates;
-  let sentinel;
-  if (stage === "theme") {
-    candidates = imports.filter((item) => /^\.\/chromatic-themes\/[^/]+\/[^/]+\.css$/.test(item));
-    sentinel = './chromatic-themes/slots.css';
-  } else {
-    candidates = imports.filter((item) => item.startsWith("./semantic-sets/"));
-    sentinel = './tokens/color.css';
-  }
+  const candidates = localImports(app).filter((item) => /^\.\/chromatic-themes\/[^/]+\/[^/]+\.css$/.test(item));
+  const sentinel = "./chromatic-themes/slots.css";
   const defaultImport = candidates[0];
   const ordered = [defaultImport, ...[...candidates.slice(1), specifier].sort()].filter(Boolean);
   for (const item of candidates) text = text.replace(`@import "${item}";\n`, "");

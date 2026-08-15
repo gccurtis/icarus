@@ -17,17 +17,12 @@
 @import "./chromatic-themes/cyberpunk/cyberpunk.css";
 @import "./chromatic-themes/slots.css";
 
-/* 2. Semantic identity: default, then alternates. */
-@import "./semantic-sets/blue-primary.css";
-@import "./semantic-sets/cyan-primary.css";
-@import "./semantic-sets/pink-primary.css";
-
-/* 3. Framework-independent public tokens. */
-@import "./tokens/color.css";
-@import "./tokens/typography.css";
-@import "./tokens/spacing.css";
-@import "./tokens/shape.css";
-@import "./tokens/motion.css";
+/* 2. Framework-independent public tokens. */
+@import "./semantic-tokens/color.css";
+@import "./semantic-tokens/typography.css";
+@import "./semantic-tokens/spacing.css";
+@import "./semantic-tokens/shape.css";
+@import "./semantic-tokens/motion.css";
 
 /* x. External vocabulary adapters. */
 @import "./x-integrations/tailwind/tailwind.css";

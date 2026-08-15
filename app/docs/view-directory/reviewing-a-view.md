@@ -5,7 +5,7 @@
 1. **Does it know the application exists?** A view reads the client model, calls
    a capability browser door, or owns state coordinating the tree it renders.
    Something that only takes props and renders them belongs in its parent's
-   `components/`, or in `simple-components/`.
+   `components/`, or in `simple-components/` / `unique-components/`.
 
 2. **Did a promoted child earn its own directory?** A view holding a root
    component and nothing else is a file in its parent's tree.
@@ -39,7 +39,7 @@
     invisible until a test mounts twice, mutates one, and asserts the other is
     unchanged.
 
-11. **Did a value graduate to `styles/tokens/` for a real reason?** One zone
+11. **Did a value graduate to `styles/semantic-tokens/` for a real reason?** One zone
     reading its own width many times is still view geometry.
 
 12. **Does each document say anything?** A document that restates its code has

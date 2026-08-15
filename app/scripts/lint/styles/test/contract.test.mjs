@@ -3,7 +3,8 @@ import { readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { cssFacts } from "../rules.mjs";
+import { readFileSync } from "node:fs";
+import { cssFacts, RULE_NAMES } from "../rules.mjs";
 
 const packageRoot = dirname(dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url))))));
 const stylesRoot = join(packageRoot, "src", "lib", "styles");
@@ -34,6 +35,12 @@ const contrast = (left, right) => {
   return (values[0] + 0.05) / (values[1] + 0.05);
 };
 
+test("the documented rule table lists exactly the rules that exist", () => {
+  const document = readFileSync(join(packageRoot, "docs", "styles-directory", "styles-directory.md"), "utf8");
+  const documented = [...document.matchAll(/^\| `([a-z][a-z-]+)` \|/gm)].map((match) => match[1]);
+  assert.deepEqual(documented.sort(), [...RULE_NAMES].sort());
+});
+
 test("every theme preserves border, text, and on-fill contrast contracts", () => {
   const themesRoot = join(stylesRoot, "chromatic-themes");
   const hues = [...new Set(cssFacts(join(themesRoot, "slots.css")).declarations
@@ -57,7 +64,7 @@ test("every theme preserves border, text, and on-fill contrast contracts", () =>
 });
 
 test("Tailwind exposes every canonical token without defining design meaning", () => {
-  const tokensRoot = join(stylesRoot, "tokens");
+  const tokensRoot = join(stylesRoot, "semantic-tokens");
   const canonical = new Set(readdirSync(tokensRoot).filter((name) => name.endsWith(".css"))
     .flatMap((name) => [...declarations(join(tokensRoot, name)).keys()]));
   const adapter = cssFacts(join(stylesRoot, "x-integrations", "tailwind", "tailwind.css"));

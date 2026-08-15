@@ -90,13 +90,6 @@
   --color-success-surface: var(--token-color-success-surface);
   --color-success-text: var(--token-color-success-text);
   --color-surface-canvas: var(--token-surface-canvas);
-  --color-tertiary-border: var(--token-color-tertiary-border);
-  --color-tertiary-fill-hover: var(--token-color-tertiary-fill-hover);
-  --color-tertiary-fill: var(--token-color-tertiary-fill);
-  --color-tertiary-on-fill: var(--token-color-tertiary-on-fill);
-  --color-tertiary-surface-hover: var(--token-color-tertiary-surface-hover);
-  --color-tertiary-surface: var(--token-color-tertiary-surface);
-  --color-tertiary-text: var(--token-color-tertiary-text);
   --color-surface-elevated: var(--token-surface-elevated);
   --color-surface-panel-hover: var(--token-surface-panel-hover);
   --color-surface-panel: var(--token-surface-panel);
@@ -110,6 +103,14 @@
   --radius-panel: var(--token-radius-panel);
   --shadow-overlay: var(--token-shadow-overlay);
   --shadow-panel: var(--token-shadow-panel);
+  --shadow-raised: var(--token-shadow-raised);
+
+  /* Shadow colors, for the cases where a component needs its own geometry —
+   * an inset edge, a directional overhang — and only the color should be
+   * inherited from the system. */
+  --color-shadow-ambient: var(--token-shadow-ambient);
+  --color-shadow-cast: var(--token-shadow-cast);
+  --color-shadow-occlusion: var(--token-shadow-occlusion);
   --spacing: var(--token-spacing-unit);
   --text-body--line-height: var(--token-text-body-leading);
   --text-body-lg--line-height: var(--token-text-body-lg-leading);

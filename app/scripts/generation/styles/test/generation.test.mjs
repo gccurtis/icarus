@@ -9,7 +9,6 @@ import { buildFixture } from "../../../lint/styles/test/build-fixtures.mjs";
 
 const scriptsRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const themeScript = join(scriptsRoot, "new-theme.mjs");
-const setScript = join(scriptsRoot, "new-semantic-set.mjs");
 
 const run = (script, args, fixture, extraEnv = {}, cwd = fixture.packageRoot) => spawnSync(process.execPath, [script, ...args], {
   cwd,
@@ -42,35 +41,10 @@ test("registers a generated dark theme in Tailwind", () => withFixture((fixture)
   assert.deepEqual(checkStyles(fixture), []);
 }));
 
-test("generates an exact complete semantic set", () => withFixture((fixture) => {
-  const result = run(setScript, [
-    "violet-primary",
-    "--primary", "violet",
-    "--secondary", "cyan",
-    "--tertiary", "pink",
-    "--accent-1", "teal",
-    "--accent-2", "orange"
-  ], fixture);
-  assert.equal(result.status, 0, result.stderr);
-  const target = join(fixture.stylesRoot, "semantic-sets", "violet-primary.css");
-  const aliases = readFileSync(target, "utf8").match(/^\s*--semantic-/gm) ?? [];
-  assert.equal(aliases.length, 35);
-  assert.deepEqual(checkStyles(fixture), []);
-}));
-
-test("rejects invalid names and assignments without writes", () => withFixture((fixture) => {
+test("rejects an invalid name without writes", () => withFixture((fixture) => {
   const badName = run(themeScript, ["Bad/Name", "--from", "celestial", "--scheme", "light"], fixture);
   assert.notEqual(badName.status, 0);
-  const badSet = run(setScript, [
-    "bad-set",
-    "--primary", "blue",
-    "--secondary", "blue",
-    "--tertiary", "pink",
-    "--accent-1", "red",
-    "--accent-2", "orange"
-  ], fixture);
-  assert.notEqual(badSet.status, 0);
-  assert.ok(!existsSync(join(fixture.stylesRoot, "semantic-sets", "bad-set.css")));
+  assert.ok(!existsSync(join(fixture.stylesRoot, "chromatic-themes", "Bad")));
 }));
 
 test("refuses collisions", () => withFixture((fixture) => {

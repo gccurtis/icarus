@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { checkStyles } from "../rules.mjs";
@@ -22,77 +22,112 @@ const expectRule = (rule, mutate) => {
 
 test("valid fixture satisfies the complete contract", () => assert.deepEqual(run(), []));
 
-test("STY001 structure", () => expectRule("STY001", ({ stylesRoot }) => {
+test("restrict-stage-entries structure", () => expectRule("restrict-stage-entries", ({ stylesRoot }) => {
   writeFileSync(join(stylesRoot, "misc.css"), ":root {}\n");
 }));
 
-test("STY001 rejects a duplicate root document", () => expectRule("STY001", ({ stylesRoot }) => {
+test("restrict-stage-entries rejects a duplicate root document", () => expectRule("restrict-stage-entries", ({ stylesRoot }) => {
   writeFileSync(join(stylesRoot, "styles.md"), "# Duplicate style-system document\n");
 }));
 
-test("STY002 documentation", () => expectRule("STY002", ({ stylesRoot }) => {
-  unlinkSync(join(stylesRoot, "tokens", "tokens.md"));
+test("require-stage-document documentation", () => expectRule("require-stage-document", ({ stylesRoot }) => {
+  unlinkSync(join(stylesRoot, "semantic-tokens", "semantic-tokens.md"));
 }));
 
-test("STY002 requires the style-system document", () => expectRule("STY002", ({ packageRoot }) => {
+test("require-stage-document requires the style-system document", () => expectRule("require-stage-document", ({ packageRoot }) => {
   unlinkSync(join(packageRoot, "docs", "styles-directory", "styles-directory.md"));
 }));
 
-test("STY003 public door", () => expectRule("STY003", ({ packageRoot }) => {
+test("confine-style-door public door", () => expectRule("confine-style-door", ({ packageRoot }) => {
   writeFileSync(join(packageRoot, "src", "routes", "+layout.svelte"), "<main />\n");
 }));
 
-test("STY004 manifest reachability", () => expectRule("STY004", ({ stylesRoot }) => {
-  replace(join(stylesRoot, "app.css"), '@import "./tokens/motion.css";\n', "");
+test("require-manifest-import manifest reachability", () => expectRule("require-manifest-import", ({ stylesRoot }) => {
+  replace(join(stylesRoot, "app.css"), '@import "./semantic-tokens/motion.css";\n', "");
 }));
 
-test("STY005 stage order", () => expectRule("STY005", ({ stylesRoot }) => {
+test("order-stage-imports stage order", () => expectRule("order-stage-imports", ({ stylesRoot }) => {
+  // The default theme binds :root and must precede its alternates.
   replace(
     join(stylesRoot, "app.css"),
-    '@import "./semantic-sets/blue-primary.css";\n@import "./semantic-sets/cyan-primary.css";',
-    '@import "./semantic-sets/cyan-primary.css";\n@import "./semantic-sets/blue-primary.css";'
+    '@import "./chromatic-themes/celestial/celestial.css";\n@import "./chromatic-themes/cyberpunk/cyberpunk.css";',
+    '@import "./chromatic-themes/cyberpunk/cyberpunk.css";\n@import "./chromatic-themes/celestial/celestial.css";'
   );
 }));
 
-test("STY006 declaration ownership", () => expectRule("STY006", ({ stylesRoot }) => {
-  replace(join(stylesRoot, "tokens", "spacing.css"), "--token-spacing-unit", "--semantic-spacing-unit");
+test("match-declaration-namespace declaration ownership", () => expectRule("match-declaration-namespace", ({ stylesRoot }) => {
+  replace(join(stylesRoot, "semantic-tokens", "spacing.css"), "--token-spacing-unit", "--chromatic-spacing-unit");
 }));
 
-test("STY007 dependency edge", () => expectRule("STY007", ({ stylesRoot }) => {
-  replace(join(stylesRoot, "tokens", "color.css"), "var(--chromatic-green-surface)", "var(--palette-green-faded)");
+test("restrict-stage-references dependency edge", () => expectRule("restrict-stage-references", ({ stylesRoot }) => {
+  replace(join(stylesRoot, "semantic-tokens", "color.css"), "var(--chromatic-green-surface)", "var(--palette-green-faded)");
 }));
 
-test("STY008 literal ownership", () => expectRule("STY008", ({ stylesRoot }) => {
-  replace(join(stylesRoot, "tokens", "color.css"), "var(--chromatic-green-surface)", "#fff");
+test("confine-literal-colors literal ownership", () => expectRule("confine-literal-colors", ({ stylesRoot }) => {
+  replace(join(stylesRoot, "semantic-tokens", "color.css"), "var(--chromatic-green-surface)", "#fff");
 }));
 
-test("STY009 theme interface", () => expectRule("STY009", ({ stylesRoot }) => {
+test("match-theme-interface theme interface", () => expectRule("match-theme-interface", ({ stylesRoot }) => {
   replace(join(stylesRoot, "chromatic-themes", "cyberpunk", "cyberpunk.css"), "  --palette-red-faded: #ffecef;\n", "");
 }));
 
-test("STY010 theme integration", () => expectRule("STY010", ({ stylesRoot }) => {
+test("match-theme-registration theme integration", () => expectRule("match-theme-registration", ({ stylesRoot }) => {
   replace(join(stylesRoot, "x-integrations", "tailwind", "tailwind.css"), "cyberpunk", "celestial");
 }));
 
-test("STY011 semantic interface", () => expectRule("STY011", ({ stylesRoot }) => {
-  replace(join(stylesRoot, "semantic-sets", "cyan-primary.css"), "  --semantic-primary-surface: var(--chromatic-cyan-surface);\n", "");
+test("require-role-slots role interface", () => expectRule("require-role-slots", ({ stylesRoot }) => {
+  // A role must declare its complete seven-slot family.
+  replace(
+    join(stylesRoot, "semantic-tokens", "color.css"),
+    "  --token-color-success-on-fill: var(--chromatic-green-on-fill);\n",
+    ""
+  );
 }));
 
-test("STY012 semantic meaning", () => expectRule("STY012", ({ stylesRoot }) => {
-  // Collapse tertiary onto the primary's own hue, so two identity anchors
-  // resolve to the same chromatic family.
-  const path = join(stylesRoot, "semantic-sets", "blue-primary.css");
-  replace(path, /--chromatic-blue-tertiary-/g, "--chromatic-blue-");
+test("require-role-slots rejects an indirect role value", () => expectRule("require-role-slots", ({ stylesRoot }) => {
+  replace(
+    join(stylesRoot, "semantic-tokens", "color.css"),
+    "--token-color-success-text: var(--chromatic-green-text);",
+    "--token-color-success-text: var(--chromatic-green-fill);"
+  );
 }));
 
-test("STY013 integration boundary", () => expectRule("STY013", ({ stylesRoot }) => {
+test("pin-meaning-hues role semantics", () => expectRule("pin-meaning-hues", ({ stylesRoot }) => {
+  // accent-1 owns pink alone, so repointing it lands the whole family on a
+  // fixed-meaning hue.
+  replace(join(stylesRoot, "semantic-tokens", "color.css"), /--chromatic-pink-/g, "--chromatic-green-");
+}));
+
+test("pin-meaning-hues pins a meaning role to its hue", () => expectRule("pin-meaning-hues", ({ stylesRoot }) => {
+  replace(join(stylesRoot, "semantic-tokens", "color.css"), /--chromatic-green-/g, "--chromatic-teal-");
+}));
+
+test("confine-integration-boundary integration boundary", () => expectRule("confine-integration-boundary", ({ stylesRoot }) => {
   replace(join(stylesRoot, "x-integrations", "shadcn", "bridge.css"), "var(--token-color-danger-fill)", "var(--chromatic-red-fill)");
 }));
 
-test("STY014 quarantine", () => expectRule("STY014", ({ packageRoot }) => {
+test("quarantine-generated-css quarantine", () => expectRule("quarantine-generated-css", ({ packageRoot }) => {
   writeFileSync(join(packageRoot, "components.json"), JSON.stringify({ tailwind: { css: "src/lib/styles/app.css" } }));
 }));
 
-test("STY015 consumer surface", () => expectRule("STY015", ({ packageRoot }) => {
-  writeFileSync(join(packageRoot, "src", "bad.svelte"), '<div style="color: var(--semantic-primary-text)"></div>\n');
+test("restrict-consumer-surface consumer surface", () => expectRule("restrict-consumer-surface", ({ packageRoot }) => {
+  writeFileSync(join(packageRoot, "src", "bad.svelte"), '<div style="color: var(--chromatic-blue-text)"></div>\n');
 }));
+
+test("restrict-registry-surface registry surface", () => expectRule("restrict-registry-surface", ({ packageRoot }) => {
+  const registry = join(packageRoot, "src", "lib", "simple-components", "toggle");
+  mkdirSync(registry, { recursive: true });
+  writeFileSync(join(registry, "toggle.svelte"), '<div class="bg-active-surface"></div>\n');
+}));
+
+test("restrict-registry-surface permits shadcn bridge names", () => {
+  const failures = run(({ packageRoot }) => {
+    const registry = join(packageRoot, "src", "lib", "simple-components", "button");
+    mkdirSync(registry, { recursive: true });
+    writeFileSync(
+      join(registry, "button.svelte"),
+      '<div class="bg-primary text-primary-foreground bg-secondary-hover bg-accent ring-ring border-input"></div>\n'
+    );
+  });
+  assert.deepEqual(failures.filter((failure) => failure.rule === "restrict-registry-surface"), []);
+});

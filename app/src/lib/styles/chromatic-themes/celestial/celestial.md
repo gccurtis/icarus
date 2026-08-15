@@ -92,7 +92,8 @@ on-fill exception.
 | --- | --- | --- |
 | `--theme-shadow-tint` | `grey-strong` | `#1D2329` |
 
-The offsets, blur, and opacity are in [tokens](../../tokens/tokens.md). Shadow is
+The offsets, blur, and opacity are in
+[semantic tokens](../../semantic-tokens/semantic-tokens.md). Shadow is
 the one geometry family made of color, so only the color half lives here.
 
 ## Rules
@@ -161,10 +162,10 @@ product wears:
 The amber that carries judgment is `amber-emphasized` — daylight on stone, not a
 warning lamp.
 
-These names describe *this theme's* values. Which of them is primary is not
-Celestial's decision — that belongs to a
-[semantic set](../../semantic-sets/semantic-sets.md), and under the
-default `blue-primary` it is Aether Blue.
+These names describe *this theme's* values. Which of them carries which role is
+not Celestial's decision — that belongs to the
+[role table](../../semantic-tokens/semantic-tokens.md), where `interactive` and
+`primary` bind to blue.
 
 ## Restraint
 

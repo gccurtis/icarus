@@ -92,6 +92,20 @@
   --radius-md: var(--token-radius-control);
   --radius-lg: var(--token-radius-panel);
   --radius-xl: var(--token-radius-overlay);
+
+  /* The same move for depth. shadcn reaches for shadow-xs/sm/md/lg, which are
+   * Tailwind defaults built on flat black — they do not follow a theme, so on
+   * Cyberpunk's near-black ground they paint almost nothing. Remapping the
+   * scale onto our three elevations means a stock component gets a
+   * theme-tinted shadow without being edited, which is the whole point of the
+   * bridge. */
+  --shadow-2xs: var(--token-shadow-panel);
+  --shadow-xs: var(--token-shadow-panel);
+  --shadow-sm: var(--token-shadow-panel);
+  --shadow-md: var(--token-shadow-raised);
+  --shadow-lg: var(--token-shadow-overlay);
+  --shadow-xl: var(--token-shadow-overlay);
+  --shadow-2xl: var(--token-shadow-overlay);
 }
 
 /**

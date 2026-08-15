@@ -169,11 +169,9 @@ Cyberpunk names three of its own palette entries:
 | **Hologram Violet** | `violet-muted` `#A86BFF` | Projected light — present, not solid |
 | **Ultra Magenta** | `pink-muted` `#FF5CC8` | The loudest thing the palette can say |
 
-Which of them is primary is not Cyberpunk's decision — that belongs to a
-[semantic set](../../semantic-sets/semantic-sets.md). Under
-`blue-primary` this theme is cool and institutional; under `cyan-primary` it
-becomes arc-lit; under `pink-primary` it becomes a street at night. All three
-are the same theme.
+Which of them carries which role is not Cyberpunk's decision — that belongs to
+the [role table](../../semantic-tokens/semantic-tokens.md). This theme supplies
+the material; the roles decide what the material is used for.
 
 ## Restraint at the other end
 

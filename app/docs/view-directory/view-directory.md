@@ -6,10 +6,13 @@
 
 ## What a view is
 
-A view is a complex component: the stateful counterpart to the primitives in
-`simple-components/`.
+A view is a complex component: the stateful counterpart to the presentational
+primitives.
 
-- A **simple component** knows only its props. It is generic and presentational.
+- A **simple component** (`simple-components/`) is vendored shadcn, run as
+  shipped. It knows only its props.
+- A **unique component** (`unique-components/`) is authored here: a primitive
+  carrying real engineering of its own. It still knows only its props.
 - A **view** knows this application exists. It reads the client model, calls a
   capability browser door, or owns state coordinating the tree it renders.
 
@@ -197,11 +200,12 @@ Views reference public tokens only — `--token-*` — never a private stage
 namespace. See
 [the styles directory standard](../styles-directory/styles-directory.md).
 
-A value moves into `styles/tokens/` only when unrelated rendered owners share the
+A value moves into `styles/semantic-tokens/` only when unrelated rendered owners share the
 decision.
 
 `simple-components/` is consumed, never edited. A primitive that must behave
-differently is wrapped by a component in this view.
+differently is wrapped by a component in this view; one that is reused across
+views and carries engineering of its own becomes a `unique-components/` entry.
 
 ## Boundaries and imports
 

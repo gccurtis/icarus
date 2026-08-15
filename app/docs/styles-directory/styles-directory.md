@@ -8,9 +8,8 @@ The directory exposes the styling process in the same way a capability exposes
 its public functions and the procedure trees behind them:
 
 ```text
-chromatic themes  ->  semantic sets  ->  tokens  ->  external integrations
-physical material     identity            public     translated vocabulary
-                                           API
+chromatic themes  ->  semantic tokens  ->  external integrations
+physical material     public API           translated vocabulary
 ```
 
 Form follows function. A reader should learn the execution order from the
@@ -30,13 +29,8 @@ src/lib/styles/
 │   └── cyberpunk/
 │       ├── cyberpunk.md
 │       └── cyberpunk.css
-├── semantic-sets/
-│   ├── semantic-sets.md                 assignment contract and comparison table
-│   ├── blue-primary.css
-│   ├── cyan-primary.css
-│   └── pink-primary.css
-├── tokens/
-│   ├── tokens.md                        complete public vocabulary and usage laws
+├── semantic-tokens/
+│   ├── semantic-tokens.md               complete public vocabulary and role table
 │   ├── color.css
 │   ├── typography.css
 │   ├── spacing.css
@@ -54,11 +48,10 @@ src/lib/styles/
         └── generated.css                quarantined CLI target; never imported
 ```
 
-The first three stage names already sort in execution order: `chromatic`,
-`semantic`, `tokens`. The `x-` prefix places integrations last and identifies
-them as cross-boundary adapters rather than a fourth source of design meaning.
-Numbering all four directories would also sort them, but would imply that an
-integration is necessary to produce a token. It is not; tokens are already the
+The two implementation stage names sort in execution order: `chromatic`,
+`semantic`. The `x-` prefix places integrations last and identifies them as
+cross-boundary adapters rather than a third source of design meaning. An
+integration is not necessary to produce a token; semantic tokens are already the
 complete framework-independent output.
 
 Themes own directories because a theme has implementation, theory, a palette
@@ -66,10 +59,9 @@ contract, and room for theme-specific verification material. Integrations own
 directories because each is an independently removable external boundary and
 may need several adapter files.
 
-Semantic sets remain files. Each is one complete five-anchor assignment table
-with no supporting tree. Token domains remain files while one file tells the
-truth for each domain. A new subdirectory requires an actual internal process,
-not merely a desire to make the tree look symmetrical.
+Token domains remain files while one file tells the truth for each domain. A new
+subdirectory requires an actual internal process, not merely a desire to make
+the tree look symmetrical.
 
 ## `app.css`: public door and execution manifest
 
@@ -100,17 +92,12 @@ between the door and a stage, so the whole pipeline remains visible in one file:
 @import "./chromatic-themes/cyberpunk/cyberpunk.css";
 @import "./chromatic-themes/slots.css";
 
-/* 2. Semantic identity: default, then alternates. */
-@import "./semantic-sets/blue-primary.css";
-@import "./semantic-sets/cyan-primary.css";
-@import "./semantic-sets/pink-primary.css";
-
-/* 3. Public tokens. */
-@import "./tokens/color.css";
-@import "./tokens/typography.css";
-@import "./tokens/spacing.css";
-@import "./tokens/shape.css";
-@import "./tokens/motion.css";
+/* 2. Public tokens. */
+@import "./semantic-tokens/color.css";
+@import "./semantic-tokens/typography.css";
+@import "./semantic-tokens/spacing.css";
+@import "./semantic-tokens/shape.css";
+@import "./semantic-tokens/motion.css";
 
 /* x. External translations of the public vocabulary. */
 @import "./x-integrations/tailwind/tailwind.css";
@@ -123,9 +110,9 @@ remain at the bottom of `app.css`. They are the final application of the public
 tokens. Creating `base/`, `document/`, and `accessibility/` directories around
 a few selectors would hide that final step rather than expose it.
 
-The order of alternate themes and sets is load-bearing. Defaults bind to bare
-`:root` as well as their explicit data selector; alternates bind to equal-
-specificity data selectors, so source order must place defaults first. Other
+The order of alternate themes is load-bearing. The default theme binds to bare
+`:root` as well as its explicit data selector; alternates bind to equal-
+specificity data selectors, so source order must place the default first. Other
 custom-property references resolve at computed-value time, but the same order is
 kept because it tells the truth about the transformation.
 
@@ -173,48 +160,46 @@ intensity or knowing the theme polarity.
 Every theme implements the same declaration interface. A theme changes values,
 not names, meanings, or slot resolution.
 
-## Stage 2: semantic sets
+## Stage 2: semantic tokens
 
-A semantic set assigns identity to the chromatic interface:
+Semantic tokens are the public styling API. Everything before
+`semantic-tokens/` is private implementation.
+
+`color.css` binds each role directly to one chromatic family, and aliases the
+theme's achromatic material:
+
+| Kind | Role | Hue |
+| --- | --- | --- |
+| Meaning | `success` | green |
+| Meaning | `danger` | red |
+| Meaning | `attention` | amber |
+| Meaning | `inactive` | grey |
+| Identity | `interactive` | blue |
+| Identity | `active` | cyan |
+| Identity | `intelligence` | violet |
+| Brand | `primary` | blue |
+| Brand | `secondary` | cyan |
+| Brand | `accent-1` | pink |
+| Brand | `accent-2` | teal |
+
+Each role declares the full seven-slot family, and every declaration is a direct
+matching alias:
 
 ```css
---semantic-primary-fill: var(--chromatic-blue-fill);
---semantic-secondary-fill: var(--chromatic-violet-fill);
---semantic-tertiary-fill: var(--chromatic-cyan-fill);
+--token-color-interactive-fill: var(--chromatic-blue-fill);
 ```
 
-Each set is one flat file because the complete implementation is an assignment
-table: five anchors times seven jobs. It has no private supporting process to
-expose.
+The role table is the only place a hue is chosen, so a role's colour is a pure
+function of the palette. Meaning roles are fixed. Identity and brand roles may
+share a hue with one another but never with a meaning hue. `orange` and `yellow`
+are declared by the chromatic stage and reserved. Theme planes, seams, and ink
+alias `--theme-*` directly.
 
-The parent document contains the contract and a comparison table for every set.
-An individual set document is added only if a future assignment needs rationale
-that cannot fit truthfully in that table.
-
-A set decides identity only. It cannot assign fixed meaning. Success remains
-chromatic green, danger red, attention amber, and inactive grey; public bindings
-for those meanings are made in `tokens/color.css`.
-
-Primary, secondary, and tertiary must be distinguishable hues. Accent hues must
-not reuse fixed meaning hues. Every set is total: a consumer never handles a
-missing anchor or job.
-
-## Stage 3: tokens
-
-Tokens are the public styling API. Everything before `tokens/` is private
-implementation.
-
-`color.css` combines chromatic meaning, semantic identity, and theme-neutral
-material into canonical `--token-*` properties:
-
-```text
-chromatic green -----------------------> success tokens
-chromatic red -------------------------> danger tokens
-semantic primary ----------------------> interactive and primary tokens
-semantic secondary --------------------> intelligence and secondary tokens
-semantic tertiary ---------------------> active tokens
-theme planes, seams, and ink ----------> public neutral tokens
-```
+`color.css` also owns shadow colour, named by what a shadow physically does —
+`ambient` for something resting above its plane, `cast` for something floating
+clear of it, `occlusion` for something passing beneath something else. The theme
+supplies the tint and this layer decides each strength, so no component computes
+a shadow colour at its call site. Geometry stays in `shape.css`.
 
 The other files publish independent domains:
 
@@ -227,7 +212,7 @@ The other files publish independent domains:
 
 The directory remains flat while one file tells the truth for each domain. If a
 domain later contains multiple passes with private dependencies, it may become
-`tokens/<domain>/`. File length alone does not create a directory.
+`semantic-tokens/<domain>/`. File length alone does not create a directory.
 
 Visibility is explicit in the names:
 
@@ -235,7 +220,6 @@ Visibility is explicit in the names:
 | --- | --- |
 | Private theme material | `--palette-*`, `--theme-*` |
 | Private chromatic interface | `--chromatic-*` |
-| Private semantic identity | `--semantic-*` |
 | Public colors | `--token-color-*`, `--token-surface-*`, `--token-ink-*`, `--token-border-*` |
 | Public non-color values | `--token-font-*`, `--token-text-*`, `--token-spacing-*`, `--token-radius-*`, `--token-shadow-*`, `--token-motion-*`, `--token-ease-*` |
 
@@ -314,8 +298,8 @@ Documentation mirrors the process without creating a second architecture.
   generation, and consumer surface.
 - `chromatic-themes.md` defines the theme and chromatic-slot interfaces.
 - Every theme owns `<theme>.md` because its palette and theory are substantive.
-- `semantic-sets.md` defines and compares the flat assignments.
-- `tokens.md` enumerates the public API and usage laws.
+- `semantic-tokens.md` enumerates the public API, the role table, and usage
+  laws.
 - `x-integrations.md` defines adapter rules.
 - Every integration owns `<integration>.md` because it is an external removal
   boundary.
@@ -352,6 +336,7 @@ checkStyleStructure({ stylesRoot, packageRoot })
 checkStyleImports({ stylesRoot, packageRoot })
 checkStyleDeclarations({ stylesRoot })
 checkStyleConsumers({ sourceRoot, stylesRoot })
+checkRegistrySurface({ sourceRoot, stylesRoot })
 ```
 
 Each returns failures with a stable shape:
@@ -375,7 +360,7 @@ The parser records, with source locations:
 - local and package `@import` statements;
 - custom-property declarations;
 - `var()` references in every declaration value;
-- selectors containing `data-theme` and `data-set`;
+- selectors containing `data-theme`;
 - `color-scheme` declarations;
 - literal color syntax;
 - custom variants and their selector parameters.
@@ -388,38 +373,52 @@ of its color inputs are token references or permitted keywords.
 Consumer checking scans authored `.svelte`, `.ts`, and `.css` files. Svelte
 style blocks are obtained through `svelte/compiler`; private custom-property
 references in script strings and inline style expressions are checked from the
-source text. `simple-components/` is excluded because it is generated or
-vendor-derived. The palette demo is the only diagnostics exception: it may
-read `--palette-*`, but may not import internal CSS or author literal colors.
+source text.
+
+Components are split by provenance, and the two halves are checked by opposite
+rules:
+
+| Directory | Contents | Rule |
+| --- | --- | --- |
+| `simple-components/` | vendored shadcn, run as shipped | `restrict-registry-surface` — bridge vocabulary only |
+| `unique-components/` | authored here, real engineering on top | `restrict-consumer-surface` — `--token-*` required, no literal colors |
+
+A component that needs more than the bridge already gives it belongs in
+`unique-components/`. Anything in `simple-components/` that looks wrong is
+fixed in `bridge.css`, not in the component.
+
+The palette demo is the only diagnostics exception: it may read `--palette-*`,
+but may not import internal CSS or author literal colors.
 
 ### Rule set
 
-Rule ids are stable so fixture names and future suppressions can name a precise
-contract.
+Rules are named, not numbered, and each starts with the verb for what it does to
+the thing it names — so a failure says what was violated without a lookup table.
+`rules.mjs` exports `RULE_NAMES`; this table must list exactly those names.
 
 | Rule | Enforcement |
 | --- | --- |
-| `STY001 structure` | Only `app.css` and the four named stage directories exist at the root. Theme and integration directories have matching documents and required CSS. Semantic sets and token domains remain files. All authored names are kebab-case. |
-| `STY002 documentation` | The system document exists at `docs/styles-directory/styles-directory.md`; required stage, theme, and integration documents exist beside the code they describe. No duplicate root document or legacy implementation document remains. |
-| `STY003 public-door` | `src/routes/+layout.svelte` imports `$lib/styles/app.css` exactly once. No other file imports `styles/*.css`. |
-| `STY004 manifest` | Every authored stage CSS file is imported exactly once by `app.css`; no missing, duplicate, or transitive local imports exist. `generated.css` is the sole unreachable CSS file. |
-| `STY005 stage-order` | Imports are contiguous in prelude, chromatic-theme, semantic-set, token, integration order. The default theme/set precedes alternates; `slots.css` follows all theme files. |
-| `STY006 declaration-owner` | A declaration's namespace is owned by its stage and file. Duplicate custom-property declarations are rejected except the same interface intentionally repeated once per mutually exclusive theme or set selector. |
-| `STY007 dependency-edge` | Theme files reference their own palette values; slots reference theme material; sets reference chromatic values; tokens reference theme, chromatic, or semantic values; integrations reference public tokens only. References cannot point backward or skip the public boundary. |
-| `STY008 literal-owner` | Literal colors occur only in `<theme>/<theme>.css`. Literal durations/easing occur only in `tokens/motion.css`; shared font/type values only in typography; shared radii/shadows only in shape. |
-| `STY009 theme-interface` | Directory, file, document, and selector names agree. Exactly one default binds `:root`; every theme declares one `color-scheme`; all themes declare identical theme token sets. |
-| `STY010 theme-integration` | The default theme agrees with `app.html`. Themes declaring dark `color-scheme` exactly match the theme list in Tailwind's `dark` custom variant. |
-| `STY011 set-interface` | File and selector names agree. Exactly one default binds `:root`. Every set declares the same five anchors times seven jobs and every value is a direct `--semantic-*` to `--chromatic-*` alias. |
-| `STY012 set-semantics` | Primary, secondary, and tertiary hues are pairwise distinct. Accent assignments do not use the fixed success, danger, attention, or inactive hues listed by the semantic-set contract. |
-| `STY013 integration-boundary` | Integration CSS declares only external compatibility namespaces or variants and references only public tokens. The integration document names every authored and generated file in its directory. |
-| `STY014 quarantine` | `x-integrations/shadcn/generated.css` is the exact `components.json` CSS target, has the quarantine header, and is not imported anywhere. No other file is silently exempt from reachability. |
-| `STY015 consumer-surface` | Authored consumers cannot reference private stage variables, import an internal stylesheet, or contain literal colors. Only the named palette diagnostic may read `--palette-*`. |
+| `restrict-stage-entries` | Only `app.css` and the three named stage directories exist at the root. Theme and integration directories have matching documents and required CSS. Token domains remain files. All authored names are kebab-case. |
+| `require-stage-document` | The system document exists at `docs/styles-directory/styles-directory.md`; required stage, theme, and integration documents exist beside the code they describe. No duplicate root document or legacy implementation document remains. |
+| `confine-style-door` | `src/routes/+layout.svelte` imports `$lib/styles/app.css` exactly once. No other file imports `styles/*.css`. |
+| `require-manifest-import` | Every authored stage CSS file is imported exactly once by `app.css`; no missing, duplicate, or transitive local imports exist. `generated.css` is the sole unreachable CSS file. |
+| `order-stage-imports` | Imports are contiguous in prelude, chromatic-theme, token, integration order. The default theme precedes alternates; `slots.css` follows all theme files. |
+| `match-declaration-namespace` | A declaration's namespace is owned by its stage and file — themes declare `--palette-*`/`--theme-*`, slots declare `--chromatic-*`, semantic tokens declare `--token-*`, integrations declare none of these. |
+| `restrict-stage-references` | Theme files reference their own palette values; slots reference theme material; tokens reference theme or chromatic values; integrations reference public tokens only. References cannot point backward or skip the public boundary. |
+| `confine-literal-colors` | Literal colors occur only in `<theme>/<theme>.css`. Every later stage names a value rather than writing one. |
+| `match-theme-interface` | Directory, file, document, and selector names agree. Exactly one default binds `:root`; every theme declares one `color-scheme`; all themes declare identical theme token sets. |
+| `match-theme-registration` | The default theme agrees with `app.html`. Themes declaring dark `color-scheme` exactly match the theme list in Tailwind's `dark` custom variant. |
+| `require-role-slots` | Every `--token-color-*` declaration names a role from the table and one of the seven slots, and is a direct `var(--chromatic-<hue>-<slot>)` alias whose slot matches. Every role declares its complete seven-slot family. |
+| `pin-meaning-hues` | Meaning roles bind their fixed hues; no identity or brand role reuses a meaning hue; no role spans more than one chromatic family. |
+| `confine-integration-boundary` | Integration CSS declares only external compatibility namespaces or variants and references only public tokens. The integration document names every authored and generated file in its directory. |
+| `quarantine-generated-css` | `x-integrations/shadcn/generated.css` is the exact `components.json` CSS target, has the quarantine header, and is not imported anywhere. No other file is silently exempt from reachability. |
+| `restrict-consumer-surface` | Authored consumers — including `unique-components/` — cannot reference private stage variables, import an internal stylesheet, or contain literal colors. Only the named palette diagnostic may read `--palette-*`. |
+| `restrict-registry-surface` | Registry components under `simple-components/` use shadcn's bridge vocabulary only. A utility whose root is a first-party `--color-*` alias registered by the Tailwind adapter is rejected: a registry component that looks wrong is fixed in `bridge.css`. |
 
 Contrast is deliberately not a structural rule. A separate contract test parses
 theme values, resolves the light and dark slot mappings, and measures each
-documented foreground/background pairing. Rendered theme-by-set combinations,
-focus behavior, and reduced motion belong to browser or visual tests when that
-harness exists.
+documented foreground/background pairing. Rendered themes, focus behavior, and
+reduced motion belong to browser or visual tests when that harness exists.
 
 ### Fixture strategy
 
@@ -432,10 +431,13 @@ rule id, path, and relevant message. Required mutations include:
 
 - a theme missing one palette value;
 - an alternate theme imported before the default;
-- a semantic set missing one job;
+- a role missing one slot;
+- a role aliasing a mismatched slot;
+- a role landing on a fixed-meaning hue;
 - a token reaching directly into a palette;
 - an integration reaching into a chromatic variable;
 - a literal color in a view;
+- a registry component reaching past the bridge;
 - an undocumented integration file;
 - generated CSS becoming reachable;
 - a private stylesheet import from a component;
@@ -453,8 +455,7 @@ The implementation adds:
 {
   "scripts": {
     "lint:styles": "node scripts/lint/styles/lint.mjs",
-    "new-style-theme": "node scripts/generation/styles/new-theme.mjs",
-    "new-semantic-set": "node scripts/generation/styles/new-semantic-set.mjs"
+    "new-style-theme": "node scripts/generation/styles/new-theme.mjs"
   }
 }
 ```
@@ -467,7 +468,7 @@ style CLI remains independently runnable during translation.
 A successful run reports counts instead of listing every file:
 
 ```text
-style lint: 2 themes, 3 semantic sets, 5 token domains, 2 integrations; graph and consumer surface clean
+style lint: 2 themes, 5 token domains, 2 integrations; graph, roles, registry, and consumer surface clean
 ```
 
 ## Generation implementation
@@ -477,7 +478,6 @@ Only repeatable, fully specified variants get generators.
 ```text
 scripts/generation/styles/
 ├── new-theme.mjs
-├── new-semantic-set.mjs
 ├── shared.mjs
 └── test/
     └── generation.test.mjs
@@ -507,8 +507,8 @@ Commands never overwrite an existing variant and never accept a path, slash, or
 unresolved glob as a name. They print the created files and edited registration
 files on success.
 
-Generated inventories in `chromatic-themes.md` and `semantic-sets.md` are bounded
-by explicit comments:
+The generated inventory in `chromatic-themes.md` is bounded by explicit
+comments:
 
 ```md
 <!-- generated:theme-inventory:start -->
@@ -549,38 +549,12 @@ The command:
 
 The generator cannot change the default theme. That operation changes bare
 `:root`, `app.html`, import precedence, and possibly the initial paint, so it is
-a deliberate manual migration checked by `STY009` and `STY010`.
+a deliberate manual migration checked by `match-theme-interface` and
+`match-theme-registration`.
 
-### `new-semantic-set.mjs`
-
-Usage:
-
-```text
-pnpm new-semantic-set -- <name> \
-  --primary <hue> \
-  --secondary <hue> \
-  --tertiary <hue> \
-  --accent-1 <hue> \
-  --accent-2 <hue>
-```
-
-The command reads valid hue and job names from `slots.css`; they are not
-duplicated as a second hard-coded list in the generator.
-
-It then:
-
-1. validates the name and five assignments against the semantic-set rules;
-2. expands each assignment across the seven discovered jobs, producing the full
-   35 direct aliases;
-3. binds the new set only to `[data-set="<name>"]`;
-4. writes `semantic-sets/<name>.css`;
-5. inserts its import after the default and among alternates alphabetically;
-6. adds the assignment row to the generated comparison table;
-7. validates the full planned result with the style rules.
-
-The default set, like the default theme, is changed manually and verified by
-lint. A set does not get a Markdown file because the comparison row exposes its
-entire decision.
+Roles do not get a generator. The role table is a single fixed assignment
+checked by `require-role-slots` and `pin-meaning-hues`, not a repeatable
+variant.
 
 ### Generator tests
 
@@ -589,112 +563,8 @@ Generator tests run in temporary copies of a minimal valid package and cover:
 - invocation from both repository and package working directories;
 - valid light and dark theme generation;
 - selector, import, documentation, and Tailwind registration updates;
-- exact 35-alias semantic-set generation;
-- invalid names, missing sources, unknown hues, and assignment violations;
+- invalid names and missing sources;
 - refusal to overwrite existing variants;
 - rollback after a simulated write failure;
 - idempotent failure on a repeated command;
 - a clean style-lint result after successful generation.
-
-## Translation record
-
-The migration was performed in dependency order so each step had a defined
-input and output. These stages remain the rollback and review boundaries.
-
-### 1. Build enforcement against fixtures
-
-The PostCSS dependencies, rule module, CLI, and fixture tests were established
-before translating production. `lint:styles` is now part of aggregate lint.
-
-### 2. Establish the chromatic stage
-
-- Create `styles/chromatic-themes/<theme>/` directories.
-- Merge each current palette and theory document into `<theme>/<theme>.md`.
-- Move the theme CSS without changing its literal values.
-- Move `system/color/slots.css` to `chromatic-themes/slots.css`.
-- Rename `--hue-*` to `--chromatic-*` and theme-owned neutral implementation
-  values to the documented private `--theme-*` surface where necessary.
-- Compare theme declaration sets and contrast results before continuing.
-
-### 3. Establish semantic sets
-
-- Move `system/color/sets/*.css` to flat `semantic-sets/*.css`.
-- Rename `--anchor-*` to `--semantic-*`.
-- Condense the current set documents into the generated comparison table and
-  retain non-tabular rationale in `semantic-sets.md`.
-- Verify that every file contains exactly 35 direct aliases.
-
-### 4. Establish the public token API
-
-- Merge current `roles.css` and first-party `utilities.css` decisions into
-  `tokens/color.css`.
-- Move typography, spacing, shape, and motion into same-name token files.
-- Change internal references to the chromatic and semantic namespaces.
-- Scan all authored consumers and replace private-layer references with public
-  tokens before enabling `STY015`.
-
-### 5. Isolate integrations
-
-- Move Tailwind aliases and the theme-aware dark variant to
-  `x-integrations/tailwind/tailwind.css`.
-- Move the shadcn bridge and registry variants to their purpose-named files.
-- Move the CLI target to `x-integrations/shadcn/generated.css` and update
-  `components.json`.
-- Replace the bridge's direct hue references with public semantic tokens.
-- Prove the generated quarantine is unreachable.
-
-### 6. Replace the public door and documents
-
-- Rewrite `styles/app.css` with the explicit stage manifest and final universal
-  rules.
-- Update the root layout import and comments in `app.html`.
-- Move `mandate.md` to `docs/design-preferences.md`.
-- Move or condense token-specific documents into the stage that owns them.
-- Relocate broader interaction/accessibility theory without making styles its
-  accidental owner.
-- Remove the old `src/lib/style/` and `docs/style/` trees only after searches
-  show no remaining imports or links.
-
-### 7. Enable generation and enforcement
-
-- Add and test both generators against the translated production contract.
-- Add `lint:styles` to package scripts.
-- Run script tests, style lint, typecheck, unit tests, and build.
-- Enable style lint in the aggregate lint command.
-
-## Translation map
-
-| Current | Target |
-| --- | --- |
-| `src/lib/style/themes/celestial.css` | `styles/chromatic-themes/celestial/celestial.css` |
-| `src/lib/style/themes/cyberpunk.css` | `styles/chromatic-themes/cyberpunk/cyberpunk.css` |
-| `system/color/slots.css` | `styles/chromatic-themes/slots.css` |
-| `system/color/sets/*.css` | `styles/semantic-sets/*.css` |
-| `system/color/roles.css` and `utilities.css` | `styles/tokens/color.css` |
-| Other `system/*.css` token files | same-name files under `styles/tokens/` |
-| Tailwind custom variants in `app.css` | `styles/x-integrations/tailwind/tailwind.css` |
-| `shadcn-bridge.css` | `styles/x-integrations/shadcn/bridge.css` |
-| Registry state variants in `app.css` | `styles/x-integrations/shadcn/variants.css` |
-| `vendor-generated.css` | `styles/x-integrations/shadcn/generated.css` |
-| `docs/style/mandate.md` | `docs/design-preferences.md` |
-| Remaining token-specific `docs/style/**` | corresponding stage documents |
-
-## Acceptance criteria
-
-The translation is complete when:
-
-- the directory listing reads in process order without a guide;
-- `app.css` shows every executed stage and no hidden CSS barrel exists;
-- only the root layout imports the style door;
-- every theme and integration owns a documented directory;
-- semantic sets and token domains remain flat and complete;
-- no authored consumer references a private stage namespace;
-- literal colors exist only in theme implementations;
-- every theme-by-set combination resolves the full public token API;
-- default, alternate, and dark-theme registrations agree;
-- shadcn generated CSS remains unreachable;
-- `src/lib/style/` and `docs/style/` no longer exist;
-- generator tests, linter fixtures, style contract tests, typecheck, tests, and
-  production build all pass;
-- the rendered design has not changed except where a separately reviewed token
-  correction is explicitly recorded.

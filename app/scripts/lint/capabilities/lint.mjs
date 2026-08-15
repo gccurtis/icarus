@@ -8,9 +8,9 @@
  *
  * **Scope is the whole design of this script: it walks `lib/capabilities` and
  * nothing else.** Everything outside is another domain's business —
- * `simple-components/` is vendored verbatim and uses relative imports
- * throughout, `style/` is CSS, and `routes/` answers to SvelteKit's conventions
- * rather than ours. Widening the walk would bury a real capability defect under
+ * `simple-components/` and `unique-components/` answer to the style standard,
+ * `styles/` is CSS, and `routes/` answers to SvelteKit's conventions rather
+ * than ours. Widening the walk would bury a real capability defect under
  * hundreds of findings about code this standard does not govern.
  *
  * Aliases come from svelte.config.js because that is the single map — SvelteKit

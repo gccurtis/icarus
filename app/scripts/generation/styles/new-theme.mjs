@@ -38,7 +38,7 @@ const targetDir = join(stylesRoot, "chromatic-themes", name);
 const targetCss = join(targetDir, `${name}.css`);
 const targetDoc = join(targetDir, `${name}.md`);
 const title = name.split("-").map((part) => part[0].toUpperCase() + part.slice(1)).join(" ");
-const document = `# ${title}\n\n**Status:** Draft copied from \`${from}\`.\n\n## Theory\n\nDescribe the physical material, polarity, contrast intent, and relationship among the palette families.\n\n## Verification\n\n- [ ] Every palette value has been intentionally reviewed.\n- [ ] Documented foreground/background pairs meet their contrast contract.\n- [ ] Every semantic-set combination has been rendered.\n- [ ] Focus, selection, shadows, and filled controls have been reviewed.\n`;
+const document = `# ${title}\n\n**Status:** Draft copied from \`${from}\`.\n\n## Theory\n\nDescribe the physical material, polarity, contrast intent, and relationship among the palette families.\n\n## Verification\n\n- [ ] Every palette value has been intentionally reviewed.\n- [ ] Documented foreground/background pairs meet their contrast contract.\n- [ ] Every semantic role has been rendered against this theme.\n- [ ] Focus, selection, shadows, and filled controls have been reviewed.\n`;
 
 const app = join(stylesRoot, "app.css");
 const inventory = join(stylesRoot, "chromatic-themes", "chromatic-themes.md");
@@ -49,7 +49,7 @@ if (scheme === "dark") dark.push(name);
 const tx = transaction();
 tx.create(targetCss, css);
 tx.create(targetDoc, document);
-tx.edit(app, registerImport({ stage: "theme", specifier: `./chromatic-themes/${name}/${name}.css` }));
+tx.edit(app, registerImport({ specifier: `./chromatic-themes/${name}/${name}.css` }));
 tx.edit(inventory, updateInventory({
   path: inventory,
   start: "<!-- generated:theme-inventory:start -->",
