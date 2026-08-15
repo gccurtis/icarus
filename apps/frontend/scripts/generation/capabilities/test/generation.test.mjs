@@ -30,7 +30,7 @@ const generators = dirname(here);
 const realPackageRoot = dirname(dirname(dirname(generators)));
 
 const CAPABILITY = "data/thing";
-const ALIASES = { $thing: `src/lib/capabilities/${CAPABILITY}`, $runtime: "src/lib/runtime" };
+const ALIASES = { $thing: `src/lib/capabilities/${CAPABILITY}`, $model: "src/lib/model" };
 
 /**
  * A package with just enough in it for the generators to run: the templates
@@ -55,22 +55,22 @@ const makePackage = () => {
   // composition root a procedure gets its database from, and the logger
   // `record` writes to. Stubs rather than copies — lint resolves alias targets
   // to real files, and does not read them.
-  mkdirSync(join(root, "src", "lib", "runtime", "server", "persistence"), { recursive: true });
-  mkdirSync(join(root, "src", "lib", "runtime", "server", "observability"), { recursive: true });
+  mkdirSync(join(root, "src", "lib", "model", "server", "persistence"), { recursive: true });
+  mkdirSync(join(root, "src", "lib", "model", "server", "observability"), { recursive: true });
   writeFileSync(
-    join(root, "src", "lib", "runtime", "server", "scope.server.ts"),
+    join(root, "src", "lib", "model", "server", "scope.server.ts"),
     "export type Scope = { readonly projectId: string; readonly userId: string };\n"
   );
   writeFileSync(
-    join(root, "src", "lib", "runtime", "server", "index.server.ts"),
-    "export const serverRuntime = async () => ({});\n"
+    join(root, "src", "lib", "model", "server", "index.server.ts"),
+    "export const serverModel = async () => ({ observability: { logger: {} } });\nexport const errorFields = () => ({});\n"
   );
   writeFileSync(
-    join(root, "src", "lib", "runtime", "server", "observability", "index.server.ts"),
+    join(root, "src", "lib", "model", "server", "observability", "index.server.ts"),
     "export const errorFields = () => ({});\n"
   );
   writeFileSync(
-    join(root, "src", "lib", "runtime", "server", "persistence", "types.ts"),
+    join(root, "src", "lib", "model", "server", "persistence", "types.ts"),
     "export interface Database {}\n"
   );
 
@@ -80,7 +80,7 @@ const makePackage = () => {
 /** A package without the persistence runtime, to check that `--persisted` refuses. */
 const makePackageWithoutPersistence = () => {
   const root = makePackage();
-  rmSync(join(root, "src", "lib", "runtime", "server", "persistence"), {
+  rmSync(join(root, "src", "lib", "model", "server", "persistence"), {
     recursive: true,
     force: true
   });

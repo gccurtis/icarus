@@ -12,15 +12,14 @@
  * Run: node --test scripts/capabilities/test/
  */
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { after, test } from "node:test";
 
 import { buildFixtures } from "./build-fixtures.mjs";
 import {
   checkCapabilities,
-  checkClientConstruction,
   checkNames,
   checkPaths,
   checkTestPlacement,
@@ -191,104 +190,4 @@ test("ignores an unsubstituted placeholder in a template's procedure tree", () =
 
 test("returns nothing when a document has no procedure tree", () => {
   assert.deepEqual(procedureTreePaths("# API: `list`\n\nNo tree here.\n"), []);
-});
-
-// ------------------------------------------------ client construction ----
-// A different tree and a different question: not "what shape is a capability"
-// but "can this object leak across users". Fixtures are written inline because
-// they are two files, not a capability.
-
-const clientFixture = (name, contents) => {
-  const root = join(workspace, "client", name);
-  for (const [path, source] of Object.entries(contents)) {
-    const full = join(root, path);
-    mkdirSync(dirname(full), { recursive: true });
-    writeFileSync(full, source);
-  }
-  return root;
-};
-
-const COMPOSITION_ROOT = `import { browser } from "$app/environment";
-let instance;
-export const createClientRuntime = (storage) => ({
-  workbench: createWorkbench(storage)
-});
-export const clientRuntime = () => {
-  if (!browser) throw new Error("browser-only");
-  return (instance ??= createClientRuntime(createBrowserStorage()));
-};
-`;
-
-const OBJECT = `export const createWorkbench = (from) => new Workbench(from);\n`;
-
-test("accepts a composition root that guards, and objects that do not", () => {
-  const root = clientFixture("guarded", {
-    "index.ts": COMPOSITION_ROOT,
-    "workbench/index.ts": OBJECT
-  });
-  assert.deepEqual(checkClientConstruction({ root, base: root }), []);
-});
-
-test("rejects a second browser guard outside the composition root", () => {
-  // A second check is a second way in, and the isolation argument rests on
-  // there being one.
-  const root = clientFixture("two-guards", {
-    "index.ts": COMPOSITION_ROOT,
-    "workbench/index.ts": `import { browser } from "$app/environment";\n${OBJECT}`
-  });
-  const failures = checkClientConstruction({ root, base: root });
-
-  assert.equal(failures.length, 1);
-  assert.equal(failures[0].path, "workbench/index.ts:1");
-  assert.match(failures[0].message, /belongs to runtime\/client\/index\.ts alone/);
-});
-
-test("accepts a frozen constant and an arrow function", () => {
-  const root = clientFixture("constants", {
-    "activities/registry.ts":
-      "const OVERVIEW = Object.freeze({ id: \"overview\" });\n" +
-      "export const ACTIVITIES = Object.freeze({ \"project-overview\": [OVERVIEW] });\n" +
-      "export const createActivities = (over) => new Activities(over);\n"
-  });
-  assert.deepEqual(checkClientConstruction({ root, base: root }), []);
-});
-
-test("rejects a module-scope new", () => {
-  const root = clientFixture("new", {
-    "workbench/index.ts": "export const workbench = new Workbench();\n"
-  });
-  const [failure, ...rest] = checkClientConstruction({ root, base: root });
-
-  assert.ok(failure, "an unguarded singleton was admitted");
-  assert.match(failure.message, /shared by every request on the server/);
-  assert.equal(failure.path, "workbench/index.ts:1");
-  assert.deepEqual(rest, []);
-});
-
-test("rejects a module-scope create call", () => {
-  // The likelier spelling: a convenience singleton added "just until the shell
-  // is wired", which typechecks and works perfectly with one user.
-  const root = clientFixture("create", {
-    "workbench/index.ts": "export const workbench = createWorkbench(storage());\n"
-  });
-  const failures = checkClientConstruction({ root, base: root });
-
-  assert.equal(failures.length, 1);
-  assert.match(failures[0].message, /Build it in the composition root/);
-});
-
-test("rejects an unexported module-scope construction too", () => {
-  // Not exported is not safe: the module still runs on the server, and whatever
-  // reads this binding shares it.
-  const root = clientFixture("internal", {
-    "workbench/index.ts": "const shared = createWorkbench(storage());\n"
-  });
-  assert.equal(checkClientConstruction({ root, base: root }).length, 1);
-});
-
-test("ignores test files, which construct deliberately", () => {
-  const root = clientFixture("tests", {
-    "workbench/workbench.test.ts": "const a = createWorkbench(fake());\n"
-  });
-  assert.deepEqual(checkClientConstruction({ root, base: root }), []);
 });

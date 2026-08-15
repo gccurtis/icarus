@@ -50,7 +50,7 @@ None.
 ```text
 list(scope)
 ├── record("list", {})              ../shared/record.ts
-├── projectDatabase(scope.projectId)   $runtime/server/index.server
+├── projectDatabase(scope.projectId)   $model/server/index.server
 ├── select from settings order by key
 └── currentSetting(row) per row     ../../persistence/stored-types.ts
 ```

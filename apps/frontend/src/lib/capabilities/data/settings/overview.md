@@ -3,7 +3,7 @@
 Configuration that belongs to a **project** rather than to a person: keyed
 values every collaborator on that project sees.
 
-The counterpart is [`runtime/client/preferences`](../../../runtime/client/preferences),
+The counterpart is [`model/client/workbench`](../../../model/client/workbench/workbench.md),
 which holds *this browser's* panel widths. The dividing question is who a value
 follows. Panel geometry follows a person and never leaves their machine.
 `editor.default-font` follows the project, and a colleague opening it should see

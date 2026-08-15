@@ -56,7 +56,7 @@ None.
 get(scope, key)
 ├── record("get", { key })          ../shared/record.ts
 ├── canonicalKey(key)               ../shared/canonical-key.ts
-├── projectDatabase(scope.projectId)   $runtime/server/index.server
+├── projectDatabase(scope.projectId)   $model/server/index.server
 ├── select from settings where key = …
 └── currentSetting(row)             ../../persistence/stored-types.ts
 ```

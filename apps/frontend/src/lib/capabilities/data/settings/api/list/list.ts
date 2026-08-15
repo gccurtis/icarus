@@ -1,5 +1,5 @@
-import { projectDatabase } from "$runtime/server/index.server";
-import type { Scope } from "$runtime/server/scope.server";
+import { projectDatabase } from "$model/server/index.server";
+import type { Scope } from "$model/server/scope.server";
 import { record } from "$settings/api/shared/record";
 import { currentSetting } from "$settings/persistence/stored-types";
 import type { Setting } from "$settings/types/settings";

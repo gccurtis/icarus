@@ -20,7 +20,7 @@ transactional operation or grow parameters until it was a worse query builder.
 
 A project is its own database. **No table here carries a `project_id` column and
 no query carries a `project_id` predicate** — the registry in
-`$runtime/server/persistence` opens the right database from `scope.projectId`
+`$model/server/persistence` opens the right database from `scope.projectId`
 before any of this is reached. A capability that forgets to scope cannot leak
 across projects, because there is no cross-project reach to forget.
 
@@ -44,8 +44,8 @@ collides instead of quietly landing in another user's row.}}
 
 ## Initialization
 
-`initialize.ts` exports one function that the persistence runtime calls at
-startup, once per project database, in the order the runtime lists.
+`initialize.ts` exports one function that the persistence object calls at
+startup, once per project database, in the order that object lists.
 
 It does two things, and the second is the point:
 

@@ -32,7 +32,7 @@ export interface SettingsTable {
  * that re-exports it — this is the one place the bare-alias rule does not apply,
  * and it is structural rather than stylistic.
  */
-declare module "$runtime/server/persistence/types" {
+declare module "$model/server/persistence/types" {
   interface Database {
     settings: SettingsTable;
   }

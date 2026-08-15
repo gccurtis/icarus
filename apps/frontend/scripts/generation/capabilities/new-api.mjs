@@ -97,7 +97,7 @@ write.add(
 
 write.add(
   join(functionRoot, `${directory}.ts`),
-  `import type { Scope } from "$runtime/server/scope.server";
+  `import type { Scope } from "$model/server/scope.server";
 
 /**
  * TODO: what this function is for, who calls it, and when it should be used
@@ -118,7 +118,7 @@ if (flags.has("--remote")) {
   write.add(
     join(functionRoot, `${directory}.remote.ts`),
     `import { getRequestEvent, query } from "$app/server";
-import { resolveScope } from "$runtime/server/scope.server";
+import { resolveScope } from "$model/server/scope.server";
 import { ${functionName} as ${functionName}Procedure } from "${alias}/api/${directory}/${directory}";
 import { stated } from "${alias}/api/shared/stated";
 
@@ -179,8 +179,7 @@ if (!existsSync(join(sharedRoot, "shared.md"))) {
 if (!existsSync(join(sharedRoot, "record.ts"))) {
   write.add(
     join(sharedRoot, "record.ts"),
-    `import { serverRuntime } from "$runtime/server/index.server";
-import { errorFields } from "$runtime/server/observability/index.server";
+    `import { errorFields, serverModel } from "$model/server/index.server";
 import { ${errorClass} } from "${alias}/errors";
 
 /**
@@ -204,7 +203,8 @@ export const record = async <T>(
   fields: Record<string, unknown>,
   run: () => Promise<T>
 ): Promise<T> => {
-  const { logger } = await serverRuntime();
+  const { observability } = await serverModel();
+  const { logger } = observability;
 
   logger.debug(\`${capabilityName}.\${operation}.started\`, fields);
 

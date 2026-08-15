@@ -71,7 +71,7 @@ set(scope, input)
 ├── canonicalKey(input.key)         ../shared/canonical-key.ts
 ├── canonicalValue(input.value)     canonical-value.ts
 │   └── rejectForbiddenKeys()       canonical-value.ts
-├── projectDatabase(scope.projectId)   $runtime/server/index.server
+├── projectDatabase(scope.projectId)   $model/server/index.server
 ├── insert into settings … on conflict (key) do update
 └── currentSetting(row)             ../../persistence/stored-types.ts
 ```

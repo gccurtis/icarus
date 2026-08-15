@@ -6,7 +6,7 @@ import { SettingsError } from "$settings/errors";
 import { installDatabases, scopeFor } from "$settings/test/fixture";
 
 vi.mock(
-  "$runtime/server/index.server",
+  "$model/server/index.server",
   async () => (await import("$settings/test/stub")).serverStub()
 );
 

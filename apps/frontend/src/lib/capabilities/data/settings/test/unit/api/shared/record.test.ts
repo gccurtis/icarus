@@ -5,7 +5,7 @@ import { SettingsError } from "$settings/errors";
 import { stub } from "$settings/test/stub";
 
 vi.mock(
-  "$runtime/server/index.server",
+  "$model/server/index.server",
   async () => (await import("$settings/test/stub")).serverStub()
 );
 

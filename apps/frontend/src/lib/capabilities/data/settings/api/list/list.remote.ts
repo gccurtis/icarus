@@ -1,5 +1,5 @@
 import { getRequestEvent, query } from "$app/server";
-import { resolveScope } from "$runtime/server/scope.server";
+import { resolveScope } from "$model/server/scope.server";
 import { list as listProcedure } from "$settings/api/list/list";
 import { stated } from "$settings/api/shared/stated";
 import type { ListRequest } from "$settings/types/requests";

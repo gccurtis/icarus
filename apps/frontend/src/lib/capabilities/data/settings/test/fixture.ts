@@ -1,8 +1,8 @@
 import { PGlite } from "@electric-sql/pglite";
 import { Kysely, PGliteDialect, sql } from "kysely";
 import { afterAll, beforeAll, beforeEach } from "vitest";
-import type { Database } from "$runtime/server/persistence/types";
-import type { Scope } from "$runtime/server/scope.server";
+import type { Database } from "$model/server/persistence/types";
+import type { Scope } from "$model/server/scope.server";
 import { initializeSettings } from "$settings/persistence/initialize";
 import { stub } from "$settings/test/stub";
 

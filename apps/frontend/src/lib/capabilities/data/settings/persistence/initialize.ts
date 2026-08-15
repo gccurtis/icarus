@@ -1,5 +1,5 @@
 import type { Kysely } from "kysely";
-import type { Database } from "$runtime/server/persistence/types";
+import type { Database } from "$model/server/index.server";
 import "$settings/persistence/tables";
 
 /**

@@ -22,7 +22,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import {
   checkCapabilities,
-  checkClientConstruction,
   checkNames,
   checkPaths,
   checkTestPlacement,
@@ -31,7 +30,6 @@ import {
 
 const packageRoot = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
 const capabilitiesRoot = join(packageRoot, "src", "lib", "capabilities");
-const clientRuntimeRoot = join(packageRoot, "src", "lib", "runtime", "client");
 
 const config = await import(pathToFileURL(join(packageRoot, "svelte.config.js")).href);
 
@@ -48,13 +46,12 @@ const failures = [
   ...checkCapabilities(scope),
   ...checkPaths({ ...scope, aliases }),
   ...checkNames(scope),
-  ...checkTestPlacement(scope),
+  ...checkTestPlacement(scope)
 
-  // The one rule outside capabilities/. It is here rather than in a lint of its
-  // own because it answers the same question the capability rules do — what
-  // shape is this allowed to be — and a second script for one rule would be
-  // read half as often.
-  ...checkClientConstruction({ root: clientRuntimeRoot, base: packageRoot })
+  // Client construction used to be checked here, because the model tree had no
+  // lint of its own and one homeless rule did not justify a second script. It
+  // has one now: model lint's `lifetime` covers the same ground with a compiler
+  // behind it, so this lint governs capabilities and nothing else.
 ];
 
 if (failures.length > 0) {

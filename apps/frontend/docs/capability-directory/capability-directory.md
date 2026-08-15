@@ -7,7 +7,7 @@ adding a capability, a public function, or a table.
 ## What a capability is
 
 A capability references data kept in a database, and it is **procedural**: types,
-tables, and functions. It has no runtime object.
+tables, and functions. It has no model object.
 
 That is a deliberate narrowing from the version of this standard the backend
 carried. A runtime object there held no state — it bound a store and a logger,
@@ -18,8 +18,8 @@ imported, and instrumentation is a shared procedure each entry calls, which no
 caller can bypass the way a wrapper above the procedure could.
 
 Objects survive where there is real lifetime, and that is not here. Browser state
-and process-held resources live in [`$runtime`](../../src/lib/runtime), on their
-own terms.
+and process-held resources live in [`$model`](../../src/lib/model), on their own
+terms.
 
 ## The template
 
@@ -68,6 +68,14 @@ directories, no `.gitkeep`.
 These names appear nowhere under `capabilities/`: `runtime-objects/`,
 `runtime-api/`, `endpoints/`, `wire/`, `store.ts`, `queries.ts`, `definition.ts`,
 `constructor.ts`, `domain/`, `application/`, `ports/`.
+
+**`definition.ts` and `constructor.ts` are banned here and required in
+[the model directory](../model-directory/model-directory.md).** That is not a
+contradiction between the two standards, it is the difference they exist to mark:
+a model object has state to define and dependencies to assemble, and a capability
+has neither. Either filename appearing under `capabilities/` means something with
+a lifetime was written as though it were procedural, which is the mistake worth
+catching by name.
 
 ## Directory contracts
 
@@ -176,7 +184,7 @@ Infrastructure divides by whether it depends on the caller.
 | configuration | imported where read | one per process |
 | **the project database** | `projectDatabase(scope.projectId)` | **one per project** — there is no import that could be correct |
 
-`projectDatabase` lives on `$runtime/server/index.server`, the composition root
+`projectDatabase` lives on `$model/server/index.server`, the composition root
 that holds the registry. It is the only scoped accessor, and a second scoped
 object would get its own beside it rather than joining a bundle everyone then has
 to grow a field for.
@@ -234,7 +242,7 @@ verifies them. `stored-types.ts` converts rows to canonical values and back.
 **One database per project.** A project is its own database, so no query carries a
 `project_id` predicate and no table carries the column. A capability that forgets
 to scope *cannot* leak across projects, because there is no cross-project reach to
-forget. The registry in `$runtime/server/persistence` opens a project's database
+forget. The registry in `$model/server/persistence` opens a project's database
 on first use and runs every capability's `initialize` against it.
 
 The exception, where it arises, is data scoped to a **user** as well as a project.
@@ -317,7 +325,7 @@ drift — there is no second map to keep in step.
 One exception exists, and it is structural rather than stylistic: a
 `declare module` block for Kysely declaration merging must name the module that
 declares the interface, so a capability's `tables.ts` targets the persistence
-runtime's types module rather than a door.
+object's types module rather than a door.
 
 ## Server-only enforcement
 

@@ -1,5 +1,4 @@
-import { serverRuntime } from "$runtime/server/index.server";
-import { errorFields } from "$runtime/server/observability/index.server";
+import { errorFields, serverModel } from "$model/server/index.server";
 import { SettingsError } from "$settings/errors";
 
 /**
@@ -7,7 +6,7 @@ import { SettingsError } from "$settings/errors";
  *
  * Called from inside each entry rather than wrapping them. A wrapper above a
  * procedure can be bypassed by anything that reaches the procedure directly; a
- * call inside it cannot. That mattered enough to delete the runtime object this
+ * call inside it cannot. That mattered enough to delete the model object this
  * used to hang from — there is now no object left to reach past.
  *
  * The logger is resolved here rather than passed in, because it is one per
@@ -23,7 +22,7 @@ export const record = async <T>(
   fields: Record<string, unknown>,
   run: () => Promise<T>
 ): Promise<T> => {
-  const { logger } = await serverRuntime();
+  const { logger } = serverModel().observability;
 
   logger.debug(`settings.${operation}.started`, fields);
 

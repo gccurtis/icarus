@@ -40,7 +40,7 @@ the capability does not have.
 
 ## Dependency Ports
 
-List only direct capability dependencies. Infrastructure from `$runtime/server` —
+List only direct capability dependencies. Infrastructure from `$model/server` —
 the database registry, the logger, configuration — is imported rather than
 injected and is not a port.
 

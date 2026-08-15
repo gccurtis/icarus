@@ -1,5 +1,5 @@
 import { command, getRequestEvent } from "$app/server";
-import { resolveScope } from "$runtime/server/scope.server";
+import { resolveScope } from "$model/server/scope.server";
 import { set as setProcedure } from "$settings/api/set/set";
 import { stated } from "$settings/api/shared/stated";
 import type { SetRequest } from "$settings/types/requests";

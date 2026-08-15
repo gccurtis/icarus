@@ -28,7 +28,7 @@ import {
 } from "./shared.mjs";
 
 /** What `--persisted` needs to exist before it can generate anything useful. */
-const PERSISTENCE_TYPES = "src/lib/runtime/server/persistence/types.ts";
+const PERSISTENCE_TYPES = "src/lib/model/server/persistence/types.ts";
 
 const USAGE = `usage: pnpm new-capability <path/to/name> [--persisted] [--browser-facing]
 
@@ -183,7 +183,7 @@ export interface ${pascal(name)}Table {
  * door that re-exports it — this is the one place the bare-alias rule does not
  * apply, and it is structural rather than stylistic.
  */
-declare module "$runtime/server/persistence/types" {
+declare module "$model/server/persistence/types" {
   interface Database {
     ${name.replace(/-/g, "_")}: ${pascal(name)}Table;
   }
@@ -193,7 +193,7 @@ declare module "$runtime/server/persistence/types" {
   write.add(
     join(root, "persistence", "initialize.ts"),
     `import type { Kysely } from "kysely";
-import type { Database } from "$runtime/server/persistence/types";
+import type { Database } from "$model/server/index.server";
 import "${alias}/persistence/tables";
 
 /**
