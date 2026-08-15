@@ -1,6 +1,6 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
-import type { ServerRuntime } from "$runtime/server/index.server";
-import type { Session } from "$runtime/server/scope.server";
+import type { ServerModel } from "$model/server/index.server";
+import type { Session } from "$model/server/scope.server";
 
 declare global {
   namespace App {
@@ -17,10 +17,10 @@ declare global {
       session: Session;
 
       /**
-       * The server runtime: configuration, the logger, and the per-project
+       * The server model: configuration, observability, and the per-project
        * database registry. Built once for the process, not per request.
        */
-      runtime: ServerRuntime;
+      model: ServerModel;
     }
     // interface Error {}
     // interface PageData {}

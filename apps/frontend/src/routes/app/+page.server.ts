@@ -12,14 +12,14 @@ import type { PageServerLoad } from "./$types";
  * The token is not a credential and does not scope anything by sitting here: a
  * remote function cannot see the page that called it, so the client reads this
  * out of its own URL and sends it with every call. See
- * `runtime/server/scope.server.ts`.
+ * `model/server/scope.server.ts`.
  *
  * Until authentication exists there is one project and one handle to it, named
  * in `configuration/dev.yaml`. When a real picker arrives this becomes a lookup
  * of the user's last project, and nothing below it changes.
  */
 export const load: PageServerLoad = ({ locals }) => {
-  const token = locals.runtime.configuration.get("development.projectToken");
+  const token = locals.model.configuration.get("development.projectToken");
 
   if (typeof token !== "string" || token.length === 0) {
     throw new Error(

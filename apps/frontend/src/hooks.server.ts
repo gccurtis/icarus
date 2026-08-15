@@ -1,9 +1,26 @@
-import type { Handle } from "@sveltejs/kit";
-import { closeServerRuntime, serverRuntime } from "$runtime/server/index.server";
-import { resolveSession } from "$runtime/server/scope.server";
+import type { Handle, ServerInit } from "@sveltejs/kit";
+import { closeServerModel, initServerModel, serverModel } from "$model/server/index.server";
+import { resolveSession } from "$model/server/scope.server";
 
 /**
- * Per request: build the runtime if it is not built, then resolve who is asking.
+ * Builds the one server graph, before this process answers its first request.
+ *
+ * This is the whole of the model's construction, and it happens once. A request
+ * is the wrong moment: it would make the first caller pay for configuration,
+ * logging, and the database registry, and it would mean concurrent first
+ * requests could race to open the same log file — which is why the door used to
+ * carry an in-flight promise cache and a failed-build eviction, and why neither
+ * exists any more.
+ *
+ * A configuration error now fails startup rather than one unlucky request.
+ */
+export const init: ServerInit = async () => {
+  await initServerModel();
+};
+
+/**
+ * Per request: hand the already-built model to the request, then resolve who is
+ * asking.
  *
  * **Authority only.** This runs before any handler has parsed a request body,
  * and a call's project arrives in that body — a remote function cannot be
@@ -11,23 +28,16 @@ import { resolveSession } from "$runtime/server/scope.server";
  * call from `/_app/remote/…` with empty route params. So a scope is assembled
  * one layer down, by the remote wrapper that holds both the session and the
  * token; see `scope.server.ts`.
- *
- * The runtime is awaited eagerly because resolving a session needs
- * configuration, and every request resolves one. There is no lazy accessor: one
- * forced open on the line below where it is installed would be a comment
- * claiming a saving that does not happen.
  */
 export const handle: Handle = async ({ event, resolve }) => {
-  const runtime = await serverRuntime();
-
-  event.locals.runtime = runtime;
+  event.locals.model = serverModel();
   event.locals.session = await resolveSession(event.cookies);
 
   return resolve(event);
 };
 
 /**
- * Release what the runtime holds, after the server has stopped accepting work.
+ * Release what the model holds, after the server has stopped accepting work.
  *
  * `sveltekit:shutdown` rather than SIGTERM: the Node adapter installs its own
  * signal handler that closes the listener, drains in-flight requests, and only
@@ -40,8 +50,8 @@ export const handle: Handle = async ({ event, resolve }) => {
  * so a second signal never reaches Node's default disposition anyway.
  */
 process.on("sveltekit:shutdown", () => {
-  void closeServerRuntime().catch((error: unknown) => {
+  void closeServerModel().catch((error: unknown) => {
     process.exitCode = 1;
-    console.error("runtime shutdown failed", error);
+    console.error("model shutdown failed", error);
   });
 });

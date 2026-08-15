@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/state";
+  import { clientModel } from "$model/client";
   import { list, set } from "$settings";
 
   /**
@@ -10,14 +10,18 @@
    * is tree-shaken out of the build entirely: an unused capability is not a
    * quiet capability, it is an absent one.
    *
-   * It reads the project token from its own URL and sends it with every call.
-   * That is not ceremony — a remote function cannot see the page that called
-   * it, because kit serves them all from `/_app/remote/…` with empty route
-   * params. The token names which project; the session cookie names who is
-   * asking; the server pairs them and neither the view nor the procedure gets a
-   * say. See src/lib/runtime/server/scope.server.ts.
+   * The project comes off the model rather than out of `page`. The layout read
+   * it from the route once and built the client instance around it, so this is
+   * the same token by construction — and a view that reached for `page` itself
+   * could disagree with the workbench it is rendering.
+   *
+   * Every capability call carries it, which is not ceremony: a remote function
+   * cannot see the page that called it, because kit serves them all from
+   * `/_app/remote/…` with empty route params. The token names which project; the
+   * session cookie names who is asking; the server pairs them and neither the
+   * view nor the procedure gets a say.
    */
-  const project = page.params.project ?? "";
+  const { project } = clientModel();
 
   // One project per client instance for its whole life, so this query is built
   // once rather than derived from something that could change under it.

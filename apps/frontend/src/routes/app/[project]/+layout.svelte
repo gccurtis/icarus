@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { clientRuntime } from "$runtime/client";
+  import { page } from "$app/state";
+
+  import { initClientModel } from "$model/client";
   import ContextPanel from "$lib/shell/context/context-panel.svelte";
   import Inspector from "$lib/shell/inspector.svelte";
   import Status from "$lib/shell/status.svelte";
@@ -20,20 +22,30 @@
    * nothing resizes, collapses, or responds to selection yet — the panel
    * components will own the drag and its bounds when they are wired.
    *
-   * The two panel widths come from preferences rather than being declared in
-   * the stylesheet, so there is one source of truth per dimension. Reaching the
-   * runtime here is safe because this route sets `ssr = false` — the accessor
-   * throws outside the browser by design. See lib/runtime/client/client.md.
+   * This layout owns the client instance, so it is the one place that calls
+   * `initClientModel`. The project comes from the route: a client instance acts
+   * on exactly one project for its whole life, and switching projects is a full
+   * page load rather than a client-side navigation — this script would not
+   * re-run otherwise, and the model would go on serving the previous project's
+   * workbench.
+   *
+   * That makes `data-sveltekit-reload` on every project link load-bearing rather
+   * than cautious: it is the only thing that runs this script again, so a link
+   * that omits it produces a shell pointed at one project and a model still
+   * holding another. See lib/model/client/client.md.
+   *
+   * The two panel widths come from the active tab rather than being declared in
+   * the stylesheet, so there is one source of truth per dimension.
    */
   let { children }: { children: Snippet } = $props();
 
-  const { preferences } = clientRuntime();
+  const { workbench } = initClientModel({ project: page.params.project ?? "" });
 </script>
 
 <div
   class="shell"
-  style:--shell-context="calc(var(--shell-rail) + {preferences.panels.contextWidth}px)"
-  style:--shell-inspector="{preferences.panels.inspectorWidth}px"
+  style:--shell-context="calc(var(--shell-rail) + {workbench.panels.contextWidth}px)"
+  style:--shell-inspector="{workbench.panels.inspectorWidth}px"
 >
   <Topbar />
   <Tabstrip />
@@ -62,7 +74,7 @@
   .shell {
     --shell-topbar: calc(var(--token-spacing-unit) * 11); /* 44px */
     --shell-tabstrip: calc(var(--token-spacing-unit) * 9); /* 36px */
-    /* Seeds only. Both are overridden inline from preferences above; these are
+    /* Seeds only. Both are overridden inline from the workbench above; these are
      * what paints if that ever fails, and they are why the grid never collapses
      * to zero on a first frame. */
     --shell-context: calc(var(--token-spacing-unit) * 80); /* 44 rail + 276 content */

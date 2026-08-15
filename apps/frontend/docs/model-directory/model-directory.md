@@ -1,21 +1,40 @@
 # The Model Directory
 
-**Status:** Translation and implementation specification. This replaces
-`src/lib/runtime/` with `src/lib/model/` while preserving the current client and
-server lifetimes.
+**Status:** The standard for model objects in this application. Read it before
+adding a model object, a public method, or an environment root. It governs
+`src/lib/model/`, and model lint (`pnpm lint:model`) enforces its structure.
+
+**This document describes structure, not design.** What shape a directory takes,
+which file may import which, and what a reviewer can check are here. *Why this
+application's model is built the way it is* — what a client instance is, why the
+server graph is built in a hook, what the workbench owns — belongs beside the
+code that decides it:
+
+| Question | Answered in |
+| --- | --- |
+| What is here, and why the two halves differ | [`model/model.md`](../../src/lib/model/model.md) |
+| How a client instance is built, held, and released | [`model/client/client.md`](../../src/lib/model/client/client.md) |
+| How the process graph is built and shut down | [`model/server/server.md`](../../src/lib/model/server/server.md) |
+| What one object owns, and what it promises | that object's `<object>.md` |
+
+**Document templates:** [`templates/`](templates/templates.md).
+[`reviewing-a-model-object.md`](reviewing-a-model-object.md) is the review
+checklist, and its "Structure" items are what the linter checks for you.
 
 ## Contract
 
 - A model object owns state or a resource that survives a procedure call.
-- Every production model object is a singleton in its environment process.
-- `model/client/` owns one graph for one browser JavaScript process.
+- **No object builds itself at module load.** One environment root holds one
+  instance, and one place initializes it.
+- `model/client/` owns one graph per client instance — one browser tab now, one
+  desktop window later — for that instance's whole life.
 - `model/server/` owns one graph for one server process.
-- The environment root constructs, caches, and releases the graph. Leaf object
-  modules never create independent singleton caches.
+- The environment root constructs, holds, and releases the graph. Leaf object
+  modules never hold instances of their own.
 - Public methods expose an object's surface; their directories expose the
   procedural flow behind that surface.
 
-“Singleton” describes production lifetime. Constructors still return fresh
+"One instance" describes production lifetime. Constructors still return fresh
 objects so the roots can assemble the graph and tests can prove isolation.
 
 Capabilities remain the procedural half of the application model: they own
@@ -28,19 +47,19 @@ stateful half.
 src/lib/model/
 ├── model.md
 ├── client/
-│   ├── client.md                    browser lifetime and isolation contract
-│   ├── index.ts                     public door and guarded singleton accessor
-│   ├── types.ts                     aggregate ClientModel type
-│   ├── constructor.ts               constructs the complete client graph
+│   ├── client.md                    client-instance lifetime and initialization
+│   ├── index.ts                     public door, initializer, and accessor
+│   ├── types.ts                     aggregate ClientModel and ClientModelInput
+│   ├── constructor.ts               buildClientModel: composes the client graph
 │   ├── test/                         graph, lifetime, and isolation tests
 │   └── <object>/
 └── server/
     ├── server.md                    process lifetime and shutdown contract
-    ├── index.server.ts              public door and lazy singleton accessor
+    ├── index.server.ts              public door, initializer, accessor, shutdown
     ├── types.ts                     aggregate ServerModel type
-    ├── constructor.server.ts        constructs the complete server graph
+    ├── constructor.server.ts        buildServerModel: composes the server graph
     ├── scope.server.ts              per-request identity and authority
-    ├── test/                         graph, concurrency, and shutdown tests
+    ├── test/                         graph, lifetime, and shutdown tests
     └── <object>/
 ```
 
@@ -56,7 +75,7 @@ model/{client|server}/<object>/
 │                                      state/resource holder; delegates methods
 ├── constructor.ts                   always returns a fresh object
 ├── methods/
-│   ├── methods.md                   public method inventory and shared laws
+│   ├── methods.md                   method inventory and shared laws
 │   ├── <simple-method>.ts
 │   ├── <complex-method>/
 │   │   ├── <complex-method>.md
@@ -76,107 +95,45 @@ model/{client|server}/<object>/
 ```
 
 Optional directories are absent when unused. A client definition uses
-`.svelte.ts` only when it owns Svelte runes. Stateless client projections and
-server definitions use `.ts`.
+`.svelte.ts` only when it owns Svelte runes. Server definitions use `.ts`.
 
-## Lifetime and construction
+**The object root holds what an object *is*** — its document, its door, its
+types, its state, and its constructor, and nothing else. Everything an object
+*does* lives in `methods/`, including a module that is not a public method at
+all: a codec, a wire format, a parser is still the execution behind the surface,
+and `methods.md` is where it names the caller it serves. A file at the root with
+no decided home is one nobody decided the home of, and `layout` refuses it.
 
-Both environments follow the same ownership pattern:
+### Three construction verbs
 
-```text
-environment accessor
-└── one cached aggregate
-    ├── one instance of object A
-    ├── one instance of object B
-    └── one instance of object C
-```
+| Function | Called by | Returns |
+| --- | --- | --- |
+| `init<Environment>Model(…)` | the one place that owns the lifetime | the graph, and holds it |
+| `build<Environment>Model(input)` | that initializer, and tests | a complete graph; pure composition |
+| `create<Object>(dependencies)` | the builder, once each | one fresh object |
 
-An object does not obtain singleton lifetime by caching itself. Its constructor
-returns a fresh instance; the environment constructor calls it once, and the
-environment accessor caches the completed graph once.
+The three are named separately because their callers differ, and because
+collapsing any two removes a seam something depends on.
 
-This gives one place to enforce construction order, browser/server admission,
-failure cleanup, and shutdown. It also prevents independently cached objects
-from accidentally belonging to different graphs.
+`init` is the only thing that assigns the instance, and exactly one place calls
+it. `build` is pure composition and holds nothing, which is what lets a test
+stand up two whole graphs and prove they share nothing. `create` returns one
+fresh object and never caches.
 
-### Client process
+**A door does not re-export its builder.** The initializer and tests are the
+whole set allowed to hold a graph, so publishing the builder beside the accessor
+would offer a second way to build one — and a second graph is what this shape
+exists to prevent. A test reaches a builder at its constructor module, which the
+door rules exempt test code from.
 
-A client process is one browser page's JavaScript realm. Navigation beneath the
-application layout retains the same graph. Reloading the page or opening another
-tab creates another graph. Persistent storage may be shared by the browser
-origin; live objects and reactive state are not.
+### `definition.ts` and `constructor.ts` are model filenames
 
-The production path is:
-
-```text
-clientModel()
-├── reject when browser === false
-└── create once
-    └── createClientModel(createBrowserStorage())
-        ├── createPreferences(storage)
-        ├── createWorkbench(storage)
-        ├── createActivities(workbench)
-        └── createInspector(workbench)
-```
-
-`model/client/index.ts` owns the only client cache and the only import of
-`browser` from `$app/environment`:
-
-```ts
-let instance: ClientModel | undefined;
-
-export const clientModel = (): ClientModel => {
-  if (!browser) throw new Error("The client model is browser-only");
-  return (instance ??= createClientModel(createBrowserStorage()));
-};
-```
-
-`model/client/constructor.ts` is pure composition over injected storage. It is
-not browser-guarded and is not an application-facing alternative to
-`clientModel()`. The root and tests use it; routes, views, capabilities, and
-server code do not.
-
-Client isolation has two required parts:
-
-1. `src/routes/app/+layout.ts` exports `ssr = false`, so the application shell
-   and its descendants are not rendered on the server.
-2. `clientModel()` checks `browser` before storage access or construction.
-
-SSR disabling alone is insufficient because SvelteKit may load component
-modules on the server while assembling the route and its CSS. The guard ensures
-the client graph is never constructed in a shared server module process.
-
-Leaf modules contain no module-scope mutable identity, constructed object, or
-second browser guard. `$state`, counters, subscriptions, and other live state
-belong to their object instance.
-
-### Server process
-
-A server process owns one server graph. A multi-process deployment has one graph
-per worker. The graph contains process infrastructure only; user and project
-identity arrive per request through `Scope`.
-
-`model/server/index.server.ts` owns the in-flight construction promise and
-terminal shutdown state:
-
-```text
-serverModel()
-├── reject after shutdown begins
-├── return existing construction promise
-└── otherwise build once
-    └── createServerModel()
-        ├── configuration
-        ├── observability
-        └── persistence
-```
-
-Caching the promise makes concurrent first requests share initialization. A
-failed construction is evicted so a later request may retry. Shutdown is
-idempotent and one-way: it closes owned resources in dependency order and never
-permits a replacement graph to start while the first is closing.
-
-`hooks.server.ts` obtains this same singleton graph and places its reference on
-each request's locals. It does not construct a graph per request.
+[The Capability Directory](../capability-directory/capability-directory.md)
+lists both among names that appear nowhere under `capabilities/`. This standard
+mandates both. The rules agree rather than collide: a capability is procedural
+and has no object to define or construct, so either filename appearing beneath
+`capabilities/` means someone imported this model into a place with no lifetime
+to hold. Read the pair as one rule about where objects live.
 
 ## File responsibilities
 
@@ -184,11 +141,18 @@ each request's locals. It does not construct a graph per request.
 
 | File | Responsibility |
 | --- | --- |
-| `index.ts` | Client public exports, browser admission, and cached aggregate |
-| `index.server.ts` | Server public exports, lazy process promise, and shutdown |
-| `types.ts` | Names every object present in the aggregate model |
-| `constructor*` | Calls every leaf constructor once in dependency order |
+| `index.ts` | Client public exports, the one instance, its initializer, and its accessor |
+| `index.server.ts` | Server public exports, the one instance, its initializer, accessor, and shutdown |
+| `types.ts` | Names every object present in the aggregate model, and the root's input |
+| `constructor*` | `build<Environment>Model`: calls every leaf constructor once in dependency order |
 | `client.md` / `server.md` | Defines lifetime, construction, failure, and release behavior |
+
+**The aggregate `types.ts` is required at each root**, not written only when
+something needs it. Both the builder and the accessor return a named
+`ClientModel` or `ServerModel`, and a contract inferred from a constructor cannot
+be referenced by the consumers that have to name it: the file declaring what it
+initialized, the test substituting one object, the helper taking the graph as a
+parameter.
 
 Production consumers enter through the environment door and select an object
 from the aggregate:
@@ -211,8 +175,8 @@ const { persistence } = event.locals.model;
 | `test/` | Proves behavior owned by this object |
 
 The object door is a composition door, not a second production access path.
-Application consumers receive its singleton instance from the aggregate; they
-do not call `create<Object>()` themselves.
+Application consumers receive the one instance from the aggregate; they do not
+call `create<Object>()` themselves.
 
 ## Method execution trees
 
@@ -253,6 +217,11 @@ used by a second public method moves to `methods/shared/` only when it preserves
 an object-wide invariant. Sibling public-method directories never import one
 another.
 
+**`methods/shared/` is created by hand, when its second caller arrives.** There
+is no promotion command, matching the capability generator, which has none
+either. Promotion is a judgment about which invariant the method preserves, and a
+command would turn it into a mechanical move of any code that appeared twice.
+
 This is the same execution-tree rule capabilities already use for
 `api/<function>/`. Capability functions always get directories because each is
 an independently documented server API. Model methods stay as files until they
@@ -260,11 +229,27 @@ have a supporting tree.
 
 ## Exposure rules
 
-- `$model/client` and `$model/server/index.server` are the production doors.
-- Application code never imports `constructor.ts` or calls leaf constructors.
+- `$model/client` and `$model/server/index.server` are the production doors,
+  plus `$model/server/scope.server` for request identity.
+- **`scope.server.ts` is a door rather than an internal file**, and it has to be
+  one. It resolves who is asking and about which project, so a remote wrapper and
+  `hooks.server.ts` both reach it directly. Folding it behind `index.server.ts`
+  would mean the root re-exporting values from a module that imports
+  `serverModel` back out of the root — a real import cycle, and one `graph` would
+  then have to be taught to ignore. The root already re-exports `Scope` and
+  `Session` as types, which is erased and therefore safe; the functions cannot
+  follow them. It stays a narrow door: identity in, `Scope` out, and no process
+  object reachable through it.
+- Only the one place that owns a lifetime calls `init<Environment>Model`.
+  Everything else calls the accessor.
+- Application code never imports `constructor.ts` or calls leaf constructors, and
+  no door re-exports a builder.
 - The environment constructor imports each leaf through its object door.
 - An object imports another object through that object's door, never its
   definition, methods, or state types.
+- **Only an environment door reaches `$app/*`.** A leaf taking `browser`, `page`,
+  or `navigating` is taking its identity from ambient routing rather than from
+  the argument its constructor was handed.
 - Client code never imports the server tree.
 - Server code, capabilities, hooks, loads, and actions never import the client
   tree.
@@ -275,14 +260,13 @@ have a supporting tree.
 
 ## Tests
 
-Environment tests prove singleton lifetime and graph behavior:
+Environment tests prove lifetime and graph behavior:
 
+- the accessor throws before the graph is built, and returns it afterwards;
 - repeated access returns the same aggregate and the same leaf references;
 - every aggregate field is constructed exactly once;
-- two explicit test graphs over separate dependencies share nothing;
-- client server-side access fails before storage or leaf construction;
-- concurrent server access shares one construction promise;
-- failed server construction cleans up and permits retry;
+- two graphs built over separate dependencies share nothing;
+- a failed build leaves nothing reachable;
 - shutdown is idempotent, closes all owned resources, and prevents rebuild.
 
 Object tests use fresh constructors. `unit/` mirrors methods and construction,
@@ -305,23 +289,20 @@ and `svelte/compiler` for Svelte script blocks. Rules return structured failures
 `lint.mjs` only resolves package paths, formats all failures, and sets the exit
 code. Every rule has a valid fixture and an isolated failing mutation.
 
+**Rules are named, not numbered.** A finding leads with its rule name, so the
+message says what was violated without a table to look it up in. Capability and
+view lint carry no codes either.
+
 | Rule | What it enforces |
 | --- | --- |
-| `MOD001 layout` | Only the documented environment-root and object shapes exist; names are kebab-case and required documents are present. |
-| `MOD002 aggregate` | `ClientModel` and `ServerModel` fields match the objects returned by their constructors; every field is assigned exactly once. |
-| `MOD003 singleton-owner` | Only environment roots cache constructed graphs. Leaf modules have no module-scope `let`, `var`, `new`, or `create<Object>()` result. |
-| `MOD004 client-gate` | Only `client/index.ts` imports `$app/environment`; its accessor checks `browser` before browser storage and construction. |
-| `MOD005 client-ssr` | Every route import graph reaching `$model/client` is beneath a layout exporting `ssr = false`; server modules never reach the client tree. |
-| `MOD006 server-boundary` | Browser modules cannot reach `model/server`; production server imports enter through server-marked doors. |
-| `MOD007 construction` | Application consumers cannot import environment or leaf constructors; roots call leaf constructors in dependency order without cycles. |
-| `MOD008 method-tree` | Complex method directories contain same-name entries and documents recursively; every documented tree path exists. |
-| `MOD009 method-ownership` | Sibling method directories do not import one another; shared methods have at least two public-method callers. |
-| `MOD010 doors` | Imports across object and environment boundaries use doors; definitions, methods, and private types are not deep-imported. |
-| `MOD011 tests` | Tests live under environment or object `test/` directories and use the correct environment-specific extensions. |
-
-`MOD003` and `MOD004` absorb the current client-construction checks that are
-temporarily housed in capability lint. Capability lint then returns to governing
-capabilities only.
+| `layout` | Only the documented shapes exist: required files, permitted root files and directories, kebab-case names, and a definition extension matching its runes. |
+| `graph` | `ClientModel` and `ServerModel` fields match what their builders return; every field is assigned once; leaves are constructed once; the root assembles in dependency order without cycles. |
+| `lifetime` | Nothing constructs at module load; only an environment door holds a mutable module-scope binding or reaches `$app/*`; the client accessor guards on `browser`, and both accessors throw. |
+| `environment` | Nothing browser-reachable imports `model/server`; no server module reaches `model/client`; every route reaching the client model sits beneath a layout exporting `ssr = false`. |
+| `doors` | Object and environment boundaries are crossed at their doors; constructors are not reachable from consumers. |
+| `methods` | A method directory is named for its entry and documents its tree; every documented path exists; sibling directories do not import one another; a shared method has at least two callers. |
+| `tests` | Tests live under environment or object `test/` directories, in `unit/`, `regression/`, or `non-functional/`, with the extension their contents require. |
+| `view-keys` | No model type names a Svelte `Component`, imports one, or sits in a `.svelte` file. |
 
 The package exposes `lint:model`; aggregate `lint` runs capability, model, view,
 and style structural checks.
@@ -370,27 +351,3 @@ the simple-file or complex-directory choice is made when each method is added.
 Generator tests cover both environments, reactive and plain client definitions,
 sync and async server construction, dependency ordering, cycle rejection,
 collision refusal, rollback, and a clean model-lint result.
-
-## Translation
-
-1. Add `$model` and the model linter against fixtures.
-2. Move the client root to `model/client/`; split aggregate types and pure
-   construction from the guarded accessor. Preserve `ssr = false`, the single
-   browser guard, browser storage behavior, and one instance of every object.
-3. Move each client object. Extract public implementation into method trees.
-   Move activity and inspector component registries into the view layer without
-   changing their stable keys or selection behavior.
-4. Move the server root; split construction from its lazy accessor. Preserve
-   promise caching, failure eviction, per-request `Scope`, shutdown order, and
-   one instance of every process object.
-5. Move each server object and expose its method flow.
-6. Rename `ClientRuntime` and `ServerRuntime` to `ClientModel` and `ServerModel`;
-   rename `clientRuntime()` and `serverRuntime()` to `clientModel()` and
-   `serverModel()`; rename `App.Locals.runtime` to `model`.
-7. Update capability and route imports from `$runtime` to `$model`, enable model
-   lint, then remove the old alias and `runtime/` tree.
-
-The translation is complete when production behavior is unchanged, repeated
-access returns the same per-process objects, client construction is impossible
-on the server path, all method trees and doors pass lint, and the old runtime
-vocabulary no longer exists.
