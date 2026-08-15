@@ -1,7 +1,0 @@
-# Shared resource revision retention.
-
-retention:
-  revisionRetentionDays: 30
-  sweepIntervalHours: 24
-
-# Project and user identifiers.

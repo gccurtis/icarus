@@ -1,5 +1,0 @@
-# The bound user and project. Requests will carry these once scope moves out of
-# configuration; until then the process serves exactly one project.
-
-projectId: default
-userId: default-user
