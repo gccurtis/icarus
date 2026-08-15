@@ -1,0 +1,68 @@
+# Revision retention: how much change history stays hot, and how far back it goes.
+#
+# General resources are stored as a snapshot plus a sequence of change sets. Every
+# number here divides that sequence somewhere, and each division is a trade the
+# model deliberately leaves open — see docs/data-models/revisions/.
+#
+# None of these affect correctness. Widening a window costs storage and read
+# latency; narrowing it costs merges and history. They are meant to be tuned
+# against real editing sessions, so change them freely.
+
+revisions:
+  # When an editor stops accumulating operations and submits them as one change
+  # set. Whichever threshold is reached first wins.
+  #
+  # Editing produces far more operations than changes: typing a sentence and
+  # deleting half of it is dozens of operations that fold into one small splice.
+  # Submitting each one would be wasteful and would fill history with steps
+  # nobody wants to see. Waiting too long makes an edit invisible to collaborators
+  # and enlarges what a single undo reverses.
+  changeSets:
+    # Submit once this many operations have accumulated, before folding.
+    flushAfterOps: 50
+    # Submit this long after the first unsubmitted operation, whatever the count.
+    flushAfterMs: 2000
+
+  resources:
+    # How many change sets stay in the `recent` tier behind the leader snapshot.
+    #
+    # This is the rebase window. A mutation authored against a revision older
+    # than the window is rejected outright regardless of whether it actually
+    # conflicts, because the sets needed to evaluate the conflict are no longer
+    # hot. That is rule 5, and it is the rule most likely to change.
+    #
+    # Raising it merges more edits from clients that were offline or slow, at the
+    # cost of a longer replay on every read. Lowering it makes reads cheaper and
+    # rejects more retryable writes.
+    rebaseWindow: 200
+
+    # Consolidation folds recent change sets into the leader snapshot and moves
+    # them to the `historical` tier. It runs once this many sets have accumulated
+    # past the leader.
+    #
+    # Must stay below rebaseWindow, or consolidation would evict sets that are
+    # still needed to rebase against.
+    consolidateAfter: 100
+
+    # Historical change sets retained behind the base snapshot, per resource.
+    # This is how far back a past revision can be reconstructed.
+    #
+    # Exceeding it advances the base: the body at the cutoff is materialized as
+    # the new base and everything older is discarded. Older revisions become
+    # permanently unreachable, which is the intent — this is the storage lever.
+    historyDepth: 10000
+
+    # Optional intermediate snapshots in the historical range, written every this
+    # many revisions. They bound how long reconstructing an old revision takes;
+    # without them a replay runs from the base every time.
+    #
+    # Set to 0 to write none. Each one costs a full body.
+    checkpointEvery: 2000
+
+  lattice:
+    # Lattice change rows retained per project, oldest dropped first.
+    #
+    # These are explanations, not state. The lattice can be rebuilt from project
+    # content at any time, so dropping a row loses the record of why some nodes
+    # changed and never the ability to recover them.
+    changeHistory: 1000
