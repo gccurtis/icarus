@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SectionHeading from "$lib/demo/section-heading.svelte";
+  import SectionHeading from "$views/demo/components/section-heading.svelte";
   import * as Resizable from "$lib/simple-components/resizable";
   import { ScrollArea } from "$lib/simple-components/scroll-area";
   import { Skeleton } from "$lib/simple-components/skeleton";

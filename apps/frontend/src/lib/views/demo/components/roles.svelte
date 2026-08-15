@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SectionHeading from "$lib/demo/section-heading.svelte";
+  import SectionHeading from "$views/demo/components/section-heading.svelte";
 
   const SLOTS = ["surface", "surface-hover", "border", "fill", "fill-hover", "text", "on-fill"];
 
@@ -14,13 +14,9 @@
     { role: "inactive", hue: "grey", means: "Unavailable, disabled" },
   ];
 
-  /** Identity resolves through an anchor, so the active set decides it. */
-  const BRAND = [
-    { role: "primary", hue: "blue" },
-    { role: "secondary", hue: "violet" },
-    { role: "accent-1", hue: "teal" },
-    { role: "accent-2", hue: "pink" },
-  ];
+  /** Identity resolves through an anchor, so the active set decides the hue.
+   *  No hue is named here: naming one would be a lie under any other set. */
+  const BRAND = ["primary", "secondary", "tertiary", "accent-1", "accent-2"];
 </script>
 
 <section class="flex flex-col gap-4">
@@ -60,7 +56,7 @@
 
   <h3 class="text-h4 mt-2 font-semibold">Brand roles</h3>
   <div class="flex flex-col gap-2">
-    {#each BRAND as { role, hue } (role)}
+    {#each BRAND as role (role)}
       <div class="grid grid-cols-[9rem_repeat(7,1fr)_14rem] items-center gap-2">
         <span class="text-label font-mono">{role}</span>
         {#each SLOTS as slot (slot)}
@@ -70,7 +66,7 @@
             title="--token-color-{role}-{slot}"
           ></div>
         {/each}
-        <span class="text-caption text-ink-muted">{hue}</span>
+        <span class="text-caption text-ink-muted">set-dependent</span>
       </div>
     {/each}
   </div>

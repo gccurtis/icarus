@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SectionHeading from "$lib/demo/section-heading.svelte";
+  import SectionHeading from "$views/demo/components/section-heading.svelte";
   import { Checkbox } from "$lib/simple-components/checkbox";
   import * as Field from "$lib/simple-components/field";
   import * as InputGroup from "$lib/simple-components/input-group";

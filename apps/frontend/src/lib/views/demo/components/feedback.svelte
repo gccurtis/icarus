@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SectionHeading from "$lib/demo/section-heading.svelte";
+  import SectionHeading from "$views/demo/components/section-heading.svelte";
   import * as Alert from "$lib/simple-components/alert";
   import * as Avatar from "$lib/simple-components/avatar";
   import { Button } from "$lib/simple-components/button";

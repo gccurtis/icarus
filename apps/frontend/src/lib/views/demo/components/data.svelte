@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SectionHeading from "$lib/demo/section-heading.svelte";
+  import SectionHeading from "$views/demo/components/section-heading.svelte";
   import { Badge } from "$lib/simple-components/badge";
   import * as Carousel from "$lib/simple-components/carousel";
   import { Label } from "$lib/simple-components/label";

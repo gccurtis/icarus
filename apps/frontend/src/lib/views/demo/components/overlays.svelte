@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SectionHeading from "$lib/demo/section-heading.svelte";
+  import SectionHeading from "$views/demo/components/section-heading.svelte";
   import { Button } from "$lib/simple-components/button";
   import * as Dialog from "$lib/simple-components/dialog";
   import * as DropdownMenu from "$lib/simple-components/dropdown-menu";

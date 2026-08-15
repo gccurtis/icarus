@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SectionHeading from "$lib/demo/section-heading.svelte";
+  import SectionHeading from "$views/demo/components/section-heading.svelte";
   import * as Accordion from "$lib/simple-components/accordion";
   import * as AlertDialog from "$lib/simple-components/alert-dialog";
   import * as Breadcrumb from "$lib/simple-components/breadcrumb";
