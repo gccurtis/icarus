@@ -1,10 +1,8 @@
 <script lang="ts">
   import {
     applyAppearance,
-    SETS,
     storedAppearance,
     THEMES,
-    type SetName,
     type ThemeName
   } from "$views/demo/effects/apply-appearance.svelte";
   import { Label } from "$lib/simple-components/label";
@@ -12,16 +10,12 @@
 
   const initial = storedAppearance();
   let theme = $state<ThemeName>(initial.theme);
-  let set = $state<SetName>(initial.set);
 
-  applyAppearance(() => ({ theme, set }));
+  applyAppearance(() => ({ theme }));
 
   const LABELS: Record<string, string> = {
     celestial: "Celestial — light",
-    cyberpunk: "Cyberpunk — dark",
-    "blue-primary": "Blue primary",
-    "cyan-primary": "Cyan primary",
-    "pink-primary": "Pink primary"
+    cyberpunk: "Cyberpunk — dark"
   };
 </script>
 
@@ -36,18 +30,6 @@
       <Select.Trigger id="theme" class="w-48">{LABELS[theme]}</Select.Trigger>
       <Select.Content>
         {#each THEMES as name (name)}
-          <Select.Item value={name}>{LABELS[name]}</Select.Item>
-        {/each}
-      </Select.Content>
-    </Select.Root>
-  </div>
-
-  <div class="flex items-center gap-2">
-    <Label for="set">Semantic set</Label>
-    <Select.Root type="single" bind:value={set}>
-      <Select.Trigger id="set" class="w-44">{LABELS[set]}</Select.Trigger>
-      <Select.Content>
-        {#each SETS as name (name)}
           <Select.Item value={name}>{LABELS[name]}</Select.Item>
         {/each}
       </Select.Content>

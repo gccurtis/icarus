@@ -3,20 +3,25 @@
 
   const SLOTS = ["surface", "surface-hover", "border", "fill", "fill-hover", "text", "on-fill"];
 
-  /** Meaning is fixed in tokens/color.css and a set may not move it. */
+  /** Every role binds directly to one chromatic family in
+   *  semantic-tokens/color.css. Meaning roles are fixed there; identity and
+   *  brand roles may share a hue with each other but never with a meaning. */
   const SEMANTIC = [
     { role: "success", hue: "green", means: "Applied, accepted, valid, safe" },
     { role: "danger", hue: "red", means: "Failed, rejected, destructive, denied" },
     { role: "attention", hue: "amber", means: "Human judgment required; stale" },
-    { role: "intelligence", hue: "violet", means: "Derived work" },
+    { role: "inactive", hue: "grey", means: "Unavailable, disabled" },
     { role: "interactive", hue: "blue", means: "Can be acted upon" },
     { role: "active", hue: "cyan", means: "Currently engaged, live" },
-    { role: "inactive", hue: "grey", means: "Unavailable, disabled" },
+    { role: "intelligence", hue: "violet", means: "Derived work" },
   ];
 
-  /** Identity resolves through an anchor, so the active set decides the hue.
-   *  No hue is named here: naming one would be a lie under any other set. */
-  const BRAND = ["primary", "secondary", "tertiary", "accent-1", "accent-2"];
+  const BRAND = [
+    { role: "primary", hue: "blue", means: "Shares the interactive hue" },
+    { role: "secondary", hue: "cyan", means: "Shares the active hue" },
+    { role: "accent-1", hue: "pink", means: "Categorical work" },
+    { role: "accent-2", hue: "teal", means: "Categorical work" },
+  ];
 </script>
 
 <section class="flex flex-col gap-4">
@@ -56,7 +61,7 @@
 
   <h3 class="text-h4 mt-2 font-semibold">Brand roles</h3>
   <div class="flex flex-col gap-2">
-    {#each BRAND as role (role)}
+    {#each BRAND as { role, hue, means } (role)}
       <div class="grid grid-cols-[9rem_repeat(7,1fr)_14rem] items-center gap-2">
         <span class="text-label font-mono">{role}</span>
         {#each SLOTS as slot (slot)}
@@ -66,7 +71,7 @@
             title="--token-color-{role}-{slot}"
           ></div>
         {/each}
-        <span class="text-caption text-ink-muted">set-dependent</span>
+        <span class="text-caption text-ink-muted">{hue} — {means}</span>
       </div>
     {/each}
   </div>

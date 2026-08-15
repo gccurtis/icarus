@@ -14,14 +14,14 @@ This view owns:
 
 - the section order, page width, padding, and gaps between sections;
 - the local state each section uses to drive its own examples;
-- the active chromatic theme and semantic set, selected in
-  `components/appearance-bar.svelte` and applied to the document root;
+- the active chromatic theme, selected in `components/appearance-bar.svelte` and
+  applied to the document root;
 - the single permitted read of private `--palette-*` properties, in
   `components/palette.svelte`.
 
 It does not own:
 
-- the tokens, themes, or semantic sets themselves — those belong to
+- the tokens or themes themselves — those belong to
   [the styles directory](../../../../docs/styles-directory/styles-directory.md);
 - the primitive components it demonstrates, which belong to
   `simple-components/` and are consumed unmodified;
@@ -112,8 +112,8 @@ model or capability work, and no state is shared between sections.
   `components/palette.svelte`.
 - No section reads the client model or calls a capability.
 - Section state stays in the section that owns it; nothing is shared.
-- Appearance reaches the page through `data-theme` and `data-set` on the document
-  root, never through props.
+- Appearance reaches the page through `data-theme` on the document root, never
+  through props.
 - Primitives are consumed unmodified. A primitive that needs different behavior
   is wrapped by a component here rather than edited in `simple-components/`.
 

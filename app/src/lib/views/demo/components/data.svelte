@@ -2,6 +2,7 @@
   import SectionHeading from "$views/demo/components/section-heading.svelte";
   import { Badge } from "$lib/simple-components/badge";
   import * as Carousel from "$lib/simple-components/carousel";
+  import * as Shelf from "$lib/unique-components/carousel-shelf";
   import { Label } from "$lib/simple-components/label";
   import * as Pagination from "$lib/simple-components/pagination";
   import { Slider } from "$lib/simple-components/slider";
@@ -17,6 +18,19 @@
   const visible = $derived(
     Math.max(1, Math.floor((windowWidth[0] + GAP) / (cardWidth[0] + GAP)))
   );
+
+  // Enough cards to overflow any reasonable window, so the frame's overhang is
+  // visible at both ends without resizing anything.
+  const SHELF = [
+    { name: "revenue", state: "Applied", tone: "default", note: "Q3 close", value: "1.24M" },
+    { name: "headcount", state: "Applied", tone: "default", note: "Q3 close", value: "312" },
+    { name: "churn", state: "Review", tone: "secondary", note: "Awaiting sign-off", value: "2.1%" },
+    { name: "runway", state: "Applied", tone: "default", note: "Q3 close", value: "18mo" },
+    { name: "cac", state: "Stale", tone: "outline", note: "Source changed", value: "$412" },
+    { name: "nps", state: "Review", tone: "secondary", note: "Awaiting sign-off", value: "47" },
+    { name: "arr", state: "Applied", tone: "default", note: "Q3 close", value: "14.9M" },
+    { name: "burn", state: "Rejected", tone: "destructive", note: "Failed validation", value: "—" },
+  ] as const;
 
   const ROWS = [
     { source: "annual-report.pdf", state: "Applied", confidence: "0.92" },
@@ -134,4 +148,25 @@
       <Carousel.Next />
     </Carousel.Root>
   </div>
+
+  <h3 class="text-h4 mt-2 font-semibold">Carousel shelf</h3>
+  <p class="text-body-sm text-ink-secondary max-w-[70ch]">
+    The same set, recessed. The well takes the darker plane and the cards take the raised one, so
+    they read as sitting <em>in</em> the page rather than on it. The frame overhangs the cards on
+    every side: a card passes under the edge instead of stopping at it. The track loops, so the
+    buttons never dead-end — drag it, arrow through it, or use the controls on the frame.
+  </p>
+
+  <Shelf.Root>
+    {#each SHELF as item (item.name)}
+      <Shelf.Item class="flex h-full w-56 flex-col gap-2 p-4">
+        <div class="flex items-start justify-between gap-2">
+          <span class="text-label font-mono">{item.name}</span>
+          <Badge variant={item.tone}>{item.state}</Badge>
+        </div>
+        <span class="text-caption text-ink-muted">{item.note}</span>
+        <span class="text-h3 mt-auto font-mono tabular-nums">{item.value}</span>
+      </Shelf.Item>
+    {/each}
+  </Shelf.Root>
 </section>

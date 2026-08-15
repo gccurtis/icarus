@@ -16,7 +16,8 @@
 
   /** The 4px scale, shown as multiples of the one declared token. Named zone
    * dimensions used to live here; they named an application rather than a
-   * design dimension and were removed — see styles/tokens/tokens.md. */
+   * design dimension and were removed — see
+   * styles/semantic-tokens/semantic-tokens.md. */
   const STEPS = [
     { cls: "w-1", label: "1 — 4px" },
     { cls: "w-2", label: "2 — 8px" },

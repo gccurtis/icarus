@@ -16,7 +16,10 @@
 </script>
 
 <section class="flex flex-col gap-4">
-  <SectionHeading title="Surfaces and ink" source="styles/tokens/tokens.md" />
+  <SectionHeading
+    title="Surfaces and ink"
+    source="styles/semantic-tokens/semantic-tokens.md"
+  />
 
   <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
     {#each SURFACES as { token, cls, role } (token)}

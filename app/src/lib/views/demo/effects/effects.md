@@ -11,7 +11,6 @@ Every entry here is `.svelte.ts`.
 ```text
 appearance selection changes              apply-appearance.svelte.ts
 ├── write data-theme on <html>
-├── write data-set on <html>
 └── write the icarus.appearance key
 ```
 
@@ -29,9 +28,9 @@ rewritten. Every effect appears here and is described under Lifecycles below.
 ### `applyAppearance`
 
 - **Trigger:** The `Appearance` returned by the reader changes.
-- **Observed values:** `theme`, `set`
-- **Writes:** `data-theme` and `data-set` on the document root; the
-  `icarus.appearance` localStorage key.
+- **Observed values:** `theme`
+- **Writes:** `data-theme` on the document root; the `icarus.appearance`
+  localStorage key.
 - **External resource:** The document root and browser storage. Neither is held.
 - **General procedures:** `None`
 
@@ -39,7 +38,7 @@ rewritten. Every effect appears here and is described under Lifecycles below.
 
 ```text
 1. Read the current appearance.
-2. Assign data-theme and data-set on the document root.
+2. Assign data-theme on the document root.
 3. Write the appearance to localStorage, ignoring a blocked or full store.
 ```
 
