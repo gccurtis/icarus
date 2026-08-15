@@ -14,7 +14,7 @@ export default defineConfig({
   },
 
   // Tests reuse this config, which is the whole reason they run under vitest
-  // rather than `node --test`: `$runtime` and `$lib` resolve here and nowhere
+  // rather than `node --test`: `$model` and `$lib` resolve here and nowhere
   // else. Node resolves package.json "imports", whose keys must begin with `#`.
   test: {
     include: ["src/**/*.test.ts"],

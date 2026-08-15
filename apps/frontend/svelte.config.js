@@ -40,7 +40,8 @@ export default {
     // compiler and the bundler cannot drift. There is no second map to keep in
     // step, which is a rule the backend needed and this does not.
     alias: {
-      $runtime: "src/lib/runtime",
+      $model: "src/lib/model",
+      $views: "src/lib/views",
       $settings: "src/lib/capabilities/data/settings",
     },
   },
