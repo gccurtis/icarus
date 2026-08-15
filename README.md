@@ -28,10 +28,17 @@ Supplies Node and pnpm. Everything below assumes it.
 ```bash
 cd app
 pnpm install
-pnpm dev                     # vite, on :3000
+pnpm dev:convex              # backend on :3210, pushes and watches — run this first
+pnpm dev                     # vite, on :3000, in a second terminal
 pnpm lint && pnpm typecheck && pnpm test && pnpm test:scripts
 pnpm build && node build/index.js
 ```
+
+`pnpm dev:convex` downloads the Convex backend binary and runs it **locally**.
+No Convex account is involved and no data leaves the machine. It writes the
+deployment URL to a git-ignored `app/.env.local`, which the app reads as
+`PUBLIC_CONVEX_URL`, and it generates `src/convex/_generated/` — which must exist
+before `pnpm typecheck` runs, since the app's tsconfig includes it.
 
 `pnpm build` produces a Node server at `build/index.js` via `adapter-node`.
 Set `ORIGIN` when running it: kit refuses a mutation whose `Origin` header does
@@ -44,7 +51,7 @@ checklist, and a linter behind it:
 
 | Tree | Holds | Standard |
 | --- | --- | --- |
-| `capabilities/` | database-backed data, **procedurally** — types, tables, and functions | [capability-directory](app/docs/capability-directory/capability-directory.md) |
+| `capabilities/` | stored data, **procedurally** — types and functions | [capability-directory](app/docs/capability-directory/capability-directory.md) |
 | `model/` | things with a real lifetime — browser state, and process-held server resources | [model-directory](app/docs/model-directory/model-directory.md) |
 | `views/` | what a person sees | [view-directory](app/docs/view-directory/view-directory.md) |
 
@@ -52,38 +59,34 @@ checklist, and a linter behind it:
 [styles](app/docs/styles-directory/styles-directory.md)). They are the machine-checked
 half of each standard; the checklists cover the rest.
 
-### A view reaches a capability by calling a function
+### A view subscribes to a capability
 
-There are no endpoints and no hand-written wire types. A capability exposes each
-public function through a SvelteKit **remote function**, and a view imports it
-from the capability's browser door:
+Convex is the store. A capability holds its table declaration and its handlers;
+[`app/src/convex/`](app/src/convex/convex.md) holds the registration that makes
+one callable, and a file's path there is its public name.
 
-```ts
-import { list } from "$name-manager";
+A view subscribes rather than fetches, so a write arriving from anywhere — this
+tab, another tab, another machine — lands without being asked for:
 
-const variables = list({ project });
+```svelte
+const settings = useQuery(api.capabilities.settings.list, () => ({ projectId }));
 ```
 
-Types flow from the server implementation, because the client module is
-regenerated from it at build time.
+Types flow from the handler, because Convex generates the client API from the
+functions it pushed.
 
-### Two doors, and they cannot be merged
+### Project isolation is a field, and it is not yet enforced
 
-`index.server.ts` exports the procedures, for load functions and other
-capabilities. `index.ts` re-exports only the remote wrappers, for views. A view
-importing the server door would pull Kysely into the client graph, and kit's
-server-only guard fails the build rather than tree-shaking it.
+Every scoped table carries `projectId` and every index leads with it, because one
+deployment holds every project and a read that forgets the predicate reads
+everyone's rows.
 
-### One database per project
-
-Project isolation is **structural**: a project is its own PGlite database, so no
-query carries a `project_id` predicate and no table has the column.
-
-A browser call names a project with an opaque **token** it holds in its URL.
-`resolveScope` looks that token up within the asking user's own handles — the
-lookup *is* the authorization, and a token the user does not hold resolves to no
-project at all. Below that line a procedure has a `Scope` and the token no longer
-exists.
+**The membership check that should sit in front of that does not exist yet.**
+Today's functions take `projectId` as an argument and trust it, so anything
+holding the deployment URL can read and write any project. `resolveScope` still
+resolves a project token within one user's own handles — the lookup *is* the
+authorization — but nothing on the Convex side consults it. Closing that is the
+next piece of work.
 
 ## Configuration
 

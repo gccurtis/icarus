@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "allowJs": true,
+    "noEmit": true,
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "$convex/*": ["./*"],
+      "$settings/*": ["../lib/capabilities/settings/*"],
+      "$model/*": ["../lib/model/*"]
+    }
+  },
+  "include": ["./**/*"],
+  "exclude": ["./_generated"]
+}

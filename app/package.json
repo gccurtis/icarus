@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
+    "dev:convex": "convex dev",
     "build": "pnpm typecheck && vite build",
     "preview": "vite preview",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -26,12 +27,12 @@
     "new-style-companions": "node scripts/generation/styles/companions.mjs"
   },
   "dependencies": {
-    "@electric-sql/pglite": "latest",
     "@fontsource/ibm-plex-mono": "latest",
     "@fontsource/ibm-plex-sans": "latest",
     "bits-ui": "latest",
     "clsx": "latest",
-    "kysely": "latest",
+    "convex": "latest",
+    "convex-svelte": "latest",
     "pino": "latest",
     "tailwind-merge": "latest",
     "tailwind-variants": "latest",

@@ -40,11 +40,10 @@ export default {
     // compiler and the bundler cannot drift. There is no second map to keep in
     // step, which is a rule the backend needed and this does not.
     alias: {
+      $convex: "src/convex",
       $model: "src/lib/model",
       $views: "src/lib/views",
       $settings: "src/lib/capabilities/settings",
-      "$name-manager": "src/lib/capabilities/name-manager",
-      "$rich-content": "src/lib/capabilities/rich-content",
     },
   },
 };

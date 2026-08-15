@@ -1,0 +1,12 @@
+# pnpm settings for this package. Not a workspace definition — there is no
+# `packages:` key, so nothing here declares a monorepo. pnpm 11 reads its own
+# configuration from this file; the `pnpm` field in `package.json` is ignored.
+
+# esbuild's install script fetches the platform binary. pnpm blocks a dependency
+# from running install scripts until it is named here, and an unapproved one
+# makes `pnpm install` exit non-zero — which fails `svelte-kit sync`, and so
+# fails `pnpm typecheck` and `pnpm test` before they run a single check.
+#
+# esbuild arrives with the Convex CLI, which bundles the functions directory.
+allowBuilds:
+  esbuild: true

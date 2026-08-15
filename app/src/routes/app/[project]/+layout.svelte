@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { setupConvex } from "convex-svelte";
+  import { PUBLIC_CONVEX_URL } from "$env/static/public";
   import { page } from "$app/state";
 
   import { initClientModel } from "$model/client";
@@ -36,8 +38,16 @@
    *
    * The two panel widths come from the active tab rather than being declared in
    * the stylesheet, so there is one source of truth per dimension.
+   *
+   * `setupConvex` belongs here rather than in the root layout for the same
+   * reason `initClientModel` does: both build something that lives as long as
+   * one client instance, and this route is the only one that has one. It also
+   * keeps the Convex client out of server rendering entirely — `+layout.ts`
+   * sets `ssr = false` — so `/` and `/demo` are untouched by it.
    */
   let { children }: { children: Snippet } = $props();
+
+  setupConvex(PUBLIC_CONVEX_URL);
 
   const { workbench } = initClientModel({ project: page.params.project ?? "" });
 </script>

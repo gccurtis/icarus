@@ -12,9 +12,7 @@ coverage/
 *.tsbuildinfo
 logs/*.log
 
-# Runtime artifacts. One embedded PostgreSQL directory per project, tens of
-# megabytes each — state a run produces, never state a checkout needs.
-app/data/
+# Runtime artifacts — state a run produces, never state a checkout needs.
 app/logs/*.log
 
 # Agent worktrees
@@ -26,6 +24,11 @@ app/logs/*.log
 # Nothing is pinned: lockfiles are regenerable local caches, not committed state.
 flake.lock
 pnpm-lock.yaml
+
+# Convex writes this from the schema and functions it pushed. Same reasoning as
+# the lockfiles: regenerable output, not state a checkout needs. `pnpm dev:convex`
+# produces it, and must run once before `pnpm typecheck` will pass.
+app/src/convex/_generated/
 
 # Local configuration overrides — real secrets live here
 *.local.yaml

@@ -13,18 +13,19 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
-const ALLOWED_DIRS = new Set(["docs", "types", "api", "persistence", "test"]);
+const ALLOWED_DIRS = new Set(["docs", "types", "api", "test"]);
+
+/**
+ * `schema.ts` is one file rather than a directory because a capability declares
+ * tables and nothing else about storage — there are no queries to hold beside
+ * them, and no DDL. A directory would exist to hold one file and its document.
+ */
 const ALLOWED_ROOT_FILES = new Set([
   "overview.md",
   "index.ts",
   "index.server.ts",
-  "errors.ts"
-]);
-const PERSISTENCE_FILES = new Set([
-  "persistence.md",
-  "tables.ts",
-  "initialize.ts",
-  "stored-types.ts"
+  "errors.ts",
+  "schema.ts"
 ]);
 
 /** Directories that carry no document: their contents are described elsewhere. */
@@ -210,19 +211,6 @@ export const checkCapabilities = ({ root, base = root }) => {
     checkApiTree(dir, 0);
   };
 
-  const checkPersistence = (capabilityRoot) => {
-    const dir = join(capabilityRoot, "persistence");
-    if (!existsSync(dir)) return;
-    for (const file of filesIn(dir)) {
-      if (!PERSISTENCE_FILES.has(file)) {
-        fail(
-          join(dir, file),
-          "persistence/ holds tables, not queries — tables, initialize, stored types. SQL lives with the function that runs it"
-        );
-      }
-    }
-  };
-
   /**
    * The server door and `api/` must describe the same set of functions. A
    * function implemented inline in the door has no directory; a directory the
@@ -237,13 +225,11 @@ export const checkCapabilities = ({ root, base = root }) => {
     // exports all three, and only the functions have directories — demanding
     // `api/thing-error/` for an exported `ThingError` would be nonsense.
     //
-    // `initialize<Capability>` is the one camelCase export that is not an API
-    // function. It is the capability's contract with the persistence runtime,
-    // which composes every capability's schema in one list and must reach each
-    // one through its door like anything else. It lives at
-    // persistence/initialize.ts, checked separately by the persistence rules.
-    const exported = exportedNames(readFileSync(door, "utf8")).filter(
-      (name) => /^[a-z]/.test(name) && !/^initialize[A-Z]/.test(name)
+    // Every camelCase export is a function, with no exemptions. An export that
+    // is neither an API function nor a type would need one, and would be worth
+    // arguing for on its own terms rather than assumed.
+    const exported = exportedNames(readFileSync(door, "utf8")).filter((name) =>
+      /^[a-z]/.test(name)
     );
     const directories = dirsIn(apiRoot).filter((name) => name !== "shared");
 
@@ -261,8 +247,8 @@ export const checkCapabilities = ({ root, base = root }) => {
 
   /**
    * The browser door re-exports remote functions and nothing else. This is what
-   * keeps the server graph out of the client bundle: one plain import here
-   * drags Kysely and the database driver across the boundary.
+   * keeps the server graph out of the client bundle: one plain import here drags
+   * the whole procedure tree, and everything it depends on, across the boundary.
    */
   const checkBrowserDoor = (capabilityRoot) => {
     const door = join(capabilityRoot, "index.ts");
@@ -317,7 +303,6 @@ export const checkCapabilities = ({ root, base = root }) => {
 
     walkDocuments(capabilityRoot, "overview", true);
     checkApi(capabilityRoot);
-    checkPersistence(capabilityRoot);
     checkPublicSurface(capabilityRoot);
     checkBrowserDoor(capabilityRoot);
   }
@@ -360,9 +345,20 @@ export const checkPaths = ({ root, base = root, aliases = {} }) => {
     return null;
   };
 
+  /**
+   * `.d.ts` is a candidate because a generated module is a `.js` implementation
+   * beside its declarations, with no `.ts` anywhere — which is what a capability
+   * imports when it names a Convex context type.
+   */
   const resolvesOnDisk = (target) => {
     const absolute = resolve(base, target);
-    const candidates = [absolute, `${absolute}.ts`, join(absolute, "index.ts")];
+    const candidates = [
+      absolute,
+      `${absolute}.ts`,
+      `${absolute}.d.ts`,
+      join(absolute, "index.ts"),
+      join(absolute, "index.d.ts")
+    ];
     if (absolute.endsWith(".js")) candidates.push(`${absolute.slice(0, -3)}.ts`);
     return candidates.some((candidate) => existsSync(candidate));
   };

@@ -1,143 +1,59 @@
 <script lang="ts">
+  import { useMutation, useQuery } from "convex-svelte";
+
+  import { api } from "$convex/_generated/api";
   import { clientModel } from "$model/client";
-  import { define, list as listVariables } from "$name-manager";
-  import { applyStyle, create, display } from "$rich-content";
-  import { list, set } from "$settings";
 
   /**
    * /app/[project] — the work surface, with nothing open in it yet.
    *
-   * The settings panel below is the first thing in this application to read a
-   * capability, and it is here because a remote function that nothing imports
-   * is tree-shaken out of the build entirely: an unused capability is not a
-   * quiet capability, it is an absent one.
+   * The panel below is the first thing in this application to read a capability
+   * through Convex, and it is here to prove one property: **nothing in this file
+   * re-fetches.** `useQuery` holds a subscription, so a write anywhere — this
+   * tab, another tab, another machine — arrives on its own.
    *
    * The project comes off the model rather than out of `page`. The layout read
    * it from the route once and built the client instance around it, so this is
-   * the same token by construction — and a view that reached for `page` itself
+   * the same value by construction, and a view that reached for `page` itself
    * could disagree with the workbench it is rendering.
-   *
-   * Every capability call carries it, which is not ceremony: a remote function
-   * cannot see the page that called it, because kit serves them all from
-   * `/_app/remote/…` with empty route params. The token names which project; the
-   * session cookie names who is asking; the server pairs them and neither the
-   * view nor the procedure gets a say.
    */
   const { project } = clientModel();
 
-  // One project per client instance for its whole life, so these queries are
-  // built once rather than derived from something that could change under them.
-  const settings = list({ project });
-  const variables = listVariables({ project });
+  const settings = useQuery(api.capabilities.settings.list, () => ({ projectId: project }));
+  const set = useMutation(api.capabilities.settings.set);
 
   let key = $state("");
   let value = $state("");
   let failure = $state<string | undefined>(undefined);
-
-  let variableName = $state("");
-  let variableValue = $state("");
-  let variableFailure = $state<string | undefined>(undefined);
-
-  let contentId = $state<string | undefined>(undefined);
-  let contentText = $state("");
-  let contentFailure = $state<string | undefined>(undefined);
-  let projection = $state<Awaited<ReturnType<typeof display>> | undefined>(undefined);
 
   const save = async (event: SubmitEvent) => {
     event.preventDefault();
     failure = undefined;
 
     try {
-      await set({ project, key, value });
-      await settings.refresh();
+      await set({ projectId: project, key, value: JSON.stringify(value) });
       key = "";
       value = "";
     } catch (error) {
-      // The capability states its refusals with a code; showing the message is
-      // enough to tell a rejected key from a broken server.
       failure = error instanceof Error ? error.message : String(error);
     }
   };
 
   /**
-   * Declares a number-valued scalar, which is the smallest declaration Name
-   * Manager accepts.
-   *
-   * The shape is spelled out rather than inferred because that is the
-   * capability's whole point: a scalar and a one-element list both hold one
-   * value, so nothing downstream could recover which the author meant.
+   * Writes a counter. Reads its current value out of the live query rather than
+   * holding one, so two windows clicking alternately still count up rather than
+   * each continuing from whatever they last saw.
    */
-  const declare = async (event: SubmitEvent) => {
-    event.preventDefault();
-    variableFailure = undefined;
+  const bump = async () => {
+    failure = undefined;
+
+    const current = settings.data?.find((setting) => setting.key === "demo.clicks");
+    const next = typeof current?.value === "number" ? current.value + 1 : 1;
 
     try {
-      await define({
-        project,
-        variable: {
-          name: variableName,
-          type: { kind: "scalar", field: { name: "value", type: { kind: "number" } } },
-          value: Number(variableValue)
-        }
-      });
-      await variables.refresh();
-      variableName = "";
-      variableValue = "";
+      await set({ projectId: project, key: "demo.clicks", value: JSON.stringify(next) });
     } catch (error) {
-      variableFailure = error instanceof Error ? error.message : String(error);
-    }
-  };
-
-  /**
-   * Creates a content object and renders its projection.
-   *
-   * The projection is held rather than re-derived, because the segment handles
-   * in it are what `boldFirstWord` needs — and they are only valid for the
-   * revision they were rendered at.
-   */
-  const compose = async (event: SubmitEvent) => {
-    event.preventDefault();
-    contentFailure = undefined;
-
-    try {
-      const created = await create({ project, initialText: contentText });
-      contentId = created.contentId;
-      projection = await display({ project, contentId: created.contentId });
-      contentText = "";
-    } catch (error) {
-      contentFailure = error instanceof Error ? error.message : String(error);
-    }
-  };
-
-  /**
-   * Styles the first four characters, then re-reads.
-   *
-   * The re-read is not optional: every mutation returns only an id and a
-   * revision, and the handles in the projection above are now stale — they embed
-   * the version they were rendered at, so reusing them would be refused.
-   */
-  const boldFirstWord = async () => {
-    contentFailure = undefined;
-    const current = projection;
-    if (!current || !contentId) return;
-
-    const segment = current.lines[0]?.segments[0];
-    if (!segment || segment.text.length === 0) return;
-
-    try {
-      await applyStyle({
-        project,
-        contentId,
-        expectedVersion: current.version,
-        range: {
-          start: { segmentId: segment.id, offset: 0 },
-          end: { segmentId: segment.id, offset: Math.min(4, segment.text.length) }
-        },
-        properties: { bold: true }
-      });
-      projection = await display({ project, contentId });
-    } catch (error) {
-      contentFailure = error instanceof Error ? error.message : String(error);
+      failure = error instanceof Error ? error.message : String(error);
     }
   };
 </script>
@@ -147,27 +63,23 @@
 </svelte:head>
 
 <div class="surface">
-  <p class="empty">No object open.</p>
-
-  <section class="settings">
+  <section class="panel">
     <h2>Project settings</h2>
 
-    {#await settings}
+    {#if settings.isLoading}
       <p class="note">Loading.</p>
-    {:then stored}
-      {#if stored.length === 0}
-        <p class="note">None set.</p>
-      {:else}
-        <dl>
-          {#each stored as setting (setting.key)}
-            <dt>{setting.key}</dt>
-            <dd>{JSON.stringify(setting.value)} <span>— {setting.updatedBy}</span></dd>
-          {/each}
-        </dl>
-      {/if}
-    {:catch error}
-      <p class="note failure">{error.message}</p>
-    {/await}
+    {:else if settings.error}
+      <p class="note failure">{settings.error.toString()}</p>
+    {:else if settings.data.length === 0}
+      <p class="note">None set.</p>
+    {:else}
+      <dl>
+        {#each settings.data as setting (setting.key)}
+          <dt>{setting.key}</dt>
+          <dd>{JSON.stringify(setting.value)}</dd>
+        {/each}
+      </dl>
+    {/if}
 
     <form onsubmit={save}>
       <input bind:value={key} placeholder="editor.theme" aria-label="Setting key" />
@@ -175,67 +87,10 @@
       <button type="submit" disabled={key.length === 0}>Save</button>
     </form>
 
+    <button type="button" onclick={bump}>Bump demo.clicks</button>
+
     {#if failure}
       <p class="note failure">{failure}</p>
-    {/if}
-  </section>
-
-  <section class="settings">
-    <h2>Named variables</h2>
-
-    {#await variables}
-      <p class="note">Loading.</p>
-    {:then declared}
-      {#if declared.length === 0}
-        <p class="note">None declared.</p>
-      {:else}
-        <dl>
-          {#each declared as variable (variable.name)}
-            <dt>{variable.name}</dt>
-            <dd>{JSON.stringify(variable.value)} <span>— {variable.type.kind}</span></dd>
-          {/each}
-        </dl>
-      {/if}
-    {:catch error}
-      <p class="note failure">{error.message}</p>
-    {/await}
-
-    <form onsubmit={declare}>
-      <input bind:value={variableName} placeholder="TaxRate" aria-label="Variable name" />
-      <input bind:value={variableValue} placeholder="0.0825" aria-label="Variable value" />
-      <button type="submit" disabled={variableName.length === 0}>Declare</button>
-    </form>
-
-    {#if variableFailure}
-      <p class="note failure">{variableFailure}</p>
-    {/if}
-  </section>
-
-  <section class="settings">
-    <h2>Rich content</h2>
-
-    {#if projection}
-      <p class="content">
-        {#each projection.lines as line (line.id)}
-          <span class="line">
-            {#each line.segments as segment (segment.id)}<span
-                class:bold={segment.style.bold}>{segment.text}</span
-              >{/each}
-          </span>
-        {/each}
-      </p>
-      <button type="button" onclick={boldFirstWord}>Bold the first word</button>
-    {:else}
-      <p class="note">Nothing composed.</p>
-    {/if}
-
-    <form onsubmit={compose}>
-      <input bind:value={contentText} placeholder="the quick brown fox" aria-label="Content text" />
-      <button type="submit" disabled={contentText.length === 0}>Compose</button>
-    </form>
-
-    {#if contentFailure}
-      <p class="note failure">{contentFailure}</p>
     {/if}
   </section>
 </div>
@@ -251,17 +106,7 @@
     padding: calc(var(--token-spacing-unit) * 6);
   }
 
-  .empty,
-  .note {
-    font-size: var(--token-text-body-sm);
-    color: var(--token-ink-muted);
-  }
-
-  .failure {
-    color: var(--token-ink-danger, var(--token-ink-muted));
-  }
-
-  .settings {
+  .panel {
     width: 100%;
     max-width: 32rem;
     display: flex;
@@ -272,6 +117,15 @@
   h2 {
     font-size: var(--token-text-body-sm);
     color: var(--token-ink-muted);
+  }
+
+  .note {
+    font-size: var(--token-text-body-sm);
+    color: var(--token-ink-muted);
+  }
+
+  .failure {
+    color: var(--token-ink-danger, var(--token-ink-muted));
   }
 
   dl {
@@ -290,10 +144,6 @@
     margin: 0;
   }
 
-  dd span {
-    color: var(--token-ink-muted);
-  }
-
   form {
     display: flex;
     gap: calc(var(--token-spacing-unit) * 2);
@@ -305,18 +155,5 @@
     font: inherit;
     font-size: var(--token-text-body-sm);
     padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 2);
-  }
-
-  .content {
-    font-size: var(--token-text-body-sm);
-    margin: 0;
-  }
-
-  .line {
-    display: block;
-  }
-
-  .bold {
-    font-weight: 700;
   }
 </style>
