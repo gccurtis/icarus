@@ -2,24 +2,25 @@
 /**
  * Scaffolds one capability onto the directory template.
  *
- * usage: pnpm new-capability <path/to/name> [--persisted] [--browser-facing]
+ * usage: pnpm new-capability <path/to/name> [--browser-facing]
  *
  *   <path/to/name>     relative to src/lib/capabilities, e.g. data/name-manager
- *   --persisted        also write persistence/ (tables, initialize, stored types)
  *   --browser-facing   also write index.ts, the browser door
  *
  * `api/` is created with its document and nothing else — a function directory
  * arrives with `new-api`, because which functions a capability offers is a
  * decision about its public surface rather than something to scaffold blindly.
+ *
+ * Nothing here scaffolds storage. A capability that declares tables gets a flag
+ * written against whatever it declares them on, which is a decision the store
+ * makes rather than this script.
  */
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import {
   KEBAB,
   aliasFor,
   capabilitiesRoot,
   fail,
-  packageRoot,
   pascal,
   planner,
   render,
@@ -27,13 +28,9 @@ import {
   title
 } from "./shared.mjs";
 
-/** What `--persisted` needs to exist before it can generate anything useful. */
-const PERSISTENCE_TYPES = "src/lib/model/server/persistence/types.ts";
-
-const USAGE = `usage: pnpm new-capability <path/to/name> [--persisted] [--browser-facing]
+const USAGE = `usage: pnpm new-capability <path/to/name> [--browser-facing]
 
   <path/to/name>     relative to src/lib/capabilities, e.g. data/name-manager
-  --persisted        also write persistence/
   --browser-facing   also write index.ts, the browser door`;
 
 const args = process.argv.slice(2);
@@ -46,7 +43,7 @@ if (!capabilityPath) {
 }
 
 for (const flag of flags) {
-  if (flag !== "--persisted" && flag !== "--browser-facing") {
+  if (flag !== "--browser-facing") {
     fail(flag, `unknown flag\n\n${USAGE}`);
   }
 }
@@ -66,19 +63,6 @@ for (const segment of segments) {
   if (!KEBAB.test(segment)) fail(capabilityPath, `'${segment}' must be kebab-case`);
 }
 stopIfFailed("new-capability");
-
-/**
- * `--persisted` generates code that imports the persistence runtime's `Database`
- * interface — both to type its queries and to merge its tables into it. Without
- * that module the scaffold does not compile and does not lint, so refusing is
- * more useful than emitting it and letting the author discover why.
- */
-if (flags.has("--persisted") && !existsSync(join(packageRoot, PERSISTENCE_TYPES))) {
-  fail(
-    PERSISTENCE_TYPES,
-    "--persisted needs the persistence runtime — a generated capability declares its tables on that module's Database interface, and there is nothing to declare them on yet"
-  );
-}
 
 const name = segments.at(-1);
 const alias = await aliasFor(capabilityPath);
@@ -165,79 +149,6 @@ export type ${pascal(name)}Id = string & { readonly __brand: "${pascal(name)}Id"
 
 write.add(join(root, "api", "api.md"), render("api.md", substitutions));
 
-if (flags.has("--persisted")) {
-  write.add(join(root, "persistence", "persistence.md"), render("persistence.md", substitutions));
-  write.add(
-    join(root, "persistence", "tables.ts"),
-    `import type { Generated } from "kysely";
-
-/**
- * The tables ${title(name)} owns.
- *
- * No \`project_id\` column: a project is its own database, so scoping is
- * structural and a predicate here would mean the wrong model was imported.
- */
-export interface ${pascal(name)}Table {
-  id: string;
-  created_at: Generated<Date>;
-}
-
-/**
- * Declaration merging must name the module that declares \`Database\`, not a
- * door that re-exports it — this is the one place the bare-alias rule does not
- * apply, and it is structural rather than stylistic.
- */
-declare module "$model/server/persistence/types" {
-  interface Database {
-    ${name.replace(/-/g, "_")}: ${pascal(name)}Table;
-  }
-}
-`
-  );
-  write.add(
-    join(root, "persistence", "initialize.ts"),
-    `import type { Kysely } from "kysely";
-import type { Database } from "$model/server/index.server";
-import "${alias}/persistence/tables";
-
-/**
- * Creates ${title(name)}'s tables, then verifies them.
- *
- * The verification is the point. \`createTable().ifNotExists()\` creates when
- * absent and does nothing when present, so the first added column silently
- * succeeds against an outdated database and fails later at query time, far from
- * the cause. Introspecting afterwards turns that into a startup failure naming
- * the difference.
- */
-export const initialize${pascal(name)} = async (database: Kysely<Database>): Promise<void> => {
-  await database.schema
-    .createTable("${name.replace(/-/g, "_")}")
-    .ifNotExists()
-    .addColumn("id", "text", (column) => column.primaryKey())
-    .addColumn("created_at", "timestamptz", (column) => column.notNull())
-    .execute();
-
-  const [table] = await database.introspection.getTables();
-  void table; // TODO: compare the columns present against the table declared above.
-};
-`
-  );
-  write.add(
-    join(root, "persistence", "stored-types.ts"),
-    `/**
- * Rows exactly as stored, and the conversion to and from the canonical types in
- * \`types/\`.
- *
- * A row is never handed to a consumer directly — the translation happens here so
- * a storage decision cannot leak into the public contract.
- */
-export interface Stored${pascal(name)} {
-  readonly id: string;
-}
-`
-  );
-}
-
 stopIfFailed("new-capability");
 const written = write.commit();
 
@@ -245,9 +156,8 @@ console.log(`new-capability: wrote ${written.length} files\n`);
 for (const path of written) console.log(`  ${path}`);
 
 console.log(`
-Two things this cannot do for you:
+What this cannot do for you:
 
-  1. ${flags.has("--persisted") ? `Register initialize${pascal(name)} in the persistence runtime's initializer list.` : "Nothing — no persistence was generated."}
-  2. Add functions:  pnpm new-api ${capabilityPath} <functionName>${flags.has("--browser-facing") ? " --remote" : ""}
+  Add functions:  pnpm new-api ${capabilityPath} <functionName>${flags.has("--browser-facing") ? " --remote" : ""}
 
 Then:  pnpm lint:capabilities`);

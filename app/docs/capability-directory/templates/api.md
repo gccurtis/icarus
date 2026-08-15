@@ -53,10 +53,8 @@ once here so each function document can describe only what it does differently.}
 
 ## Queries
 
-SQL lives with the function that runs it, not in `persistence/`. A query one
-function needs sits in that function's directory; a query two functions need is
-promoted to `shared/` like any other procedure.
+A read or write lives with the function that runs it. One that two functions run
+is promoted to `shared/` like any other procedure.
 
-{{Note anything a reader should know before reading the queries: the tables
-involved, the revision or concurrency scheme, whether reads are ordered and by
-what.}}
+{{Note anything a reader should know before reading the queries: what is read,
+the revision or concurrency scheme, whether reads are ordered and by what.}}

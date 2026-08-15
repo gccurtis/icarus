@@ -24,7 +24,6 @@ vi.mock("$model/server/constructor.server", () => ({
     return {
       configuration: { get: () => undefined },
       observability: { logger: {}, close: async () => {} },
-      persistence: { forProject: async () => ({}), close: async () => {} },
       close: async () => {
         build.closes += 1;
       }
@@ -58,7 +57,7 @@ test("the initializer's graph is what the accessor returns", async () => {
 
   assert.equal(serverModel(), built);
   // Repeated access is the same aggregate and the same leaves.
-  assert.equal(serverModel().persistence, built.persistence);
+  assert.equal(serverModel().observability, built.observability);
   assert.equal(serverModel().configuration, built.configuration);
   assert.equal(build.calls, 1);
 });

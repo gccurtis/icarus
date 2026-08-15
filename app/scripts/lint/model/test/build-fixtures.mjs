@@ -214,43 +214,43 @@ const clean = (root) => {
   );
   model(
     "server/types.ts",
-    'import type { PersistenceModel } from "$model/server/persistence/index.server";\n\n' +
-      "export interface ServerModel {\n  readonly persistence: PersistenceModel;\n}\n"
+    'import type { ObservabilityModel } from "$model/server/observability/index.server";\n\n' +
+      "export interface ServerModel {\n  readonly observability: ObservabilityModel;\n}\n"
   );
   model(
     "server/constructor.server.ts",
-    'import { createPersistence } from "$model/server/persistence/index.server";\n' +
+    'import { createObservability } from "$model/server/observability/index.server";\n' +
       'import type { ServerModel } from "$model/server/types";\n\n' +
-      "export const buildServerModel = (): ServerModel => ({\n  persistence: createPersistence()\n});\n"
+      "export const buildServerModel = (): ServerModel => ({\n  observability: createObservability()\n});\n"
   );
   model("server/scope.server.ts", "export interface Scope {\n  readonly userId: string;\n}\n");
   model("server/test/unit/shutdown.test.ts", "// shutdown is idempotent\n");
 
-  model("server/persistence/persistence.md", "# Persistence\n");
+  model("server/observability/observability.md", "# Observability\n");
   model(
-    "server/persistence/index.server.ts",
-    'export { createPersistence } from "$model/server/persistence/constructor";\n' +
-      'export type { PersistenceModel } from "$model/server/persistence/types";\n'
+    "server/observability/index.server.ts",
+    'export { createObservability } from "$model/server/observability/constructor";\n' +
+      'export type { ObservabilityModel } from "$model/server/observability/types";\n'
   );
   model(
-    "server/persistence/types.ts",
-    "export interface PersistenceModel {\n  close(): Promise<void>;\n}\n"
+    "server/observability/types.ts",
+    "export interface ObservabilityModel {\n  close(): Promise<void>;\n}\n"
   );
   model(
-    "server/persistence/definition.ts",
-    'import type { PersistenceModel } from "$model/server/persistence/types";\n\n' +
-      "export class Persistence implements PersistenceModel {\n" +
+    "server/observability/definition.ts",
+    'import type { ObservabilityModel } from "$model/server/observability/types";\n\n' +
+      "export class Observability implements ObservabilityModel {\n" +
       "  async close(): Promise<void> {}\n}\n"
   );
   model(
-    "server/persistence/constructor.ts",
-    'import { Persistence } from "$model/server/persistence/definition";\n' +
-      'import type { PersistenceModel } from "$model/server/persistence/types";\n\n' +
-      "export const createPersistence = (): PersistenceModel => new Persistence();\n"
+    "server/observability/constructor.ts",
+    'import { Observability } from "$model/server/observability/definition";\n' +
+      'import type { ObservabilityModel } from "$model/server/observability/types";\n\n' +
+      "export const createObservability = (): ObservabilityModel => new Observability();\n"
   );
-  model("server/persistence/methods/methods.md", "# Persistence Methods\n\n`close`.\n");
-  model("server/persistence/methods/close.ts", "export const close = async (): Promise<void> => {};\n");
-  model("server/persistence/test/unit/close.test.ts", "// close releases the pool\n");
+  model("server/observability/methods/methods.md", "# Observability Methods\n\n`close`.\n");
+  model("server/observability/methods/close.ts", "export const close = async (): Promise<void> => {};\n");
+  model("server/observability/test/unit/close.test.ts", "// close ends the log stream\n");
 
   // ------------------------------------------------------------------ routes ----
   write(root, "routes/app/+layout.ts", "export const ssr = false;\n");
@@ -486,7 +486,7 @@ export const FIXTURES = {
       root,
       "routes/app/[project]/+page.svelte",
       '<script lang="ts">\n  import { serverModel } from "$model/server/index.server";\n\n' +
-        "  const { persistence } = serverModel();\n</script>\n\n<p>{persistence}</p>\n"
+        "  const { observability } = serverModel();\n</script>\n\n<p>{observability}</p>\n"
     );
   },
 

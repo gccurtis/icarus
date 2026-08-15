@@ -13,7 +13,6 @@ This file records only what is in the directory and which of it is live.
 | --- | --- |
 | `dev.yaml` | Scope resolution: `development.userId`, `development.projectId`, `development.projectToken` — the one identity that exists before authentication does |
 | `observability.yaml` | The logger: `logging.enabled`, `logging.level`, `logging.destination.*` |
-| `persistence.yaml` | The project database registry: `persistence.directory` |
 
 **Everything here is read.** Eight further files were carried over from the
 deleted backend and read by nothing — limits for capabilities that do not exist,

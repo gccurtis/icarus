@@ -78,10 +78,6 @@ test("rejects a file loose at the capability root", () => {
   expectOnly("stray-root-file", "belong at a capability root");
 });
 
-test("rejects a query file in persistence", () => {
-  expectOnly("persistence-extra-file", "persistence/ holds tables, not queries");
-});
-
 test("rejects a function directory with no entry file", () => {
   const failures = lint("api-missing-entry");
   assert.ok(failures.some((f) => f.message.includes("missing entry file 'archive.ts'")));
@@ -102,7 +98,7 @@ test("rejects a function directory the server door does not export", () => {
   expectOnly("surface-mismatch", "no function named 'list'");
 });
 
-test("rejects a door export with no directory, initializer or not", () => {
+test("rejects a door export with no directory", () => {
   expectOnly("surface-extra-export", "exports 'archive', which has no directory");
 });
 

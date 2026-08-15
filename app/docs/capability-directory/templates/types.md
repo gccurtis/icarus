@@ -2,10 +2,11 @@
 
 Lives at `types/types.md`.
 
-`types/` holds the canonical model and the public contract. It contains no Kysely
-row shapes — those live in [`persistence/stored-types.ts`](../persistence/persistence.md)
-— and no wire shapes, because there is no wire format to describe: types cross
-the boundary on their own when a function is re-exported through a `.remote.ts`.
+`types/` holds the canonical model and the public contract. It contains no stored
+row shapes — a stored shape is a storage decision and must not leak into the
+public contract — and no wire shapes, because there is no wire format to
+describe: types cross the boundary on their own when a function is re-exported
+through a `.remote.ts`.
 
 Private model types live here too; the doors decide which of them leave.
 

@@ -41,10 +41,9 @@ export const handle: Handle = async ({ event, resolve }) => {
  *
  * `sveltekit:shutdown` rather than SIGTERM: the Node adapter installs its own
  * signal handler that closes the listener, drains in-flight requests, and only
- * then emits this event. Tearing databases down on the raw signal would pull
- * them out from under requests still being served — and PGlite holds a WASM
- * instance and file handles per project, so a request querying after close
- * fails rather than degrades.
+ * then emits this event. Releasing on the raw signal would pull what the model
+ * holds out from under requests still being served — today that is the log
+ * stream, and a record written after close is a record nobody reads.
  *
  * `once` is wrong here for the same reason: the adapter's handler is permanent,
  * so a second signal never reaches Node's default disposition anyway.

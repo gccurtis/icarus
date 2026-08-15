@@ -1,5 +1,3 @@
-import type { Kysely } from "kysely";
-import type { Database } from "$model/server/persistence/index.server";
 import type { ServerModel } from "$model/server/types";
 import { buildServerModel } from "$model/server/constructor.server";
 
@@ -17,7 +15,6 @@ export type { Configuration } from "$model/server/configuration/index.server";
  */
 export { errorFields } from "$model/server/observability/index.server";
 export type { Logger } from "$model/server/observability/index.server";
-export type { Database, ProjectDatabase } from "$model/server/persistence/index.server";
 
 /**
  * The one graph, built once at startup.
@@ -64,29 +61,14 @@ export const serverModel = (): ServerModel => {
 };
 
 /**
- * One project's database, for the capability procedure that asked.
+ * Closes the graph if one was built. Idempotent, and one-way.
  *
- * **The only scoped accessor there is, and the reason it is a call rather than
- * an import.** Configuration and the logger are one per process, so code that
- * needs them imports them; there is no `import { database }` that could be
- * correct, because which database depends on a `scope.projectId` known only when
- * the procedure runs.
- *
- * It lives here rather than in `persistence/` because that module exports a
- * constructor and the built instance is held by this file. An accessor inside
- * `persistence/` would have to reach back up to the composition root, which is a
- * cycle.
- *
- * A second scoped object — a per-project cache, a subscription fan-out — would
- * get its own accessor beside this one rather than joining a bundle that then
- * has to grow a field for everyone.
+ * Everything this door hands back is one per process, so a caller imports it.
+ * Anything that varies with the request instead — where an import could not name
+ * the right one — needs a scoped accessor here, taking what it varies by, and
+ * gets its own name rather than joining a bundle everyone then has to grow a
+ * field for.
  */
-export const projectDatabase = async (projectId: string): Promise<Kysely<Database>> => {
-  const { database } = await serverModel().persistence.forProject(projectId);
-  return database;
-};
-
-/** Closes the graph if one was built. Idempotent, and one-way. */
 export const closeServerModel = async (): Promise<void> => {
   if (closed) return;
   closed = true;
@@ -95,7 +77,7 @@ export const closeServerModel = async (): Promise<void> => {
   if (!model) return;
 
   // Cleared before closing, so a caller arriving mid-drain cannot be handed a
-  // graph whose databases are already going away. The latch above is what tells
+  // graph whose log stream is already going away. The latch above is what tells
   // it "shutting down" rather than "not built yet".
   instance = undefined;
   await model.close();

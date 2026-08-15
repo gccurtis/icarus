@@ -2,19 +2,19 @@
 
 Objects, as opposed to capabilities.
 
-A **capability** references data kept in a database and is procedural: types,
-tables, and functions, with nothing held between calls. A **model object** owns
-something with a lifetime — a parsed snapshot, an open log stream, a set of open
-databases, what a person has open in front of them.
+A **capability** references stored data and is procedural: types and functions,
+with nothing held between calls. A **model object** owns something with a
+lifetime — a parsed snapshot, an open log stream, what a person has open in front
+of them.
 
-That is the whole distinction, and it is why `configuration`, `observability`,
-and `persistence` live here rather than under `capabilities/`. None of them
-references data in a database. Persistence *is* the database.
+That is the whole distinction, and it is why `configuration` and `observability`
+live here rather than under `capabilities/`. Neither references stored data; each
+*is* a held resource.
 
 ```text
 model/
 ├── client/     one person's application state, for as long as their tab lives
-└── server/     process resources: configuration, logging, databases
+└── server/     process resources: configuration, logging
 ```
 
 The written standard is
@@ -51,9 +51,9 @@ easy to break while refactoring:
   configuration file does not require a restart.
 - **Shutdown is one-way.** Once it begins the model is gone; clearing the cache
   instead would let a request arriving mid-shutdown build a second model against
-  a directory the first is concurrently closing.
-- **Databases close before logging**, so the database's own close records still
-  reach the destination.
+  a resource the first is concurrently closing.
+- **Logging closes last**, so whatever released before it still has somewhere to
+  record that it did.
 
 ### Doors, and the guard that does not cover them
 

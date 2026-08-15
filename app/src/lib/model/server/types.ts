@@ -1,14 +1,12 @@
 import type { Configuration } from "$model/server/configuration/index.server";
 import type { Observability } from "$model/server/observability/index.server";
-import type { Persistence } from "$model/server/persistence/index.server";
 
 /**
  * The server model: everything held for one process's lifetime.
  *
  * These are model *objects* rather than capabilities because each owns a
- * resource with a lifetime — a parsed snapshot, an open log stream, a set of
- * open databases. Capabilities own rows, hold nothing between requests, and are
- * procedural.
+ * resource with a lifetime — a parsed snapshot, an open log stream. Capabilities
+ * own rows, hold nothing between requests, and are procedural.
  *
  * Named rather than inferred from the constructor, because the consumers that
  * matter have to name it: the request that carries it on its locals, the test
@@ -22,6 +20,5 @@ import type { Persistence } from "$model/server/persistence/index.server";
 export interface ServerModel {
   readonly configuration: Configuration;
   readonly observability: Observability;
-  readonly persistence: Persistence;
   close(): Promise<void>;
 }

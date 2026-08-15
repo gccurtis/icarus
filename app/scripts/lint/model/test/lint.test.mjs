@@ -108,7 +108,7 @@ test("environment roots are roots, not malformed objects", () => {
   assert.deepEqual(discoverObjects(scopeFor("clean")), [
     "client/storage",
     "client/workbench",
-    "server/persistence"
+    "server/observability"
   ]);
 });
 

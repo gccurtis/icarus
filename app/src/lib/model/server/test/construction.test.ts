@@ -3,16 +3,18 @@ import { beforeEach, test, vi } from "vitest";
 import { buildServerModel } from "$model/server/constructor.server";
 
 /**
- * Composition order, and what happens to what was already acquired when a later
- * step fails.
+ * Composition order, and what the graph names when it is built.
  *
  * The leaves are replaced by fakes that record when they were closed. Order and
  * cleanup are the whole of what the composition root decides; a real
  * configuration read and a real log stream would prove neither.
+ *
+ * Release ordering and the failure path are not tested here because neither is
+ * expressible against one closable object: nothing is acquired after the last
+ * step that can throw. Both need a case the day a second one is.
  */
 const graph = vi.hoisted(() => ({
   order: [] as string[],
-  persistenceFails: false,
   records: [] as string[]
 }));
 
@@ -35,32 +37,9 @@ vi.mock("$model/server/observability/index.server", () => ({
   errorFields: (error: unknown) => ({ errorMessage: String(error) })
 }));
 
-vi.mock("$model/server/persistence/index.server", () => ({
-  createPersistence: () => {
-    if (graph.persistenceFails) throw new Error("projects directory was unreadable");
-    return {
-      forProject: async () => ({}),
-      close: async () => {
-        graph.order.push("persistence");
-      }
-    };
-  }
-}));
-
 beforeEach(() => {
   graph.order = [];
   graph.records = [];
-  graph.persistenceFails = false;
-});
-
-test("closes databases before logging", async () => {
-  // Flushing the logger first would drop exactly the records that say whether
-  // the databases closed.
-  const model = await buildServerModel();
-
-  await model.close();
-
-  assert.deepEqual(graph.order, ["persistence", "observability"]);
 });
 
 test("the graph names every object it built", async () => {
@@ -68,18 +47,13 @@ test("the graph names every object it built", async () => {
 
   assert.ok(model.configuration);
   assert.ok(model.observability);
-  assert.ok(model.persistence);
   assert.deepEqual(graph.records, ["model.started"]);
 });
 
-test("a failed construction releases what it had already acquired", async () => {
-  // Logging is opened before persistence and is the thing that reports the
-  // failure, so it is also the thing that would be left holding a stream nobody
-  // closes.
-  graph.persistenceFails = true;
+test("closing the graph closes what it holds", async () => {
+  const model = await buildServerModel();
 
-  await assert.rejects(buildServerModel(), /projects directory was unreadable/);
+  await model.close();
 
   assert.deepEqual(graph.order, ["observability"]);
-  assert.deepEqual(graph.records, ["model.start.failed"]);
 });

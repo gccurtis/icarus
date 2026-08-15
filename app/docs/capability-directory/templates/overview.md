@@ -34,15 +34,13 @@ the capability does not have.
 ├── docs/                    # Omit when no supporting doc exists
 ├── types/
 ├── api/
-├── persistence/             # Omit for stateless capabilities
 └── test/
 ```
 
 ## Dependency Ports
 
 List only direct capability dependencies. Infrastructure from `$model/server` —
-the database registry, the logger, configuration — is imported rather than
-injected and is not a port.
+the logger, configuration — is imported rather than injected and is not a port.
 
 | Capability | Usage |
 | ---------- | ----- |
@@ -74,15 +72,12 @@ so a client cannot name a project it does not belong to.
 
 ## Data Ownership
 
-Include only when the capability persists state. The capability owns its tables,
-their SQL, and their invariants. Details live in
-[`persistence/persistence.md`](persistence/persistence.md).
+Include only when the capability persists state. The capability owns what it
+stores, every read and write against it, and its invariants.
 
-| Table | Purpose |
-| ----- | ------- |
-| `{{table_name}}` | {{State stored by the table}} |
-
-A project is its own database, so no table here carries a `project_id` column.
+| Stored | Purpose |
+| ------ | ------- |
+| `{{table_name}}` | {{State stored}} |
 
 ## Capability Invariants
 

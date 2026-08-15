@@ -10,9 +10,10 @@ identity arrive per request through `Scope`.
 | ------ | ---- |
 | [`configuration`](configuration/configuration.md) | One frozen snapshot of `configuration/*.yaml`, read once |
 | [`observability`](observability/observability.md) | The root logger, and the log stream if it opened one |
-| [`persistence`](persistence/persistence.md) | One open database per project |
 
-They are built in that order, and released in the reverse of it.
+They are built in that order, and released in the reverse of it. Logging is built
+first among the releasable objects and closed last, so anything released before
+it still has somewhere to record that it was.
 
 ## Three verbs, and who calls each
 
@@ -27,8 +28,7 @@ hooks.server.ts  init()          before the first request is answered
 └── initServerModel()
     └── buildServerModel()
         ├── configuration
-        ├── observability
-        └── persistence
+        └── observability
 
 serverModel()                    every later caller
 ├── throw after shutdown begins
@@ -66,25 +66,26 @@ tell a request arriving mid-drain from one arriving before startup — and the
 window is real: the Node adapter drains in-flight requests for up to thirty
 seconds after the signal, and keep-alive connections keep delivering.
 
-Shutdown closes databases before logging, so the database's own close records
-still reach the destination. It is idempotent: a second call does nothing, and
-no call after it revives the graph.
+Shutdown releases what the graph holds — today the log stream, and nothing
+else. It is idempotent: a second call does nothing, and no call after it revives
+the graph.
 
-## `projectDatabase` is the only scoped accessor
+## Scoped accessors live on this root
 
 Configuration and the logger are one per process and vary with nothing, so a
-caller takes them off the graph the door hands back. Which database a procedure
-needs depends on `scope.projectId`, known only when the procedure runs, so that
-one is a call.
+caller takes them off the graph the door hands back.
+
+Anything that varies with the request cannot be taken off the graph, because the
+value depends on something known only when the procedure runs. It is a call on
+this root taking what it varies by. It belongs here rather than beside the object
+it reaches: that object's module exports a constructor while the built instance
+is held here, so an accessor inside it would have to reach back up to the
+composition root. Each scoped accessor gets its own name rather than joining a
+bundle.
 
 The graph names one field per object and no shortcuts through them. A `logger`
 beside the `observability` that owns it would be a second name for one thing,
 free to disagree with the first the moment either moved.
-
-It lives on this root rather than in `persistence/` because that module exports a
-constructor and the built instance is held here. An accessor inside `persistence/`
-would have to reach back up to the composition root, which is a cycle. A second
-scoped object gets its own accessor beside this one.
 
 ## The doors
 
@@ -109,6 +110,5 @@ server/
 ├── scope.server.ts        request identity
 ├── test/                  lifetime and composition
 ├── configuration/
-├── observability/
-└── persistence/
+└── observability/
 ```

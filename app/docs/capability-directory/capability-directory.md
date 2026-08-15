@@ -1,13 +1,23 @@
 # The Capability Directory
 
-**Status:** The standard for capabilities in this application. Read it before
-adding a capability, a public function, or a table.
+> **Stale. Do not build against it.** `src/lib/capabilities/` is empty and there
+> is no store. Sections on the two doors, remote wrappers, admission, and storage
+> describe a shape nothing currently has.
+>
+> What still holds is everything about organizing functions: one directory per
+> capability, the recursive entry-filename rule, promotion to `shared/` on a
+> second caller, the procedure tree that names real paths, and a document per
+> directory.
+>
+> Rewritten against Convex once a capability exists on Convex — a standard
+> written for a shape nobody has used is a guess.
+
 **Document templates:** [`templates/`](templates/templates.md)
 
 ## What a capability is
 
-A capability references data kept in a database, and it is **procedural**: types,
-tables, and functions. It has no model object.
+A capability references stored data, and it is **procedural**: types and
+functions. It has no model object.
 
 That is a deliberate narrowing from the version of this standard the backend
 carried. A runtime object there held no state — it bound a store and a logger,
@@ -57,11 +67,6 @@ src/lib/capabilities/<capability>/
 │       └── <supporting>/       a procedure with sub-procedures of its own
 │           ├── <supporting>.ts
 │           └── <leaf>.ts
-├── persistence/
-│   ├── persistence.md
-│   ├── tables.ts               Kysely table types + Database registration
-│   ├── initialize.ts           DDL, and the schema drift check
-│   └── stored-types.ts         row ↔ canonical conversion
 └── test/
     ├── unit/                   mirrors the source directories it covers
     ├── regression/             one file per fixed defect
@@ -88,9 +93,10 @@ catching by name.
 ### The two doors
 
 A capability has two public surfaces, reached differently, and they cannot be
-merged. `index.ts` would otherwise import procedures and so Kysely; a view
-importing the capability pulls that whole graph, and the framework's server-only
-guard runs on the module graph at resolve time, so tree-shaking does not save it.
+merged. `index.ts` would otherwise import procedures and so the whole server
+graph; a view importing the capability pulls it in, and the framework's
+server-only guard runs on the module graph at resolve time, so tree-shaking does
+not save it.
 
 **`index.server.ts`** — reached by **import**, by server code: load functions,
 form actions, and other capabilities. It exports the procedures, the public
@@ -152,12 +158,12 @@ named in each documented procedure tree exist. It does not yet prove the actual
 call graph matches the document or mechanically count callers before promotion;
 those remain review checks and are the useful next enforcement improvements.
 
-**SQL lives here, not in `persistence/`.** A query one function runs sits in that
-function's directory; a query two functions run is promoted to `shared/` like any
-other procedure. The generic query layer already exists and is called Kysely —
-`db.selectFrom(table)` is the table interface, fully typed against `tables.ts`,
-and a wrapper over it would either fail to express a real multi-row transactional
-operation or grow parameters until it was a worse query builder.
+**Reads and writes live here.** One a single function runs sits in that
+function's directory; one two functions run is promoted to `shared/` like any
+other procedure. There is no store object and no query layer between a procedure
+and what it stores: a wrapper over the store's own interface would either fail to
+express a real multi-record transactional operation or grow parameters until it
+was a worse version of the thing it wrapped.
 
 ### `<function>.remote.ts`
 
@@ -188,12 +194,12 @@ Infrastructure divides by whether it depends on the caller.
 | --- | --- | --- |
 | the logger | `record` resolves it itself | one per process |
 | configuration | imported where read | one per process |
-| **the project database** | `projectDatabase(scope.projectId)` | **one per project** — there is no import that could be correct |
 
-`projectDatabase` lives on `$model/server/index.server`, the composition root
-that holds the registry. It is the only scoped accessor, and a second scoped
-object would get its own beside it rather than joining a bundle everyone then has
-to grow a field for.
+Both are one per process, so both are imported. Anything that varies with the
+caller cannot be — there is no import that could name the right one — so it is
+reached through an accessor on `$model/server/index.server` taking what it varies
+by. Each such accessor gets its own name rather than joining a bundle everyone
+then has to grow a field for.
 
 Keeping `projectId` and `userId` out of the input type is a security property
 rather than tidiness. A remote request carries a **project token** — an opaque
@@ -235,34 +241,22 @@ caller catches the error class directly and has no use for a status.
 
 ### `types/`
 
-The canonical model and the public contract. No Kysely row shapes — those are
-`persistence/stored-types.ts`. Private model types live here too; the doors
-decide what leaves.
+The canonical model and the public contract. No stored row shapes — a stored
+shape is a storage decision, and keeping it out is what stops a change in where
+data lives from reaching the public contract. Private model types live here too;
+the doors decide what leaves.
 
-### `persistence/`
+### Storage
 
-**Tables, not queries.** `tables.ts` holds the Kysely table types and registers
-them on the `Database` interface. `initialize.ts` creates them if absent and then
-verifies them. `stored-types.ts` converts rows to canonical values and back.
+A capability has no storage directory. Two rules apply to whatever it stores:
 
-**One database per project.** A project is its own database, so no query carries a
-`project_id` predicate and no table carries the column. A capability that forgets
-to scope *cannot* leak across projects, because there is no cross-project reach to
-forget. The registry in `$model/server/persistence` opens a project's database
-on first use and runs every capability's `initialize` against it.
+**A stored shape is converted at the boundary**, so a storage decision cannot
+leak into `types/`. That boundary is also where a retired representation is
+rewritten on read, which retires it without rewriting every record.
 
-The exception, where it arises, is data scoped to a **user** as well as a project.
-That stays a column, and it belongs in the primary key rather than merely beside
-it, so a write that omits it collides instead of quietly landing in another
-user's row.
-
-**`initialize.ts` verifies as well as creates.** `createTable().ifNotExists()` is
-not a migration strategy — it creates when absent and does nothing when present,
-so the first added column silently succeeds against an outdated database and
-fails at query time. After creating, `initialize` introspects the columns
-actually present and throws on drift, which converts a silent wrong answer into a
-startup failure. Real migrations replace this later; the check buys time, not
-correctness.
+**Schema disagreement is a deploy failure, not a query-time one.** A store that
+accepts a write against a shape it was not declared with fails much later and far
+from the cause.
 
 ### `test/`
 
@@ -329,10 +323,11 @@ Aliases are declared once, in `svelte.config.js` under `kit.alias`. The framewor
 generates the TypeScript paths from it, so the compiler and the bundler cannot
 drift — there is no second map to keep in step.
 
-One exception exists, and it is structural rather than stylistic: a
-`declare module` block for Kysely declaration merging must name the module that
-declares the interface, so a capability's `tables.ts` targets the persistence
-object's types module rather than a door.
+One exception is structural rather than stylistic: a `declare module` block for
+TypeScript declaration merging must name the module that *declares* the
+interface, never a door that re-exports it. That is a language rule, so a
+capability registering itself by declaration merging targets the declaring module
+directly.
 
 ## Server-only enforcement
 
@@ -345,8 +340,8 @@ before `server` — and a directory merely *named* `server` deeper in the tree
 buys nothing.
 
 **Mark the door, not every file.** A capability marks `index.server.ts` and
-leaves `api/` and `persistence/` unmarked, because the bare-alias rule already
-forbids reaching past the door. What that leaves uncovered is a deliberate
+leaves `api/` unmarked, because the bare-alias rule already forbids reaching past
+the door. What that leaves uncovered is a deliberate
 deep-import of an internal, which still fails the build — Node built-ins cannot
 be bundled for a browser — just with a worse message.
 

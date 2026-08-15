@@ -51,11 +51,9 @@ const makePackage = () => {
     `export default { kit: { alias: ${JSON.stringify(ALIASES)} } };\n`
   );
 
-  // The server runtime a generated capability reaches: scope resolution, the
-  // composition root a procedure gets its database from, and the logger
-  // `record` writes to. Stubs rather than copies — lint resolves alias targets
-  // to real files, and does not read them.
-  mkdirSync(join(root, "src", "lib", "model", "server", "persistence"), { recursive: true });
+  // The server runtime a generated capability reaches: scope resolution and the
+  // logger `record` writes to. Stubs rather than copies — lint resolves alias
+  // targets to real files, and does not read them.
   mkdirSync(join(root, "src", "lib", "model", "server", "observability"), { recursive: true });
   writeFileSync(
     join(root, "src", "lib", "model", "server", "scope.server.ts"),
@@ -69,21 +67,7 @@ const makePackage = () => {
     join(root, "src", "lib", "model", "server", "observability", "index.server.ts"),
     "export const errorFields = () => ({});\n"
   );
-  writeFileSync(
-    join(root, "src", "lib", "model", "server", "persistence", "types.ts"),
-    "export interface Database {}\n"
-  );
 
-  return root;
-};
-
-/** A package without the persistence runtime, to check that `--persisted` refuses. */
-const makePackageWithoutPersistence = () => {
-  const root = makePackage();
-  rmSync(join(root, "src", "lib", "model", "server", "persistence"), {
-    recursive: true,
-    force: true
-  });
   return root;
 };
 
@@ -121,11 +105,8 @@ test("a bare capability passes lint", () => {
   assert.deepEqual(lint(root), []);
 });
 
-test("a persisted, browser-facing capability passes lint", () => {
-  const root = generate([
-    "new-capability.mjs",
-    [CAPABILITY, "--persisted", "--browser-facing"]
-  ]);
+test("a browser-facing capability passes lint", () => {
+  const root = generate(["new-capability.mjs", [CAPABILITY, "--browser-facing"]]);
   assert.deepEqual(lint(root), []);
 });
 
@@ -147,7 +128,7 @@ test("a capability with a browser-reachable function passes lint", () => {
 
 test("several functions accumulate without the doors drifting", () => {
   const root = generate(
-    ["new-capability.mjs", [CAPABILITY, "--persisted", "--browser-facing"]],
+    ["new-capability.mjs", [CAPABILITY, "--browser-facing"]],
     ["new-api.mjs", [CAPABILITY, "define", "--remote"]],
     ["new-api.mjs", [CAPABILITY, "list", "--remote"]],
     ["new-api.mjs", [CAPABILITY, "requireThing"]]
@@ -227,12 +208,11 @@ test("refuses --remote when the capability has no browser door", () => {
   );
 });
 
-test("refuses --persisted before the persistence runtime exists", () => {
-  const root = makePackageWithoutPersistence();
-  workspaces.push(root);
+test("refuses an unknown flag", () => {
+  const root = generate(["new-capability.mjs", [CAPABILITY]]);
   assert.throws(
-    () => run("new-capability.mjs", [CAPABILITY, "--persisted"], root),
-    /--persisted needs the persistence runtime/
+    () => run("new-capability.mjs", ["other/thing", "--persisted"], root),
+    /unknown flag/
   );
 });
 

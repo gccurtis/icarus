@@ -1,5 +1,9 @@
 # Reviewing a Capability
 
+> **Stale where [the standard it checks](capability-directory.md) is.** The items
+> on the two doors, remote wrappers, and admission describe a shape nothing
+> currently has. Rewritten with the standard.
+
 The template exists so review is mechanical. Work down this list; each item is
 answerable by opening one directory.
 
@@ -7,8 +11,8 @@ answerable by opening one directory.
 
 1. `pnpm lint` passes. Every structural rule in this section is machine-checked;
    if lint is green, skip to the judgment items.
-2. Directories present are only: `docs`, `types`, `api`, `persistence`, `test`.
-   An unused directory is absent, not empty.
+2. Directories present are only: `docs`, `types`, `api`, `test`. An unused
+   directory is absent, not empty.
 3. Every directory has a document named after it, and the capability root has
    `overview.md`. Exempt: `test/`, `docs/`, and nested procedure directories.
 4. Every path named in a function's procedure tree resolves on disk.
@@ -30,7 +34,7 @@ answerable by opening one directory.
    but `.remote.ts` files. This is what keeps the server graph out of the browser
    bundle.
 10. No file outside the capability imports past a door.
-11. `types/` contains no Kysely row shapes.
+11. `types/` contains no stored row shapes.
 
 ## The public surface
 
@@ -61,29 +65,20 @@ answerable by opening one directory.
 21. Every entry records its call through the shared instrumentation procedure.
     Skipping it means a browser-reachable call leaves no trace.
 
-## Persistence
+## Storage
 
-22. `persistence/` holds tables, not queries: `tables.ts`, `initialize.ts`,
-    `stored-types.ts`. SQL lives with the function that runs it.
-23. **No query carries a `project_id` predicate and no table carries the column.**
-    A project is its own database. A predicate here means someone imported the
-    wrong scoping model.
-24. Data scoped to a user as well as a project carries `user_id` **in the primary
-    key**, not merely as a column, so a write that omits it collides rather than
-    landing in another user's row.
-25. `initialize.ts` creates *and* verifies — it introspects the columns actually
-    present and throws on drift. `ifNotExists()` alone silently accepts an
-    outdated table.
-26. `stored-types.ts` is distinct from `types/`, and a row is never handed to a
+22. A read or write lives with the function that runs it, promoted to `shared/`
+    only when a second function runs it.
+23. A stored shape is converted at the boundary, and is never handed to a
     consumer directly.
-27. Transaction boundaries are started by `api/` entries.
+24. Transaction boundaries are started by `api/` entries.
 
 ## Tests
 
-28. Each public function has coverage in `test/unit/`, mirroring the source
+25. Each public function has coverage in `test/unit/`, mirroring the source
     directory it covers.
-29. Each fixed defect has a file in `test/regression/`.
-30. Performance, concurrency, and resource behavior the capability claims in its
+26. Each fixed defect has a file in `test/regression/`.
+27. Performance, concurrency, and resource behavior the capability claims in its
     documents is tested in `test/non-functional/`.
-31. Tests exercise real behavior. A test that asserts its own fixture back is
+28. Tests exercise real behavior. A test that asserts its own fixture back is
     worse than no test, because it reports success either way.

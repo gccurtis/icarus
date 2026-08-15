@@ -12,7 +12,6 @@ hand, copy the file and rename it to match its directory.
 | [api.md](api.md) | `api/` | `api.md` |
 | [api-function.md](api-function.md) | `api/<function>/` | `<function>.md` |
 | [api-shared.md](api-shared.md) | `api/shared/` | `shared.md` |
-| [persistence.md](persistence.md) | `persistence/` | `persistence.md` |
 
 [reviewing-a-capability.md](../reviewing-a-capability.md) is not a template. It is
 the review checklist the structure exists to make possible.

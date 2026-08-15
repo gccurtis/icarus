@@ -37,9 +37,8 @@ checklist, and its "Structure" items are what the linter checks for you.
 "One instance" describes production lifetime. Constructors still return fresh
 objects so the roots can assemble the graph and tests can prove isolation.
 
-Capabilities remain the procedural half of the application model: they own
-database-backed data and hold nothing between calls. Model objects are the
-stateful half.
+Capabilities remain the procedural half of the application model: they own stored
+data and hold nothing between calls. Model objects are the stateful half.
 
 ## Target layout
 
@@ -159,7 +158,7 @@ from the aggregate:
 
 ```ts
 const { workbench } = clientModel();
-const { persistence } = event.locals.model;
+const { observability } = event.locals.model;
 ```
 
 ### Object directory
