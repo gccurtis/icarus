@@ -12,17 +12,10 @@ coverage/
 *.tsbuildinfo
 logs/*.log
 
-# Backend runtime artifacts
-apps/backend/data/*.db
-apps/backend/data/*.db-shm
-apps/backend/data/*.db-wal
-apps/backend/data/pglite/
-apps/backend/logs/*.log
-
-# Frontend runtime artifacts. One embedded PostgreSQL directory per project,
-# tens of megabytes each — state a run produces, never state a checkout needs.
-apps/frontend/data/
-apps/frontend/logs/*.log
+# Runtime artifacts. One embedded PostgreSQL directory per project, tens of
+# megabytes each — state a run produces, never state a checkout needs.
+app/data/
+app/logs/*.log
 
 # Agent worktrees
 .claude/worktrees/

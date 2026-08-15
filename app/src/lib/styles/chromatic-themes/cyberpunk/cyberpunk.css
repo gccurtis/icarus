@@ -1,0 +1,290 @@
+/**
+ * Cyberpunk — a chromatic theme.
+ *
+ * The dark reading: neon signage over a blue-black city. Authored for a dark
+ * ground rather than mirrored from Celestial — the ramps are more saturated
+ * through the middle and much brighter at the light end, because that is what a
+ * dark ground demands and what a lightness-flipped light theme cannot give.
+ *
+ * Contract: cyberpunk.md
+ *
+ * Like every theme, this file names no jobs. `color-scheme: dark` is the only
+ * thing that tells the system which end of these ramps to read from, and the
+ * shared chromatic slot table does the rest.
+ */
+
+[data-theme="cyberpunk"] {
+  /* Cyberpunk reads from the dark end. Every light-dark() in the slot table
+   * re-aims off this one declaration. */
+  color-scheme: dark;
+
+  /* ---- Chromatic ------------------------------------------------------
+   * Ordered by lightness, faded → deep, exactly as in every theme.
+   *
+   * Contract, measured against THIS theme's ground (--theme-surface-work):
+   *   `normal` clears 3:1        → the `border` slot
+   *   `muted`  carries --theme-ink-on-fill at 4.5:1 → the `fill` slot
+   *   `light`  clears 7:1        → the `text` slot
+   *
+   * `faded` and `emphasized` go unused in the dark direction, exactly as
+   * `muted` and `deep` go unused in a light one.
+   */
+
+  --palette-red-faded: #ffecef;
+  --palette-red-light: #ff9fb0;
+  --palette-red-muted: #ff3d6a;
+  --palette-red-normal: #d91a4b;
+  --palette-red-emphasized: #a31038;
+  --palette-red-strong: #5e0a22;
+  --palette-red-deep: #2e0511;
+
+  --palette-orange-faded: #fff1e6;
+  --palette-orange-light: #ffc08a;
+  --palette-orange-muted: #ff8a2b;
+  --palette-orange-normal: #d9640f;
+  --palette-orange-emphasized: #a34a08;
+  --palette-orange-strong: #5e2a05;
+  --palette-orange-deep: #2e1502;
+
+  --palette-amber-faded: #fff8e6;
+  --palette-amber-light: #ffde8a;
+  --palette-amber-muted: #ffc22b;
+  --palette-amber-normal: #d99a0f;
+  --palette-amber-emphasized: #a37308;
+  --palette-amber-strong: #5e4205;
+  --palette-amber-deep: #2e2002;
+
+  --palette-yellow-faded: #fdffe6;
+  --palette-yellow-light: #f2ff8a;
+  --palette-yellow-muted: #e3ff2b;
+  --palette-yellow-normal: #b8d10f;
+  --palette-yellow-emphasized: #8a9c08;
+  --palette-yellow-strong: #4f5a05;
+  --palette-yellow-deep: #272d02;
+
+  --palette-green-faded: #e9fff0;
+  --palette-green-light: #8fffb8;
+  --palette-green-muted: #2bff88;
+  --palette-green-normal: #0fd165;
+  --palette-green-emphasized: #089c4a;
+  --palette-green-strong: #055a2b;
+  --palette-green-deep: #022d15;
+
+  --palette-teal-faded: #e6fffb;
+  --palette-teal-light: #8affee;
+  --palette-teal-muted: #2bffdd;
+  --palette-teal-normal: #0fd1b4;
+  --palette-teal-emphasized: #089c86;
+  --palette-teal-strong: #055a4d;
+  --palette-teal-deep: #022d26;
+
+  --palette-cyan-faded: #e6fdff;
+  --palette-cyan-light: #9ff5ff;
+  --palette-cyan-muted: #22d3ee;
+  --palette-cyan-normal: #0ea5c6;
+  --palette-cyan-emphasized: #0a7b96;
+  --palette-cyan-strong: #08505f;
+  --palette-cyan-deep: #052a33;
+
+  --palette-blue-faded: #eaf0ff;
+  --palette-blue-light: #a8c2ff;
+  --palette-blue-muted: #6f9dff;
+  --palette-blue-normal: #2f74e6;
+  --palette-blue-emphasized: #1445a8;
+  --palette-blue-strong: #0c2760;
+  --palette-blue-deep: #06132f;
+
+  --palette-violet-faded: #f3eaff;
+  --palette-violet-light: #c9a8ff;
+  --palette-violet-muted: #a86bff;
+  --palette-violet-normal: #8c4aec;
+  --palette-violet-emphasized: #5416a8;
+  --palette-violet-strong: #300c60;
+  --palette-violet-deep: #18062f;
+
+  --palette-pink-faded: #ffeaf8;
+  --palette-pink-light: #ffa8e0;
+  --palette-pink-muted: #ff5cc8;
+  --palette-pink-normal: #e01fa0;
+  --palette-pink-emphasized: #a81478;
+  --palette-pink-strong: #600c44;
+  --palette-pink-deep: #2f0622;
+
+  /* Companion ramps, written by `pnpm new-style-companions`. Each is the primary
+   * interpolated a fixed angle toward a wheel neighbour, so every set places its
+   * anchors the same perceptual distance from its primary. */
+  /* generated:companions:start */
+  /* blue -10° toward cyan */
+  --palette-blue-tertiary-faded: #e8f3ff;
+  --palette-blue-tertiary-light: #a0d0ff;
+  --palette-blue-tertiary-muted: #59acff;
+  --palette-blue-tertiary-normal: #0183e1;
+  --palette-blue-tertiary-emphasized: #0056a6;
+  --palette-blue-tertiary-strong: #003362;
+  --palette-blue-tertiary-deep: #031931;
+
+  /* blue +10° toward violet */
+  --palette-blue-secondary-faded: #ecefff;
+  --palette-blue-secondary-light: #afbcff;
+  --palette-blue-secondary-muted: #7d91ff;
+  --palette-blue-secondary-normal: #4f6aed;
+  --palette-blue-secondary-emphasized: #2d3bab;
+  --palette-blue-secondary-strong: #192162;
+  --palette-blue-secondary-deep: #0b1030;
+
+  /* blue -20° toward cyan */
+  --palette-blue-accent-1-faded: #e6f7ff;
+  --palette-blue-accent-1-light: #9bddff;
+  --palette-blue-accent-1-muted: #41bafe;
+  --palette-blue-accent-1-normal: #0090d9;
+  --palette-blue-accent-1-emphasized: #0064a1;
+  --palette-blue-accent-1-strong: #003d62;
+  --palette-blue-accent-1-deep: #011f32;
+
+  /* blue +20° toward violet */
+  --palette-blue-accent-2-faded: #eeedff;
+  --palette-blue-accent-2-light: #b7b5ff;
+  --palette-blue-accent-2-muted: #8c85ff;
+  --palette-blue-accent-2-normal: #6860f0;
+  --palette-blue-accent-2-emphasized: #3d30ac;
+  --palette-blue-accent-2-strong: #221b63;
+  --palette-blue-accent-2-deep: #100d31;
+
+  /* cyan -10° toward teal */
+  --palette-cyan-tertiary-faded: #e6fefe;
+  --palette-cyan-tertiary-light: #99f8fc;
+  --palette-cyan-tertiary-muted: #00deed;
+  --palette-cyan-tertiary-normal: #00b0c5;
+  --palette-cyan-tertiary-emphasized: #008495;
+  --palette-cyan-tertiary-strong: #00535c;
+  --palette-cyan-tertiary-deep: #022b31;
+
+  /* cyan +10° toward blue */
+  --palette-cyan-secondary-faded: #e5faff;
+  --palette-cyan-secondary-light: #9aeaff;
+  --palette-cyan-secondary-muted: #29c8f7;
+  --palette-cyan-secondary-normal: #009ccf;
+  --palette-cyan-secondary-emphasized: #00719c;
+  --palette-cyan-secondary-strong: #004860;
+  --palette-cyan-secondary-deep: #012533;
+
+  /* cyan -20° toward teal */
+  --palette-cyan-accent-1-faded: #e6fefd;
+  --palette-cyan-accent-1-light: #93faf9;
+  --palette-cyan-accent-1-muted: #00e9ea;
+  --palette-cyan-accent-1-normal: #00bbc2;
+  --palette-cyan-accent-1-emphasized: #008c92;
+  --palette-cyan-accent-1-strong: #005558;
+  --palette-cyan-accent-1-deep: #002c2e;
+
+  /* cyan +20° toward blue */
+  --palette-cyan-accent-2-faded: #e6f7ff;
+  --palette-cyan-accent-2-light: #9adeff;
+  --palette-cyan-accent-2-muted: #3fbbfe;
+  --palette-cyan-accent-2-normal: #0091d8;
+  --palette-cyan-accent-2-emphasized: #0065a1;
+  --palette-cyan-accent-2-strong: #003e61;
+  --palette-cyan-accent-2-deep: #011f32;
+
+  /* pink -10° toward violet */
+  --palette-pink-tertiary-faded: #fdeafa;
+  --palette-pink-tertiary-light: #f6a7e8;
+  --palette-pink-tertiary-muted: #f05ed8;
+  --palette-pink-tertiary-normal: #d22ab5;
+  --palette-pink-tertiary-emphasized: #991386;
+  --palette-pink-tertiary-strong: #580b4c;
+  --palette-pink-tertiary-deep: #2b0626;
+
+  /* pink +10° toward red */
+  --palette-pink-secondary-faded: #ffeaf4;
+  --palette-pink-secondary-light: #ffa4cf;
+  --palette-pink-secondary-muted: #ff50a9;
+  --palette-pink-secondary-normal: #e01882;
+  --palette-pink-secondary-emphasized: #a80f62;
+  --palette-pink-secondary-strong: #600a38;
+  --palette-pink-secondary-deep: #2f051c;
+
+  /* pink -20° toward violet */
+  --palette-pink-accent-1-faded: #fbeafb;
+  --palette-pink-accent-1-light: #eca7ef;
+  --palette-pink-accent-1-muted: #df61e5;
+  --palette-pink-accent-1-normal: #c333c7;
+  --palette-pink-accent-1-emphasized: #891392;
+  --palette-pink-accent-1-strong: #4f0b53;
+  --palette-pink-accent-1-deep: #270629;
+
+  /* pink +20° toward red */
+  --palette-pink-accent-2-faded: #ffebf1;
+  --palette-pink-accent-2-light: #ffa1be;
+  --palette-pink-accent-2-muted: #ff4588;
+  --palette-pink-accent-2-normal: #dd1665;
+  --palette-pink-accent-2-emphasized: #a60d4c;
+  --palette-pink-accent-2-strong: #5f092c;
+  --palette-pink-accent-2-deep: #2f0516;
+  /* generated:companions:end */
+
+  /* ---- Achromatic -----------------------------------------------------
+   * white  — cool signage light, carries text
+   * grey   — tint-free, spans the full range
+   * black  — blue-black city ground, carries the planes
+   *
+   * The names still describe the family, not the job. Cyberpunk draws its
+   * planes from `black` and its text from `white`; Celestial does the reverse
+   * with the same two names, which is the whole reason they are literal.
+   */
+
+  --palette-white-faded: #f2fbff;
+  --palette-white-light: #dceef7;
+  --palette-white-muted: #c2dcea;
+  --palette-white-normal: #a3c2d4;
+  --palette-white-emphasized: #7e9baf;
+  --palette-white-strong: #5a7387;
+  --palette-white-deep: #3b4c5c;
+
+  --palette-grey-faded: #f4f6f7;
+  --palette-grey-light: #d7dde1;
+  --palette-grey-muted: #a9b3ba;
+  --palette-grey-normal: #78838c;
+  --palette-grey-emphasized: #4e5860;
+  --palette-grey-strong: #2e363c;
+  --palette-grey-deep: #12171a;
+
+  --palette-black-faded: #554e7a;
+  --palette-black-light: #3b3563;
+  --palette-black-muted: #262145;
+  --palette-black-normal: #1b1734;
+  --palette-black-emphasized: #141027;
+  --palette-black-strong: #0d0a1b;
+  --palette-black-deep: #05030c;
+
+  /* ---- Planes, seams, and text ----------------------------------------
+   * Same jobs as Celestial, opposite end of the range. The work surface is
+   * still lifted above the canvas and the panel is still recessed below it —
+   * on a dark ground "lifted" means lighter, which is why this is a theme's
+   * decision and not a mechanical flip.
+   */
+
+  --theme-surface-canvas: var(--palette-black-emphasized);
+  --theme-surface-work: var(--palette-black-normal);
+  --theme-surface-panel: var(--palette-black-strong);
+  --theme-surface-elevated: var(--palette-black-muted);
+
+  /* One step lighter than `panel`. It coincides with `canvas` here, which is
+   * what happens when seven steps serve seven jobs; the relationship is what
+   * matters, not the distinctness. */
+  --theme-surface-panel-hover: var(--palette-black-emphasized);
+
+  --theme-border-subtle: var(--palette-black-light);
+  --theme-border-strong: var(--palette-black-faded);
+
+  --theme-ink-primary: var(--palette-white-faded);
+  --theme-ink-secondary: var(--palette-white-normal);
+  --theme-ink-muted: var(--palette-white-emphasized);
+
+  /* Dark, because `fill` resolves to the `muted` step here and every `muted`
+   * step in this palette is neon. White on neon is unreadable; this is the
+   * inverse of Celestial's choice and the reason on-fill is a theme token. */
+  --theme-ink-on-fill: var(--palette-black-deep);
+
+  --theme-shadow-tint: var(--palette-black-deep);
+}

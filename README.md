@@ -1,73 +1,92 @@
 # Icarus
 
-Independent TypeScript frontend and backend. Neither shares build configuration, dependencies, or
-types with the other.
+One TypeScript application. SvelteKit serves the browser and runs the server
+code behind it, so there is no wire contract to keep in step and no second
+process to start.
 
 ## Structure
 
-- `apps/backend`: backend API (Fastify) — self-contained, own lockfile and tsconfig
-- `apps/frontend`: frontend app (Vite) — self-contained, own lockfile and tsconfig
-- `infra/devshell`: Nix flake dev environment
-- `docs`: project docs
+- `app/` — the application: `src/`, `scripts/`, `docs/`, `configuration/`
+- `infra/devshell/` — Nix flake dev environment
+- `docs/` — repository-level design records
+- `reference/` — a frozen copy of the pre-rebuild tree. Nothing here is
+  compiled, type-checked, imported, or executed
 
-The repository root holds no workspace manifest, lockfile, or shared tsconfig. Each app is installed
-and run from its own directory.
+The repository root holds no workspace manifest, lockfile, or shared tsconfig.
+`app/` is installed and run from its own directory.
 
-## NixOS / Nix usage
-
-The dev shell is defined in `infra/devshell` and supplies Node and pnpm:
+## Nix
 
 ```bash
 nix develop ./infra/devshell
 ```
 
-## Install
+Supplies Node and pnpm. Everything below assumes it.
 
-Each app installs independently:
-
-```bash
-cd apps/backend  && pnpm install
-cd apps/frontend && pnpm install
-```
-
-## Development
+## Install, develop, verify, build
 
 ```bash
-cd apps/backend  && pnpm dev     # tsx watch on src/main.ts
-cd apps/frontend && pnpm dev     # vite
+cd app
+pnpm install
+pnpm dev                     # vite, on :3000
+pnpm lint && pnpm typecheck && pnpm test && pnpm test:scripts
+pnpm build && node build/index.js
 ```
 
-Both are needed for the frontend to reach the backend; run them in separate shells.
+`pnpm build` produces a Node server at `build/index.js` via `adapter-node`.
+Set `ORIGIN` when running it: kit refuses a mutation whose `Origin` header does
+not match.
 
-## Verify
+## How it is put together
 
-```bash
-cd apps/backend  && pnpm typecheck && pnpm test
-cd apps/frontend && pnpm typecheck
+Three trees under `app/src/lib`, each with a written standard, a review
+checklist, and a linter behind it:
+
+| Tree | Holds | Standard |
+| --- | --- | --- |
+| `capabilities/` | database-backed data, **procedurally** — types, tables, and functions | [capability-directory](app/docs/capability-directory/capability-directory.md) |
+| `model/` | things with a real lifetime — browser state, and process-held server resources | [model-directory](app/docs/model-directory/model-directory.md) |
+| `views/` | what a person sees | [view-directory](app/docs/view-directory/view-directory.md) |
+
+`pnpm lint` runs all four linters (the fourth covers
+[styles](app/docs/styles-directory/styles-directory.md)). They are the machine-checked
+half of each standard; the checklists cover the rest.
+
+### A view reaches a capability by calling a function
+
+There are no endpoints and no hand-written wire types. A capability exposes each
+public function through a SvelteKit **remote function**, and a view imports it
+from the capability's browser door:
+
+```ts
+import { list } from "$name-manager";
+
+const variables = list({ project });
 ```
 
-## Build
+Types flow from the server implementation, because the client module is
+regenerated from it at build time.
 
-```bash
-cd apps/backend  && pnpm build
-cd apps/frontend && pnpm build
-```
+### Two doors, and they cannot be merged
 
-## The backend/frontend contract
+`index.server.ts` exports the procedures, for load functions and other
+capabilities. `index.ts` re-exports only the remote wrappers, for views. A view
+importing the server door would pull Kysely into the client graph, and kit's
+server-only guard fails the build rather than tree-shaking it.
 
-The backend owns the shapes it serves; the frontend declares its own expectation of them. For example
-`ApiHealth` is defined in `apps/backend/src/3-capabilities/built-in/healthCapability.ts` and declared
-again in `apps/frontend/src/main.ts`.
+### One database per project
 
-This is deliberate — the two sides are independent — but it means **the wire contract is not checked
-by the compiler across the boundary**. A change to a response shape on one side will not fail the
-other side's type-check. Endpoint contracts have to be kept in step by test or convention.
+Project isolation is **structural**: a project is its own PGlite database, so no
+query carries a `project_id` predicate and no table has the column.
+
+A browser call names a project with an opaque **token** it holds in its URL.
+`resolveScope` looks that token up within the asking user's own handles — the
+lookup *is* the authorization, and a token the user does not hold resolves to no
+project at all. Below that line a procedure has a `Scope` and the token no longer
+exists.
 
 ## Configuration
 
-Each app configures itself. The backend reads every `*.yaml` under
-[`apps/backend/configuration/`](apps/backend/configuration/README.md) and merges them, with real
-secrets in that directory's git-ignored `local.yaml`.
-
-The repository-root `.env` is no longer read by anything. The backend used to load it via dotenv, for
-a single variable that `local.yaml` now supplies.
+`app/configuration/` holds YAML read at startup, merged lexicographically with
+the git-ignored `local.yaml` last. See
+[its README](app/configuration/README.md).

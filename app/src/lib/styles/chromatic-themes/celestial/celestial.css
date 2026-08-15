@@ -1,0 +1,297 @@
+/**
+ * Celestial — a chromatic theme.
+ *
+ * A theme is pure material. It declares what colors exist at what intensities,
+ * which end of the range it reads from (`color-scheme`), and which achromatic
+ * family carries its planes and its text. It contains no job names: no `fill`,
+ * no `text`, no role. Those are assigned theme-independently in
+ * system/color/, and this file cannot see them.
+ *
+ * Contract: celestial.md
+ *
+ * Declared OUTSIDE @theme on purpose. Tailwind generates no utilities from
+ * these, which mechanically enforces the rule that nothing references the
+ * palette directly — a component cannot write `bg-palette-blue-normal`
+ * because that utility does not exist.
+ */
+
+:root,
+[data-theme="celestial"] {
+  /* Celestial reads from the light end. This one line drives every
+   * light-dark() in chromatic-themes/slots.css, and it is the only place the
+   * theme's polarity is stated. */
+  color-scheme: light;
+
+  /* ---- Chromatic ------------------------------------------------------
+   * Seven steps per hue, ordered by lightness: faded → deep. The ladder is
+   * symmetric about `normal`, so each step has a mirror at the same distance
+   * on the other side: muted↔emphasized, light↔strong, faded↔deep.
+   *
+   * Contract, measured against this theme's own near-white ground:
+   * `normal` clears 3:1, `emphasized` clears 4.5:1, `strong` clears 7:1.
+   */
+
+  --palette-red-faded: #fdf1ef;
+  --palette-red-light: #fad5d0;
+  --palette-red-muted: #f2645a;
+  --palette-red-normal: #d9483c;
+  --palette-red-emphasized: #c0362c;
+  --palette-red-strong: #92251d;
+  --palette-red-deep: #5a1611;
+
+  --palette-orange-faded: #fef4ec;
+  --palette-orange-light: #fbdcc2;
+  --palette-orange-muted: #f08a3c;
+  --palette-orange-normal: #dd6f1a;
+  --palette-orange-emphasized: #a85309;
+  --palette-orange-strong: #7e3e07;
+  --palette-orange-deep: #4e2705;
+
+  --palette-amber-faded: #fef6e8;
+  --palette-amber-light: #fae3b8;
+  --palette-amber-muted: #e0a93b;
+  --palette-amber-normal: #b07a15;
+  --palette-amber-emphasized: #8a5a13;
+  --palette-amber-strong: #6b4510;
+  --palette-amber-deep: #452b09;
+
+  --palette-yellow-faded: #fefae6;
+  --palette-yellow-light: #faf0b4;
+  --palette-yellow-muted: #e8ce3e;
+  --palette-yellow-normal: #9e8912;
+  --palette-yellow-emphasized: #7d6c0f;
+  --palette-yellow-strong: #5f520b;
+  --palette-yellow-deep: #3b3307;
+
+  --palette-green-faded: #eff8f2;
+  --palette-green-light: #c9e8d5;
+  --palette-green-muted: #3dd68c;
+  --palette-green-normal: #2e9160;
+  --palette-green-emphasized: #1e7a46;
+  --palette-green-strong: #145c34;
+  --palette-green-deep: #0c3a20;
+
+  --palette-teal-faded: #ecf8f7;
+  --palette-teal-light: #c0e6e2;
+  --palette-teal-muted: #3fcfc0;
+  --palette-teal-normal: #1f9e92;
+  --palette-teal-emphasized: #187d74;
+  --palette-teal-strong: #115d57;
+  --palette-teal-deep: #0b3b37;
+
+  --palette-cyan-faded: #eaf6fb;
+  --palette-cyan-light: #bce2f2;
+  --palette-cyan-muted: #38bdf8;
+  --palette-cyan-normal: #0087b8;
+  --palette-cyan-emphasized: #016e96;
+  --palette-cyan-strong: #02597a;
+  --palette-cyan-deep: #013a50;
+
+  --palette-blue-faded: #eef1fb;
+  --palette-blue-light: #ccd6f2;
+  --palette-blue-muted: #6e8bff;
+  --palette-blue-normal: #3657c9;
+  --palette-blue-emphasized: #2a45a6;
+  --palette-blue-strong: #1e3179;
+  --palette-blue-deep: #131f4b;
+
+  --palette-violet-faded: #f3effc;
+  --palette-violet-light: #dacff7;
+  --palette-violet-muted: #a98bff;
+  --palette-violet-normal: #6f49d8;
+  --palette-violet-emphasized: #593aaf;
+  --palette-violet-strong: #412b80;
+  --palette-violet-deep: #291b50;
+
+  --palette-pink-faded: #fdeff5;
+  --palette-pink-light: #f9cfe1;
+  --palette-pink-muted: #ee7fae;
+  --palette-pink-normal: #db4a88;
+  --palette-pink-emphasized: #bc386f;
+  --palette-pink-strong: #8e2853;
+  --palette-pink-deep: #591834;
+
+  /* Companion ramps, written by `pnpm new-style-companions`. Each is the primary
+   * interpolated a fixed angle toward a wheel neighbour, so every set places its
+   * anchors the same perceptual distance from its primary. */
+  /* generated:companions:start */
+  /* blue -10° toward cyan */
+  --palette-blue-tertiary-faded: #ecf3fc;
+  --palette-blue-tertiary-light: #c7daf4;
+  --palette-blue-tertiary-muted: #5c9bff;
+  --palette-blue-tertiary-normal: #1f68c7;
+  --palette-blue-tertiary-emphasized: #1653a3;
+  --palette-blue-tertiary-strong: #113e7b;
+  --palette-blue-tertiary-deep: #0c284e;
+
+  /* blue +10° toward violet */
+  --palette-blue-secondary-faded: #f0f0fc;
+  --palette-blue-secondary-light: #d1d3f5;
+  --palette-blue-secondary-muted: #8a8bff;
+  --palette-blue-secondary-normal: #5151d2;
+  --palette-blue-secondary-emphasized: #4140ac;
+  --palette-blue-secondary-strong: #2f2f7d;
+  --palette-blue-secondary-deep: #1d1d4e;
+
+  /* blue -20° toward cyan */
+  --palette-blue-accent-1-faded: #ebf4fc;
+  --palette-blue-accent-1-light: #c2ddf4;
+  --palette-blue-accent-1-muted: #4aaaff;
+  --palette-blue-accent-1-normal: #0076c2;
+  --palette-blue-accent-1-emphasized: #00609f;
+  --palette-blue-accent-1-strong: #024a7c;
+  --palette-blue-accent-1-deep: #05304f;
+
+  /* blue +20° toward violet */
+  --palette-blue-accent-2-faded: #f2effc;
+  --palette-blue-accent-2-light: #d8d0f7;
+  --palette-blue-accent-2-muted: #a38bff;
+  --palette-blue-accent-2-normal: #694bd7;
+  --palette-blue-accent-2-emphasized: #553baf;
+  --palette-blue-accent-2-strong: #3e2c80;
+  --palette-blue-accent-2-deep: #271b50;
+
+  /* cyan -10° toward teal */
+  --palette-cyan-tertiary-faded: #eaf7fa;
+  --palette-cyan-tertiary-light: #bce3ef;
+  --palette-cyan-tertiary-muted: #21c2ee;
+  --palette-cyan-tertiary-normal: #008db2;
+  --palette-cyan-tertiary-emphasized: #007290;
+  --palette-cyan-tertiary-strong: #005b73;
+  --palette-cyan-tertiary-deep: #003b4b;
+
+  /* cyan +10° toward blue */
+  --palette-cyan-secondary-faded: #ebf5fc;
+  --palette-cyan-secondary-light: #c0dff4;
+  --palette-cyan-secondary-muted: #43b0fd;
+  --palette-cyan-secondary-normal: #007bbf;
+  --palette-cyan-secondary-emphasized: #00649c;
+  --palette-cyan-secondary-strong: #004f7b;
+  --palette-cyan-secondary-deep: #033350;
+
+  /* cyan -20° toward teal */
+  --palette-cyan-accent-1-faded: #eaf7f9;
+  --palette-cyan-accent-1-light: #bce4ec;
+  --palette-cyan-accent-1-muted: #10c7e3;
+  --palette-cyan-accent-1-normal: #0093aa;
+  --palette-cyan-accent-1-emphasized: #007689;
+  --palette-cyan-accent-1-strong: #005c6c;
+  --palette-cyan-accent-1-deep: #003b46;
+
+  /* cyan +20° toward blue */
+  --palette-cyan-accent-2-faded: #ecf3fc;
+  --palette-cyan-accent-2-light: #c5dbf4;
+  --palette-cyan-accent-2-muted: #54a1ff;
+  --palette-cyan-accent-2-normal: #136ec5;
+  --palette-cyan-accent-2-emphasized: #0a59a2;
+  --palette-cyan-accent-2-strong: #0b437c;
+  --palette-cyan-accent-2-deep: #092b4f;
+
+  /* pink -10° toward violet */
+  --palette-pink-tertiary-faded: #fceff6;
+  --palette-pink-tertiary-light: #f6cee5;
+  --palette-pink-tertiary-muted: #e87fbc;
+  --palette-pink-tertiary-normal: #d04798;
+  --palette-pink-tertiary-emphasized: #b1367d;
+  --palette-pink-tertiary-strong: #85275e;
+  --palette-pink-tertiary-deep: #54183b;
+
+  /* pink +10° toward red */
+  --palette-pink-secondary-faded: #feeff3;
+  --palette-pink-secondary-light: #fbd0da;
+  --palette-pink-secondary-muted: #f17596;
+  --palette-pink-secondary-normal: #dd4771;
+  --palette-pink-secondary-emphasized: #bf355c;
+  --palette-pink-secondary-strong: #912544;
+  --palette-pink-secondary-deep: #5a162a;
+
+  /* pink -20° toward violet */
+  --palette-pink-accent-1-faded: #fbeff7;
+  --palette-pink-accent-1-light: #f2cee9;
+  --palette-pink-accent-1-muted: #e17fca;
+  --palette-pink-accent-1-normal: #c445a7;
+  --palette-pink-accent-1-emphasized: #a5358a;
+  --palette-pink-accent-1-strong: #7c2767;
+  --palette-pink-accent-1-deep: #4d1841;
+
+  /* pink +20° toward red */
+  --palette-pink-accent-2-faded: #fef0f1;
+  --palette-pink-accent-2-light: #fbd2d5;
+  --palette-pink-accent-2-muted: #f36c7b;
+  --palette-pink-accent-2-normal: #dc4659;
+  --palette-pink-accent-2-emphasized: #c03547;
+  --palette-pink-accent-2-strong: #922433;
+  --palette-pink-accent-2-deep: #5b161f;
+  /* generated:companions:end */
+
+  /* ---- Achromatic -----------------------------------------------------
+   * white  — warm paper family, fine resolution at the light end
+   * grey   — tint-free, spans the full range, carries text
+   * black  — cool void family, fine resolution at the dark end
+   *
+   * `white` and `black` name the family, not the step: `white-deep` is a warm
+   * mid-grey and `black-faded` is a cool mid-grey. Both are the far end of a
+   * ramp anchored at the color it is named for.
+   */
+
+  --palette-white-faded: #ffffff;
+  --palette-white-light: #fffefa;
+  --palette-white-muted: #f7f4ec;
+  --palette-white-normal: #eeeae0;
+  --palette-white-emphasized: #e4dfd2;
+  --palette-white-strong: #d8d3c4;
+  --palette-white-deep: #b9b3a1;
+
+  --palette-grey-faded: #f2f4f5;
+  --palette-grey-light: #d8dde2;
+  --palette-grey-muted: #93a0b4;
+  --palette-grey-normal: #6c716c;
+  --palette-grey-emphasized: #3a424d;
+  --palette-grey-strong: #1d2329;
+  --palette-grey-deep: #05070a;
+
+  --palette-black-faded: #42506a;
+  --palette-black-light: #2a3445;
+  --palette-black-muted: #172033;
+  --palette-black-normal: #111827;
+  --palette-black-emphasized: #0b0f14;
+  --palette-black-strong: #05070a;
+  --palette-black-deep: #000000;
+
+  /* ---- Planes, seams, and text ----------------------------------------
+   * Which achromatic family does which job. This is the theme's decision and
+   * the reason `white`/`grey`/`black` keep their literal names: a dark theme
+   * states the same jobs against the other end of the same ramps.
+   *
+   * Celestial draws its planes from the warm paper family and its text from
+   * the tint-free one. Long-form work should feel like pearl paper or
+   * illuminated stone.
+   */
+
+  --theme-surface-canvas: var(--palette-white-muted);
+  --theme-surface-work: var(--palette-white-light);
+  --theme-surface-panel: var(--palette-white-normal);
+  --theme-surface-elevated: var(--palette-white-faded);
+
+  /* The neutral hover plane: what a control wearing a plane rather than a role
+   * fill becomes under the pointer. One step away from `panel`, in whichever
+   * direction this theme reads as "closer" — darker here, lighter in a dark
+   * theme. Role fills use their own `fill-hover` slot instead. */
+  --theme-surface-panel-hover: var(--palette-white-emphasized);
+
+  --theme-border-subtle: var(--palette-white-strong);
+  --theme-border-strong: var(--palette-white-deep);
+
+  --theme-ink-primary: var(--palette-grey-strong);
+  --theme-ink-secondary: var(--palette-grey-emphasized);
+  --theme-ink-muted: var(--palette-grey-normal);
+
+  /* Text on a solid role fill. Uniform across hues because `fill` resolves to
+   * the `emphasized` step, which clears 4.5:1 against near-white on every
+   * ramp — see chromatic-themes.md. */
+  --theme-ink-on-fill: var(--palette-white-light);
+
+  /* Shadow is the one geometry family made of color, so the theme owns the
+   * tint and system/shape.css owns the offsets and blur. */
+  --theme-shadow-tint: var(--palette-grey-strong);
+}

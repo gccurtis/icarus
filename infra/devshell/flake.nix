@@ -24,10 +24,12 @@
               nodejs_latest
               pnpm
 
-              # Database migrations and local development for the backend's
-              # PostgreSQL/Supabase transition. `supabase start` uses the
-              # host's Docker-compatible daemon; the daemon is not part of
-              # this development shell.
+              # For the eventual move off PGlite. Nothing uses it today —
+              # persistence is an embedded PostgreSQL per project, opened
+              # in-process — but the registry is the only code that changes when
+              # a real server replaces it, and this is what runs one locally.
+              # `supabase start` uses the host's Docker-compatible daemon; the
+              # daemon is not part of this development shell.
               supabase-cli
 
               # Language servers. Top-level attributes — the `nodePackages.*`
@@ -50,10 +52,6 @@
               nil
               nixfmt
 
-              # Native build deps (required for better-sqlite3)
-              python3
-              pkg-config
-
               # Log inspection + data wrangling
               jq
               fx   # interactive JSON browser
@@ -64,9 +62,6 @@
               curl
               git
               gh
-
-              bruno
-              bruno-cli
             ];
 
             shellHook = ''

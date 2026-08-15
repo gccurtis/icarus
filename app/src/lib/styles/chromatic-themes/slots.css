@@ -1,0 +1,233 @@
+/**
+ * Slots — which intensity does each job.
+ *
+ * The one table that turns a ramp into usable material. Seven purpose slots
+ * per hue; a component never picks an intensity again, it picks a job.
+ *
+ * Theme-independent. Both directions are written here and `light-dark()`
+ * chooses between them from the theme's own `color-scheme`, so a theme
+ * identifies as light or dark in one line and never names a job.
+ *
+ *   slot            light         dark        job
+ *   surface         faded         deep        wash behind content
+ *   surface-hover   light         strong      hover wash, selected row
+ *   border          normal        normal      boundary — clears 3:1
+ *   fill            emphasized    muted       solid button, filled chip
+ *   fill-hover      strong        light       hover and pressed solid
+ *   text            strong        light       text and icons — clears 7:1
+ *   on-fill         theme         theme       text on that solid
+ *
+ * Each direction reaches five of the seven steps and the two sets mirror each
+ * other about `normal`, which is what the seventh step is for.
+ *
+ * `fill` is `emphasized`, NOT `normal`. A `normal` step is built to clear 3:1
+ * against near-white, so white text on it lands at ~3.3–4.2:1 and fails AA for
+ * body text on eight of the eleven ramps. `emphasized` clears 4.5:1 by
+ * construction, so `--theme-ink-on-fill` is uniform across hues.
+ *
+ * Contract: chromatic-themes.md
+ *
+ * Outside @theme deliberately: no `bg-chromatic-green-fill` utility exists.
+ */
+
+:root {
+  --chromatic-red-surface: light-dark(var(--palette-red-faded), var(--palette-red-deep));
+  --chromatic-red-surface-hover: light-dark(var(--palette-red-light), var(--palette-red-strong));
+  --chromatic-red-border: var(--palette-red-normal);
+  --chromatic-red-fill: light-dark(var(--palette-red-emphasized), var(--palette-red-muted));
+  --chromatic-red-fill-hover: light-dark(var(--palette-red-strong), var(--palette-red-light));
+  --chromatic-red-text: light-dark(var(--palette-red-strong), var(--palette-red-light));
+  --chromatic-red-on-fill: var(--theme-ink-on-fill);
+
+  --chromatic-orange-surface: light-dark(var(--palette-orange-faded), var(--palette-orange-deep));
+  --chromatic-orange-surface-hover: light-dark(var(--palette-orange-light), var(--palette-orange-strong));
+  --chromatic-orange-border: var(--palette-orange-normal);
+  --chromatic-orange-fill: light-dark(var(--palette-orange-emphasized), var(--palette-orange-muted));
+  --chromatic-orange-fill-hover: light-dark(var(--palette-orange-strong), var(--palette-orange-light));
+  --chromatic-orange-text: light-dark(var(--palette-orange-strong), var(--palette-orange-light));
+  --chromatic-orange-on-fill: var(--theme-ink-on-fill);
+
+  --chromatic-amber-surface: light-dark(var(--palette-amber-faded), var(--palette-amber-deep));
+  --chromatic-amber-surface-hover: light-dark(var(--palette-amber-light), var(--palette-amber-strong));
+  --chromatic-amber-border: var(--palette-amber-normal);
+  --chromatic-amber-fill: light-dark(var(--palette-amber-emphasized), var(--palette-amber-muted));
+  --chromatic-amber-fill-hover: light-dark(var(--palette-amber-strong), var(--palette-amber-light));
+  --chromatic-amber-text: light-dark(var(--palette-amber-strong), var(--palette-amber-light));
+  --chromatic-amber-on-fill: var(--theme-ink-on-fill);
+
+  --chromatic-yellow-surface: light-dark(var(--palette-yellow-faded), var(--palette-yellow-deep));
+  --chromatic-yellow-surface-hover: light-dark(var(--palette-yellow-light), var(--palette-yellow-strong));
+  --chromatic-yellow-border: var(--palette-yellow-normal);
+  --chromatic-yellow-fill: light-dark(var(--palette-yellow-emphasized), var(--palette-yellow-muted));
+  --chromatic-yellow-fill-hover: light-dark(var(--palette-yellow-strong), var(--palette-yellow-light));
+  --chromatic-yellow-text: light-dark(var(--palette-yellow-strong), var(--palette-yellow-light));
+  --chromatic-yellow-on-fill: var(--theme-ink-on-fill);
+
+  --chromatic-green-surface: light-dark(var(--palette-green-faded), var(--palette-green-deep));
+  --chromatic-green-surface-hover: light-dark(var(--palette-green-light), var(--palette-green-strong));
+  --chromatic-green-border: var(--palette-green-normal);
+  --chromatic-green-fill: light-dark(var(--palette-green-emphasized), var(--palette-green-muted));
+  --chromatic-green-fill-hover: light-dark(var(--palette-green-strong), var(--palette-green-light));
+  --chromatic-green-text: light-dark(var(--palette-green-strong), var(--palette-green-light));
+  --chromatic-green-on-fill: var(--theme-ink-on-fill);
+
+  --chromatic-teal-surface: light-dark(var(--palette-teal-faded), var(--palette-teal-deep));
+  --chromatic-teal-surface-hover: light-dark(var(--palette-teal-light), var(--palette-teal-strong));
+  --chromatic-teal-border: var(--palette-teal-normal);
+  --chromatic-teal-fill: light-dark(var(--palette-teal-emphasized), var(--palette-teal-muted));
+  --chromatic-teal-fill-hover: light-dark(var(--palette-teal-strong), var(--palette-teal-light));
+  --chromatic-teal-text: light-dark(var(--palette-teal-strong), var(--palette-teal-light));
+  --chromatic-teal-on-fill: var(--theme-ink-on-fill);
+
+  --chromatic-cyan-surface: light-dark(var(--palette-cyan-faded), var(--palette-cyan-deep));
+  --chromatic-cyan-surface-hover: light-dark(var(--palette-cyan-light), var(--palette-cyan-strong));
+  --chromatic-cyan-border: var(--palette-cyan-normal);
+  --chromatic-cyan-fill: light-dark(var(--palette-cyan-emphasized), var(--palette-cyan-muted));
+  --chromatic-cyan-fill-hover: light-dark(var(--palette-cyan-strong), var(--palette-cyan-light));
+  --chromatic-cyan-text: light-dark(var(--palette-cyan-strong), var(--palette-cyan-light));
+  --chromatic-cyan-on-fill: var(--theme-ink-on-fill);
+
+  --chromatic-blue-surface: light-dark(var(--palette-blue-faded), var(--palette-blue-deep));
+  --chromatic-blue-surface-hover: light-dark(var(--palette-blue-light), var(--palette-blue-strong));
+  --chromatic-blue-border: var(--palette-blue-normal);
+  --chromatic-blue-fill: light-dark(var(--palette-blue-emphasized), var(--palette-blue-muted));
+  --chromatic-blue-fill-hover: light-dark(var(--palette-blue-strong), var(--palette-blue-light));
+  --chromatic-blue-text: light-dark(var(--palette-blue-strong), var(--palette-blue-light));
+  --chromatic-blue-on-fill: var(--theme-ink-on-fill);
+
+  --chromatic-violet-surface: light-dark(var(--palette-violet-faded), var(--palette-violet-deep));
+  --chromatic-violet-surface-hover: light-dark(var(--palette-violet-light), var(--palette-violet-strong));
+  --chromatic-violet-border: var(--palette-violet-normal);
+  --chromatic-violet-fill: light-dark(var(--palette-violet-emphasized), var(--palette-violet-muted));
+  --chromatic-violet-fill-hover: light-dark(var(--palette-violet-strong), var(--palette-violet-light));
+  --chromatic-violet-text: light-dark(var(--palette-violet-strong), var(--palette-violet-light));
+  --chromatic-violet-on-fill: var(--theme-ink-on-fill);
+
+  --chromatic-pink-surface: light-dark(var(--palette-pink-faded), var(--palette-pink-deep));
+  --chromatic-pink-surface-hover: light-dark(var(--palette-pink-light), var(--palette-pink-strong));
+  --chromatic-pink-border: var(--palette-pink-normal);
+  --chromatic-pink-fill: light-dark(var(--palette-pink-emphasized), var(--palette-pink-muted));
+  --chromatic-pink-fill-hover: light-dark(var(--palette-pink-strong), var(--palette-pink-light));
+  --chromatic-pink-text: light-dark(var(--palette-pink-strong), var(--palette-pink-light));
+  --chromatic-pink-on-fill: var(--theme-ink-on-fill);
+
+  --chromatic-grey-surface: light-dark(var(--palette-grey-faded), var(--palette-grey-deep));
+  --chromatic-grey-surface-hover: light-dark(var(--palette-grey-light), var(--palette-grey-strong));
+  --chromatic-grey-border: var(--palette-grey-normal);
+  --chromatic-grey-fill: light-dark(var(--palette-grey-emphasized), var(--palette-grey-muted));
+  --chromatic-grey-fill-hover: light-dark(var(--palette-grey-strong), var(--palette-grey-light));
+  --chromatic-grey-text: light-dark(var(--palette-grey-strong), var(--palette-grey-light));
+  --chromatic-grey-on-fill: var(--theme-ink-on-fill);
+
+  /* Companion slots, written by `pnpm new-style-companions`. Same interface as
+   * every hue above; the ramps behind them are generated rather than authored. */
+  /* generated:companions:start */
+  /* blue-tertiary */
+  --chromatic-blue-tertiary-surface: light-dark(var(--palette-blue-tertiary-faded), var(--palette-blue-tertiary-deep));
+  --chromatic-blue-tertiary-surface-hover: light-dark(var(--palette-blue-tertiary-light), var(--palette-blue-tertiary-strong));
+  --chromatic-blue-tertiary-border: light-dark(var(--palette-blue-tertiary-normal), var(--palette-blue-tertiary-normal));
+  --chromatic-blue-tertiary-fill: light-dark(var(--palette-blue-tertiary-emphasized), var(--palette-blue-tertiary-muted));
+  --chromatic-blue-tertiary-fill-hover: light-dark(var(--palette-blue-tertiary-strong), var(--palette-blue-tertiary-light));
+  --chromatic-blue-tertiary-text: light-dark(var(--palette-blue-tertiary-strong), var(--palette-blue-tertiary-light));
+  --chromatic-blue-tertiary-on-fill: var(--theme-ink-on-fill);
+
+  /* blue-secondary */
+  --chromatic-blue-secondary-surface: light-dark(var(--palette-blue-secondary-faded), var(--palette-blue-secondary-deep));
+  --chromatic-blue-secondary-surface-hover: light-dark(var(--palette-blue-secondary-light), var(--palette-blue-secondary-strong));
+  --chromatic-blue-secondary-border: light-dark(var(--palette-blue-secondary-normal), var(--palette-blue-secondary-normal));
+  --chromatic-blue-secondary-fill: light-dark(var(--palette-blue-secondary-emphasized), var(--palette-blue-secondary-muted));
+  --chromatic-blue-secondary-fill-hover: light-dark(var(--palette-blue-secondary-strong), var(--palette-blue-secondary-light));
+  --chromatic-blue-secondary-text: light-dark(var(--palette-blue-secondary-strong), var(--palette-blue-secondary-light));
+  --chromatic-blue-secondary-on-fill: var(--theme-ink-on-fill);
+
+  /* blue-accent-1 */
+  --chromatic-blue-accent-1-surface: light-dark(var(--palette-blue-accent-1-faded), var(--palette-blue-accent-1-deep));
+  --chromatic-blue-accent-1-surface-hover: light-dark(var(--palette-blue-accent-1-light), var(--palette-blue-accent-1-strong));
+  --chromatic-blue-accent-1-border: light-dark(var(--palette-blue-accent-1-normal), var(--palette-blue-accent-1-normal));
+  --chromatic-blue-accent-1-fill: light-dark(var(--palette-blue-accent-1-emphasized), var(--palette-blue-accent-1-muted));
+  --chromatic-blue-accent-1-fill-hover: light-dark(var(--palette-blue-accent-1-strong), var(--palette-blue-accent-1-light));
+  --chromatic-blue-accent-1-text: light-dark(var(--palette-blue-accent-1-strong), var(--palette-blue-accent-1-light));
+  --chromatic-blue-accent-1-on-fill: var(--theme-ink-on-fill);
+
+  /* blue-accent-2 */
+  --chromatic-blue-accent-2-surface: light-dark(var(--palette-blue-accent-2-faded), var(--palette-blue-accent-2-deep));
+  --chromatic-blue-accent-2-surface-hover: light-dark(var(--palette-blue-accent-2-light), var(--palette-blue-accent-2-strong));
+  --chromatic-blue-accent-2-border: light-dark(var(--palette-blue-accent-2-normal), var(--palette-blue-accent-2-normal));
+  --chromatic-blue-accent-2-fill: light-dark(var(--palette-blue-accent-2-emphasized), var(--palette-blue-accent-2-muted));
+  --chromatic-blue-accent-2-fill-hover: light-dark(var(--palette-blue-accent-2-strong), var(--palette-blue-accent-2-light));
+  --chromatic-blue-accent-2-text: light-dark(var(--palette-blue-accent-2-strong), var(--palette-blue-accent-2-light));
+  --chromatic-blue-accent-2-on-fill: var(--theme-ink-on-fill);
+
+  /* cyan-tertiary */
+  --chromatic-cyan-tertiary-surface: light-dark(var(--palette-cyan-tertiary-faded), var(--palette-cyan-tertiary-deep));
+  --chromatic-cyan-tertiary-surface-hover: light-dark(var(--palette-cyan-tertiary-light), var(--palette-cyan-tertiary-strong));
+  --chromatic-cyan-tertiary-border: light-dark(var(--palette-cyan-tertiary-normal), var(--palette-cyan-tertiary-normal));
+  --chromatic-cyan-tertiary-fill: light-dark(var(--palette-cyan-tertiary-emphasized), var(--palette-cyan-tertiary-muted));
+  --chromatic-cyan-tertiary-fill-hover: light-dark(var(--palette-cyan-tertiary-strong), var(--palette-cyan-tertiary-light));
+  --chromatic-cyan-tertiary-text: light-dark(var(--palette-cyan-tertiary-strong), var(--palette-cyan-tertiary-light));
+  --chromatic-cyan-tertiary-on-fill: var(--theme-ink-on-fill);
+
+  /* cyan-secondary */
+  --chromatic-cyan-secondary-surface: light-dark(var(--palette-cyan-secondary-faded), var(--palette-cyan-secondary-deep));
+  --chromatic-cyan-secondary-surface-hover: light-dark(var(--palette-cyan-secondary-light), var(--palette-cyan-secondary-strong));
+  --chromatic-cyan-secondary-border: light-dark(var(--palette-cyan-secondary-normal), var(--palette-cyan-secondary-normal));
+  --chromatic-cyan-secondary-fill: light-dark(var(--palette-cyan-secondary-emphasized), var(--palette-cyan-secondary-muted));
+  --chromatic-cyan-secondary-fill-hover: light-dark(var(--palette-cyan-secondary-strong), var(--palette-cyan-secondary-light));
+  --chromatic-cyan-secondary-text: light-dark(var(--palette-cyan-secondary-strong), var(--palette-cyan-secondary-light));
+  --chromatic-cyan-secondary-on-fill: var(--theme-ink-on-fill);
+
+  /* cyan-accent-1 */
+  --chromatic-cyan-accent-1-surface: light-dark(var(--palette-cyan-accent-1-faded), var(--palette-cyan-accent-1-deep));
+  --chromatic-cyan-accent-1-surface-hover: light-dark(var(--palette-cyan-accent-1-light), var(--palette-cyan-accent-1-strong));
+  --chromatic-cyan-accent-1-border: light-dark(var(--palette-cyan-accent-1-normal), var(--palette-cyan-accent-1-normal));
+  --chromatic-cyan-accent-1-fill: light-dark(var(--palette-cyan-accent-1-emphasized), var(--palette-cyan-accent-1-muted));
+  --chromatic-cyan-accent-1-fill-hover: light-dark(var(--palette-cyan-accent-1-strong), var(--palette-cyan-accent-1-light));
+  --chromatic-cyan-accent-1-text: light-dark(var(--palette-cyan-accent-1-strong), var(--palette-cyan-accent-1-light));
+  --chromatic-cyan-accent-1-on-fill: var(--theme-ink-on-fill);
+
+  /* cyan-accent-2 */
+  --chromatic-cyan-accent-2-surface: light-dark(var(--palette-cyan-accent-2-faded), var(--palette-cyan-accent-2-deep));
+  --chromatic-cyan-accent-2-surface-hover: light-dark(var(--palette-cyan-accent-2-light), var(--palette-cyan-accent-2-strong));
+  --chromatic-cyan-accent-2-border: light-dark(var(--palette-cyan-accent-2-normal), var(--palette-cyan-accent-2-normal));
+  --chromatic-cyan-accent-2-fill: light-dark(var(--palette-cyan-accent-2-emphasized), var(--palette-cyan-accent-2-muted));
+  --chromatic-cyan-accent-2-fill-hover: light-dark(var(--palette-cyan-accent-2-strong), var(--palette-cyan-accent-2-light));
+  --chromatic-cyan-accent-2-text: light-dark(var(--palette-cyan-accent-2-strong), var(--palette-cyan-accent-2-light));
+  --chromatic-cyan-accent-2-on-fill: var(--theme-ink-on-fill);
+
+  /* pink-tertiary */
+  --chromatic-pink-tertiary-surface: light-dark(var(--palette-pink-tertiary-faded), var(--palette-pink-tertiary-deep));
+  --chromatic-pink-tertiary-surface-hover: light-dark(var(--palette-pink-tertiary-light), var(--palette-pink-tertiary-strong));
+  --chromatic-pink-tertiary-border: light-dark(var(--palette-pink-tertiary-normal), var(--palette-pink-tertiary-normal));
+  --chromatic-pink-tertiary-fill: light-dark(var(--palette-pink-tertiary-emphasized), var(--palette-pink-tertiary-muted));
+  --chromatic-pink-tertiary-fill-hover: light-dark(var(--palette-pink-tertiary-strong), var(--palette-pink-tertiary-light));
+  --chromatic-pink-tertiary-text: light-dark(var(--palette-pink-tertiary-strong), var(--palette-pink-tertiary-light));
+  --chromatic-pink-tertiary-on-fill: var(--theme-ink-on-fill);
+
+  /* pink-secondary */
+  --chromatic-pink-secondary-surface: light-dark(var(--palette-pink-secondary-faded), var(--palette-pink-secondary-deep));
+  --chromatic-pink-secondary-surface-hover: light-dark(var(--palette-pink-secondary-light), var(--palette-pink-secondary-strong));
+  --chromatic-pink-secondary-border: light-dark(var(--palette-pink-secondary-normal), var(--palette-pink-secondary-normal));
+  --chromatic-pink-secondary-fill: light-dark(var(--palette-pink-secondary-emphasized), var(--palette-pink-secondary-muted));
+  --chromatic-pink-secondary-fill-hover: light-dark(var(--palette-pink-secondary-strong), var(--palette-pink-secondary-light));
+  --chromatic-pink-secondary-text: light-dark(var(--palette-pink-secondary-strong), var(--palette-pink-secondary-light));
+  --chromatic-pink-secondary-on-fill: var(--theme-ink-on-fill);
+
+  /* pink-accent-1 */
+  --chromatic-pink-accent-1-surface: light-dark(var(--palette-pink-accent-1-faded), var(--palette-pink-accent-1-deep));
+  --chromatic-pink-accent-1-surface-hover: light-dark(var(--palette-pink-accent-1-light), var(--palette-pink-accent-1-strong));
+  --chromatic-pink-accent-1-border: light-dark(var(--palette-pink-accent-1-normal), var(--palette-pink-accent-1-normal));
+  --chromatic-pink-accent-1-fill: light-dark(var(--palette-pink-accent-1-emphasized), var(--palette-pink-accent-1-muted));
+  --chromatic-pink-accent-1-fill-hover: light-dark(var(--palette-pink-accent-1-strong), var(--palette-pink-accent-1-light));
+  --chromatic-pink-accent-1-text: light-dark(var(--palette-pink-accent-1-strong), var(--palette-pink-accent-1-light));
+  --chromatic-pink-accent-1-on-fill: var(--theme-ink-on-fill);
+
+  /* pink-accent-2 */
+  --chromatic-pink-accent-2-surface: light-dark(var(--palette-pink-accent-2-faded), var(--palette-pink-accent-2-deep));
+  --chromatic-pink-accent-2-surface-hover: light-dark(var(--palette-pink-accent-2-light), var(--palette-pink-accent-2-strong));
+  --chromatic-pink-accent-2-border: light-dark(var(--palette-pink-accent-2-normal), var(--palette-pink-accent-2-normal));
+  --chromatic-pink-accent-2-fill: light-dark(var(--palette-pink-accent-2-emphasized), var(--palette-pink-accent-2-muted));
+  --chromatic-pink-accent-2-fill-hover: light-dark(var(--palette-pink-accent-2-strong), var(--palette-pink-accent-2-light));
+  --chromatic-pink-accent-2-text: light-dark(var(--palette-pink-accent-2-strong), var(--palette-pink-accent-2-light));
+  --chromatic-pink-accent-2-on-fill: var(--theme-ink-on-fill);
+  /* generated:companions:end */
+}
