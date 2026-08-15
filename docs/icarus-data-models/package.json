@@ -1,0 +1,26 @@
+{
+  "name": "@icarus/data-models",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./core": "./src/core.ts",
+    "./rich-blocks": "./src/rich-blocks.ts",
+    "./chat": "./src/chat.ts",
+    "./authored-resources": "./src/authored-resources.ts",
+    "./inquiry": "./src/inquiry.ts",
+    "./knowledge": "./src/knowledge.ts",
+    "./agent-tasks": "./src/agent-tasks.ts",
+    "./collaboration": "./src/collaboration.ts",
+    "./legacy": "./src/legacy.ts",
+    "./registry": "./src/registry.ts",
+    "./cross-surface": "./src/cross-surface.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}
