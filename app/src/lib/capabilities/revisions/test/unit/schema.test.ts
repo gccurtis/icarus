@@ -1,0 +1,97 @@
+import { describe, expect, it } from "vitest";
+import { revisionsTables } from "$revisions/schema";
+
+const indexesOf = (table: { " indexes"(): { indexDescriptor: string; fields: string[] }[] }) =>
+  Object.fromEntries(table[" indexes"]().map((index) => [index.indexDescriptor, index.fields]));
+
+const literalsOf = (union: { members: readonly { value: unknown }[] }) =>
+  union.members.map((member) => member.value).sort();
+
+/** Reading a member's own shape leaves the union's type behind; the assertion is the check. */
+const asLiteral = (validator: unknown) => validator as { kind: string; value: unknown };
+
+/**
+ * The index compositions are read off the table rather than exercised through a
+ * fake, which ignores index names — so a wrong field order is only catchable
+ * here, and it is the difference between a read of one resource and a read of
+ * every resource in the deployment.
+ */
+describe("revisions schema", () => {
+  it("keys the change set indexes on the resource pair, in the order they are queried", () => {
+    const indexes = indexesOf(revisionsTables.changeSets);
+
+    expect(indexes.by_resource_state).toEqual(["resourceType", "resourceId", "tier", "revision"]);
+    expect(indexes.by_resource_revision).toEqual(["resourceType", "resourceId", "revision"]);
+  });
+
+  it("keys the snapshot index on the resource pair and the role", () => {
+    const indexes = indexesOf(revisionsTables.resourceSnapshots);
+
+    expect(indexes.by_resource_role).toEqual(["resourceType", "resourceId", "role"]);
+  });
+
+  it("carries what a conflict check reads without parsing a path", () => {
+    const fields = revisionsTables.changeSets.validator.fields;
+
+    expect(fields).toHaveProperty("touched");
+    expect(fields.touched.element.kind).toBe("string");
+  });
+
+  it("holds both revisions, because the question is what changed and not whether", () => {
+    const fields = Object.keys(revisionsTables.changeSets.validator.fields).sort();
+
+    expect(fields).toEqual(
+      [
+        "projectId",
+        "resourceType",
+        "resourceId",
+        "revision",
+        "baseRevision",
+        "tier",
+        "ops",
+        "touched",
+        "actor",
+        "at"
+      ].sort()
+    );
+  });
+
+  it("gives a snapshot a role and a body and nothing to join for", () => {
+    const fields = Object.keys(revisionsTables.resourceSnapshots.validator.fields).sort();
+
+    expect(fields).toEqual(
+      ["projectId", "resourceType", "resourceId", "revision", "role", "body", "at"].sort()
+    );
+  });
+
+  it("admits exactly the three snapshot roles", () => {
+    expect(literalsOf(revisionsTables.resourceSnapshots.validator.fields.role)).toEqual([
+      "base",
+      "checkpoint",
+      "leader"
+    ]);
+  });
+
+  it("admits exactly the two tiers, on one table", () => {
+    expect(literalsOf(revisionsTables.changeSets.validator.fields.tier)).toEqual([
+      "historical",
+      "recent"
+    ]);
+  });
+
+  it("admits exactly the five ops", () => {
+    const ops = revisionsTables.changeSets.validator.fields.ops.element.members;
+
+    expect(ops.map((op) => op.fields.op.value).sort()).toEqual(
+      ["set", "insert", "remove", "move", "text"].sort()
+    );
+  });
+
+  it("lets a text op target literal atoms and nothing else", () => {
+    const ops = revisionsTables.changeSets.validator.fields.ops.element.members;
+    const target = asLiteral(ops.find((op) => op.fields.op.value === "text")?.fields.target);
+
+    expect(target.kind).toBe("literal");
+    expect(target.value).toBe("atom");
+  });
+});

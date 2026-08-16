@@ -2,6 +2,7 @@ import { defineSchema } from "convex/server";
 import { accessTables } from "$access/schema";
 import { activityTables } from "$activity/schema";
 import { documentsTables } from "$documents/schema";
+import { revisionsTables } from "$revisions/schema";
 import { settingsTables } from "$settings/schema";
 
 /**
@@ -14,7 +15,13 @@ import { settingsTables } from "$settings/schema";
  * The spread is what carries the table types through to `ctx.db`, so it has to
  * be written literally — a helper that merged them would erase what it merged.
  */
-const tables = { ...accessTables, ...activityTables, ...documentsTables, ...settingsTables };
+const tables = {
+  ...accessTables,
+  ...activityTables,
+  ...documentsTables,
+  ...revisionsTables,
+  ...settingsTables
+};
 
 /**
  * A spread resolves a duplicate key by declaration order and says nothing. Two
@@ -26,9 +33,13 @@ const tables = { ...accessTables, ...activityTables, ...documentsTables, ...sett
  * literal. Adding a fragment to one and not the other makes this check pass
  * while claiming less than it should — it cannot produce a false failure.
  */
-const declared = [accessTables, activityTables, documentsTables, settingsTables].flatMap((fragment) =>
-  Object.keys(fragment)
-);
+const declared = [
+  accessTables,
+  activityTables,
+  documentsTables,
+  revisionsTables,
+  settingsTables
+].flatMap((fragment) => Object.keys(fragment));
 if (declared.length !== Object.keys(tables).length) {
   const duplicate = declared.find((name, index) => declared.indexOf(name) !== index);
   throw new Error(`Two capabilities define a table named '${duplicate}'`);

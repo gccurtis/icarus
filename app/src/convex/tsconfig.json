@@ -16,6 +16,7 @@
       "$activity/*": ["../lib/capabilities/activity/*"],
       "$content/*": ["../lib/capabilities/content/*"],
       "$documents/*": ["../lib/capabilities/documents/*"],
+      "$revisions/*": ["../lib/capabilities/revisions/*"],
       "$settings/*": ["../lib/capabilities/settings/*"],
       "$shared/*": ["../lib/capabilities/shared/*"],
       "$model/*": ["../lib/model/*"]

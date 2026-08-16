@@ -47,6 +47,7 @@ export default {
       $activity: "src/lib/capabilities/activity",
       $content: "src/lib/capabilities/content",
       $documents: "src/lib/capabilities/documents",
+      $revisions: "src/lib/capabilities/revisions",
       $settings: "src/lib/capabilities/settings",
       $shared: "src/lib/capabilities/shared",
     },
