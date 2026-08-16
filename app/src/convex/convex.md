@@ -65,6 +65,12 @@ So this file's `paths` block duplicates the aliases Convex code actually uses, a
 alias that Convex code imports means adding it in both places. That is a real drift risk and
 the only one this layout carries.
 
+**It covers `src/convex/**` only.** The bundler resolves aliases from the *nearest* tsconfig,
+and a capability handler's nearest is `app/tsconfig.json`, which extends the generated
+`.svelte-kit/tsconfig.json`. So a push from an unsynced checkout fails on
+`Could not resolve "$access/types/access"` while this block sits there looking correct — run
+`svelte-kit sync` first. `pnpm test` and `pnpm typecheck` do it; `pnpm dev:convex` does not.
+
 `noEmit` is set for a mechanical reason worth keeping: Convex runs `tsc` for its typecheck,
 and without it `tsc` writes `.js` beside every `.ts`, which the bundler then sees as a second
 entry point for the same module — `Two output files share the same path`.
@@ -73,7 +79,11 @@ entry point for the same module — `Two output files share the same path`.
 
 `convex dev` downloads the backend binary and runs it on `127.0.0.1:3210`. **No Convex
 account is involved**, and no data leaves the machine. It writes `CONVEX_DEPLOYMENT`,
-`PUBLIC_CONVEX_URL`, and `PUBLIC_CONVEX_SITE_URL` to a git-ignored `.env.local`.
+`PUBLIC_CONVEX_URL`, and `PUBLIC_CONVEX_SITE_URL` to a git-ignored `.env.local`, and the
+deployment's state to a git-ignored `.convex/`.
+
+Both are per-checkout, so a worktree provisions its own backend on the next free ports and
+can push a schema the main tree has never seen.
 
 ```sh
 pnpm dev:convex   # pushes schema and functions, then watches
@@ -86,4 +96,6 @@ no membership behind it, so until it runs, every call to every capability answer
 `no-such-project` and nothing renders.
 
 `_generated/` must exist before `pnpm typecheck` runs, because the app's tsconfig includes
-`src/**/*.ts`. `npx convex codegen` produces it without a deployment.
+`src/**/*.ts`. `npx convex codegen` produces it without a deployment running — but it does
+read `CONVEX_DEPLOYMENT` from `.env.local`, so a checkout that has never run `convex dev`
+has to do that once first.

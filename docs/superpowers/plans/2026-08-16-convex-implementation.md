@@ -38,22 +38,30 @@ needs, so a new worktree starts unable to run a single check:
 
 | Absent | Why | Restored by |
 | --- | --- | --- |
-| `node_modules/` | gitignored, and `pnpm-lock.yaml` is too — [lockfiles are treated as regenerable caches](../../../.gitignore) | `pnpm install` |
-| `app/src/convex/_generated/` | gitignored; Convex writes it from the schema it pushed | `pnpm exec convex codegen` |
-| `.svelte-kit/` | gitignored; generated types and the alias map | `pnpm exec svelte-kit sync` |
-
-`_generated/` is the one that bites. The app's tsconfig includes `src/**/*.ts`,
-so **`pnpm typecheck` fails outright until it exists** — and it is imported by
-`functions.ts` and by every handler that names a `QueryCtx`. `convex codegen`
-produces it with no deployment and no account.
+| `node_modules/` | gitignored, and so is `pnpm-lock.yaml` | `pnpm install` |
+| `.svelte-kit/` | generated types and the alias map | `pnpm exec svelte-kit sync` |
+| `.env.local` | names the deployment; written on first provision | `pnpm exec convex dev --once` |
+| `app/src/convex/_generated/` | Convex writes it from the schema | `pnpm exec convex codegen` |
 
 ```bash
 export PATH="/nix/store/2gf37maq4k2nhidw22dxndccma074cak-nodejs-26.7.0/bin:/nix/store/ry314j51iqvrn8fs26vna9xy823c1swy-pnpm-11.20.0/bin:$PATH"
 cd <worktree>/app
 pnpm install
-pnpm exec convex codegen
-pnpm test && pnpm typecheck && pnpm lint    # the clean baseline
+pnpm exec svelte-kit sync      # before the push, not after — see below
+pnpm exec convex dev --once    # provisions the backend; writes .env.local and _generated/
+pnpm test && pnpm typecheck && pnpm lint
 ```
+
+**`svelte-kit sync` must precede the push.** The Convex bundler resolves aliases
+from the *nearest* `tsconfig.json`, and for `src/lib/capabilities/**` that is
+`app/tsconfig.json`, which extends the generated `.svelte-kit/tsconfig.json`.
+Without it the push fails on `Could not resolve "$access/types/access"` while
+`src/convex/tsconfig.json` sits there looking correct — it only covers
+`src/convex/**`.
+
+`convex codegen` works fine on its own once `.env.local` exists; a checkout that
+has never provisioned needs `convex dev --once` once. It takes no account and
+picks free ports, so a worktree runs its own backend beside the main tree's.
 
 A green baseline before Task 1 is what makes the first red test mean something.
 

@@ -30,6 +30,11 @@ pnpm-lock.yaml
 # produces it, and must run once before `pnpm typecheck` will pass.
 app/src/convex/_generated/
 
+# The local backend's own state and the one-line ignore file the CLI writes
+# beside it. Per-checkout, which is what lets a worktree run its own deployment.
+app/.convex/
+app/.gitignore
+
 # Local configuration overrides — real secrets live here
 *.local.yaml
 **/configuration/local.yaml
