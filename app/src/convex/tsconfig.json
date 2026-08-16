@@ -18,6 +18,7 @@
       "$content/*": ["../lib/capabilities/content/*"],
       "$documents/*": ["../lib/capabilities/documents/*"],
       "$external-files/*": ["../lib/capabilities/external-files/*"],
+      "$findings/*": ["../lib/capabilities/findings/*"],
       "$formula/*": ["../lib/capabilities/formula/*"],
       "$hypotheses/*": ["../lib/capabilities/hypotheses/*"],
       "$name-manager/*": ["../lib/capabilities/name-manager/*"],

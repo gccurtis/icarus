@@ -4,6 +4,7 @@ import { activityTables } from "$activity/schema";
 import { commentsTables } from "$comments/schema";
 import { documentsTables } from "$documents/schema";
 import { externalFilesTables } from "$external-files/schema";
+import { findingsTables } from "$findings/schema";
 import { hypothesesTables } from "$hypotheses/schema";
 import { nameManagerTables } from "$name-manager/schema";
 import { questionsTables } from "$questions/schema";
@@ -29,6 +30,7 @@ const tables = {
   ...commentsTables,
   ...documentsTables,
   ...externalFilesTables,
+  ...findingsTables,
   ...hypothesesTables,
   ...nameManagerTables,
   ...questionsTables,
@@ -55,6 +57,7 @@ const declared = [
   commentsTables,
   documentsTables,
   externalFilesTables,
+  findingsTables,
   hypothesesTables,
   nameManagerTables,
   questionsTables,

@@ -49,6 +49,7 @@ export default {
       $content: "src/lib/capabilities/content",
       $documents: "src/lib/capabilities/documents",
       "$external-files": "src/lib/capabilities/external-files",
+      $findings: "src/lib/capabilities/findings",
       $formula: "src/lib/capabilities/formula",
       $hypotheses: "src/lib/capabilities/hypotheses",
       "$name-manager": "src/lib/capabilities/name-manager",
