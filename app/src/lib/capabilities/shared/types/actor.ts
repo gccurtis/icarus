@@ -11,14 +11,14 @@ import { v, type Infer } from "convex/values";
  */
 export const actorValidator = v.union(
   v.object({ kind: v.literal("user"), userId: v.id("users") }),
-  v.object({ kind: v.literal("agent"), taskId: v.string() }),
+  v.object({ kind: v.literal("agent"), taskId: v.id("agentTasks") }),
   v.object({ kind: v.literal("automation"), automationId: v.string() }),
   v.object({ kind: v.literal("connector"), connectorId: v.string() }),
   v.object({ kind: v.literal("system") })
 );
 
-// The three are `v.string()` only because `agentTasks`, `automations`, and
-// `connectors` do not exist until passes 7 and 8. Each tightens to `v.id(...)`
-// in the task that creates its table.
+// The last two are `v.string()` because `v.id` names a table the schema must
+// declare, and `automations` (needs scheduling) and `connectors` (needs OAuth,
+// webhooks, provider sync) are pass 8. Each tightens with its table.
 
 export type Actor = Infer<typeof actorValidator>;

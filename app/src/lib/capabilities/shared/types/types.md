@@ -65,7 +65,13 @@ the set that can *act*: you mention a persona, but what acts is one run of it, a
 nothing is served by addressing an automation, a connector, or the system. Two
 unions that nearly match are exactly the pair worth keeping in one place.
 
-`taskId`, `automationId`, and `connectorId` are `v.string()` rather than
-`v.id(...)` only because `agentTasks`, `automations`, and `connectors` do not
-exist yet — `v.id` names a table the schema must declare. Each tightens in the
-task that creates its table, as `personaId` did when `personas` arrived.
+## Two of `Actor`'s five kinds still carry a `v.string()` id
+
+`taskId` no longer does: `agentTasks` exists, so an agent actor names a real row
+and a fabricated origin is refused at the door rather than stored.
+
+`automationId` and `connectorId` are still strings, because `v.id` names a table
+the schema must declare and neither table is buildable yet — `automations` waits
+on scheduling infrastructure, `connectors` on OAuth, webhooks, and provider sync.
+Both are pass 8, and each tightens in the task that creates its table, as
+`taskId` and `personaId` did.

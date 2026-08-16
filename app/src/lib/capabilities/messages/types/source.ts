@@ -31,8 +31,7 @@ export const messageSourceValidator = v.union(
   }),
   v.object({
     kind: v.literal("lattice"),
-    // `v.string()` until `latticeNodes` arrives in pass 6, where it tightens.
-    nodeId: v.string(),
+    nodeId: v.id("latticeNodes"),
     excerpt: v.optional(v.string())
   })
 );

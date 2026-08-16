@@ -18,6 +18,11 @@ describe("messageSourceValidator", () => {
     expect(kinds).not.toContain("finding");
   });
 
+  it("names a lattice node by a real latticeNodes id", () => {
+    // Unlike `resourceId`, one table answers to it, so nothing is lost by typing it.
+    expect(fieldsOf("lattice").nodeId).toMatchObject({ kind: "id", tableName: "latticeNodes" });
+  });
+
   it("names a resource by both its type and its id", () => {
     const resource = fieldsOf("resource");
 

@@ -18,8 +18,10 @@ import { resourceTypeValidator } from "$revisions/types/change";
  * carries the reason it was ordered, in the same vocabulary the version row
  * records a rebuild under.
  *
- * `connectorId` is a string because connectors arrive in pass 8. It becomes
- * `v.id("connectors")` with the table.
+ * `resourceId` is a string permanently, because `(resourceType, resourceId)` is
+ * the key and a union of id types would make every reader pick a branch.
+ * `connectorId` is one only until pass 8 brings `connectors` — it needs OAuth,
+ * webhooks, and provider sync — and it becomes `v.id("connectors")` with the table.
  */
 export const latticeCauseValidator = v.union(
   v.object({

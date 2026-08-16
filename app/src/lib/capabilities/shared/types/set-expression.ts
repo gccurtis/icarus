@@ -9,6 +9,7 @@ import { resourceKindValidator } from "$shared/types/resource";
  */
 export const resourceRefValidator = v.object({
   kind: resourceKindValidator,
+  /** A string permanently: seven kinds answer to it, and one of them is pass 8's `connectors`. */
   id: v.string()
 });
 

@@ -27,6 +27,9 @@ export const asking = async () => {
   return { ctx, scope: scopeOf(await projectNamed(ctx, "Development"), userId), userId };
 };
 
+/** A task nothing was written under: the agent label this capability cannot resolve. */
+export const unwrittenTask = "agentTasks:1" as Id<"agentTasks">;
+
 export const entryBy = (userId: string, verb: string): ActivityEntry => ({
   actor: { kind: "user", userId: userId as Id<"users"> },
   verb,
@@ -63,7 +66,7 @@ export const taskWith = async (
       })
     : undefined;
 
-  return await ctx.db.insert("agentTasks", {
+  return (await ctx.db.insert("agentTasks", {
     projectId,
     title: task.title,
     prompt: "Scan the market.",
@@ -71,5 +74,5 @@ export const taskWith = async (
     status: "running",
     origin: task.origin,
     updatedAt: NOW
-  });
+  })) as Id<"agentTasks">;
 };

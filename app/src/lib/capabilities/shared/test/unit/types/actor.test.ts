@@ -36,6 +36,17 @@ describe("actorValidator", () => {
     expect(fieldsOf("user").userId).toMatchObject({ kind: "id", tableName: "users" });
   });
 
+  it("references a real agentTasks row, so a fabricated origin is refused at the door", () => {
+    expect(fieldsOf("agent").taskId).toMatchObject({ kind: "id", tableName: "agentTasks" });
+  });
+
+  it("leaves the two pass-8 kinds untyped, because `v.id` names a table the schema must declare", () => {
+    // Asserted rather than left implicit: a `v.string()` here is a scheduled
+    // change, and this fails the day `automations` or `connectors` lands.
+    expect(fieldsOf("automation").automationId.kind).toBe("string");
+    expect(fieldsOf("connector").connectorId.kind).toBe("string");
+  });
+
   it("carries one reference and nothing else — a label is a separate type", () => {
     for (const kind of ["user", "agent", "automation", "connector"]) {
       expect(Object.keys(fieldsOf(kind))).toHaveLength(2);

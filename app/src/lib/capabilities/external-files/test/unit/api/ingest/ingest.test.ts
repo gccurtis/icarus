@@ -11,7 +11,7 @@ import {
 import type { Id } from "$convex/_generated/dataModel";
 import type { Actor } from "$shared/types/actor";
 
-const agent: Actor = { kind: "agent", taskId: "agentTasks:1" };
+const agent: Actor = { kind: "agent", taskId: "agentTasks:1" as Id<"agentTasks"> };
 const agentLabel = { kind: "agent", name: "Research agent" };
 
 describe("ingest", () => {

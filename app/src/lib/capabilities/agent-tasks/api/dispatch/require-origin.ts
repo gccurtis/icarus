@@ -1,6 +1,5 @@
 import type { Scope } from "$access/types/access";
 import { requireTask } from "$agent-tasks/api/shared/require-task";
-import type { Id } from "$convex/_generated/dataModel";
 import type { QueryCtx } from "$convex/_generated/server";
 import type { Actor } from "$shared/types/actor";
 
@@ -19,6 +18,5 @@ export const requireOrigin = async (
   scope: Scope,
   origin: Actor
 ): Promise<void> => {
-  // The cast goes away with the actor union's own `v.id("agentTasks")`.
-  if (origin.kind === "agent") await requireTask(ctx, scope, origin.taskId as Id<"agentTasks">);
+  if (origin.kind === "agent") await requireTask(ctx, scope, origin.taskId);
 };

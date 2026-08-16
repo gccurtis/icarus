@@ -73,6 +73,7 @@ export const inputRevisionValidator = v.union(
   v.object({
     kind: v.literal("resource"),
     resourceType: resourceKindValidator,
+    /** A string for the reason the input above is: the pair is the key, not the id. */
     resourceId: v.string(),
     revision: v.number()
   }),

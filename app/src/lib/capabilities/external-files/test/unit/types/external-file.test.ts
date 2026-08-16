@@ -19,7 +19,7 @@ const refusalOf = (call: () => unknown) => {
 };
 
 const person: Actor = { kind: "user", userId: "users:1" as unknown as Id<"users"> };
-const agent: Actor = { kind: "agent", taskId: "agentTasks:1" };
+const agent: Actor = { kind: "agent", taskId: "agentTasks:1" as Id<"agentTasks"> };
 
 describe("fileName", () => {
   it("stores the name as it will be read", () => {

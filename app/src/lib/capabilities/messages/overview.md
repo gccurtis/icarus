@@ -124,7 +124,6 @@ capability that owns the thread row.
 | Today | When | Becomes |
 | --- | --- | --- |
 | a `ThreadRef` names a row nothing can check exists | when a turn is posted into a task | every kind now names a real table, so `post` can prove the thread is in the caller's project rather than trusting the id |
-| `sources.lattice.nodeId` is `v.string()` | pass 6 | `v.id("latticeNodes")` |
 | a message cannot be promoted to a finding from here | when the two meet | [`findings.create`](../findings/api/create/create.md) already takes the writeup and the citations; what is missing is the excerpt copying that makes a finding's sources survive the thread |
 
 ## Related

@@ -136,7 +136,6 @@ exists.
 | --- | --- | --- |
 | a dispatched task sits in `draft` until something calls `startRun` | the intelligence capability | an action that runs the prompt, posts turns, and drives the lifecycle |
 | `branchedFrom` is a reference a reader follows | same | the earlier turns loaded as the run's opening context |
-| `origin.taskId` is a `v.string()` on the actor union | the next task | `v.id("agentTasks")`, now that this table exists |
 
 ## Related
 

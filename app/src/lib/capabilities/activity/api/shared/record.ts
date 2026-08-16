@@ -17,10 +17,11 @@ import type { Actor } from "$shared/types/actor";
  * untouched; a label can afford to be generous precisely because it is never
  * what code compares.
  */
-const agentLabel = async (ctx: MutationCtx, taskId: string): Promise<ActorLabel | undefined> => {
-  // Cast because the actor union still types `taskId` as a string until the last
-  // table it names exists.
-  const task = await ctx.db.get(taskId as Id<"agentTasks">);
+const agentLabel = async (
+  ctx: MutationCtx,
+  taskId: Id<"agentTasks">
+): Promise<ActorLabel | undefined> => {
+  const task = await ctx.db.get(taskId);
   if (!task) return undefined;
 
   const persona = task.personaId ? await ctx.db.get(task.personaId) : null;

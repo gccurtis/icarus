@@ -22,14 +22,14 @@ describe("finish", () => {
     await finish(asCtx(ctx), scope, id, {
       blocks: said("Input costs, mostly."),
       toolCalls: [{ name: "search", input: { query: "margin" }, state: "success" }],
-      sources: [{ kind: "lattice", nodeId: "latticeNodes:1" }]
+      sources: [{ kind: "lattice", nodeId: "latticeNodes:1" as Id<"latticeNodes"> }]
     });
 
     expect(ctx.rows.get(id)).toMatchObject({
       state: "complete",
       blocks: said("Input costs, mostly."),
       toolCalls: [{ name: "search", input: { query: "margin" }, state: "success" }],
-      sources: [{ kind: "lattice", nodeId: "latticeNodes:1" }]
+      sources: [{ kind: "lattice", nodeId: "latticeNodes:1" as Id<"latticeNodes"> }]
     });
     expect(ctx.rows.get(id)?.error).toBeUndefined();
   });

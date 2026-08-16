@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { record } from "$activity/api/shared/record";
-import { asCtx, asking, entryBy, taskWith } from "$activity/test/fixture";
+import { asCtx, asking, entryBy, taskWith, unwrittenTask } from "$activity/test/fixture";
 import type { ActivityEntry } from "$activity/types/activity";
 import type { Id } from "$convex/_generated/dataModel";
 
@@ -111,7 +111,7 @@ describe("record", () => {
 
     await record(asCtx(ctx), scope, {
       ...entryBy(userId, "created"),
-      actor: { kind: "agent", taskId: "agentTasks:1" },
+      actor: { kind: "agent", taskId: unwrittenTask },
       actorLabel: { kind: "agent", name: "Research agent", onBehalfOf: "Development User" }
     });
 
@@ -130,7 +130,7 @@ describe("record", () => {
     await expect(
       record(asCtx(ctx), scope, {
         ...entryBy(userId, "created"),
-        actor: { kind: "agent", taskId: "agentTasks:1" }
+        actor: { kind: "agent", taskId: unwrittenTask }
       })
     ).rejects.toThrow(/label/i);
   });
@@ -141,7 +141,7 @@ describe("record", () => {
     await expect(
       record(asCtx(ctx), scope, {
         ...entryBy(userId, "created"),
-        actor: { kind: "agent", taskId: "agentTasks:1" },
+        actor: { kind: "agent", taskId: unwrittenTask },
         actorLabel: { kind: "agent", name: "" }
       })
     ).rejects.toThrow(/label/i);
