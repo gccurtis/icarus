@@ -9,6 +9,7 @@ Lives at `api/shared/shared.md`.
 | [`digest.ts`](digest.ts) | that a window id and a node id are derived the same way, and are wide enough not to collide |
 | [`level-index.ts`](level-index.ts) | that a level has one index, and that one fitted under other parameters is recognizable rather than used |
 | [`ingest/ingest.ts`](ingest/ingest.ts) | that a source's level-0 nodes are exactly its current windows, and that an unchanged window keeps its vector |
+| [`retrieve/retrieve.ts`](retrieve/retrieve.ts) | that a query with no good answer returns nothing, and that what does come back is the source's own words |
 
 ## `version.ts` is the single enforcement point
 
@@ -58,12 +59,100 @@ marked stale, and the pass that follows is what answers those marks. Doing it
 here would make `markStale` pointless and put a quadratic algorithm inside the
 transaction that writes the windows.
 
-## `level-index.ts` is here for the reader that has not been built
+## `retrieve` — the procedure
 
-Clustering **writes** a level index and never reads one. The reader is descent,
-which is not built yet, and that asymmetry is why the file sits in `shared/`
-rather than under `cluster/`: it is the row's whole lifetime, not a step of the
-clustering procedure.
+```text
+retrieve(ctx, scope, request, embedding)
+├── readVersion()                  version.ts        ← refuses another model's vectors
+├── resolveScope()                 retrieve/scope-manifest.ts
+├── embedding.embed([query])
+├── frontier()                     retrieve/frontier.ts
+├── descend()                      retrieve/descent.ts
+├── ctx.db.get() per window        ← then dropped if the scope does not admit its source
+├── assembleRegions()              retrieve/regions.ts
+└── admit()                        retrieve/admit.ts
+```
+
+**It is here rather than in an `api/retrieve/` of its own for `ingest`'s reason.**
+Embedding the query is a network call, so retrieval is the transactional half of
+an action whose outer half is the intelligence capability, which does not exist
+yet. A registration would have to fabricate an embedder or throw on every call.
+
+**An empty descent returns an empty region list**, and nothing in the path scans
+for a consolation answer. A query with no good answer says so, rather than
+returning the least-bad passages in the project — those read as answers and are
+not.
+
+## Narrowing the frontier needs a row nothing writes
+
+[The process document](../../../../../../../docs/processes/lattice-retrieval.md#narrowing-the-frontier)
+has descent narrow the frontier through the stored level index: project the
+query, find the nearest cells, score only the entries in them. **That is not
+built, and the reason is structural rather than unfinished work.**
+
+An IVF search needs the inverted lists — which cell each artifact is in.
+`latticeLevelIndexes` holds the basis and the cell centroids and no assignments,
+so the only way to place a frontier entry in a cell is to project it, and
+projecting one entry costs `pcaDims` times what scoring it in full costs.
+Narrowing that way is slower than not narrowing at all.
+
+Storing the cell on each node would not fix it either, because **the frontier is
+by definition the set no clustering pass has placed.** A pass assigns cells to
+the pool it clusters, and everything it clusters stops being frontier; the
+clusters it creates are the new frontier and were in no pool. Only the orphans
+would carry a cell.
+
+So the whole frontier is scored, which the process document already calls correct
+rather than degraded below the crossover. Making it true above the crossover
+needs a cell written at node creation — a projection per new cluster, amortized
+over every query that follows — and that is a clustering change, not a retrieval
+one.
+
+## Scoped retrieval
+
+A [resource set](../../../resource-sets/overview.md) expression resolves once,
+into a set of admissible source ids, and **filtering happens after descent**.
+
+**The source id is the authoritative membership key.** A kind guides resolution —
+it says which table to walk, and a connector expands to the files it brought in —
+and it is carried as provenance, but admission compares ids alone.
+
+An absent scope, and one written as an empty selector, both search the whole
+lattice. A scope that *resolved* to nothing does not: it names resources that are
+gone or were never the caller's, and reading that as "no restriction" would
+answer from the whole project exactly when the caller asked for the least.
+`{ op: "project" }` is how the whole lattice is said positively, so nobody has to
+write an empty scope to mean everything.
+
+The manifest is what makes a scoped answer checkable. "Why was this not found" is
+either "the source was not admissible" or "it was, and descent did not reach it",
+and the manifest distinguishes them. Its digests are over the canonical input and
+the canonical resolution; `resolvedAt` is in neither, so the same scope resolved
+twice digests the same.
+
+### The known limitation
+
+**Descent is global, so a narrow scope can come back thin.** The expansion budget
+is spent on globally stronger out-of-scope branches before in-scope material is
+reached.
+
+That is the deliberate price of **one lattice**. Scoping the descent itself means
+a scope-shaped graph per scope, which is a lattice per scope, re-clustered over
+overlapping content forever.
+
+The process document records a mitigation — for scopes small enough to express as
+an index filter, skip descent and vector-search the in-scope windows directly.
+**It is an option and not a design, and it is deliberately not built here.** The
+two have opposite cost profiles and choosing between them needs a measurement
+nobody has made.
+
+## `level-index.ts` is here for a reader that still cannot use it
+
+Clustering **writes** a level index and never reads one. Descent, the reader it
+was written for, cannot narrow the frontier with it for the reason above — so the
+asymmetry stands, and it is why the file sits in `shared/` rather than under
+`cluster/`: it is the row's whole lifetime, not a step of the clustering
+procedure.
 
 It is what makes "the index is derived" true rather than claimed — `clusterLevel`
 takes no context and so *cannot* consult one, which is where the guarantee is

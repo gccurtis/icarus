@@ -6,7 +6,7 @@ Lives at `api/api.md`.
 | --- | --- | --- |
 | [`status/`](status/status.md) | `status` | query — what the project's lattice is, or nothing |
 | [`cluster/`](cluster/cluster.md) | `cluster` | mutation — one clustering pass: source tiers, then the corpus tier |
-| [`shared/`](shared/shared.md) | — | `ingest`, the version invariant every writer goes through, and the level index |
+| [`shared/`](shared/shared.md) | — | `ingest`, `retrieve`, the version invariant every writer goes through, and the level index |
 
 ## Ingestion is not a registered function, and that is not an omission
 
@@ -26,12 +26,11 @@ clustering pass reads the level-0 nodes ingestion leaves behind.
 that are already stored and writes rows, with no provider in it at all. Nothing
 has to exist before it can be called, so nothing is gained by hiding it.
 
-## Retrieval is not here either
+## Retrieval is not registered either, and for the same reason
 
-Descent arrives with regions. It needs the levels `cluster` builds; a search over
-a flat level 0 would be a different algorithm with the same name.
+`retrieve` embeds the query, and embedding is a network call. So it sits beside
+`ingest` in [`shared/`](shared/shared.md) and waits for the same outer half.
 
-The level index it will narrow the frontier with is already written, by
-[`cluster`](cluster/cluster.md) — it is the by-product of clustering a pool too
-large to compare in full, so producing it costs nothing extra and holding it back
-would mean fitting the same basis twice.
+The two are not symmetrical in what they need first: ingestion needs a provider,
+while retrieval needs the levels [`cluster`](cluster/cluster.md) builds as well —
+a search over a flat level 0 would be a different algorithm with the same name.

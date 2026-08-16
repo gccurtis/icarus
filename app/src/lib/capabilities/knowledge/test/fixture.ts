@@ -5,7 +5,7 @@ import { knowledgeRefusal } from "$knowledge/errors";
 import { EMBEDDING_DIMENSIONS } from "$knowledge/schema";
 import type { Embedding } from "$knowledge/types/embedding";
 import type { LatticeWindow } from "$knowledge/types/lattice-node";
-import type { LatticeSource } from "$knowledge/types/lattice-source";
+import { sourceKey, type LatticeSource } from "$knowledge/types/lattice-source";
 import { fakeCtx } from "$shared/test/fake-ctx";
 
 /** The fake `db` is structural; no handler here touches anything else on a ctx. */
@@ -42,6 +42,21 @@ export const aDocument = async (ctx: Ctx, scope: Scope, title = "Notes"): Promis
     updatedBy: { kind: "user", userId: scope.userId },
     updatedAt: NOW
   })) as Id<"documents">
+});
+
+/** A source of another kind, for the tests that prove a kind never decides admission. */
+export const aFinding = async (
+  ctx: Ctx,
+  scope: Scope,
+  title = "What we found"
+): Promise<LatticeSource> => ({
+  kind: "finding",
+  id: (await ctx.db.insert("findings", {
+    projectId: scope.projectId,
+    title,
+    createdBy: { kind: "user", userId: scope.userId },
+    updatedAt: NOW
+  })) as Id<"findings">
 });
 
 /**
@@ -104,6 +119,7 @@ export const aNode = async (
     tierSourceId?: string;
     clustered?: boolean;
     windows?: LatticeWindow[];
+    text?: string;
     members?: Id<"latticeNodes">[];
     parentId?: Id<"latticeNodes">;
     cohesion?: number;
@@ -116,6 +132,7 @@ export const aNode = async (
     tierSourceId: node.tierSourceId,
     clustered: node.clustered ?? false,
     windows: node.windows ?? [],
+    text: node.text,
     centroid: node.centroid,
     count: node.members?.length,
     cohesion: node.cohesion,
@@ -139,6 +156,98 @@ export const tilted = (axis: number, tilt: number, degrees: number): number[] =>
   vector[axis] = Math.cos(degrees * RADIANS);
   vector[tilt] = Math.sin(degrees * RADIANS);
   return vector;
+};
+
+/**
+ * A unit vector on `axis`, leaning `degrees` towards the space's last dimension.
+ *
+ * One spare dimension is what lets a group be tight without pulling any other
+ * group towards it: members of a group differ only in how far they lean, so two
+ * groups on different axes stay near-orthogonal however many of them there are.
+ */
+export const leaning = (width: number, axis: number, degrees: number): number[] => {
+  const vector = new Array<number>(width).fill(0);
+  vector[axis] = Math.cos(degrees * RADIANS);
+  vector[width - 1] = Math.sin(degrees * RADIANS);
+  return vector;
+};
+
+/**
+ * A clustered lattice: `groups` documents, each windowed into `per` overlapping
+ * spans under a cluster of its own, each group facing an axis nobody else uses.
+ *
+ * **The point is that growing it changes nothing a query reaches.** A query aimed
+ * at one group scores every other group near zero, so descent opens one branch
+ * whether the corpus holds two of them or twenty — which is the property the
+ * hierarchy exists for and cannot be shown on a corpus of one shape.
+ *
+ * Window spans overlap by design, so a group's windows merge back into one
+ * region and the text of that region can be compared against the document's.
+ */
+export const aCorpus = async (
+  ctx: Ctx,
+  scope: Scope,
+  { groups, per = 4 }: { groups: number; per?: number }
+) => {
+  const width = groups + 1;
+  const sources: LatticeSource[] = [];
+  const texts: string[] = [];
+  const clusters: Id<"latticeNodes">[] = [];
+
+  for (let group = 0; group < groups; group++) {
+    const source = await aDocument(ctx, scope, `Group ${group}`);
+    const body = paragraph(group);
+    sources.push(source);
+    texts.push(body);
+
+    const members: Id<"latticeNodes">[] = [];
+    for (let index = 0; index < per; index++) {
+      const start = index * 300;
+      const end = Math.min(start + 400, body.length);
+      members.push(
+        await aNode(ctx, scope, {
+          centroid: leaning(width, group, (index - (per - 1) / 2) * 3),
+          tierSourceId: sourceKey(source),
+          clustered: true,
+          windows: [{ source, start, end, density: 1 }],
+          text: body.slice(start, end)
+        })
+      );
+    }
+
+    const cluster = await aNode(ctx, scope, {
+      level: 1,
+      centroid: leaning(width, group, 0),
+      members
+    });
+    for (const member of members) await ctx.db.patch(member, { parentId: cluster });
+    clusters.push(cluster);
+  }
+
+  return { width, sources, texts, clusters };
+};
+
+/**
+ * An embedder that answers every text with the same direction.
+ *
+ * A query's vector is the only input retrieval has, so a test says what it is
+ * asking for by naming the direction rather than by finding a string that hashes
+ * near one.
+ */
+export const aimedEmbedder = (vector: number[], model = "fake-embed-1") => {
+  const asked: string[] = [];
+
+  const embedding: Embedding = {
+    binding: "embedding",
+    model,
+    dimensions: vector.length,
+    embed: async (texts) => {
+      asked.push(...texts);
+      return texts.map(() => [...vector]);
+    }
+  };
+
+  return { embedding, asked };
 };
 
 /**

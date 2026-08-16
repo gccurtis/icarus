@@ -13,16 +13,23 @@ levels — each level a set of overlapping cliques over the one below.
 Registered in
 [`src/convex/capabilities/knowledge.ts`](../../../convex/capabilities/knowledge.ts).
 
-**Ingestion is deliberately not registered.** Embedding is a network call and a
-Convex mutation cannot make one, so `ingest` is the transactional half of an
-action whose outer half is the intelligence capability — which does not exist
-yet. Clustering has no such problem: it reads vectors that are already stored.
-See [`api/api.md`](api/api.md).
+**Ingestion and retrieval are deliberately not registered.** Both embed text, and
+embedding is a network call a Convex function cannot make: each is the
+transactional half of an action whose outer half is the intelligence capability,
+which does not exist yet. Clustering has no such problem — it reads vectors that
+are already stored. See [`api/api.md`](api/api.md).
 
 **Both clustering paths are built.** A pool at or below `maxClusterPool` is
 compared pair by pair; above it, an IVF search over a PCA projection picks which
 pairs are worth comparing and every survivor is scored in full — see
 [`api/cluster/cluster.md`](api/cluster/cluster.md).
+
+**Retrieval walks what clustering built**: the frontier, then best-first descent,
+then regions merged out of the windows it reached — see
+[`api/shared/shared.md`](api/shared/shared.md). Nothing about a retrieval is
+stored. It is a step in producing a
+[message](../../../../../docs/data-models/core/message.md#research-steps-are-tool-calls)
+and is recorded there as a tool call.
 
 ## Data Ownership
 
@@ -37,11 +44,14 @@ pairs are worth comparing and every survivor is scored in full — see
 
 The `Embedder` is an injected function — `(texts: string[]) => Promise<number[][]>`.
 The only implementation today is the deterministic fake in `test/fixture.ts`.
+Ingestion embeds windows through it and retrieval embeds the query through it.
 
 That is not a weakness in the tests. Every property this pass has to prove is
 about the **algorithm** — that windows overlap, that an unchanged window keeps
-its vector, that staleness reaches the top — and a fake with known geometry tests
-those far better than a real model with unknown geometry would.
+its vector, that a branch scoring poorly is never opened — and a fake with known
+geometry tests those far better than a real model with unknown geometry would. A
+query aimed at a named direction is a test that says what it is asking for;
+finding a string that happens to hash near a cluster is not.
 
 Wiring a real provider is separate work: it needs `configuration/intelligence.yaml`,
 a provider client, and an action to call it from. None of it belongs in this
@@ -93,6 +103,23 @@ capability, which is why none of it is here.
   before it is walked, and node ids hash their members. A lattice that reshuffled
   on every rebuild would make retrieval irreproducible and repair impossible to
   reason about.
+- **A query's cost is bounded by `beam × maxExpansions`, independent of corpus
+  size.** A cluster's centroid approximates its members, so a branch scoring
+  poorly is never opened — a corpus ten times larger has more levels, and each
+  level is one more hop rather than one more scan. That bound is the entire
+  reason the hierarchy exists.
+- **An empty descent returns an empty region list, and there is no fallback
+  scan.** A query with no good answer says so, rather than returning the
+  least-bad passages in the project — those read as answers and are not.
+- **A region's text is verbatim, and its relevance is its best covering
+  window's.** Whatever is quoted downstream must be what the source actually
+  says, and a span holding one excellent passage should rank on that passage
+  rather than be averaged down by the ordinary material merged alongside.
+- **Scope filters after descent, and the source id is what it filters on.** A
+  kind guides resolution and is carried as provenance; admission compares ids.
+  Filtering afterwards has a
+  [known cost](api/shared/shared.md#the-known-limitation) — a narrow scope can
+  come back thin — and it is the price of one lattice rather than one per scope.
 - **`latticeLevelIndexes` is entirely derived, and clustering never reads one.**
   `clusterLevel` takes no context, so it cannot; the rows are written for descent
   and can be dropped wholesale for the cost of a refit. That is what makes

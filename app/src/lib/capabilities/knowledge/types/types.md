@@ -10,6 +10,7 @@ Lives at `types/types.md`.
 | [`clustering.ts`](clustering.ts) | `ClusterArtifact`, `ClusterShape`, `ClusterPass`, `LevelRelation` — what a clustering pass sees and what it reports |
 | [`level-index.ts`](level-index.ts) | `LevelIndex`, `CandidateFit` — the geometry a large level was clustered through |
 | [`embedding.ts`](embedding.ts) | `Embedder`, `Embedding` — the one thing this capability cannot do itself |
+| [`retrieval.ts`](retrieval.ts) | `ReachedWindow`, `Region`, `ScopeManifest`, `RetrievalRequest`, `Retrieval` — what a query gets back |
 
 ## `LatticeSource` is a strict subset of `ResourceKind`
 
@@ -33,7 +34,7 @@ the deterministic fake in `test/fixture.ts`.
 
 `Embedding` wraps it with the binding name, the resolved model, and the width.
 **Both the binding and the model, deliberately.** The binding is the
-[intelligence](../../../../../docs/processes/intelligence.md) key — `"embedding"`
+[intelligence](../../../../../../docs/processes/intelligence.md) key — `"embedding"`
 — and the model is what that key pointed at. The key can be repointed at any time
 and the lattice does not follow; comparing the two is exactly how a required
 rebuild is detected. Carrying only the binding hides the drift, and only the
@@ -58,6 +59,18 @@ resemblance: the exact relation can be built over a pool the approximate one
 would have taken, and both run through the same code.
 
 `similarity` is a full-dimensional dot product on both. Only `adjacent` differs.
+
+## A `Region` names its source, and carries no label
+
+[The process document](../../../../../../docs/processes/lattice-retrieval.md#regions)
+gives a region a `sourceId` and a `label`. Here it holds the whole
+`LatticeSource` instead, because a source in this system is a **kind and an id**:
+the id alone decides admission, and the kind is what lets whatever quotes a
+region open what it quoted.
+
+**There is no label because nothing stores one.** `ingest` takes text and a
+revision; the title belongs to the resource, and it is the resource's to render.
+Emitting `document:abc` under the name "label" would be a lie in a field.
 
 ## `LatticeNode` is a returned shape, not a stored one
 

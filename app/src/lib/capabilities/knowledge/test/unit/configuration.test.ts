@@ -14,6 +14,12 @@ import {
   WINDOW_OVERLAP_CHARS,
   WINDOW_TARGET_CHARS
 } from "$knowledge/api/shared/ingest/window-text";
+import { CHAR_BUDGET, TOP_K } from "$knowledge/api/shared/retrieve/admit";
+import {
+  DESCENT_BEAM,
+  DESCENT_THRESHOLD,
+  MAX_EXPANSIONS
+} from "$knowledge/api/shared/retrieve/descent";
 
 /**
  * The tuning numbers live in a YAML file a Convex isolate cannot read, so the
@@ -42,6 +48,13 @@ const knowledge = parse(readFileSync("configuration/knowledge.yaml", "utf8")) as
         projectionIterations: number;
         kmeansIterations: number;
       };
+    };
+    retrieval: {
+      beam: number;
+      threshold: number;
+      maxExpansions: number;
+      charBudget: number;
+      topK: number;
     };
   };
 };
@@ -95,5 +108,32 @@ describe("clustering configuration", () => {
     expect(CLUSTER_PERCENTILE).toBeLessThan(1);
     expect(CLUSTER_FLOOR).toBeGreaterThan(0);
     expect(CLUSTER_FLOOR).toBeLessThan(1);
+  });
+});
+
+describe("retrieval configuration", () => {
+  it("mirrors the file the isolate cannot read", () => {
+    const { retrieval } = knowledge.knowledge;
+
+    expect(DESCENT_BEAM).toBe(retrieval.beam);
+    expect(DESCENT_THRESHOLD).toBe(retrieval.threshold);
+    expect(MAX_EXPANSIONS).toBe(retrieval.maxExpansions);
+    expect(CHAR_BUDGET).toBe(retrieval.charBudget);
+    expect(TOP_K).toBe(retrieval.topK);
+  });
+
+  it("bounds a query's cost whatever the corpus is", () => {
+    // Beam and ceiling together are what make cost independent of corpus size.
+    // Either one unset would make a pathological graph a runaway query.
+    expect(DESCENT_BEAM).toBeGreaterThan(0);
+    expect(MAX_EXPANSIONS).toBeGreaterThan(0);
+    expect(Number.isFinite(DESCENT_BEAM * MAX_EXPANSIONS)).toBe(true);
+  });
+
+  it("keeps the threshold a similarity", () => {
+    // At or below zero every branch is worth opening and nothing is ever
+    // refused, which is the fallback scan by another name.
+    expect(DESCENT_THRESHOLD).toBeGreaterThan(0);
+    expect(DESCENT_THRESHOLD).toBeLessThan(1);
   });
 });
