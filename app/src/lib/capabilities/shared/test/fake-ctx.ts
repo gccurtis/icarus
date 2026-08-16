@@ -55,6 +55,7 @@ export function fakeCtx() {
           order: (direction: "asc" | "desc") =>
             chain(direction === "desc" ? [...found].reverse() : found),
           collect: async () => found,
+          first: async () => found[0] ?? null,
           unique: async () => found[0] ?? null
         });
         return chain(all);

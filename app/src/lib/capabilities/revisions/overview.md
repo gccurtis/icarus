@@ -5,10 +5,16 @@ of what changed. A [document](../documents/overview.md), a deck, and a workbook
 all go through here, because replay is generic over ops and never inspects a
 body.
 
-**No registered function yet, so no deployment door.** [`api/`](api/api.md) holds
-the procedures every eventual function shares — applying ops, inverting one,
-shifting an offset. The conflict ladder arrives in task 9 and
-`read`/`submit`/`consolidate` in task 10.
+## Public Surface
+
+| Function | Kind | Answers |
+| --- | --- | --- |
+| `submit` | mutation | whether a change may land, and at which revision |
+
+Registered in
+[`src/convex/capabilities/revisions.ts`](../../../convex/capabilities/revisions.ts),
+built from `projectMutation`. `read` and `consolidate` arrive in task 10;
+[`api/shared/`](api/shared/shared.md) already holds what all three call.
 
 ## Data Ownership
 
@@ -36,7 +42,14 @@ shifting an offset. The conflict ladder arrives in task 9 and
   first invalidates this one's read set and it re-runs. There is no version field
   and no retry loop.
 - **`touched` holds the deepest id each op addresses**, never its ancestors —
-  including them would report a collision on every shared container.
+  including them would report a collision on every shared container. It is
+  derived from the ops on the way in, because a caller that understated it would
+  be a caller whose changes collide with nothing.
+- **A rejection names the rung that refused it.** Thrown as `RevisionsError`, so
+  the payload survives to the client: Convex serializes a `ConvexError`'s payload
+  and redacts everything else, and a conflict with no reason is unactionable.
+  Nothing is lost by one — the edits are still in the client's buffer, and it
+  re-reads, reapplies, and resubmits.
 - **A body is opaque to everything here but one op.** Stored it is `v.any()`
   until task 11, where it becomes a union discriminated on `resourceType`; read
   it is a path and whatever sits at the end of it. The exception is a `text` op,
@@ -51,4 +64,4 @@ shifting an offset. The conflict ladder arrives in task 9 and
 [general resources in Convex](../../../../../docs/storage/general-resources.md) —
 the tables and their read costs ·
 [change conflicts](../../../../../docs/processes/change-conflicts.md) — the
-ladder task 9 implements
+ladder [`api/submit/`](api/submit/submit.md) implements
