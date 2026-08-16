@@ -373,6 +373,77 @@ capability list is meant to be read as the set of things this application can do
 
 ---
 
+## Pass 5 — Conversation
+
+### `messages` writes no activity entry, against the standing rule
+
+**Question.** Pass 1 established that every later capability calls `record`.
+Does a message?
+
+**Grounding.** A conversation is *already* an append-only ordered log, read by
+thread. Activity is deliberately coarse — the model says a burst of editing is
+one entry and many change sets.
+
+**Alternatives.** Follow the rule literally; record one entry per turn.
+
+**Chosen.** No entry per turn. Copying every message into the project feed is a
+second record of the same events, and it would swamp an unpaged feed — a
+forty-turn chat becomes forty entries all saying that a chat happened. What
+belongs in the log is *the thread being started*, which the capability owning
+the thread row writes.
+
+Recorded because it is a deliberate exception to a rule stated in an earlier
+pass, and `overview.md` and `api/api.md` both carry the reason so it does not
+read as an omission.
+
+### A turn's end state is derived, never supplied
+
+**Question.** How does a `streaming` turn finish? `finish(id, {state, blocks})`,
+or two mutations, or derive it?
+
+**Chosen.** `finish(id, {blocks, toolCalls?, sources?, error?})`, with `state`
+derived from whether `error` is present.
+
+**Two fields saying whether the turn worked can disagree** — a row marked
+`complete` carrying the error that killed it — and one cannot. Deriving also
+keeps the blocks on both paths, which matters: a turn that failed halfway still
+said something, and what it managed to say plus the tools it managed to call is
+the record of how far it got. Mutation-tested: forcing `state: "complete"` breaks
+the error test.
+
+### `by_thread` leads with `projectId`, and this is now a settled pattern
+
+`storage/README.md` names the index `(thread.kind, thread.id)`; the global
+constraint says `projectId` leads. Same tension `researchLinks` and
+`externalFiles` already resolved, resolved the same way and for the same reason:
+a thread never crosses projects so the prefix narrows nothing, but a read that
+*can* forget the tenant predicate is the one worth making impossible to write.
+Verified live — the push created
+`messages.by_thread projectId, thread.kind, thread.id, _creationTime`.
+
+Three capabilities have now hit this. The storage doc predates the constraint and
+should be reconciled to it in the final audit rather than each pass deciding
+again.
+
+### What review found: tests that reported success either way
+
+No logic defects. Both findings were **tests that would have passed against a
+broken implementation** — `finish` asserted only its resulting state, leaving the
+payload it wrote unverified, and `branch` asserted no activity entry at all,
+leaving the whole record unchecked. Both now assert what was actually written.
+
+The rest was documents that had stopped matching their code: the personas
+procedure trees passed the access `scope` where the handlers pass the persona's,
+`templates` still claimed to be the only global-capable table now that `personas`
+is one, `post.md` counted one thread table where there are three, and the
+comments anchor note still called three of its seven targets unbuilt.
+
+That shift is worth noting on its own. Review is no longer finding logic bugs; it
+is finding weak tests and stale prose, which is what it should be finding by
+pass 5.
+
+---
+
 ## Pass 6, settled early
 
 ### `knowledge.yaml` values are carried, not invented
