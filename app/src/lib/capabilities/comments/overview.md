@@ -111,7 +111,6 @@ question is settled is a judgement a person makes.
 
 | Today | When | Becomes |
 | --- | --- | --- |
-| `question`, `hypothesis`, and `finding` anchors resolve against nothing | pass 4 | those tables exist; an anchor is a kind string and an id, so it never needed them to |
 | `mentions` is a column nothing reads | pass 5, pass 7 | a mentioned persona now names a real row, and the hop that opens a [chat](../persona-threads/overview.md) carrying the comment as context is what is missing; mentioning a task delivers into that task's thread |
 | "comments mentioning me" would be a scan | with notifications | Convex has no array-containment index, so the lookup is derived from this column — which is what extracting mentions beside the blocks buys, since it can be built without opening a single comment body |
 

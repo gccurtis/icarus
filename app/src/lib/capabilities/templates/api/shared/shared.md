@@ -9,10 +9,10 @@ Lives at `api/shared/shared.md`.
 
 ## Two procedures, because visibility and editability are different questions
 
-This is the only table where they come apart. A global template is readable from
-every project and writable from none of them, so `instantiate` admits one and
-`revise` and `remove` do not. Collapsing them into one procedure with a flag would
-put the decision at each call site, which is where it gets forgotten.
+Here they come apart. A global template is readable from every project and
+writable from none of them, so `instantiate` admits one and `revise` and
+`remove` do not. Collapsing them into one procedure with a flag would put the
+decision at each call site, which is where it gets forgotten.
 
 `requireOwnTemplate` is built on `requireTemplate` rather than beside it, so the
 "not found" rule is stated once and the editability rule adds to it.

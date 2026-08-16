@@ -46,8 +46,8 @@ duplicate four things that would then be free to drift.
 
 ## `projectId` is optional, and still leads the index
 
-This is the one table whose tenant column may be absent, and absent means
-available to every project.
+This table's tenant column may be absent, and absent means available to every
+project.
 
 Convex has no partial index, so the readings were: an index over rows that have a
 project plus some other path for the globals, a sentinel value `v.id("projects")`

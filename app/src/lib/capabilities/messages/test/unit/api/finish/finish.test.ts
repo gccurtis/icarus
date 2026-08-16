@@ -25,7 +25,12 @@ describe("finish", () => {
       sources: [{ kind: "lattice", nodeId: "latticeNodes:1" }]
     });
 
-    expect(ctx.rows.get(id)).toMatchObject({ state: "complete" });
+    expect(ctx.rows.get(id)).toMatchObject({
+      state: "complete",
+      blocks: said("Input costs, mostly."),
+      toolCalls: [{ name: "search", input: { query: "margin" }, state: "success" }],
+      sources: [{ kind: "lattice", nodeId: "latticeNodes:1" }]
+    });
     expect(ctx.rows.get(id)?.error).toBeUndefined();
   });
 
@@ -34,6 +39,7 @@ describe("finish", () => {
 
     await finish(asCtx(ctx), scope, id, {
       blocks: said("Three sources agr"),
+      toolCalls: [{ name: "search", input: { query: "margin" }, state: "success" }],
       error: "the model connection dropped"
     });
 
@@ -41,7 +47,9 @@ describe("finish", () => {
     // called are the record of how far it got.
     expect(ctx.rows.get(id)).toMatchObject({
       state: "error",
-      error: "the model connection dropped"
+      error: "the model connection dropped",
+      blocks: said("Three sources agr"),
+      toolCalls: [{ name: "search", input: { query: "margin" }, state: "success" }]
     });
   });
 

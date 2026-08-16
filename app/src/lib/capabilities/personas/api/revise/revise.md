@@ -8,13 +8,13 @@ Registered as `api.capabilities.personas.revise`, built from `projectMutation`.
 
 ```text
 revise(ctx, scope, id, revision, draft)
-├── requireOwnPersona(ctx, scope, id)              require-own-persona.ts
-│   └── requirePersona(ctx, scope, id)             ../shared/require-persona.ts
-├── personaName(draft.name)                        ../../types/persona.ts
-├── personaDefinition(draft.definition, scope)     ../../types/definition.ts
-├── personaTools(draft.tools)                      ../../types/persona.ts
-├── ctx.db.patch(id, { revision: n + 1, … })       revise.ts
-└── record(ctx, scope, "revised")                  ../../../activity/api/shared/record.ts
+├── requireOwnPersona(ctx, scope, id)                 require-own-persona.ts
+│   └── requirePersona(ctx, scope, id)                ../shared/require-persona.ts
+├── personaName(draft.name)                           ../../types/persona.ts
+├── personaDefinition(draft.definition, draft.scope)  ../../types/definition.ts
+├── personaTools(draft.tools)                         ../../types/persona.ts
+├── ctx.db.patch(id, { revision: n + 1, … })          revise.ts
+└── record(ctx, scope, "revised")                     ../../../activity/api/shared/record.ts
 ```
 
 ## Everything referencing it shows the new one

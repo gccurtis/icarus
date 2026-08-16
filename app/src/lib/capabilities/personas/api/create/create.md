@@ -8,11 +8,11 @@ Registered as `api.capabilities.personas.create`, built from `projectMutation`.
 
 ```text
 create(ctx, scope, persona)
-├── personaName(persona.name)                          ../../types/persona.ts
-├── personaDefinition(persona.definition, scope)       ../../types/definition.ts
-├── personaTools(persona.tools)                        ../../types/persona.ts
-├── ctx.db.insert("personas", { … })                   create.ts
-└── record(ctx, scope, "created")                      ../../../activity/api/shared/record.ts
+├── personaName(persona.name)                             ../../types/persona.ts
+├── personaDefinition(persona.definition, persona.scope)  ../../types/definition.ts
+├── personaTools(persona.tools)                           ../../types/persona.ts
+├── ctx.db.insert("personas", { … })                      create.ts
+└── record(ctx, scope, "created")                         ../../../activity/api/shared/record.ts
 ```
 
 ## It always stamps the caller's project

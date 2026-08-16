@@ -11,8 +11,9 @@ import { TemplatesError } from "$templates/errors";
  * as one that never existed, because telling them apart confirms it exists to
  * someone with no right to know that.
  *
- * The global case is the only place in the schema where an absent tenant column
- * means "yours too", so it is stated once here rather than at each call site.
+ * An absent project column means "yours too", which is not the reading a call
+ * site assumes, so the rule is stated once in this procedure rather than at
+ * each one.
  */
 export const requireTemplate = async (
   ctx: QueryCtx,

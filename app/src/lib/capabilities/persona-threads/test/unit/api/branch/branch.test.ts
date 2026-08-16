@@ -33,6 +33,13 @@ describe("branch", () => {
       branchedFrom: { threadId, messageId: first },
       createdBy: { kind: "user", userId }
     });
+    // `target.label` is the branch's own title; `context.label` freezes the
+    // source's, which is the branch-specific part of the entry.
+    expect(ctx.log.at(-1)).toMatchObject({
+      verb: "branched",
+      target: { type: "personaThread", id, label: "A different tack" },
+      context: { type: "personaThread", id: threadId, label: "Q3 margin" }
+    });
   });
 
   /**

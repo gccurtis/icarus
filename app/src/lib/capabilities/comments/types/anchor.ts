@@ -47,9 +47,8 @@ export type CommentTarget = Infer<typeof commentTargetValidator>;
 /**
  * Where a thread points.
  *
- * `targetId` is `v.string()` rather than a `v.id`: seven tables, three of which do
- * not exist yet, and a union of id types would make every reader choose between
- * them to render one list.
+ * `targetId` is `v.string()` rather than a `v.id`: seven tables, and a union of
+ * id types would make every reader choose between them to render one list.
  */
 export const commentAnchorValidator = v.object({
   targetType: commentTargetValidator,
