@@ -6,12 +6,12 @@
  *
  * No named structural dimensions. A token here may name a *dimension*; it may
  * not name a zone. `--token-spacing-inspector` and `--token-spacing-topbar` described the
- * application rather than the design system, which tokens.md forbids
+ * application rather than the design system, which semantic-tokens.md forbids
  * outright: "Nothing here names an application, a feature, or a screen." The
- * shell binds its own zones to these steps at the layout layer, where naming a
- * zone is correct.
+ * application frame binds its own zones to these steps at the layout layer,
+ * where naming a zone is correct.
  *
- * Contract: tokens.md
+ * Contract: semantic-tokens.md
  */
 
 /* The canonical unit; Tailwind maps its `--spacing` namespace onto this. */

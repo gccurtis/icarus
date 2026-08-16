@@ -11,8 +11,9 @@
 <section class="flex flex-col gap-4">
   <SectionHeading title="Structure" source="shadcn-svelte, bridged to our tokens" />
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">
-    The primitives the shell is built from. None of these are wired into
-    <code class="font-mono">/app</code> yet — the shell's zones are static until the runtime exists.
+    The primitives the application frame will be built from. None of these are wired into
+    <code class="font-mono">/app</code> yet — its zones are authored components rather than registry
+    ones, so this section is a reference for what they can become.
   </p>
 
   <h3 class="text-h4 font-semibold">Tabs</h3>
@@ -23,9 +24,9 @@
     </Tabs.List>
     <Tabs.Content value="one">
       <p class="text-body-sm text-ink-secondary pt-2">
-        The ARIA tablist pattern: this component owns both the tabs and their panels. The shell's tab
-        strip is a different thing — open objects whose content is the work surface — so this is a
-        reference rather than a drop-in.
+        The ARIA tablist pattern: this component owns both the tabs and their panels. The
+        application's tab bar is a different thing — open objects whose content is the work surface,
+        with no panel relationship to declare — so this is a reference rather than a drop-in.
       </p>
     </Tabs.Content>
     <Tabs.Content value="two">

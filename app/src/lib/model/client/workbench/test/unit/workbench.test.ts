@@ -8,7 +8,7 @@ import { DEFAULTS, PROJECT_OVERVIEW, createWorkbench } from "$model/client/workb
  * The invariants here were guaranteed only by prose before this object moved — a
  * permanent tab cannot be closed, `activeId` is never empty, closing the active
  * tab selects right-then-left. A refactor that broke one would have gone
- * unnoticed until the shell was wired.
+ * unnoticed until a surface rendered it.
  *
  * Three surfaces fold in here: the rail, the inspector, and panel geometry. What
  * used to be tested across four objects is tested through one, and the questions

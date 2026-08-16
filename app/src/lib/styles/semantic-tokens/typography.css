@@ -4,7 +4,7 @@
  * Type does not vary by theme, so nothing here is ever re-declared by one.
  *
  * Canonical names live in ordinary CSS. Tailwind-facing spellings live only in
- * the Tailwind integration. Contract: tokens.md
+ * the Tailwind integration. Contract: semantic-tokens.md
  */
 
 :root {

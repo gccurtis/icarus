@@ -9,9 +9,12 @@
  * most visible part — `session` collided with an authentication session.
  *
  * Nothing here names a Svelte component. Every view-facing value is a stable
- * key, and [`views/registries/`](../../../views/registries) resolves keys to
- * components. A model type naming a component points the dependency backwards
- * and drags a DOM into every test of this object.
+ * key, and the view that renders the result resolves it — the workspace maps
+ * `ResourceKind`, the activity panel maps `ActivityId`. There is no registry
+ * directory and no shared map file; see
+ * [the view standard](../../../../../docs/view-directory/view-directory.md).
+ * A model type naming a component points the dependency backwards and drags a
+ * DOM into every test of this object.
  */
 
 export type TabId = string;

@@ -3,8 +3,8 @@
 ## Description
 
 Workbench holds what is open, which tab is active, and everything a tab carries,
-so that every zone of the shell reads one coordinating state instead of keeping
-its own copy.
+so that every zone of the application frame reads one coordinating state instead
+of keeping its own copy.
 
 The tab strip renders it, the work surface fills from it, and the context and
 inspector panels are projections over it. Named for the frame rather than for
@@ -50,8 +50,10 @@ Workbench owns:
 Consumers own:
 
 - what a resource kind or an activity id *renders as*. This object exposes stable
-  keys; [`views/registries/`](../../../views/registries) resolves them to
-  components.
+  keys, and the view that renders the result resolves each one: the workspace
+  maps `ResourceKind`, the activity panel maps `ActivityId`. There is no registry
+  directory and no shared map file — see
+  [the view standard](../../../../../docs/view-directory/view-directory.md).
 - the bounds of a drag. `resize` records values; the minimum, the maximum, and
   the width below which a drag collapses belong to the panel that enforces it.
 

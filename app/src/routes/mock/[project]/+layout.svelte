@@ -14,7 +14,7 @@
    * This is a second client instance root, and the only one besides
    * `/app/[project]`. It stands up exactly what a client instance needs — a
    * Convex client and a client model keyed to the route's project — and renders
-   * whatever page asked for it, with no shell, no tabs, and no panels.
+   * whatever page asked for it, with no frame, no tabs, and no panels.
    *
    * The duplication with the application layout is the point rather than an
    * oversight. A mock that reached into `/app` to borrow its instance would stop

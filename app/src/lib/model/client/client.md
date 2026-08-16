@@ -5,7 +5,7 @@ tab is active, and everything a tab carries.
 
 ## A client instance
 
-This is a single-page application. The shell layout persists, tabs are workbench
+This is a single-page application. The `/app` layout persists, tabs are workbench
 state rather than route state, and views do not remount on navigation. A client
 instance is therefore **one browser tab holding the application** — one desktop
 window later — and it owns one client model for its whole life.
@@ -116,7 +116,7 @@ constraints are load-bearing.
 ## Why not Svelte context
 
 Context buys per-render isolation, and there are no concurrent renders to
-isolate: the shell renders once per client instance. What it costs is
+isolate: the frame renders once per client instance. What it costs is
 `getContext` in every consumer, forever, to separate instances that never
 coexist. It would also cost a cookie instead of `localStorage`, because a cookie
 is the only store a server render can read — and `/app` does not server-render.
@@ -134,7 +134,7 @@ socket inherits one instead of inventing one.
 ## What must never be written here
 
 **A module-scope `new` or `create*()`.** The failure mode is a convenience
-singleton added "just until the shell is wired": it would typecheck and behave
+singleton added "just until the frame is wired": it would typecheck and behave
 perfectly with one user.
 
 **A second holder of the instance.** A second cache is a second graph, and the

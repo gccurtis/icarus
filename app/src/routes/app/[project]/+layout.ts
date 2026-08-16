@@ -1,8 +1,8 @@
 /**
  * `/app` is client-rendered.
  *
- * The shell reads the client model, which one layout builds and holds for the
- * life of a client instance. Rendering that on the server would either build a
+ * Every view beneath it reads the client model, which this layout builds and
+ * holds for the life of a client instance. Rendering that on the server would either build a
  * second graph in the process or serve markup from a model nothing initialized,
  * and this flag is what makes neither possible: with SSR off the layout script
  * never runs on the server, so nothing needs a browser guard of its own.

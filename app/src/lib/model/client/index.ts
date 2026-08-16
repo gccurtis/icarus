@@ -36,9 +36,10 @@ export {
 /**
  * The one client model for this client instance.
  *
- * A client instance is one browser tab holding the application: the shell layout
- * persists, tabs are workbench state rather than route state, and views do not
- * remount on navigation. One instance, one graph, for that tab's whole life.
+ * A client instance is one browser tab holding the application: the `/app`
+ * layout persists, tabs are workbench state rather than route state, and views
+ * do not remount on navigation. One instance, one graph, for that tab's whole
+ * life.
  *
  * Module state is safe here *because none of it is shared*. There is no second
  * person inside a tab to leak to, which is the whole reason a shape that would be
