@@ -99,6 +99,10 @@ test("rejects a capability with no deployment door", () => {
   expectOnly("no-deployment-door", "no deployment door");
 });
 
+test("accepts an api/ of promoted procedures with no door to register them", () => {
+  assert.deepEqual(lint("promoted-only"), []);
+});
+
 test("rejects a deployment door that registers a function unscoped", () => {
   expectOnly("door-registers-unscoped", "built from projectQuery/projectMutation");
 });

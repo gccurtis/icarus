@@ -121,6 +121,18 @@ export const FIXTURES = {
     rmSync(join(functionsRootFor(root), "capabilities/thing.ts"));
   },
 
+  /**
+   * Compliant, not defective: an `api/` holding only promoted procedures offers
+   * no public function, so there is nothing for a door to register. It is the
+   * shape a capability has while its procedures exist and its functions do not.
+   */
+  "promoted-only": (root) => {
+    write(root, "data/thing/overview.md", "# Thing Overview\n");
+    write(root, "data/thing/api/api.md", "# Thing API\n");
+    write(root, "data/thing/api/shared/shared.md", "# Thing Shared Procedures\n");
+    write(root, "data/thing/api/shared/find-thing.ts", "export const findThing = async () => {};\n");
+  },
+
   // The door is the only file that can register, so it is the only place the
   // scoping rule can be broken. `define` stays scoped so the surface rules do
   // not co-fire, and `thing` is not an allowlisted door.

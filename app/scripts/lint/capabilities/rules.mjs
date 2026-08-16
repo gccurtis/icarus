@@ -266,10 +266,14 @@ export const checkCapabilities = ({ root, base = root, functionsRoot }) => {
     const apiRoot = join(capabilityRoot, "api");
     const name = camelOf(capability.split("/").at(-1));
     const door = join(functionsRoot, "capabilities", `${name}.ts`);
+    const offersFunction = () => dirsIn(apiRoot).some((n) => n !== "shared");
 
     if (!existsSync(door)) {
-      // A capability with no api/ offers no function, so it needs no door.
-      if (existsSync(apiRoot)) {
+      // A capability offering no public function needs no door: with no api/ at
+      // all, or with an api/ holding only procedures promoted for callers
+      // elsewhere. `shared/` is exempt from the correspondence in both
+      // directions, and that includes whether the door has to exist.
+      if (existsSync(apiRoot) && offersFunction()) {
         fail(apiRoot, `no deployment door — expected capabilities/${name}.ts under the functions directory`);
       }
       return;

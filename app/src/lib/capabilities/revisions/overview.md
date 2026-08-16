@@ -5,9 +5,10 @@ of what changed. A [document](../documents/overview.md), a deck, and a workbook
 all go through here, because replay is generic over ops and never inspects a
 body.
 
-**No `api/` yet, so no deployment door.** Applying ops arrives in task 8, the
-conflict ladder in task 9, and `read`/`submit`/`consolidate` in task 10. Until
-then this capability is a schema and a vocabulary.
+**No registered function yet, so no deployment door.** [`api/`](api/api.md) holds
+the procedures every eventual function shares — applying ops, inverting one,
+shifting an offset. The conflict ladder arrives in task 9 and
+`read`/`submit`/`consolidate` in task 10.
 
 ## Data Ownership
 
@@ -36,8 +37,11 @@ then this capability is a schema and a vocabulary.
   and no retry loop.
 - **`touched` holds the deepest id each op addresses**, never its ancestors —
   including them would report a collision on every shared container.
-- **A body is opaque to everything here.** It is `v.any()` until task 11, where
-  it becomes a union discriminated on `resourceType`.
+- **A body is opaque to everything here but one op.** Stored it is `v.any()`
+  until task 11, where it becomes a union discriminated on `resourceType`; read
+  it is a path and whatever sits at the end of it. The exception is a `text` op,
+  which maintains its block's `display` and marks — a change set carries
+  neither, so applying is what keeps them true.
 
 ## Related
 
