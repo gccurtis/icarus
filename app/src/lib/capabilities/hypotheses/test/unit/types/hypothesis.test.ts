@@ -70,6 +70,11 @@ describe("hypothesisConfidence", () => {
     expect(refusalFromCall(() => hypothesisConfidence("supported", -0.1))).toMatchObject({
       code: "confidence-range"
     });
+    // NaN compares false against every bound, so a range check has to be
+    // written as the negation of "in range" to catch it.
+    expect(refusalFromCall(() => hypothesisConfidence("supported", Number.NaN))).toMatchObject({
+      code: "confidence-range"
+    });
   });
 });
 

@@ -109,7 +109,8 @@ export const hypothesisConfidence = (
       "An untested hypothesis has no confidence to report"
     );
   }
-  if (confidence < 0 || confidence > 1) {
+  // Negated rather than `< 0 || > 1`, because NaN compares false against both.
+  if (!(confidence >= 0 && confidence <= 1)) {
     throw new HypothesesError("confidence-range", `A confidence of ${confidence} is not a probability`);
   }
   return confidence;

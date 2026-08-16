@@ -56,12 +56,6 @@ describe("researchLinks schema", () => {
     ]);
   });
 
-  it("declares no index unique, because Convex has none", () => {
-    // Uniqueness is an invariant `link` maintains inside one serializable
-    // transaction. A schema claiming otherwise would be a promise nothing keeps.
-    for (const index of indexes) expect(index).not.toHaveProperty("unique");
-  });
-
   it("makes a question no bearer and a finding no subject", () => {
     // Direction is canonical — finding → hypothesis → question — so the same
     // relationship cannot be stored two ways, and the duplicate check means

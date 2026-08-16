@@ -11,7 +11,7 @@ export type HypothesesErrorCode =
   | "unknown-assessment"
   /** A confidence on a claim nobody has tested. */
   | "confidence-untested"
-  /** A confidence outside 0–1, which is not a probability. */
+  /** A confidence that is not a probability — outside 0–1, or not a number at all. */
   | "confidence-range";
 
 export type HypothesesRefusal = {
