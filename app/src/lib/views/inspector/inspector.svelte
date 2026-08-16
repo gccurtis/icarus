@@ -3,6 +3,7 @@
 
   import { clientModel } from "$model/client";
   import { ResizeHandle } from "$lib/unique-components/resize-handle";
+  import Copilot from "$views/inspector/components/copilot.svelte";
   import NextText from "$views/inspector/components/next-text.svelte";
   import TextSelection from "$views/inspector/components/text-selection.svelte";
   import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH } from "$views/inspector/types";
@@ -22,12 +23,14 @@
    * the per-kind props and every component would take `any`. Narrowing on `kind`
    * is what keeps `blockId` and the offsets typed at the point they are passed.
    *
-   * **The map is partial, deliberately.** Only the two kinds a surface can
-   * actually produce are built. `document-table`, `formula`, and `prompt` have
-   * no producer, and `empty` needs the insert affordances that belong to an
-   * editor; components for any of them would be files nothing can reach. The
-   * fallback below names the kind, which is the honest rendering of "something
-   * is inspected and this panel has no view for it yet".
+   * **The map is partial because the application is, not because the union is
+   * about documents.** An inspection is a label for whatever the user is looking
+   * at, anywhere: `copilot` belongs to no resource at all, and slides,
+   * spreadsheets, and research will each contribute their own. This panel builds
+   * a view per label that some surface can currently produce — three today — and
+   * the fallback names the rest, which is the honest rendering of "something is
+   * inspected and this panel has no view for it yet". The union is closed, so
+   * adding a label makes the compiler name every surface that must handle it.
    *
    * **Collapsed, it becomes a rail rather than nothing.** A flank that vanishes
    * leaves no way back but finding a 4px edge, so what remains is the same 44px
@@ -62,6 +65,8 @@
     <div class="content">
       {#if !inspection}
         <p class="note">Nothing selected.</p>
+      {:else if inspection.kind === "copilot"}
+        <Copilot chatId={inspection.chatId} />
       {:else if inspection.kind === "document-text-selection"}
         <TextSelection blockId={inspection.blockId} from={inspection.from} to={inspection.to} />
       {:else if inspection.kind === "document-next-text"}

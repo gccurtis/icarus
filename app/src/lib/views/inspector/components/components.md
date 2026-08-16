@@ -8,6 +8,7 @@ do not carry their own Markdown files.
 
 ```text
 inspector.svelte
+├── copilot                          components/copilot.svelte
 ├── text-selection                   components/text-selection.svelte
 └── next-text                        components/next-text.svelte
 ```
@@ -23,6 +24,7 @@ rewritten. Every authored component appears here, and each meaningful one is
 described under Subtree Contracts below.
 
 <!-- generated:inventory:start -->
+- [`copilot.svelte`](copilot.svelte)
 - [`next-text.svelte`](next-text.svelte)
 - [`text-selection.svelte`](text-selection.svelte)
 <!-- generated:inventory:end -->
@@ -74,6 +76,7 @@ document capability, which does not exist. Each shows the identity it was handed
 | Key value | Renders | Component or composed view |
 | --- | --- | --- |
 | `undefined` | Nothing selected | root markup |
+| `copilot` | Conversations, running work, the active chat | [`copilot.svelte`](copilot.svelte) |
 | `document-text-selection` | The range and its offsets | [`text-selection.svelte`](text-selection.svelte) |
 | `document-next-text` | The caret's block | [`next-text.svelte`](next-text.svelte) |
 | `empty` | The kind, named | root fallback |
@@ -81,13 +84,16 @@ document capability, which does not exist. Each shows the identity it was handed
 | `formula` | The kind, named | root fallback |
 | `prompt` | The kind, named | root fallback |
 
-**The map is deliberately partial, and the fallback is the stated exception.**
-Only the two kinds a surface can actually produce are built — the workspace's
-document component is the sole caller of `inspect()` in the application. The
-other three kinds have no producer, and `empty` needs the insert affordances
-that belong to an editor; components for any of them would be files nothing can
-reach. The fallback names the kind, which is the honest rendering of "something
-is inspected and this panel has no view for it yet".
+**The map is partial because the application is, not because the union is about
+documents.** An inspection is a label for whatever the user is looking at,
+anywhere — `copilot` belongs to no resource at all, and slides, spreadsheets, and
+research will each contribute their own labels as their editors arrive. What is
+built is a view per label some surface can currently produce: the copilot bar
+produces one, the workspace's document component produces two. The rest have no
+producer, and `empty` needs the insert affordances that belong to an editor;
+components for them would be files nothing can reach. The fallback names the
+kind, which is the honest rendering of "something is inspected and this panel has
+no view for it yet".
 
 **Selection is an if-chain rather than a `Record`**, unlike the workspace and the
 context panel. `InspectionNode` is a discriminated union whose members carry

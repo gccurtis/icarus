@@ -99,6 +99,15 @@ export const CONTEXTS_BY_KIND: Record<ResourceKind, readonly ContextId[]> = Obje
  * views. The members that are genuinely shared — `formula`, `prompt` — stay
  * unqualified, because the server treats those as capabilities in their own
  * right rather than as document internals, and one view serves both.
+ *
+ * **This union is not about documents, and it is expected to get long.** Every
+ * editor contributes members — slides, spreadsheets, research — and so do
+ * surfaces that belong to no resource at all, like `copilot`. A member is a
+ * stable label for "what the user is looking at", nothing more; the view that
+ * renders it decides what that looks like and fetches whatever it needs from the
+ * ids the label carries. Length is the design working, not a smell: a closed
+ * union is what makes the compiler name every surface that must handle a new
+ * one.
  */
 export type InspectionNode =
   /**
@@ -107,6 +116,18 @@ export type InspectionNode =
    * insert affordances here, which is exactly when it is most useful.
    */
   | { readonly kind: "empty" }
+  /**
+   * The copilot surface, and the clearest case that an inspection is not a thing
+   * *inside* a resource. Nothing on the work surface is selected here: what is
+   * under inspection is the assistant itself, and the panel it opens searches
+   * past conversations, lists running work, and holds the active one.
+   *
+   * `chatId` absent is the home — search and running work with no conversation
+   * open. Present, it is that conversation. Absent is not an error state, which
+   * is why there is no separate kind for it: submitting from the bar with no
+   * chat open is how a chat gets created.
+   */
+  | { readonly kind: "copilot"; readonly chatId?: string }
   /**
    * Text about to be typed. This is the case that shows the inspector is a
    * control surface rather than a mirror: what the user sets here — bold, a

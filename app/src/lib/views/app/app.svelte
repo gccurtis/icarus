@@ -1,6 +1,7 @@
 <script lang="ts">
   import { clientModel } from "$model/client";
   import ContextPanel from "$views/context-panel/context-panel.svelte";
+  import CopilotBar from "$views/copilot-bar/copilot-bar.svelte";
   import { RAIL_WIDTH } from "$views/context-panel/types";
   import Inspector from "$views/inspector/inspector.svelte";
   import { COLLAPSED_WIDTH } from "$views/inspector/types";
@@ -61,7 +62,17 @@
   <div class="zone top-bar"><TopBar /></div>
   <div class="zone tab-bar"><TabBar /></div>
   <div class="zone context"><ContextPanel /></div>
-  <main class="zone work"><Workspace /></main>
+  <!--
+    The copilot bar floats over the work rather than taking a row of the grid: it
+    is available from wherever work happens, and a zone of its own would cost the
+    work surface height it never gets back. The scroll therefore belongs to the
+    inner element, not to this one — a bar anchored inside a scroller would slide
+    away with the content it is meant to sit over.
+  -->
+  <main class="zone work">
+    <div class="surface"><Workspace /></div>
+    <CopilotBar />
+  </main>
   <div class="zone inspector"><Inspector /></div>
   <div class="zone status"><StatusBar /></div>
 </div>
@@ -132,9 +143,15 @@
   /* The work surface is sacred: it gets the generous plane. */
   .work {
     grid-area: work;
-    overflow-y: auto;
+    position: relative;
+    overflow: hidden;
     background-color: var(--token-surface-work);
     color: var(--token-ink-primary);
+  }
+
+  .surface {
+    height: 100%;
+    overflow-y: auto;
   }
 
   .inspector {
