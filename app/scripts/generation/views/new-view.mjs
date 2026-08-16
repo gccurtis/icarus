@@ -12,9 +12,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { KEBAB, at, commitIfClean, fail, packageRoot, planner, render, stopIfFailed, title, viewsRoot } from "./shared.mjs";
+import { KEBAB, at, commandArgs, commitIfClean, fail, packageRoot, planner, render, stopIfFailed, title, viewsRoot } from "./shared.mjs";
 
-const [view] = process.argv.slice(2);
+const [view] = commandArgs();
 
 if (!view || !KEBAB.test(view)) {
   fail("<view>", `'${view ?? ""}' is not a kebab-case view name`);

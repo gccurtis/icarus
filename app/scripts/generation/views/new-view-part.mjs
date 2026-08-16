@@ -18,10 +18,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
-import { CONCERNS, KEBAB, at, commitIfClean, fail, planner, render, requireView, stopIfFailed, withInventoryEntry } from "./shared.mjs";
+import { CONCERNS, KEBAB, at, commandArgs, commitIfClean, fail, planner, render, requireView, stopIfFailed, withInventoryEntry } from "./shared.mjs";
 
 const NAME = "new-view-part";
-const args = process.argv.slice(2);
+const args = commandArgs();
 const complex = args.includes("--complex");
 const [view, concern, name] = args.filter((argument) => !argument.startsWith("--"));
 

@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { cssFacts } from "../../lint/styles/rules.mjs";
 import {
+  commandArgs,
   darkVariant,
   die,
   parseArgs,
@@ -14,7 +15,7 @@ import {
   validateName
 } from "./shared.mjs";
 
-const { positional, options } = parseArgs(process.argv.slice(2));
+const { positional, options } = parseArgs(commandArgs());
 const name = positional[0];
 const from = options.get("from");
 const scheme = options.get("scheme");

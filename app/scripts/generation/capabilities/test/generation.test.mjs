@@ -123,6 +123,20 @@ test("a bare capability passes lint", () => {
   assert.deepEqual(lint(root), []);
 });
 
+/**
+ * pnpm forwards the `--` separator to the script rather than consuming it, so a
+ * generator reading `argv` directly fails on its first word. The bug only
+ * reproduces through pnpm and survives every `node scripts/…` run somebody
+ * reaches for to check the generator by hand.
+ */
+test("the leading -- pnpm forwards is not read as an argument", () => {
+  const root = generate(
+    ["new-capability.mjs", ["--", CAPABILITY]],
+    ["new-api.mjs", ["--", CAPABILITY, "define", "--mutation"]]
+  );
+  assert.deepEqual(lint(root), []);
+});
+
 test("a capability with tables passes lint", () => {
   const root = generate(["new-capability.mjs", [CAPABILITY, "--tables"]]);
   assert.deepEqual(lint(root), []);

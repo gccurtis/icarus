@@ -33,6 +33,18 @@ test("generates a light theme and registers every owned surface", () => withFixt
   assert.deepEqual(checkStyles(fixture), []);
 }));
 
+/**
+ * pnpm forwards the `--` separator to the script rather than consuming it, and
+ * here it failed silently rather than loudly: `--` starts with `--`, so
+ * `parseArgs` read the theme name as its value and the name went missing.
+ */
+test("the leading -- pnpm forwards is not read as an argument", () => withFixture((fixture) => {
+  const result = run(themeScript, ["--", "aurora", "--from", "celestial", "--scheme", "light"], fixture);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(existsSync(join(fixture.stylesRoot, "chromatic-themes", "aurora", "aurora.css")));
+  assert.deepEqual(checkStyles(fixture), []);
+}));
+
 test("registers a generated dark theme in Tailwind", () => withFixture((fixture) => {
   const result = run(themeScript, ["nocturne", "--from", "cyberpunk", "--scheme", "dark"], fixture);
   assert.equal(result.status, 0, result.stderr);

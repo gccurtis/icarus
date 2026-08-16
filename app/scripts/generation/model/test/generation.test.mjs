@@ -309,6 +309,18 @@ test("a reactive client object passes lint", () => {
   assert.match(read(root, `${MODEL}/client/session/definition.svelte.ts`), /\$state/);
 });
 
+/**
+ * The standard documents this generator as `pnpm new-model-object -- client
+ * <name>`, and pnpm forwards that separator to the script rather than consuming
+ * it. The bug only reproduces through pnpm, so it survives every `node
+ * scripts/…` run somebody reaches for to check the generator by hand.
+ */
+test("the leading -- pnpm forwards is not read as an argument", () => {
+  const root = generate(["--", "client", "session", "--definition", "plain"]);
+  assert.deepEqual(lint(root), []);
+  assert.ok(existsSync(join(root, MODEL, "client/session/definition.ts")));
+});
+
 test("a plain client object passes lint, and owns no runes", () => {
   const root = generate(["client", "session", "--definition", "plain"]);
   assert.deepEqual(lint(root), []);

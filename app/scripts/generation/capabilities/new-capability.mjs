@@ -22,6 +22,7 @@ import {
   aliasFor,
   camel,
   capabilitiesRoot,
+  commandArgs,
   fail,
   functionsRoot,
   pascal,
@@ -37,7 +38,7 @@ const USAGE = `usage: pnpm new-capability <path/to/name> [--tables]
   <path/to/name>     relative to src/lib/capabilities, e.g. name-manager
   --tables           also write schema.ts, a table fragment`;
 
-const args = process.argv.slice(2);
+const args = commandArgs();
 const flags = new Set(args.filter((arg) => arg.startsWith("--")));
 const [capabilityPath] = args.filter((arg) => !arg.startsWith("--"));
 

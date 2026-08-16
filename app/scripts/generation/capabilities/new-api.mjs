@@ -28,6 +28,7 @@ import {
   at,
   camel,
   capabilitiesRoot,
+  commandArgs,
   fail,
   functionsRoot,
   kebabOf,
@@ -44,7 +45,7 @@ const USAGE = `usage: pnpm new-api <capability-path> <functionName> --query|--mu
   --query            reads; subscribable, and may not write
   --mutation         writes; one serializable transaction`;
 
-const args = process.argv.slice(2);
+const args = commandArgs();
 const flags = new Set(args.filter((arg) => arg.startsWith("--")));
 const [capabilityPath, functionName] = args.filter((arg) => !arg.startsWith("--"));
 

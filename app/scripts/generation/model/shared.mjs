@@ -74,6 +74,23 @@ export const DOCUMENTS = { client: "client.md", server: "server.md" };
 export const doorSpecifier = (environment, name) =>
   environment === "server" ? `$model/server/${name}/index.server` : `$model/client/${name}`;
 
+// -------------------------------------------------------------- arguments ----
+
+/**
+ * The arguments this command was invoked with, minus the separator pnpm leaves
+ * behind.
+ *
+ * Every standard documents its generator as `pnpm <script> -- <args>`, and pnpm
+ * forwards that `--` to the script rather than consuming it. Reading `argv`
+ * directly therefore makes the one invocation anybody will copy fail on its
+ * first word.
+ *
+ * Only a leading `--` goes. Anywhere else it is a real argument error and still
+ * reported as one.
+ */
+export const commandArgs = () =>
+  process.argv.slice(2).filter((argument, index) => !(index === 0 && argument === "--"));
+
 // ---------------------------------------------------------------- naming ----
 
 export const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;

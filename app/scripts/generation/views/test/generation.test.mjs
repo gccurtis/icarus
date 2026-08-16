@@ -102,6 +102,24 @@ test("a view with every concern passes the real linter", () => {
   });
 });
 
+/**
+ * The standards document every generator as `pnpm <script> -- <args>`, and pnpm
+ * forwards that separator to the script rather than consuming it. The bug this
+ * guards only ever reproduces through pnpm, so it survives every `node
+ * scripts/…` run somebody reaches for to check the generator by hand — which is
+ * exactly why it is worth a test rather than a habit.
+ */
+test("the leading -- pnpm forwards is not read as an argument", () => {
+  withPackage((root) => {
+    run(root, "new-view.mjs", "--", "workspace");
+    run(root, "new-view-part.mjs", "--", "workspace", "components", "empty-state");
+
+    assert.ok(existsSync(view(root, "workspace", "workspace.svelte")));
+    assert.ok(existsSync(view(root, "workspace", "components", "empty-state.svelte")));
+    clean(root);
+  });
+});
+
 test("a bare view — two files and nothing else — passes the real linter", () => {
   withPackage((root) => {
     run(root, "new-view.mjs", "demo");

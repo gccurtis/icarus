@@ -18,6 +18,22 @@ export const validateName = (name, kind) => {
   }
 };
 
+/**
+ * The arguments this command was invoked with, minus the separator pnpm leaves
+ * behind.
+ *
+ * Every standard documents its generator as `pnpm <script> -- <args>`, and pnpm
+ * forwards that `--` to the script rather than consuming it. Reading `argv`
+ * directly therefore makes the one invocation anybody will copy fail on its
+ * first word — and here it fails silently rather than loudly, because `--`
+ * starts with `--`, so `parseArgs` reads the theme name as its value.
+ *
+ * Only a leading `--` goes. Anywhere else it is a real argument error and still
+ * reported as one.
+ */
+export const commandArgs = () =>
+  process.argv.slice(2).filter((argument, index) => !(index === 0 && argument === "--"));
+
 export const parseArgs = (argv) => {
   const positional = [];
   const options = new Map();

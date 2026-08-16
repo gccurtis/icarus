@@ -41,6 +41,7 @@ import {
   at,
   builderOf,
   camel,
+  commandArgs,
   cycleFrom,
   dependencyGraph,
   doorSpecifier,
@@ -72,15 +73,7 @@ const USAGE = `usage: pnpm new-model-object -- client <name> --definition <react
 
 // -------------------------------------------------------------- arguments ----
 
-/**
- * A leading `--` is dropped rather than parsed.
- *
- * The standard documents this as `pnpm new-model-object -- client <name>`, and
- * pnpm forwards that separator to the script instead of consuming it. Treating
- * it as an argument makes the one invocation anybody will copy fail on its first
- * word.
- */
-const argv = process.argv.slice(2).filter((argument, index) => !(index === 0 && argument === "--"));
+const argv = commandArgs();
 const options = new Map();
 const positional = [];
 
