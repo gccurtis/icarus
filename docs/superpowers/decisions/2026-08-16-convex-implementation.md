@@ -134,6 +134,63 @@ many fields. The constant is read in two places, both adjacent to `authSubject:`
 siblings `DEVELOPMENT_PROJECT` and `DEVELOPMENT_TOKEN` are unqualified the same
 way. Its doc comment now says the value is an authSubject.
 
+### What adversarial review found, and why it was worth running
+
+Two of these are the reason the verify phase exists at all. Both passed every
+check — tests, typecheck, and all four linters were green when they were found.
+
+**Lint checked the scoping rule only on the side that cannot break it.** The
+rule is "every registration is built from `projectQuery` or `projectMutation`".
+Lint enforced the half that says capabilities may not import `query`/`mutation`
+— and never read the doors, where the violation would actually live. A door
+registering a bare `mutation()` would have shipped clean. Fixed by reading doors
+too, with the `access` exemption moved out of prose and into a named
+`UNSCOPED_DOORS` constant in the rules, so granting one is a diff rather than a
+sentence somebody wrote.
+
+**`documents` stated two refusals and threw plain `Error` for both.** Convex
+serializes a `ConvexError`'s payload to the caller and redacts everything else,
+so "document not found" was reaching callers as an opaque server fault — the
+capability's whole refusal contract was inert. The tests had asserted on the
+message string, which passes either way; they now assert the payload, which is
+what would have caught it.
+
+The rest were smaller: three untested `labelFor` branches, an unasserted `list`
+projection, a `requireDocument` caller count that said three, and a storage
+document naming an index that does not exist.
+
+---
+
+## Pass 6, settled early
+
+### `knowledge.yaml` values are carried, not invented
+
+**Question.** Both lattice process docs say their tuning belongs in
+`app/configuration/`, and no such file existed. Pass 6 would have had to invent
+every number.
+
+**Grounding.** `reference/capabilities/knowledge/` is the Taurus Omega runtime
+the lattice design is carried from, and it holds the real defaults —
+`types.ts` for windowing, clustering, and KNN; `lattice/descent.ts` and
+`lattice/knn.ts` for the constants the types do not name.
+
+**Alternatives.** Pick plausible numbers; leave the file for pass 6 to write.
+
+**Chosen.** Every value carried across: window 4000/400, threshold at the 0.75
+percentile with a 0.30 floor, `k=32`, `pcaDims=128`, `probeCells=4`,
+`maxClusterPool=2000`, repair bounds 0.2/0.02, descent beam 3 at threshold 0.35
+with a 256-expansion ceiling, `charBudget` 4000, `topK` 5. The seeds are its
+seeds, because a lattice that reshuffles on rebuild makes retrieval
+irreproducible and repair impossible to reason about.
+
+Invented numbers would have looked exactly as authoritative and been worth
+nothing. The file says in its own comments that these were measured against a
+different corpus and are starting points.
+
+This also turned up that `configuration/README.md` claimed everything in the
+directory is read, which stopped being true when `revisions.yaml` landed. It now
+names both files written ahead of their reader.
+
 ---
 
 ## Spec defects found and fixed
