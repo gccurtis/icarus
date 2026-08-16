@@ -516,6 +516,74 @@ returns the single `{op:"set"}` member type, which is assignable at every depth.
 
 ---
 
+## Pass 7 and the final audit
+
+### The third `projectId` exception, and why "it held" was not good enough
+
+The audit walked every index in the deployment against the rule that `projectId`
+leads. **The `revisions` capability was the last exception**:
+`changeSets.by_resource_state`, `changeSets.by_resource_revision`, and
+`resourceSnapshots.by_resource_role` were all keyed on
+`(resourceType, resourceId, …)`.
+
+It was deliberate, documented in four places, and **it worked** — every read
+compensated afterwards with an explicit `if (leader.projectId !== scope.projectId)`
+or by checking the `projectId` that `head` returned. No test failed and no query
+leaked.
+
+It was fixed anyway, and the reasoning is the point: **that is a predicate correct
+only because a caller remembered it**, which is exactly what the projectId-leads
+rule exists to remove. A refactor that dropped one comparison would turn a read
+that returns empty into one that goes deployment-wide, silently. Prepending
+`projectId` costs nothing — a prefix of equalities is the same contiguous B-tree
+scan — so the safety is free and the compensating checks are gone.
+
+The plan's own Task 7 snippet spells those indexes *without* `projectId`. The
+auditor took the Global Constraints section as governing over the illustration,
+which is the right way round: an example that contradicts a stated rule is a
+defect in the example.
+
+**`memberships` remains a fourth exception, deliberately.** Its indexes lead with
+`userId`, and that ordering *is* the authorization — a token-first index would
+resolve any token to its project regardless of who presented it. Now stated in
+`storage/README.md` beside `users` rather than left as an unexplained outlier.
+
+### `step: undefined` was on the wire
+
+`RevisionsError`'s own type says the `step` field is "absent for a refusal
+outside the conflict ladder". It was present and undefined, which is not absent —
+the live payload read `{"capability":"revisions","code":"not-found",…,"step":"undefined"}`,
+so a client testing for the key gets a rung that never ran.
+
+Found by **looking at the actual wire**, not by reading the type. Fixed with a
+conditional spread, which `resource-sets/errors.ts` already did for its own
+optional field.
+
+### One refusal discriminant, spelled two ways
+
+`derived-outputs` and `resource-sets` set `capability: "derived-outputs"` /
+`"resource-sets"`; the other twenty use the door's name — `agentTasks`,
+`externalFiles`, `nameManager`, `researchLinks`, `slideDecks`. **The door name is
+the only spelling a caller ever sees**, so both moved to `derivedOutputs` /
+`resourceSets`. A public payload change, made now precisely because nothing
+consumes it yet.
+
+### The storage doc was reconciled to the code, not the reverse
+
+Six index shapes in `storage/README.md` disagreed with what was built —
+`changeSets`, `nameVariables`, `externalFiles`, `researchLinks`, `commentThreads`,
+`messages`. Every one was a case where the doc predated the projectId-leads
+constraint and three separate passes had each independently worked around it.
+
+The doc was fixed in all six. The seventh — `revisions` — was fixed in the *code*,
+because there the doc was right and the code was the outlier.
+
+Two tables exist that the doc never listed: `latticeSources` (pass 6; without it
+an unchanged source can only be skipped *after* it has been windowed and hashed)
+and `settings` (predates this plan entirely). Both added.
+
+---
+
 ## Pass 6, settled early
 
 ### `knowledge.yaml` values are carried, not invented
