@@ -4,17 +4,21 @@ import type { Op } from "$revisions/types/change";
  * What a `remove` names its entries by.
  *
  * A merge is a bare range string with no record around it, so a value that is
- * its own identity is taken as such. Anything else without an id would invert to
- * a remove that removes nothing, which is a silently unusable undo — so it
- * throws instead.
+ * its own identity is taken as such. A value with **no** identity of its own can
+ * only be a keyed entry — a spreadsheet cell, addressed by where it sits — and
+ * then the path's last segment is what names it, because nothing else could have.
  */
-const idOf = (value: unknown): string => {
+const idOf = (value: unknown, path: string): string => {
   if (typeof value === "string") return value;
   if (value !== null && typeof value === "object" && "id" in value) {
     const id = (value as { id: unknown }).id;
     if (typeof id === "string") return id;
   }
-  throw new Error("cannot invert an insert of a value that carries no id");
+  const key = path.split("/").at(-1);
+  if (key === undefined || key === "") {
+    throw new Error("cannot invert an insert of a value that carries no id");
+  }
+  return key;
 };
 
 /**
@@ -38,7 +42,7 @@ export const invert = (op: Op): Op => {
         op: "remove",
         target: op.target,
         path: op.path,
-        ids: op.values.map(idOf),
+        ids: op.values.map((value) => idOf(value, op.path)),
         after: op.after,
         values: op.values
       };

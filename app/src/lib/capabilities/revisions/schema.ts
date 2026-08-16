@@ -1,5 +1,6 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
+import { resourceBodyValidator } from "$revisions/types/body";
 import { opValidator, resourceTypeValidator } from "$revisions/types/change";
 import { actorValidator } from "$shared/types/actor";
 
@@ -53,8 +54,8 @@ export const revisionsTables = {
     revision: v.number(),
     /** `leader` anchors the hot read and `base` the cold one; a checkpoint only bounds replay. */
     role: v.union(v.literal("base"), v.literal("leader"), v.literal("checkpoint")),
-    /** Staged rather than lazy: a union on `resourceType` in task 11, once all three bodies exist. */
-    body: v.any(),
+    /** One of the three resources' bodies; the column beside it says which. */
+    body: resourceBodyValidator,
     at: v.number()
   }).index("by_resource_role", ["resourceType", "resourceId", "role"])
 };

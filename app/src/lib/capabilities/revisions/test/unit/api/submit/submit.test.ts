@@ -5,6 +5,7 @@ import {
   RESOURCE,
   asCtx,
   asking,
+  emptyBody,
   landed,
   refusalFrom,
   setAt,
@@ -43,7 +44,7 @@ describe("submit", () => {
 
   it("starts a resource nobody has edited at revision 1", async () => {
     const { ctx, scope } = await asking();
-    await start(asCtx(ctx), scope, RESOURCE, { rows: [] });
+    await start(asCtx(ctx), scope, RESOURCE, emptyBody());
 
     expect(await submit(asCtx(ctx), scope, authored(0, [typing(0, "Hello")]))).toEqual({
       revision: 1
@@ -88,7 +89,7 @@ describe("submit", () => {
 
   it("derives touched from the ops rather than trusting the caller", async () => {
     const { ctx, scope } = await asking();
-    await start(asCtx(ctx), scope, RESOURCE, { rows: [] });
+    await start(asCtx(ctx), scope, RESOURCE, emptyBody());
     const inserting: Op = {
       op: "insert",
       target: "row",
@@ -106,7 +107,7 @@ describe("submit", () => {
 
   it("attributes the set to the asking user rather than to an argument", async () => {
     const { ctx, scope, userId } = await asking();
-    await start(asCtx(ctx), scope, RESOURCE, { rows: [] });
+    await start(asCtx(ctx), scope, RESOURCE, emptyBody());
 
     await submit(asCtx(ctx), scope, authored(0, [typing(0, "Hello")]));
 

@@ -40,6 +40,11 @@ const assign = ({ container, key }: Location, value: unknown): void => {
   else container[key as string] = value;
 };
 
+const drop = ({ container, key }: Location): void => {
+  if (Array.isArray(container)) container.splice(key as number, 1);
+  else delete container[key as string];
+};
+
 /**
  * Ids are unique within a resource, so an `#id` segment resolves by search
  * rather than by walking down to it — which is what lets `#b7x2/atoms/#a9x1`
@@ -98,10 +103,20 @@ const locate = (body: unknown, path: string): Location => {
   return location;
 };
 
-const listAt = (body: unknown, path: string): unknown[] => {
-  const list = valueAt(locate(body, path));
-  if (!Array.isArray(list)) throw new Error(`'${path}' is not an ordered list`);
-  return list;
+/**
+ * A keyed collection's entry is named by the path itself, because it has no
+ * identity apart from where it sits — a spreadsheet cell, whose address is what
+ * a formula references. So `insert` and `remove` take one value there, and the
+ * `after` an ordered list needs means nothing.
+ *
+ * Nothing about this is spreadsheet-specific: a style set is a keyed map on the
+ * same terms.
+ */
+const only = (values: unknown[], path: string): unknown => {
+  if (values.length !== 1) {
+    throw new Error(`'${path}' names one keyed entry, so it carries one value`);
+  }
+  return values[0];
 };
 
 /** `after: null` is the head, which is also what an empty list wants. */
@@ -218,12 +233,23 @@ const apply = (body: unknown, op: Op): void => {
       assign(locate(body, op.path), op.value);
       return;
     case "insert": {
-      const list = listAt(body, op.path);
+      const at = locate(body, op.path);
+      const list = valueAt(at);
+      if (!Array.isArray(list)) {
+        assign(at, only(op.values, op.path));
+        return;
+      }
       list.splice(indexAfter(list, op.after, op.path), 0, ...op.values);
       return;
     }
     case "remove": {
-      const list = listAt(body, op.path);
+      const at = locate(body, op.path);
+      const list = valueAt(at);
+      if (!Array.isArray(list)) {
+        if (list === undefined) throw new Error(`'${op.path}' holds nothing to remove`);
+        drop(at);
+        return;
+      }
       for (const target of op.ids) {
         const id = bareId(target);
         const index = list.findIndex((entry) => identityOf(entry) === id);
@@ -233,7 +259,8 @@ const apply = (body: unknown, op: Op): void => {
       return;
     }
     case "move": {
-      const list = listAt(body, op.path);
+      const list = valueAt(locate(body, op.path));
+      if (!Array.isArray(list)) throw new Error(`'${op.path}' is not an ordered list`);
       const id = bareId(op.id);
       const from = list.findIndex((entry) => identityOf(entry) === id);
       if (from === -1) throw new Error(`'${op.path}' holds no '${op.id}' to move`);

@@ -49,20 +49,30 @@ creates the resource, in the same transaction.
   Read the maximum and insert one above it in one mutation; a writer that commits
   first invalidates this one's read set and it re-runs. There is no version field
   and no retry loop.
-- **`touched` holds the deepest id each op addresses**, never its ancestors —
-  including them would report a collision on every shared container. It is
-  derived from the ops on the way in, because a caller that understated it would
-  be a caller whose changes collide with nothing.
+- **`touched` holds the deepest thing each op addresses**, never its ancestors —
+  including them would report a collision on every shared container. Deepest is
+  the last `#id` in the path *and the segments below it*, because a keyed
+  collection's entries are told apart by nothing else: stopping at the id would
+  collapse every cell of a sheet onto the sheet. It is derived from the ops on
+  the way in, because a caller that understated it would be a caller whose
+  changes collide with nothing.
 - **A rejection names the rung that refused it.** Thrown as `RevisionsError`, so
   the payload survives to the client: Convex serializes a `ConvexError`'s payload
   and redacts everything else, and a conflict with no reason is unactionable.
   Nothing is lost by one — the edits are still in the client's buffer, and it
   re-reads, reapplies, and resubmits.
-- **A body is opaque to everything here but one op.** Stored it is `v.any()`
-  until task 11, where it becomes a union discriminated on `resourceType`; read
-  it is a path and whatever sits at the end of it. The exception is a `text` op,
-  which maintains its block's `display` and marks — a change set carries
-  neither, so applying is what keeps them true.
+- **A body is opaque to everything here but one op.** Stored it is a union of the
+  three resources' bodies, declared in [`types/body.ts`](types/body.ts) by
+  importing them; read it is a path and whatever sits at the end of it. The
+  exception is a `text` op, which maintains its block's `display` and marks — a
+  change set carries neither, so applying is what keeps them true.
+- **An op works on a tree, not on a resource.** Ordered lists are addressed by
+  the ids their entries carry; a keyed collection's entries are addressed by the
+  path itself, because a key *is* the entry's identity. Both are properties of
+  the shape at the path, and nothing here branches on `resourceType` to decide
+  which — that genericity is what let decks and workbooks arrive without a line
+  of new machinery. [`test/unit/resource-types.test.ts`](test/unit/resource-types.test.ts)
+  is what says so.
 
 ## Related
 

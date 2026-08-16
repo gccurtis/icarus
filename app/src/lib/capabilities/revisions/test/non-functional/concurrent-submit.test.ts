@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { start } from "$revisions/api/shared/start";
 import { submit } from "$revisions/api/submit/submit";
-import { RESOURCE, asCtx, asking, setsStored } from "$revisions/test/fixture";
+import { RESOURCE, asCtx, asking, emptyBody, setsStored } from "$revisions/test/fixture";
 import type { Op } from "$revisions/types/change";
 
 const typing = (atom: string, at: number, insert: string): Op => ({
@@ -29,7 +29,7 @@ const authored = (baseRevision: number, ops: Op[]) => ({ ...RESOURCE, baseRevisi
 describe("submitting at a taken revision", () => {
   it("re-runs above the revision the winner took", async () => {
     const { ctx, scope } = await asking();
-    await start(asCtx(ctx), scope, RESOURCE, { rows: [] });
+    await start(asCtx(ctx), scope, RESOURCE, emptyBody());
     const mine = authored(0, [typing("a9x1", 0, "mine ")]);
 
     const winner = await submit(asCtx(ctx), scope, authored(0, [typing("a9x2", 0, "theirs ")]));

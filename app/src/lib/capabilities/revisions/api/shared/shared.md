@@ -87,6 +87,15 @@ right up until one of them was edited.
 to reject to, and the text the mark named is gone. It collapses rather than
 disappearing so a change addressing that mark still finds it.
 
+## Ordered lists and keyed collections
+
+`insert` and `remove` read the shape at the path rather than the op's target: an
+array is an ordered list whose entries are found by the ids they carry, and
+anything else is a keyed collection whose entry the path itself names. A
+spreadsheet cell is the case that needed the second reading — its address is its
+identity — and a style set is the same shape, which is why this is a property of
+the tree rather than a special case for sheets.
+
 ## What applying refuses
 
 Whether an op *may* apply is settled before it gets here. What is still refused

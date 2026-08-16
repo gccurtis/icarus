@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { create } from "$documents/api/create/create";
 import { asCtx, asking, refusalFrom } from "$documents/test/fixture";
+import { emptyDocumentBody } from "$documents/types/body";
 import { read } from "$revisions/api/read/read";
 
 describe("create", () => {
@@ -40,9 +41,13 @@ describe("create", () => {
 
     const id = await create(asCtx(ctx), scope, "Q3 plan");
 
-    expect(
-      await read(asCtx(ctx), scope, { resourceType: "document", resourceId: id })
-    ).toEqual({ revision: 0, body: { rows: [] } });
+    // A page and a style set, not just an empty row list: both are in the body
+    // rather than on the row, and a body missing them is one no renderer can
+    // lay out and no undo could restore.
+    expect(await read(asCtx(ctx), scope, { resourceType: "document", resourceId: id })).toEqual({
+      revision: 0,
+      body: emptyDocumentBody()
+    });
   });
 
   it("keeps the template it was made from as provenance", async () => {

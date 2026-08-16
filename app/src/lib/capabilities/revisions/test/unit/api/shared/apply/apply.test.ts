@@ -180,6 +180,70 @@ describe("applyOps", () => {
     });
   });
 
+  /**
+   * A keyed collection's entry has no identity apart from where it sits, so the
+   * path names the entry rather than the collection — and `insert` and `remove`
+   * follow the path instead of searching. A spreadsheet cell is the case that
+   * needs it; a style set is the same shape.
+   */
+  describe("keyed entries", () => {
+    const sheet = () => ({
+      sheets: [{ id: "sh1", cells: { B6: { blocks: ["six"] } }, merges: ["B2:D4"] }]
+    });
+
+    it("inserts under the key the path names", () => {
+      const next = applyOps(sheet(), [
+        {
+          op: "insert",
+          target: "cell",
+          path: "sheets/#sh1/cells/B7",
+          after: null,
+          values: [{ blocks: ["seven"] }]
+        }
+      ]);
+
+      expect(Object.keys(next.sheets[0].cells).sort()).toEqual(["B6", "B7"]);
+    });
+
+    it("removes the key rather than leaving a hole in the map", () => {
+      const next = applyOps(sheet(), [
+        {
+          op: "remove",
+          target: "cell",
+          path: "sheets/#sh1/cells/B6",
+          ids: ["B6"],
+          after: null,
+          values: [{ blocks: ["six"] }]
+        }
+      ]);
+
+      expect(next.sheets[0].cells).toEqual({});
+    });
+
+    it("refuses to remove a key that holds nothing", () => {
+      expect(() =>
+        applyOps(sheet(), [
+          {
+            op: "remove",
+            target: "cell",
+            path: "sheets/#sh1/cells/Z9",
+            ids: ["Z9"],
+            after: null,
+            values: [{ blocks: [] }]
+          }
+        ])
+      ).toThrow();
+    });
+
+    it("still treats a path that lands on a list as a list", () => {
+      const next = applyOps(sheet(), [
+        { op: "insert", target: "merge", path: "sheets/#sh1/merges", after: null, values: ["F2:G3"] }
+      ]);
+
+      expect(next.sheets[0].merges).toEqual(["F2:G3", "B2:D4"]);
+    });
+  });
+
   describe("a text op", () => {
     it("splices the atom's own text", () => {
       const doc = applyOps(body(), [typed]);

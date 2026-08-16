@@ -72,7 +72,14 @@ const removedBy = (op: Extract<Op, { op: "remove" }>): Set<string> | null => {
     typeof value === "string" ? [bare(value)] : idsWithin(value)
   );
   const ids = op.ids.map(bare);
-  return ids.every((id) => within.includes(id)) ? new Set([...ids, ...within]) : null;
+  // A keyed entry has no identity of its own, so the account cannot name it —
+  // the value in the same position is that account, and its absence is what the
+  // opaque case looks like.
+  const accounted = ids.every(
+    (id, index) =>
+      index < op.values.length && (within.includes(id) || identityOf(op.values[index]) === null)
+  );
+  return accounted ? new Set([...ids, ...within]) : null;
 };
 
 /** A merge is a bare range string and its own identity; everything else carries an `id`. */
@@ -83,7 +90,23 @@ const identityOf = (value: unknown): string | null => {
 };
 
 /**
- * The deepest id an op addresses, never its ancestors: including them would
+ * The deepest identity a path names: its last `#id` and the segments below it,
+ * or the whole path when it names no id at all.
+ *
+ * **The segments below the id are not decoration.** A keyed collection's entries
+ * are named by the path and by nothing else, so stopping at the deepest id would
+ * collapse `sheets/#sh1/cells/B2` and `.../B7` onto `sh1` — and two people
+ * working in different corners of one sheet would contend on every write, which
+ * is the opposite of what the sparse cell map is for.
+ */
+const deepest = (path: string): string => {
+  const segments = path.split("/");
+  const id = segments.findLastIndex((segment) => segment.startsWith("#"));
+  return id === -1 ? path : segments.slice(id).map(bare).join("/");
+};
+
+/**
+ * The deepest thing an op addresses, never its ancestors: including them would
  * report a collision on every shared container, so two people editing different
  * atoms of one paragraph would never both land.
  *
@@ -95,13 +118,16 @@ const touchedByOp = (op: Op): string[] => {
     case "insert":
       return op.values.map(identityOf).filter((id): id is string => id !== null);
     case "remove":
-      return op.ids.map(bare);
+      // A path that already names the entry is what identifies it — a keyed
+      // entry has no identity apart from where it sits. Otherwise the entry
+      // names itself and the path is the collection it was in.
+      return op.ids.map((id) =>
+        op.path.split("/").at(-1) === bare(id) ? deepest(op.path) : bare(id)
+      );
     case "move":
       return [bare(op.id)];
     default:
-      // A path naming no id addresses a structural field, and then the path is
-      // the only identity it has.
-      return [idsIn(op.path).at(-1) ?? op.path];
+      return [deepest(op.path)];
   }
 };
 

@@ -4,6 +4,8 @@ import { activityTables } from "$activity/schema";
 import { documentsTables } from "$documents/schema";
 import { revisionsTables } from "$revisions/schema";
 import { settingsTables } from "$settings/schema";
+import { slideDecksTables } from "$slide-decks/schema";
+import { spreadsheetsTables } from "$spreadsheets/schema";
 
 /**
  * The deployment's schema, composed from one fragment per capability.
@@ -20,7 +22,9 @@ const tables = {
   ...activityTables,
   ...documentsTables,
   ...revisionsTables,
-  ...settingsTables
+  ...settingsTables,
+  ...slideDecksTables,
+  ...spreadsheetsTables
 };
 
 /**
@@ -38,7 +42,9 @@ const declared = [
   activityTables,
   documentsTables,
   revisionsTables,
-  settingsTables
+  settingsTables,
+  slideDecksTables,
+  spreadsheetsTables
 ].flatMap((fragment) => Object.keys(fragment));
 if (declared.length !== Object.keys(tables).length) {
   const duplicate = declared.find((name, index) => declared.indexOf(name) !== index);

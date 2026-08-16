@@ -1,5 +1,6 @@
 import type { Scope } from "$access/types/access";
 import type { MutationCtx } from "$convex/_generated/server";
+import type { ResourceBody } from "$revisions/types/body";
 import type { ResourceKey } from "$revisions/types/change";
 
 /**
@@ -11,7 +12,9 @@ import type { ResourceKey } from "$revisions/types/change";
  * someone else's id.
  *
  * The body comes from the caller because what an empty one looks like is the
- * resource's own business; nothing here has ever inspected a body.
+ * resource's own business; nothing here has ever inspected a body. Its type is
+ * the union the snapshot column is declared with — which is a statement about
+ * what may be stored, not about what this reads.
  *
  * **Both anchors are written, and only here.** Consolidation moves the leader
  * forward, leaving `base` as the sole anchor below it — and creation is the one
@@ -21,7 +24,7 @@ export const start = async (
   ctx: MutationCtx,
   scope: Scope,
   resource: ResourceKey,
-  body: unknown
+  body: ResourceBody
 ): Promise<void> => {
   const at = Date.now();
   for (const role of ["base", "leader"] as const) {

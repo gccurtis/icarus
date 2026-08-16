@@ -1,5 +1,6 @@
 import type { Scope } from "$access/types/access";
 import type { MutationCtx, QueryCtx } from "$convex/_generated/server";
+import { emptyDocumentBody } from "$documents/types/body";
 import { touchedBy } from "$revisions/api/submit/check";
 import { revisionsRefusal } from "$revisions/errors";
 import type { Op } from "$revisions/types/change";
@@ -28,6 +29,12 @@ export const asking = async () => {
 
 /** The one resource these tests edit — the ladder never knows more than the pair. */
 export const RESOURCE = { resourceType: "document", resourceId: "documents:1" } as const;
+
+/**
+ * What `start` anchors it with. A document's, because `RESOURCE` is one — the
+ * body type is the resource's, and this capability only knows the union.
+ */
+export const emptyBody = emptyDocumentBody;
 
 /**
  * A body whose one block holds three atoms, rebuilt per test.

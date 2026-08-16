@@ -5,6 +5,7 @@ Lives at `types/types.md`.
 | File | Holds |
 | --- | --- |
 | [`change.ts`](change.ts) | `opValidator` and the `Op` type, `opTargetValidator`, `resourceTypeValidator`, `ResourceKey` |
+| [`body.ts`](body.ts) | `resourceBodyValidator` — the three resources' bodies, imported rather than declared |
 
 The validators are the model and [`schema.ts`](../schema.ts) composes them, the
 same way [activity](../../activity/types/types.md) does: the storage part is
@@ -21,12 +22,19 @@ op:
 | `row`, `block`, `slide`, `element`, `section`, `sheet` | ● | ● | ● | ● | |
 | `atom` | ● | ● | ● | | ● |
 | `mark`, `chart` | ● | ● | ● | | |
-| `cell` | ● | | ● | | |
+| `cell` | ● | ● | ● | | |
 | `merge` | | ● | ● | | |
 | `field` | ● | | | | |
 
-`cell` takes no `insert` or `move` because cells are keyed by address rather than
-ordered; `field` is replaced, never reordered.
+`field` is replaced, never reordered.
+
+**The model's table gives `cell` no `insert`, and building spreadsheets showed
+that cannot hold.** A cell that did not exist comes into being, and the op that
+creates it has to invert to one that removes it — `set`'s inverse is a `set`, and
+setting a key to nothing is not a value a keyed map can hold. So a cell follows
+the same discipline as an ordered list's entry: `insert` creates, `remove`
+destroys, `set` replaces. What stays true is the reason the table said otherwise
+— a cell is never *moved*, because its address is its identity.
 
 **`text` is the one the validator states**, as `v.literal("atom")`, because it is
 the one that changes what the rest of the system may assume: an in-place string

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { validate } from "convex-helpers/validators";
+import { emptyDocumentBody } from "$documents/types/body";
 import { revisionsTables } from "$revisions/schema";
+import { emptySlideDeckBody } from "$slide-decks/types/body";
+import { emptySpreadsheetBody } from "$spreadsheets/types/body";
 
 const indexesOf = (table: { " indexes"(): { indexDescriptor: string; fields: string[] }[] }) =>
   Object.fromEntries(table[" indexes"]().map((index) => [index.indexDescriptor, index.fields]));
@@ -77,6 +81,18 @@ describe("revisions schema", () => {
       "historical",
       "recent"
     ]);
+  });
+
+  it("declares a body as one of the three, so each is checked as itself", () => {
+    const body = revisionsTables.resourceSnapshots.validator.fields.body;
+
+    expect(body.kind).toBe("union");
+    expect(validate(body, emptyDocumentBody())).toBe(true);
+    expect(validate(body, emptySlideDeckBody())).toBe(true);
+    expect(validate(body, emptySpreadsheetBody())).toBe(true);
+    // `v.any()` was what the one implementation cost until all three existed.
+    expect(validate(body, { rows: [] })).toBe(false);
+    expect(validate(body, { ...emptySlideDeckBody(), slides: [{ id: "s1" }] })).toBe(false);
   });
 
   it("admits exactly the five ops", () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { applyOps } from "$revisions/api/shared/apply/apply";
 import { invert } from "$revisions/api/shared/apply/invert";
 import type { Op } from "$revisions/types/change";
 
@@ -104,7 +105,22 @@ describe("invert", () => {
     expect(invert(merges)).toEqual({ ...merges, op: "remove", ids: ["B2:D4"] });
   });
 
-  it("refuses a value it cannot name, rather than a remove that removes nothing", () => {
+  it("names a keyed entry by its path, because it has no identity of its own", () => {
+    // A spreadsheet cell. Its address *is* what it is called, so the path is the
+    // only thing that could name it — and the undo of creating one has to be
+    // able to.
+    const cell: Op = {
+      op: "insert",
+      target: "cell",
+      path: "sheets/#sh1/cells/B7",
+      after: null,
+      values: [{ blocks: [] }]
+    };
+
+    expect(invert(cell)).toEqual({ ...cell, op: "remove", ids: ["B7"] });
+  });
+
+  it("refuses to undo an insert of a value it cannot name, rather than removing nothing", () => {
     const nameless: Op = {
       op: "insert",
       target: "block",
@@ -113,6 +129,11 @@ describe("invert", () => {
       values: [{ type: "text" }]
     };
 
-    expect(() => invert(nameless)).toThrow();
+    // The fallback names the list rather than an entry in it, so the undo is
+    // refused where it is carried out. What must never happen is a remove that
+    // silently takes nothing.
+    expect(() =>
+      applyOps({ rows: [{ id: "r4m1", blocks: [{ id: "b1" }] }] }, [invert(nameless)])
+    ).toThrow();
   });
 });

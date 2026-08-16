@@ -18,6 +18,8 @@
       "$documents/*": ["../lib/capabilities/documents/*"],
       "$revisions/*": ["../lib/capabilities/revisions/*"],
       "$settings/*": ["../lib/capabilities/settings/*"],
+      "$slide-decks/*": ["../lib/capabilities/slide-decks/*"],
+      "$spreadsheets/*": ["../lib/capabilities/spreadsheets/*"],
       "$shared/*": ["../lib/capabilities/shared/*"],
       "$model/*": ["../lib/model/*"]
     }

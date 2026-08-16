@@ -2,6 +2,7 @@ import type { Scope } from "$access/types/access";
 import { record } from "$activity/api/shared/record";
 import type { Id } from "$convex/_generated/dataModel";
 import type { MutationCtx } from "$convex/_generated/server";
+import { emptyDocumentBody } from "$documents/types/body";
 import { documentTitle } from "$documents/types/document";
 import { start } from "$revisions/api/shared/start";
 import type { Actor } from "$shared/types/actor";
@@ -39,8 +40,7 @@ export const create = async (
     updatedAt: Date.now()
   });
 
-  // `page` and `styles` join it in task 11, with the body type they belong to.
-  await start(ctx, scope, { resourceType: "document", resourceId: id }, { rows: [] });
+  await start(ctx, scope, { resourceType: "document", resourceId: id }, emptyDocumentBody());
 
   await record(ctx, scope, {
     actor: by,

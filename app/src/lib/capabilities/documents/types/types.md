@@ -5,6 +5,15 @@ Lives at `types/types.md`.
 | File | Holds |
 | --- | --- |
 | [`document.ts`](document.ts) | `Document`, and `documentTitle` |
+| [`body.ts`](body.ts) | `documentBodyValidator`, `documentRowValidator`, `emptyDocumentBody` |
+
+## The body type is a document's, not the revision machinery's
+
+`revisions` stores the body and never looks inside it, so what a document body
+*is* belongs here — the same way a deck's belongs to
+[`slide-decks`](../../slide-decks/types/types.md). Revisions imports the three to
+build the union its snapshot column is declared with, which is the only place all
+three are named together.
 
 ## `Document` is not the row
 

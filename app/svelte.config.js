@@ -49,6 +49,8 @@ export default {
       $documents: "src/lib/capabilities/documents",
       $revisions: "src/lib/capabilities/revisions",
       $settings: "src/lib/capabilities/settings",
+      "$slide-decks": "src/lib/capabilities/slide-decks",
+      $spreadsheets: "src/lib/capabilities/spreadsheets",
       $shared: "src/lib/capabilities/shared",
     },
   },

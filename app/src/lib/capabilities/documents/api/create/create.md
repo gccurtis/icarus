@@ -12,6 +12,7 @@ handler receives `ctx.scope` rather than a project it could have chosen.
 create(ctx, scope, title, templateId?)
 ├── documentTitle(title)                    ../../types/document.ts
 ├── ctx.db.insert("documents", …)           create.ts
+├── emptyDocumentBody()                     ../../types/body.ts
 ├── start(ctx, scope, resource, body)       ../../../revisions/api/shared/start.ts
 └── record(ctx, scope, "created")           ../../../activity/api/shared/record.ts
 ```
