@@ -6,29 +6,13 @@
   import * as Select from "$lib/simple-components/select";
 
   /**
-   * The copilot bar — a persistent place to describe the next move, anchored at
-   * the bottom of the work surface.
+   * A persistent place to describe the next move, floating over the work surface.
    *
-   * It is not a help input and not a detached chat product. From anywhere real
-   * work happens, a user can say what they want next, watch the result in the
-   * inspector, and carry on without leaving the surface they were on. That is
-   * why it floats over the work rather than occupying a zone of the frame.
+   * Activation makes two model calls deliberately: `inspect()` records what the
+   * user is looking at, `resize()` opens the panel. Folding the second into the
+   * first would make every future caller of `inspect()` a layout change.
    *
-   * **Two model calls on activation, deliberately separate.** Focusing the
-   * composer inspects the copilot *and* opens the inspector if it was shut.
-   * Opening is not a consequence of inspecting: `inspect()` records what the
-   * user is looking at and nothing else, and a model method that also moved
-   * panels would make every future caller of `inspect()` a layout change. The
-   * bar wants both, so the bar asks for both.
-   *
-   * Opening a collapsed panel is all it does — a panel already open is left at
-   * whatever width its user chose, because a composer that resized the
-   * inspector every time it took focus would be fighting the person using it.
-   *
-   * **Mode and persona are local state.** Neither survives a reload, and neither
-   * should until something can act on them: a mode nobody dispatches on is a
-   * label, and persisting a label costs a storage version. They move to the
-   * workbench when a capability gives them consequences.
+   * Mode and persona are local state until a capability can act on them.
    */
   const { workbench } = clientModel();
 
@@ -40,11 +24,7 @@
 
   type Mode = (typeof MODES)[number]["id"];
 
-  /**
-   * Placeholder personas. The picker and its scrolling are real; the list is
-   * not — it is long on purpose, because a picker that only ever holds three
-   * entries never proves it can hold thirty.
-   */
+  /** Placeholder personas, long enough to exercise scrolling. */
   const PERSONAS = [
     "Generalist",
     "Analyst",
@@ -58,14 +38,8 @@
     "Translator"
   ];
 
-  /**
-   * Three rows and then it scrolls. A menu tall enough to show everything is a
-   * wall of options over the work surface; three is enough to see that it is a
-   * list and that there is more below it.
-   *
-   * The class is also the hook this component's stylesheet uses to reach the
-   * items, which render in a portal and so are outside its own tree.
-   */
+  /** Three rows, then it scrolls. The class is how the stylesheet reaches the
+   *  portalled menu. */
   const MENU = "copilot-menu max-h-[5rem] min-w-32";
 
   let mode = $state<Mode>("ask");
@@ -77,12 +51,8 @@
   const inspectingCopilot = $derived(workbench.currentInspection?.kind === "copilot");
   const inspectorOpen = $derived(!workbench.panels.inspectorCollapsed);
 
-  /**
-   * Solid when it is being used, translucent when it is not. "Being used"
-   * includes the inspector showing the copilot, because the bar and that panel
-   * are one surface: dimming the bar while its own panel is open would read as
-   * the two being unrelated.
-   */
+  /** Solid when in use. That includes the inspector showing the copilot — the
+   *  bar and that panel are one surface. */
   const active = $derived(focused || (inspectingCopilot && inspectorOpen));
 
   const activate = () => {
@@ -90,11 +60,7 @@
     if (workbench.panels.inspectorCollapsed) workbench.resize({ inspectorCollapsed: false });
   };
 
-  /**
-   * Four lines, then it scrolls inside itself. Growing without a ceiling would
-   * walk the bar up over the work it is meant to sit beneath, and the bottom
-   * edge staying put is what keeps the submit control where the hand left it.
-   */
+  /** Four lines, then it scrolls inside itself, so the bottom edge stays put. */
   const MAX_HEIGHT = 88;
 
   const grow = () => {
@@ -239,18 +205,10 @@
     box-shadow: var(--token-shadow-overlay);
   }
 
-  /* The controls take the panel plane and the composer keeps the raised one, so
-   * the row of choices reads as chrome and the place you type reads as the
-   * surface you are typing on. `surface-panel` is the same plane the bars and
-   * both flanks use, which is what keeps this bar part of the frame rather than
-   * a card floating in front of it. */
-  /**
-   * Three columns rather than a flex row with a spacer: the persona sits in the
-   * middle column, so it is centred against the *bar* and not against whatever
-   * happens to be left over after the mode and the send button. The two outer
-   * columns are equal, which is what keeps it centred as the mode label changes
-   * width between Ask, Plan, and Action.
-   */
+  /* The controls take the panel plane and the composer the raised one, so the
+   * row reads as chrome and the composer as the surface you type on. */
+  /* Three columns, so the persona is centred against the bar rather than
+   * against what is left over beside the mode and the send button. */
   .controls {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -270,20 +228,9 @@
     justify-self: end;
   }
 
-  /**
-   * The two pickers, styled here rather than through the class prop.
-   *
-   * The registry trigger is a bordered field at `text-sm` — correct for a form,
-   * wrong for chrome. Overriding it with utilities does not work reliably:
-   * `twMerge` does not know that this system's `text-caption` conflicts with
-   * Tailwind's `text-sm`, so it keeps both and the larger one wins. Reaching the
-   * element from this stylesheet is unambiguous, and it puts the bar's whole
-   * appearance in one place instead of half here and half in a prop.
-   *
-   * What is left is a label that happens to be clickable: no border, no fill, no
-   * chevron. The affordance is the ink moving on hover, which is the quietest
-   * thing that still says a control is there.
-   */
+  /* Styled here, not through the class prop: `twMerge` does not know
+   * `text-caption` conflicts with the registry's `text-sm`, so it keeps both and
+   * the larger one wins. */
   .control :global([data-slot="select-trigger"]) {
     height: calc(var(--token-spacing-unit) * 6);
     padding-inline: calc(var(--token-spacing-unit) * 1.5);
@@ -299,6 +246,12 @@
     display: none;
   }
 
+  /* Hover paints rather than recolours: a shape under the pointer says "target"
+   * where shifting ink could read as a state change. */
+  .control :global([data-slot="select-trigger"]:hover) {
+    background-color: var(--token-surface-panel-hover);
+  }
+
   .intent :global([data-slot="select-trigger"]) {
     /* Intent is the one choice that changes what the bar does, so it carries the
      * intelligence role — as ink alone, not as a filled chip. */
@@ -306,11 +259,18 @@
     font-weight: 600;
   }
 
+  .intent :global([data-slot="select-trigger"]:hover) {
+    background-color: var(--token-color-intelligence-surface);
+  }
+
+  /* Muted only while the bar is resting. The dock already fades to 65%, and a
+   * greyed label beside text you are typing reads as disabled. */
   .who :global([data-slot="select-trigger"]) {
     color: var(--token-ink-muted);
   }
 
-  .who :global([data-slot="select-trigger"]:hover) {
+  .dock:hover .who :global([data-slot="select-trigger"]),
+  .dock[data-active] .who :global([data-slot="select-trigger"]) {
     color: var(--token-ink-primary);
   }
 
@@ -357,16 +317,17 @@
     color: var(--token-ink-muted);
   }
 
-  /**
-   * Menu rows, at the same caption size as the triggers that open them.
-   *
-   * Genuinely global, because the menu renders in a portal and is not in this
-   * component's tree at all. `.copilot-menu` is the scope: it travels with the
-   * portalled element, so the rule reaches these rows and no other Select in the
-   * application.
-   */
+  /* Global because the menu renders in a portal; `.copilot-menu` is the scope. */
   :global(.copilot-menu [data-slot="select-item"]) {
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
+  }
+
+  /* The registry's scroll buttons go. They auto-scrolled on hover at the menu's
+   * edges, and took 24 of its 80 pixels to do what the viewport already does
+   * natively. */
+  :global(.copilot-menu [data-slot="select-scroll-up-button"]),
+  :global(.copilot-menu [data-slot="select-scroll-down-button"]) {
+    display: none;
   }
 </style>
