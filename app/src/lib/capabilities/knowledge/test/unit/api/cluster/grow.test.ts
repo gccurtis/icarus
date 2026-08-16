@@ -3,6 +3,7 @@ import type { Doc, Id } from "$convex/_generated/dataModel";
 import { NEIGHBOURS_K } from "$knowledge/api/cluster/candidates";
 import { grow } from "$knowledge/api/cluster/grow";
 import { MAX_CLUSTER_POOL } from "$knowledge/api/cluster/level";
+import { neighbours } from "$knowledge/api/shared/edges";
 import { readLevelIndex, writeLevelIndex } from "$knowledge/api/shared/level-index";
 import type { LatticeSource } from "$knowledge/types/lattice-source";
 import {
@@ -103,6 +104,32 @@ describe("grow", () => {
     expect(second.count).toBe(2);
   });
 
+  it("stores each pass's network at the generation that pass ran at", async () => {
+    const { ctx, scope } = await asking();
+    const ids = [];
+    for (const degrees of [0, 10, 40]) {
+      ids.push(await aNode(ctx, scope, { centroid: tilted(0, 1, degrees), tierSourceId: TIER }));
+    }
+
+    await grow(asCtx(ctx), scope, TIER, await poolOf(ctx, ids));
+    const [cluster] = latticeNodes(ctx, scope).filter((node) => node.level === 1);
+
+    // The level-0 pass related the tight pair and nothing else.
+    expect(await neighbours(asCtx(ctx), scope, ids[0], 0)).toEqual([
+      { nodeId: ids[1], level: 0, weight: expect.closeTo(Math.cos((10 * Math.PI) / 180), 12) }
+    ]);
+
+    // **The counterintuitive half.** The pass at level 1 compared the 40°
+    // orphan against the cluster the other two became, so its edge joins a
+    // level-0 node to a level-1 one. An edge's level is when it was computed,
+    // never a claim about its endpoints.
+    expect(await neighbours(asCtx(ctx), scope, ids[2], 1)).toEqual([
+      { nodeId: cluster._id, level: 1, weight: expect.closeTo(Math.cos((35 * Math.PI) / 180), 12) }
+    ]);
+    expect((await asCtx(ctx).db.get(ids[2]))?.level).toBe(0);
+    expect(cluster.level).toBe(1);
+  });
+
   it("stops when nothing more clusters, leaving the roots on the frontier", async () => {
     const { ctx, scope } = await asking();
     const ids = [];
@@ -135,7 +162,9 @@ describe("grow", () => {
     expect(index?.k).toBe(NEIGHBOURS_K);
     expect(index?.centroids).toHaveLength(45);
     expect(await readLevelIndex(asCtx(ctx), scope, 1)).toBeNull();
-  });
+    // The fake store answers every query by scanning every row, so a pool this
+    // size pays for the network it writes many times over. A real index seeks.
+  }, 30_000);
 
   it("builds the same lattice whatever index is lying in the store, because it reads none", async () => {
     const { ctx, scope } = await asking();

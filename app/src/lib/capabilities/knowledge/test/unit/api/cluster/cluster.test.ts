@@ -142,12 +142,41 @@ describe("cluster", () => {
     expect(pass.levelCount).toBe(3);
   });
 
+  it("counts how far up it reached, per level, rather than listing what it touched", async () => {
+    const { ctx, scope } = await asking();
+    await twoSources(ctx, scope);
+
+    const pass = await cluster(asCtx(ctx), scope);
+
+    // Two source clusters and the corpus node above them. The windows underneath
+    // were not rewritten, so the count at level 0 is zero — which is exactly the
+    // shape of the question: how far up did this reach.
+    expect(pass.reclustered).toEqual([0, 2, 1]);
+  });
+
+  it("reports nothing reclustered when the pass changed nothing", async () => {
+    const { ctx, scope } = await asking();
+    await twoSources(ctx, scope);
+    await cluster(asCtx(ctx), scope);
+
+    const again = await cluster(asCtx(ctx), scope);
+
+    expect(again.reclustered).toEqual([]);
+  });
+
   it("does nothing at all for a project that has never been ingested", async () => {
     const { ctx, scope } = await asking();
 
     const pass = await cluster(asCtx(ctx), scope);
 
-    expect(pass).toEqual({ tiers: 0, created: 0, dissolved: 0, rebuilt: 0, levelCount: 0 });
+    expect(pass).toEqual({
+      tiers: 0,
+      created: 0,
+      dissolved: 0,
+      rebuilt: 0,
+      levelCount: 0,
+      reclustered: []
+    });
     expect(latticeNodes(ctx, scope)).toEqual([]);
   });
 

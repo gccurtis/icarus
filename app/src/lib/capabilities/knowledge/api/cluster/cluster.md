@@ -17,7 +17,8 @@ cluster(ctx, scope)
 │   ├── needsRebuild()               settle.ts
 │   ├── repair() / release()         settle.ts
 │   │   ├── nodeId()                 node-id.ts
-│   │   └── mergeWindows()           merge-windows.ts
+│   │   ├── mergeWindows()           merge-windows.ts
+│   │   └── dropEdges()              ../shared/edges.ts
 │   └── grow()                       grow.ts
 │       ├── clusterLevel()           level.ts
 │       │   ├── exactRelation()      level.ts        ← at or below the crossover
@@ -32,8 +33,10 @@ cluster(ctx, scope)
 │       │       ├── maximalCliques() cliques.ts
 │       │       ├── centroidOf(), cohesionOf()   similarity.ts
 │       │       ├── nodeId()         node-id.ts
+│       │       ├── relatedPairs()   level.ts
 │       │       └── mergeWindows()   merge-windows.ts
-│       └── writeLevelIndex()        ../shared/level-index.ts
+│       ├── writeLevelIndex()        ../shared/level-index.ts
+│       └── writeEdges()             ../shared/edges.ts
 └── advanceVersion()                 ../shared/version.ts
 ```
 
@@ -104,6 +107,38 @@ configuration produce the same lattice every time.
 Not a nicety: a lattice that reshuffled on every rebuild would make retrieval
 irreproducible and repair impossible to reason about — a cluster whose id changed
 for no reason looks exactly like one whose membership changed.
+
+## Each pass writes down the network it found
+
+A level's related pairs are stored as [edges](../shared/edges.ts) at the pool's
+own depth — the same number the level index for that pass carries, so an edge and
+the geometry it was found through are filed together. The endpoints need not
+share it: an orphan carried up from level 0 is in the pool, so a pass at level 3
+can relate it to a level-2 cluster.
+
+**Capped at each artifact's strongest `k`**, which is what makes it storable.
+Every related pair is quadratic in a cluster's size, so one tight group of
+hundreds would write more edges than the level has nodes and nothing would read
+most of them. `k` is the number the candidate graph already retains per artifact
+and the number the level index records, so the stored network is the graph the
+cliques were found over rather than a second, denser thing.
+
+**Weights are full-dimensional on both paths**, read off the same relation
+clique-finding used. The projection decides which pairs are compared and never
+how similar they are, and a stored weight is where that would be hardest to
+notice going wrong.
+
+## The pass reports how far up it reached
+
+`reclustered` counts the nodes written per level, indexed by level. A source
+change cascades upward — its windows, the cluster over them, the cluster over
+that — and listing every id touched would make a change row larger than the
+change and be read by nobody.
+
+The counts are accumulated through `settle` rather than read back off the rows
+afterwards, because a timestamp cannot tell a node this pass wrote from one the
+last pass did: a mutation's clock does not move, and two mutations can share a
+millisecond.
 
 ## Source tiers first, corpus tier last
 

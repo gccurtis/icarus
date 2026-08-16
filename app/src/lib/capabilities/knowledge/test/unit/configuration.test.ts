@@ -15,6 +15,7 @@ import {
   PROJECTION_SEED
 } from "$knowledge/api/cluster/projection";
 import { REPAIR_MAX_DRIFT, REPAIR_MAX_FRACTION } from "$knowledge/api/cluster/settle";
+import { CHANGE_HISTORY } from "$knowledge/api/shared/changes";
 import {
   WINDOW_OVERLAP_CHARS,
   WINDOW_TARGET_CHARS
@@ -115,6 +116,28 @@ describe("clustering configuration", () => {
     expect(CLUSTER_PERCENTILE).toBeLessThan(1);
     expect(CLUSTER_FLOOR).toBeGreaterThan(0);
     expect(CLUSTER_FLOOR).toBeLessThan(1);
+  });
+});
+
+/**
+ * Lattice retention sits in the revisions file rather than this one, because it
+ * is a retention decision beside the resource ones it is contrasted with — the
+ * lattice has no base to advance, and reading the two together is what makes
+ * that difference visible.
+ */
+const revisions = parse(readFileSync("configuration/revisions.yaml", "utf8")) as {
+  revisions: { lattice: { changeHistory: number } };
+};
+
+describe("lattice history configuration", () => {
+  it("mirrors the file the isolate cannot read", () => {
+    expect(CHANGE_HISTORY).toBe(revisions.revisions.lattice.changeHistory);
+  });
+
+  it("keeps a history to prune, so pruning is a bound rather than a switch", () => {
+    // At zero every change row would be written and immediately dropped, which
+    // is a table nobody can read and a write nobody can see.
+    expect(CHANGE_HISTORY).toBeGreaterThan(0);
   });
 });
 

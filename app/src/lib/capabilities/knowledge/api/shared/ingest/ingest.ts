@@ -1,12 +1,14 @@
 import type { Scope } from "$access/types/access";
-import type { Doc } from "$convex/_generated/dataModel";
+import type { Doc, Id } from "$convex/_generated/dataModel";
 import type { MutationCtx } from "$convex/_generated/server";
+import { dropEdges } from "$knowledge/api/shared/edges";
 import { embedWindows } from "$knowledge/api/shared/ingest/embed-windows";
 import { windowId } from "$knowledge/api/shared/ingest/window-id";
 import { windowText } from "$knowledge/api/shared/ingest/window-text";
 import { markStale } from "$knowledge/api/shared/mark-stale";
 import { advanceVersion, ensureVersion } from "$knowledge/api/shared/version";
 import type { Embedding } from "$knowledge/types/embedding";
+import type { LatticeNodeSet } from "$knowledge/types/lattice-change";
 import type { WindowPiece } from "$knowledge/types/lattice-node";
 import { sourceKey, type LatticeSource } from "$knowledge/types/lattice-source";
 
@@ -24,15 +26,24 @@ export type IngestResult = {
   readonly embedded: number;
   readonly reused: number;
   readonly staleMarked: number;
+  /**
+   * What this source contributed to the lattice, ready to be recorded as a
+   * [change](../changes.ts).
+   *
+   * Ingestion is the only thing that knows it: the outer half sees a revision
+   * and a body, and by the time a clustering pass runs the level-0 nodes are
+   * already what they are.
+   */
+  readonly nodeSet: LatticeNodeSet;
 };
 
-const SKIPPED: IngestResult = {
-  skipped: true,
-  windows: 0,
-  embedded: 0,
-  reused: 0,
-  staleMarked: 0
-};
+/** A source the pass left exactly as it found it. */
+const nothing = (source: LatticeSource): LatticeNodeSet => ({
+  source,
+  added: [],
+  removed: [],
+  unchanged: 0
+});
 
 const sourceRecord = async (ctx: MutationCtx, scope: Scope, source: LatticeSource) =>
   await ctx.db
@@ -81,7 +92,9 @@ export const ingest = async (
   const { source, revision, text } = request;
 
   const record = await sourceRecord(ctx, scope, source);
-  if (record && revision !== "" && record.revision === revision) return SKIPPED;
+  if (record && revision !== "" && record.revision === revision) {
+    return { skipped: true, windows: 0, embedded: 0, reused: 0, staleMarked: 0, nodeSet: nothing(source) };
+  }
 
   // After the skip, because a drifted binding is not worth refusing over a
   // source that was going to be left alone anyway.
@@ -122,6 +135,10 @@ export const ingest = async (
   const parents = existing.map((node) => node.parentId).filter((id) => id !== undefined);
   const staleMarked = await markStale(ctx, scope, parents, at);
 
+  const added: Id<"latticeNodes">[] = [];
+  const removed: Id<"latticeNodes">[] = [];
+  let unchanged = 0;
+
   for (const piece of pieces) {
     const windows = [{ source, start: piece.start, end: piece.end, density: 1 }];
     const reusable = spare.get(piece.id)?.shift();
@@ -130,26 +147,35 @@ export const ingest = async (
       // Same text, possibly a different place in the source. The vector is the
       // text's, so it stands; the offsets are not, so they are rewritten.
       await ctx.db.patch(reusable._id, { windows, updatedAt: at });
+      unchanged++;
       continue;
     }
 
     const centroid = vectors.get(piece.id);
     if (!centroid) throw new Error(`No vector was produced for window ${piece.id}`);
-    await ctx.db.insert("latticeNodes", {
-      projectId: scope.projectId,
-      level: 0,
-      tierSourceId: sourceKey(source),
-      clustered: false,
-      windows,
-      text: piece.text,
-      centroid: [...centroid],
-      updatedAt: at
-    });
+    added.push(
+      await ctx.db.insert("latticeNodes", {
+        projectId: scope.projectId,
+        level: 0,
+        tierSourceId: sourceKey(source),
+        clustered: false,
+        windows,
+        text: piece.text,
+        centroid: [...centroid],
+        updatedAt: at
+      })
+    );
   }
 
   // Whatever no piece claimed is a window the source no longer has.
   for (const bucket of spare.values()) {
-    for (const node of bucket) await ctx.db.delete(node._id);
+    for (const node of bucket) {
+      // Its edges are claims about a window that is gone, and a neighbour query
+      // cannot notice that on its own.
+      await dropEdges(ctx, scope, node._id);
+      await ctx.db.delete(node._id);
+      removed.push(node._id);
+    }
   }
 
   // Steps 7 and 8 — the source tier and the corpus tier — are `api/cluster`,
@@ -182,7 +208,11 @@ export const ingest = async (
     windows: pieces.length,
     embedded: ids.size - reused,
     reused,
-    staleMarked
+    staleMarked,
+    // Added and removed, never modified — and `unchanged` a count, because
+    // listing thousands of ids to say "these were fine" would make a change row
+    // larger than the change it records.
+    nodeSet: { source, added, removed, unchanged }
   };
 };
 

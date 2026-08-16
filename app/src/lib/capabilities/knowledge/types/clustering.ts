@@ -61,4 +61,13 @@ export type ClusterPass = {
   readonly dissolved: number;
   readonly rebuilt: number;
   readonly levelCount: number;
+  /**
+   * Nodes this pass wrote, per level, indexed by level — what a
+   * [change](lattice-change.ts) records as `reclustered`.
+   *
+   * A count rather than a list of ids for the reason the rest of this type is
+   * counts: an edit cascades upward, and what a person wants to know is how far
+   * up it reached, not which four hundred rows moved.
+   */
+  readonly reclustered: readonly number[];
 };

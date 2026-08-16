@@ -5,6 +5,7 @@ import { grow } from "$knowledge/api/cluster/grow";
 import { mergeWindows } from "$knowledge/api/cluster/merge-windows";
 import { nodeId } from "$knowledge/api/cluster/node-id";
 import { centroidOf, cohesionOf, dot, similarityMatrix } from "$knowledge/api/cluster/similarity";
+import { dropEdges } from "$knowledge/api/shared/edges";
 
 /**
  * `knowledge.clustering.knn.repairMaxFraction` and `.repairMaxDrift` in
@@ -21,6 +22,8 @@ export type SettleResult = {
   readonly created: number;
   readonly dissolved: number;
   readonly rebuilt: boolean;
+  /** The level of each node this settle wrote, one entry per node. */
+  readonly writtenLevels: number[];
 };
 
 type Damaged = {
@@ -132,8 +135,14 @@ const free = async (ctx: MutationCtx, memberIds: readonly Id<"latticeNodes">[]) 
   }
 };
 
-const dissolve = async (ctx: MutationCtx, node: Doc<"latticeNodes">) => {
+/** A node's edges go with the node: they name a generation, not a lifetime. */
+const remove = async (ctx: MutationCtx, scope: Scope, node: Doc<"latticeNodes">) => {
+  await dropEdges(ctx, scope, node._id);
   await ctx.db.delete(node._id);
+};
+
+const dissolve = async (ctx: MutationCtx, scope: Scope, node: Doc<"latticeNodes">) => {
+  await remove(ctx, scope, node);
   await free(ctx, node.members ?? []);
 };
 
@@ -145,13 +154,18 @@ const dissolve = async (ctx: MutationCtx, node: Doc<"latticeNodes">) => {
  * centroid says, so it is dissolved rather than patched — and its member goes
  * back on the frontier, where the next pass can find it a home.
  */
-const repair = async (ctx: MutationCtx, damage: Damage): Promise<number> => {
+const repair = async (
+  ctx: MutationCtx,
+  scope: Scope,
+  damage: Damage
+): Promise<{ dissolved: number; writtenLevels: number[] }> => {
   const at = Date.now();
+  const writtenLevels: number[] = [];
   let dissolved = 0;
 
   for (const { node, surviving } of damage.damaged) {
     if (surviving.length < 2) {
-      await dissolve(ctx, node);
+      await dissolve(ctx, scope, node);
       dissolved++;
       continue;
     }
@@ -171,9 +185,10 @@ const repair = async (ctx: MutationCtx, damage: Damage): Promise<number> => {
       staleAt: undefined,
       updatedAt: at
     });
+    writtenLevels.push(node.level);
   }
 
-  return dissolved;
+  return { dissolved, writtenLevels };
 };
 
 /**
@@ -215,6 +230,7 @@ export const settle = async (
   const rebuilt = damage.damaged.length > 0 && needsRebuild(damage);
 
   let dissolved = 0;
+  let patchedLevels: number[] = [];
   const reusable = new Map<string, Doc<"latticeNodes">>();
   const setAside = new Set<string>();
   if (rebuilt) {
@@ -224,7 +240,9 @@ export const settle = async (
       setAside.add(node._id);
     }
   } else if (damage.damaged.length > 0) {
-    dissolved = await repair(ctx, damage);
+    const repaired = await repair(ctx, scope, damage);
+    dissolved = repaired.dissolved;
+    patchedLevels = repaired.writtenLevels;
   }
 
   // A released cluster is not itself an artifact to cluster: it is the thing
@@ -238,8 +256,15 @@ export const settle = async (
   // What the new grouping did not reach again is a cluster that no longer
   // exists. What it did reach kept its row, because a cluster *is* its members.
   for (const [key, node] of reusable) {
-    if (!grown.reused.has(key)) await ctx.db.delete(node._id);
+    if (!grown.reused.has(key)) await remove(ctx, scope, node);
   }
 
-  return { created: grown.written.length - grown.reused.size, dissolved, rebuilt };
+  return {
+    created: grown.written.length - grown.reused.size,
+    dissolved,
+    rebuilt,
+    // A repaired cluster was rewritten as much as a new one was, and both are
+    // the edit reaching that level.
+    writtenLevels: [...patchedLevels, ...grown.written.map((node) => node.level)]
+  };
 };

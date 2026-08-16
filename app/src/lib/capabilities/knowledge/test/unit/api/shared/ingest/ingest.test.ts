@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Id } from "$convex/_generated/dataModel";
+import { neighbours, writeEdges } from "$knowledge/api/shared/edges";
 import { ingest } from "$knowledge/api/shared/ingest/ingest";
 import { readVersion } from "$knowledge/api/shared/version";
 import { sourceKey, type LatticeSource } from "$knowledge/types/lattice-source";
@@ -135,6 +136,73 @@ describe("ingest", () => {
       expect(kept).not.toBeNull();
       expect((kept as unknown as StoredNode).centroid).toEqual(node.centroid);
     }
+  });
+
+  it("reports a changed passage as one node gone and one arrived, never a modification", async () => {
+    const { ctx, scope } = await asking();
+    const embedder = fakeEmbedder();
+    const source = await aDocument(ctx, scope);
+    const before = document(6);
+    const first = await ingest(
+      asCtx(ctx),
+      scope,
+      { source, revision: "r1", text: before },
+      embedder.embedding
+    );
+
+    const edited = before.slice(0, before.lastIndexOf("Paragraph 5.")) + paragraph(99);
+    const second = await ingest(
+      asCtx(ctx),
+      scope,
+      { source, revision: "r2", text: edited },
+      embedder.embedding
+    );
+
+    // A node's identity is its content and its embedding together, so changed
+    // text is a different vector, a different point in the index, a different
+    // node. Calling it a modification would imply the node survived the change.
+    expect(first.nodeSet.source).toEqual(source);
+    expect(first.nodeSet.added).toHaveLength(first.windows);
+    expect(first.nodeSet.removed).toEqual([]);
+    expect(first.nodeSet.unchanged).toBe(0);
+    expect(second.nodeSet.added).toHaveLength(1);
+    expect(second.nodeSet.removed).toHaveLength(1);
+    // A count, not a list: a small edit to a large document leaves most of its
+    // passages untouched.
+    expect(second.nodeSet.unchanged).toBe(first.windows - 1);
+    expect(await ctx.db.get(second.nodeSet.removed[0])).toBeNull();
+    expect(await ctx.db.get(second.nodeSet.added[0])).not.toBeNull();
+  });
+
+  it("takes a dropped window's edges with it", async () => {
+    const { ctx, scope } = await asking();
+    const embedder = fakeEmbedder();
+    const source = await aDocument(ctx, scope);
+    await ingest(
+      asCtx(ctx),
+      scope,
+      { source, revision: "r1", text: document(6) },
+      embedder.embedding
+    );
+    const [first, second] = nodesOf(ctx).map((node) => node._id as Id<"latticeNodes">);
+    await writeEdges(
+      asCtx(ctx),
+      scope,
+      0,
+      [first, second],
+      [{ fromId: first, toId: second, weight: 0.9 }]
+    );
+
+    await ingest(
+      asCtx(ctx),
+      scope,
+      { source, revision: "r2", text: document(2) },
+      embedder.embedding
+    );
+
+    // Whatever survived the shortening is related to a window that is gone, and
+    // a neighbour query has no way to notice that on its own.
+    expect(await neighbours(asCtx(ctx), scope, second)).toEqual([]);
   });
 
   it("drops the windows a shorter source no longer has", async () => {

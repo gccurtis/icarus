@@ -2,6 +2,7 @@ import type { Scope } from "$access/types/access";
 import type { Doc, Id } from "$convex/_generated/dataModel";
 import type { MutationCtx } from "$convex/_generated/server";
 import { clusterLevel } from "$knowledge/api/cluster/level";
+import { writeEdges } from "$knowledge/api/shared/edges";
 import { writeLevelIndex } from "$knowledge/api/shared/level-index";
 import type { ClusterArtifact } from "$knowledge/types/clustering";
 
@@ -16,7 +17,15 @@ const artifactOf = (node: Doc<"latticeNodes">): ClusterArtifact => ({
 });
 
 export type Grown = {
-  readonly written: Id<"latticeNodes">[];
+  /**
+   * The nodes this pass wrote, each with the level it was written at.
+   *
+   * The level travels with the id because the caller reports **how far up** the
+   * pass reached, and reading it back off the rows afterwards cannot tell a
+   * node this pass wrote from one the last pass did — two mutations can share a
+   * millisecond.
+   */
+  readonly written: { id: Id<"latticeNodes">; level: number }[];
   /** The keys of set-aside rows this pass reached again, and therefore kept. */
   readonly reused: Set<string>;
 };
@@ -49,17 +58,25 @@ export const grow = async (
   frontier: readonly Doc<"latticeNodes">[],
   reusable: ReadonlyMap<string, Doc<"latticeNodes">> = new Map()
 ): Promise<Grown> => {
-  const written: Id<"latticeNodes">[] = [];
+  const written: Grown["written"] = [];
   const reused = new Set<string>();
   const at = Date.now();
   let pool: ClusterArtifact[] = frontier.map(artifactOf);
 
   while (pool.length >= 2) {
-    const { clusters, orphanIds, index } = clusterLevel(pool);
+    const { clusters, orphanIds, index, edges } = clusterLevel(pool);
     // Recorded whether or not anything clustered: the index describes the pool
     // that was searched, and a pass that found no clique searched it all the
     // same.
     if (index) await writeLevelIndex(ctx, scope, index);
+
+    // The generation is the pool's own depth, which is what the level index for
+    // this same pass carries — so an edge and the geometry it was found through
+    // are filed under one number. The endpoints need not share it: a window
+    // that found no home at level 0 is still in this pool.
+    const level = Math.max(...pool.map((artifact) => artifact.level));
+    await writeEdges(ctx, scope, level, asNodeIds(pool.map((artifact) => artifact.id)), edges);
+
     if (clusters.length === 0) break;
 
     const orphans = new Set(orphanIds);
@@ -89,7 +106,7 @@ export const grow = async (
       } else {
         id = await ctx.db.insert("latticeNodes", { ...measured, clustered: false });
       }
-      written.push(id);
+      written.push({ id, level: shape.level });
 
       // Cliques overlap, so a member can be held twice while only one field can
       // name a parent. `members` is the truth about containment; `parentId` is

@@ -10,7 +10,8 @@ const NOTHING: ClusterPass = {
   created: 0,
   dissolved: 0,
   rebuilt: 0,
-  levelCount: 0
+  levelCount: 0,
+  reclustered: []
 };
 
 const projectNodes = async (ctx: MutationCtx, scope: Scope) =>
@@ -18,6 +19,13 @@ const projectNodes = async (ctx: MutationCtx, scope: Scope) =>
     .query("latticeNodes")
     .withIndex("by_project_clustered", (q) => q.eq("projectId", scope.projectId))
     .collect();
+
+/** A list of levels as counts indexed by level, with the gaps filled in. */
+const perLevel = (levels: readonly number[]): number[] => {
+  const counts: number[] = [];
+  for (const level of levels) counts[level] = (counts[level] ?? 0) + 1;
+  return Array.from(counts, (count) => count ?? 0);
+};
 
 /**
  * How many nodes stand at each level, counted rather than accumulated.
@@ -63,11 +71,13 @@ export const cluster = async (ctx: MutationCtx, scope: Scope): Promise<ClusterPa
   let created = 0;
   let dissolved = 0;
   let rebuilt = 0;
+  const writtenLevels: number[] = [];
   for (const tier of [...tiers, undefined]) {
     const result = await settle(ctx, scope, tier);
     created += result.created;
     dissolved += result.dissolved;
     if (result.rebuilt) rebuilt++;
+    writtenLevels.push(...result.writtenLevels);
   }
 
   const nodes = await projectNodes(ctx, scope);
@@ -85,6 +95,10 @@ export const cluster = async (ctx: MutationCtx, scope: Scope): Promise<ClusterPa
     created,
     dissolved,
     rebuilt,
-    levelCount: nodesByLevel.length
+    levelCount: nodesByLevel.length,
+    // How far up the pass reached, which is the only thing a reader of the
+    // history wants from a cascade — a source change invalidates its windows,
+    // the cluster over them, the cluster over that, and every id would be unread.
+    reclustered: perLevel(writtenLevels)
   };
 };

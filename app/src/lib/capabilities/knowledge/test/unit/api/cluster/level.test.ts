@@ -117,6 +117,32 @@ describe("clusterLevel", () => {
 
     expect(alone.clusters).toEqual([]);
     expect(alone.orphanIds).toEqual(["w:alone"]);
+    expect(alone.edges).toEqual([]);
+  });
+
+  it("reports every related pair, which is the network inside the level", () => {
+    const { edges } = clusterLevel(bridged());
+
+    // The pairs, not the cliques. The bridge is related to both groups and the
+    // two groups are related to nothing of each other's, which is a shape no
+    // list of cliques can be read back out of.
+    expect(edges.map((edge) => [edge.fromId, edge.toId])).toEqual([
+      ["w:a1", "w:a2"],
+      ["w:a1", "w:bridge"],
+      ["w:a2", "w:bridge"],
+      ["w:b1", "w:b2"],
+      ["w:b1", "w:bridge"],
+      ["w:b2", "w:bridge"]
+    ]);
+  });
+
+  it("weighs a pair by the full-dimensional dot product", () => {
+    const { edges } = clusterLevel(bridged());
+    const weightOf = (from: string, to: string) =>
+      edges.find((edge) => edge.fromId === from && edge.toId === to)?.weight;
+
+    expect(weightOf("w:a1", "w:a2")).toBeCloseTo(Math.cos((20 * Math.PI) / 180), 12);
+    expect(weightOf("w:a1", "w:bridge")).toBeCloseTo(BRIDGE_SIMILARITY, 12);
   });
 });
 

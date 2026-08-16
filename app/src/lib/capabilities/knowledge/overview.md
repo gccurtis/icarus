@@ -41,6 +41,8 @@ and is recorded there as a tool call.
 | `latticeVersions` | one row per project: what built the index, how deep it is, whether it is coherent |
 | `latticeLevelIndexes` | the basis and cells one level was clustered through, for descent to narrow the frontier with |
 | `latticeSources` | what has already been read out of each source, and at which revision |
+| `latticeEdges` | the network inside a level: which nodes one pass found related, and how strongly |
+| `latticeChanges` | why the lattice moved, per cause: the node sets it produced and how far up it reached |
 
 ## No provider is wired, and that is stated rather than half-built
 
@@ -128,6 +130,29 @@ capability, which is why none of it is here.
   Filtering afterwards has a
   [known cost](api/shared/shared.md#the-known-limitation) — a narrow scope can
   come back thin — and it is the price of one lattice rather than one per scope.
+- **Hierarchy is fields and edges are within a level, and containment is never an
+  edge kind.** `members` and `parentId` make descending a field read;
+  `latticeEdges` makes finding neighbours an indexed query. Modelling containment
+  as an edge would put a kind check in front of every neighbour query, for a
+  relationship two fields already answer without one.
+- **An edge's level is the generation it was computed at, not a claim about its
+  endpoints.** An orphan is carried into every pool above it, so a pass at level 3
+  can relate a level-0 window to a level-2 cluster. The number files the edge with
+  the level index of the same pass.
+- **An edge is one row, read from either end, and never outlives its endpoints.**
+  Two rows per pair would double the write and let the halves disagree; a
+  surviving edge would hand back an id that reads as a node until someone loads
+  it, which is why every deletion goes through `dropEdges`.
+- **Lattice history explains and is never needed to reconstruct.** The lattice can
+  be rebuilt from project content at any time, so change rows are pruned
+  oldest-first at `revisions.lattice.changeHistory` and a dropped row costs an
+  explanation, never a state. There is no base to advance, which is exactly what
+  separates this from a resource snapshot.
+- **A change records added and removed ids and an unchanged *count*, never a
+  modification.** A node's identity is its content and its embedding together, so
+  edited text is a different node rather than a changed one — and listing the
+  thousands of passages an edit left alone would make the row larger than the
+  change it records. `reclustered` is a count per level for the same reason.
 - **`latticeLevelIndexes` is entirely derived, and clustering never reads one.**
   `clusterLevel` takes no context, so it cannot; the rows are written for descent
   and can be dropped wholesale for the cost of a refit. That is what makes
@@ -175,5 +200,6 @@ setting rather than a rewrite.
 
 [knowledge lattice](../../../../../docs/data-models/knowledge/knowledge-lattice.md) ·
 [lattice version](../../../../../docs/data-models/revisions/lattice-version.md) ·
+[lattice change](../../../../../docs/data-models/revisions/lattice-change.md) ·
 [lattice clustering](../../../../../docs/processes/lattice-clustering.md) ·
 [intelligence](../../../../../docs/processes/intelligence.md)

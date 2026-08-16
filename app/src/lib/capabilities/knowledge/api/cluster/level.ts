@@ -1,4 +1,4 @@
-import { candidateGraph } from "$knowledge/api/cluster/candidates";
+import { NEIGHBOURS_K, candidateGraph } from "$knowledge/api/cluster/candidates";
 import { maximalCliques } from "$knowledge/api/cluster/cliques";
 import { mergeWindows } from "$knowledge/api/cluster/merge-windows";
 import { nodeId } from "$knowledge/api/cluster/node-id";
@@ -11,6 +11,7 @@ import {
   thresholdOf
 } from "$knowledge/api/cluster/similarity";
 import type { ClusterArtifact, ClusterShape, LevelRelation } from "$knowledge/types/clustering";
+import type { LevelEdge } from "$knowledge/types/lattice-edge";
 import type { LevelIndex } from "$knowledge/types/level-index";
 
 /**
@@ -29,6 +30,12 @@ export const THRESHOLD_SAMPLE_MAX = 256;
 export type LevelResult = {
   readonly clusters: ClusterShape[];
   readonly orphanIds: string[];
+  /**
+   * Every pair the level related, which is a shape no list of cliques can be
+   * read back out of: an artifact bridging two groups is in both cliques, and
+   * the groups' unrelatedness to each other is only visible in the pairs.
+   */
+  readonly edges: LevelEdge[];
   /** What the pool was clustered through, when it was too large to compare in full. */
   readonly index?: LevelIndex;
 };
@@ -138,8 +145,64 @@ export const levelOf = (
     clusters,
     orphanIds: artifacts
       .filter((_, index) => !claimed.has(index))
-      .map((artifact) => artifact.id)
+      .map((artifact) => artifact.id),
+    edges: relatedPairs(artifacts, relation)
   };
+};
+
+/**
+ * The pairs the relation calls related, weighted in full, at most `k` per
+ * artifact.
+ *
+ * **Read off the same relation clique-finding uses**, which is what keeps a
+ * stored weight a full-dimensional dot product on both paths: above the
+ * crossover the projection decided which pairs were compared, and `similarity`
+ * still answers with the whole embedding.
+ *
+ * **Capped at each artifact's strongest `k`, which is what makes it storable.**
+ * Every related pair is quadratic in a cluster's size — one tight group of
+ * hundreds would write more edges than the level has nodes, and nothing would
+ * ever read most of them. `k` is the same number the graph above the crossover
+ * retains per artifact and the same one the level index records, so the stored
+ * network is the graph the cliques were found over rather than a second,
+ * denser thing.
+ *
+ * The cap is applied by union, like the candidate graph's: an edge one endpoint
+ * kept and the other did not is still an edge, and dropping it would make the
+ * network depend on which end was asked.
+ */
+const relatedPairs = (
+  artifacts: readonly ClusterArtifact[],
+  relation: LevelRelation
+): LevelEdge[] => {
+  const strongest: { to: number; weight: number }[][] = artifacts.map(() => []);
+  for (let a = 0; a < artifacts.length; a++) {
+    for (let b = a + 1; b < artifacts.length; b++) {
+      if (!relation.adjacent(a, b)) continue;
+      const weight = relation.similarity(a, b);
+      strongest[a].push({ to: b, weight });
+      strongest[b].push({ to: a, weight });
+    }
+  }
+
+  const kept = new Set<number>();
+  const edges: LevelEdge[] = [];
+  for (let a = 0; a < artifacts.length; a++) {
+    const neighbours = strongest[a]
+      .sort((left, right) => right.weight - left.weight || left.to - right.to)
+      .slice(0, NEIGHBOURS_K);
+    for (const { to, weight } of neighbours) {
+      const pair = a < to ? a * artifacts.length + to : to * artifacts.length + a;
+      if (kept.has(pair)) continue;
+      kept.add(pair);
+      edges.push({
+        fromId: artifacts[Math.min(a, to)].id,
+        toId: artifacts[Math.max(a, to)].id,
+        weight
+      });
+    }
+  }
+  return edges;
 };
 
 /**
@@ -158,7 +221,7 @@ export const levelOf = (
 export const clusterLevel = (pool: readonly ClusterArtifact[]): LevelResult => {
   const artifacts = [...pool].sort((left, right) => (left.id < right.id ? -1 : 1));
   if (artifacts.length < 2) {
-    return { clusters: [], orphanIds: artifacts.map((artifact) => artifact.id) };
+    return { clusters: [], orphanIds: artifacts.map((artifact) => artifact.id), edges: [] };
   }
 
   const vectors = artifacts.map((artifact) => artifact.centroid);

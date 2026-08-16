@@ -1,5 +1,9 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
+import {
+  latticeCauseValidator,
+  latticeNodeSetValidator
+} from "$knowledge/types/lattice-change";
 import { latticeWindowValidator } from "$knowledge/types/lattice-node";
 import { latticeSourceValidator } from "$knowledge/types/lattice-source";
 import { latticeStateValidator, rebuildReasonValidator } from "$knowledge/types/lattice-version";
@@ -132,5 +136,56 @@ export const knowledgeTables = {
     revision: v.string(),
     windowCount: v.number(),
     indexedAt: v.number()
-  }).index("by_project_source", ["projectId", "source.kind", "source.id"])
+  }).index("by_project_source", ["projectId", "source.kind", "source.id"]),
+
+  /**
+   * The network *inside* a level: which nodes a pass found related, and how
+   * strongly.
+   *
+   * **Containment is deliberately not an edge kind.** `members` and `parentId`
+   * express the tree, so descending is a field read and finding neighbours is an
+   * indexed query — modelling both here would make every neighbour query filter
+   * vertical edges out first.
+   *
+   * **One row per pair**, reachable from either end, which is what the two
+   * indexes are for. Two rows would double every write and let the two halves of
+   * one relationship disagree.
+   */
+  latticeEdges: defineTable({
+    projectId: v.id("projects"),
+    /**
+     * The generation the pass ran at — the depth of the pool it compared, the
+     * same number the level index for that pass carries.
+     *
+     * **It may connect nodes of different generations.** A window that found no
+     * home at level 0 is carried into every pool above it, so an edge computed
+     * at level 3 can join a level-0 window to a level-2 cluster.
+     */
+    level: v.number(),
+    fromId: v.id("latticeNodes"),
+    toId: v.id("latticeNodes"),
+    /** A full-dimensional dot product, always. The projection never scores. */
+    weight: v.number()
+  })
+    .index("by_from_level", ["projectId", "fromId", "level"])
+    .index("by_to_level", ["projectId", "toId", "level"]),
+
+  /**
+   * The lattice's history: one row per change, holding a node set per source it
+   * touched.
+   *
+   * **Prunable, and carrying no correctness weight.** The lattice can be rebuilt
+   * from project content at any time, so dropping a row loses an explanation and
+   * never a state — unlike a resource snapshot, there is no base to advance.
+   */
+  latticeChanges: defineTable({
+    projectId: v.id("projects"),
+    /** The lattice version this change produced. */
+    version: v.number(),
+    cause: latticeCauseValidator,
+    nodeSets: v.array(latticeNodeSetValidator),
+    /** Nodes written per level, indexed by level. A count, never a list of ids. */
+    reclustered: v.optional(v.array(v.number())),
+    at: v.number()
+  }).index("by_project", ["projectId"])
 };

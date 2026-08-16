@@ -8,6 +8,8 @@ Lives at `api/shared/shared.md`.
 | [`mark-stale.ts`](mark-stale.ts) | that a cluster built from changed text is marked out of date, all the way up |
 | [`digest.ts`](digest.ts) | that a window id and a node id are derived the same way, and are wide enough not to collide |
 | [`level-index.ts`](level-index.ts) | that a level has one index, and that one fitted under other parameters is recognizable rather than used |
+| [`edges.ts`](edges.ts) | that a pair is one row read from either end, and that no edge outlives the node it names |
+| [`changes.ts`](changes.ts) | that the history explains without ever being needed to reconstruct, and stays inside its bound |
 | [`ingest/ingest.ts`](ingest/ingest.ts) | that a source's level-0 nodes are exactly its current windows, and that an unchanged window keeps its vector |
 | [`retrieve/retrieve.ts`](retrieve/retrieve.ts) | that a query with no good answer returns nothing, and that what does come back is the source's own words |
 
@@ -35,6 +37,7 @@ ingest(ctx, scope, request, embedding)
 ├── windowId() per window          ingest/window-id.ts
 ├── embedWindows()                 ingest/embed-windows.ts
 ├── markStale()                    mark-stale.ts
+├── dropEdges() per window gone    edges.ts
 └── advanceVersion()               version.ts
 ```
 
@@ -170,6 +173,50 @@ assignments and edges the
 draws inside the same structure. Those are edges, they belong to a table of their
 own, and a single row holding every artifact's would grow without bound and could
 not be read for one node.
+
+## `edges.ts` — one row per pair, two indexes
+
+A pair is stored once, with the columns assigned by id order rather than by which
+end reported it, and read back through `by_from_level` or `by_to_level`. Two rows
+per pair would double every write and let the two halves of one relationship
+disagree; one row read from one index would answer differently depending on which
+end happened to be written first.
+
+**A pass re-derives its own generation and nothing else.** `writeEdges` clears
+both columns for every node in the pool at that level before writing, because a
+pair the pass no longer relates has to stop being an edge and there is no version
+to compare against — the pass that just ran is the answer. Other levels are left
+alone: each is its own network, not a correction of another.
+
+**The clearing is what bounds pool size.** Its reads are empty ranges when
+nothing was there, so a first pass costs seeks; a re-clustering pass reads what
+it replaces, and a pool near `maxClusterPool` writes on the order of `pool × k`
+edges in one transaction. That is the largest write this capability makes, and
+it sits beside [the basis note](../../overview.md) as a bound the corpus decides
+rather than something to fix in advance.
+
+**`dropEdges` goes with every node deletion**, in `ingest` and in `settle` alike.
+An edge outliving its endpoint hands back an id that reads as a node until
+someone loads it, and a neighbour query has no way to notice that on its own.
+
+## `changes.ts` — a history that explains and never reconstructs
+
+`recordChange` writes one row per change, holding a node set per source it
+touched, and reads the version rather than taking one: a change row is only
+meaningful beside the lattice state it produced, and a caller that supplied the
+number could supply the wrong one.
+
+**Pruning is oldest-first and loses nothing.** The lattice can be rebuilt from
+project content at any time, so a dropped row costs an explanation and never a
+state — unlike a [resource snapshot](../../../revisions/overview.md), there is no
+base to advance first. The read that finds what to drop is bounded by
+`CHANGE_HISTORY` because this same function is what keeps the table under it.
+
+**Nothing here calls it yet, for `ingest`'s reason.** A change is caused by
+something outside the transaction — a document saved, a connector synced, a
+rebuild ordered — and the half that knows which is the intelligence capability.
+What this capability supplies is the two halves only it can know:
+`ingest` returns the source's node set, and `cluster` returns `reclustered`.
 
 ## `markStale` walks `parentId`, not an edge table
 

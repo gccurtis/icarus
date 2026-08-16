@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Doc, Id } from "$convex/_generated/dataModel";
 import { needsRebuild, settle } from "$knowledge/api/cluster/settle";
 import { centroidOf } from "$knowledge/api/cluster/similarity";
+import { neighbours, writeEdges } from "$knowledge/api/shared/edges";
 import { aNode, asCtx, asking, latticeNodes, tilted } from "$knowledge/test/fixture";
 
 const RADIANS = Math.PI / 180;
@@ -133,6 +134,28 @@ describe("settle", () => {
     expect(freed?.clustered).toBe(false);
     expect(freed?.parentId).toBeUndefined();
     expect(await read(ctx, clusters[1].id)).not.toBeNull();
+  });
+
+  it("takes a dissolved cluster's edges with it, at every generation", async () => {
+    const { ctx, scope } = await asking();
+    const clusters = await aCorpusTier(ctx, scope, 0.2);
+    // At level 2, which is a generation this pass does not reach — a pass
+    // rewrites its own network and knows nothing of the ones above it, so the
+    // dissolve is what has to take the rest.
+    await writeEdges(
+      asCtx(ctx),
+      scope,
+      2,
+      [clusters[0].id, clusters[1].id],
+      [{ fromId: clusters[0].id, toId: clusters[1].id, weight: 0.4 }]
+    );
+    await ctx.db.delete(clusters[0].members[1]);
+
+    await settle(asCtx(ctx), scope, undefined);
+
+    // An edge outliving its endpoint hands back an id that reads as a node
+    // until someone loads it, and a neighbour query cannot notice on its own.
+    expect(await neighbours(asCtx(ctx), scope, clusters[1].id, 2)).toEqual([]);
   });
 
   it("clusters what is on the tier's frontier when nothing was damaged at all", async () => {
