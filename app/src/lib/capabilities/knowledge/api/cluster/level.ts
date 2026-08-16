@@ -7,15 +7,15 @@ import {
   cohesionOf,
   dot,
   similarityMatrix,
-  thresholdFrom,
+  thresholdBySample,
   thresholdOf
 } from "$knowledge/api/cluster/similarity";
 import type { ClusterArtifact, ClusterShape, LevelRelation } from "$knowledge/types/clustering";
 import type { LevelIndex } from "$knowledge/types/level-index";
 
 /**
- * `knowledge.clustering.percentile`, `.floor`, and `.knn.maxClusterPool` in
- * `configuration/knowledge.yaml`.
+ * `knowledge.clustering.percentile`, `.floor`, `.knn.maxClusterPool`, and
+ * `.determinism.thresholdSampleMax` in `configuration/knowledge.yaml`.
  *
  * Mirrored rather than read, for the reason windowing mirrors its spans: a
  * Convex isolate has no filesystem. `test/unit/configuration.test.ts` is what
@@ -24,6 +24,7 @@ import type { LevelIndex } from "$knowledge/types/level-index";
 export const CLUSTER_PERCENTILE = 0.75;
 export const CLUSTER_FLOOR = 0.3;
 export const MAX_CLUSTER_POOL = 2000;
+export const THRESHOLD_SAMPLE_MAX = 256;
 
 export type LevelResult = {
   readonly clusters: ClusterShape[];
@@ -56,27 +57,34 @@ export const exactRelation = (vectors: readonly (readonly number[])[]): LevelRel
  * dot product — approximation where it buys asymptotics, exactness where it
  * affects answers.
  *
- * The threshold comes off the graph's edges through the same function the exact
- * path uses on its matrix, so a candidate search that reached every pair lands
- * on exactly the exact path's threshold rather than near it.
+ * **The threshold is read off the pool, not off the graph.** The edges the
+ * search kept are the pool's strongest pairs by construction, so a percentile
+ * over them would say how similar neighbours are rather than how similar
+ * "related" has to be — and the projection, which is only allowed to pick
+ * candidates, would end up deciding adjacency for every pair. A stride sample of
+ * the pool's own pairs is scored in full instead, through the same function the
+ * exact path uses on its matrix.
  */
 export const approximateRelation = (vectors: readonly (readonly number[])[]): LevelRelation => {
   const graph = candidateGraph(vectors);
   const size = vectors.length;
 
   const weights = new Map<number, number>();
-  const pairs: number[] = [];
   graph.neighbours.forEach((list, from) => {
     for (const { to, similarity } of list) {
       // The graph is symmetric, so counting the lower half would weigh every
       // pair twice and say nothing more.
       if (to < from) continue;
       weights.set(from * size + to, similarity);
-      pairs.push(similarity);
     }
   });
 
-  const threshold = thresholdFrom(pairs, CLUSTER_PERCENTILE, CLUSTER_FLOOR);
+  const threshold = thresholdBySample(
+    vectors,
+    THRESHOLD_SAMPLE_MAX,
+    CLUSTER_PERCENTILE,
+    CLUSTER_FLOOR
+  );
   const edge = (a: number, b: number) => weights.get(a < b ? a * size + b : b * size + a);
 
   return {

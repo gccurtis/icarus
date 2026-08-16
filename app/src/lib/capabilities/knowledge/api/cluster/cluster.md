@@ -27,7 +27,7 @@ cluster(ctx, scope)
 │       │   │   │   ├── fitProjection(), project()   projection.ts
 │       │   │   │   │   └── orthonormalize(), seeded()   projection.ts, seeded.ts
 │       │   │   │   └── cellCount(), assignCells()   cells.ts
-│       │   │   └── thresholdFrom()  similarity.ts
+│       │   │   └── thresholdBySample()   similarity.ts
 │       │   └── levelOf()            level.ts
 │       │       ├── maximalCliques() cliques.ts
 │       │       ├── centroidOf(), cohesionOf()   similarity.ts
@@ -55,6 +55,34 @@ stored, every edge weight, and every cohesion is a full-dimensional dot product.
 The projection decides *which pairs are worth comparing*; it never decides how
 similar they are — approximation where it buys asymptotics, exactness where it
 affects answers.
+
+**Which is why the threshold is sampled from the pool and never from the graph.**
+Above the crossover there is no matrix to take a percentile over, and the
+candidate graph's edges are the wrong substitute: they are each artifact's
+strongest neighbours by construction, so a percentile over them measures how
+similar *neighbours* are rather than how similar "related" has to be. Reading the
+cutoff off the selection the projection made is the projection deciding
+adjacency — the one thing it must not do. `thresholdBySample` scores a stride
+sample of the pool's own pairs in full instead, at a cost constant in the pool,
+and within the sample budget it *is* the exact path's threshold rather than near
+it.
+
+### Where the two paths agree, and the two bounds on it
+
+Equality is a property of a pool the candidate search reaches whole, not an
+unconditional one. Two bounds are worth stating rather than discovering:
+
+- **A clique cannot be larger than the graph's degree.** Each artifact keeps its
+  strongest `k` neighbours, so a group of more than about `k + 1` members can
+  never come back as one clique, whatever the threshold. Raising `k` to chase it
+  trades away the asymptotics the approximate path exists to buy.
+- **Cell recall is its own concern.** An artifact probes `probeCells` cells; a
+  neighbour that landed outside all of them is never scored, and the pair is not
+  related. Losing a few within-group pairs splits a group the exact path keeps
+  whole — the search working as designed, and the reason the equality test uses a
+  pool whose groups it provably reaches whole.
+
+Neither bound is a threshold problem, and neither is fixed by one.
 
 **The basis is fitted uncentered**, over a stride sample, from a fixed seed. It
 approximates dot products rather than mean-centred variance, and subtracting the

@@ -5,6 +5,7 @@ import {
   dot,
   normalize,
   similarityMatrix,
+  thresholdBySample,
   thresholdFrom,
   thresholdOf
 } from "$knowledge/api/cluster/similarity";
@@ -110,5 +111,39 @@ describe("thresholdOf", () => {
     const matrix = similarityMatrix([tilted(0, 1, 0), tilted(0, 1, 80), tilted(0, 1, 160)]);
 
     expect(thresholdOf(matrix, 0.75, 0.3)).toBe(0.3);
+  });
+});
+
+/** Two blocks in id order: eight facing one axis, eight facing another. */
+const blocks = () => [
+  ...Array.from({ length: 8 }, () => tilted(0, 2, 0)),
+  ...Array.from({ length: 8 }, () => tilted(1, 2, 0))
+];
+
+describe("thresholdBySample", () => {
+  it("is thresholdOf exactly when the budget covers the pool", () => {
+    const vectors = [tilted(0, 1, 0), tilted(0, 1, 20), tilted(0, 1, 70), tilted(0, 1, 110)];
+
+    // Not "close to". A small pool lands *on* the exact path's threshold, which
+    // is what makes an equality test below the crossover honest rather than
+    // accidental.
+    expect(thresholdBySample(vectors, 100, 0.75, 0.3)).toBe(
+      thresholdOf(similarityMatrix(vectors), 0.75, 0.3)
+    );
+  });
+
+  it("spans the pool rather than a neighbourhood of it", () => {
+    // The pool is sorted by id before anything is clustered, and ids often track
+    // the order rows were written — so pairing each artifact with the next few
+    // would sample one document over and over and read back a threshold far
+    // above the pool's own. Striding across it is what stops that.
+    expect(thresholdBySample(blocks(), 4, 0.4, 0.3)).toBe(
+      thresholdOf(similarityMatrix(blocks()), 0.4, 0.3)
+    );
+    expect(thresholdBySample(blocks(), 4, 0.4, 0.3)).toBe(0.3);
+  });
+
+  it("falls back to the floor when there is nothing to sample", () => {
+    expect(thresholdBySample([], 100, 0.75, 0.3)).toBe(0.3);
   });
 });

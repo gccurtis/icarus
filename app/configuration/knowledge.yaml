@@ -83,6 +83,17 @@ knowledge:
       projectionIterations: 4
       kmeansIterations: 8
 
+      # Artifacts sampled to read a level's threshold off when the pool is too large
+      # to compare in full. Every pair among them is scored, so the cost is quadratic
+      # in this and constant in the pool.
+      #
+      # It samples the *pool*, never the candidate graph: a graph of each artifact's
+      # strongest neighbours holds the top percent or two of the pairs, and a
+      # percentile over those would let the projection decide how similar "related"
+      # has to be. Below this many artifacts the sample is the pool, so a small pool
+      # lands on the exact path's threshold rather than near it.
+      thresholdSampleMax: 256
+
   retrieval:
     # How many candidates best-first descent carries forward at each step. Trades
     # recall against cost directly.

@@ -72,9 +72,9 @@ export const cohesionOf = (
  * inventing relationships the weights do not support.
  *
  * It takes the similarities loose rather than as a matrix because above the
- * crossover there is no matrix — there is a candidate graph's edges. One
- * function is what makes an exhaustive graph land on exactly the exact path's
- * threshold rather than somewhere near it.
+ * crossover there is no matrix to hand it — there is a sample of one. One
+ * function for both paths is what makes them read the same distribution the same
+ * way rather than nearly so.
  */
 export const thresholdFrom = (
   pairs: readonly number[],
@@ -97,6 +97,44 @@ export const thresholdOf = (
   const pairs: number[] = [];
   for (let i = 0; i < matrix.length; i++) {
     for (let j = i + 1; j < matrix.length; j++) pairs.push(matrix[i][j]);
+  }
+  return thresholdFrom(pairs, percentile, floor);
+};
+
+/**
+ * The threshold of a pool too large to build a matrix over, off a stride sample
+ * of the **pool's own** pairs.
+ *
+ * Never off a candidate graph's edges. Those are each artifact's strongest
+ * neighbours by construction — a percentile over them says how similar
+ * neighbours are, not how similar "related" has to be, and it would leave the
+ * projection deciding adjacency for every pair in the pool.
+ *
+ * **By stride, not by neighbourhood.** The pool is sorted by id before it is
+ * clustered and ids commonly track the order rows were written, so pairing each
+ * artifact with the next few would sample one document over and over and read
+ * back a threshold far above the pool's.
+ *
+ * Within the budget the sample *is* the pool, so a small pool lands on
+ * `thresholdOf`'s answer exactly rather than near it. Above it, near — a cutoff
+ * estimated from tens of thousands of pairs, at a cost constant in the pool.
+ */
+export const thresholdBySample = (
+  vectors: readonly (readonly number[])[],
+  sampleMax: number,
+  percentile: number,
+  floor: number
+): number => {
+  const count = vectors.length;
+  const size = Math.max(0, Math.min(count, sampleMax));
+  const sample =
+    size === count
+      ? vectors
+      : Array.from({ length: size }, (_, i) => vectors[Math.floor((i * count) / size)]);
+
+  const pairs: number[] = [];
+  for (let i = 0; i < size; i++) {
+    for (let j = i + 1; j < size; j++) pairs.push(dot(sample[i], sample[j]));
   }
   return thresholdFrom(pairs, percentile, floor);
 };

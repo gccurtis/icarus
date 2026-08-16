@@ -312,6 +312,27 @@ export const separatedGroups = ({
 };
 
 /**
+ * One undifferentiated blob: every vector leaning on the same axis, differing
+ * only in how the noise fell.
+ *
+ * Everything `separatedGroups` is not, and that is what it is for. A pool with
+ * structure has a 75th percentile down among the cross-group pairs, which the
+ * floor then clamps — so a threshold read off the wrong distribution is hidden.
+ * This pool's own percentile sits far above the floor, where a wrong one shows
+ * up as a number.
+ */
+export const cone = ({ count, width }: { count: number; width: number }): number[][] =>
+  Array.from({ length: count }, (_, index) => {
+    const vector = Array.from(
+      { length: width },
+      (_, t) => Math.sin(1 + t * 1.7 + index * 0.9) * 0.9
+    );
+    vector[0] += 1;
+    const length = Math.sqrt(vector.reduce((total, value) => total + value * value, 0));
+    return vector.map((value) => value / length);
+  });
+
+/**
  * The refusal a call produced, or `undefined` if it produced none.
  *
  * The payload rather than the message, because the payload is the only part

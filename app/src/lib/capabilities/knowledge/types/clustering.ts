@@ -21,9 +21,11 @@ export type ClusterArtifact = {
  * position in the pool, so a level can answer from a full matrix or from a
  * sparse candidate graph without the clique finder knowing which.
  *
- * `similarity` is a **full-dimensional** dot product on both paths. Only
- * `adjacent` differs: above the crossover a pair the candidate search never
- * compared is not related, however close it turns out to be.
+ * `similarity` is a **full-dimensional** dot product on both paths, and
+ * `threshold` is read off the pool's own pairs on both. Only `adjacent` differs,
+ * and only in reach: above the crossover a pair the candidate search never
+ * compared is not related, however close it turns out to be. So the two paths
+ * agree wherever the search found every pair above the threshold.
  */
 export type LevelRelation = {
   readonly threshold: number;

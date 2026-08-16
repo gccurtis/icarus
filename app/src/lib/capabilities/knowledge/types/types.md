@@ -58,7 +58,12 @@ That is what lets the two paths be **compared for equality** rather than for
 resemblance: the exact relation can be built over a pool the approximate one
 would have taken, and both run through the same code.
 
-`similarity` is a full-dimensional dot product on both. Only `adjacent` differs.
+`similarity` is a full-dimensional dot product on both, and `threshold` is read
+off the pool's own pairs on both. Only `adjacent` differs — and it differs only
+in *reach*, so the two agree wherever the candidate search found every pair above
+the threshold. Where it did not, the approximate path splits what the exact path
+keeps whole; that is candidate recall, and
+[`cluster.md`](../api/cluster/cluster.md) is where its bounds are stated.
 
 ## A `Region` names its source, and carries no label
 

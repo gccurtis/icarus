@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Id } from "$convex/_generated/dataModel";
-import { NEIGHBOURS_K, PCA_DIMS } from "$knowledge/api/cluster/candidates";
+import { NEIGHBOURS_K, PCA_DIMS, candidateGraph } from "$knowledge/api/cluster/candidates";
 import {
   CLUSTER_FLOOR,
   MAX_CLUSTER_POOL,
@@ -12,7 +12,7 @@ import {
 import { nodeId } from "$knowledge/api/cluster/node-id";
 import type { ClusterArtifact } from "$knowledge/types/clustering";
 import type { LatticeSource } from "$knowledge/types/lattice-source";
-import { bridgedGroups, separatedGroups, tilted } from "$knowledge/test/fixture";
+import { bridgedGroups, cone, separatedGroups, tilted } from "$knowledge/test/fixture";
 
 const notes: LatticeSource = { kind: "document", id: "documents:1" as Id<"documents"> };
 
@@ -127,6 +127,15 @@ const poolOf = (vectors: number[][]): ClusterArtifact[] =>
 /** Wider than the projection keeps, so the basis is a real reduction. */
 const structured = () => separatedGroups({ groups: 8, per: 5, width: PCA_DIMS + 32 });
 
+/**
+ * Exactly one artifact past the crossover, in groups small enough for a top-`k`
+ * graph to hold one whole — a clique can never be larger than the graph's
+ * degree, so groups above `NEIGHBOURS_K + 1` would split under *any* threshold.
+ * Wide enough that the projection is a real reduction, and separated enough that
+ * the candidate search reaches every within-group pair.
+ */
+const crowded = () => separatedGroups({ groups: 69, per: 29, width: PCA_DIMS + 32 });
+
 describe("the approximate path", () => {
   it("finds the same clusters the exact path finds", () => {
     const vectors = structured();
@@ -142,6 +151,66 @@ describe("the approximate path", () => {
     expect(approximate.clusters).toEqual(exact.clusters);
     expect(approximate.orphanIds).toEqual(exact.orphanIds);
     expect(exact.clusters).toHaveLength(8);
+  });
+
+  it("finds them on a pool the exact path would not have been given", () => {
+    const vectors = crowded();
+    const pool = poolOf(vectors);
+
+    // The oracle comparison the whole design rests on, run where it means
+    // something: above the crossover, on a pool the approximate path would take
+    // in production. Below it the candidate graph reaches nearly every pair and
+    // the two agree for reasons that say nothing about scale.
+    const exact = levelOf(pool, exactRelation(vectors));
+    const approximate = levelOf(pool, approximateRelation(vectors));
+
+    expect(vectors).toHaveLength(MAX_CLUSTER_POOL + 1);
+    expect(approximate.clusters).toEqual(exact.clusters);
+    expect(approximate.orphanIds).toEqual(exact.orphanIds);
+    expect(exact.clusters).toHaveLength(69);
+  });
+
+  it("reads its threshold off the pool's own pairs, not off the edges it kept", () => {
+    const vectors = cone({ count: MAX_CLUSTER_POOL + 1, width: PCA_DIMS + 32 });
+    const exact = exactRelation(vectors).threshold;
+
+    // A graph of the strongest `k` neighbours holds the top percent or two of
+    // the pool's pairs, so a percentile over *those* measures how similar
+    // neighbours are, not how similar "related" has to be — and the projection
+    // would end up deciding adjacency, which is the one thing it must not do.
+    //
+    // A pool with no structure is what makes that visible: its own percentile
+    // sits well above the floor, where a structured pool's is clamped to it and
+    // any wrong answer is hidden.
+    expect(exact).toBeGreaterThan(CLUSTER_FLOOR);
+    expect(approximateRelation(vectors).threshold).toBeCloseTo(exact, 1);
+  });
+
+  it("calls a pair the search never reached unrelated, however close it is", () => {
+    // One artifact short of the fixture above, which is enough for the cell
+    // search to miss a few pairs inside a group. That the equality above holds
+    // *because* the search reached every pair — rather than because `adjacent`
+    // quietly falls back to scoring one — is what this pins.
+    const vectors = crowded().slice(0, MAX_CLUSTER_POOL);
+    const relation = approximateRelation(vectors);
+    const kept = candidateGraph(vectors).neighbours.map(
+      (list) => new Set(list.map((neighbour) => neighbour.to))
+    );
+
+    let missed: [number, number] | undefined;
+    for (let a = 0; a < vectors.length && !missed; a++) {
+      // A group is laid out contiguously, so a missed pair is near in id order.
+      for (let b = a + 1; b < Math.min(vectors.length, a + 29); b++) {
+        if (kept[a].has(b) || relation.similarity(a, b) < relation.threshold) continue;
+        missed = [a, b];
+        break;
+      }
+    }
+
+    expect(missed).toBeDefined();
+    const [a, b] = missed ?? [0, 0];
+    expect(relation.similarity(a, b)).toBeGreaterThanOrEqual(relation.threshold);
+    expect(relation.adjacent(a, b)).toBe(false);
   });
 
   it("answers every similarity with the full embedding, edge or not", () => {
@@ -179,18 +248,23 @@ describe("the approximate path", () => {
 });
 
 describe("the crossover", () => {
-  const crowd = (size: number) =>
-    poolOf(separatedGroups({ groups: 32, per: 63, width: 32 }).slice(0, size));
+  const crowd = (size: number) => poolOf(crowded().slice(0, size));
 
   it("compares every pair at the crossover, and fits nothing, so there is no index", () => {
     const exact = clusterLevel(crowd(MAX_CLUSTER_POOL));
 
-    expect(exact.clusters).toHaveLength(32);
+    expect(exact.clusters).toHaveLength(69);
     expect(exact.index).toBeUndefined();
   });
 
   it("projects and buckets one artifact later, and reports what it clustered through", () => {
     const approximate = clusterLevel(crowd(MAX_CLUSTER_POOL + 1));
+
+    // The count is asserted on *both* sides of the crossover on purpose. One
+    // artifact more must change what the pass costs and nothing about what it
+    // decides; asserting only the index above it would let the grouping change
+    // silently, which is exactly how the threshold went wrong once.
+    expect(approximate.clusters).toHaveLength(69);
 
     // The index is what makes changing pcaDims, k, or the cell count a rebuild
     // rather than a migration, and `threshold` and `k` beside the basis are what

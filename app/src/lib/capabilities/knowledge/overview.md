@@ -21,8 +21,10 @@ are already stored. See [`api/api.md`](api/api.md).
 
 **Both clustering paths are built.** A pool at or below `maxClusterPool` is
 compared pair by pair; above it, an IVF search over a PCA projection picks which
-pairs are worth comparing and every survivor is scored in full — see
-[`api/cluster/cluster.md`](api/cluster/cluster.md).
+pairs are worth comparing and every survivor is scored in full. The two produce
+the same clusters wherever the search reaches every pair that matters, which is
+what makes the exact path an oracle rather than a fallback — see
+[`api/cluster/cluster.md`](api/cluster/cluster.md) for the two bounds on that.
 
 **Retrieval walks what clustering built**: the frontier, then best-first descent,
 then regions merged out of the windows it reached — see
@@ -98,6 +100,12 @@ capability, which is why none of it is here.
   product. The projection decides which pairs are worth comparing; it never
   decides how similar they are. Approximation where it buys asymptotics,
   exactness where it affects answers.
+- **A level's threshold is sampled from the pool, never from the candidate
+  graph.** The graph holds each artifact's strongest neighbours, so a percentile
+  over its edges would say how similar neighbours are rather than how similar
+  "related" has to be — and the projection would be deciding adjacency after all.
+  A stride sample of the pool's own pairs, scored in full, is what keeps the
+  cutoff a property of the corpus on both sides of the crossover.
 - **The same pool builds the same lattice every time.** Seeds are fixed, the
   projection samples by stride rather than at random, the pool is sorted by id
   before it is walked, and node ids hash their members. A lattice that reshuffled

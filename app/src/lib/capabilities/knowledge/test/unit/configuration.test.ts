@@ -3,7 +3,12 @@ import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { NEIGHBOURS_K, PCA_DIMS, PROBE_CELLS } from "$knowledge/api/cluster/candidates";
 import { IVF_CELLS, KMEANS_ITERATIONS, KMEANS_SEED } from "$knowledge/api/cluster/cells";
-import { CLUSTER_FLOOR, CLUSTER_PERCENTILE, MAX_CLUSTER_POOL } from "$knowledge/api/cluster/level";
+import {
+  CLUSTER_FLOOR,
+  CLUSTER_PERCENTILE,
+  MAX_CLUSTER_POOL,
+  THRESHOLD_SAMPLE_MAX
+} from "$knowledge/api/cluster/level";
 import {
   PROJECTION_ITERATIONS,
   PROJECTION_SAMPLE_MAX,
@@ -45,6 +50,7 @@ const knowledge = parse(readFileSync("configuration/knowledge.yaml", "utf8")) as
         projectionSeed: number;
         kmeansSeed: number;
         projectionSampleMax: number;
+        thresholdSampleMax: number;
         projectionIterations: number;
         kmeansIterations: number;
       };
@@ -91,6 +97,7 @@ describe("clustering configuration", () => {
     expect(PROJECTION_SEED).toBe(determinism.projectionSeed);
     expect(KMEANS_SEED).toBe(determinism.kmeansSeed);
     expect(PROJECTION_SAMPLE_MAX).toBe(determinism.projectionSampleMax);
+    expect(THRESHOLD_SAMPLE_MAX).toBe(determinism.thresholdSampleMax);
     expect(PROJECTION_ITERATIONS).toBe(determinism.projectionIterations);
     expect(KMEANS_ITERATIONS).toBe(determinism.kmeansIterations);
   });

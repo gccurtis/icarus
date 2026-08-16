@@ -93,6 +93,16 @@ dimensions. The projection decides *which pairs are worth comparing*; it never
 decides how similar they are. That is the whole trick — approximation where it
 buys asymptotics, exactness where it affects answers.
 
+The threshold is part of "nothing else". It is sampled from the **pool's** own
+pairwise distribution, never from the candidate graph's edge weights: those are
+each artifact's strongest neighbours by construction, and a percentile over them
+would leave the projection deciding how similar "related" has to be.
+
+**A clique cannot be larger than the graph's degree.** Keeping the top `k` edges
+per artifact means a group of more than about `k + 1` members comes back as
+several overlapping cliques rather than one, whatever the threshold — the price
+of a bounded graph, and not something a threshold can recover.
+
 The basis is fitted by **uncentered** subspace iteration over a stride sample.
 Uncentered because the basis is approximating dot products, not mean-centered
 variance — subtracting the mean would optimize for the wrong quantity.
