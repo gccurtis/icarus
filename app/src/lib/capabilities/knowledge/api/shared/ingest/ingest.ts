@@ -152,10 +152,10 @@ export const ingest = async (
     for (const node of bucket) await ctx.db.delete(node._id);
   }
 
-  // TODO(Task 25/26): rebuild this source's tier of clusters and then repair or
-  // rebuild the corpus tier. Until clustering exists the lattice is level 0
-  // alone, which is a state retrieval is defined for — flat rather than
-  // hierarchical — and not a half-built one.
+  // Steps 7 and 8 — the source tier and the corpus tier — are `api/cluster`,
+  // and they run after this rather than inside it. The clusters above this
+  // source are marked stale above; the pass that follows is what answers those
+  // marks, and doing it here would make marking them pointless.
 
   await (record
     ? ctx.db.patch(record._id, { revision, windowCount: pieces.length, indexedAt: at })

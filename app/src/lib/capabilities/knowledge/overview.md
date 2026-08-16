@@ -1,24 +1,29 @@
 # Knowledge
 
-The project's content read into overlapping windows, embedded, and — eventually
-— clustered into levels. This pass builds the bottom of that: windowing,
-embedding, the level-0 nodes, and the one row per project that says what the
-whole index is.
+The project's content read into overlapping windows, embedded, and clustered into
+levels — each level a set of overlapping cliques over the one below.
 
 ## Public Surface
 
 | Function | Kind | Answers |
 | --- | --- | --- |
 | `status` | query | what this project's lattice is, or nothing |
+| `cluster` | mutation | one clustering pass: each source's forest, then the corpus tier |
 
 Registered in
-[`src/convex/capabilities/knowledge.ts`](../../../convex/capabilities/knowledge.ts),
-built from `projectQuery`.
+[`src/convex/capabilities/knowledge.ts`](../../../convex/capabilities/knowledge.ts).
 
 **Ingestion is deliberately not registered.** Embedding is a network call and a
 Convex mutation cannot make one, so `ingest` is the transactional half of an
 action whose outer half is the intelligence capability — which does not exist
-yet. See [`api/api.md`](api/api.md).
+yet. Clustering has no such problem: it reads vectors that are already stored.
+See [`api/api.md`](api/api.md).
+
+**Only the exact clustering path is built.** It compares every pair, which is
+affordable below `maxClusterPool` and is the known-correct oracle the approximate
+path (PCA and IVF) will be measured against. Until that lands, nothing consults
+the crossover and a pass holds every vector it clusters in memory — see
+[`api/cluster/cluster.md`](api/cluster/cluster.md).
 
 ## Data Ownership
 
@@ -69,6 +74,15 @@ capability, which is why none of it is here.
   re-windowing or re-embedding with another model an option rather than a
   data-loss event. It is also why no node carries an actor: the answer to "who
   wrote this" is the source every window names.
+- **A cluster's identity is the hash of its sorted member ids**, and so is a
+  window's over `(source, text)`. Neither is stored: a derived value written down
+  can disagree with what it was derived from. Identity independent of order and
+  of when clustering ran is what lets repair recognize an unchanged cluster
+  instead of churning it.
+- **Cliques overlap, so `members` is the truth about containment and `parentId`
+  is one walk upwards.** A node held by two cliques has two holders and one
+  parent — the first to claim it — because a field cannot name two and the
+  hierarchy is written by one pass rather than edited.
 
 ## `latticeSources` is a table the data models do not list
 

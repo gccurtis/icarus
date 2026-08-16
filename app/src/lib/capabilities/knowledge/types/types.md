@@ -7,6 +7,7 @@ Lives at `types/types.md`.
 | [`lattice-source.ts`](lattice-source.ts) | `latticeSourceValidator`, `LATTICE_SOURCE_KINDS`, `sourceKey` — what the lattice reads text out of |
 | [`lattice-node.ts`](lattice-node.ts) | `latticeWindowValidator`, `LatticeNode`, `WindowPiece` — a window, and a cluster of them |
 | [`lattice-version.ts`](lattice-version.ts) | `latticeStateValidator`, `LatticeVersion` — the index's own state |
+| [`clustering.ts`](clustering.ts) | `ClusterArtifact`, `ClusterShape`, `ClusterPass` — what a clustering pass sees and what it reports |
 | [`embedding.ts`](embedding.ts) | `Embedder`, `Embedding` — the one thing this capability cannot do itself |
 
 ## `LatticeSource` is a strict subset of `ResourceKind`
@@ -36,6 +37,13 @@ the deterministic fake in `test/fixture.ts`.
 and the lattice does not follow; comparing the two is exactly how a required
 rebuild is detected. Carrying only the binding hides the drift, and only the
 model loses the connection to the configuration that should be updated.
+
+## Clustering sees artifacts, not rows
+
+`ClusterArtifact` is an id, a level, a direction, and the spans underneath it —
+deliberately not a stored row. Clustering is arithmetic over vectors, and keeping
+the store's shape out of it is what lets one algorithm cluster the windows of a
+single source and the frontiers of a whole corpus.
 
 ## `LatticeNode` is a returned shape, not a stored one
 

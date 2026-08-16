@@ -1,9 +1,10 @@
 import type { Scope } from "$access/types/access";
-import type { Id } from "$convex/_generated/dataModel";
+import type { Doc, Id } from "$convex/_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "$convex/_generated/server";
 import { knowledgeRefusal } from "$knowledge/errors";
 import { EMBEDDING_DIMENSIONS } from "$knowledge/schema";
 import type { Embedding } from "$knowledge/types/embedding";
+import type { LatticeWindow } from "$knowledge/types/lattice-node";
 import type { LatticeSource } from "$knowledge/types/lattice-source";
 import { fakeCtx } from "$shared/test/fake-ctx";
 
@@ -92,6 +93,77 @@ export const fakeEmbedder = (model = "fake-embed-1") => {
 /** Long enough to window into several spans, and different every paragraph. */
 export const paragraph = (n: number) =>
   `Paragraph ${n}. ${`Sentence about subject ${n}, at some length. `.repeat(40)}`;
+
+/** A node the way a pass would have left it, with a direction the test chose. */
+export const aNode = async (
+  ctx: Ctx,
+  scope: Scope,
+  node: {
+    centroid: number[];
+    level?: number;
+    tierSourceId?: string;
+    clustered?: boolean;
+    windows?: LatticeWindow[];
+    members?: Id<"latticeNodes">[];
+    parentId?: Id<"latticeNodes">;
+    cohesion?: number;
+    staleAt?: number;
+  }
+): Promise<Id<"latticeNodes">> =>
+  (await ctx.db.insert("latticeNodes", {
+    projectId: scope.projectId,
+    level: node.level ?? 0,
+    tierSourceId: node.tierSourceId,
+    clustered: node.clustered ?? false,
+    windows: node.windows ?? [],
+    centroid: node.centroid,
+    count: node.members?.length,
+    cohesion: node.cohesion,
+    members: node.members,
+    parentId: node.parentId,
+    staleAt: node.staleAt,
+    updatedAt: NOW
+  })) as Id<"latticeNodes">;
+
+/** Every lattice node a project holds, straight out of the fake store. */
+export const latticeNodes = (ctx: Ctx, scope: Scope): Doc<"latticeNodes">[] =>
+  [...ctx.rows.entries()]
+    .filter(([, row]) => row._table === "latticeNodes" && row.projectId === scope.projectId)
+    .map(([id, row]) => ({ _id: id, ...row }) as unknown as Doc<"latticeNodes">);
+
+const RADIANS = Math.PI / 180;
+
+/** A unit vector `degrees` off `axis`, leaning towards `tilt`. Four dimensions is enough. */
+export const tilted = (axis: number, tilt: number, degrees: number): number[] => {
+  const vector = [0, 0, 0, 0];
+  vector[axis] = Math.cos(degrees * RADIANS);
+  vector[tilt] = Math.sin(degrees * RADIANS);
+  return vector;
+};
+
+/**
+ * The geometry the clustering tests are argued from: two tight groups a right
+ * angle apart, one artifact equally close to both, and two close to nothing.
+ *
+ * **The bridge is the point.** It belongs in both groups' cliques and in neither
+ * group, which is what makes the result a lattice rather than a tree — and it
+ * only shows up in a geometry with more than two dimensions, because on a circle
+ * anything near two groups puts those groups near each other.
+ *
+ * Every bridge similarity is `cos10/√2` **exactly** — the same product summed in
+ * the same order — so the level's 75th percentile lands on it and the four edges
+ * sit *at* the threshold rather than above it. That is deliberate: it is what
+ * makes "at or above" a claim the test can fail.
+ */
+export const bridgedGroups = () => ({
+  a1: tilted(0, 2, 10),
+  a2: tilted(0, 2, -10),
+  b1: tilted(1, 2, 10),
+  b2: tilted(1, 2, -10),
+  bridge: [Math.SQRT1_2, Math.SQRT1_2, 0, 0],
+  loner: [0, 0, 0, 1],
+  drifter: [0, 0, -1, 0]
+});
 
 /**
  * The refusal a call produced, or `undefined` if it produced none.
