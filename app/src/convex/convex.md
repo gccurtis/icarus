@@ -48,6 +48,50 @@ Each registration is written here as a real `query({...})` or `mutation({...})` 
 than re-exported from its capability. Codegen types a definition properly; a re-export
 through a path alias can degrade the generated API to `AnyApi`.
 
+## Everything an untrusted caller can reach
+
+84 functions behind 24 doors. This is the audit list — a name absent from it is a
+name nobody outside the deployment can call, whatever it is exported as.
+
+| Door | Functions |
+| --- | --- |
+| `access` | `seed` |
+| `activity` | `list` |
+| `agentTasks` | `list` `read` `dispatch` `cancel` |
+| `comments` | `list` `start` `reply` `edit` `resolve` `reopen` |
+| `derivedOutputs` | `list` `read` `create` `refresh` |
+| `documents` | `list` `create` `rename` `remove` |
+| `externalFiles` | `list` `ingest` `recordExtraction` `remove` |
+| `findings` | `list` `read` `create` `revise` |
+| `formula` | `evaluate` |
+| `hypotheses` | `list` `propose` `revise` `assess` |
+| `knowledge` | `status` `cluster` |
+| `messages` | `list` `post` `finish` |
+| `nameManager` | `list` `define` `remove` |
+| `personaThreads` | `list` `read` `start` `branch` `rename` |
+| `personas` | `list` `create` `revise` |
+| `questions` | `list` `ask` `revise` `setStatus` `remove` |
+| `researchLinks` | `bearers` `subjects` `link` `unlink` |
+| `researchThreads` | `list` `read` `start` `revise` |
+| `resourceSets` | `list` `resolve` `create` `revise` |
+| `revisions` | `read` `submit` `consolidate` |
+| `settings` | `list` `set` |
+| `slideDecks` | `list` `create` `rename` `remove` |
+| `spreadsheets` | `list` `create` `rename` `remove` |
+| `templates` | `list` `create` `revise` `instantiate` `remove` |
+
+**Two capabilities have no door at all**, and both are deliberate. `shared` holds
+the `Actor` validator every other table embeds, and `content` holds the block
+union every body is made of — neither stores anything or answers a call, so a
+registration would be a public name for a type.
+
+**Four things a capability owns are called only from inside the deployment**, by
+the capability that owns the resource, in the same transaction:
+`activity`'s `record`, and `revisions`' `start`, `discard`, and `head`. A client
+that could write the log or plant a body under an id it chose would be reaching
+past the capability that owns the thing. They sit in `api/shared/`, which is the
+one directory lint does not expect a matching registration for.
+
 ## Names here are camelCase, not kebab-case
 
 **Convex rejects a hyphen in a module path** — `Path component probe-nested.js can only

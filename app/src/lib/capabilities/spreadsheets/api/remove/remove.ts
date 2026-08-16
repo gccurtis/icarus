@@ -23,7 +23,7 @@ export const remove = async (
 ): Promise<void> => {
   const { title } = await requireSpreadsheet(ctx, scope, id);
 
-  await discard(ctx, { resourceType: "spreadsheet", resourceId: id });
+  await discard(ctx, scope, { resourceType: "spreadsheet", resourceId: id });
   await ctx.db.delete(id);
 
   await record(ctx, scope, {

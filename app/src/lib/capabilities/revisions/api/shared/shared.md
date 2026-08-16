@@ -5,7 +5,7 @@ Lives at `api/shared/shared.md`.
 | File | Preserves |
 | --- | --- |
 | [`current.ts`](current.ts) | that a resource is reached by its whole key, in this project, at a cost that does not grow |
-| [`head.ts`](head.ts) | that where a resource stands is two rows and never a body, and that the row saying so is the one that says whose it is |
+| [`head.ts`](head.ts) | that where a resource stands is two rows and never a body, read inside the caller's own project |
 | [`start.ts`](start.ts) | that a resource is readable from the moment it exists, and anchored below wherever the leader gets to |
 | [`discard.ts`](discard.ts) | that deleting a resource ends it, rather than leaving a body its owner's row no longer guards |
 | [`apply/apply.ts`](apply/apply.ts) | that a body advances by whole ops, and that a text edit leaves the block's display and marks consistent with it |
@@ -55,9 +55,10 @@ same functions, and neither of these is in either, because a client that could
 plant or erase a body under an id it chose would be reaching past the capability
 that owns the resource.
 
-`discard` is what makes deletion mean anything: a read is scoped by the leader
-snapshot and a write by the head change set, so a resource whose rows outlive
-their owner's row stays readable and writable by anyone holding its id.
+`discard` is what makes deletion mean anything: a read finds the leader snapshot
+and a write the head change set without consulting the resource row at all, so
+rows that outlived their owner's stay readable and writable by anyone in the
+project still holding the id.
 
 ## Promoted before either caller exists
 

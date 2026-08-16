@@ -23,7 +23,7 @@ export const remove = async (
 ): Promise<void> => {
   const { title } = await requireDeck(ctx, scope, id);
 
-  await discard(ctx, { resourceType: "slides", resourceId: id });
+  await discard(ctx, scope, { resourceType: "slides", resourceId: id });
   await ctx.db.delete(id);
 
   await record(ctx, scope, {

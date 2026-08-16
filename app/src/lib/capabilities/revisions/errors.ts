@@ -33,7 +33,10 @@ export type RevisionsRefusal = {
  */
 export class RevisionsError extends ConvexError<RevisionsRefusal> {
   constructor(code: RevisionsErrorCode, message: string, step?: number) {
-    super({ capability: "revisions", code, message, step });
+    // Spread rather than pass, because a present `step: undefined` is not an
+    // absent one: it survives the wire as whatever the serializer makes of it,
+    // and a client testing for the key reads a rung that never ran.
+    super({ capability: "revisions", code, message, ...(step === undefined ? {} : { step }) });
   }
 }
 

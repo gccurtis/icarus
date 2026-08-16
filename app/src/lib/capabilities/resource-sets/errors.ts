@@ -17,7 +17,7 @@ export type SetStep = {
 };
 
 export type ResourceSetsRefusal = {
-  readonly capability: "resource-sets";
+  readonly capability: "resourceSets";
   readonly code: ResourceSetsErrorCode;
   readonly message: string;
   /**
@@ -39,7 +39,7 @@ export type ResourceSetsRefusal = {
  */
 export class ResourceSetsError extends ConvexError<ResourceSetsRefusal> {
   constructor(code: ResourceSetsErrorCode, message: string, cycle?: SetStep[]) {
-    super({ capability: "resource-sets", code, message, ...(cycle ? { cycle } : {}) });
+    super({ capability: "resourceSets", code, message, ...(cycle ? { cycle } : {}) });
   }
 }
 
@@ -48,7 +48,7 @@ export const resourceSetsRefusal = (error: unknown): ResourceSetsRefusal | undef
   const data: unknown = (error as { data?: unknown })?.data;
   return typeof data === "object" &&
     data !== null &&
-    (data as ResourceSetsRefusal).capability === "resource-sets"
+    (data as ResourceSetsRefusal).capability === "resourceSets"
     ? (data as ResourceSetsRefusal)
     : undefined;
 };

@@ -23,11 +23,15 @@ outright.
 
 ## Everything is by project
 
-Every table below carries `projectId` and indexes on it. There are two
-exceptions and they are both global by nature: `users`, which is an account
-rather than project content, and deployment-wide `personas` and `templates`,
-which carry an optional `projectId` and mean "available everywhere" when it is
-absent.
+Every table below carries `projectId` and **leads every index with it**. There are
+two exceptions. `users` is an account rather than project content, so it has no
+`projectId` at all; `memberships` leads with `userId` because that ordering *is*
+the authorization, for the reason set out below.
+
+`personas` and `templates` are not exceptions, though they read like ones. Their
+`projectId` is optional — absent means "available everywhere" — and it still
+leads their index, so `eq("projectId", undefined)` is exactly the deployment-wide
+set and `eq("projectId", mine)` is exactly this project's.
 
 Tables reached through an already-scoped parent — `comments` by thread,
 `hypotheses` by question, `messages` by chat — still store `projectId` anyway. A
@@ -54,8 +58,9 @@ one fragment per capability, and it owns the list and nothing else. A capability
 declares its own tables in its own `schema.ts`, so adding one does not mean
 editing a file describing every other capability's storage.
 
-Two fragments exist today — `access` and `settings`. The tables below are grouped
-by the fragment each will belong to.
+The tables below are grouped by subject rather than by fragment; a fragment is
+usually the capability of the same name, and the deployment's list of them is
+`schema.ts` itself.
 
 ## Table inventory
 
@@ -102,7 +107,7 @@ without bound, not because a thread is a thing.
 | `slideDecks` | Title and aspect ratio. No body. | `by_project` |
 | `spreadsheets` | Title only. No body. | `by_project` |
 | `resourceSnapshots` | Materialized bodies at a revision, roled `base` / `leader` / `checkpoint`. | `by_resource_role` |
-| `changeSets` | One accepted mutation each: ops, revision, baseRevision, tier. | `by_resource_revision` **unique**, `by_resource_tier` |
+| `changeSets` | One accepted mutation each: ops, revision, baseRevision, tier. | `by_resource_revision` **unique**, `by_resource_state` |
 | `externalFiles` | Uploads, connector pulls, generated files, web captures. | `by_project`, `by_connector_external` |
 | `connectors` | External system config, credential pointer, sync cursor. | `by_project` |
 | `templates` | Resource skeletons with named slots. | `by_project` |
@@ -111,14 +116,20 @@ without bound, not because a thread is a thing.
 See [general resources](general-resources.md) for how the first five work
 together, and why the bodies are not on the resource rows.
 
-`by_connector_external` is `(connectorId, externalId)` — how a re-sync matches a
-remote file to the row it already created instead of duplicating it.
+The two revision indexes carry `(projectId, resourceType, resourceId, …)`, and
+the pair is never split: two resources of different kinds may hold the same id.
+`by_resource_state` adds `tier` before `revision` so the hot read ranges over the
+`recent` sets alone, while `by_resource_revision` spans both tiers for the reads
+that reconstruct a past revision or delete a resource outright.
+
+`by_connector_external` is `(projectId, connectorId, externalId)` — how a re-sync
+matches a remote file to the row it already created instead of duplicating it.
 
 ### data
 
 | Table | Holds | Key indexes |
 | --- | --- | --- |
-| `nameVariables` | Named project variables — the shared vocabulary for formulas and analyses. | `by_project_nameKey` **unique**, `by_project_order` |
+| `nameVariables` | Named project variables — the shared vocabulary for formulas and analyses. | `by_project_and_name_key` **unique**, `by_project_and_order` |
 | `analyses` | Saved chart and table definitions: inputs, joins, shelves, filters, display. | `by_project` |
 
 Formula has no table. An expression is text on the block holding it, evaluated on
@@ -132,6 +143,7 @@ demand — see [name manager](../data-models/data/name-manager.md#what-is-not-he
 | `latticeEdges` | Full-dimensional weighted links within a level. | `by_from_level`, `by_to_level` |
 | `latticeLevelIndexes` | Per level: PCA basis, IVF centroids, threshold, k. Derived. | `by_project_level` **unique** |
 | `latticeVersions` | One per project: embedding model, level count, readiness. | `by_project` **unique** |
+| `latticeSources` | Per source: the revision last read out of it, and how many windows it gave. | `by_project_source` **unique** |
 | `latticeChanges` | Node sets produced per source change, with the cause. | `by_project` |
 | `derivedOutputs` | Prompt, scope, declared inputs, the one generated block. | `by_project` |
 
@@ -144,6 +156,10 @@ frontier. They are the same set.
 `latticeLevelIndexes` is entirely derived and can be dropped and rebuilt, which
 is what makes retuning `pcaDims` or the cell count a rebuild rather than a
 migration.
+
+`latticeSources` is what lets an unchanged source be skipped *before* it is
+windowed rather than after it is embedded — the saving is the windowing and the
+hashing too, which is most of the cost of a re-index that changes nothing.
 
 ### research
 
@@ -161,9 +177,9 @@ not.
 
 `researchLinks` carries every question↔hypothesis, question↔finding, and
 hypothesis↔finding relationship, which is why none of the three rows hold
-foreign keys to each other. `by_bearer` is `(bearerKind, bearerId)` and
-`by_subject` is `(subjectKind, subjectId)`, so both directions are one indexed
-read.
+foreign keys to each other. `by_bearer` is `(projectId, bearerKind, bearerId)`
+and `by_subject` is `(projectId, subjectKind, subjectId)`, so both directions are
+one indexed read.
 
 `bearing` lives on the link rather than the finding. That is what lets one
 finding support one hypothesis and contradict another — impossible while it was a
@@ -191,10 +207,19 @@ lives in [`app/configuration/`](../../app/configuration/), and a persona's
 | `comments` | Blocks, author, mentions. | `by_thread` |
 | `activity` | Append-only log: actor, verb, target, with labels frozen in. | `by_project` |
 
-`commentThreads.by_target` is `(targetType, targetId)` — a comment anchors to any
-object by kind and id, which is why [kinds are
+`commentThreads.by_target` is `(projectId, anchor.targetType, anchor.targetId)` —
+a comment anchors to any object by kind and id, which is why [kinds are
 namespaced](../data-models/special-resources/external-file.md#kind-is-derived-from-the-extension)
 across every domain.
+
+### deployment
+
+| Table | Holds | Key indexes |
+| --- | --- | --- |
+| `settings` | Per-project key/value preferences. | `by_project_and_key` **unique** |
+
+It sits apart because it holds no domain object: a setting is a value a project
+keeps about itself, and nothing in the models above refers to one.
 
 ## There are no unique indexes
 
@@ -222,13 +247,21 @@ these writes belong behind one function each.
 
 ## Project scoping
 
-Every table holding project content carries `projectId` and indexes on it. The
-project is the isolation boundary and every query filters by it.
+The project is the isolation boundary, and `projectId` leads every index above
+save the two named at the top. That includes indexes that read as though they
+were keyed on something else entirely — `comments.by_thread`,
+`commentThreads.by_target`, `changeSets.by_resource_revision`,
+`externalFiles.by_connector_external`, `researchLinks.by_bearer`,
+`latticeNodes.by_parent`.
 
-The exceptions are the tables reached through a parent that is already scoped —
-`comments` by thread, `hypotheses` by question, `messages` by thread,
-`personaThreads` by persona. They still store `projectId`, because a query that
-has to join upward to check access is a query that will eventually forget to.
+Each of those could argue it is already scoped: the thread, the resource, the
+connector, or the parent was resolved through a gated read first. **The rule
+holds anyway, and the argument is why.** A predicate that is only correct because
+of what some earlier read established is a predicate a later refactor can drop
+without anything failing, and the read that loses it goes deployment-wide rather
+than empty. Leading with `projectId` costs one equality on a B-tree prefix — the
+same contiguous scan either way — and makes the scoping structural instead of
+remembered.
 
 ## Related
 

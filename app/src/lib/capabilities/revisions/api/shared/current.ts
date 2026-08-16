@@ -16,14 +16,13 @@ export type Current = {
  * The leader snapshot and the recent sets past it — one indexed range each, and
  * the only read either `read` or `consolidate` performs.
  *
- * Two equalities and a range on the fourth field is one contiguous scan of a
- * B-tree sorted by that tuple, so rows belonging to other resources are never
- * reached rather than scanned and discarded. That is what bounds this at
- * `consolidateAfter + 1` rows however busy the deployment is.
+ * A prefix of equalities and a range on the field after them is one contiguous
+ * scan of a B-tree sorted by that tuple, so rows belonging to other resources
+ * are never reached rather than scanned and discarded. That is what bounds this
+ * at `consolidateAfter + 1` rows however busy the deployment is.
  *
- * **The leader is also the row that says whose the resource is.** Every index
- * here leads with the resource pair rather than `projectId`, so nothing about
- * ranging over them is scoped by the gate.
+ * **The scoping is the index, not a check after it.** `projectId` leads both, so
+ * another project's resource has no leader here and reads as absent.
  */
 export const current = async (
   ctx: QueryCtx,
@@ -34,17 +33,19 @@ export const current = async (
     .query("resourceSnapshots")
     .withIndex("by_resource_role", (q) =>
       q
+        .eq("projectId", scope.projectId)
         .eq("resourceType", resource.resourceType)
         .eq("resourceId", resource.resourceId)
         .eq("role", "leader")
     )
     .unique();
-  if (!leader || leader.projectId !== scope.projectId) throw notFound(resource);
+  if (!leader) throw notFound(resource);
 
   const sets = await ctx.db
     .query("changeSets")
     .withIndex("by_resource_state", (q) =>
       q
+        .eq("projectId", scope.projectId)
         .eq("resourceType", resource.resourceType)
         .eq("resourceId", resource.resourceId)
         .eq("tier", "recent")

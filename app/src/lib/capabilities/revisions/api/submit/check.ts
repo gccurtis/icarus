@@ -360,6 +360,7 @@ export const check = async (
     .query("changeSets")
     .withIndex("by_resource_revision", (q) =>
       q
+        .eq("projectId", scope.projectId)
         .eq("resourceType", incoming.resourceType)
         .eq("resourceId", incoming.resourceId)
         .gt("revision", incoming.baseRevision)

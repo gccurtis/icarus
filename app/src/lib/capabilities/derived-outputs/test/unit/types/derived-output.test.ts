@@ -137,7 +137,7 @@ describe("derivedPrompt", () => {
     // The prompt is the whole instruction and it lives only here, so an empty
     // one is a row that can never generate anything.
     expect(refusalOf(() => derivedPrompt("   "))).toMatchObject({
-      capability: "derived-outputs",
+      capability: "derivedOutputs",
       code: "empty-prompt"
     });
   });

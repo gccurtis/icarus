@@ -21,17 +21,39 @@ const asLiteral = (validator: unknown) => validator as { kind: string; value: un
  * every resource in the deployment.
  */
 describe("revisions schema", () => {
-  it("keys the change set indexes on the resource pair, in the order they are queried", () => {
+  it("keys the change set indexes on the project and the resource pair, in query order", () => {
     const indexes = indexesOf(revisionsTables.changeSets);
 
-    expect(indexes.by_resource_state).toEqual(["resourceType", "resourceId", "tier", "revision"]);
-    expect(indexes.by_resource_revision).toEqual(["resourceType", "resourceId", "revision"]);
+    expect(indexes.by_resource_state).toEqual([
+      "projectId",
+      "resourceType",
+      "resourceId",
+      "tier",
+      "revision"
+    ]);
+    expect(indexes.by_resource_revision).toEqual([
+      "projectId",
+      "resourceType",
+      "resourceId",
+      "revision"
+    ]);
   });
 
-  it("keys the snapshot index on the resource pair and the role", () => {
+  it("keys the snapshot index on the project, the resource pair, and the role", () => {
     const indexes = indexesOf(revisionsTables.resourceSnapshots);
 
-    expect(indexes.by_resource_role).toEqual(["resourceType", "resourceId", "role"]);
+    expect(indexes.by_resource_role).toEqual([
+      "projectId",
+      "resourceType",
+      "resourceId",
+      "role"
+    ]);
+  });
+
+  it("leads every index with projectId, so a forgotten predicate cannot cross a project", () => {
+    for (const table of [revisionsTables.changeSets, revisionsTables.resourceSnapshots]) {
+      for (const fields of Object.values(indexesOf(table))) expect(fields[0]).toBe("projectId");
+    }
   });
 
   it("carries what a conflict check reads without parsing a path", () => {

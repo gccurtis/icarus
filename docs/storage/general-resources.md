@@ -24,9 +24,10 @@ just as well: `body` is `v.union(documentBody, deckBody, sheetBody)` keyed on
 `resourceType`. Per-type validation and one implementation, rather than a choice
 between them.
 
-Queries are unaffected. Every index leads with `resourceType`, so
-`by_resource_revision(("document", id))` is exactly as selective as a
-document-only table would be — Convex does not scan what an index range excludes.
+Queries are unaffected. Every index leads with `projectId` and then the resource
+pair, so `by_resource_revision((project, "document", id))` is exactly as
+selective as a document-only table would be — Convex does not scan what an index
+range excludes.
 
 The genuine cost is that a reader has to know `resourceType` before they know
 what `body` contains. That is one discriminant, in a table nobody reads casually.
@@ -79,14 +80,15 @@ the index is what guarantees it.
 
 ```ts
 changeSets
-  .index("by_resource_state", ["resourceType", "resourceId", "tier", "revision"])
-  .index("by_resource_revision", ["resourceType", "resourceId", "revision"])
+  .index("by_resource_state", ["projectId", "resourceType", "resourceId", "tier", "revision"])
+  .index("by_resource_revision", ["projectId", "resourceType", "resourceId", "revision"])
 ```
 
 ```text
-leader = resourceSnapshots.by_resource_role(type, id, "leader")
+leader = resourceSnapshots.by_resource_role(project, type, id, "leader")
 sets   = changeSets.by_resource_state(q =>
-           q.eq("resourceType", type)
+           q.eq("projectId",    project)
+            .eq("resourceType", type)
             .eq("resourceId",   id)
             .eq("tier",         "recent")
             .gt("revision",     leader.revision))
@@ -96,8 +98,8 @@ body   = apply(leader.body, sets)
 ### Why interleaving does not matter
 
 A Convex index is a B-tree sorted by its field tuple, **not by insertion time**.
-Equality on the first three fields plus a range on the fourth is one contiguous
-scan over exactly the matching rows.
+Equality on the leading fields plus a range on the one after them is one
+contiguous scan over exactly the matching rows.
 
 Rows belonging to other documents are not adjacent in that ordering, so they are
 never visited — not scanned and discarded, never reached. Writes arriving
@@ -169,7 +171,7 @@ the guarantee.
 ## Consolidation
 
 ```text
-sets = changeSets.by_resource_tier(type, id, "recent") where count > consolidateAfter
+sets = changeSets.by_resource_state(project, type, id, "recent") where count > consolidateAfter
 patch leader { revision, body: apply(leader.body, sets) }
 patch each folded set { tier: "historical" }
 ```
@@ -183,7 +185,7 @@ indexed range read.
 
 ```text
 anchor = newest resourceSnapshot with revision <= target
-sets   = changeSets.by_resource_revision(type, id) in (anchor.revision, target]
+sets   = changeSets.by_resource_revision(project, type, id) in (anchor.revision, target]
 body   = apply(anchor.body, sets)
 ```
 

@@ -36,13 +36,13 @@ export const inputRevisions = async (
 
   for (const input of inputs) {
     if (input.kind === "resource") {
-      const standing = await head(ctx, input);
-      if (standing && standing.projectId === scope.projectId) {
+      const revision = await head(ctx, scope, input);
+      if (revision !== null) {
         recorded.push({
           kind: "resource",
           resourceType: input.resourceType,
           resourceId: input.resourceId,
-          revision: standing.revision
+          revision
         });
       }
       continue;

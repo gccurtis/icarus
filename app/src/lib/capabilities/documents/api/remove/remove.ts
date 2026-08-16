@@ -25,7 +25,7 @@ export const remove = async (
 ): Promise<void> => {
   const { title } = await requireDocument(ctx, scope, id);
 
-  await discard(ctx, { resourceType: "document", resourceId: id });
+  await discard(ctx, scope, { resourceType: "document", resourceId: id });
   await ctx.db.delete(id);
 
   await record(ctx, scope, {

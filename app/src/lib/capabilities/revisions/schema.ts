@@ -10,10 +10,10 @@ import { actorValidator } from "$shared/types/actor";
  * it applied.
  *
  * **`(resourceType, resourceId)` is the full key, always.** Never the id alone —
- * two resources of different kinds may carry the same id. That pair leads every
- * index here rather than `projectId`, because these rows are reached through a
- * resource row the gate has already scoped, and the pair is what a read ranges
- * on; `projectId` is stored so nothing has to join upward to know whose they are.
+ * two resources of different kinds may carry the same id. `projectId` leads the
+ * pair rather than the pair leading, so a read that names one field too few
+ * ranges over one project instead of the deployment; the equality costs nothing,
+ * since a prefix of equalities is the same contiguous B-tree scan either way.
  *
  * **The resource row has no revision.** Current revision is the highest change
  * set revision, read from an index. Storing it would make every edit patch the
@@ -44,8 +44,8 @@ export const revisionsTables = {
     actor: actorValidator,
     at: v.number()
   })
-    .index("by_resource_state", ["resourceType", "resourceId", "tier", "revision"])
-    .index("by_resource_revision", ["resourceType", "resourceId", "revision"]),
+    .index("by_resource_state", ["projectId", "resourceType", "resourceId", "tier", "revision"])
+    .index("by_resource_revision", ["projectId", "resourceType", "resourceId", "revision"]),
 
   resourceSnapshots: defineTable({
     projectId: v.id("projects"),
@@ -57,5 +57,5 @@ export const revisionsTables = {
     /** One of the three resources' bodies; the column beside it says which. */
     body: resourceBodyValidator,
     at: v.number()
-  }).index("by_resource_role", ["resourceType", "resourceId", "role"])
+  }).index("by_resource_role", ["projectId", "resourceType", "resourceId", "role"])
 };

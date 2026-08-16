@@ -40,12 +40,11 @@ export const submit = async (
   authored: AuthoredChange,
   by: Actor = { kind: "user", userId: scope.userId }
 ): Promise<{ revision: number }> => {
-  const standing = await head(ctx, authored);
-  // No head means no resource: creating one writes its anchors, so nothing that
-  // exists is without one.
-  if (!standing || standing.projectId !== scope.projectId) throw notFound(authored);
+  const current = await head(ctx, scope, authored);
+  // No head means no resource *here*: creating one writes its anchors, so
+  // nothing that exists is without one.
+  if (current === null) throw notFound(authored);
 
-  const current = standing.revision;
   const touched = touchedBy(authored.ops);
   const ops = await check(ctx, scope, { ...authored, touched }, current);
   const revision = current + 1;

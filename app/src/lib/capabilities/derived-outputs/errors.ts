@@ -13,7 +13,7 @@ export type DerivedOutputsErrorCode =
   | "block-list";
 
 export type DerivedOutputsRefusal = {
-  readonly capability: "derived-outputs";
+  readonly capability: "derivedOutputs";
   readonly code: DerivedOutputsErrorCode;
   readonly message: string;
 };
@@ -28,7 +28,7 @@ export type DerivedOutputsRefusal = {
  */
 export class DerivedOutputsError extends ConvexError<DerivedOutputsRefusal> {
   constructor(code: DerivedOutputsErrorCode, message: string) {
-    super({ capability: "derived-outputs", code, message });
+    super({ capability: "derivedOutputs", code, message });
   }
 }
 
@@ -37,7 +37,7 @@ export const derivedOutputsRefusal = (error: unknown): DerivedOutputsRefusal | u
   const data: unknown = (error as { data?: unknown })?.data;
   return typeof data === "object" &&
     data !== null &&
-    (data as DerivedOutputsRefusal).capability === "derived-outputs"
+    (data as DerivedOutputsRefusal).capability === "derivedOutputs"
     ? (data as DerivedOutputsRefusal)
     : undefined;
 };

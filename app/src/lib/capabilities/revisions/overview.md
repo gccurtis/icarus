@@ -29,10 +29,10 @@ creates the resource, in the same transaction.
 ## Capability Invariants
 
 - **`(resourceType, resourceId)` is the full key, always.** Never the id alone:
-  two resources of different kinds may carry the same id. It is what every index
-  leads with here, unlike the rest of the codebase, because these rows are
-  reached through a resource row the gate has already scoped. `projectId` is
-  stored anyway, so nothing has to join upward to know whose a row is.
+  two resources of different kinds may carry the same id. `projectId` leads that
+  pair on every index, as everywhere else, so a read naming one field too few
+  ranges over one project rather than the deployment — and the scoping is the
+  index rather than a comparison somebody has to remember after it.
 - **Neither the resource row nor anything else stores a current revision.** It is
   the highest change set revision, read from an index. Storing it would mean an
   edit patches the resource, and a Convex patch rewrites the whole document
@@ -40,8 +40,8 @@ creates the resource, in the same transaction.
 - **A resource is anchored at creation or it does not exist.** `start` writes the
   `leader` and the `base` at revision 0 in the same transaction as the resource
   row, which is what makes a leader's absence mean "no such resource" rather than
-  "not written yet" — and what lets every function here answer ownership from a
-  row whose indexes are keyed on the resource pair.
+  "not written yet". Read through a scope, absent and somebody else's are the
+  same answer, which is the refusal a caller should be making anyway.
 - **A change set is inserted, never modified** — except `tier`, which
   consolidation flips. Nothing rewrites an accepted set, which is what makes
   history and undo the same mechanism as merging.

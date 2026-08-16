@@ -53,7 +53,7 @@ the same transaction.
 
 ## Not found, never forbidden
 
-The leader is the row that says whose the resource is: every index here leads with
-the resource pair rather than `projectId`, so nothing about ranging over them is
-scoped by the gate. A resource in another project answers exactly as one that was
-never created, because telling them apart confirms it exists.
+Every index here leads with `projectId`, so the leader this ranges for is the
+caller's project's or there is none. A resource in another project answers
+exactly as one that was never created, because telling them apart confirms it
+exists.

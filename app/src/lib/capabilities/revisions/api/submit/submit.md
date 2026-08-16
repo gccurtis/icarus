@@ -83,12 +83,12 @@ door accepts it, so a browser cannot sign somebody else's name to a change.
 The client re-reads at the current revision, reapplies the edits still in its
 buffer, and resubmits — no work is lost, and the cost is one round trip.
 
-## The head row is what says whose the resource is
+## No head means no resource here
 
-Every index on `changeSets` leads with the resource pair rather than `projectId`,
-so nothing in reading the window is scoped by the gate. The last accepted set —
-or the leader snapshot behind it — is the row that answers it, and a resource
-whose head belongs to another project is **not found**, never forbidden.
+Every index on `changeSets` leads with `projectId`, so the window this reads is
+the caller's project's or it is empty. A resource belonging to somebody else has
+no head to find and is **not found**, never forbidden — the same answer as one
+that was never created, because telling them apart confirms it exists.
 
 **No head means no resource**, and that is why this is sound rather than a gap:
 [`start`](../shared/shared.md) writes the leader in the same transaction as the
