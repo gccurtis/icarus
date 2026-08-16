@@ -10,12 +10,12 @@ import { v, type Infer } from "convex/values";
  *
  * `id` stays one indexed column across all three variants — a Convex id *is* a
  * string — so no reader has to choose a branch to render one conversation. Each
- * variant names its table once that table exists: `agentTasks` arrives in pass 7
- * and tightens the way the other two already have.
+ * variant names its own table, which is what stops a turn being posted against
+ * an id minted somewhere else.
  */
 export const threadRefValidator = v.union(
   v.object({ kind: v.literal("research"), id: v.id("researchThreads") }),
-  v.object({ kind: v.literal("task"), id: v.string() }),
+  v.object({ kind: v.literal("task"), id: v.id("agentTasks") }),
   v.object({ kind: v.literal("persona"), id: v.id("personaThreads") })
 );
 

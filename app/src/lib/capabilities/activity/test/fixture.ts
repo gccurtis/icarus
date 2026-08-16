@@ -32,3 +32,44 @@ export const entryBy = (userId: string, verb: string): ActivityEntry => ({
   verb,
   target: { type: "document", id: "documents:1", label: "Q3 plan" }
 });
+
+/**
+ * A task that ran, and the persona it ran as — the three-part label's subject.
+ *
+ * Written straight to the tables rather than through the agent tasks capability:
+ * what is under test is that a label is resolved from the rows, not how they got
+ * there.
+ */
+export const taskWith = async (
+  ctx: ReturnType<typeof fakeCtx>,
+  projectId: string,
+  task: { title: string; persona?: string; origin: Record<string, unknown> }
+) => {
+  const personaId = task.persona
+    ? await ctx.db.insert("personas", {
+        projectId,
+        name: task.persona,
+        definition: {
+          focus: task.persona,
+          background: "",
+          approach: "",
+          outputPreferences: "",
+          verification: ""
+        },
+        tools: [],
+        createdBy: { kind: "system" },
+        revision: 1,
+        updatedAt: NOW
+      })
+    : undefined;
+
+  return await ctx.db.insert("agentTasks", {
+    projectId,
+    title: task.title,
+    prompt: "Scan the market.",
+    personaId,
+    status: "running",
+    origin: task.origin,
+    updatedAt: NOW
+  });
+};

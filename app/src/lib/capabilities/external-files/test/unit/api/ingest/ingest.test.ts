@@ -8,6 +8,7 @@ import {
   refusalFrom,
   scopeOf
 } from "$external-files/test/fixture";
+import type { Id } from "$convex/_generated/dataModel";
 import type { Actor } from "$shared/types/actor";
 
 const agent: Actor = { kind: "agent", taskId: "agentTasks:1" };
@@ -90,7 +91,7 @@ describe("ingest", () => {
 
   it("says an agent produced a file rather than uploaded one", async () => {
     const { ctx, scope } = await asking();
-    const origin = { kind: "generated", agentTaskId: "agentTasks:1" } as const;
+    const origin = { kind: "generated", agentTaskId: "agentTasks:1" as Id<"agentTasks"> } as const;
 
     const id = await ingest(asCtx(ctx), scope, agent, arriving("chart.png", origin), agentLabel);
 

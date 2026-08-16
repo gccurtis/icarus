@@ -1,16 +1,47 @@
 import type { Scope } from "$access/types/access";
 import type { ActivityEntry, ActorLabel } from "$activity/types/activity";
+import type { Id } from "$convex/_generated/dataModel";
 import type { MutationCtx } from "$convex/_generated/server";
 import type { Actor } from "$shared/types/actor";
+
+/**
+ * An agent's label, which is three fields because an agent needs three.
+ *
+ * *Researcher · Gabriel Curtis · Q3 competitive scan* — the persona says what
+ * kind of thing produced the work, the dispatcher says who is accountable for it
+ * having happened at all, and the task's title says which job it was, since
+ * several tasks run the same persona.
+ *
+ * **`onBehalfOf` names the dispatcher and changes nothing about attribution.**
+ * The actor is still the task, and the dispatcher's undo stack is still
+ * untouched; a label can afford to be generous precisely because it is never
+ * what code compares.
+ */
+const agentLabel = async (ctx: MutationCtx, taskId: string): Promise<ActorLabel | undefined> => {
+  // Cast because the actor union still types `taskId` as a string until the last
+  // table it names exists.
+  const task = await ctx.db.get(taskId as Id<"agentTasks">);
+  if (!task) return undefined;
+
+  const persona = task.personaId ? await ctx.db.get(task.personaId) : null;
+  const dispatcher = task.origin.kind === "user" ? await ctx.db.get(task.origin.userId) : null;
+
+  return {
+    kind: "agent",
+    name: persona?.name ?? "Agent",
+    onBehalfOf: dispatcher?.displayName,
+    detail: task.title
+  };
+};
 
 /**
  * The display form to freeze into the entry.
  *
  * Resolved here rather than by the caller for the reason blank labels ship and
  * stay: a capability that has to remember to look a name up is a capability that
- * eventually does not. `user` and `system` are every kind this deployment can
- * construct today; the other three name tables that arrive in passes 7 and 8,
- * and each of those tasks moves its resolution into this function.
+ * eventually does not. `user`, `system`, and `agent` are every kind this
+ * deployment can construct today; `automation` and `connector` name tables that
+ * arrive in pass 8, and each of those tasks moves its resolution into here.
  *
  * Until then their label has to come from the caller, and an entry with no
  * legible actor is refused rather than written. The caller is another
@@ -27,6 +58,10 @@ const labelFor = async (
     return { kind: actor.kind, name: user?.displayName ?? "A deleted user" };
   }
   if (actor.kind === "system") return { kind: actor.kind, name: "System" };
+  if (actor.kind === "agent") {
+    const resolved = await agentLabel(ctx, actor.taskId);
+    if (resolved) return resolved;
+  }
   if (given && given.name.length > 0) return given;
   throw new Error(`An activity entry by a ${actor.kind} must carry its actor label`);
 };

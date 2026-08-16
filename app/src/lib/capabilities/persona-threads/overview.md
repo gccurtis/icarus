@@ -89,7 +89,7 @@ has needed yet.
 
 | Today | When | Becomes |
 | --- | --- | --- |
-| a branch is a reference and a reader follows it one hop at a time | pass 7 | the same record is what an agent task inherits as context when it is spun off a chat |
+| a branch is a reference and a reader follows it one hop at a time | when a runner exists | an [agent task](../agent-tasks/overview.md) records the same pair, and loading the turns before it as context is what is still missing |
 
 ## Related
 

@@ -27,11 +27,18 @@ export type AuthoredChange = ResourceKey & {
  *
  * **No activity entry.** An edit is a keystroke batch, and a feed of them would
  * bury everything a person would want to read there.
+ *
+ * **`by` is a parameter, not an argument.** The door builds the caller's own
+ * actor from `ctx.scope`, so a browser cannot sign someone else's name to a
+ * change; an agent editing during a task passes its own, because a task's edits
+ * are attributed to the task and not to whoever dispatched it — which is what
+ * keeps them out of that person's undo stack.
  */
 export const submit = async (
   ctx: MutationCtx,
   scope: Scope,
-  authored: AuthoredChange
+  authored: AuthoredChange,
+  by: Actor = { kind: "user", userId: scope.userId }
 ): Promise<{ revision: number }> => {
   const standing = await head(ctx, authored);
   // No head means no resource: creating one writes its anchors, so nothing that
@@ -52,7 +59,7 @@ export const submit = async (
     tier: "recent",
     ops,
     touched,
-    actor: { kind: "user", userId: scope.userId } satisfies Actor,
+    actor: by,
     at: Date.now()
   });
 

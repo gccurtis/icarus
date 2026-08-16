@@ -25,8 +25,7 @@ describe("mentionValidator", () => {
   it("references real rows, so a mention resolves to who it addresses", () => {
     expect(fieldsOf("user").userId).toMatchObject({ kind: "id", tableName: "users" });
     expect(fieldsOf("persona").personaId).toMatchObject({ kind: "id", tableName: "personas" });
-    // `agentTasks` arrives in pass 7, where `taskId` tightens the same way.
-    expect(fieldsOf("task").taskId.kind).toBe("string");
+    expect(fieldsOf("task").taskId).toMatchObject({ kind: "id", tableName: "agentTasks" });
   });
 
   it("carries one reference and nothing else", () => {

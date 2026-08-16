@@ -86,8 +86,7 @@ version rather than a duplicate.
 | Today | When | Becomes |
 | --- | --- | --- |
 | `origin.connectorId` is `v.string()` | pass 8 | `v.id("connectors")` |
-| `origin.agentTaskId` is `v.string()` | pass 7 | `v.id("agentTasks")` |
-| only the door's `upload` origin is reachable | passes 7 and 8 | connector sync and agent tasks call `ingest` with their own origin and actor |
+| only the door's `upload` origin is reachable | when a runner exists | connector sync and [agent tasks](../agent-tasks/overview.md) call `ingest` with their own origin and actor |
 
 ## Related
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { record } from "$activity/api/shared/record";
-import { asCtx, asking, entryBy } from "$activity/test/fixture";
+import { asCtx, asking, entryBy, taskWith } from "$activity/test/fixture";
 import type { ActivityEntry } from "$activity/types/activity";
 import type { Id } from "$convex/_generated/dataModel";
 
@@ -43,6 +43,67 @@ describe("record", () => {
     await record(asCtx(ctx), scope, { ...entryBy(userId, "cleaned"), actor: { kind: "system" } });
 
     expect(ctx.log[0].actorLabel).toEqual({ kind: "system", name: "System" });
+  });
+
+  it("resolves an agent's label to persona, dispatcher, and task title", async () => {
+    const { ctx, scope, userId } = await asking();
+    const taskId = await taskWith(ctx, scope.projectId, {
+      title: "Q3 competitive scan",
+      persona: "Researcher",
+      origin: { kind: "user", userId }
+    });
+
+    await record(asCtx(ctx), scope, {
+      ...entryBy(userId, "edited"),
+      actor: { kind: "agent", taskId }
+    });
+
+    // Rendered in order: *Researcher · Development User · Q3 competitive scan*.
+    // Each answers a question the others do not — several tasks run the same
+    // persona, and a title alone says nothing about what produced the work.
+    expect(ctx.log[0].actorLabel).toEqual({
+      kind: "agent",
+      name: "Researcher",
+      onBehalfOf: "Development User",
+      detail: "Q3 competitive scan"
+    });
+  });
+
+  it("names an agent with no persona, and nobody it acted for", async () => {
+    const { ctx, scope, userId } = await asking();
+    const taskId = await taskWith(ctx, scope.projectId, {
+      title: "Nightly sweep",
+      origin: { kind: "system" }
+    });
+
+    await record(asCtx(ctx), scope, {
+      ...entryBy(userId, "edited"),
+      actor: { kind: "agent", taskId }
+    });
+
+    expect(ctx.log[0].actorLabel).toEqual({
+      kind: "agent",
+      name: "Agent",
+      onBehalfOf: undefined,
+      detail: "Nightly sweep"
+    });
+  });
+
+  it("resolves an agent's label itself and ignores one the caller passes", async () => {
+    const { ctx, scope, userId } = await asking();
+    const taskId = await taskWith(ctx, scope.projectId, {
+      title: "Q3 competitive scan",
+      persona: "Researcher",
+      origin: { kind: "user", userId }
+    });
+
+    await record(asCtx(ctx), scope, {
+      ...entryBy(userId, "edited"),
+      actor: { kind: "agent", taskId },
+      actorLabel: { kind: "agent", name: "Something Else", detail: "Another job" }
+    });
+
+    expect(ctx.log[0].actorLabel).toMatchObject({ name: "Researcher", detail: "Q3 competitive scan" });
   });
 
   it("keeps a label it cannot resolve itself", async () => {

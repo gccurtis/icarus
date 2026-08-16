@@ -46,7 +46,7 @@ describe("originFrom", () => {
     const origins: FileOrigin[] = [
       { kind: "upload" },
       { kind: "connector", connectorId: "connectors:1", externalId: "drive-99" },
-      { kind: "generated", agentTaskId: "agentTasks:1" },
+      { kind: "generated", agentTaskId: "agentTasks:1" as Id<"agentTasks"> },
       { kind: "capture", url: "https://example.com/report", capturedAt: 1_700_000_000_000 }
     ];
 
@@ -54,9 +54,11 @@ describe("originFrom", () => {
   });
 
   it("lets an agent record the file it produced", () => {
-    expect(originFrom(agent, { kind: "generated", agentTaskId: "agentTasks:1" })).toEqual({
+    const task = "agentTasks:1" as Id<"agentTasks">;
+
+    expect(originFrom(agent, { kind: "generated", agentTaskId: task })).toEqual({
       kind: "generated",
-      agentTaskId: "agentTasks:1"
+      agentTaskId: task
     });
   });
 });

@@ -33,10 +33,14 @@ call rather than callers do belongs.
 - **`at` is stamped by `record`**, and an `at` a caller passes is ignored. A log
   whose timestamps come from whoever is writing can be backdated.
 - **A resolvable label is resolved by `record`**, and one a caller passes for
-  those kinds is ignored too. `user` and `system` are every kind that exists
-  today; the other three name tables from passes 7 and 8 and must carry their
-  label until then, and an entry with no legible actor is refused rather than
-  written blank.
+  those kinds is ignored too. `user`, `system`, and `agent` are every kind whose
+  table exists today; `automation` and `connector` arrive in pass 8 and must
+  carry their label until then, and an entry with no legible actor is refused
+  rather than written blank.
+- **An agent's label is three fields**, resolved from its
+  [task](../agent-tasks/overview.md): the persona's name, the dispatching user as
+  `onBehalfOf`, and the task's title as `detail`. Naming the dispatcher for
+  display changes nothing about attribution — the actor is still the task.
 - **Labels are snapshots, not references.** A renamed document keeps its old name
   in past entries, which is right: they describe what happened when it happened.
 - **Not every mutation earns a row.** A burst of editing is one `updated` event,

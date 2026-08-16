@@ -117,7 +117,7 @@ any member put a row in everyone else's list.
 | Today | When | Becomes |
 | --- | --- | --- |
 | `scope` resolves, but nothing retrieves with it | pass 6 | lattice retrieval restricts a search to what [`resourceSets.resolve`](../resource-sets/api/resolve/resolve.md) returns |
-| nothing runs a persona | pass 7 | an agent task references one and renders its prompt |
+| an [agent task](../agent-tasks/overview.md) references one, and nothing renders its prompt yet | the intelligence capability | a run that sends the definition as the system turn |
 | a global persona can only be seeded | — | there is no project-scoped path that should be able to write one |
 
 ## Related

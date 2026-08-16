@@ -30,4 +30,4 @@ timestamp because there is no field to put one in.
 
 `actorLabel` is optional for the opposite reason: `record` resolves the kinds it
 can reach and ignores one passed for those, so the field exists only for an actor
-whose table does not exist yet. It becomes unnecessary as passes 7 and 8 land.
+whose table does not exist yet — `automation` and `connector`, until pass 8.

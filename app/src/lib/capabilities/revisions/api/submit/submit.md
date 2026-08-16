@@ -9,7 +9,7 @@ handler receives `ctx.scope` rather than a project it could have chosen.
 ## Procedure Tree
 
 ```text
-submit(ctx, scope, authored)
+submit(ctx, scope, authored, by)
 ├── head(ctx, authored)                     ../shared/head.ts   current revision, and whose
 ├── touchedBy(authored.ops)                 check.ts    the ids step 2 intersects
 ├── check(ctx, scope, incoming, revision)   check.ts    the ladder
@@ -64,6 +64,18 @@ understates its own payload.
 are not conflicts; they are changes that pass every other rung, commit, and can
 then never be applied. There is no repair path in this capability for a resource
 whose log holds one, so the rung fails closed wherever it cannot see.
+
+## `by` decides whose undo can reach the change
+
+The door builds the caller's own actor from `ctx.scope`, which is the default and
+what a person's edit carries. An agent editing during a task passes
+[its task's actor](../../../agent-tasks/types/agent-task.ts) instead, because a
+task's changes are attributed to the task and not to whoever dispatched it — undo
+selects on `actor.kind === "user"`, so that one argument is what keeps a hundred
+agent edits out of somebody's Ctrl-Z.
+
+It is a parameter rather than an argument for the usual reason: nothing at the
+door accepts it, so a browser cannot sign somebody else's name to a change.
 
 ## A rejection says which rung refused
 

@@ -9,9 +9,9 @@ import type { Actor } from "$shared/types/actor";
  * carry genuinely different data: a connector file keeps the provider's own id
  * so a re-sync matches it, a capture keeps the URL and the moment it was read.
  *
- * `connectorId` and `agentTaskId` are `v.string()` because `connectors` and
- * `agentTasks` do not exist until passes 8 and 7; each tightens to `v.id(...)`
- * in the task that creates its table.
+ * `connectorId` is `v.string()` because `connectors` does not exist until pass 8;
+ * it tightens to `v.id(...)` in the task that creates its table, the way
+ * `agentTaskId` already has.
  */
 export const fileOriginValidator = v.union(
   v.object({ kind: v.literal("upload") }),
@@ -21,7 +21,7 @@ export const fileOriginValidator = v.union(
     externalId: v.string(),
     externalUrl: v.optional(v.string())
   }),
-  v.object({ kind: v.literal("generated"), agentTaskId: v.string() }),
+  v.object({ kind: v.literal("generated"), agentTaskId: v.id("agentTasks") }),
   v.object({ kind: v.literal("capture"), url: v.string(), capturedAt: v.number() })
 );
 

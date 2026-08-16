@@ -17,9 +17,11 @@ deployment root.
 the same functions, and `record` is in neither, because a client that can append
 to the log makes the log worthless as evidence.
 
-`at` is stamped inside, and a `user` or `system` label is resolved inside. Both
-are refusals to trust the writer about the record of its own writing. The three
-remaining actor kinds name tables that arrive in passes 7 and 8; until then their
+`at` is stamped inside, and a `user`, `system`, or `agent` label is resolved
+inside — an agent's from its task, which is where its persona, its dispatcher,
+and its title all are. Both are refusals to trust the writer about the record of
+its own writing. The two remaining actor kinds name tables that arrive in pass 8;
+until then their
 label must be supplied, and an entry with no legible actor throws rather than
 storing a blank name — the caller is another capability, so that is a programming
 error and failing the mutation is how it gets found.

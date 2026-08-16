@@ -37,7 +37,7 @@ export const research = (id: string): ThreadRef => ({
   kind: "research",
   id: id as Id<"researchThreads">
 });
-export const task = (id: string): ThreadRef => ({ kind: "task", id });
+export const task = (id: string): ThreadRef => ({ kind: "task", id: id as Id<"agentTasks"> });
 export const persona = (id: string): ThreadRef => ({
   kind: "persona",
   id: id as Id<"personaThreads">
