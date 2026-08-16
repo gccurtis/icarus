@@ -52,6 +52,7 @@ export default {
       $findings: "src/lib/capabilities/findings",
       $formula: "src/lib/capabilities/formula",
       $hypotheses: "src/lib/capabilities/hypotheses",
+      $knowledge: "src/lib/capabilities/knowledge",
       $messages: "src/lib/capabilities/messages",
       "$name-manager": "src/lib/capabilities/name-manager",
       "$persona-threads": "src/lib/capabilities/persona-threads",

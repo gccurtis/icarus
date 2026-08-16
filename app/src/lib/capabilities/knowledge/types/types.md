@@ -1,0 +1,44 @@
+# Knowledge Types
+
+Lives at `types/types.md`.
+
+| File | Holds |
+| --- | --- |
+| [`lattice-source.ts`](lattice-source.ts) | `latticeSourceValidator`, `LATTICE_SOURCE_KINDS`, `sourceKey` — what the lattice reads text out of |
+| [`lattice-node.ts`](lattice-node.ts) | `latticeWindowValidator`, `LatticeNode`, `WindowPiece` — a window, and a cluster of them |
+| [`lattice-version.ts`](lattice-version.ts) | `latticeStateValidator`, `LatticeVersion` — the index's own state |
+| [`embedding.ts`](embedding.ts) | `Embedder`, `Embedding` — the one thing this capability cannot do itself |
+
+## `LatticeSource` is a strict subset of `ResourceKind`
+
+Using the **same kind strings**, which is what makes scoping total: anything the
+lattice indexes, a [resource set](../../resource-sets/overview.md) can select,
+with no translation table between two vocabularies to drift apart.
+
+A template is a skeleton and a connector is configuration, so neither is a
+source — both are resource kinds all the same, which is what makes the subset
+strict rather than equal. `LATTICE_SOURCE_KINDS` states the relation where the
+compiler checks it; the runtime half, including *which* two kinds are outside it,
+is asserted in `test/unit/types/lattice-source.test.ts` by reading both
+validators rather than by writing the list down a second time.
+
+## The embedder is injected, and carries what it is
+
+`Embedder` is a function and nothing more — text in, vectors out. It is passed in
+rather than imported because embedding is a network call and nothing here may
+make one, and because no provider exists yet: today the only implementation is
+the deterministic fake in `test/fixture.ts`.
+
+`Embedding` wraps it with the binding name, the resolved model, and the width.
+**Both the binding and the model, deliberately.** The binding is the
+[intelligence](../../../../../docs/processes/intelligence.md) key — `"embedding"`
+— and the model is what that key pointed at. The key can be repointed at any time
+and the lattice does not follow; comparing the two is exactly how a required
+rebuild is detected. Carrying only the binding hides the drift, and only the
+model loses the connection to the configuration that should be updated.
+
+## `LatticeNode` is a returned shape, not a stored one
+
+`_id`, `projectId`, and `_creationTime` are not on it. What a caller gets back is
+the model; where it sits is `schema.ts`'s business, and keeping the two apart is
+what stops a storage change from reaching the public contract.

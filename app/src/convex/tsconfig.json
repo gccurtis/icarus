@@ -21,6 +21,7 @@
       "$findings/*": ["../lib/capabilities/findings/*"],
       "$formula/*": ["../lib/capabilities/formula/*"],
       "$hypotheses/*": ["../lib/capabilities/hypotheses/*"],
+      "$knowledge/*": ["../lib/capabilities/knowledge/*"],
       "$messages/*": ["../lib/capabilities/messages/*"],
       "$name-manager/*": ["../lib/capabilities/name-manager/*"],
       "$persona-threads/*": ["../lib/capabilities/persona-threads/*"],
