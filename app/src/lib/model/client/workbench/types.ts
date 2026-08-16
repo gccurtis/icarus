@@ -10,7 +10,7 @@
  *
  * Nothing here names a Svelte component. Every view-facing value is a stable
  * key, and the view that renders the result resolves it — the workspace maps
- * `ResourceKind`, the activity panel maps `ActivityId`. There is no registry
+ * `ResourceKind`, the context panel maps `ContextId`. There is no registry
  * directory and no shared map file; see
  * [the view standard](../../../../../docs/view-directory/view-directory.md).
  * A model type naming a component points the dependency backwards and drags a
@@ -24,14 +24,14 @@ export type TabId = string;
  *
  * A value rather than only a type because stored state has to be checked against
  * it at runtime: a tab restored from an older build can name a kind that no
- * longer exists, and `ACTIVITIES_BY_KIND` is a `Record<ResourceKind, …>`, so an
+ * longer exists, and `CONTEXTS_BY_KIND` is a `Record<ResourceKind, …>`, so an
  * unknown kind resolves to `undefined` and throws during paint. The type is
  * derived from the value, so the two cannot drift.
  *
  * Adding a member forces every surface that switches on kind to handle it, which
  * is the point of the union.
  */
-export const RESOURCE_KINDS = ["project-overview"] as const;
+export const RESOURCE_KINDS = ["project-overview", "document"] as const;
 
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
 
@@ -49,19 +49,24 @@ export type ResourceRef = {
 
 /**
  * The context panel's rail positions, as values, for the same reason resource
- * kinds are values: a stored id can outlive the activity it named.
+ * kinds are values: a stored id can outlive the context it named.
+ *
+ * A context is a way of looking at what surrounds the active resource — its
+ * outline, what it relates to, who commented on it. Not a mode of working: a
+ * rail entry answers "what else is here?", never "what am I doing?", which is
+ * why these are contexts rather than activities.
  */
-export const ACTIVITY_IDS = ["overview"] as const;
+export const CONTEXT_IDS = ["overview", "outline"] as const;
 
 /**
- * Stable identity, and the whole of what this object exposes about an activity.
+ * Stable identity, and the whole of what this object exposes about a context.
  * A label and an icon are display copy: rewording or translating either must not
- * change what a tab points at, so both belong to the view registry.
+ * change what a tab points at, so both belong to the view that renders the rail.
  */
-export type ActivityId = (typeof ACTIVITY_IDS)[number];
+export type ContextId = (typeof CONTEXT_IDS)[number];
 
-export const isActivityId = (value: string): value is ActivityId =>
-  (ACTIVITY_IDS as readonly string[]).includes(value);
+export const isContextId = (value: string): value is ContextId =>
+  (CONTEXT_IDS as readonly string[]).includes(value);
 
 /**
  * What each resource kind's rail offers, first entry first.
@@ -72,16 +77,17 @@ export const isActivityId = (value: string): value is ActivityId =>
  *
  * `Record<ResourceKind, …>` rather than a partial map, so adding a resource kind
  * fails to compile until it has been given a rail. A kind reaching the panel
- * with no activities has no way to render, and finding that at runtime is
- * strictly worse than finding it at build time.
+ * with no contexts has no way to render, and finding that at runtime is strictly
+ * worse than finding it at build time.
  *
  * The first entry of each array is that kind's default — what the rail shows
- * before the user has chosen, and what it falls back to when a tab points at an
- * activity the kind no longer offers. An activity may be shared between kinds by
- * listing it in several arrays.
+ * before the user has chosen, and what it falls back to when a tab points at a
+ * context the kind no longer offers. A context may be shared between kinds by
+ * listing it in several arrays, which `overview` is.
  */
-export const ACTIVITIES_BY_KIND: Record<ResourceKind, readonly ActivityId[]> = Object.freeze({
-  "project-overview": Object.freeze(["overview"] as const)
+export const CONTEXTS_BY_KIND: Record<ResourceKind, readonly ContextId[]> = Object.freeze({
+  "project-overview": Object.freeze(["overview"] as const),
+  document: Object.freeze(["outline", "overview"] as const)
 });
 
 /**
@@ -187,7 +193,7 @@ export type TabOptions = {
   /** Not persisted, for the same reason. */
   scrollTop?: number;
   /** The rail position this tab was last on, so each tab keeps its own. */
-  activityId?: ActivityId;
+  contextId?: ContextId;
   /**
    * This tab's panel geometry, absent until the tab is resized.
    *
@@ -233,12 +239,12 @@ export type WorkbenchModel = {
   reorder(id: TabId, index: number): void;
   update(id: TabId, patch: Partial<TabOptions>): void;
 
-  /** Activities for the active tab's resource kind. Static per kind. */
-  readonly availableActivities: readonly ActivityId[];
-  /** The tab's remembered activity, or the kind's first when none is valid. */
-  readonly activeActivity: ActivityId;
+  /** Contexts for the active tab's resource kind. Static per kind. */
+  readonly availableContexts: readonly ContextId[];
+  /** The tab's remembered context, or the kind's first when none is valid. */
+  readonly activeContext: ContextId;
   /** Records the choice on the active tab, so each keeps its own rail position. */
-  selectActivity(id: ActivityId): void;
+  selectContext(id: ContextId): void;
 
   /**
    * The innermost node of the active tab's inspection — what the inspector shows

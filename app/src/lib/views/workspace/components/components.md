@@ -8,7 +8,8 @@ do not carry their own Markdown files.
 
 ```text
 workspace.svelte
-└── project-overview                 components/project-overview.svelte
+├── project-overview                 components/project-overview.svelte
+└── document                         components/document.svelte
 ```
 
 Exactly one component renders at a time, chosen by the key below. A resource
@@ -22,10 +23,17 @@ rewritten. Every authored component appears here, and each meaningful one is
 described under Subtree Contracts below.
 
 <!-- generated:inventory:start -->
+- [`document.svelte`](document.svelte)
 - [`project-overview.svelte`](project-overview.svelte)
 <!-- generated:inventory:end -->
 
 ## Subtree Contracts
+
+Both take the active tab's `ResourceRef`, so a resource component is a function
+of what it renders rather than a reader of the workbench. Both are **fixtures**:
+their content is static because the capabilities that would supply it do not
+exist. What is real in each is the model call it makes, and between them they are
+the only callers of `open()` and `inspect()` in the application.
 
 ### `project-overview`
 
@@ -33,19 +41,38 @@ described under Subtree Contracts below.
 - **Purpose:** what a `project-overview` resource renders as. It is the
   permanent tab's kind, so this is what the work surface shows on a first load
   and whenever every transient tab has been closed.
-- **Inputs:** `None`. A resource component is selected by kind; the tab it
-  belongs to is the active one by construction.
-- **Outputs:** `None`
+- **Inputs:** the active tab's resource ref
+- **Outputs:** `open()` per listed document
 - **Owned children:** `None`
 - **Behavior delegated to the view root:** selection, and the scroll above it
-- **Focus behavior:** nothing focusable yet
+- **Focus behavior:** each entry is an ordinary button in tab order
 - **Layout and overflow:** fills the centre; does not own a scroll
-- **Accessibility:** static text inside the frame's `main` landmark
+- **Accessibility:** a list of buttons inside the frame's `main` landmark
 
-It has no content of its own yet. A project summary needs capabilities that do
-not exist, and the Convex round trip that used to occupy this space was a
-transport probe rather than a surface — it lives at `/mock/[project]` now, where
-it belongs to no tab and pretends to no resource kind.
+The list stands in for a project's contents. What is real is the opening:
+`open()` mints a tab or activates the one already holding that resource, because
+it dedupes on kind *and* id — pressing the same entry twice returns to the tab
+rather than making a second.
+
+### `document`
+
+- **Root:** [`document.svelte`](document.svelte)
+- **Purpose:** what a `document` resource renders as, and the only surface that
+  reports an inspection.
+- **Inputs:** the active tab's resource ref
+- **Outputs:** `inspect()` on release inside a block — a text selection when one
+  exists, a caret otherwise
+- **Owned children:** `None`
+- **Behavior delegated to the view root:** selection, and the scroll above it
+- **Focus behavior:** nothing focusable. Reaching an inspection by keyboard is a
+  real gap that belongs to a real editor, which owns a caret; giving a paragraph
+  a button role would claim a keyboard path that does not work.
+- **Layout and overflow:** a measure-limited column; does not own a scroll
+- **Accessibility:** paragraphs inside the frame's `main` landmark
+
+Offsets are measured from the block rather than taken from the DOM selection
+directly, because `anchorOffset` counts within one text node and a block holding
+any markup has several.
 
 ## Key Selection
 
@@ -56,10 +83,11 @@ it belongs to no tab and pretends to no resource kind.
 | Key value | Renders | Component or composed view |
 | --- | --- | --- |
 | `project-overview` | The project overview | [`project-overview.svelte`](project-overview.svelte) |
+| `document` | A document's blocks | [`document.svelte`](document.svelte) |
 
-Total in both directions: one kind, one component, and no component here that a
-key cannot reach. The map is a `Record<ResourceKind, Component>`, so a new kind
-fails to compile until it has a row.
+Total in both directions: every kind has a component, and no component here is
+unreachable by a key. The map is a `Record<ResourceKind, Component<…>>`, so a new
+kind fails to compile until it has a row.
 
 No exception, and no unknown-key branch. Restoration drops a stored kind this
 build no longer recognises, so nothing unmapped reaches the map.
@@ -67,7 +95,7 @@ build no longer recognises, so nothing unmapped reaches the map.
 **This is half the mapping for `ResourceKind`.** The tab bar holds the other
 half — the label and icon for the same key — because that is the surface that
 displays them. Adding a kind therefore touches two views, which is the same
-obligation the model already imposes by typing `ACTIVITIES_BY_KIND` as a
+obligation the model already imposes by typing `CONTEXTS_BY_KIND` as a
 `Record` over the same union.
 
 ## Tree Invariants

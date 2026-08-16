@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 import type { ClientStorage, PersistedPanels, PersistedWorkbench } from "$model/client/storage";
-import type { ActivityId } from "$model/client/workbench";
+import type { ContextId } from "$model/client/workbench";
 import { DEFAULTS, PROJECT_OVERVIEW, createWorkbench } from "$model/client/workbench";
 
 /**
@@ -28,6 +28,8 @@ const fakeStorage = (initial?: PersistedWorkbench): ClientStorage => {
 };
 
 const OTHER = { kind: "project-overview", id: "other" } as const;
+/** A second kind, so what the rail offers can differ between two open tabs. */
+const DOCUMENT = { kind: "document", id: "doc-1" } as const;
 const THIRD = { kind: "project-overview", id: "third" } as const;
 
 test("starts with the permanent tab active", () => {
@@ -126,28 +128,58 @@ test("unknown ids are rejected rather than ignored", () => {
 test("the rail sits on the kind's default until a tab chooses", () => {
   const workbench = createWorkbench(fakeStorage());
 
-  assert.deepEqual(workbench.availableActivities, ["overview"]);
-  assert.equal(workbench.activeActivity, "overview");
+  assert.deepEqual(workbench.availableContexts, ["overview"]);
+  assert.equal(workbench.activeContext, "overview");
 });
 
-test("selecting an activity records it on the active tab, not globally", () => {
+test("what the rail offers follows the active tab's kind", () => {
+  const workbench = createWorkbench(fakeStorage());
+
+  assert.deepEqual(workbench.availableContexts, ["overview"]);
+
+  workbench.open(DOCUMENT);
+
+  // A different kind, a different rail — and the default moved with it, because
+  // a kind's first entry is its default and `document` leads with its outline.
+  assert.deepEqual(workbench.availableContexts, ["outline", "overview"]);
+  assert.equal(workbench.activeContext, "outline");
+});
+
+test("selecting a context records it on the active tab, not globally", () => {
   const workbench = createWorkbench(fakeStorage());
   const overview = workbench.active;
   const other = workbench.open(OTHER);
 
-  workbench.selectActivity("overview");
+  workbench.selectContext("overview");
 
-  assert.equal(other.options.activityId, "overview");
-  assert.equal(overview.options.activityId, undefined);
+  assert.equal(other.options.contextId, "overview");
+  assert.equal(overview.options.contextId, undefined);
 });
 
-test("an activity the kind does not offer is refused", () => {
+test("each tab keeps its own rail position across a switch", () => {
+  const workbench = createWorkbench(fakeStorage());
+  const overview = workbench.active;
+  const document = workbench.open(DOCUMENT);
+
+  workbench.selectContext("overview");
+  assert.equal(workbench.activeContext, "overview");
+
+  workbench.activate(overview.id);
+  assert.equal(workbench.activeContext, "overview");
+
+  workbench.activate(document.id);
+  assert.equal(workbench.activeContext, "overview", "the document kept its own choice");
+});
+
+test("a context the kind does not offer is refused", () => {
   const workbench = createWorkbench(fakeStorage());
 
-  // The rail can only have rendered what is available, so anything else is a
-  // caller defect rather than drift.
+  // `outline` is a real context id, just not one `project-overview` offers —
+  // which is the case a plain type check would miss.
+  assert.throws(() => workbench.selectContext("outline"), /not available/);
+
   assert.throws(
-    () => workbench.selectActivity("not-an-activity" as unknown as ActivityId),
+    () => workbench.selectContext("not-a-context" as unknown as ContextId),
     /not available/
   );
 });
@@ -285,7 +317,7 @@ test("stands a workbench up from a given starting state", () => {
           "project-overview",
           "restored",
           {
-            activityId: "overview",
+            contextId: "overview",
             panels: {
               contextWidth: 320,
               contextCollapsed: true,
@@ -301,13 +333,13 @@ test("stands a workbench up from a given starting state", () => {
 
   assert.equal(workbench.tabs.length, 2); // permanent + restored
   assert.equal(workbench.active.resource.id, "restored");
-  assert.equal(workbench.activeActivity, "overview");
+  assert.equal(workbench.activeContext, "overview");
   assert.equal(workbench.panels.contextWidth, 320);
   assert.equal(workbench.panels.contextCollapsed, true);
 });
 
 test("drops a stored tab whose kind no longer exists", () => {
-  // ACTIVITIES_BY_KIND is keyed by kind, so an unknown one resolves to undefined
+  // CONTEXTS_BY_KIND is keyed by kind, so an unknown one resolves to undefined
   // and throws during paint. Dropping it is what keeps a stale store from being
   // a crash.
   const workbench = createWorkbench(
@@ -323,14 +355,25 @@ test("drops a stored tab whose kind no longer exists", () => {
   assert.ok(workbench.tabs.every((tab) => tab.resource.kind === "project-overview"));
 });
 
-test("drops a stored activity id the kind no longer offers", () => {
+test("drops a stored context id the kind no longer offers", () => {
   // A reset rail is a harmless outcome where a crash is not.
   const workbench = createWorkbench(
-    fakeStorage({ tabs: [["project-overview", "a", { activityId: "gone" }]] })
+    fakeStorage({ tabs: [["project-overview", "a", { contextId: "gone" }]] })
   );
 
-  assert.equal(workbench.active.options.activityId, undefined);
-  assert.equal(workbench.activeActivity, "overview");
+  assert.equal(workbench.active.options.contextId, undefined);
+  assert.equal(workbench.activeContext, "overview");
+});
+
+test("drops a stored context id that exists but this kind does not offer", () => {
+  // The subtler half: `outline` is a live context id, so `isContextId` admits
+  // it — and `project-overview` still does not offer it. Only the fallback in
+  // `activeContext` catches this one.
+  const workbench = createWorkbench(
+    fakeStorage({ tabs: [["project-overview", "a", { contextId: "outline" }]] })
+  );
+
+  assert.equal(workbench.activeContext, "overview");
 });
 
 test("merges stored geometry over the defaults", () => {

@@ -1,5 +1,5 @@
 export type {
-  ActivityId,
+  ContextId,
   Inspection,
   InspectionNode,
   Panels,
@@ -11,12 +11,12 @@ export type {
   WorkbenchModel
 } from "$model/client/workbench/types";
 export {
-  ACTIVITIES_BY_KIND,
-  ACTIVITY_IDS,
+  CONTEXTS_BY_KIND,
+  CONTEXT_IDS,
   DEFAULTS,
   PROJECT_OVERVIEW,
   RESOURCE_KINDS,
-  isActivityId,
+  isContextId,
   isResourceKind
 } from "$model/client/workbench/types";
 export { createWorkbench } from "$model/client/workbench/constructor";

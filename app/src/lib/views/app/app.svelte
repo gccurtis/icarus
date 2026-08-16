@@ -1,7 +1,7 @@
 <script lang="ts">
   import { clientModel } from "$model/client";
-  import ActivityPanel from "$views/activity-panel/activity-panel.svelte";
-  import { RAIL_WIDTH } from "$views/activity-panel/types";
+  import ContextPanel from "$views/context-panel/context-panel.svelte";
+  import { RAIL_WIDTH } from "$views/context-panel/types";
   import Inspector from "$views/inspector/inspector.svelte";
   import StatusBar from "$views/app/components/status-bar.svelte";
   import TabBar from "$views/tab-bar/tab-bar.svelte";
@@ -34,22 +34,22 @@
   const { workbench } = clientModel();
 
   /**
-   * The model stores the activity panel's **content** width; the rail is
+   * The model stores the context panel's **content** width; the rail is
    * structural and deliberately excluded. Adding it back is the frame's job, and
    * `RAIL_WIDTH` is the panel's own constant rather than a number repeated here
-   * — see `$views/activity-panel/types`.
+   * — see `$views/context-panel/types`.
    */
-  const activityWidth = $derived(RAIL_WIDTH + workbench.panels.contextWidth);
+  const contextWidth = $derived(RAIL_WIDTH + workbench.panels.contextWidth);
 </script>
 
 <div
   class="app"
-  style:--app-activity="{activityWidth}px"
+  style:--app-context="{contextWidth}px"
   style:--app-inspector="{workbench.panels.inspectorWidth}px"
 >
   <div class="zone top-bar"><TopBar /></div>
   <div class="zone tab-bar"><TabBar /></div>
-  <div class="zone activity"><ActivityPanel /></div>
+  <div class="zone context"><ContextPanel /></div>
   <main class="zone work"><Workspace /></main>
   <div class="zone inspector"><Inspector /></div>
   <div class="zone status"><StatusBar /></div>
@@ -64,7 +64,7 @@
    *
    * The two flanks had one shared token once, on the reasoning that two names
    * for a single dimension is what lets them drift. That was right about the
-   * risk and wrong about the dimension: the activity panel is rail + content and
+   * risk and wrong about the dimension: the context panel is rail + content and
    * the inspector is its whole width, so 320 was two numbers that happened to
    * coincide by arithmetic. They diverge the moment either is dragged.
    */
@@ -75,7 +75,7 @@
     /* Seeds only. Both flanks are overridden inline from the workbench above;
      * these are what paints if that ever fails, and they are why the grid never
      * collapses to zero on a first frame. */
-    --app-activity: calc(var(--token-spacing-unit) * 80); /* 44 rail + 276 content */
+    --app-context: calc(var(--token-spacing-unit) * 80); /* 44 rail + 276 content */
     --app-inspector: calc(var(--token-spacing-unit) * 80); /* 320px */
 
     display: grid;
@@ -84,12 +84,12 @@
       var(--app-tab-bar)
       1fr
       var(--app-status);
-    grid-template-columns: var(--app-activity) 1fr var(--app-inspector);
+    grid-template-columns: var(--app-context) 1fr var(--app-inspector);
     grid-template-areas:
-      "top-bar  top-bar   top-bar"
-      "tab-bar  tab-bar   tab-bar"
-      "activity work      inspector"
-      "status   status    status";
+      "top-bar top-bar top-bar"
+      "tab-bar tab-bar tab-bar"
+      "context work    inspector"
+      "status  status  status";
 
     /* The frame owns the viewport; each zone scrolls within itself rather than
      * the page scrolling as a whole. */
@@ -114,8 +114,8 @@
     grid-area: tab-bar;
   }
 
-  .activity {
-    grid-area: activity;
+  .context {
+    grid-area: context;
   }
 
   /* The work surface is sacred: it gets the generous plane. */

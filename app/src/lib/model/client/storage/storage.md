@@ -124,7 +124,7 @@ strings for a ref — and drops what could not. It does **not** clamp to a panel
 minimum or maximum: that is policy, it belongs to the component that enforces the
 drag, and putting it here would put the same number in two places.
 
-It also does not know what a `ResourceKind` or an `ActivityId` is. Doing so would
+It also does not know what a `ResourceKind` or a `ContextId` is. Doing so would
 make the stored format follow every domain change; the workbench drops what it no
 longer recognises.
 

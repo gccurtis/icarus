@@ -82,7 +82,7 @@ restore(state)                                restore/restore.ts
 ├── isResourceKind()                          ../../types.ts
 ├── open()                                    open.ts
 ├── storedOptions()                           restore/stored-options.ts
-│   └── isActivityId()                        ../../types.ts
+│   └── isContextId()                         ../../types.ts
 ├── assignOptions()                           ../shared/assign-options.ts
 └── state.activeId = the matched stored ref   restore/restore.ts
 ```

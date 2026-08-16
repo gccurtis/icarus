@@ -19,8 +19,8 @@ only path between them.
 
 | Method | Invariant it preserves | Used by | File |
 | ------ | ---------------------- | ------- | ---- |
-| `activeTab` | `activeId` always names a tab in the list | `availableActivities`, `activeActivity`, `selectActivity`, `currentInspection`, `inspect`, `panels`, `resize` | [active-tab.ts](active-tab.ts) |
-| `assignOptions` | Options are replaced, not mutated, and only what outlives the session persists | `update`, `selectActivity`, `inspect`, `resize`, `open` | [assign-options.ts](assign-options.ts) |
+| `activeTab` | `activeId` always names a tab in the list | `availableContexts`, `activeContext`, `selectContext`, `currentInspection`, `inspect`, `panels`, `resize` | [active-tab.ts](active-tab.ts) |
+| `assignOptions` | Options are replaced, not mutated, and only what outlives the session persists | `update`, `selectContext`, `inspect`, `resize`, `open` | [assign-options.ts](assign-options.ts) |
 | `persist` | The store is a whole current document or nothing | `open`, `close`, `activate`, `reorder`, `assignOptions` | [persist.ts](persist.ts) |
 
 ## Method: `activeTab`
@@ -61,7 +61,7 @@ And the line between persisted and session-only state is drawn in one place:
 changed since, `scrollTop` is the same case, and persisting either would mean a
 write per keystroke-adjacent action.
 
-A patch persists when it *names* `activityId` or `panels`, including when it
+A patch persists when it *names* `contextId` or `panels`, including when it
 names one to clear it. Absence has to survive a reload too.
 
 **Fails when:** never. The tab was resolved by its caller.

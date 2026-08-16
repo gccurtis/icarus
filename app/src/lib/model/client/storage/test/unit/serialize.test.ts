@@ -36,7 +36,7 @@ test("round trips a full document", () => {
           "project-overview",
           "p1",
           {
-            activityId: "overview",
+            contextId: "overview",
             panels: {
               contextWidth: 312,
               contextCollapsed: false,
@@ -124,7 +124,7 @@ test("drops options that could not be options, keeping the tab", () => {
     workbench: {
       tabs: [
         ["project-overview", "p1", 7],
-        ["project-overview", "p2", { activityId: 7 }]
+        ["project-overview", "p2", { contextId: 7 }]
       ]
     }
   });
@@ -147,19 +147,19 @@ test("keeps an unknown kind — dropping it is the workbench's decision", () => 
   assert.deepEqual(decode(stored).workbench?.tabs, [["a-kind-that-no-longer-exists", "x"]]);
 });
 
-test("keeps an unknown activity id — the workbench decides that too", () => {
+test("keeps an unknown context id — the workbench decides that too", () => {
   const stored = JSON.stringify({
     v: STORAGE_VERSION,
-    workbench: { tabs: [["project-overview", "p1", { activityId: "gone" }]] }
+    workbench: { tabs: [["project-overview", "p1", { contextId: "gone" }]] }
   });
 
-  assert.equal(decode(stored).workbench?.tabs[0][2]?.activityId, "gone");
+  assert.equal(decode(stored).workbench?.tabs[0][2]?.contextId, "gone");
 });
 
 test("takes only the ref from an active entry, never a third element", () => {
   const stored = JSON.stringify({
     v: STORAGE_VERSION,
-    workbench: { tabs: [], active: ["project-overview", "p1", { activityId: "overview" }] }
+    workbench: { tabs: [], active: ["project-overview", "p1", { contextId: "overview" }] }
   });
 
   assert.deepEqual(decode(stored).workbench?.active, ["project-overview", "p1"]);

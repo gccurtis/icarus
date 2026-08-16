@@ -1,5 +1,5 @@
 /**
- * The activity panel's public contract.
+ * The context panel's public contract.
  *
  * One value, and it exists because the panel's width is decided in two places
  * that must agree. The workbench stores `contextWidth` as the **content portion

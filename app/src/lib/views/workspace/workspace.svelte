@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Component } from "svelte";
 
-  import { clientModel, type ResourceKind } from "$model/client";
+  import { clientModel, type ResourceKind, type ResourceRef } from "$model/client";
+  import DocumentResource from "$views/workspace/components/document.svelte";
   import ProjectOverview from "$views/workspace/components/project-overview.svelte";
 
   /**
@@ -22,13 +23,15 @@
    * compile until it has something to render. The model refuses a stored kind it
    * no longer recognises during restoration, so no unknown key reaches here.
    */
-  const RESOURCES: Record<ResourceKind, Component> = {
-    "project-overview": ProjectOverview
+  const RESOURCES: Record<ResourceKind, Component<{ resource: ResourceRef }>> = {
+    "project-overview": ProjectOverview,
+    document: DocumentResource
   };
 
   const { workbench } = clientModel();
 
-  const Resource = $derived(RESOURCES[workbench.active.resource.kind]);
+  const resource = $derived(workbench.active.resource);
+  const Resource = $derived(RESOURCES[resource.kind]);
 </script>
 
 <!--
@@ -37,5 +40,5 @@
   documents are not one document.
 -->
 {#key workbench.activeId}
-  <Resource />
+  <Resource {resource} />
 {/key}

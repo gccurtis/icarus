@@ -18,7 +18,10 @@ order.
 This view owns:
 
 - how a tab looks, including which cues say "active";
-- display copy — the label and icon — for every resource kind a tab can hold;
+- display copy — the label and icon — for every resource kind a tab can hold. A
+  label is a function of the whole resource rather than of its kind alone, or
+  every document tab would read "Document", which is the one thing a tab strip
+  exists to prevent;
 - the rule that a permanent tab shows no close affordance.
 
 It does not own:
@@ -75,6 +78,7 @@ gesture, bounds, and a keyboard equivalent to own.
 | State | Trigger | Visible result | Available recovery |
 | --- | --- | --- | --- |
 | Initial | Always | At least one tab, one of them active | — |
+| Several | A resource was opened | One tab per open resource; only transient ones show a close control | Closing returns to a neighbour |
 | Loading | `None` | — | — |
 | Empty | `None` | — | — |
 | Stale | `None` | — | — |

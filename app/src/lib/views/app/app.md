@@ -27,7 +27,7 @@ It does not own:
 - anything a zone renders. Each zone view is reached through its root and is
   otherwise opaque.
 - what fills the centre. The workspace resolves that from the active tab.
-- the rail's width, which belongs to the activity panel and is imported from it.
+- the rail's width, which belongs to the context panel and is imported from it.
 
 ## Public Contract
 
@@ -59,7 +59,7 @@ Views reached through their root component only.
 | View | Root imported | Usage |
 | --- | --- | --- |
 | `tab-bar` | `tab-bar.svelte` | What is open and which one is active |
-| `activity-panel` | `activity-panel.svelte`, `types.ts` | The left flank; `types.ts` for the rail width the column math needs |
+| `context-panel` | `context-panel.svelte`, `types.ts` | The left flank; `types.ts` for the rail width the column math needs |
 | `workspace` | `workspace.svelte` | The centre |
 | `inspector` | `inspector.svelte` | The right flank |
 

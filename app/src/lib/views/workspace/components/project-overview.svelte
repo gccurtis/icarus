@@ -1,20 +1,45 @@
 <script lang="ts">
+  import { clientModel, type ResourceRef } from "$model/client";
+
   /**
    * What a `project-overview` resource renders as.
    *
    * The permanent tab's kind, so this is what the work surface shows on a first
-   * load and whenever every transient tab has been closed. It has no content of
-   * its own yet: a project summary needs capabilities that do not exist, and the
-   * Convex round trip that used to occupy this space was a transport probe
-   * rather than a surface — it lives at `/mock/[project]` now.
+   * load and whenever every transient tab has been closed.
    *
-   * What it does is make the workspace's key map total and reachable: one
-   * `ResourceKind`, one component, resolved rather than branched.
+   * **A fixture, and the only caller of `open()` in the application.** The list
+   * below stands in for a project's contents until a capability can supply one.
+   * What is real is the opening: `open()` mints a tab, or activates the one
+   * already holding that resource — it dedupes on kind *and* id, so pressing the
+   * same entry twice returns to the tab rather than making a second.
    */
+  let { resource }: { resource: ResourceRef } = $props();
+
+  const { workbench } = clientModel();
+
+  const DOCUMENTS = ["Weekly notes", "Interview 03", "Q3 findings"];
+
+  const documentRef = (name: string): ResourceRef => ({
+    kind: "document",
+    id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+  });
 </script>
 
 <div class="overview">
-  <p class="note">Nothing open.</p>
+  <div class="panel">
+    <h2 class="heading">{resource.id}</h2>
+    <p class="note">Open one, and the tab bar, the context rail, and this surface all follow it.</p>
+
+    <ul class="documents">
+      {#each DOCUMENTS as name (name)}
+        <li>
+          <button type="button" class="entry" onclick={() => workbench.open(documentRef(name))}>
+            {name}
+          </button>
+        </li>
+      {/each}
+    </ul>
+  </div>
 </div>
 
 <style>
@@ -26,9 +51,55 @@
     padding: calc(var(--token-spacing-unit) * 6);
   }
 
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 3);
+    width: 100%;
+    max-width: 32rem;
+  }
+
+  .heading {
+    font-size: var(--token-text-h4);
+    line-height: var(--token-text-h4-leading);
+    font-weight: 600;
+    margin: 0;
+  }
+
   .note {
     font-size: var(--token-text-body-sm);
     color: var(--token-ink-muted);
     margin: 0;
+  }
+
+  .documents {
+    display: flex;
+    flex-direction: column;
+    gap: var(--token-spacing-unit);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .entry {
+    width: 100%;
+    /* Past the 24px minimum target with room to spare. */
+    min-height: calc(var(--token-spacing-unit) * 9);
+    display: flex;
+    align-items: center;
+    padding-inline: calc(var(--token-spacing-unit) * 3);
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background-color: var(--token-surface-panel);
+    font: inherit;
+    font-size: var(--token-text-body-sm);
+    color: var(--token-ink-primary);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .entry:hover {
+    background-color: var(--token-surface-panel-hover);
+    border-color: var(--token-color-interactive-border);
   }
 </style>

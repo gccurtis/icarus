@@ -1,5 +1,7 @@
 <script lang="ts">
   import { clientModel } from "$model/client";
+  import NextText from "$views/inspector/components/next-text.svelte";
+  import TextSelection from "$views/inspector/components/text-selection.svelte";
 
   /**
    * The inspector — the lens. It answers "what is this selected thing?"
@@ -10,15 +12,18 @@
    * this panel is a control surface, not a mirror, and the nothing-inspected
    * case is exactly when it can offer insert affordances.
    *
-   * **It is `undefined` on every path today**, because `inspect()` has no
-   * callers yet — no editor exists to report a caret. That is a fact about how
-   * far the application has been built, not a gap in this view.
+   * **The key selection is an if-chain rather than a map**, unlike the workspace
+   * and the context panel. `InspectionNode` is a discriminated union whose
+   * members carry different fields, so a `Record<kind, Component>` would erase
+   * the per-kind props and every component would take `any`. Narrowing on `kind`
+   * is what keeps `blockId` and the offsets typed at the point they are passed.
    *
-   * **There is no kind map here, deliberately.** `InspectionNode` names six
-   * kinds, and building six components for carets no surface can produce would
-   * be six files nothing can reach. The branch below is the whole of the
-   * mapping until something calls `inspect()`; the first caller brings the view
-   * its node needs, and the map starts then.
+   * **The map is partial, deliberately.** Only the two kinds a surface can
+   * actually produce are built. `document-table`, `formula`, and `prompt` have
+   * no producer, and `empty` needs the insert affordances that belong to an
+   * editor; components for any of them would be files nothing can reach. The
+   * fallback below names the kind, which is the honest rendering of "something
+   * is inspected and this panel has no view for it yet".
    */
   const { workbench } = clientModel();
 
@@ -26,10 +31,14 @@
 </script>
 
 <aside class="inspector" aria-label="Inspector">
-  {#if inspection}
-    <p class="note">No view for <code>{inspection.kind}</code> yet.</p>
-  {:else}
+  {#if !inspection}
     <p class="note">Nothing selected.</p>
+  {:else if inspection.kind === "document-text-selection"}
+    <TextSelection blockId={inspection.blockId} from={inspection.from} to={inspection.to} />
+  {:else if inspection.kind === "document-next-text"}
+    <NextText blockId={inspection.blockId} />
+  {:else}
+    <p class="note">No view for <code>{inspection.kind}</code> yet.</p>
   {/if}
 </aside>
 

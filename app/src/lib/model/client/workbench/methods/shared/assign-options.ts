@@ -21,5 +21,5 @@ export const assignOptions = (
   patch: Partial<TabOptions>
 ): void => {
   tab.options = { ...tab.options, ...patch };
-  if ("activityId" in patch || "panels" in patch) persist(state);
+  if ("contextId" in patch || "panels" in patch) persist(state);
 };

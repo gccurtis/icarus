@@ -9,7 +9,7 @@
  * That direction is why a persisted tab carries a bare `string` kind rather than
  * a `ResourceKind`: the stored value is whatever was written last time, possibly
  * by an older build, and treating it as a current domain type would be a lie the
- * compiler cannot catch. The same holds for a stored activity id.
+ * compiler cannot catch. The same holds for a stored context id.
  */
 
 /** Every project's key begins with this, so one prefix finds them all. */
@@ -27,10 +27,13 @@ export const storageKey = (project: string): string => `${STORAGE_KEY_PREFIX}.${
  * migrating — this is a cache of panel widths and open tabs, so being wrong
  * costs one re-drag, and migration code for it would outlive its usefulness.
  *
- * Version 2 is the first with panel geometry on the tab rather than in a
- * document-wide preferences section.
+ * Version 2 was the first with panel geometry on the tab rather than in a
+ * document-wide preferences section. Version 3 renamed a tab's remembered rail
+ * position from `activityId` to `contextId`, which is a rename in the stored
+ * document as much as in the code — discarding costs one rail position per tab,
+ * which is exactly the kind of loss this policy exists to accept.
  */
-export const STORAGE_VERSION = 2;
+export const STORAGE_VERSION = 3;
 
 /** Panel geometry. Values only; the bounds belong to the components. */
 export type PersistedPanels = {
@@ -44,12 +47,12 @@ export type PersistedPanels = {
  * The part of a tab's options that outlives the tab's session.
  *
  * Named rather than positional, unlike the ref beside it: this is the sparse
- * half. A tab that was never resized and never left the default activity writes
+ * half. A tab that was never resized and never left the default context writes
  * nothing here at all, and a name costs bytes only when there is a value to
  * carry.
  */
 export type PersistedTabOptions = {
-  readonly activityId?: string;
+  readonly contextId?: string;
   readonly panels?: PersistedPanels;
 };
 

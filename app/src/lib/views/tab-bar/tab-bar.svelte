@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Component } from "svelte";
+  import FileText from "@lucide/svelte/icons/file-text";
   import LayoutDashboard from "@lucide/svelte/icons/layout-dashboard";
   import X from "@lucide/svelte/icons/x";
 
-  import { clientModel, type ResourceKind } from "$model/client";
+  import { clientModel, type ResourceKind, type ResourceRef } from "$model/client";
 
   /**
    * The tab bar — which objects are open, and which one is active.
@@ -19,14 +20,19 @@
    * and the model already forces both to be total with
    * `Record<ResourceKind, …>`.
    *
+   * A label is a function of the whole resource rather than of its kind alone.
+   * Every document tab would otherwise read "Document", which is the one thing a
+   * tab strip exists to prevent.
+   *
    * **Not an ARIA tablist.** That pattern owes a `tabpanel` relationship and
    * roving tabindex, and a tab whose element also contains a focusable close
    * button is not a `role="tab"`. Each tab is an ordinary button carrying
    * `aria-current`, which is honest about what is implemented; the day these
    * gain arrow-key traversal is the day the roles are worth claiming.
    */
-  const RESOURCES: Record<ResourceKind, { label: string; icon: Component }> = {
-    "project-overview": { label: "Overview", icon: LayoutDashboard }
+  const RESOURCES: Record<ResourceKind, { label: (of: ResourceRef) => string; icon: Component }> = {
+    "project-overview": { label: () => "Overview", icon: LayoutDashboard },
+    document: { label: (of) => of.id, icon: FileText }
   };
 
   const { workbench } = clientModel();
@@ -34,8 +40,9 @@
 
 <div class="tab-bar">
   {#each workbench.tabs as tab (tab.id)}
-    {@const resource = RESOURCES[tab.resource.kind]}
-    {@const Icon = resource.icon}
+    {@const entry = RESOURCES[tab.resource.kind]}
+    {@const Icon = entry.icon}
+    {@const label = entry.label(tab.resource)}
     {@const active = tab.id === workbench.activeId}
     <div class="tab" class:active>
       <button
@@ -45,7 +52,7 @@
         onclick={() => workbench.activate(tab.id)}
       >
         <Icon size={14} aria-hidden="true" />
-        <span>{resource.label}</span>
+        <span>{label}</span>
       </button>
 
       <!--
@@ -57,7 +64,7 @@
         <button
           type="button"
           class="close"
-          aria-label="Close {resource.label}"
+          aria-label="Close {label}"
           onclick={() => workbench.close(tab.id)}
         >
           <X size={12} aria-hidden="true" />

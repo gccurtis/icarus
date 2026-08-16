@@ -1,6 +1,6 @@
 import type { PersistedTabOptions } from "$model/client/storage";
 import type { TabOptions } from "$model/client/workbench/types";
-import { DEFAULTS, isActivityId } from "$model/client/workbench/types";
+import { DEFAULTS, isContextId } from "$model/client/workbench/types";
 
 /**
  * Stored options, as options this workbench will accept.
@@ -17,10 +17,10 @@ import { DEFAULTS, isActivityId } from "$model/client/workbench/types";
 export const storedOptions = (stored: PersistedTabOptions): Partial<TabOptions> => {
   const patch: Partial<TabOptions> = {};
 
-  // A stored id can outlive the activity it named. Dropping it falls back to the
+  // A stored id can outlive the context it named. Dropping it falls back to the
   // kind's default, which is a reset rail where a crash is not.
-  if (stored.activityId !== undefined && isActivityId(stored.activityId)) {
-    patch.activityId = stored.activityId;
+  if (stored.contextId !== undefined && isContextId(stored.contextId)) {
+    patch.contextId = stored.contextId;
   }
   if (stored.panels) {
     patch.panels = { ...DEFAULTS, ...stored.panels };

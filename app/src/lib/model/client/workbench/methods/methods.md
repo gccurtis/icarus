@@ -23,9 +23,9 @@ workbench at construction.
 | `activate` | file | [`activate.ts`](activate.ts) | mutator | Makes a tab the active one |
 | `reorder` | file | [`reorder.ts`](reorder.ts) | mutator | Moves a transient tab among the transient tabs |
 | `update` | file | [`update.ts`](update.ts) | mutator | Patches any tab's options by id |
-| `availableActivities` | file | [`available-activities.ts`](available-activities.ts) | accessor | The rail positions the active tab's kind offers |
-| `activeActivity` | file | [`active-activity.ts`](active-activity.ts) | accessor | The active tab's rail position, or its kind's default |
-| `selectActivity` | file | [`select-activity.ts`](select-activity.ts) | mutator | Records a rail choice on the active tab |
+| `availableContexts` | file | [`available-contexts.ts`](available-contexts.ts) | accessor | The rail positions the active tab's kind offers |
+| `activeContext` | file | [`active-context.ts`](active-context.ts) | accessor | The active tab's rail position, or its kind's default |
+| `selectContext` | file | [`select-context.ts`](select-context.ts) | mutator | Records a rail choice on the active tab |
 | `currentInspection` | file | [`current-inspection.ts`](current-inspection.ts) | accessor | The innermost node of the active tab's inspection |
 | `inspect` | file | [`inspect.ts`](inspect.ts) | mutator | Replaces the active tab's inspection |
 | `panels` | file | [`panels.ts`](panels.ts) | accessor | The active tab's geometry, or `DEFAULTS` |

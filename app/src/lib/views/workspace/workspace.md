@@ -77,6 +77,7 @@ through its root. None has yet.
 | State | Trigger | Visible result | Available recovery |
 | --- | --- | --- | --- |
 | Initial | Always | The active tab's resource | — |
+| Switched | A different tab became active | The new tab's resource, freshly mounted | — |
 | Loading | `None` | — | — |
 | Empty | `None` | — | — |
 | Stale | `None` | — | — |

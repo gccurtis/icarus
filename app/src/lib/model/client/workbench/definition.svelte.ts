@@ -1,7 +1,7 @@
 import type { ClientStorage } from "$model/client/storage";
 import { activate } from "$model/client/workbench/methods/activate";
-import { activeActivity } from "$model/client/workbench/methods/active-activity";
-import { availableActivities } from "$model/client/workbench/methods/available-activities";
+import { activeContext } from "$model/client/workbench/methods/active-context";
+import { availableContexts } from "$model/client/workbench/methods/available-contexts";
 import { close } from "$model/client/workbench/methods/close";
 import { currentInspection } from "$model/client/workbench/methods/current-inspection";
 import { inspect } from "$model/client/workbench/methods/inspect";
@@ -10,11 +10,11 @@ import { restore } from "$model/client/workbench/methods/open/restore/restore";
 import { panels } from "$model/client/workbench/methods/panels";
 import { reorder } from "$model/client/workbench/methods/reorder";
 import { resize } from "$model/client/workbench/methods/resize";
-import { selectActivity } from "$model/client/workbench/methods/select-activity";
+import { selectContext } from "$model/client/workbench/methods/select-context";
 import { activeTab } from "$model/client/workbench/methods/shared/active-tab";
 import { update } from "$model/client/workbench/methods/update";
 import type {
-  ActivityId,
+  ContextId,
   Inspection,
   InspectionNode,
   Panels,
@@ -113,16 +113,16 @@ export class Workbench implements WorkbenchModel {
     update(this.#state, id, patch);
   }
 
-  get availableActivities(): readonly ActivityId[] {
-    return availableActivities(this.#state);
+  get availableContexts(): readonly ContextId[] {
+    return availableContexts(this.#state);
   }
 
-  get activeActivity(): ActivityId {
-    return activeActivity(this.#state);
+  get activeContext(): ContextId {
+    return activeContext(this.#state);
   }
 
-  selectActivity(id: ActivityId): void {
-    selectActivity(this.#state, id);
+  selectContext(id: ContextId): void {
+    selectContext(this.#state, id);
   }
 
   get currentInspection(): InspectionNode | undefined {

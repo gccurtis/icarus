@@ -68,12 +68,12 @@ const panels = (value: unknown): PersistedPanels | undefined => {
 const options = (value: unknown): PersistedTabOptions | undefined => {
   if (!isObject(value)) return undefined;
 
-  const activityId = typeof value.activityId === "string" ? value.activityId : undefined;
+  const contextId = typeof value.contextId === "string" ? value.contextId : undefined;
   const geometry = panels(value.panels);
 
-  if (activityId === undefined && geometry === undefined) return undefined;
+  if (contextId === undefined && geometry === undefined) return undefined;
   return {
-    ...(activityId === undefined ? {} : { activityId }),
+    ...(contextId === undefined ? {} : { contextId }),
     ...(geometry === undefined ? {} : { panels: geometry })
   };
 };

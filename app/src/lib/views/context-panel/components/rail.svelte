@@ -1,44 +1,44 @@
 <script lang="ts">
   import type { Component } from "svelte";
 
-  import type { ActivityId } from "$model/client";
-  import { RAIL_WIDTH } from "$views/activity-panel/types";
+  import type { ContextId } from "$model/client";
+  import { RAIL_WIDTH } from "$views/context-panel/types";
 
   /**
    * The rail — the fixed strip that chooses what the panel shows.
    *
    * It takes its entries rather than reading the workbench itself, because the
    * panel root already resolves the same key to a content component. One reader
-   * of `activeActivity`, one place the map lives, and the rail stays a control
+   * of `activeContext`, one place the map lives, and the rail stays a control
    * that reports a choice.
    */
   let {
-    activities,
+    contexts,
     available,
     active,
     onselect
   }: {
-    /** Display copy for every activity the model can name. */
-    activities: Record<ActivityId, { label: string; icon: Component }>;
+    /** Display copy for every context the model can name. */
+    contexts: Record<ContextId, { label: string; icon: Component }>;
     /** What this resource kind offers, in the order it offers them. */
-    available: readonly ActivityId[];
+    available: readonly ContextId[];
     /** The one currently showing. */
-    active: ActivityId;
-    onselect: (id: ActivityId) => void;
+    active: ContextId;
+    onselect: (id: ContextId) => void;
   } = $props();
 </script>
 
-<nav class="rail" aria-label="Activities" style:width="{RAIL_WIDTH}px">
+<nav class="rail" aria-label="Contexts" style:width="{RAIL_WIDTH}px">
   {#each available as id (id)}
-    {@const activity = activities[id]}
-    {@const Icon = activity.icon}
+    {@const entry = contexts[id]}
+    {@const Icon = entry.icon}
     <button
       type="button"
       class="entry"
       class:selected={id === active}
       aria-current={id === active ? "true" : undefined}
-      aria-label={activity.label}
-      title={activity.label}
+      aria-label={entry.label}
+      title={entry.label}
       onclick={() => onselect(id)}
     >
       <Icon size={18} aria-hidden="true" />

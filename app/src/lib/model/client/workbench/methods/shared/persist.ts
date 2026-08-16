@@ -28,13 +28,13 @@ export const persist = (state: WorkbenchState): void => {
  * `open()` dedupes on kind and id.
  */
 const toPersisted = (tab: Tab): PersistedTab => {
-  const { activityId, panels } = tab.options;
-  if (activityId === undefined && panels === undefined) {
+  const { contextId, panels } = tab.options;
+  if (contextId === undefined && panels === undefined) {
     return [tab.resource.kind, tab.resource.id];
   }
 
   const options: PersistedTabOptions = {
-    ...(activityId === undefined ? {} : { activityId }),
+    ...(contextId === undefined ? {} : { contextId }),
     ...(panels === undefined ? {} : { panels })
   };
   return [tab.resource.kind, tab.resource.id, options];

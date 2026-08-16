@@ -5,7 +5,7 @@ import type { TabId, TabOptions } from "$model/client/workbench/types";
 /**
  * Patches any tab's options by id.
  *
- * The general form. `selectActivity`, `inspect`, and `resize` are the named ways
+ * The general form. `selectContext`, `inspect`, and `resize` are the named ways
  * to change one option on the active tab; this is how a caller changes an option
  * on a tab that is not active, which is what a background load or a restore
  * needs.

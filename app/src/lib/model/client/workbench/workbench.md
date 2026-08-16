@@ -24,9 +24,9 @@ one document has said something about that document, not about the application.
 
 | Was | Is now |
 | --- | --- |
-| `activities.available` | `availableActivities` |
-| `activities.active` | `activeActivity` |
-| `activities.select` | `selectActivity` |
+| `activities.available` | `availableContexts` |
+| `activities.active` | `activeContext` |
+| `activities.select` | `selectContext` |
 | `inspector.inspection` | `active.options.inspection` |
 | `inspector.current` | `currentInspection` |
 | `inspector.inspect` | `inspect` |
@@ -49,9 +49,9 @@ Workbench owns:
 
 Consumers own:
 
-- what a resource kind or an activity id *renders as*. This object exposes stable
+- what a resource kind or a context id *renders as*. This object exposes stable
   keys, and the view that renders the result resolves each one: the workspace
-  maps `ResourceKind`, the activity panel maps `ActivityId`. There is no registry
+  maps `ResourceKind`, the context panel maps `ContextId`. There is no registry
   directory and no shared map file — see
   [the view standard](../../../../../docs/view-directory/view-directory.md).
 - the bounds of a drag. `resize` records values; the minimum, the maximum, and
@@ -76,9 +76,9 @@ supporting flow.
 | `activate` | file | mutator | Makes a tab the active one | — |
 | `reorder` | file | mutator | Moves a transient tab among the transient tabs | — |
 | `update` | file | mutator | Patches any tab's options by id | — |
-| `availableActivities` | file | accessor | The rail positions the active tab's kind offers | — |
-| `activeActivity` | file | accessor | The active tab's rail position, or its kind's default | — |
-| `selectActivity` | file | mutator | Records a rail choice on the active tab | — |
+| `availableContexts` | file | accessor | The rail positions the active tab's kind offers | — |
+| `activeContext` | file | accessor | The active tab's rail position, or its kind's default | — |
+| `selectContext` | file | mutator | Records a rail choice on the active tab | — |
 | `currentInspection` | file | accessor | The innermost node of the active tab's inspection | — |
 | `inspect` | file | mutator | Replaces the active tab's inspection | — |
 | `panels` | file | accessor | The active tab's geometry, or `DEFAULTS` | — |
@@ -158,11 +158,11 @@ the geometry a user dragged on it would otherwise be the one panel size in the
 application that a reload forgot. Replaying its ref costs nothing, because
 `open()` dedupes on kind and id.
 
-**A stored kind is checked before it is trusted.** `ACTIVITIES_BY_KIND` is a
+**A stored kind is checked before it is trusted.** `CONTEXTS_BY_KIND` is a
 `Record<ResourceKind, …>`, so a kind written by an older build resolves to
 `undefined` and throws during paint. `RESOURCE_KINDS` exists as a value for
 exactly this — the type is derived from it, so the two cannot drift — and
-`isResourceKind` drops what no longer exists. `ACTIVITY_IDS` and `isActivityId`
+`isResourceKind` drops what no longer exists. `CONTEXT_IDS` and `isContextId`
 are the same pair for the rail.
 
 ## Terminal Behaviour
@@ -201,8 +201,8 @@ never left pending at unload.
   rather than no-op, because a caller holding an id for a tab that is gone has a
   defect that gets harder to find the further it travels.
 - **A stored value is drift, not a defect.** Restoration drops what it no longer
-  recognises instead of throwing. `selectActivity` throws, because that is a
-  caller naming an activity the rail could not have offered.
+  recognises instead of throwing. `selectContext` throws, because that is a
+  caller naming a context the rail could not have offered.
 
 ## File Tree
 
@@ -216,8 +216,8 @@ workbench/
 ├── methods/
 │   ├── methods.md
 │   ├── activate.ts
-│   ├── active-activity.ts
-│   ├── available-activities.ts
+│   ├── active-context.ts
+│   ├── available-contexts.ts
 │   ├── close.ts
 │   ├── current-inspection.ts
 │   ├── inspect.ts
@@ -225,7 +225,7 @@ workbench/
 │   ├── panels.ts
 │   ├── reorder.ts
 │   ├── resize.ts
-│   ├── select-activity.ts
+│   ├── select-context.ts
 │   ├── update.ts
 │   └── shared/
 └── test/

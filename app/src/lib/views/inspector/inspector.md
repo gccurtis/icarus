@@ -68,24 +68,35 @@ It does not own:
 
 ## Directory Documents
 
-No concern directories. This view reads one value and renders it; there is
+| Concern | Document | What it owns |
+| --- | --- | --- |
+| Components | [components.md](components/components.md) | One component per inspection kind that has a view, and the partial map between them |
+
+No other concern directory. This view reads one value and renders it; there is
 nothing to coordinate and nothing to observe.
 
 ## Rendered States
 
 | State | Trigger | Visible result | Available recovery |
 | --- | --- | --- | --- |
-| Initial | Always | Nothing selected | — |
+| Initial | A tab nobody has inspected in | Nothing selected | — |
 | Loading | `None` | — | — |
 | Empty | `currentInspection` is undefined | "Nothing selected" | — |
 | Stale | `None` | — | — |
 | Failure | `None` | — | — |
 | Denied | `None` | — | — |
-| Unmapped | An inspection exists whose kind has no view | The kind, named | — |
+| Selection | A drag inside a document block | The block and its offsets | — |
+| Caret | A click inside a document block | The block | — |
+| Unmapped | An inspection whose kind has no view | The kind, named | — |
 
-**The empty state is every state today.** `inspect()` has no callers — no editor
-exists to report a caret — so `currentInspection` is undefined on every path.
-That is a fact about how far the application has been built, not a gap here.
+**An inspection lives on the tab, so switching tabs switches this panel** — and
+a tab returned to still shows what was inspected in it. That is the model's
+doing, not this view's: it reads `currentInspection` and re-renders.
+
+The last three states are reachable only through the workspace's document
+component, which is the one caller of `inspect()` in the application. It is a
+fixture, so the two mapped states are proof that the path works rather than
+finished surface.
 
 ## Accessibility
 
@@ -111,10 +122,13 @@ That is a fact about how far the application has been built, not a gap here.
 
 ## View Invariants
 
-- **There is no kind map, deliberately.** `InspectionNode` names six kinds, and
-  building six components for carets no surface can produce would be six files
-  nothing can reach. The undefined-or-not branch is the whole mapping until
-  something calls `inspect()`; the first caller brings the view its node needs.
+- **The kind map is partial, deliberately.** `InspectionNode` names six kinds;
+  two are built, because two are all any surface can currently produce.
+  Components for the rest would be files nothing can reach. Each new producer
+  brings the view its node needs.
+- **A node is never a payload.** The model hands over ids and offsets, and this
+  view fetches whatever it needs from them. Carrying content would put a copy of
+  something that lives elsewhere into state that is deliberately not persisted.
 - **Nothing here writes an inspection.** This view reads. When it gains controls
   they act on the thing inspected, not on the inspection itself.
 

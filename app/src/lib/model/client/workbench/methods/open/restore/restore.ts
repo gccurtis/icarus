@@ -23,7 +23,7 @@ export const restore = (state: WorkbenchState): void => {
   if (!stored) return;
 
   for (const [kind, id, options] of stored.tabs) {
-    // A kind from an older build may no longer exist. `ACTIVITIES_BY_KIND` is
+    // A kind from an older build may no longer exist. `CONTEXTS_BY_KIND` is
     // keyed by kind, so an unknown one resolves to undefined and throws during
     // paint. Dropping it is what keeps a stale store from being a crash.
     if (!isResourceKind(kind)) continue;
