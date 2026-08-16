@@ -58,6 +58,16 @@
     "Translator"
   ];
 
+  /**
+   * Three rows and then it scrolls. A menu tall enough to show everything is a
+   * wall of options over the work surface; three is enough to see that it is a
+   * list and that there is more below it.
+   *
+   * The class is also the hook this component's stylesheet uses to reach the
+   * items, which render in a portal and so are outside its own tree.
+   */
+  const MENU = "copilot-menu max-h-[5rem] min-w-32";
+
   let mode = $state<Mode>("ask");
   let persona = $state(PERSONAS[0]);
   let prompt = $state("");
@@ -151,20 +161,18 @@
         decision belongs, rather than removed from a component every other
         surface shares.
       -->
-      <Select.Root type="single" bind:value={mode}>
-        <Select.Trigger
-          size="sm"
-          class="border-intelligence-border bg-intelligence-surface text-intelligence-text px-2.5 [&>svg]:hidden"
-          aria-label="Mode"
-        >
-          {MODES.find((entry) => entry.id === mode)?.label}
-        </Select.Trigger>
-        <Select.Content side="top" align="start">
-          {#each MODES as entry (entry.id)}
-            <Select.Item value={entry.id} label={entry.label}>{entry.label}</Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
+      <div class="control intent">
+        <Select.Root type="single" bind:value={mode}>
+          <Select.Trigger size="sm" aria-label="Mode">
+            {MODES.find((entry) => entry.id === mode)?.label}
+          </Select.Trigger>
+          <Select.Content side="top" align="start" class={MENU}>
+            {#each MODES as entry (entry.id)}
+              <Select.Item value={entry.id} label={entry.label}>{entry.label}</Select.Item>
+            {/each}
+          </Select.Content>
+        </Select.Root>
+      </div>
 
       <!--
         Who is answering, centred. `max-h` is what makes the list scroll rather
@@ -172,20 +180,16 @@
         menu opens upward, so an unbounded list of personas would grow straight
         past the frame with its far end unreachable.
       -->
-      <Select.Root type="single" bind:value={persona}>
-        <Select.Trigger
-          size="sm"
-          class="border-border-subtle hover:bg-surface-panel-hover px-2.5 [&>svg]:hidden"
-          aria-label="Persona"
-        >
-          {persona}
-        </Select.Trigger>
-        <Select.Content side="top" align="center" class="max-h-64">
-          {#each PERSONAS as name (name)}
-            <Select.Item value={name} label={name}>{name}</Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
+      <div class="control who">
+        <Select.Root type="single" bind:value={persona}>
+          <Select.Trigger size="sm" aria-label="Persona">{persona}</Select.Trigger>
+          <Select.Content side="top" align="center" class={MENU}>
+            {#each PERSONAS as name (name)}
+              <Select.Item value={name} label={name}>{name}</Select.Item>
+            {/each}
+          </Select.Content>
+        </Select.Root>
+      </div>
 
       <button type="submit" class="send" disabled={!prompt.trim()} aria-label="Send {mode}">
         <ArrowUp size={14} aria-hidden="true" />
@@ -266,6 +270,50 @@
     justify-self: end;
   }
 
+  /**
+   * The two pickers, styled here rather than through the class prop.
+   *
+   * The registry trigger is a bordered field at `text-sm` — correct for a form,
+   * wrong for chrome. Overriding it with utilities does not work reliably:
+   * `twMerge` does not know that this system's `text-caption` conflicts with
+   * Tailwind's `text-sm`, so it keeps both and the larger one wins. Reaching the
+   * element from this stylesheet is unambiguous, and it puts the bar's whole
+   * appearance in one place instead of half here and half in a prop.
+   *
+   * What is left is a label that happens to be clickable: no border, no fill, no
+   * chevron. The affordance is the ink moving on hover, which is the quietest
+   * thing that still says a control is there.
+   */
+  .control :global([data-slot="select-trigger"]) {
+    height: calc(var(--token-spacing-unit) * 6);
+    padding-inline: calc(var(--token-spacing-unit) * 1.5);
+    border: 0;
+    background: none;
+    box-shadow: none;
+    font-size: var(--token-text-caption);
+    line-height: var(--token-text-caption-leading);
+    transition: color var(--token-motion-control, 120ms) ease;
+  }
+
+  .control :global([data-slot="select-trigger"] svg) {
+    display: none;
+  }
+
+  .intent :global([data-slot="select-trigger"]) {
+    /* Intent is the one choice that changes what the bar does, so it carries the
+     * intelligence role — as ink alone, not as a filled chip. */
+    color: var(--token-color-intelligence-text);
+    font-weight: 600;
+  }
+
+  .who :global([data-slot="select-trigger"]) {
+    color: var(--token-ink-muted);
+  }
+
+  .who :global([data-slot="select-trigger"]:hover) {
+    color: var(--token-ink-primary);
+  }
+
   .send {
     display: flex;
     align-items: center;
@@ -307,5 +355,18 @@
 
   textarea::placeholder {
     color: var(--token-ink-muted);
+  }
+
+  /**
+   * Menu rows, at the same caption size as the triggers that open them.
+   *
+   * Genuinely global, because the menu renders in a portal and is not in this
+   * component's tree at all. `.copilot-menu` is the scope: it travels with the
+   * portalled element, so the rule reaches these rows and no other Select in the
+   * application.
+   */
+  :global(.copilot-menu [data-slot="select-item"]) {
+    font-size: var(--token-text-caption);
+    line-height: var(--token-text-caption-leading);
   }
 </style>
