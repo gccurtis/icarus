@@ -2,6 +2,7 @@ import type { Scope } from "$access/types/access";
 import type { Doc, Id } from "$convex/_generated/dataModel";
 import type { MutationCtx } from "$convex/_generated/server";
 import { clusterLevel } from "$knowledge/api/cluster/level";
+import { writeLevelIndex } from "$knowledge/api/shared/level-index";
 import type { ClusterArtifact } from "$knowledge/types/clustering";
 
 /** The algorithm sees strings; what goes back into `members` came out of the store. */
@@ -54,7 +55,11 @@ export const grow = async (
   let pool: ClusterArtifact[] = frontier.map(artifactOf);
 
   while (pool.length >= 2) {
-    const { clusters, orphanIds } = clusterLevel(pool);
+    const { clusters, orphanIds, index } = clusterLevel(pool);
+    // Recorded whether or not anything clustered: the index describes the pool
+    // that was searched, and a pass that found no clique searched it all the
+    // same.
+    if (index) await writeLevelIndex(ctx, scope, index);
     if (clusters.length === 0) break;
 
     const orphans = new Set(orphanIds);

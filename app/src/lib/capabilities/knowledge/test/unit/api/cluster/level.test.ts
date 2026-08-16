@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
 import type { Id } from "$convex/_generated/dataModel";
-import { clusterLevel } from "$knowledge/api/cluster/level";
+import { NEIGHBOURS_K, PCA_DIMS } from "$knowledge/api/cluster/candidates";
+import {
+  CLUSTER_FLOOR,
+  MAX_CLUSTER_POOL,
+  approximateRelation,
+  clusterLevel,
+  exactRelation,
+  levelOf
+} from "$knowledge/api/cluster/level";
 import { nodeId } from "$knowledge/api/cluster/node-id";
 import type { ClusterArtifact } from "$knowledge/types/clustering";
 import type { LatticeSource } from "$knowledge/types/lattice-source";
-import { bridgedGroups, tilted } from "$knowledge/test/fixture";
+import { bridgedGroups, separatedGroups, tilted } from "$knowledge/test/fixture";
 
 const notes: LatticeSource = { kind: "document", id: "documents:1" as Id<"documents"> };
 
@@ -109,5 +117,87 @@ describe("clusterLevel", () => {
 
     expect(alone.clusters).toEqual([]);
     expect(alone.orphanIds).toEqual(["w:alone"]);
+  });
+});
+
+/** Ids in the pool's own order, so the sorted pool is the vector order. */
+const poolOf = (vectors: number[][]): ClusterArtifact[] =>
+  vectors.map((centroid, index) => artifact(`w:${String(index).padStart(5, "0")}`, centroid));
+
+/** Wider than the projection keeps, so the basis is a real reduction. */
+const structured = () => separatedGroups({ groups: 8, per: 5, width: PCA_DIMS + 32 });
+
+describe("the approximate path", () => {
+  it("finds the same clusters the exact path finds", () => {
+    const vectors = structured();
+    const pool = poolOf(vectors);
+
+    const exact = levelOf(pool, exactRelation(vectors));
+    const approximate = levelOf(pool, approximateRelation(vectors));
+
+    // Identical, not similar. Node ids hash sorted member ids, so a grouping
+    // that differs by one member renames the cluster and everything above it —
+    // and cohesion and the centroid have to match too, because both paths score
+    // with the full embedding and only the candidate search is approximated.
+    expect(approximate.clusters).toEqual(exact.clusters);
+    expect(approximate.orphanIds).toEqual(exact.orphanIds);
+    expect(exact.clusters).toHaveLength(8);
+  });
+
+  it("answers every similarity with the full embedding, edge or not", () => {
+    const vectors = structured();
+    const relation = approximateRelation(vectors);
+    // Recomputed here rather than imported: the claim is about the arithmetic
+    // the relation used, and borrowing its own would not test it.
+    const full = (a: number, b: number) => {
+      let total = 0;
+      for (let i = 0; i < vectors[a].length; i++) total += vectors[a][i] * vectors[b][i];
+      return total;
+    };
+
+    // Every pair, not only the ones the search kept. A pair the search skipped
+    // is outside the *graph*, not outside the arithmetic — so cohesion cannot
+    // pick up a projected score by asking about one.
+    for (let a = 0; a < vectors.length; a++) {
+      for (let b = a + 1; b < vectors.length; b++) {
+        expect(relation.similarity(a, b)).toBeCloseTo(full(a, b), 12);
+      }
+    }
+  });
+
+  it("builds the same lattice out of the same pool every time", () => {
+    const vectors = structured();
+
+    // Byte-identical rather than equivalent. A lattice that reshuffled on every
+    // rebuild would make retrieval irreproducible and repair impossible to
+    // reason about, which is why every seed here is fixed and every sample is
+    // taken by stride.
+    expect(JSON.stringify(levelOf(poolOf(vectors), approximateRelation(vectors)))).toBe(
+      JSON.stringify(levelOf(poolOf(vectors), approximateRelation(vectors)))
+    );
+  });
+});
+
+describe("the crossover", () => {
+  const crowd = (size: number) =>
+    poolOf(separatedGroups({ groups: 32, per: 63, width: 32 }).slice(0, size));
+
+  it("compares every pair at the crossover, and fits nothing, so there is no index", () => {
+    const exact = clusterLevel(crowd(MAX_CLUSTER_POOL));
+
+    expect(exact.clusters).toHaveLength(32);
+    expect(exact.index).toBeUndefined();
+  });
+
+  it("projects and buckets one artifact later, and reports what it clustered through", () => {
+    const approximate = clusterLevel(crowd(MAX_CLUSTER_POOL + 1));
+
+    // The index is what makes changing pcaDims, k, or the cell count a rebuild
+    // rather than a migration, and `threshold` and `k` beside the basis are what
+    // make one fitted under other parameters recognizable.
+    expect(approximate.index?.k).toBe(NEIGHBOURS_K);
+    expect(approximate.index?.level).toBe(0);
+    expect(approximate.index?.threshold).toBeGreaterThanOrEqual(CLUSTER_FLOOR);
+    expect(approximate.index?.centroids).toHaveLength(45);
   });
 });

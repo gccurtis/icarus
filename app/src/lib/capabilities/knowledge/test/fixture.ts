@@ -166,6 +166,43 @@ export const bridgedGroups = () => ({
 });
 
 /**
+ * `groups` bundles of `per` vectors, each bundle leaning on an axis of its own,
+ * in a space `width` wide with a little energy in **every** dimension.
+ *
+ * The noise is the point, not decoration. A pool whose vectors are pure axes
+ * projects into any basis losslessly, so a projected score and a full-dimensional
+ * one would agree — and the defect this pass exists to avoid, scoring with the
+ * projection, would pass every test. Energy outside the basis is what makes the
+ * two answers differ enough to tell apart.
+ *
+ * The bundles stay far enough apart that the grouping is not in doubt, which is
+ * what lets the approximate path be compared against the exact one for equality
+ * rather than for resemblance.
+ */
+export const separatedGroups = ({
+  groups,
+  per,
+  width
+}: {
+  groups: number;
+  per: number;
+  width: number;
+}): number[][] => {
+  const vectors: number[][] = [];
+  for (let group = 0; group < groups; group++) {
+    for (let member = 0; member < per; member++) {
+      const vector = Array.from({ length: width }, (_, t) =>
+        Math.sin(1 + t * 1.7 + member * 0.9 + group * 5.1) * 0.03
+      );
+      vector[group % width] += 1;
+      const length = Math.sqrt(vector.reduce((total, value) => total + value * value, 0));
+      vectors.push(vector.map((value) => value / length));
+    }
+  }
+  return vectors;
+};
+
+/**
  * The refusal a call produced, or `undefined` if it produced none.
  *
  * The payload rather than the message, because the payload is the only part

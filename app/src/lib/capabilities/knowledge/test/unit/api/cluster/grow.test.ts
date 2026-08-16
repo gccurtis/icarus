@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
 import type { Doc, Id } from "$convex/_generated/dataModel";
+import { NEIGHBOURS_K } from "$knowledge/api/cluster/candidates";
 import { grow } from "$knowledge/api/cluster/grow";
+import { MAX_CLUSTER_POOL } from "$knowledge/api/cluster/level";
+import { readLevelIndex, writeLevelIndex } from "$knowledge/api/shared/level-index";
 import type { LatticeSource } from "$knowledge/types/lattice-source";
-import { aNode, asCtx, asking, bridgedGroups, latticeNodes, tilted } from "$knowledge/test/fixture";
+import {
+  aNode,
+  asCtx,
+  asking,
+  bridgedGroups,
+  latticeNodes,
+  separatedGroups,
+  tilted
+} from "$knowledge/test/fixture";
 
 const notes: LatticeSource = { kind: "document", id: "documents:1" as Id<"documents"> };
 const TIER = "document:documents:1";
@@ -105,6 +116,55 @@ describe("grow", () => {
     // top of its own hierarchy clustered would hide it from every query.
     const unclustered = latticeNodes(ctx, scope).filter((node) => !node.clustered);
     expect(unclustered.map((node) => node.level)).toEqual([2]);
+  });
+
+  it("records what it clustered a pool through when the pool was too large to compare in full", async () => {
+    const { ctx, scope } = await asking();
+    const centroids = separatedGroups({ groups: 32, per: 63, width: 32 }).slice(
+      0,
+      MAX_CLUSTER_POOL + 1
+    );
+    const ids = [];
+    for (const centroid of centroids) ids.push(await aNode(ctx, scope, { centroid }));
+
+    await grow(asCtx(ctx), scope, undefined, await poolOf(ctx, ids));
+
+    // Level 0 is the pool the basis was fitted over; the levels above it were
+    // small enough to compare in full and fitted nothing.
+    const index = await readLevelIndex(asCtx(ctx), scope, 0);
+    expect(index?.k).toBe(NEIGHBOURS_K);
+    expect(index?.centroids).toHaveLength(45);
+    expect(await readLevelIndex(asCtx(ctx), scope, 1)).toBeNull();
+  });
+
+  it("builds the same lattice whatever index is lying in the store, because it reads none", async () => {
+    const { ctx, scope } = await asking();
+    const { a1, a2, b1, b2, bridge, loner, drifter } = bridgedGroups();
+    const ids = [];
+    for (const centroid of [a1, a2, b1, b2, bridge, loner, drifter]) {
+      ids.push(await aNode(ctx, scope, { centroid, tierSourceId: TIER }));
+    }
+    await writeLevelIndex(asCtx(ctx), scope, {
+      level: 0,
+      threshold: 0.99,
+      k: 4,
+      basis: [[1, 0, 0, 0]],
+      centroids: [[1, 0, 0, 0]]
+    });
+
+    await grow(asCtx(ctx), scope, TIER, await poolOf(ctx, ids));
+
+    // The index is entirely derived: it is written down for retrieval and never
+    // consulted here, so dropping every one of them costs a refit and no
+    // lattice. `clusterLevel` takes no context, which is where that is enforced.
+    const clusters = latticeNodes(ctx, scope).filter((node) => node.level === 1);
+    expect(clusters).toHaveLength(2);
+    for (const cluster of clusters) {
+      expect(cluster.cohesion).toBeCloseTo(Math.cos((10 * Math.PI) / 180) / Math.SQRT2, 12);
+    }
+    // Nothing fitted anything to replace it with, and a reader is kept off it by
+    // the staleness check rather than by the row being gone.
+    expect((await readLevelIndex(asCtx(ctx), scope, 0))?.threshold).toBe(0.99);
   });
 
   it("clusters nothing when no pair is close enough", async () => {

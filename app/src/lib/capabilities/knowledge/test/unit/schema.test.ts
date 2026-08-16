@@ -106,6 +106,26 @@ describe("latticeVersions schema", () => {
   });
 });
 
+describe("latticeLevelIndexes schema", () => {
+  it("leads its index with projectId and names the level under it", () => {
+    const indexes = knowledgeTables.latticeLevelIndexes[" indexes"]();
+
+    expect(indexes.map((index) => index.indexDescriptor)).toEqual(["by_project_level"]);
+    expect(indexes[0].fields).toEqual(["projectId", "level"]);
+  });
+
+  it("stores the parameters it was built under beside the basis", () => {
+    const fields = Object.keys(knowledgeTables.latticeLevelIndexes.validator.fields).sort();
+
+    // `threshold` and `k` are what make the rest safe: an index fitted under
+    // other parameters is recognizable as stale rather than silently mixed with
+    // one that is not.
+    expect(fields).toEqual(
+      ["projectId", "level", "threshold", "k", "basis", "centroids", "updatedAt"].sort()
+    );
+  });
+});
+
 describe("latticeSources schema", () => {
   it("leads its index with projectId and names the source under it", () => {
     const indexes = knowledgeTables.latticeSources[" indexes"]();

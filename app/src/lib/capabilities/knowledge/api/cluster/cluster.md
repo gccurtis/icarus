@@ -19,28 +19,63 @@ cluster(ctx, scope)
 │   │   ├── nodeId()                 node-id.ts
 │   │   └── mergeWindows()           merge-windows.ts
 │   └── grow()                       grow.ts
-│       └── clusterLevel()           level.ts
-│           ├── thresholdOf(), centroidOf(), cohesionOf()   similarity.ts
-│           ├── maximalCliques()     cliques.ts
-│           ├── nodeId()             node-id.ts
-│           └── mergeWindows()       merge-windows.ts
+│       ├── clusterLevel()           level.ts
+│       │   ├── exactRelation()      level.ts        ← at or below the crossover
+│       │   │   └── similarityMatrix(), thresholdOf()   similarity.ts
+│       │   ├── approximateRelation()   level.ts     ← above it
+│       │   │   ├── candidateGraph()    candidates.ts
+│       │   │   │   ├── fitProjection(), project()   projection.ts
+│       │   │   │   │   └── orthonormalize(), seeded()   projection.ts, seeded.ts
+│       │   │   │   └── cellCount(), assignCells()   cells.ts
+│       │   │   └── thresholdFrom()  similarity.ts
+│       │   └── levelOf()            level.ts
+│       │       ├── maximalCliques() cliques.ts
+│       │       ├── centroidOf(), cohesionOf()   similarity.ts
+│       │       ├── nodeId()         node-id.ts
+│       │       └── mergeWindows()   merge-windows.ts
+│       └── writeLevelIndex()        ../shared/level-index.ts
 └── advanceVersion()                 ../shared/version.ts
 ```
 
-## The exact path, and only the exact path
+## The crossover, and what does *not* change at it
 
-`clusterLevel` builds the **full pairwise matrix**. Quadratic, fine below
-`maxClusterPool`, and unacceptable above it — which is what the approximate path
-(PCA and IVF) exists to answer.
+Pool size picks the path. At or below `maxClusterPool` every pair is compared;
+above it, an IVF search over a PCA projection picks which pairs are worth
+comparing at all.
 
-It is not a placeholder for that path. It is the **known-correct oracle** the
-approximate one is measured against, and building both at once would mean
-debugging a projection and a clustering algorithm simultaneously with nothing to
-compare either to.
+**Everything else is the same on both sides.** Both score with full-dimensional
+dot products, both read their threshold off the pool's own distribution through
+the same function, and both find overlapping maximal cliques over the result.
+That is why `levelOf` takes a `LevelRelation` rather than choosing one: the exact
+path can be run over a pool the approximate one would have taken, and the two
+compared for equality. It is the **known-correct oracle**, not a fallback.
 
-Two consequences are outstanding until that work lands: nothing here consults the
-crossover, and a pass holds every vector it clusters in memory, which a large
-project's mutation cannot afford.
+**The projection guides candidate selection and nothing else.** Every similarity
+stored, every edge weight, and every cohesion is a full-dimensional dot product.
+The projection decides *which pairs are worth comparing*; it never decides how
+similar they are — approximation where it buys asymptotics, exactness where it
+affects answers.
+
+**The basis is fitted uncentered**, over a stride sample, from a fixed seed. It
+approximates dot products rather than mean-centred variance, and subtracting the
+mean would optimize for the wrong quantity: a one-line difference that degrades
+recall without failing anywhere.
+
+A pair the candidate search never reached is **not related**, however close it
+turns out to be — that is what makes the search worth doing. `similarity` still
+answers exactly for such a pair, because measuring one is arithmetic and cheap;
+`adjacent` does not, because comparing all of them is the cost being avoided.
+
+## Determinism is the reason every seed is fixed
+
+Projection and k-means seeds are constants, sampling is by stride rather than at
+random, the pool is sorted by id before anything is grown, and node ids hash
+their sorted members. So the same pool, the same vectors, and the same
+configuration produce the same lattice every time.
+
+Not a nicety: a lattice that reshuffled on every rebuild would make retrieval
+irreproducible and repair impossible to reason about — a cluster whose id changed
+for no reason looks exactly like one whose membership changed.
 
 ## Source tiers first, corpus tier last
 

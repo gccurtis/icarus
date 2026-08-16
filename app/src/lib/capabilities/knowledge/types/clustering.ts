@@ -1,3 +1,4 @@
+import type { CandidateFit } from "$knowledge/types/level-index";
 import type { LatticeWindow } from "$knowledge/types/lattice-node";
 
 /**
@@ -13,6 +14,23 @@ export type ClusterArtifact = {
   readonly level: number;
   readonly centroid: readonly number[];
   readonly windows: readonly LatticeWindow[];
+};
+
+/**
+ * How one level answers "are these two related, and how strongly" — asked by
+ * position in the pool, so a level can answer from a full matrix or from a
+ * sparse candidate graph without the clique finder knowing which.
+ *
+ * `similarity` is a **full-dimensional** dot product on both paths. Only
+ * `adjacent` differs: above the crossover a pair the candidate search never
+ * compared is not related, however close it turns out to be.
+ */
+export type LevelRelation = {
+  readonly threshold: number;
+  readonly similarity: (a: number, b: number) => number;
+  readonly adjacent: (a: number, b: number) => boolean;
+  /** Present on the approximate path alone — the exact one fits nothing. */
+  readonly candidates?: CandidateFit;
 };
 
 /** A clique, measured and ready to be written down as a node. */

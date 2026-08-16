@@ -50,13 +50,13 @@ export const similarityMatrix = (vectors: readonly (readonly number[])[]): numbe
  * barely related attached reads as a healthy cluster under a mean.
  */
 export const cohesionOf = (
-  matrix: readonly (readonly number[])[],
+  similarity: (a: number, b: number) => number,
   indices: readonly number[]
 ): number => {
   let weakest = 1;
   for (let a = 0; a < indices.length; a++) {
     for (let b = a + 1; b < indices.length; b++) {
-      weakest = Math.min(weakest, matrix[indices[a]][indices[b]]);
+      weakest = Math.min(weakest, similarity(indices[a], indices[b]));
     }
   }
   return weakest;
@@ -70,7 +70,25 @@ export const cohesionOf = (
  * blob.** The percentile makes it relative to the pool in front of it; the floor
  * is what stops a corpus with no real structure from clustering anyway and
  * inventing relationships the weights do not support.
+ *
+ * It takes the similarities loose rather than as a matrix because above the
+ * crossover there is no matrix — there is a candidate graph's edges. One
+ * function is what makes an exhaustive graph land on exactly the exact path's
+ * threshold rather than somewhere near it.
  */
+export const thresholdFrom = (
+  pairs: readonly number[],
+  percentile: number,
+  floor: number
+): number => {
+  if (pairs.length === 0) return floor;
+
+  const sorted = [...pairs].sort((left, right) => left - right);
+  const at = Math.min(sorted.length - 1, Math.floor(percentile * sorted.length));
+  return Math.max(floor, sorted[at]);
+};
+
+/** The threshold of a full pairwise matrix — every pair counted once. */
 export const thresholdOf = (
   matrix: readonly (readonly number[])[],
   percentile: number,
@@ -80,9 +98,5 @@ export const thresholdOf = (
   for (let i = 0; i < matrix.length; i++) {
     for (let j = i + 1; j < matrix.length; j++) pairs.push(matrix[i][j]);
   }
-  if (pairs.length === 0) return floor;
-
-  pairs.sort((left, right) => left - right);
-  const at = Math.min(pairs.length - 1, Math.floor(percentile * pairs.length));
-  return Math.max(floor, pairs[at]);
+  return thresholdFrom(pairs, percentile, floor);
 };

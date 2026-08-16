@@ -5,6 +5,7 @@ import {
   dot,
   normalize,
   similarityMatrix,
+  thresholdFrom,
   thresholdOf
 } from "$knowledge/api/cluster/similarity";
 import { bridgedGroups, tilted } from "$knowledge/test/fixture";
@@ -53,11 +54,45 @@ describe("cohesionOf", () => {
       [0.4, 0.9, 1]
     ];
 
-    expect(cohesionOf(matrix, [0, 1, 2])).toBe(0.4);
+    expect(cohesionOf((a, b) => matrix[a][b], [0, 1, 2])).toBe(0.4);
   });
 
   it("is 1 for a set with no pair in it", () => {
-    expect(cohesionOf([[1]], [0])).toBe(1);
+    expect(cohesionOf(() => 0.5, [0])).toBe(1);
+  });
+
+  it("asks for a pair rather than reading a matrix, because a large pool has none", () => {
+    // Above the crossover there is no full matrix to index into — the pairs a
+    // clique is measured on are looked up one at a time, from the same
+    // full-dimensional arithmetic.
+    const asked: string[] = [];
+
+    cohesionOf((a, b) => {
+      asked.push(`${a}-${b}`);
+      return 0.8;
+    }, [2, 5]);
+
+    expect(asked).toEqual(["2-5"]);
+  });
+});
+
+describe("thresholdFrom", () => {
+  it("reads the percentile off the similarities it was given", () => {
+    expect(thresholdFrom([0.9, 0.5, 0.8, 0.6], 0.75, 0.3)).toBe(0.9);
+  });
+
+  it("is what thresholdOf is, so the two paths agree wherever they see the same pairs", () => {
+    // The approximate path has a set of edge weights and no matrix. Deriving the
+    // threshold through one function is what makes an exhaustive candidate graph
+    // land on the exact path's threshold rather than near it.
+    const matrix = similarityMatrix([tilted(0, 1, 0), tilted(0, 1, 20), tilted(0, 1, 70)]);
+    const pairs = [matrix[0][1], matrix[0][2], matrix[1][2]];
+
+    expect(thresholdFrom(pairs, 0.75, 0.3)).toBe(thresholdOf(matrix, 0.75, 0.3));
+  });
+
+  it("falls back to the floor when there is no pair at all", () => {
+    expect(thresholdFrom([], 0.75, 0.3)).toBe(0.3);
   });
 });
 

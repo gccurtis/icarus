@@ -7,7 +7,8 @@ Lives at `types/types.md`.
 | [`lattice-source.ts`](lattice-source.ts) | `latticeSourceValidator`, `LATTICE_SOURCE_KINDS`, `sourceKey` — what the lattice reads text out of |
 | [`lattice-node.ts`](lattice-node.ts) | `latticeWindowValidator`, `LatticeNode`, `WindowPiece` — a window, and a cluster of them |
 | [`lattice-version.ts`](lattice-version.ts) | `latticeStateValidator`, `LatticeVersion` — the index's own state |
-| [`clustering.ts`](clustering.ts) | `ClusterArtifact`, `ClusterShape`, `ClusterPass` — what a clustering pass sees and what it reports |
+| [`clustering.ts`](clustering.ts) | `ClusterArtifact`, `ClusterShape`, `ClusterPass`, `LevelRelation` — what a clustering pass sees and what it reports |
+| [`level-index.ts`](level-index.ts) | `LevelIndex`, `CandidateFit` — the geometry a large level was clustered through |
 | [`embedding.ts`](embedding.ts) | `Embedder`, `Embedding` — the one thing this capability cannot do itself |
 
 ## `LatticeSource` is a strict subset of `ResourceKind`
@@ -44,6 +45,19 @@ model loses the connection to the configuration that should be updated.
 deliberately not a stored row. Clustering is arithmetic over vectors, and keeping
 the store's shape out of it is what lets one algorithm cluster the windows of a
 single source and the frontiers of a whole corpus.
+
+## A level is asked about pairs, not handed a matrix
+
+`LevelRelation` is how clique-finding asks "are these two related, and how
+strongly" — by position in the pool, with no matrix in sight. Below the crossover
+the answers come from one; above it they come from a sparse candidate graph, and
+the clique finder cannot tell.
+
+That is what lets the two paths be **compared for equality** rather than for
+resemblance: the exact relation can be built over a pool the approximate one
+would have taken, and both run through the same code.
+
+`similarity` is a full-dimensional dot product on both. Only `adjacent` differs.
 
 ## `LatticeNode` is a returned shape, not a stored one
 

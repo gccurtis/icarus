@@ -94,6 +94,30 @@ export const knowledgeTables = {
   }).index("by_project", ["projectId"]),
 
   /**
+   * The PCA basis and IVF cell centroids one level was clustered through, above
+   * the exact/approximate crossover.
+   *
+   * **Entirely derived**, like everything else here: it can be dropped and
+   * refitted from the persisted windows, which is what makes changing `pcaDims`,
+   * `k`, or the cell count a rebuild rather than a migration.
+   *
+   * `threshold` and `k` sit beside the basis so an index fitted under other
+   * parameters is recognizable rather than silently mixed with one that is not.
+   */
+  latticeLevelIndexes: defineTable({
+    projectId: v.id("projects"),
+    /** The deepest level in the pool the basis was fitted over. */
+    level: v.number(),
+    threshold: v.number(),
+    /** Neighbours retained per artifact in the graph this level clustered over. */
+    k: v.number(),
+    /** Orthonormal rows. Empty when the pool's own width is already narrow enough. */
+    basis: v.array(v.array(v.float64())),
+    centroids: v.array(v.array(v.float64())),
+    updatedAt: v.number()
+  }).index("by_project_level", ["projectId", "level"]),
+
+  /**
    * What has already been read out of each source.
    *
    * It exists so that ingesting an unchanged source can be skipped *entirely* —

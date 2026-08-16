@@ -19,10 +19,9 @@ action whose outer half is the intelligence capability — which does not exist
 yet. Clustering has no such problem: it reads vectors that are already stored.
 See [`api/api.md`](api/api.md).
 
-**Only the exact clustering path is built.** It compares every pair, which is
-affordable below `maxClusterPool` and is the known-correct oracle the approximate
-path (PCA and IVF) will be measured against. Until that lands, nothing consults
-the crossover and a pass holds every vector it clusters in memory — see
+**Both clustering paths are built.** A pool at or below `maxClusterPool` is
+compared pair by pair; above it, an IVF search over a PCA projection picks which
+pairs are worth comparing and every survivor is scored in full — see
 [`api/cluster/cluster.md`](api/cluster/cluster.md).
 
 ## Data Ownership
@@ -31,6 +30,7 @@ the crossover and a pass holds every vector it clusters in memory — see
 | ------ | ------- |
 | `latticeNodes` | level-0 windows now, clusters above them later: centroid, merged windows, parent |
 | `latticeVersions` | one row per project: what built the index, how deep it is, whether it is coherent |
+| `latticeLevelIndexes` | the basis and cells one level was clustered through, for descent to narrow the frontier with |
 | `latticeSources` | what has already been read out of each source, and at which revision |
 
 ## No provider is wired, and that is stated rather than half-built
@@ -83,6 +83,22 @@ capability, which is why none of it is here.
   is one walk upwards.** A node held by two cliques has two holders and one
   parent — the first to claim it — because a field cannot name two and the
   hierarchy is written by one pass rather than edited.
+- **The projection guides candidate selection and nothing else.** Every stored
+  similarity, every edge weight, and every cohesion is a full-dimensional dot
+  product. The projection decides which pairs are worth comparing; it never
+  decides how similar they are. Approximation where it buys asymptotics,
+  exactness where it affects answers.
+- **The same pool builds the same lattice every time.** Seeds are fixed, the
+  projection samples by stride rather than at random, the pool is sorted by id
+  before it is walked, and node ids hash their members. A lattice that reshuffled
+  on every rebuild would make retrieval irreproducible and repair impossible to
+  reason about.
+- **`latticeLevelIndexes` is entirely derived, and clustering never reads one.**
+  `clusterLevel` takes no context, so it cannot; the rows are written for descent
+  and can be dropped wholesale for the cost of a refit. That is what makes
+  changing `pcaDims`, `k`, or the cell count a rebuild rather than a migration,
+  and storing `threshold` and `k` beside the basis is what makes an index fitted
+  under other parameters recognizable rather than silently mixed in.
 
 ## `latticeSources` is a table the data models do not list
 
@@ -104,6 +120,21 @@ A Convex vector index takes a literal `dimensions`, so `EMBEDDING_DIMENSIONS` in
 per project. `latticeVersions.dimensions` is the per-project record of what
 actually built that lattice, which is what makes a lattice built at another width
 recognizable instead of silently mixed in.
+
+## A basis is a large row, and at the pinned width it is too large
+
+A basis is `pcaDims × dimensions` numbers. At `EMBEDDING_DIMENSIONS` of 1536 and
+a `pcaDims` of 128 that is 196,608 float64s — about 1.5 MiB, over Convex's 1 MiB
+document limit. A `pcaDims` of roughly 80 fits; so does splitting the basis
+across rows.
+
+Nothing reaches it today: no provider is wired, the widths that have run are the
+test fixtures', and no project is near `maxClusterPool`. It is written down here
+rather than fixed because both fixes are a trade — fewer projected dimensions
+costs recall, more rows costs a read — and the number that decides it is the
+corpus, which does not exist yet. `pcaDims` is
+[configuration](../../../../configuration/knowledge.yaml) precisely so this is a
+setting rather than a rewrite.
 
 ## Related
 

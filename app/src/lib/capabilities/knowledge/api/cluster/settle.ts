@@ -161,7 +161,7 @@ const repair = async (ctx: MutationCtx, damage: Damage): Promise<number> => {
       centroid: centroidOf(surviving.map((member) => member.centroid)),
       count: surviving.length,
       cohesion: cohesionOf(
-        matrix,
+        (a, b) => matrix[a][b],
         surviving.map((_, index) => index)
       ),
       windows: mergeWindows(surviving.flatMap((member) => member.windows)),

@@ -6,7 +6,7 @@ Lives at `api/api.md`.
 | --- | --- | --- |
 | [`status/`](status/status.md) | `status` | query — what the project's lattice is, or nothing |
 | [`cluster/`](cluster/cluster.md) | `cluster` | mutation — one clustering pass: source tiers, then the corpus tier |
-| [`shared/`](shared/shared.md) | — | `ingest`, and the version invariant every writer goes through |
+| [`shared/`](shared/shared.md) | — | `ingest`, the version invariant every writer goes through, and the level index |
 
 ## Ingestion is not a registered function, and that is not an omission
 
@@ -28,6 +28,10 @@ has to exist before it can be called, so nothing is gained by hiding it.
 
 ## Retrieval is not here either
 
-Descent arrives with regions and the level index. It needs the levels `cluster`
-builds; a search over a flat level 0 would be a different algorithm with the same
-name.
+Descent arrives with regions. It needs the levels `cluster` builds; a search over
+a flat level 0 would be a different algorithm with the same name.
+
+The level index it will narrow the frontier with is already written, by
+[`cluster`](cluster/cluster.md) — it is the by-product of clustering a pool too
+large to compare in full, so producing it costs nothing extra and holding it back
+would mean fitting the same basis twice.
