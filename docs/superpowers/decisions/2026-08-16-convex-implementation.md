@@ -233,6 +233,46 @@ readable and writable by anyone holding its id.
 
 ---
 
+## Pass 2b — the design claim, tested
+
+### The change-set machinery is generic over `resourceType`, and now that is evidence
+
+**Question.** The whole storage design rests on one claim: an op says
+"set `sheets/#sh1/cells/B7`" and the code applying it never inspects the body, so
+one snapshot table and one change-set table serve documents, decks, and
+workbooks. Task 11 exists to falsify that claim if it is false.
+
+**Result: it holds.** Every appearance of `resourceType` in the revisions `api/`
+tree is an index key — `.eq("resourceType", …)` — or a type annotation. There is
+no branch on its value anywhere. `applyOps` and `shift` do not mention it at all.
+Decks and workbooks did come along nearly free.
+
+Recorded as a result rather than an assumption, because the plan named this the
+load-bearing task and "we did not need a special case" is only worth anything if
+someone went looking.
+
+### But building sheets found a hole documents never would have
+
+**`touchedBy` understated a keyed insert.** A spreadsheet cell carries no id —
+its identity *is* its A1 address, which is the one place the model deliberately
+departs from ids-everywhere. So a row insert reported none of the cells it
+created, `touched` came back short, and **a concurrent write to one of those
+cells passed the entire conflict ladder**. Fixed by naming the keyed entry in the
+path, exactly as `remove` already did.
+
+This is the argument for building decks and workbooks in pass 2 rather than pass
+6, made concrete. The machinery was generic; its `touched` computation was
+incomplete for keyed collections, and only a keyed collection could show that.
+Three more passes would have been built on top of it first.
+
+Two documents also claimed enforcement that does not exist: `revisions/types/
+types.md` said `submit` enforces the target/op pairing table (only `text → atom`
+is stated, and the doc now says what the convention costs), and
+`name-manager/types/types.md` said formula never calls `asTable`, which is its
+only caller. A document that contradicts its code is worse than none.
+
+---
+
 ## Pass 6, settled early
 
 ### `knowledge.yaml` values are carried, not invented
