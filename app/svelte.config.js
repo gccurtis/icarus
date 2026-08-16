@@ -47,6 +47,7 @@ export default {
       $activity: "src/lib/capabilities/activity",
       $comments: "src/lib/capabilities/comments",
       $content: "src/lib/capabilities/content",
+      "$derived-outputs": "src/lib/capabilities/derived-outputs",
       $documents: "src/lib/capabilities/documents",
       "$external-files": "src/lib/capabilities/external-files",
       $findings: "src/lib/capabilities/findings",

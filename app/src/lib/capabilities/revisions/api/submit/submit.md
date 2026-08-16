@@ -10,7 +10,7 @@ handler receives `ctx.scope` rather than a project it could have chosen.
 
 ```text
 submit(ctx, scope, authored)
-├── headOf(ctx, resourceType, resourceId)   submit.ts   current revision, and whose
+├── head(ctx, authored)                     ../shared/head.ts   current revision, and whose
 ├── touchedBy(authored.ops)                 check.ts    the ids step 2 intersects
 ├── check(ctx, scope, incoming, revision)   check.ts    the ladder
 │   ├── bothTyping(mine, landed, id)        check.ts    step 2's one exception

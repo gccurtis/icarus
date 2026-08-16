@@ -89,6 +89,18 @@ const embedBlock = {
   fetchedAt: 1_755_000_000_000
 };
 
+const promptBlock = {
+  id: "b6",
+  type: "prompt",
+  derivedOutputId: "derivedOutputs:1",
+  atoms: [{ id: "b6x1", kind: "literal", text: "Revenue grew 12% on the quarter." }],
+  display: "Revenue grew 12% on the quarter.",
+  marks: [{ id: "b6m1", from: 0, to: 7, style: ["bold"] }],
+  scope: { op: "kind", kind: "document" },
+  state: "fresh",
+  refreshedAt: 1_755_000_000_000
+};
+
 describe("blockValidator", () => {
   it("carries an id on every variant, which is what a change set addresses", () => {
     for (const member of blockValidator.members) {
@@ -100,21 +112,22 @@ describe("blockValidator", () => {
     expect(blockValidator.members.every((m) => m.fields.type.kind === "literal")).toBe(true);
   });
 
-  it("holds the five variants built so far and no placeholders", () => {
+  it("holds the six variants built so far and no placeholders", () => {
     expect(blockValidator.members.map((m) => m.fields.type.value).sort()).toEqual([
       "embed",
       "formula",
       "image",
+      "prompt",
       "table",
       "text"
     ]);
   });
 
   it("admits every built variant and refuses one that has not been built", () => {
-    for (const block of [textBlock, formulaBlock, imageBlock, tableBlock, embedBlock]) {
+    for (const block of [textBlock, formulaBlock, imageBlock, tableBlock, embedBlock, promptBlock]) {
       expect(validate(blockValidator, block)).toBe(true);
     }
-    expect(validate(blockValidator, { id: "b6", type: "prompt", display: "", marks: [] })).toBe(false);
+    expect(validate(blockValidator, { id: "b6", type: "diagram", display: "", marks: [] })).toBe(false);
   });
 
   it("grows a variant without changing an existing one", () => {
@@ -126,7 +139,7 @@ describe("blockValidator", () => {
 
     const grown = v.union(
       ...blockValidator.members,
-      v.object({ id: v.string(), type: v.literal("prompt"), display: v.string() })
+      v.object({ id: v.string(), type: v.literal("diagram"), display: v.string() })
     );
     const textMember = grown.members.find((m) => m.fields.type.value === "text");
     expect(textMember!.fields).toEqual(fieldsOf("text"));
@@ -363,5 +376,92 @@ describe("the embed variant", () => {
     }
     expect(validate(blockValidator, { id: "b5", type: "embed", url: "https://x", presentation: "card" })).toBe(true);
     expect(validate(blockValidator, { ...embedBlock, presentation: "lightbox" })).toBe(false);
+  });
+});
+
+describe("the prompt variant", () => {
+  it("is a text block with a derived output behind it", () => {
+    // The same atoms, display, and marks as any text block, behaving the same
+    // way: the text is the user's, editable in place, marked up normally.
+    for (const field of ["atoms", "display", "marks"]) {
+      expect(fieldsOf("prompt")[field].kind).toBe(fieldsOf("text")[field].kind);
+    }
+    expect(fieldsOf("prompt").derivedOutputId.isOptional).toBe("required");
+  });
+
+  it("stores no prompt of its own", () => {
+    // The prompt lives on the derived output. A copy here would be a second
+    // prompt that can disagree with the one that produced the text.
+    expect(fieldsOf("prompt").prompt).toBeUndefined();
+    expect(validate(blockValidator, { ...promptBlock, prompt: "Summarize the findings" })).toBe(
+      false
+    );
+  });
+
+  it("holds one text body, because a derived output produces exactly one block", () => {
+    expect(validate(blockValidator, promptBlock)).toBe(true);
+    expect(validate(blockValidator, { ...promptBlock, atoms: undefined })).toBe(false);
+    expect(validate(blockValidator, { ...promptBlock, blocks: [textBlock] })).toBe(false);
+  });
+
+  it("has four states and no idle one, because a block always shows something", () => {
+    const states = fieldsOf("prompt").state as unknown as { members: { value: string }[] };
+    expect(states.members.map((member) => member.value).sort()).toEqual([
+      "error",
+      "fresh",
+      "generating",
+      "stale"
+    ]);
+    // `idle` is a derived output nothing has been asked of yet, and a block is
+    // written into a body by asking.
+    expect(validate(blockValidator, { ...promptBlock, state: "idle" })).toBe(false);
+  });
+
+  it("carries a scope, because it is part of what the author specified", () => {
+    expect(fieldsOf("prompt").scope.isOptional).toBe("optional");
+    const { scope: _scope, ...wholeProject } = promptBlock;
+    expect(validate(blockValidator, wholeProject)).toBe(true);
+    expect(validate(blockValidator, { ...promptBlock, scope: { op: "everything" } })).toBe(false);
+  });
+
+  it("takes an edit into its atoms exactly as a text block does", () => {
+    const after = applyOps({ blocks: [promptBlock] }, [
+      { op: "text", target: "atom", path: "#b6/atoms/#b6x1", at: 14, insert: "4", remove: "2" }
+    ]);
+
+    // Editing changes what is displayed and nothing else: the derived output
+    // behind it is untouched, and this edited text is what feeds the next
+    // refresh as the shape to preserve.
+    expect(after.blocks[0].display).toBe("Revenue grew 14% on the quarter.");
+    expect(after.blocks[0].derivedOutputId).toBe("derivedOutputs:1");
+    expect(validate(blockValidator, after.blocks[0])).toBe(true);
+  });
+
+  it("leaves every variant that was already here exactly as it was", () => {
+    // The union grows a member; nothing existing changes.
+    expect(Object.keys(fieldsOf("image")).sort()).toEqual([
+      "alt",
+      "caption",
+      "crop",
+      "display",
+      "format",
+      "id",
+      "source",
+      "type"
+    ]);
+    expect(Object.keys(fieldsOf("embed")).sort()).toEqual([
+      "description",
+      "fetchedAt",
+      "format",
+      "id",
+      "presentation",
+      "thumbnail",
+      "title",
+      "type",
+      "url"
+    ]);
+    for (const block of [textBlock, formulaBlock, imageBlock, tableBlock, embedBlock]) {
+      expect(validate(blockValidator, block)).toBe(true);
+    }
   });
 });

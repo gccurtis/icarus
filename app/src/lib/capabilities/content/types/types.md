@@ -7,7 +7,7 @@ here is a row: a block is embedded in whatever owns it.
 
 | File | Holds |
 | --- | --- |
-| [`block.ts`](block.ts) | `blockValidator` and its five variants, `textAtomValidator`, `markValidator` |
+| [`block.ts`](block.ts) | `blockValidator` and its six variants, `textAtomValidator`, `markValidator` |
 | [`format.ts`](format.ts) | `blockFormatValidator` — the block's own box, on every variant |
 | [`value.ts`](value.ts) | `formulaValueValidator`, `dateValueValidator`, and the `FormulaValue` type |
 

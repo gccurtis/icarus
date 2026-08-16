@@ -5,6 +5,7 @@ Lives at `api/shared/shared.md`.
 | File | Preserves |
 | --- | --- |
 | [`current.ts`](current.ts) | that a resource is reached by its whole key, in this project, at a cost that does not grow |
+| [`head.ts`](head.ts) | that where a resource stands is two rows and never a body, and that the row saying so is the one that says whose it is |
 | [`start.ts`](start.ts) | that a resource is readable from the moment it exists, and anchored below wherever the leader gets to |
 | [`discard.ts`](discard.ts) | that deleting a resource ends it, rather than leaving a body its owner's row no longer guards |
 | [`apply/apply.ts`](apply/apply.ts) | that a body advances by whole ops, and that a text edit leaves the block's display and marks consistent with it |
@@ -33,6 +34,14 @@ applyOps(body, ops)
 range predicates — and the bound they buy — are stated once. `submit` deliberately
 does **not** use it: it needs the maximum revision, not the body, and that is two
 rows rather than a hundred.
+
+## `head` was promoted when generation needed it
+
+[`submit`](../submit/submit.md) reads it to accept a change above the current
+revision, and [derived outputs](../../../derived-outputs/overview.md) read it to
+ask whether an input has moved since a generation saw it. Both want the number
+and neither wants the body, which is the difference between it and `current` —
+folding a body per input would make staleness cost a document per question.
 
 ## `start` and `discard` are called from outside this capability
 

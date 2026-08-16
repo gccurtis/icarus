@@ -17,11 +17,30 @@ edits them is [revisions](../revisions/overview.md), through change sets.
 | `image` | pass 3 | an upload or a URL | the normalized, servable asset |
 | `table` | pass 3 | rows of cells, each a block list | — |
 | `embed` | pass 3 | a URL | the fetched title, description, and thumbnail |
-| `prompt` | pass 7 | | |
+| `prompt` | pass 7 | atoms, and a derived output behind them | the resolved string |
 
 `blockValidator` is discriminated on `type` and its members are found by that
-literal, so the one still to come appends without touching a variant already
-here.
+literal, which is what let the last of them append without touching a variant
+already here.
+
+## The prompt variant is a text block with an output behind it
+
+It carries the same `atoms`, `display`, and `marks` as a text block and they
+behave identically — the text is the user's, editable in place, marked up
+normally, and edited by the same ops. What it adds is a
+[derived output](../derived-outputs/overview.md) that can refresh that text.
+
+**Editing it changes what is displayed and nothing else.** The edit is not
+written back to the output; on the next refresh it goes to the generator as the
+shape to preserve. Two copies, deliberately: the output keeps the canonical
+generated version and the block keeps the presented one.
+
+**The prompt itself is not stored here**, because two prompts could then disagree
+about what produced the text. `scope` is, because it is part of what the author
+specified and has to survive being read back into the editor.
+
+Its four states are the output's five without `idle`: a block is written into a
+body by asking for content, so it always shows something.
 
 ## Capability Invariants
 

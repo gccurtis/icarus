@@ -2,6 +2,7 @@ import { defineSchema } from "convex/server";
 import { accessTables } from "$access/schema";
 import { activityTables } from "$activity/schema";
 import { commentsTables } from "$comments/schema";
+import { derivedOutputsTables } from "$derived-outputs/schema";
 import { documentsTables } from "$documents/schema";
 import { externalFilesTables } from "$external-files/schema";
 import { findingsTables } from "$findings/schema";
@@ -35,6 +36,7 @@ const tables = {
   ...accessTables,
   ...activityTables,
   ...commentsTables,
+  ...derivedOutputsTables,
   ...documentsTables,
   ...externalFilesTables,
   ...findingsTables,
@@ -69,6 +71,7 @@ const declared = [
   accessTables,
   activityTables,
   commentsTables,
+  derivedOutputsTables,
   documentsTables,
   externalFilesTables,
   findingsTables,

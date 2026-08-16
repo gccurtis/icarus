@@ -16,6 +16,7 @@
       "$activity/*": ["../lib/capabilities/activity/*"],
       "$comments/*": ["../lib/capabilities/comments/*"],
       "$content/*": ["../lib/capabilities/content/*"],
+      "$derived-outputs/*": ["../lib/capabilities/derived-outputs/*"],
       "$documents/*": ["../lib/capabilities/documents/*"],
       "$external-files/*": ["../lib/capabilities/external-files/*"],
       "$findings/*": ["../lib/capabilities/findings/*"],

@@ -1,6 +1,7 @@
 import { v, type Infer } from "convex/values";
 import { blockFormatValidator } from "$content/types/format";
 import { formulaValueValidator, type FormulaValue } from "$content/types/value";
+import { setExpressionValidator } from "$shared/types/set-expression";
 
 /** Where a computation stands. A block still reads while one is stale, which is why `resolved` is stored beside it. */
 const resolutionStateValidator = v.union(
@@ -207,11 +208,52 @@ const embedBlockValidator = v.object({
 });
 
 /**
+ * A text block with a [derived output](../../derived-outputs/overview.md) behind
+ * it.
+ *
+ * It carries the same `atoms`, `display`, and `marks` as a text block and they
+ * behave identically: the text is the user's, editable in place, marked up
+ * normally. What it adds is an output that can refresh that text — and editing
+ * changes what is displayed and nothing else, because on the next refresh the
+ * edited text goes to the generator as the shape to preserve.
+ *
+ * **The prompt is not here.** It lives on the derived output; a copy would be a
+ * second prompt that can disagree about what produced the text. `scope` *is*
+ * here, because it is part of what the author specified and has to survive being
+ * read back into the editor.
+ *
+ * **One text body rather than a list**, because a derived output produces
+ * exactly one block. A prompt expanding into a document section would be a
+ * document, generated as one.
+ *
+ * Its four states are the output's five without `idle`: a block is written into
+ * a body by asking for content, and it always shows something.
+ */
+const promptBlockValidator = v.object({
+  id: v.string(),
+  type: v.literal("prompt"),
+  derivedOutputId: v.id("derivedOutputs"),
+  atoms: v.array(textAtomValidator),
+  display: v.string(),
+  marks: v.array(markValidator),
+  scope: v.optional(setExpressionValidator),
+  state: v.union(
+    v.literal("fresh"),
+    v.literal("stale"),
+    v.literal("generating"),
+    v.literal("error")
+  ),
+  error: v.optional(v.string()),
+  refreshedAt: v.optional(v.number()),
+  format: v.optional(blockFormatValidator)
+});
+
+/**
  * The one content primitive: anything a person authors or an agent produces is a
  * list of these, embedded in whatever owns them.
  *
- * Discriminated on `type` and looked up by that literal, so `prompt` joins the
- * union without touching a variant already here. No owner accepts every variant
+ * Discriminated on `type` and looked up by that literal, which is how `prompt`
+ * joined without touching a variant already here. No owner accepts every variant
  * — a spreadsheet cell takes text and formula, a comment takes text and image —
  * and the owner enforces its own set, which is what keeps this union single
  * rather than one per surface.
@@ -221,7 +263,8 @@ export const blockValidator = v.union(
   formulaBlockValidator,
   imageBlockValidator,
   tableBlockValidator,
-  embedBlockValidator
+  embedBlockValidator,
+  promptBlockValidator
 );
 
 export type TextBlock = Infer<typeof textBlockValidator>;
@@ -231,10 +274,17 @@ export type FormulaBlock = Omit<Infer<typeof formulaBlockValidator>, "value"> & 
 };
 export type ImageBlock = Infer<typeof imageBlockValidator>;
 export type EmbedBlock = Infer<typeof embedBlockValidator>;
+export type PromptBlock = Infer<typeof promptBlockValidator>;
 /** The recursion the validator cannot state, for the same reason `FormulaValue` states its own. */
 export type TableCell = Omit<Infer<typeof tableCellValidator>, "blocks"> & {
   blocks: ContentBlock[];
 };
 export type TableRow = { id: string; cells: TableCell[] };
 export type TableBlock = Omit<Infer<typeof tableBlockValidator>, "rows"> & { rows: TableRow[] };
-export type ContentBlock = TextBlock | FormulaBlock | ImageBlock | TableBlock | EmbedBlock;
+export type ContentBlock =
+  | TextBlock
+  | FormulaBlock
+  | ImageBlock
+  | TableBlock
+  | EmbedBlock
+  | PromptBlock;
