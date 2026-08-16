@@ -273,6 +273,65 @@ only caller. A document that contradicts its code is worse than none.
 
 ---
 
+## Pass 3 — Files and collaboration
+
+### The door fixes the origin; it does not accept it
+
+**Question.** `ExternalFile.origin` is a four-case union — upload, connector,
+generated, capture. Does the public `ingest` function take it as an argument?
+
+**Grounding.** `origin` exists to answer "where did these bytes come from", and
+it is the record a connector sync and an agent export are traced through.
+
+**Alternatives.** Door accepts `origin: fileOriginValidator`; door fixes
+`{kind: "upload"}` and the handler takes the origin for server-side callers; four
+separate functions, one per origin.
+
+**Chosen.** The second. **An upload is the only origin a browser can honestly
+claim.** Accepting the union at the door would let a project member sign a file
+as an agent's export or a connector's pull inside their own project — corrupting
+exactly the record `origin` exists to keep. Four functions would give four
+near-identical writers free to drift.
+
+The related rule — an upload origin requires a *user* actor — is enforced in
+`types/`, not at the door, because the door already supplies a user and the rule
+is unreachable there. It exists for the callers arriving in passes 7 and 8, which
+reach the handler directly with their own actor. Writing it while the rule is
+being stated is cheaper than retrofitting it then, and `ingest.md` says plainly
+that the door cannot produce that refusal.
+
+### `by_connector_external` gained a column the spec did not name
+
+**Question.** `storage/README.md` and the task both say the index is
+`(connectorId, externalId)`. The global constraint says `projectId` leads every
+index on a project-scoped table. Those conflict.
+
+**Chosen.** `(projectId, origin.connectorId, origin.externalId)`. The extra
+leading column is free — a connector belongs to one project and every caller is
+already inside a project scope — and it makes a read that forgets the project
+predicate impossible to write. The name and the matching behaviour are unchanged.
+
+Two things made this more than a preference: the fields live inside the `origin`
+union, so the index uses Convex's dotted paths, and that was verified against a
+real backend rather than assumed. `schema.ts` and `overview.md` both state the
+reconciliation, so the next reader does not re-litigate it against the storage
+doc.
+
+### What review found
+
+One finding, and it is the deferred-id sweep paying off: **a slide background's
+`fileId` was still `v.string()`** from before `externalFiles` existed, so a deck
+body could store an id no file has — while the identical reference in an image
+block was checked at the door. Passes leave these deliberately and close them
+when the table lands; this is the one that was missed.
+
+Pass 3 came back far cleaner than pass 2a. The rules that earlier reviews turned
+up — refusals must be `ConvexError` subclasses, tests assert payloads not
+messages, `test/unit/` mirrors source, internal procedures live in `api/shared/` —
+are now stated up front in every task, and they are no longer being rediscovered.
+
+---
+
 ## Pass 6, settled early
 
 ### `knowledge.yaml` values are carried, not invented
