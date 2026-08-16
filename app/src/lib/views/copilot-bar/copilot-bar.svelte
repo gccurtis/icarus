@@ -40,8 +40,23 @@
 
   type Mode = (typeof MODES)[number]["id"];
 
-  /** Placeholder personas. The picker is real; the list is not. */
-  const PERSONAS = ["Generalist", "Analyst", "Editor"];
+  /**
+   * Placeholder personas. The picker and its scrolling are real; the list is
+   * not — it is long on purpose, because a picker that only ever holds three
+   * entries never proves it can hold thirty.
+   */
+  const PERSONAS = [
+    "Generalist",
+    "Analyst",
+    "Editor",
+    "Researcher",
+    "Summariser",
+    "Critic",
+    "Archivist",
+    "Planner",
+    "Reviewer",
+    "Translator"
+  ];
 
   let mode = $state<Mode>("ask");
   let persona = $state(PERSONAS[0]);
@@ -123,10 +138,25 @@
       below it to open into anyway.
     -->
     <div class="controls">
-      <span class="mark">AI</span>
+      <!--
+        Intent on the left, wearing the intelligence role — the same violet the
+        rest of the application uses for derived work. It is the one choice that
+        changes what the whole bar does, so it reads as a mode switch rather than
+        as another field.
 
+        Both triggers hide the registry's chevron and let their border carry the
+        affordance instead. Two arrows in a 32px row are clutter that says the
+        same thing the border already says, and the registry component is
+        consumed rather than edited — so the icon is hidden from here, where the
+        decision belongs, rather than removed from a component every other
+        surface shares.
+      -->
       <Select.Root type="single" bind:value={mode}>
-        <Select.Trigger size="sm" class="border-transparent px-2" aria-label="Mode">
+        <Select.Trigger
+          size="sm"
+          class="border-intelligence-border bg-intelligence-surface text-intelligence-text px-2.5 [&>svg]:hidden"
+          aria-label="Mode"
+        >
           {MODES.find((entry) => entry.id === mode)?.label}
         </Select.Trigger>
         <Select.Content side="top" align="start">
@@ -136,18 +166,26 @@
         </Select.Content>
       </Select.Root>
 
+      <!--
+        Who is answering, centred. `max-h` is what makes the list scroll rather
+        than run off the top of the viewport: this bar sits at the bottom and the
+        menu opens upward, so an unbounded list of personas would grow straight
+        past the frame with its far end unreachable.
+      -->
       <Select.Root type="single" bind:value={persona}>
-        <Select.Trigger size="sm" class="border-transparent px-2" aria-label="Persona">
+        <Select.Trigger
+          size="sm"
+          class="border-border-subtle hover:bg-surface-panel-hover px-2.5 [&>svg]:hidden"
+          aria-label="Persona"
+        >
           {persona}
         </Select.Trigger>
-        <Select.Content side="top" align="start">
+        <Select.Content side="top" align="center" class="max-h-64">
           {#each PERSONAS as name (name)}
             <Select.Item value={name} label={name}>{name}</Select.Item>
           {/each}
         </Select.Content>
       </Select.Root>
-
-      <span class="spacer"></span>
 
       <button type="submit" class="send" disabled={!prompt.trim()} aria-label="Send {mode}">
         <ArrowUp size={14} aria-hidden="true" />
@@ -202,10 +240,17 @@
    * surface you are typing on. `surface-panel` is the same plane the bars and
    * both flanks use, which is what keeps this bar part of the frame rather than
    * a card floating in front of it. */
+  /**
+   * Three columns rather than a flex row with a spacer: the persona sits in the
+   * middle column, so it is centred against the *bar* and not against whatever
+   * happens to be left over after the mode and the send button. The two outer
+   * columns are equal, which is what keeps it centred as the mode label changes
+   * width between Ask, Plan, and Action.
+   */
   .controls {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: calc(var(--token-spacing-unit) * 1);
     /* The bar starts at 48px: this row plus one line of composer. */
     height: calc(var(--token-spacing-unit) * 8);
     padding-inline: calc(var(--token-spacing-unit) * 2.5);
@@ -213,15 +258,12 @@
     border-bottom: 1px solid var(--token-border-subtle);
   }
 
-  .mark {
-    font-size: var(--token-text-caption);
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: var(--token-color-intelligence-text);
+  .controls > :first-child {
+    justify-self: start;
   }
 
-  .spacer {
-    flex: 1;
+  .controls > :last-child {
+    justify-self: end;
   }
 
   .send {
