@@ -10,10 +10,27 @@
 export function fakeCtx() {
   const rows = new Map<string, Record<string, unknown>>();
   const log: Record<string, unknown>[] = [];
+  const blobsDeleted: string[] = [];
   let n = 0;
+
+  /** Convex indexes a nested field by its dotted path, and so does this. */
+  const at = (doc: Record<string, unknown>, path: string): unknown =>
+    path
+      .split(".")
+      .reduce<unknown>(
+        (value, key) => (value as Record<string, unknown> | undefined)?.[key],
+        doc
+      );
+
   const ctx = {
     rows,
     log,
+    blobsDeleted,
+    // Stored bytes have no contents here: what a handler must get right is
+    // taking them with the row it deletes, which is what this records.
+    storage: {
+      delete: async (id: string) => void blobsDeleted.push(id)
+    },
     db: {
       insert: async (table: string, doc: Record<string, unknown>) => {
         const id = `${table}:${++n}`;
@@ -39,11 +56,11 @@ export function fakeCtx() {
             const preds: Array<(d: Record<string, unknown>) => boolean> = [];
             const q = {
               eq: (f: string, val: unknown) => {
-                preds.push((d) => d[f] === val);
+                preds.push((d) => at(d, f) === val);
                 return q;
               },
               gt: (f: string, val: number) => {
-                preds.push((d) => (d[f] as number) > val);
+                preds.push((d) => (at(d, f) as number) > val);
                 return q;
               }
             };

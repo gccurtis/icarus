@@ -47,6 +47,7 @@ export default {
       $activity: "src/lib/capabilities/activity",
       $content: "src/lib/capabilities/content",
       $documents: "src/lib/capabilities/documents",
+      "$external-files": "src/lib/capabilities/external-files",
       $formula: "src/lib/capabilities/formula",
       "$name-manager": "src/lib/capabilities/name-manager",
       $revisions: "src/lib/capabilities/revisions",
