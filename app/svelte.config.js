@@ -47,6 +47,8 @@ export default {
       $activity: "src/lib/capabilities/activity",
       $content: "src/lib/capabilities/content",
       $documents: "src/lib/capabilities/documents",
+      $formula: "src/lib/capabilities/formula",
+      "$name-manager": "src/lib/capabilities/name-manager",
       $revisions: "src/lib/capabilities/revisions",
       $settings: "src/lib/capabilities/settings",
       "$slide-decks": "src/lib/capabilities/slide-decks",
