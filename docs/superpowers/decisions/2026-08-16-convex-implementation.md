@@ -161,6 +161,78 @@ document naming an index that does not exist.
 
 ---
 
+## Pass 2a — Editing
+
+### `FormulaValue` is recursive and a Convex validator is a value, not a type
+
+**Question.** A formula can return a table whose cells are themselves formula
+values. There is no recursive validator to write.
+
+**Grounding.** `settings/schema.ts` hit the same wall and stores its value as
+JSON text.
+
+**Alternatives.** Bound the recursion at a fixed depth N, writing the definition
+N times; encode the whole value as JSON text as settings does; `v.any()` at the
+nested cell only, with an honest recursive TypeScript type beside it.
+
+**Chosen.** The third. Settings' answer does not transfer, and the reason is
+specific: **the outer `kind` discriminant is read server-side** by anything
+resolving a dependency, and JSON text protects nothing that has to be read. This
+is the only option whose stored bytes are the shape the model describes — the
+kind, the columns, and the fact that rows are rows are all still checked at the
+door, and if a recursive validator ever exists it tightens with nothing to
+migrate. A fixed depth refuses a legitimate deeper value with no recourse and
+makes N a guess.
+
+The accepted cost is that a malformed *nested* cell is storable, so a renderer of
+one must be defensive. That is stated in `content/types/types.md` rather than
+left for someone to discover.
+
+### The union must grow safely, and the real risk is not what it looks like
+
+**Question.** How do you test that adding `image`, `table`, `embed`, and `prompt`
+later cannot disturb `text` and `formula`?
+
+**Alternatives.** Assert the member list by index; assert only that the union has
+two members today.
+
+**Chosen.** Look every member up by its `type` literal, and assert **each variant
+owns its whole field set** — `fieldsOf('text').expression` is undefined,
+`fieldsOf('formula').atoms` is undefined.
+
+An index assertion breaks the moment a member is appended, which is exactly the
+change that is supposed to be safe. And the real failure mode is not appending a
+member: it is someone later collapsing the union into one wide `v.object` with
+per-type optional fields. The field-set assertions are what catch that.
+
+### What adversarial review found
+
+Three defects, all past tests, typecheck, and four green linters. Two are in the
+code the plan singled out as the riskiest in the build, which is where the review
+weight was deliberately placed.
+
+**Step 3 saw the incoming op's path and nothing else.** Removal containment is
+supposed to reject an edit whose subtree an intervening set deleted. Reading only
+the path missed the subtree no id names — so two ordinary shapes of collaboration
+committed change sets that *could never be applied*, and every subsequent read of
+that resource threw, permanently, with no repair path. It now reads a removal's
+`values`, refuses a removal that did not say what it took, and tests the anchor an
+insert or move is placed by.
+
+**Step 4 shifted a text op's `at` and never its far end**, accepting a
+replacement that swallowed an intervening edit — the fails-open failure the plan
+warned about, arriving exactly where it was predicted. It also compared a mark's
+*display* offsets against a text op's *atom-local* ones, silently moving marks
+the edit never reached. The first fix is a second endpoint with the opposite
+tie-break; the second is a conversion that needs the body, so it is read once,
+last, and only where an incoming mark meets an intervening edit in its own block.
+
+**Deleting a document left its snapshots and change sets behind.** Revisions
+scopes off those rows rather than the document row, so the document stayed
+readable and writable by anyone holding its id.
+
+---
+
 ## Pass 6, settled early
 
 ### `knowledge.yaml` values are carried, not invented
