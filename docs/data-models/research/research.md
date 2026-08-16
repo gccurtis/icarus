@@ -11,31 +11,40 @@ interface ResearchThread {
   questionId?: Id<"questions">;
   hypothesisId?: Id<"hypotheses">;
   createdBy: Actor;
+  revision: number;
   updatedAt: number;
 }
-
 ```
 
-Messages are [`Message`](../core/message.md) rows with a
-`{ kind: "research" }` thread reference.
+## A room with a job
 
-## Messages are not embedded
+Research is a conversation aimed at something: pull information together, test
+hypotheses, work toward answers, and turn what holds up into
+[findings](finding.md). More than one person can be in it, and an agent answers
+alongside them.
 
-The thread holds metadata only. A conversation grows without bound, so embedding
-messages would walk a thread into Convex's document limit and rewrite the entire
-history on every reply.
+**This row is the thread.** There is no separate conversation object and no
+`chatId` — [messages](../core/message.md#threads-exist-only-to-serve-their-consumer)
+name this row, and `by_thread(("research", id))` is the whole link. What the row
+itself holds is only what makes it *research*: its mode and what it is anchored
+to.
 
-They are the shared [`Message`](../core/message.md) type rather than a research
--specific one — a research message, an agent task message, and a persona chat
-message had identical structure, and three copies of one shape is three places
-for it to drift.
+Messages are not embedded, because a conversation grows without bound and
+embedding would walk the thread into Convex's document limit while rewriting the
+whole history on every reply.
 
 ## Mode
 
-`mode` says what the thread is for. `discover` is open exploration with nothing
-attached. `question` and `hypothesis` are anchored, and the corresponding id is
-set — which is what lets the thread be shown in context on the object it belongs
-to, and what gives a drafted finding somewhere obvious to attach.
+`mode` says what the thread is working toward, not how attached it is.
+
+`discover` is **looking for things** — the thread is driven by its prompt rather
+than by a specific question or hypothesis. It is not "unanchored"; it is a
+different job. Discovery is how questions get found in the first place, and a
+discover thread producing a finding is the normal case rather than a loose end.
+
+`question` and `hypothesis` are pointed at something, and the corresponding id is
+set — which is what lets the thread appear in context on the object it belongs
+to, and gives a drafted finding somewhere obvious to attach.
 
 ## Research is an agent with a fixed toolset
 

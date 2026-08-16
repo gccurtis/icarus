@@ -15,11 +15,18 @@ interface CommentThread {
 }
 
 interface CommentAnchor {
-  targetType: "document" | "slides" | "spreadsheet" | "question" | "hypothesis" | "finding" | "externalFile";
+  targetType: "document" | "slides" | "spreadsheet" | "externalFile"
+            | "question" | "hypothesis" | "finding";
   targetId: string;
-  path?: string;               // "blocks/4", "slides/2/elements/1", "Sheet1!B7"
-  quote?: string;              // the text the thread was anchored to
+  within?: AnchorWithin;       // absent = the whole thing
+  quote?: string;              // the selected text, when there was a selection
 }
+
+type AnchorWithin =
+  | { kind: "slide"; slideId: string }
+  | { kind: "element"; elementId: string }
+  | { kind: "cell"; sheetId: string; ref: string }      // "B7"
+  | { kind: "text"; blockId: string; from: number; to: number };
 
 interface Comment {
   threadId: Id<"commentThreads">;
@@ -58,22 +65,50 @@ mentioning a task delivers into that task's thread. So "@Researcher, is this
 consistent with the Q3 scan?" on a paragraph is a complete interaction rather
 than a note nobody reads.
 
-## Anchoring is a path, and it is best-effort
+## What you can comment on
 
-`path` locates the thread within its target using the same addressing as
-everything else — object, field, index. Since [content blocks have no
-ids](../README.md#addressing-a-content-block), a comment on block 4 of a
-document is a comment on `blocks/4`.
+`within` is absent for a comment on the whole object, and otherwise names the
+smallest thing the person actually pointed at. Which variants are legal depends
+on the target:
 
-Which means an edit that inserts a block above it moves what it points at. That
-is a real cost of block identity living in position, and `quote` is the
-mitigation: the thread keeps the text it was anchored to, so a path that no
-longer matches can be re-found by searching, or shown as detached rather than
-silently pointing at the wrong paragraph.
+| Target | `within` may be |
+| --- | --- |
+| document | `text`, or absent |
+| slides | `slide`, `element`, `text`, or absent |
+| spreadsheet | `cell`, `text`, or absent |
+| external file | absent |
+| question, hypothesis, finding | `text`, or absent |
 
-The alternative — stable block ids purely to anchor comments — would put an
-identifier on every block in the system to serve the small fraction that get
-commented on.
+A slide can be commented on as a slide, which is the case that matters — "this
+one needs rework" is about the slide, not about anything on it. A deck-level
+comment and a slide-level comment are different remarks and the model has to keep
+them apart.
+
+There is no `row` variant for documents. Nobody points at a row; they select
+text, or they comment on the document. Rows are layout.
+
+## Anchoring is exact
+
+An anchor names an [id](../content/content-block.md#one-id-space-per-resource) —
+`#b7x2` is that block wherever it moves and whatever gets inserted above it — so
+a comment cannot drift onto the wrong paragraph.
+
+This was not always true. Blocks were positional, `blocks/4` moved when anything
+was inserted above, and `quote` existed as a repair mechanism for anchors that
+had silently gone wrong. Block ids removed that class of problem entirely.
+
+The one part still positional is `text`'s `from`/`to`, which shift when the text
+before them is edited. That is the same
+[offset arithmetic](../content/content-block.md#marks-index-the-display-string)
+marks already require, handled the same way.
+
+`quote` is what was selected. It renders in the comment list so a thread reads on
+its own without loading its target, and it makes a range that has drifted
+recognizable as drifted. It is absent when nothing was selected.
+
+Anchors reach all the way down to a text range rather than stopping at a block
+because commenting is a textual act — a person selects a phrase, not a container.
+Anchoring at block granularity would make every comment about a paragraph.
 
 `resolvedBy` stays a user while `createdBy` and `author` are actors. Anything can
 raise a remark; closing one is a judgement that a person makes.

@@ -15,12 +15,13 @@ interface Automation {
   lastError?: string;
   runCount: number;
   createdBy: Actor;
+  revision: number;
   updatedAt: number;
 }
 
 type AutomationTrigger =
   | { kind: "schedule"; cron: string; timezone: string }
-  | { kind: "resource_changed"; resourceType: string; resourceId?: string }
+  | { kind: "resource_changed"; resourceType: ResourceKind; resourceId?: string }
   | { kind: "connector_synced"; connectorId: Id<"connectors"> }
   | { kind: "finding_created"; questionId?: Id<"questions"> }
   | { kind: "manual" };

@@ -15,9 +15,9 @@ interface PersonaThread {
 }
 ```
 
-Messages are [`Message`](../core/message.md) rows with a
-`{ kind: "persona" }` thread reference — the same shape research and agent tasks
-use.
+This row is the thread.
+[Messages](../core/message.md#threads-exist-only-to-serve-their-consumer) name it
+directly; there is no separate conversation object.
 
 ## Why this is not a task
 

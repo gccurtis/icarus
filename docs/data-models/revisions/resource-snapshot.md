@@ -15,9 +15,9 @@ interface ResourceSnapshot {
 }
 
 type ResourceBody =
-  | { resourceType: "document"; blocks: ContentBlock[] }
-  | { resourceType: "slides"; slides: Slide[]; theme?: SlideTheme }
-  | { resourceType: "spreadsheet"; sheets: Sheet[] };
+  | ({ resourceType: "document" } & DocumentBody)
+  | ({ resourceType: "slides" } & SlideDeckBody)
+  | ({ resourceType: "spreadsheet" } & SpreadsheetBody);
 ```
 
 ## Three roles, two jobs
@@ -91,6 +91,10 @@ The body deliberately excludes metadata — title, template origin, timestamps.
 Those live on the resource row and are not worth versioning; a renamed document
 is not a different document, and [activity](../collaboration/activity.md)
 already records the rename.
+
+It does include page setup, style sets, themes, and layouts. Changing a margin or
+restyling every heading is an edit like any other, and an
+[undo](README.md#undo) has to reach it.
 
 ## Related
 

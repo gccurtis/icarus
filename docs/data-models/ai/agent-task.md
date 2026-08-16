@@ -32,8 +32,9 @@ interface PlanStep {
 }
 ```
 
-Messages are [`Message`](../core/message.md) rows with a `{ kind: "task" }`
-thread reference, carrying the task's tool calls.
+This row is the thread. Its
+[messages](../core/message.md#threads-exist-only-to-serve-their-consumer) name it
+directly and carry the task's tool calls.
 
 ## Three names for three jobs
 
@@ -134,4 +135,5 @@ merging them makes failure rates meaningless.
 ## Related
 
 [persona](persona.md) · [automation](automation.md) ·
-[intelligence](intelligence.md) · [research](../research/research.md)
+[intelligence](../../processes/intelligence.md) ·
+[research](../research/research.md)

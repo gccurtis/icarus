@@ -22,7 +22,7 @@ interface DerivedOutput {
 }
 
 type InputRevision =
-  | { kind: "resource"; resourceType: string; resourceId: string; revision: number }
+  | { kind: "resource"; resourceType: ResourceKind; resourceId: string; revision: number }
   | { kind: "file"; fileId: Id<"externalFiles"> }
   | { kind: "finding"; findingId: Id<"findings"> };
 

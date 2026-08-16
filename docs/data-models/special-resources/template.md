@@ -12,13 +12,14 @@ interface Template {
   body: TemplateBody;
   slots: TemplateSlot[];
   createdBy: Actor;
+  revision: number;
   updatedAt: number;
 }
 
 type TemplateBody =
-  | { target: "document"; blocks: ContentBlock[] }
-  | { target: "slides"; slides: Slide[]; theme?: SlideTheme; aspectRatio: "16:9" | "4:3" }
-  | { target: "spreadsheet"; sheets: Sheet[] };
+  | ({ target: "document" } & DocumentBody)
+  | ({ target: "slides" } & SlideDeckBody & { aspectRatio: "16:9" | "4:3" })
+  | ({ target: "spreadsheet" } & SpreadsheetBody);
 
 interface TemplateSlot {
   key: string;                 // "client_name"

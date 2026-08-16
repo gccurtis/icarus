@@ -50,17 +50,20 @@ decisions — they are numbers to tune against real editing sessions.
 The resource row carries no `revision`. Current revision is the highest change
 set revision, read from an index.
 
-The change set table is uniquely indexed on `(resourceId, revision)`, so
-inserting at an already-taken revision fails — and that failure *is* the CAS. No
-version field to read, patch, and contend on, and no rewriting a large body just
-to bump a counter.
+The read of the current maximum and the insert one above it happen in a single
+Convex mutation, and Convex mutations are serializable — a concurrent writer that
+commits first invalidates this one's read set, so it re-runs against the new
+state. No version field to read, patch, and contend on, and no rewriting a large
+body just to bump a counter. See
+[storage](../../storage/README.md#there-are-no-unique-indexes).
 
 ## Undo
 
 An undo is not a special operation. Every op is
 [invertible](change-set.md#every-op-is-invertible), so undoing a change set means
 inverting each op, reversing their order, and submitting the result as an
-ordinary change set — subject to the same rebase rules as anything else. Undoing
+ordinary change set — subject to the same [conflict
+checks](../../processes/change-conflicts.md) as anything else. Undoing
 a change someone has since edited around either merges cleanly or conflicts, and
 both are correct.
 
@@ -155,8 +158,9 @@ configuration history.
 copy](../special-resources/template.md#instantiation-is-a-copy), so editing a
 template cannot damage anything created from it.
 
-**Content blocks** — no ids and no independent history. A block's history is its
-resource's history.
+**Content blocks** — ids but no independent history. A block's history is its
+resource's history; the id exists to address it inside a change set, not to make
+it a versioned thing of its own.
 
 ## Files
 

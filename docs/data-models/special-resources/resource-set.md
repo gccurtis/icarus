@@ -14,6 +14,7 @@ interface ResourceSet {
   description?: string;
   expression: SetExpression;
   createdBy: Actor;
+  revision: number;
   updatedAt: number;
 }
 
@@ -35,6 +36,7 @@ type ResourceKind =
   | "slides"
   | "spreadsheet"
   | "externalFile"
+  | "finding"
   | "connector"
   | "template";
 ```
@@ -59,7 +61,7 @@ the project except the documents" is the natural way to say a real thing, and
 without difference it has to be written as an enumeration that stops being true
 as soon as anything is added.
 
-```
+```text
 difference(project, kind("document"))
 ```
 
@@ -125,18 +127,40 @@ Where a consumer needs to remember what it actually saw — a derived output
 explaining its output — it records the resolved refs and their revisions itself,
 in its own `inputsAt`. The set stays lazy; the consumer captures.
 
+## Findings are resources; questions and hypotheses are not
+
+A [finding](../research/finding.md) is a resource kind. It is a durable piece of
+project content with a body, it is cited, it is indexed by the
+[lattice](../knowledge/knowledge-lattice.md), and "answer from our findings only"
+is an obvious thing to want to scope to.
+
+[Questions](../research/question.md) and
+[hypotheses](../research/hypothesis.md) are not. They are the project's open
+threads rather than its material — a question is what we do not know, and
+retrieving over it would return the asking rather than an answer.
+
+## Every lattice source is a resource kind
+
+The kinds a [lattice node](../knowledge/knowledge-lattice.md) can come from are a
+subset of these, never anything else. That is the invariant that makes scoping
+total: anything retrieval can index, a scope can select.
+
+It runs one way only. `template` and `connector` are resource kinds that are not
+lattice sources — a template is a skeleton and a connector is configuration, and
+neither has content worth retrieving in its own right.
+
+**Messages are deliberately outside both.** A conversation is working material,
+and indexing it would fill retrieval with half-formed reasoning and abandoned
+turns. A message worth keeping is
+[promoted to a finding](../research/finding.md), which gives it a title, sources,
+and a place in the graph — and that promotion is the editorial act the lattice
+should be indexing, not the raw transcript.
+
 ## What is not a resource
 
-Research objects — [questions](../research/question.md),
-[hypotheses](../research/hypothesis.md), [findings](../research/finding.md) — are
-not resource kinds, and neither are [agent tasks](../ai/agent-task.md) or
-messages. Resources are the things a project holds; research objects are what it
-concludes.
-
-The lattice does index findings, so scoping retrieval to "findings only" is not
-currently expressible. That is a known gap rather than a decision, and the fix is
-either a kind here or a separate axis on retrieval — worth settling when the
-lattice's own model is revisited.
+[Agent tasks](../ai/agent-task.md), [personas](../ai/persona.md),
+[automations](../ai/automation.md), comments, and activity. Resources are what a
+project holds and works over; these are how the work gets done.
 
 ## Related
 

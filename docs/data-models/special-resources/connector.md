@@ -12,8 +12,10 @@ interface Connector {
   status: ConnectorStatus;
   scope: ConnectorScope[];
   credentialRef: string;       // pointer into the secret store, never the secret
+  delivery: ConnectorDelivery;
   sync?: ConnectorSync;
   createdBy: Actor;
+  revision: number;
   updatedAt: number;
 }
 
@@ -30,6 +32,10 @@ interface ConnectorScope {
   recursive?: boolean;
 }
 
+type ConnectorDelivery =
+  | { kind: "pull"; intervalMinutes: number }
+  | { kind: "push"; webhookRef: string; verifiedAt?: number };
+
 interface ConnectorSync {
   cursor?: string;             // provider's delta token or page marker
   lastSyncedAt?: number;
@@ -37,6 +43,26 @@ interface ConnectorSync {
   fileCount?: number;
 }
 ```
+
+## Pull is the default; push is the same connector
+
+`delivery` says how content arrives. `pull` polls on an interval and is what
+every provider supports. `push` receives webhooks and is what some providers
+offer instead.
+
+They are one field on one connector rather than two connector types because
+everything else about them is identical — credentials, scope, status, cursor, the
+files produced. Only the trigger differs, and a provider that gains webhook
+support should be a configuration change rather than a migration.
+
+`webhookRef` points at the registered endpoint's secret the same way
+`credentialRef` does, and `verifiedAt` records when a delivery was last
+successfully authenticated — a webhook that silently stopped arriving looks
+exactly like one with nothing to send, and that timestamp is the difference.
+
+A `push` connector still needs a periodic reconciliation, because webhooks are
+lost. That is behaviour rather than state, and it reads `sync.cursor` like a pull
+would.
 
 ## Credentials are referenced, never stored
 

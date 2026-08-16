@@ -11,9 +11,11 @@ interface LatticeVersion {
   embeddingModel: string;      // the provider's identifier, resolved
   embeddingBinding: string;    // the intelligence key it resolved from
   dimensions: number;
+  levelCount: number;                  // 1 = windows only, no clusters yet
   nodeCount: number;
+  nodesByLevel: number[];
   staleCount: number;
-  state: "building" | "ready" | "rebuilding" | "error";
+  state: "building" | "ready" | "clustering" | "rebuilding" | "error";
   error?: string;
   rebuildReason?: "embedding_changed" | "manual" | "corruption";
   updatedAt: number;
@@ -37,7 +39,7 @@ flag cannot say that, because the problem is the population, not any node.
 
 ## One per project
 
-Enforced by a unique index on `projectId`. The lattice is a single index over
+Enforced by the mutation, indexed on `projectId`. The lattice is a single index over
 one project's content; two would mean two answers to "what does this project
 know", with nothing to say which is right.
 
@@ -55,7 +57,7 @@ comparisons work.
 
 ## Both binding and resolved model
 
-`embeddingBinding` is the [intelligence](../ai/intelligence.md) key —
+`embeddingBinding` is the [intelligence](../../processes/intelligence.md) key —
 `"embedding"`. `embeddingModel` is what that key pointed at when the lattice was
 built.
 
@@ -65,16 +67,39 @@ required rebuild is detected. Storing only the binding would hide the drift, and
 storing only the model would lose the connection to the configuration that
 should be updated.
 
+## Layers
+
+`levelCount` is how deep the [cluster
+hierarchy](../knowledge/knowledge-lattice.md#a-node-is-a-window-or-a-cluster-of-them)
+goes. A value of 1 means level 0 exists and nothing has been clustered yet —
+which is a normal state, not a failure, since windows are embedded as content
+arrives and clustering runs after.
+
+It belongs to the index rather than to any node because it is what a retrieval
+has to know before choosing where to start: searching from the top layer and
+descending is a different operation from searching layer 0 directly, and the
+number of layers is what makes that choice available.
+
+`clustering` is its own state for the same reason. A lattice mid-clustering has
+coherent layer-0 vectors and an incomplete hierarchy above them, which is usable
+for flat retrieval and not for hierarchical — distinguishable only if the state
+says so.
+
 ## Counts
 
 `nodeCount` and `staleCount` are maintained rather than computed. They drive a
 readiness indicator that renders on every project view, and counting rows for it
 would mean scanning the lattice to draw a badge.
 
-They are approximate by nature and are corrected on rebuild.
+`nodesByLevel` is the same number broken out per level, indexed by level. It is
+the one diagnostic that says whether clustering is doing anything useful: healthy
+levels shrink by a roughly constant factor, and a level that barely reduces the
+one below it means the clustering found no structure worth having.
+
+All three are approximate by nature and are corrected on rebuild.
 
 ## Related
 
 [lattice change](lattice-change.md) ·
 [knowledge lattice](../knowledge/knowledge-lattice.md) ·
-[intelligence](../ai/intelligence.md)
+[intelligence](../../processes/intelligence.md)

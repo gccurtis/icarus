@@ -21,14 +21,14 @@ interface ExternalFile {
 }
 
 type FileKind =
-  | "text"
-  | "image"
-  | "data"
-  | "document"
-  | "audio"
-  | "video"
-  | "archive"
-  | "unknown";
+  | "ext-text"
+  | "ext-image"
+  | "ext-data"
+  | "ext-document"
+  | "ext-audio"
+  | "ext-video"
+  | "ext-archive"
+  | "ext-unknown";
 
 type FileOrigin =
   | { kind: "upload" }
@@ -64,14 +64,25 @@ and nothing cleverer:
 
 | kind | extensions |
 | --- | --- |
-| `text` | `txt` `md` `rtf` |
-| `image` | `png` `jpg` `jpeg` `gif` `webp` `svg` `heic` |
-| `data` | `csv` `tsv` `json` `xlsx` `xls` `parquet` |
-| `document` | `pdf` `docx` `pptx` `odt` |
-| `audio` | `mp3` `wav` `m4a` `flac` |
-| `video` | `mp4` `mov` `webm` `avi` |
-| `archive` | `zip` `tar` `gz` `7z` |
-| `unknown` | anything else |
+| `ext-text` | `txt` `md` `rtf` |
+| `ext-image` | `png` `jpg` `jpeg` `gif` `webp` `svg` `heic` |
+| `ext-data` | `csv` `tsv` `json` `xlsx` `xls` `parquet` |
+| `ext-document` | `pdf` `docx` `pptx` `odt` |
+| `ext-audio` | `mp3` `wav` `m4a` `flac` |
+| `ext-video` | `mp4` `mov` `webm` `avi` |
+| `ext-archive` | `zip` `tar` `gz` `7z` |
+| `ext-unknown` | anything else |
+
+**Kinds are namespaced.** `ext-document` is an uploaded PDF; `document` is an
+Icarus [document](../general-resources/document.md). They are unrelated things
+and a bare `document` in both vocabularies would eventually be compared, indexed,
+or switched on as if they were the same.
+
+The prefix is not decoration — kind strings travel into
+[resource sets](resource-set.md), [lattice
+sources](../knowledge/knowledge-lattice.md), and comment anchors, where they are
+matched against kinds from every other domain. A kind is only safe as a
+discriminator if it is unique across all of them.
 
 It is stored rather than computed on read so it can be indexed, and so a
 correction — a mislabelled extension, a better classifier later — is a write

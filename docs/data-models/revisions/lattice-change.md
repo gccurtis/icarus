@@ -9,6 +9,7 @@ interface LatticeChange {
   version: number;             // the lattice version this produced
   cause: LatticeCause;
   nodeSets: LatticeNodeSet[];
+  reclustered?: number[];      // nodes touched per level, indexed by level
   at: number;
 }
 
@@ -26,6 +27,13 @@ interface LatticeNodeSet {
   unchanged: number;           // count only — nodes the source kept
 }
 ```
+
+`reclustered` is a count per level rather than a list of ids. A source change
+[cascades upward](../knowledge/knowledge-lattice.md#staleness-cascades-upward):
+editing one paragraph invalidates its windows, the cluster containing them, the
+cluster containing that, and so on to the top. Listing every id touched would
+make a change row larger than the change and would be read by nobody — what a
+person wants to know is how far up the edit reached.
 
 ## Grouped by the change, listed by source
 

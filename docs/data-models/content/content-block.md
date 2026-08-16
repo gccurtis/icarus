@@ -5,8 +5,42 @@ an agent can produce is a list of content blocks — a document body, a slide
 element, a spreadsheet cell, a comment, a research message, an agent task
 message, a generated output.
 
-Blocks are embedded values. They have no ids and no owner field; the object
-holding them is the owner.
+Blocks are embedded values with **stable ids**, scoped to the resource that holds
+them. They have no owner field; the object holding them is the owner.
+
+## One id space per resource
+
+Every identified thing inside a resource — rows, blocks, atoms, marks, slides,
+elements — draws from **one id space, unique within that resource and nowhere
+else**. Two documents may use the same ids and it means nothing.
+
+Flat rather than nested scoping, deliberately. A block moved from one row to
+another keeps its id, so the edit that moved it and an edit to its text do not
+have to agree about where it lives. Scoping ids to their container would mean a
+move re-identifies the thing being moved, which is the one case the id exists to
+survive.
+
+That is also why an id needs no global uniqueness and no coordination — a short
+random string per resource is enough, and a resource can be duplicated by
+copying ids wholesale.
+
+## Why ids at all
+
+Position was the earlier answer: a block was *this document, `blocks`, index 4*.
+Three things pushed that over.
+
+**Rebasing.** With positional paths, an insert above shifts every index below it,
+so merging concurrent edits means rewriting the indices in the incoming change.
+With ids, inserting a block above changes nothing about the path to the one being
+edited — the intervening op is simply irrelevant.
+
+**Comment anchors.** A comment on `blocks/4` silently points somewhere else after
+an insert. [Anchoring](../collaboration/comment.md) to an id is exact and stays
+exact.
+
+**Merge granularity.** Ids go down to atoms and marks, so two people bolding
+different words in one paragraph touch different paths and merge, where a
+whole-array `set` would have collided.
 
 ```ts
 type ContentBlock =
@@ -16,6 +50,12 @@ type ContentBlock =
   | EmbedBlock
   | FormulaBlock
   | PromptBlock;
+
+// every variant carries these
+interface BlockIdentity {
+  id: string;                  // unique within the resource
+  format?: BlockFormat;
+}
 
 interface BlockFormat {
   align?: "start" | "center" | "end" | "justify";     // horizontal
@@ -68,6 +108,7 @@ have to re-run a resolver to get it.
 
 ```ts
 interface TextBlock {
+  id: string;
   type: "text";
   variant: "paragraph" | "heading" | "list" | "quote" | "code";
   level?: number;              // heading depth, or list indent depth
@@ -75,6 +116,7 @@ interface TextBlock {
   checked?: boolean;           // todo list items
   language?: string;           // code
 
+  style?: string;              // key into the resource's style set
   atoms: TextAtom[];           // raw — what was authored
   display: string;             // resolved — what is shown
   marks: Mark[];               // offsets into `display`
@@ -82,6 +124,12 @@ interface TextBlock {
   format?: BlockFormat;
 }
 ```
+
+`style` names an entry in the containing resource's
+[style set](../general-resources/style-set.md) rather than copying its
+formatting. Changing "Heading 1" then restyles every heading at once, and a
+paragraph given "Body" matches the others by definition instead of by someone
+having got the numbers right. The block's own `format` overrides it locally.
 
 The text variants are one type rather than five, because they share the whole
 atoms/display/marks machine and differ only in how they are presented. A
@@ -92,18 +140,57 @@ Code blocks are the exception that stays inside the type: they carry a
 rather than outside because a code block still sits in the same block list, in
 the same order, as the paragraphs around it.
 
+### A block holds no newlines
+
+A block's display string is a single line. Pressing Enter does not insert a
+newline into a block — it ends the block and starts another.
+
+This is what keeps every consumer simple. A block is one thing that can be
+styled, aligned, measured, laid out, and placed in a
+[document row](../general-resources/document.md#rows-not-a-flat-block-list) or a
+sheet cell, and a block containing three paragraphs would be three things
+pretending to be one. It is also what makes `marks` offsets tractable: one
+display string, one coordinate space.
+
+The consequence is that anything longer than a paragraph is a **list** of blocks
+— a document body, a [finding's](../research/finding.md) writeup, a message. That
+is why those fields are `ContentBlock[]` rather than a single block, and why a
+[derived output](../knowledge/derived-output.md#output-is-one-block) producing
+exactly one block is producing one paragraph's worth.
+
+Soft wrapping is not a newline. Where a line breaks visually depends on the
+measure, and it is computed rather than stored.
+
 ### Atoms
 
 ```ts
 type TextAtom =
-  | { kind: "literal"; text: string }
-  | { kind: "formula"; expression: string };
+  | { id: string; kind: "literal"; text: string }
+  | { id: string; kind: "formula"; expression: string; resolved: string;
+      state: "fresh" | "stale" | "computing" | "error"; error?: string };
 ```
 
 An atom is the smallest authored unit. Literal atoms are typed characters.
 Formula atoms are written inline with `{{ }}` delimiters — `Revenue was
 {{SUM(Sales!B:B)}} this quarter` is three atoms: a literal, a formula, a
 literal.
+
+**`display` is the atoms' text in order** — each literal's `text`, each
+formula's `resolved`, concatenated. Nothing else. So the span each atom occupies
+in `display` is derived by walking them and accumulating lengths, and never
+stored: a re-resolved formula is a splice at a computed offset, and storing the
+offsets would mean a second thing to keep correct.
+
+A formula atom carries its own `resolved` text and `state` for exactly this
+reason. Without it, `display` could not be rebuilt without re-evaluating, and a
+block would be unreadable while a formula was stale.
+
+Atom ids give the finest merge granularity in the model. Two people editing
+either side of a formula in one sentence touch different atoms, so their paths
+are disjoint and both survive. Two people editing the *same* atom at different
+offsets are reconciled by [shifting
+offsets](../../processes/change-conflicts.md#shifting-offsets); only genuinely
+overlapping replacements conflict.
 
 Formula atoms are inline references *within* prose. A block that is entirely a
 formula is a [formula block](#formula-blocks) instead — see the note there on
@@ -113,6 +200,7 @@ why the two are not the same thing.
 
 ```ts
 interface Mark {
+  id: string;
   from: number;               // UTF-16 offset into `display`
   to: number;                 // exclusive
   style?: ("bold" | "italic" | "underline" | "strikethrough" | "code")[];
@@ -120,6 +208,11 @@ interface Mark {
   color?: string;
 }
 ```
+
+Marks carry ids so a change can target one — `set` at `#blockId/marks/#markId` —
+rather than replacing the array. Two people bolding different words in the same
+paragraph then have disjoint paths and merge, where a whole-array write would
+have collided.
 
 **This is the load-bearing decision in the whole model.** Marks are offsets into
 `display`, not into `atoms`.
@@ -132,10 +225,14 @@ result", because the result is not in the raw at all.
 
 The consequence is that a mark's offsets are only meaningful against a
 particular resolution. When a formula's value changes, display shifts and marks
-covering or following it must shift with it. That is real work, and it is the
-work the model should make obvious rather than hide: the formula atom knows the
-display range it produced, so a re-resolve is a splice, and the marks either
-side move by the length delta.
+covering or following it must shift with it.
+
+That is the same [offset
+shift](../../processes/change-conflicts.md#shifting-offsets) a concurrent text
+edit needs, and it is the same function: a re-resolved formula is a splice at a
+known offset with a known delta, and every mark moves by the rule. Nothing stores
+the adjustment — it is derived whenever the string changes, whether by an edit or
+by a resolution.
 
 A block with no formula atoms never encounters any of this — display is
 byte-for-byte the concatenated literals and marks are stable.
@@ -144,6 +241,7 @@ byte-for-byte the concatenated literals and marks are stable.
 
 ```ts
 interface FormulaBlock {
+  id: string;
   type: "formula";
   expression: string;          // raw, "=SUM(A1:A10)"
   display: string;             // resolved, "42"
@@ -245,6 +343,7 @@ is right.
 
 ```ts
 interface ImageBlock {
+  id: string;
   type: "image";
   source:
     | { kind: "file"; fileId: Id<"externalFiles"> }
@@ -274,6 +373,7 @@ agent reading the document.
 
 ```ts
 interface TableBlock {
+  id: string;
   type: "table";
   rows: TableRow[];
   headerRows: number;
@@ -282,10 +382,12 @@ interface TableBlock {
 }
 
 interface TableRow {
+  id: string;
   cells: TableCell[];
 }
 
 interface TableCell {
+  id: string;
   blocks: ContentBlock[];
   rowSpan?: number;
   columnSpan?: number;
@@ -313,6 +415,7 @@ one place a renderer has to look.
 
 ```ts
 interface EmbedBlock {
+  id: string;
   type: "embed";
   url: string;
   presentation: "card" | "inline" | "iframe";
@@ -335,6 +438,7 @@ are block-level.
 
 ```ts
 interface PromptBlock {
+  id: string;
   type: "prompt";
   derivedOutputId: Id<"derivedOutputs">;
 

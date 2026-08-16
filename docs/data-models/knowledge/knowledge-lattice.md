@@ -1,120 +1,229 @@
 # Knowledge lattice
 
-The project's content, broken into passages, embedded, and linked. It is what
-makes retrieval possible: given a question, find the passages that bear on it.
+The project's content read into overlapping windows, embedded, and clustered into
+**levels** — each level a network whose nodes are clusters of the level below.
+
+The fields here are thin for how much they carry, because almost everything about
+the lattice is procedural. How nodes are produced is
+[clustering](../../processes/lattice-clustering.md); how they are walked is
+[retrieval](../../processes/lattice-retrieval.md).
 
 ```ts
 interface LatticeNode {
   projectId: Id<"projects">;
-  source: LatticeSource;
-  text: string;                // the passage
-  embedding: number[];
-  tokens: number;
-  ordinal: number;             // position within the source
-  staleAt?: number;            // set when the source changed
+  level: number;                       // 0 = windows read from sources
+  tierSourceId?: string;               // set on source-tier nodes
+  clustered: boolean;                  // has a parent yet
+  windows: LatticeWindow[];
+  text?: string;                       // level 0 only
+  centroid: number[];                  // unit-normalized
+  count?: number;                      // members, level > 0
+  cohesion?: number;                   // weakest pairwise similarity in the clique
+  tokens?: number;
+  members?: Id<"latticeNodes">[];      // level > 0
+  parentId?: Id<"latticeNodes">;
+  staleAt?: number;
   updatedAt: number;
 }
 
+interface LatticeWindow {
+  source: LatticeSource;
+  start: number;                       // offset into the source's text
+  end: number;
+  density: number;                     // how many windows merged into this one
+}
+
 type LatticeSource =
-  | { kind: "file"; fileId: Id<"externalFiles">; locator?: string }
-  | { kind: "document"; documentId: Id<"documents">; blockIndex: number }
-  | { kind: "slides"; deckId: Id<"slideDecks">; slideIndex: number }
-  | { kind: "spreadsheet"; spreadsheetId: Id<"spreadsheets">; sheet: string; range?: string }
-  | { kind: "finding"; findingId: Id<"findings"> }
-  | { kind: "message"; threadId: Id<"researchThreads">; messageId: Id<"researchMessages"> };
+  | { kind: "document"; id: Id<"documents"> }
+  | { kind: "slides"; id: Id<"slideDecks"> }
+  | { kind: "spreadsheet"; id: Id<"spreadsheets"> }
+  | { kind: "externalFile"; id: Id<"externalFiles"> }
+  | { kind: "finding"; id: Id<"findings"> };
 
 interface LatticeEdge {
   projectId: Id<"projects">;
+  level: number;
   fromId: Id<"latticeNodes">;
   toId: Id<"latticeNodes">;
-  kind: "cites" | "derived_from" | "contradicts" | "similar";
-  weight?: number;
+  weight: number;                      // full-dimensional dot product
+}
+
+interface LatticeLevelIndex {
+  projectId: Id<"projects">;
+  level: number;
+  threshold: number;                   // similarity threshold used at this level
+  k: number;                           // neighbours retained per artifact
+  basis: number[][];                   // PCA basis
+  centroids: number[][];               // IVF cell centroids
+  updatedAt: number;
 }
 ```
 
+## A node is a window, or a cluster of them
+
+At **level 0** a node is one window of text — a span read out of a source,
+overlapping its neighbours, embedded. One entry in `windows`, and it carries that
+span's `text`.
+
+At **level 1 and above** a node is a cluster of the level below, with its own
+centroid, its own edges to its peers, and a `windows` list assembled from
+everything underneath it.
+
+Clustering runs on the previous level's nodes, not on the level-0 windows, so
+level 2 clusters clusters. What emerges is a cascade of networks, each a coarser
+view of the one below.
+
+## Two tiers
+
+`tierSourceId` marks a **source-tier** node — one clustering a single source's
+windows. Corpus-tier nodes leave it absent, because they span several sources.
+
+The split keeps ingestion affordable: adding a document rebuilds that document's
+forest and then *repairs* the corpus tier, rather than re-clustering the project.
+Only the corpus tier reasons about everything, and it does so over source
+frontiers rather than raw windows.
+
+## Centroid, count, cohesion
+
+`centroid` is the unit-normalized mean of a node's members; at level 0 it is the
+window's own embedding. Retrieval scores against it, which is what lets a
+poorly-matching cluster be skipped without opening it.
+
+`cohesion` is the **weakest** pairwise similarity inside the clique, not the
+average. A cluster is only as tight as its loosest pair, and averaging hides
+exactly the case worth knowing about — a tight core with something barely related
+attached.
+
+## Windows merge; density counts the merge
+
+A cluster's `windows` is not a concatenation of its members'. Two windows join
+into one when — and only when — they name the **same source** and their ranges
+overlap. The joined window spans the union, and its `density` is the sum.
+
+Density is what makes a cluster legible. All-density-1 windows scattered across
+nine sources is a thin thematic link; one window of density 40 over a single
+document is that document's argument, recognized as one thing. The number tells
+them apart without re-reading text.
+
+Windows from one source that do **not** overlap stay separate. A document
+discussing a topic in two distant sections is two contributions, and collapsing
+them would claim coverage of everything between.
+
+## Not everything clusters, and that is load-bearing
+
+A clustering pass leaves nodes behind. A window with no strong neighbours belongs
+in no cluster, and forcing it into the nearest one would invent a relationship
+the weights did not support.
+
+`clustered` marks whether a node has found a parent. **The next pass clusters
+every unclustered node, regardless of level** — not just what the last pass
+produced. A level-3 cluster can absorb a level-0 window that never found a home,
+because by then there is something for it to relate to that did not exist before.
+
+That set is also [retrieval's entry
+point](../../processes/lattice-retrieval.md#the-frontier) — the frontier is
+exactly the unclustered nodes. So an orphan is not a loose end; it is a root, and
+one index serves both readers.
+
+It is a stored boolean rather than derived from `parentId` being absent because
+it is an **index key**: `by_project_clustered` is asked at the start of every
+pass and every query, and building the most frequent question on the absence of a
+field makes it the most expensive one.
+
+Whether a node is unclustered because clustering has not reached it or because it
+has no neighbours is **not** stored. Both mean the same to retrieval — enter
+here — and the distinction is a judgement the algorithm re-makes each pass.
+
+## Hierarchy is fields; edges are within a level
+
+`members` and `parentId` express the tree. `LatticeEdge` expresses the network
+*inside* a level.
+
+Keeping them separate makes the structure queryable both ways without a kind
+check on every traversal: descending is a field read, finding neighbours is an
+indexed edge query. Containment as an edge kind would mean every neighbour query
+filtering out vertical edges.
+
+Storing both `members` and `parentId` is redundant and safe here — the hierarchy
+is written by one clustering pass rather than edited incrementally, so the two
+sides cannot drift the way independently mutated lists would.
+
+`weight` is a **full-dimensional** dot product, always. The PCA projection used
+during clustering selects which pairs are worth comparing and never decides how
+similar they are — see
+[clustering](../../processes/lattice-clustering.md#large-pools--pca-and-ivf).
+
+## The level index is derived
+
+`LatticeLevelIndex` holds the PCA basis and IVF centroids for a level. It
+accelerates both clustering and frontier narrowing, and everything in it is
+rebuildable from the persisted windows.
+
+Storing `threshold` and `k` beside the basis is what makes that safe: an index
+built under different parameters is recognizable as stale rather than silently
+mixed with one that is not.
+
+## Text is stored once
+
+`text` is present at level 0 and absent above; a cluster's text is recoverable
+from its windows. Storing merged text at every level would duplicate the corpus
+once per level, and a five-level lattice would hold six copies of the project.
+
 ## Nodes are derived, never authored
 
-Every node is a projection of something else. Nothing is written directly into
-the lattice, and nothing is lost by rebuilding it — which is what makes it safe
-to re-chunk, re-embed with a different model, or discard and regenerate.
+Every node is a projection of something else. Nothing is written into the lattice
+directly and nothing is lost by rebuilding it — which is what makes it safe to
+re-window, re-embed with a different model, or discard and regenerate.
 
-`source` is therefore required and is a discriminated union rather than a
-freeform string, because reindexing has to be able to find every node derived
-from a given file or document and replace exactly those.
+## Every source is a resource kind
 
-`ordinal` keeps a source's passages in order, so retrieved context can be
-expanded to its neighbours — a matched passage is often clearer with the one
-before it.
+`LatticeSource` is a strict subset of
+[`ResourceKind`](../special-resources/resource-set.md#every-lattice-source-is-a-resource-kind),
+using the same kind strings. That is what makes scoping total: anything the
+lattice indexes, a resource set can select.
 
-## Embeddings live on the node
+Templates and connectors are resource kinds that are not sources — a template is
+a skeleton, a connector is configuration.
 
-Convex indexes vectors on the document, so the embedding sits in the row it
-describes rather than in a parallel store. A separate vector database would mean
-two systems to keep consistent and a project's content living somewhere its
-access rules do not reach.
+**Messages are not indexed.** A conversation is working material, and indexing it
+would fill retrieval with half-formed reasoning and abandoned turns. A message
+worth keeping becomes a [finding](../research/finding.md) — the editorial act
+worth indexing, which gives the content a title, sources, and a place in the
+research graph that a raw turn does not have.
 
-The embedding's model is not recorded per node. Mixing embeddings from different
-models in one index produces meaningless distances, so the invariant is that a
-project's lattice is entirely one model — changing models means rebuilding, and
-a per-node field would suggest otherwise.
+Questions and hypotheses are not indexed either. They are what the project does
+not know; retrieving over them returns the asking rather than an answer.
 
-## Staleness rather than deletion
+## Staleness cascades upward
 
-When a source changes, its nodes get `staleAt` set instead of being deleted
-immediately. Retrieval can still use them, marked as possibly out of date, while
-re-embedding happens in the background.
+When a source changes, its level-0 nodes get `staleAt` set — and so does every
+cluster above them, reached by `parentId`. A cluster built from a passage that no
+longer exists is stale whether or not its own text changed.
 
-The alternative is a window where a document has been edited and is absent from
-retrieval entirely, which is worse: a slightly stale answer is more useful than
-a confidently incomplete one.
-
-## Edges
-
-Edges are separate rows, not arrays on the node. A heavily cited passage would
-otherwise carry an unbounded list that every read of it pays for, and every new
-citation would rewrite it.
-
-`cites` and `derived_from` are structural — extracted from real references
-between objects. `similar` is computed from embedding proximity. `contradicts`
-is asserted, usually from a [finding](../research/finding.md) whose bearing says
-so. They are one type because traversal treats them the same way and only the
-weighting differs.
-
-## Retrieval is scoped by a resource set
-
-A search restricts which nodes are eligible by their `source`, using a
-[resource set](../special-resources/resource-set.md) expression. Supplying none
-means the whole project, which is the default and the common case.
-
-The scope is an expression resolved at search time rather than a stored id list,
-so "the connector-synced material" keeps meaning that as syncs bring more in.
-This is what `source` being a discriminated union buys beyond reindexing — a node
-can be tested for membership in a set without a join.
+Retrieval can still use stale nodes, marked as possibly out of date, while
+re-embedding and re-clustering happen. A window where edited content is absent
+from retrieval entirely is worse: a slightly stale answer beats a confidently
+incomplete one.
 
 ## Index-wide state lives elsewhere
 
-Properties of the whole index — which embedding model built it, whether it is
-mid-rebuild, how many nodes are stale — are on the
-[lattice version](../revisions/lattice-version.md), one row per project. A
-per-node field cannot express them, because the subject is the population rather
-than any node.
+Which embedding model built the index, how many levels it has, and whether it is
+mid-rebuild are on the [lattice
+version](../revisions/lattice-version.md), one row per project. A per-node field
+cannot express them, because the subject is the population.
 
-Its history is the [lattice change](../revisions/lattice-change.md) log: one row
-per source change, holding the node sets that change produced. Each carries the
-cause, including the resource revision it followed, so a lattice state and a
-document state can be lined up.
+Its history is the [lattice change](../revisions/lattice-change.md) log.
 
 ## What is not here
 
-No retrieval receipts and no per-query logs. What a particular search returned is
-a property of that search — it belongs on the [message's tool
-calls](../core/message.md#research-steps-are-tool-calls), where someone will
-actually look for it.
+No retrieval receipts and no per-query logs. What a search returned is a property
+of that search — it belongs on the [message's tool
+calls](../core/message.md#research-steps-are-tool-calls).
 
 ## Related
 
+[clustering](../../processes/lattice-clustering.md) ·
+[retrieval](../../processes/lattice-retrieval.md) ·
 [lattice version](../revisions/lattice-version.md) ·
 [lattice change](../revisions/lattice-change.md) ·
-[derived output](derived-output.md) ·
-[external file](../special-resources/external-file.md) ·
-[research](../research/research.md)
+[resource set](../special-resources/resource-set.md)

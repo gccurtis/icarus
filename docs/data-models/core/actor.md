@@ -88,8 +88,8 @@ times per document, going stale the moment someone is renamed.
 
 | kind | `name` | `onBehalfOf` | `detail` |
 | --- | --- | --- | --- |
-| `user` | the user's `name` | — | — |
-| `agent` | the task's persona `name`, or `"Agent"` | the dispatching user's `name` | the task's `title` |
+| `user` | the user's `displayName` | — | — |
+| `agent` | the task's persona `name`, or `"Agent"` | the dispatching user's `displayName` | the task's `title` |
 | `automation` | the automation's `name` | — | — |
 | `connector` | the connector's `displayName` | — | — |
 | `system` | `"System"` | — | — |
@@ -157,8 +157,9 @@ author field because they are not documents.
 The remaining `Id<"users">` fields express **human responsibility**, not
 authorship:
 
-- [Project](project.md) `ownerId`, `members[].userId`, `members[].addedBy` —
-  accountability for a project is not delegable to a process
+- [Membership](project.md#membership-is-a-table-and-the-token-is-why) `userId` —
+  accountability for a project is not delegable to a process, and a token
+  belongs to a person
 - [Comment thread](../collaboration/comment.md) `resolvedBy` — anything can
   raise a remark; closing one is a judgement
 
