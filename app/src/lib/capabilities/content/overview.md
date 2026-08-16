@@ -14,11 +14,13 @@ edits them is [revisions](../revisions/overview.md), through change sets.
 | --- | --- | --- | --- |
 | `text` | pass 2 | atoms, some of them formulas | the resolved string |
 | `formula` | pass 2 | `=SUM(A1:A10)` | `42` |
-| `image`, `table`, `embed` | pass 3 | | |
+| `image` | pass 3 | an upload or a URL | the normalized, servable asset |
+| `table` | pass 3 | rows of cells, each a block list | — |
+| `embed` | pass 3 | a URL | the fetched title, description, and thumbnail |
 | `prompt` | pass 7 | | |
 
 `blockValidator` is discriminated on `type` and its members are found by that
-literal, so the four still to come append without touching a variant already
+literal, so the one still to come appends without touching a variant already
 here.
 
 ## Capability Invariants
@@ -37,7 +39,14 @@ here.
   consumer holding a value never re-checks whether it is really one.
 - **No owner accepts every variant.** A spreadsheet cell takes text and formula;
   a comment takes text and image. The owner declares and enforces its own set,
-  which is what keeps this union single rather than one per surface.
+  which is what keeps this union single rather than one per surface. It is also
+  what bounds the recursion a table cell opens: no surface that accepts a table
+  accepts one nested inside a cell.
+- **An image carries `alt`, and it is required.** An image without it is a hole
+  in every non-visual consumer — search, the lattice, screen readers, and any
+  agent reading the document.
+- **A hyperlink in a sentence is a `link` mark; an embed is a block.** Embeds are
+  block-level, so the two are never two spellings of one thing.
 
 ## Related
 

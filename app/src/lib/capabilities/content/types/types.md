@@ -7,16 +7,16 @@ here is a row: a block is embedded in whatever owns it.
 
 | File | Holds |
 | --- | --- |
-| [`block.ts`](block.ts) | `blockValidator`, the text and formula variants, `textAtomValidator`, `markValidator` |
+| [`block.ts`](block.ts) | `blockValidator` and its five variants, `textAtomValidator`, `markValidator` |
 | [`format.ts`](format.ts) | `blockFormatValidator` — the block's own box, on every variant |
 | [`value.ts`](value.ts) | `formulaValueValidator`, `dateValueValidator`, and the `FormulaValue` type |
 
 Three files rather than one because they are read at different times: a renderer
 opens `format.ts`, a resolver opens `value.ts`, and only an editor needs
 `block.ts`. Each validator is the source and its type is inferred from it — with
-one exception, below.
+the exceptions below.
 
-## A `FormulaValue` is recursive and a validator is not
+## The recursive shapes, and why a validator cannot state one
 
 A formula can return a table, and a cell of that table can be a table. The
 recursion is real: a grouped aggregate returns exactly that. But a Convex
@@ -38,7 +38,13 @@ tightens with nothing to migrate. The other two both store something other than
 what the model says, which is the cost that does not go away.
 
 `FormulaValue` is therefore hand-written for its `table` member and inferred for
-the other five. That one member is the only fact stated twice in this capability,
-and it is stated twice because the validator cannot state it once. `FormulaBlock`
-overrides its `value` for the same reason: the inferred type would say `any` and
-the model does not.
+the other five. That member is stated twice because the validator cannot state it
+once. `FormulaBlock` overrides its `value` for the same reason: the inferred type
+would say `any` and the model does not.
+
+**A table block's cell is the same problem, so it gets the same answer.** A cell
+holds `ContentBlock[]` and a table block is a `ContentBlock`, so `blocks` is
+`v.array(v.any())` and `TableCell` states the element type the validator cannot.
+Weighing it again would have produced a second convention for one situation; what
+does differ is where the bound comes from — the owner refuses a table inside a
+cell, where a formula's nesting is legitimate and unbounded.

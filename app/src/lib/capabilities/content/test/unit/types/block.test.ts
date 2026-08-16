@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { v } from "convex/values";
 import { validate } from "convex-helpers/validators";
-import { blockValidator, markValidator, textAtomValidator } from "$content/types/block";
+import {
+  blockValidator,
+  markValidator,
+  textAtomValidator,
+  type ContentBlock,
+  type TableCell
+} from "$content/types/block";
 import { formulaValueValidator, type FormulaValue } from "$content/types/value";
+// A block is only ever edited through a change set, so the round trip below is
+// what "stored" means for a variant.
+import { applyOps } from "$revisions/api/shared/apply/apply";
 
 /**
  * The union is the model: what a block can be, and what every block owes
@@ -37,6 +46,49 @@ const formulaBlock = {
   state: "fresh"
 };
 
+const caption = {
+  id: "b3cx",
+  type: "text",
+  variant: "paragraph",
+  atoms: [{ id: "b3cx1", kind: "literal", text: "Figure 1" }],
+  display: "Figure 1",
+  marks: []
+};
+
+const imageBlock = {
+  id: "b3",
+  type: "image",
+  source: { kind: "file", fileId: "ef7" },
+  display: { fileId: "ef8", width: 1200, height: 675 },
+  alt: "Revenue by quarter, rising through Q3",
+  caption,
+  crop: { x: 0, y: 0, width: 1200, height: 600 }
+};
+
+const tableBlock = {
+  id: "b4",
+  type: "table",
+  rows: [
+    {
+      id: "b4r1",
+      cells: [{ id: "b4c1", blocks: [textBlock], columnSpan: 2, format: { verticalAlign: "middle" } }]
+    }
+  ],
+  headerRows: 1,
+  columnWidths: [120, 240]
+};
+
+const embedBlock = {
+  id: "b5",
+  type: "embed",
+  url: "https://example.com/talk",
+  presentation: "card",
+  title: "The talk",
+  description: "Forty minutes on nothing in particular",
+  thumbnail: { fileId: "ef9", width: 320, height: 180 },
+  fetchedAt: 1_755_000_000_000
+};
+
 describe("blockValidator", () => {
   it("carries an id on every variant, which is what a change set addresses", () => {
     for (const member of blockValidator.members) {
@@ -48,14 +100,21 @@ describe("blockValidator", () => {
     expect(blockValidator.members.every((m) => m.fields.type.kind === "literal")).toBe(true);
   });
 
-  it("holds the two variants pass 2 needs and no placeholders", () => {
-    expect(blockValidator.members.map((m) => m.fields.type.value).sort()).toEqual(["formula", "text"]);
+  it("holds the five variants built so far and no placeholders", () => {
+    expect(blockValidator.members.map((m) => m.fields.type.value).sort()).toEqual([
+      "embed",
+      "formula",
+      "image",
+      "table",
+      "text"
+    ]);
   });
 
-  it("admits both variants and refuses one that has not been built", () => {
-    expect(validate(blockValidator, textBlock)).toBe(true);
-    expect(validate(blockValidator, formulaBlock)).toBe(true);
-    expect(validate(blockValidator, { id: "b3", type: "image", alt: "" })).toBe(false);
+  it("admits every built variant and refuses one that has not been built", () => {
+    for (const block of [textBlock, formulaBlock, imageBlock, tableBlock, embedBlock]) {
+      expect(validate(blockValidator, block)).toBe(true);
+    }
+    expect(validate(blockValidator, { id: "b6", type: "prompt", display: "", marks: [] })).toBe(false);
   });
 
   it("grows a variant without changing an existing one", () => {
@@ -63,14 +122,51 @@ describe("blockValidator", () => {
     // widening — the failure mode this guards is one object with optionals.
     expect(fieldsOf("text").expression).toBeUndefined();
     expect(fieldsOf("formula").atoms).toBeUndefined();
+    expect(fieldsOf("image").atoms).toBeUndefined();
 
     const grown = v.union(
       ...blockValidator.members,
-      v.object({ id: v.string(), type: v.literal("image"), alt: v.string() })
+      v.object({ id: v.string(), type: v.literal("prompt"), display: v.string() })
     );
     const textMember = grown.members.find((m) => m.fields.type.value === "text");
     expect(textMember!.fields).toEqual(fieldsOf("text"));
     expect(validate(grown, textBlock)).toBe(true);
+  });
+
+  /**
+   * Pass 3 appends three members and touches nothing. Pinning the two earlier
+   * field sets by name is what makes that checkable — an index would move under
+   * a reorder and say nothing about a field quietly added or made optional.
+   */
+  it("leaves the pass 2 variants' field sets exactly as they were", () => {
+    expect(Object.keys(fieldsOf("text")).sort()).toEqual([
+      "atoms",
+      "checked",
+      "display",
+      "format",
+      "id",
+      "language",
+      "level",
+      "listStyle",
+      "marks",
+      "resolvedAt",
+      "style",
+      "type",
+      "variant"
+    ]);
+    expect(Object.keys(fieldsOf("formula")).sort()).toEqual([
+      "display",
+      "error",
+      "expression",
+      "format",
+      "id",
+      "resolvedAt",
+      "state",
+      "type",
+      "value"
+    ]);
+    expect(fieldsOf("text").display.isOptional).toBe("required");
+    expect(fieldsOf("formula").value.isOptional).toBe("required");
   });
 });
 
@@ -168,5 +264,104 @@ describe("the formula variant", () => {
   it("says a failure in state, never as a value kind", () => {
     expect(validate(blockValidator, { ...formulaBlock, state: "error", error: "#REF!" })).toBe(true);
     expect(validate(formulaValueValidator, { kind: "error", value: "#REF!" })).toBe(false);
+  });
+});
+
+describe("the image variant", () => {
+  it("requires alt, because an image without it is a hole in every non-visual reader", () => {
+    const { alt: _alt, ...unlabelled } = imageBlock;
+    expect(validate(blockValidator, unlabelled)).toBe(false);
+    expect(fieldsOf("image").alt.isOptional).toBe("required");
+  });
+
+  it("separates what was given from what we serve, so a placeholder is a missing display", () => {
+    const { display: _display, ...unresolved } = imageBlock;
+    expect(validate(blockValidator, unresolved)).toBe(true);
+    expect(validate(blockValidator, { ...unresolved, source: { kind: "url", url: "https://x/y.png" } })).toBe(true);
+    expect(validate(blockValidator, { ...imageBlock, source: { kind: "url", fileId: "ef7" } })).toBe(false);
+  });
+
+  it("round-trips through applyOps, caption and all", () => {
+    const before = { rows: [{ id: "r1", kind: "blocks", blocks: [] as unknown[] }] };
+
+    const after = applyOps(before, [
+      { op: "insert", target: "block", path: "rows/#r1/blocks", after: null, values: [imageBlock] }
+    ]);
+
+    expect(after.rows[0].blocks).toEqual([imageBlock]);
+    expect(validate(blockValidator, after.rows[0].blocks[0])).toBe(true);
+  });
+
+  it("takes an op into its caption, which is an ordinary text block", () => {
+    const after = applyOps({ blocks: [imageBlock] }, [
+      { op: "text", target: "atom", path: "#b3cx/atoms/#b3cx1", at: 7, insert: "2", remove: "1" },
+      { op: "set", target: "block", path: "#b3/alt", value: "Revenue by quarter", was: imageBlock.alt }
+    ]);
+
+    expect(after.blocks[0].caption.display).toBe("Figure 2");
+    expect(after.blocks[0].alt).toBe("Revenue by quarter");
+    expect(validate(blockValidator, after.blocks[0])).toBe(true);
+  });
+});
+
+describe("the table variant", () => {
+  it("holds ContentBlock[] in a cell, not a weaker text-only shape", () => {
+    const cell: TableCell = {
+      id: "b4c1",
+      blocks: [
+        { id: "b9", type: "text", variant: "paragraph", atoms: [], display: "", marks: [] },
+        { id: "b10", type: "embed", url: "https://example.com", presentation: "inline" }
+      ]
+    };
+    const blocks: ContentBlock[] = cell.blocks;
+
+    expect(validate(blockValidator, { ...tableBlock, rows: [{ id: "b4r1", cells: [cell] }] })).toBe(true);
+    for (const block of blocks) expect(validate(blockValidator, block)).toBe(true);
+  });
+
+  it("styles per cell, so a renderer has one place to look", () => {
+    // The table's own `format` is its own box. There is no second place a cell's
+    // styling could come from, which is why a table-wide style is written onto
+    // the cells rather than held here.
+    expect(Object.keys(fieldsOf("table")).sort()).toEqual([
+      "columnWidths",
+      "format",
+      "headerRows",
+      "id",
+      "rows",
+      "type"
+    ]);
+    expect(validate(blockValidator, tableBlock)).toBe(true);
+    expect(validate(blockValidator, { ...tableBlock, cellFormat: { verticalAlign: "middle" } })).toBe(false);
+  });
+
+  it("counts header rows rather than flagging them, so the first two can both be headers", () => {
+    expect(fieldsOf("table").headerRows.kind).toBe("float64");
+    const { headerRows: _headerRows, ...unheaded } = tableBlock;
+    expect(validate(blockValidator, unheaded)).toBe(false);
+  });
+});
+
+describe("the embed variant", () => {
+  it("is block-level, where a plain hyperlink in a sentence is a mark", () => {
+    const link = { id: "m9", from: 0, to: 4, link: "https://example.com/talk" };
+
+    expect(validate(markValidator, link)).toBe(true);
+    expect(validate(blockValidator, link)).toBe(false);
+    expect(validate(blockValidator, embedBlock)).toBe(true);
+    expect(validate(markValidator, embedBlock)).toBe(false);
+    // Neither is the other spelled differently: an embed has no offsets into a
+    // display string, and a mark has no say in how the target is presented.
+    expect(fieldsOf("embed").from).toBeUndefined();
+    expect(Object.keys(markValidator.fields)).not.toContain("presentation");
+  });
+
+  it("caches the fetched display beside the raw url, and says how old it is", () => {
+    expect(fieldsOf("embed").url.isOptional).toBe("required");
+    for (const field of ["title", "description", "thumbnail", "fetchedAt"]) {
+      expect(fieldsOf("embed")[field].isOptional).toBe("optional");
+    }
+    expect(validate(blockValidator, { id: "b5", type: "embed", url: "https://x", presentation: "card" })).toBe(true);
+    expect(validate(blockValidator, { ...embedBlock, presentation: "lightbox" })).toBe(false);
   });
 });
