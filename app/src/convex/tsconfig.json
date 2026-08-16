@@ -25,6 +25,7 @@
       "$name-manager/*": ["../lib/capabilities/name-manager/*"],
       "$questions/*": ["../lib/capabilities/questions/*"],
       "$research-links/*": ["../lib/capabilities/research-links/*"],
+      "$research-threads/*": ["../lib/capabilities/research-threads/*"],
       "$revisions/*": ["../lib/capabilities/revisions/*"],
       "$settings/*": ["../lib/capabilities/settings/*"],
       "$slide-decks/*": ["../lib/capabilities/slide-decks/*"],

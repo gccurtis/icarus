@@ -123,8 +123,8 @@ capability that owns the thread row.
 
 | Today | When | Becomes |
 | --- | --- | --- |
-| a `ThreadRef` names a row nothing can check exists | tasks 21 and 22, then pass 7 | `researchThreads`, `personaThreads`, and `agentTasks` exist; `post` proves the thread is in the caller's project |
-| `thread.id` is `v.string()` | the same tasks | the id stays one column — three tables mint into it — but each consumer can then resolve it |
+| a `ThreadRef` names a row nothing can check exists | task 22, then pass 7 | `personaThreads` and `agentTasks` join `researchThreads`; `post` proves the thread is in the caller's project. Checking one kind of three would be a worse state than the deferral |
+| `thread.id` is `v.string()` for `persona` and `task` | the same tasks | the id stays one column — three tables mint into it — and each variant names its table as that table arrives |
 | `sources.lattice.nodeId` is `v.string()` | pass 6 | `v.id("latticeNodes")` |
 | a message cannot be promoted to a finding from here | when the two meet | [`findings.create`](../findings/api/create/create.md) already takes the writeup and the citations; what is missing is the excerpt copying that makes a finding's sources survive the thread |
 

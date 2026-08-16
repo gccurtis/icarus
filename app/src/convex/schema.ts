@@ -10,6 +10,7 @@ import { messagesTables } from "$messages/schema";
 import { nameManagerTables } from "$name-manager/schema";
 import { questionsTables } from "$questions/schema";
 import { researchLinksTables } from "$research-links/schema";
+import { researchThreadsTables } from "$research-threads/schema";
 import { revisionsTables } from "$revisions/schema";
 import { settingsTables } from "$settings/schema";
 import { slideDecksTables } from "$slide-decks/schema";
@@ -38,6 +39,7 @@ const tables = {
   ...nameManagerTables,
   ...questionsTables,
   ...researchLinksTables,
+  ...researchThreadsTables,
   ...revisionsTables,
   ...settingsTables,
   ...slideDecksTables,
@@ -67,6 +69,7 @@ const declared = [
   nameManagerTables,
   questionsTables,
   researchLinksTables,
+  researchThreadsTables,
   revisionsTables,
   settingsTables,
   slideDecksTables,

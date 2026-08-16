@@ -8,14 +8,13 @@ import { v, type Infer } from "convex/values";
  * `_id` is what this names — the link is the index, and neither side stores a
  * pointer at the other to keep in sync.
  *
- * `id` is `v.string()` in all three variants because it is one indexed column
- * holding ids minted for three different tables; a union of `v.id`s would make
- * every reader choose a branch to render one conversation. `researchThreads` and
- * `personaThreads` arrive later in this pass and `agentTasks` in pass 7, so
- * today it is also the only thing that compiles.
+ * `id` stays one indexed column across all three variants — a Convex id *is* a
+ * string — so no reader has to choose a branch to render one conversation. Each
+ * variant names its table once that table exists: `personaThreads` arrives with
+ * task 22 and `agentTasks` in pass 7.
  */
 export const threadRefValidator = v.union(
-  v.object({ kind: v.literal("research"), id: v.string() }),
+  v.object({ kind: v.literal("research"), id: v.id("researchThreads") }),
   v.object({ kind: v.literal("task"), id: v.string() }),
   v.object({ kind: v.literal("persona"), id: v.string() })
 );

@@ -33,7 +33,10 @@ export const asking = async () => {
 };
 
 /** All three thread kinds, so a read proving isolation has something to be isolated from. */
-export const research = (id: string): ThreadRef => ({ kind: "research", id });
+export const research = (id: string): ThreadRef => ({
+  kind: "research",
+  id: id as Id<"researchThreads">
+});
 export const task = (id: string): ThreadRef => ({ kind: "task", id });
 export const persona = (id: string): ThreadRef => ({ kind: "persona", id });
 

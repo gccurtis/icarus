@@ -18,9 +18,11 @@ A research thread, an agent task, and a persona thread each *are* threads, so
 there is nothing to create first and no pointer to write back. The draft names
 which thread it belongs to and the index does the rest.
 
-Nothing here checks that the thread exists yet — none of the three tables does.
-When they arrive this proves the thread is in the caller's project, which is the
-one check the model asks for and the only one it can.
+Nothing here checks that the thread exists yet. `researchThreads` is built and
+the other two are not, and a check covering one kind of three would read as a
+guarantee this function does not make. When all three exist it proves the thread
+is in the caller's project, which is the one check the model asks for and the
+only one it can.
 
 ## The author rule lives here
 

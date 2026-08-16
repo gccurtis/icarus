@@ -18,8 +18,10 @@ resource kind is added. `resourceId` stays `v.string()` because three tables
 answer to it and a union of id types would make every reader choose between them
 to render one citation.
 
-`threadId` and `messageId` are `v.string()` only because `researchThreads` and
-`messages` do not exist until pass 5. Both tighten to `v.id(...)` there.
+A `message` source names both tables outright — `researchThreads` and `messages`
+— because both exist and a promoted turn is one turn in one thread. It is the
+`resource` variant's opposite for the reason above: there is nothing to choose
+between.
 
 ## `findingSources` states the rule the schema cannot
 

@@ -14,12 +14,11 @@ Lives at `types/types.md`.
 `schema.ts` indexes it and the door validates it, which makes the column's three
 variants and the door's refusal of a fourth the same statement.
 
-**`id` is `v.string()` in all three variants.** It is one indexed column holding
-ids minted for three different tables, and a union of `v.id`s would make every
-reader choose a branch to render one conversation — the same answer
-[research links](../../research-links/types/research-link.ts) give for an
-endpoint. It is also the only thing that compiles today: `researchThreads` and
-`personaThreads` arrive later in this pass, `agentTasks` in pass 7.
+**`id` stays one column across all three variants**, because a Convex id *is* a
+string: no reader has to choose a branch to render one conversation, and each
+variant can still name its own table. `research` names
+[`researchThreads`](../../research-threads/overview.md); `persona` and `task`
+wait for `personaThreads` in task 22 and `agentTasks` in pass 7.
 
 The discriminant is half the key, not decoration. Two tables may hand out the
 same id, so `by_thread` reads `(kind, id)` and a read on the id alone would

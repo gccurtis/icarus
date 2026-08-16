@@ -45,6 +45,15 @@ describe("findingSourceValidator", () => {
     expect(source("url").excerpt.isOptional).toBe("optional");
   });
 
+  it("names both tables a promoted message came from", () => {
+    // A thread and a turn within it. Both tables exist now, so the ids are ids:
+    // a citation cannot be built out of a string from somewhere else.
+    const message = source("message") as unknown as Record<string, { tableName: string }>;
+
+    expect(message.threadId.tableName).toBe("researchThreads");
+    expect(message.messageId.tableName).toBe("messages");
+  });
+
   it("gives a manual source a note and nothing to point at", () => {
     // A conversation, a phone call, prior knowledge — cited without a fake URL.
     expect(Object.keys(source("manual")).sort()).toEqual(["kind", "note"]);

@@ -44,10 +44,8 @@ export const findingSourceValidator = v.union(
   }),
   v.object({
     kind: v.literal("message"),
-    // `v.string()` until researchThreads and messages arrive in pass 5, which is
-    // where both tighten to `v.id(...)`.
-    threadId: v.string(),
-    messageId: v.string()
+    threadId: v.id("researchThreads"),
+    messageId: v.id("messages")
   }),
   v.object({ kind: v.literal("manual"), note: v.string() })
 );

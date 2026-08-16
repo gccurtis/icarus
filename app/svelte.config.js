@@ -56,6 +56,7 @@ export default {
       "$name-manager": "src/lib/capabilities/name-manager",
       $questions: "src/lib/capabilities/questions",
       "$research-links": "src/lib/capabilities/research-links",
+      "$research-threads": "src/lib/capabilities/research-threads",
       $revisions: "src/lib/capabilities/revisions",
       $settings: "src/lib/capabilities/settings",
       "$slide-decks": "src/lib/capabilities/slide-decks",
