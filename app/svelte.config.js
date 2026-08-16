@@ -45,6 +45,7 @@ export default {
       $views: "src/lib/views",
       $access: "src/lib/capabilities/access",
       $activity: "src/lib/capabilities/activity",
+      $content: "src/lib/capabilities/content",
       $documents: "src/lib/capabilities/documents",
       $settings: "src/lib/capabilities/settings",
       $shared: "src/lib/capabilities/shared",

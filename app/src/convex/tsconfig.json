@@ -14,6 +14,7 @@
       "$convex/*": ["./*"],
       "$access/*": ["../lib/capabilities/access/*"],
       "$activity/*": ["../lib/capabilities/activity/*"],
+      "$content/*": ["../lib/capabilities/content/*"],
       "$documents/*": ["../lib/capabilities/documents/*"],
       "$settings/*": ["../lib/capabilities/settings/*"],
       "$shared/*": ["../lib/capabilities/shared/*"],
