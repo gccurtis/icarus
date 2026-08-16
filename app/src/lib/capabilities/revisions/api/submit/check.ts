@@ -1,5 +1,8 @@
+import type { Scope } from "$access/types/access";
 import type { QueryCtx } from "$convex/_generated/server";
+import { applyOps, displaySpan } from "$revisions/api/shared/apply/apply";
 import { CONFLICT, shift, type TextSpan } from "$revisions/api/shared/apply/shift";
+import { current } from "$revisions/api/shared/current";
 import { RevisionsError } from "$revisions/errors";
 import type { Op, ResourceType } from "$revisions/types/change";
 
@@ -36,6 +39,41 @@ const idsIn = (path: string): string[] =>
     .split("/")
     .filter((segment) => segment.startsWith("#"))
     .map(bare);
+
+/**
+ * The id an op resolves against the body besides the ones in its path: the entry
+ * it is ordered after. `remove.after` and `move.wasAfter` are not among them —
+ * they are what an undo would place the entry back after, and applying never
+ * reads them, so refusing on one would cost a resubmit for a change that lands.
+ */
+const anchorOf = (op: Op): string | null =>
+  (op.op === "insert" || op.op === "move") && op.after !== null ? bare(op.after) : null;
+
+/** Every entity nested inside a removed entry, at any depth. A string field is text, not an entity. */
+const idsWithin = (value: unknown): string[] => {
+  if (value === null || typeof value !== "object") return [];
+  if (Array.isArray(value)) return value.flatMap(idsWithin);
+  const record = value as Record<string, unknown>;
+  const own = typeof record.id === "string" ? [bare(record.id)] : [];
+  return [...own, ...Object.values(record).flatMap(idsWithin)];
+};
+
+/**
+ * What a removal took, subtree included — or `null` when it did not say.
+ *
+ * A removed row takes its blocks, atoms, and marks with it and names none of
+ * them, so `values` is the only account of that subtree the ladder has. It is
+ * the same payload an undo restores from, so a removal that carries it is a
+ * removal that was invertible anyway.
+ */
+const removedBy = (op: Extract<Op, { op: "remove" }>): Set<string> | null => {
+  const within = op.values.flatMap((value) =>
+    // A merge is a bare range string and its own identity.
+    typeof value === "string" ? [bare(value)] : idsWithin(value)
+  );
+  const ids = op.ids.map(bare);
+  return ids.every((id) => within.includes(id)) ? new Set([...ids, ...within]) : null;
+};
 
 /** A merge is a bare range string and its own identity; everything else carries an `id`. */
 const identityOf = (value: unknown): string | null => {
@@ -113,10 +151,10 @@ const disturbed = (op: Op): string | null =>
   op.target === "atom" ? owner(op.path, "atoms") : (idsIn(op.path).at(-1) ?? null);
 
 /** Every intervening span in revision order, each against the result of the last. */
-const through = (p: number, spans: TextSpan[]): number => {
+const through = (p: number, spans: TextSpan[], closing = false): number => {
   let at = p;
   for (const span of spans) {
-    const next = shift(at, span);
+    const next = shift(at, span, closing);
     if (next === CONFLICT) {
       throw new RevisionsError(
         "offsets-overlap",
@@ -159,21 +197,77 @@ const marksMoved = (op: Op, move: (p: number) => number): Op => {
 };
 
 /**
+ * The window's text edits in the coordinates a mark is measured in.
+ *
+ * **The one rung that reads a body**, and only for the pair that cannot be
+ * decided without one: a text op's `at` indexes its own atom while a mark's
+ * offsets index the block's display, and no op carries the atoms in front that
+ * separate them. Comparing the two raw moves marks the edit never reached.
+ *
+ * Each span is measured against the body as its own op found it, so the window
+ * is replayed from the incoming change's own base rather than measured against
+ * where it ended up — an edit to an earlier atom moves where a later one starts.
+ */
+const displayed = async (
+  ctx: QueryCtx,
+  scope: Scope,
+  incoming: IncomingChange,
+  landed: Op[]
+): Promise<Map<TextOp, TextSpan>> => {
+  const { leader, sets } = await current(ctx, scope, incoming);
+  if (leader.revision > incoming.baseRevision) {
+    throw new RevisionsError(
+      "not-plain-text",
+      `Consolidation has folded past revision ${incoming.baseRevision}, so the text these offsets were measured against cannot be rebuilt.`,
+      4
+    );
+  }
+
+  let body: unknown = applyOps(
+    leader.body,
+    sets.filter((set) => set.revision <= incoming.baseRevision).flatMap((set) => set.ops)
+  );
+  const spans = new Map<TextOp, TextSpan>();
+  for (const op of landed) {
+    if (isText(op)) {
+      const span = displaySpan(body, op);
+      if (span) spans.set(op, span);
+    }
+    body = applyOps(body, [op]);
+  }
+  return spans;
+};
+
+/**
  * One incoming op with its offsets moved past the window.
  *
  * A text op's `at` is an offset into its own atom, so only edits to that atom
- * move it. A mark's offsets index the block's whole display string, so every
- * text edit in the block does. Either way, a path that does not name what the
- * offsets are measured against cannot be shown to be somewhere else, and the
- * change is refused rather than shifted on a guess.
+ * move it, and its own span is the one to move it by. A mark's offsets index the
+ * block's whole display string, so every text edit in the block moves it, in the
+ * converted coordinates `displayed` supplies. Either way, a path that does not
+ * name what the offsets are measured against cannot be shown to be somewhere
+ * else, and the change is refused rather than shifted on a guess.
  */
-const rebased = (op: Op, texts: TextOp[]): Op => {
+const rebased = (op: Op, texts: TextOp[], display: Map<TextOp, TextSpan>): Op => {
   if (isText(op)) {
     const atom = atomOf(op);
     if (atom === null) {
       throw new RevisionsError("not-plain-text", `'${op.path}' names no atom to measure in.`, 4);
     }
-    return { ...op, at: through(op.at, texts.filter((text) => atomOf(text) === atom)) };
+    const spans = texts.filter((text) => atomOf(text) === atom);
+    const at = through(op.at, spans);
+
+    // Both ends of what this replaces, because moving only the near one accepts
+    // an edit that swallowed the window's: `remove` would then be a string the
+    // atom no longer holds, and applying is where that would be found out.
+    if (op.remove.length > 0 && through(op.at + op.remove.length, spans, true) - at !== op.remove.length) {
+      throw new RevisionsError(
+        "offsets-overlap",
+        `'${op.path}' replaces text the window edited inside.`,
+        4
+      );
+    }
+    return { ...op, at };
   }
 
   const block = blockOf(op);
@@ -184,7 +278,21 @@ const rebased = (op: Op, texts: TextOp[]): Op => {
       4
     );
   }
-  return marksMoved(op, (p) => through(p, texts.filter((text) => blockOf(text) === block)));
+
+  const spans: TextSpan[] = [];
+  for (const text of texts) {
+    if (blockOf(text) !== block) continue;
+    const span = display.get(text);
+    if (!span) {
+      throw new RevisionsError(
+        "not-plain-text",
+        `'${text.path}' cannot be located in the body, so '${op.path}' cannot be measured against it.`,
+        4
+      );
+    }
+    spans.push(span);
+  }
+  return marksMoved(op, (p) => through(p, spans));
 };
 
 /**
@@ -197,19 +305,22 @@ const rebased = (op: Op, texts: TextOp[]): Op => {
  * certain about — a rejection costs one round trip and loses no work, because
  * the edits are still in the client's buffer.
  *
- * Nothing here reads a body. Every rung is a comparison of ids, paths, and
- * offsets the ops already carry.
+ * Every rung is a comparison of ids, paths, and offsets the ops already carry,
+ * with one exception: rebasing a mark past a text edit needs the atoms in front
+ * of that edit, and only the body holds them. That read is the last thing done
+ * and the narrowest case reaching it.
  */
 export const check = async (
   ctx: QueryCtx,
+  scope: Scope,
   incoming: IncomingChange,
-  current: number
+  revision: number
 ): Promise<Op[]> => {
-  if (incoming.baseRevision === current) return incoming.ops;
+  if (incoming.baseRevision === revision) return incoming.ops;
 
   // The window's age is tested before it is read, which is also what bounds the
   // read: `(B, C]` on a base from last year is every set the resource ever had.
-  if (current - incoming.baseRevision > REBASE_WINDOW) {
+  if (revision - incoming.baseRevision > REBASE_WINDOW) {
     throw new RevisionsError(
       "base-outside-window",
       `Authored against revision ${incoming.baseRevision}; only the last ${REBASE_WINDOW} are kept.`,
@@ -237,19 +348,37 @@ export const check = async (
     throw new RevisionsError("touched-intersects", `The window already addressed '${id}'.`, 2);
   }
 
-  // Identity misses one relationship: removing `#b7x2` touches `#b7x2`, while
-  // editing `#b7x2/atoms/#a9x1` touches `#a9x1`. A removal covers its whole
-  // subtree and a path is a string, so this is the containment the ids missed.
+  // Identity misses two relationships. Removing `#r4m1` touches `#r4m1`, while
+  // editing `#b7x2/atoms/#a9x1` inside it touches `#a9x1` — and an `#id` segment
+  // resolves alone, so the path above it that would have said so is not there.
+  // An insert or move names what it created or carried, never the entry it was
+  // ordered after. Both land as sets nothing can ever apply.
   for (const op of landed) {
     if (op.op !== "remove") continue;
-    const gone = new Set(op.ids.map(bare));
-    const under = incoming.ops.find((mine) => idsIn(mine.path).some((id) => gone.has(id)));
-    if (under) {
+    const gone = removedBy(op);
+    if (gone === null) {
       throw new RevisionsError(
         "removed-under-edit",
-        `'${under.path}' is inside something the window removed.`,
+        `A removal on '${op.path}' did not say what it took, so nothing can be shown to be outside it.`,
         3
       );
+    }
+    for (const mine of incoming.ops) {
+      if (idsIn(mine.path).some((id) => gone.has(id))) {
+        throw new RevisionsError(
+          "removed-under-edit",
+          `'${mine.path}' is inside something the window removed.`,
+          3
+        );
+      }
+      const anchor = anchorOf(mine);
+      if (anchor !== null && gone.has(anchor)) {
+        throw new RevisionsError(
+          "removed-under-edit",
+          `'${mine.path}' orders against '#${anchor}', which the window removed.`,
+          3
+        );
+      }
     }
   }
 
@@ -273,5 +402,17 @@ export const check = async (
 
   const texts = landed.filter(isText);
   if (texts.length === 0) return incoming.ops;
-  return incoming.ops.map((op) => (carriesOffsets(op) ? rebased(op, texts) : op));
+
+  // Everything above answered from the ops alone. A mark is the one thing left
+  // whose offsets nothing in them can convert, so the body is read here and
+  // nowhere else — and only when the window typed inside a mark's own block.
+  const marks = offsets.filter((op) => !isText(op));
+  const converting = marks.some(
+    (mark) => blockOf(mark) !== null && texts.some((text) => blockOf(text) === blockOf(mark))
+  );
+  const display = converting
+    ? await displayed(ctx, scope, incoming, landed)
+    : new Map<TextOp, TextSpan>();
+
+  return incoming.ops.map((op) => (carriesOffsets(op) ? rebased(op, texts, display) : op));
 };

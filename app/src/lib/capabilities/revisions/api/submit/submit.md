@@ -12,10 +12,14 @@ handler receives `ctx.scope` rather than a project it could have chosen.
 submit(ctx, scope, authored)
 ├── headOf(ctx, resourceType, resourceId)   submit.ts   current revision, and whose
 ├── touchedBy(authored.ops)                 check.ts    the ids step 2 intersects
-├── check(ctx, incoming, current)           check.ts    the ladder
+├── check(ctx, scope, incoming, revision)   check.ts    the ladder
 │   ├── bothTyping(mine, landed, id)        check.ts    step 2's one exception
+│   ├── removedBy(op) / anchorOf(op)        check.ts    step 3's containment
 │   ├── movesText(op) / disturbed(op)       check.ts    step 4's precondition
-│   └── rebased(op, texts)                  check.ts
+│   ├── displayed(ctx, scope, incoming, …)  check.ts    a mark's coordinates
+│   │   ├── current(ctx, scope, resource)   ../shared/current.ts
+│   │   └── displaySpan(body, op)           ../shared/apply/apply.ts
+│   └── rebased(op, texts, display)         check.ts
 │       └── shift(p, span)                  ../shared/apply/shift.ts
 └── ctx.db.insert("changeSets", …)          submit.ts
 ```
@@ -48,6 +52,19 @@ cannot reach it. The copy names the key it copies, and
 nothing can then prove the block around it was left alone. Step 4 rejects rather
 than shifting on a guess, which is the same stance as every other rung.
 
+**A removal has to say what it took, or nothing concurrent may land.** `values`
+is what an undo restores from, and it is also the only account of the subtree a
+removed row carried: no id in the op names the blocks and atoms inside it, and an
+incoming path naming one of them by its own id says nothing about the row above.
+A removal that carries none makes the window opaque and everything concurrent is
+refused — which is what a rung that will not read a body costs when the client
+understates its own payload.
+
+**A refusal here is cheaper than the alternative.** The sets step 3 now catches
+are not conflicts; they are changes that pass every other rung, commit, and can
+then never be applied. There is no repair path in this capability for a resource
+whose log holds one, so the rung fails closed wherever it cannot see.
+
 ## A rejection says which rung refused
 
 `RevisionsError` carries a `step`, because "conflict" on its own is unactionable.
@@ -76,10 +93,19 @@ bury everything a person would want to read there.
 `current + 1` first invalidates this one's read set and it re-runs against the
 state that beat it. No version field, no retry loop.
 
-## A known limit
+## Converting a mark's coordinates is the one body read
 
-A text op's `at` is an offset into its own atom, and a mark's offsets index the
-block's whole display string. Rebasing a mark past a text edit uses the edit's
-own span, as the specification prescribes — which is exact for a single-atom
-block and off by the preceding atoms' length otherwise. Converting between the
-two coordinate systems needs the body, and no rung of the ladder reads one.
+A text op's `at` is an offset into its own atom; a mark's offsets index the
+block's whole display string. Rebasing one against the other without converting
+is exact for a single-atom block and wrong by the preceding atoms' length
+otherwise — and wrong here means marks land on text nobody put them on, with
+nothing raised and nothing to notice.
+
+So the conversion is made, by the same function `applyOps` uses, and the body it
+needs is fetched only where the case actually arises: an incoming mark, and an
+intervening text edit in that mark's own block. Everything before it has already
+returned. The window is replayed from the change's own base rather than measured
+against the body as it stands, because an edit to an earlier atom moves where a
+later one starts — and a change authored below a leader consolidation has since
+passed is refused, because that body can no longer be rebuilt from what a read
+reaches.

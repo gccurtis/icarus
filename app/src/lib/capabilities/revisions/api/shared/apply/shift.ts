@@ -27,12 +27,17 @@ export const CONFLICT = Symbol("conflict");
  * `p >= aEnd` before `p <= aStart` is what makes two inserts at one point
  * deterministic: both bounds equal `p`, the committed edit keeps the position,
  * and the later one lands after it whatever order they arrived in.
+ *
+ * `closing` reverses only that tie, for the far end of a range rather than a
+ * position: text inserted exactly where a range ends landed outside it, so
+ * moving the end would turn a clean merge into a conflict.
  */
-export const shift = (p: number, a: TextSpan): number | typeof CONFLICT => {
+export const shift = (p: number, a: TextSpan, closing = false): number | typeof CONFLICT => {
   const aStart = a.at;
   const aEnd = a.at + a.remove.length;
   const delta = a.insert.length - a.remove.length;
 
+  if (closing && p <= aStart) return p;
   if (p >= aEnd) return p + delta;
   if (p <= aStart) return p;
   return CONFLICT;

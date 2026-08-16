@@ -29,6 +29,40 @@ export const asking = async () => {
 /** The one resource these tests edit — the ladder never knows more than the pair. */
 export const RESOURCE = { resourceType: "document", resourceId: "documents:1" } as const;
 
+/**
+ * A body whose one block holds three atoms, rebuilt per test.
+ *
+ * Three rather than one because a mark's offsets run across all of them: an
+ * edit measured inside the third atom sits 25 characters further along the
+ * display, and a rebase that confuses the two coordinate spaces still looks
+ * right whenever the edited atom happens to be first.
+ */
+export const bodyWithBlock = () => ({
+  rows: [
+    {
+      id: "r4m1",
+      kind: "blocks",
+      blocks: [
+        {
+          id: "b7x2",
+          type: "text",
+          variant: "paragraph",
+          atoms: [
+            { id: "a9x1", kind: "literal", text: "The quarterly report" },
+            { id: "a9x2", kind: "formula", expression: "SUM(Sales!B:B)", resolved: "$4.2M" },
+            { id: "a9x3", kind: "literal", text: " overall" }
+          ],
+          display: "The quarterly report$4.2M overall",
+          marks: [
+            { id: "m03", from: 4, to: 20, style: ["bold"] },
+            { id: "m07", from: 26, to: 33, style: ["code"] }
+          ]
+        }
+      ]
+    }
+  ]
+});
+
 /** Rows a read must range past: another tier, another resource. */
 type Elsewhere = { tier?: "recent" | "historical"; resourceId?: string };
 

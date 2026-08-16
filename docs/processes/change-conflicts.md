@@ -32,7 +32,8 @@ Reaching the bottom means applying.
 1.  load intervening sets (B, C]      → none? apply
 2.  touched ∩ touched ≠ ∅,
       excluding same-string pairs ?   → reject
-3.  any removal covering my path ?    → reject
+3.  any removal covering a path
+      or an ordering anchor ?         → reject
 4.  not plainly literal-on-literal ?  → reject
     overlapping ranges ?              → reject
     otherwise shift offsets           → apply shifted
@@ -71,16 +72,41 @@ a collision.
 
 ### 3 — Removal containment
 
-Identity misses one relationship: an intervening set that removed `#b7x2` touches
-`#b7x2`, while a change editing `#b7x2/atoms/#a91` touches `#a91`. They do not
-intersect, and the edit is plainly invalid — its block is gone.
+Identity misses two relationships. Both end the same way, and it is worse than a
+conflict: the change lands, and then nothing can ever apply it. Every later read
+of that resource fails on it.
 
-So: for each intervening op with `op: "remove"`, test whether any removed id
-appears anywhere in an incoming op's path. Removal covers its whole subtree, and
-a path is a string, so this is a substring or prefix test.
+**A removal covers its whole subtree, and nothing names that subtree.** A set
+that removed `#r4m1` touches `#r4m1`, while a change editing `#b7x2/atoms/#a91`
+inside it touches `#a91`. The path does not save it either, because an [`#id`
+segment resolves on its own](../data-models/revisions/change-set.md#paths):
+`#b7x2/atoms/#a91` is the ordinary way to write that path, and the row above it
+never appears in it.
+
+The removal's `values` are the only account of what went with it — the entries it
+took, which is the same payload its inverse restores. So the removed set is the
+ids the op names **plus every id nested inside those values**, and a removal that
+does not account for the ids it names makes the window opaque: nothing can be
+shown to be outside a subtree nobody described, so every concurrent change is
+refused until one is.
+
+**An `insert` or a `move` is positioned by an id in neither its `touched` nor its
+path.** Both name what they created or carried; `after` is the only thing placing
+them. An insert after a row the window removed passes every other rung and then
+has nothing to sit behind.
+
+`remove.after` and `move.wasAfter` are **not** tested. They are where an undo
+would put the entry back, applying never reads them, and refusing on one costs a
+resubmit for a change that would have landed.
 
 Only `remove` ops are scanned, and they are rare, so this costs almost nothing in
 the common case.
+
+**This rung covers removals, and that is not the whole class.** A `set` that
+replaced a whole list wholesale leaves an anchor equally gone, with no removal
+anywhere to scan, and no comparison of ids and paths can see it. Closing that
+means applying the change to decide it, which is a different design from this
+one.
 
 ### 4 — Shifting offsets
 
@@ -139,6 +165,33 @@ shift(p) =
 Apply `shift` to the incoming op's offsets — a `text` op's `at`, or a mark's
 `from` and `to` independently. With several intervening text ops, apply them in
 revision order, each against the result of the last.
+
+**A `text` op has two ends, and both have to move.** Shifting `at` alone accepts
+a replacement that swallowed an intervening edit: the offset sits before that
+edit and needs no adjustment, while `remove` is a string the atom no longer
+holds. So push `at + remove.length` through the same spans and reject unless the
+distance between the two ends is unchanged.
+
+The closing end takes the **opposite tie-break** — `p <= aStart` before
+`p >= aEnd` — because text inserted exactly where a range ends landed outside it.
+Under the opening end's tie-break it would move, and a merge that is perfectly
+clean would be refused. A mark's `from` and `to` are not paired this way: they
+are meant to straddle a concurrent edit and grow.
+
+**`p` and `A.at` must index the same string.** A `text` op's `at` is an offset
+into its own atom; a mark's offsets index the block's display. Rebasing a mark
+against a text edit therefore converts the edit first — the atoms in front of it,
+summed, plus its `at` — which is the same conversion [applying one already
+makes](#marks-shift-when-text-applies). Comparing the two raw moves marks the
+edit never reached, by an amount nothing states, with no error raised.
+
+That conversion needs the body, and it is the only thing in this procedure that
+does. It is bounded: it happens only where an incoming mark and an intervening
+text edit share a block, it is the last thing tried, and it reads the leader
+snapshot plus the sets above it — the same read [opening the
+resource](../storage/general-resources.md#reading-the-current-body) performs. The
+window is replayed from the incoming change's own base, because an edit to an
+earlier atom moves where a later one starts.
 
 That is the whole transformation.
 
@@ -199,8 +252,9 @@ called in two places: once when applying, once when rebasing.
 Each step is more expensive and less likely to fire than the one above it.
 
 Step 2 is a set intersection over data already in memory. Step 3 touches only
-removal ops. Step 4 touches only mark and text ops and only compares blocks. None
-of them reads the body, and none resolves a path against anything.
+removal ops. Step 4 touches only mark and text ops and only compares blocks —
+until a mark has to be converted into the display's coordinates, which is the one
+place a body is read and the last thing reached.
 
 Running them in the other order would mean doing the narrow, structural work on
 every change to catch cases the cheap test would have caught first.
@@ -232,12 +286,21 @@ the resolved text.
 changed. Nothing at any step. Both land — two people can format one paragraph
 simultaneously.
 
-**Deleting under an edit.** A removes row `#r4m1`; B edits a block inside it.
-Step 2 passes — different ids. Step 3 rejects.
+**Bolding a phrase in an earlier run.** A marks the first words of a block; B
+types into the third atom of it. Converted to the display's coordinates, B's edit
+is past both of A's offsets, so the mark does not move at all. Both land.
 
-**Inserting after the same row.** Both insert after `#r4m1`. `touched` holds the
-new ids, which differ, so step 2 passes and both land. Their order is settled by
-revision.
+**Deleting under an edit.** A removes row `#r4m1`; B edits a block inside it.
+Step 2 passes — different ids, and B's path names its atom by that atom's own id.
+Step 3 finds that atom among the entries A's removal took with it, and rejects.
+
+**Inserting after a deleted row.** A removes `#r4m1`; B inserts after it. Step 2
+passes — an insert names what it created. Step 3 rejects on the anchor, because
+`after` is the only thing that would have placed it.
+
+**Inserting after the same row.** Both insert after `#r4m1`, which neither
+removed. `touched` holds the new ids, which differ, so step 2 passes and both
+land. Their order is settled by revision.
 
 ## Rejection is cheap
 

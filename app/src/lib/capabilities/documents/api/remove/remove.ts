@@ -3,6 +3,7 @@ import { record } from "$activity/api/shared/record";
 import type { Id } from "$convex/_generated/dataModel";
 import type { MutationCtx } from "$convex/_generated/server";
 import { requireDocument } from "$documents/api/shared/require-document";
+import { discard } from "$revisions/api/shared/discard";
 
 /**
  * Deletes a document. A real delete — archival is a project-level affordance and
@@ -12,9 +13,10 @@ import { requireDocument } from "$documents/api/shared/require-document";
  * document was deleted and there is nothing left to ask afterwards. That is the
  * whole reason activity stores labels rather than joining for them.
  *
- * The body is not deleted here because there is no body yet. Pass 2 adds the
- * leader snapshot and the change-set log, and removal has to take them with it —
- * a document's rows outliving the document would be unreachable storage.
+ * **The body goes with the row, and it has to.** Revisions scopes a read off the
+ * leader snapshot and a write off the head change set, so a document whose rows
+ * outlived it would not merely be unreachable storage — it would stay readable
+ * and editable by anyone still holding its id.
  */
 export const remove = async (
   ctx: MutationCtx,
@@ -23,6 +25,7 @@ export const remove = async (
 ): Promise<void> => {
   const { title } = await requireDocument(ctx, scope, id);
 
+  await discard(ctx, { resourceType: "document", resourceId: id });
   await ctx.db.delete(id);
 
   await record(ctx, scope, {

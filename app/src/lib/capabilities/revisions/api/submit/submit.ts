@@ -67,7 +67,7 @@ export const submit = async (
 
   const current = head.revision;
   const touched = touchedBy(authored.ops);
-  const ops = await check(ctx, { ...authored, touched }, current);
+  const ops = await check(ctx, scope, { ...authored, touched }, current);
   const revision = current + 1;
 
   await ctx.db.insert("changeSets", {

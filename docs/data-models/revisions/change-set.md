@@ -181,9 +181,11 @@ segment resolves on its own and needs no path above it. `#b7x2/atoms/#a91` is
 complete whether that block sits in a document row, a table cell, or a slide
 element.
 
-A string rather than an array of segments, so it can be compared and
-prefix-matched directly — which is what the [removal containment
-check](../../processes/change-conflicts.md#3--removal-containment) needs.
+A string rather than an array of segments, so the ids in it can be read off and
+compared directly. That is not the whole of the [removal containment
+check](../../processes/change-conflicts.md#3--removal-containment), and for the
+reason just above: a segment that resolves on its own is a path that says nothing
+about the row above it, so the check reads what a removal said it took as well.
 
 ### Index transformation is gone
 

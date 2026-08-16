@@ -7,7 +7,7 @@ Lives at `api/api.md`.
 | [`read/`](read/read.md) | `read` | query — a resource's current body and revision |
 | [`submit/`](submit/submit.md) | `submit` | mutation — accepts a change, or refuses it |
 | [`consolidate/`](consolidate/consolidate.md) | `consolidate` | mutation — folds the recent sets into the leader |
-| [`shared/`](shared/shared.md) | — | `current`, `start`, `applyOps`, `invert`, and `shift` |
+| [`shared/`](shared/shared.md) | — | `current`, `start`, `discard`, `applyOps`, `invert`, and `shift` |
 
 Registered in
 [`src/convex/capabilities/revisions.ts`](../../../../convex/capabilities/revisions.ts).
@@ -31,9 +31,10 @@ and it is the whole reason this capability has a public write. Everything in
 `shared/` executes a decision already made — which is why the only thing those
 procedures refuse is an op that cannot be carried out at all.
 
-## Creating a resource is not a function here
+## Creating or deleting a resource is not a function here
 
-[`shared/start.ts`](shared/shared.md) writes the anchors a resource is read from,
-and it is called by whoever creates the resource, in the same transaction. It is
-registered nowhere: a client that could plant a body under an id it chose would be
-creating resources the capability that owns them never made.
+[`shared/start.ts`](shared/shared.md) writes the anchors a resource is read from
+and [`shared/discard.ts`](shared/shared.md) takes them away again, both called by
+whoever owns the resource, in that owner's own transaction. They are registered
+nowhere: a client that could plant or erase a body under an id it chose would be
+reaching past the capability the resource belongs to.

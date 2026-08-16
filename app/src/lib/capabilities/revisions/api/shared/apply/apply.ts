@@ -145,20 +145,40 @@ const shifted = (p: number, span: TextSpan): number => {
 };
 
 /**
+ * What a text op replaces, said in the coordinates a mark uses.
+ *
+ * The op's `at` is an offset into its own atom; a mark's offsets index the
+ * block's whole display string, so the atoms in front are the difference — and
+ * only the body holds them. Getting it wrong moves marks that should not have
+ * moved, silently, so applying and rebasing both come here rather than each
+ * doing the sum.
+ */
+export const displaySpan = (body: unknown, op: TextOp): TextSpan | null => {
+  const atomId = bareId(op.path.split("/").pop() ?? "");
+  const block = blockOf(body, atomId);
+  if (!block) return null;
+
+  const atoms = block.atoms as unknown[];
+  const index = atoms.findIndex((atom) => identityOf(atom) === atomId);
+  return {
+    at: atoms.slice(0, index).map(textOf).join("").length + op.at,
+    insert: op.insert,
+    remove: op.remove
+  };
+};
+
+/**
  * Splice the atom, then move the block's marks and rebuild its display.
  *
  * **The mark shift is a consequence of applying, not a payload.** A change set
  * carries no marks beside a text op, so the shift is computed here — one
  * function, called again when rebasing.
- *
- * The op's `at` is an offset into the atom; a mark's offsets index the whole
- * display string, so the span the marks shift against starts where this atom
- * does. Getting that wrong moves marks that should not have moved, silently.
  */
 const applyText = (body: unknown, op: TextOp): void => {
   const atomId = bareId(op.path.split("/").pop() ?? "");
   const block = blockOf(body, atomId);
-  if (!block) throw new Error(`'${op.path}' names no atom of any block`);
+  const span = displaySpan(body, op);
+  if (!block || !span) throw new Error(`'${op.path}' names no atom of any block`);
 
   const atoms = block.atoms as unknown[];
   const index = atoms.findIndex((atom) => identityOf(atom) === atomId);
@@ -179,12 +199,6 @@ const applyText = (body: unknown, op: TextOp): void => {
   if (atom.text.slice(op.at, op.at + op.remove.length) !== op.remove) {
     throw new Error(`'${op.path}' does not hold '${op.remove}' at ${op.at}`);
   }
-
-  const span: TextSpan = {
-    at: atoms.slice(0, index).map(textOf).join("").length + op.at,
-    insert: op.insert,
-    remove: op.remove
-  };
 
   atom.text = atom.text.slice(0, op.at) + op.insert + atom.text.slice(op.at + op.remove.length);
 
