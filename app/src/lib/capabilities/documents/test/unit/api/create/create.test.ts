@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { create } from "$documents/api/create/create";
 import { asCtx, asking, refusalFrom } from "$documents/test/fixture";
+import { read } from "$revisions/api/read/read";
 
 describe("create", () => {
   it("scopes what it creates to the caller's project", async () => {
@@ -32,6 +33,16 @@ describe("create", () => {
       verb: "created",
       target: { type: "document", id, label: "Q3 plan" }
     });
+  });
+
+  it("anchors an empty body, so the document opens before anyone edits it", async () => {
+    const { ctx, scope } = await asking();
+
+    const id = await create(asCtx(ctx), scope, "Q3 plan");
+
+    expect(
+      await read(asCtx(ctx), scope, { resourceType: "document", resourceId: id })
+    ).toEqual({ revision: 0, body: { rows: [] } });
   });
 
   it("keeps the template it was made from as provenance", async () => {

@@ -29,6 +29,9 @@ export const asking = async () => {
 /** The one resource these tests edit — the ladder never knows more than the pair. */
 export const RESOURCE = { resourceType: "document", resourceId: "documents:1" } as const;
 
+/** Rows a read must range past: another tier, another resource. */
+type Elsewhere = { tier?: "recent" | "historical"; resourceId?: string };
+
 /**
  * A change set that already landed: the window the ladder reads.
  *
@@ -39,19 +42,40 @@ export const landed = async (
   ctx: ReturnType<typeof fakeCtx>,
   projectId: string,
   revision: number,
-  ops: Op[]
+  ops: Op[],
+  elsewhere: Elsewhere = {}
 ) =>
   await ctx.db.insert("changeSets", {
     projectId,
-    ...RESOURCE,
+    resourceType: RESOURCE.resourceType,
+    resourceId: elsewhere.resourceId ?? RESOURCE.resourceId,
     revision,
     baseRevision: revision - 1,
-    tier: "recent",
+    tier: elsewhere.tier ?? "recent",
     ops,
     touched: touchedBy(ops),
     actor: { kind: "system" },
     at: NOW
   });
+
+/** The anchor a read folds onto, placed where consolidation would have left it. */
+export const leaderAt = async (
+  ctx: ReturnType<typeof fakeCtx>,
+  projectId: string,
+  revision: number,
+  body: unknown
+) =>
+  await ctx.db.insert("resourceSnapshots", {
+    projectId,
+    ...RESOURCE,
+    revision,
+    role: "leader",
+    body,
+    at: NOW
+  });
+
+export const snapshotsStored = (ctx: ReturnType<typeof fakeCtx>) =>
+  [...ctx.rows.values()].filter((row) => row._table === "resourceSnapshots");
 
 /** The change set stored at a revision, found the way a reader would rather than by insertion id. */
 export const setAt = (ctx: ReturnType<typeof fakeCtx>, revision: number) =>

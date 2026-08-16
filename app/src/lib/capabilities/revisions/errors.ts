@@ -1,4 +1,5 @@
 import { ConvexError } from "convex/values";
+import type { ResourceKey } from "$revisions/types/change";
 
 export type RevisionsErrorCode =
   | "not-found"
@@ -35,6 +36,14 @@ export class RevisionsError extends ConvexError<RevisionsRefusal> {
     super({ capability: "revisions", code, message, step });
   }
 }
+
+/**
+ * The one answer for a resource that is absent and a resource that is someone
+ * else's. Distinguishing them confirms the resource exists to a caller with no
+ * right to know that.
+ */
+export const notFound = (resource: ResourceKey): RevisionsError =>
+  new RevisionsError("not-found", `Not found: ${resource.resourceType} ${resource.resourceId}`);
 
 /**
  * Reads a refusal out of whatever a caller caught.

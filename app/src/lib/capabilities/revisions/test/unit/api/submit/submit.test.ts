@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { start } from "$revisions/api/shared/start";
 import { submit } from "$revisions/api/submit/submit";
 import {
   RESOURCE,
@@ -40,12 +41,24 @@ describe("submit", () => {
     });
   });
 
-  it("starts a resource nothing has written at revision 1", async () => {
+  it("starts a resource nobody has edited at revision 1", async () => {
     const { ctx, scope } = await asking();
+    await start(asCtx(ctx), scope, RESOURCE, { rows: [] });
 
     expect(await submit(asCtx(ctx), scope, authored(0, [typing(0, "Hello")]))).toEqual({
       revision: 1
     });
+  });
+
+  it("reports not found for a resource nothing anchored", async () => {
+    const { ctx, scope } = await asking();
+
+    // Creating the resource is what writes the leader, so no anchor means no
+    // resource — and it is also the only row that could have said whose it is.
+    expect(
+      await refusalFrom(submit(asCtx(ctx), scope, authored(0, [typing(0, "Hello")])))
+    ).toMatchObject({ code: "not-found" });
+    expect(setsStored(ctx)).toEqual([]);
   });
 
   it("counts from the leader when consolidation has taken the sets behind it", async () => {
@@ -75,6 +88,7 @@ describe("submit", () => {
 
   it("derives touched from the ops rather than trusting the caller", async () => {
     const { ctx, scope } = await asking();
+    await start(asCtx(ctx), scope, RESOURCE, { rows: [] });
     const inserting: Op = {
       op: "insert",
       target: "row",
@@ -92,6 +106,7 @@ describe("submit", () => {
 
   it("attributes the set to the asking user rather than to an argument", async () => {
     const { ctx, scope, userId } = await asking();
+    await start(asCtx(ctx), scope, RESOURCE, { rows: [] });
 
     await submit(asCtx(ctx), scope, authored(0, [typing(0, "Hello")]));
 

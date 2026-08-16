@@ -12,6 +12,9 @@ export const resourceTypeValidator = v.union(
 
 export type ResourceType = Infer<typeof resourceTypeValidator>;
 
+/** The whole key. Never the id alone — two resources of different kinds may carry the same one. */
+export type ResourceKey = { resourceType: ResourceType; resourceId: string };
+
 /**
  * What kind of thing an op addresses; `path` says which one.
  *

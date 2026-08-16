@@ -1,14 +1,17 @@
 import { v } from "convex/values";
-import { projectMutation } from "$convex/functions";
+import { projectMutation, projectQuery } from "$convex/functions";
+import { consolidate as consolidateResource } from "$revisions/api/consolidate/consolidate";
+import { read as readResource } from "$revisions/api/read/read";
 import { submit as submitChange } from "$revisions/api/submit/submit";
 import { opValidator, resourceTypeValidator } from "$revisions/types/change";
 
 /**
  * Revisions' public surface — `api.capabilities.revisions.*`.
  *
- * `read` and `consolidate` join `submit` in task 10. Until then the only thing
- * an untrusted caller can reach here is the one write, and `api/shared/` holds
- * what all three will call.
+ * Three functions for one resource: what it says now, what someone wants it to
+ * say, and the maintenance that keeps the first cheap. `start` is in none of
+ * them — a client that could plant a body under an id it chose would be creating
+ * resources the capability that owns them never made.
  *
  * **`ops` is validated at the door and decided in the handler.** The shape is
  * this validator's business — an op that is not one of the five never reaches
@@ -16,12 +19,24 @@ import { opValidator, resourceTypeValidator } from "$revisions/types/change";
  * window to answer. `baseRevision` is an argument because it is what the author
  * was looking at; the revision it lands at is not, because that is read here.
  */
+const resource = { resourceType: resourceTypeValidator, resourceId: v.string() };
+
+export const read = projectQuery({
+  args: resource,
+  handler: (ctx, args) => readResource(ctx, ctx.scope, args)
+});
+
 export const submit = projectMutation({
-  args: {
-    resourceType: resourceTypeValidator,
-    resourceId: v.string(),
-    baseRevision: v.number(),
-    ops: v.array(opValidator)
-  },
+  args: { ...resource, baseRevision: v.number(), ops: v.array(opValidator) },
   handler: (ctx, args) => submitChange(ctx, ctx.scope, args)
+});
+
+/**
+ * Registered rather than hidden: folding is a real maintenance action someone
+ * triggers, and it refuses a resource the caller cannot already read, so the
+ * worst a client can do with it is pay for a fold it was going to get anyway.
+ */
+export const consolidate = projectMutation({
+  args: resource,
+  handler: (ctx, args) => consolidateResource(ctx, ctx.scope, args)
 });

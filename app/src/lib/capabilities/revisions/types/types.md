@@ -4,7 +4,7 @@ Lives at `types/types.md`.
 
 | File | Holds |
 | --- | --- |
-| [`change.ts`](change.ts) | `opValidator` and the `Op` type, `opTargetValidator`, `resourceTypeValidator` |
+| [`change.ts`](change.ts) | `opValidator` and the `Op` type, `opTargetValidator`, `resourceTypeValidator`, `ResourceKey` |
 
 The validators are the model and [`schema.ts`](../schema.ts) composes them, the
 same way [activity](../../activity/types/types.md) does: the storage part is

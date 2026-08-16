@@ -9,9 +9,10 @@ import type { Op, ResourceType } from "$revisions/types/change";
  * Mirrored rather than read. A mutation runs in an isolate with no filesystem
  * and the Convex bundler has no YAML loader, so the only two ways to reach the
  * file are a deployment environment variable or a copy here — and a copy is
- * visible to the code that depends on it.
+ * visible to the code that depends on it. `test/unit/retention.test.ts` is what
+ * fails if the file moves without it.
  */
-const REBASE_WINDOW = 200;
+export const REBASE_WINDOW = 200;
 
 /** A change as authored, before it is known whether it may land. */
 export type IncomingChange = {

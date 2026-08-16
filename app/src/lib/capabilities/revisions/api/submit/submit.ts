@@ -1,14 +1,12 @@
 import type { Scope } from "$access/types/access";
 import type { MutationCtx } from "$convex/_generated/server";
 import { check, touchedBy } from "$revisions/api/submit/check";
-import { RevisionsError } from "$revisions/errors";
-import type { Op, ResourceType } from "$revisions/types/change";
+import { notFound } from "$revisions/errors";
+import type { Op, ResourceKey, ResourceType } from "$revisions/types/change";
 import type { Actor } from "$shared/types/actor";
 
 /** A change as its author wrote it, against the revision they were looking at. */
-export type AuthoredChange = {
-  resourceType: ResourceType;
-  resourceId: string;
+export type AuthoredChange = ResourceKey & {
   baseRevision: number;
   ops: Op[];
 };
@@ -17,9 +15,10 @@ export type AuthoredChange = {
  * Where the resource stands: the last accepted set, or the leader behind it once
  * consolidation has re-tiered those sets.
  *
- * It carries `projectId` because this is also the only row that can say whose
- * the resource is — the change set indexes lead with the resource pair, so
- * nothing in a read of them is scoped by the gate.
+ * Two rows at most, rather than the window `read` collects — this needs the
+ * maximum revision, not the body. It carries `projectId` because this is also the
+ * only row that can say whose the resource is: the change set indexes lead with
+ * the resource pair, so nothing in a read of them is scoped by the gate.
  */
 const headOf = async (ctx: MutationCtx, resourceType: ResourceType, resourceId: string) => {
   const last = await ctx.db
@@ -62,14 +61,11 @@ export const submit = async (
   authored: AuthoredChange
 ): Promise<{ revision: number }> => {
   const head = await headOf(ctx, authored.resourceType, authored.resourceId);
-  if (head && head.projectId !== scope.projectId) {
-    throw new RevisionsError(
-      "not-found",
-      `No such ${authored.resourceType}: ${authored.resourceId}`
-    );
-  }
+  // No head means no resource: creating one writes its anchors, so nothing that
+  // exists is without one.
+  if (!head || head.projectId !== scope.projectId) throw notFound(authored);
 
-  const current = head?.revision ?? 0;
+  const current = head.revision;
   const touched = touchedBy(authored.ops);
   const ops = await check(ctx, { ...authored, touched }, current);
   const revision = current + 1;

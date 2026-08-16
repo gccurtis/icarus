@@ -4,6 +4,8 @@ Lives at `api/shared/shared.md`.
 
 | File | Preserves |
 | --- | --- |
+| [`current.ts`](current.ts) | that a resource is reached by its whole key, in this project, at a cost that does not grow |
+| [`start.ts`](start.ts) | that a resource is readable from the moment it exists, and anchored below wherever the leader gets to |
 | [`apply/apply.ts`](apply/apply.ts) | that a body advances by whole ops, and that a text edit leaves the block's display and marks consistent with it |
 | [`apply/shift.ts`](apply/shift.ts) | that an offset measured before an edit still names the same characters after it |
 | [`apply/invert.ts`](apply/invert.ts) | that every op has an opposite, so undo is an ordinary change |
@@ -21,6 +23,25 @@ applyOps(body, ops)
     ├── blockOf(body, atomId)            apply/apply.ts
     └── shift(p, span)                   apply/shift.ts
 ```
+
+## `current` is one read with two callers
+
+[`read`](../read/read.md) folds what it returns and
+[`consolidate`](../consolidate/consolidate.md) folds it and writes it back, so the
+range predicates — and the bound they buy — are stated once. `submit` deliberately
+does **not** use it: it needs the maximum revision, not the body, and that is two
+rows rather than a hundred.
+
+## `start` is called from outside this capability
+
+Like [`activity`'s `record`](../../../activity/api/shared/shared.md), its callers
+are the capabilities that own the resources rather than functions of this one.
+That is unusual and correct: a general resource's body lives here, and what an
+empty one looks like does not.
+
+**It is registered nowhere.** The `api/` set and the deployment door name the same
+functions, and `start` is in neither, because a client that could plant a body
+under an id it chose would be creating resources nothing else knows about.
 
 ## Promoted before either caller exists
 

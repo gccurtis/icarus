@@ -9,12 +9,15 @@ body.
 
 | Function | Kind | Answers |
 | --- | --- | --- |
+| `read` | query | what a resource says now, and what to author against |
 | `submit` | mutation | whether a change may land, and at which revision |
+| `consolidate` | mutation | nothing a reader can observe — it is what keeps `read` cheap |
 
 Registered in
-[`src/convex/capabilities/revisions.ts`](../../../convex/capabilities/revisions.ts),
-built from `projectMutation`. `read` and `consolidate` arrive in task 10;
-[`api/shared/`](api/shared/shared.md) already holds what all three call.
+[`src/convex/capabilities/revisions.ts`](../../../convex/capabilities/revisions.ts).
+Creating a resource is not among them: `start` in
+[`api/shared/`](api/shared/shared.md) writes the anchors, called by whoever
+creates the resource, in the same transaction.
 
 ## Data Ownership
 
@@ -34,6 +37,11 @@ built from `projectMutation`. `read` and `consolidate` arrive in task 10;
   the highest change set revision, read from an index. Storing it would mean an
   edit patches the resource, and a Convex patch rewrites the whole document
   including the body.
+- **A resource is anchored at creation or it does not exist.** `start` writes the
+  `leader` and the `base` at revision 0 in the same transaction as the resource
+  row, which is what makes a leader's absence mean "no such resource" rather than
+  "not written yet" — and what lets every function here answer ownership from a
+  row whose indexes are keyed on the resource pair.
 - **A change set is inserted, never modified** — except `tier`, which
   consolidation flips. Nothing rewrites an accepted set, which is what makes
   history and undo the same mechanism as merging.

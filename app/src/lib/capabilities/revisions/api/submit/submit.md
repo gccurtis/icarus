@@ -40,7 +40,8 @@ every set the resource ever had.
 **`rebaseWindow` is copied into `check.ts`, not read.** A mutation runs in an
 isolate with no filesystem and the Convex bundler has no YAML loader, so the
 value in [`configuration/revisions.yaml`](../../../../../../configuration/revisions.yaml)
-cannot reach it. The copy names the key it copies.
+cannot reach it. The copy names the key it copies, and
+`test/unit/retention.test.ts` fails if the file moves without it.
 
 **A path that does not name what an offset is measured against is refused.** An
 `#id` segment resolves alone, so `#a9x1` is a legal path for a text op — and
@@ -60,9 +61,11 @@ so nothing in reading the window is scoped by the gate. The last accepted set �
 or the leader snapshot behind it — is the row that answers it, and a resource
 whose head belongs to another project is **not found**, never forbidden.
 
-A resource with no head at all cannot be checked this way. Its ownership check
-arrives with `read` in task 10, where resolving the resource row is already the
-first thing that happens.
+**No head means no resource**, and that is why this is sound rather than a gap:
+[`start`](../shared/shared.md) writes the leader in the same transaction as the
+resource row, so nothing that exists is without one. Two rows at most, rather than
+the window [`read`](../read/read.md) collects — what this needs is the maximum
+revision, not the body.
 
 ## What it does not do
 

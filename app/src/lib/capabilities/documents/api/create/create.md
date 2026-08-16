@@ -12,15 +12,22 @@ handler receives `ctx.scope` rather than a project it could have chosen.
 create(ctx, scope, title, templateId?)
 ├── documentTitle(title)                    ../../types/document.ts
 ├── ctx.db.insert("documents", …)           create.ts
+├── start(ctx, scope, resource, body)       ../../../revisions/api/shared/start.ts
 └── record(ctx, scope, "created")           ../../../activity/api/shared/record.ts
 ```
 
-## A new document has no body
+## The row and the body are written together
 
-Nothing is written to `resourceSnapshots` here, and nothing will be. Pass 2's
-first change set is what gives a document content, so creating and opening are
-separate writes rather than one that has to guess at an empty body's shape — and
-a document that was never opened costs one row.
+A document is spread across three tables, and the row alone is not a document
+anyone can open: [`revisions.read`](../../../revisions/api/read/read.md) folds
+recent change sets onto a leader snapshot, and a resource with no leader is not
+found. Committing one without the other would produce exactly that — a row in
+every list that opens to a refusal.
+
+**What an empty body looks like is decided here.** Nothing in `revisions` has ever
+inspected a body, and that genericity is the reason one snapshot table serves
+documents, decks, and workbooks. So the emptiest document — a page with no rows —
+is this capability's to state.
 
 ## It returns the id and nothing else
 

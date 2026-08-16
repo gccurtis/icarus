@@ -3,14 +3,16 @@ import { record } from "$activity/api/shared/record";
 import type { Id } from "$convex/_generated/dataModel";
 import type { MutationCtx } from "$convex/_generated/server";
 import { documentTitle } from "$documents/types/document";
+import { start } from "$revisions/api/shared/start";
 import type { Actor } from "$shared/types/actor";
 
 /**
- * Starts a document: a title, and no content at all.
+ * Starts a document: a title, and a page with nothing on it.
  *
- * There is no body to write. A new document is a row and nothing else — pass 2's
- * first change set is what gives it one, so creating and opening are separate
- * writes rather than one that guesses at an empty body's shape.
+ * **The row and the anchor are written together**, because a document whose row
+ * committed without one is a document nothing can open. What an empty body looks
+ * like is decided here rather than there — nothing in revisions has ever
+ * inspected a body.
  *
  * **The actor is built from the scope, never accepted.** An argument saying who
  * created this would let a caller sign someone else's name to it.
@@ -36,6 +38,9 @@ export const create = async (
     updatedBy: by,
     updatedAt: Date.now()
   });
+
+  // `page` and `styles` join it in task 11, with the body type they belong to.
+  await start(ctx, scope, { resourceType: "document", resourceId: id }, { rows: [] });
 
   await record(ctx, scope, {
     actor: by,
