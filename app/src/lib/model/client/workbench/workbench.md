@@ -147,6 +147,38 @@ assigning it directly would put the frozen constant on the tab, and a later deep
 write would either throw or — without the freeze — reach every other tab reading
 the same object.
 
+## The rail is a menu; the inspector is a report
+
+The context panel and the inspector are the same shape. Each is a label stored on
+the active tab, set by one method, resolved by the view that renders it:
+
+| | Context panel | Inspector |
+| --- | --- | --- |
+| Setter | `selectContext` | `inspect` |
+| Stored on the tab | `options.contextId` | `options.inspection` |
+| Switching tabs | restores that tab's choice | restores that tab's inspection |
+| A tab nobody touched | the kind's first context | nothing inspected |
+
+One asymmetry survives that symmetry, and it is deliberate: `CONTEXTS_BY_KIND`
+constrains which contexts a resource kind offers, while an inspection is
+constrained by nothing.
+
+That is the difference between a menu and a report. The rail renders a set of
+choices before anyone picks one, so something has to say what is on it — and what
+is on it depends on the resource, which is why a slide deck's rail leads with its
+slides and a document's with its outline. An inspection is produced by a surface
+that already knows the thing exists; a document editor does not need permission
+to say that text is selected.
+
+The menu lives here rather than in the view because two behaviours depend on it
+and both are worth testing: `selectContext` refuses an id the kind never offered,
+and `activeContext` falls back when a stored id outlives the rail that held it.
+The second is the one most likely to break silently when an editor's rail
+changes, and the view layer has no component-render harness to catch it.
+
+What the view still owns is everything about how a context *looks* — its label,
+its icon, and the component it resolves to. This object exposes ids.
+
 ## What is persisted
 
 Tab refs, rail positions, and panel geometry. Not `inspection`, which names block
