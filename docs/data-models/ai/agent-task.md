@@ -25,11 +25,6 @@ interface PlanStep {
   description: string;
   status: "pending" | "active" | "done" | "skipped" | "failed";
 }
-
-interface PlanStep {
-  description: string;
-  status: "pending" | "active" | "done" | "skipped" | "failed";
-}
 ```
 
 This row is the thread. Its

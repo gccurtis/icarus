@@ -27,7 +27,7 @@ type FindingSource =
   | { kind: "file"; fileId: Id<"externalFiles">; locator?: string; excerpt?: string }
   | { kind: "url"; url: string; title?: string; excerpt?: string; capturedAt: number }
   | { kind: "resource"; resourceType: "document" | "slides" | "spreadsheet"; resourceId: string; locator?: string }
-  | { kind: "message"; threadId: Id<"researchThreads">; messageId: Id<"researchMessages"> }
+  | { kind: "message"; threadId: Id<"researchThreads">; messageId: Id<"messages"> }
   | { kind: "manual"; note: string };
 ```
 
