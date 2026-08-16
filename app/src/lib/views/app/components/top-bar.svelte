@@ -3,17 +3,23 @@
    * Top bar — always visible, never route-dependent. The first rung of the
    * disclosure ladder lives here: primary actions and critical state.
    *
+   * A component rather than a view, and the test is not size. It reads no client
+   * model, coordinates no siblings, and needs no concern directory, so a
+   * document for it could only restate its own markup. The day it holds a
+   * command palette or reads sync state it becomes a view, which costs one
+   * generator run and one import.
+   *
    * Static placeholder beyond the wordmark.
    */
 </script>
 
-<header class="topbar">
+<header class="top-bar">
   <span class="wordmark">ICARUS</span>
 </header>
 
 <style>
-  .topbar {
-    grid-area: topbar;
+  .top-bar {
+    height: 100%;
     display: flex;
     align-items: center;
     gap: var(--token-spacing-unit);

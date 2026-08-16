@@ -1,29 +1,18 @@
 <script lang="ts">
+  import App from "$views/app/app.svelte";
+
   /**
-   * /app/[project] — the work surface, with nothing open in it yet.
+   * /app/[project] — the application.
    *
-   * The Convex round trip that used to live here moved to `/mock/[project]`. It
-   * was a probe rather than a surface: it belonged to no tab and answered to no
-   * resource kind, so keeping it here meant the one thing the work surface
-   * rendered was the one thing the workbench did not know about.
+   * One import, because there is nothing for a route to decide here. The frame
+   * fills its own centre from the active tab, so this page supplies no content
+   * and holds no geometry; the layout above it built the client instance that
+   * every zone reads.
    */
 </script>
 
-<div class="surface">
-  <p class="note">Nothing open.</p>
-</div>
+<svelte:head>
+  <title>Icarus</title>
+</svelte:head>
 
-<style>
-  .surface {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding: calc(var(--token-spacing-unit) * 6);
-  }
-
-  .note {
-    font-size: var(--token-text-body-sm);
-    color: var(--token-ink-muted);
-  }
-</style>
+<App />
