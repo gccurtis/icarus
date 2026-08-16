@@ -72,29 +72,78 @@ reference where `v.id` would either be wrong or would defeat the design.
 These do not constrain merge order, but they are what a reviewer should check by
 hand, because nothing else will.
 
-## Suggested tranches
+## Review order
 
-Sizes are source / test lines, so a tranche's cost is visible before opening it.
-`main` already has `access` and `settings`.
+Types before tables, then tables by subject, with AI, templates, and connectors
+last. Sizes are source / test lines so a stage's cost is visible before opening
+it. `main` already has `access` and `settings`.
 
-| # | Tranche | Tables | Lines | Why here |
-| --- | --- | --- | --- | --- |
-| 1 | **access reconciliation** | `users` `projects` `memberships` | 254 / 120 | Renames `subject`→`authSubject` and adds fields. Touches shipped code, so it is the only tranche that can break what exists |
-| 2 | **attribution** | `activity` | 231 / 256 + 230 / 242 | `shared` (Actor, no table) then `activity`. Everything after this writes to the log |
-| 3 | **content primitive** | — | 404 / 468 | `content` declares no table. It is the block union every body composes, and reviewing it alone is the only chance to argue about blocks without a table in the way |
-| 4 | **revisions** | `resourceSnapshots` `changeSets` | 1454 / 1984 | **The hard one, and independent of the resource tables.** `shift`, the conflict ladder, read/submit/consolidate. Review this before anything that stores a body |
-| 5 | **general resources** | `documents` `slideDecks` `spreadsheets` `templates` | 1902 / 1966 | Thin once 4 lands — metadata rows plus body validators. `templates` comes with them because they reference it |
-| 6 | **data** | `nameVariables` | 457 / 577 + 525 / 398 | `name-manager` and `formula`. Evaluates nothing; formula depends on it and not the reverse |
-| 7 | **files** | `externalFiles` | 555 / 682 | Unlocks the image/table/embed block variants added in tranche 3 |
-| 8 | **collaboration** | `commentThreads` `comments` | 837 / 1196 | Needs stable block ids from 4 |
-| 9 | **research** | `questions` `hypotheses` `findings` `researchLinks` | 1853 / 2165 | Four independent objects and the many-to-many edge |
-| 10 | **conversation** | `messages` `personas` `personaThreads` `researchThreads` | 1770 / 1987 | One `messages` table serving three thread kinds |
-| 11 | **sets** | `resourceSets` | 534 / 756 | Needs every resource kind to exist to be worth scoping over |
-| 12 | **knowledge** | `latticeVersions` `latticeSources` `latticeNodes` `latticeLevelIndexes` `latticeEdges` `latticeChanges` | 3457 / 4063 | **21% of the branch.** Worth splitting further at review time — ingest, clustering, and retrieval are separable |
-| 13 | **generated + agents** | `derivedOutputs` `agentTasks` | 1497 / 2125 | Last, and then `Actor.taskId` tightens from `v.string()` to `v.id("agentTasks")` — the deferred edge closing |
+### Stage 0 — everything that is not a table
+
+Nothing here declares storage. It is the vocabulary every table is written in,
+and it is the only chance to argue about the model without a table in the way.
+
+| Capability | Holds | Lines |
+| --- | --- | --- |
+| `shared/types` | `actor` `mention` `resource` `page-setup` `style-set` `set-expression` | 231 / 256 |
+| `content/types` | `block` `format` `value` — **the content block union** | 404 / 468 |
+| `revisions/types` | `change` (the five ops, paths, targets) `body` | part of 1454 / 1984 |
+
+### Stages 1–8
+
+| # | Stage | Tables | Lines |
+| --- | --- | --- | --- |
+| 1 | **access reconciliation** | `users` `projects` `memberships` | 254 / 120 |
+| 2 | **revisions** — the machinery, no resources yet | `resourceSnapshots` `changeSets` | 1454 / 1984 |
+| 3 | **general resources** | `documents` `slideDecks` `spreadsheets` | 1283 / 1105 |
+| 4 | **data** | `nameVariables`, `formula` (no table) | 982 / 975 |
+| 5 | **collaboration** | `activity` `commentThreads` `comments` | 1067 / 1438 |
+| 6 | **research** | `questions` `hypotheses` `findings` `researchLinks` `researchThreads` | 2302 / 2732 |
+| 7 | **knowledge** | `resourceSets` `latticeVersions` `latticeSources` `latticeNodes` `latticeLevelIndexes` `latticeEdges` `latticeChanges` | 3991 / 4819 |
+| 8 | **intelligence and agents** | `messages` `personas` `personaThreads` `agentTasks` `derivedOutputs` | 2818 / 3545 |
+| 9 | **special resources** | `externalFiles` `templates` | 1174 / 1543 |
 
 Total: 16,078 source lines and 18,985 test lines across 26 capability
 directories.
+
+## Moving templates and files late costs three deferred edges
+
+The order above is a review-convenience choice and it is the right one, but it
+inverts three real schema edges. Each is fixed the same way `Actor.taskId`
+already is — hold the reference as `v.string()`, tighten when the table lands.
+The pattern is established and tested; what matters is that the ledger is
+explicit rather than discovered at push time.
+
+| Edge | Breaks | Deferral |
+| --- | --- | --- |
+| `documents.templateId`, `slideDecks.templateId`, `spreadsheets.templateId` → `templates` | stage 3 pushes before stage 9 | `v.optional(v.string())` until templates lands |
+| `ImageBlock.source.fileId`, `ImageBlock.display.fileId` → `externalFiles` | stage 0 defines a union referencing a stage 9 table | `v.string()`, or land the image variant with stage 9 |
+| `PromptBlock.derivedOutputId` → `derivedOutputs` | stage 0 references a stage 8 table | `v.string()`, or land the prompt variant with stage 8 |
+
+**The last two are why the content block union grew across passes rather than
+arriving whole.** The union is a *type*, so it belongs in stage 0 — but as a
+*validator* two of its members name tables that do not exist yet.
+
+Those are separable concerns, and separating them is the answer: **discuss the
+whole union in stage 0, merge it in three pieces.** Deciding whether the model is
+right is one conversation; what the schema will accept on a given day is another.
+
+## Not built — pass 8 and beyond
+
+Three tables in the data models have no implementation on this branch. Each was
+deferred because it waits on something outside the model, and the reasons are in
+[build-order.md](build-order.md#pass-8-and-beyond).
+
+| Table | Waiting on |
+| --- | --- |
+| `analyses` | The relational builtins an analysis compiles to — `JOIN`, `WHERE`, `GROUP`, `AGGREGATE`, `SORT`. Pass 2's formula evaluation is arithmetic, cell references, and name lookup, which is a much smaller thing |
+| `connectors` | OAuth, webhook endpoints, provider-specific sync. Everything a connector produces is an `externalFile`, which stage 9 already handles |
+| `automations` | Scheduling infrastructure. Nothing depends on it |
+
+`Actor.automationId` and `Actor.connectorId` are `v.string()` for this reason,
+and `resourceSets` resolves a `connector` ref through
+`externalFiles.origin.connectorId` rather than through a table that does not
+exist.
 
 ## What to check per table
 
