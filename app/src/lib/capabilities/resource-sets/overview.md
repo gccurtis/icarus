@@ -71,9 +71,15 @@ record".
 `connectors` does not exist until pass 8, and this does not wait for it: the
 files are what a set selects either way, so
 [`connectorFiles`](api/resolve/connector-files.ts) reads `externalFiles.origin.connectorId`
-and will not change when the table arrives. The ref's id is a `v.string()` for
-the same reason `Mention` carries one — `v.id` names a table the schema must
-declare — and it tightens in the task that creates `connectors`.
+and will not change when the table arrives.
+
+The ref's id stays a `v.string()`, and not because the table is missing: one
+`{ kind, id }` shape answers for all seven kinds, and the id is half of the
+`(kind, id)` key that resolution and the lattice both build. A `v.id` for the
+connector case alone would split the ref into a union and make every reader pick
+a branch to render one list. Nothing is gained by it either — a connector ref
+never names a `connectors` row during resolution, so a typed connector id would
+type a column only ever matched against `externalFiles.origin.connectorId`.
 
 ## Findings are resources; questions and hypotheses are not
 
@@ -119,7 +125,6 @@ every project is held by none.
 
 | Today | When | Becomes |
 | --- | --- | --- |
-| a `connector` ref carries a `v.string()` id | pass 8 | `v.id("connectors")`, resolving through the same files |
 | nothing consumes a resolution | pass 6–7 | lattice retrieval scopes by one, and derived outputs record what they resolved |
 
 ## Related
