@@ -116,7 +116,7 @@ any member put a row in everyone else's list.
 
 | Today | When | Becomes |
 | --- | --- | --- |
-| `scope` carries a set expression nothing resolves | pass 6 | `resourceSets` resolves it, and `{ op: "set" }` tightens to `v.id("resourceSets")` |
+| `scope` resolves, but nothing retrieves with it | pass 6 | lattice retrieval restricts a search to what [`resourceSets.resolve`](../resource-sets/api/resolve/resolve.md) returns |
 | nothing runs a persona | pass 7 | an agent task references one and renders its prompt |
 | a global persona can only be seeded | — | there is no project-scoped path that should be able to write one |
 

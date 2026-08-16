@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { resourceRefValidator, setExpressionValidator } from "$shared/types/set-expression";
 
-type Union = { members: { fields: Record<string, { kind: string; value?: string }> }[] };
+type Union = {
+  members: { fields: Record<string, { kind: string; value?: string; tableName?: string }> }[];
+};
 
 /** The fields differ per operator, so they are read as a bag rather than narrowed. */
 const ops = (union: Union) => union.members.map((member) => member.fields.op.value).sort();
@@ -34,9 +36,9 @@ describe("setExpressionValidator", () => {
     }
   });
 
-  it("leaves setId a string until resourceSets exists", () => {
-    // Pass 6 declares the table and this tightens to `v.id("resourceSets")`.
-    expect(fieldsOf("set").setId.kind).toBe("string");
+  it("names a saved set by id, so a reference cannot point outside the table", () => {
+    expect(fieldsOf("set").setId.kind).toBe("id");
+    expect(fieldsOf("set").setId.tableName).toBe("resourceSets");
   });
 
   it("stores a ref's kind beside its id, so resolving probes no table", () => {

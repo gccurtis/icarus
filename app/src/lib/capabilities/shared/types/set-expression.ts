@@ -19,9 +19,7 @@ const selectors = [
   v.object({ op: v.literal("project") }),
   v.object({ op: v.literal("kind"), kind: resourceKindValidator }),
   v.object({ op: v.literal("resources"), refs: v.array(resourceRefValidator) }),
-  // `setId` is `v.string()` until `resourceSets` arrives in pass 6, where it
-  // tightens to `v.id("resourceSets")`.
-  v.object({ op: v.literal("set"), setId: v.string() })
+  v.object({ op: v.literal("set"), setId: v.id("resourceSets") })
 ];
 
 /** Combining them. `union` takes a list so five kinds are one node, not four. */

@@ -28,6 +28,7 @@
       "$questions/*": ["../lib/capabilities/questions/*"],
       "$research-links/*": ["../lib/capabilities/research-links/*"],
       "$research-threads/*": ["../lib/capabilities/research-threads/*"],
+      "$resource-sets/*": ["../lib/capabilities/resource-sets/*"],
       "$revisions/*": ["../lib/capabilities/revisions/*"],
       "$settings/*": ["../lib/capabilities/settings/*"],
       "$slide-decks/*": ["../lib/capabilities/slide-decks/*"],

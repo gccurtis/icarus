@@ -13,6 +13,7 @@ import { personasTables } from "$personas/schema";
 import { questionsTables } from "$questions/schema";
 import { researchLinksTables } from "$research-links/schema";
 import { researchThreadsTables } from "$research-threads/schema";
+import { resourceSetsTables } from "$resource-sets/schema";
 import { revisionsTables } from "$revisions/schema";
 import { settingsTables } from "$settings/schema";
 import { slideDecksTables } from "$slide-decks/schema";
@@ -44,6 +45,7 @@ const tables = {
   ...questionsTables,
   ...researchLinksTables,
   ...researchThreadsTables,
+  ...resourceSetsTables,
   ...revisionsTables,
   ...settingsTables,
   ...slideDecksTables,
@@ -76,6 +78,7 @@ const declared = [
   questionsTables,
   researchLinksTables,
   researchThreadsTables,
+  resourceSetsTables,
   revisionsTables,
   settingsTables,
   slideDecksTables,
