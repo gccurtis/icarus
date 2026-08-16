@@ -42,6 +42,9 @@ export function fakeCtx() {
       },
       get: async (id: string) =>
         rows.has(id) ? { _id: id, ...rows.get(id) } : null,
+      // A stored id names the table it was minted for, which is what lets a
+      // handler holding `(kind, id)` refuse an id belonging to another table.
+      normalizeId: (table: string, id: string) => (id.startsWith(`${table}:`) ? id : null),
       patch: async (id: string, fields: Record<string, unknown>) => {
         rows.set(id, { ...rows.get(id), ...fields });
       },

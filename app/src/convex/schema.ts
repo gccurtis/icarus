@@ -8,6 +8,7 @@ import { findingsTables } from "$findings/schema";
 import { hypothesesTables } from "$hypotheses/schema";
 import { nameManagerTables } from "$name-manager/schema";
 import { questionsTables } from "$questions/schema";
+import { researchLinksTables } from "$research-links/schema";
 import { revisionsTables } from "$revisions/schema";
 import { settingsTables } from "$settings/schema";
 import { slideDecksTables } from "$slide-decks/schema";
@@ -34,6 +35,7 @@ const tables = {
   ...hypothesesTables,
   ...nameManagerTables,
   ...questionsTables,
+  ...researchLinksTables,
   ...revisionsTables,
   ...settingsTables,
   ...slideDecksTables,
@@ -61,6 +63,7 @@ const declared = [
   hypothesesTables,
   nameManagerTables,
   questionsTables,
+  researchLinksTables,
   revisionsTables,
   settingsTables,
   slideDecksTables,

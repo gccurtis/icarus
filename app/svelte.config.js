@@ -54,6 +54,7 @@ export default {
       $hypotheses: "src/lib/capabilities/hypotheses",
       "$name-manager": "src/lib/capabilities/name-manager",
       $questions: "src/lib/capabilities/questions",
+      "$research-links": "src/lib/capabilities/research-links",
       $revisions: "src/lib/capabilities/revisions",
       $settings: "src/lib/capabilities/settings",
       "$slide-decks": "src/lib/capabilities/slide-decks",
