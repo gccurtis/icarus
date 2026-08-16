@@ -18,12 +18,12 @@ export const frameValidator = v.object({
   height: v.number()
 });
 
-/** `fileId` is `v.string()` until `externalFiles` exists in pass 3. */
+/** A flat colour or an uploaded file — never inline bytes, so a deck body stays small. */
 const slideBackgroundValidator = v.union(
   v.object({ kind: v.literal("color"), color: v.string() }),
   v.object({
     kind: v.literal("image"),
-    fileId: v.string(),
+    fileId: v.id("externalFiles"),
     fit: v.union(v.literal("cover"), v.literal("contain"))
   })
 );

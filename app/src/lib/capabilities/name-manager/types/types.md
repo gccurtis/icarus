@@ -26,7 +26,7 @@ single comparison rather than a switch.
 ## `asTable` lives here, not in `formula`
 
 The projection is over a *variable*, and
-[name-manager.md](../../../../../docs/data-models/data/name-manager.md#every-value-is-a-table-degenerately)
+[name-manager.md](../../../../../../docs/data-models/data/name-manager.md#every-value-is-a-table-degenerately)
 is where the table it implements is written. Formula calls it today: `valueOf` in
 [`reduce.ts`](../../formula/api/evaluate/reduce/reduce.ts) sends a list- or
 record-valued name through it, so `SUM(Quarters)` works however `Quarters` was

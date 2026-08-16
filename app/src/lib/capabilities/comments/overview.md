@@ -42,7 +42,7 @@ was a mistake.
 It is reached only through an already-scoped thread, so the column is redundant —
 and the redundancy is the point. A check that has to join upward to decide access
 is a check that will eventually forget to, and
-[`requireComment`](api/edit/require-comment.md) decides from the comment's own
+[`requireComment`](api/edit/require-comment.ts) decides from the comment's own
 column and never reads the thread above it.
 
 ## Anchoring is exact, and one part of it is not

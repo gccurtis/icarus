@@ -110,6 +110,17 @@ describe("a slide element", () => {
   });
 });
 
+describe("a slide background", () => {
+  it("points at an uploaded file the same way an image block does", () => {
+    const image = slideValidator.fields.background.members.find(
+      (member) => member.fields.kind.value === "image"
+    );
+    const fields = image!.fields as Record<string, { kind: string; tableName?: string }>;
+
+    expect(fields.fileId).toMatchObject({ kind: "id", tableName: "externalFiles" });
+  });
+});
+
 describe("emptySlideDeckBody", () => {
   it("is a deck with no slides, and is a body the schema admits", () => {
     const body = emptySlideDeckBody();
