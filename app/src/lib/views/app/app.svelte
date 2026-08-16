@@ -3,6 +3,7 @@
   import ContextPanel from "$views/context-panel/context-panel.svelte";
   import { RAIL_WIDTH } from "$views/context-panel/types";
   import Inspector from "$views/inspector/inspector.svelte";
+  import { COLLAPSED_WIDTH } from "$views/inspector/types";
   import StatusBar from "$views/app/components/status-bar.svelte";
   import TabBar from "$views/tab-bar/tab-bar.svelte";
   import TopBar from "$views/app/components/top-bar.svelte";
@@ -38,14 +39,24 @@
    * structural and deliberately excluded. Adding it back is the frame's job, and
    * `RAIL_WIDTH` is the panel's own constant rather than a number repeated here
    * — see `$views/context-panel/types`.
+   *
+   * A collapsed flank is still a column, just a narrow one. Each panel collapses
+   * to a rail rather than to nothing, so the grid keeps three columns in every
+   * state and the work surface never has to reflow between two and three.
    */
-  const contextWidth = $derived(RAIL_WIDTH + workbench.panels.contextWidth);
+  const contextWidth = $derived(
+    workbench.panels.contextCollapsed ? RAIL_WIDTH : RAIL_WIDTH + workbench.panels.contextWidth
+  );
+
+  const inspectorWidth = $derived(
+    workbench.panels.inspectorCollapsed ? COLLAPSED_WIDTH : workbench.panels.inspectorWidth
+  );
 </script>
 
 <div
   class="app"
   style:--app-context="{contextWidth}px"
-  style:--app-inspector="{workbench.panels.inspectorWidth}px"
+  style:--app-inspector="{inspectorWidth}px"
 >
   <div class="zone top-bar"><TopBar /></div>
   <div class="zone tab-bar"><TabBar /></div>

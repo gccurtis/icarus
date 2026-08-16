@@ -16,6 +16,7 @@
     contexts,
     available,
     active,
+    collapsed,
     onselect
   }: {
     /** Display copy for every context the model can name. */
@@ -24,6 +25,11 @@
     available: readonly ContextId[];
     /** The one currently showing. */
     active: ContextId;
+    /**
+     * Whether the panel beside this rail is shut. The rail itself never
+     * collapses — it is what the panel collapses *to*, and the only way back.
+     */
+    collapsed: boolean;
     onselect: (id: ContextId) => void;
   } = $props();
 </script>
@@ -35,9 +41,10 @@
     <button
       type="button"
       class="entry"
-      class:selected={id === active}
-      aria-current={id === active ? "true" : undefined}
-      aria-label={entry.label}
+      class:selected={id === active && !collapsed}
+      aria-current={id === active && !collapsed ? "true" : undefined}
+      aria-expanded={!collapsed}
+      aria-label={collapsed ? `${entry.label} — opens the panel` : entry.label}
       title={entry.label}
       onclick={() => onselect(id)}
     >

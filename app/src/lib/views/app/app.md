@@ -60,8 +60,8 @@ Views reached through their root component only.
 | --- | --- | --- |
 | `tab-bar` | `tab-bar.svelte` | What is open and which one is active |
 | `context-panel` | `context-panel.svelte`, `types.ts` | The left flank; `types.ts` for the rail width the column math needs |
+| `inspector` | `inspector.svelte`, `types.ts` | The right flank; `types.ts` for the width it collapses to |
 | `workspace` | `workspace.svelte` | The centre |
-| `inspector` | `inspector.svelte` | The right flank |
 
 ### Presentation
 
@@ -121,6 +121,10 @@ at which it has nothing to paint.
   is `100vh`; a second would produce two scroll contexts stacked on each other.
 - **A flank's width has one source.** The model holds it, this view applies it,
   and the stylesheet carries seeds that matter only if the model read fails.
+- **The grid always has three columns.** A collapsed flank narrows to a rail
+  rather than disappearing, so the work surface never reflows between a
+  two-column and a three-column layout, and each flank keeps something on screen
+  to reopen it with.
 
 ## Supporting Documents
 

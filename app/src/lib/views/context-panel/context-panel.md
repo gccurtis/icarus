@@ -38,12 +38,19 @@ It does not own:
 
 | Kind | Name | Type | Required | Purpose |
 | --- | --- | --- | --- | --- |
-| Export | `RAIL_WIDTH` | `number` | — | Pixels. The frame adds it to the model's content width to size this whole column. |
+| Export | `RAIL_WIDTH` | `number` | — | Pixels. The frame adds it to the model's content width to size this whole column, and it is what the flank collapses to. |
+| Export | `MIN_WIDTH` | `number` | — | Narrowest visible width a drag may reach |
+| Export | `MAX_WIDTH` | `number` | — | Widest |
+| Export | `COLLAPSE_BELOW` | `number` | — | Drag inside this and the panel collapses instead of clamping |
 
-It takes no props. `RAIL_WIDTH` is the contract, and it exists because the
-panel's width is decided in two places that must agree: the model deliberately
-stores the content portion only, so whoever lays the column out has to add the
-rail back.
+It takes no props. Everything above is a **visible** width — rail included —
+while the model stores the content portion only, because the rail is structural
+and never resizes. The panel converts at that boundary so the arithmetic runs one
+way: model plus rail equals visible, always.
+
+The bounds are exported rather than kept private because the frame sizes the
+column, and they match the inspector's, so both edges of the work surface behave
+alike.
 
 ## Dependencies
 
@@ -83,6 +90,7 @@ rail back.
 | State | Trigger | Visible result | Available recovery |
 | --- | --- | --- | --- |
 | Initial | Always | The rail, one entry selected, and that entry's content | — |
+| Collapsed | A drag inside `COLLAPSE_BELOW` | The rail alone, nothing selected-looking | Click any rail icon |
 | Loading | `None` | — | — |
 | Empty | `None` | — | — |
 | Stale | `None` | — | — |
@@ -132,6 +140,15 @@ a projection over the workbench rather than a surface holding its own state.
   to compile until it has a label, an icon, and something to show.
 - **The rail is one number.** `RAIL_WIDTH` sizes the rail and is what the frame
   adds to the model's content width; nothing restates it.
+- **Collapsing never destroys the width.** A gesture that shuts the panel
+  reports the width it began with, so reopening returns to the size the user
+  chose. Reporting the pointer's position instead would remember the minimum
+  every time, because every pixel between the minimum and the threshold clamps
+  to the minimum.
+- **Selecting a context always opens the panel**, and that is the whole
+  uncollapse affordance — no arrow, no chevron. Choosing the context already
+  showing is left alone rather than treated as a toggle, because closing a panel
+  by clicking into it is a surprise and the edge already closes it.
 
 ## Supporting Documents
 

@@ -4,9 +4,11 @@
   import LayoutDashboard from "@lucide/svelte/icons/layout-dashboard";
 
   import { clientModel, type ContextId, type ResourceRef } from "$model/client";
+  import { ResizeHandle } from "$lib/unique-components/resize-handle";
   import Outline from "$views/context-panel/components/outline.svelte";
   import Overview from "$views/context-panel/components/overview.svelte";
   import Rail from "$views/context-panel/components/rail.svelte";
+  import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH, RAIL_WIDTH } from "$views/context-panel/types";
 
   /**
    * The context panel — the map. It answers "where am I and what else is here?"
@@ -18,7 +20,9 @@
    *
    * The rail is inside this panel rather than beside it in the frame's grid: it
    * is the panel's own navigation and has no meaning without it, so the frame
-   * sees one zone and this view owns how it divides.
+   * sees one zone and this view owns how it divides. It is also what makes
+   * collapsing work — the panel narrows to the rail rather than disappearing, so
+   * there is always something left to click.
    *
    * **The key map.** `ContextId` is a stable model key and never a component —
    * the model says so explicitly, because a model type naming a component drags
@@ -47,6 +51,25 @@
 
   const Content = $derived(CONTEXTS[workbench.activeContext].content);
   const resource = $derived<ResourceRef>(workbench.active.resource);
+
+  /** The model stores content only; the handle works in painted pixels. */
+  const visible = $derived(RAIL_WIDTH + workbench.panels.contextWidth);
+  const collapsed = $derived(workbench.panels.contextCollapsed);
+
+  /**
+   * Selecting a context always opens the panel.
+   *
+   * That is the whole uncollapse affordance on this side, and it needs no arrow
+   * of its own: the rail is visible while collapsed, and the thing a user wants
+   * when they reach for an icon is to see what it holds. Choosing the context
+   * that is already showing is left alone rather than treated as a toggle —
+   * closing a panel by clicking into it is a surprise, and the edge already
+   * closes it.
+   */
+  const select = (id: ContextId) => {
+    workbench.selectContext(id);
+    if (collapsed) workbench.resize({ contextCollapsed: false });
+  };
 </script>
 
 <aside class="panel" aria-label="Context">
@@ -54,7 +77,8 @@
     contexts={CONTEXTS}
     available={workbench.availableContexts}
     active={workbench.activeContext}
-    onselect={(id) => workbench.selectContext(id)}
+    {collapsed}
+    onselect={select}
   />
 
   <!--
@@ -62,13 +86,28 @@
     a scroll position unrecoverable — the rail never scrolls, so this is the
     only one here.
   -->
-  <div class="content">
-    <Content {resource} />
-  </div>
+  {#if !collapsed}
+    <div class="content">
+      <Content {resource} />
+    </div>
+  {/if}
+
+  <ResizeHandle
+    side="start"
+    width={visible}
+    {collapsed}
+    min={MIN_WIDTH}
+    max={MAX_WIDTH}
+    collapseBelow={COLLAPSE_BELOW}
+    label="the context panel"
+    onchange={({ width, collapsed: next }) =>
+      workbench.resize({ contextWidth: width - RAIL_WIDTH, contextCollapsed: next })}
+  />
 </aside>
 
 <style>
   .panel {
+    position: relative;
     height: 100%;
     display: flex;
     min-height: 0;

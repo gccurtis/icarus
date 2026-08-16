@@ -34,11 +34,19 @@ It does not own:
 ## Public Contract
 
 - **Entry:** [`inspector.svelte`](inspector.svelte)
-- **Types:** `None`
+- **Types:** [`types.ts`](types.ts)
 
 | Kind | Name | Type | Required | Purpose |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | Nothing. It reads the workbench directly. |
+| Export | `COLLAPSED_WIDTH` | `number` | — | What the flank narrows to when shut; the frame sizes the column from it |
+| Export | `MIN_WIDTH` | `number` | — | Narrowest a drag may reach |
+| Export | `MAX_WIDTH` | `number` | — | Widest |
+| Export | `COLLAPSE_BELOW` | `number` | — | Drag inside this and the panel collapses instead of clamping |
+
+It takes no props. Every number here is the panel's whole width — unlike the
+context panel, the inspector has no rail to add back while open, so the model
+stores exactly what is painted. The bounds deliberately match the context
+panel's, so a user who learns one edge has learned the other.
 
 ## Dependencies
 
@@ -80,6 +88,7 @@ nothing to coordinate and nothing to observe.
 | State | Trigger | Visible result | Available recovery |
 | --- | --- | --- | --- |
 | Initial | A tab nobody has inspected in | Nothing selected | — |
+| Collapsed | A drag inside `COLLAPSE_BELOW` | A 44px rail carrying the agent icon | Click the rail |
 | Loading | `None` | — | — |
 | Empty | `currentInspection` is undefined | "Nothing selected" | — |
 | Stale | `None` | — | — |
@@ -129,6 +138,13 @@ finished surface.
 - **A node is never a payload.** The model hands over ids and offsets, and this
   view fetches whatever it needs from them. Carrying content would put a copy of
   something that lives elsewhere into state that is deliberately not persisted.
+- **Collapsed is a rail, never nothing.** A flank that vanishes leaves no way
+  back but finding a 4px edge. What remains is the same width the context panel
+  collapses to, and the whole strip is the control rather than an icon sitting
+  on one — 44px is narrow enough that a miss between icon and edge would read as
+  the panel ignoring a click.
+- **Collapsing never destroys the width**, for the same reason it does not on
+  the other flank: the gesture reports the width it began with.
 - **Nothing here writes an inspection.** This view reads. When it gains controls
   they act on the thing inspected, not on the inspection itself.
 
