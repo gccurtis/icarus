@@ -332,6 +332,47 @@ are now stated up front in every task, and they are no longer being rediscovered
 
 ---
 
+## Pass 4 — Research
+
+### `confidence` accepted `NaN`
+
+**The best finding of the build so far, and the smallest.** A hypothesis's
+`confidence` is optional precisely so that an untested hypothesis reports no
+number — the spec says a default of `0` or `0.5` would be a fabricated figure
+that charts and summaries would happily consume.
+
+The guard was `confidence < 0 || confidence > 1`. **Both comparisons are false
+for `NaN`**, so a blank form field parsed to `NaN` sailed through and stored as a
+probability. The fabricated number the field exists to prevent, arriving by a
+route nobody was watching.
+
+The fix is to negate the in-range test rather than add a `Number.isNaN` clause:
+`!(c >= 0 && c <= 1)` rejects `NaN` and leaves every finite value — and
+`Infinity` — behaving exactly as before.
+
+### A test that could never fail was deleted, not fixed
+
+Review found a research-links test asserting "declares no index unique". Convex
+builds index entries as `{ indexDescriptor, fields }`, so **no edit to
+`schema.ts` could ever turn that test red**. It reported success either way,
+which is worse than not existing — it occupied the space where a real check would
+have gone.
+
+Deleted rather than repaired, with a note that the invariant it was named for is
+tested where it actually lives, in `link.test.ts`. Worth recording because the
+instinct on finding a weak test is to strengthen it in place, and here the honest
+move was to remove it and point at the real one.
+
+### Two capabilities, not one
+
+The task named two tables and left the packaging open. They became two
+capabilities with two doors — `questions` and `hypotheses` — rather than one
+`research` capability owning both. They are top-level objects with independent
+purpose in the model, each can exist with no reference to the other, and the flat
+capability list is meant to be read as the set of things this application can do.
+
+---
+
 ## Pass 6, settled early
 
 ### `knowledge.yaml` values are carried, not invented
