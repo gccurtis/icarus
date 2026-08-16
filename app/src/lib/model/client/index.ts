@@ -4,6 +4,14 @@ import type { ClientModel, ClientModelInput } from "$model/client/types";
 
 export type { ClientModel, ClientModelInput } from "$model/client/types";
 export type {
+  Chord,
+  ChordParts,
+  Command,
+  CommandId,
+  CommandsModel
+} from "$model/client/commands";
+export { COMMAND_IDS, DEFAULT_BINDINGS, chordOf, isCommandId } from "$model/client/commands";
+export type {
   ClientStorage,
   PersistedClient,
   PersistedPanels,

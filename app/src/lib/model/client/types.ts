@@ -1,3 +1,4 @@
+import type { CommandsModel } from "$model/client/commands";
 import type { ClientStorage } from "$model/client/storage";
 import type { WorkbenchModel } from "$model/client/workbench";
 
@@ -37,4 +38,5 @@ export interface ClientModel {
   readonly project: string;
   readonly storage: ClientStorage;
   readonly workbench: WorkbenchModel;
+  readonly commands: CommandsModel;
 }

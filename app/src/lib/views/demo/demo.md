@@ -93,7 +93,8 @@ model or capability work, and no state is shared between sections.
   section carries an `h2` from `section-heading.svelte`.
 - **Initial focus:** Document default. The view moves focus nowhere on mount.
 - **Keyboard model:** Each demonstrated primitive keeps its own keyboard
-  behavior; the view adds none.
+  behavior. The only shortcut the view adds is `Ctrl`/`⌘`+K in
+  `components/disclosure.svelte`, which opens the command dialog.
 - **Announcements:** `None`.
 - **Focus restoration:** Owned by the overlay primitives that take focus.
 

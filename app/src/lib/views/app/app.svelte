@@ -1,5 +1,7 @@
 <script lang="ts">
   import { clientModel } from "$model/client";
+  import CommandBar from "$views/command-bar/command-bar.svelte";
+  import { dispatchCommands } from "$views/app/effects/dispatch-commands.svelte";
   import ContextPanel from "$views/context-panel/context-panel.svelte";
   import CopilotBar from "$views/copilot-bar/copilot-bar.svelte";
   import { RAIL_WIDTH } from "$views/context-panel/types";
@@ -33,7 +35,15 @@
    * stylesheet, so there is one source of truth per dimension and each tab keeps
    * the geometry its user dragged.
    */
-  const { workbench } = clientModel();
+  const { workbench, commands } = clientModel();
+
+  /**
+   * One keydown listener for the whole application, mounted with the frame and
+   * removed with it. It sits here rather than in the command bar because a
+   * shortcut has to work while the bar is closed — including the one that opens
+   * it.
+   */
+  dispatchCommands(commands);
 
   /**
    * The model stores the context panel's **content** width; the rail is
@@ -76,6 +86,13 @@
   <div class="zone inspector"><Inspector /></div>
   <div class="zone status"><StatusBar /></div>
 </div>
+
+<!--
+  Outside the grid, and deliberately. The bar belongs to no zone — it dims all of
+  them — so giving it a `grid-area` would mean inventing a seventh region that is
+  empty in every state but one, and the six-zone rule would stop being true.
+-->
+<CommandBar />
 
 <style>
   /**

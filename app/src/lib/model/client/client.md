@@ -14,6 +14,7 @@ window later — and it owns one client model for its whole life.
 | --- | --- | --- |
 | [`storage`](storage/storage.md) | This project's browser store, and the format of what survives a reload | no |
 | [`workbench`](workbench/workbench.md) | What is open, which tab is active, and everything a tab holds | yes |
+| [`commands`](commands/commands.md) | Every argument-free action, the chords bound to them, and whether the bar is showing | yes |
 
 Two, down from five. `activities` and `inspector` were pure getters over the
 workbench, and `preferences` held four numbers that became per tab. See

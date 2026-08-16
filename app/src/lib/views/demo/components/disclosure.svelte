@@ -1,15 +1,37 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
+
   import SectionHeading from "$views/demo/components/section-heading.svelte";
   import * as Accordion from "$lib/simple-components/accordion";
   import * as AlertDialog from "$lib/simple-components/alert-dialog";
   import * as Breadcrumb from "$lib/simple-components/breadcrumb";
   import { Button } from "$lib/simple-components/button";
   import * as Collapsible from "$lib/simple-components/collapsible";
+  import * as Command from "$lib/simple-components/command";
   import * as ContextMenu from "$lib/simple-components/context-menu";
   import * as HoverCard from "$lib/simple-components/hover-card";
   import { Kbd } from "$lib/simple-components/kbd";
   import * as Popover from "$lib/simple-components/popover";
+
+  let commandOpen = $state(false);
+  let lastRan = $state("");
+
+  const modifier = $derived(browser && /mac|iphone|ipad/i.test(navigator.userAgent) ? "⌘" : "Ctrl");
+
+  const run = (label: string) => {
+    lastRan = label;
+    commandOpen = false;
+  };
+
+  /** Firefox binds Ctrl+K to the address bar, so the default has to go. */
+  const onkeydown = (event: KeyboardEvent) => {
+    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "k") return;
+    event.preventDefault();
+    commandOpen = !commandOpen;
+  };
 </script>
+
+<svelte:window {onkeydown} />
 
 <section class="flex flex-col gap-4">
   <SectionHeading title="Disclosure" source="system/interaction/theory.md" />
@@ -138,7 +160,22 @@
     navigation is wrong.
   </p>
   <div class="flex flex-wrap items-center gap-2">
-    <Kbd>⌘</Kbd><Kbd>K</Kbd>
+    <Kbd>{modifier}</Kbd><Kbd>K</Kbd>
     <span class="text-caption text-ink-muted">opens command search</span>
+    {#if lastRan}
+      <span class="text-caption text-ink-secondary">ran "{lastRan}"</span>
+    {/if}
   </div>
+
+  <Command.Dialog bind:open={commandOpen}>
+    <Command.Input placeholder="Type a command" />
+    <Command.List>
+      <Command.Empty>No commands found.</Command.Empty>
+      <Command.Group heading="Demo">
+        <Command.Item onSelect={() => run("Open document")}>Open document</Command.Item>
+        <Command.Item onSelect={() => run("New question")}>New question</Command.Item>
+        <Command.Item onSelect={() => run("Toggle inspector")}>Toggle inspector</Command.Item>
+      </Command.Group>
+    </Command.List>
+  </Command.Dialog>
 </section>

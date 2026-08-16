@@ -44,7 +44,7 @@ It does not own:
 
 | Door | Usage |
 | --- | --- |
-| `$model/client` | `workbench.panels`, for the two flank column widths |
+| `$model/client` | `workbench.panels`, for the two flank column widths; `commands`, handed to the dispatch effect |
 
 ### Capabilities
 
@@ -63,6 +63,7 @@ Views reached through their root component only.
 | `inspector` | `inspector.svelte`, `types.ts` | The right flank; `types.ts` for the width it collapses to |
 | `workspace` | `workspace.svelte` | The centre |
 | `copilot-bar` | `copilot-bar.svelte` | Floats over the centre, bottom-anchored |
+| `command-bar` | `command-bar.svelte` | The command overlay. Rendered outside the grid, because it belongs to no zone |
 
 ### Presentation
 
@@ -75,6 +76,7 @@ Views reached through their root component only.
 | Concern | Document | What it owns |
 | --- | --- | --- |
 | Components | [components.md](components/components.md) | The two zones that read nothing yet |
+| Effects | [effects.md](effects/effects.md) | The one keydown listener, and what it does with a chord |
 
 ## Rendered States
 
@@ -96,10 +98,14 @@ at which it has nothing to paint.
 - **Landmark and accessible name:** the centre is the `main` landmark. Each
   flank names itself; the frame itself is not a landmark.
 - **Initial focus:** the document. The frame moves focus nowhere.
-- **Keyboard model:** none of its own. Tab order follows the visual order the
-  grid areas declare, which is why placement lives here rather than in the zones.
+- **Keyboard model:** the application's shortcuts, and nothing else of its own.
+  [`effects/dispatch-commands.svelte.ts`](effects/dispatch-commands.svelte.ts)
+  holds the one keydown listener; what each chord means belongs to the commands
+  model, not here. Tab order follows the visual order the grid areas declare,
+  which is why placement lives in this view rather than in the zones.
 - **Announcements:** `None`.
-- **Focus restoration:** `None` — nothing here opens or closes.
+- **Focus restoration:** the command bar's, which the dialog primitive owns.
+  Nothing else here opens or closes.
 
 ## Layout and Overflow
 

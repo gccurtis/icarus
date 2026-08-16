@@ -1,3 +1,4 @@
+import { createCommands } from "$model/client/commands";
 import { createBrowserStorage } from "$model/client/storage";
 import type { ClientModel, ClientModelInput } from "$model/client/types";
 import { createWorkbench } from "$model/client/workbench";
@@ -18,9 +19,12 @@ export const buildClientModel = ({ project, storage }: ClientModelInput): Client
   // Storage first: the workbench restores from it during its own construction.
   const store = storage ?? createBrowserStorage(project);
 
+  const workbench = createWorkbench(store);
+
   return {
     project,
     storage: store,
-    workbench: createWorkbench(store)
+    workbench,
+    commands: createCommands(workbench)
   };
 };

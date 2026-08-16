@@ -105,6 +105,7 @@ is named in `scripts/lint/styles/rules.mjs` and must be updated if it moves.
 | [`appearance-bar.svelte`](appearance-bar.svelte) | `theme`, `set` | The active chromatic theme and semantic set |
 | [`controls.svelte`](controls.svelte) | `bold`, `marks`, `live`, `confidence`, `scope`, `kind` | Drives the form primitives so each renders in a real state |
 | [`data.svelte`](data.svelte) | `cardWidth`, `cardHeight`, `windowWidth`, derived `visible` | Drives the responsive data examples |
+| [`disclosure.svelte`](disclosure.svelte) | `commandOpen`, `lastRan` | Whether the command dialog is open, and which command last ran |
 | [`registry-components.svelte`](registry-components.svelte) | `inputValue` | Drives the registry input example |
 
 State stays in the component that owns it. No section reads another's state, so
