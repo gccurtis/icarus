@@ -3,6 +3,7 @@
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
 
   import { clientModel } from "$model/client";
+  import * as Select from "$lib/simple-components/select";
 
   /**
    * The copilot bar — a persistent place to describe the next move, anchored at
@@ -115,26 +116,36 @@
       }
     }}
   >
+    <!--
+      Both menus open upward. A menu that drops down from this row lands on the
+      composer, so choosing a mode covers the sentence the choice is about — and
+      this bar is anchored to the bottom of the viewport, where there is nothing
+      below it to open into anyway.
+    -->
     <div class="controls">
-      <span class="mark">Copilot</span>
+      <span class="mark">AI</span>
 
-      <label class="field">
-        <span class="sr-only">Mode</span>
-        <select bind:value={mode} title={MODES.find((entry) => entry.id === mode)?.hint}>
+      <Select.Root type="single" bind:value={mode}>
+        <Select.Trigger size="sm" class="border-transparent px-2" aria-label="Mode">
+          {MODES.find((entry) => entry.id === mode)?.label}
+        </Select.Trigger>
+        <Select.Content side="top" align="start">
           {#each MODES as entry (entry.id)}
-            <option value={entry.id}>{entry.label}</option>
+            <Select.Item value={entry.id} label={entry.label}>{entry.label}</Select.Item>
           {/each}
-        </select>
-      </label>
+        </Select.Content>
+      </Select.Root>
 
-      <label class="field">
-        <span class="sr-only">Persona</span>
-        <select bind:value={persona}>
+      <Select.Root type="single" bind:value={persona}>
+        <Select.Trigger size="sm" class="border-transparent px-2" aria-label="Persona">
+          {persona}
+        </Select.Trigger>
+        <Select.Content side="top" align="start">
           {#each PERSONAS as name (name)}
-            <option value={name}>{name}</option>
+            <Select.Item value={name} label={name}>{name}</Select.Item>
           {/each}
-        </select>
-      </label>
+        </Select.Content>
+      </Select.Root>
 
       <span class="spacer"></span>
 
@@ -183,10 +194,14 @@
     overflow: hidden;
     border: 1px solid var(--token-border-subtle);
     border-radius: var(--token-radius-overlay);
-    background-color: var(--token-surface-elevated);
     box-shadow: var(--token-shadow-overlay);
   }
 
+  /* The controls take the panel plane and the composer keeps the raised one, so
+   * the row of choices reads as chrome and the place you type reads as the
+   * surface you are typing on. `surface-panel` is the same plane the bars and
+   * both flanks use, which is what keeps this bar part of the frame rather than
+   * a card floating in front of it. */
   .controls {
     display: flex;
     align-items: center;
@@ -194,6 +209,7 @@
     /* The bar starts at 48px: this row plus one line of composer. */
     height: calc(var(--token-spacing-unit) * 8);
     padding-inline: calc(var(--token-spacing-unit) * 2.5);
+    background-color: var(--token-surface-panel);
     border-bottom: 1px solid var(--token-border-subtle);
   }
 
@@ -206,23 +222,6 @@
 
   .spacer {
     flex: 1;
-  }
-
-  .field select {
-    height: calc(var(--token-spacing-unit) * 6);
-    padding-inline: calc(var(--token-spacing-unit) * 1.5);
-    border: 1px solid transparent;
-    border-radius: var(--token-radius-control);
-    background: none;
-    font: inherit;
-    font-size: var(--token-text-caption);
-    color: var(--token-ink-secondary);
-    cursor: pointer;
-  }
-
-  .field select:hover {
-    border-color: var(--token-border-subtle);
-    background-color: var(--token-surface-panel-hover);
   }
 
   .send {
@@ -244,15 +243,18 @@
     cursor: default;
   }
 
+  /* The raised plane, so the place you type is distinct from the chrome above
+   * it. `.bar` carries no background of its own; these two halves are the whole
+   * of it. */
   textarea {
     width: 100%;
+    background-color: var(--token-surface-elevated);
     min-height: calc(var(--token-spacing-unit) * 6);
     max-height: 88px;
     resize: none;
     overflow-y: auto;
     padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 2.5);
     border: none;
-    background: none;
     font: inherit;
     font-size: var(--token-text-body-sm);
     line-height: var(--token-text-body-sm-leading);
@@ -263,14 +265,5 @@
 
   textarea::placeholder {
     color: var(--token-ink-muted);
-  }
-
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 </style>
