@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FormulaValue } from "$content/types/value";
-import { BUILTINS, isBuiltin } from "$formula/api/evaluate/builtins";
+import { BUILTINS, isBuiltin } from "$formula/api/evaluate/reduce/builtins";
 import { EMPTY, number, refusalOf, text } from "$formula/test/fixture";
 
 const column = (...cells: FormulaValue[]): FormulaValue => ({

@@ -267,6 +267,19 @@ describe("inserting a row into a sheet", () => {
     expect(applyOps(after, [...ops].reverse().map(invert))).toEqual(before);
   });
 
+  it("names a restored keyed entry, because undoing a cell removal is an insert", () => {
+    const removal: Op = {
+      op: "remove",
+      target: "cell",
+      path: at("D9"),
+      ids: ["D9"],
+      after: null,
+      values: [cell("9")]
+    };
+
+    expect(touchedBy([invert(removal)])).toEqual(touchedBy([removal]));
+  });
+
   it("leaves a concurrent edit above the insertion point on a disjoint path", async () => {
     const { ctx, scope, projectId } = await asking();
     const resource = { resourceType: "spreadsheet", resourceId: "spreadsheets:1" } as const;
@@ -305,6 +318,29 @@ describe("inserting a row into a sheet", () => {
       at: 1
     });
     const mine = [setting("cell", "sheets/#sh1/cells/B7", cell("42"), cell("7"))];
+
+    await expect(
+      check(asCtx(ctx), scope, { ...resource, baseRevision: 7, ops: mine, touched: touchedBy(mine) }, 8)
+    ).rejects.toThrow();
+  });
+
+  it("collides with a concurrent edit to a cell it created", async () => {
+    const { ctx, scope, projectId } = await asking();
+    const resource = { resourceType: "spreadsheet", resourceId: "spreadsheets:1" } as const;
+    await ctx.db.insert("changeSets", {
+      projectId,
+      ...resource,
+      revision: 8,
+      baseRevision: 7,
+      tier: "recent",
+      ops,
+      touched: touchedBy(ops),
+      actor: { kind: "system" },
+      at: 1
+    });
+    const mine: Op[] = [
+      { op: "insert", target: "cell", path: at("D10"), after: null, values: [cell("42")] }
+    ];
 
     await expect(
       check(asCtx(ctx), scope, { ...resource, baseRevision: 7, ops: mine, touched: touchedBy(mine) }, 8)

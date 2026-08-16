@@ -8,10 +8,11 @@ Lives at `api/api.md`.
 
 ## One function, and no `shared/`
 
-Nothing is promoted because nothing has a second caller: `parse`, `reduce`,
-`arithmetic`, and `builtins` are all steps of the one evaluation, and they sit
-under it. When a second public function needs one — a batch recalculation, say —
-that is when it moves.
+Nothing is promoted, because nothing has a second caller. Each procedure sits
+under the one that calls it: `parse` and `reduce` are `evaluate`'s steps, and
+`arithmetic` and `builtins` are `reduce`'s, in a directory of its own. When a
+second public function needs one — a batch recalculation, say — that is when it
+moves.
 
 ## It is a query, and writes nothing
 

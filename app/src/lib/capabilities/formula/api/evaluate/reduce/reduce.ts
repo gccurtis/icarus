@@ -1,8 +1,8 @@
 import type { Scope } from "$access/types/access";
 import type { FormulaValue } from "$content/types/value";
 import type { QueryCtx } from "$convex/_generated/server";
-import { apply, negate } from "$formula/api/evaluate/arithmetic";
-import { BUILTINS, isBuiltin } from "$formula/api/evaluate/builtins";
+import { apply, negate } from "$formula/api/evaluate/reduce/arithmetic";
+import { BUILTINS, isBuiltin } from "$formula/api/evaluate/reduce/builtins";
 import { FormulaError } from "$formula/errors";
 import type { Cells } from "$formula/types/evaluation";
 import type { Expression } from "$formula/types/expression";

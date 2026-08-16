@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { apply, negate } from "$formula/api/evaluate/arithmetic";
+import { apply, negate } from "$formula/api/evaluate/reduce/arithmetic";
 import { EMPTY, number, refusalOf, text } from "$formula/test/fixture";
 
 describe("arithmetic", () => {

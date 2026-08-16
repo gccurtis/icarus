@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "$formula/api/evaluate/parse";
-import { reduce } from "$formula/api/evaluate/reduce";
+import { reduce } from "$formula/api/evaluate/reduce/reduce";
 import { asCtx, asking, EMPTY, number, refusalFrom, text } from "$formula/test/fixture";
 import { define } from "$name-manager/api/define/define";
 import type { VariableDefinition } from "$name-manager/types/variable";

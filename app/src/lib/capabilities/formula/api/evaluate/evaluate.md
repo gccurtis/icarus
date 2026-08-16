@@ -9,12 +9,15 @@ Registered as `api.capabilities.formula.evaluate`, built from `projectQuery`.
 ```text
 evaluate(ctx, scope, expression, cells)
 ├── parse(expression)                       parse.ts
-├── reduce(ctx, scope, node, cells)         reduce.ts
-│   ├── rangeValue(from, to, cells)         reduce.ts
+├── reduce(ctx, scope, node, cells)         reduce/reduce.ts
+│   ├── rangeValue(from, to, cells)         reduce/reduce.ts
 │   ├── findVariable(ctx, scope, name)      ../../../name-manager/api/shared/find-variable.ts
-│   ├── asTable(name, value)                ../../../name-manager/types/table.ts
-│   ├── apply(operator, left, right)        arithmetic.ts
-│   └── BUILTINS[name](args)                builtins.ts
+│   ├── valueOf(variable)                   reduce/reduce.ts
+│   │   └── asTable(name, value)            ../../../name-manager/types/table.ts
+│   ├── isBuiltin(name)                     reduce/builtins.ts
+│   ├── BUILTINS[name](args)                reduce/builtins.ts
+│   ├── negate(value)                       reduce/arithmetic.ts
+│   └── apply(operator, left, right)        reduce/arithmetic.ts
 └── catch FormulaError → { state: "error" } evaluate.ts
 ```
 

@@ -27,9 +27,12 @@ single comparison rather than a switch.
 
 The projection is over a *variable*, and
 [name-manager.md](../../../../../docs/data-models/data/name-manager.md#every-value-is-a-table-degenerately)
-is where the table it implements is written. Its consumer is the analysis
-capability in pass 8, which takes variables as inputs; formula in pass 2 wants
-the value itself and never calls it.
+is where the table it implements is written. Formula calls it today: `valueOf` in
+[`reduce.ts`](../../formula/api/evaluate/reduce/reduce.ts) sends a list- or
+record-valued name through it, so `SUM(Quarters)` works however `Quarters` was
+declared, while a scalar or a table reaches the expression as itself. Analyses in
+pass 8 will read every variable through it. Putting it in `formula` would make
+the name manager's own consumers depend on an evaluator.
 
 A function refuses rather than projecting to an empty table: it is not an input
 at all, and a caller that asked for one has a mistake rather than no rows.

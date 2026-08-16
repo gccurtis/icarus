@@ -1,7 +1,7 @@
 import type { Scope } from "$access/types/access";
 import type { QueryCtx } from "$convex/_generated/server";
 import { parse } from "$formula/api/evaluate/parse";
-import { reduce } from "$formula/api/evaluate/reduce";
+import { reduce } from "$formula/api/evaluate/reduce/reduce";
 import { formulaRefusal } from "$formula/errors";
 import type { Cells, Evaluation } from "$formula/types/evaluation";
 

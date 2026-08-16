@@ -42,6 +42,13 @@ edit on anything but a literal atom would put
 [offset shifting](../../../../../../docs/processes/change-conflicts.md#shifting-offsets)
 on a string whose length moves for reasons the ops do not state.
 
-The rest would mean writing the union out once per target — twelve near-identical
-members to say what one table says — so it is **an invariant `submit` enforces**,
-in task 9, where the incoming set is checked anyway.
+Stating the rest would mean writing the union out once per target — twelve
+near-identical members to say what one table says — so **nothing states it**. The
+remaining cells are a convention the writers of ops honour, and `submit` checks
+the shape an op has, never the pairing it claims.
+
+That costs two things. The conflict ladder reads `target` — in `carriesOffsets`,
+`movesText`, and `disturbed` — so a mislabelled one changes which rung a change
+is judged on. And an op whose op and path cannot be carried out is not refused at
+the door at all: [`applyOps`](../api/shared/apply/apply.ts) is where it is found
+out, which is after the set is stored.

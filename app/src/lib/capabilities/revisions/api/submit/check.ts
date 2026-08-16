@@ -116,7 +116,9 @@ const deepest = (path: string): string => {
 const touchedByOp = (op: Op): string[] => {
   switch (op.op) {
     case "insert":
-      return op.values.map(identityOf).filter((id): id is string => id !== null);
+      // A keyed entry has no identity of its own, so the path is what names it —
+      // the mirror of the `remove` branch below.
+      return op.values.map((value) => identityOf(value) ?? deepest(op.path));
     case "remove":
       // A path that already names the entry is what identifies it — a keyed
       // entry has no identity apart from where it sits. Otherwise the entry
