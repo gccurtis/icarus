@@ -34,7 +34,7 @@ export function fakeCtx() {
         const all = [...rows.entries()]
           .filter(([, d]) => d._table === table)
           .map(([id, d]) => ({ _id: id, ...d }));
-        const api = {
+        const chain = (found: Array<Record<string, unknown>>) => ({
           withIndex: (_name: string, fn?: (q: unknown) => unknown) => {
             const preds: Array<(d: Record<string, unknown>) => boolean> = [];
             const q = {
@@ -48,13 +48,16 @@ export function fakeCtx() {
               }
             };
             fn?.(q);
-            const rowsOut = all.filter((d) => preds.every((p) => p(d)));
-            return { ...api, collect: async () => rowsOut, unique: async () => rowsOut[0] ?? null };
+            return chain(found.filter((d) => preds.every((p) => p(d))));
           },
-          collect: async () => all,
-          unique: async () => all[0] ?? null
-        };
-        return api;
+          // Insertion order stands in for `_creationTime`, which is what Convex
+          // orders an index range by.
+          order: (direction: "asc" | "desc") =>
+            chain(direction === "desc" ? [...found].reverse() : found),
+          collect: async () => found,
+          unique: async () => found[0] ?? null
+        });
+        return chain(all);
       }
     }
   };
