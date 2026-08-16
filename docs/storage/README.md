@@ -63,9 +63,24 @@ by the fragment each will belong to.
 
 | Table | Holds | Key indexes |
 | --- | --- | --- |
-| `projects` | Name, members, owner. The isolation boundary. | `by_owner` |
-| `users` | Accounts. Global, not project-scoped. | `by_authSubject` **unique** |
+| `projects` | Name, description, archival, revision. The isolation boundary. | none — reached by `db.get` from a membership |
+| `users` | Accounts. Global, not project-scoped. | `by_auth_subject` **unique** |
+| `memberships` | One per (user, project): that user's own token for it, and their role. | `by_user_and_token`, `by_user_and_project` |
 | `messages` | Turns in a thread. Role, blocks, author, tool calls, sources. | `by_thread`, `by_project` |
+
+**`projects` has no index**, and that is deliberate: a project is never listed
+globally, which would be the one query in the schema with no tenant predicate.
+
+**`memberships.by_user_and_token` leads with `userId`, not `token`.** A
+token-first index would resolve any token to its project regardless of who
+presented it; with the user first, a copied URL lands in someone else's key range
+and finds nothing. That lookup **is** the authorization, and it is why membership
+is a table rather than an array on the project — you cannot index into an
+embedded array. See
+[project](../data-models/core/project.md#membership-is-a-table-and-the-token-is-why).
+
+There is no `ownerId` on a project. Ownership is the membership whose `role` is
+`owner`, and a stored copy could disagree with the row it copies.
 
 **There is no `chats` table.** A thread has no object of its own — the
 [research thread](../data-models/research/research.md),

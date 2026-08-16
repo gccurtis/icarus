@@ -24,15 +24,38 @@ an append-only change-set log.
 ## Work in an isolated worktree
 
 **This plan runs on its own branch in its own worktree**, start to finish.
-Create it with the `superpowers:using-git-worktrees` skill before Task 1.
-
-```bash
-git worktree add ../icarus-build -b convex-implementation
-cd ../icarus-build/app
-```
+Create it with the `superpowers:using-git-worktrees` skill before Task 1 —
+`.claude/worktrees/` is the repository's declared and gitignored location for
+them.
 
 Nothing here touches the tree the design docs live in. Commit after every task;
 the branch is reviewed as a whole when the passes are done.
+
+### Bootstrap it before Task 1, because a fresh worktree cannot build
+
+Three things this repository deliberately does not commit are things the toolchain
+needs, so a new worktree starts unable to run a single check:
+
+| Absent | Why | Restored by |
+| --- | --- | --- |
+| `node_modules/` | gitignored, and `pnpm-lock.yaml` is too — [lockfiles are treated as regenerable caches](../../../.gitignore) | `pnpm install` |
+| `app/src/convex/_generated/` | gitignored; Convex writes it from the schema it pushed | `pnpm exec convex codegen` |
+| `.svelte-kit/` | gitignored; generated types and the alias map | `pnpm exec svelte-kit sync` |
+
+`_generated/` is the one that bites. The app's tsconfig includes `src/**/*.ts`,
+so **`pnpm typecheck` fails outright until it exists** — and it is imported by
+`functions.ts` and by every handler that names a `QueryCtx`. `convex codegen`
+produces it with no deployment and no account.
+
+```bash
+export PATH="/nix/store/2gf37maq4k2nhidw22dxndccma074cak-nodejs-26.7.0/bin:/nix/store/ry314j51iqvrn8fs26vna9xy823c1swy-pnpm-11.20.0/bin:$PATH"
+cd <worktree>/app
+pnpm install
+pnpm exec convex codegen
+pnpm test && pnpm typecheck && pnpm lint    # the clean baseline
+```
+
+A green baseline before Task 1 is what makes the first red test mean something.
 
 ## Global Constraints
 
@@ -122,13 +145,41 @@ and follows this structure without restating it.
 src/lib/capabilities/<name>/
 ├── overview.md                  what this owns and why
 ├── schema.ts                    the table fragment
-├── types/<name>.ts              the TypeScript types
-├── api/<verb>/<verb>.ts         one directory per operation
-├── api/shared/                  helpers used by more than one verb
+├── types/
+│   ├── types.md
+│   └── <name>.ts                the TypeScript types
+├── api/
+│   ├── api.md                   the function table
+│   ├── <verb>/
+│   │   ├── <verb>.md            carries the procedure tree
+│   │   └── <verb>.ts            the handler
+│   └── shared/                  procedures more than one verb needs
+│       ├── shared.md
+│       └── <procedure>.ts
 └── test/unit/<name>.test.ts     vitest
 
 src/convex/capabilities/<name>.ts    the public surface
 ```
+
+**Every directory carries a document named after itself** — `types/types.md`,
+`api/api.md`, `api/read/read.md`. Lint fails a missing one, and fails a document
+whose name does not match its directory. `test/` and `docs/` are exempt, and so
+are nested procedure directories: the function's document carries the whole tree.
+
+**`api/` and the deployment door must name the same set of functions, in both
+directions.** Lint reads the door's lowercase exports and the `api/`
+subdirectories and reports either side's extras: an `api/apply/` nobody registers
+is "no function named 'apply' is registered", and a registration with no
+directory is a procedure hidden inline. `shared/` is the one exemption.
+
+**So an internal procedure goes in `api/shared/`, never in an `api/<verb>/` of
+its own.** This is not a style point — it decides where `applyOps`, `shift`, and
+the conflict ladder live in Task 8 and Task 9, and getting it wrong fails lint at
+the end of the task rather than the start.
+
+A procedure with sub-procedures becomes a directory holding a `.ts` of the same
+name, recursively: `api/shared/apply/apply.ts` with `api/shared/apply/shift.ts`
+beside it.
 
 **Six steps, every time:**
 
@@ -223,8 +274,19 @@ Tables: `projects`, `users` (both extended), `activity`, `documents`.
 
 ### Task 1: The shared `Actor` validator
 
-**Files:** create `src/lib/capabilities/shared/actor.ts`,
-`src/lib/capabilities/shared/test/unit/actor.test.ts`.
+**Files:** create `src/lib/capabilities/shared/overview.md`,
+`types/types.md`, `types/actor.ts`, `test/unit/actor.test.ts`; add `$shared` to
+`svelte.config.js` and `src/convex/tsconfig.json`.
+
+**`shared` is a real capability directory, and it obeys the template.** Lint
+treats any directory under `capabilities/` holding a file as a capability, and
+allows only `overview.md`, `errors.ts`, and `schema.ts` at its root — so
+`shared/actor.ts` fails on sight. It goes in `types/`, where it belongs anyway: a
+validator is the model, not a procedure.
+
+It has no `api/`, so lint demands no deployment door, and no `schema.ts`, because
+it stores nothing. Its `overview.md` says exactly that — the one capability with
+no public surface, holding what every other capability's tables embed.
 
 **Produces:** `actorValidator`, type `Actor`. Every later table uses it for
 `createdBy`, `updatedBy`, and `actor`.
@@ -233,7 +295,7 @@ Tables: `projects`, `users` (both extended), `activity`, `documents`.
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { actorValidator } from "$lib/capabilities/shared/actor";
+import { actorValidator } from "$shared/types/actor";
 
 describe("actorValidator", () => {
   it("admits every actor kind the model defines", () => {
@@ -248,7 +310,7 @@ describe("actorValidator", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail** — `pnpm vitest run src/lib/capabilities/shared/` → cannot resolve module.
+- [ ] **Step 2: Run it and watch it fail** — `pnpm exec vitest run src/lib/capabilities/shared/` → cannot resolve module.
 
 - [ ] **Step 3: Implement**
 
@@ -582,8 +644,15 @@ export const revisionsTables = {
 
 ### Task 8: Applying ops
 
-**Files:** create `src/lib/capabilities/revisions/api/apply/{apply.ts,shift.ts}`,
+**Files:** create
+`src/lib/capabilities/revisions/api/shared/apply/{apply.ts,shift.ts,invert.ts}`,
 `test/unit/apply.test.ts`.
+
+**`shared/`, not `api/apply/`.** Nothing registers `apply` — it is called by
+`read`, `submit`, and `consolidate`, which is the definition of a promoted
+procedure. An `api/apply/` directory with no matching export in the deployment
+door fails lint, and `shared/` is the exemption. See
+[the recipe](#the-capability-recipe).
 
 **Produces:** `applyOps(body, ops): Body`, `invert(op): Op`,
 `shift(p, a): number | CONFLICT`.
@@ -638,8 +707,12 @@ shift is a consequence of applying, computed here.
 
 ### Task 9: The conflict ladder
 
-**Files:** create `src/lib/capabilities/revisions/api/submit/{submit.ts,check.ts}`,
+**Files:** create `src/lib/capabilities/revisions/api/submit/{submit.md,submit.ts,check.ts}`,
 `test/unit/conflicts.test.ts`.
+
+`check.ts` sits beside `submit.ts` rather than in `shared/`: the ladder has one
+caller. `submit.md` carries the procedure tree, and every `.ts` path it names
+must resolve — lint checks that too.
 
 Implements [change-conflicts.md](../../processes/change-conflicts.md) exactly.
 
@@ -675,6 +748,11 @@ it("rejects when baseRevision predates the window", …);      // step 1
 **Files:** create `src/lib/capabilities/revisions/api/{read,consolidate}/…`,
 `src/convex/capabilities/revisions.ts`; modify `app/configuration/revisions.yaml`
 if the defaults need moving.
+
+The door registers exactly three: `read`, `submit`, `consolidate` — one per
+`api/` directory that is not `shared/`. `consolidate` is registered rather than
+hidden because it is a real maintenance mutation someone triggers, and because a
+directory the door never names fails lint.
 
 - [ ] **Step 1: Failing tests** — reading returns leader body plus recent sets
   folded, in revision order; a submit at a taken revision loses the race and the
