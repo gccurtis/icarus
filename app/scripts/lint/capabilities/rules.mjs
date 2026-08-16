@@ -29,6 +29,26 @@ const ALLOWED_ROOT_FILES = new Set(["overview.md", "errors.ts", "schema.ts"]);
 /** Convex rejects a hyphen in a module path, so a door is named in camelCase. */
 const camelOf = (kebab) => kebab.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
 
+/**
+ * Doors allowed to register with the raw builders, by capability name.
+ *
+ * An exemption bought by writing a sentence in a document is not a check, so it
+ * is granted here instead: adding one is a visible diff in the lint rules, which
+ * is what "that should read as unusual" asks for. `access` is the only entry —
+ * `seed` creates the first membership the gate would resolve against.
+ */
+const UNSCOPED_DOORS = new Set(["access"]);
+
+/** Registration builders a source imports from the generated server module. */
+const registrationBuilders = (source) => {
+  const imported = source.match(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*_generated\/server["']/s);
+  if (!imported) return [];
+  return imported[1]
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => /^(query|mutation|action|internalQuery|internalMutation|internalAction)\b/.test(part));
+};
+
 /** Every `.ts` beneath a directory, tests included — they may not register either. */
 const walkTypeScript = (dir) => {
   const found = [];
@@ -212,6 +232,25 @@ export const checkCapabilities = ({ root, base = root, functionsRoot }) => {
   };
 
   /**
+   * The door builds its registrations from the gate.
+   *
+   * The other half of the "every function is gated" rule, and the half that can
+   * actually be broken: a capability registers nothing at all, while the door is
+   * the one file that registers everything. Checking only the capability side
+   * left the rule enforced where it could never fail.
+   */
+  const checkDoorBuilders = (door, capability, source) => {
+    if (UNSCOPED_DOORS.has(capability.split("/").at(-1))) return;
+    const builders = registrationBuilders(source);
+    if (builders.length > 0) {
+      fail(
+        door,
+        `registers with ${builders.join(", ")} — a public function is built from projectQuery/projectMutation; an unscoped door needs an UNSCOPED_DOORS entry and a stated reason in overview.md`
+      );
+    }
+  };
+
+  /**
    * The deployment door and `api/` must describe the same set of functions.
    *
    * The door is `<functionsRoot>/capabilities/<camelCase>.ts`, and it is the
@@ -222,18 +261,25 @@ export const checkCapabilities = ({ root, base = root, functionsRoot }) => {
    * unreachable code left behind by a rename.
    */
   const checkDeploymentDoor = (capabilityRoot, capability) => {
-    const apiRoot = join(capabilityRoot, "api");
-    if (!functionsRoot || !existsSync(apiRoot)) return;
+    if (!functionsRoot) return;
 
+    const apiRoot = join(capabilityRoot, "api");
     const name = camelOf(capability.split("/").at(-1));
     const door = join(functionsRoot, "capabilities", `${name}.ts`);
 
     if (!existsSync(door)) {
-      fail(apiRoot, `no deployment door — expected capabilities/${name}.ts under the functions directory`);
+      // A capability with no api/ offers no function, so it needs no door.
+      if (existsSync(apiRoot)) {
+        fail(apiRoot, `no deployment door — expected capabilities/${name}.ts under the functions directory`);
+      }
       return;
     }
 
-    const exported = exportedNames(readFileSync(door, "utf8")).filter((n) => /^[a-z]/.test(n));
+    const source = readFileSync(door, "utf8");
+    checkDoorBuilders(door, capability, source);
+    if (!existsSync(apiRoot)) return;
+
+    const exported = exportedNames(source).filter((n) => /^[a-z]/.test(n));
     const directories = dirsIn(apiRoot).filter((n) => n !== "shared");
 
     for (const fn of exported) {
@@ -259,19 +305,11 @@ export const checkCapabilities = ({ root, base = root, functionsRoot }) => {
    */
   const checkNoRegistrations = (capabilityRoot) => {
     for (const file of walkTypeScript(capabilityRoot)) {
-      const source = readFileSync(file, "utf8");
-      const imports = source.match(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*_generated\/server["']/s);
-      if (!imports) continue;
-
-      const values = imports[1]
-        .split(",")
-        .map((part) => part.trim())
-        .filter((part) => /^(query|mutation|action|internalQuery|internalMutation|internalAction)\b/.test(part));
-
-      if (values.length > 0) {
+      const builders = registrationBuilders(readFileSync(file, "utf8"));
+      if (builders.length > 0) {
         fail(
           file,
-          `imports ${values.join(", ")} — a capability holds handlers; registration belongs in its deployment door`
+          `imports ${builders.join(", ")} — a capability holds handlers; registration belongs in its deployment door`
         );
       }
     }

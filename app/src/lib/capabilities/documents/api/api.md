@@ -8,7 +8,7 @@ Lives at `api/api.md`.
 | [`create/`](create/create.md) | `create` | mutation — starts one |
 | [`rename/`](rename/rename.md) | `rename` | mutation — retitles one |
 | [`remove/`](remove/remove.md) | `remove` | mutation — deletes one |
-| [`shared/`](shared/shared.md) | — | `requireDocument`, which three of them start with |
+| [`shared/`](shared/shared.md) | — | `requireDocument`, which `rename` and `remove` start with |
 
 ## Four functions rather than one `update`
 

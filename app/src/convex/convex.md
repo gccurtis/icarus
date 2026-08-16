@@ -21,8 +21,12 @@ capability function is built from what it exports.
 That is not a convention, it is where the decision has to live. A Convex function
 is public the moment it is registered, and there is no request pipeline for a
 middleware to sit in — so "is this call allowed" belongs in what the function is
-*made of*. Lint enforces the rest: nothing under `src/lib/capabilities/` may
-import a registration builder at all.
+*made of*. Lint enforces both halves: nothing under `src/lib/capabilities/` may
+import a registration builder at all, and a door here that imports one is a
+failure unless its capability is named in `UNSCOPED_DOORS` in
+[the capability rules](../../scripts/lint/capabilities/rules.mjs). The exemption
+is a constant rather than a sentence in a document, because an exemption granted
+by prose is not a check.
 
 The gate declares `projectToken`, resolves it against the caller's own
 memberships, and consumes it. The handler's argument type has no project in it,

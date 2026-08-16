@@ -59,6 +59,9 @@ in: `remove` has to take a document's snapshot and change sets with it, and
 - **A title is trimmed and never empty.** A document is reached by name in every
   surface that lists one. What to call an unnamed document is the client's
   decision, not this capability's.
+- **Both refusals are thrown as `DocumentsError`.** Convex serializes a
+  `ConvexError`'s payload and redacts everything else, so a refusal thrown as a
+  plain `Error` arrives as a server fault and stops being a refusal at all.
 
 ## Related
 

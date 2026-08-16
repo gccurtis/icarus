@@ -164,10 +164,18 @@ src/lib/capabilities/<name>/
 │   └── shared/                  procedures more than one verb needs
 │       ├── shared.md
 │       └── <procedure>.ts
-└── test/unit/<name>.test.ts     vitest
+└── test/
+    ├── fixture.ts               the ctx and scope every test starts from
+    └── unit/                    mirrors the source directories it covers
+        ├── schema.test.ts
+        └── api/<verb>/<verb>.test.ts
 
 src/convex/capabilities/<name>.ts    the public surface
 ```
+
+**`test/unit/` mirrors, one file per source file** — never one file per
+capability. Shared setup is hoisted into `test/fixture.ts` rather than repeated.
+Nothing below `test/` is linted, so this one is on the author.
 
 **Every directory carries a document named after itself** — `types/types.md`,
 `api/api.md`, `api/read/read.md`. Lint fails a missing one, and fails a document
@@ -283,7 +291,7 @@ Tables: `projects`, `users` (both extended), `activity`, `documents`.
 ### Task 1: The shared `Actor` validator
 
 **Files:** create `src/lib/capabilities/shared/overview.md`,
-`types/types.md`, `types/actor.ts`, `test/unit/actor.test.ts`; add `$shared` to
+`types/types.md`, `types/actor.ts`, `test/unit/types/actor.test.ts`; add `$shared` to
 `svelte.config.js` and `src/convex/tsconfig.json`.
 
 **`shared` is a real capability directory, and it obeys the template.** Lint
@@ -435,7 +443,7 @@ Leave the `// No index.` comment under `projects`; it is still true. Update
 
 ### Task 3: `activity`
 
-**Files:** create `src/lib/capabilities/activity/{schema.ts,types/activity.ts,api/record/record.ts,api/list/list.ts,test/unit/activity.test.ts}`,
+**Files:** create `src/lib/capabilities/activity/{schema.ts,types/activity.ts,api/record/record.ts,api/list/list.ts,test/fixture.ts,test/unit/{schema.test.ts,api/list/list.test.ts,api/shared/record.test.ts}}`,
 `src/convex/capabilities/activity.ts`; modify `src/convex/schema.ts`.
 
 **Produces:** `record(ctx, scope, entry): Promise<void>`,
@@ -489,7 +497,7 @@ evidence of anything.
 
 ### Task 4: `documents`
 
-**Files:** create `src/lib/capabilities/documents/{schema.ts,types/document.ts,api/{create,rename,remove,list}/…,api/shared/require-document.ts,test/unit/documents.test.ts}`,
+**Files:** create `src/lib/capabilities/documents/{schema.ts,errors.ts,types/document.ts,api/{create,rename,remove,list}/…,api/shared/require-document.ts,test/fixture.ts,test/unit/{schema.test.ts,api/{create,rename,remove,list}/*.test.ts}}`,
 `src/convex/capabilities/documents.ts`.
 
 - [ ] **Step 1: Failing tests** — the row holds **no** `blocks`, `rows`, or
@@ -568,7 +576,7 @@ starting.
 ### Task 6: Content block types
 
 **Files:** create `src/lib/capabilities/content/types/{block.ts,format.ts,value.ts}`,
-`src/lib/capabilities/content/test/unit/block.test.ts`.
+`src/lib/capabilities/content/test/unit/types/block.test.ts`.
 
 Only the variants pass 2 needs: `text` and `formula`. `image`, `table`, `embed`
 arrive in pass 3 and `prompt` in pass 7 — the union grows a member and nothing
@@ -654,7 +662,7 @@ export const revisionsTables = {
 
 **Files:** create
 `src/lib/capabilities/revisions/api/shared/apply/{apply.ts,shift.ts,invert.ts}`,
-`test/unit/apply.test.ts`.
+`test/unit/api/shared/apply/{apply,shift,invert}.test.ts`.
 
 **`shared/`, not `api/apply/`.** Nothing registers `apply` — it is called by
 `read`, `submit`, and `consolidate`, which is the definition of a promoted
@@ -716,7 +724,7 @@ shift is a consequence of applying, computed here.
 ### Task 9: The conflict ladder
 
 **Files:** create `src/lib/capabilities/revisions/api/submit/{submit.md,submit.ts,check.ts}`,
-`test/unit/conflicts.test.ts`.
+`test/unit/api/submit/{submit,check}.test.ts`.
 
 `check.ts` sits beside `submit.ts` rather than in `shared/`: the ladder has one
 caller. `submit.md` carries the procedure tree, and every `.ts` path it names
@@ -824,6 +832,12 @@ Tables: `externalFiles`, `templates`, `commentThreads`, `comments`.
 - [ ] Failing tests: instantiation is a **full copy** — editing the template
   afterwards leaves the created resource untouched; `body` discriminates on
   `target`; a slot with `kind: "derived"` carries a prompt.
+- [ ] Tighten every deferred `templateId` now that `templates` exists: the
+  `documents`, `slideDecks`, and `spreadsheets` schemas move from
+  `v.optional(v.string())` to `v.optional(v.id("templates"))`; the matching
+  `types/*.ts` fields move from `string` to `Id<"templates">`; and each
+  capability's `create` door argument in `src/convex/capabilities/*.ts` moves
+  with them. Run the full suite.
 - [ ] Implement, verify, commit — `feat(templates): resource skeletons with slots`
 
 ### Task 16: `commentThreads` and `comments`

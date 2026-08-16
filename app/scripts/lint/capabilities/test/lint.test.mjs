@@ -99,6 +99,10 @@ test("rejects a capability with no deployment door", () => {
   expectOnly("no-deployment-door", "no deployment door");
 });
 
+test("rejects a deployment door that registers a function unscoped", () => {
+  expectOnly("door-registers-unscoped", "built from projectQuery/projectMutation");
+});
+
 test("rejects a capability that registers its own function", () => {
   expectOnly("capability-registers", "a capability holds handlers");
 });

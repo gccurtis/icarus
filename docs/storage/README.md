@@ -213,7 +213,7 @@ So the pattern is read-then-insert inside one mutation, and the isolation does
 the rest. No version field, no retry loop, no compare-and-swap primitive —
 `changeSets` gets its
 [revision guarantee](../data-models/revisions/change-set.md#revision-is-an-index)
-this way, and so do `users.by_authSubject`, `latticeVersions.by_project`, and
+this way, and so do `users.by_auth_subject`, `latticeVersions.by_project`, and
 `nameVariables`.
 
 What this does mean is that uniqueness has exactly one enforcement point per

@@ -1,4 +1,5 @@
 import type { Id } from "$convex/_generated/dataModel";
+import { DocumentsError } from "$documents/errors";
 import type { Actor } from "$shared/types/actor";
 
 /**
@@ -29,6 +30,8 @@ export type Document = {
  */
 export const documentTitle = (title: string): string => {
   const trimmed = title.trim();
-  if (trimmed.length === 0) throw new Error("A document title cannot be empty");
+  if (trimmed.length === 0) {
+    throw new DocumentsError("empty-title", "A document title cannot be empty");
+  }
   return trimmed;
 };

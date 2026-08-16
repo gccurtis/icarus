@@ -1,6 +1,7 @@
 import type { Scope } from "$access/types/access";
 import type { Doc, Id } from "$convex/_generated/dataModel";
 import type { QueryCtx } from "$convex/_generated/server";
+import { DocumentsError } from "$documents/errors";
 
 /**
  * The document that id names, or a refusal — and the two cases every function
@@ -18,7 +19,7 @@ export const requireDocument = async (
 ): Promise<Doc<"documents">> => {
   const document = await ctx.db.get(id);
   if (!document || document.projectId !== scope.projectId) {
-    throw new Error(`Document not found: ${id}`);
+    throw new DocumentsError("not-found", `Document not found: ${id}`);
   }
   return document;
 };

@@ -121,6 +121,20 @@ export const FIXTURES = {
     rmSync(join(functionsRootFor(root), "capabilities/thing.ts"));
   },
 
+  // The door is the only file that can register, so it is the only place the
+  // scoping rule can be broken. `define` stays scoped so the surface rules do
+  // not co-fire, and `thing` is not an allowlisted door.
+  "door-registers-unscoped": (root) => {
+    clean(root);
+    writeDoor(
+      root,
+      'import { projectMutation } from "$convex/functions";\n' +
+        'import { query } from "$convex/_generated/server";\n' +
+        "export const define = projectMutation({ args: {}, handler: () => null });\n" +
+        "export const list = query({ args: {}, handler: () => null });\n"
+    );
+  },
+
   // A capability holds handlers; registering inside one puts a public function
   // where the door list does not describe it.
   "capability-registers": (root) => {
