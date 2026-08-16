@@ -35,7 +35,9 @@ export function fakeCtx() {
       insert: async (table: string, doc: Record<string, unknown>) => {
         const id = `${table}:${++n}`;
         if (table === "activity") log.push(doc);
-        rows.set(id, { ...doc, _table: table });
+        // Convex stamps `_creationTime` on every row, so anything reading one
+        // back — a comment's time, an ordering — must find it here too.
+        rows.set(id, { _creationTime: Date.now(), ...doc, _table: table });
         return id;
       },
       get: async (id: string) =>
@@ -44,7 +46,8 @@ export function fakeCtx() {
         rows.set(id, { ...rows.get(id), ...fields });
       },
       replace: async (id: string, doc: Record<string, unknown>) => {
-        rows.set(id, { ...doc, _table: rows.get(id)?._table });
+        const { _creationTime, _table } = rows.get(id) ?? {};
+        rows.set(id, { _creationTime, ...doc, _table });
       },
       delete: async (id: string) => void rows.delete(id),
       query: (table: string) => {

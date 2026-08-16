@@ -11,6 +11,7 @@ tables embed.
 | File | Holds |
 | --- | --- |
 | [`actor.ts`](actor.ts) | `actorValidator`, and the `Actor` type inferred from it |
+| [`mention.ts`](mention.ts) | `mentionValidator` — who a remark is addressed to |
 | [`page-setup.ts`](page-setup.ts) | `pageSetupValidator`, `paperSizeValidator` — paper, orientation, margins |
 | [`style-set.ts`](style-set.ts) | `styleSetValidator`, `textStyleValidator` — a resource's named styles |
 
@@ -29,7 +30,14 @@ They are embedded in bodies rather than in rows, which is the one difference fro
 `Actor` and does not change where they belong: a body is still someone else's
 stored value.
 
-`taskId`, `automationId`, and `connectorId` are `v.string()` rather than
-`v.id(...)` only because `agentTasks`, `automations`, and `connectors` do not
-exist yet — `v.id` names a table the schema must declare. Each tightens in the
-task that creates its table.
+## `Mention` is here for the same reason, and is deliberately not `Actor`
+
+A comment and a message both address people, and the set you can *address* is not
+the set that can *act*: you mention a persona, but what acts is one run of it, and
+nothing is served by addressing an automation, a connector, or the system. Two
+unions that nearly match are exactly the pair worth keeping in one place.
+
+`taskId`, `automationId`, `connectorId`, and `personaId` are `v.string()` rather
+than `v.id(...)` only because `agentTasks`, `automations`, `connectors`, and
+`personas` do not exist yet — `v.id` names a table the schema must declare. Each
+tightens in the task that creates its table.
