@@ -25,7 +25,7 @@ export const create = projectMutation({
   args: {
     title: v.string(),
     aspectRatio: v.union(v.literal("16:9"), v.literal("4:3")),
-    templateId: v.optional(v.string())
+    templateId: v.optional(v.id("templates"))
   },
   handler: (ctx, args) => createDeck(ctx, ctx.scope, args.title, args.aspectRatio, args.templateId)
 });

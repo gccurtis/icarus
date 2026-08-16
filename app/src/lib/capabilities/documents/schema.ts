@@ -15,16 +15,15 @@ import { actorValidator } from "$shared/types/actor";
  * What remains is what a document list, a tab, a breadcrumb, and a search result
  * render from — readable without loading a word of content.
  *
- * `templateId` is `v.string()` because `templates` does not exist until pass 3;
- * tightening it to `v.id("templates")` is a step in the task that creates it. It
- * is provenance only — a document is a full copy from creation, so changing the
- * template later changes nothing here.
+ * `templateId` is provenance only — a document is a full copy from creation, so
+ * changing the template later changes nothing here, and deleting it leaves an id
+ * that resolves to nothing and costs nothing.
  */
 export const documentsTables = {
   documents: defineTable({
     projectId: v.id("projects"),
     title: v.string(),
-    templateId: v.optional(v.string()),
+    templateId: v.optional(v.id("templates")),
     createdBy: actorValidator,
     updatedBy: actorValidator,
     updatedAt: v.number()

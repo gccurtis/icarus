@@ -9,13 +9,18 @@ handler receives `ctx.scope` rather than a project it could have chosen.
 ## Procedure Tree
 
 ```text
-create(ctx, scope, title, templateId?)
+create(ctx, scope, title, templateId?, body?)
 ├── documentTitle(title)                    ../../types/document.ts
 ├── ctx.db.insert("documents", …)           create.ts
 ├── emptyDocumentBody()                     ../../types/body.ts
 ├── start(ctx, scope, resource, body)       ../../../revisions/api/shared/start.ts
 └── record(ctx, scope, "created")           ../../../activity/api/shared/record.ts
 ```
+
+`body` is the one a template supplies, and the empty one otherwise — see
+[`templates.instantiate`](../../../templates/api/instantiate/instantiate.md). It
+is stored as given and never read, which is what makes a document from a template
+a complete copy that owes it nothing.
 
 ## The row and the body are written together
 

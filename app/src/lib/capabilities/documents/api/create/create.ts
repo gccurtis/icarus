@@ -2,7 +2,7 @@ import type { Scope } from "$access/types/access";
 import { record } from "$activity/api/shared/record";
 import type { Id } from "$convex/_generated/dataModel";
 import type { MutationCtx } from "$convex/_generated/server";
-import { emptyDocumentBody } from "$documents/types/body";
+import { emptyDocumentBody, type DocumentBody } from "$documents/types/body";
 import { documentTitle } from "$documents/types/document";
 import { start } from "$revisions/api/shared/start";
 import type { Actor } from "$shared/types/actor";
@@ -18,6 +18,10 @@ import type { Actor } from "$shared/types/actor";
  * **The actor is built from the scope, never accepted.** An argument saying who
  * created this would let a caller sign someone else's name to it.
  *
+ * `body` is the one a template supplies, and the empty one otherwise. It is
+ * stored as given and never read, which is what makes instantiation a copy that
+ * owes its template nothing.
+ *
  * The id is the return value because it is the one thing the caller cannot
  * already know; everything else it just wrote. Convex re-runs `list` for
  * everyone the moment this commits, so an echo would only be a staler copy.
@@ -26,7 +30,8 @@ export const create = async (
   ctx: MutationCtx,
   scope: Scope,
   title: string,
-  templateId?: string
+  templateId?: Id<"templates">,
+  body?: DocumentBody
 ): Promise<Id<"documents">> => {
   const named = documentTitle(title);
   const by: Actor = { kind: "user", userId: scope.userId };
@@ -40,7 +45,7 @@ export const create = async (
     updatedAt: Date.now()
   });
 
-  await start(ctx, scope, { resourceType: "document", resourceId: id }, emptyDocumentBody());
+  await start(ctx, scope, { resourceType: "document", resourceId: id }, body ?? emptyDocumentBody());
 
   await record(ctx, scope, {
     actor: by,

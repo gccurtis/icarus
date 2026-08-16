@@ -17,7 +17,7 @@ export type SlideDeck = {
   readonly title: string;
   readonly aspectRatio: AspectRatio;
   /** What it was made from, if anything. Provenance; the copy is already full. */
-  readonly templateId?: string;
+  readonly templateId?: Id<"templates">;
   readonly createdBy: Actor;
   readonly updatedBy: Actor;
   readonly updatedAt: number;

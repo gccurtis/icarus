@@ -23,6 +23,7 @@
       "$settings/*": ["../lib/capabilities/settings/*"],
       "$slide-decks/*": ["../lib/capabilities/slide-decks/*"],
       "$spreadsheets/*": ["../lib/capabilities/spreadsheets/*"],
+      "$templates/*": ["../lib/capabilities/templates/*"],
       "$shared/*": ["../lib/capabilities/shared/*"],
       "$model/*": ["../lib/model/*"]
     }

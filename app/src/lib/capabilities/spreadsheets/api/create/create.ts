@@ -4,7 +4,7 @@ import type { Id } from "$convex/_generated/dataModel";
 import type { MutationCtx } from "$convex/_generated/server";
 import { start } from "$revisions/api/shared/start";
 import type { Actor } from "$shared/types/actor";
-import { emptySpreadsheetBody } from "$spreadsheets/types/body";
+import { emptySpreadsheetBody, type SpreadsheetBody } from "$spreadsheets/types/body";
 import { spreadsheetTitle } from "$spreadsheets/types/spreadsheet";
 
 /**
@@ -13,12 +13,17 @@ import { spreadsheetTitle } from "$spreadsheets/types/spreadsheet";
  * **The row and the anchor are written together**, because a workbook whose row
  * committed without one is a workbook nothing can open. What an empty body looks
  * like is decided here rather than in `revisions`, which has never inspected one.
+ *
+ * `body` is the one a template supplies, and the empty one otherwise. It is
+ * stored as given and never read, which is what makes instantiation a copy that
+ * owes its template nothing.
  */
 export const create = async (
   ctx: MutationCtx,
   scope: Scope,
   title: string,
-  templateId?: string
+  templateId?: Id<"templates">,
+  body?: SpreadsheetBody
 ): Promise<Id<"spreadsheets">> => {
   const named = spreadsheetTitle(title);
   const by: Actor = { kind: "user", userId: scope.userId };
@@ -32,7 +37,12 @@ export const create = async (
     updatedAt: Date.now()
   });
 
-  await start(ctx, scope, { resourceType: "spreadsheet", resourceId: id }, emptySpreadsheetBody());
+  await start(
+    ctx,
+    scope,
+    { resourceType: "spreadsheet", resourceId: id },
+    body ?? emptySpreadsheetBody()
+  );
 
   await record(ctx, scope, {
     actor: by,

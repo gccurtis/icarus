@@ -11,13 +11,13 @@ import { actorValidator } from "$shared/types/actor";
  * workbook's shape is edited, and everything edited belongs in the body where an
  * undo reaches it.
  *
- * `templateId` is `v.string()` until `templates` exists in pass 3.
+ * `templateId` is provenance only — a workbook is a full copy from creation.
  */
 export const spreadsheetsTables = {
   spreadsheets: defineTable({
     projectId: v.id("projects"),
     title: v.string(),
-    templateId: v.optional(v.string()),
+    templateId: v.optional(v.id("templates")),
     createdBy: actorValidator,
     updatedBy: actorValidator,
     updatedAt: v.number()

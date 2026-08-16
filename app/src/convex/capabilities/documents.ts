@@ -23,7 +23,7 @@ export const list = projectQuery({
 });
 
 export const create = projectMutation({
-  args: { title: v.string(), templateId: v.optional(v.string()) },
+  args: { title: v.string(), templateId: v.optional(v.id("templates")) },
   handler: (ctx, args) => createDocument(ctx, ctx.scope, args.title, args.templateId)
 });
 

@@ -41,9 +41,15 @@ What is left is exactly what a list, a tab, a breadcrumb, and a search result
 render from, readable without loading a word of content. That is why `list` stays
 cheap however much has been written.
 
-Pass 2 adds the leader snapshot and the change-set log. Two things here follow it
-in: `remove` has to take a document's snapshot and change sets with it, and
-`templateId` tightens to `v.id("templates")` when pass 3 creates that table.
+Pass 2 adds the leader snapshot and the change-set log, and `remove` takes a
+document's snapshot and change sets with it.
+
+`create` takes the body it starts from, which is the empty one for a document
+someone starts and the template's own for one
+[`templates.instantiate`](../templates/api/instantiate/instantiate.md) makes. The
+body is stored unread either way — that is what makes a document from a template
+a complete copy that owes it nothing, and `templateId` provenance and nothing
+more.
 
 ## Capability Invariants
 

@@ -54,6 +54,7 @@ export default {
       $settings: "src/lib/capabilities/settings",
       "$slide-decks": "src/lib/capabilities/slide-decks",
       $spreadsheets: "src/lib/capabilities/spreadsheets",
+      $templates: "src/lib/capabilities/templates",
       $shared: "src/lib/capabilities/shared",
     },
   },

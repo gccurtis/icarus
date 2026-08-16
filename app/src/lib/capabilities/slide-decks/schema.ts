@@ -13,14 +13,14 @@ import { actorValidator } from "$shared/types/actor";
  * frames are fractions of the slide, so they only mean the same thing across
  * slides if the slides are the same shape.
  *
- * `templateId` is `v.string()` until `templates` exists in pass 3.
+ * `templateId` is provenance only — a deck is a full copy from creation.
  */
 export const slideDecksTables = {
   slideDecks: defineTable({
     projectId: v.id("projects"),
     title: v.string(),
     aspectRatio: v.union(v.literal("16:9"), v.literal("4:3")),
-    templateId: v.optional(v.string()),
+    templateId: v.optional(v.id("templates")),
     createdBy: actorValidator,
     updatedBy: actorValidator,
     updatedAt: v.number()

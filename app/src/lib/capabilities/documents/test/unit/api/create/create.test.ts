@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Id } from "$convex/_generated/dataModel";
 import { create } from "$documents/api/create/create";
 import { asCtx, asking, refusalFrom } from "$documents/test/fixture";
 import { emptyDocumentBody } from "$documents/types/body";
@@ -52,10 +53,27 @@ describe("create", () => {
 
   it("keeps the template it was made from as provenance", async () => {
     const { ctx, scope } = await asking();
+    const templateId = "templates:1" as Id<"templates">;
 
-    const id = await create(asCtx(ctx), scope, "Q3 plan", "templates:1");
+    const id = await create(asCtx(ctx), scope, "Q3 plan", templateId);
 
-    expect(ctx.rows.get(id)).toMatchObject({ templateId: "templates:1" });
+    expect(ctx.rows.get(id)).toMatchObject({ templateId });
+  });
+
+  /**
+   * A template's body arrives as a value and is stored unread, which is what
+   * makes the copy complete from this moment.
+   */
+  it("starts from the body it is given rather than from the empty one", async () => {
+    const { ctx, scope } = await asking();
+    const authored = { ...emptyDocumentBody(), rows: [{ id: "r1", kind: "pageBreak" as const }] };
+
+    const id = await create(asCtx(ctx), scope, "Q3 plan", undefined, authored);
+
+    expect(await read(asCtx(ctx), scope, { resourceType: "document", resourceId: id })).toEqual({
+      revision: 0,
+      body: authored
+    });
   });
 
   it("stores the title as it will be read, not as it was typed", async () => {
