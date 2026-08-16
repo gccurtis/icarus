@@ -1,0 +1,107 @@
+# Knowledge lattice tuning: how text is windowed, how windows cluster into levels,
+# and how a query descends them.
+#
+# Every number here is carried from the Taurus Omega knowledge runtime, which is the
+# design the lattice follows rather than reinvents — see docs/processes/lattice-
+# clustering.md and lattice-retrieval.md. They are starting points measured against a
+# different corpus, not settings anyone has validated against Icarus content.
+#
+# None of these affect correctness. They trade recall against cost on curves nobody
+# can pick correctly in advance, so change them freely and measure.
+
+knowledge:
+  # How source text is cut into overlapping spans before embedding.
+  #
+  # Offsets are UTF-16 code units, matching every other offset in the system.
+  windowing:
+    # Target span per window. Roughly a thousand tokens — large enough that a window
+    # carries an argument rather than a sentence, small enough that retrieval returns
+    # a passage rather than a chapter.
+    targetChars: 4000
+
+    # Trailing carry-forward into the next window. Overlap is what stops a claim that
+    # straddles a boundary from being invisible to both windows; it is also why
+    # retrieval merges windows into regions rather than returning them raw.
+    overlapChars: 400
+
+  clustering:
+    # The similarity threshold for a level is taken from this point in that level's
+    # own pairwise distribution, rather than being a fixed number. A fixed threshold
+    # means one corpus clusters into nothing and another into one giant blob.
+    percentile: 0.75
+
+    # The threshold never drops below this, however loose the distribution. Without a
+    # floor, a corpus with no real structure clusters anyway and invents relationships
+    # the weights do not support.
+    floor: 0.30
+
+    knn:
+      # Neighbours retained per artifact in the symmetric graph cliques are found over.
+      k: 32
+
+      # Dimensions the PCA projection keeps. The projection selects which pairs are
+      # worth comparing and never decides how similar they are — every stored weight
+      # is a full-dimensional dot product.
+      pcaDims: 128
+
+      # IVF cell count. Null means derive it as roughly the square root of the pool,
+      # which is the standard choice and self-scaling.
+      cells: null
+
+      # How many cells each artifact probes for candidates: its own and the nearest
+      # few. Raising it costs comparisons and recovers neighbours that landed just
+      # over a cell boundary.
+      probeCells: 4
+
+      # The exact/approximate crossover. At or below this many artifacts, build the
+      # full pairwise matrix; above it, project and bucket.
+      #
+      # The most consequential number here, and the one most worth measuring: it is
+      # where exactness stops being affordable. The exact path is the known-correct
+      # oracle the approximate path is tested against.
+      maxClusterPool: 2000
+
+      # Bounds on repairing the corpus tier after a source changes, rather than
+      # rebuilding it. Fraction is how much of the tier may be touched before a
+      # rebuild is cheaper than patching; drift is how far a centroid may move before
+      # its cluster is no longer meaningfully the same cluster.
+      #
+      # Drift matters independently of fraction — one member replaced by something
+      # very different can invalidate a centroid entirely, and a fraction-only rule
+      # would happily keep it.
+      repairMaxFraction: 0.2
+      repairMaxDrift: 0.02
+
+    # Fixed seeds and stride sampling, so the same pool and the same configuration
+    # produce the same lattice every time. This is not a nicety: a lattice that
+    # reshuffled on every rebuild would make retrieval irreproducible and repair
+    # impossible to reason about.
+    determinism:
+      projectionSeed: 0x9e3779b9
+      kmeansSeed: 0xd1b54a32
+      projectionSampleMax: 1000
+      projectionIterations: 4
+      kmeansIterations: 8
+
+  retrieval:
+    # How many candidates best-first descent carries forward at each step. Trades
+    # recall against cost directly.
+    beam: 3
+
+    # Candidates scoring below this are dropped. A query with no good answer returns
+    # nothing rather than the least-bad passages in the project — those read as
+    # answers and are not.
+    threshold: 0.35
+
+    # Hard ceiling on node expansions. With beam, it bounds a query's cost
+    # independently of corpus size, so a pathological graph cannot run away.
+    maxExpansions: 256
+
+    # Characters of assembled regions admitted per query. The top region is admitted
+    # even if alone it exceeds this, and a region of density 2 or more that just
+    # misses the cut gets a 25% overage — cutting substantial material to admit two
+    # thin ones is the wrong trade.
+    charBudget: 4000
+
+    # Regions returned when a caller names no limit.
+    topK: 5
