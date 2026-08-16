@@ -19,13 +19,29 @@ import { v } from "convex/values";
  */
 export const accessTables = {
   users: defineTable({
-    /** Stable external identity — a JWT subject once one exists. Never a display value. */
-    subject: v.string(),
-    displayName: v.string()
-  }).index("by_subject", ["subject"]),
+    /** The identity provider's subject claim. Look users up by this, never by email. */
+    authSubject: v.string(),
+    /** A label over the identity, not the identity. */
+    displayName: v.string(),
+    /** Optional until auth exists; `seed` has no email to supply. */
+    email: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    lastSeenAt: v.optional(v.number()),
+    updatedAt: v.number()
+  }).index("by_auth_subject", ["authSubject"]),
 
   projects: defineTable({
-    name: v.string()
+    name: v.string(),
+    description: v.optional(v.string()),
+    /** Hides without destroying. Deletion is a real delete. */
+    archivedAt: v.optional(v.number()),
+    /**
+     * Bumped on every accepted write. A client sends the revision it read and a
+     * stale write is rejected — the person-left-a-form-open problem, which
+     * Convex's transactions do not cover because the read happened minutes ago.
+     */
+    revision: v.number(),
+    updatedAt: v.number()
   }),
   // No index. A project is never listed globally — that would be the one query
   // in the schema with no tenant predicate. It is reached by `db.get` from a

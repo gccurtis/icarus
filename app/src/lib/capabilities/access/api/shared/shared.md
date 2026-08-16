@@ -13,7 +13,8 @@ call in the application passes through it exactly once.
 
 It is the single most security-critical procedure in the deployment: it is the
 only thing standing between a project token in a payload and that project's rows.
-When it grows a test suite, that is the reason.
+That is why it is the one procedure here with its own tests, and why one of them
+holds a token belonging to somebody else.
 
 Its refusal is deliberately uninformative — a token that resolves to nothing and
 a token belonging to someone else answer identically, because distinguishing them

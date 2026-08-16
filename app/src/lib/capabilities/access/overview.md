@@ -40,12 +40,15 @@ and project. It goes when signing up exists.
 
 | Stored | Purpose |
 | ------ | ------- |
-| `users` | one row per person; `subject` is the external identity a token would carry |
-| `projects` | one row per project, holding its name |
+| `users` | one row per person, keyed by `authSubject` and carrying the label and contact a member list renders from |
+| `projects` | one row per project: its name, description, archival mark, and revision |
 | `memberships` | one row per (user, project), holding that user's own token for it and their role |
 
 These are the only tables in the application not scoped to a project, because
 they are what decides what a project scope *is*.
+
+`users.email` is optional, and only until authentication exists — `seed` has no
+email to supply. It becomes required when auth lands.
 
 ## Capability Invariants
 
@@ -59,3 +62,10 @@ they are what decides what a project scope *is*.
   unauthorized caller that a project exists is itself a disclosure.
 - **Each collaborator holds their own token for a project.** That is what makes a
   token safe in a URL and useless to pass on.
+- **A user is looked up by `authSubject`, never by email.** People change their
+  address, and matching on it either creates a second account silently or adopts
+  someone else's.
+- **Ownership is a membership `role`, not a column on the project.** A stored
+  copy is a second answer free to disagree with the first. "At least one owner"
+  is enforced wherever a membership is removed or demoted, which is the only
+  moment it can break — and nothing here can do that yet.

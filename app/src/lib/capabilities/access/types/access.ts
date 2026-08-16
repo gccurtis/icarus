@@ -18,11 +18,11 @@ export type Role = "owner" | "editor" | "viewer";
 /**
  * The one identity that exists before authentication does.
  *
- * `resolveScope` resolves this subject instead of reading `ctx.auth`, and `seed`
- * creates the row it names. **This is why nothing is actually kept out yet** —
- * every caller is treated as this user. The membership lookup beneath it is
- * real, so the shape every handler is written against is the final one; what is
- * missing is only where the subject comes from.
+ * `resolveScope` resolves this `authSubject` instead of reading `ctx.auth`, and
+ * `seed` creates the row it names. **This is why nothing is actually kept out
+ * yet** — every caller is treated as this user. The membership lookup beneath it
+ * is real, so the shape every handler is written against is the final one; what
+ * is missing is only where the claim comes from.
  */
 export const DEVELOPMENT_SUBJECT = "default-user";
 export const DEVELOPMENT_PROJECT = "Development";

@@ -3,8 +3,8 @@
 Lives at `types/types.md`.
 
 `types/` holds the canonical model and the public contract. It contains no stored
-row shapes: a row carries `_id`, `_creationTime`, and a `subject` that no consumer
-should have to know about.
+row shapes: a row carries `_id`, `_creationTime`, and an `authSubject` that no
+consumer should have to know about.
 
 ## Files
 

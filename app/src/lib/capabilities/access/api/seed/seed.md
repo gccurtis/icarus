@@ -9,7 +9,7 @@ see [`overview.md`](../../overview.md) for why it has to be.
 
 ```text
 seed(ctx)
-├── find the development user by subject          seed.ts
+├── find the development user by authSubject      seed.ts
 ├── insert it when absent                         seed.ts
 ├── find a membership for its token               seed.ts
 └── insert a project and a membership when absent seed.ts

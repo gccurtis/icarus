@@ -33,7 +33,7 @@ const refuse = (): never => {
 export const resolveScope = async (ctx: QueryCtx, projectToken: string): Promise<Scope> => {
   const user = await ctx.db
     .query("users")
-    .withIndex("by_subject", (q) => q.eq("subject", DEVELOPMENT_SUBJECT))
+    .withIndex("by_auth_subject", (q) => q.eq("authSubject", DEVELOPMENT_SUBJECT))
     .unique();
 
   if (!user) return refuse();

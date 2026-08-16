@@ -20,14 +20,15 @@ import {
 export const seed = async (ctx: MutationCtx): Promise<{ token: string }> => {
   const existing = await ctx.db
     .query("users")
-    .withIndex("by_subject", (q) => q.eq("subject", DEVELOPMENT_SUBJECT))
+    .withIndex("by_auth_subject", (q) => q.eq("authSubject", DEVELOPMENT_SUBJECT))
     .unique();
 
   const userId =
     existing?._id ??
     (await ctx.db.insert("users", {
-      subject: DEVELOPMENT_SUBJECT,
-      displayName: "Development User"
+      authSubject: DEVELOPMENT_SUBJECT,
+      displayName: "Development User",
+      updatedAt: Date.now()
     }));
 
   const membership = await ctx.db
@@ -39,7 +40,11 @@ export const seed = async (ctx: MutationCtx): Promise<{ token: string }> => {
 
   if (membership) return { token: DEVELOPMENT_TOKEN };
 
-  const projectId = await ctx.db.insert("projects", { name: DEVELOPMENT_PROJECT });
+  const projectId = await ctx.db.insert("projects", {
+    name: DEVELOPMENT_PROJECT,
+    revision: 1,
+    updatedAt: Date.now()
+  });
 
   await ctx.db.insert("memberships", {
     userId,
