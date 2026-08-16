@@ -444,6 +444,78 @@ pass 5.
 
 ---
 
+## Pass 6 — Search
+
+### The projection was deciding relevance, and the oracle is what caught it
+
+**This is the most consequential defect found in the build**, and it existed
+only on the approximate path — above `maxClusterPool`, where nobody would be
+looking.
+
+A level's similarity threshold is meant to sit at the 0.75 percentile of *that
+level's own pairwise distribution*. The approximate path read it off the
+**candidate graph's edge weights** instead. Those weights are the pool's
+strongest pairs by construction — the graph only holds each artifact's top `k`
+neighbours — so the percentile was computed over a sample biased to the top
+percent or two of all pairs.
+
+The consequence: **the PCA projection was deciding how similar "related" has to
+be.** That is a direct violation of the invariant the whole clustering design
+rests on — *the projection selects candidates and never scores them*.
+
+And it was measured, not theorised. **One artifact past the crossover turned 69
+document-sized clusters into 743 fragments.** A behavioural cliff at exactly the
+point where the system changes modes, which in production would have read as
+"search got worse as the corpus grew" and been close to undiagnosable.
+
+The fix is `thresholdBySample`: a stride sample of the pool's *own* pairs, scored
+at full dimensions. Below the sample budget the sample **is** the pool, so a
+small corpus lands on the exact path's threshold exactly rather than near it.
+That is where `thresholdSampleMax: 256` in `knowledge.yaml` comes from — added
+during the pass, with its reasoning in the file.
+
+**The oracle is what made this findable.** Task 25 built the exact path first and
+alone, for precisely this: something known-correct to compare against. Without
+it, 743 fragments is not a bug, it is just what clustering does. The plan called
+that sequencing out and it paid for itself here.
+
+### The equality claim now states its own limits
+
+"The approximate path produces the same clusters as the exact path" was the
+headline test, and it is true only within bounds that are now written down rather
+than implied: **equality is bounded by candidate recall and by `k`.** A clique
+cannot exceed the graph's degree, and a neighbour that falls outside every probed
+cell is never scored at all.
+
+Worth recording because a claim of equality with unstated preconditions is the
+kind of thing a later reader trusts further than it deserves.
+
+### `{op: "connector"}` resolves with no connectors table
+
+**Question.** A resource set can name a connector, but `connectors` is pass 8.
+
+**Alternatives.** Refuse connector refs until the table exists; return the
+connector id unexpanded.
+
+**Chosen.** Expand through `externalFiles.origin.connectorId` — one connector's
+files by named ref, every connector's files for `kind("connector")`. The model
+says a connector ref means *the material it brought in*, never the credential
+record, so the files are what a set selects whether or not the table exists.
+`connector` is therefore permanently absent from `RESOURCE_TABLES` rather than
+pending, which is a different statement and the correct one.
+
+### The recursive-validator answer was reused, not reinvented
+
+`SetExpression` is recursive for the same reason `FormulaValue` is, and it got
+the same answer: unroll to a fixed depth, with `{op: "set"}` as what goes deeper.
+A second mechanism for one problem is what the reuse rule exists to prevent.
+
+The consequence surfaced in TypeScript rather than in Convex: the top-level
+`SetExpression` type cannot sit inside itself, so a test fixture's `setRef`
+returns the single `{op:"set"}` member type, which is assignable at every depth.
+
+---
+
 ## Pass 6, settled early
 
 ### `knowledge.yaml` values are carried, not invented
