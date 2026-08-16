@@ -17,8 +17,9 @@ variants and the door's refusal of a fourth the same statement.
 **`id` stays one column across all three variants**, because a Convex id *is* a
 string: no reader has to choose a branch to render one conversation, and each
 variant can still name its own table. `research` names
-[`researchThreads`](../../research-threads/overview.md); `persona` and `task`
-wait for `personaThreads` in task 22 and `agentTasks` in pass 7.
+[`researchThreads`](../../research-threads/overview.md) and `persona` names
+[`personaThreads`](../../persona-threads/overview.md); `task` waits for
+`agentTasks` in pass 7.
 
 The discriminant is half the key, not decoration. Two tables may hand out the
 same id, so `by_thread` reads `(kind, id)` and a read on the id alone would

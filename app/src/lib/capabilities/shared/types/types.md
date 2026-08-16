@@ -14,6 +14,7 @@ tables embed.
 | [`mention.ts`](mention.ts) | `mentionValidator` — who a remark is addressed to |
 | [`page-setup.ts`](page-setup.ts) | `pageSetupValidator`, `paperSizeValidator` — paper, orientation, margins |
 | [`resource.ts`](resource.ts) | `resourceKindValidator` — what a project holds and works over |
+| [`set-expression.ts`](set-expression.ts) | `setExpressionValidator`, `resourceRefValidator` — how a group of resources is named |
 | [`style-set.ts`](style-set.ts) | `styleSetValidator`, `textStyleValidator` — a resource's named styles |
 
 The validator is the source and the type is derived from it, not the other way
@@ -45,6 +46,18 @@ What a **comment** can hang on includes questions and hypotheses, because
 remarking on an open thread is exactly what people do with one, while retrieving
 over it would return the asking rather than an answer.
 
+## `SetExpression` is here before the table that stores one
+
+A [persona's](../../personas/overview.md) scope, a prompt block's, and a derived
+output's inputs are one question, and `resourceSets` — the table that *names* an
+expression — is only the fourth thing to ask it. Putting the grammar in that
+table would make three capabilities import their scope from a fifth.
+
+**Its nesting is unrolled to a fixed depth rather than recursive**, because a
+Convex validator is data and cannot refer to itself. `{ op: "set" }` is what goes
+deeper, which is not a workaround: an expression worth nesting further is an
+expression worth naming.
+
 ## `Mention` is here for the same reason, and is deliberately not `Actor`
 
 A comment and a message both address people, and the set you can *address* is not
@@ -52,7 +65,7 @@ the set that can *act*: you mention a persona, but what acts is one run of it, a
 nothing is served by addressing an automation, a connector, or the system. Two
 unions that nearly match are exactly the pair worth keeping in one place.
 
-`taskId`, `automationId`, `connectorId`, and `personaId` are `v.string()` rather
-than `v.id(...)` only because `agentTasks`, `automations`, `connectors`, and
-`personas` do not exist yet — `v.id` names a table the schema must declare. Each
-tightens in the task that creates its table.
+`taskId`, `automationId`, and `connectorId` are `v.string()` rather than
+`v.id(...)` only because `agentTasks`, `automations`, and `connectors` do not
+exist yet — `v.id` names a table the schema must declare. Each tightens in the
+task that creates its table, as `personaId` did when `personas` arrived.

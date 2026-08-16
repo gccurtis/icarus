@@ -24,13 +24,12 @@ describe("threadRefValidator", () => {
   it("names the table for every kind whose table exists", () => {
     // One column still, because a Convex id *is* a string — what tightening buys
     // is that a research turn cannot be posted against an id from anywhere else.
-    expect(idOf("research").kind).toBe("id");
-    expect(idOf("research").tableName).toBe("researchThreads");
+    expect(idOf("research")).toMatchObject({ kind: "id", tableName: "researchThreads" });
+    expect(idOf("persona")).toMatchObject({ kind: "id", tableName: "personaThreads" });
   });
 
-  it("leaves the kinds whose tables have not been built as strings", () => {
-    // `personaThreads` arrives with task 22 and `agentTasks` in pass 7; each
-    // tightens the same way there.
-    for (const kind of ["persona", "task"]) expect(idOf(kind).kind).toBe("string");
+  it("leaves the kind whose table has not been built as a string", () => {
+    // `agentTasks` arrives in pass 7 and tightens the same way there.
+    expect(idOf("task").kind).toBe("string");
   });
 });

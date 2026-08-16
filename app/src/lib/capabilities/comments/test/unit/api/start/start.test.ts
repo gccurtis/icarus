@@ -74,7 +74,7 @@ describe("start", () => {
       anchor,
       blocks: remark("@Researcher does this hold?"),
       mentions: [
-        { kind: "persona", personaId: "personas:1" },
+        { kind: "persona", personaId: "personas:1" as Id<"personas"> },
         { kind: "user", userId: userId as Id<"users"> }
       ]
     });

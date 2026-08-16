@@ -14,11 +14,11 @@ import { v, type Infer } from "convex/values";
  */
 export const mentionValidator = v.union(
   v.object({ kind: v.literal("user"), userId: v.id("users") }),
-  v.object({ kind: v.literal("persona"), personaId: v.string() }),
+  v.object({ kind: v.literal("persona"), personaId: v.id("personas") }),
   v.object({ kind: v.literal("task"), taskId: v.string() })
 );
 
-// `personaId` and `taskId` are `v.string()` only because `personas` and
-// `agentTasks` arrive in passes 5 and 7; each tightens to `v.id(...)` there.
+// `taskId` is `v.string()` only because `agentTasks` arrives in pass 7, where it
+// tightens to `v.id(...)` the way `personaId` did here.
 
 export type Mention = Infer<typeof mentionValidator>;

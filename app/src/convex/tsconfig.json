@@ -23,6 +23,8 @@
       "$hypotheses/*": ["../lib/capabilities/hypotheses/*"],
       "$messages/*": ["../lib/capabilities/messages/*"],
       "$name-manager/*": ["../lib/capabilities/name-manager/*"],
+      "$persona-threads/*": ["../lib/capabilities/persona-threads/*"],
+      "$personas/*": ["../lib/capabilities/personas/*"],
       "$questions/*": ["../lib/capabilities/questions/*"],
       "$research-links/*": ["../lib/capabilities/research-links/*"],
       "$research-threads/*": ["../lib/capabilities/research-threads/*"],

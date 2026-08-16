@@ -40,7 +40,7 @@ describe("edit", () => {
   it("replaces the mentions with the ones the new words carry", async () => {
     const { ctx, scope, threadId } = await opened();
     const id = await reply(asCtx(ctx), scope, threadId, remark("@Researcher?"), [
-      { kind: "persona", personaId: "personas:1" }
+      { kind: "persona", personaId: "personas:1" as Id<"personas"> }
     ]);
 
     await edit(asCtx(ctx), scope, id, remark("Never mind"), []);

@@ -38,7 +38,10 @@ export const research = (id: string): ThreadRef => ({
   id: id as Id<"researchThreads">
 });
 export const task = (id: string): ThreadRef => ({ kind: "task", id });
-export const persona = (id: string): ThreadRef => ({ kind: "persona", id });
+export const persona = (id: string): ThreadRef => ({
+  kind: "persona",
+  id: id as Id<"personaThreads">
+});
 
 /** What was said. One paragraph is enough to prove blocks round trip. */
 export const said = (text: string): ContentBlock[] => [

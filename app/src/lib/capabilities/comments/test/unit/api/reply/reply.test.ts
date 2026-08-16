@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { reply } from "$comments/api/reply/reply";
 import { start } from "$comments/api/start/start";
 import { asCtx, asking, documentOf, paragraph, refusalFrom, remark } from "$comments/test/fixture";
+import type { Id } from "$convex/_generated/dataModel";
 
 const opened = async () => {
   const { ctx, scope, userId, elsewhere } = await asking();
@@ -31,7 +32,7 @@ describe("reply", () => {
     const { ctx, scope, threadId } = await opened();
 
     const id = await reply(asCtx(ctx), scope, threadId, remark("@Researcher?"), [
-      { kind: "persona", personaId: "personas:1" }
+      { kind: "persona", personaId: "personas:1" as Id<"personas"> }
     ]);
 
     expect(ctx.rows.get(id)?.mentions).toEqual([{ kind: "persona", personaId: "personas:1" }]);

@@ -22,8 +22,11 @@ describe("mentionValidator", () => {
     expect(Object.keys(fieldsOf("persona"))).toEqual(["kind", "personaId"]);
   });
 
-  it("references a real users row, so a mention resolves to a person", () => {
+  it("references real rows, so a mention resolves to who it addresses", () => {
     expect(fieldsOf("user").userId).toMatchObject({ kind: "id", tableName: "users" });
+    expect(fieldsOf("persona").personaId).toMatchObject({ kind: "id", tableName: "personas" });
+    // `agentTasks` arrives in pass 7, where `taskId` tightens the same way.
+    expect(fieldsOf("task").taskId.kind).toBe("string");
   });
 
   it("carries one reference and nothing else", () => {

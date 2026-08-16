@@ -54,6 +54,8 @@ export default {
       $hypotheses: "src/lib/capabilities/hypotheses",
       $messages: "src/lib/capabilities/messages",
       "$name-manager": "src/lib/capabilities/name-manager",
+      "$persona-threads": "src/lib/capabilities/persona-threads",
+      $personas: "src/lib/capabilities/personas",
       $questions: "src/lib/capabilities/questions",
       "$research-links": "src/lib/capabilities/research-links",
       "$research-threads": "src/lib/capabilities/research-threads",
