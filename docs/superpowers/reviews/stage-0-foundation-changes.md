@@ -803,6 +803,12 @@ matter. So the rule is two-sided:
 does not already have and hands them back. An empty cell nobody references still
 costs nothing, which is the property sparseness was protecting.
 
+**A range is anchored by its corners, not enumerated.** `SUM(B2:B10)` stored as
+nine ids would not grow when a row is inserted at B5 — the new cell is not among
+the nine, and the sum silently excludes it. Stored as its corner cells, the range
+means "everything between these, at their current addresses", which both expands
+correctly and survives the corners moving.
+
 This belongs to the spreadsheet table rather than to the foundation, but it is
 recorded here because it is the op vocabulary that made it necessary.
 
@@ -862,9 +868,43 @@ with two ids, because sharing one would mean editing either edits both.
 expression is not in any block's display string now, so there is nothing for a
 `text` op to reach even by accident. Editing a formula is a `set` on the formula.
 
-**Undo still reaches it** — a formula edit is an ordinary `set`, just coarser
-than character-level. What is not yet settled is which change log carries it; see
-below.
+### A formula is immutable; editing one mints a new id
+
+The resource's change log has to carry a formula edit, because that is where undo
+looks and the edit is part of what the resource did. But a formula row is not in
+the resource's body, so the obvious answer — a `formulaEdit` op the resource
+knows how to perform — **breaks on replay.**
+
+**Ops are pure functions on a body, and they run more than once.** Every read is
+the leader snapshot plus the recent change sets applied over it, so an op that
+reached outside the body to mutate a formula row would re-mutate it on every
+read. An op that must run exactly once at append and do nothing thereafter is not
+an op; it is a migration wearing one.
+
+So the formula moves instead of the op getting clever:
+
+```text
+edit a formula  →  mint a NEW formula row with a new id
+                →  the op is an ordinary `set` of the block's formulaId
+                →  the old row is kept a while, then purged
+```
+
+**The `set` is pure.** Replaying it a thousand times sets the same id a thousand
+times. Undo is `set` back to the previous id, which is already what `was` holds.
+Nothing about the op vocabulary changes, and no special case enters the ladder.
+
+**A move does not mint a version.** Because a formula stores cell ids rather than
+addresses, a cell changing address changes only how the formula *renders* — its
+canonical form is untouched, so no new row. Only an actual expression edit mints
+one. That is the payoff for storing ids.
+
+Old formula rows are retained on the same terms as historical change sets and
+purged with them, since that is exactly how far back an undo can reach anyway.
+
+**Two operations, not one.** `set` points a block at a different formula. A
+separate `duplicate` covers the case where an edit should branch a version, and
+dropping the old one is its own step — so a formula can be repointed without
+minting, and minted without immediately losing what it replaced.
 
 **Decisions baked in**
 
@@ -891,6 +931,7 @@ code somewhere, and each is a place a future change breaks something silently.
 | Marks are UTF-16 offsets into `display` | `applyOps` and `shift` | Formatting drifts onto the wrong words, no error raised |
 | Legal `(op, target)` pairings | Convention only | A nonsensical op stores fine and fails when something applies it |
 | A prompt names its author | `messageAuthor()` | A question from nobody, with no way to attribute or reply |
+| **An op is a pure function on a body** | Nothing — it is a rule about what may be written | An op with an outside effect re-runs it on every read, because a read *is* a replay |
 | Ids are unique within a resource | Whoever mints them | A path resolves to two things; the conflict ladder's identity check stops meaning anything |
 
 ## Related
