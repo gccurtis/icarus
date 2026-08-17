@@ -45,10 +45,13 @@ it is ever worth it.
 | 7 | **`Mention` moves into `Mark`** as `mention?` | A mention is a span of typed text, so it belongs in the text — not in a field beside it |
 | 8 | **`SetExpression` → `ResourceSetExpression`**, flattened to `include` / `exclude` | Any tree of unions and differences normalizes to two flat lists; the depth-4 unrolling disappears |
 | 9 | **`ResourceKind` becomes an open string** with `::` subkinds | A connector is a provider and a version; a closed union cannot grow with integrations |
-| 10 | **`Actor` drops `automationId` and `connectorId`** | An unvalidated string nothing checks is worse than an honest absence |
+| 10 | **`Actor` drops `automation` and `connector`** | An unvalidated string nothing checks is worse than an honest absence |
 | 11 | **`FormulaValue` gains `list`, `range`, `reference`** | A simple range is a list, a 2-D one is neither, and a formula can produce a pointer |
 | 12 | **`TextStyle` gains `bold` and `background`** | Bold was the one common style you could not set the way you set italic |
 | 13 | **Every id is a plain `string`** | Tables land in stages; typing them means loosening and re-tightening across dozens of files |
+| 14 | **`Actor` kinds become `user` / `task` / `persona` / `system`**, uniform `{kind, id}` | A persona answering in its own chat is not a task, and inventing one to attribute a reply invents a unit of work |
+| 15 | **The extracted `mentions[]` array is dropped** | Mentions live in marks now; the array was a denormalization that could drift |
+| 16 | **Sheet cells get ids** | Removes the keyed-collection special case in `touched` rather than handling it |
 
 ---
 
@@ -65,24 +68,35 @@ Who did something. Embedded in most tables as `createdBy`, `updatedBy`, `actor`,
 
 ```ts
 type Actor =
-  | { kind: "user";       userId: string }
-  | { kind: "agent";      taskId: string }
-  | { kind: "automation" }                 // no id until automations exist
-  | { kind: "connector" }                  // no id until connectors exist
-  | { kind: "system" };                    // no id: nothing to look up
+  | { kind: "user";    id: string }
+  | { kind: "task";    id: string }
+  | { kind: "persona"; id: string }
+  | { kind: "system" };              // no id: nothing to look up
 ```
 
-**The five kinds are settled.** `automation` and `connector` carry no id, because
-their tables do not exist and an unvalidated string that nothing checks is worse
-than an honest absence. Each gains its id with its table.
+**Four kinds, uniform `{ kind, id }`.** Per-variant names — `userId`, `taskId` —
+made the same shape read four ways for no gain. This matches `ResourceRef`, so
+one accessor works on both.
 
-Ids are plain `string` throughout rather than `Id<"table">`, so nothing has to be
-loosened and re-tightened as tables land in stages.
+**`agent` is now `task`, and `persona` joins it.** The old union had one agent
+kind pointing at a task, on the reasoning that a run is what acts. That is right
+for tracked work and wrong for a chat: **a persona answering in its own thread is
+not a task**, and forcing one into existence to attribute a reply would invent a
+unit of work nobody asked for. So a task acts when work is tracked, and a persona
+acts when it is talking.
+
+**`automation` and `connector` are gone.** Their tables do not exist, and an
+unvalidated string nothing checks is worse than an honest absence. They return
+with their tables, if they need to at all.
+
+**Actor kinds have no subkinds.** They are a closed set of four, unlike
+[resource kinds](#resourcekind-and-resourceref), which grow with integrations.
+Nothing here prefix-matches.
 
 **Decisions baked in**
 
-- **An agent actor points at the task, not the persona.** The task already
-  carries `personaId`, so storing both lets them disagree — and the task is the
+- **A task actor points at the run, not the persona behind it.** The task already
+  carries `personaId`, so storing both lets them disagree — and the run is the
   more specific truth about what acted.
 - **Reference, never label.** `ActorLabel` is separate and stored only in
   `activity`. A display string on every change set would be duplicated thousands
@@ -90,20 +104,17 @@ loosened and re-tightened as tables land in stages.
 - **Undo scopes on this field** — `kind === "user"` and a matching id. That is
   the field's purpose, not a filter added later.
 
-**When those ids return, they carry a subkind.** A connector is not one thing —
-it is a provider and a version. The convention is `::`, so a kind reads
-`connector::google-docs-v1`, and the delimiter is what makes `connector::` a
-prefix match. See [ResourceKind](#resourcekind-and-resourceref), where the same
-convention applies.
-
 ## Mention — and where it actually belongs
 
 ```ts
 type Mention =
-  | { kind: "user";    userId: string }
-  | { kind: "persona"; personaId: string }
-  | { kind: "task";    taskId: string };
+  | { kind: "user";    id: string }
+  | { kind: "persona"; id: string }
+  | { kind: "task";    id: string };
 ```
+
+Same uniform `{ kind, id }` as `Actor`, and now the same three addressable kinds
+minus `system` — because you do not talk to the system.
 
 **The type is right; its home was wrong.** It was a `mentions?: Mention[]` field
 sitting beside `blocks` — which meant the content had no way to say *where* in a
@@ -133,17 +144,16 @@ persona opens a chat, a task receives a steer.
 
 **Decisions baked in**
 
-- **You mention a persona; the thing that acts is a task.** A persona is a
-  durable identity you talk to, a task is one run of it. The addressable set and
-  the acting set overlap without matching, which is why this is not `Actor`.
-- **No `automation`, `connector`, or `system`.** They are things that happen, not
-  things you talk to.
+- **Mentioning a persona and mentioning a task are different acts.** A persona is
+  a durable identity — mentioning one starts or continues a chat with it. A task
+  is one run, and mentioning it steers work already in progress.
+- **No `system`.** It is a thing that happens, not a thing you talk to. That is
+  the only difference from `Actor` now that both use the same three named kinds.
 
-**Decide** — with mentions in the marks, does anything still need the extracted
-`mentions[]` array? Its only purpose was making "everything mentioning me" an
-index rather than a scan. That is a real query, but it is also a denormalization
-that can disagree with the text it summarizes. Leaving it out until something
-needs the query is the smaller commitment.
+**The extracted `mentions[]` array is dropped.** Its only purpose was making
+"everything mentioning me" an index rather than a scan, and it is a
+denormalization that can disagree with the text it summarizes. The query is real
+and can have the field back when something actually needs it.
 
 ## ResourceKind and ResourceRef — 11 imports
 
@@ -163,9 +173,13 @@ interface ResourceRef {
 
 **The kind is an open string, and subkinds use `::`.** A connector is a provider
 and a version, not one thing — `connector::google-docs-v1`. A closed union cannot
-express a provider space that grows, and the delimiter is what makes
-`connector::` a prefix match, so "everything from any Google Docs connector" is
-one range rather than an enumeration.
+express a provider space that grows.
+
+**Matching is prefix matching.** A kind matches another when it is a prefix of
+it, so `connector` matches `connector::google-docs-v1`, and
+`connector::google-docs` matches every version of it. One selector covers a whole
+provider without enumerating anything, and that is the entire reason the
+delimiter exists rather than being decoration.
 
 **Kind and id stay separate fields.** That is what makes the kind — and its
 subkind — readable without parsing an id, which is the whole reason they were
@@ -221,9 +235,14 @@ Nesting deeper never produces anything the two lists cannot already say.
 | Rule | Effect |
 | --- | --- |
 | `project` appears in `include` | Drop every other include — it already covers them |
-| A `resourceKind` appears in a list | Drop individual `resource` selectors of that kind from the same list |
+| A `resourceKind` appears in a list | Drop `resource` selectors it prefix-matches from the same list |
 | A selector appears in both lists | `exclude` wins; the include is dropped |
 | Duplicate selectors | Collapse |
+
+**An empty `include` resolves to nothing, not everything.** Everything is
+`{ include: [project] }`, said out loud. That matters because an empty list is
+what an unfinished form produces, and a default that silently means "the whole
+project" is how a scope somebody meant to narrow leaks the lot.
 
 So `difference(project, kind("document"))` is stored as
 `{ include: [project], exclude: [kind document] }`, and there is exactly one
@@ -497,8 +516,9 @@ type FormulaValue =
   | { kind: "boolean";   value: boolean }
   | { kind: "date";      value: DateValue }
   | { kind: "list";      values: FormulaValue[] }              // ← added
-  | { kind: "range";     sheetId?: string; ref: string }       // ← added
-  | { kind: "reference"; name: string }                        // ← added
+  | { kind: "range";     sheetId: string;                      // ← added
+                         columns: string[]; rows: number[] }
+  | { kind: "reference"; ref: string }                         // ← added
   | { kind: "table";     columns: FormulaColumn[]; rows: FormulaValue[][] };
 ```
 
@@ -506,18 +526,25 @@ type FormulaValue =
 
 - **`list` is a simple sequence.** A range down one column or across one row
   resolves to a list, and that is a different thing from a table — it has no
-  columns to type and no header to name. Folding it into a one-column table
-  would make every consumer check whether a table was really a list.
-- **`range` is a range that did not simplify.** `A1:C3` is two-dimensional, and a
-  multi-area selection is worse; neither is a list, and materializing either into
-  a table loses which cells it came from. It carries the address rather than the
-  values, so the sheet stays the authority.
-- **`reference` is a name the renderer resolves.** A formula can produce a
-  pointer at something — a named variable, another cell — rather than its value,
-  and resolving it is the reader's job at the moment it is read.
+  columns to type and no header to name. Folding it into a one-column table would
+  make every consumer check whether a table was really a list.
+- **`range` is a live window onto a sheet.** It holds the column and row
+  references rather than the values, so the sheet stays the authority and the
+  range stays current. Explicit lists rather than a from/to pair, because a
+  selection can be irregular.
+- **`reference` is an id the renderer resolves.** Always a plain string. A
+  friendlier notation — `sheets.Budget.B7`, `document.Memo.row.block` — is a
+  later concern that resolves *to* one of these, not a second shape here.
 - **`record` is not a kind.** A record is a one-row table whose fields are its
   columns, which is what `table` already says. There is no behaviour a separate
   kind would add.
+
+**A range always names its sheet, and a computed result is never a range.**
+Multiplying every value in `B2:D10` by two does not produce a range — the answer
+no longer corresponds to those cells. It produces a `list` or a `table`. That is
+what keeps `range` meaning "these cells, right now" rather than "some numbers
+that came from cells once", and it is why `sheetId` is required rather than
+optional.
 
 **Where the validator and the type differ** — a cell is `v.any()` in the
 validator. Only the `table` member is written twice.
@@ -589,7 +616,6 @@ interface Message {
   author?: Actor;            // absent = the thread's own responder
   sentAt: number;            // WHEN, not order
   blocks: ContentBlock[];
-  mentions?: Mention[];
   attachments?: Attachment[];
   labels?: string[];         // open — see Decide
   state: "streaming" | "complete" | "error";
@@ -717,10 +743,41 @@ type Op =
   paths against a body: a row insert cannot collide with a mark edit, and knowing
   that cheaply is what makes the cheap checks cheap.
 
-**Decide** — the legal `(op, target)` pairings are **not enforced**. The model
+**Still open** — the legal `(op, target)` pairings are **not enforced**. The model
 states a twelve-by-five table of legal combinations; the validator states one.
 The rest is convention in `types.md`. A validator could hold it by writing the
-union out per target: twelve members instead of five.
+union out per target: twelve members instead of five. Settle it with the
+operations review rather than here.
+
+## Consequence: sheet cells get ids
+
+**Every addressable thing inside a resource carries an id — with no exception for
+a spreadsheet cell.** Cells were the one place the model used a key instead,
+their identity being their A1 address.
+
+That exception cost more than it saved. `touched` collects the deepest id each op
+addresses, and a cell had none — so a row insert reported none of the cells it
+created, `touched` came back short, and a concurrent write to one of them passed
+the entire conflict ladder. The fix at the time was a special case for keyed
+collections. **Giving cells ids removes the special case instead of handling it.**
+
+```ts
+interface SheetCell {
+  id: string;                  // ← added; stable across a move
+  blocks: ContentBlock[];
+}
+
+// the map stays keyed by address
+cells: Record<string, SheetCell>   // "B7" -> cell
+```
+
+**The id is not the address**, and that is the point. The map key is the address
+because a formula referencing `B7` must be one lookup, and `B7` is what a person
+means when they point. The id is what survives the cell being moved somewhere
+else with its content intact — which the address, by definition, cannot do.
+
+This belongs to the spreadsheet table rather than to the foundation, but it is
+recorded here because it is the op vocabulary that made it necessary.
 
 ---
 
