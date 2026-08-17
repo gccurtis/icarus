@@ -13,7 +13,10 @@
     "paths": {
       "$convex/*": ["./*"],
       "$access/*": ["../lib/capabilities/access/*"],
+      "$content/*": ["../lib/capabilities/content/*"],
+      "$messages/*": ["../lib/capabilities/messages/*"],
       "$settings/*": ["../lib/capabilities/settings/*"],
+      "$shared/*": ["../lib/capabilities/shared/*"],
       "$model/*": ["../lib/model/*"]
     }
   },

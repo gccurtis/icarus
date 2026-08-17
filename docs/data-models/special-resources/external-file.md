@@ -24,7 +24,7 @@ type FileKind =
   | "external::text"
   | "external::image"
   | "external::data"
-  | "external::document"
+  | "external::web-page"
   | "external::audio"
   | "external::video"
   | "external::archive"
@@ -64,20 +64,32 @@ and nothing cleverer:
 
 | kind | extensions |
 | --- | --- |
-| `external::text` | `txt` `md` `rtf` |
+| `external::text` | `txt` `md` `rtf` `pdf` `docx` `pptx` `odt` |
 | `external::image` | `png` `jpg` `jpeg` `gif` `webp` `svg` `heic` |
 | `external::data` | `csv` `tsv` `json` `xlsx` `xls` `parquet` |
-| `external::document` | `pdf` `docx` `pptx` `odt` |
+| `external::web-page` | `html` `htm` |
 | `external::audio` | `mp3` `wav` `m4a` `flac` |
 | `external::video` | `mp4` `mov` `webm` `avi` |
 | `external::archive` | `zip` `tar` `gz` `7z` |
 | `external::file` | anything else |
 
 **A file kind is a [resource kind](../../stage-0/0-foundation-design.md#resourcekind-and-resourceref--11-imports),
-in that vocabulary's own notation.** `external::document` is an uploaded PDF;
+in that vocabulary's own notation.** `external::text` holds an uploaded PDF;
 `document` is an Icarus [document](../general-resources/document.md). They are
 unrelated things, and a bare `document` in both vocabularies would eventually be
 compared, indexed, or switched on as if they were the same.
+
+**There is no separate `document` kind, because everything prose-shaped ends up
+as text.** A `.md` and a `.pdf` differ in how hard they are to read, not in what
+reading them produces — and what the system does downstream with either is the
+same thing. Splitting them would name the parser rather than the material, and
+the parser is already chosen by `extension` sitting right beside the kind.
+
+**A web page is its own kind because of the markup.** It is the one member of the
+prose family that is not prose in a container — it is prose wrapped in navigation,
+scripts, and layout scaffolding, all of which has to be stripped before there is
+anything worth keeping. That is a different extraction path and a different
+failure mode, and a kind is a routing decision.
 
 The namespace is not decoration — kind strings travel into
 [resource sets](resource-set.md), [lattice
@@ -100,17 +112,19 @@ has to be handled like one.
 **The subkind is the extension family and nothing else.** Where the bytes came
 from is `origin`, which is a field with its own union — putting it in the kind
 too would mean a captured PDF and an uploaded one were different kinds of thing
-to every consumer that only cares that it is a PDF.
+to every consumer that only cares that it is a PDF. A captured web page is
+`external::web-page` because it is HTML, not because it was captured; an HTML
+file someone uploaded is the same kind.
 
 It is stored rather than computed on read so it can be indexed, and so a
 correction — a mislabelled extension, a better classifier later — is a write
 rather than a change in behaviour for existing files.
 
 `kind` decides what happens next: a `data` file can back an analysis, an `image`
-can be placed in a block, a `document` gets text extracted, and a bare
-`external::file` is stored and offered for download and nothing else. It is a
-routing decision, not a claim about the contents — `mimeType` and the bytes
-remain the authority.
+can be placed in a block, `text` and `web-page` get text extracted by different
+routes, and a bare `external::file` is stored and offered for download and
+nothing else. It is a routing decision, not a claim about the contents —
+`mimeType` and the bytes remain the authority.
 
 ## Extraction
 

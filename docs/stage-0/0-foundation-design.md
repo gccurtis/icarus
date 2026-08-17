@@ -54,7 +54,7 @@ it is ever worth it.
 | 16 | **Sheet cells get ids** | Removes the keyed-collection special case in `touched` rather than handling it |
 | 17 | **A formula atom and a formula block hold `formulaId`**, never `expression` | A formula is its own row; only it can give an up-to-date rendering |
 | 18 | **Charts are deferred** — `chart` leaves the op targets | Nothing renders one, and deferring removes a target rather than describing an absent thing |
-| 19 | **`PageFurniture` is reconciled, not introduced** | Two definitions of it exist and they disagree — see [below](#pagefurniture) |
+| 19 | **`PageFurniture` keeps `document.md`'s shape** | A second, thinner definition had grown beside it; rows and a distance from the edge say things blocks cannot |
 
 ---
 
@@ -308,22 +308,44 @@ interface PageSetup {
 
 ## PageFurniture
 
-What is printed *around* the content rather than in it.
+What is printed *around* the content rather than in it — and it is
+**[already specified in `document.md`](../data-models/general-resources/document.md#header-and-footer)**,
+which is the definition that stands:
 
 ```ts
 interface PageFurniture {
-  header?: ContentBlock[];
-  footer?: ContentBlock[];
-  /** Absent means every page gets the same header and footer. */
-  firstPage?: { header?: ContentBlock[]; footer?: ContentBlock[] };
+  rows: DocumentRow[];
+  firstPageRows?: DocumentRow[];
+  distanceFromEdge: number;            // points
   pageNumber?: {
-    placement: "header" | "footer";
-    align: "start" | "center" | "end";
+    position: "start" | "center" | "end";
+    format?: string;                   // "{n}", "Page {n} of {total}"
     startAt?: number;
-    showOnFirstPage?: boolean;
+    hideOnFirstPage?: boolean;
   };
 }
+
+// on the body, one per slot
+header?: PageFurniture;
+footer?: PageFurniture;
 ```
+
+This is recorded here only because stage 0 kept referring to furniture as the
+home for headers and footers, and a second, thinner definition had started
+growing beside it. There is one, and the more expressive one wins:
+
+- **`DocumentRow[]`, not `ContentBlock[]`.** A title on the left and a date on
+  the right is one row with `proportions`, using the machinery the body already
+  has. A flat block list cannot say it, and a bespoke header layout model is
+  exactly what the row form exists to avoid.
+- **`distanceFromEdge` is load-bearing.** Furniture sits *outside* the margins and
+  is specified from the paper edge — [`PageSetup`](#pagesetup--4-imports) has no
+  field for it and should not grow one.
+- **`format` covers "Page 3 of 12"** in a single string, which a position and an
+  alignment cannot.
+- **Two objects rather than one**, because a header and a footer each carry their
+  own rows, their own distance from the edge, and their own first-page override.
+  Grouping them would mean every field appearing twice inside one type.
 
 **Decisions baked in**
 
@@ -331,40 +353,15 @@ interface PageFurniture {
   deck's handout and a spreadsheet's print setup need a paper size and margins
   and have no headers at all. Merging them would put four fields on every
   resource that only one uses.
-- **A header is `ContentBlock[]`**, so it takes the same marks, styles, and
-  formulas as the body and renders through the same code. A separate
-  header-text type would be a second content model for three lines of text.
 - **Page numbering is a field, not a block.** The number is not authored — it is
   produced per page at render, so there is nothing for a block to hold.
-- **`firstPage` is one optional override, not a page-rules engine.** A different
-  first page is the case that actually comes up; anything more is a feature
-  nobody has asked for.
+- **`firstPageRows` is one optional override, not a page-rules engine.** A
+  different first page is the case that actually comes up, and separate rows
+  rather than a suppress flag because "different" is more common than "absent".
 
 **It ships with `documents`**, not with stage 0. Only documents have furniture
 today, and a type used by one capability lives with it. `PageSetup` is in
 `shared` because three resources genuinely use it.
-
-**Decide — this is not the only definition, and the other one is better in two
-places.** [`document.md`](../data-models/general-resources/document.md#header-and-footer)
-already specifies a `PageFurniture`, as two separate objects — `header?` and
-`footer?` — each holding `DocumentRow[]` rather than `ContentBlock[]`, plus a
-`distanceFromEdge` and a page-number `format` string. The differences are not
-cosmetic:
-
-- **`DocumentRow[]` buys the proportioned split.** A title on the left and a date
-  on the right is one row with `proportions`, using the machinery the body
-  already has. `ContentBlock[]` cannot say it, and a bespoke header layout model
-  is exactly what the row form exists to avoid.
-- **`distanceFromEdge` is load-bearing.** Furniture sits *outside* the margins and
-  is specified from the paper edge —
-  [`PageSetup` says so](#pagesetup--4-imports) and has no field for it.
-- **`format` covers "Page 3 of 12"** in one string, where `placement`/`align`
-  alone cannot.
-
-What the shape above has that the other does not is `firstPage` covering header
-and footer together, and one object rather than two. **The likely answer is
-`document.md`'s shape with that grouping**, but it is a documents-stage decision
-and is recorded here only so the two definitions stop silently diverging.
 
 ## StyleSet — 4 imports
 
@@ -687,7 +684,7 @@ interface Message {
   sentAt: number;            // WHEN, not order
   blocks: ContentBlock[];
   attachments?: ResourceRef[];
-  labels?: string[];         // open vocabulary — see Decide, below
+  labels?: string[];         // trimmed and lowercased; a client's own marks
   state: "streaming" | "complete" | "error";
   error?: string;
 }
@@ -737,37 +734,10 @@ author and differ only in time, so they could collapse into one message with
 several blocks. Cheaper, and it is how chat reads anyway — but a message is the
 unit you branch from, so merging changes what a branch point is.
 
-**Decide — what `labels` is allowed to become**
-
-An open `string[]` is the cheapest possible way to let a client mark a turn —
-pinned, hidden, needs-review — without a schema change per idea, and that is why
-it is here. What is not settled is the rule that keeps it cheap.
-
-The failure mode is specific, and it is not that the list gets long. It is that
-**something starts branching on a label.** The moment a mutation reads
-`labels.includes("pinned")` and behaves differently, an unvalidated open string
-set has become a discriminant: a typo is a silent no-op, two clients spell the
-same idea differently, and there is no validator or migration to catch either.
-[`ResourceKind`](#resourcekind-and-resourceref--11-imports) accepts exactly that
-cost on purpose and argues for it. `labels` has no such argument written, and
-should not inherit one by accident.
-
-The proposed rule, which costs nothing to adopt now and is expensive to adopt
-later:
-
-- **Nothing server-side branches on a label.** They are annotations a client
-  reads and writes. A mark that needs behaviour has earned a real field, with a
-  validator and a name.
-- **Canonicalized on write** — trimmed and lowercased, as
-  [`settings`](../../app/src/lib/capabilities/settings/types/settings.ts) already
-  does with its keys, so `Pinned` and `pinned` are one label rather than two that
-  shadow each other depending on write order.
-
-Two smaller questions ride along and can be answered with it: whether labels
-survive promotion to a `finding` (probably not — a finding is an editorial act
-with its own vocabulary), and whether a *server*-written label is legitimate at
-all for things like a truncated or rate-limited turn, which under the rule above
-would want a field instead.
+**`labels` is a client's own marks** — pinned, hidden, needs-review — and it is
+an open `string[]` because a field per idea is not worth it. Trimmed and
+lowercased on write, so `Pinned` and `pinned` are one label. That is the whole of
+it; a list of strings is easy to keep and equally easy to pull out.
 
 ## attachments
 
@@ -798,7 +768,7 @@ A link lives in a mark, and capturing it is a downstream process:
 ```text
 Mark.link          the URL, in the text, permanently
       ↓            something tries to fetch it
-externalFile       kind from the extension, origin { kind: "capture", url, capturedAt }
+externalFile       kind "external::web-page", origin { kind: "capture", url, capturedAt }
       ↓            now an ordinary resource
 ResourceRef        which is what an attachment already is
 ```
@@ -811,7 +781,9 @@ is exactly why the failed-capture case stopped being a foundation problem.
 Whether a failed attempt is worth persisting at all is an `externalFiles`
 question, not this one, and it is deferred to that table.
 
-**A capture takes the kind its extension gives it**, like every other file.
+**A capture takes the kind its extension gives it**, like every other file — a
+captured page is `external::web-page` because it is HTML, not because it was
+captured, and a captured PDF is `external::text` exactly as an uploaded one is.
 Where the bytes came from is `origin`, not the kind — see [external
 file](../data-models/special-resources/external-file.md#kind-is-derived-from-the-extension).
 Encoding the capture in the kind would make a captured PDF a different kind of

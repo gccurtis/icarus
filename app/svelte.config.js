@@ -44,7 +44,10 @@ export default {
       $model: "src/lib/model",
       $views: "src/lib/views",
       $access: "src/lib/capabilities/access",
+      $content: "src/lib/capabilities/content",
+      $messages: "src/lib/capabilities/messages",
       $settings: "src/lib/capabilities/settings",
+      $shared: "src/lib/capabilities/shared",
     },
   },
 };
