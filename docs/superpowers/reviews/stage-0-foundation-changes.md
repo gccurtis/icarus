@@ -712,10 +712,11 @@ type ResourceType = "document" | "slides" | "spreadsheet";
 type ResourceKey  = { resourceType: ResourceType; resourceId: string };
 
 type OpTarget =
-  | "row" | "block" | "atom" | "mark"          // content anywhere
-  | "slide" | "element" | "section"            // slides
-  | "sheet" | "cell" | "merge" | "chart"       // spreadsheet
-  | "field";                                   // page setup, styles, theme
+  | "row" | "block" | "atom" | "mark"                  // content anywhere
+  | "slide" | "element" | "section"                    // slides
+  | "sheet" | "cell" | "range" | "mergedCells"         // spreadsheet
+  | "chart"
+  | "field";                                           // page setup, styles, theme
 
 type Op =
   | { op: "set";    target: OpTarget; path: string; value: unknown; was: unknown }
@@ -743,6 +744,15 @@ type Op =
 - **`target` exists so the conflict ladder can pre-filter** without resolving
   paths against a body: a row insert cannot collide with a mark edit, and knowing
   that cheaply is what makes the cheap checks cheap.
+- **`merge` is now `mergedCells`.** Every other target is a noun naming a thing;
+  `merge` read as the verb for the operation being performed on it.
+- **`range` is a target**, because a path can address one — a formula's operands,
+  a print area, a chart's data all name a range rather than a cell.
+- **A chart takes no `move`.** It anchors to a cell with an offset and floats
+  above the grid rather than sitting in an ordered list, so there is no `after`
+  for it to move past. Repositioning a chart is a `set` on its anchor. Sheets are
+  the same: `cell` takes no `insert` or `move`, because setting `B7` is how a
+  cell comes into being.
 
 **Still open** — the legal `(op, target)` pairings are **not enforced**. The model
 states a twelve-by-five table of legal combinations; the validator states one.
@@ -776,6 +786,22 @@ cells: Record<string, SheetCell>   // "B7" -> cell
 because a formula referencing `B7` must be one lookup, and `B7` is what a person
 means when they point. The id is what survives the cell being moved somewhere
 else with its content intact — which the address, by definition, cannot do.
+
+### A cell exists when it has a value **or** a consumer
+
+The obvious objection is that ids break sparseness: a formula over `B2:B10000`
+cannot mint ten thousand ids for cells nobody has typed in.
+
+It does not, because **sparse never meant "only cells with values."** It meant
+"only cells that matter", and a cell being referenced is exactly what makes it
+matter. So the rule is two-sided:
+
+- a cell holding content exists — it is *producing* something
+- a cell inside a referenced range exists — it is being *consumed*
+
+`formula` asks the sheet for the ids covering a range; the sheet mints what it
+does not already have and hands them back. An empty cell nobody references still
+costs nothing, which is the property sparseness was protecting.
 
 This belongs to the spreadsheet table rather than to the foundation, but it is
 recorded here because it is the op vocabulary that made it necessary.
@@ -813,11 +839,32 @@ That means a formula has the same raw/display split a text block has:
 | **rendered** | what a person reads — resolved to addresses | `=B7 * 2` |
 | **value** | what it evaluated to | `84` |
 
-And a formula gains an id of its own, so a block stores `formulaId` rather than
-expression text.
+**A formula gets its own table**, and the things that use one hold a `formulaId`
+rather than expression text.
 
-**This is not yet designed.** It changes `FormulaBlock`, the formula atom inside
-a text block, and where a formula is stored — see the questions below.
+Nothing about the block structure changes. There are still text atoms and formula
+atoms; a formula atom simply holds a reference instead of a copy:
+
+```ts
+// before
+{ id, kind: "formula", expression: string, resolved, state, error? }
+// after
+{ id, kind: "formula", formulaId: string,  resolved, state, error? }
+```
+
+`FormulaBlock` loses `expression` for the same reason — it asks the formula, which
+is the only thing that can give an up-to-date rendering anyway.
+
+**Formulas are never deduplicated.** Two cells holding `=A1*2` are two formulas
+with two ids, because sharing one would mean editing either edits both.
+
+**The `text`-op precondition still holds, and gets stronger.** A formula's
+expression is not in any block's display string now, so there is nothing for a
+`text` op to reach even by accident. Editing a formula is a `set` on the formula.
+
+**Undo still reaches it** — a formula edit is an ordinary `set`, just coarser
+than character-level. What is not yet settled is which change log carries it; see
+below.
 
 **Decisions baked in**
 
