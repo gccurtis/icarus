@@ -754,11 +754,27 @@ type Op =
   the same: `cell` takes no `insert` or `move`, because setting `B7` is how a
   cell comes into being.
 
-**Still open** — the legal `(op, target)` pairings are **not enforced**. The model
-states a twelve-by-five table of legal combinations; the validator states one.
-The rest is convention in `types.md`. A validator could hold it by writing the
-union out per target: twelve members instead of five. Settle it with the
-operations review rather than here.
+### The pairings are enforced, and it costs almost nothing
+
+The validator states one pairing — `text → atom` — and leaves the rest as
+convention. Enforcing all of it does **not** mean a union member per pairing. It
+means each op keeps its own narrower target union:
+
+```ts
+set    → row block atom mark slide element section sheet cell range chart field
+insert → row block atom mark slide element section sheet mergedCells chart
+remove → row block atom mark slide element section sheet cell mergedCells chart
+move   → row block slide element section sheet
+text   → atom
+```
+
+Still five members. The table becomes the type, and a nonsensical op is rejected
+at the door instead of failing later when something tries to apply it.
+
+**`move` is the one that matters.** It is the only op whose illegal targets are
+silently plausible — `move` a cell, `move` a chart — and both are cases the model
+rules out for a reason: a cell is keyed by address rather than ordered, and a
+chart floats on an anchor rather than sitting in a list.
 
 ## Consequence: sheet cells get ids
 
@@ -803,11 +819,18 @@ matter. So the rule is two-sided:
 does not already have and hands them back. An empty cell nobody references still
 costs nothing, which is the property sparseness was protecting.
 
-**A range is anchored by its corners, not enumerated.** `SUM(B2:B10)` stored as
+**A range is anchored by two corners, not enumerated.** `SUM(B2:B10)` stored as
 nine ids would not grow when a row is inserted at B5 — the new cell is not among
-the nine, and the sum silently excludes it. Stored as its corner cells, the range
-means "everything between these, at their current addresses", which both expands
-correctly and survives the corners moving.
+the nine, and the sum silently excludes it.
+
+Stored as its top-left and bottom-right cell ids, the range means *everything
+between these, at their current addresses*. A row inserted between them is inside
+the range and counts, which is the behaviour anyone expects; and the corners
+moving carries the range with them, which addresses alone could not do.
+
+Two anchors, because a range is a rectangle and two corners determine one. A
+multi-area selection, if it is ever wanted, is a list of rectangles rather than a
+range with more corners.
 
 This belongs to the spreadsheet table rather than to the foundation, but it is
 recorded here because it is the op vocabulary that made it necessary.
@@ -929,7 +952,6 @@ code somewhere, and each is a place a future change breaks something silently.
 | --- | --- | --- |
 | `display` is the atoms' text in order | `applyOps` | Marks index a string that no longer matches its atoms — silently wrong text runs |
 | Marks are UTF-16 offsets into `display` | `applyOps` and `shift` | Formatting drifts onto the wrong words, no error raised |
-| Legal `(op, target)` pairings | Convention only | A nonsensical op stores fine and fails when something applies it |
 | A prompt names its author | `messageAuthor()` | A question from nobody, with no way to attribute or reply |
 | **An op is a pure function on a body** | Nothing — it is a rule about what may be written | An op with an outside effect re-runs it on every read, because a read *is* a replay |
 | Ids are unique within a resource | Whoever mints them | A path resolves to two things; the conflict ladder's identity check stops meaning anything |
