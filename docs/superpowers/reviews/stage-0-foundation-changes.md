@@ -37,10 +37,9 @@ the table lands.
 | 1 | **The `messages` table is removed.** Owners hold `messages: Message[]` | A conversation is never read outside its consumer, and is most of what the consumer is |
 | 2 | **`ThreadRef` is removed** | The owner holds the message; the link stops needing to exist |
 | 3 | **`ToolCall` is removed entirely** | A client concern. The client holds a call's output in memory while the thread is open; on reload only what the message stored survives |
-| 4 | **`MessageSource` → `ResourceRef[]`**, without `excerpt` or `title` | Everything citable is already a resource, and the ref is enough to find it |
+| 4 | **`sources` → `attachments`**, a two-variant union, no `excerpt` or `title` | A resource ref finds the thing; a link records only where it pointed and whether it worked |
 | 5 | **`at` → `sentAt`**, and ordering is array position | An array is already ordered; a timestamp is for display only |
 | 6 | **`labels?: string[]` added** to a message | Open — see the decision |
-| 7 | **`externalFiles.storageId` becomes optional**, and a capture records its outcome | A link that failed to fetch is still a link worth keeping |
 
 ---
 
@@ -479,7 +478,7 @@ interface Message {
   sentAt: number;            // WHEN, not order
   blocks: ContentBlock[];
   mentions?: Mention[];
-  sources?: ResourceRef[];
+  attachments?: Attachment[];
   labels?: string[];         // open — see Decide
   state: "streaming" | "complete" | "error";
   error?: string;
@@ -532,46 +531,40 @@ calls would push the problem somewhere else and give it a schema.
   Cheaper, and it is how chat reads anyway — but a message is the unit you branch
   from, so merging changes what a branch point is. Deferred.
 
-## sources
+## attachments
 
-Three variants collapse to one, because everything a message can cite is already
-a resource, and the ref is enough to find it.
-
-```ts
-sources?: ResourceRef[]      // { kind: ResourceKind, id: string }
-```
-
-**No `excerpt`, no `title`.** A message is working material. Where an excerpt has
-to survive — a finding's citation — it is copied and dated at promotion, because
-a finding's citations must outlive the thread.
-
-**A web link is captured, always.** `FileOrigin` already has a `capture` variant
-built for exactly this: a page read while investigating becomes an `externalFile`
-so the bytes actually read are kept. Pages change and disappear; a citation wants
-the copy, not just the link.
-
-### Consequence: a capture that failed is still a capture
-
-`externalFiles.storageId` is currently **required**, so a fetch that fails cannot
-produce a row at all — and the link is then lost entirely. That is wrong: the
-link is there regardless of whether what it returned was any use.
+What a turn pulled in. Two variants on one discriminant.
 
 ```ts
-// externalFiles.storageId becomes optional
-storageId?: Id<"_storage">;      // absent = nothing was retrieved
-
-// and the capture origin records its outcome
-{ kind: "capture"; url: string; capturedAt: number;
-  ok: boolean; error?: string }
+type Attachment =
+  | ResourceRef                     // { kind: ResourceKind; id: string }
+  | { kind: "link";
+      url: string;
+      triedAt: number;
+      ok: boolean;
+      fileId?: Id<"externalFiles">; // when the fetch produced something storable
+      error?: string };             // when it did not, and we know why
 ```
 
-A row with a `capture` origin and no `storageId` is a link we tried and failed to
-fetch. It still resolves as a source, it still says where it pointed and when,
-and it says plainly that there are no bytes behind it.
+`kind` discriminates across all eight values, because `"link"` is not one of the
+seven `ResourceKind` literals. No nesting and one switch.
 
-**Decide** — this makes `storageId` optional for *every* file kind, not just
-captures. The alternative is a separate table for attempted captures, which is
-worse: two places to look for one link.
+**Named `attachments`, not `sources`.** These are things pulled into a turn, and
+a source is a narrower claim — it implies the turn drew a conclusion from it.
+
+**No `excerpt`, no `title`.** The ref is enough to find the thing, and a message
+is working material. Where an excerpt has to survive — a finding's citation — it
+is copied and dated at promotion, because a finding's citations must outlive the
+thread.
+
+**A link is its own variant, not a file.** Some attachments are resources we
+already hold. Some are a URL we tried to fetch, and whether that produced an
+`externalFile` is a separate question from whether the link was attached: the
+retrieval can fail, or return something not worth storing as a file. `fileId` is
+present when it worked and absent when it did not.
+
+That is deliberately all it records — where we pointed, when, whether it worked,
+and why not. Anything more is storage for a question nobody has asked.
 
 ---
 
