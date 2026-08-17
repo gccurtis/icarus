@@ -26,9 +26,11 @@ Convex validator is a **value**, not a type, so it cannot refer to itself. Where
 a shape is genuinely recursive, the validator gives up and the TypeScript type
 stays honest.
 
-`◆` marks a reference held as a plain string because the table it names arrives
-in a later stage. Each is one line that changes at merge and changes back when
-the table lands.
+**Every id is a plain `string`, not `Id<"table">`.** Tables land in stages, and
+typing an id against a table that does not exist yet means loosening it and
+re-tightening it later — churn across dozens of files for a check that only ever
+held inside one deployment anyway. Ids can be tightened in a single later pass if
+it is ever worth it.
 
 ## Changes from what was built
 
@@ -39,7 +41,14 @@ the table lands.
 | 3 | **`ToolCall` is removed entirely** | A client concern. The client holds a call's output in memory while the thread is open; on reload only what the message stored survives |
 | 4 | **`sources` → `attachments`**, a two-variant union, no `excerpt` or `title` | A resource ref finds the thing; a link records only where it pointed and whether it worked |
 | 5 | **`at` → `sentAt`**, and ordering is array position | An array is already ordered; a timestamp is for display only |
-| 6 | **`labels?: string[]` added** to a message | Open — see the decision |
+| 6 | **`labels?: string[]` added** to a message | Cheap, open-ended, and lets a client mark a turn without a field per idea |
+| 7 | **`Mention` moves into `Mark`** as `mention?` | A mention is a span of typed text, so it belongs in the text — not in a field beside it |
+| 8 | **`SetExpression` → `ResourceSetExpression`**, flattened to `include` / `exclude` | Any tree of unions and differences normalizes to two flat lists; the depth-4 unrolling disappears |
+| 9 | **`ResourceKind` becomes an open string** with `::` subkinds | A connector is a provider and a version; a closed union cannot grow with integrations |
+| 10 | **`Actor` drops `automationId` and `connectorId`** | An unvalidated string nothing checks is worse than an honest absence |
+| 11 | **`FormulaValue` gains `list`, `range`, `reference`** | A simple range is a list, a 2-D one is neither, and a formula can produce a pointer |
+| 12 | **`TextStyle` gains `bold` and `background`** | Bold was the one common style you could not set the way you set italic |
+| 13 | **Every id is a plain `string`** | Tables land in stages; typing them means loosening and re-tightening across dozens of files |
 
 ---
 
@@ -56,15 +65,19 @@ Who did something. Embedded in most tables as `createdBy`, `updatedBy`, `actor`,
 
 ```ts
 type Actor =
-  | { kind: "user";       userId: Id<"users"> }
-  | { kind: "agent";      taskId: Id<"agentTasks"> }        // ◆
-  | { kind: "automation"; automationId: string }
-  | { kind: "connector";  connectorId: string }
-  | { kind: "system" };                                     // no id: nothing to look up
+  | { kind: "user";       userId: string }
+  | { kind: "agent";      taskId: string }
+  | { kind: "automation" }                 // no id until automations exist
+  | { kind: "connector" }                  // no id until connectors exist
+  | { kind: "system" };                    // no id: nothing to look up
 ```
 
-`◆` `taskId` is a plain string until agent tasks land. `automationId` and
-`connectorId` stay strings — those tables are deferred and not built.
+**The five kinds are settled.** `automation` and `connector` carry no id, because
+their tables do not exist and an unvalidated string that nothing checks is worse
+than an honest absence. Each gains its id with its table.
+
+Ids are plain `string` throughout rather than `Id<"table">`, so nothing has to be
+loosened and re-tightened as tables land in stages.
 
 **Decisions baked in**
 
@@ -77,49 +90,91 @@ type Actor =
 - **Undo scopes on this field** — `kind === "user"` and a matching id. That is
   the field's purpose, not a filter added later.
 
-**Decide**
+**When those ids return, they carry a subkind.** A connector is not one thing —
+it is a provider and a version. The convention is `::`, so a kind reads
+`connector::google-docs-v1`, and the delimiter is what makes `connector::` a
+prefix match. See [ResourceKind](#resourcekind-and-resourceref), where the same
+convention applies.
 
-- Is the five-kind set closed? A sixth kind touches 78 files.
-- `automationId` and `connectorId` are unvalidated strings and stay that way
-  unless their tables are built. Remove those two kinds until then, or accept it?
-
-## Mention — 8 imports
-
-`Actor`'s mirror image: who a remark is addressed to.
+## Mention — and where it actually belongs
 
 ```ts
 type Mention =
-  | { kind: "user";    userId: Id<"users"> }
-  | { kind: "persona"; personaId: Id<"personas"> }          // ◆
-  | { kind: "task";    taskId: Id<"agentTasks"> };          // ◆
+  | { kind: "user";    userId: string }
+  | { kind: "persona"; personaId: string }
+  | { kind: "task";    taskId: string };
 ```
+
+**The type is right; its home was wrong.** It was a `mentions?: Mention[]` field
+sitting beside `blocks` — which meant the content had no way to say *where* in a
+sentence the mention appeared. A mention is a span of text a person typed, so it
+belongs in the text.
+
+**A mention is a mark.** `Mark` already carries `link?: string` for exactly this
+shape of thing — a range of `display` that points somewhere. A mention is the
+same with a different target:
+
+```ts
+interface Mark {
+  id: string; from: number; to: number;
+  style?: (…)[];
+  link?: string;
+  mention?: Mention;         // ← this is where it lives
+  color?: string;
+}
+```
+
+That gets the behaviour right for free: the mark shifts when text before it is
+edited, it survives a merge, and it renders inline where it was written.
+
+**What `Mention` itself is for** is naming what the span resolves to, and that is
+worth a type because the three targets behave differently — a user is notified, a
+persona opens a chat, a task receives a steer.
 
 **Decisions baked in**
 
 - **You mention a persona; the thing that acts is a task.** A persona is a
   durable identity you talk to, a task is one run of it. The addressable set and
-  the acting set overlap without matching.
+  the acting set overlap without matching, which is why this is not `Actor`.
 - **No `automation`, `connector`, or `system`.** They are things that happen, not
   things you talk to.
 
-**Decide** — two overlapping unions now exist. Confirm the asymmetry is worth the
-duplication.
+**Decide** — with mentions in the marks, does anything still need the extracted
+`mentions[]` array? Its only purpose was making "everything mentioning me" an
+index rather than a scan. That is a real query, but it is also a denormalization
+that can disagree with the text it summarizes. Leaving it out until something
+needs the query is the smaller commitment.
 
 ## ResourceKind and ResourceRef — 11 imports
 
-What a project holds and works over: the kinds a scope can select and retrieval
-can index.
+What a project holds and works over.
 
 ```ts
-type ResourceKind =
-  | "document" | "slides" | "spreadsheet"
-  | "externalFile" | "finding" | "connector" | "template";
+/** Open, not a closed union. Base kinds today: */
+type ResourceKind = string;   // "document" | "slides" | "spreadsheet"
+                              // "externalFile" | "finding"
+                              // "connector" | "template" | …
 
 interface ResourceRef {
   kind: ResourceKind;
-  id: string;          // permanently a string — seven kinds answer to it
+  id: string;
 }
 ```
+
+**The kind is an open string, and subkinds use `::`.** A connector is a provider
+and a version, not one thing — `connector::google-docs-v1`. A closed union cannot
+express a provider space that grows, and the delimiter is what makes
+`connector::` a prefix match, so "everything from any Google Docs connector" is
+one range rather than an enumeration.
+
+**Kind and id stay separate fields.** That is what makes the kind — and its
+subkind — readable without parsing an id, which is the whole reason they were
+split. A concatenated key would force every reader to split it back apart.
+
+The cost is honest: an open string is not validated, so a typo in a kind is a
+silent miss rather than a rejected write. A closed union would catch that and
+would make every new connector a schema change. **The open space is the right
+trade for a set of kinds that grows with integrations.**
 
 **Decisions baked in**
 
@@ -130,46 +185,70 @@ interface ResourceRef {
   than an answer.
 - **The kind is stored beside the id** so a set resolves without probing every
   table to discover what each id is.
+- **Which kinds are lattice sources is not settled here** and does not need to
+  be. A connector's material probably is; a template never is. That question
+  belongs to retrieval, not to this type.
 
-**Decide**
-
-- `connector` resolves to *the files it brought in*, never the credential record.
-  Is a kind that expands to a different kind sound?
-- `connector` and `template` are resource kinds that are **not** lattice sources.
-  The invariant runs one way only — intended, or an omission?
-
-## SetExpression — 18 imports
+## ResourceSetExpression — 18 imports
 
 How a group of resources is named: retrieval scope, a persona's material, a
-prompt block's inputs.
+prompt block's inputs. **Renamed from `SetExpression`** — "set" alone says
+nothing about what is in it.
 
 ```ts
-type SetExpression =
-  | { op: "project" }
-  | { op: "kind";       kind: ResourceKind }
-  | { op: "resources";  refs: ResourceRef[] }
-  | { op: "set";        setId: Id<"resourceSets"> }
-  | { op: "union";      of: SetExpression[] }
-  | { op: "difference"; from: SetExpression; remove: SetExpression };
+interface ResourceSetExpression {
+  include: Selector[];
+  exclude: Selector[];
+}
+
+type Selector =
+  | { kind: "project" }
+  | { kind: "resourceKind"; resourceKind: ResourceKind }
+  | { kind: "resource";     ref: ResourceRef }
+  | { kind: "set";          setId: string };
 ```
 
-The validator cannot say this, because it would have to refer to itself. It
-unrolls the nesting four times instead, with `{ op: "set" }` as what goes deeper.
+**No nesting, no recursion, no depth limit.** The previous design was a tree of
+`union` and `difference` nodes unrolled four times, because a Convex validator
+cannot refer to itself. That is gone: **any tree of unions and differences
+normalizes to one flat include set and one flat exclude set.**
+
+Unions merge into the include side. Differences merge into the exclude side.
+Nesting deeper never produces anything the two lists cannot already say.
+
+**Normalization, applied on write**
+
+| Rule | Effect |
+| --- | --- |
+| `project` appears in `include` | Drop every other include — it already covers them |
+| A `resourceKind` appears in a list | Drop individual `resource` selectors of that kind from the same list |
+| A selector appears in both lists | `exclude` wins; the include is dropped |
+| Duplicate selectors | Collapse |
+
+So `difference(project, kind("document"))` is stored as
+`{ include: [project], exclude: [kind document] }`, and there is exactly one
+representation of it. **A canonical form is what makes two sets comparable** —
+under the old tree, the same set had many spellings and none of them could be
+diffed.
 
 **Decisions baked in**
 
-- **An expression, resolved when used — never an id list.** `{op:"project"}`
+- **An expression, resolved when used — never an id list.** `{kind:"project"}`
   includes a document created tomorrow; a list captured today would silently mean
   "the project as it was" and decay from the moment it was saved.
-- **No intersection primitive.** Expressible as `difference(A, difference(A, B))`;
-  adding it would be a third way to write what two operators cover.
+- **No intersection primitive.** `A ∩ B` is `A` minus everything not in `B`, and
+  a third operator would be a second way to write what these two already cover.
+- **`{kind:"set"}` is how one set builds on another.** It resolves at use time,
+  so nesting happens during resolution rather than in the stored shape, and
+  resolution must still detect cycles and fail naming them.
 - **It lives in `shared`, not `resourceSets`** — a persona's scope, a prompt
   block's, and a derived output's inputs are the same question, and whichever
   table was built first would be an odd place for the others to import from.
 
-**Decide** — four levels, then you must name a set. The justification is "an
-expression worth nesting deeper is worth naming." Is that a limit anyone hits,
-and is the failure legible when they do?
+**Deferred** — pinning a set to a moment in time. Resolution is always "as of
+now", and a consumer that needs to remember what it actually saw records the
+resolved refs itself. Revisit if something genuinely needs a frozen set rather
+than a frozen answer.
 
 ## PageSetup — 4 imports
 
@@ -197,6 +276,10 @@ interface PageSetup {
 - **Margins are the content boundary**; a header and footer sit outside them,
   measured from the page edge.
 
+**Headers, footers, page numbers, and a different first page are not here.** They
+are `PageFurniture` on the document, because a deck's handout and a sheet's print
+setup do not have them. `PageSetup` is only the physical page.
+
 ## StyleSet — 4 imports
 
 ```ts
@@ -205,9 +288,11 @@ interface TextStyle {
   fontFamily?: string;
   fontSize?: number;         // points
   fontWeight?: number;
+  bold?: boolean;            // ← added
   italic?: boolean;
   underline?: boolean;
   color?: string;
+  background?: string;       // ← added
   lineHeight?: number;       // multiplier
   spaceBefore?: number;      // points
   spaceAfter?: number;       // points
@@ -223,6 +308,12 @@ interface StyleSet {
 
 **Decisions baked in**
 
+- **`bold` is a boolean beside `fontWeight`.** The weight is the precise control
+  and the boolean is what a toolbar toggles; without it, bold was the one common
+  style a person could not set the way they set italic and underline.
+- **No `verticalAlign` here.** It is on `BlockFormat`, where it means something —
+  a style applies to text, and vertical alignment is a property of the box the
+  text sits in.
 - **A block carries a style *key*, not a copy of the formatting** — which is what
   makes editing "Heading 1" restyle every heading at once.
 - **Key and display name are separate**, so renaming a style is one field rather
@@ -256,6 +347,7 @@ interface Mark {
   to: number;
   style?: ("bold" | "italic" | "underline" | "strikethrough" | "code")[];
   link?: string;
+  mention?: Mention;         // ← a mention is a mark, see above
   color?: string;
 }
 ```
@@ -306,9 +398,9 @@ interface FormulaBlock {
 
 interface ImageBlock {
   id: string; type: "image";
-  source: { kind: "file"; fileId: Id<"externalFiles"> }      // ◆
+  source: { kind: "file"; fileId: string }
         | { kind: "url";  url: string };
-  display?: { fileId: Id<"externalFiles">; width: number; height: number };  // ◆
+  display?: { fileId: string; width: number; height: number };
   alt: string;               // REQUIRED
   caption?: TextBlock;
   crop?: { x: number; y: number; width: number; height: number };
@@ -334,13 +426,13 @@ interface EmbedBlock {
   url: string;
   presentation: "card" | "inline" | "iframe";
   title?: string; description?: string;
-  thumbnail?: { fileId: Id<"externalFiles">; width: number; height: number };
+  thumbnail?: { fileId: string; width: number; height: number };
   fetchedAt?: number; format?: BlockFormat;
 }
 
 interface PromptBlock {
   id: string; type: "prompt";
-  derivedOutputId: Id<"derivedOutputs">;                     // ◆
+  derivedOutputId: string;
   atoms: TextAtom[]; display: string; marks: Mark[];         // identical to TextBlock
   scope?: SetExpression;
   state: "fresh" | "stale" | "generating" | "error";
@@ -400,12 +492,32 @@ interface FormulaColumn { name?: string; valueFormat?: string }
 
 type FormulaValue =
   | { kind: "empty" }        // not zero, not "", not false
-  | { kind: "number";  value: number }
-  | { kind: "text";    value: string }
-  | { kind: "boolean"; value: boolean }
-  | { kind: "date";    value: DateValue }
-  | { kind: "table";   columns: FormulaColumn[]; rows: FormulaValue[][] };
+  | { kind: "number";    value: number }
+  | { kind: "text";      value: string }
+  | { kind: "boolean";   value: boolean }
+  | { kind: "date";      value: DateValue }
+  | { kind: "list";      values: FormulaValue[] }              // ← added
+  | { kind: "range";     sheetId?: string; ref: string }       // ← added
+  | { kind: "reference"; name: string }                        // ← added
+  | { kind: "table";     columns: FormulaColumn[]; rows: FormulaValue[][] };
 ```
+
+**Three kinds added, and one deliberately not.**
+
+- **`list` is a simple sequence.** A range down one column or across one row
+  resolves to a list, and that is a different thing from a table — it has no
+  columns to type and no header to name. Folding it into a one-column table
+  would make every consumer check whether a table was really a list.
+- **`range` is a range that did not simplify.** `A1:C3` is two-dimensional, and a
+  multi-area selection is worse; neither is a list, and materializing either into
+  a table loses which cells it came from. It carries the address rather than the
+  values, so the sheet stays the authority.
+- **`reference` is a name the renderer resolves.** A formula can produce a
+  pointer at something — a named variable, another cell — rather than its value,
+  and resolving it is the reader's job at the moment it is read.
+- **`record` is not a kind.** A record is a one-row table whose fields are its
+  columns, which is what `table` already says. There is no behaviour a separate
+  kind would add.
 
 **Where the validator and the type differ** — a cell is `v.any()` in the
 validator. Only the `table` member is written twice.
@@ -521,15 +633,10 @@ calls would push the problem somewhere else and give it a schema.
 - **Nothing here says how a conversation is grouped or paged.** That belongs to
   the research thread, persona chat, or agent task that owns it.
 
-**Decide**
-
-- **`labels`** — optional tags so a client can mark a turn as a decision, a
-  question, a summary, without a new field per idea. Cheap and open-ended, which
-  is both the argument for and against. In or out?
-- **Consecutive turns from one author.** They share role and author and differ
-  only in time, so they could merge into one message with several blocks.
-  Cheaper, and it is how chat reads anyway — but a message is the unit you branch
-  from, so merging changes what a branch point is. Deferred.
+**Deferred** — merging consecutive turns from one author. They share role and
+author and differ only in time, so they could collapse into one message with
+several blocks. Cheaper, and it is how chat reads anyway — but a message is the
+unit you branch from, so merging changes what a branch point is.
 
 ## attachments
 
@@ -542,7 +649,7 @@ type Attachment =
       url: string;
       triedAt: number;
       ok: boolean;
-      fileId?: Id<"externalFiles">; // when the fetch produced something storable
+      fileId?: string;              // when the fetch produced something storable
       error?: string };             // when it did not, and we know why
 ```
 
