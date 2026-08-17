@@ -1,8 +1,8 @@
 # Stage 0 — how to build it
 
 The design is
-[stage-0-foundation-changes.md](stage-0-foundation-changes.md). This is what to
-write, where it goes, and what will check it.
+[0-foundation-design.md](0-foundation-design.md). This is what to write, where it
+goes, and what will check it.
 
 **Stage 0 declares no storage.** Three capabilities, no tables, no schema
 changes, no deployment doors. On `main` all three are new — it currently holds
@@ -47,10 +47,24 @@ app/src/lib/capabilities/shared/
 
 Two files carry behaviour rather than only shapes, and both need real tests:
 
-**`resource.ts` exports `kindMatches(pattern, kind)`.** Prefix matching on the
-`::` boundary — `connector` matches `connector::google-docs-v1`, and
-`connector::google` must **not** match `connector::googlesheets`. Match on
-segment boundaries, not raw string prefix, or that false positive ships.
+**`resource.ts` exports `kindMatches(pattern, kind)`.** Split both on `::` and
+compare segment by segment; the pattern matches when it is a segment-wise prefix.
+
+```ts
+export const kindMatches = (pattern: string, kind: string): boolean => {
+  const p = pattern.split("::");
+  const k = kind.split("::");
+  return p.length <= k.length && p.every((segment, i) => segment === k[i]);
+};
+```
+
+**Arbitrary depth comes free.** A generic split handles
+`connector::google-docs::v1` and anything deeper without a special case, because
+nothing in the comparison knows how many levels there are.
+
+Comparing *segments* rather than raw string prefixes is the part that matters:
+`connector::google` must not match `connector::googlesheets`, and a
+`startsWith` would say it does.
 
 **`resource-set-expression.ts` exports `normalize(expression)`.** The four rules
 from the design: `project` in `include` drops the other includes; a
@@ -213,6 +227,6 @@ requires loosening anything that stage 0 wrote.
 
 ## Related
 
-[the design](stage-0-foundation-changes.md) ·
-[merge order](../../storage/merge-order.md) ·
-[capability directory](../../../app/docs/capability-directory/capability-directory.md)
+[the design](0-foundation-design.md) ·
+[merge order](../storage/merge-order.md) ·
+[capability directory](../../app/docs/capability-directory/capability-directory.md)

@@ -11,7 +11,7 @@ reference for everything unchanged.
 
 ## Why these are Convex validators
 
-The [data models](../../data-models/) show TypeScript interfaces — that is the
+The [data models](../data-models/) show TypeScript interfaces — that is the
 thinking. The code shows `v.object` / `v.union` validators, because that is what
 Convex actually enforces at the door, and the TypeScript type is generated *from*
 the validator by `Infer<typeof …>`. Reviewing the interface alone would review
@@ -175,11 +175,16 @@ interface ResourceRef {
 and a version, not one thing — `connector::google-docs-v1`. A closed union cannot
 express a provider space that grows.
 
-**Matching is prefix matching.** A kind matches another when it is a prefix of
-it, so `connector` matches `connector::google-docs-v1`, and
-`connector::google-docs` matches every version of it. One selector covers a whole
-provider without enumerating anything, and that is the entire reason the
-delimiter exists rather than being decoration.
+**Matching is segment-wise prefix matching, to any depth.** Split both sides on
+`::` and compare segment by segment: `connector` matches
+`connector::google-docs::v1`, and `connector::google-docs` matches every version
+of it. One selector covers a whole provider without enumerating anything, which
+is the entire reason the delimiter exists rather than being decoration.
+
+**Segments, not raw string prefixes.** `connector::google` must not match
+`connector::googlesheets`, and a `startsWith` would say it does. Comparing
+segments also means arbitrary depth costs nothing — the comparison never knows
+how many levels there are, so a subkind can have a subkind.
 
 **Kind and id stay separate fields.** That is what makes the kind — and its
 subkind — readable without parsing an id, which is the whole reason they were
@@ -958,6 +963,6 @@ code somewhere, and each is a place a future change breaks something silently.
 
 ## Related
 
-[merge order](../../storage/merge-order.md) ·
-[data models](../../data-models/) ·
-[decisions](../decisions/2026-08-16-convex-implementation.md)
+[how to build it](0-foundation-build.md) ·
+[merge order](../storage/merge-order.md) ·
+[data models](../data-models/)
