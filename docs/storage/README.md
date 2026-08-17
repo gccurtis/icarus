@@ -30,9 +30,8 @@ which carry an optional `projectId` and mean "available everywhere" when it is
 absent.
 
 Tables reached through an already-scoped parent — `comments` by thread,
-`hypotheses` by question, `messages` by chat — still store `projectId` anyway. A
-query that has to join upward to check access is a query that will eventually
-forget to.
+`hypotheses` by question — still store `projectId` anyway. A query that has to
+join upward to check access is a query that will eventually forget to.
 
 ## What is not a table
 
@@ -46,6 +45,12 @@ address a block inside a body that is stored as a whole. An id is not a row.
 The same is true of every nested type in the models: rows, slide elements, sheet
 cells, windows, style sets, page setup, marks, atoms. If it does not appear in the
 inventory below, it lives inside something that does.
+
+**Messages.** A conversation is never read outside the thing having it, and is
+most of what that thing *is*, so `researchThreads`, `agentTasks`, and
+`personaThreads` each hold `messages: Message[]` inline. There is no `messages`
+table, no `ThreadRef`, and no `by_thread` index — the owner row is the thread.
+See [stage 0](../stage-0/0-foundation-design.md#message--decorated-content-blocks).
 
 ## Schema fragments
 
@@ -66,7 +71,6 @@ by the fragment each will belong to.
 | `projects` | Name, description, archival, revision. The isolation boundary. | none — reached by `db.get` from a membership |
 | `users` | Accounts. Global, not project-scoped. | `by_auth_subject` **unique** |
 | `memberships` | One per (user, project): that user's own token for it, and their role. | `by_user_and_token`, `by_user_and_project` |
-| `messages` | Turns in a thread. Role, blocks, author, tool calls, sources. | `by_thread`, `by_project` |
 
 **`projects` has no index**, and that is deliberate: a project is never listed
 globally, which would be the one query in the schema with no tenant predicate.
@@ -82,17 +86,23 @@ embedded array. See
 There is no `ownerId` on a project. Ownership is the membership whose `role` is
 `owner`, and a stored copy could disagree with the row it copies.
 
-**There is no `chats` table.** A thread has no object of its own — the
-[research thread](../data-models/research/research.md),
+**There is no `chats` table, and no `messages` table either.** A thread has no
+object of its own — the [research thread](../data-models/research/research.md),
 [agent task](../data-models/ai/agent-task.md), or
-[persona thread](../data-models/ai/persona-chat.md) row *is* the thread, and
-`messages.by_thread` is `(thread.kind, thread.id)`.
+[persona thread](../data-models/ai/persona-chat.md) row *is* the thread, and it
+holds its turns inline.
 
-Nor do those rows carry a thread pointer. Their `_id` is the key messages index
-on, so the link is the index. This is the same relationship
-[content blocks](../data-models/core/message.md#threads-exist-only-to-serve-their-consumer)
-have with resources — messages are a table only because conversations grow
-without bound, not because a thread is a thing.
+So the link between a thread and its messages is not an index; there is nothing
+to link. This is the same relationship
+[content blocks](../data-models/content/content-block.md) have with the resources
+holding them, and messages reach it for the same reason: nothing reads a
+conversation except the thing having it.
+
+What that trades away is unbounded growth. A thread's messages share the owner
+row's 1 MiB budget, and a conversation long enough to approach it moves its
+messages to a child table keyed by the owner — the same escape
+[every embedded body has](../data-models/README.md#document-size), rather than a
+special case for conversations.
 
 ### resources
 
@@ -120,9 +130,24 @@ remote file to the row it already created instead of duplicating it.
 | --- | --- | --- |
 | `nameVariables` | Named project variables — the shared vocabulary for formulas and analyses. | `by_project_nameKey` **unique**, `by_project_order` |
 | `analyses` | Saved chart and table definitions: inputs, joins, shelves, filters, display. | `by_project` |
+| `formulas` | One canonical expression each, written in cell ids rather than addresses. Immutable. | `by_project` |
 
-Formula has no table. An expression is text on the block holding it, evaluated on
-demand — see [name manager](../data-models/data/name-manager.md#what-is-not-here).
+**`formulas` is a table, and an expression is not text on a block.** A block or
+atom holds a `formulaId`; only the formula itself can render an up-to-date
+expression, because a cell that moves changes the address the expression *reads
+as* without changing what it means. See
+[stage 0](../stage-0/0-foundation-design.md#formula--ids-and-immutability).
+
+**Rows are immutable — editing an expression mints a new one.** A formula row
+sits outside the resource body, and ops are pure functions on that body replayed
+on every read, so an op that reached out to mutate a row would re-mutate it every
+time. Instead the op is an ordinary `set` of the block's `formulaId`, which
+replays harmlessly, and old rows are purged with the change sets that reference
+them.
+
+Evaluation still has no table and no stored calculation graph: dependency order
+is derived from the formulas at load — see
+[name manager](../data-models/data/name-manager.md#what-is-not-here).
 
 ### knowledge
 
@@ -188,7 +213,7 @@ lives in [`app/configuration/`](../../app/configuration/), and a persona's
 | Table | Holds | Key indexes |
 | --- | --- | --- |
 | `commentThreads` | An anchor into any object, plus resolved state. | `by_project`, `by_target` |
-| `comments` | Blocks, author, mentions. | `by_thread` |
+| `comments` | Blocks and author. Mentions live in the blocks, as marks. | `by_thread` |
 | `activity` | Append-only log: actor, verb, target, with labels frozen in. | `by_project` |
 
 `commentThreads.by_target` is `(targetType, targetId)` — a comment anchors to any
@@ -226,9 +251,9 @@ Every table holding project content carries `projectId` and indexes on it. The
 project is the isolation boundary and every query filters by it.
 
 The exceptions are the tables reached through a parent that is already scoped —
-`comments` by thread, `hypotheses` by question, `messages` by thread,
-`personaThreads` by persona. They still store `projectId`, because a query that
-has to join upward to check access is a query that will eventually forget to.
+`comments` by thread, `hypotheses` by question, `personaThreads` by persona. They
+still store `projectId`, because a query that has to join upward to check access
+is a query that will eventually forget to.
 
 ## Related
 

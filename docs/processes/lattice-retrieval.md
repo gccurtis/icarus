@@ -173,8 +173,8 @@ but not part of either digest, so an identical scope resolved twice produces
 identical digests.
 
 Nothing here is stored as its own record. A retrieval is a step in producing a
-[message](../data-models/core/message.md#research-steps-are-tool-calls), and it is
-recorded there as a tool call.
+[message](../data-models/core/message.md#tool-calls-are-not-stored), and it
+leaves no typed trace — what the turn says about what it found is the record.
 
 ## Configuration
 

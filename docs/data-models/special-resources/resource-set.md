@@ -12,76 +12,119 @@ interface ResourceSet {
   projectId: Id<"projects">;
   name: string;
   description?: string;
-  expression: SetExpression;
+  expression: ResourceSetExpression;
   createdBy: Actor;
   revision: number;
   updatedAt: number;
 }
 
-type SetExpression =
-  | { op: "project" }
-  | { op: "kind"; kind: ResourceKind }
-  | { op: "resources"; refs: ResourceRef[] }
-  | { op: "set"; setId: Id<"resourceSets"> }
-  | { op: "union"; of: SetExpression[] }
-  | { op: "difference"; from: SetExpression; remove: SetExpression };
+interface ResourceSetExpression {
+  include: Selector[];
+  exclude: Selector[];
+}
+
+type Selector =
+  | { kind: "project" }
+  | { kind: "resourceKind"; resourceKind: ResourceKind }
+  | { kind: "resource";     ref: ResourceRef }
+  | { kind: "set";          setId: string };
 
 interface ResourceRef {
   kind: ResourceKind;
   id: string;
 }
 
-type ResourceKind =
-  | "document"
-  | "slides"
-  | "spreadsheet"
-  | "externalFile"
-  | "finding"
-  | "connector"
-  | "template";
+/** Open, not a closed union. Base kinds today: */
+type ResourceKind = string;   // "document" | "slides" | "spreadsheet"
+                              // "externalFile" | "finding"
+                              // "connector" | "template" | …
 ```
+
+## Two flat lists, not a tree
+
+**Any tree of unions and differences normalizes to one include set and one
+exclude set.** Unions merge into the include side, differences into the exclude
+side, and nesting deeper never produces anything the two lists cannot already
+say. So there is no `union` node, no `difference` node, and no recursion.
+
+That also removes a limit nobody wanted: the tree form had to be unrolled to a
+fixed depth, because a Convex validator is a value and cannot refer to itself.
+Flattening makes depth meaningless rather than bounded.
+
+**The real prize is a canonical form.** Under the tree, one set had many
+spellings and none of them could be compared — two scopes that meant the same
+thing were not equal to anything. Normalizing on write leaves exactly one
+representation of each set, so two of them can be diffed:
+
+| Rule | Effect |
+| --- | --- |
+| `project` appears in `include` | Drop every other include — it already covers them |
+| A `resourceKind` appears in a list | Drop the `resource` selectors it matches from the same list |
+| A selector appears in both lists | `exclude` wins; the include is dropped |
+| Duplicate selectors | Collapse |
+
+**An empty `include` resolves to nothing, not everything.** Everything is
+`{ include: [{ kind: "project" }] }`, said out loud. An empty list is what an
+unfinished form produces, and a default that silently meant "the whole project"
+is how a scope somebody meant to narrow leaks the lot.
+
+## The kind is an open string
+
+`ResourceKind` is not a closed union, because a connector is a provider *and* a
+version rather than one thing, and integrations keep arriving. Subkinds are
+written with `::` — `connector::google-docs::v1`,
+[`external::image`](external-file.md#kind-is-derived-from-the-extension) — and
+matching is segment-wise prefix matching to any depth, so `connector` selects
+every provider and `connector::google-docs` selects every version of one.
+
+Segments rather than raw string prefixes, so `connector::google` does not match
+`connector::googlesheets`. The cost is honest: an open string is not validated,
+so a typo in a kind is a silent miss rather than a rejected write. A closed union
+would catch that and would make every new integration a schema change.
 
 ## An expression, not a list
 
 The central decision. A set is stored as an expression that is **resolved when
 used**, not as an enumerated list of ids.
 
-`{ op: "project" }` means *the resources in this project*, and a document created
-tomorrow is in it. An id list captured today would not be — it would silently
-mean "the project as it was", and every set anyone made would start decaying the
-moment they saved it.
+`{ kind: "project" }` means *the resources in this project*, and a document
+created tomorrow is in it. An id list captured today would not be — it would
+silently mean "the project as it was", and every set anyone made would start
+decaying the moment they saved it.
 
 That is the whole reason this is a model rather than an array field. Lazy
 evaluation is what makes a saved scope stay correct.
 
-## Union and difference
+## Subtraction is what makes it useful
 
-Both are needed because the useful expressions are subtractive. "Everything in
-the project except the documents" is the natural way to say a real thing, and
-without difference it has to be written as an enumeration that stops being true
-as soon as anything is added.
+The useful expressions are subtractive. "Everything in the project except the
+documents" is the natural way to say a real thing, and without an exclude side it
+has to be written as an enumeration that stops being true as soon as anything is
+added.
 
 ```text
-difference(project, kind("document"))
+{ include: [{ kind: "project" }],
+  exclude: [{ kind: "resourceKind", resourceKind: "document" }] }
 ```
 
-Intersection is not a primitive. It is expressible — `A ∩ B` is
-`difference(A, difference(A, B))` — and adding it as an operator would be a third
-way to write things the two existing operators already cover. If real expressions
-turn out to need it constantly it can be added, on evidence.
+Intersection is not a primitive. `A ∩ B` is `A` minus everything not in `B`, and
+a third operator would be a second way to write what these two lists already
+cover. If real expressions turn out to need it constantly it can be added, on
+evidence.
 
-`union` takes a list rather than a pair so that combining five kinds is one node
-rather than four nested ones.
+## Selectors
 
-## Catch-alls per kind
+`{ kind: "resourceKind" }` is the per-kind catch-all: all documents, all external
+files. Same laziness as `project`, one level down — and because kinds are
+[segment-matched](#the-kind-is-an-open-string), `external` selects every file
+without naming the families under it.
 
-`{ op: "kind" }` is the per-kind catch-all: all documents, all external files.
-Same laziness as `project`, one level down.
+`{ kind: "resource" }` is the explicit case — one specific thing, named by a
+`ResourceRef`. The kind is stored beside the id rather than looked up, because a
+set has to be resolvable without probing every table to find out what each id is.
 
-`{ op: "resources" }` is the explicit case — a handful of specific things,
-each with its kind alongside its id. The kind is stored rather than looked up
-because a set has to be resolvable without probing every table to find out what
-each id is.
+Both appear in either list, and that is the whole vocabulary: a set is what these
+select, minus what they exclude.
 
 ## A connector expands to its files
 
@@ -95,8 +138,9 @@ material in our Notion", not "answer from a credential record".
 
 ## References between sets
 
-`{ op: "set" }` lets one set build on another, so a broadly useful scope is
-defined once and narrowed in several places.
+`{ kind: "set" }` lets one set build on another, so a broadly useful scope is
+defined once and narrowed in several places. It resolves at use time, so nesting
+happens during resolution rather than in the stored shape.
 
 Resolution must detect cycles. Two sets referencing each other is a
 configuration mistake rather than a meaningful expression, and the resolver
@@ -115,8 +159,13 @@ limits what its refresh may draw on.
 generation runs against.
 
 In each case the expression may be written inline rather than referencing a saved
-set — `{ op: "set" }` is what connects the two, so there is one mechanism and not
-a separate inline and saved form.
+set — `{ kind: "set" }` is what connects the two, so there is one mechanism and
+not a separate inline and saved form.
+
+The type lives in the shared vocabulary rather than with this table, because a
+persona's scope, a prompt block's, and a derived output's inputs are the same
+question — and whichever table was built first would be an odd place for the
+others to import from.
 
 ## Resolution is a point in time
 

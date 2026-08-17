@@ -217,8 +217,9 @@ Its history is the [lattice change](../revisions/lattice-change.md) log.
 ## What is not here
 
 No retrieval receipts and no per-query logs. What a search returned is a property
-of that search — it belongs on the [message's tool
-calls](../core/message.md#research-steps-are-tool-calls).
+of that search, and it is not stored anywhere: [tool calls have no
+schema](../core/message.md#tool-calls-are-not-stored), so what survives is
+whatever the turn wrote into its own blocks.
 
 ## Related
 

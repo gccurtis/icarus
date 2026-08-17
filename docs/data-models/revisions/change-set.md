@@ -28,10 +28,10 @@ type Op =
   | { op: "text";   target: "atom";   path: string; at: number; insert: string; remove: string };
 
 type OpTarget =
-  | "row" | "block" | "atom" | "mark"        // document, and content anywhere
-  | "slide" | "element" | "section"          // slides
-  | "sheet" | "cell" | "merge" | "chart"     // spreadsheet
-  | "field";                                 // a structural field: page setup, styles, theme
+  | "row" | "block" | "atom" | "mark"            // document, and content anywhere
+  | "slide" | "element" | "section"              // slides
+  | "sheet" | "cell" | "range" | "mergedCells"   // spreadsheet
+  | "field";                                     // a structural field: page setup, styles, theme
 ```
 
 ## Sets, not individual operations
@@ -131,18 +131,32 @@ Only certain pairings are legal:
 | `section` | ● | ● | ● | ● | |
 | `sheet` | ● | ● | ● | ● | |
 | `cell` | ● | | ● | | |
-| `merge` | | ● | ● | | |
-| `chart` | ● | ● | ● | | |
+| `range` | ● | | | | |
+| `mergedCells` | | ● | ● | | |
 | `field` | ● | | | | |
 
 `cell` takes no `insert` or `move` because cells are keyed by address rather than
-ordered — setting `B7` is how a cell comes into being. `field` only takes `set`,
-because a structural field is replaced, never reordered.
+ordered — setting `B7` is how a cell comes into being, and its address is its
+position. `field` only takes `set`, because a structural field is replaced, never
+reordered. `range` is a target because a path can address one: a formula's
+operands and a print area both name a rectangle rather than a cell.
 
-**`text` targets literal atoms only.** A formula atom's `expression` is replaced
-with `set`, never edited character by character. Expressions are short, so
-nothing is lost, and it keeps the only in-place string edit in the system to one
-kind of string — which is what makes [offset
+**`mergedCells`, not `merge`.** Every other target is a noun naming a thing;
+`merge` read as the verb for the operation being performed on it.
+
+**There is no `chart` target yet.** A chart needs a data range, an anchoring
+model, and a rendering surface, none of which exists — so the target returns with
+them rather than describing something that cannot be built. When it does, it
+takes no `move`: a chart anchors to a cell with an offset and floats above the
+grid, so repositioning it is a `set` on its anchor and there is no `after` for it
+to move past.
+
+**`text` targets literal atoms only.** A formula atom is changed by `set`ting its
+`formulaId` — the expression is [a row of its
+own](../../stage-0/0-foundation-design.md#formula--ids-and-immutability) and is
+not in any block's display string, so there is nothing for a `text` op to reach
+even by accident. That keeps the only in-place string edit in the system to one
+kind of string, which is what makes [offset
 shifting](../../processes/change-conflicts.md#the-precondition-reject-unless-it-is-plainly-text-on-text)
 safe to attempt at all.
 

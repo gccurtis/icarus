@@ -8,7 +8,7 @@ when its inputs move.
 interface DerivedOutput {
   projectId: Id<"projects">;
   prompt: string;
-  scope?: SetExpression;       // what retrieval may draw on
+  scope?: ResourceSetExpression;   // what retrieval may draw on
   inputs: DerivedInput[];
   block: ContentBlock;         // the generated content — exactly one
   state: "idle" | "generating" | "fresh" | "stale" | "error";

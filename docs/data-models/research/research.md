@@ -23,9 +23,10 @@ hypotheses, work toward answers, and turn what holds up into
 [findings](finding.md). More than one person can be in it, and an agent answers
 alongside them.
 
-**This row is the thread.** There is no separate conversation object and no
-`chatId` — [messages](../core/message.md#threads-exist-only-to-serve-their-consumer)
-name this row, and `by_thread(("research", id))` is the whole link. What the row
+**This row is the thread.** There is no separate conversation object, no `chatId`
+and no `messages` table — the row
+[holds its turns](../core/message.md#nothing-reads-a-conversation-except-the-thing-having-it)
+inline, so there is no link at all. What the row
 itself holds is only what makes it *research*: its mode and what it is anchored
 to.
 
@@ -49,10 +50,12 @@ to, and gives a drafted finding somewhere obvious to attach.
 ## Research is an agent with a fixed toolset
 
 What the assistant did while producing a message — searched this, read that,
-retrieved from the lattice — is recorded as
-[tool calls](../core/message.md#research-steps-are-tool-calls), the same field an
-agent task uses. A search *is* a tool call, and describing it separately was the
-same thing written twice.
+retrieved from the lattice — has no field of its own, and neither does an
+[agent task's](../ai/agent-task.md#tool-calls-are-not-stored) equivalent. A search
+*is* a tool call, so describing research steps separately was the same thing
+written twice; the resolution is that
+[neither is stored](../core/message.md#tool-calls-are-not-stored). What the turn
+wrote down is the record.
 
 `sources` is what a message drew on. When a message becomes a
 [finding](finding.md), these are what its `sources` are built from — with

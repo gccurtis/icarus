@@ -21,14 +21,14 @@ interface ExternalFile {
 }
 
 type FileKind =
-  | "ext-text"
-  | "ext-image"
-  | "ext-data"
-  | "ext-document"
-  | "ext-audio"
-  | "ext-video"
-  | "ext-archive"
-  | "ext-unknown";
+  | "external::text"
+  | "external::image"
+  | "external::data"
+  | "external::document"
+  | "external::audio"
+  | "external::video"
+  | "external::archive"
+  | "external::file";
 
 type FileOrigin =
   | { kind: "upload" }
@@ -64,34 +64,53 @@ and nothing cleverer:
 
 | kind | extensions |
 | --- | --- |
-| `ext-text` | `txt` `md` `rtf` |
-| `ext-image` | `png` `jpg` `jpeg` `gif` `webp` `svg` `heic` |
-| `ext-data` | `csv` `tsv` `json` `xlsx` `xls` `parquet` |
-| `ext-document` | `pdf` `docx` `pptx` `odt` |
-| `ext-audio` | `mp3` `wav` `m4a` `flac` |
-| `ext-video` | `mp4` `mov` `webm` `avi` |
-| `ext-archive` | `zip` `tar` `gz` `7z` |
-| `ext-unknown` | anything else |
+| `external::text` | `txt` `md` `rtf` |
+| `external::image` | `png` `jpg` `jpeg` `gif` `webp` `svg` `heic` |
+| `external::data` | `csv` `tsv` `json` `xlsx` `xls` `parquet` |
+| `external::document` | `pdf` `docx` `pptx` `odt` |
+| `external::audio` | `mp3` `wav` `m4a` `flac` |
+| `external::video` | `mp4` `mov` `webm` `avi` |
+| `external::archive` | `zip` `tar` `gz` `7z` |
+| `external::file` | anything else |
 
-**Kinds are namespaced.** `ext-document` is an uploaded PDF; `document` is an
-Icarus [document](../general-resources/document.md). They are unrelated things
-and a bare `document` in both vocabularies would eventually be compared, indexed,
-or switched on as if they were the same.
+**A file kind is a [resource kind](../../stage-0/0-foundation-design.md#resourcekind-and-resourceref--11-imports),
+in that vocabulary's own notation.** `external::document` is an uploaded PDF;
+`document` is an Icarus [document](../general-resources/document.md). They are
+unrelated things, and a bare `document` in both vocabularies would eventually be
+compared, indexed, or switched on as if they were the same.
 
-The prefix is not decoration — kind strings travel into
+The namespace is not decoration — kind strings travel into
 [resource sets](resource-set.md), [lattice
 sources](../knowledge/knowledge-lattice.md), and comment anchors, where they are
 matched against kinds from every other domain. A kind is only safe as a
 discriminator if it is unique across all of them.
+
+**`::` rather than a hyphen prefix, because the delimiter is what makes the
+family selectable.** `kindMatches` compares segment by segment, so `external`
+selects every file in one selector and `external::image` selects the images —
+without enumerating either. A hyphenated `ext-image` is one opaque segment, and
+"every external file" would have to be written out kind by kind, growing every
+time the table does.
+
+**The unknown case is `external::file`, not `external::unknown`.** Nothing failed
+when an extension is unrecognized; there is simply no more specific answer than
+the one every row already gives, and `unknown` reads as an error state that then
+has to be handled like one.
+
+**The subkind is the extension family and nothing else.** Where the bytes came
+from is `origin`, which is a field with its own union — putting it in the kind
+too would mean a captured PDF and an uploaded one were different kinds of thing
+to every consumer that only cares that it is a PDF.
 
 It is stored rather than computed on read so it can be indexed, and so a
 correction — a mislabelled extension, a better classifier later — is a write
 rather than a change in behaviour for existing files.
 
 `kind` decides what happens next: a `data` file can back an analysis, an `image`
-can be placed in a block, a `document` gets text extracted, an `unknown` file is
-stored and offered for download and nothing else. It is a routing decision, not
-a claim about the contents — `mimeType` and the bytes remain the authority.
+can be placed in a block, a `document` gets text extracted, and a bare
+`external::file` is stored and offered for download and nothing else. It is a
+routing decision, not a claim about the contents — `mimeType` and the bytes
+remain the authority.
 
 ## Extraction
 

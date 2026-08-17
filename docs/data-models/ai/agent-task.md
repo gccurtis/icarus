@@ -32,9 +32,9 @@ interface PlanStep {
 }
 ```
 
-This row is the thread. Its
-[messages](../core/message.md#threads-exist-only-to-serve-their-consumer) name it
-directly and carry the task's tool calls.
+This row is the thread. It holds its
+[messages](../core/message.md#nothing-reads-a-conversation-except-the-thing-having-it)
+inline — there is no `messages` table and no link to store.
 
 ## Three names for three jobs
 
@@ -80,15 +80,24 @@ This is the path from thinking out loud to work that gets tracked: talk to a
 persona, reach a point worth acting on, branch a task from that message. The
 chat is untouched and remains readable as the reason the task exists.
 
-## Tool calls
+## Tool calls are not stored
 
-Held on the [message](../core/message.md#research-steps-are-tool-calls) that made
-them, with `input` and `output` as opaque values. They are not normalized into a
-schema because every tool's payload is different — the tool implementation is the
-only thing that can interpret its own arguments.
+They have no field here and no field on a
+[message](../core/message.md#tool-calls-are-not-stored). A call's output lives in
+the client while the thread is open; on reload, what survives is whatever the
+turn actually wrote down.
 
-They are stored because a task's behaviour is otherwise unexplainable after the
-fact.
+That is a deliberate reversal of the obvious answer, and the reasoning is that a
+typed call log is a rendering concern wearing a schema. Every tool's payload is
+different, so the stored shape would be `unknown` either way — and then every
+consumer of a message has to learn a vocabulary belonging to one client's
+transcript view.
+
+What a task's behaviour actually needs to be explainable after the fact is
+prose: a turn saying what it searched and what it found, in ordinary blocks that
+render, search, and promote to a [finding](../research/finding.md) like anything
+else. If that proves insufficient in practice, the answer is a block variant
+argued on its own merits, not a payload bag restored by default.
 
 ## Plan
 

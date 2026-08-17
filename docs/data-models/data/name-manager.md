@@ -100,10 +100,18 @@ then.
 
 ## What is not here
 
-**No formula model.** Formula is stateless — an expression is text stored on the
-block that holds it, evaluated on demand. There is nothing to persist beyond the
-expression and its resolved value, both of which live on the
-[block](../content/content-block.md#formula-blocks).
+**No calculation graph, and no cached dependency order.** Evaluation stays
+stateless: order is derived from the formulas at load, because persisting it
+would mean a second representation that can disagree with the first.
+
+The expression itself is not here either — it is a
+[formula row](../../stage-0/0-foundation-design.md#formula--ids-and-immutability)
+of its own, written in cell ids rather than addresses, and a
+[block](../content/content-block.md#formula-blocks) holds a `formulaId` pointing
+at it. That is storage for the expression, not for the evaluation; nothing about
+it makes the evaluator stateful, and the dependency between the two capabilities
+still runs one way — formula asks the name manager to resolve a bare name, and
+the name manager evaluates nothing.
 
 **No scoping beyond the project.** A name means one thing in a project. Sheet-
 local or document-local names would mean resolution depends on where a formula

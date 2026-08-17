@@ -166,7 +166,7 @@ measure, and it is computed rather than stored.
 ```ts
 type TextAtom =
   | { id: string; kind: "literal"; text: string }
-  | { id: string; kind: "formula"; expression: string; resolved: string;
+  | { id: string; kind: "formula"; formulaId: string; resolved: string;
       state: "fresh" | "stale" | "computing" | "error"; error?: string };
 ```
 
@@ -174,6 +174,13 @@ An atom is the smallest authored unit. Literal atoms are typed characters.
 Formula atoms are written inline with `{{ }}` delimiters — `Revenue was
 {{SUM(Sales!B:B)}} this quarter` is three atoms: a literal, a formula, a
 literal.
+
+**A formula atom holds a `formulaId`, never the expression.** The expression is a
+[row of its own](../../stage-0/0-foundation-design.md#formula--ids-and-immutability),
+written in cell ids rather than addresses, so only the formula can render an
+up-to-date form of itself — a cell that moves changes what the expression *reads
+as* without changing what it means. A copy on the atom would be a second spelling
+that goes stale the first time anything moves.
 
 **`display` is the atoms' text in order** — each literal's `text`, each
 formula's `resolved`, concatenated. Nothing else. So the span each atom occupies
@@ -243,7 +250,7 @@ byte-for-byte the concatenated literals and marks are stable.
 interface FormulaBlock {
   id: string;
   type: "formula";
-  expression: string;          // raw, "=SUM(A1:A10)"
+  formulaId: string;           // the expression is a row, not a field
   display: string;             // resolved, "42"
   value: FormulaValue;
   state: "fresh" | "stale" | "computing" | "error";
@@ -258,6 +265,7 @@ type FormulaValue =
   | { kind: "text"; value: string }
   | { kind: "boolean"; value: boolean }
   | { kind: "date"; value: DateValue }
+  | { kind: "reference"; ref: string }
   | { kind: "table"; columns: FormulaColumn[]; rows: FormulaValue[][] };
 
 interface FormulaColumn {
@@ -446,7 +454,7 @@ interface PromptBlock {
   display: string;
   marks: Mark[];
 
-  scope?: SetExpression;       // what retrieval may draw on
+  scope?: ResourceSetExpression;   // what retrieval may draw on
   state: "fresh" | "stale" | "generating" | "error";
   error?: string;
   refreshedAt?: number;
@@ -475,6 +483,14 @@ text.
 
 `scope` is a [resource set](../special-resources/resource-set.md) expression
 limiting what retrieval may draw on when refreshing — "summarize the findings,
-but only from the connector-synced files". Absent means the whole project. It is
-stored on the block rather than only on the derived output because it is part of
-what the author specified, and it has to survive being read back into the editor.
+but only from the connector-synced files". It is stored on the block rather than
+only on the derived output because it is part of what the author specified, and
+it has to survive being read back into the editor.
+
+**Absent and empty are not the same thing**, and the difference is deliberate.
+An absent `scope` means none was specified, and retrieval falls back to the whole
+project. A *present* expression with an empty `include` resolves to nothing —
+because [an empty list is what an unfinished form
+produces](../../stage-0/0-foundation-design.md#resourcesetexpression--18-imports),
+and a scope somebody meant to narrow must not silently widen to everything.
+Writing "the whole project" out loud is `{ include: [{ kind: "project" }] }`.

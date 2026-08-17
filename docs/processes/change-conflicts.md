@@ -108,13 +108,15 @@ So before shifting, every intervening op affecting the same block must be a
 | Intervening op | Why it disqualifies |
 | --- | --- |
 | a formula atom re-resolved | `resolved` changed length by an amount nothing in the op states |
-| a formula's `expression` set | it may re-resolve, changing display unpredictably |
+| a formula atom's `formulaId` set | it points at a different expression, which re-resolves to a different length |
 | an atom inserted or removed | display changed by that atom's whole length |
 | the block `set` wholesale | the old string is gone; offsets mean nothing |
 
-`text` ops only ever target **literal** atoms. A formula's expression is replaced
-with `set`, never edited with `text` — expressions are short, and the rule
-removes an entire category of case from this precondition.
+`text` ops only ever target **literal** atoms. A formula atom holds a
+`formulaId`, not an expression, so the expression is not in the display string at
+all and there is nothing for a `text` op to reach even by accident — the rule
+removes an entire category of case from this precondition rather than forbidding
+one.
 
 This is what keeps the risk bounded. The shift runs on one narrow, fully
 specified situation — literal text edited concurrently with literal text — and

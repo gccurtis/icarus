@@ -1,66 +1,48 @@
 # Message
 
-One turn in a thread. Messages are the only table here — a **thread has no
-object of its own**, because the thing it belongs to is the thread.
+One turn in a thread. **Not a table** — a message is an embedded value, and so is
+the thread it belongs to. The row that holds the conversation *is* the thread.
 
 ```ts
 interface Message {
-  projectId: Id<"projects">;
-  thread: ThreadRef;
+  id: string;                  // local to the thread, like a row id
   role: "prompt" | "response";
+  author?: Actor;              // absent = the thread's own responder
+  sentAt: number;              // when, not order
   blocks: ContentBlock[];
-  author?: Actor;
-  mentions?: Mention[];
-  toolCalls?: ToolCall[];
-  sources?: MessageSource[];
+  attachments?: ResourceRef[];
+  labels?: string[];
   state: "streaming" | "complete" | "error";
   error?: string;
 }
-
-type ThreadRef =
-  | { kind: "research"; id: Id<"researchThreads"> }
-  | { kind: "task"; id: Id<"agentTasks"> }
-  | { kind: "persona"; id: Id<"personaThreads"> };
-
-interface ToolCall {
-  name: string;
-  input: unknown;
-  output?: unknown;
-  state: "pending" | "success" | "error";
-  error?: string;
-  durationMs?: number;
-}
-
-type MessageSource =
-  | { kind: "resource"; resourceType: ResourceKind; resourceId: string; title?: string; excerpt?: string }
-  | { kind: "url"; url: string; title?: string; excerpt?: string }
-  | { kind: "lattice"; nodeId: Id<"latticeNodes">; excerpt?: string };
 ```
 
-## Threads exist only to serve their consumer
+There is no `projectId` and no thread reference. Both belonged to a `messages`
+table, and both stop needing to exist once the owner holds its own turns.
+
+## Nothing reads a conversation except the thing having it
 
 This is the same relationship [content blocks](../content/content-block.md) have
 with the resources that hold them. A block has no independent existence — it is
-part of a document, addressed through it, and meaningless without it. A thread is
-the same: it is the conversation *of* a research thread, a task, or a persona
+part of a document, addressed through it, and meaningless without it. A message
+is the same: it is the conversation *of* a research thread, a task, or a persona
 chat, and there is no such thing as a conversation that belongs to nothing.
 
-So there is no `chats` table and no thread id. A
-[research thread](../research/research.md),
-[agent task](../ai/agent-task.md), and
-[persona thread](../ai/persona-chat.md) each *are* threads, and a message names
-which one it belongs to.
+So a [research thread](../research/research.md),
+[agent task](../ai/agent-task.md), and [persona thread](../ai/persona-chat.md)
+each hold `messages: Message[]` inline. There is no `chats` table, no `messages`
+table, no thread id and no `by_thread` index — **the link stops needing to exist
+at all**, rather than being stored more cheaply.
 
-Neither do the consumers carry a thread pointer. Their own `_id` is the key
-messages are indexed by, so "the messages of this research thread" is
-`by_thread(("research", id))` — one indexed read, no field to store and nothing
-to keep in sync.
+A conversation is also most of what its consumer is. A persona thread minus its
+messages is a title and a branch pointer, so splitting the two put the smaller
+half in the row and the substance somewhere else.
 
-**Messages are a table and blocks are not** for one reason only: a conversation
-grows without bound. Embedding messages would walk a thread into Convex's
-document limit and rewrite the whole history on every reply. That is a storage
-necessity, not an identity — the table exists so appends are cheap, not because a
-thread is a thing.
+**What this trades away is unbounded growth**, and that is the honest cost. A
+thread's turns share the owner row's 1 MiB budget. The escape is the one
+[every embedded body has](../README.md#document-size) — move the messages to a
+child table keyed by the owner if a thread type actually approaches the cap —
+rather than paying for a table upfront against a limit nothing has reached.
 
 ## Why the research group is different
 
@@ -90,19 +72,10 @@ present when anyone else did: another person, or a persona brought in by a
 [mention](actor.md#mentions-are-the-mirror-image). So absence means "the obvious
 responder", and presence always names someone.
 
-On a `prompt` turn, `author` is always set.
-
-## Research steps are tool calls
-
-Research once recorded `steps` — searched this, read that, retrieved the other —
-separately from an agent's `toolCalls`. They were the same thing described twice:
-research is an agent with a fixed toolset, and a search *is* a tool call.
-
-Both are a record of work done, written as it happens and never revised. That
-record exists so a person can see why an answer says what it says without
-rerunning anything, and so a thin answer is recognizable as thin. Nothing reads
-it to decide what to do next — it is not a plan, and that is what keeps it
-honest.
+On a `prompt` turn, `author` is always set. That constraint holds between two
+fields, so no validator can state it — it lives in the constructor every message
+is built through, alongside the rule that `state` is derived from `error` rather
+than supplied beside it.
 
 ## Blocks, not markdown
 
@@ -111,25 +84,51 @@ responses are genuinely rich: a table of results, a chart, a code sample, a cite
 excerpt. A markdown string would mean parsing on every render and would make
 citations inexpressible.
 
-## Sources
+## Tool calls are not stored
 
-What a message drew on. When a research message becomes a
-[finding](../research/finding.md), these are what its `sources` are built from —
-with excerpts copied, because a finding's citations must survive independently of
-the thread.
+An agent's calls — searched this, read that, retrieved the other — have no type
+here and no field. They are a client concern: the client holds a call's output in
+memory while the thread is open, and on reload only what the message actually
+stored survives.
 
-A `resource` source names both `resourceType` and `resourceId`, never the id
-alone — [the pair is the
-key](../revisions/change-set.md#the-resource-key-is-the-pair-named-once). `file`
-and `finding` folded into it once findings became a
-[resource kind](../special-resources/resource-set.md), which removed two
-near-duplicate variants that differed only in which table they meant.
+What survives is whatever the turn wrote down, which may be an ordinary text
+block naming the call and its inputs. That is deliberate. Giving tool calls a
+schema would mean every consumer of a message learns a vocabulary that belongs to
+one client's rendering, and the record a person actually needs — why an answer
+says what it says — is prose, not a typed log.
+
+Research once recorded `steps` separately from an agent's calls, and they were
+the same thing described twice: research is an agent with a fixed toolset, and a
+search *is* a tool call. Neither survives.
+
+## Attachments
+
+What a turn pulled in alongside itself, as plain
+[`ResourceRef`](../special-resources/resource-set.md) — a kind and an id, nothing
+else. There is no attachment type.
+
+**Named `attachments`, not `sources`.** A source is a narrower claim; it implies
+the turn drew a conclusion from the thing. These are just what was pulled in.
+
+**No excerpts and no titles.** The ref finds the thing, and a message is working
+material. Where an excerpt has to outlive the thread — a
+[finding](../research/finding.md)'s citation — it is copied and dated at
+promotion, which is the point at which someone decided it was worth keeping.
+
+**A link is not an attachment.** A URL a person typed lives in the text, as a
+[mark](../content/content-block.md); capturing it produces an
+[external file](../special-resources/external-file.md), which is a resource like
+any other and therefore already a `ResourceRef`. The text is the durable record
+of the link, so a capture that fails loses nothing and can be retried.
 
 ## Append-only
 
-Messages are written and never reordered. Order is `_creationTime`, so no
-explicit rank is needed, and the log is its own history — which is why
-conversations have [no revision
+Messages are written and never reordered. **Order is array position** — the owner
+appends — so nothing sequences on `sentAt`, which exists only to display a time.
+A linked list is what you reach for when rows sit unordered in a table; an array
+is already ordered.
+
+The log is its own history, which is why conversations have [no revision
 model](../revisions/README.md#why-the-rest-have-none).
 
 Changing a conversation is not undo and not revision: it is **branching**. A
@@ -140,4 +139,5 @@ intact — see [persona chat](../ai/persona-chat.md#branching).
 
 [actor](actor.md) · [content block](../content/content-block.md) ·
 [research](../research/research.md) · [agent task](../ai/agent-task.md) ·
-[persona chat](../ai/persona-chat.md)
+[persona chat](../ai/persona-chat.md) ·
+[stage 0](../../stage-0/0-foundation-design.md#message--decorated-content-blocks)

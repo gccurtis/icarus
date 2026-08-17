@@ -6,6 +6,10 @@ This document is about **tables**. Where a pass also needs non-table work — an
 algorithm, an evaluator — it is listed separately under *Also needs*, so the
 table review stays a table review.
 
+**[Stage 0](../stage-0/) comes before all of it** and declares no tables at all:
+the shared vocabulary, the content block union, and `Message`. Where the two
+disagree, stage 0 is what gets built.
+
 The ordering rule is **dependency, then usefulness**: nothing is built before what
 it references, and among the options at each step, the one that makes the app
 demonstrably do something comes first.
@@ -16,7 +20,7 @@ demonstrably do something comes first.
 | 2 | `resourceSnapshots` `changeSets` `slideDecks` `spreadsheets` `nameVariables` | Editing that merges and undoes |
 | 3 | `externalFiles` `templates` `commentThreads` `comments` | Uploads, starting points, discussion |
 | 4 | `questions` `hypotheses` `findings` `researchLinks` | The research graph |
-| 5 | `messages` `researchThreads` `personas` `personaThreads` | Conversation |
+| 5 | `researchThreads` `personas` `personaThreads` | Conversation |
 | 6 | `resourceSets` `latticeVersions` `latticeNodes` `latticeLevelIndexes` | Search that works |
 | 7 | `latticeEdges` `latticeChanges` `derivedOutputs` `agentTasks` | Generated content and agents |
 
@@ -24,27 +28,34 @@ Then a [pass 8 and beyond](#pass-8-and-beyond): `automations`, `connectors`,
 `analyses` — later passes rather than dropped work, each waiting on something
 outside the model.
 
-## Content blocks grow with the passes
+## Content blocks are whole from the start; owners widen
 
-[`ContentBlock`](../data-models/content/content-block.md) is one type from the
-first pass that has a body, and each owner accepts a **widening subset** of its
-variants. Nothing is rewritten — the union grows a member, and owners that should
-accept it start accepting it.
+**The union ships complete in [stage 0](../stage-0/0-foundation-design.md#contentblock--35-imports).**
+All six variants are defined before any table exists, and that costs nothing:
+every id in them is a plain `string`, so no validator names a table Convex would
+reject.
 
-| Pass | Variants available | Unlocked by |
+What arrives pass by pass is not the type but the **machinery a variant needs to
+be worth accepting**, and which owners accept it:
+
+| Pass | Variant becomes usable | Waiting on |
 | --- | --- | --- |
 | 2 | `text` — paragraph, heading, list, quote, code | change sets |
-| 2 | `formula` | formula evaluation |
+| 2 | `formula` | the `formulas` table and evaluation |
 | 3 | `image`, `table`, `embed` | `externalFiles` |
 | 7 | `prompt` | `derivedOutputs` |
+
+Each owner accepts a **widening subset**, and nothing is rewritten when it
+widens: a spreadsheet cell takes text and formula, a comment takes text and
+image, and the owner enforces its own set rather than the union doing it.
 
 This is the reason prompt blocks stay in the union rather than becoming their own
 thing. A [prompt block *is* a text
 block](../data-models/content/content-block.md#prompt-blocks) with a derived
 output behind it — same atoms, same display, same marks. Splitting it out would
 mean a second text editor with its own marks and offsets, then reconciling the
-two forever. Keeping it in the union means pass 7 adds a variant and nothing
-existing changes.
+two forever. Keeping it in the union means pass 7 wires up a variant that has
+been there all along.
 
 ---
 
@@ -70,12 +81,19 @@ embedded in nearly every table after this. Project membership roles.
 ## Pass 2 — Editing
 
 **Tables:** `resourceSnapshots` · `changeSets` · `slideDecks` · `spreadsheets` ·
-`nameVariables`
+`nameVariables` · `formulas`
 
-**Also needs:** formula evaluation — stateless, no tables, but a spreadsheet
-without it is a grid of text.
+**Also needs:** formula evaluation — still stateless and still storing no
+calculation graph, but a spreadsheet without it is a grid of text.
 
-Five tables, because `nameVariables` belongs beside formula and costs almost
+`formulas` is a table because an expression is written in cell ids rather than
+addresses, and a row that
+[cannot be edited in place](../stage-0/0-foundation-design.md#a-formula-is-immutable-editing-one-mints-a-new-id)
+is what keeps a formula edit replayable as an ordinary `set`. Blocks hold a
+`formulaId` from stage 0, so nothing here changes a shape — it gives the id
+something to point at.
+
+Six tables, because `nameVariables` belongs beside formula and costs almost
 nothing. It [evaluates
 nothing](../data-models/data/name-manager.md#it-evaluates-nothing) and depends on
 nothing — values arrive already computed and are validated for shape only. The
@@ -109,7 +127,7 @@ beyond this pass — it is what pass 6 indexes.
 Comments need stable block addressing, which pass 2 settled. Templates need
 resource bodies to copy, which pass 2 also settled.
 
-**Review:** the `ext-` kind table and extraction states. Comment anchoring is
+**Review:** the `external::` kind table and extraction states. Comment anchoring is
 best-effort by design — [`path` plus
 `quote`](../data-models/collaboration/comment.md) — and that trade is worth
 re-examining before it ships.
@@ -130,12 +148,18 @@ direction, and whether `bearing` needs values beyond supports/contradicts/neutra
 
 ## Pass 5 — Conversation
 
-**Tables:** `messages` · `researchThreads` · `personas` · `personaThreads`
+**Tables:** `researchThreads` · `personas` · `personaThreads`
 
-One `messages` table serving research threads and persona chats, with `ThreadRef`
-naming the owner. Multi-participant from the start —
-[`prompt`/`response` plus
-`author`](../data-models/core/message.md#several-people-in-one-thread).
+**No `messages` table.** Each thread row holds `messages: Message[]` inline, and
+the `Message` type already exists from
+[stage 0](../stage-0/0-foundation-design.md#message--decorated-content-blocks) —
+so this pass builds the threads and reuses the turn. Multi-participant from the
+start: `role` says which side of the exchange a turn is on and `author` says who,
+because a thread is a room rather than a two-party exchange.
+
+Turns are appended through `message()`, which is the only thing that builds one —
+it refuses an unauthored prompt and derives `state` from `error`, neither of
+which a validator can express.
 
 Personas carry the five-section definition. `agentTasks` is deliberately *not*
 here: a task is a thread too, but it also needs tool execution, and this pass

@@ -5,23 +5,22 @@ needs attribution.
 
 ```ts
 type Actor =
-  | { kind: "user"; userId: Id<"users"> }
-  | { kind: "agent"; taskId: Id<"agentTasks"> }
-  | { kind: "automation"; automationId: Id<"automations"> }
-  | { kind: "connector"; connectorId: Id<"connectors"> }
-  | { kind: "system" };
+  | { kind: "user";    id: string }
+  | { kind: "task";    id: string }
+  | { kind: "persona"; id: string }
+  | { kind: "system" };              // no id: nothing to look up
 
 interface ActorLabel {
   kind: Actor["kind"];
   name: string;                // who acted
-  onBehalfOf?: string;         // who asked for it — agents only
-  detail?: string;             // what they were doing — agents only
+  onBehalfOf?: string;         // who asked for it — tasks only
+  detail?: string;             // what they were doing — tasks only
 }
 
 type Mention =
-  | { kind: "user"; userId: Id<"users"> }
-  | { kind: "persona"; personaId: Id<"personas"> }
-  | { kind: "task"; taskId: Id<"agentTasks"> };
+  | { kind: "user";    id: string }
+  | { kind: "persona"; id: string }
+  | { kind: "task";    id: string };
 ```
 
 ## One type, not one per consumer
@@ -33,19 +32,34 @@ the same question. Before this they each answered it with their own union,
 differing by a case or two — which is how "who edited this" and "who is shown in
 the feed" quietly become different answers to the same question.
 
-The five kinds are the complete set of things that can act. Anything new that
+The four kinds are the complete set of things that can act. Anything new that
 acts is a new kind here, added once.
 
-## Agent actors point at the task
+**Every variant is `{ kind, id }`.** Per-variant names — `userId`, `taskId` —
+made one shape read four ways for no gain, and it matches
+[`ResourceRef`](../special-resources/resource-set.md), so one accessor works on
+both.
 
-Not at the persona, and not at both. A [task](../ai/agent-task.md) already
-carries its `personaId`, so persona is one hop away, and storing both would
-allow them to disagree — a task whose persona was reassigned would have two
-answers about who ran it.
+**`automation` and `connector` are not kinds.** Their tables do not exist yet,
+and a variant holding an unvalidated id that nothing can resolve is worse than an
+honest absence. They come back with their tables, if they need to at all.
+
+## A task acts when work is tracked; a persona acts when it is talking
+
+A [task](../ai/agent-task.md) actor points at the run, not at the persona behind
+it, and not at both. A task already carries its `personaId`, so persona is one
+hop away, and storing both would allow them to disagree — a task whose persona
+was reassigned would have two answers about who ran it.
 
 The task is also the more specific truth. "The Researcher persona" did not edit
 this paragraph; a particular run of it did, and that run has a goal, a message
 log, and a plan explaining why.
+
+**But a persona answering in its own chat is not a task.** There is no run, no
+goal and no plan — there is a persona saying something in a thread that exists to
+hold exactly that. Forcing a task into existence to attribute the reply would
+invent a unit of work nobody asked for, so `persona` is its own kind and is used
+where there is no run to name.
 
 ## The user behind an agent is not the actor
 
@@ -65,9 +79,9 @@ not a reflex.
 no identifier because there is nothing to look up, and inventing one would
 invite code to try.
 
-It should be rare. An actor is `system` only when no user, agent, automation, or
-connector caused the change. If a system kind starts appearing often, something
-that acts has not been modelled.
+It should be rare. An actor is `system` only when no user, task, or persona
+caused the change. If a system kind starts appearing often, something that acts
+has not been modelled.
 
 ## Reference and label are separate types
 
@@ -89,12 +103,11 @@ times per document, going stale the moment someone is renamed.
 | kind | `name` | `onBehalfOf` | `detail` |
 | --- | --- | --- | --- |
 | `user` | the user's `displayName` | — | — |
-| `agent` | the task's persona `name`, or `"Agent"` | the dispatching user's `displayName` | the task's `title` |
-| `automation` | the automation's `name` | — | — |
-| `connector` | the connector's `displayName` | — | — |
+| `task` | the task's persona `name`, or `"Agent"` | the dispatching user's `displayName` | the task's `title` |
+| `persona` | the persona's `name` | — | — |
 | `system` | `"System"` | — | — |
 
-The agent row is why three fields exist. Rendered in order it reads
+The task row is why three fields exist. Rendered in order it reads
 *Researcher · Gabriel Curtis · Q3 competitive scan* — persona, then who asked,
 then the job. Each answers a question the others do not: several tasks run the
 same persona, a title without its persona does not say what kind of thing
@@ -112,35 +125,40 @@ can afford to be informative precisely because it is never what code compares.
 ## Undo scopes on the actor
 
 [Undo](../revisions/README.md#per-tab-means-per-user) reverts change sets where
-`actor.kind === "user"` and `actor.userId` is the person undoing. This is a
-designed property of the field, not a filter bolted on later.
+`actor.kind === "user"` and `actor.id` is the person undoing. This is a designed
+property of the field, not a filter bolted on later.
 
 The two cases it deliberately excludes:
 
 **Other people's edits.** In a shared document, "undo the most recent change" is
 wrong — it reverts a colleague's paragraph because they typed after you.
 
-**Agent and automation edits.** Excluded by the kind check, per
+**Anything an agent did**, whether the actor is a `task` or a `persona`.
+Excluded by the kind check, per
 [above](#the-user-behind-an-agent-is-not-the-actor).
 
 ## Mentions are the mirror image
 
 A [comment](../collaboration/comment.md) or a [message](message.md) can mention a
-user, a persona, or a running task. `Mention` is deliberately not `Actor`, and
-the asymmetry is the interesting part:
+user, a persona, or a running task. `Mention` is `Actor` minus one kind, and that
+one exclusion is the whole of the difference:
 
-**You mention a persona; the actor is a task.** A persona is a durable,
-addressable identity — mentioning one starts or continues a [persona
-thread](../ai/persona-chat.md) with it. A task is a single run, and it is what
-actually acts. So the addressable set and the acting set overlap without
-matching.
+**`system` has no mention case.** Nothing is served by addressing it; it is a
+thing that happens, not a thing you talk to.
 
-**You can also mention a specific task**, which delivers the message into that
-task's own thread — the way to say something to work already in progress rather
-than to the persona in general.
+The three that remain are addressable because each does something different when
+addressed. **Mentioning a persona** starts or continues a [persona
+thread](../ai/persona-chat.md) with a durable identity. **Mentioning a task**
+delivers into that task's own thread — the way to steer work already in progress
+rather than to address the persona in general. **Mentioning a user** notifies a
+person.
 
-`automation`, `connector`, and `system` have no mention case. Nothing is served
-by addressing them; they are things that happen, not things you talk to.
+**A mention is not a field beside the content — it is a
+[mark](../content/content-block.md) inside it.** A mention is a span of text
+someone typed, so it belongs in the text, which is what makes it shift when
+earlier text is edited, survive a merge, and render where it was written. An
+extracted `mentions[]` array alongside the blocks could disagree with the
+sentences it summarized, and did not know where in a sentence the mention was.
 
 ## Where actor is not used
 

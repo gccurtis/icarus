@@ -14,7 +14,7 @@ changes, no deployment doors. On `main` all three are new — it currently holds
 app/src/lib/capabilities/
 ├── shared/          cross-cutting types every capability uses
 ├── content/         the content block union
-└── messages/        a message and what it attaches
+└── messages/        a message, and the constructor that keeps one honest
 ```
 
 None of them gets a `schema.ts`, an `api/`, or a file under
@@ -113,14 +113,18 @@ and a reader of the validator alone would conclude the type is wrong:
 ```text
 app/src/lib/capabilities/messages/
 ├── overview.md
+├── errors.ts           MessagesError
 ├── types/
 │   ├── types.md
-│   ├── message.ts      Message, MessageRole, MessageState, messageAuthor
-│   └── attachment.ts   Attachment
+│   └── message.ts      Message, MessageRole, MessageState, message()
 └── test/unit/types/
-    ├── message.test.ts
-    └── attachment.test.ts
+    └── message.test.ts
 ```
+
+**There is no `attachment.ts`.** An attachment is a `ResourceRef` and nothing
+more, so `Message.attachments` is `ResourceRef[]` imported from `$shared`. A link
+is not an attachment — it lives in a mark, and capturing it produces an
+`externalFile::webLink`, which is a resource like any other.
 
 **`overview.md` has one job: say why there is no table.** A conversation is never
 read outside its consumer and is most of what the consumer is, so
@@ -128,15 +132,24 @@ read outside its consumer and is most of what the consumer is, so
 `messages: Message[]` when those tables arrive. Without that written down, the
 next reader assumes the table was forgotten.
 
-**`messageAuthor(role, author)` is the one piece of behaviour** — a prompt must
-name its author, a response need not. It is a function because a validator cannot
-express a constraint between two fields, and the test has to prove it throws
-rather than just that the happy path returns.
+**`message(fields)` is the one piece of behaviour** — a constructor, not a
+validator, because it upholds two things a validator cannot express:
 
-**`attachment.ts` stays here rather than in `shared`** because messages are its
-only consumer today. It promotes when a second one appears — findings are the
-likely candidate, and they may want excerpts, in which case they are a different
-type and this one stays put.
+- **A prompt must name its author**, a response need not. That is a constraint
+  between two fields.
+- **`state` is derived from `error`**, never supplied. Making the constructor the
+  only way to build a `Message` is what stops a caller passing a `state` that
+  contradicts its own `error`.
+
+It throws `MessagesError`, a `ConvexError` subclass with a code, from
+`errors.ts`. It is called inside another capability's mutation — a research
+thread, an agent task, a persona thread — so the throw reaches a client
+regardless of which file raised it, and a plain `Error` would arrive there
+opaque.
+
+The test has to prove it throws, and that the derived state is right for both a
+present and an absent `error`. A test that only builds a valid message and
+asserts it back proves nothing.
 
 ---
 
@@ -219,7 +232,9 @@ nothing declares a table. `_generated/` must exist for typecheck, which
 | --- | --- |
 | revisions | `Op`, `OpTarget`, `ResourceKey` — the op vocabulary ships with its tables, including the narrowed per-op target unions |
 | spreadsheets | Sheet cells gaining ids, and a range anchored by two corner ids |
-| formula | A `formulas` table, immutable formula rows, and blocks holding a `formulaId` |
+| formula | The `formulas` table and immutable formula rows. **Not the `formulaId` field** — blocks carry it from stage 0, as a plain string |
+| documents | `PageFurniture` — headers, footers, page numbers. Only documents have it, so it ships with them |
+| charts | The `chart` op target, deferred until there is a data range and a rendering surface |
 | access | Nothing — `users` and `projects` already exist on `main` |
 
 Every id in stage 0 is a plain `string`, not `Id<"table">`, so none of the above
@@ -228,5 +243,4 @@ requires loosening anything that stage 0 wrote.
 ## Related
 
 [the design](0-foundation-design.md) ·
-[merge order](../storage/merge-order.md) ·
 [capability directory](../../app/docs/capability-directory/capability-directory.md)

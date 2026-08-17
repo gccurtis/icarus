@@ -9,7 +9,7 @@ interface Persona {
   name: string;
   description?: string;
   definition: PersonaDefinition;
-  scope?: SetExpression;       // retrievable material it brings with it
+  scope?: ResourceSetExpression;   // retrievable material it brings with it
   modelBinding?: string;       // named binding, resolved from configuration
   tools: string[];             // tool names this persona may call
   avatar?: { emoji?: string; fileId?: Id<"externalFiles"> };

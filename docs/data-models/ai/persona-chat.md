@@ -15,9 +15,9 @@ interface PersonaThread {
 }
 ```
 
-This row is the thread.
-[Messages](../core/message.md#threads-exist-only-to-serve-their-consumer) name it
-directly; there is no separate conversation object.
+This row is the thread. It holds its
+[messages](../core/message.md#nothing-reads-a-conversation-except-the-thing-having-it)
+inline; there is no separate conversation object and no `messages` table.
 
 ## Why this is not a task
 

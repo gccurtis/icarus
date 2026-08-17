@@ -32,7 +32,6 @@ interface Comment {
   threadId: Id<"commentThreads">;
   blocks: ContentBlock[];
   author: Actor;
-  mentions?: Mention[];
   editedAt?: number;
 }
 ```
@@ -50,20 +49,24 @@ Comments get links, mentions, code snippets, and pasted screenshots. Those are
 the ordinary content of a review remark, and blocks are what already express
 them.
 
-`mentions` is extracted alongside rather than only living inside the blocks, so
-"comments mentioning me" is an index rather than a scan of every comment body in
-the project.
+**A mention is inside the blocks**, as a
+[mark](../content/content-block.md) carrying a
+[`Mention`](../core/actor.md#mentions-are-the-mirror-image) — not a field
+extracted alongside them. There was one, to make "comments mentioning me" an
+index rather than a scan, and it went: a denormalized copy of what the text says
+can disagree with the text, and a mention outside the text cannot say *where* in
+the remark it appeared. The query is real and can have its field back when
+something actually needs it.
 
 `author` is an [`Actor`](../core/actor.md), not a user id — an agent reviewing a
 document and leaving remarks on it is an ordinary thing to want, and a comment is
 the natural place for those to land.
 
-`mentions` uses [`Mention`](../core/actor.md#mentions-are-the-mirror-image), which
-addresses users, personas, and running tasks. Mentioning a persona from a comment
-opens a [chat](../ai/persona-chat.md) with it carrying the comment as context;
-mentioning a task delivers into that task's thread. So "@Researcher, is this
-consistent with the Q3 scan?" on a paragraph is a complete interaction rather
-than a note nobody reads.
+`Mention` addresses users, personas, and running tasks. Mentioning a persona from
+a comment opens a [chat](../ai/persona-chat.md) with it carrying the comment as
+context; mentioning a task delivers into that task's thread. So "@Researcher, is
+this consistent with the Q3 scan?" on a paragraph is a complete interaction
+rather than a note nobody reads.
 
 ## What you can comment on
 

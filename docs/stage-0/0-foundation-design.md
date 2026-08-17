@@ -39,7 +39,7 @@ it is ever worth it.
 | 1 | **The `messages` table is removed.** Owners hold `messages: Message[]` | A conversation is never read outside its consumer, and is most of what the consumer is |
 | 2 | **`ThreadRef` is removed** | The owner holds the message; the link stops needing to exist |
 | 3 | **`ToolCall` is removed entirely** | A client concern. The client holds a call's output in memory while the thread is open; on reload only what the message stored survives |
-| 4 | **`sources` → `attachments`**, a two-variant union, no `excerpt` or `title` | A resource ref finds the thing; a link records only where it pointed and whether it worked |
+| 4 | **`sources` → `attachments`**, plain `ResourceRef[]`, no `excerpt` or `title` | A ref finds the thing. A link is text, not an attachment, and a captured one is already a resource |
 | 5 | **`at` → `sentAt`**, and ordering is array position | An array is already ordered; a timestamp is for display only |
 | 6 | **`labels?: string[]` added** to a message | Cheap, open-ended, and lets a client mark a turn without a field per idea |
 | 7 | **`Mention` moves into `Mark`** as `mention?` | A mention is a span of typed text, so it belongs in the text — not in a field beside it |
@@ -52,6 +52,9 @@ it is ever worth it.
 | 14 | **`Actor` kinds become `user` / `task` / `persona` / `system`**, uniform `{kind, id}` | A persona answering in its own chat is not a task, and inventing one to attribute a reply invents a unit of work |
 | 15 | **The extracted `mentions[]` array is dropped** | Mentions live in marks now; the array was a denormalization that could drift |
 | 16 | **Sheet cells get ids** | Removes the keyed-collection special case in `touched` rather than handling it |
+| 17 | **A formula atom and a formula block hold `formulaId`**, never `expression` | A formula is its own row; only it can give an up-to-date rendering |
+| 18 | **Charts are deferred** — `chart` leaves the op targets | Nothing renders one, and deferring removes a target rather than describing an absent thing |
+| 19 | **`PageFurniture` is reconciled, not introduced** | Two definitions of it exist and they disagree — see [below](#pagefurniture) |
 
 ---
 
@@ -90,7 +93,7 @@ unvalidated string nothing checks is worse than an honest absence. They return
 with their tables, if they need to at all.
 
 **Actor kinds have no subkinds.** They are a closed set of four, unlike
-[resource kinds](#resourcekind-and-resourceref), which grow with integrations.
+[resource kinds](#resourcekind-and-resourceref--11-imports), which grow with integrations.
 Nothing here prefix-matches.
 
 **Decisions baked in**
@@ -300,9 +303,68 @@ interface PageSetup {
 - **Margins are the content boundary**; a header and footer sit outside them,
   measured from the page edge.
 
-**Headers, footers, page numbers, and a different first page are not here.** They
-are `PageFurniture` on the document, because a deck's handout and a sheet's print
-setup do not have them. `PageSetup` is only the physical page.
+**Headers, footers, page numbers, and a different first page are not here.**
+`PageSetup` is only the physical sheet. They are `PageFurniture`, below.
+
+## PageFurniture
+
+What is printed *around* the content rather than in it.
+
+```ts
+interface PageFurniture {
+  header?: ContentBlock[];
+  footer?: ContentBlock[];
+  /** Absent means every page gets the same header and footer. */
+  firstPage?: { header?: ContentBlock[]; footer?: ContentBlock[] };
+  pageNumber?: {
+    placement: "header" | "footer";
+    align: "start" | "center" | "end";
+    startAt?: number;
+    showOnFirstPage?: boolean;
+  };
+}
+```
+
+**Decisions baked in**
+
+- **Separate from `PageSetup` because the two have different owners.** A slide
+  deck's handout and a spreadsheet's print setup need a paper size and margins
+  and have no headers at all. Merging them would put four fields on every
+  resource that only one uses.
+- **A header is `ContentBlock[]`**, so it takes the same marks, styles, and
+  formulas as the body and renders through the same code. A separate
+  header-text type would be a second content model for three lines of text.
+- **Page numbering is a field, not a block.** The number is not authored — it is
+  produced per page at render, so there is nothing for a block to hold.
+- **`firstPage` is one optional override, not a page-rules engine.** A different
+  first page is the case that actually comes up; anything more is a feature
+  nobody has asked for.
+
+**It ships with `documents`**, not with stage 0. Only documents have furniture
+today, and a type used by one capability lives with it. `PageSetup` is in
+`shared` because three resources genuinely use it.
+
+**Decide — this is not the only definition, and the other one is better in two
+places.** [`document.md`](../data-models/general-resources/document.md#header-and-footer)
+already specifies a `PageFurniture`, as two separate objects — `header?` and
+`footer?` — each holding `DocumentRow[]` rather than `ContentBlock[]`, plus a
+`distanceFromEdge` and a page-number `format` string. The differences are not
+cosmetic:
+
+- **`DocumentRow[]` buys the proportioned split.** A title on the left and a date
+  on the right is one row with `proportions`, using the machinery the body
+  already has. `ContentBlock[]` cannot say it, and a bespoke header layout model
+  is exactly what the row form exists to avoid.
+- **`distanceFromEdge` is load-bearing.** Furniture sits *outside* the margins and
+  is specified from the paper edge —
+  [`PageSetup` says so](#pagesetup--4-imports) and has no field for it.
+- **`format` covers "Page 3 of 12"** in one string, where `placement`/`align`
+  alone cannot.
+
+What the shape above has that the other does not is `firstPage` covering header
+and footer together, and one object rather than two. **The likely answer is
+`document.md`'s shape with that grouping**, but it is a documents-stage decision
+and is recorded here only so the two definitions stop silently diverging.
 
 ## StyleSet — 4 imports
 
@@ -362,7 +424,7 @@ these carrying ids.
 ```ts
 type TextAtom =
   | { id: string; kind: "literal"; text: string }
-  | { id: string; kind: "formula"; expression: string; resolved: string;
+  | { id: string; kind: "formula"; formulaId: string; resolved: string;
       state: "fresh" | "stale" | "computing" | "error"; error?: string };
 
 interface Mark {
@@ -384,7 +446,8 @@ interface Mark {
   anchored to raw atoms could not express "bold the result", because the result
   is not in the raw at all.
 - **A formula atom carries its own `resolved` and `state`**, so a block is still
-  readable while a formula is stale.
+  readable while a formula is stale. It holds a `formulaId` and never the
+  expression — see [formula](#formula--ids-and-immutability).
 - **Marks carry ids** so a change targets one mark rather than replacing the
   array — two people bolding different words in one paragraph then merge.
 - **Atom ids give the finest merge granularity in the model.** Two people editing
@@ -415,7 +478,7 @@ interface TextBlock {
 
 interface FormulaBlock {
   id: string; type: "formula";
-  expression: string; display: string; value: FormulaValue;
+  formulaId: string; display: string; value: FormulaValue;
   state: "fresh" | "stale" | "computing" | "error";
   error?: string; resolvedAt?: number; format?: BlockFormat;
 }
@@ -458,7 +521,7 @@ interface PromptBlock {
   id: string; type: "prompt";
   derivedOutputId: string;
   atoms: TextAtom[]; display: string; marks: Mark[];         // identical to TextBlock
-  scope?: SetExpression;
+  scope?: ResourceSetExpression;
   state: "fresh" | "stale" | "generating" | "error";
   error?: string; refreshedAt?: number; format?: BlockFormat;
 }
@@ -493,13 +556,14 @@ recursion is real and unstatable.
   marks, and cannot be searched — they are row kinds instead. Content and
   structure split there.
 
-**Decide**
+**Settled**
 
-- **The union is a type, but two members name late tables.** Discuss it whole
-  here; merge it in three pieces.
-- **`TableCell.blocks` is `v.any()`.** The recursion is bounded by the owner
-  instead — no surface accepting a table accepts one nested in a cell. Is
-  "bounded by convention" enough, or should a cell take a narrower explicit union?
+- **The union ships whole, in stage 0.** Two members name tables that arrive much
+  later, and that costs nothing: every id here is a plain `string`, so no
+  validator names a table Convex would reject.
+- **`TableCell.blocks` stays `v.any()`, bounded by convention.** No surface
+  accepting a table accepts one nested in a cell, and the owner is what enforces
+  that. A narrower explicit union was considered and rejected.
 
 ## FormulaValue and DateValue — 11 imports
 
@@ -569,7 +633,7 @@ validator. Only the `table` member is written twice.
 - **Columns are typed independently**, because a date column and a currency
   column render differently inside one result.
 
-**Decide** — the recursion answer is reused in three places. It rejected the
+**The recursion answer** is reused in three places. It rejected the
 `settings` precedent of JSON-encoding the whole value, because the outer `kind`
 discriminant *is* read server-side and JSON text protects nothing that has to be
 read. Accepted cost: a malformed *nested* cell is storable, so a renderer of one
@@ -606,7 +670,7 @@ A message is blocks plus the little that belongs to the grouping rather than to
 any block in it: who said it, when, and which side of the exchange it is on.
 
 **It cannot just be a block.** A message is plural in blocks — a response with a
-paragraph, a table, and a chart is three, and [a block holds no
+paragraph, a table, and an image is three, and [a block holds no
 newlines](#nonewline), so even two paragraphs are two. And a block has no field
 for attribution or time.
 
@@ -622,8 +686,8 @@ interface Message {
   author?: Actor;            // absent = the thread's own responder
   sentAt: number;            // WHEN, not order
   blocks: ContentBlock[];
-  attachments?: Attachment[];
-  labels?: string[];         // open — see Decide
+  attachments?: ResourceRef[];
+  labels?: string[];         // open vocabulary — see Decide, below
   state: "streaming" | "complete" | "error";
   error?: string;
 }
@@ -658,6 +722,9 @@ calls would push the problem somewhere else and give it a schema.
 - **`state` is derived from `error`, never supplied.** Two fields saying whether
   the turn worked can disagree; one cannot. Blocks are carried either way,
   because a turn that failed halfway still said something.
+- **Both rules live in one constructor, `message()`.** Making it the only way to
+  build a `Message` is what turns them from advice into something a caller
+  cannot get wrong.
 - **Append-only.** Changing a conversation is branching, not editing.
 - **Messages are not lattice sources.** A conversation is working material; a
   turn worth keeping is promoted to a `finding`, and that promotion is the
@@ -670,23 +737,46 @@ author and differ only in time, so they could collapse into one message with
 several blocks. Cheaper, and it is how chat reads anyway — but a message is the
 unit you branch from, so merging changes what a branch point is.
 
+**Decide — what `labels` is allowed to become**
+
+An open `string[]` is the cheapest possible way to let a client mark a turn —
+pinned, hidden, needs-review — without a schema change per idea, and that is why
+it is here. What is not settled is the rule that keeps it cheap.
+
+The failure mode is specific, and it is not that the list gets long. It is that
+**something starts branching on a label.** The moment a mutation reads
+`labels.includes("pinned")` and behaves differently, an unvalidated open string
+set has become a discriminant: a typo is a silent no-op, two clients spell the
+same idea differently, and there is no validator or migration to catch either.
+[`ResourceKind`](#resourcekind-and-resourceref--11-imports) accepts exactly that
+cost on purpose and argues for it. `labels` has no such argument written, and
+should not inherit one by accident.
+
+The proposed rule, which costs nothing to adopt now and is expensive to adopt
+later:
+
+- **Nothing server-side branches on a label.** They are annotations a client
+  reads and writes. A mark that needs behaviour has earned a real field, with a
+  validator and a name.
+- **Canonicalized on write** — trimmed and lowercased, as
+  [`settings`](../../app/src/lib/capabilities/settings/types/settings.ts) already
+  does with its keys, so `Pinned` and `pinned` are one label rather than two that
+  shadow each other depending on write order.
+
+Two smaller questions ride along and can be answered with it: whether labels
+survive promotion to a `finding` (probably not — a finding is an editorial act
+with its own vocabulary), and whether a *server*-written label is legitimate at
+all for things like a truncated or rate-limited turn, which under the rule above
+would want a field instead.
+
 ## attachments
 
-What a turn pulled in. Two variants on one discriminant.
+What a turn pulled in alongside itself. There is no `Attachment` type — an
+attachment is a `ResourceRef` and nothing else.
 
 ```ts
-type Attachment =
-  | ResourceRef                     // { kind: ResourceKind; id: string }
-  | { kind: "link";
-      url: string;
-      triedAt: number;
-      ok: boolean;
-      fileId?: string;              // when the fetch produced something storable
-      error?: string };             // when it did not, and we know why
+attachments?: ResourceRef[];        // { kind: ResourceKind; id: string }
 ```
-
-`kind` discriminates across all eight values, because `"link"` is not one of the
-seven `ResourceKind` literals. No nesting and one switch.
 
 **Named `attachments`, not `sources`.** These are things pulled into a turn, and
 a source is a narrower claim — it implies the turn drew a conclusion from it.
@@ -696,14 +786,41 @@ is working material. Where an excerpt has to survive — a finding's citation �
 is copied and dated at promotion, because a finding's citations must outlive the
 thread.
 
-**A link is its own variant, not a file.** Some attachments are resources we
-already hold. Some are a URL we tried to fetch, and whether that produced an
-`externalFile` is a separate question from whether the link was attached: the
-retrieval can fail, or return something not worth storing as a file. `fileId` is
-present when it worked and absent when it did not.
+### A link is not an attachment
 
-That is deliberately all it records — where we pointed, when, whether it worked,
-and why not. Anything more is storage for a question nobody has asked.
+The two are separate acts. **A link is something inside the text**; an attachment
+is something added beside it. Modelling a link as an attachment variant gave one
+name to two different things, in a codebase where `Mark.link` is already the
+other one.
+
+A link lives in a mark, and capturing it is a downstream process:
+
+```text
+Mark.link          the URL, in the text, permanently
+      ↓            something tries to fetch it
+externalFile       kind from the extension, origin { kind: "capture", url, capturedAt }
+      ↓            now an ordinary resource
+ResourceRef        which is what an attachment already is
+```
+
+**A successful capture is a resource, so it needs no variant.** An unsuccessful
+one needs no record either: the mark still holds the URL, so nothing is lost and
+the fetch can be retried. **The text is the durable record of the link** — which
+is exactly why the failed-capture case stopped being a foundation problem.
+
+Whether a failed attempt is worth persisting at all is an `externalFiles`
+question, not this one, and it is deferred to that table.
+
+**A capture takes the kind its extension gives it**, like every other file.
+Where the bytes came from is `origin`, not the kind — see [external
+file](../data-models/special-resources/external-file.md#kind-is-derived-from-the-extension).
+Encoding the capture in the kind would make a captured PDF a different kind of
+thing from an uploaded one to every consumer that only cares that it is a PDF.
+
+External files are where [`::` subkinds](#resourcekind-and-resourceref--11-imports)
+first earn their keep, and it is the family that matters rather than the
+provenance: `external` selects every file a project holds in one selector, and
+`external::image` selects the images, neither enumerating anything.
 
 ---
 
@@ -720,7 +837,6 @@ type OpTarget =
   | "row" | "block" | "atom" | "mark"                  // content anywhere
   | "slide" | "element" | "section"                    // slides
   | "sheet" | "cell" | "range" | "mergedCells"         // spreadsheet
-  | "chart"
   | "field";                                           // page setup, styles, theme
 
 type Op =
@@ -743,21 +859,23 @@ type Op =
 - **Every op is closed under inversion**, which is what the extra payloads buy:
   `was` reverses a set, `values` and `after` reverse a remove, `wasAfter`
   reverses a move. An undo is an ordinary change set, not a rewind.
-- **`text` targets literal atoms only.** A formula's expression is replaced with
-  `set`, which keeps the one in-place string edit in the system to one kind of
-  string — the precondition that makes offset shifting safe to attempt at all.
+- **`text` targets literal atoms only.** A formula atom is changed by `set`ting
+  its `formulaId`, which keeps the one in-place string edit in the system to one
+  kind of string — the precondition that makes offset shifting safe to attempt
+  at all.
 - **`target` exists so the conflict ladder can pre-filter** without resolving
   paths against a body: a row insert cannot collide with a mark edit, and knowing
   that cheaply is what makes the cheap checks cheap.
 - **`merge` is now `mergedCells`.** Every other target is a noun naming a thing;
   `merge` read as the verb for the operation being performed on it.
-- **`range` is a target**, because a path can address one — a formula's operands,
-  a print area, a chart's data all name a range rather than a cell.
-- **A chart takes no `move`.** It anchors to a cell with an offset and floats
-  above the grid rather than sitting in an ordered list, so there is no `after`
-  for it to move past. Repositioning a chart is a `set` on its anchor. Sheets are
-  the same: `cell` takes no `insert` or `move`, because setting `B7` is how a
-  cell comes into being.
+- **`range` is a target**, because a path can address one — a formula's operands
+  and a print area both name a range rather than a cell.
+- **`cell` takes no `insert` or `move`.** Setting `B7` is how a cell comes into
+  being, and its address is its position — there is no ordered list to move it
+  within.
+- **`chart` is deferred, not omitted.** Charts need a data range, an anchoring
+  model, and a rendering surface, none of which exists. The target returns with
+  them, and until then the op table describes only things that can be built.
 
 ### The pairings are enforced, and it costs almost nothing
 
@@ -766,9 +884,9 @@ convention. Enforcing all of it does **not** mean a union member per pairing. It
 means each op keeps its own narrower target union:
 
 ```ts
-set    → row block atom mark slide element section sheet cell range chart field
-insert → row block atom mark slide element section sheet mergedCells chart
-remove → row block atom mark slide element section sheet cell mergedCells chart
+set    → row block atom mark slide element section sheet cell range field
+insert → row block atom mark slide element section sheet mergedCells
+remove → row block atom mark slide element section sheet cell mergedCells
 move   → row block slide element section sheet
 text   → atom
 ```
@@ -776,10 +894,9 @@ text   → atom
 Still five members. The table becomes the type, and a nonsensical op is rejected
 at the door instead of failing later when something tries to apply it.
 
-**`move` is the one that matters.** It is the only op whose illegal targets are
-silently plausible — `move` a cell, `move` a chart — and both are cases the model
-rules out for a reason: a cell is keyed by address rather than ordered, and a
-chart floats on an anchor rather than sitting in a list.
+**`move` is the one that matters.** Its illegal targets are the silently
+plausible ones — `move` a cell reads as obviously fine and is exactly what the
+model rules out, because a cell is keyed by address rather than ordered.
 
 ## Consequence: sheet cells get ids
 
@@ -842,13 +959,15 @@ recorded here because it is the op vocabulary that made it necessary.
 
 ---
 
-# formula — the one capability with no table
+# formula — ids and immutability
 
-It has a public door, an `api/`, errors, and no `schema.ts` at all.
+A formula is a row of its own. Evaluation stays stateless, but the expression
+stops being text carried on whatever block happens to use it.
 
 ```text
 formula/
 ├── errors.ts
+├── schema.ts                 the formulas table
 ├── types/expression.ts       the parsed form
 ├── types/evaluation.ts       result + context
 └── api/evaluate/
@@ -857,9 +976,7 @@ formula/
     └── reduce/{reduce,arithmetic,builtins}.ts
 ```
 
-**Decisions baked in**
-
-## Open: formulas get ids, and stop being text on a block
+## Formulas get ids, and stop being text on a block
 
 Cells having ids makes a second thing possible. **A formula stores cell *ids*,
 not addresses**, so when a cell moves the formula still points at the same value
@@ -880,14 +997,15 @@ Nothing about the block structure changes. There are still text atoms and formul
 atoms; a formula atom simply holds a reference instead of a copy:
 
 ```ts
-// before
+// on the branch
 { id, kind: "formula", expression: string, resolved, state, error? }
-// after
+// the design
 { id, kind: "formula", formulaId: string,  resolved, state, error? }
 ```
 
-`FormulaBlock` loses `expression` for the same reason — it asks the formula, which
-is the only thing that can give an up-to-date rendering anyway.
+`FormulaBlock` carries `formulaId` for the same reason and never an expression —
+it asks the formula, which is the only thing that can give an up-to-date
+rendering anyway.
 
 **Formulas are never deduplicated.** Two cells holding `=A1*2` are two formulas
 with two ids, because sharing one would mean editing either edits both.
@@ -950,19 +1068,18 @@ minting, and minted without immediately losing what it replaced.
 
 # What the validators do not enforce
 
-Five invariants the model states that no schema check catches. Each is upheld by
+Six invariants the model states that no schema check catches. Each is upheld by
 code somewhere, and each is a place a future change breaks something silently.
 
 | Invariant | Upheld by | If it breaks |
 | --- | --- | --- |
 | `display` is the atoms' text in order | `applyOps` | Marks index a string that no longer matches its atoms — silently wrong text runs |
 | Marks are UTF-16 offsets into `display` | `applyOps` and `shift` | Formatting drifts onto the wrong words, no error raised |
-| A prompt names its author | `messageAuthor()` | A question from nobody, with no way to attribute or reply |
+| A prompt names its author | `message()` | A question from nobody, with no way to attribute or reply |
+| `state` agrees with `error` | `message()` | Two fields disagree about whether the turn worked |
 | **An op is a pure function on a body** | Nothing — it is a rule about what may be written | An op with an outside effect re-runs it on every read, because a read *is* a replay |
 | Ids are unique within a resource | Whoever mints them | A path resolves to two things; the conflict ladder's identity check stops meaning anything |
 
 ## Related
 
-[how to build it](0-foundation-build.md) ·
-[merge order](../storage/merge-order.md) ·
-[data models](../data-models/)
+[how to build it](0-foundation-build.md) · [data models](../data-models/)

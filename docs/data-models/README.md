@@ -106,9 +106,11 @@ difference between these and [general
 resources](revisions/README.md), where concurrent editing is the point and
 merging is worth its machinery.
 
-Append-only tables have no `revision` (`messages`, `activity`, `changeSets`,
+Append-only tables have no `revision` (`activity`, `changeSets`,
 `latticeChanges`), and neither do derived ones (`latticeNodes`,
-`resourceSnapshots`, `derivedOutputs`). Nothing edits them in place.
+`resourceSnapshots`, `derivedOutputs`). Nothing edits them in place. Messages are
+append-only for the same reason and are not a table at all — a thread holds
+[its own turns](core/message.md).
 
 ## Document size
 
