@@ -46,7 +46,7 @@ it is ever worth it.
 | 8 | **`SetExpression` → `ResourceSetExpression`**, flattened to `include` / `exclude` | Any tree of unions and differences normalizes to two flat lists; the depth-4 unrolling disappears |
 | 9 | **`ResourceKind` becomes an open string** with `::` subkinds | A connector is a provider and a version; a closed union cannot grow with integrations |
 | 10 | **`Actor` drops `automation` and `connector`** | An unvalidated string nothing checks is worse than an honest absence |
-| 11 | **`FormulaValue` gains `list`, `range`, `reference`** | A simple range is a list, a 2-D one is neither, and a formula can produce a pointer |
+| 11 | **`FormulaValue` gains `reference`; `list`, `record`, and `range` all stay `table`** | A value is a result, not a query — liveness belongs to the formula that recomputes |
 | 12 | **`TextStyle` gains `bold` and `background`** | Bold was the one common style you could not set the way you set italic |
 | 13 | **Every id is a plain `string`** | Tables land in stages; typing them means loosening and re-tightening across dozens of files |
 | 14 | **`Actor` kinds become `user` / `task` / `persona` / `system`**, uniform `{kind, id}` | A persona answering in its own chat is not a task, and inventing one to attribute a reply invents a unit of work |
@@ -515,36 +515,37 @@ type FormulaValue =
   | { kind: "text";      value: string }
   | { kind: "boolean";   value: boolean }
   | { kind: "date";      value: DateValue }
-  | { kind: "list";      values: FormulaValue[] }              // ← added
-  | { kind: "range";     sheetId: string;                      // ← added
-                         columns: string[]; rows: number[] }
   | { kind: "reference"; ref: string }                         // ← added
   | { kind: "table";     columns: FormulaColumn[]; rows: FormulaValue[][] };
 ```
 
-**Three kinds added, and one deliberately not.**
+**One kind added, and three deliberately not.**
 
-- **`list` is a simple sequence.** A range down one column or across one row
-  resolves to a list, and that is a different thing from a table — it has no
-  columns to type and no header to name. Folding it into a one-column table would
-  make every consumer check whether a table was really a list.
-- **`range` is a live window onto a sheet.** It holds the column and row
-  references rather than the values, so the sheet stays the authority and the
-  range stays current. Explicit lists rather than a from/to pair, because a
-  selection can be irregular.
 - **`reference` is an id the renderer resolves.** Always a plain string. A
   friendlier notation — `sheets.Budget.B7`, `document.Memo.row.block` — is a
   later concern that resolves *to* one of these, not a second shape here.
+- **`list` is not a kind.** A one-column table says it, and a separate kind would
+  make every consumer check whether a table was really a list.
 - **`record` is not a kind.** A record is a one-row table whose fields are its
-  columns, which is what `table` already says. There is no behaviour a separate
-  kind would add.
+  columns, which `table` already says.
+- **`range` is not a kind**, and this is the one worth stating properly.
 
-**A range always names its sheet, and a computed result is never a range.**
-Multiplying every value in `B2:D10` by two does not produce a range — the answer
-no longer corresponds to those cells. It produces a `list` or a `table`. That is
-what keeps `range` meaning "these cells, right now" rather than "some numbers
-that came from cells once", and it is why `sheetId` is required rather than
-optional.
+### Why a range is a table
+
+A live range — sheet, columns, rows, values pulled on read — was tempting, and
+what killed it is that **a value is a result, not a query.** Liveness belongs to
+the formula, which re-evaluates; a value is what that evaluation produced. A
+range that stayed live would be the only value kind that changed without anything
+recomputing it.
+
+It also removes the awkward case: multiplying `B2:D10` by two produces something
+that is no longer those cells. As a range that needed a second "augmented" form.
+As a table it is just a table.
+
+The one thing a range had that a table does not is knowing *where* the values
+came from. If that turns out to matter — highlighting the source cells,
+re-resolving after an edit — it is an optional field on `table` rather than a
+second kind.
 
 **Where the validator and the type differ** — a cell is `v.any()` in the
 validator. Only the `table` member is written twice.
@@ -798,9 +799,31 @@ formula/
 
 **Decisions baked in**
 
-- **Stateless — an expression is text on the block that holds it.** Nothing to
-  persist beyond the expression and its resolved value, both of which live on the
-  block.
+## Open: formulas get ids, and stop being text on a block
+
+Cells having ids makes a second thing possible. **A formula stores cell *ids*,
+not addresses**, so when a cell moves the formula still points at the same value
+and simply renders a different address.
+
+That means a formula has the same raw/display split a text block has:
+
+| | Holds | Example |
+| --- | --- | --- |
+| **canonical** | what is stored — cell ids | `=#c4x1 * 2` |
+| **rendered** | what a person reads — resolved to addresses | `=B7 * 2` |
+| **value** | what it evaluated to | `84` |
+
+And a formula gains an id of its own, so a block stores `formulaId` rather than
+expression text.
+
+**This is not yet designed.** It changes `FormulaBlock`, the formula atom inside
+a text block, and where a formula is stored — see the questions below.
+
+**Decisions baked in**
+
+- **Stateless evaluation.** Even with ids, nothing caches a dependency graph:
+  order is derived from the formulas at load, and persisting it would mean a
+  second representation that can disagree with the first.
 - **Formula depends on the name manager, never the reverse.** It resolves any
   bare name that is not a built-in by asking; the name manager evaluates nothing.
   That is what keeps the two from depending on each other in a circle.
