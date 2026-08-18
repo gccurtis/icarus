@@ -64,7 +64,8 @@ are checked for you. The judgment items are the half worth your attention.
     boundary worth explaining. One holding an entry file and nothing else did not
     earn it; it is a file.
 18. **Does a promoted `methods/shared/` procedure preserve an object-wide
-    invariant?** Two methods wanting the same code is not enough. Promotion
+    invariant?** Methods wanting the same code is not enough, and neither is a
+    caller count — the linter only checks that something calls it. Promotion
     without an invariant moves code away from its owner and hides where the rule
     lives.
 19. A complex method document explains the flow behind the surface rather than

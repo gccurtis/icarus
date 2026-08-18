@@ -1194,11 +1194,8 @@ export const checkMethods = (scope) => {
     for (const path of walkFiles(shared)) {
       if (!path.endsWith(".ts")) continue;
       const found = callers.get(path)?.size ?? 0;
-      if (found < 2) {
-        fail(
-          path,
-          `methods promoted with ${found} caller${found === 1 ? "" : "s"} — shared/ holds invariants two methods share`
-        );
+      if (found < 1) {
+        fail(path, "methods promoted with no callers — shared/ holds a step some method needs");
       }
     }
   }

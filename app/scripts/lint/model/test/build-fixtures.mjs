@@ -547,7 +547,38 @@ export const FIXTURES = {
     );
   },
 
+  // A promotion nothing calls. One caller is legitimate — `shared/` holds a step
+  // some method needs, and whether a second one arrives is not the linter's
+  // judgment to make. Zero callers is the case still worth catching: it is dead
+  // code sitting where the next reader will assume something depends on it.
   "method-ownership-lonely-shared": (root) => {
+    clean(root);
+    write(
+      root,
+      `${MODEL}/client/workbench/methods/activate.ts`,
+      "export const activate = (tabs: Tab[], id: string): void => {};\n"
+    );
+    write(
+      root,
+      `${MODEL}/client/workbench/methods/open/open.ts`,
+      'import { canonicalResource } from "$model/client/workbench/methods/open/canonical-resource";\n' +
+        'import { restore } from "$model/client/workbench/methods/open/restore/restore";\n\n' +
+        "export const open = (tabs: Tab[], resource: string): Tab =>\n" +
+        "  restore(tabs, canonicalResource(resource));\n"
+    );
+    write(
+      root,
+      `${MODEL}/client/workbench/methods/open/open.md`,
+      "# Method: `open`\n\n## Method Tree\n\n```text\nopen(tabs, resource)\n" +
+        "├── canonicalResource()     canonical-resource.ts\n" +
+        "└── restore()               restore/restore.ts\n" +
+        "    └── validateStoredKind()  restore/validate-stored-kind.ts\n```\n"
+    );
+  },
+
+  // One caller, and nothing else wrong. This is the case the rule used to
+  // reject and now accepts.
+  "method-ownership-single-caller-shared": (root) => {
     clean(root);
     write(
       root,

@@ -260,8 +260,15 @@ test("methods rejects one directory importing another", () => {
   expectOnly("method-ownership-sibling-import", "methods", "moves to methods/shared/");
 });
 
-test("methods rejects a promoted method with one caller", () => {
-  expectOnly("method-ownership-lonely-shared", "methods", "1 caller");
+test("methods rejects a promoted method with no callers", () => {
+  expectOnly("method-ownership-lonely-shared", "methods", "no callers");
+});
+
+test("methods accepts a promoted method with one caller", () => {
+  // Whether a second caller arrives is not the linter's judgment. A step that
+  // has to be spelled identically by whoever needs it belongs in shared/ the
+  // moment the first method needs it that way.
+  assert.deepEqual(checkMethods(scopeFor("method-ownership-single-caller-shared")), []);
 });
 
 test("methods resolves every documented path and accepts a shared method two use", () => {

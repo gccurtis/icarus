@@ -212,14 +212,22 @@ The directory and entry file always share a name. Nesting repeats recursively.
 The complex method document contains the method tree and names the real paths.
 
 A supporting method used by one public method stays below that method. A method
-used by a second public method moves to `methods/shared/` only when it preserves
-an object-wide invariant. Sibling public-method directories never import one
-another.
+moves to `methods/shared/` when it preserves an object-wide invariant. Sibling
+public-method directories never import one another, and `shared/` is the only
+path between them.
 
-**`methods/shared/` is created by hand, when its second caller arrives.** There
-is no promotion command, matching the capability generator, which has none
-either. Promotion is a judgment about which invariant the method preserves, and a
-command would turn it into a mechanical move of any code that appeared twice.
+**The test is the invariant, not the caller count.** A promoted method needs at
+least one caller — a file nothing imports is dead code sitting where the next
+reader will assume something depends on it — and the linter checks exactly that.
+It does not ask for two. Whether a second caller arrives is a fact about the
+future, and a rule demanding one would either push a genuinely shared step back
+under whichever method happened to need it first, or invite a second import
+written to satisfy the linter.
+
+**`methods/shared/` is created by hand.** There is no promotion command, matching
+the capability generator, which has none either. Promotion is a judgment about
+which invariant the method preserves, and a command would turn it into a
+mechanical move of any code that appeared twice.
 
 This is the same execution-tree rule capabilities already use for
 `api/<function>/`. Capability functions always get directories because each is
@@ -299,7 +307,7 @@ view lint carry no codes either.
 | `lifetime` | Nothing constructs at module load; only an environment door holds a mutable module-scope binding or reaches `$app/*`; the client accessor guards on `browser`, and both accessors throw. |
 | `environment` | Nothing browser-reachable imports `model/server`; no server module reaches `model/client`; every route reaching the client model sits beneath a layout exporting `ssr = false`. |
 | `doors` | Object and environment boundaries are crossed at their doors; constructors are not reachable from consumers. |
-| `methods` | A method directory is named for its entry and documents its tree; every documented path exists; sibling directories do not import one another; a shared method has at least two callers. |
+| `methods` | A method directory is named for its entry and documents its tree; every documented path exists; sibling directories do not import one another; a shared method has at least one caller. |
 | `tests` | Tests live under environment or object `test/` directories, in `unit/`, `regression/`, or `non-functional/`, with the extension their contents require. |
 | `view-keys` | No model type names a Svelte `Component`, imports one, or sits in a `.svelte` file. |
 
