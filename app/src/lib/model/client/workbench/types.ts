@@ -189,10 +189,10 @@ export type Tab = {
  * You do not close a singleton any more than you close project overview; not
  * being on one *is* closing it.
  *
- * Exported because four surfaces ask the same question — `close` and `reorder`
- * refuse one, the tab strip offers no close affordance for one, and the
- * `tab.close` command greys itself out on one — and four spellings of one
- * predicate is three chances to get it wrong.
+ * Exported because five surfaces ask the same question — `close` and `reorder`
+ * refuse one, `closeAll` keeps only those, the tab strip offers no close
+ * affordance for one, and the `tab.close` command greys itself out on one —
+ * and five spellings of one predicate is four chances to get it wrong.
  */
 export const isPermanent = (tab: Tab): boolean => tab.target.kind === "singleton";
 

@@ -70,8 +70,9 @@ tab — it is `target.kind === "singleton"`, and `isPermanent(tab)` is the one
 spelling of it. A boolean beside the target would be a second answer that can
 disagree with the first.
 
-Four surfaces ask: `close` and `reorder` refuse one, the strip offers no close
-affordance for one, and the `tab.close` command greys itself out on one.
+Five surfaces ask: `close` and `reorder` refuse one, `closeAll` keeps only
+those, the strip offers no close affordance for one, and the `tab.close`
+command greys itself out on one.
 
 ### The launcher never dedupes
 
