@@ -46,6 +46,7 @@ export default {
       $access: "src/lib/capabilities/access",
       $content: "src/lib/capabilities/content",
       $messages: "src/lib/capabilities/messages",
+      $revisions: "src/lib/capabilities/revisions",
       $settings: "src/lib/capabilities/settings",
       $shared: "src/lib/capabilities/shared",
     },
