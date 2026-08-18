@@ -13,7 +13,14 @@ const resource = (refKind: string, id: string): Selector => ({
   kind: "resource",
   ref: { kind: refKind, id }
 });
-const set = (setId: string): Selector => ({ kind: "set", setId });
+const savedSet = (id: string): Selector => ({ kind: "resource", ref: { kind: "resourceSet", id } });
+const part = (id: string, scopePath: string): Selector => ({
+  kind: "part",
+  ref: { kind: "document", id },
+  scopePath,
+  label: "a paragraph"
+});
+const web: Selector = { kind: "web" };
 
 describe("normalize", () => {
   /**
@@ -52,21 +59,21 @@ describe("normalize", () => {
     it("collapses duplicates", () => {
       const result = normalize({
         include: [resource("document", "d1"), resource("document", "d1")],
-        exclude: [set("s1"), set("s1")]
+        exclude: [savedSet("s1"), savedSet("s1")]
       });
 
       expect(result.include).toEqual([resource("document", "d1")]);
-      expect(result.exclude).toEqual([set("s1")]);
+      expect(result.exclude).toEqual([savedSet("s1")]);
     });
 
     it("lets exclude win when a selector is in both lists", () => {
       const result = normalize({
-        include: [kind("document"), set("s1")],
-        exclude: [set("s1")]
+        include: [kind("document"), savedSet("s1")],
+        exclude: [savedSet("s1")]
       });
 
       expect(result.include).toEqual([kind("document")]);
-      expect(result.exclude).toEqual([set("s1")]);
+      expect(result.exclude).toEqual([savedSet("s1")]);
     });
 
     it("absorbs before subtracting, so excluding the project leaves nothing", () => {
@@ -109,13 +116,14 @@ describe("normalize", () => {
       expect(result.include).toContainEqual(kind("external"));
     });
 
-    it("keeps a set, which is opaque until it resolves", () => {
-      // Nothing can be said from here about what a set contains, so nothing may
-      // absorb it — not even the project.
-      const result = normalize({ include: [project, set("s1")], exclude: [] });
+    it("absorbs a saved set, because a set is a resource", () => {
+      // There is no `set` arm: a resource set *is* a resource, so `project`
+      // covers one exactly as it covers any other resource. That is the whole
+      // reason a separate arm was not worth having.
+      const result = normalize({ include: [project, savedSet("s1")], exclude: [] });
 
       expect(result.include).toEqual([project]);
-      expect(normalize({ include: [set("s1"), set("s2")], exclude: [] }).include).toHaveLength(2);
+      expect(normalize({ include: [savedSet("s1"), savedSet("s2")], exclude: [] }).include).toHaveLength(2);
     });
 
     it("does not let a narrower kind absorb its own family", () => {
@@ -125,10 +133,63 @@ describe("normalize", () => {
     });
   });
 
+  describe("part and web are exempt from absorption", () => {
+    it("project does not absorb a part", () => {
+      // They are different mechanisms, not narrower statements of membership.
+      // Retrieval over the document may never surface that paragraph; naming it
+      // as a part is what guarantees the response sees it.
+      const result = normalize({ include: [project, part("d1", "rows/#r1")], exclude: [] });
+
+      expect(result.include).toHaveLength(2);
+      expect(result.include).toContainEqual(part("d1", "rows/#r1"));
+    });
+
+    it("a resource does not absorb a part of itself", () => {
+      const result = normalize({
+        include: [resource("document", "d1"), part("d1", "rows/#r1")],
+        exclude: []
+      });
+
+      expect(result.include).toHaveLength(2);
+    });
+
+    it("project does not absorb web, which belongs to no set", () => {
+      const result = normalize({ include: [project, web], exclude: [] });
+
+      expect(result.include).toContainEqual(web);
+    });
+
+    it("two parts of one resource at different paths are two selectors", () => {
+      const result = normalize({
+        include: [part("d1", "rows/#r1"), part("d1", "rows/#r2")],
+        exclude: []
+      });
+
+      expect(result.include).toHaveLength(2);
+    });
+
+    it("the same part twice still collapses", () => {
+      // Exempt from absorption is not exempt from deduplication.
+      const result = normalize({
+        include: [part("d1", "rows/#r1"), part("d1", "rows/#r1")],
+        exclude: []
+      });
+
+      expect(result.include).toHaveLength(1);
+    });
+
+    it("web is still excluded when it appears in both lists", () => {
+      const result = normalize({ include: [web], exclude: [web] });
+
+      expect(result.include).toEqual([]);
+      expect(result.exclude).toEqual([web]);
+    });
+  });
+
   describe("canonical form", () => {
     it("gives one representation to a set written two ways", () => {
-      const one = normalize({ include: [kind("document"), set("s1")], exclude: [] });
-      const other = normalize({ include: [set("s1"), kind("document")], exclude: [] });
+      const one = normalize({ include: [kind("document"), savedSet("s1")], exclude: [] });
+      const other = normalize({ include: [savedSet("s1"), kind("document")], exclude: [] });
 
       expect(one).toEqual(other);
     });
@@ -154,13 +215,13 @@ describe("normalize", () => {
 });
 
 describe("selectorValidator", () => {
-  it("names four selectors and no combining operators", () => {
+  it("names five selectors and no combining operators", () => {
     // Union and difference are the two lists themselves. A tree of them
     // normalizes to one include set and one exclude set, so there is nothing for
     // an operator node to say.
     const kinds = selectorValidator.members.map((member) => member.fields.kind.value as string);
 
-    expect(kinds.sort()).toEqual(["project", "resource", "resourceKind", "set"]);
+    expect(kinds.sort()).toEqual(["part", "project", "resource", "resourceKind", "web"]);
     for (const absent of ["union", "difference", "intersection"]) {
       expect(kinds).not.toContain(absent);
     }
