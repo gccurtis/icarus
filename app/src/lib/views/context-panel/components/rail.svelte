@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Component } from "svelte";
 
-  import type { ContextId } from "$model/client";
+  import type { ContextId } from "$views/context-panel/procedures/resolve-context";
   import { RAIL_WIDTH } from "$views/context-panel/types";
 
   /**

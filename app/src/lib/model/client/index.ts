@@ -11,6 +11,8 @@ export type {
   CommandsModel
 } from "$model/client/commands";
 export { COMMAND_IDS, DEFAULT_BINDINGS, chordOf, isCommandId } from "$model/client/commands";
+export type { ConfigurationModel, ConfigurationSnapshot } from "$model/client/configuration";
+export { requiredNumber } from "$model/client/configuration";
 export type {
   ClientStorage,
   PersistedClient,
@@ -20,25 +22,25 @@ export type {
   PersistedWorkbench
 } from "$model/client/storage";
 export type {
-  ContextId,
-  Inspection,
-  InspectionNode,
-  Panels,
-  ResourceKind,
-  ResourceRef,
+  Frame,
+  InspectionKey,
+  ScreenKind,
+  Selection,
+  SingletonScreen,
   Tab,
   TabId,
-  TabOptions,
-  WorkbenchModel
+  TabTarget,
+  ViewStateFor,
+  ViewStatePatch,
+  WorkbenchModel,
+  WorkbenchViewState
 } from "$model/client/workbench";
 export {
-  CONTEXTS_BY_KIND,
-  CONTEXT_IDS,
-  DEFAULTS,
-  PROJECT_OVERVIEW,
-  RESOURCE_KINDS,
-  isContextId,
-  isResourceKind
+  DEFAULT_FRAME,
+  SINGLETON_SCREENS,
+  SINGLETON_TARGETS,
+  isPermanent,
+  screenKindOf
 } from "$model/client/workbench";
 
 /**

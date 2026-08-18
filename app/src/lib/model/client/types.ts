@@ -1,4 +1,7 @@
 import type { CommandsModel } from "$model/client/commands";
+import type { ConfigurationModel, ConfigurationSnapshot } from "$model/client/configuration";
+import type { CopilotModel } from "$model/client/copilot";
+import type { ResourceRuntimesModel } from "$model/client/resource-runtimes";
 import type { ClientStorage } from "$model/client/storage";
 import type { WorkbenchModel } from "$model/client/workbench";
 
@@ -16,6 +19,15 @@ import type { WorkbenchModel } from "$model/client/workbench";
  */
 export type ClientModelInput = {
   readonly project: string;
+  /**
+   * The settings the server published for this tab, from the layout's load data.
+   *
+   * Required rather than optional, and with no default anywhere. A client whose
+   * thresholds silently fell back to literals would be a client configured by
+   * two files that can disagree — which is the whole reason this crosses at all.
+   * A test builds one with the values it means to prove something about.
+   */
+  readonly configuration: ConfigurationSnapshot;
   readonly storage?: ClientStorage;
 };
 
@@ -36,7 +48,24 @@ export interface ClientModel {
    * this value and none of them should find it a different way.
    */
   readonly project: string;
+  readonly configuration: ConfigurationModel;
   readonly storage: ClientStorage;
+  readonly resourceRuntimes: ResourceRuntimesModel;
   readonly workbench: WorkbenchModel;
   readonly commands: CommandsModel;
+  readonly copilot: CopilotModel;
+
+  /**
+   * Ends the instance. Run by the layout that initialized it, through `$effect`
+   * cleanup.
+   *
+   * The first object to own something releasable is what brought this — a
+   * runtime holds a subscription and an unsent buffer, and both have to go
+   * somewhere deliberate when the tab does. Objects are released in reverse
+   * construction order.
+   *
+   * Synchronous. A closing tab has almost no budget, and an `await` here is how
+   * the last resource's edits fail to leave.
+   */
+  close(): void;
 }

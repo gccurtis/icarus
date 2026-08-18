@@ -7,30 +7,26 @@
   import NextText from "$views/inspector/components/next-text.svelte";
   import TextSelection from "$views/inspector/components/text-selection.svelte";
   import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH } from "$views/inspector/types";
+  import { familyOf } from "$views/inspector/procedures/inspection-family";
 
   /**
    * The inspector — the lens. It answers "what is this selected thing?"
    *
-   * It reads `currentInspection`, the innermost node of the active tab's
-   * inspection ancestry. That value is `undefined` whenever nothing is
-   * inspected, which the model made a named state rather than an absent one:
-   * this panel is a control surface, not a mirror, and the nothing-inspected
-   * case is exactly when it can offer insert affordances.
+   * It reads `inspectedNode`, the active tab's inspection key. That value is
+   * `undefined` whenever nothing is inspected, and this panel is a control
+   * surface rather than a mirror — the nothing-inspected case is exactly when it
+   * can offer insert affordances.
    *
-   * **The key selection is an if-chain rather than a map**, unlike the workspace
-   * and the context panel. `InspectionNode` is a discriminated union whose
-   * members carry different fields, so a `Record<kind, Component>` would erase
-   * the per-kind props and every component would take `any`. Narrowing on `kind`
-   * is what keeps `blockId` and the offsets typed at the point they are passed.
+   * **An inspection is a key and nothing more.** It carries no payload — a
+   * payload would be a second record of what the user has selected, beside the
+   * one already in view state — so this panel routes on the family before the
+   * dot and reads the detail from where that family keeps it: view state for a
+   * block or a document, the copilot object for a conversation.
    *
-   * **The map is partial because the application is, not because the union is
-   * about documents.** An inspection is a label for whatever the user is looking
-   * at, anywhere: `copilot` belongs to no resource at all, and slides,
-   * spreadsheets, and research will each contribute their own. This panel builds
-   * a view per label that some surface can currently produce — three today — and
-   * the fallback names the rest, which is the honest rendering of "something is
-   * inspected and this panel has no view for it yet". The union is closed, so
-   * adding a label makes the compiler name every surface that must handle it.
+   * The vocabulary lives in `procedures/`, not in the model, for the same reason
+   * the context rail's does. An unrouteable key renders as "no view yet" rather
+   * than throwing: the model never validated the string, which is the trade for
+   * it not owning the vocabulary.
    *
    * **Collapsed, it becomes a rail rather than nothing.** A flank that vanishes
    * leaves no way back but finding a 4px edge, so what remains is the same 44px
@@ -40,8 +36,12 @@
    */
   const { workbench } = clientModel();
 
-  const inspection = $derived(workbench.currentInspection);
-  const collapsed = $derived(workbench.panels.inspectorCollapsed);
+  const inspected = $derived(workbench.inspectedNode);
+  const family = $derived(inspected === undefined ? undefined : familyOf(inspected));
+  const documentState = $derived(
+    workbench.active.viewState.kind === "document" ? workbench.active.viewState : undefined
+  );
+  const collapsed = $derived(workbench.frame.inspectorCollapsed);
 </script>
 
 <aside class="inspector" aria-label="Inspector">
@@ -63,23 +63,27 @@
     </button>
   {:else}
     <div class="content">
-      {#if !inspection}
+      {#if inspected === undefined}
         <p class="note">Nothing selected.</p>
-      {:else if inspection.kind === "copilot"}
-        <Copilot chatId={inspection.chatId} />
-      {:else if inspection.kind === "document-text-selection"}
-        <TextSelection blockId={inspection.blockId} from={inspection.from} to={inspection.to} />
-      {:else if inspection.kind === "document-next-text"}
-        <NextText blockId={inspection.blockId} />
+      {:else if family === "copilot"}
+        <Copilot member={inspected.slice("copilot.".length)} />
+      {:else if inspected === "block.text-selection" && documentState?.selection}
+        <TextSelection
+          anchor={documentState.scrollAnchor}
+          from={documentState.selection.anchor}
+          to={documentState.selection.head}
+        />
+      {:else if inspected === "block.next-text"}
+        <NextText anchor={documentState?.scrollAnchor} />
       {:else}
-        <p class="note">No view for <code>{inspection.kind}</code> yet.</p>
+        <p class="note">No view for <code>{inspected}</code> yet.</p>
       {/if}
     </div>
   {/if}
 
   <ResizeHandle
     side="end"
-    width={workbench.panels.inspectorWidth}
+    width={workbench.frame.inspectorWidth}
     {collapsed}
     min={MIN_WIDTH}
     max={MAX_WIDTH}

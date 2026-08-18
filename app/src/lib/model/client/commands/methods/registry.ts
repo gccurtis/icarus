@@ -2,6 +2,7 @@ import type { CommandsState } from "$model/client/commands/definition.svelte";
 import { setOpen } from "$model/client/commands/methods/shared/set-open";
 import type { Command, CommandId } from "$model/client/commands/types";
 import type { WorkbenchModel } from "$model/client/workbench";
+import { isPermanent } from "$model/client/workbench";
 
 /**
  * Every command, built over the state it acts on.
@@ -28,7 +29,7 @@ export const buildRegistry = (state: CommandsState): Record<CommandId, Command> 
   },
 
   "tab.close": {
-    enabled: () => !state.workbench.active.permanent,
+    enabled: () => !isPermanent(state.workbench.active),
     run: () => state.workbench.close(state.workbench.activeId)
   },
 

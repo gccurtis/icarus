@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ResourceRef } from "$model/client";
+  import { screenKindOf, type Tab } from "$model/client";
 
   /**
    * The `outline` context: the structure of the resource being looked at.
@@ -13,14 +13,14 @@
    * real structure needs a document capability, and inventing a shared store to
    * fake one would be a worse lie than a visibly static list.
    */
-  let { resource }: { resource: ResourceRef } = $props();
+  let { tab }: { tab: Tab } = $props();
 
   const HEADINGS = ["Summary", "Findings", "Open questions"];
 </script>
 
 <div class="context">
   <h2 class="heading">Outline</h2>
-  <p class="note"><code>{resource.id}</code></p>
+  <p class="note"><code>{tab.target.kind === "resource" ? tab.target.resourceId : screenKindOf(tab.target)}</code></p>
   <ol class="entries">
     {#each HEADINGS as heading (heading)}
       <li>{heading}</li>

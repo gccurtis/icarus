@@ -6,95 +6,69 @@ Lives at `methods/methods.md`.
 readable surface and delegates to these files, so reading `types.ts` tells you
 what this object offers and reading a method tells you how it holds.
 
-This is a list of **methods**, not a mirror of anything. Each entry is here
-because `WorkbenchModel` means to offer it.
-
-Three objects folded in here, which is why the list is long enough to need a
-directory at all. The context rail, the inspector, and panel geometry all read
-and wrote the active tab; being separate objects only meant each was handed a
-workbench at construction.
-
 ## Methods
 
 | Method | Shape | Location | Effect | Description |
 | ------ | ----- | -------- | ------ | ----------- |
-| `open` | directory | [`open/`](open/open.md) | mutator | Opens a resource, or activates the tab already holding it |
-| `close` | file | [`close.ts`](close.ts) | mutator | Removes a transient tab and chooses the next active one |
-| `activate` | file | [`activate.ts`](activate.ts) | mutator | Makes a tab the active one |
-| `reorder` | file | [`reorder.ts`](reorder.ts) | mutator | Moves a transient tab among the transient tabs |
-| `update` | file | [`update.ts`](update.ts) | mutator | Patches any tab's options by id |
-| `availableContexts` | file | [`available-contexts.ts`](available-contexts.ts) | accessor | The rail positions the active tab's kind offers |
-| `activeContext` | file | [`active-context.ts`](active-context.ts) | accessor | The active tab's rail position, or its kind's default |
-| `selectContext` | file | [`select-context.ts`](select-context.ts) | mutator | Records a rail choice on the active tab |
-| `currentInspection` | file | [`current-inspection.ts`](current-inspection.ts) | accessor | The innermost node of the active tab's inspection |
-| `inspect` | file | [`inspect.ts`](inspect.ts) | mutator | Replaces the active tab's inspection |
-| `panels` | file | [`panels.ts`](panels.ts) | accessor | The active tab's geometry, or `DEFAULTS` |
-| `resize` | file | [`resize.ts`](resize.ts) | mutator | Records geometry on the active tab |
-
-`tabs`, `activeId`, and `active` are exposed state rather than methods. The first
-two are read straight off the instance; the third is
-[`shared/active-tab.ts`](shared/active-tab.ts), because several methods need the
-same lookup and the same refusal.
+| `open` | directory | [`open/`](open/open.md) | mutator | The tab already on this target, or a fresh one |
+| `resolveLauncher` | directory | [`open/`](open/open.md) | mutator | Turn a launcher into what it created |
+| `close` | file | [`close.ts`](close.ts) | mutator | Splice, queue, release |
+| `closeAll` | file | [`close-all.ts`](close-all.ts) | mutator | Clear to the singletons |
+| `activate` | file | [`activate.ts`](activate.ts) | mutator | Move `activeId` |
+| `reorder` | file | [`reorder.ts`](reorder.ts) | mutator | Move a closable tab |
+| `reopenClosed` | file | [`reopen-closed.ts`](reopen-closed.ts) | mutator | Pop the reopen queue |
+| `update` | file | [`update.ts`](update.ts) | mutator | Patch one screen's own state |
+| `selectContext` | file | [`select-context.ts`](select-context.ts) | mutator | Record the rail position |
+| `inspect` | file | [`inspect.ts`](inspect.ts) | mutator | Replace the inspection key |
+| `resize` | file | [`resize.ts`](resize.ts) | mutator | Record frame geometry |
+| `inspectedNode` | file | [`inspected-node.ts`](inspected-node.ts) | accessor | The active tab's key |
+| `frame` | file | [`frame.ts`](frame.ts) | accessor | The active tab's geometry |
+| `runtimeFor` | file | [`runtime-for.ts`](runtime-for.ts) | accessor | A tab's resource runtime |
 
 ## Shape
 
-A method is one file while one file tells the truth about it. It becomes a
-directory when it owns supporting flow — then the directory and its entry file
-share a name, and the entry's document carries the whole method tree. Nesting
-repeats: a supporting method with support of its own becomes a directory too.
-
-`open` is the only directory here. It owns restoration, because a stored tab
-enters this workbench by the same path a click takes and the dedupe that makes
-that safe belongs to `open` rather than beside it.
+`open` is the only directory, and `resolveLauncher` sits inside it because the
+two are one flow: a launcher is a tab a user opened without yet saying what for,
+and resolving is where they say. Both end in the same two shared steps.
 
 ## State Access
 
-Methods receive `WorkbenchState` from the definition — the reactive tab list, the
-active id, the id counter, and the borrowed storage. They never import it,
-because there is nothing at module scope to import: a method that reached for a
-module-level value would be shared by every instance of this object.
+Every method takes `WorkbenchState` as its first argument, imported as a **type**
+from [`definition.svelte.ts`](../definition.svelte.ts) — which is what keeps the
+definition's import of these files from being a cycle at runtime.
 
-A method assigns `state.tabs` and `state.activeId` directly. It never assigns
-`tab.options` directly — that is
-[`shared/assign-options.ts`](shared/assign-options.ts), which owns the line
-between what survives a reload and what dies with the tab.
+A method never reaches module scope. `nextId` is an instance field on the state
+for exactly that reason: one counter per process would mint ids for every client
+instance at once.
 
 ## Shared Methods
 
-Three, all promoted for invariants that span the surface rather than for reuse.
-See [`shared/shared.md`](shared/shared.md).
+Four, each preserving an invariant that spans its callers — see
+[`shared/shared.md`](shared/shared.md).
 
-A supporting method used by one public method stays under that method. It moves
-to `shared/` when a second public method needs it **and** it preserves an
-invariant spanning them. Two call sites wanting the same code is duplication, not
-an invariant, and promoting it early hides which method owns the behavior.
-
-Sibling method directories never import one another. `shared/` is the only path
-between them, and it is why `restore` takes the same route to `assignOptions`
-that `update` does rather than calling its sibling.
+| File | Invariant |
+| --- | --- |
+| `target-key.ts` | One target, one key. The whole definition of "already open" |
+| `adopt-target.ts` | One mint point, so a tab is never half-built |
+| `active-tab.ts` | `activeId` names a real tab, so `active` is non-optional |
+| `assign-state.ts` | One write path into view state |
 
 ## Common Shape
 
-Every mutator resolves the tab it acts on first and refuses when it cannot,
-because acting on a tab that is not in this workbench is the one failure that
-would otherwise surface somewhere else entirely.
-
 ```text
-1. resolve the tab — by id, or the active one — and refuse when it is absent
-2. refuse when the tab's own rules forbid the change: permanent, or unavailable
-3. assign to state, or hand the patch to assignOptions
-4. persist, unless nothing that outlives the session changed
+1. Find the tab, or refuse — a defect for an unknown id, a no-op for an
+   ordinary miss
+2. Refuse a singleton where the operation cannot apply to one
+3. Compute the next value and assign it
+4. Keep `activeId` pointing at something real
 ```
-
-Accessors stop at step one and read.
 
 ## Concurrency
 
-Every method here is synchronous and therefore indivisible: a caller cannot
-observe the tab list part-way through a splice, and there is no await after which
-state must be re-read.
+Nothing here is asynchronous, so no two methods can interleave — every one runs
+to completion before the next begins.
 
-Storage is the one place a write outlives the call. `saveWorkbench` coalesces
-into a microtask, so several methods running in one synchronous burst cost one
-serialization and the last document wins — which is the current one, because each
-method persists the whole workbench rather than a delta.
+`runtime-for` is the exception worth naming: it reaches an object that *is*
+asynchronous, but it neither awaits nor stores what it gets. `attach` is
+idempotent, so calling it is a lookup, and the runtime's own status is what a
+view reads.

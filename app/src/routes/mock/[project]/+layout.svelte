@@ -28,9 +28,24 @@
    */
   let { children }: { children: Snippet } = $props();
 
+  /**
+   * The mock's own settings, as a literal rather than from a server load.
+   *
+   * Deliberate, and the same argument the duplication above rests on: a mock
+   * that reached for the application's published configuration would stop being
+   * able to run on its own. Fixed values also make a mock deterministic, which
+   * is most of what a mock is for.
+   *
+   * These need to hold every key a client object requires at construction. When
+   * one is missing, `requiredNumber` says which and names where it comes from.
+   */
+  const configuration = {
+    revisions: { changeSets: { flushAfterOps: 50, flushAfterMs: 2000 } }
+  };
+
   setupConvex(PUBLIC_CONVEX_URL);
 
-  initClientModel({ project: page.params.project ?? "" });
+  initClientModel({ project: page.params.project ?? "", configuration });
 </script>
 
 {@render children()}

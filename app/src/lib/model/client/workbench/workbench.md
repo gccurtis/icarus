@@ -1,240 +1,268 @@
 # Workbench
 
+Lives at the object root as `workbench.md`. It is the entry point: a reviewer
+reads this, then follows the file tree into the document that answers their
+question.
+
 ## Description
 
-Workbench holds what is open, which tab is active, and everything a tab carries,
-so that every zone of the application frame reads one coordinating state instead
-of keeping its own copy.
+The workbench holds **every tab and everything a tab is**. The tab strip, context
+panel, work surface, inspector and status bar read it directly and write back
+through its methods.
 
-The tab strip renders it, the work surface fills from it, and the context and
-inspector panels are projections over it. Named for the frame rather than for
-tabs, because the tab list is only its most visible part — and because `session`
-collided with an authentication session.
+There is no event bus, no store subscription, no props drilling, and no
+surface-to-surface communication — the model is `$state` and Svelte's reactivity
+is the whole delivery mechanism. That is why the five shell surfaces own almost
+nothing between them, and why a screen can be built without touching any of them.
 
-## Three objects folded in
+Three things that were once separate objects fold in here: the context rail, the
+inspector, and panel geometry. All three read and wrote the active tab, and being
+handed a workbench at construction was the tell.
 
-`activities` and `inspector` were never objects. Both were pure getters over the
-workbench — every value they exposed already lived on the active tab — and being
-handed a workbench at construction was the tell. They owned no state, no
-identity, no subscription, and no handle.
-
-`preferences` went for a different reason. Panel geometry became per tab, and
-those four values were the whole of it. A user sizing the inspector while reading
-one document has said something about that document, not about the application.
-
-| Was | Is now |
-| --- | --- |
-| `activities.available` | `availableContexts` |
-| `activities.active` | `activeContext` |
-| `activities.select` | `selectContext` |
-| `inspector.inspection` | `active.options.inspection` |
-| `inspector.current` | `currentInspection` |
-| `inspector.inspect` | `inspect` |
-| `inspector.view` | the view layer's, resolved from `currentInspection.kind` |
-| `preferences.panels` | `panels` |
-| `preferences.set` | `resize` |
-
-When surface unrelated to what a tab is starts landing here, that is the signal
-to split rather than to fold again.
+**One thing folds back out.** A live resource runtime was a field on `Tab`, and
+it is [the register's](../resource-runtimes/resource-runtimes.md) now.
 
 ## Ownership Boundary
 
-Workbench owns:
+The workbench owns:
 
-- the tab list and its order, including which tabs are permanent;
-- which tab is active;
-- everything one tab remembers: its rail position, its inspection, its scroll
-  offset, and its panel geometry;
-- the id counter that mints tab ids.
+- What is open, in what order, and which one is active
+- Everything a tab carries: its target, its typed view state, its frame, its
+  inspection key
+- The reopen queue
+- **Runtime lifetime** — it attaches when a resource tab opens and releases when
+  one closes
 
 Consumers own:
 
-- what a resource kind or a context id *renders as*. This object exposes stable
-  keys, and the view that renders the result resolves each one: the workspace
-  maps `ResourceKind`, the context panel maps `ContextId`. There is no registry
-  directory and no shared map file — see
-  [the view standard](../../../../../docs/view-directory/view-directory.md).
-- the bounds of a drag. `resize` records values; the minimum, the maximum, and
-  the width below which a drag collapses belong to the panel that enforces it.
+- **Every vocabulary.** Which contexts a screen offers, what an inspection key
+  means, which component a screen kind renders as — all `views/`
+- **Bounds.** The model records a width; the panel that enforces the drag knows a
+  gesture overshot
+- **Everything stored.** A tab is client state; a document, a persona, an
+  activity are rows, read with `useQuery`
 
-## Lifetime
+## Three kinds of tab
 
-- **Instance:** one per client instance, which is one browser tab on one project
-- **Constructed by:** `buildClientModel`, after storage, which it is built over
-- **Released by:** nothing — this object holds nothing releasable
+Identity is the only axis a target expresses.
+
+```ts
+type TabTarget =
+  | { kind: "singleton"; screen: SingletonScreen }
+  | { kind: "resource"; resourceType: GeneralResourceType; resourceId: string }
+  | { kind: "launcher" };
+```
+
+**Singletons** are one per project and always open: project overview, research,
+analysis, context, templates, personas, automations. **Resources** are the three
+bodies `revisions` edits. **Launchers** have no identity at all.
+
+Research and analysis are singletons rather than id-bearing tabs, and that is the
+correction worth stating plainly: each has its own internal selection — an
+investigation, an analysis — exactly as a deck selects a slide. That belongs in
+view state. A tab per investigation would make the strip the navigation for a
+screen that already has its own.
+
+### `permanent` is derived, not stored
+
+Every singleton is permanent, so permanence is not an independent fact about a
+tab — it is `target.kind === "singleton"`, and `isPermanent(tab)` is the one
+spelling of it. A boolean beside the target would be a second answer that can
+disagree with the first.
+
+Four surfaces ask: `close` and `reorder` refuse one, the strip offers no close
+affordance for one, and the `tab.close` command greys itself out on one.
+
+### The launcher never dedupes
+
+`targetKey()` answers "is this already open", and a launcher has no identity, so
+it returns `undefined` and a fresh tab is minted whenever the key is absent. Open
+five, get five. It is otherwise an ordinary tab, with a context panel and
+inspector of its own.
+
+## State
+
+| Field | Type | Persisted |
+| --- | --- | --- |
+| `tabs` | `readonly Tab[]` | not yet |
+| `activeId` | `TabId` | not yet |
+| `closed` | `readonly Tab[]` | never |
+
+`tabs` holds singletons first, then closable tabs in user order. `activeId` is
+never empty, because a singleton cannot be closed and one therefore always
+remains — an invariant rather than a hope. `closed` is the reopen queue, capped at
+ten, holding **whole tabs** so that a reopen restores view state rather than just
+identity.
+
+## Two labels the model never reads
+
+`frame.contextId` and `Tab.inspected` are both opaque strings.
+
+This is the decision that let the workbench land on its own. The rail's
+vocabulary used to live here as a `CONTEXT_IDS` union with a
+`Record<ScreenKind, …>` beside it, and that meant a model type grew a member
+every time a screen arrived — the stated blocker to landing this without the
+screens existing.
+
+The inspector had already solved it: a key, routed on its prefix by the panel
+that renders it. Making the rail symmetric moved `CONTEXT_IDS`,
+`CONTEXTS_BY_SCREEN` and the drift fallback into
+[`views/context-panel/procedures/`](../../../views/context-panel/procedures/procedures.md),
+and `availableContexts`/`activeContext` off this object entirely.
+
+What it costs: `selectContext` can no longer refuse an id the rail never offered,
+because there is no rail here to check against. The panel resolves an unknown one
+to its own default, which is where the knowledge to do that lives — and that
+fallback is unit-tested there, in `procedures/`, rather than being untestable in
+markup.
+
+## `viewState`
+
+The screen's whole typed working state, one arm per screen kind. Not the selected
+context — that is one field, two levels down, in `frame`.
+
+Called `viewState` and not `state` because four different things in this object
+are state, and the ambiguity cost more than the four extra characters.
+
+`frame` is the shell's own per-tab geometry. Every member is present from the
+moment a tab is minted except `contextId`, and that one is genuinely absent
+rather than defaulted: which context a screen starts on is the panel's knowledge,
+so absent means "the panel's default", which is the only answer this object could
+honestly give.
 
 ## Public Methods
 
-Every method on `WorkbenchModel`. **Shape** records the choice made when the
-method was added: a file while one file tells the truth, a directory once it owns
-supporting flow.
+| Method | Shape | Effect | Description |
+| ------ | ----- | ------ | ----------- |
+| `open` | directory | mutator | The tab already on this target, or a fresh one |
+| `resolveLauncher` | directory | mutator | Turn a launcher into what it created |
+| `close` | file | mutator | Throws for a singleton |
+| `closeAll` | file | mutator | Clear to the singletons; releases everything |
+| `activate` | file | mutator | Throws for an id that names nothing |
+| `reorder` | file | mutator | Closable tabs only; clamps rather than throwing |
+| `reopenClosed` | file | mutator | The last closed tab, with its view state |
+| `update` | file | mutator | Patch one screen's own state, kind restated |
+| `selectContext` | file | mutator | Record the rail position |
+| `inspect` | file | mutator | Replace the inspection key |
+| `resize` | file | mutator | Frame values only; cannot reach `contextId` |
+| `inspectedNode` | file | accessor | The active tab's key |
+| `frame` | file | accessor | The active tab's geometry |
+| `runtimeFor` | file | accessor | The only route from a view to a runtime |
 
-| Method | Shape | Effect | Description | Document |
-| ------ | ----- | ------ | ----------- | -------- |
-| `open` | directory | mutator | Opens a resource, or activates the tab already holding it | [open.md](methods/open/open.md) |
-| `close` | file | mutator | Removes a transient tab and chooses the next active one | — |
-| `activate` | file | mutator | Makes a tab the active one | — |
-| `reorder` | file | mutator | Moves a transient tab among the transient tabs | — |
-| `update` | file | mutator | Patches any tab's options by id | — |
-| `availableContexts` | file | accessor | The rail positions the active tab's kind offers | — |
-| `activeContext` | file | accessor | The active tab's rail position, or its kind's default | — |
-| `selectContext` | file | mutator | Records a rail choice on the active tab | — |
-| `currentInspection` | file | accessor | The innermost node of the active tab's inspection | — |
-| `inspect` | file | mutator | Replaces the active tab's inspection | — |
-| `panels` | file | accessor | The active tab's geometry, or `DEFAULTS` | — |
-| `resize` | file | mutator | Records geometry on the active tab | — |
+Fourteen. Gone from the version this replaced: `attachRuntime`, `runtime`,
+`retiring` and the whole retire machinery, all the register's now;
+`availableContexts` and `activeContext`, both the context panel's; and
+`selectTabs`/`selectedIds`, deferred until the strip has a drag gesture.
 
-A simple method has no document of its own.
-[`methods/methods.md`](methods/methods.md) lists it.
+`assignState` is not a public method and should not become one. It is the
+procedure in `methods/shared/` that `update`, `resize` and `selectContext` route
+through.
 
-## Exposed State
+### Two asymmetries that are deliberate
 
-| Field | Type | Meaning |
-| ----- | ---- | ------- |
-| `tabs` | `readonly Tab[]` | Permanent tabs first, then transient ones in user order |
-| `activeId` | `readonly TabId` | Never empty: a permanent tab cannot be closed, so one always remains |
-| `active` | `readonly Tab` | The tab `activeId` names |
+`update` throws when the restated kind does not match the tab; `reorder` clamps
+an out-of-range index. A caller naming the wrong screen is a defect — that is
+exactly the case a cast would have let through silently — where a drag that
+overshoots the end of the strip means the end.
 
-Every field is readonly. Consumers read state and call methods; a writable field
-hands this object's invariants to whoever holds a reference, and no method can
-promise anything after that.
-
-`Tab.options` is the one mutable-looking value, and it is replaced rather than
-mutated by every path that writes it. A consumer assigning it directly bypasses
-the rule about what persists.
-
-No field is a Svelte `Component` or a registry of them. This object exposes
-stable keys and the view layer resolves them, so the model stays testable without
-a DOM.
+`resize` records values only and **cannot reach `contextId`**, because the patch
+type excludes it. So a drag can never move the rail and a rail click can never
+resize a panel, structurally rather than by convention.
 
 ## Construction
 
 ```ts
-export const createWorkbench = (over: ClientStorage): WorkbenchModel => ...;
+export const createWorkbench = (runtimes: ResourceRuntimesModel): WorkbenchModel => ...;
 ```
-
-Every call returns a fresh object. State lives on the instance — no module-level
-value, and in particular no module-level counter.
 
 | Dependency | Ownership | Usage |
 | ---------- | --------- | ----- |
-| `storage` | BORROWED | Read once at construction to restore, written on every change that outlives the session |
+| `runtimes` | BORROWED | `attach` on open, `release` on close; never disposed here |
 
-**BORROWED** means the environment root constructed it and the root releases it;
-this object must never close it.
+It builds the singletons in its constructor rather than restoring them, which is
+what makes "`activeId` is never empty" an invariant rather than a hope. They are
+minted through `adoptTarget` like every other tab, so nothing about them is a
+special case beyond being built first.
 
-Construction is atomic in the only sense available to it: the permanent tab is
-built before anything is restored, so `activeId` names a real tab from the first
-statement onward, and a store that cannot be read is an empty one rather than a
-failure.
-
-## The id counter is an instance field
-
-It was module scope before this object moved, and it is not user data, so it
-reads as harmless — which is exactly why it was the thing most likely to be
-carried across untouched. One counter per process mints ids for every client
-instance at once, so two users' tabs interleave and an id stops being
-reproducible from a fresh boot.
-
-## Panel geometry rides on the tab
-
-`panels` reads `active.options.panels ?? DEFAULTS`. A tab nobody dragged stores
-nothing and follows a later change to the defaults, rather than pinning whatever
-was current when it opened.
-
-`DEFAULTS` is frozen, and not merely by convention. Spreading it is load-bearing:
-assigning it directly would put the frozen constant on the tab, and a later deep
-write would either throw or — without the freeze — reach every other tab reading
-the same object.
-
-## The rail is a menu; the inspector is a report
-
-The context panel and the inspector are the same shape. Each is a label stored on
-the active tab, set by one method, resolved by the view that renders it:
-
-| | Context panel | Inspector |
-| --- | --- | --- |
-| Setter | `selectContext` | `inspect` |
-| Stored on the tab | `options.contextId` | `options.inspection` |
-| Switching tabs | restores that tab's choice | restores that tab's inspection |
-| A tab nobody touched | the kind's first context | nothing inspected |
-
-One asymmetry survives that symmetry, and it is deliberate: `CONTEXTS_BY_KIND`
-constrains which contexts a resource kind offers, while an inspection is
-constrained by nothing.
-
-That is the difference between a menu and a report. The rail renders a set of
-choices before anyone picks one, so something has to say what is on it — and what
-is on it depends on the resource, which is why a slide deck's rail leads with its
-slides and a document's with its outline. An inspection is produced by a surface
-that already knows the thing exists; a document editor does not need permission
-to say that text is selected.
-
-The menu lives here rather than in the view because two behaviours depend on it
-and both are worth testing: `selectContext` refuses an id the kind never offered,
-and `activeContext` falls back when a stored id outlives the rail that held it.
-The second is the one most likely to break silently when an editor's rail
-changes, and the view layer has no component-render harness to catch it.
-
-What the view still owns is everything about how a context *looks* — its label,
-its icon, and the component it resolves to. This object exposes ids.
-
-## What is persisted
-
-Tab refs, rail positions, and panel geometry. Not `inspection`, which names block
-ids and character offsets in a document that may have changed since, and not
-`scrollTop`, for the same reason.
-
-The permanent tab is written too. It is reconstructed rather than restored, but
-the geometry a user dragged on it would otherwise be the one panel size in the
-application that a reload forgot. Replaying its ref costs nothing, because
-`open()` dedupes on kind and id.
-
-**A stored kind is checked before it is trusted.** `CONTEXTS_BY_KIND` is a
-`Record<ResourceKind, …>`, so a kind written by an older build resolves to
-`undefined` and throws during paint. `RESOURCE_KINDS` exists as a value for
-exactly this — the type is derived from it, so the two cannot drift — and
-`isResourceKind` drops what no longer exists. `CONTEXT_IDS` and `isContextId`
-are the same pair for the rail.
+**No storage, yet.** See below.
 
 ## Terminal Behaviour
 
-None. This object owns nothing releasable. Its one effect outside itself is a
-write to borrowed storage, which coalesces into a microtask and is therefore
-never left pending at unload.
+- **Terminal operation:** `closeAll`, reached from `ClientModel.close()`
+- **Releases:** every runtime, through `releaseAll`
+- **After release:** the singletons remain and the object is still usable — this
+  is a clear, not a close
+
+`close(id)` splices from `tabs`, pushes the whole tab onto `closed`, and for a
+resource target calls `release`. **Release at close, not at dequeue:** release is
+the flush, and a closed tab holding an unflushed buffer would mean the user's
+last edits sit unsent until ten unrelated tabs close. The queue still holds the
+whole tab, so a reopen restores zoom, find query, rail position and panel widths
+losslessly; only the runtime is rebuilt, from a backend that by then has the
+edits.
+
+`closeAll` does not fill the reopen queue. These tabs are not being closed by a
+person, and offering to reopen them after teardown would be offering to reopen a
+session that has ended.
+
+## Persistence is paused
+
+Nothing here is written to storage. `restore`, `persist` and `toPersisted` are
+not implemented, and `PERSISTED_FIELDS` — the per-screen allowlist that decided
+what outlives a reload — is not declared.
+
+**Deliberate, and it is the reason rather than an oversight.** What a stored tab
+should carry is a question about a shape that has just changed completely: a
+target instead of a `ResourceRef`, an eleven-arm view state instead of an options
+blob, a derived permanence instead of a stored one. Writing a format for that
+before the screens exist means versioning a guess, and the storage policy here is
+to discard on mismatch rather than migrate — so the guess would cost a user their
+tabs the day it changed.
+
+[`storage`](../storage/storage.md) is still constructed and holds its section
+types unchanged. It is intact and unread, rather than torn out and rebuilt later.
+
+The visible consequence: a reload opens on the singletons.
 
 ## Concurrency and SSR
 
-- Every method is synchronous and indivisible. Nothing awaits, so no method
-  re-reads state it started from.
-- Several methods in one synchronous burst cost one write, because storage
-  coalesces and each method persists the whole workbench rather than a delta.
-- This object touches no browser API. Its storage does, at construction, which is
-  safe only because `/app` exports `ssr = false` — see [`client.md`](../client.md).
-- Reads track correctly wherever they happen: the state is `$state`, the surface
-  is getters, and a component consuming `workbench.panels` re-renders when the
-  active tab's geometry changes or when a different tab becomes active.
+- Every method is synchronous. Two cannot interleave, because none awaits.
+- `runtimeFor` reaches an object that *is* asynchronous, and hands it over
+  without waiting — the runtime's own status is what a view reads.
+- This object touches no browser API at all. It is `$state` and arrays.
 
 ## Invariants
 
-- **A permanent tab cannot be closed or reordered.** It is constructed with the
-  workbench, which is what makes the next invariant true rather than hoped for.
-- **`activeId` is never empty.** Something is always open, so no consumer needs an
-  "if nothing is open" branch.
-- **Permanent tabs hold the leading positions**, so the transient ones a user can
-  drag are always a contiguous run at the end. `reorder`'s index counts transient
-  tabs only, and is offset past that prefix.
-- **Closing the active tab selects right, then left.** After the splice the
-  element now *at* the removed index is the one that was to the right; a
-  permanent tab always survives, so this cannot fall through to nothing.
-- **`reorder` clamps rather than throwing.** A drag past either end is an ordinary
-  gesture, not a caller error.
-- **An unknown id is refused.** `close`, `activate`, `reorder`, and `update` throw
-  rather than no-op, because a caller holding an id for a tab that is gone has a
-  defect that gets harder to find the further it travels.
-- **A stored value is drift, not a defect.** Restoration drops what it no longer
-  recognises instead of throwing. `selectContext` throws, because that is a
-  caller naming a context the rail could not have offered.
+- **`activeId` names a real tab, always.** The singleton set is non-empty by
+  construction, so there is nothing to fall back to.
+- **One write path.** View state changes through `assignState` and nowhere else.
+  `inspect()` is the single documented exception, because an inspection is never
+  persisted and is not per-screen typed.
+- **One identity function.** `targetKey()` is the whole definition of "already
+  open", and `adoptTarget` is the only place a tab is minted.
+- **`viewState.kind` always equals `screenKindOf(target)`**, established at mint
+  and unreachable afterwards — `update` refuses a mismatched kind and cannot
+  change one.
+- **The model holds values; views hold bounds.**
+- **The model holds labels; views hold vocabularies.**
+- **No component type enters the model.** The `view-keys` rule enforces it, and
+  it is also what makes this object extractable on its own.
+
+## The contract a screen follows
+
+- Restorable typed state goes in `viewState`, written with
+  `update(tab.id, kind, patch)`.
+- Editing a general resource means `workbench.runtimeFor(tab.id)`. A view never
+  touches [the register](../resource-runtimes/resource-runtimes.md) directly.
+- Everything else reads a capability with `useQuery`. It is already a live
+  subscription; do not wrap it.
+- Internal selection is view state, not a tab. An investigation, an analysis, a
+  slide, a sheet — all the same shape of thing.
+- Never derive an inspection from focus. Clicking into the inspector blurs the
+  editor, and a focus-derived inspection would empty the panel the user is
+  reaching for.
+- **Assume the centre remounts on every tab switch.** The rules above exist for
+  it.
 
 ## File Tree
 
@@ -247,19 +275,16 @@ workbench/
 ├── constructor.ts
 ├── methods/
 │   ├── methods.md
-│   ├── activate.ts
-│   ├── active-context.ts
-│   ├── available-contexts.ts
-│   ├── close.ts
-│   ├── current-inspection.ts
-│   ├── inspect.ts
 │   ├── open/
-│   ├── panels.ts
-│   ├── reorder.ts
-│   ├── resize.ts
-│   ├── select-context.ts
-│   ├── update.ts
+│   │   ├── open.md
+│   │   ├── open.ts
+│   │   └── resolve-launcher.ts
+│   ├── activate.ts · close.ts · close-all.ts · reopen-closed.ts · reorder.ts
+│   ├── frame.ts · resize.ts · inspect.ts · inspected-node.ts
+│   ├── select-context.ts · update.ts · runtime-for.ts
 │   └── shared/
+│       ├── shared.md
+│       ├── active-tab.ts · adopt-target.ts · assign-state.ts · target-key.ts
 └── test/
     └── unit/
 ```

@@ -1,21 +1,25 @@
 import type { WorkbenchState } from "$model/client/workbench/definition.svelte";
+import { assignState } from "$model/client/workbench/methods/shared/assign-state";
 import { activeTab } from "$model/client/workbench/methods/shared/active-tab";
-import { assignOptions } from "$model/client/workbench/methods/shared/assign-options";
-import type { ContextId } from "$model/client/workbench/types";
-import { CONTEXTS_BY_KIND } from "$model/client/workbench/types";
 
 /**
- * Records a rail choice on the active tab.
+ * Records the active tab's rail position, so each tab keeps its own.
  *
- * On the tab rather than on the workbench, so each tab keeps its own rail
- * position and switching tabs restores it. A context the tab's kind does not
- * offer is refused: the rail can only have rendered what is available, so a
- * caller passing anything else has a defect rather than a stale value.
+ * **The label is never interpreted.** Which contexts a screen offers, what each
+ * one is called, and what happens to a stored id that is no longer on the rail
+ * all belong to `views/context-panel/` — this object remembers a string.
+ *
+ * That is the same relationship the inspector already had, and making the two
+ * symmetric is what stops this object growing a fifty-member union as screens
+ * arrive. The cost is that it can no longer refuse an id the rail never offered;
+ * the panel resolves an unknown one to its own default, which is where the
+ * knowledge to do that lives.
+ *
+ * Separate from `resize` deliberately. A drag can never move the rail and a rail
+ * click can never resize a panel, structurally rather than by convention.
  */
-export const selectContext = (state: WorkbenchState, id: ContextId): void => {
-  const tab = activeTab(state);
-  if (!CONTEXTS_BY_KIND[tab.resource.kind].includes(id)) {
-    throw new Error(`Context ${id} is not available for resource kind ${tab.resource.kind}.`);
-  }
-  assignOptions(state, tab, { contextId: id });
+export const selectContext = (state: WorkbenchState, id: string): void => {
+  assignState(state, activeTab(state).id, (tab) => {
+    tab.viewState.frame.contextId = id;
+  });
 };

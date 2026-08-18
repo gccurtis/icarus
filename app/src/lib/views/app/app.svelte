@@ -3,7 +3,7 @@
   import CommandBar from "$views/command-bar/command-bar.svelte";
   import { dispatchCommands } from "$views/app/effects/dispatch-commands.svelte";
   import ContextPanel from "$views/context-panel/context-panel.svelte";
-  import CopilotBar from "$views/copilot-bar/copilot-bar.svelte";
+  import CopilotDock from "$views/copilot-dock/copilot-dock.svelte";
   import { RAIL_WIDTH } from "$views/context-panel/types";
   import Inspector from "$views/inspector/inspector.svelte";
   import { COLLAPSED_WIDTH } from "$views/inspector/types";
@@ -56,11 +56,11 @@
    * state and the work surface never has to reflow between two and three.
    */
   const contextWidth = $derived(
-    workbench.panels.contextCollapsed ? RAIL_WIDTH : RAIL_WIDTH + workbench.panels.contextWidth
+    workbench.frame.contextCollapsed ? RAIL_WIDTH : RAIL_WIDTH + workbench.frame.contextWidth
   );
 
   const inspectorWidth = $derived(
-    workbench.panels.inspectorCollapsed ? COLLAPSED_WIDTH : workbench.panels.inspectorWidth
+    workbench.frame.inspectorCollapsed ? COLLAPSED_WIDTH : workbench.frame.inspectorWidth
   );
 </script>
 
@@ -81,7 +81,7 @@
   -->
   <main class="zone work">
     <div class="surface"><Workspace /></div>
-    <CopilotBar />
+    <CopilotDock />
   </main>
   <div class="zone inspector"><Inspector /></div>
   <div class="zone status"><StatusBar /></div>

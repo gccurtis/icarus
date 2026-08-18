@@ -1,5 +1,18 @@
 # Storage
 
+> **Nothing writes to this object today, and nothing reads it.**
+>
+> Everything it persists is workbench state, and the workbench does not persist
+> while its stored shape is unsettled — a target instead of a `ResourceRef`, an
+> eleven-arm view state instead of an options blob. See
+> [workbench.md](../workbench/workbench.md#persistence-is-paused).
+>
+> It is left **intact and unused** rather than torn out: the serialisation, the
+> version policy and the per-project key are all still right, and the section
+> types below carry no domain types, so nothing here had to change when the
+> workbench did. The document below describes the format as it stands, which is
+> the format persistence will be reconsidered against rather than resumed with.
+
 ## Description
 
 Storage holds this project's browser store and the format of what survives a

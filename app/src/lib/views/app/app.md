@@ -62,7 +62,7 @@ Views reached through their root component only.
 | `context-panel` | `context-panel.svelte`, `types.ts` | The left flank; `types.ts` for the rail width the column math needs |
 | `inspector` | `inspector.svelte`, `types.ts` | The right flank; `types.ts` for the width it collapses to |
 | `workspace` | `workspace.svelte` | The centre |
-| `copilot-bar` | `copilot-bar.svelte` | Floats over the centre, bottom-anchored |
+| `copilot-dock` | `copilot-dock.svelte` | Floats over the centre, bottom-anchored |
 | `command-bar` | `command-bar.svelte` | The command overlay. Rendered outside the grid, because it belongs to no zone |
 
 ### Presentation

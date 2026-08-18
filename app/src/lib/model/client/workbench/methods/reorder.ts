@@ -1,30 +1,36 @@
 import type { WorkbenchState } from "$model/client/workbench/definition.svelte";
-import { persist } from "$model/client/workbench/methods/shared/persist";
 import type { TabId } from "$model/client/workbench/types";
-
-const clamp = (value: number, min: number, max: number): number =>
-  Math.min(Math.max(value, min), max);
+import { isPermanent } from "$model/client/workbench/types";
 
 /**
- * Moves a transient tab to a position among the transient tabs.
+ * Moves a closable tab to a new position.
  *
- * `index` counts transient tabs only, because permanent ones have no index — they
- * hold the leading positions and cannot be dragged, which is what keeps the
- * draggable tabs a contiguous run at the end.
+ * **`index` counts closable tabs only**, because singletons have no index — they
+ * hold the leading positions and cannot be dragged, so the positions a user can
+ * see are the ones after them.
+ *
+ * Refuses a singleton, for the same reason `close` does: the strip must not
+ * offer to drag one.
+ *
+ * Clamping rather than throwing on an out-of-range index. A drag that overshoots
+ * the end of the strip means the end, and a gesture is not a defect.
  */
 export const reorder = (state: WorkbenchState, id: TabId, index: number): void => {
   const from = state.tabs.findIndex((tab) => tab.id === id);
-  if (from === -1) throw new Error(`Cannot reorder unknown tab ${id}.`);
-  if (state.tabs[from].permanent) {
+  if (from === -1) {
+    throw new Error(`Tab ${id} does not exist.`);
+  }
+  if (isPermanent(state.tabs[from])) {
     throw new Error(`Tab ${id} is permanent and cannot be reordered.`);
   }
 
-  // Offset past the permanent prefix. Clamping rather than throwing: a drag that
-  // overshoots either end is an ordinary gesture, not a caller error.
-  const offset = state.tabs.filter((tab) => tab.permanent).length;
-  const to = offset + clamp(index, 0, state.tabs.length - offset - 1);
+  const offset = state.tabs.filter(isPermanent).length;
+  const closable = state.tabs.length - offset;
+  const to = offset + Math.min(Math.max(index, 0), closable - 1);
 
-  const [tab] = state.tabs.splice(from, 1);
-  state.tabs.splice(to, 0, tab);
-  persist(state);
+  const next = [...state.tabs];
+  const [tab] = next.splice(from, 1);
+  next.splice(to, 0, tab);
+
+  state.tabs = next;
 };

@@ -54,7 +54,7 @@ panel's, so a user who learns one edge has learned the other.
 
 | Door | Usage |
 | --- | --- |
-| `$model/client` | `workbench.currentInspection` |
+| `$model/client` | `workbench.inspectedNode` |
 
 ### Capabilities
 
@@ -90,7 +90,7 @@ nothing to coordinate and nothing to observe.
 | Initial | A tab nobody has inspected in | Nothing selected | — |
 | Collapsed | A drag inside `COLLAPSE_BELOW` | A 44px rail carrying the agent icon | Click the rail |
 | Loading | `None` | — | — |
-| Empty | `currentInspection` is undefined | "Nothing selected" | — |
+| Empty | `inspectedNode` is undefined | "Nothing selected" | — |
 | Stale | `None` | — | — |
 | Failure | `None` | — | — |
 | Denied | `None` | — | — |
@@ -100,7 +100,7 @@ nothing to coordinate and nothing to observe.
 
 **An inspection lives on the tab, so switching tabs switches this panel** — and
 a tab returned to still shows what was inspected in it. That is the model's
-doing, not this view's: it reads `currentInspection` and re-renders.
+doing, not this view's: it reads `inspectedNode` and re-renders.
 
 The last three states are reachable only through the workspace's document
 component, which is the one caller of `inspect()` in the application. It is a
@@ -131,7 +131,7 @@ finished surface.
 
 ## View Invariants
 
-- **The kind map is partial, deliberately.** `InspectionNode` names six kinds;
+- **The kind map is partial, deliberately.** `InspectionKey` names six kinds;
   two are built, because two are all any surface can currently produce.
   Components for the rest would be files nothing can reach. Each new producer
   brings the view its node needs.

@@ -3,6 +3,8 @@ import { test, vi } from "vitest";
 import { clientModel, initClientModel } from "$model/client";
 import { buildClientModel } from "$model/client/constructor";
 import type { ClientStorage, PersistedWorkbench } from "$model/client/storage";
+import { DEFAULT_FRAME, SINGLETON_SCREENS } from "$model/client/workbench";
+import type { TabTarget } from "$model/client/workbench";
 
 /**
  * What the composition root is for.
@@ -28,6 +30,17 @@ vi.mock("$app/environment", () => ({
     return env.browser;
   }
 }));
+
+/**
+ * What the layout's server load publishes, as a literal.
+ *
+ * Spelled out rather than defaulted, because `ClientModelInput.configuration` is
+ * required precisely so a graph is never built over values nobody chose — and a
+ * test that let it default would be proving the opposite of that.
+ */
+const settings = { revisions: { changeSets: { flushAfterOps: 50, flushAfterMs: 2000 } } };
+
+const document: TabTarget = { kind: "resource", resourceType: "document", resourceId: "other" };
 
 const fakeStorage = (initial?: PersistedWorkbench): ClientStorage => {
   let workbench = initial;
@@ -55,86 +68,101 @@ test("the accessor refuses a server path in its own words", () => {
 });
 
 test("builds the whole graph over one input", () => {
-  const model = buildClientModel({ project: "alpha", storage: fakeStorage() });
+  const model = buildClientModel({ project: "alpha", configuration: settings, storage: fakeStorage() });
 
   assert.equal(model.project, "alpha");
   assert.ok(model.storage);
   assert.ok(model.workbench);
 });
 
-test("the workbench is built over the storage the root was given", () => {
-  const storage = fakeStorage();
-  const model = buildClientModel({ project: "alpha", storage });
+test("configuration is built over the snapshot the root was given", () => {
+  // The published slice reaches the graph unchanged, so an object constructed
+  // below it reads the value the deployment configured rather than a literal.
+  const model = buildClientModel({ project: "alpha", configuration: settings, storage: fakeStorage() });
 
-  model.workbench.open({ kind: "project-overview", id: "other" });
-
-  // Not a second store: the object the root handed down is the one written to.
-  assert.equal(model.storage, storage);
-  assert.equal(storage.workbench?.tabs.length, 2);
+  assert.equal(model.configuration.get("revisions.changeSets.flushAfterOps"), 50);
+  assert.equal(model.configuration.get("revisions.changeSets.flushAfterMs"), 2000);
 });
 
-test("stands a model up from a given starting state", () => {
-  // The reason storage is a parameter: a whole configuration goes in as data,
-  // rather than being assembled by calls a test has to keep in step.
-  const model = buildClientModel({
+test("two models do not share a configuration", () => {
+  const a = buildClientModel({
     project: "alpha",
-    storage: fakeStorage({
-      tabs: [
-        [
-          "project-overview",
-          "restored",
-          {
-            panels: {
-              contextWidth: 320,
-              contextCollapsed: true,
-              inspectorWidth: 400,
-              inspectorCollapsed: false
-            }
-          }
-        ]
-      ],
-      active: ["project-overview", "restored"]
-    })
+    configuration: { revisions: { changeSets: { flushAfterOps: 10, flushAfterMs: 500 } } },
+    storage: fakeStorage()
   });
+  const b = buildClientModel({ project: "beta", configuration: settings, storage: fakeStorage() });
 
-  assert.equal(model.workbench.active.resource.id, "restored");
-  assert.equal(model.workbench.tabs.length, 2); // permanent + restored
-  assert.equal(model.workbench.panels.contextWidth, 320);
-  assert.equal(model.workbench.panels.contextCollapsed, true);
+  assert.notEqual(a.configuration, b.configuration);
+  assert.equal(a.configuration.get("revisions.changeSets.flushAfterOps"), 10);
+  assert.equal(b.configuration.get("revisions.changeSets.flushAfterOps"), 50);
+});
+
+test("the workbench is built over the register the root handed it", () => {
+  // Not a second register: opening a resource tab attaches through the one the
+  // root constructed, which is what makes `runtimeFor` and `flushing` agree.
+  const model = buildClientModel({ project: "alpha", configuration: settings, storage: fakeStorage() });
+
+  model.workbench.open(document);
+
+  assert.deepEqual(model.resourceRuntimes.open, ["document:other"]);
+});
+
+test("storage is built and, for now, read by nothing", () => {
+  // The workbench does not persist while its stored shape is unsettled, and
+  // storage holds exactly that one section. It stands intact and unused rather
+  // than being torn out and rebuilt when persistence returns.
+  const storage = fakeStorage();
+  const model = buildClientModel({ project: "alpha", configuration: settings, storage });
+
+  model.workbench.open(document);
+
+  assert.equal(model.storage, storage);
+  assert.equal(storage.workbench, undefined);
 });
 
 test("two models share nothing", () => {
   // The assertion the whole shape exists for, at the level a component sees.
-  const a = buildClientModel({ project: "alpha", storage: fakeStorage() });
-  const b = buildClientModel({ project: "beta", storage: fakeStorage() });
+  const a = buildClientModel({ project: "alpha", configuration: settings, storage: fakeStorage() });
+  const b = buildClientModel({ project: "beta", configuration: settings, storage: fakeStorage() });
 
-  a.workbench.open({ kind: "project-overview", id: "only-in-a" });
+  a.workbench.open(document);
   a.workbench.resize({ contextWidth: 400 });
-  a.workbench.inspect([{ kind: "empty" }]);
+  a.workbench.inspect("block.text-selection");
 
-  assert.equal(b.workbench.tabs.length, 1);
-  assert.equal(b.workbench.panels.contextWidth, 276);
-  assert.equal(b.workbench.currentInspection, undefined);
+  assert.equal(b.workbench.tabs.length, SINGLETON_SCREENS.length);
+  assert.equal(b.workbench.frame.contextWidth, DEFAULT_FRAME.contextWidth);
+  assert.equal(b.workbench.inspectedNode, undefined);
+  assert.deepEqual(b.resourceRuntimes.open, []);
   assert.notEqual(a.project, b.project);
   assert.notEqual(a.storage, b.storage);
   assert.notEqual(a.workbench, b.workbench);
 });
 
-test("one model's writes reach only its own storage", () => {
-  const first = fakeStorage();
-  const second = fakeStorage();
+test("close releases every runtime the workbench opened", () => {
+  const model = buildClientModel({ project: "alpha", configuration: settings, storage: fakeStorage() });
+  model.workbench.open(document);
 
-  buildClientModel({ project: "alpha", storage: first }).workbench.resize({
-    inspectorWidth: 500
-  });
-  buildClientModel({ project: "beta", storage: second });
+  model.close();
 
-  assert.equal(first.workbench?.tabs[0][2]?.panels?.inspectorWidth, 500);
-  assert.equal(second.workbench, undefined);
+  assert.deepEqual(model.resourceRuntimes.open, []);
+  assert.equal(model.workbench.tabs.length, SINGLETON_SCREENS.length);
+});
+
+test("one model's writes reach only its own graph", () => {
+  // Storage used to be the visible proof of this. With persistence paused, the
+  // frame is where a write lands, and it is per tab — so the assertion moves
+  // rather than going away.
+  const a = buildClientModel({ project: "alpha", configuration: settings, storage: fakeStorage() });
+  const b = buildClientModel({ project: "beta", configuration: settings, storage: fakeStorage() });
+
+  a.workbench.resize({ inspectorWidth: 500 });
+
+  assert.equal(a.workbench.frame.inspectorWidth, 500);
+  assert.equal(b.workbench.frame.inspectorWidth, DEFAULT_FRAME.inspectorWidth);
 });
 
 test("the initializer's graph is what the accessor returns", () => {
-  const initialized = initClientModel({ project: "alpha", storage: fakeStorage() });
+  const initialized = initClientModel({ project: "alpha", configuration: settings, storage: fakeStorage() });
 
   assert.equal(clientModel(), initialized);
   // Repeated access is the same aggregate and the same leaves.

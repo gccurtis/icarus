@@ -34,7 +34,7 @@ described under Subtree Contracts below.
 
 - **Root:** [`rail.svelte`](rail.svelte)
 - **Purpose:** the fixed strip that chooses what the panel shows.
-- **Inputs:** the display copy for every context, the ids this resource kind
+- **Inputs:** the display copy for every context, the ids this screen kind
   offers in order, the selected id, and a select callback.
 - **Outputs:** one select call carrying a `ContextId`.
 - **Owned children:** `None`
@@ -50,13 +50,13 @@ described under Subtree Contracts below.
   ride on colour.
 
 **Why it takes props instead of reading the model.** The root already reads
-`activeContext` to resolve the content component. A rail that read it too would
+`the resolved context` to resolve the content component. A rail that read it too would
 make the same key resolve in two places, and the map would have to exist in
 both.
 
 ### Content components
 
-Both take the active tab's `ResourceRef` and render what surrounds it. Neither
+Both take the active tab's `Tab` and render what surrounds it. Neither
 reads the model: the root resolves the key and passes the resource, so a context
 component stays a function of its input and the panel has one reader.
 
@@ -94,7 +94,7 @@ the panel as well as in the centre.
 
 - **Key:** `ContextId`, from `$model/client`.
 - **Selected by:** [`context-panel.svelte`](../context-panel.svelte), which
-  reads `workbench.activeContext` and renders the match.
+  reads `workbench.the resolved context` and renders the match.
 
 | Key value | Renders | Component or composed view |
 | --- | --- | --- |
@@ -105,12 +105,12 @@ Total in both directions: every id has a component, and no component here is
 unreachable by a key. The map is a `Record<ContextId, …>`, so a new id fails to
 compile until it has a row.
 
-No exception, and no unknown-key branch. The model guarantees `activeContext` is
-an id this resource kind offers, falling back to the kind's default when a stored
+No exception, and no unknown-key branch. The model guarantees `the resolved context` is
+an id this screen kind offers, falling back to the kind's default when a stored
 one no longer resolves.
 
 **Which ids are offered is not this view's decision.** `CONTEXTS_BY_KIND` maps
-each resource kind to its rail, so `project-overview` offers `overview` alone
+each screen kind to its rail, so `project-overview` offers `overview` alone
 while `document` offers `outline` first and `overview` second. That is why the
 rail itself changes when the active tab does, and why `outline` is the default
 for a document without anyone selecting it.

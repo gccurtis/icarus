@@ -7,7 +7,7 @@
    * the copilot itself, and this is where its conversations, its running work,
    * and the active exchange live.
    *
-   * Absent `chatId` is the home rather than an error: search and running work
+   * The `home` member is search and running work with no conversation open —
    * with nothing open. Submitting from the bar with no chat open is how one gets
    * created, so there is no New chat control to add.
    *
@@ -15,7 +15,7 @@
    * nothing is sent. What is real is the shape and the route into it: the bar
    * inspects `copilot`, the inspector resolves that label, and this renders.
    */
-  let { chatId }: { chatId?: string } = $props();
+  let { member }: { member: string } = $props();
 
   const RUNNING = [
     { id: "t1", label: "Summarising interview-03", state: "Running" },
@@ -29,9 +29,9 @@
 </script>
 
 <div class="copilot">
-  {#if chatId}
+  {#if member !== "home"}
     <h2 class="heading">Chat</h2>
-    <p class="note">Conversation <code>{chatId}</code>.</p>
+    <p class="note">Showing <code>{member}</code>.</p>
     <p class="note">Turns render here once an agent capability can supply them.</p>
   {:else}
     <h2 class="heading">Copilot</h2>

@@ -10,14 +10,14 @@
    * The controls that would set it need an editor to apply them, so what is here
    * is the identity it was handed.
    */
-  let { blockId }: { blockId: string } = $props();
+  let { anchor }: { anchor?: string } = $props();
 </script>
 
 <div class="inspection">
   <h2 class="heading">Caret</h2>
   <dl class="fields">
     <dt>Block</dt>
-    <dd><code>{blockId}</code></dd>
+    <dd><code>{anchor ?? "—"}</code></dd>
   </dl>
   <p class="note">Nothing is selected. What is set here would apply to what is typed next.</p>
 </div>

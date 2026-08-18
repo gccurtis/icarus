@@ -18,17 +18,17 @@ order.
 This view owns:
 
 - how a tab looks, including which cues say "active";
-- display copy — the label and icon — for every resource kind a tab can hold. A
+- display copy — the label and icon — for every screen kind a tab can hold. A
   label is a function of the whole resource rather than of its kind alone, or
   every document tab would read "Document", which is the one thing a tab strip
   exists to prevent;
-- the rule that a permanent tab shows no close affordance.
+- the rule that a singleton shows no close affordance.
 
 It does not own:
 
 - the tab list, its order, or which tab is active. All three are model state.
 - what happens after a close. The model chooses the next active tab.
-- what a resource kind *renders as*. That map belongs to the workspace.
+- what a screen kind *renders as*. That map belongs to the workspace.
 
 ## Public Contract
 
@@ -63,7 +63,7 @@ It does not own:
 
 | Dependency | Usage |
 | --- | --- |
-| `@lucide/svelte` | One icon per resource kind, plus the close glyph |
+| `@lucide/svelte` | One icon per screen kind, plus the close glyph |
 | Token domains: color, spacing, typography, shape | Every value |
 
 ## Directory Documents
@@ -86,7 +86,7 @@ gesture, bounds, and a keyboard equivalent to own.
 | Denied | `None` | — | — |
 
 There is no empty state, and that is a model invariant rather than an omission:
-a permanent tab cannot be closed, so something is always open and `activeId`
+a singleton cannot be closed, so something is always open and `activeId`
 always names a real tab.
 
 ## Accessibility
@@ -120,12 +120,12 @@ describes what is actually implemented.
 
 ## View Invariants
 
-- **A permanent tab never shows a close control.** `close()` throws for one, so
+- **A singleton never shows a close control.** `close()` throws for one, so
   offering it would be offering a crash — a correctness requirement, not a
   nicety.
 - **Which tab is active never rides on colour alone.** The tint is paired with
   an underline on the shared edge and with `aria-current`.
-- **The resource map is total.** `Record<ResourceKind, …>` means a new kind
+- **The resource map is total.** `Record<ScreenKind, …>` means a new kind
   fails to compile until it has a label and an icon.
 
 ## Supporting Documents

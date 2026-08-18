@@ -17,13 +17,13 @@ not follow a tab.
 
 This view owns:
 
-- resolving a resource kind to a component;
+- resolving a screen kind to a component;
 - the rule that two tabs are two mounts, even when they hold the same kind.
 
 It does not own:
 
 - which tab is active, or what it holds. Both are model state.
-- display copy for a resource kind. The tab bar owns the label and icon, because
+- display copy for a screen kind. The tab bar owns the label and icon, because
   that is the surface that displays them.
 - the scroll. The frame's centre owns it, so a resource cannot take the page
   with it.
@@ -110,7 +110,7 @@ current build no longer recognises, so every kind reaching here maps.
 
 ## View Invariants
 
-- **The map is total and lives here.** `Record<ResourceKind, Component>` means a
+- **The map is total and lives here.** `Record<ScreenKind, Component>` means a
   new kind fails to compile until it has something to render, and the map sits
   in the view that renders the result rather than in a shared registry — which
   the view standard forbids and which no view could import from another anyway.

@@ -6,6 +6,7 @@
   import { page } from "$app/state";
 
   import { initClientModel } from "$model/client";
+  import type { LayoutServerData } from "./$types";
 
   /**
    * The client instance. Everything under /app runs inside the one this builds.
@@ -37,11 +38,32 @@
    * below, and this file holds no markup and no CSS so that lifetime and
    * appearance stay separable.
    */
-  let { children }: { children: Snippet } = $props();
+  let { children, data }: { children: Snippet; data: LayoutServerData } = $props();
 
   setupConvex(PUBLIC_CONVEX_URL);
 
-  initClientModel({ project: page.params.project ?? "" });
+  // `data.configuration` is the allowlisted slice of the YAML, from
+  // `+layout.server.ts`. It is handed in rather than fetched because the objects
+  // below read their tuned values while they are being constructed.
+  //
+  // Reading the initial value is exactly right here, which is what the ignore
+  // says: this script runs once per client instance, and a later `data` would
+  // mean a project switch — which is a full page load, not a reactive update.
+  // svelte-ignore state_referenced_locally
+  const model = initClientModel({
+    project: page.params.project ?? "",
+    configuration: data.configuration
+  });
+
+  /**
+   * The instance ends with the layout that owns it.
+   *
+   * This is the release hook `client.md` names: nothing between the root and a
+   * leaf decides when an object ends, and `close()` releases in reverse
+   * construction order. Today that means every open resource submits what it has
+   * buffered on the way out — disposal is never a silent discard.
+   */
+  $effect(() => () => model.close());
 </script>
 
 {@render children()}

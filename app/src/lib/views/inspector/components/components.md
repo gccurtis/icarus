@@ -69,9 +69,9 @@ document capability, which does not exist. Each shows the identity it was handed
 
 ## Key Selection
 
-- **Key:** `InspectionNode["kind"]`, from `$model/client`.
+- **Key:** `InspectionKey["kind"]`, from `$model/client`.
 - **Selected by:** [`inspector.svelte`](../inspector.svelte), which reads
-  `workbench.currentInspection` and narrows on its kind.
+  `workbench.inspectedNode` and narrows on its kind.
 
 | Key value | Renders | Component or composed view |
 | --- | --- | --- |
@@ -96,7 +96,7 @@ kind, which is the honest rendering of "something is inspected and this panel ha
 no view for it yet".
 
 **Selection is an if-chain rather than a `Record`**, unlike the workspace and the
-context panel. `InspectionNode` is a discriminated union whose members carry
+context panel. `InspectionKey` is a discriminated union whose members carry
 different fields, so a component map would erase the per-kind props and every
 component would take `any`. Narrowing on `kind` is what keeps `blockId` and the
 offsets typed at the point they are passed.

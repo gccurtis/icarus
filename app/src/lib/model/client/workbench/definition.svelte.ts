@@ -1,30 +1,31 @@
-import type { ClientStorage } from "$model/client/storage";
+import type { ResourceRuntime, ResourceRuntimesModel } from "$model/client/resource-runtimes";
 import { activate } from "$model/client/workbench/methods/activate";
-import { activeContext } from "$model/client/workbench/methods/active-context";
-import { availableContexts } from "$model/client/workbench/methods/available-contexts";
 import { close } from "$model/client/workbench/methods/close";
-import { currentInspection } from "$model/client/workbench/methods/current-inspection";
+import { closeAll } from "$model/client/workbench/methods/close-all";
+import { frame } from "$model/client/workbench/methods/frame";
 import { inspect } from "$model/client/workbench/methods/inspect";
+import { inspectedNode } from "$model/client/workbench/methods/inspected-node";
 import { open } from "$model/client/workbench/methods/open/open";
-import { restore } from "$model/client/workbench/methods/open/restore/restore";
-import { panels } from "$model/client/workbench/methods/panels";
+import { resolveLauncher } from "$model/client/workbench/methods/open/resolve-launcher";
+import { reopenClosed } from "$model/client/workbench/methods/reopen-closed";
 import { reorder } from "$model/client/workbench/methods/reorder";
 import { resize } from "$model/client/workbench/methods/resize";
+import { runtimeFor } from "$model/client/workbench/methods/runtime-for";
 import { selectContext } from "$model/client/workbench/methods/select-context";
 import { activeTab } from "$model/client/workbench/methods/shared/active-tab";
+import { adoptTarget } from "$model/client/workbench/methods/shared/adopt-target";
 import { update } from "$model/client/workbench/methods/update";
 import type {
-  ContextId,
-  Inspection,
-  InspectionNode,
-  Panels,
-  ResourceRef,
+  Frame,
+  InspectionKey,
+  ScreenKind,
   Tab,
   TabId,
-  TabOptions,
+  TabTarget,
+  ViewStatePatch,
   WorkbenchModel
 } from "$model/client/workbench/types";
-import { PROJECT_OVERVIEW } from "$model/client/workbench/types";
+import { SINGLETON_TARGETS } from "$model/client/workbench/types";
 
 /**
  * The instance's state, and the only thing a method is handed.
@@ -33,19 +34,22 @@ import { PROJECT_OVERVIEW } from "$model/client/workbench/types";
  * primitive: a method cannot reassign it through a value it was passed unless
  * something owns the binding. This owns it.
  *
- * The id counter is an **instance** field, not module scope. It was module scope
- * before the model directory existed, and it is not user data, so it reads as
- * harmless — which is exactly why it is the thing most likely to be carried
- * across a rename untouched. One counter per process would mint ids for every
- * client instance at once, so two users' tabs interleave and an id stops being
- * reproducible from a fresh boot.
+ * The id counter is an **instance** field, not module scope. It is not user data,
+ * so it reads as harmless — which is exactly why it is the thing most likely to
+ * be carried across a rename untouched. One counter per process would mint ids
+ * for every client instance at once, so two users' tabs interleave and an id
+ * stops being reproducible from a fresh boot.
  */
 export class WorkbenchState {
   tabs = $state<Tab[]>([]);
   activeId = $state<TabId>("");
+
+  /** The reopen queue, most recently closed first. Not persisted, ever. */
+  closed = $state.raw<readonly Tab[]>([]);
+
   #counter = 0;
 
-  constructor(readonly storage: ClientStorage) {}
+  constructor(readonly runtimes: ResourceRuntimesModel) {}
 
   nextId(): TabId {
     return `tab-${++this.#counter}`;
@@ -62,23 +66,17 @@ export class WorkbenchState {
  * behind it lives in `methods/`, where it can be read one method at a time.
  */
 export class Workbench implements WorkbenchModel {
-  #state: WorkbenchState;
+  readonly #state: WorkbenchState;
 
-  constructor(storage: ClientStorage) {
-    this.#state = new WorkbenchState(storage);
+  constructor(runtimes: ResourceRuntimesModel) {
+    this.#state = new WorkbenchState(runtimes);
 
-    // The permanent tab is constructed here rather than restored, which is what
-    // makes "activeId is never empty" an invariant rather than a hope.
-    const overview: Tab = {
-      id: this.#state.nextId(),
-      resource: PROJECT_OVERVIEW,
-      permanent: true,
-      options: {}
-    };
-    this.#state.tabs = [overview];
-    this.#state.activeId = overview.id;
-
-    restore(this.#state);
+    // The singletons are constructed here rather than restored, which is what
+    // makes "activeId is never empty" an invariant rather than a hope. They are
+    // minted through `adoptTarget` like every other tab, so nothing about them
+    // is a special case beyond being built first.
+    this.#state.tabs = SINGLETON_TARGETS.map((target) => adoptTarget(this.#state, target));
+    this.#state.activeId = this.#state.tabs[0].id;
   }
 
   get tabs(): readonly Tab[] {
@@ -93,12 +91,24 @@ export class Workbench implements WorkbenchModel {
     return activeTab(this.#state);
   }
 
-  open(resource: ResourceRef): Tab {
-    return open(this.#state, resource);
+  get closed(): readonly Tab[] {
+    return this.#state.closed;
+  }
+
+  open(target: TabTarget): Tab {
+    return open(this.#state, target);
+  }
+
+  resolveLauncher(id: TabId, target: TabTarget): Tab {
+    return resolveLauncher(this.#state, id, target);
   }
 
   close(id: TabId): void {
     close(this.#state, id);
+  }
+
+  closeAll(): void {
+    closeAll(this.#state);
   }
 
   activate(id: TabId): void {
@@ -109,35 +119,35 @@ export class Workbench implements WorkbenchModel {
     reorder(this.#state, id, index);
   }
 
-  update(id: TabId, patch: Partial<TabOptions>): void {
-    update(this.#state, id, patch);
+  reopenClosed(): Tab | undefined {
+    return reopenClosed(this.#state);
   }
 
-  get availableContexts(): readonly ContextId[] {
-    return availableContexts(this.#state);
+  update<K extends ScreenKind>(id: TabId, kind: K, patch: ViewStatePatch<K>): void {
+    update(this.#state, id, kind, patch);
   }
 
-  get activeContext(): ContextId {
-    return activeContext(this.#state);
-  }
-
-  selectContext(id: ContextId): void {
+  selectContext(id: string): void {
     selectContext(this.#state, id);
   }
 
-  get currentInspection(): InspectionNode | undefined {
-    return currentInspection(this.#state);
+  get inspectedNode(): InspectionKey | undefined {
+    return inspectedNode(this.#state);
   }
 
-  inspect(inspection?: Inspection): void {
-    inspect(this.#state, inspection);
+  inspect(key?: InspectionKey): void {
+    inspect(this.#state, key);
   }
 
-  get panels(): Panels {
-    return panels(this.#state);
+  get frame(): Frame {
+    return frame(this.#state);
   }
 
-  resize(patch: Partial<Panels>): void {
+  resize(patch: Partial<Omit<Frame, "contextId">>): void {
     resize(this.#state, patch);
+  }
+
+  runtimeFor(id: TabId): ResourceRuntime<unknown> | undefined {
+    return runtimeFor(this.#state, id);
   }
 }

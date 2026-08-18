@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { clientModel, type ResourceRef } from "$model/client";
+  import { clientModel, type Tab } from "$model/client";
 
   /**
    * What a `document` resource renders as.
@@ -16,13 +16,12 @@
    * holding any markup has several. Measuring the range from the block's start
    * gives the offset the model's contract means.
    *
-   * Nothing here carries text into the inspection. That is the design the model
-   * states: an inspection names ids and offsets, and whoever renders it fetches
-   * what it needs. A payload would be a copy of something that lives elsewhere
-   * and may have changed since — which is also why an inspection is not
-   * persisted.
+   * Nothing here carries text into the inspection. An inspection is a *key* and
+   * nothing more, and the detail belongs in view state — so the offsets go to
+   * `update`, which is typed per screen, and the key goes to `inspect`. A
+   * payload on the key would be a second record of the same selection.
    */
-  let { resource }: { resource: ResourceRef } = $props();
+  let { tab }: { tab: Tab } = $props();
 
   const { workbench } = clientModel();
 
@@ -56,18 +55,20 @@
     if (selection && !selection.isCollapsed && selection.anchorNode && block.contains(selection.anchorNode)) {
       const range = selection.getRangeAt(0);
       const from = offsetWithin(block, range.startContainer, range.startOffset);
-      workbench.inspect([
-        { kind: "document-text-selection", blockId, from, to: from + range.toString().length }
-      ]);
+      workbench.update(tab.id, "document", {
+        selection: { anchor: from, head: from + range.toString().length }
+      });
+      workbench.inspect("block.text-selection");
       return;
     }
 
-    workbench.inspect([{ kind: "document-next-text", blockId }]);
+    workbench.update(tab.id, "document", { scrollAnchor: blockId, selection: undefined });
+    workbench.inspect("block.next-text");
   };
 </script>
 
 <article class="document">
-  <h1 class="title">{resource.id}</h1>
+  <h1 class="title">{tab.target.kind === "resource" ? tab.target.resourceId : "Document"}</h1>
   <p class="hint">Click a paragraph to inspect the caret; drag across one to inspect a selection.</p>
 
   {#each BLOCKS as block (block.id)}

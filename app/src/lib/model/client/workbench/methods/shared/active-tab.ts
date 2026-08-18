@@ -2,17 +2,15 @@ import type { WorkbenchState } from "$model/client/workbench/definition.svelte";
 import type { Tab } from "$model/client/workbench/types";
 
 /**
- * The tab `activeId` names.
+ * The active tab, which always exists.
  *
- * Preserves the never-empty invariant by refusing to paper over its breach: a
- * permanent tab cannot be closed, so an `activeId` naming nothing means the tab
- * list lost a tab it was promised. Returning `undefined` here would push that
- * failure into whichever surface read it next.
+ * `activeId` names a real tab by construction: the singletons are built with the
+ * workbench and none can be closed, so there is always something for `close` and
+ * `closeAll` to fall back to. The final `?? tabs[0]` is not a defence against
+ * that failing — it is what makes the return type non-optional, so that eight
+ * callers do not each write a guard for a case the object rules out.
+ *
+ * Shared by everything that reads or writes the active tab.
  */
-export const activeTab = (state: WorkbenchState): Tab => {
-  const tab = state.tabs.find((candidate) => candidate.id === state.activeId);
-  if (!tab) {
-    throw new Error(`Active tab ${state.activeId} is not in the tab list.`);
-  }
-  return tab;
-};
+export const activeTab = (state: WorkbenchState): Tab =>
+  state.tabs.find((tab) => tab.id === state.activeId) ?? state.tabs[0];

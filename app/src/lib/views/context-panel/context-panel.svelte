@@ -3,12 +3,17 @@
   import FileText from "@lucide/svelte/icons/file-text";
   import LayoutDashboard from "@lucide/svelte/icons/layout-dashboard";
 
-  import { clientModel, type ContextId, type ResourceRef } from "$model/client";
+  import { clientModel, screenKindOf, type Tab } from "$model/client";
   import { ResizeHandle } from "$lib/unique-components/resize-handle";
   import Outline from "$views/context-panel/components/outline.svelte";
   import Overview from "$views/context-panel/components/overview.svelte";
   import Rail from "$views/context-panel/components/rail.svelte";
   import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH, RAIL_WIDTH } from "$views/context-panel/types";
+  import {
+    CONTEXTS_BY_SCREEN,
+    resolveContext,
+    type ContextId
+  } from "$views/context-panel/procedures/resolve-context";
 
   /**
    * The context panel — the map. It answers "where am I and what else is here?"
@@ -39,7 +44,7 @@
   type ContextEntry = {
     label: string;
     icon: Component;
-    content: Component<{ resource: ResourceRef }>;
+    content: Component<{ tab: Tab }>;
   };
 
   const CONTEXTS: Record<ContextId, ContextEntry> = {
@@ -49,12 +54,15 @@
 
   const { workbench } = clientModel();
 
-  const Content = $derived(CONTEXTS[workbench.activeContext].content);
-  const resource = $derived<ResourceRef>(workbench.active.resource);
+  const tab = $derived(workbench.active);
+  const screen = $derived(screenKindOf(tab.target));
+  const available = $derived(CONTEXTS_BY_SCREEN[screen]);
+  const active = $derived(resolveContext(screen, tab.viewState.frame.contextId));
+  const Content = $derived(CONTEXTS[active].content);
 
   /** The model stores content only; the handle works in painted pixels. */
-  const visible = $derived(RAIL_WIDTH + workbench.panels.contextWidth);
-  const collapsed = $derived(workbench.panels.contextCollapsed);
+  const visible = $derived(RAIL_WIDTH + workbench.frame.contextWidth);
+  const collapsed = $derived(workbench.frame.contextCollapsed);
 
   /**
    * Selecting a context always opens the panel.
@@ -75,8 +83,8 @@
 <aside class="panel" aria-label="Context">
   <Rail
     contexts={CONTEXTS}
-    available={workbench.availableContexts}
-    active={workbench.activeContext}
+    {available}
+    {active}
     {collapsed}
     onselect={select}
   />
@@ -88,7 +96,7 @@
   -->
   {#if !collapsed}
     <div class="content">
-      <Content {resource} />
+      <Content {tab} />
     </div>
   {/if}
 

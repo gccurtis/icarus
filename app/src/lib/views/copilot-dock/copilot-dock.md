@@ -1,6 +1,6 @@
-# Copilot Bar
+# Copilot Dock
 
-Lives at `src/lib/views/copilot-bar/copilot-bar.md`. Trees live in the concern
+Lives at `src/lib/views/copilot-dock/copilot-dock.md`. Trees live in the concern
 documents linked below.
 
 ## Purpose
@@ -33,7 +33,7 @@ It does not own:
 
 ## Public Contract
 
-- **Entry:** [`copilot-bar.svelte`](copilot-bar.svelte)
+- **Entry:** [`copilot-dock.svelte`](copilot-dock.svelte)
 - **Types:** `None`
 
 | Kind | Name | Type | Required | Purpose |
@@ -46,7 +46,7 @@ It does not own:
 
 | Door | Usage |
 | --- | --- |
-| `$model/client` | `currentInspection`, `panels.inspectorCollapsed`; calls `inspect` and `resize` |
+| `$model/client` | `inspectedNode`, `panels.inspectorCollapsed`; calls `inspect` and `resize` |
 
 ### Capabilities
 

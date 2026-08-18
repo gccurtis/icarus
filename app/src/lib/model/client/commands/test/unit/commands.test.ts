@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 import { COMMAND_IDS, chordOf, createCommands, isCommandId } from "$model/client/commands";
-import type { ClientStorage, PersistedWorkbench } from "$model/client/storage";
+import { createConfiguration } from "$model/client/configuration";
+import { createResourceRuntimes } from "$model/client/resource-runtimes";
 import { createWorkbench } from "$model/client/workbench";
+import type { TabTarget } from "$model/client/workbench";
 
 /**
  * Enablement is the half worth testing hardest. `run` is a lookup and a call;
@@ -11,26 +13,21 @@ import { createWorkbench } from "$model/client/workbench";
  * it, and nothing in this directory would say so.
  *
  * Every command closes over a real workbench, which is why these build one
- * rather than a stub. That is the cost of the closure, and it is the reason the
- * fake here is a storage rather than a workbench.
+ * rather than a stub — and a real register with it, since the workbench borrows
+ * one. That is the cost of the closure, and it is what makes these tests fail
+ * when the workbench changes underneath them, which is the point.
  */
-const fakeStorage = (initial?: PersistedWorkbench): ClientStorage => {
-  let workbench = initial;
-  return {
-    get workbench() {
-      return workbench;
-    },
-    saveWorkbench: (value: PersistedWorkbench) => (workbench = value)
-  };
-};
-
 const build = () => {
-  const workbench = createWorkbench(fakeStorage());
+  const workbench = createWorkbench(
+    createResourceRuntimes(
+      createConfiguration({ revisions: { changeSets: { flushAfterOps: 50, flushAfterMs: 2000 } } })
+    )
+  );
   return { workbench, commands: createCommands(workbench) };
 };
 
-const OTHER = { kind: "project-overview", id: "other" } as const;
-const THIRD = { kind: "project-overview", id: "third" } as const;
+const OTHER: TabTarget = { kind: "resource", resourceType: "document", resourceId: "other" };
+const THIRD: TabTarget = { kind: "resource", resourceType: "document", resourceId: "third" };
 
 // ------------------------------------------------------------------ registry ----
 
@@ -52,13 +49,13 @@ test("an unknown id is refused rather than ignored", () => {
 
 // ---------------------------------------------------------------- enablement ----
 
-test("tab.close is disabled while only the permanent tab is open", () => {
+test("tab.close is disabled while a singleton is active", () => {
   const { commands } = build();
 
   assert.equal(commands.enabled("tab.close"), false);
 });
 
-test("tab.close becomes enabled once a transient tab is active", () => {
+test("tab.close becomes enabled once a closable tab is active", () => {
   const { workbench, commands } = build();
 
   workbench.open(OTHER);
@@ -72,12 +69,14 @@ test("running a disabled command throws rather than doing nothing", () => {
   assert.throws(() => commands.run("tab.close"), /disabled/);
 });
 
-test("tab cycling is disabled with one tab and enabled with two", () => {
+test("tab cycling is always available, because the singletons always are", () => {
+  // The predicate is `tabs.length > 1`, and a workbench opens with seven
+  // singletons that cannot be closed — so unlike `tab.close`, this one has no
+  // disabled state to reach any more.
   const { workbench, commands } = build();
 
-  assert.equal(commands.enabled("tab.next"), false);
-  workbench.open(OTHER);
   assert.equal(commands.enabled("tab.next"), true);
+  workbench.open(OTHER);
   assert.equal(commands.enabled("tab.previous"), true);
 });
 
@@ -88,7 +87,7 @@ test("tab.next wraps from the last tab to the first", () => {
   workbench.open(OTHER);
   workbench.open(THIRD);
 
-  assert.equal(workbench.activeId, workbench.tabs[2].id);
+  assert.equal(workbench.activeId, workbench.tabs.at(-1)?.id);
   commands.run("tab.next");
 
   assert.equal(workbench.activeId, workbench.tabs[0].id);
@@ -101,16 +100,17 @@ test("tab.previous wraps from the first tab to the last", () => {
 
   commands.run("tab.previous");
 
-  assert.equal(workbench.activeId, workbench.tabs[1].id);
+  assert.equal(workbench.activeId, workbench.tabs.at(-1)?.id);
 });
 
 test("tab.close closes the active tab", () => {
   const { workbench, commands } = build();
+  const before = workbench.tabs.length;
   workbench.open(OTHER);
 
   commands.run("tab.close");
 
-  assert.equal(workbench.tabs.length, 1);
+  assert.equal(workbench.tabs.length, before);
 });
 
 // ---------------------------------------------------------------------- bar ----

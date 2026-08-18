@@ -1,25 +1,22 @@
 import type { WorkbenchState } from "$model/client/workbench/definition.svelte";
+import type { Frame } from "$model/client/workbench/types";
+import { assignState } from "$model/client/workbench/methods/shared/assign-state";
 import { activeTab } from "$model/client/workbench/methods/shared/active-tab";
-import { assignOptions } from "$model/client/workbench/methods/shared/assign-options";
-import type { Panels } from "$model/client/workbench/types";
-import { DEFAULTS } from "$model/client/workbench/types";
 
 /**
  * Records panel geometry on the active tab.
  *
- * Per tab rather than per workbench, which is the whole of what the deleted
- * preferences object held. A user sizing the inspector while reading one
- * document has said something about that document, not about the application.
+ * **Values only, and it cannot reach `contextId`.** The patch type excludes it,
+ * so a drag can never move the rail and a rail click can never resize a panel —
+ * structurally rather than by convention.
  *
- * Values only. The minimum, the maximum, and the width below which a drag
- * collapses belong to the panel component that enforces the drag, because that
- * is the thing which knows a gesture overshot.
- *
- * The spread over `DEFAULTS` is load-bearing: without it the first resize would
- * write the frozen constant itself onto the tab, and `DEFAULTS` is frozen so
- * that mistake throws rather than leaking into every later reader.
+ * Bounds are the panel's. The minimum, the maximum, and the width below which a
+ * drag collapses rather than clamps all belong to the component that enforces
+ * the gesture, because it is the thing that knows a drag overshot. Storing a
+ * bound here as well would put the same number in two places.
  */
-export const resize = (state: WorkbenchState, patch: Partial<Panels>): void => {
-  const tab = activeTab(state);
-  assignOptions(state, tab, { panels: { ...DEFAULTS, ...tab.options.panels, ...patch } });
+export const resize = (state: WorkbenchState, patch: Partial<Omit<Frame, "contextId">>): void => {
+  assignState(state, activeTab(state).id, (tab) => {
+    Object.assign(tab.viewState.frame, patch);
+  });
 };

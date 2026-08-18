@@ -3,6 +3,7 @@
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
 
   import { clientModel } from "$model/client";
+  import type { Mode } from "$model/client/copilot";
   import * as Select from "$lib/simple-components/select";
 
   /**
@@ -12,17 +13,25 @@
    * user is looking at, `resize()` opens the panel. Folding the second into the
    * first would make every future caller of `inspect()` a layout change.
    *
-   * Mode and persona are local state until a capability can act on them.
+   * **Mode, persona and the draft are the copilot model's**, not this view's.
+   * The dock is deliberately small — a composer, a mode and a persona — and the
+   * inspector is where a request is assembled. That split matters because the
+   * dock is always visible and the inspector is not: a composer that grew a
+   * scope editor would take permanent vertical space for something used
+   * occasionally.
+   *
+   * **This view sends and the model does not.** `copilot.sent()` is past tense,
+   * so a refused mutation leaves the draft where the user can see it, and the
+   * failure is this surface's to render.
    */
-  const { workbench } = clientModel();
+  const { workbench, copilot } = clientModel();
 
+  /** Display copy for the model's three modes. The ids are the model's. */
   const MODES = [
     { id: "ask", label: "Ask", hint: "Answer against the current context" },
     { id: "plan", label: "Plan", hint: "Turn an outcome into a reviewable sequence" },
-    { id: "action", label: "Action", hint: "Make the change directly" }
-  ] as const;
-
-  type Mode = (typeof MODES)[number]["id"];
+    { id: "act", label: "Act", hint: "Make the change directly" }
+  ] as const satisfies readonly { id: Mode; label: string; hint: string }[];
 
   /** Placeholder personas, long enough to exercise scrolling. */
   const PERSONAS = [
@@ -42,22 +51,43 @@
    *  portalled menu. */
   const MENU = "copilot-menu max-h-[5rem] min-w-32";
 
-  let mode = $state<Mode>("ask");
-  let persona = $state(PERSONAS[0]);
-  let prompt = $state("");
   let focused = $state(false);
   let composer = $state<HTMLTextAreaElement>();
 
-  const inspectingCopilot = $derived(workbench.currentInspection?.kind === "copilot");
-  const inspectorOpen = $derived(!workbench.panels.inspectorCollapsed);
+  /**
+   * Bound to the model rather than held here. A draft that lived in this
+   * component would be lost the moment anything remounted the frame, and the
+   * whole reason the copilot is a model object is that an unsent message
+   * outlives every surface that shows it.
+   */
+  const mode = $derived(copilot.mode);
+  const persona = $derived(copilot.personaId ?? PERSONAS[0]);
+  const prompt = $derived(copilot.draft);
+
+  /**
+   * The whole of the `copilot.focus` command on this side: the model counts
+   * requests and the dock acts on a number it has not seen before. A boolean
+   * would have to be reset by whoever consumed it, which means the model holding
+   * a flag about a DOM operation it cannot observe.
+   */
+  let acted = $state(0);
+
+  $effect(() => {
+    if (copilot.focusRequests === acted) return;
+    acted = copilot.focusRequests;
+    composer?.focus();
+  });
+
+  const inspectingCopilot = $derived(workbench.inspectedNode?.startsWith("copilot.") === true);
+  const inspectorOpen = $derived(!workbench.frame.inspectorCollapsed);
 
   /** Solid when in use. That includes the inspector showing the copilot — the
    *  bar and that panel are one surface. */
   const active = $derived(focused || (inspectingCopilot && inspectorOpen));
 
   const activate = () => {
-    workbench.inspect([{ kind: "copilot" }]);
-    if (workbench.panels.inspectorCollapsed) workbench.resize({ inspectorCollapsed: false });
+    workbench.inspect("copilot.home");
+    if (workbench.frame.inspectorCollapsed) workbench.resize({ inspectorCollapsed: false });
   };
 
   /** Four lines, then it scrolls inside itself, so the bottom edge stays put. */
@@ -71,11 +101,24 @@
 
   const submit = (event: SubmitEvent) => {
     event.preventDefault();
-    if (!prompt.trim()) return;
-    // Nothing dispatches yet — no agent capability exists. What is real is where
-    // the result will land, so activation happens and the prompt clears.
+    if (copilot.blocked) return;
+
+    // ── FORWARD DECLARATION ──────────────────────────────────────────────
+    // No agent capability exists, so nothing is dispatched. This is the call
+    // we expect to run, and its shape is what decides where `sent` goes:
+    //
+    // ```ts
+    // const landed = await messages.send({ ... });
+    // copilot.sent(landed.destination);
+    // ```
+    //
+    // `sent` is past tense, so it belongs *after* the mutation resolves — a
+    // refusal leaves the draft in the composer because that line never runs,
+    // and rendering the failure is this surface's job rather than the model's.
+    // Until the capability lands, the message goes where it was addressed.
+    copilot.sent(copilot.destination);
+
     activate();
-    prompt = "";
     void tick().then(grow);
   };
 
@@ -128,7 +171,7 @@
         surface shares.
       -->
       <div class="control intent">
-        <Select.Root type="single" bind:value={mode}>
+        <Select.Root type="single" value={mode} onValueChange={(next) => copilot.setMode(next as Mode)}>
           <Select.Trigger size="sm" aria-label="Mode">
             {MODES.find((entry) => entry.id === mode)?.label}
           </Select.Trigger>
@@ -147,7 +190,7 @@
         past the frame with its far end unreachable.
       -->
       <div class="control who">
-        <Select.Root type="single" bind:value={persona}>
+        <Select.Root type="single" value={persona} onValueChange={(next) => copilot.selectPersona(next)}>
           <Select.Trigger size="sm" aria-label="Persona">{persona}</Select.Trigger>
           <Select.Content side="top" align="center" class={MENU}>
             {#each PERSONAS as name (name)}
@@ -157,15 +200,18 @@
         </Select.Root>
       </div>
 
-      <button type="submit" class="send" disabled={!prompt.trim()} aria-label="Send {mode}">
+      <button type="submit" class="send" disabled={copilot.blocked !== undefined} aria-label="Send {mode}">
         <ArrowUp size={14} aria-hidden="true" />
       </button>
     </div>
 
     <textarea
       bind:this={composer}
-      bind:value={prompt}
-      oninput={grow}
+      value={prompt}
+      oninput={(event) => {
+        copilot.write(event.currentTarget.value);
+        grow();
+      }}
       {onkeydown}
       rows="1"
       aria-label="Copilot prompt"

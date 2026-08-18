@@ -26,7 +26,7 @@ This view owns:
 It does not own:
 
 - which contexts exist, which are offered, or which is selected. The model
-  decides all three from the active tab's resource kind.
+  decides all three from the active tab's screen kind.
 - the panel's total width. That is a column in the frame, sized from the model.
 - the bounds of a resize. Values are the model's, bounds belong to the drag that
   does not exist yet.
@@ -58,7 +58,7 @@ alike.
 
 | Door | Usage |
 | --- | --- |
-| `$model/client` | `workbench.availableContexts`, `activeContext`, `active.resource`; calls `selectContext` |
+| `$model/client` | `workbench.active`, `workbench.frame`; calls `selectContext` and `resize` |
 
 ### Capabilities
 
@@ -97,12 +97,12 @@ alike.
 | Failure | `None` | — | — |
 | Denied | `None` | — | — |
 
-No unknown-context state. The model guarantees `activeContext` is one the active
+No unknown-context state. The panel resolves the tab's remembered id to one the active
 tab's kind offers, falling back to that kind's default when a stored id no longer
 resolves, so there is no branch here for a key that does not map.
 
 **What the rail offers changes with the active tab**, because
-`CONTEXTS_BY_KIND` is keyed by resource kind. A `project-overview` tab offers one
+`CONTEXTS_BY_KIND` is keyed by screen kind. A `project-overview` tab offers one
 entry; a `document` offers two. That is the most visible proof that this panel is
 a projection over the workbench rather than a surface holding its own state.
 

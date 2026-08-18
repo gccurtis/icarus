@@ -12,12 +12,24 @@ window later — and it owns one client model for its whole life.
 
 | Object | Owns | Holds `$state` |
 | --- | --- | --- |
+| [`configuration`](configuration/configuration.md) | The settings the server published to this tab | no |
 | [`storage`](storage/storage.md) | This project's browser store, and the format of what survives a reload | no |
 | [`workbench`](workbench/workbench.md) | What is open, which tab is active, and everything a tab holds | yes |
 | [`commands`](commands/commands.md) | Every argument-free action, the chords bound to them, and whether the bar is showing | yes |
+| [`resource-runtimes`](resource-runtimes/resource-runtimes.md) | One runtime per open resource: the unsent buffer, the submit protocol, the undo stack | yes |
+| [`copilot`](copilot/copilot.md) | The message that has not been sent: its text, mode, addressee, scope and attachments | yes |
 
-Two, down from five. `activities` and `inspector` were pure getters over the
-workbench, and `preferences` held four numbers that became per tab. See
+In construction order, which is dependency order: configuration depends on
+nothing, the register is built before the workbench that borrows it, and commands
+and the copilot both close over the workbench.
+
+**Storage is built and read by nothing.** The workbench does not persist while
+its stored shape is unsettled — see
+[workbench.md](workbench/workbench.md) — and storage holds exactly that one
+section. It stands intact and unused rather than being torn out and rebuilt.
+
+`activities` and `inspector` were pure getters over the workbench, and
+`preferences` held four numbers that became per tab. See
 [workbench.md](workbench/workbench.md) for the fold and what each surface became.
 
 ## Initialization, not a lazy singleton
@@ -36,8 +48,7 @@ It would have to reach for `page` itself, or accept a setter afterwards and be
 observable half-built until someone remembered to call it.
 
 `buildClientModel` lives in [`constructor.ts`](constructor.ts) and is pure
-composition over its input: browser storage keyed by the project, then the
-workbench over that storage. A test builds a whole graph in one call and asserts
+composition over its input. A test builds a whole graph in one call and asserts
 across objects without touching module state.
 
 **It is not reachable through the door.** The initializer and tests are the whole
@@ -128,9 +139,16 @@ The composition root is a Svelte layout component, so release is `$effect`
 cleanup in that layout: an object exposing a terminal operation is closed there,
 in reverse dependency order, when the layout is destroyed.
 
-No client object owns anything releasable today, so `ClientModel` has no
-`close()`. The hook is named here so the first object to own a subscription or a
-socket inherits one instead of inventing one.
+`ClientModel.close()` is that hook, and `resource-runtimes` is what brought it —
+a runtime holds a subscription and an unsent buffer, and both have to go
+somewhere deliberate when the tab does. It releases in reverse construction
+order.
+
+It is **synchronous**. A closing tab has almost no budget, and `releaseAll`
+submits every buffer without awaiting rather than serialising three round trips
+into a window that will not fit them. A submit that does not make it leaves its
+buffer intact and its runtime reporting the failure — see
+[resource-runtimes.md](resource-runtimes/resource-runtimes.md).
 
 ## What must never be written here
 

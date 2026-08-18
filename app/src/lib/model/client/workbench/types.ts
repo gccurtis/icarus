@@ -1,3 +1,6 @@
+import type { GeneralResourceType } from "$revisions/types/resource";
+import type { ResourceRuntime } from "$model/client/resource-runtimes";
+
 /**
  * Workbench — what is open, which one is active, and everything a tab holds.
  *
@@ -5,182 +8,90 @@
  * the work surface fills from it, and the context and inspector panels are
  * projections over it rather than objects of their own.
  *
- * Named for the frame rather than for tabs, because the tab list is only its
- * most visible part — `session` collided with an authentication session.
- *
- * Nothing here names a Svelte component. Every view-facing value is a stable
- * key, and the view that renders the result resolves it — the workspace maps
- * `ResourceKind`, the context panel maps `ContextId`. There is no registry
- * directory and no shared map file; see
- * [the view standard](../../../../../docs/view-directory/view-directory.md).
- * A model type naming a component points the dependency backwards and drags a
- * DOM into every test of this object.
+ * Nothing here names a Svelte component, and nothing here holds a vocabulary the
+ * views own. A context id and an inspection key are **opaque labels**: the model
+ * remembers one per tab and never interprets it, and the view that renders the
+ * rail or the inspector decides what it means. That is what stops this object
+ * growing a fifty-member union every time a screen arrives.
  */
 
 export type TabId = string;
 
-/**
- * The resource kinds a tab can hold, as a value.
- *
- * A value rather than only a type because stored state has to be checked against
- * it at runtime: a tab restored from an older build can name a kind that no
- * longer exists, and `CONTEXTS_BY_KIND` is a `Record<ResourceKind, …>`, so an
- * unknown kind resolves to `undefined` and throws during paint. The type is
- * derived from the value, so the two cannot drift.
- *
- * Adding a member forces every surface that switches on kind to handle it, which
- * is the point of the union.
- */
-export const RESOURCE_KINDS = ["project-overview", "document"] as const;
+/** A screen that is one per project and always open. */
+export const SINGLETON_SCREENS = [
+  "project-overview",
+  "research",
+  "analysis",
+  "context",
+  "templates",
+  "personas",
+  "automations"
+] as const;
 
-export type ResourceKind = (typeof RESOURCE_KINDS)[number];
-
-export const isResourceKind = (value: string): value is ResourceKind =>
-  (RESOURCE_KINDS as readonly string[]).includes(value);
+export type SingletonScreen = (typeof SINGLETON_SCREENS)[number];
 
 /**
- * A resource is identified by kind *and* id — the id alone is not unique across
- * kinds, and `open()` matches on both.
+ * Every screen a tab can show: the seven singletons, the three editable
+ * resources, and the launcher.
+ *
+ * `ScreenKind` is the discriminant on `viewState`, and `target.kind` narrows to
+ * it — the two always agree, which `adoptTarget` establishes at mint.
  */
-export type ResourceRef = {
-  kind: ResourceKind;
-  id: string;
-};
+export type ScreenKind = SingletonScreen | GeneralResourceType | "new-tab";
 
 /**
- * The context panel's rail positions, as values, for the same reason resource
- * kinds are values: a stored id can outlive the context it named.
+ * What a tab points at. **Identity is the only axis a target expresses.**
  *
- * A context is a way of looking at what surrounds the active resource — its
- * outline, what it relates to, who commented on it. Not a mode of working: a
- * rail entry answers "what else is here?", never "what am I doing?", which is
- * why these are contexts rather than activities.
+ * Research and analysis are singletons rather than id-bearing tabs, and that is
+ * the correction worth stating plainly: each has its own internal selection — an
+ * investigation, an analysis — exactly as a deck selects a slide. That belongs in
+ * view state. A tab per investigation would make the strip the navigation for a
+ * screen that already has its own.
  */
-export const CONTEXT_IDS = ["overview", "outline"] as const;
-
-/**
- * Stable identity, and the whole of what this object exposes about a context.
- * A label and an icon are display copy: rewording or translating either must not
- * change what a tab points at, so both belong to the view that renders the rail.
- */
-export type ContextId = (typeof CONTEXT_IDS)[number];
-
-export const isContextId = (value: string): value is ContextId =>
-  (CONTEXT_IDS as readonly string[]).includes(value);
-
-/**
- * What each resource kind's rail offers, first entry first.
- *
- * Static vocabulary about resource kinds, which is why it sits beside
- * `RESOURCE_KINDS` rather than in a file of its own: what a kind offers is a
- * property of that kind, not something assembled at runtime.
- *
- * `Record<ResourceKind, …>` rather than a partial map, so adding a resource kind
- * fails to compile until it has been given a rail. A kind reaching the panel
- * with no contexts has no way to render, and finding that at runtime is strictly
- * worse than finding it at build time.
- *
- * The first entry of each array is that kind's default — what the rail shows
- * before the user has chosen, and what it falls back to when a tab points at a
- * context the kind no longer offers. A context may be shared between kinds by
- * listing it in several arrays, which `overview` is.
- */
-export const CONTEXTS_BY_KIND: Record<ResourceKind, readonly ContextId[]> = Object.freeze({
-  "project-overview": Object.freeze(["overview"] as const),
-  document: Object.freeze(["outline", "overview"] as const)
-});
-
-/**
- * One thing that can be inspected.
- *
- * The union is global rather than namespaced per resource kind, but most members
- * end up resource-qualified anyway: selected text in a document is not the same
- * object as selected text in a spreadsheet, and they want different inspector
- * views. The members that are genuinely shared — `formula`, `prompt` — stay
- * unqualified, because the server treats those as capabilities in their own
- * right rather than as document internals, and one view serves both.
- *
- * **This union is not about documents, and it is expected to get long.** Every
- * editor contributes members — slides, spreadsheets, research — and so do
- * surfaces that belong to no resource at all, like `copilot`. A member is a
- * stable label for "what the user is looking at", nothing more; the view that
- * renders it decides what that looks like and fetches whatever it needs from the
- * ids the label carries. Length is the design working, not a smell: a closed
- * union is what makes the compiler name every surface that must handle a new
- * one.
- */
-export type InspectionNode =
-  /**
-   * The caret rests somewhere with nothing to inspect yet — a new line. A named
-   * state rather than an absent one, because the inspector can still offer
-   * insert affordances here, which is exactly when it is most useful.
-   */
-  | { readonly kind: "empty" }
-  /**
-   * The copilot surface, and the clearest case that an inspection is not a thing
-   * *inside* a resource. Nothing on the work surface is selected here: what is
-   * under inspection is the assistant itself, and the panel it opens searches
-   * past conversations, lists running work, and holds the active one.
-   *
-   * `chatId` absent is the home — search and running work with no conversation
-   * open. Present, it is that conversation. Absent is not an error state, which
-   * is why there is no separate kind for it: submitting from the bar with no
-   * chat open is how a chat gets created.
-   */
-  | { readonly kind: "copilot"; readonly chatId?: string }
-  /**
-   * Text about to be typed. This is the case that shows the inspector is a
-   * control surface rather than a mirror: what the user sets here — bold, a
-   * style — is what the editor applies to each subsequent keypress, and none of
-   * that typing changes the inspection.
-   */
-  | { readonly kind: "document-next-text"; readonly blockId: string }
+export type TabTarget =
+  | { readonly kind: "singleton"; readonly screen: SingletonScreen }
   | {
-      readonly kind: "document-text-selection";
-      readonly blockId: string;
-      readonly from: number;
-      readonly to: number;
+      readonly kind: "resource";
+      readonly resourceType: GeneralResourceType;
+      readonly resourceId: string;
     }
-  | { readonly kind: "document-table"; readonly tableId: string }
-  | { readonly kind: "formula"; readonly formulaId: string }
-  | { readonly kind: "prompt"; readonly promptId: string };
+  | { readonly kind: "launcher" };
 
 /**
- * An inspection ancestry, outermost first and innermost last.
+ * The shell's own per-tab geometry, and the rail position.
  *
- * Selected text inside a table inside a document is one caret position with
- * three plausible targets. The inspector shows the innermost by default and the
- * ancestry is what makes one step outward reachable.
+ * **Values only.** The minimum, the maximum, and the width below which a drag
+ * collapses rather than clamps all belong to the panel component that enforces
+ * the drag — it is the thing that knows a gesture overshot. Storing a bound here
+ * would put the same number in two places.
+ *
+ * `contextId` is the one optional member, and deliberately so. It is an opaque
+ * label the model never reads, and which context a screen kind defaults to is
+ * the context panel's knowledge rather than this object's — so a freshly minted
+ * tab has no rail position until either the user picks one or the panel resolves
+ * its own default. Absent means "the view's default", which is the only answer
+ * this object could honestly give.
  */
-export type Inspection = readonly InspectionNode[];
-
-/**
- * Panel geometry. **Values only.** The minimum, the maximum, and the width below
- * which a drag collapses rather than clamps all belong to the panel component
- * that enforces the drag — it is the thing that knows a gesture overshot.
- * Storing a bound here as well would put the same number in two places.
- */
-export type Panels = {
+export type Frame = {
+  contextId?: string;
+  contextCollapsed: boolean;
   /**
    * Pixels, and the **content portion only** — the context panel's icon rail is
    * structural, never resizes, and never collapses, so it is not part of this
-   * number. The panel's total is this plus the rail. Storing the total instead
-   * would oblige every reader to remember to subtract the rail, which is an
-   * off-by-44 waiting to happen.
+   * number. Storing the total instead would oblige every reader to remember to
+   * subtract the rail, which is an off-by-44 waiting to happen.
    */
   contextWidth: number;
-  contextCollapsed: boolean;
+  inspectorCollapsed: boolean;
   /** Pixels. The inspector has no rail, so this is its whole width. */
   inspectorWidth: number;
-  inspectorCollapsed: boolean;
 };
 
 /**
- * The geometry a tab has until it is resized, and the fallback behind
- * `panels`.
+ * The geometry a tab is minted with.
  *
- * Frozen, and not merely by convention. `$state(DEFAULTS)` instead of
- * `$state({ ...DEFAULTS })` would wrap this constant itself in a reactive proxy,
+ * Frozen, and not merely by convention. `$state(DEFAULT_FRAME)` instead of
+ * `$state({ ...DEFAULT_FRAME })` would wrap this constant in a reactive proxy,
  * so a deep write would reach every later reader — a leak that typechecks,
  * passes review, and works perfectly with one user. Freezing turns that into an
  * immediate throw at the write.
@@ -190,51 +101,118 @@ export type Panels = {
  * consulted. The layout reads them from here, so these are the source and the
  * CSS is the seed.
  */
-export const DEFAULTS: Readonly<Panels> = Object.freeze({
-  contextWidth: 276,
+export const DEFAULT_FRAME: Readonly<Frame> = Object.freeze({
   contextCollapsed: false,
-  inspectorWidth: 320,
-  inspectorCollapsed: false
+  contextWidth: 276,
+  inspectorCollapsed: false,
+  inspectorWidth: 320
 });
 
-/** Per-tab view state. */
-export type TabOptions = {
-  /**
-   * What this tab has under inspection.
-   *
-   * Set only by an explicit `inspect()` call, never derived from focus. That is
-   * what lets it hold: clicking into the inspector blurs the editor and
-   * collapses the caret, and an inspection derived from focus would empty the
-   * panel the user is reaching for.
-   *
-   * Not persisted — it names block ids and character offsets in a document that
-   * may have changed since.
-   */
-  inspection?: Inspection;
-  /** Not persisted, for the same reason. */
-  scrollTop?: number;
-  /** The rail position this tab was last on, so each tab keeps its own. */
-  contextId?: ContextId;
-  /**
-   * This tab's panel geometry, absent until the tab is resized.
-   *
-   * Absent rather than defaulted, so a tab nobody dragged stores nothing and
-   * follows a later change to `DEFAULTS`. `panels` reads
-   * `active.options.panels ?? DEFAULTS`.
-   */
-  panels?: Panels;
-};
+/**
+ * What the user is looking at, as a namespaced label and nothing more —
+ * `block.text-selection`, `document.page`, `copilot.tool-call`.
+ *
+ * **Opaque here, exactly as `contextId` is.** The inspector routes on the prefix
+ * before the dot and reads the detail from view state, or for the copilot family
+ * from the copilot object, since those belong to no tab. The vocabulary lives in
+ * `views/inspector/`.
+ *
+ * It carried a payload before — `block.text-selection` held `{ blockId, from,
+ * to }` — and that was a second record of what the user has selected, beside the
+ * one already in `viewState.selection`. The ancestry array went with it: it
+ * existed so the inspector could render a breadcrumb, and a screen derives that
+ * from its own view state, which is where the structure it would be walking
+ * already lives.
+ *
+ * **Not persisted**, when persistence returns. A key is trivially serialisable
+ * but only meaningful if what it points at survives too, and the detail is
+ * exactly the class of thing deliberately dropped. An inspector that opens empty
+ * after a reload is the honest report of what the client actually knows.
+ */
+export type InspectionKey = string;
+
+/** A text position, as the editor reports it. */
+export type Selection = { readonly anchor: number; readonly head: number };
+
+/**
+ * The screen's whole typed working state, one arm per screen kind.
+ *
+ * Not the selected context — that is one field, two levels down, in `frame`.
+ *
+ * Called `viewState` and not `state` because four different things in this
+ * object are state, and the ambiguity cost more than the four extra characters.
+ *
+ * The arms are deliberately thin. Every screen but the document is a placeholder
+ * today, and inventing fields for one that does not exist is how a screen
+ * inherits state it never wanted.
+ */
+export type WorkbenchViewState =
+  | { kind: "project-overview"; frame: Frame }
+  | { kind: "research"; frame: Frame; investigationId?: string }
+  | { kind: "analysis"; frame: Frame; analysisId?: string }
+  | { kind: "context"; frame: Frame }
+  | { kind: "templates"; frame: Frame; mode?: string }
+  | { kind: "personas"; frame: Frame; personaId?: string }
+  | { kind: "automations"; frame: Frame; automationId?: string }
+  | {
+      kind: "document";
+      frame: Frame;
+      zoom: number;
+      findQuery: string;
+      scrollAnchor?: string;
+      selection?: Selection;
+    }
+  | { kind: "slides"; frame: Frame; zoom: number; slideId?: string }
+  | { kind: "spreadsheet"; frame: Frame; sheetId?: string; selection?: Selection }
+  | { kind: "new-tab"; frame: Frame; query: string };
+
+/** The view state arm belonging to one screen kind. */
+export type ViewStateFor<K extends ScreenKind> = Extract<WorkbenchViewState, { kind: K }>;
+
+/** What `update` accepts: any of a screen's own fields, never `kind` or `frame`. */
+export type ViewStatePatch<K extends ScreenKind> = Partial<Omit<ViewStateFor<K>, "kind" | "frame">>;
 
 export type Tab = {
   readonly id: TabId;
-  readonly resource: ResourceRef;
-  /**
-   * Permanent tabs are always open: they cannot be closed and cannot be
-   * reordered. They hold the leading positions, so the transient ones a user can
-   * drag are always a contiguous run at the end.
-   */
-  readonly permanent: boolean;
-  options: TabOptions;
+  readonly target: TabTarget;
+  viewState: WorkbenchViewState;
+  inspected?: InspectionKey;
+};
+
+/**
+ * Whether a tab is always open.
+ *
+ * **A derivation, not a stored field.** Every singleton is permanent, so
+ * permanence is not an independent fact about a tab — it is what its target is.
+ * A boolean beside it would be a second answer that can disagree with the first.
+ *
+ * You do not close a singleton any more than you close project overview; not
+ * being on one *is* closing it.
+ *
+ * Exported because four surfaces ask the same question — `close` and `reorder`
+ * refuse one, the tab strip offers no close affordance for one, and the
+ * `tab.close` command greys itself out on one — and four spellings of one
+ * predicate is three chances to get it wrong.
+ */
+export const isPermanent = (tab: Tab): boolean => tab.target.kind === "singleton";
+
+/**
+ * Which screen a target shows.
+ *
+ * The bridge between the two axes: a target expresses identity, a screen kind
+ * expresses what renders. `adoptTarget` uses it to build the matching view state
+ * arm, and the work surface uses it to resolve a component — which is why it is
+ * here rather than inside `methods/`, where a view could not reach it.
+ */
+export const screenKindOf = (target: TabTarget): ScreenKind => {
+  switch (target.kind) {
+    case "singleton":
+      return target.screen;
+    case "resource":
+      return target.resourceType;
+    case "launcher":
+      return "new-tab";
+  }
 };
 
 /**
@@ -243,56 +221,82 @@ export type Tab = {
  * Three surfaces that were separate objects fold in here: the context rail, the
  * inspector, and panel geometry. All three read and wrote the active tab, and
  * being handed a workbench at construction was the tell.
+ *
+ * One thing folds back out: a live resource runtime was a field on `Tab`, and it
+ * is [the register's](../resource-runtimes/resource-runtimes.md) now.
  */
 export type WorkbenchModel = {
-  /** Permanent tabs first, then transient ones in user order. */
+  /** Singletons first, then closable tabs in user order. */
   readonly tabs: readonly Tab[];
-  /** Never empty: a permanent tab cannot be closed, so one always remains. */
+  /** Never empty: a singleton cannot be closed, so one always remains. */
   readonly activeId: TabId;
   readonly active: Tab;
+  /** The reopen queue, most recently closed first. Capped at ten. */
+  readonly closed: readonly Tab[];
 
-  /** Returns the existing tab when kind+id already match one, and activates it. */
-  open(resource: ResourceRef): Tab;
-  /** Throws for a permanent tab — the UI must not offer to close one. */
+  /** Returns the tab already open on this target, or mints one. Activates either way. */
+  open(target: TabTarget): Tab;
+  /**
+   * Turns a launcher into the thing it created, keeping the same `TabId` and
+   * slot — or, when the target is already open elsewhere, activates that tab and
+   * closes the launcher.
+   */
+  resolveLauncher(id: TabId, target: TabTarget): Tab;
+  /** Throws for a singleton — the UI must not offer to close one. */
   close(id: TabId): void;
+  /** Clears to the singletons. Releases every runtime; does not persist. */
+  closeAll(): void;
   activate(id: TabId): void;
-  /** `index` counts transient tabs only, since permanent ones have no index. */
+  /** `index` counts closable tabs only, since singletons have no index. */
   reorder(id: TabId, index: number): void;
-  update(id: TabId, patch: Partial<TabOptions>): void;
-
-  /** Contexts for the active tab's resource kind. Static per kind. */
-  readonly availableContexts: readonly ContextId[];
-  /** The tab's remembered context, or the kind's first when none is valid. */
-  readonly activeContext: ContextId;
-  /** Records the choice on the active tab, so each keeps its own rail position. */
-  selectContext(id: ContextId): void;
+  /** Reopens the most recently closed tab, restoring its view state with it. */
+  reopenClosed(): Tab | undefined;
 
   /**
-   * The innermost node of the active tab's inspection — what the inspector shows
-   * by default. Undefined when nothing is inspected, which is the panel's cue to
-   * render the nothing-inspected view: that state has no node to hand a view, so
-   * pretending otherwise would mean every view defending against a node that
-   * isn't there. The ancestry above it is `active.options.inspection`.
+   * Patches one screen's own view state.
+   *
+   * The kind is an argument because a patch against an eleven-arm union cannot
+   * be narrowed from the patch itself, and the alternative is a cast — which is
+   * exactly how a document's `zoom` ends up on a persona library. Restating it
+   * makes the narrowing sound at compile time and a wrong caller a thrown error
+   * rather than a corrupted tab.
    */
-  readonly currentInspection: InspectionNode | undefined;
-  /** Replaces the active tab's inspection. Passing nothing clears it. */
-  inspect(inspection?: Inspection): void;
+  update<K extends ScreenKind>(id: TabId, kind: K, patch: ViewStatePatch<K>): void;
 
-  /** The active tab's geometry, or `DEFAULTS` while it has none of its own. */
-  readonly panels: Panels;
+  /** Records the active tab's rail position. The label is never interpreted. */
+  selectContext(id: string): void;
+
+  /** What the active tab has under inspection, or undefined for nothing. */
+  readonly inspectedNode: InspectionKey | undefined;
+  /** Replaces the active tab's inspection. Passing nothing clears it. */
+  inspect(key?: InspectionKey): void;
+
+  /** The active tab's frame. */
+  readonly frame: Frame;
   /** Records geometry on the active tab. Values only; bounds are the panel's. */
-  resize(patch: Partial<Panels>): void;
+  resize(patch: Partial<Omit<Frame, "contextId">>): void;
+
+  /**
+   * The resource runtime for a tab, or `undefined` for a tab that is not a
+   * resource.
+   *
+   * The **only** way a view reaches one. The workbench borrows the register,
+   * calls `attach` as part of opening a resource tab and `release` as part of
+   * closing one, and hands the result out here. A view calling `attach` itself
+   * would tie runtime lifetime to a component's mount, which is the case the
+   * whole design exists to prevent — the work surface remounts on every tab
+   * switch.
+   */
+  runtimeFor(id: TabId): ResourceRuntime<unknown> | undefined;
 };
 
 /**
- * The one permanent tab. It is constructed with the workbench, which is what
- * makes "activeId is never empty" an invariant rather than a hope.
+ * The singletons, minted in this order, and the first is the one a fresh client
+ * instance opens on.
  *
- * The id is fixed rather than the project's, because a client instance holds one
- * project for its whole life and a second project is a second instance with its
- * own storage key. Nothing distinguishes two overviews inside one workbench.
+ * Built in the constructor rather than restored, which is what makes "`activeId`
+ * is never empty" an invariant rather than a hope.
  */
-export const PROJECT_OVERVIEW: ResourceRef = Object.freeze({
-  kind: "project-overview",
-  id: "project-overview"
-});
+export const SINGLETON_TARGETS: readonly TabTarget[] = Object.freeze(
+  SINGLETON_SCREENS.map((screen) => Object.freeze({ kind: "singleton" as const, screen }))
+);

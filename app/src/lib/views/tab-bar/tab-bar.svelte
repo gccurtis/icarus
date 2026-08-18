@@ -3,8 +3,17 @@
   import FileText from "@lucide/svelte/icons/file-text";
   import LayoutDashboard from "@lucide/svelte/icons/layout-dashboard";
   import X from "@lucide/svelte/icons/x";
+  import ChartNoAxesColumn from "@lucide/svelte/icons/chart-no-axes-column";
+  import FlaskConical from "@lucide/svelte/icons/flask-conical";
+  import LayoutTemplate from "@lucide/svelte/icons/layout-template";
+  import Library from "@lucide/svelte/icons/library";
+  import Plus from "@lucide/svelte/icons/plus";
+  import Presentation from "@lucide/svelte/icons/presentation";
+  import Sheet from "@lucide/svelte/icons/sheet";
+  import Users from "@lucide/svelte/icons/users";
+  import Workflow from "@lucide/svelte/icons/workflow";
 
-  import { clientModel, type ResourceKind, type ResourceRef } from "$model/client";
+  import { clientModel, isPermanent, screenKindOf, type ScreenKind, type Tab } from "$model/client";
 
   /**
    * The tab bar — which objects are open, and which one is active.
@@ -18,9 +27,9 @@
    * that displays it. The workspace maps the same key to a component. Two maps
    * on one key is deliberate — a label and a component are different decisions,
    * and the model already forces both to be total with
-   * `Record<ResourceKind, …>`.
+   * `Record<ScreenKind, …>`.
    *
-   * A label is a function of the whole resource rather than of its kind alone.
+   * A label is a function of the whole tab rather than of its screen alone.
    * Every document tab would otherwise read "Document", which is the one thing a
    * tab strip exists to prevent.
    *
@@ -30,19 +39,38 @@
    * `aria-current`, which is honest about what is implemented; the day these
    * gain arrow-key traversal is the day the roles are worth claiming.
    */
-  const RESOURCES: Record<ResourceKind, { label: (of: ResourceRef) => string; icon: Component }> = {
+  const SCREENS: Record<ScreenKind, { label: (of: Tab) => string; icon: Component }> = {
     "project-overview": { label: () => "Overview", icon: LayoutDashboard },
-    document: { label: (of) => of.id, icon: FileText }
+    research: { label: () => "Research", icon: FlaskConical },
+    analysis: { label: () => "Analysis", icon: ChartNoAxesColumn },
+    context: { label: () => "Context", icon: Library },
+    templates: { label: () => "Templates", icon: LayoutTemplate },
+    personas: { label: () => "Personas", icon: Users },
+    automations: { label: () => "Automations", icon: Workflow },
+    document: { label: resourceId, icon: FileText },
+    slides: { label: resourceId, icon: Presentation },
+    spreadsheet: { label: resourceId, icon: Sheet },
+    "new-tab": { label: () => "New tab", icon: Plus }
   };
+
+  /**
+   * A resource tab is named by what it holds. The id stands in until a title
+   * arrives: a title lives on the metadata row rather than in the body, so it is
+   * an ordinary query the day `documents` exists — and a placeholder that reads
+   * as an id is better than one that reads as a name and is not.
+   */
+  function resourceId(of: Tab): string {
+    return of.target.kind === "resource" ? of.target.resourceId : "Untitled";
+  }
 
   const { workbench } = clientModel();
 </script>
 
 <div class="tab-bar">
   {#each workbench.tabs as tab (tab.id)}
-    {@const entry = RESOURCES[tab.resource.kind]}
+    {@const entry = SCREENS[screenKindOf(tab.target)]}
     {@const Icon = entry.icon}
-    {@const label = entry.label(tab.resource)}
+    {@const label = entry.label(tab)}
     {@const active = tab.id === workbench.activeId}
     <div class="tab" class:active>
       <button
@@ -56,11 +84,12 @@
       </button>
 
       <!--
-        A permanent tab has no close affordance, and that is a correctness
+        A singleton has no close affordance, and that is a correctness
         requirement rather than a nicety: `close()` throws for one, so offering
-        the control would be offering a crash.
+        the control would be offering a crash. Permanence is derived from the
+        target, so this asks the same question the model does.
       -->
-      {#if !tab.permanent}
+      {#if !isPermanent(tab)}
         <button
           type="button"
           class="close"

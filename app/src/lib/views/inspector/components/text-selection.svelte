@@ -13,14 +13,14 @@
    * shows is the identity it was handed; the controls that act on a selection —
    * style, weight, comment — arrive with the thing that can apply them.
    */
-  let { blockId, from, to }: { blockId: string; from: number; to: number } = $props();
+  let { anchor, from, to }: { anchor?: string; from: number; to: number } = $props();
 </script>
 
 <div class="inspection">
   <h2 class="heading">Text selection</h2>
   <dl class="fields">
     <dt>Block</dt>
-    <dd><code>{blockId}</code></dd>
+    <dd><code>{anchor ?? "—"}</code></dd>
     <dt>Characters</dt>
     <dd><code>{from}–{to}</code></dd>
     <dt>Length</dt>

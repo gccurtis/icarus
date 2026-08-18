@@ -1,21 +1,34 @@
 import type { WorkbenchState } from "$model/client/workbench/definition.svelte";
-import { assignOptions } from "$model/client/workbench/methods/shared/assign-options";
-import type { TabId, TabOptions } from "$model/client/workbench/types";
+import type { ScreenKind, TabId, ViewStatePatch } from "$model/client/workbench/types";
+import { assignState } from "$model/client/workbench/methods/shared/assign-state";
 
 /**
- * Patches any tab's options by id.
+ * Patches one screen's own view state.
  *
- * The general form. `selectContext`, `inspect`, and `resize` are the named ways
- * to change one option on the active tab; this is how a caller changes an option
- * on a tab that is not active, which is what a background load or a restore
- * needs.
+ * **The kind is restated by the caller, and that is the whole design of this
+ * signature.** A patch against an eleven-arm union cannot be narrowed from the
+ * patch itself — `{ zoom: 2 }` is assignable to three arms — so without it the
+ * only way to write is a cast, which is exactly how a document's `zoom` ends up
+ * on a persona library.
+ *
+ * Restating it makes the narrowing sound at compile time, and turns a caller
+ * that gets it wrong into a thrown error rather than a corrupted tab.
+ *
+ * `frame` is unreachable from here, structurally. A screen changes its own
+ * state; the shell's geometry is `resize`'s and the rail is `selectContext`'s,
+ * so no screen can move a panel by patching what it thought was its own.
  */
-export const update = (
+export const update = <K extends ScreenKind>(
   state: WorkbenchState,
   id: TabId,
-  patch: Partial<TabOptions>
+  kind: K,
+  patch: ViewStatePatch<K>
 ): void => {
-  const tab = state.tabs.find((candidate) => candidate.id === id);
-  if (!tab) throw new Error(`Cannot update unknown tab ${id}.`);
-  assignOptions(state, tab, patch);
+  assignState(state, id, (tab) => {
+    if (tab.viewState.kind !== kind) {
+      throw new Error(`Tab ${id} shows ${tab.viewState.kind}, not ${kind}.`);
+    }
+
+    Object.assign(tab.viewState, patch);
+  });
 };

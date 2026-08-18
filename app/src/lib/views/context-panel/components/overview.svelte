@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ResourceRef } from "$model/client";
+  import { screenKindOf, type Tab } from "$model/client";
 
   /**
    * The `overview` context: what surrounds the active resource at project level.
@@ -13,12 +13,12 @@
    * proves is that the panel re-resolves when the active tab changes, which is
    * visible here because the name below changes with it.
    */
-  let { resource }: { resource: ResourceRef } = $props();
+  let { tab }: { tab: Tab } = $props();
 </script>
 
 <div class="context">
   <h2 class="heading">Overview</h2>
-  <p class="note">Looking at <code>{resource.kind}</code> · <code>{resource.id}</code></p>
+  <p class="note">Looking at <code>{screenKindOf(tab.target)}</code></p>
   <p class="note">A project tree belongs here once a capability can supply one.</p>
 </div>
 
