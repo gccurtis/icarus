@@ -24,17 +24,20 @@ test("a remembered context is honoured", () => {
 test("a tab with no remembered context gets the screen's default", () => {
   // The first entry of each array is the default.
   assert.equal(resolveContext("document", undefined), "outline");
-  assert.equal(resolveContext("project-overview", undefined), "overview");
+  assert.equal(resolveContext("project-overview", undefined), "project");
 });
 
 test("a context the screen does not offer falls back rather than throwing", () => {
   // `outline` is real but project overview's rail does not carry it.
-  assert.equal(resolveContext("project-overview", "outline"), "overview");
+  assert.equal(resolveContext("project-overview", "outline"), "project");
+  // And the reverse: the project overview's own views are not on a document's
+  // rail, which is what a tab switching screens has to survive.
+  assert.equal(resolveContext("document", "mentions"), "outline");
 });
 
 test("a context that no longer exists falls back", () => {
   // What a stored id from an older build looks like.
-  assert.equal(resolveContext("document", "activity"), "outline");
+  assert.equal(resolveContext("document", "relationships"), "outline");
   assert.equal(resolveContext("document", ""), "outline");
 });
 

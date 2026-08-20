@@ -38,6 +38,7 @@ described under Subtree Contracts below.
 - [`appearance-bar.svelte`](appearance-bar.svelte)
 - [`controls.svelte`](controls.svelte)
 - [`data.svelte`](data.svelte)
+- [`demo-index.svelte`](demo-index.svelte)
 - [`disclosure.svelte`](disclosure.svelte)
 - [`feedback.svelte`](feedback.svelte)
 - [`geometry.svelte`](geometry.svelte)
@@ -53,6 +54,19 @@ described under Subtree Contracts below.
 <!-- generated:inventory:end -->
 
 ## Subtree Contracts
+
+### `demo-index`
+
+- **Root:** [`demo-index.svelte`](demo-index.svelte)
+- **Purpose:** the way to the other demo pages, from the one everybody opens
+  first.
+- **Inputs:** `None`. The list of pages is here.
+- **Outputs:** `None`. Each card is an anchor.
+
+**It exists because the other pages were being reached by typing the URL**,
+which meant in practice that only the person who built them knew they were
+there. Each card says what its page is *for* rather than what is on it, because
+the four answer different questions and opening the wrong one wastes the trip.
 
 ### `section-heading.svelte`
 

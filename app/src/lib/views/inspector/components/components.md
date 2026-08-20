@@ -10,10 +10,27 @@ do not carry their own Markdown files.
 inspector.svelte
 ├── copilot                          components/copilot.svelte
 ├── text-selection                   components/text-selection.svelte
-└── next-text                        components/next-text.svelte
+├── next-text                        components/next-text.svelte
+├── project                          components/project.svelte
+├── mention                          components/mention.svelte
+├── resource                         components/resource.svelte
+├── research-thread                  components/research-thread.svelte
+├── activity                         components/activity.svelte
+├── people                           components/people.svelte
+├── file                             components/file.svelte
+├── connector                        components/connector.svelte
+├── variable                         components/variable.svelte
+├── person                           components/person.svelte
+├── newtab-document                  components/newtab-document.svelte
+├── newtab-deck                      components/newtab-deck.svelte
+├── newtab-spreadsheet               components/newtab-spreadsheet.svelte
+├── newtab-recent                    components/newtab-recent.svelte
+├── newtab-template                  components/newtab-template.svelte
+├── newtab-upload                    components/newtab-upload.svelte
+└── newtab-connector                 components/newtab-connector.svelte
 ```
 
-At most one renders, chosen by the inspection's kind. The nothing-selected and
+At most one renders, chosen by the inspection key. The nothing-selected and
 no-view-yet states are plain markup in the root rather than components, because
 neither has anything to hold.
 
@@ -24,87 +41,127 @@ rewritten. Every authored component appears here, and each meaningful one is
 described under Subtree Contracts below.
 
 <!-- generated:inventory:start -->
+- [`activity.svelte`](activity.svelte)
+- [`connector.svelte`](connector.svelte)
 - [`copilot.svelte`](copilot.svelte)
+- [`file.svelte`](file.svelte)
+- [`mention.svelte`](mention.svelte)
+- [`newtab-connector.svelte`](newtab-connector.svelte)
+- [`newtab-deck.svelte`](newtab-deck.svelte)
+- [`newtab-document.svelte`](newtab-document.svelte)
+- [`newtab-recent.svelte`](newtab-recent.svelte)
+- [`newtab-spreadsheet.svelte`](newtab-spreadsheet.svelte)
+- [`newtab-template.svelte`](newtab-template.svelte)
+- [`newtab-upload.svelte`](newtab-upload.svelte)
 - [`next-text.svelte`](next-text.svelte)
+- [`people.svelte`](people.svelte)
+- [`person.svelte`](person.svelte)
+- [`project.svelte`](project.svelte)
+- [`research-thread.svelte`](research-thread.svelte)
+- [`resource.svelte`](resource.svelte)
 - [`text-selection.svelte`](text-selection.svelte)
+- [`variable.svelte`](variable.svelte)
 <!-- generated:inventory:end -->
 
 ## Subtree Contracts
 
-Both take the fields of the inspection node they are named for, and nothing
-else. That is the model's contract rather than a limitation here: an inspection
-names ids and offsets, and whoever renders it fetches whatever it needs. A
-payload would be a copy of content that lives elsewhere and may have changed
-since — the same reason an inspection is never persisted.
+### Lenses built on the panel vocabulary
 
-**The fetch is the missing half of both.** Turning a block id into text needs a
-document capability, which does not exist. Each shows the identity it was handed.
+Seventeen of the twenty — everything under `project.`, `actor.` and `newtab.` —
+are built from `$lib/unique-components/panel`, and share one contract:
 
-### `text-selection`
-
-- **Root:** [`text-selection.svelte`](text-selection.svelte)
-- **Purpose:** the `document-text-selection` inspection — a range within a block.
-- **Inputs:** `blockId`, `from`, `to`
-- **Outputs:** `None`. Controls that act on a selection arrive with the editor
-  that can apply them.
+- **Inputs:** `None`. The inspection key is the whole address: a project resource
+  and a person are found by a project-scoped query, not by reading the active
+  tab. That is what makes them reachable from every screen.
+- **Outputs:** `None` directly. Each writes inspections through the workbench —
+  a breadcrumb navigates to an ancestor, a "who" link opens an actor — which is
+  a model call rather than a callback to the root.
 - **Owned children:** `None`
-- **Behavior delegated to the view root:** narrowing the union, and the scroll
-- **Focus behavior:** nothing focusable
-- **Layout and overflow:** fills the panel; does not own a scroll
-- **Accessibility:** a description list under a heading
+- **Behavior delegated to the view root:** routing the key, and the width.
+- **Focus behavior:** ordinary tab order. No lens takes focus or restores it.
+- **Layout and overflow:** each fills the zone and owns its own scroll, because
+  `Panel` pins the trail and the title row and scrolls everything under them.
+- **Accessibility:** a `Breadcrumb` landmark where the thing has ancestors, then
+  headings per section with `bits-ui` disclosures under them.
 
-### `next-text`
+**All are fixtures.** Every value is a project-scoped query no capability can
+answer yet. What is real is the routing, the breadcrumbs, and the writes: each
+lens reaches other lenses by key, so clicking through them exercises the
+vocabulary the specifications describe.
 
-- **Root:** [`next-text.svelte`](next-text.svelte)
-- **Purpose:** the `document-next-text` inspection — a caret with text about to
-  be typed. The case that shows this panel is a control surface rather than a
-  mirror: nothing is selected, so a mirror would have nothing to show.
-- **Inputs:** `blockId`
-- **Outputs:** `None`
-- **Owned children:** `None`
-- **Behavior delegated to the view root:** narrowing the union, and the scroll
-- **Focus behavior:** nothing focusable
-- **Layout and overflow:** fills the panel; does not own a scroll
-- **Accessibility:** a description list under a heading
+| Component | Renders | Reached from |
+| --- | --- | --- |
+| [`project.svelte`](project.svelte) | The project: identity, membership, dates | Settings, and every breadcrumb root |
+| [`mention.svelte`](mention.svelte) | One comment addressed to you, and its anchor | The mentions feed, the Mentions view, a person's Between you |
+| [`resource.svelte`](resource.svelte) | Any first-class thing: identity, provenance, relationships | The work table, the Resources view |
+| [`research-thread.svelte`](research-thread.svelte) | A line of enquiry, and the way into the Research tab | The work table |
+| [`activity.svelte`](activity.svelte) | One recorded event: actor, action, target, time | The Activity view |
+| [`people.svelte`](people.svelte) | Everybody at once, rather than one person | The presence overflow chip |
+| [`file.svelte`](file.svelte) | An external file, and whether text came out of it | The work table, Resources, Health |
+| [`connector.svelte`](connector.svelte) | A connection: scope, delivery, sync state | Needs attention, Resources, Health |
+| [`variable.svelte`](variable.svelte) | One project variable: name, key, type, value | The Variables view |
+| [`person.svelte`](person.svelte) | A person's project profile, and writing to them | Any avatar, any "who" link |
+| [`newtab-document.svelte`](newtab-document.svelte) | What a document will be, before it exists | The Document pill, the Create view |
+| [`newtab-deck.svelte`](newtab-deck.svelte) | What a deck will be: aspect ratio and first slide | The Slide deck pill |
+| [`newtab-spreadsheet.svelte`](newtab-spreadsheet.svelte) | What a spreadsheet will be — the shortest of the three | The Spreadsheet pill |
+| [`newtab-recent.svelte`](newtab-recent.svelte) | Something that exists, and opening it without duplicating a tab | The Recent shelf and view |
+| [`newtab-template.svelte`](newtab-template.svelte) | A template, its shape, and what it will ask for | The template shelf and view |
+| [`newtab-upload.svelte`](newtab-upload.svelte) | Files on their way in | Bring in → Upload |
+| [`newtab-connector.svelte`](newtab-connector.svelte) | Connecting a system, or repairing a connection | Bring in → connectors |
+
+### `person`
+
+Called out because it is the one that belongs to no screen. An actor is
+inspectable from wherever it is named, so this lens is reached from a table cell
+on one screen and an avatar on another, and it must not assume either.
+
+It is also the one that says what it cannot do: writing to a person needs a
+project-level comment with no resource anchor, and every current `Comment`
+anchors to a resource. The composer is drawn and the send is disabled, with the
+reason in the panel rather than in a comment here.
+
+### Lenses that predate the panel vocabulary
+
+`copilot`, `text-selection` and `next-text` take the fields of the inspection
+they render and lay themselves out. They are unconverted, which is why the root
+has two shapes — `.lens` for a panel, `.content` for a padded scroller — and the
+two converge when these three are rewritten.
 
 ## Key Selection
 
-- **Key:** `InspectionKey["kind"]`, from `$model/client`.
+- **Key:** `InspectionKey`, from `$model/client`. An opaque namespaced string.
 - **Selected by:** [`inspector.svelte`](../inspector.svelte), which reads
-  `workbench.inspectedNode` and narrows on its kind.
+  `workbench.inspectedNode`.
 
-| Key value | Renders | Component or composed view |
+Routing is in two parts, and the split is the design:
+
+| Key | Renders | How it is routed |
 | --- | --- | --- |
 | `undefined` | Nothing selected | root markup |
-| `copilot` | Conversations, running work, the active chat | [`copilot.svelte`](copilot.svelte) |
-| `document-text-selection` | The range and its offsets | [`text-selection.svelte`](text-selection.svelte) |
-| `document-next-text` | The caret's block | [`next-text.svelte`](next-text.svelte) |
-| `empty` | The kind, named | root fallback |
-| `document-table` | The kind, named | root fallback |
-| `formula` | The kind, named | root fallback |
-| `prompt` | The kind, named | root fallback |
+| `project.*`, `actor.*`, `newtab.*` | The lens for that key | `LENSES`, a map from the whole key |
+| `copilot.*` | [`copilot.svelte`](copilot.svelte) | family, then member |
+| `block.text-selection` | [`text-selection.svelte`](text-selection.svelte) | exact key, plus view state |
+| `block.next-text` | [`next-text.svelte`](next-text.svelte) | exact key, plus view state |
+| anything else | The key, named | root fallback |
 
-**The map is partial because the application is, not because the union is about
-documents.** An inspection is a label for whatever the user is looking at,
-anywhere — `copilot` belongs to no resource at all, and slides, spreadsheets, and
-research will each contribute their own labels as their editors arrive. What is
-built is a view per label some surface can currently produce: the copilot bar
-produces one, the workspace's document component produces two. The rest have no
-producer, and `empty` needs the insert affordances that belong to an editor;
-components for them would be files nothing can reach. The fallback names the
-kind, which is the honest rendering of "something is inspected and this panel has
-no view for it yet".
+**A map for the self-contained lenses, branches for the rest.** A `project` or
+`actor` key is the whole address, so those lenses take no props and a map is
+exactly right. A `block` or `document` key is a *label* whose detail lives in the
+active tab's view state, and a `copilot` key's detail lives on the copilot
+object — those need different reads, which a single map cannot express without
+every component taking `any`.
 
-**Selection is an if-chain rather than a `Record`**, unlike the workspace and the
-context panel. `InspectionKey` is a discriminated union whose members carry
-different fields, so a component map would erase the per-kind props and every
-component would take `any`. Narrowing on `kind` is what keeps `blockId` and the
-offsets typed at the point they are passed.
+The fallback names the key. That is the honest rendering of "some surface
+produced a label and this panel has no view for it", and it is the trade for the
+model not owning this vocabulary.
 
 ## Tree Invariants
 
-- **Neither component fetches anything.** When the fetch arrives it belongs to
-  the component that needs it, not to the root — the root's job is to decide
-  which one renders.
-- **Neither writes an inspection.** This panel reads. When it gains controls
-  they act on the thing inspected, not on the inspection itself.
+- **No lens fetches anything.** When capabilities arrive the fetch belongs to the
+  lens that needs it, not to the root — the root's job is to decide which one
+  renders.
+- **A lens writes inspections, never view state.** Navigating a breadcrumb or
+  opening an actor sets a key through the workbench. Nothing here edits the thing
+  it is inspecting.
+- **The panel owns the scroll.** A lens never wraps itself in a scroller, because
+  pinning the trail and the title row is a decision only `Panel` can make.

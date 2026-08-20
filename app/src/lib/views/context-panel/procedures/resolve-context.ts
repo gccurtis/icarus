@@ -17,8 +17,33 @@ import type { ScreenKind } from "$model/client";
  * outline, what it relates to, who commented on it. Never a mode of working: a
  * rail entry answers "what else is here?", never "what am I doing?", which is
  * why these are contexts rather than activities.
+ *
+ * **One id is one component, everywhere it appears.** `variables` is the project
+ * Name Manager on every screen that can hold a formula, so it is one id and one
+ * file. Where a name means genuinely different content per screen — every screen
+ * has an "Overview", and no two show the same thing — the ids differ and the
+ * *labels* collide instead. `project` is that case: it is the project overview's
+ * own orientation view, and it is labelled "Overview" like the rest of them.
  */
-export const CONTEXT_IDS = ["overview", "outline"] as const;
+export const CONTEXT_IDS = [
+  "overview",
+  "outline",
+  "project",
+  "resources",
+  "mentions",
+  "people",
+  "activity",
+  "tasks",
+  "health",
+  "variables",
+  "contexts",
+  "templates",
+
+  "newtab-create",
+  "newtab-recent",
+  "newtab-templates",
+  "newtab-bring-in"
+] as const;
 
 export type ContextId = (typeof CONTEXT_IDS)[number];
 
@@ -35,10 +60,28 @@ export const isContextId = (value: string): value is ContextId =>
  *
  * The first entry of each array is that screen's default — what the rail shows
  * before the user has chosen. A context may be shared between screens by
- * appearing in several arrays, which `overview` is.
+ * appearing in several arrays, which `overview` and `variables` both are.
  */
 export const CONTEXTS_BY_SCREEN: Record<ScreenKind, readonly ContextId[]> = Object.freeze({
-  "project-overview": Object.freeze(["overview"] as const),
+  /**
+   * Ten entries, in the order
+   * `docs/screen-panel-views/project-overview/README.md` lists them. Overview
+   * leads because it answers "where am I and what is outstanding" without a
+   * click; Mentions is third because what a person addressed to you is the only
+   * thing worth a permanent interruption.
+   */
+  "project-overview": Object.freeze([
+    "project",
+    "resources",
+    "mentions",
+    "people",
+    "activity",
+    "tasks",
+    "health",
+    "variables",
+    "contexts",
+    "templates"
+  ] as const),
   research: Object.freeze(["overview"] as const),
   analysis: Object.freeze(["overview"] as const),
   context: Object.freeze(["overview"] as const),
@@ -48,7 +91,12 @@ export const CONTEXTS_BY_SCREEN: Record<ScreenKind, readonly ContextId[]> = Obje
   document: Object.freeze(["outline", "overview"] as const),
   slides: Object.freeze(["outline", "overview"] as const),
   spreadsheet: Object.freeze(["outline", "overview"] as const),
-  "new-tab": Object.freeze(["overview"] as const)
+  "new-tab": Object.freeze([
+    "newtab-create",
+    "newtab-recent",
+    "newtab-templates",
+    "newtab-bring-in"
+  ] as const)
 });
 
 /**

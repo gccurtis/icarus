@@ -7,6 +7,7 @@
   import AppearanceBar from "$views/demo/components/appearance-bar.svelte";
   import Controls from "$views/demo/components/controls.svelte";
   import Data from "$views/demo/components/data.svelte";
+  import DemoIndex from "$views/demo/components/demo-index.svelte";
   import Disclosure from "$views/demo/components/disclosure.svelte";
   import Feedback from "$views/demo/components/feedback.svelte";
   import Geometry from "$views/demo/components/geometry.svelte";
@@ -35,6 +36,9 @@
       swatch reads a token, so the whole surface moves with the theme.
     </p>
   </header>
+
+  <DemoIndex />
+  <Separator />
 
   <Palette />
   <Separator />

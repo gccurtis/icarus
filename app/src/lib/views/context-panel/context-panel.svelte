@@ -1,12 +1,39 @@
 <script lang="ts">
   import type { Component } from "svelte";
+  import Activity from "@lucide/svelte/icons/activity";
+  import AtSign from "@lucide/svelte/icons/at-sign";
+  import Clock from "@lucide/svelte/icons/clock";
   import FileText from "@lucide/svelte/icons/file-text";
+  import Hash from "@lucide/svelte/icons/hash";
+  import HeartPulse from "@lucide/svelte/icons/heart-pulse";
+  import Info from "@lucide/svelte/icons/info";
+  import Layers from "@lucide/svelte/icons/layers";
   import LayoutDashboard from "@lucide/svelte/icons/layout-dashboard";
+  import LayoutTemplate from "@lucide/svelte/icons/layout-template";
+  import Plus from "@lucide/svelte/icons/plus";
+  import Sparkles from "@lucide/svelte/icons/sparkles";
+  import Target from "@lucide/svelte/icons/target";
+  import Upload from "@lucide/svelte/icons/upload";
+  import Users from "@lucide/svelte/icons/users";
 
   import { clientModel, screenKindOf, type Tab } from "$model/client";
   import { ResizeHandle } from "$lib/unique-components/resize-handle";
+  import NewtabBringIn from "$views/context-panel/components/newtab-bring-in.svelte";
+  import NewtabCreate from "$views/context-panel/components/newtab-create.svelte";
+  import NewtabRecent from "$views/context-panel/components/newtab-recent.svelte";
+  import NewtabTemplates from "$views/context-panel/components/newtab-templates.svelte";
   import Outline from "$views/context-panel/components/outline.svelte";
   import Overview from "$views/context-panel/components/overview.svelte";
+  import ProjectActivity from "$views/context-panel/components/project-activity.svelte";
+  import ProjectContexts from "$views/context-panel/components/project-contexts.svelte";
+  import ProjectHealth from "$views/context-panel/components/project-health.svelte";
+  import ProjectMentions from "$views/context-panel/components/project-mentions.svelte";
+  import ProjectOverview from "$views/context-panel/components/project-overview.svelte";
+  import ProjectPeople from "$views/context-panel/components/project-people.svelte";
+  import ProjectResources from "$views/context-panel/components/project-resources.svelte";
+  import ProjectTasks from "$views/context-panel/components/project-tasks.svelte";
+  import ProjectTemplates from "$views/context-panel/components/project-templates.svelte";
+  import ProjectVariables from "$views/context-panel/components/project-variables.svelte";
   import Rail from "$views/context-panel/components/rail.svelte";
   import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH, RAIL_WIDTH } from "$views/context-panel/types";
   import {
@@ -49,7 +76,29 @@
 
   const CONTEXTS: Record<ContextId, ContextEntry> = {
     overview: { label: "Overview", icon: LayoutDashboard, content: Overview },
-    outline: { label: "Outline", icon: FileText, content: Outline }
+    outline: { label: "Outline", icon: FileText, content: Outline },
+
+    /**
+     * The project overview's rail. `project` is that screen's own orientation
+     * view and is labelled "Overview" like every other screen's — two ids with
+     * one label, because the label names the job and the id names the content.
+     */
+    project: { label: "Overview", icon: Info, content: ProjectOverview },
+    resources: { label: "Resources", icon: Layers, content: ProjectResources },
+    mentions: { label: "Mentions", icon: AtSign, content: ProjectMentions },
+    people: { label: "People", icon: Users, content: ProjectPeople },
+    activity: { label: "Activity", icon: Activity, content: ProjectActivity },
+    tasks: { label: "Tasks", icon: Sparkles, content: ProjectTasks },
+    health: { label: "Health", icon: HeartPulse, content: ProjectHealth },
+    variables: { label: "Variables", icon: Hash, content: ProjectVariables },
+    contexts: { label: "Context", icon: Target, content: ProjectContexts },
+    templates: { label: "Templates", icon: LayoutTemplate, content: ProjectTemplates },
+
+    /** New Tab's rail. Four ways to answer one question. */
+    "newtab-create": { label: "Create", icon: Plus, content: NewtabCreate },
+    "newtab-recent": { label: "Recent", icon: Clock, content: NewtabRecent },
+    "newtab-templates": { label: "Templates", icon: LayoutTemplate, content: NewtabTemplates },
+    "newtab-bring-in": { label: "Bring in", icon: Upload, content: NewtabBringIn }
   };
 
   const { workbench } = clientModel();
@@ -90,9 +139,11 @@
   />
 
   <!--
-    One scroll context per zone. Nesting scrollable regions inside a panel makes
-    a scroll position unrecoverable — the rail never scrolls, so this is the
-    only one here.
+    One scroll context per zone, and it belongs to `Panel` rather than to this
+    div. The frame has to own it: a pinned title row is only pinned if what
+    scrolls is everything under it, which is a decision no wrapper outside the
+    panel can make. So this passes the full height down and scrolls nothing
+    itself.
   -->
   {#if !collapsed}
     <div class="content">
@@ -126,7 +177,6 @@
   .content {
     flex: 1;
     min-width: 0;
-    overflow-y: auto;
-    padding: calc(var(--token-spacing-unit) * 3);
+    min-height: 0;
   }
 </style>

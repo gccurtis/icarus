@@ -1,11 +1,29 @@
 <script lang="ts">
+  import type { Component } from "svelte";
   import Sparkles from "@lucide/svelte/icons/sparkles";
 
   import { clientModel } from "$model/client";
   import { ResizeHandle } from "$lib/unique-components/resize-handle";
+  import ActivityLens from "$views/inspector/components/activity.svelte";
+  import ConnectorLens from "$views/inspector/components/connector.svelte";
   import Copilot from "$views/inspector/components/copilot.svelte";
+  import FileLens from "$views/inspector/components/file.svelte";
+  import MentionLens from "$views/inspector/components/mention.svelte";
+  import NewtabConnectorLens from "$views/inspector/components/newtab-connector.svelte";
+  import NewtabDeckLens from "$views/inspector/components/newtab-deck.svelte";
+  import NewtabDocumentLens from "$views/inspector/components/newtab-document.svelte";
+  import NewtabRecentLens from "$views/inspector/components/newtab-recent.svelte";
+  import NewtabSpreadsheetLens from "$views/inspector/components/newtab-spreadsheet.svelte";
+  import NewtabTemplateLens from "$views/inspector/components/newtab-template.svelte";
+  import NewtabUploadLens from "$views/inspector/components/newtab-upload.svelte";
   import NextText from "$views/inspector/components/next-text.svelte";
+  import PeopleLens from "$views/inspector/components/people.svelte";
+  import PersonLens from "$views/inspector/components/person.svelte";
+  import ProjectLens from "$views/inspector/components/project.svelte";
+  import ResearchThreadLens from "$views/inspector/components/research-thread.svelte";
+  import ResourceLens from "$views/inspector/components/resource.svelte";
   import TextSelection from "$views/inspector/components/text-selection.svelte";
+  import VariableLens from "$views/inspector/components/variable.svelte";
   import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH } from "$views/inspector/types";
   import { familyOf } from "$views/inspector/procedures/inspection-family";
 
@@ -34,9 +52,43 @@
    * it. Both edges of the work surface therefore behave alike: drag inward to
    * shut, click an icon in what is left to reopen. No arrows on either side.
    */
+  /**
+   * The lenses that need nothing from the tab.
+   *
+   * A `project` or `actor` key is the whole address — a person and a project
+   * resource are found by a project-scoped query, not by reading the active
+   * tab's view state — so these route by exact key and take no props. The
+   * families below that *do* read view state keep their own branches, because
+   * what they need differs per family and a map cannot express that.
+   *
+   * Keyed by the full string rather than by member, so the map reads as the
+   * vocabulary it implements.
+   */
+  const LENSES: Record<string, Component> = {
+    "project.self": ProjectLens,
+    "project.mention": MentionLens,
+    "project.resource": ResourceLens,
+    "project.research-thread": ResearchThreadLens,
+    "project.activity": ActivityLens,
+    "project.people": PeopleLens,
+    "project.file": FileLens,
+    "project.connector": ConnectorLens,
+    "project.variable": VariableLens,
+    "actor.person": PersonLens,
+
+    "newtab.document": NewtabDocumentLens,
+    "newtab.deck": NewtabDeckLens,
+    "newtab.spreadsheet": NewtabSpreadsheetLens,
+    "newtab.recent": NewtabRecentLens,
+    "newtab.template": NewtabTemplateLens,
+    "newtab.upload": NewtabUploadLens,
+    "newtab.connector": NewtabConnectorLens
+  };
+
   const { workbench } = clientModel();
 
   const inspected = $derived(workbench.inspectedNode);
+  const Lens = $derived(inspected === undefined ? undefined : LENSES[inspected]);
   const family = $derived(inspected === undefined ? undefined : familyOf(inspected));
   const documentState = $derived(
     workbench.active.viewState.kind === "document" ? workbench.active.viewState : undefined
@@ -61,6 +113,15 @@
     >
       <Sparkles size={18} aria-hidden="true" />
     </button>
+  {:else if Lens}
+    <!--
+      A `Panel` lens is handed the whole zone. It owns the scroll, because only
+      the panel knows which of its bands scroll and which are pinned — the trail
+      and the title row stay put while everything under them moves.
+    -->
+    <div class="lens">
+      <Lens />
+    </div>
   {:else}
     <div class="content">
       {#if inspected === undefined}
@@ -102,6 +163,18 @@
     display: flex;
     background-color: var(--token-surface-panel);
     border-left: 1px solid var(--token-border-subtle);
+  }
+
+  /*
+   * Two shapes, deliberately. `.lens` hands a `Panel` the whole zone and lets it
+   * divide its own bands; `.content` is the plain padded scroller the lenses
+   * that predate the panel vocabulary still use. They will converge when those
+   * three are rewritten.
+   */
+  .lens {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
   }
 
   .content {
