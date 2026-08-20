@@ -33,6 +33,7 @@
     "convex": "latest",
     "convex-helpers": "latest",
     "convex-svelte": "latest",
+    "layerchart": "^2.2.0",
     "pino": "latest",
     "tailwind-merge": "latest",
     "tailwind-variants": "latest",
