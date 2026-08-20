@@ -11,6 +11,7 @@ coverage/
 .DS_Store
 *.tsbuildinfo
 logs/*.log
+logs/*.jsonl
 
 # Runtime artifacts — state a run produces, never state a checkout needs.
 app/logs/*.log
