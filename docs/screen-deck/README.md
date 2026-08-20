@@ -16,8 +16,10 @@ drawing that happens to be clickable.
 | First pass, frozen for comparison | <https://claude.ai/code/artifact/f76dda2d-124f-49d8-891c-a2a9bb60fe1e> |
 | Source | [`src/`](src/) |
 
-Sixteen slides over eleven screen kinds, plus the surfaces that are not screens:
-the New Slide chooser, the Copilot open, and a multi-selection.
+Twenty-one slides over eleven screen kinds. Several screens have more than one
+subscreen — a deck editing a slide or a layout, Research on one question or all
+threads, and every library-plus-editor pair — and the surfaces that are not
+screens at all: the New Slide chooser, the Copilot open, and a multi-selection.
 
 ## Reading it
 
@@ -30,6 +32,10 @@ Arrow keys move between slides. Inside one:
   changed in the last revision, what the tab retains, and the model gaps that
   gate parts of the UI.
 - **ICARUS** in the top bar switches Celestial and Cyberpunk.
+- **Pinch** on a document, a deck or a grid to zoom it. Nothing around the work
+  surface moves, and the work stays centred. The readout in the bottom-right
+  corner is nearly invisible at 100% and steps forward when you are anywhere
+  else, because that is when it is a way back — clicking it returns to 100%.
 
 ## What it is made of
 
@@ -148,9 +154,61 @@ later renamed Agent, the screen does not change shape.
 **Templates say "variable", not "slot".** That is what they are — a resource-set
 variable inside an ordinary body. A single slide is a template kind of its own.
 
+**The document floats.** Gutters on all four sides and between pages, all of
+it canvas rather than more paper — a document sits on a surface the way a slide
+sits on its pasteboard. Pages are always full height.
+
+**A spreadsheet is one grid.** Not a workbook of sheets. The sheet tabs, the
+Sheets panel and the frozen-column rule are gone; a tab is a spreadsheet.
+
+**Overview leads every screen.** The first rail entry orients you around what you
+are looking at — identity, state, who is here, what needs you. The one exception
+is a deck, where the list of slides is the first thing you need.
+
+**Speaker notes left the canvas** for the slide inspector and the Notes panel. A
+tray under a 16:9 slide costs the height that zooming needs. Zoom belongs to the
+work surface and never the shell; each surface decides whether it zooms at all.
+
+**Zoom is a gesture on the work surface, not a control in the shell.** A trackpad
+pinch reaches the page as a wheel event carrying `ctrlKey`; the page takes it
+before the browser acts, scales one element about the pointer, and leaves the
+bars, rails and panels exactly where they were. That is how every canvas
+application does this. It scales rendered pixels with `transform` rather than
+CSS `zoom` — `zoom` re-runs layout, so percentages resolve against the zoomed
+box and the content reflows instead of getting bigger.
+
+The one thing no page can scope is the browser's own zoom: ⌘+ / ⌘− and the zoom
+menu happen above the document and enlarge the shell along with everything else.
+That is a browser-level operation and nothing in a page can intercept it.
+
+A document, a deck and a grid zoom. A library, a conversation and a form have no
+canvas and do not offer it.
+
+**No scrollbars anywhere.** Every surface still scrolls; none of them spends width
+saying so, and no panel gets a gutter its neighbour lacks.
+
+**Singleton tabs have a library subscreen.** Research, Analysis and Context each
+hold many objects behind one permanent tab, so each can show all of them —
+threads, analyses, saved scopes — and open one into the centre. Which object you
+are on is view state, never another tab.
+
 **The tab strip separates the permanent from the opened.** Singletons are
 icon-only behind a divider; only tabs a person opened carry a label. This is a
 proposal for a problem that is still open, not a settled answer.
+
+## Deck aids
+
+Two controls in the bezel exist for reviewing, not for the product, and are drawn
+dashed in violet so they cannot be mistaken for application chrome. **screen**
+enumerates a screen's subscreens — the states a tab can be in that are not
+selection, like a deck editing a layout or Research showing every thread — and
+**inspecting** enumerates every lens the screen can show, its own plus the
+Copilot and actor lenses reachable everywhere. Both reach things that are also
+reachable by clicking; they exist so nothing has to be hunted for.
+
+Switching subscreen is a real product affordance too, and it lives in the context
+panel's action row on the screen that owns it. The bezel dropdown is only a
+faster way to the same place.
 
 ## Where the deck disagrees with the specs
 
@@ -209,5 +267,6 @@ deck's whole value is that it looks like the thing it is arguing about.
 
 ## Related
 
-[screen specifications](../screen-specs/) · [client model](../client-model/) ·
+[screen specifications](../screen-specs/) ·
+[screen panel views](../screen-panel-views/) · [client model](../client-model/) ·
 [data models](../data-models/) · [design system](../../app/src/lib/styles/)

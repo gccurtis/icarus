@@ -7,9 +7,33 @@ SCREENS["analysis"] = {
   path: "docs/screen-specs/analysis.md",
   purpose:
     "Drop a field on an axis and see a chart. Project variables are just variables — there is no root table and no join step to get through first. If two fields cannot be related, the screen says so and offers the fix.",
-  init: { ctx: "variables", inspect: "placement" },
+  init: { ctx: "overview", inspect: "placement", mode: "one" },
+  modes: [["one", "One analysis", "This one"], ["library", "All analyses", "All"]],
 
-  center: () => `
+  center: (s) => s.mode === "library" ? `
+    <div class="wrap">
+      <div class="hd">
+        <div class="hd-m"><h1 class="hd-t">Analysis</h1>
+          <span class="hd-s">Every chart built on this project's variables. One Analysis tab — which one you are on is view state.</span></div>
+        <div class="hd-a">${btn("New analysis", { icon: "plus", k: "pri" })}</div>
+      </div>
+      <div class="chips">
+        <span style="flex:1;min-width:180px;max-width:300px">${search("Search analyses")}</span>
+        ${chip("All", "act")}${chip("Charts")}${chip("Tables")}
+      </div>
+      <div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr))">
+        ${[["Outage minutes by substation", "Bar · 6 of 41 rows", true], ["Cost per avoided minute", "Bar · 41 rows"], ["Events by month", "Line · 24 rows"], ["Spend against authorization", "Table · 4 rows"]]
+          .map(([n, m, on]) => `<button class="card${on ? " is-on" : ""}" type="button" data-inspect="analysis">
+            <span class="thumb" style="aspect-ratio:4/3;display:flex;align-items:flex-end;gap:6px;padding:12px">
+              <span style="flex:1;height:38%;background:var(--int-f);border-radius:2px 2px 0 0"></span>
+              <span style="flex:1;height:66%;background:var(--int-f);border-radius:2px 2px 0 0"></span>
+              <span style="flex:1;height:92%;background:var(--act-f);border-radius:2px 2px 0 0"></span>
+              <span style="flex:1;height:52%;background:var(--int-f);border-radius:2px 2px 0 0"></span>
+            </span>
+            <span class="card-t">${n}</span><span class="card-s">${m}</span></button>`).join("")}
+      </div>
+      ${note("Nothing about a result is stored. Opening one runs it again against the variables as they are now.")}
+    </div>` : `
     <div class="shead">
       <span class="shead-t">Outage minutes by substation</span>
       <div class="shead-r">${chip("Saved", "ok")}${btn("Duplicate", { sm: true })}</div>
@@ -74,7 +98,24 @@ SCREENS["analysis"] = {
       </div>
     </div>`,
 
-  contexts: () => [
+  contexts: (s) => s.mode === "library" ? [
+    { id: "analyses-l", label: "Analyses", icon: "chart", body: () =>
+      pane("Analyses", sec("In this project", [
+        row("Outage minutes by substation", { icon: "chart", sub2: "Bar · run 2m ago", inspect: "analysis", on: true }),
+        row("Cost per avoided minute", { icon: "chart", sub2: "Bar · run yesterday", inspect: "analysis" }),
+        row("Events by month", { icon: "activity", sub2: "Line · run 3d ago", inspect: "analysis" }),
+        row("Spend against authorization", { icon: "sheet", sub2: "Table · run 1w ago", inspect: "analysis" })
+      ].join(""), { count: 4, flush: true }), { actions: `${btn("New", { icon: "plus", sm: true, k: "pri" })}${btn("Open", { sm: true, act: "mode:one" })}${btn("Duplicate", { icon: "copy", sm: true })}`, search: search("Search analyses") }) },
+    { id: "variables", label: "Variables", icon: "db", body: VARIABLES }
+  ] : [
+    { id: "overview", label: "Overview", icon: "info", body: () =>
+      pane("Overview", [
+        sec("This analysis", `<div class="fld"><span class="fld-k">Title</span><span class="fld-v"><span class="inp is-filled">Outage minutes by substation</span></span></div><div class="fld" style="margin-top:6px"><span class="fld-k">Description</span><span class="fld-v"><span class="inp is-filled">Storm-season load on the worst substations.</span></span></div>`),
+        sec("Saved", `${chip("Saved · revision 12", "ok")}` + note("Revision-CAS current state. Undo covers unsaved builder actions only — there is no durable change-set history here.")),
+        sec("Result", kv([["Rows", "6 of 41", { mono: true }], ["Limit", "10", { mono: true }], ["Evaluated", "2 minutes ago", { mono: true }]]) + note("Replaceable projections, not resources. Nothing about the result is stored.")),
+        sec("Attribution", kv([["Created by", who("Mira Jain", "actor")], ["Updated", "2 minutes ago", { mono: true }]]), { shut: true })
+      ].join(""), { actions: btn("Run again", { icon: "play", sm: true, k: "pri" }) }) },
+
     { id: "variables", label: "Variables", icon: "db", body: () =>
       pane("Variables", [
         sec("Tables", [
@@ -92,14 +133,6 @@ SCREENS["analysis"] = {
         sec("Functions", row("avoidedMinutes(t)", { icon: "wrench", sub2: "not a chart input", inspect: "variable" }), { count: 2, flush: true, shut: true }),
         `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${note("Drag a field onto an axis, a filter or a sort. Every drop also has an Add menu and a keyboard path — nothing here is drag-only.")}</div>`
       ].join(""), { search: search("Search variables") }) },
-
-    { id: "overview", label: "Overview", icon: "info", body: () =>
-      pane("Overview", [
-        sec("This analysis", `<div class="fld"><span class="fld-k">Title</span><span class="fld-v"><span class="inp is-filled">Outage minutes by substation</span></span></div><div class="fld" style="margin-top:6px"><span class="fld-k">Description</span><span class="fld-v"><span class="inp is-filled">Storm-season load on the worst substations.</span></span></div>`),
-        sec("Saved", `${chip("Saved · revision 12", "ok")}` + note("Revision-CAS current state. Undo covers unsaved builder actions only — there is no durable change-set history here.")),
-        sec("Result", kv([["Rows", "6 of 41", { mono: true }], ["Limit", "10", { mono: true }], ["Evaluated", "2 minutes ago", { mono: true }]]) + note("Replaceable projections, not resources. Nothing about the result is stored.")),
-        sec("Attribution", kv([["Created by", who("Mira Jain", "actor")], ["Updated", "2 minutes ago", { mono: true }]]), { shut: true })
-      ].join(""), { actions: btn("Run again", { icon: "play", sm: true, k: "pri" }) }) },
 
     { id: "chart", label: "Chart", icon: "chart", body: () =>
       pane("Chart", `<div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(94px,1fr))">
@@ -217,9 +250,33 @@ SCREENS["context"] = {
   path: "docs/screen-specs/context.md",
   purpose:
     "A saved scope, said plainly: what is in, what is taken out, and the resources that survive. The rule stays live — a document created tomorrow is included without editing anything.",
-  init: { ctx: "sets", inspect: "resource-set" },
+  init: { ctx: "overview", inspect: "resource-set", mode: "one" },
+  modes: [["one", "One Context", "This one"], ["library", "All Contexts", "All"]],
 
-  center: () => `
+  center: (s) => s.mode === "library" ? `
+    <div class="wrap">
+      <div class="hd">
+        <div class="hd-m"><h1 class="hd-t">Context</h1>
+          <span class="hd-s">Saved scopes. Each is a live rule — what matches it today is what an agent can look at today.</span></div>
+        <div class="hd-a">${btn("New Context", { icon: "plus", k: "pri" })}</div>
+      </div>
+      <div class="chips"><span style="flex:1;min-width:180px;max-width:300px">${search("Search Contexts")}</span></div>
+      ${table(["Name", "The rule, in words", "Contains", "Retrievable", "Used by"], [
+        { on: true, inspect: "resource-set", cells: [
+          { h: `<span class="cellname"><span class="row-i">${ic("pin")}</span>Everything but drafts</span>` },
+          { h: "Everything in the project, minus templates" }, { h: "211", cls: "num" }, { h: "88", cls: "num" }, { h: "2 agents" } ] },
+        { inspect: "resource-set", cells: [
+          { h: `<span class="cellname"><span class="row-i">${ic("target")}</span>Regulatory corpus</span>` },
+          { h: "Documents, and the Filings set" }, { h: "34", cls: "num" }, { h: "34", cls: "num" }, { h: "1 agent · 1 automation" } ] },
+        { inspect: "resource-set", cells: [
+          { h: `<span class="cellname"><span class="row-i">${ic("target")}</span>Field reports 2024–25</span>` },
+          { h: "12 chosen resources, and everything SharePoint syncs" }, { h: "96", cls: "num" }, { h: "88", cls: "num" }, { h: "1 agent · 3 prompts" } ] },
+        { inspect: "resource-set", cells: [
+          { h: `<span class="cellname"><span class="row-i" style="color:var(--warn-t)">${ic("warn")}</span>Storm precedents</span>` },
+          { h: "Nothing matches it right now" }, { h: "0", cls: "num" }, { h: "0", cls: "num" }, { h: "—" } ] }
+      ])}
+      ${gap("A Context matching nothing cannot be used to narrow a search — an empty scope currently means the whole project, so it would widen rather than narrow.")}
+    </div>` : `
     <div class="shead">
       <span class="shead-t">Everything but drafts</span>
       <div class="shead-r">${chip("Saved", "ok")}<span class="note">211 resources</span>${btn("Duplicate", { sm: true })}${btn("Delete", { sm: true, k: "dgr", dis: true })}</div>
@@ -290,7 +347,29 @@ SCREENS["context"] = {
       </div>
     </div>`,
 
-  contexts: () => [
+  contexts: (s) => s.mode === "library" ? [
+    { id: "contexts-l", label: "Contexts", icon: "target", body: () =>
+      pane("Contexts", sec("Saved", [
+        row("Everything but drafts", { icon: "pin", sub2: "211 resources", right: "211", inspect: "resource-set", on: true }),
+        row("Regulatory corpus", { icon: "target", sub2: "34 resources", right: "34", inspect: "resource-set" }),
+        row("Field reports 2024–25", { icon: "target", sub2: "96 resources", right: "96", inspect: "resource-set" }),
+        row("Storm precedents", { icon: "warn", sub2: "Matches nothing", right: "0", inspect: "resource-set" })
+      ].join(""), { count: 4, flush: true }), { actions: `${btn("New", { icon: "plus", sm: true, k: "pri" })}${btn("Open", { sm: true, act: "mode:one" })}${btn("Duplicate", { icon: "copy", sm: true })}`, search: search("Search Contexts") }) },
+    { id: "resources-l", label: "Resources", icon: "layers", body: () =>
+      pane("Resources", [
+        sec("Documents", [row("Q3 Resilience Memo", { icon: "doc" }), row("Interconnect Failure Review", { icon: "doc" })].join(""), { count: 3, flush: true }),
+        sec("Findings", row("Undergrounding cut SAIDI 38%", { icon: "quote" }), { count: 14, flush: true }),
+        sec("Connector files", row("SharePoint — Ops Reports", { icon: "link", sub2: "312 files" }), { count: 2, flush: true })
+      ].join(""), { search: search("Search resources") }) }
+  ] : [
+    { id: "overview", label: "Overview", icon: "info", body: () =>
+      pane("Overview", [
+        sec("This Context", `<div class="fld"><span class="fld-k">Name</span><span class="fld-v"><span class="inp is-filled">Everything but drafts</span></span></div><div class="fld" style="margin-top:6px"><span class="fld-k">About</span><span class="fld-v"><span class="inp is-filled">Everything the filing may cite, minus template bodies.</span></span></div>`),
+        sec("Right now", kv([["Contains", "211 resources", { mono: true }], ["Retrievable", "88 of them", { mono: true }], ["Worked out", "12:04:31", { mono: true }]]) + note("A Context is a rule, not a list. A document created tomorrow that fits the rule is in it without anyone editing this.")),
+        sec("Saved", chip("Saved · revision 9", "ok")),
+        sec("Used by", note("Shown only for consumers the backend can truthfully query. There is no universal reverse index of everything using a Context."), { shut: true })
+      ].join(""), { actions: `${btn("Duplicate", { icon: "copy", sm: true })}${btn("Delete", { icon: "trash", sm: true, k: "dgr", dis: true })}` }) },
+
     { id: "sets", label: "Contexts", icon: "target", body: () =>
       pane("Contexts", sec("Saved", [
         row("Everything but drafts", { icon: "pin", sub2: "Everything, minus templates", right: "211", inspect: "resource-set", on: true }),
@@ -419,8 +498,8 @@ SCREENS["templates"] = {
   path: "docs/screen-specs/templates.md",
   purpose:
     "A template is an ordinary body with variables left open. Authoring is the ordinary editor; using one asks for the variables and hands back an independent copy.",
-  init: { ctx: "library", inspect: "template-card", mode: "library" },
-  modes: [["library", "Library"], ["author", "Authoring"]],
+  init: { ctx: "overview", inspect: "template-card", mode: "library" },
+  modes: [["library", "All templates", "All"], ["author", "One template", "This one"]],
 
   center: (s) => s.mode === "author" ? `
     <div class="shead">
@@ -483,6 +562,13 @@ SCREENS["templates"] = {
     </div>`,
 
   contexts: (s) => s.mode === "author" ? [
+    { id: "overview", label: "Overview", icon: "info", body: () =>
+      pane("Overview", [
+        sec("This template", `<div class="fld"><span class="fld-k">Name</span><span class="fld-v"><span class="inp is-filled">Regulatory filing shell</span></span></div>` + kv([["Kind", "Document"], ["Available in", chip("This project", "a2")], ["Variables", "4", { mono: true }]]) + note("The kind is fixed at creation. Changing it would mean converting the body, which is not modelled.")),
+        sec("Saved", chip("Saved · revision 6", "ok")),
+        sec("Attribution", kv([["Created by", who("Mira Jain", "actor")], ["Updated", "2 weeks ago", { mono: true }]]), { shut: true })
+      ].join(""), { actions: btn("Back to library", { icon: "chevL", sm: true, act: "mode:library" }) }) },
+
     { id: "variables-t", label: "Variables", icon: "hash", body: () =>
       pane("Variables in this template", [
         sec("Required", [row("filingDocket", { icon: "hash", sub2: "Text", inspect: "slot", on: true }), row("filingParty", { icon: "hash", sub2: "Text", inspect: "slot" }), row("outageTable", { icon: "db", sub2: "Table", inspect: "slot" })].join(""), { count: 3, flush: true }),
@@ -502,6 +588,14 @@ SCREENS["templates"] = {
         sec("Page", kv([["Paper", "Letter"], ["Gutters", "1 in", { mono: true }]]))
       ].join("")) }
   ] : [
+    { id: "overview", label: "Overview", icon: "info", body: () =>
+      pane("Overview", [
+        sec("Templates", note("A template is an ordinary body with some of it left open — the open parts are variables you fill when you use it. Authoring one is authoring a document, a deck or a spreadsheet.")),
+        sec("In this project", kv([["Templates", "5", { mono: true }], ["Documents", "1", { mono: true }], ["Slide decks", "2", { mono: true }], ["Single slides", "1", { mono: true }], ["Spreadsheets", "1", { mono: true }]])),
+        sec("Available everywhere", kv([["Templates", "1", { mono: true }]]) + note("A global template can be used here; who may edit it is a deployment rule, not something the absence of a project says.")),
+        sec("Selected", kv([["Name", "Regulatory filing shell"], ["Variables", "4 required", { mono: true }]]) + `<div class="btn-row">${btn("Open", { k: "pri", sm: true, act: "mode:author" })}${btn("Use", { sm: true, dis: true })}</div>`)
+      ].join("")) },
+
     { id: "library", label: "Library", icon: "template", body: () =>
       pane("Library", [
         sec("Project", [row("Regulatory filing shell", { icon: "doc", sub2: "Document · 4 variables", inspect: "template-card", on: true }), row("Board update", { icon: "deck", sub2: "Slide deck · 2 variables", inspect: "template-card" }), row("Title slide", { icon: "deck", sub2: "Slide · 1 variable", inspect: "template-card" }), row("Cost model skeleton", { icon: "sheet", sub2: "Spreadsheet", inspect: "template-card" })].join(""), { count: 5, flush: true }),
@@ -572,8 +666,8 @@ SCREENS["personas"] = {
   path: "docs/screen-specs/personas.md",
   purpose:
     "A profile for each agent: who it is, what it knows, what it may touch, and everything it has done. Background is prompt material; Context is retrievable material — the screen never confuses the two.",
-  init: { ctx: "library", inspect: "persona", mode: "author" },
-  modes: [["library", "Library"], ["author", "Profile"]],
+  init: { ctx: "overview", inspect: "persona", mode: "author" },
+  modes: [["library", "All personas", "All"], ["author", "One persona", "This one"]],
 
   center: (s) => s.mode === "library" ? `
     <div class="wrap">
@@ -679,6 +773,15 @@ SCREENS["personas"] = {
     </div>`,
 
   contexts: () => [
+    { id: "overview", label: "Overview", icon: "info", body: () =>
+      pane("Overview", [
+        sec("This persona", `<div class="chips" style="margin-bottom:6px">${avb("GA", "ai", { name: "Grid Analyst", inspect: "actor-agent" })}<span class="card-t">Grid Analyst</span></div><div class="fld"><span class="fld-k">Does</span><span class="fld-v"><span class="inp is-filled">Reads field data and relay logs</span></span></div>` + kv([["Available in", chip("This project", "a2")]])),
+        sec("Record", `<div class="stat-row">${stat("41", "tasks")}${stat("2", "running")}${stat("128", "findings")}</div>`),
+        sec("Set up", kv([["Behaviour", "5 of 5 written", { mono: true }], ["Can look up", "Field reports 2024–25 · 96", { mono: true }], ["May use", "4 of 6 tools", { mono: true }]])),
+        sec("Saved", chip("Saved · revision 14", "ok")),
+        sec("Attribution", kv([["Created by", who("Mira Jain", "actor")], ["Updated", "3 days ago", { mono: true }]]), { shut: true })
+      ].join(""), { actions: btn("Back to library", { icon: "chevL", sm: true, act: "mode:library" }) }) },
+
     { id: "library", label: "Personas", icon: "persona", body: () =>
       pane("Personas", [
         sec("This project", [row("Grid Analyst", { icon: "pin", sub2: "41 tasks · 2 running", inspect: "persona", on: true }), row("Filing Editor", { icon: "persona", sub2: "18 tasks", inspect: "persona" })].join(""), { count: 2, flush: true }),
@@ -791,8 +894,8 @@ SCREENS["automations"] = {
   path: "docs/screen-specs/automations.md",
   purpose:
     "Standing one-trigger/one-action rules, read as a sentence. A run is a dispatch: success means the task was created, not that it finished.",
-  init: { ctx: "automations", inspect: "automation", mode: "library" },
-  modes: [["library", "Library"], ["author", "Rule"]],
+  init: { ctx: "overview", inspect: "automation", mode: "library" },
+  modes: [["library", "All automations", "All"], ["author", "One rule", "This one"]],
 
   center: (s) => s.mode === "author" ? `
     <div class="shead">
@@ -864,6 +967,16 @@ SCREENS["automations"] = {
     </div>`,
 
   contexts: () => [
+    { id: "overview", label: "Overview", icon: "info", body: () =>
+      pane("Overview", [
+        sec("Automations", note("A standing rule: when one thing happens, do one other thing. Two triggers means two rules.")),
+        sec("In this project", kv([["Rules", "4", { mono: true }], ["On", "3", { mono: true }], ["Not working", "1", { mono: true }]])),
+        sec("Selected", `<div class="fld"><span class="fld-k">Name</span><span class="fld-v"><span class="inp is-filled">Nightly filing digest</span></span></div>`
+          + note("<b>When</b> the clock reaches 02:00 in New York, <b>ask Filing Editor</b> to summarise last night's reports.")
+          + kv([["On", `<span class="tog is-on"></span>`], ["Last result", chip("Couldn't start", "err")], ["Fired about", "184 times", { mono: true }]])),
+        sec("Actions", `<div class="btn-row">${btn("Open", { k: "pri", sm: true, act: "mode:author" })}${btn("Run now", { icon: "play", sm: true })}</div>`)
+      ].join("")) },
+
     { id: "automations", label: "Automations", icon: "bolt", body: () =>
       pane("Automations", [
         sec("Not working", row("Nightly filing digest", { icon: "warn", sub2: "Agent may not use web.search", inspect: "automation", on: true }), { count: 1, flush: true }),

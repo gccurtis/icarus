@@ -120,7 +120,7 @@ SCREENS["project-overview"] = {
   path: "docs/screen-specs/project-overview.md",
   purpose:
     "The permanent first tab. Who is here, what is addressed to you, what exists, and the four things you can make. Every list is a project-scoped query, never a stored resource array.",
-  init: { ctx: "resources", inspect: "project" },
+  init: { ctx: "overview", inspect: "project" },
 
   center: () => `
     <div class="wrap">
@@ -218,6 +218,15 @@ SCREENS["project-overview"] = {
     </div>`,
 
   contexts: () => [
+    { id: "overview", label: "Overview", icon: "info", body: () =>
+      pane("Overview", [
+        sec("This project", `<div class="fld"><span class="fld-k">Name</span><span class="fld-v"><span class="inp is-filled">${esc(PROJECT.name)}</span></span></div><div class="fld" style="margin-top:6px"><span class="fld-k">About</span><span class="fld-v"><span class="inp is-filled">Winter-storm hardening case for the 2026 rate filing.</span></span></div>`),
+        sec("State", kv([["Status", chip("Active", "ok")], ["Your role", chip("Owner", "int")], ["Members", "7", { mono: true }], ["Project work", "24 items", { mono: true }]])),
+        sec("Here now", `<div class="chips">${avb("AR", "a1", { name: "Ana Reyes — you", inspect: "actor" })}${avb("TK", "a2", { name: "Tomas Kaur", inspect: "actor" })}${avb("MJ", "int", { name: "Mira Jain", inspect: "actor" })}</div>`),
+        sec("Needs you", [row("4 mentions", { icon: "at", sub2: "Unread", inspect: "mention" }), row("SharePoint can't sync", { icon: "warn", sub2: "Authentication expired", inspect: "connector" })].join(""), { count: 2, flush: true }),
+        sec("Dates", kv([["Created", "12 Mar 2026", { mono: true }], ["Updated", "4 minutes ago", { mono: true }]]), { shut: true })
+      ].join(""), { actions: btn("Settings", { icon: "gear", sm: true }) }) },
+
     { id: "resources", label: "Resources", icon: "layers", body: () =>
       pane("Resources", [
         sec("Documents", [row("Q3 Resilience Memo", { icon: "doc", inspect: "resource", on: true }), row("Interconnect Failure Review", { icon: "doc", inspect: "resource" }), row("Regulatory Filing Draft", { icon: "doc", inspect: "resource" })].join(""), { count: 3, flush: true }),
@@ -556,7 +565,9 @@ SCREENS["document"] = {
   path: "docs/screen-specs/document-editor.md",
   purpose:
     "Native DocumentBody as a paginated writing surface. Full pages with all four gutters drawn, no toolbars — every property of the thing you selected is in the inspector.",
-  init: { ctx: "navigator", inspect: "text-selection" },
+  init: { ctx: "overview", inspect: "text-selection" },
+  zoomable: true,
+  pasteboard: true,
 
   center: () => `
     <div class="pasteboard">
@@ -599,6 +610,15 @@ SCREENS["document"] = {
     </div>`,
 
   contexts: () => [
+    { id: "overview", label: "Overview", icon: "info", body: () =>
+      pane("Overview", [
+        sec("This document", `<div class="fld"><span class="fld-k">Title</span><span class="fld-v"><span class="inp is-filled">Q3 Resilience Memo</span></span></div>` + kv([["Kind", "Document"], ["Pages", "5", { mono: true }], ["Words", "1,204", { mono: true }]])),
+        sec("Editing now", [row("Ana Reyes", { icon: "eye", sub2: "page 2 · you", inspect: "actor" }), row("Tomas Kaur", { icon: "eye", sub2: "page 3", inspect: "actor" })].join(""), { count: 2, flush: true }),
+        sec("Saved", `${chip("All changes saved", "ok")}` + note("Saving, rebasing, needs review, offline and error use the shared shell language.")),
+        sec("From template", kv([["Template", "Regulatory filing shell"]]) + note("Provenance only. Later template edits never reach this document."), { shut: true }),
+        sec("Attribution", kv([["Created by", who("Ana Reyes", "actor")], ["Created", "12 Oct 2026", { mono: true }], ["Updated", "just now", { mono: true }]]), { shut: true })
+      ].join("")) },
+
     { id: "navigator", label: "Navigator", icon: "list", body: () =>
       pane("Navigator", [
         `<div class="chips" style="padding:0 calc(var(--u)*3) calc(var(--u)*2)">${chip("Outline", "act")}${chip("Pages")}</div>`,
@@ -611,15 +631,6 @@ SCREENS["document"] = {
         ].join(""), { flush: true }),
         sec("Breaks and furniture", [row("Explicit page break", { icon: "rows", right: "p.4" }), row("Header", { icon: "page", inspect: "header" }), row("Footer", { icon: "page", inspect: "footer" })].join(""), { flush: true, shut: true })
       ].join(""), { search: search("Filter outline") }) },
-
-    { id: "overview", label: "Overview", icon: "info", body: () =>
-      pane("Overview", [
-        sec("This document", `<div class="fld"><span class="fld-k">Title</span><span class="fld-v"><span class="inp is-filled">Q3 Resilience Memo</span></span></div>` + kv([["Kind", "Document"], ["Pages", "5", { mono: true }], ["Words", "1,204", { mono: true }]])),
-        sec("Editing now", [row("Ana Reyes", { icon: "eye", sub2: "page 2 · you", inspect: "actor" }), row("Tomas Kaur", { icon: "eye", sub2: "page 3", inspect: "actor" })].join(""), { count: 2, flush: true }),
-        sec("Saved", `${chip("All changes saved", "ok")}` + note("Saving, rebasing, needs review, offline and error use the shared shell language.")),
-        sec("From template", kv([["Template", "Regulatory filing shell"]]) + note("Provenance only. Later template edits never reach this document."), { shut: true }),
-        sec("Attribution", kv([["Created by", who("Ana Reyes", "actor")], ["Created", "12 Oct 2026", { mono: true }], ["Updated", "just now", { mono: true }]]), { shut: true })
-      ].join("")) },
 
     { id: "find", label: "Find", icon: "search", body: () =>
       pane("Find", [
@@ -760,14 +771,13 @@ SCREENS["document"] = {
     { t: "All changes saved", tone: "ok", icon: "ok" },
     { t: "38 characters selected", icon: "type" },
     { t: "Page 2 of 5", right: true },
-    { t: "1,204 words", right: true },
-    { t: "100%", right: true }
+    { t: "1,204 words", right: true }
   ],
 
   notes: {
     retained: ["<code>zoom</code> and <code>findQuery</code> survive a reload", "<code>scrollAnchor</code> and <code>selection</code> are dropped — a position into a document that may have changed means nothing on restore", "ProseMirror views, canonical furniture editors, undo history, IME state and pending ops live in the tab runtime"],
     nav: ["Find is a context view, not a dialog.", "Only user-origin ProseMirror transactions become outbound operations; accepted-local, remote and display-refresh origins cannot echo back as new edits.", "Header and footer furniture has one canonical editor; repeated page appearances are read-only projections of it."],
-    revised: ["The resource header and the formatting toolbar are gone. Identity moved to the Overview panel; every property moved to the inspector, which is where the selected thing already lives.", "The ruler is gone. Gutters are drawn on the page itself — a dashed guide on all four sides — so the margin is visible where you write rather than measured above it.", "Pages are always full height, including one that only holds two paragraphs.", "Text selection shows the selected text. Offsets and atom counts were internals and are gone.", "No stale state on formulas or prompts. Both read when they run."],
-    gaps: ["Natural pages are computed views. “Page 3” is a label, not an object with an ID.", "Removing the toolbar makes the inspector load-bearing for every formatting action: it must be reachable by keyboard and must never be the only path to an essential command."]
+    revised: ["The page floats. Gutters on all four sides and between pages, all of it canvas rather than more paper, so a document sits on a surface the way a slide sits on its pasteboard.", "The resource header and the formatting toolbar are gone. Identity moved to the Overview panel; every property moved to the inspector, which is where the selected thing already lives.", "The ruler is gone. Gutters are drawn on the page itself — a dashed guide on all four sides — so the margin is visible where you write rather than measured above it.", "Pages are always full height, including one that only holds two paragraphs.", "Text selection shows the selected text. Offsets and atom counts were internals and are gone.", "No stale state on formulas or prompts. Both read when they run."],
+    gaps: ["Natural pages are computed views. “Page 3” is a label, not an object with an ID.", "Removing the toolbar makes the inspector load-bearing for every formatting action: it must be reachable by keyboard and must never be the only path to an essential command.", "Pinch scales the work surface and nothing around it. A trackpad pinch reaches the page as a wheel event carrying <code>ctrlKey</code>, which the page takes before the browser acts on it — the same mechanism every canvas application uses.", "The browser's own zoom — ⌘+ / ⌘− and the zoom menu — happens above the document and enlarges the shell with everything else. No page can scope that, and this one does not pretend to."]
   }
 };

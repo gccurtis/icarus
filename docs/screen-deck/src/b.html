@@ -83,6 +83,10 @@
 }
 
 *,*::before,*::after { box-sizing:border-box; }
+/* Nothing shows a scrollbar. Every surface still scrolls; none of them spends
+   width saying so, and no panel gets a gutter its neighbour lacks. */
+* { scrollbar-width:none; }
+*::-webkit-scrollbar { width:0; height:0; display:none; }
 html,body { height:100%; }
 body {
   margin:0; background:var(--bez); color:var(--ink);
@@ -141,7 +145,16 @@ button { font:inherit; color:inherit; }
 .z-top{grid-area:top}.z-tabs{grid-area:tabs}.z-ctx{grid-area:ctx}
 .z-work{grid-area:work;position:relative;overflow:hidden;background:var(--work)}
 .z-insp{grid-area:insp}.z-st{grid-area:st}
-.surface { height:100%; overflow:auto; }
+.surface { height:100%; overflow:auto; background:var(--surface-bg, transparent); }
+/* Zoom belongs to the work, not the window. Only what is inside this element
+   scales — the bars, the panels and the rails are the same size at every zoom,
+   which is the whole point of putting the control on the surface. */
+.zoomer {
+  width:100%; height:100%;
+  transform:translate(var(--tx, 0px), var(--ty, 0px)) scale(var(--wz, 1));
+  transform-origin:0 0;
+  will-change:transform;
+}
 
 /* ---------- top bar ---------- */
 .topbar {
@@ -422,8 +435,6 @@ button { font:inherit; color:inherit; }
 
 /* Horizontal shelf — templates and recents scroll rather than stack. */
 .carousel { display:flex; gap:calc(var(--u)*3); overflow-x:auto; padding-bottom:calc(var(--u)*2); scroll-snap-type:x proximity; }
-.carousel::-webkit-scrollbar { height:8px; }
-.carousel::-webkit-scrollbar-thumb { background:var(--bd-strong); border-radius:4px; }
 .carousel > * { flex:0 0 190px; scroll-snap-align:start; }
 
 .tbl-w { border:1px solid var(--bd); border-radius:var(--r-pan); background:var(--elev); overflow:hidden; }
@@ -456,6 +467,20 @@ button { font:inherit; color:inherit; }
 .st-i.t-ok{color:var(--ok-t)}.st-i.t-warn{color:var(--warn-t)}.st-i.t-err{color:var(--err-t)}
 .st-i.t-ai{color:var(--ai-t)}.st-i.t-act{color:var(--act-t)}
 .st-sep { width:1px; height:12px; background:var(--bd); flex:0 0 auto; }
+.zm-tag {
+  position:absolute; right:calc(var(--u)*3); bottom:calc(var(--u)*3); z-index:25;
+  display:inline-flex; align-items:center; height:22px;
+  padding-inline:calc(var(--u)*2.5); border:1px solid var(--bd); border-radius:999px;
+  background:var(--elev); cursor:pointer;
+  font-family:var(--mono); font-size:var(--t-cap); font-variant-numeric:tabular-nums; color:var(--ink3);
+  opacity:.12; transition:opacity 320ms ease, color 160ms ease, border-color 160ms ease;
+}
+/* Away from 100% it is a way back, so it stops hiding. */
+.zm-tag.is-off100 { opacity:.6; color:var(--act-t); border-color:var(--act-b); background:var(--act-s); }
+/* While the gesture is happening, it is the thing you are reading. */
+.zm-tag.is-live { opacity:1; transition:opacity 60ms ease; }
+.zm-tag:hover { opacity:1; color:var(--ink); border-color:var(--bd-strong); }
+.frame[data-zoomable="no"] .zm-tag { display:none; }
 
 /* The centre section IS the Copilot. Closed it is one plain button; open, the
    same width of bar rises straight up out of the status row. */
@@ -499,17 +524,24 @@ button { font:inherit; color:inherit; }
 .ovl-f { display:flex; align-items:center; gap:calc(var(--u)*2); padding:calc(var(--u)*3) calc(var(--u)*4); border-top:1px solid var(--bd); background:var(--panel); }
 
 /* ---------- document: a full page with gutters on all four sides ---------- */
-.pasteboard { background:var(--canvas); padding:calc(var(--u)*8) 0 calc(var(--u)*10); display:flex; flex-direction:column; align-items:center; gap:calc(var(--u)*6); }
+/* The page floats. Gutter on all four sides and between pages, all of it the
+   canvas rather than more paper, so the document reads as an object sitting on
+   a surface — the same relationship a slide has to its pasteboard. */
+.pasteboard {
+  background:var(--canvas); min-height:100%;
+  padding:calc(var(--u)*8) calc(var(--u)*10) calc(var(--u)*12);
+  display:flex; flex-direction:column; align-items:center; gap:calc(var(--u)*8);
+}
 .page {
-  width:816px; height:1056px; flex:0 0 auto; background:var(--elev); border:1px solid var(--bd);
+  width:min(816px, 100%); aspect-ratio:8.5 / 11; flex:0 0 auto; background:var(--elev); border:1px solid var(--bd);
   box-shadow:var(--sh-rai); position:relative;
-  display:grid; grid-template-rows:76px 1fr 76px; grid-template-columns:96px 1fr 96px;
+  display:grid; grid-template-rows:9% 1fr 9%; grid-template-columns:11.7% 1fr 11.7%;
   grid-template-areas:"gl head gr" "gl body gr" "gl foot gr";
 }
 /* The four gutters are drawn, not implied — margins, header and footer are
    part of what a page IS. */
 .page::before {
-  content:""; position:absolute; inset:76px 96px; pointer-events:none;
+  content:""; position:absolute; inset:9% 11.7%; pointer-events:none;
   outline:1px dashed color-mix(in srgb, var(--act-b) 34%, transparent);
 }
 .pg-head { grid-area:head; display:flex; align-items:center; }
@@ -552,7 +584,6 @@ button { font:inherit; color:inherit; }
 .strip-row.is-on { background:var(--act-s); }
 .strip-n { font-family:var(--mono); font-size:var(--t-cap); color:var(--ink3); width:16px; flex:0 0 auto; padding-top:2px; font-variant-numeric:tabular-nums; }
 .strip-t { flex:1; min-width:0; display:flex; flex-direction:column; }
-.notes-tray { flex:0 0 auto; min-height:96px; border-top:1px solid var(--bd); background:var(--panel); padding:calc(var(--u)*3) calc(var(--u)*4) calc(var(--u)*4); display:flex; flex-direction:column; gap:calc(var(--u)*2); }
 
 /* ---------- spreadsheet ---------- */
 .grid-w { display:flex; flex-direction:column; height:100%; min-height:0; }
@@ -569,11 +600,6 @@ button { font:inherit; color:inherit; }
 .gt td.is-rng { background:var(--sel); }
 .gt td.is-spill { background:var(--a2-s); color:var(--a2-t); }
 .gt td.is-err { background:var(--err-s); color:var(--err-t); font-family:var(--mono); font-size:var(--t-mono); }
-.gt .frz { border-right:2px solid var(--act-b); }
-.sheets { flex:0 0 auto; display:flex; align-items:center; gap:calc(var(--u)*1); height:28px; padding-inline:calc(var(--u)*2); background:var(--panel); border-top:1px solid var(--bd); }
-.sh-t { height:22px; display:inline-flex; align-items:center; gap:calc(var(--u)*1.5); padding-inline:calc(var(--u)*2.5); border:none; border-radius:var(--r-ctl) var(--r-ctl) 0 0; background:none; font-size:var(--t-cap); color:var(--ink3); cursor:pointer; }
-.sh-t:hover { background:var(--panel-h); color:var(--ink); }
-.sh-t.is-on { background:var(--elev); color:var(--ink); box-shadow:inset 0 -2px 0 var(--act-b); font-weight:500; }
 
 /* ---------- research ---------- */
 /* Anchored to the current prompt: the turn on the left, what it produced on
@@ -649,6 +675,13 @@ button { font:inherit; color:inherit; }
 
 /* mock-only affordance marker */
 .mocklab { font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--ai-t); }
+/* Deck aids live in the bezel and are drawn dashed, so nothing here can be
+   mistaken for a control the application has. */
+.dk-aid { display:flex; align-items:center; gap:calc(var(--u)*1.5); }
+.dk-aid > .dk-k { font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--bez-accent); }
+.dk-sel.is-aid, .dk-btn.is-aid { border-style:dashed; border-color:var(--bez-accent); min-width:0; }
+.dk-sel.is-aid { max-width:170px; }
+.dk-btn.is-aid.is-on { background:var(--bez-accent); border-style:solid; color:var(--bez); font-weight:600; }
 
 /* ---------- spec-notes drawer ---------- */
 .notes-d {
@@ -682,6 +715,10 @@ button { font:inherit; color:inherit; }
       <button class="dk-btn" type="button" id="next" aria-label="Next screen">&#8594;</button>
     </nav>
     <div class="dk-tools">
+      <span class="dk-aid" id="modeAid"><span class="dk-k">screen</span>
+        <select class="dk-sel is-aid" id="modePick" aria-label="Subscreen"></select></span>
+      <span class="dk-aid"><span class="dk-k">inspecting</span>
+        <select class="dk-sel is-aid" id="inspPick" aria-label="Inspector target"></select></span>
       <button class="dk-btn" type="button" id="notesBtn" aria-pressed="false">Spec notes</button>
     </div>
   </header>
@@ -698,6 +735,7 @@ button { font:inherit; color:inherit; }
       </div>
       <main class="z z-work">
         <div class="surface" id="surface"></div>
+        <button class="zm-tag" type="button" id="zoomTag" title="Back to 100%">100%</button>
         <div id="copilot"></div>
         <div id="overlay"></div>
       </main>

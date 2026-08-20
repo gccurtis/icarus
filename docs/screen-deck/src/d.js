@@ -39,10 +39,42 @@ SCREENS["slides"] = {
   path: "docs/screen-specs/slide-deck-editor.md",
   purpose:
     "One slide on a canvas, the deck in the panel, and every property of what you selected in the inspector. Shift-click to multi-select; arrange, align and format are inspector work, not a toolbar.",
-  init: { ctx: "slides", inspect: "element" },
+  init: { ctx: "slides", inspect: "element", mode: "slide" },
+  zoomable: true,
+  pasteboard: true,
+  modes: [["slide", "Editing a slide", "Slide"], ["layout", "Editing a layout", "Layout"]],
   lift: "tray",
 
-  center: () => `
+  center: (s) => s.mode === "layout" ? `
+    <div style="display:flex;flex-direction:column;height:100%;min-height:0">
+    <div class="canvas">
+      <div class="chips" style="width:min(760px,100%)">
+        ${chip("Editing the layout — every slide using it changes", "ai")}
+        <span style="margin-inline-start:auto" class="note">Used by 4 slides</span>
+      </div>
+      <div class="slide">
+        <div class="el is-lock is-on" style="left:4%;top:80%;width:26%;height:9%" data-inspect="locked-element">
+          <span class="note" style="font-size:9px">${esc(PROJECT.name)}</span>
+          <span class="hnd" style="left:-4px;top:-4px"></span><span class="hnd" style="right:-4px;bottom:-4px"></span>
+        </div>
+        <div class="el is-lock" style="left:86%;top:80%;width:10%;height:9%" data-inspect="locked-element">
+          <span class="note" style="font-size:9px;text-align:right">4 / 8</span>
+        </div>
+        <div class="el" style="left:7%;top:11%;width:64%;height:16%;border-style:dashed;border-color:var(--ai-b)" data-inspect="placeholder">
+          <span class="mocklab">title</span>
+          <span class="note" style="font-size:11px">Slides fill this in</span>
+        </div>
+        <div class="el" style="left:7%;top:33%;width:44%;height:44%;border-style:dashed;border-color:var(--ai-b)" data-inspect="placeholder">
+          <span class="mocklab">body</span>
+        </div>
+        <div class="el" style="left:55%;top:33%;width:38%;height:44%;border-style:dashed;border-color:var(--ai-b)" data-inspect="placeholder">
+          <span class="mocklab">body</span>
+        </div>
+      </div>
+      <span class="note" style="width:min(760px,100%)">Solid outlines are locked content the layout owns and slides cannot touch.
+        Dashed outlines are placeholders — a slide gets its own copy of each, which it then owns.</span>
+    </div>
+    </div>` : `
     <div style="display:flex;flex-direction:column;height:100%;min-height:0">
       <div class="canvas">
         <div class="slide">
@@ -71,18 +103,28 @@ SCREENS["slides"] = {
             </span>
           </div>
         </div>
-        <div class="chips">
-          ${chip("Snap to guides", "act")}${chip("Safe area")}<span class="note">Guides and snapping are view state, never persisted objects.</span>
-        </div>
-      </div>
-      <div class="notes-tray">
-        <div class="chips"><span class="eyebrow">Speaker notes — slide 4</span>${btn("Collapse", { k: "gh", sm: true })}</div>
-        <p class="dp" style="font-size:.8125rem;line-height:1.25rem" data-inspect="notes-block">Lead with the relay finding, not the
-          spend. If asked about the 2024 precedent, the docket number is in the appendix.</p>
       </div>
     </div>`,
 
-  contexts: () => [
+  contexts: (s) => s.mode === "layout" ? [
+    { id: "layouts-l", label: "Layouts", icon: "template", body: () =>
+      pane("Layouts", sec("In this deck", [
+        row("Title and two panes", { icon: "template", sub2: "3 placeholders · 2 locked · used by 4", inspect: "layout", on: true }),
+        row("Title slide", { icon: "template", sub2: "2 placeholders · used by 1", inspect: "layout" }),
+        row("Section break", { icon: "template", sub2: "1 placeholder · used by 2", inspect: "layout" }),
+        row("Full-bleed chart", { icon: "template", sub2: "1 placeholder · used by 1", inspect: "layout" }),
+        row("Blank", { icon: "template", sub2: "no placeholders", inspect: "layout" })
+      ].join(""), { count: 5, flush: true }),
+        { actions: `${btn("New", { icon: "plus", sm: true, k: "pri" })}${btn("Duplicate", { icon: "copy", sm: true })}` }) },
+    { id: "layout-objects", label: "Objects", icon: "layers", body: () =>
+      pane("Objects", [
+        sec("Locked content", [row("Footer wordmark", { icon: "lock", inspect: "locked-element", on: true }), row("Slide number", { icon: "lock", inspect: "locked-element" })].join(""), { count: 2, flush: true }),
+        sec("Placeholders", [row("title", { icon: "type", inspect: "placeholder" }), row("body", { icon: "type", inspect: "placeholder" }), row("body", { icon: "type", sub2: "Same role as the one above", inspect: "placeholder" })].join(""), { count: 3, flush: true })
+      ].join("")) },
+    { id: "theme-l", label: "Theme", icon: "pal", body: () =>
+      pane("Theme", sec("Background", kv([["Kind", "Solid"], ["Colour", "Paper"]]) + note("A layout inherits the deck theme unless it overrides it."))) },
+    { id: "variables", label: "Variables", icon: "hash", body: VARIABLES }
+  ] : [
     { id: "slides", label: "Slides", icon: "deck", body: () =>
       pane("Slides", [
         sec("Opening", SLIDE_TITLES.slice(0, 2).map((t, i) => slideRow(i + 1, t, false)).join(""), { count: 2, flush: true }),
@@ -183,6 +225,13 @@ SCREENS["slides"] = {
       sec("Ancestry", note("The element is the spatial container; the block is the ordinary content object inside it. Element frame, rotation and overflow never leak into block content."), { shut: true })
     ].join("") },
 
+    layout: { crumbs: [["Deck", "deck"], ["Layout", null]], body: [
+      sec("This layout", `<div class="fld"><span class="fld-k">Name</span><span class="fld-v"><span class="inp is-filled">Title and two panes</span></span></div>` + kv([["Placeholders", "3", { mono: true }], ["Locked content", "2", { mono: true }], ["Used by", "4 slides", { mono: true }]])),
+      sec("Background", kv([["Source", "Inherited from theme"]])),
+      sec("Careful", note("Editing a layout changes every slide using it. Slides keep their own copies of placeholder content — only the frame, the locked content and the background come from here.")),
+      sec("Actions", `<div class="btn-row">${btn("Done", { k: "pri", act: "mode:slide" })}${btn("Duplicate", { icon: "copy" })}</div>`)
+    ].join("") },
+
     "locked-element": { crumbs: [["Deck", "deck"], ["Layout", null], ["Locked element", null]], body: [
       sec("Content", `<div class="quote-v">Northwind Grid Resilience</div>`),
       sec("Frame", kv([["X", "0.040", { mono: true }], ["Y", "0.800", { mono: true }], ["Width", "0.260", { mono: true }], ["Owner", chip("Layout", "off")]])),
@@ -190,6 +239,7 @@ SCREENS["slides"] = {
     ].join("") },
 
     slide: { crumbs: [["Deck", "deck"], ["Slide 4", null]], body: [
+      sec("Speaker notes", `<div class="quote-v">Lead with the relay finding, not the spend. If asked about the 2024 precedent, the docket number is in the appendix.</div>` + note("Notes belong to the slide, not to the canvas. The Notes panel shows them for the whole deck.")),
       sec("Slide", kv([["Layout", "Title and two panes"], ["Section", "The case"], ["Hidden", `<span class="tog"></span>`], ["Background", "Inherited from layout"]])),
       sec("Actions", `<div class="btn-row">${btn("Duplicate", { icon: "copy", sm: true })}${btn("New after", { icon: "plus", sm: true, act: "new-slide" })}${btn("Delete", { icon: "trash", sm: true, k: "dgr" })}</div>`),
       sec("Notes", note("One paragraph."), { shut: true }),
@@ -237,8 +287,7 @@ SCREENS["slides"] = {
   status: () => [
     { t: "All changes saved", tone: "ok", icon: "ok" },
     { t: "1 element selected", icon: "layers" },
-    { t: "Slide 4 of 8", right: true },
-    { t: "76%", right: true }
+    { t: "Slide 4 of 8", right: true }
   ],
 
   notes: {
@@ -266,52 +315,36 @@ SCREENS["spreadsheet"] = {
   name: "Spreadsheet editor",
   path: "docs/screen-specs/spreadsheet-editor.md",
   purpose:
-    "A sparse SpreadsheetBody as a fast grid. Icarus owns cells, formulas, merges, spills, styles and computation. No formula bar and no name box — the inspector already shows the cell you are on and the formula in it.",
-  init: { ctx: "sheets", inspect: "formula-cell" },
+    "One spreadsheet — a sparse grid, not a workbook of sheets. Icarus owns cells, formulas, merges, spills, styles and computation. No formula bar and no name box: the inspector already shows the cell you are on and the formula in it.",
+  init: { ctx: "overview", inspect: "formula-cell" },
+  zoomable: true,
   lift: "bar",
 
   center: () => `
     <div class="grid-w">
       <div class="gscroll">
         <table class="gt">
-          <thead><tr><th class="rh"></th>${COLS.map((c, i) => `<th${i === 0 ? ' class="frz"' : ""} style="width:${i === 0 ? 140 : 108}px">${c}</th>`).join("")}</tr></thead>
+          <thead><tr><th class="rh"></th>${COLS.map((c, i) => `<th style="width:${i === 0 ? 140 : 108}px">${c}</th>`).join("")}</tr></thead>
           <tbody>
             ${SHEET_ROWS.map((r, ri) => `<tr><td class="rh">${ri + 1}</td>${r.map((v, ci) => {
               const head = ri === 0, total = ri === 5, num = !head && /^[\d.]+$/.test(v);
               const on = ri === 2 && ci === 6, rng = ri >= 1 && ri <= 4 && ci === 6 && !on;
               const spill = ci === 4 && ri >= 1 && ri <= 4;
-              const cls = [num ? "n" : "", ci === 0 ? "frz" : "", on ? "is-on" : "", rng ? "is-rng" : "", spill ? "is-spill" : ""].filter(Boolean).join(" ");
+              const cls = [num ? "n" : "", on ? "is-on" : "", rng ? "is-rng" : "", spill ? "is-spill" : ""].filter(Boolean).join(" ");
               const disp = v === "" ? "" : num && ci >= 2 ? Number(v).toLocaleString() : v;
               const target = on ? "formula-cell" : spill ? "spill" : head ? "range" : "cell";
               return `<td${cls ? ` class="${cls}"` : ""}${head || total ? ' style="font-weight:600"' : ""} data-inspect="${target}">${disp}</td>`;
             }).join("")}</tr>`).join("")}
-            ${[7, 8, 9, 10, 11, 12, 13, 14].map((n) => `<tr><td class="rh">${n}</td>${COLS.map((_, ci) => `<td${ci === 0 ? ' class="frz"' : n === 8 && ci === 3 ? ' class="is-err"' : ""} data-inspect="${n === 8 && ci === 3 ? "error-cell" : "cell"}">${n === 8 && ci === 3 ? "#REF!" : ""}</td>`).join("")}</tr>`).join("")}
+            ${[7, 8, 9, 10, 11, 12, 13, 14].map((n) => `<tr><td class="rh">${n}</td>${COLS.map((_, ci) => `<td${n === 8 && ci === 3 ? ' class="is-err"' : ""} data-inspect="${n === 8 && ci === 3 ? "error-cell" : "cell"}">${n === 8 && ci === 3 ? "#REF!" : ""}</td>`).join("")}</tr>`).join("")}
           </tbody>
         </table>
-      </div>
-      <div class="sheets">
-        <button class="sh-t is-on" type="button" data-inspect="sheet">Cost model</button>
-        <button class="sh-t" type="button" data-inspect="sheet">Event log</button>
-        <button class="sh-t" type="button" data-inspect="sheet">Assumptions</button>
-        <button class="sh-t" type="button" data-inspect="sheet">${ic("eye", 12)} Scratch</button>
-        <button class="sh-t" type="button">${ic("plus", 13)}</button>
       </div>
     </div>`,
 
   contexts: () => [
-    { id: "sheets", label: "Sheets", icon: "sheet", body: () =>
-      pane("Sheets", sec("Sheets", [
-        row("Cost model", { icon: "sheet", sub2: "A1:G6 · 1 frozen column", inspect: "sheet", on: true }),
-        row("Event log", { icon: "sheet", sub2: "A1:M4183", inspect: "sheet" }),
-        row("Assumptions", { icon: "sheet", sub2: "A1:C22", inspect: "sheet" }),
-        row("Scratch", { icon: "eye", sub2: "Hidden", inspect: "sheet" })
-      ].join(""), { count: 4, flush: true }), {
-        actions: `${btn("Add", { icon: "plus", sm: true, k: "pri" })}${btn("Duplicate", { icon: "copy", sm: true })}${btn("Rename", { sm: true })}${btn("Delete", { icon: "trash", sm: true, k: "dgr" })}`
-      }) },
-
     { id: "overview", label: "Overview", icon: "info", body: () =>
       pane("Overview", [
-        sec("This workbook", `<div class="fld"><span class="fld-k">Title</span><span class="fld-v"><span class="inp is-filled">Outage Cost Model</span></span></div>` + kv([["Sheets", "4", { mono: true }], ["Populated cells", "1,204", { mono: true }]])),
+        sec("This spreadsheet", `<div class="fld"><span class="fld-k">Title</span><span class="fld-v"><span class="inp is-filled">Outage Cost Model</span></span></div>` + kv([["Used range", "A1:G6", { mono: true }], ["Populated cells", "42", { mono: true }]])),
         sec("Calculation", `${chip("Up to date", "ok")}` + note("Every formula reads its inputs when it runs. There is no cached result to fall behind.")),
         sec("Saved", chip("All changes saved", "ok")),
         sec("From template", kv([["Template", "Cost model skeleton"]]), { shut: true })
@@ -320,17 +353,17 @@ SCREENS["spreadsheet"] = {
     { id: "variables", label: "Variables", icon: "hash", body: VARIABLES },
 
     { id: "names", label: "Named ranges", icon: "pin", body: () =>
-      pane("Named ranges", sec("This workbook", [
-        row("costModel", { icon: "pin", sub2: "Cost model!A1:G6", inspect: "named-range", on: true }),
-        row("eventLog", { icon: "pin", sub2: "Event log!A1:M4183", inspect: "named-range" }),
-        row("assumptions", { icon: "pin", sub2: "Assumptions!A1:C22", inspect: "named-range" })
-      ].join(""), { count: 3, flush: true }) + `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${note("Workbook-local. Project variables are in the Variables panel and are kept visibly apart from these.")}</div>`, { actions: btn("Name this range", { icon: "plus", sm: true, k: "pri" }) }) },
+      pane("Named ranges", sec("This spreadsheet", [
+        row("costModel", { icon: "pin", sub2: "A1:G6", inspect: "named-range", on: true }),
+        row("eventLog", { icon: "pin", sub2: "A1:M4183", inspect: "named-range" }),
+        row("assumptions", { icon: "pin", sub2: "A1:C22", inspect: "named-range" })
+      ].join(""), { count: 3, flush: true }) + `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${note("Local to this spreadsheet. Project variables are in the Variables panel and stay visibly apart from these.")}</div>`, { actions: btn("Name this range", { icon: "plus", sm: true, k: "pri" }) }) },
 
     { id: "find", label: "Find", icon: "search", body: () =>
       pane("Find", [
-        `<div class="chips" style="padding:0 calc(var(--u)*3) calc(var(--u)*2)">${chip("All sheets", "act")}${chip("Formulas")}${chip("Values")}</div>`,
-        sec("Results", [row("Cost model!G3", { sub2: "=IF(E3=0,\"\",F3*1000000/E3)", right: "fx", on: true }), row("Cost model!G4", { sub2: "=IF(E4=0,\"\",F4*1000000/E4)", right: "fx" }), row("Assumptions!B7", { sub2: "cost per avoided minute", right: "text" })].join(""), { count: 3, flush: true })
-      ].join(""), { search: search("Find in workbook", "avoided") }) },
+        `<div class="chips" style="padding:0 calc(var(--u)*3) calc(var(--u)*2)">${chip("Everything", "act")}${chip("Formulas")}${chip("Values")}</div>`,
+        sec("Results", [row("G3", { sub2: "=IF(E3=0,\"\",F3*1000000/E3)", right: "fx", on: true }), row("G4", { sub2: "=IF(E4=0,\"\",F4*1000000/E4)", right: "fx" }), row("B14", { sub2: "cost per avoided minute", right: "text" })].join(""), { count: 3, flush: true })
+      ].join(""), { search: search("Find in this spreadsheet", "avoided") }) },
 
     { id: "dependencies", label: "Dependencies", icon: "branch", body: () =>
       pane("Dependencies", [
@@ -365,9 +398,9 @@ SCREENS["spreadsheet"] = {
 
     { id: "comments", label: "Comments", icon: "comment", body: () =>
       pane("Comments", [
-        `<div class="chips" style="padding:0 calc(var(--u)*3) calc(var(--u)*2)">${chip("Workbook")}${chip("Cost model", "act")}</div>`,
+        `<div class="chips" style="padding:0 calc(var(--u)*3) calc(var(--u)*2)">${chip("Everywhere", "act")}${chip("This cell")}</div>`,
         sec("Open", row("Mira Jain on C2", { icon: "at", sub2: "“@ana corrected total or the old one?”", right: "1d", inspect: "comment-sheet", on: true }), { count: 1, flush: true }),
-        `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${gap("Persisted anchors are workbook, cell, or text range only — a range, chart, row or column cannot be commented on.")}</div>`
+        `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${gap("Persisted anchors are the spreadsheet, a cell, or a text range — a range, chart, row or column cannot be commented on.")}</div>`
       ].join("")) },
 
     { id: "context", label: "Context", icon: "target", body: () =>
@@ -375,7 +408,7 @@ SCREENS["spreadsheet"] = {
   ],
 
   inspectors: {
-    "formula-cell": { crumbs: [["Workbook", "workbook"], ["Cost model", "sheet"], ["G3", null]], body: [
+    "formula-cell": { crumbs: [["Spreadsheet", "spreadsheet"], ["G3", null]], body: [
       sec("Cell", kv([["Address", "G3", { mono: true }], ["Shows", "41.70", { mono: true }], ["Type", "number", { mono: true }]])),
       sec("Formula", `<div class="inp is-filled" style="height:auto;padding:8px;align-items:flex-start;font-family:var(--mono);font-size:var(--t-mono)"><span class="inp-w" style="white-space:pre-wrap">=IF(E3=0,"",F3*1000000/E3)</span></div>` + note("Edited here or in the cell. There is no separate formula bar taking a row off the grid.")),
       sec("Reads", [row("E3", { icon: "chevR", sub2: "194,224 · spill child of E2" }), row("F3", { icon: "chevR", sub2: "8.10" })].join(""), { count: 2, flush: true }),
@@ -383,20 +416,20 @@ SCREENS["spreadsheet"] = {
       sec("Format", kv([["Style", "Currency"], ["Alignment", "Right"], ["Value format", "#,##0.00", { mono: true }]]), { shut: true })
     ].join("") },
 
-    cell: { crumbs: [["Workbook", "workbook"], ["Cost model", "sheet"], ["C3", null]], body: [
+    cell: { crumbs: [["Spreadsheet", "spreadsheet"], ["C3", null]], body: [
       sec("Cell", kv([["Address", "C3", { mono: true }], ["Value", "318,400", { mono: true }], ["Type", "number", { mono: true }]]) + note("A cell's identity is its A1 address. Rows and columns are not identified model objects.")),
       sec("Content", `<div class="inp is-filled" style="font-family:var(--mono);font-size:var(--t-mono)"><span class="inp-w">318400</span></div>`),
       sec("Format", kv([["Style", "Currency"], ["Alignment", "Right"], ["Value format", "#,##0", { mono: true }]])),
       sec("Merge and spill", note("Not part of a merge or spill range."), { shut: true })
     ].join("") },
 
-    "error-cell": { crumbs: [["Workbook", "workbook"], ["Cost model", "sheet"], ["D8", null]], body: [
+    "error-cell": { crumbs: [["Spreadsheet", "spreadsheet"], ["D8", null]], body: [
       sec("Problem", `${chip("#REF!", "err")}` + note("This formula refers to a range that no longer exists. The formula is kept exactly as written so it can be repaired rather than guessed at.")),
       sec("Formula", `<div class="inp is-filled" style="font-family:var(--mono);font-size:var(--t-mono)"><span class="inp-w">=SUM(#REF!)</span></div>`),
       sec("Actions", `<div class="btn-row">${btn("Pick a new range", { k: "pri" })}${btn("Clear cell", { k: "dgr" })}</div>`)
     ].join("") },
 
-    range: { crumbs: [["Workbook", "workbook"], ["Cost model", "sheet"], ["A1:G1", null]], body: [
+    range: { crumbs: [["Spreadsheet", "spreadsheet"], ["A1:G1", null]], body: [
       sec("Range", kv([["A1 range", "A1:G1", { mono: true }], ["Cells with content", "7 of 7", { mono: true }]])),
       sec("Shared formatting", kv([["Style", "Header"], ["Alignment", "Mixed"], ["Fill", "Mixed"]])),
       sec("Aggregate", kv([["Count", "7", { mono: true }]]), { shut: true }),
@@ -404,42 +437,36 @@ SCREENS["spreadsheet"] = {
       sec("Empty coordinates", gap("Formatting applies only to existing blocks. Empty cells have no persisted block to store fill, border, alignment or value format on."), { shut: true })
     ].join("") },
 
-    spill: { crumbs: [["Workbook", "workbook"], ["Cost model", "sheet"], ["E3", null]], body: [
+    spill: { crumbs: [["Spreadsheet", "spreadsheet"], ["E3", null]], body: [
       sec("Spill", kv([["Origin", "E2", { mono: true }], ["Occupied", "E2:E5", { mono: true }], ["Status", chip("Read-only child", "a2")]])),
       sec("Origin formula", `<div class="inp is-filled" style="font-family:var(--mono);font-size:var(--t-mono)"><span class="inp-w">=avoidedMinutes(costModel)</span></div>`),
       sec("Behavior", note("A write into the occupied range fails visibly and names the origin."))
     ].join("") },
 
-    sheet: { crumbs: [["Workbook", "workbook"], ["Cost model", null]], body: [
-      sec("Sheet", `<div class="fld"><span class="fld-k">Name</span><span class="fld-v"><span class="inp is-filled">Cost model</span></span></div>` + kv([["Used extent", "A1:G6", { mono: true }], ["Frozen", "1 column", { mono: true }], ["Hidden", `<span class="tog"></span>`]])),
-      sec("Actions", `<div class="btn-row">${btn("Duplicate", { icon: "copy", sm: true })}${btn("Move", { sm: true })}${btn("Delete", { icon: "trash", sm: true, k: "dgr" })}</div>`),
-      sec("Print setup", kv([["Area", "A1:G6", { mono: true }], ["Orientation", "Landscape"]]), { shut: true })
-    ].join("") },
-
-    chart: { crumbs: [["Workbook", "workbook"], ["Cost model", "sheet"], ["Chart", null]], body: [
+    chart: { crumbs: [["Spreadsheet", "spreadsheet"], ["Chart", null]], body: [
       sec("Chart", kv([["Type", "Column"], ["Source range", "A1:C5", { mono: true }], ["Title", "Customer-minutes by substation"]])),
       sec("Placement", kv([["Anchor", "E9", { mono: true }], ["Size", "360 × 220 px", { mono: true }]]), { shut: true }),
       sec("Status", gap("Read-only. Without a stable <code>id</code> an array index cannot support granular updates, remote reconciliation, retained selection, or comments."))
     ].join("") },
 
-    "named-range": { crumbs: [["Workbook", "workbook"], ["Named range", null]], body: [
+    "named-range": { crumbs: [["Spreadsheet", "spreadsheet"], ["Named range", null]], body: [
       sec("Name", kv([["Name", "costModel", { mono: true }], ["Sheet", "Cost model"], ["Range", "A1:G6", { mono: true }]])),
       sec("Usage", note("Referenced by 3 formulas."), { shut: true })
     ].join("") },
 
-    "named-style-sheet": { crumbs: [["Workbook", "workbook"], ["Styles", null], ["Header", null]], body: [
+    "named-style-sheet": { crumbs: [["Spreadsheet", "spreadsheet"], ["Styles", null], ["Header", null]], body: [
       sec("Identity", kv([["Name", "Header"], ["Weight", "600", { mono: true }], ["Alignment", "Center"]])),
       sec("Usage", note("Applied to 7 cells."), { shut: true })
     ].join("") },
 
-    "comment-sheet": { crumbs: [["Workbook", "workbook"], ["Cost model", "sheet"], ["C2", null], ["Comment", null]], body: [
+    "comment-sheet": { crumbs: [["Spreadsheet", "spreadsheet"], ["C2", null], ["Comment", null]], body: [
       sec("Thread", `${chip("Open", "warn")}${chip("Mentions you", "act")}`),
       sec("Comment", `<div class="quote-v">“@ana corrected total or the old one? The event log says 1,840,200.”</div>` + note("Mira Jain · yesterday")),
       sec("Actions", `<div class="btn-row">${btn("Reply", { k: "pri" })}${btn("Resolve")}</div>`)
     ].join("") },
 
-    workbook: { crumbs: [["Workbook", null]], body: [
-      sec("This workbook", `<div class="fld"><span class="fld-k">Title</span><span class="fld-v"><span class="inp is-filled">Outage Cost Model</span></span></div>` + kv([["Sheets", "4", { mono: true }], ["Saved", chip("All changes saved", "ok")]])),
+    spreadsheet: { crumbs: [["Spreadsheet", null]], body: [
+      sec("This spreadsheet", `<div class="fld"><span class="fld-k">Title</span><span class="fld-v"><span class="inp is-filled">Outage Cost Model</span></span></div>` + kv([["Used range", "A1:G6", { mono: true }], ["Populated cells", "42", { mono: true }], ["Saved", chip("All changes saved", "ok")]])),
       sec("Nothing selected", note("Click a cell to see what is in it. Selecting a range offers formatting, naming and merge.")),
       sec("Calculation", note("Icarus's formula engine is the only calculation authority. Every formula reads its inputs when it runs."))
     ].join("") },
@@ -450,15 +477,14 @@ SCREENS["spreadsheet"] = {
   status: () => [
     { t: "1 formula error", tone: "err", icon: "warn" },
     { t: "G3 · sum 176.90 · avg 44.23 · count 4", icon: "sigma" },
-    { t: "Cost model", right: true },
-    { t: "100%", right: true }
+    { t: "A1:G6", right: true }
   ],
 
   notes: {
-    retained: ["current sheet ID, A1 selection, viewport anchor, zoom, find query", "Univer instance, nested block editor, calculation buffers and undo history stay in the tab runtime", "reload validates the sheet and range against current extents, then falls back to the first visible sheet and <code>A1</code>"],
-    nav: ["Find owns workbook search; Dependencies is computed; Objects owns charts and overlays.", "Icarus's formula engine is the only calculation authority — Univer's is bypassed entirely.", "Row and column insert/delete needs one structural-rebase contract covering A1 keys, formulas, comments, named ranges, merges, spills and chart anchors — atomically, or rejected with work preserved."],
-    revised: ["The formula bar and the name box are gone. The inspector already names the cell and holds its formula, with what it reads and what it feeds underneath.", "The toolbar is gone. Formatting is a section of whatever cell or range is selected.", "Project variables and workbook named ranges are two separate panels, so the two scopes cannot be mistaken for each other."],
-    gaps: ["<code>SheetChart</code> has no stable ID, so chart creation and editing are gated.", "Empty cells have no persisted block, so range styling of empty coordinates cannot be stored.", "Comments cannot anchor to a range, chart, row, column or sheet.", "Editing a formula without a formula bar means in-cell editing must be excellent, and long formulas need somewhere to breathe in a 320px panel."]
+    retained: ["A1 selection, viewport anchor, zoom, find query", "Univer instance, nested block editor, calculation buffers and undo history stay in the tab runtime", "reload validates the range against the current extent and falls back to <code>A1</code>"],
+    nav: ["Find owns search; Dependencies is computed; Objects owns charts and overlays.", "Icarus's formula engine is the only calculation authority — Univer's is bypassed entirely.", "Row and column insert/delete needs one structural-rebase contract covering A1 keys, formulas, comments, named ranges, merges, spills and chart anchors — atomically, or rejected with work preserved."],
+    revised: ["A spreadsheet is one grid. The sheet tabs and the Sheets panel are gone — a tab is a spreadsheet, not a workbook of them, and the frozen-column rule went with them because a blue line between A and B explained nothing.", "The formula bar and the name box are gone. The inspector already names the cell and holds its formula, with what it reads and what it feeds underneath.", "The toolbar is gone. Formatting is a section of whatever cell or range is selected.", "Project variables and this spreadsheet's named ranges are two separate panels, so the two scopes cannot be mistaken for each other."],
+    gaps: ["<code>SheetChart</code> has no stable ID, so chart creation and editing are gated.", "Empty cells have no persisted block, so range styling of empty coordinates cannot be stored.", "Comments cannot anchor to a range, a chart, a row or a column — only to a cell.", "Editing a formula without a formula bar means in-cell editing must be excellent, and long formulas need somewhere to breathe in a 320px panel.", "Freezing rows and columns has no affordance now that the frozen-column rule is gone. It needs one that explains itself."]
   }
 };
 
@@ -470,10 +496,37 @@ SCREENS["research"] = {
   path: "docs/screen-specs/research.md",
   purpose:
     "Anchored to the question you just asked. The answer sits beside what it produced — findings you accept, the sources behind them, and the trace of how they were found. Earlier turns are history, not a scrollback you live in.",
-  init: { ctx: "history", inspect: "finding" },
+  init: { ctx: "overview", inspect: "finding", mode: "turn" },
+  modes: [["turn", "One question", "This thread"], ["library", "All threads", "All threads"]],
   noCopilot: true,
 
-  center: () => `
+  center: (s) => s.mode === "library" ? `
+    <div class="wrap">
+      <div class="hd">
+        <div class="hd-m"><h1 class="hd-t">Research</h1>
+          <span class="hd-s">Every line of enquiry in this project. Opening one brings it to the centre — there is one Research tab, not one per thread.</span></div>
+        <div class="hd-a">${btn("New thread", { icon: "plus", k: "pri" })}</div>
+      </div>
+      <div class="chips">
+        <span style="flex:1;min-width:180px;max-width:300px">${search("Search threads and findings")}</span>
+        ${chip("All", "act")}${chip("Questions")}${chip("Hypotheses")}${chip("Open-ended")}
+      </div>
+      ${table(["Thread", "Job", "Turns", "Findings", "Last asked"], [
+        { on: true, inspect: "thread", cells: [
+          { h: `<span class="cellname"><span class="row-i">${ic("flask")}</span>Why did Feeder 12 fail twice?</span>` },
+          { h: chip("Answer one question", "a1") }, { h: "3", cls: "num" }, { h: "1 accepted · 2 proposed", cls: "num" }, { h: "just now", cls: "num" } ] },
+        { inspect: "thread", cells: [
+          { h: `<span class="cellname"><span class="row-i">${ic("target")}</span>Undergrounding beats vegetation management</span>` },
+          { h: chip("Test an idea", "a2") }, { h: "22", cls: "num" }, { h: "9 accepted", cls: "num" }, { h: "2 days ago", cls: "num" } ] },
+        { inspect: "thread", cells: [
+          { h: `<span class="cellname"><span class="row-i">${ic("scope")}</span>Winter storm precedents</span>` },
+          { h: chip("Look around", "off") }, { h: "9", cls: "num" }, { h: "4 accepted", cls: "num" }, { h: "1 week ago", cls: "num" } ] },
+        { inspect: "thread", cells: [
+          { h: `<span class="cellname"><span class="row-i">${ic("flask")}</span>Is Eastbrook exposed the same way?</span>` },
+          { h: chip("Answer one question", "a1") }, { h: "4", cls: "num" }, { h: "none yet", cls: "num" }, { h: "1 week ago", cls: "num" } ] }
+      ])}
+      ${note("A thread has one job, chosen when it starts: look around, answer one question, or test one idea. That is what keeps an enquiry from becoming a chat room.")}
+    </div>` : `
     <div class="shead">
       <span class="shead-t">Why did Feeder 12 fail twice?</span>
       ${chip("Question", "a1")}
@@ -560,7 +613,37 @@ SCREENS["research"] = {
       </div>
     </div>`,
 
-  contexts: () => [
+  contexts: (s) => s.mode === "library" ? [
+    { id: "threads-l", label: "Threads", icon: "flask", body: () =>
+      pane("Threads", [
+        sec("Open", [
+          row("Why did Feeder 12 fail twice?", { icon: "flask", sub2: "3 turns · asked just now", inspect: "thread", on: true }),
+          row("Is Eastbrook exposed the same way?", { icon: "flask", sub2: "4 turns", inspect: "thread" }),
+          row("Undergrounding beats vegetation management", { icon: "target", sub2: "22 turns", inspect: "thread" })
+        ].join(""), { count: 3, flush: true }),
+        sec("Answered", row("What did the 2024 study assume?", { icon: "ok", sub2: "6 turns · 2 findings", inspect: "thread" }), { count: 1, flush: true })
+      ].join(""), { actions: btn("New thread", { icon: "plus", sm: true, k: "pri" }), search: search("Search threads") }) },
+    { id: "findings-l", label: "Findings", icon: "quote", body: () =>
+      pane("Findings", sec("Accepted in this project", [
+        row("Relay pair mis-coordinated since 2024", { icon: "quote", sub2: "From Feeder 12 · supports H-3", inspect: "finding-accepted" }),
+        row("Undergrounding cut SAIDI 38% in Ward 3", { icon: "quote", sub2: "From Undergrounding", inspect: "finding-accepted" }),
+        row("No coordination study after reconductoring", { icon: "quote", sub2: "From Feeder 12", inspect: "finding-accepted" })
+      ].join(""), { count: 14, flush: true }) + `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${note("Findings are resources. Every one of these is retrievable anywhere in the project.")}</div>`, { search: search("Search findings") }) },
+    { id: "inquiry-l", label: "Inquiry", icon: "scope", body: () =>
+      pane("Inquiry", [
+        sec("Questions", [row("Why do feeders fail repeatedly?", { icon: "flask", sub2: "Investigating", inspect: "question" }), row("Why did Feeder 12 fail twice?", { icon: "flask", sub2: "Investigating", inspect: "question", sub: true }), row("Is Eastbrook exposed the same way?", { icon: "flask", sub2: "Open", inspect: "question", sub: true })].join(""), { count: 4, flush: true }),
+        sec("Ideas being tested", [row("Coordination was never redone", { icon: "target", sub2: "Testing", inspect: "hypothesis" }), row("Vegetation was the shared cause", { icon: "target", sub2: "Ruled out", inspect: "hypothesis" })].join(""), { count: 2, flush: true })
+      ].join("")) }
+  ] : [
+    { id: "overview", label: "Overview", icon: "info", body: () =>
+      pane("Overview", [
+        sec("This thread", `<div class="fld"><span class="fld-k">Title</span><span class="fld-v"><span class="inp is-filled">Why did Feeder 12 fail twice?</span></span></div>` + kv([["Job", chip("Answer one question", "a1")], ["Anchored to", "Q-14 · Why did Feeder 12 fail twice?"], ["Turns", "3", { mono: true }]])),
+        sec("Asking", `<div class="chips">${avb("GA", "ai", { name: "Grid Analyst", inspect: "actor-agent" })}<span class="card-t">Grid Analyst</span></div>` + note("The persona is set for the whole thread, not per turn. The Copilot is off here — this screen is already a conversation with an agent.")),
+        sec("Looking in", row("Field reports 2024–25", { icon: "target", right: "96", inspect: "scope" }) + note("Plus the web when a turn asks for it."), { flush: true }),
+        sec("Produced", kv([["Findings accepted", "1", { mono: true }], ["Proposed", "2", { mono: true }], ["Sources used", "6", { mono: true }]])),
+        sec("Attribution", kv([["Started by", who("Ana Reyes", "actor")], ["Updated", "just now", { mono: true }]]), { shut: true })
+      ].join(""), { actions: btn("New thread", { icon: "plus", sm: true, k: "pri" }) }) },
+
     { id: "history", label: "History", icon: "clock", body: () =>
       pane("History", [
         sec("This thread", [

@@ -124,20 +124,25 @@ const NEW_SLIDE = () => `
 const SLIDES = [
   { s: "project-overview", label: "1 · Project Overview" },
   { s: "new-tab", label: "2 · New Tab" },
-  { s: "document", label: "3 · Document editor", st: { ctx: "navigator", inspect: "text-selection" } },
+  { s: "document", label: "3 · Document editor", st: { ctx: "overview", inspect: "text-selection" } },
   { s: "document", label: "4 · Document — Copilot open", st: { ctx: "navigator", inspect: "text-selection", copilot: true } },
   { s: "slides", label: "5 · Slide deck editor", st: { ctx: "slides", inspect: "element" } },
   { s: "slides", label: "6 · Slides — multi-select", st: { ctx: "layers", inspect: "multi-element" } },
-  { s: "slides", label: "7 · New Slide chooser", st: { overlay: true, inspect: "placeholder" } },
-  { s: "spreadsheet", label: "8 · Spreadsheet editor" },
-  { s: "research", label: "9 · Research" },
-  { s: "analysis", label: "10 · Analysis" },
-  { s: "context", label: "11 · Context" },
-  { s: "templates", label: "12 · Templates — library", st: { mode: "library", ctx: "library", inspect: "template-card" } },
-  { s: "templates", label: "13 · Templates — authoring", st: { mode: "author", ctx: "variables-t", inspect: "slot" } },
-  { s: "personas", label: "14 · Personas — profile", st: { mode: "author", ctx: "work", inspect: "persona" } },
-  { s: "automations", label: "15 · Automations — library", st: { mode: "library", ctx: "automations", inspect: "automation" } },
-  { s: "automations", label: "16 · Automations — one rule", st: { mode: "author", ctx: "triggers", inspect: "schedule-trigger" } }
+  { s: "slides", label: "7 · New Slide chooser", st: { mode: "slide", overlay: true, inspect: "placeholder" } },
+  { s: "slides", label: "8 · Slide deck — editing a layout", st: { mode: "layout", ctx: "layouts-l", inspect: "layout" } },
+  { s: "spreadsheet", label: "9 · Spreadsheet editor" },
+  { s: "research", label: "10 · Research — one question", st: { mode: "turn", ctx: "overview", inspect: "finding" } },
+  { s: "research", label: "11 · Research — all threads", st: { mode: "library", ctx: "threads-l", inspect: "thread" } },
+  { s: "analysis", label: "12 · Analysis — one analysis", st: { mode: "one", ctx: "overview", inspect: "placement" } },
+  { s: "analysis", label: "13 · Analysis — all analyses", st: { mode: "library", ctx: "analyses-l", inspect: "analysis" } },
+  { s: "context", label: "14 · Context — one Context", st: { mode: "one", ctx: "overview", inspect: "resource-set" } },
+  { s: "context", label: "15 · Context — all Contexts", st: { mode: "library", ctx: "contexts-l", inspect: "resource-set" } },
+  { s: "templates", label: "16 · Templates — all templates", st: { mode: "library", ctx: "overview", inspect: "template-card" } },
+  { s: "templates", label: "17 · Templates — one template", st: { mode: "author", ctx: "variables-t", inspect: "slot" } },
+  { s: "personas", label: "18 · Personas — all personas", st: { mode: "library", ctx: "library", inspect: "persona" } },
+  { s: "personas", label: "19 · Personas — one persona", st: { mode: "author", ctx: "overview", inspect: "persona" } },
+  { s: "automations", label: "20 · Automations — all automations", st: { mode: "library", ctx: "overview", inspect: "automation" } },
+  { s: "automations", label: "21 · Automations — one rule", st: { mode: "author", ctx: "triggers", inspect: "schedule-trigger" } }
 ];
 
 /* ============================================================
@@ -155,11 +160,12 @@ const stOf = (i) => state[SLIDES[i].s];
 const initState = () => {
   for (const key of Object.keys(SCREENS)) {
     state[key] = Object.assign(
-      { ctxShut: false, inspShut: false, overlay: false, copilot: false, prev: null },
+      { ctxShut: false, inspShut: false, overlay: false, copilot: false, prev: null, zoom: 100 },
       SCREENS[key].init
     );
   }
 };
+
 
 /* The Copilot and every actor belong to no screen, so they resolve before a
    screen's own lenses and are reachable from all of them. */
@@ -269,13 +275,111 @@ const renderModes = (screen, st) => {
   if (!screen.modes) return;
   const host = document.querySelector(".pane-a");
   if (!host) return;
-  const html = screen.modes.map(([m, label]) =>
-    `<button class="btn is-sm${st.mode === m ? " is-pri" : ""}" type="button" data-act="mode:${m}">${esc(label)}</button>`).join("");
+  const html = screen.modes.map(([m, label, short]) =>
+    `<button class="btn is-sm${st.mode === m ? " is-pri" : ""}" type="button" data-act="mode:${m}">${esc(short || label)}</button>`).join("");
   host.insertAdjacentHTML("afterbegin", `<span class="chips" style="gap:4px;padding-inline-end:calc(var(--u)*2);border-inline-end:1px solid var(--bd);margin-inline-end:calc(var(--u)*1)">${html}</span>`);
+};
+
+/**
+ * The deck's own aids. Everything a screen can show is enumerated here so a
+ * reviewer can reach a view or a lens without hunting for the thing that
+ * happens to open it. None of this is application UI, which is why it is
+ * dashed and lives in the bezel.
+ */
+const renderAids = (screen, st) => {
+  const own = Object.keys(screen.inspectors);
+  const shared = Object.keys(COPILOT).concat(Object.keys(ACTORS));
+  const group = (label, keys) =>
+    `<optgroup label="${esc(label)}">${keys
+      .map((k) => `<option value="${esc(k)}"${k === st.inspect ? " selected" : ""}>${esc(k)}</option>`)
+      .join("")}</optgroup>`;
+  $("inspPick").innerHTML = group(screen.name, own) + group("Anywhere", shared);
+
+  const modes = screen.modes || [["only", screen.name]];
+  $("modePick").innerHTML = modes
+    .map(([m, label]) => `<option value="${esc(m)}"${(st.mode || "only") === m ? " selected" : ""}>${esc(label)}</option>`)
+    .join("");
+  $("modePick").disabled = modes.length < 2;
+};
+
+/**
+ * Zoom.
+ *
+ * A trackpad pinch arrives as a wheel event carrying ctrlKey, and a page can
+ * take it before the browser acts on it. That is the whole trick, and it is how
+ * every canvas application does this: the gesture scales one element and the
+ * frame around it never moves.
+ *
+ * The one thing no page can scope is the browser's *own* zoom — ⌘+ / ⌘−, or the
+ * browser's zoom menu. That happens above the document and enlarges everything,
+ * shell included. Nothing here can change that, and nothing should try.
+ */
+const MIN_Z = 25, MAX_Z = 400;
+
+/**
+ * Zooming out leaves the scaled work smaller than the surface, and a transform
+ * from the top-left corner would strand it there. The translate re-centres it;
+ * once it is larger than the surface the translate is zero and scroll takes
+ * over, which is why both live in the same transform.
+ */
+const applyZoom = (screen, st, center) => {
+  const surface = $("surface");
+  const s = screen.zoomable ? st.zoom / 100 : 1;
+  const w = surface.clientWidth, h = surface.clientHeight;
+  surface.style.setProperty("--wz", String(s));
+  surface.style.setProperty("--tx", Math.max(0, (w - w * s) / 2) + "px");
+  surface.style.setProperty("--ty", Math.max(0, (h - h * s) / 2) + "px");
+  // Zoomed out, the scaled content no longer reaches the edges, so the ground
+  // it floats on belongs to the surface rather than to the content.
+  surface.style.setProperty("--surface-bg", screen.pasteboard ? "var(--canvas)" : "transparent");
+  // A surface arriving already zoomed has no gesture to anchor on, so it starts
+  // looking at the middle rather than at the top-left corner.
+  if (center && s > 1) {
+    surface.scrollLeft = (w * s - w) / 2;
+    surface.scrollTop = (h * s - h) / 2;
+  }
+  paintZoomTag(st);
+};
+
+let zoomLiveTimer = null;
+const paintZoomTag = (st, live) => {
+  const tag = $("zoomTag");
+  const z = Math.round(st.zoom);
+  tag.textContent = z + "%";
+  tag.classList.toggle("is-off100", z !== 100);
+  if (!live) return;
+  tag.classList.add("is-live");
+  clearTimeout(zoomLiveTimer);
+  zoomLiveTimer = setTimeout(() => tag.classList.remove("is-live"), 900);
+};
+
+/** Scale about the middle of the surface, so the work stays where you are looking. */
+const zoomBy = (st, factor) => {
+  const surface = $("surface");
+  const from = st.zoom / 100;
+  const to = Math.min(MAX_Z, Math.max(MIN_Z, st.zoom * factor)) / 100;
+  if (to === from) return;
+
+  const w = surface.clientWidth, h = surface.clientHeight;
+  const tFrom = { x: Math.max(0, (w - w * from) / 2), y: Math.max(0, (h - h * from) / 2) };
+  const tTo = { x: Math.max(0, (w - w * to) / 2), y: Math.max(0, (h - h * to) / 2) };
+
+  // The content point currently at the centre of the surface, kept there after.
+  const cx = (surface.scrollLeft + w / 2 - tFrom.x) / from;
+  const cy = (surface.scrollTop + h / 2 - tFrom.y) / from;
+
+  st.zoom = to * 100;
+  surface.style.setProperty("--wz", String(to));
+  surface.style.setProperty("--tx", tTo.x + "px");
+  surface.style.setProperty("--ty", tTo.y + "px");
+  surface.scrollLeft = cx * to + tTo.x - w / 2;
+  surface.scrollTop = cy * to + tTo.y - h / 2;
+  paintZoomTag(st, true);
 };
 
 const render = () => {
   const def = SLIDES[slide], screen = SCREENS[def.s], st = state[def.s];
+  frame.dataset.zoomable = screen.zoomable ? "yes" : "no";
   frame.classList.toggle("ctx-shut", st.ctxShut);
   frame.classList.toggle("insp-shut", st.inspShut);
   if (screen.lift) frame.setAttribute("data-lift", screen.lift); else frame.removeAttribute("data-lift");
@@ -283,10 +387,13 @@ const render = () => {
   renderTabs(def.s);
   renderContext(screen, st);
   renderModes(screen, st);
-  $("surface").innerHTML = screen.center(st);
+  // Only the contents of the work surface scale. The frame around it does not.
+  $("surface").innerHTML = `<div class="zoomer">${screen.center(st)}</div>`;
   $("surface").scrollTop = 0;
+  applyZoom(screen, st, true);
   renderInspector(screen, st);
   renderStatus(screen, st);
+  renderAids(screen, st);
   renderCopilot(screen, st);
   renderNotes(screen, st);
   $("overlay").innerHTML = st.overlay ? NEW_SLIDE() : "";
@@ -369,6 +476,21 @@ frame.addEventListener("click", (e) => {
   $("prev").addEventListener("click", () => goto(slide - 1));
   $("next").addEventListener("click", () => goto(slide + 1));
 
+  $("inspPick").addEventListener("change", (e) => {
+    const st = stOf(slide);
+    if (e.target.value.startsWith("copilot.") && !st.inspect.startsWith("copilot.")) st.prev = st.inspect;
+    st.inspect = e.target.value;
+    st.inspShut = false;
+    render();
+  });
+  $("modePick").addEventListener("change", (e) => {
+    const st = stOf(slide), screen = screenOf(slide);
+    st.mode = e.target.value;
+    st.ctx = screen.contexts(st)[0].id;
+    st.inspect = Object.keys(screen.inspectors)[0];
+    render();
+  });
+
   const notes = $("notes"), notesBtn = $("notesBtn");
   const setNotes = (open) => {
     notes.classList.toggle("is-open", open);
@@ -389,6 +511,32 @@ frame.addEventListener("click", (e) => {
       else setNotes(false);
     }
   });
+
+  const surface = $("surface");
+  surface.addEventListener("wheel", (e) => {
+    const screen = screenOf(slide), st = stOf(slide);
+    if (!screen.zoomable) return;
+    if (!e.ctrlKey) return;            // an ordinary scroll stays an ordinary scroll
+    e.preventDefault();                // requires the non-passive listener below
+
+    // A trackpad pinch sends a stream of small deltas; a mouse notch sends one
+    // large one. Both are clamped to the same modest step, so a single notch
+    // nudges rather than leaping to 300%.
+    const raw = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+    const k = Math.max(-0.09, Math.min(0.09, -raw * 0.0022));
+    zoomBy(st, Math.exp(k));
+  }, { passive: false });
+
+  $("zoomTag").addEventListener("click", () => {
+    const screen = screenOf(slide), st = stOf(slide);
+    st.zoom = 100;
+    applyZoom(screen, st);
+    surface.scrollTo(0, 0);
+    paintZoomTag(st, true);
+  });
+
+  // Centring is computed from the surface's size, so it is recomputed when that changes.
+  addEventListener("resize", () => applyZoom(screenOf(slide), stOf(slide)));
 
   const asked = parseInt(location.hash.slice(1), 10);
   goto(Number.isFinite(asked) ? asked - 1 : 0);
