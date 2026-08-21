@@ -9,6 +9,7 @@
   import {
     ScreenAction,
     ScreenCard,
+    ScreenDecision,
     ScreenEmpty,
     ScreenGroup,
     ScreenHeader,
@@ -26,8 +27,7 @@
     searchScope,
     sourcesForTurn,
     thread,
-    traceIn,
-    type Finding
+    traceIn
   } from "$mock-capabilities/research";
   import { mockWorkbench } from "$mock-models/workbench.svelte";
 
@@ -57,7 +57,9 @@
    *
    * A proposed finding has no state in the real model yet — proposed, accepted
    * and dismissed live only in the mock door — so the decision made here is held
-   * in view state and says so by moving the card rather than by claiming a write.
+   * in view state and says so as a verdict on the card rather than by claiming a
+   * write. A decided proposal stays where it was: a card that vanished on Accept
+   * would leave the reader unable to check what they had just done.
    */
   let {
     threadId = "th-feeder",
@@ -83,12 +85,19 @@
   /** Accept and Dismiss, held here: the model has nowhere to put either yet. */
   let decided = $state<Record<string, "accepted" | "dismissed">>({});
 
-  const fromThisTurn = $derived(proposedIn(turn.id).current);
-  const proposed = $derived(fromThisTurn.filter((found: Finding) => decided[found.id] === undefined));
-  const accepted = $derived([
-    ...fromThisTurn.filter((found: Finding) => decided[found.id] === "accepted"),
-    ...acceptedIn(threadId).current
-  ]);
+  /** Everything this turn proposed, decided or not, and what the thread has
+   * accepted. Neither band is filtered by the decision: it is carried on the
+   * card instead. */
+  const proposed = $derived(proposedIn(turn.id).current);
+  const accepted = $derived(acceptedIn(threadId).current);
+
+  /** The decision as a word. `proposed` is the state of one nothing has been
+   * done to yet, which is a thing to say now that the band holds all three. */
+  const VERDICT = {
+    proposed: { label: "Proposed", tone: "pending" },
+    accepted: { label: "Accepted", tone: "accepted" },
+    dismissed: { label: "Dismissed", tone: "dismissed" }
+  } as const;
 
   let next = $state("");
   let useContext = $state(true);
@@ -218,42 +227,64 @@
       <ScreenGroup label="Proposed here" count={String(proposed.length)}>
         <div class="flex flex-col gap-2">
           {#each proposed as found (found.id)}
-            <!--
-              TODO(vocabulary): needs ScreenDecision — a card whose content is a
-              proposal and whose controls decide it; `ScreenCard` turns into a
-              button the moment it is selectable, and Accept cannot nest there.
-            -->
-            <ScreenCard title={found.title} sub={found.derivation}>
-              <span class="text-body-sm text-ink-secondary">{found.body}</span>
-              <span class="flex flex-wrap gap-1">
-                {#each found.standingOn as standing (standing.sourceId)}
-                  <PanelChip>{standing.title}</PanelChip>
-                {/each}
-                {#each found.bearsOn as bearing (bearing.id)}
-                  <PanelChip tone={BEARING_TONE[bearing.bearing]}>
-                    {bearing.ref} · {bearing.bearing}
-                  </PanelChip>
-                {/each}
-              </span>
-              <span class="flex flex-wrap gap-1 pt-1">
-                <Button size="xs" onclick={() => (decided[found.id] = "accepted")}>Accept</Button>
-                <!-- Edit opens the proposal's lens: a proposal is editable, an acceptance is not. -->
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onclick={() =>
-                    mockWorkbench.inspect("research.proposed-finding", {
-                      kind: "finding",
-                      id: found.id
-                    })}
-                >
-                  Edit
-                </Button>
-                <Button size="xs" variant="ghost" onclick={() => (decided[found.id] = "dismissed")}>
-                  Dismiss
-                </Button>
-              </span>
-            </ScreenCard>
+            {@const decision = decided[found.id] ?? "proposed"}
+            <ScreenDecision
+              title={found.title}
+              meta={found.derivation}
+              verdict={VERDICT[decision]}
+              selected={isSelected("finding", found.id)}
+              onselect={() =>
+                mockWorkbench.inspect("research.proposed-finding", {
+                  kind: "finding",
+                  id: found.id
+                })}
+            >
+              <div class="flex flex-col gap-1.5">
+                <span>{found.body}</span>
+                <span class="flex flex-wrap gap-1">
+                  {#each found.standingOn as standing (standing.sourceId)}
+                    <PanelChip>{standing.title}</PanelChip>
+                  {/each}
+                  {#each found.bearsOn as bearing (bearing.id)}
+                    <PanelChip tone={BEARING_TONE[bearing.bearing]}>
+                      {bearing.ref} · {bearing.bearing}
+                    </PanelChip>
+                  {/each}
+                </span>
+              </div>
+
+              <!--
+                The controls change with the decision rather than going away: a
+                dismissed finding can be accepted after all, which is the reason
+                the card is still here.
+              -->
+              {#snippet actions()}
+                {#if decision !== "accepted"}
+                  <Button size="xs" onclick={() => (decided[found.id] = "accepted")}>Accept</Button>
+                  <!-- Edit opens the proposal's lens: a proposal is editable, an acceptance is not. -->
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onclick={() =>
+                      mockWorkbench.inspect("research.proposed-finding", {
+                        kind: "finding",
+                        id: found.id
+                      })}
+                  >
+                    Edit
+                  </Button>
+                {/if}
+                {#if decision !== "dismissed"}
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    onclick={() => (decided[found.id] = "dismissed")}
+                  >
+                    Dismiss
+                  </Button>
+                {/if}
+              {/snippet}
+            </ScreenDecision>
           {:else}
             <ScreenEmpty title="This turn proposed nothing">
               An answer that produced no conclusion is a result, not a failure — the trace beside it

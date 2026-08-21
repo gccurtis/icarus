@@ -67,28 +67,25 @@
     document that already has content in it.
   -->
   <PanelSection title="Page" flush>
-    <!-- TODO(vocabulary): needs PanelChoice to draw its label — a section with several axes in it has nothing naming each one. -->
-    <div class="axis">
-      <span class="text-caption text-ink-muted">Paper</span>
-      <PanelChoice
-        label="Paper"
-        value={paper ?? draft.paper}
-        options={options(draft.papers)}
-        onchange={(next: string) => (paper = next)}
-      />
-    </div>
-
-    <div class="axis">
-      <span class="text-caption text-ink-muted">Orientation</span>
-      <PanelChoice
-        label="Orientation"
-        value={orientation ?? draft.orientation}
-        options={options(draft.orientations)}
-        onchange={(next: string) => (orientation = next)}
-      />
-    </div>
-
     <PanelFields>
+      <PanelField label="Paper" stacked>
+        <PanelChoice
+          label="Paper"
+          value={paper ?? draft.paper}
+          options={options(draft.papers)}
+          flush
+          onchange={(next: string) => (paper = next)}
+        />
+      </PanelField>
+      <PanelField label="Orientation" stacked>
+        <PanelChoice
+          label="Orientation"
+          value={orientation ?? draft.orientation}
+          options={options(draft.orientations)}
+          flush
+          onchange={(next: string) => (orientation = next)}
+        />
+      </PanelField>
       <PanelField label="Margins">{draft.margins}</PanelField>
     </PanelFields>
 
@@ -105,19 +102,3 @@
     <PanelNote>This tab becomes the document. It does not open a second one.</PanelNote>
   </PanelSection>
 </Panel>
-
-<style>
-  /*
-    A named choice. The label takes the panel's gutter and the chips bring their
-    own, so the two line up without either being re-padded.
-  */
-  .axis {
-    display: flex;
-    flex-direction: column;
-    gap: var(--token-spacing-unit);
-  }
-
-  .axis > span {
-    padding-inline: calc(var(--token-spacing-unit) * 3);
-  }
-</style>

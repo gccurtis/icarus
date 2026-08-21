@@ -74,18 +74,16 @@
           />
         </PanelField>
         <PanelField label="Timezone" mono>{schedule.timezone}</PanelField>
+        <PanelField label="Repeats" stacked>
+          <PanelChoice
+            label="Repeats"
+            value={repeatsDraft ?? schedule.repeats}
+            options={REPEATS}
+            flush
+            onchange={(next: string) => (repeatsDraft = next)}
+          />
+        </PanelField>
       </PanelFields>
-
-      <!-- TODO(vocabulary): needs PanelChoice to draw its label — a choice standing beside a set of fields has nothing naming it. -->
-      <div class="axis">
-        <span class="text-caption text-ink-muted">Repeats</span>
-        <PanelChoice
-          label="Repeats"
-          value={repeatsDraft ?? schedule.repeats}
-          options={REPEATS}
-          onchange={(next: string) => (repeatsDraft = next)}
-        />
-      </div>
 
       <PanelNote>
         The timezone is stored rather than inferred. A time without one is
@@ -127,19 +125,3 @@
     </PanelNote>
   {/if}
 </Panel>
-
-<style>
-  /*
-    A named choice. The label takes the panel's gutter and the chips bring their
-    own, so the two line up without either being re-padded.
-  */
-  .axis {
-    display: flex;
-    flex-direction: column;
-    gap: var(--token-spacing-unit);
-  }
-
-  .axis > span {
-    padding-inline: calc(var(--token-spacing-unit) * 3);
-  }
-</style>

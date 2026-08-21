@@ -62,16 +62,17 @@
   </PanelSection>
 
   <PanelSection title="Format" flush>
-    <!-- TODO(vocabulary): needs PanelChoice to draw its label — a section with several axes in it has nothing naming each one. -->
-    <div class="axis">
-      <span class="text-caption text-ink-muted">Aspect ratio</span>
-      <PanelChoice
-        label="Aspect ratio"
-        value={chosen}
-        options={draft.aspects.map((name: string) => ({ value: name, label: name }))}
-        onchange={(next: string) => (aspect = next)}
-      />
-    </div>
+    <PanelFields>
+      <PanelField label="Aspect ratio" stacked>
+        <PanelChoice
+          label="Aspect ratio"
+          value={chosen}
+          options={draft.aspects.map((name: string) => ({ value: name, label: name }))}
+          flush
+          onchange={(next: string) => (aspect = next)}
+        />
+      </PanelField>
+    </PanelFields>
     <PanelNote>
       Asked explicitly. There is no modeled project or user default to fall back
       to, and changing it later re-frames every element on every slide.
@@ -97,19 +98,3 @@
     <PanelNote>This tab becomes the deck. It does not open a second one.</PanelNote>
   </PanelSection>
 </Panel>
-
-<style>
-  /*
-    A named choice. The label takes the panel's gutter and the chips bring their
-    own, so the two line up without either being re-padded.
-  */
-  .axis {
-    display: flex;
-    flex-direction: column;
-    gap: var(--token-spacing-unit);
-  }
-
-  .axis > span {
-    padding-inline: calc(var(--token-spacing-unit) * 3);
-  }
-</style>

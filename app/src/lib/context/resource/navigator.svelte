@@ -69,6 +69,9 @@
   const pageSub = (page: PageRow) =>
     page.firstHeading ?? (page.continues === undefined ? undefined : `Continues ${page.continues}`);
 
+  /** Heading level as an indent: an H1 sits at the gutter, and every level below steps in once. */
+  const DEPTH: Readonly<Record<OutlineEntry["level"], 0 | 1 | 2>> = { 1: 0, 2: 1, 3: 2 };
+
   const FURNITURE_LENS: Readonly<Record<FurnitureRow["kind"], string>> = {
     break: "resource.page-break",
     header: "resource.header",
@@ -107,15 +110,10 @@
 
     {#if onOutline}
       {#each shownOutline as entry (entry.id)}
-        <!--
-          TODO(vocabulary): needs PanelRow `depth` — an indent of more than one
-          level, for an outline nested by heading level. `indent` is a boolean, so
-          a level-3 heading sits where a level-2 one does.
-        -->
         <PanelRow
           title={entry.text}
           meta="p.{entry.page}"
-          indent={entry.level > 1}
+          depth={DEPTH[entry.level]}
           onselect={() => goToHeading(entry)}
         />
       {/each}

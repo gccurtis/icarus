@@ -110,16 +110,19 @@
     a generated one with it. Initials stand in until it is.
   </PanelNote>
 
-  <!-- TODO(vocabulary): needs PanelChoice to draw its label — a choice standing beside a set of fields has nothing naming it. -->
-  <div class="axis">
-    <span class="text-caption text-ink-muted">Available in</span>
-    <PanelChoice
-      label="Available in"
-      value={availableIn ?? profile.scope}
-      options={AVAILABLE}
-      onchange={(next: string) => (availableIn = next)}
-    />
-  </div>
+  <!-- Its own block rather than the one above: the gap note there is about the
+       picture, and a field between the two would read as belonging to it. -->
+  <PanelFields>
+    <PanelField label="Available in" stacked>
+      <PanelChoice
+        label="Available in"
+        value={availableIn ?? profile.scope}
+        options={AVAILABLE}
+        flush
+        onchange={(next: string) => (availableIn = next)}
+      />
+    </PanelField>
+  </PanelFields>
 
   <!-- What it has done, before how it is configured: two personas with similar
        prose are told apart by their record. -->
@@ -172,19 +175,3 @@
     </PanelNote>
   </PanelSection>
 </Panel>
-
-<style>
-  /*
-    A named choice. The label takes the panel's gutter and the chips bring their
-    own, so the two line up without either being re-padded.
-  */
-  .axis {
-    display: flex;
-    flex-direction: column;
-    gap: var(--token-spacing-unit);
-  }
-
-  .axis > span {
-    padding-inline: calc(var(--token-spacing-unit) * 3);
-  }
-</style>

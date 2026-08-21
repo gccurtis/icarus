@@ -8,6 +8,7 @@
     Panel,
     PanelActions,
     PanelButton,
+    PanelColor,
     PanelCrumbs,
     PanelEditableText,
     PanelField,
@@ -56,6 +57,15 @@
     { value: "Right", label: "Right" }
   ] as const;
 
+  /** The fills a cell can take: none, and the four colours the project names. */
+  const FILLS = [
+    { value: "None", label: "None", token: "transparent" },
+    { value: "Primary", label: "Primary", token: "var(--token-color-primary-fill)" },
+    { value: "Secondary", label: "Secondary", token: "var(--token-color-secondary-fill)" },
+    { value: "Accent 1", label: "Accent 1", token: "var(--token-color-accent-1-fill)" },
+    { value: "Accent 2", label: "Accent 2", token: "var(--token-color-accent-2-fill)" }
+  ] as const;
+
   /**
    * What has been set over the selection, by property. A property with an entry
    * here is no longer mixed: one answer has been given for the whole block.
@@ -68,7 +78,7 @@
     property.mixed && settings[property.label] === undefined;
   const set = (label: string, next: string) => (settings = { ...settings, [label]: next });
 
-  /** Only the properties the panel vocabulary has a control for are settable. */
+  /** The properties whose control is a list. A fill is a swatch and is set beside them. */
   const optionsFor = (label: string): readonly { value: string; label: string }[] | undefined => {
     if (label === "Style") return styleOptions;
     if (label === "Alignment") return ALIGNMENTS;
@@ -104,11 +114,16 @@
       {#each selection.formatting as property (property.label)}
         {@const options = optionsFor(property.label)}
         <PanelField label={property.label} stacked>
-          {#if options === undefined}
-            <!--
-              TODO(vocabulary): needs PanelColor — a swatch that sets a fill and
-              can also read Mixed, the way PanelSelect does for a listed value.
-            -->
+          {#if property.label === "Fill"}
+            <PanelColor
+              label={property.label}
+              value={valueOf(property)}
+              options={FILLS}
+              mixed={mixedOf(property)}
+              flush
+              onchange={(next) => set(property.label, next)}
+            />
+          {:else if options === undefined}
             {mixedOf(property) ? "Mixed" : valueOf(property)}
           {:else}
             <PanelSelect

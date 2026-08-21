@@ -11,7 +11,8 @@
     PanelNote,
     PanelRow,
     PanelSection,
-    PanelSelect
+    PanelSelect,
+    PanelTable
   } from "$lib/unique-components/panel";
   import {
     analysis,
@@ -90,35 +91,13 @@
   </PanelFields>
 
   {#if preview !== undefined}
-    <PanelSection
-      title="Value"
-      count="{preview.rows.length} of {rows(preview.total)}"
-      flush
-    >
-      <!--
-        TODO(vocabulary): needs PanelTable — a bounded, columnar prefix of a table
-        value, with its header, inside a 300px panel.
-      -->
-      <div class="preview">
-        <table class="text-caption tabular-nums w-full border-collapse">
-          <thead>
-            <tr>
-              {#each preview.columns as column (column)}
-                <th class="text-ink-muted truncate p-1 text-start font-medium">{column}</th>
-              {/each}
-            </tr>
-          </thead>
-          <tbody>
-            {#each preview.rows as row (row.id)}
-              <tr class="border-border-subtle border-t">
-                {#each row.cells as cell, index (preview.columns[index])}
-                  <td class="text-ink-secondary truncate p-1 font-mono">{cell}</td>
-                {/each}
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
+    <!-- The prefix carries its own "3 of 4,182 rows", so the heading does not say it twice. -->
+    <PanelSection title="Value" flush>
+      <PanelTable
+        columns={preview.columns}
+        rows={preview.rows.map((row) => row.cells)}
+        total={preview.total}
+      />
     </PanelSection>
   {:else if lens.value !== undefined}
     <PanelFields>
@@ -180,10 +159,3 @@
     </PanelNote>
   </PanelSection>
 </Panel>
-
-<style>
-  .preview {
-    overflow-x: auto;
-    padding-inline: calc(var(--token-spacing-unit) * 3);
-  }
-</style>

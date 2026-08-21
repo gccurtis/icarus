@@ -1,8 +1,7 @@
 <script lang="ts">
-  import Bot from "@lucide/svelte/icons/bot";
   import Plus from "@lucide/svelte/icons/plus";
 
-  import { PanelChip } from "$lib/unique-components/panel";
+  import { PanelActor, PanelChip } from "$lib/unique-components/panel";
   import {
     ScreenAction,
     ScreenCard,
@@ -96,22 +95,21 @@
       {:else}
         <ScreenCards min="16rem">
           {#each shown as row (row.id)}
-            <!--
-              TODO(vocabulary): needs ScreenFace — the specification asks for a
-              face on the card, and `PanelActor` always sets the name beside the
-              picture, which the card's own title already carries. The agent mark
-              is a 14px icon until there is a word for a face on its own.
-            -->
             <ScreenCard
               title={row.name}
               sub={row.describes}
-              icon={Bot}
               selected={opened === row.id}
               onselect={() => {
                 opened = row.id;
                 mockWorkbench.inspect("agents.persona", { kind: "persona", id: row.id });
               }}
             >
+              <!--
+                The face alone: the card's title already carries the name, and
+                the fallback's role colour is what says agent rather than person.
+                No target on it, because the card it sits in is the target.
+              -->
+              {#snippet thumb()}<PanelActor name={row.name} kind="agent" size="face" />{/snippet}
               <!--
                 What it has done, and — separately toned — what it is doing. A
                 record counts what has happened; what is happening now is a state

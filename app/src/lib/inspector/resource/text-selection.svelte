@@ -2,7 +2,6 @@
   import Link2 from "@lucide/svelte/icons/link-2";
   import MessageSquarePlus from "@lucide/svelte/icons/message-square-plus";
 
-  import { ToggleGroup, ToggleGroupItem } from "$lib/simple-components/toggle-group";
   import {
     Panel,
     PanelActions,
@@ -11,6 +10,7 @@
     PanelField,
     PanelFields,
     PanelLink,
+    PanelMarks,
     PanelNote,
     PanelQuote,
     PanelSection
@@ -64,27 +64,12 @@
   <PanelQuote>{selection.text}</PanelQuote>
 
   <PanelSection title="Marks" flush>
-    <!--
-      TODO(vocabulary): needs PanelMarks — several independent on-or-off marks as
-      one row of chips. `PanelChoice` is the closest word and is single-select,
-      which would make bold and italic mutually exclusive.
-    -->
-    <ToggleGroup
-      type="multiple"
+    <PanelMarks
+      label="Marks"
       value={on}
-      aria-label="Marks"
-      onValueChange={(next: string[]) => (pressed = next)}
-      class="flex flex-wrap justify-start gap-1 px-3"
-    >
-      {#each marks as mark (mark.id)}
-        <ToggleGroupItem
-          value={mark.id}
-          class="text-caption border-border-subtle bg-surface-panel text-ink-secondary rounded-control data-[state=on]:border-active-border data-[state=on]:bg-active-surface data-[state=on]:text-active-text h-auto min-w-0 border px-1.5 py-0.5 font-normal"
-        >
-          {mark.label}
-        </ToggleGroupItem>
-      {/each}
-    </ToggleGroup>
+      options={marks.map((mark) => ({ value: mark.id, label: mark.label }))}
+      onchange={(next: string[]) => (pressed = next)}
+    />
 
     <!-- The two things a selection can become, rather than a formatting state it can hold. -->
     <PanelActions>

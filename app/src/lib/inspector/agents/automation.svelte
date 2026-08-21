@@ -13,6 +13,7 @@
     PanelLink,
     PanelNote,
     PanelSection,
+    PanelSentence,
     PanelToggle
   } from "$lib/unique-components/panel";
   import { Separator } from "$lib/simple-components/separator";
@@ -94,13 +95,13 @@
         />
       </PanelField>
 
-      <!-- TODO(vocabulary): needs PanelSentence — one renderer for a rule's trigger and action clauses, so the list, this lens and the workspace heading cannot read the same rule three ways. -->
       <PanelField label="Reads" stacked>
-        <span class="text-ink-secondary">
-          <span class="text-ink-primary font-semibold">When</span>
-          {rule.sentence.triggerClause},
-          <span class="text-ink-primary font-semibold">{rule.sentence.actionClause}</span>.
-        </span>
+        <!-- The comma is the whole connective: the action clause carries its own verb.
+             Inert clauses, because the record names no trigger or action to open. -->
+        <PanelSentence join="">
+          {#snippet when()}{rule.sentence.triggerClause}{/snippet}
+          {#snippet then()}{rule.sentence.actionClause}{/snippet}
+        </PanelSentence>
       </PanelField>
     </PanelFields>
 

@@ -1,7 +1,6 @@
 <script lang="ts">
   import SquareFunction from "@lucide/svelte/icons/square-function";
 
-  import * as ToggleGroup from "$lib/simple-components/toggle-group";
   import {
     Panel,
     PanelChoice,
@@ -10,6 +9,7 @@
     PanelField,
     PanelFields,
     PanelLink,
+    PanelMarks,
     PanelNote,
     PanelRow,
     PanelSection
@@ -98,26 +98,12 @@
   </PanelSection>
 
   <PanelSection title="Marks">
-    <!--
-      TODO(vocabulary): needs PanelMarks — several independent on/off options as
-      one row of chips, where `PanelChoice` picks exactly one.
-    -->
-    <ToggleGroup.Root
-      type="multiple"
+    <PanelMarks
+      label="Marks"
       value={active}
-      aria-label="Marks"
-      onValueChange={(next: string[]) => (marksOverride = next)}
-      class="flex flex-wrap justify-start gap-1 px-3"
-    >
-      {#each marks as mark (mark.id)}
-        <ToggleGroup.Item
-          value={mark.id}
-          class="text-caption border-border-subtle bg-surface-panel text-ink-secondary rounded-control data-[state=on]:border-active-border data-[state=on]:bg-active-surface data-[state=on]:text-active-text h-auto min-w-0 border px-1.5 py-0.5 font-normal"
-        >
-          {mark.label}
-        </ToggleGroup.Item>
-      {/each}
-    </ToggleGroup.Root>
+      options={marks.map((mark) => ({ value: mark.id, label: mark.label }))}
+      onchange={(next: string[]) => (marksOverride = next)}
+    />
   </PanelSection>
 
   <PanelSection title="Inline formula" count={block.formulas.length} flush>

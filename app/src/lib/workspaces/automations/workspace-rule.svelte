@@ -14,7 +14,8 @@
     PanelField,
     PanelFields,
     PanelLink,
-    PanelQuote
+    PanelQuote,
+    PanelSentence
   } from "$lib/unique-components/panel";
   import {
     ScreenBar,
@@ -133,14 +134,16 @@
 
     <div class="area-the-sentence flex flex-col gap-1">
       <!--
-        TODO(vocabulary): needs ScreenSentence — `ScreenHeader` takes a string
-        title, and this heading has to pick out its two clauses in the roles of
-        the columns beneath it.
+        The same renderer the list and the lens use, at heading size. The role
+        colours go inside the clauses, so the map onto the columns survives
+        without the sentence being set a second way.
       -->
-      <h1 class="text-h3 leading-h3 text-ink-primary m-0 max-w-prose font-semibold tracking-tight">
-        When <span class="text-accent-2-text">{rule.sentence.triggerClause}</span>,
-        <span class="text-intelligence-text">{rule.sentence.actionClause}</span>.
-      </h1>
+      <div class="max-w-prose">
+        <PanelSentence size="head" join="">
+          {#snippet when()}<span class="text-accent-2-text">{rule.sentence.triggerClause}</span>{/snippet}
+          {#snippet then()}<span class="text-intelligence-text">{rule.sentence.actionClause}</span>{/snippet}
+        </PanelSentence>
+      </div>
       <p class="text-body-sm text-ink-muted m-0 max-w-prose">
         One trigger, one action. Two things to do means two Automations.
       </p>

@@ -79,18 +79,16 @@
           onchange={(next: boolean) => (required = next)}
         />
       </PanelField>
+      <PanelField label="Asks for" stacked>
+        <PanelChoice
+          label="Asks for"
+          value={type ?? variable.type}
+          options={TYPES}
+          flush
+          onchange={(next: string) => (type = next)}
+        />
+      </PanelField>
     </PanelFields>
-
-    <!-- TODO(vocabulary): needs PanelChoice to draw its label — a choice standing beside a set of fields has nothing naming it. -->
-    <div class="axis">
-      <span class="text-caption text-ink-muted">Asks for</span>
-      <PanelChoice
-        label="Asks for"
-        value={type ?? variable.type}
-        options={TYPES}
-        onchange={(next: string) => (type = next)}
-      />
-    </div>
   </PanelSection>
 
   <!-- What is used when nobody supplies one. Context, so it arrives shut. -->
@@ -120,19 +118,3 @@
     </PanelNote>
   </PanelSection>
 </Panel>
-
-<style>
-  /*
-    A named choice. The label takes the panel's gutter and the chips bring their
-    own, so the two line up without either being re-padded.
-  */
-  .axis {
-    display: flex;
-    flex-direction: column;
-    gap: var(--token-spacing-unit);
-  }
-
-  .axis > span {
-    padding-inline: calc(var(--token-spacing-unit) * 3);
-  }
-</style>

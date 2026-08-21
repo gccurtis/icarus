@@ -5,10 +5,10 @@
   import Sparkles from "@lucide/svelte/icons/sparkles";
   import TableIcon from "@lucide/svelte/icons/table";
 
-  import { Input } from "$lib/simple-components/input";
   import {
     Panel,
     PanelButton,
+    PanelInput,
     PanelNote,
     PanelRow,
     PanelSearch,
@@ -90,16 +90,13 @@
 
 <Panel title="Find">
   {#snippet actions()}
-    <!--
-      TODO(vocabulary): needs PanelInput — a single-line field in an actions row.
-      `PanelSearch` is a filter that contains what it filters and `PanelEditableText`
-      edits a value already on the screen; a replacement is neither.
-    -->
-    <Input
+    <!-- Enter commits, and `replaceSelected` is the same guard the button is disabled by. -->
+    <PanelInput
+      label="Replace with"
       bind:value={replacement}
       placeholder="Replace with"
-      aria-label="Replace with"
-      class="text-body-sm h-7 min-w-0 flex-1"
+      onenter={replaceSelected}
+      flush
     />
     <PanelButton
       label="Replace"

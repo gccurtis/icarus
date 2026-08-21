@@ -76,18 +76,16 @@
       </PanelField>
       <!-- What it makes is fixed at creation, so it is a fact rather than a control. -->
       <PanelField label="Makes a">{tpl.makes} — fixed at creation</PanelField>
+      <PanelField label="Available in" stacked>
+        <PanelChoice
+          label="Available in"
+          value={scope ?? tpl.scope}
+          options={SCOPES}
+          flush
+          onchange={(next: string) => (scope = next)}
+        />
+      </PanelField>
     </PanelFields>
-
-    <!-- TODO(vocabulary): needs PanelChoice to draw its label — a choice standing beside a set of fields has nothing naming it. -->
-    <div class="axis">
-      <span class="text-caption text-ink-muted">Available in</span>
-      <PanelChoice
-        label="Available in"
-        value={scope ?? tpl.scope}
-        options={SCOPES}
-        onchange={(next: string) => (scope = next)}
-      />
-    </div>
   </PanelSection>
 
   <PanelSection title="Preview" flush>
@@ -178,20 +176,6 @@
 </Panel>
 
 <style>
-  /*
-    A named choice. The label takes the panel's gutter and the chips bring their
-    own, so the two line up without either being re-padded.
-  */
-  .axis {
-    display: flex;
-    flex-direction: column;
-    gap: var(--token-spacing-unit);
-  }
-
-  .axis > span {
-    padding-inline: calc(var(--token-spacing-unit) * 3);
-  }
-
   /* The body, drawn small. A page rather than a picture of one. */
   .page {
     display: flex;

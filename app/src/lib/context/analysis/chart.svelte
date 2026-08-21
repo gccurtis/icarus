@@ -1,10 +1,18 @@
 <script lang="ts">
+  import ChartArea from "@lucide/svelte/icons/chart-area";
+  import ChartColumn from "@lucide/svelte/icons/chart-column";
+  import ChartLine from "@lucide/svelte/icons/chart-line";
+  import ChartPie from "@lucide/svelte/icons/chart-pie";
+  import ChartScatter from "@lucide/svelte/icons/chart-scatter";
+  import TableIcon from "@lucide/svelte/icons/table";
+
   import {
     Panel,
-    PanelChoice,
+    PanelCards,
     PanelField,
     PanelFields,
-    PanelNote
+    PanelNote,
+    PanelThumb
   } from "$lib/unique-components/panel";
   import { chartFor, chartKinds } from "$mock-capabilities/analysis";
   import type { ChartKindId } from "$mock-capabilities/analysis";
@@ -30,22 +38,39 @@
   let picked = $state<ChartKindId | undefined>(undefined);
   const chosen = $derived(picked ?? display.kind);
 
-  const options = $derived(kinds.map((kind) => ({ value: kind.id, label: kind.name })));
   const current = $derived(kinds.find((kind) => kind.id === chosen));
 
-  const choose = (next: string) => {
-    picked = next as ChartKindId;
+  /** The shape each kind draws, so the card is picked by its picture and not by its word. */
+  const SHAPE = {
+    table: TableIcon,
+    bar: ChartColumn,
+    line: ChartLine,
+    area: ChartArea,
+    scatter: ChartScatter,
+    pie: ChartPie
+  };
+
+  const choose = (next: ChartKindId) => {
+    picked = next;
     mockWorkbench.inspect("analysis.chart", { kind: "chart", id: analysisId });
   };
 </script>
 
 <Panel title="Chart">
-  <!--
-    TODO(vocabulary): needs PanelCards — a grid of cards three across, each with a
-    shape on it and a chosen state, so a kind is picked by its picture rather than
-    by its word.
-  -->
-  <PanelChoice label="Chart kind" value={chosen} {options} onchange={choose} />
+  <PanelCards label="Chart kind">
+    {#each kinds as kind (kind.id)}
+      {@const Shape = SHAPE[kind.id]}
+      <PanelThumb caption={kind.name} selected={kind.id === chosen} onselect={() => choose(kind.id)}>
+        <span
+          class="border-border-subtle bg-surface-canvas rounded-control text-ink-secondary flex w-full items-center justify-center border"
+          style="aspect-ratio: 4 / 3"
+          aria-hidden="true"
+        >
+          <Shape size={18} />
+        </span>
+      </PanelThumb>
+    {/each}
+  </PanelCards>
 
   {#if current}
     <PanelFields>
