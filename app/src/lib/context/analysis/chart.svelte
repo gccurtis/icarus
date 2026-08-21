@@ -47,7 +47,14 @@
     line: ChartLine,
     area: ChartArea,
     scatter: ChartScatter,
-    pie: ChartPie
+    bubble: ChartScatter,
+    pie: ChartPie,
+    waterfall: ChartColumn,
+    mekko: ChartColumn,
+    funnel: ChartPie,
+    radar: ChartArea,
+    heatmap: ChartColumn,
+    treemap: ChartColumn
   };
 
   const choose = (next: ChartKindId) => {

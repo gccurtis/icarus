@@ -95,7 +95,14 @@
     line: ChartLine,
     area: ChartArea,
     scatter: ChartScatter,
-    pie: ChartPie
+    bubble: ChartScatter,
+    pie: ChartPie,
+    waterfall: ChartColumn,
+    mekko: ChartColumn,
+    funnel: ChartPie,
+    radar: ChartArea,
+    heatmap: ChartColumn,
+    treemap: ChartColumn
   } as const satisfies Record<ChartKindId, unknown>;
 
   /** Empty until someone picks one; until then the definition's own kind is active. */
@@ -103,7 +110,12 @@
   const kind = $derived(
     kinds.find((option: ChartKind) => option.id === picked)?.id ?? display.kind
   );
-  /** Only these three are columns. A pie drawn as bars would be a lie about the kind. */
+  /**
+   * This specification mock has a detailed column projection for the three
+   * original Cartesian choices. The native model-backed renderer owns the
+   * actual geometry for every kind; the remaining choices use the honest row
+   * projection here instead of masquerading as bars.
+   */
   const drawsColumns = $derived(kind === "bar" || kind === "line" || kind === "area");
 
   const measures = $derived(

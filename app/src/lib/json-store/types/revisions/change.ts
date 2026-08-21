@@ -11,6 +11,8 @@ type SetTarget =
   | "section"
   | "cell"
   | "formatRule"
+  | "chart"
+  | "chartElement"
   | "field";
 
 type InsertTarget =
@@ -23,7 +25,9 @@ type InsertTarget =
   | "section"
   | "gridRow"
   | "gridColumn"
-  | "formatRule";
+  | "formatRule"
+  | "chart"
+  | "chartElement";
 
 type RemoveTarget =
   | "row"
@@ -36,9 +40,20 @@ type RemoveTarget =
   | "cell"
   | "gridRow"
   | "gridColumn"
-  | "formatRule";
+  | "formatRule"
+  | "chart"
+  | "chartElement";
 
-type MoveTarget = "row" | "block" | "slide" | "element" | "section" | "gridRow" | "gridColumn";
+type MoveTarget =
+  | "row"
+  | "block"
+  | "slide"
+  | "element"
+  | "section"
+  | "gridRow"
+  | "gridColumn"
+  | "chart"
+  | "chartElement";
 
 /** A sibling id, or `null` for the head of a list. */
 type After = string | null;

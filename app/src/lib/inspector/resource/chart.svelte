@@ -17,19 +17,16 @@
    *
    * `docs/screen-panel-views/inspector/resource/chart.md` is the specification.
    *
-   * **Nothing here is editable, and the Status band says why rather than leaving a
-   * reader to discover it.** A chart is addressed by its position in the sheet's
-   * object list because `SheetChart` has no stable id, and a position is enough
-   * for a list and not enough for a granular update, a reconciliation, a retained
-   * selection or a comment.
+   * The chart and its internal parts are identified. This lens can therefore
+   * describe the same target the renderer selected rather than an array position.
    */
   let {
     spreadsheetId = "r-cost",
-    index = 0
-  }: { spreadsheetId?: string; index?: number } = $props();
+    chartId = "chart-customer-minutes"
+  }: { spreadsheetId?: string; chartId?: string } = $props();
 
   const sheet = $derived(spreadsheetRecord(spreadsheetId).current);
-  const chart = $derived(chartAt(spreadsheetId, index).current);
+  const chart = $derived(chartAt(spreadsheetId, chartId).current);
 </script>
 
 <Panel title={chart?.title ?? "Chart"}>
@@ -44,7 +41,7 @@
   {/snippet}
 
   {#if chart === undefined}
-    <PanelNote>There is no object at position {index + 1} in this spreadsheet.</PanelNote>
+    <PanelNote>There is no chart with id {chartId} in this spreadsheet.</PanelNote>
   {:else}
     <!-- The head of the lens has no heading: the title already names the chart. -->
     <PanelFields>
@@ -64,7 +61,7 @@
     <PanelSection title="Placement" open={false}>
       <PanelFields>
         <PanelField label="Anchor" mono>{chart.anchor}</PanelField>
-        <PanelField label="Size" mono>{chart.size}</PanelField>
+        <PanelField label="Size" mono>{chart.size.width} × {chart.size.height} px</PanelField>
       </PanelFields>
       <PanelNote>
         The anchor is an address, so the chart moves when rows and columns are inserted above or
@@ -74,12 +71,13 @@
 
     <PanelSection title="Status">
       <PanelFields>
-        <PanelField label="Addressed by">Position {index + 1} in the object list</PanelField>
+        <PanelField label="Addressed by" mono>{chart.id}</PanelField>
+        <PanelField label="Data marks">{chart.model.data.datums.length}</PanelField>
+        <PanelField label="Added elements">{chart.model.elements.length}</PanelField>
       </PanelFields>
       <PanelNote tone="gap">
-        Read-only. Without a stable id an array position cannot carry a granular update, remote
-        reconciliation, a selection that survives a reload, or a comment — which gates creating a
-        chart as much as editing one.
+        The frame and internal elements use separate revision targets. A move does not conflict
+        merely because someone else relabelled a reference line inside the chart.
       </PanelNote>
     </PanelSection>
   {/if}

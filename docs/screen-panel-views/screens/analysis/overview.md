@@ -35,7 +35,7 @@ analysis you are on is view state.
 | The sort | What the result is ordered by | [sort.md](../../inspector/analysis/sort.md) |
 | The limit | How much of the result is shown | [limit.md](../../inspector/analysis/limit.md) |
 | The chart | Kind, title, axes, legend, colours | [chart.md](../../inspector/analysis/chart.md) |
-| A bar, point or slice | One mark, and the rows underneath it | [mark.md](../../inspector/analysis/mark.md) |
+| Any selectable chart mark | One bar, point, slice, step, segment, stage, cell or tile and the rows underneath it | [mark.md](../../inspector/analysis/mark.md) |
 | Nothing | The analysis itself | [analysis.md](../../inspector/analysis/analysis.md) |
 | A person, or any "who" link | Their profile in this project | [person.md](../../inspector/collaboration/person.md) |
 

@@ -30,7 +30,8 @@ type Op =
 type OpTarget =
   | "row" | "block" | "atom" | "mark"            // document, and content anywhere
   | "slide" | "element" | "section"              // slides
-  | "sheet" | "cell" | "range" | "mergedCells"   // spreadsheet
+  | "sheet" | "cell" | "range" | "mergedCells"   // spreadsheet grid
+  | "chart" | "chartElement"                      // floating chart and annotation
   | "field";                                     // a structural field: page setup, styles, theme
 ```
 

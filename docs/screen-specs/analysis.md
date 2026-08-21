@@ -38,7 +38,9 @@ Rows and Columns accept placements with None, Sum, Count, Average, Minimum, or M
 
 ### Visualization
 
-- The result occupies the generous center plane as Table, Bar, Column, Line, Area, Scatter, or Pie.
+- The result occupies the generous center plane as Table or any native chart:
+  Bar/Column, Line, Area, Scatter, Bubble, Pie/Doughnut, Waterfall, Mekko,
+  Funnel, Radar, Heatmap, or Treemap.
 - Table is the safe initial display.
 - Loading, evaluation progress, empty result, formula error, and incompatible chart configuration are distinct states once minimum-shelf/compatibility rules are defined per display kind.
 - Selecting a mark or result row inspects its evaluated values if the evaluator exposes a stable mapping.
@@ -55,7 +57,7 @@ A collapsible, read-only technical view shows the current compiled formula and e
 | --- | --- | --- |
 | `data` | Data | Default. Ordered Name Manager variables with type icons, search, table-shaped preview, and expandable fields. Functions remain visible but disabled as analysis inputs. Fields are draggable. |
 | `inputs` | Inputs & joins | Root and aliased inputs followed by the join list/diagram. Unresolved entries first. Create/edit actions select the matching inspector target. |
-| `display` | Chart | Table, Bar, Column, Line, Area, Scatter, Pie cards with active state. Compatibility guidance is conditional on a defined validation contract. Chart choice belongs here; detailed formatting belongs in the inspector. |
+| `display` | Chart | Table and all twelve native chart kinds as cards with active state. Compatibility guidance comes from each kind's required channels. Chart choice belongs here; detailed formatting belongs in the inspector. |
 | `filters` | Filters & sorts | Active filters, active sorts, and limit. Sections are collapsible; invalid items start expanded. |
 | `names` | Names | Project Name Manager access: create/edit values, definition order, lookup-name conflicts, and use as input. |
 

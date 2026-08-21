@@ -1,7 +1,6 @@
 <script lang="ts">
   import ChartBar from "@lucide/svelte/icons/chart-bar";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
-  import ChartLine from "@lucide/svelte/icons/chart-line";
   import ChartPie from "@lucide/svelte/icons/chart-pie";
 
   import { Panel, PanelNote, PanelRow, PanelSection } from "$lib/unique-components/panel";
@@ -30,9 +29,10 @@
   const ICON: Record<SheetObject["kind"], typeof ChartColumn> = {
     Column: ChartColumn,
     Bar: ChartBar,
-    Line: ChartLine,
     Pie: ChartPie
   };
+
+  const sizeOf = (object: SheetObject) => `${object.size.width} × ${object.size.height} px`;
 
   const where = (object: SheetObject) =>
     object.overlapped
@@ -42,23 +42,21 @@
 
 <Panel title="Objects">
   <PanelSection title="Charts and overlays" count={objects.length} flush>
-    {#each objects as object (object.index)}
+    {#each objects as object (object.id)}
       <PanelRow
         title="{object.kind} chart"
         sub={where(object)}
-        meta={object.size}
+        meta={sizeOf(object)}
         icon={ICON[object.kind]}
         tone={object.overlapped ? "attention" : "default"}
         onselect={() =>
-          mockWorkbench.inspect("resource.chart", { kind: "chart", id: String(object.index) })}
+          mockWorkbench.inspect("resource.chart", { kind: "chart", id: object.id })}
       />
     {/each}
   </PanelSection>
 
   <PanelNote tone="gap">
-    A chart identifies itself by its position in this list and by nothing else,
-    which is enough to name it here and not enough for granular update, remote
-    reconciliation or a comment. Charts render read-only until they have a stable
-    id.
+    Each chart, datum, axis, and added element has a stable id. The list can be
+    reordered without changing what an inspector, comment, or revision addresses.
   </PanelNote>
 </Panel>

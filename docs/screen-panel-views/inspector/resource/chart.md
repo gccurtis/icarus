@@ -32,9 +32,8 @@ inserted. It belongs in the structural-rebase contract.
 
 ## Status
 
-Read-only.
+**Shows** — stable chart id, data-mark count, and added-element count.
 
-**Open** — without a stable `id`, an array index cannot support granular updates,
-remote reconciliation, retained selection across a reload, or comments. Every
-field above is displayable and none is editable until `SheetChart` has one. This
-gates chart creation as well as chart editing.
+The frame uses the `chart` revision target. CAGR, axis, and text annotations use
+`chartElement`, so editing an internal element is not the same conflict as
+moving the floating object.

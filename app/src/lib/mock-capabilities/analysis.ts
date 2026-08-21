@@ -123,7 +123,20 @@ export type Relationship = {
   readonly alternatives: readonly KeyPair[];
 };
 
-export type ChartKindId = "table" | "bar" | "line" | "area" | "scatter" | "pie";
+export type ChartKindId =
+  | "table"
+  | "bar"
+  | "line"
+  | "area"
+  | "scatter"
+  | "bubble"
+  | "pie"
+  | "waterfall"
+  | "mekko"
+  | "funnel"
+  | "radar"
+  | "heatmap"
+  | "treemap";
 
 export type ChartKind = {
   readonly id: ChartKindId;
@@ -588,9 +601,44 @@ export const chartKinds = (): Read<readonly ChartKind[]> =>
       needs: "A number on X and a number on Y, one point per row, nothing summarised."
     },
     {
+      id: "bubble",
+      name: "Bubble",
+      needs: "Scatter's X and Y plus a non-negative number for bubble area."
+    },
+    {
       id: "pie",
       name: "Pie",
       needs: "One field to split by and one number to size the slices. Unreadable past about six."
+    },
+    {
+      id: "waterfall",
+      name: "Waterfall",
+      needs: "One ordered category and one measure, with explicit subtotal categories."
+    },
+    {
+      id: "mekko",
+      name: "Mekko",
+      needs: "A category width, a series split, and non-negative values for share-of-share."
+    },
+    {
+      id: "funnel",
+      name: "Funnel",
+      needs: "One ordered stage field and one non-negative measure."
+    },
+    {
+      id: "radar",
+      name: "Radar",
+      needs: "At least three comparable category measures and one or more series."
+    },
+    {
+      id: "heatmap",
+      name: "Heatmap",
+      needs: "A category on X, a series on Y, and a measure for colour intensity."
+    },
+    {
+      id: "treemap",
+      name: "Treemap",
+      needs: "One category and one non-negative measure for tile area."
     }
   ]);
 
