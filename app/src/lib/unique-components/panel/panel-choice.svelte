@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as ToggleGroup from "$lib/simple-components/toggle-group";
+  import { cn } from "$lib/simple-components/utils";
 
   /**
    * A small set of alternatives with exactly one on.
@@ -34,9 +35,16 @@
     value,
     options,
     mixed = false,
+    flush = false,
     onchange
   }: {
-    /** What is being chosen. The group's accessible name. */
+    /**
+     * What is being chosen. The group's accessible name.
+     *
+     * It is not drawn. Where a choice stands beside other fields and needs a
+     * visible name, put it in a `PanelField` — which is the vocabulary's word for
+     * a label beside a value — and set `flush` so the two gutters do not stack.
+     */
     label: string;
     value: string;
     options: readonly { value: string; label: string }[];
@@ -49,6 +57,8 @@
      * that is how a mixed state is resolved.
      */
     mixed?: boolean;
+    /** Drop the panel gutter, for a choice nested inside a padded region. */
+    flush?: boolean;
     onchange?: (next: string) => void;
   } = $props();
 </script>
@@ -63,7 +73,7 @@
     // way to reach a state no panel here can render.
     if (next) onchange?.(next);
   }}
-  class="flex flex-wrap justify-start gap-1 px-3"
+  class={cn("flex flex-wrap justify-start gap-1", flush ? "px-0" : "px-3")}
 >
   {#each options as option (option.value)}
     <ToggleGroup.Item

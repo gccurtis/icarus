@@ -28,6 +28,7 @@
     titleTone,
     selected = false,
     indent = false,
+    depth = 0,
     onselect,
     children
   }: {
@@ -48,12 +49,30 @@
     titleTone?: "default" | "success" | "danger" | "attention" | "active" | "intelligence";
     /** Whether this is the row the panel is currently about. */
     selected?: boolean;
-    /** One level in, for a child of the row above it. */
+    /** One level in, for a child of the row above it. `depth={1}` says the same. */
     indent?: boolean;
+    /**
+     * How many levels in, for a list nested more than once — a document outline
+     * by heading level, a lattice, a question and its children.
+     *
+     * `indent` is a boolean, so an H3 sat exactly where an H2 did and the outline
+     * read as two levels however deep it went. Capped at three: a fourth step in
+     * a 300px column leaves the title nowhere to be, and a tree that deep wants
+     * the centre rather than a flank.
+     */
+    depth?: 0 | 1 | 2 | 3;
     onselect?: () => void;
     /** Replaces the title line, for a row that needs marked-up content in it. */
     children?: Snippet;
   } = $props();
+
+  /**
+   * One step per level, off the panel's own gutter. Four values rather than a
+   * computed `padding-inline-start` because Tailwind cannot see a class it did
+   * not read in the source, and an arithmetic style attribute here would put a
+   * dimension outside the token scale.
+   */
+  const INDENT = ["", "ps-8", "ps-12", "ps-16"] as const;
 
   const ICON_TONE: Record<NonNullable<typeof tone>, string> = {
     default: "text-ink-muted",
@@ -85,7 +104,8 @@
     "flex w-full items-start gap-2 px-3 py-1.5 text-start",
     /* 24px is the floor for a pointer target; two lines of content clears it. */
     "min-h-6",
-    indent && "ps-8",
+    /* `indent` is depth 1 by another name; whichever says more wins. */
+    INDENT[Math.max(depth, indent ? 1 : 0) as 0 | 1 | 2 | 3],
     onselect && "hover:bg-surface-panel-hover cursor-pointer",
     selected && "bg-active-surface"
   )}

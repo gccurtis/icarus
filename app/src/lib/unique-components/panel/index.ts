@@ -68,6 +68,27 @@ export { default as PanelPairs } from "./panel-pairs.svelte";
 export { default as PanelPair } from "./panel-pair.svelte";
 
 /**
+ * The three the specifications asked for that the first pass did not have.
+ *
+ * `PanelInput` is the field the other two leave out: `PanelSearch` contains what
+ * it filters and `PanelEditableText` edits a value already on screen, and a
+ * replacement string is neither — it is text the panel will use against content
+ * it does not display.
+ *
+ * `PanelMarks` is the set `PanelChoice` cannot express. A choice picks exactly
+ * one, which would make bold and italic alternatives; these are independent, and
+ * the third state — some of the selection carries it — is drawn rather than
+ * resolved.
+ *
+ * `PanelColor` is a choice whose options are swatches. Not a picker: a fill comes
+ * from a theme or a style set, so the set is small and named, and a free picker
+ * would let an author put a colour in a deck its theme has never heard of.
+ */
+export { default as PanelInput } from "./panel-input.svelte";
+export { default as PanelMarks } from "./panel-marks.svelte";
+export { default as PanelColor } from "./panel-color.svelte";
+
+/**
  * What a panel says while it is finding out, and what it says about work that
  * is under way. Both are states a panel is in rather than things it holds,
  * which is why neither is a section.
@@ -77,3 +98,23 @@ export { default as PanelSkeleton } from "./panel-skeleton.svelte";
 
 /** Several actors at once, as faces. `PanelActor` is one of them, named. */
 export { default as PanelFaces } from "./panel-faces.svelte";
+
+/**
+ * Three shapes a flank has to hold that are not lists of one thing.
+ *
+ * `PanelTable` is a bounded prefix of a tabular value with its total under it —
+ * a variable holding 4,182 rows still has to show what it holds, and three rows
+ * and a count answers that where a scrollable grid in a 300px column does not.
+ *
+ * `PanelCards` is `PanelChoice` for a set chosen by its picture rather than its
+ * name: a chart kind, a slide layout, a page orientation. Two or three across and
+ * never more, because a 276px body divided four ways is not a picture of
+ * anything.
+ *
+ * `PanelSentence` is one rule read as prose, with its clauses still selectable.
+ * Three surfaces draw the same Automation — the library, the lens and the editor
+ * heading — and three hand-written renderings is three ways to read one rule.
+ */
+export { default as PanelTable } from "./panel-table.svelte";
+export { default as PanelCards } from "./panel-cards.svelte";
+export { default as PanelSentence } from "./panel-sentence.svelte";
