@@ -41,6 +41,7 @@ export default {
     // step, which is a rule the backend needed and this does not.
     alias: {
       $convex: "src/convex",
+      "$json-store": "src/lib/json-store",
       $model: "src/lib/model",
       $views: "src/lib/views",
       $access: "src/lib/capabilities/access",

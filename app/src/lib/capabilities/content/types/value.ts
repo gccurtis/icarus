@@ -39,17 +39,16 @@ export type FormulaColumn = Infer<typeof formulaColumnValidator>;
  * a value. There is no `error` kind either: a failure is a property of the
  * computation, so it lives in the block's `state`.
  *
- * `reference` is an id the renderer resolves, and always a plain string. A
- * friendlier notation — `sheets.Budget.B7` — is a later concern that resolves
- * *to* one of these rather than being a second shape here.
+ * **There is no `reference` kind.** A name that resolves to something else is a
+ * `VariableValue`, where the target is a typed union rather than an opaque id —
+ * a value that is only an id is one nothing can render without resolving first.
  */
 const scalarValueValidator = v.union(
   v.object({ kind: v.literal("empty") }),
   v.object({ kind: v.literal("number"), value: v.number() }),
   v.object({ kind: v.literal("text"), value: v.string() }),
   v.object({ kind: v.literal("boolean"), value: v.boolean() }),
-  v.object({ kind: v.literal("date"), value: dateValueValidator }),
-  v.object({ kind: v.literal("reference"), ref: v.string() })
+  v.object({ kind: v.literal("date"), value: dateValueValidator })
 );
 
 /**
@@ -57,13 +56,13 @@ const scalarValueValidator = v.union(
  * value, not a type.** A grouped aggregate returns a table whose cells are
  * tables, and there is no recursive validator to write for that.
  *
- * `v.any()` only at the cell, rather than encoding the whole value as JSON the
- * way [settings](../../settings/schema.ts) does, because the stored bytes then
- * stay the honest shape: everything outside a cell is still checked at the door,
- * a resolver reading a body can still branch on `kind`, and the day a recursive
- * validator exists this tightens with nothing to migrate. The cost is that a
- * malformed nested cell is stored, so a renderer of one is defensive.
- * `FormulaValue` below is the type that stays truthful meanwhile.
+ * `v.any()` only at the cell, rather than encoding the whole value as JSON,
+ * because the stored bytes then stay the honest shape: everything outside a cell
+ * is still checked at the door, a resolver reading a body can still branch on
+ * `kind`, and the day a recursive validator exists this tightens with nothing to
+ * migrate. The cost is that a malformed nested cell is stored, so a renderer of
+ * one is defensive. `FormulaValue` below is the type that stays truthful
+ * meanwhile.
  *
  * **There is no `list`, `record`, or `range` kind.** A one-column table is a
  * list; a one-row table whose fields are its columns is a record; and a range is

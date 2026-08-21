@@ -1,0 +1,13 @@
+import type { Id } from "$json-store/types/core/id";
+
+/**
+ * Who did something.
+ *
+ * The agent variant points at its task, not its persona: the task carries
+ * `personaId`, so storing both would let them disagree. `system` has no id.
+ */
+export type Actor =
+  | { kind: "user"; userId: Id<"users"> }
+  | { kind: "agent"; taskId: Id<"agentTasks"> }
+  | { kind: "connection"; connectionId: Id<"connections"> }
+  | { kind: "system" };

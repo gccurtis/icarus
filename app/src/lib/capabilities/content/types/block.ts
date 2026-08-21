@@ -1,10 +1,11 @@
 import { v, type Infer } from "convex/values";
 import { blockFormatValidator } from "$content/types/format";
 import { formulaValueValidator, type FormulaValue } from "$content/types/value";
-import { mentionValidator } from "$shared/types/mention";
-import { resourceSetExpressionValidator } from "$shared/types/resource-set-expression";
+import { actorValidator } from "$shared/types/actor";
+import { resourceRefValidator } from "$shared/types/resource";
+import { resourceSelectionValidator } from "$shared/types/resource-selection";
 
-/** Where a computation stands. A block still reads while one is stale, which is why `resolved` is stored beside it. */
+/** Where a computation stands. A block still reads while one is stale, which is why its last result is stored beside it. */
 const resolutionStateValidator = v.union(
   v.literal("fresh"),
   v.literal("stale"),
@@ -12,36 +13,66 @@ const resolutionStateValidator = v.union(
   v.literal("error")
 );
 
+/** Typed characters. The smallest authored unit. */
+const textAtomValidator = v.object({
+  id: v.string(),
+  kind: v.literal("literal"),
+  text: v.string()
+});
+
 /**
- * The smallest authored unit. Literals are typed characters; formula atoms are
- * the `{{ }}` spans inside prose.
+ * A `{{ }}` span inside prose.
  *
- * A formula atom carries its own `resolved` and `state` so `display` can be
- * rebuilt without re-evaluating anything.
+ * **It holds the expression and the row.** `expression` is what the author wrote
+ * and is the portable form — a template body carries it into a project where no
+ * formula row exists. `formulaId` is the row that evaluates it, and is optional
+ * for exactly that case.
  *
- * **It holds a `formulaId`, never the expression.** The expression is a row of
- * its own, written in cell ids rather than addresses, so only the formula can
- * render an up-to-date form of itself — a cell that moves changes what the
- * expression *reads as* without changing what it means. A copy here would be a
- * second spelling that goes stale the first time anything moves.
- *
- * The `formulas` table arrives with the formula stage; the field is a plain
- * string from here, so that stage gives the id something to point at rather than
- * changing a shape.
+ * **Both halves of the last result are stored.** `lastResolvedValue` is what
+ * other computations read; `lastResolvedDisplay` is the span the block's
+ * `display` concatenates and the marks index. Keeping the string is what lets
+ * `display` be rebuilt without re-evaluating anything.
  */
-export const textAtomValidator = v.union(
-  v.object({ id: v.string(), kind: v.literal("literal"), text: v.string() }),
-  v.object({
-    id: v.string(),
-    kind: v.literal("formula"),
-    formulaId: v.string(),
-    resolved: v.string(),
-    state: resolutionStateValidator,
-    error: v.optional(v.string())
-  })
-);
+const formulaAtomValidator = v.object({
+  id: v.string(),
+  kind: v.literal("formula"),
+  expression: v.string(),
+  formulaId: v.optional(v.id("formulas")),
+  lastResolvedValue: formulaValueValidator,
+  lastResolvedDisplay: v.string(),
+  state: resolutionStateValidator,
+  error: v.optional(v.string())
+});
+
+export const atomValidator = v.union(textAtomValidator, formulaAtomValidator);
 
 export type TextAtom = Infer<typeof textAtomValidator>;
+/** `lastResolvedValue` is stated rather than inferred, because a table's cells are `v.any()`. */
+export type FormulaAtom = Omit<Infer<typeof formulaAtomValidator>, "lastResolvedValue"> & {
+  lastResolvedValue: FormulaValue;
+};
+export type Atom = TextAtom | FormulaAtom;
+
+/**
+ * Where a marked span points. The span is the text, so nothing here carries a
+ * copy of it — `from`/`to` already say what was written.
+ *
+ * Two arms address someone and two address something, because all four are the
+ * same act: this run of text points elsewhere. One field rather than several, so
+ * a span can only point at one thing and a renderer branches once.
+ *
+ * **A persona is its own arm rather than an `Actor` variant.** An actor's
+ * `agent` points at a *task* — the run that acted. A persona is the durable
+ * identity, and mentioning one is a different thing from naming a run of work.
+ */
+const markLinkValidator = v.union(
+  v.object({ kind: v.literal("url"), url: v.string() }),
+  v.object({ kind: v.literal("actor"), actor: actorValidator }),
+  v.object({ kind: v.literal("persona"), personaId: v.id("personas") }),
+  v.object({ kind: v.literal("resource"), ref: resourceRefValidator })
+);
+
+export type MarkLink = Infer<typeof markLinkValidator>;
 
 /**
  * A styled range. `from`/`to` are UTF-16 offsets into `display`, never into
@@ -50,11 +81,6 @@ export type TextAtom = Infer<typeof textAtomValidator>;
  *
  * The id is what makes two people bolding different words in one paragraph
  * merge — a change addresses one mark rather than replacing the array.
- *
- * **A mention is a mark.** It is a span of typed text that points somewhere,
- * which is the shape `link` already had, so it belongs in the text rather than
- * in a field beside it: the mark shifts when earlier text is edited, survives a
- * merge, and renders inline where it was written.
  */
 export const markValidator = v.object({
   id: v.string(),
@@ -71,8 +97,7 @@ export const markValidator = v.object({
       )
     )
   ),
-  link: v.optional(v.string()),
-  mention: v.optional(mentionValidator),
+  link: v.optional(markLinkValidator),
   color: v.optional(v.string())
 });
 
@@ -88,8 +113,8 @@ export type Mark = Infer<typeof markValidator>;
  * `format` overrides it locally.
  *
  * `display` is the atoms' text in order — each literal's `text`, each formula's
- * `resolved`, concatenated — and the marks index it. Nothing here enforces that;
- * applying ops does.
+ * `lastResolvedDisplay`, concatenated — and the marks index it. Nothing here
+ * enforces that; applying ops does.
  *
  * **A block holds no newlines.** Enter ends a block and starts another, which is
  * what keeps one block one styleable, measurable, placeable thing and makes mark
@@ -110,7 +135,7 @@ const textBlockValidator = v.object({
   checked: v.optional(v.boolean()),
   language: v.optional(v.string()),
   style: v.optional(v.string()),
-  atoms: v.array(textAtomValidator),
+  atoms: v.array(atomValidator),
   display: v.string(),
   marks: v.array(markValidator),
   resolvedAt: v.optional(v.number()),
@@ -120,18 +145,19 @@ const textBlockValidator = v.object({
 /**
  * A block whose entire content is a computation.
  *
- * Kept apart from a formula atom on purpose: this has a typed `value` other
- * formulas depend on and it either computes or errors, where an atom produces a
- * string span and the sentence around it still renders when it fails.
+ * Kept apart from a formula atom on purpose: this either computes or errors,
+ * where an atom produces a string span and the sentence around it still renders
+ * when it fails.
  *
- * It holds a `formulaId` and never an expression, for the reason a formula atom
- * does — it asks the formula, which is the only thing that can give an
- * up-to-date rendering anyway.
+ * `expression` and `formulaId` are the pair a formula atom carries, for the same
+ * reasons. `display` here is the whole block's rendering rather than one span
+ * among several, which is why it needs no other name.
  */
 const formulaBlockValidator = v.object({
   id: v.string(),
   type: v.literal("formula"),
-  formulaId: v.string(),
+  expression: v.string(),
+  formulaId: v.optional(v.id("formulas")),
   display: v.string(),
   value: formulaValueValidator,
   state: resolutionStateValidator,
@@ -140,32 +166,34 @@ const formulaBlockValidator = v.object({
   format: v.optional(blockFormatValidator)
 });
 
-/** What we serve after fetch, transcode, and resize — never what was given. */
-const renderedAssetValidator = v.object({
-  fileId: v.string(),
-  width: v.number(),
-  height: v.number()
-});
-
 /**
  * A picture in the content.
  *
- * Raw and display separate here too: `source` is the upload or the pasted URL,
- * `display` is the normalized asset, and `display` absent is how the UI knows to
- * show a placeholder rather than a broken image.
+ * **Three ways to name one, and exactly one applies.** A file row, when the
+ * picture is project material. A storage id, when it is not and has no row to
+ * live in. A URL, when the bytes are somewhere else and stay there.
+ *
+ * The first two resolve to one stored blob, and that blob is the only version of
+ * the picture there is — an external file holds one object, reduced on the way
+ * in, so there is no display-sized copy beside it to reference from here.
  *
  * **`alt` is required.** An image without it is a hole in every non-visual
  * consumer — search, the knowledge lattice, screen readers, and any agent
  * reading the document.
+ *
+ * **`source` is optional.** Absent is a picture's place without a picture in it:
+ * the alt text, the caption, the crop, and the frame all stand on their own.
  */
 const imageBlockValidator = v.object({
   id: v.string(),
   type: v.literal("image"),
-  source: v.union(
-    v.object({ kind: v.literal("file"), fileId: v.string() }),
-    v.object({ kind: v.literal("url"), url: v.string() })
+  source: v.optional(
+    v.union(
+      v.object({ kind: v.literal("file"), fileId: v.id("externalFiles") }),
+      v.object({ kind: v.literal("storage"), storageId: v.id("_storage") }),
+      v.object({ kind: v.literal("url"), url: v.string() })
+    )
   ),
-  display: v.optional(renderedAssetValidator),
   alt: v.string(),
   caption: v.optional(textBlockValidator),
   crop: v.optional(
@@ -175,10 +203,10 @@ const imageBlockValidator = v.object({
 });
 
 /**
- * **A cell's `blocks` are `v.any()` for the reason `FormulaValue`'s cells are**
- * — see `types.md`. `ContentBlock` is recursive here and a validator is a value,
- * not a type, so there is nothing recursive to write; the same answer is reused
- * rather than a second one invented.
+ * **A cell's `blocks` are `v.any()` for the reason `FormulaValue`'s cells are.**
+ * `ContentBlock` is recursive here and a validator is a value, not a type, so
+ * there is nothing recursive to write; the same answer is reused rather than a
+ * second one invented.
  *
  * The recursion is bounded by the owner instead: no surface that accepts a table
  * accepts one nested in a cell.
@@ -213,26 +241,6 @@ const tableBlockValidator = v.object({
 });
 
 /**
- * An external thing rendered in place — a link card, a video, an embedded app.
- * `url` is raw; `title`, `description`, and `thumbnail` are the display, fetched
- * from the target and cached, and `fetchedAt` says how old that is.
- *
- * **A plain hyperlink inside a sentence is a `link` mark, not one of these.**
- * Embeds are block-level.
- */
-const embedBlockValidator = v.object({
-  id: v.string(),
-  type: v.literal("embed"),
-  url: v.string(),
-  presentation: v.union(v.literal("card"), v.literal("inline"), v.literal("iframe")),
-  title: v.optional(v.string()),
-  description: v.optional(v.string()),
-  thumbnail: v.optional(renderedAssetValidator),
-  fetchedAt: v.optional(v.number()),
-  format: v.optional(blockFormatValidator)
-});
-
-/**
  * A text block with a derived output behind it.
  *
  * It carries the same `atoms`, `display`, and `marks` as a text block and they
@@ -250,22 +258,24 @@ const embedBlockValidator = v.object({
  * exactly one block. A prompt expanding into a document section would be a
  * document, generated as one.
  *
- * Its four states are the output's five without `idle`: a block is written into
- * a body by asking for content, and it always shows something.
+ * **`derivedOutputId` is optional and `idle` is a state**, because a block can
+ * exist before anything has run: one written into a template has been stripped
+ * of everything project-bound, and one just instantiated has generated nothing
+ * yet. That makes these states the derived output's five exactly.
  *
- * `derivedOutputs` is a much later table. The id is a plain string, so this
- * variant costs nothing to ship now — which is why the union arrives whole
- * rather than growing a member per pass.
+ * **`scope` is optional** for the same reason — in a template it is absent, and
+ * a variable fills it at instantiation.
  */
 const promptBlockValidator = v.object({
   id: v.string(),
   type: v.literal("prompt"),
-  derivedOutputId: v.string(),
-  atoms: v.array(textAtomValidator),
+  derivedOutputId: v.optional(v.id("derivedOutputs")),
+  atoms: v.array(atomValidator),
   display: v.string(),
   marks: v.array(markValidator),
-  scope: v.optional(resourceSetExpressionValidator),
+  scope: v.optional(resourceSelectionValidator),
   state: v.union(
+    v.literal("idle"),
     v.literal("fresh"),
     v.literal("stale"),
     v.literal("generating"),
@@ -280,11 +290,15 @@ const promptBlockValidator = v.object({
  * The one content primitive: anything a person authors or an agent produces is a
  * list of these, embedded in whatever owns them.
  *
- * Discriminated on `type` and looked up by that literal, which is how a variant
- * can join without touching one already here. No owner accepts every variant —
- * a spreadsheet cell takes text and formula, a comment takes text and image —
- * and the owner enforces its own set, which is what keeps this union single
- * rather than one per surface.
+ * Discriminated on `type` and looked up by that literal, which is how `prompt`
+ * joined without touching a variant already here. No owner accepts every
+ * variant, and the owner enforces its own set — which is what keeps this union
+ * single rather than one per surface.
+ *
+ * **There is no embed variant.** A URL is a `link` mark on a span of text — a
+ * block-level version of the same thing would be a second way to say it, and the
+ * card, the title, and the cached preview image behind it are all decoration
+ * fetched from somewhere we do not control.
  *
  * **A divider and a page break are not blocks.** They hold no content, take no
  * marks, and cannot be searched — they are row kinds instead. Content and
@@ -295,7 +309,6 @@ export const blockValidator = v.union(
   formulaBlockValidator,
   imageBlockValidator,
   tableBlockValidator,
-  embedBlockValidator,
   promptBlockValidator
 );
 
@@ -305,7 +318,6 @@ export type FormulaBlock = Omit<Infer<typeof formulaBlockValidator>, "value"> & 
   value: FormulaValue;
 };
 export type ImageBlock = Infer<typeof imageBlockValidator>;
-export type EmbedBlock = Infer<typeof embedBlockValidator>;
 export type PromptBlock = Infer<typeof promptBlockValidator>;
 /** The recursion the validator cannot state, for the same reason `FormulaValue` states its own. */
 export type TableCell = Omit<Infer<typeof tableCellValidator>, "blocks"> & {
@@ -313,10 +325,5 @@ export type TableCell = Omit<Infer<typeof tableCellValidator>, "blocks"> & {
 };
 export type TableRow = { id: string; cells: TableCell[] };
 export type TableBlock = Omit<Infer<typeof tableBlockValidator>, "rows"> & { rows: TableRow[] };
-export type ContentBlock =
-  | TextBlock
-  | FormulaBlock
-  | ImageBlock
-  | TableBlock
-  | EmbedBlock
-  | PromptBlock;
+
+export type ContentBlock = TextBlock | FormulaBlock | ImageBlock | TableBlock | PromptBlock;

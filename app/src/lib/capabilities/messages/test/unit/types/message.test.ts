@@ -1,4 +1,5 @@
 import { validate } from "convex-helpers/validators";
+import type { GenericId } from "convex/values";
 import { describe, expect, it } from "vitest";
 import type { ContentBlock } from "$content/types/block";
 import { messagesRefusal, MessagesError } from "$messages/errors";
@@ -18,7 +19,9 @@ const blocks: ContentBlock[] = [
 const prompt: MessageFields = {
   id: "m1",
   role: "prompt",
-  author: { kind: "user", id: "u1" },
+  // `GenericId` rather than `Id` from the generated data model: an actor names
+  // tables that land later in the rebuild, and this one is unconstrained.
+  author: { kind: "user", userId: "u1" as GenericId<"users"> },
   sentAt: 1_755_388_800_000,
   blocks
 };
@@ -33,7 +36,7 @@ describe("message", () => {
       // attribute it or reply.
       const { author, ...unauthored } = prompt;
 
-      expect(author).toEqual({ kind: "user", id: "u1" });
+      expect(author).toEqual({ kind: "user", userId: "u1" });
       expect(() => message(unauthored)).toThrow(MessagesError);
     });
 
@@ -63,8 +66,9 @@ describe("message", () => {
     });
 
     it("keeps an author on a response when it is someone else", () => {
-      const other = message({ ...response, author: { kind: "persona", id: "p1" } });
-      expect(other.author).toEqual({ kind: "persona", id: "p1" });
+      const taskId = "t1" as GenericId<"agentTasks">;
+      const other = message({ ...response, author: { kind: "agent", taskId } });
+      expect(other.author).toEqual({ kind: "agent", taskId: "t1" });
     });
   });
 

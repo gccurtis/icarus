@@ -65,7 +65,7 @@ export const isContextId = (value: string): value is ContextId =>
 export const CONTEXTS_BY_SCREEN: Record<ScreenKind, readonly ContextId[]> = Object.freeze({
   /**
    * Ten entries, in the order
-   * `docs/screen-panel-views/project-overview/README.md` lists them. Overview
+   * `docs/screen-panel-views/screens/project-overview/overview.md` lists them. Overview
    * leads because it answers "where am I and what is outstanding" without a
    * click; Mentions is third because what a person addressed to you is the only
    * thing worth a permanent interruption.

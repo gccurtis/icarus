@@ -16,12 +16,19 @@ through.
 
 | File | Holds |
 | --- | --- |
-| [`actor.ts`](actor.ts) | `Actor` — four kinds, uniform `{ kind, id }` |
-| [`mention.ts`](mention.ts) | `Mention` — `Actor` minus `system` |
+| [`actor.ts`](actor.ts) | `Actor` — four kinds, each id named after its own variant |
 | [`resource.ts`](resource.ts) | `ResourceKind`, `ResourceRef`, and `kindMatches` |
-| [`resource-set-expression.ts`](resource-set-expression.ts) | `ResourceSetExpression`, `Selector`, and `normalize` |
+| [`resource-selection.ts`](resource-selection.ts) | `SetTerm`, `ResourceSelection`, `PortableSelection` |
+| [`resource-set-expression.ts`](resource-set-expression.ts) | `ResourceSetExpression`, `Selector`, and `normalize` — **superseded**, see below |
 | [`page-setup.ts`](page-setup.ts) | `PaperSize`, `PageSetup` |
 | [`style-set.ts`](style-set.ts) | `TextStyle`, `StyleSet` |
+
+## Two selection types, and one of them is going
+
+`resource-selection.ts` is the rebuilt vocabulary, and it is what new code uses.
+`resource-set-expression.ts` is the shape [`$model`'s
+copilot](../../../model/client/copilot) was built against and still compiles
+against; it goes when that object is ported. Nothing imports both.
 
 ## Two files carry behaviour
 

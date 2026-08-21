@@ -122,7 +122,8 @@ as well as in the centre.
   [`project-contexts.svelte`](project-contexts.svelte),
   [`project-templates.svelte`](project-templates.svelte)
 - **Purpose:** the rail specified in
-  `docs/screen-panel-views/project-overview/README.md`, one component per view.
+  `docs/screen-panel-views/screens/project-overview/overview.md`, one component
+  per view.
 - **Inputs:** the active tab, which none of them reads — the project overview is
   a singleton, so there is nothing about the tab that varies. They take it
   because every content component has the same signature.

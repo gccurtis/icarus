@@ -16,6 +16,9 @@ logs/*.jsonl
 # Runtime artifacts — state a run produces, never state a checkout needs.
 app/logs/*.log
 
+# The JSON store's tables, one file per table. Local data, not checked out.
+app/data/
+
 # Agent worktrees
 .claude/worktrees/
 

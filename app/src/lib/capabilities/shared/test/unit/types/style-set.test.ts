@@ -23,16 +23,27 @@ describe("textStyleValidator", () => {
     expect(validate(textStyleValidator, {})).toBe(false);
   });
 
-  it("holds no verticalAlign", () => {
+  it("holds no vertical alignment", () => {
     // A style applies to text; vertical alignment is a property of the box the
     // text sits in, which is `BlockFormat`.
-    expect(Object.keys(textStyleValidator.fields)).not.toContain("verticalAlign");
-    expect(validate(textStyleValidator, { name: "Body", verticalAlign: "middle" })).toBe(false);
+    expect(Object.keys(textStyleValidator.fields)).not.toContain("verticalAlignment");
+    expect(validate(textStyleValidator, { name: "Body", verticalAlignment: "middle" })).toBe(false);
+  });
+
+  it("names its alignment the way BlockFormat does", () => {
+    // One concept, one name. `align` here beside `horizontalAlignment` there
+    // would read as two different things.
+    expect(Object.keys(textStyleValidator.fields)).toContain("horizontalAlignment");
+    expect(Object.keys(textStyleValidator.fields)).not.toContain("align");
   });
 
   it("refuses an alignment it does not name", () => {
-    expect(validate(textStyleValidator, { name: "Body", align: "middle" })).toBe(false);
-    expect(validate(textStyleValidator, { name: "Body", align: "justify" })).toBe(true);
+    expect(validate(textStyleValidator, { name: "Body", horizontalAlignment: "middle" })).toBe(
+      false
+    );
+    expect(validate(textStyleValidator, { name: "Body", horizontalAlignment: "justify" })).toBe(
+      true
+    );
   });
 });
 

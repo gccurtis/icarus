@@ -19,7 +19,7 @@
    * shows on a first load and whenever every closable tab has been closed.
    *
    * Three bands, exactly as
-   * `docs/screen-panel-views/project-overview/workspace.md` draws them: identity
+   * `docs/screen-panel-views/screens/project-overview/workspace.md` draws them: identity
    * across the top, then the two things you came for side by side — what to make,
    * and what is waiting on you — then everything the project contains.
    *
@@ -339,7 +339,7 @@
 <style>
   /*
    * The grid is a transcription of the Layout table in
-   * docs/screen-panel-views/project-overview/workspace.md. Named areas rather
+   * docs/screen-panel-views/screens/project-overview/workspace.md. Named areas rather
    * than placement rules, so the CSS and the document can be read against each
    * other line for line.
    */

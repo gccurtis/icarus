@@ -35,9 +35,9 @@ and it turned out not to be a type at all.
 | File | Holds |
 | --- | --- |
 | [`types/actor.ts`](types/actor.ts) | `Actor` — who did something |
-| [`types/mention.ts`](types/mention.ts) | `Mention` — who a remark is addressed to |
 | [`types/resource.ts`](types/resource.ts) | `ResourceKind`, `ResourceRef`, `kindMatches` |
-| [`types/resource-set-expression.ts`](types/resource-set-expression.ts) | `ResourceSetExpression`, `Selector`, `normalize` |
+| [`types/resource-selection.ts`](types/resource-selection.ts) | `SetTerm`, `ResourceSelection`, `PortableSelection` |
+| [`types/resource-set-expression.ts`](types/resource-set-expression.ts) | the selection shape `$model`'s copilot still compiles against |
 | [`types/page-setup.ts`](types/page-setup.ts) | `PaperSize`, `PageSetup` — the physical sheet |
 | [`types/style-set.ts`](types/style-set.ts) | `TextStyle`, `StyleSet` |
 
@@ -46,11 +46,12 @@ and it turned out not to be a type at all.
 - **A validator is the source of truth; the type is inferred from it.** Convex
   enforces the validator at the door, and a hand-written interface beside one is
   a second description that can disagree.
-- **Every id is a plain `string`, never `Id<"table">`.** Tables land in stages,
-  and typing an id against a table that does not exist yet means loosening it and
-  re-tightening it across dozens of files — for a check that only ever held
-  inside one deployment.
-- **A stored `ResourceSetExpression` is canonical.** `normalize` runs on write,
-  because a canonical form is the only thing that makes two sets comparable.
+- **An id pointing at another table is `v.id`.** Every table is declared in one
+  `defineSchema`, so there is no stage at which a named table does not exist —
+  which is what makes the check free. A reference stays `v.string()` only where
+  it is genuinely polymorphic and the kind beside it names the table.
 - **Kind matching is segment-wise, never a string prefix.** `connector::google`
   must not match `connector::googlesheets`.
+- **A selection is two flat lists, never a tree.** A Convex validator is a value
+  and cannot name itself, so a tree would have to be unrolled to a fixed depth.
+  What two lists cannot say directly, a named set says instead.

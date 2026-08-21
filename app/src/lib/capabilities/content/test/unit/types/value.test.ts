@@ -7,16 +7,8 @@ const kinds = () => formulaValueValidator.members.map((member) => member.fields.
 const date = { calendar: "gregorian", year: 2026, month: 8, day: 17, utc: 1_755_388_800_000 };
 
 describe("formulaValueValidator", () => {
-  it("names seven kinds, looked up by literal rather than position", () => {
-    expect(kinds().sort()).toEqual([
-      "boolean",
-      "date",
-      "empty",
-      "number",
-      "reference",
-      "table",
-      "text"
-    ]);
+  it("names six kinds, looked up by literal rather than position", () => {
+    expect(kinds().sort()).toEqual(["boolean", "date", "empty", "number", "table", "text"]);
   });
 
   it("has no list, record, or range kind", () => {
@@ -48,11 +40,12 @@ describe("formulaValueValidator", () => {
     expect(Object.keys(empty!.fields)).toEqual(["kind"]);
   });
 
-  it("carries a reference as a plain string id", () => {
-    // A friendlier notation — sheets.Budget.B7 — resolves *to* one of these
-    // rather than being a second shape here.
-    expect(validate(formulaValueValidator, { kind: "reference", ref: "c4x1" })).toBe(true);
-    expect(validate(formulaValueValidator, { kind: "reference", ref: { cell: "B7" } })).toBe(false);
+  it("has no reference kind", () => {
+    // A name that resolves to something else is a `VariableValue`, where the
+    // target is a typed union rather than an opaque id. A value that is only an
+    // id is one nothing can render without resolving it first.
+    expect(kinds()).not.toContain("reference");
+    expect(validate(formulaValueValidator, { kind: "reference", ref: "c4x1" })).toBe(false);
   });
 
   it("admits a table whose cells are themselves values", () => {

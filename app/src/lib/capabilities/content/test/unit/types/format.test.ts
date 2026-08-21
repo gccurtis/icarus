@@ -11,7 +11,12 @@ describe("blockFormatValidator", () => {
     // Vertical alignment means something only when a block sits in a box taller
     // than itself — the spreadsheet cell and the slide element, which are the
     // cases that made blocks worth sharing in the first place.
-    expect(validate(blockFormatValidator, { align: "center", verticalAlign: "middle" })).toBe(true);
+    expect(
+      validate(blockFormatValidator, {
+        horizontalAlignment: "center",
+        verticalAlignment: "middle"
+      })
+    ).toBe(true);
   });
 
   it("holds valueFormat on the format rather than on the value", () => {
@@ -23,8 +28,18 @@ describe("blockFormatValidator", () => {
 
   describe("what it refuses", () => {
     it("refuses an alignment it does not name", () => {
-      expect(validate(blockFormatValidator, { align: "middle" })).toBe(false);
-      expect(validate(blockFormatValidator, { verticalAlign: "center" })).toBe(false);
+      expect(validate(blockFormatValidator, { horizontalAlignment: "middle" })).toBe(false);
+      expect(validate(blockFormatValidator, { verticalAlignment: "center" })).toBe(false);
+    });
+
+    it("names both axes symmetrically, so one concept reads one way", () => {
+      // `align`/`verticalAlign` made the horizontal one the unmarked case, which
+      // it is not — a cell and a slide element care about both equally.
+      const fields = Object.keys(blockFormatValidator.fields);
+      expect(fields).toContain("horizontalAlignment");
+      expect(fields).toContain("verticalAlignment");
+      expect(fields).not.toContain("align");
+      expect(fields).not.toContain("verticalAlign");
     });
 
     it("refuses a half-stated border", () => {

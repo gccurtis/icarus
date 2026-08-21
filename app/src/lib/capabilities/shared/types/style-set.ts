@@ -11,9 +11,10 @@ import { v, type Infer } from "convex/values";
  * and the boolean is what a toolbar toggles — without it, bold was the one common
  * style a person could not set the way they set italic and underline.
  *
- * **No `verticalAlign` here.** It is on `BlockFormat`, where it means something:
- * a style applies to text, and vertical alignment is a property of the box the
- * text sits in.
+ * **No `verticalAlignment` here.** It is on `BlockFormat`, where it means
+ * something: a style applies to text, and vertical alignment is a property of
+ * the box the text sits in. `horizontalAlignment` is named to match it, so one
+ * concept reads the same in both places.
  */
 export const textStyleValidator = v.object({
   name: v.string(),
@@ -28,7 +29,7 @@ export const textStyleValidator = v.object({
   lineHeight: v.optional(v.number()),
   spaceBefore: v.optional(v.number()),
   spaceAfter: v.optional(v.number()),
-  align: v.optional(
+  horizontalAlignment: v.optional(
     v.union(v.literal("start"), v.literal("center"), v.literal("end"), v.literal("justify"))
   ),
   indent: v.optional(v.number())

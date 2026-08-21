@@ -17,10 +17,12 @@ import { v, type Infer } from "convex/values";
  * without being stored twice.
  */
 export const blockFormatValidator = v.object({
-  align: v.optional(
+  horizontalAlignment: v.optional(
     v.union(v.literal("start"), v.literal("center"), v.literal("end"), v.literal("justify"))
   ),
-  verticalAlign: v.optional(v.union(v.literal("top"), v.literal("middle"), v.literal("bottom"))),
+  verticalAlignment: v.optional(
+    v.union(v.literal("top"), v.literal("middle"), v.literal("bottom"))
+  ),
   background: v.optional(v.string()),
   border: v.optional(
     v.object({
