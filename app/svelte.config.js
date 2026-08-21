@@ -44,6 +44,22 @@ export default {
       "$json-store": "src/lib/json-store",
       $model: "src/lib/model",
       $views: "src/lib/views",
+
+      // The four panel trees, one per surface the specifications describe.
+      // `docs/screen-panel-views` is their source of truth: a context view and an
+      // inspector lens are vertical stacks of panel components, a workspace and a
+      // modal are grids of screen components.
+      $context: "src/lib/context",
+      $inspector: "src/lib/inspector",
+      $workspaces: "src/lib/workspaces",
+      $modals: "src/lib/modals",
+
+      // Stand-ins for the doors and objects the panels need and the application
+      // does not have yet. Both are shaped like the real thing so replacing one
+      // is an import change rather than a rewrite.
+      "$mock-capabilities": "src/lib/mock-capabilities",
+      "$mock-models": "src/lib/mock-models",
+
       $access: "src/lib/capabilities/access",
       $content: "src/lib/capabilities/content",
       $messages: "src/lib/capabilities/messages",
