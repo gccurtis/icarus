@@ -75,8 +75,9 @@ most dangerous commands on the screen.
 **Open** — the grid is sparse, so an empty cell has no persisted block and
 formatting an empty range has nowhere to be stored.
 
-**Open** — `SheetChart` has no stable `id`, so charts render read-only and chart
-creation is gated.
+**Resolved** — charts, their datums, axes, and added elements have stable ids.
+The chart frame owns drag and resize handles while its SVG marks keep selection
+and annotation interactions.
 
 **Open** — with no formula bar, in-cell editing has to be excellent, and a long
 formula needs somewhere to breathe.

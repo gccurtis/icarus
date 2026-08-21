@@ -54,7 +54,21 @@
     { name: "Deering", height: 9 }
   ];
 
-  const KINDS = ["Table", "Bar", "Line", "Area", "Scatter", "Pie"];
+  const KINDS = [
+    "Table",
+    "Bar",
+    "Line",
+    "Area",
+    "Scatter",
+    "Bubble",
+    "Pie",
+    "Waterfall",
+    "Mekko",
+    "Funnel",
+    "Radar",
+    "Heatmap",
+    "Treemap"
+  ];
 
   type Pill = { label: string; icon: Component<LucideIconProps>; on?: boolean };
   type Zone = { key: string; pills: readonly Pill[]; empty?: string; inspect: string };

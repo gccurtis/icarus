@@ -46,15 +46,14 @@ interface SpillRange {
   range: string;                       // "B2:D10" — what it occupies
 }
 
-interface SheetChart {
-  anchor: { cell: string; dx: number; dy: number };   // top-left, offset in points
-  size: { width: number; height: number };            // points
-  kind: "line" | "bar" | "column" | "area" | "pie" | "scatter";
-  data: string;                        // "Sheet1!A1:D20"
-  seriesInColumns?: boolean;
-  title?: string;
-  hasHeaders?: boolean;
-}
+// See data/chart.md for ChartModel. Placement is the spreadsheet's concern;
+// chart meaning and resolved data are not.
+type SheetChart = ChartModel & {
+  anchor: { rowId: string; columnId: string };
+  offset: { x: number; y: number };
+  size: { width: number; height: number };
+  zIndex?: number;
+};
 
 interface SheetPrint {
   page: PageSetup;
@@ -100,7 +99,7 @@ than a flag, so the resolver never guesses.
 
 ## Cells keep their A1 keys; everything else gets an id
 
-Sheets, charts, and the blocks inside cells carry ids like everywhere else. Cells
+Sheets, charts, chart parts, and the blocks inside cells carry ids like everywhere else. Cells
 do **not** — their key stays A1 notation.
 
 A cell's identity *is* its position. `B7` is what a formula references, what a
@@ -163,9 +162,11 @@ cannot be dragged a few points to line up with something. Anchoring costs one
 thing — the chart moves when rows are inserted above it — and that is the
 behaviour people expect anyway.
 
-`data` is a range string rather than extracted values, so the chart follows the
-sheet. A chart holding its own copy of the numbers is a chart that is wrong after
-the next edit.
+The chart's `source` names the cell range, while its identified `data` is the
+resolved render input. The spreadsheet adapter refreshes those values after cell
+changes. Separating the two makes a chart self-contained for rendering and copy,
+without losing the provenance required to keep it current. See the shared
+[chart model](../data/chart.md#resolved-data-and-source-are-separate).
 
 ## Print setup
 
@@ -211,6 +212,7 @@ formula feature rather than a workbook one.
 
 [content block](../content/content-block.md) · [page setup](page-setup.md) ·
 [style set](style-set.md) ·
+[chart](../data/chart.md) ·
 [resource snapshot](../revisions/resource-snapshot.md) ·
 [change set](../revisions/change-set.md) ·
 [external file](../special-resources/external-file.md)

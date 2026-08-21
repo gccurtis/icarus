@@ -18,7 +18,8 @@
 
 ## Kind
 
-**Shows** — Table · **Bar** · Line · Area · Scatter · Pie
+**Shows** — Table · **Bar** · Line · Area · Scatter · Bubble · Pie/Doughnut ·
+Waterfall · Mekko · Funnel · Radar · Heatmap · Treemap
 
 **Needs** — the display kind on `AnalysisDefinition`.
 

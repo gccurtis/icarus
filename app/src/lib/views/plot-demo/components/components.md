@@ -21,18 +21,16 @@ plot-demo.svelte
 ### `selection-panel`
 
 - **Root:** [`selection-panel.svelte`](selection-panel.svelte)
-- **Purpose:** what is selected in the chart, and what could be done with it.
-- **Inputs:** the selection, the data behind it, the series, and a formatter.
+- **Purpose:** what semantic chart parts are selected.
+- **Inputs:** the selection and its `ChartModel`.
 - **Outputs:** writes through the selection — clicking a row in the list selects
   just that mark.
 
-**It is the argument for marks.** A chart that is one picture can only be
-inspected as one picture. A chart made of addressable marks can be asked what a
-particular bar is, and every operation a presentation tool offers — recolour
-this one, annotate that one, pull a slice out — is an operation on a selection.
+**It is the argument for identified parts.** A chart that is one picture can only
+be inspected as one picture. This panel resolves every supported mark family,
+axis, or added element back to its persisted id and model value.
 
 **What it offers depends on the selection's shape**, because one bar, a whole
-column, a whole series and an arbitrary handful are four different subjects. The
-three actions are drawn disabled with their reasons: none of them exist yet, and
-saying so is more honest than an empty panel that implies there was nothing to
-offer.
+category, a whole series, an axis, an annotation, and an arbitrary handful are
+different subjects. Model actions in the demo use those same targets to recolour
+selected datums and remove selected elements.

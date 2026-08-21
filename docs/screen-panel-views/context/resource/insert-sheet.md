@@ -14,12 +14,14 @@
 
 ## Charts
 
-**Shows** — Column · Bar · Line · Pie
+**Shows now** — Column/Bar · Line · Area · Scatter · Bubble · Pie/Doughnut ·
+Waterfall · Mekko · Funnel · Radar · Heatmap · Treemap
 
 **Needs** — chart creation from the current selection as a source range.
 
-**Open** — blocked with the rest of chart editing until `SheetChart` has a stable
-ID.
+Every listed type has a native identified model and SVG renderer. Creation
+remains blocked until the selected-range adapter can construct the required
+channels and persist the chart in one mutation.
 
 ## Content
 

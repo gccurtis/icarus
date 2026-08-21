@@ -131,6 +131,7 @@ cross-project read of the largest table there is.
 ```ts
 import { v, type Infer } from "convex/values";
 import { formatRuleValidator } from "$spreadsheets/types/format-rule";
+import { chartValidator } from "$spreadsheets/types/chart";
 import { pageSetupValidator } from "$shared/types/page-setup";
 import { styleSetValidator } from "$shared/types/style-set";
 
@@ -179,6 +180,8 @@ export const spreadsheetBodyValidator = v.object({
   /** Entries per part, in part order. Read from part 0. */
   rowPartCounts: v.array(v.number()),
   formatRules: v.array(formatRuleValidator),
+  /** Identified, interactive objects floating over the grid. */
+  charts: v.array(chartValidator),
   frozenRows: v.optional(v.number()),
   frozenColumns: v.optional(v.number()),
   print: sheetPrintValidator,
@@ -187,6 +190,19 @@ export const spreadsheetBodyValidator = v.object({
 
 export type SpreadsheetBody = Infer<typeof spreadsheetBodyValidator>;
 ```
+
+### Charts stay in the body
+
+Charts are bounded floating objects, so they live with grid shape rather than in
+the unbounded `sheetCells` table. Each embeds the shared identified
+[chart model](../data-models/data/chart.md) plus its row/column anchor, offset,
+size, and optional z-order. Resolved values make rendering self-contained; the
+source range remains the provenance used to refresh them.
+
+The native dispatcher currently has complete `bar` and `pie` arms. Bar elements
+may contain CAGR, axis/reference, and text annotations; pie elements may contain
+text only. That restriction is in the discriminated TypeScript model and the
+validator, not left to a settings panel.
 
 ### Formatting is regional
 

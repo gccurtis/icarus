@@ -62,7 +62,20 @@ interface AnalysisSort {
 }
 
 interface AnalysisDisplay {
-  kind: "table" | "bar" | "column" | "line" | "area" | "scatter" | "pie";
+  kind:
+    | "table"
+    | "bar"
+    | "line"
+    | "area"
+    | "scatter"
+    | "bubble"
+    | "pie"
+    | "waterfall"
+    | "mekko"
+    | "funnel"
+    | "radar"
+    | "heatmap"
+    | "treemap";
   settings?: DisplaySettings;
 }
 
@@ -135,10 +148,11 @@ Evaluating an analysis does not have to return the whole table. What it returns
 depends on `display.kind`:
 
 - `table` returns rows and columns, since that is the output
-- `bar`, `column`, `line`, `area` return series — a label, a value, and a group
-  per point
-- `pie` returns slices with values
-- `scatter` returns points
+- `bar`, `line`, `area`, `waterfall`, `mekko`, and `radar` return
+  identified categories, series, and values
+- `pie`, `funnel`, and `treemap` return one identified non-negative series
+- `scatter` returns x/y points; `bubble` adds size
+- `heatmap` returns the category–series matrix whose value becomes intensity
 
 For a bar chart the client needs categories and magnitudes, not the ten thousand
 underlying rows that were aggregated into them. Aggregation happens where the

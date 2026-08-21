@@ -24,9 +24,9 @@
    * This is the way from the picture back to the data, and it is what makes a
    * chart investigable rather than decorative.
    *
-   * **The band is named for the kind of mark it is.** A bar, a point and a slice
-   * are the same selection wearing three shapes, and a panel that calls all three
-   * "this bar" is wrong two times in three.
+   * **The band is named for the kind of mark it is.** Bars, points, slices,
+   * steps, segments, stages, cells and tiles are the same semantic selection
+   * wearing different shapes. The panel names the shape the chart actually uses.
    *
    * **Filter to this and Exclude are stated before they are taken.** Both mutate
    * the definition from a click on the picture, which is the right gesture and
@@ -47,7 +47,14 @@
     line: "point",
     area: "point",
     scatter: "point",
-    pie: "slice"
+    bubble: "bubble",
+    pie: "slice",
+    waterfall: "step",
+    mekko: "segment",
+    funnel: "stage",
+    radar: "point",
+    heatmap: "cell",
+    treemap: "tile"
   };
   const noun = $derived(NOUN[display.kind]);
 

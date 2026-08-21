@@ -1,5 +1,6 @@
 import type { BlockFormat } from "$json-store/types/content/block-format";
 import type { CellRange } from "$json-store/types/content/formula-value";
+import type { SpreadsheetChart } from "$json-store/types/data/chart";
 import type { PageSetup } from "$json-store/types/resources/page-setup";
 import type { StyleSet } from "$json-store/types/resources/style-set";
 
@@ -53,6 +54,8 @@ export type SpreadsheetBody = {
   /** Entries per part, in part order. Read from part 0. */
   rowPartCounts: number[];
   formatRules: FormatRule[];
+  /** Identified, interactive objects floating over the grid. */
+  charts: SpreadsheetChart[];
   frozenRows?: number;
   frozenColumns?: number;
   print: SheetPrint;

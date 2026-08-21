@@ -22,11 +22,10 @@ overlapping objects on a grid are how one becomes unreachable.
 **Shows**
 
 - *Column chart* — Anchored to E9
-- *Line chart* — Anchored to A14 · overlapped
+- *Pie chart* — Anchored to A14 · overlapped
 
 **Needs** — the spreadsheet's object list with type, anchor and size.
 
-**Open** — `SheetChart` has no stable `id`. Charts render read-only and identify
-themselves by array position, which is enough for this list and not enough for
-selection, granular update, remote reconciliation or comments. This gates chart
-creation and editing entirely.
+Each object row uses the same stable chart id as the canvas and inspector.
+Internal datums, axes, and annotations are identified too, so overlap affects
+reachability on the grid but never makes an object unaddressable from this list.

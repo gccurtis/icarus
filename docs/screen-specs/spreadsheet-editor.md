@@ -18,7 +18,7 @@ The fixed editor header shows editable spreadsheet title, template origin, truth
 - Merge/unmerge.
 - Insert/delete rows and columns.
 - Freeze panes.
-- Insert chart after `SheetChart` gains stable identity; existing charts are read-only until then.
+- Insert any compatible native chart type from the current selection; every chart and internal part has stable identity.
 - Comment.
 - Zoom and print preview.
 
@@ -59,7 +59,7 @@ Formatting a range applies only to existing selected blocks. Empty cells have no
 | `data` | Data & names | Workbook named ranges followed by project Name Manager variables. Keep the two scopes visibly separate; functions are valid formula values but not Analysis inputs. |
 | `find` | Find | Workbook search/replace with sheet and formula/display filters, result count, and virtualized navigation. |
 | `dependencies` | Dependencies | Derived direct precedents/dependents for the selected formula and cycle/error diagnostics. This is computed, not a persisted graph. |
-| `objects` | Objects | Floating charts/overlays by sheet and anchor, including overlapped items. First-class chart editing is gated on stable chart IDs. |
+| `objects` | Objects | Identified floating charts/overlays by anchor, including overlapped items. Selecting a row addresses the same chart id as the canvas and inspector. |
 | `insert` | Insert | Chart kinds, text/formula content, and import-as-materialized-cells affordances. There is no durable linked-data object. |
 | `styles` | Styles | Default and named workbook styles, search, create, duplicate, rename. Local cell overrides remain in inspector. |
 | `print` | Print | Page setup, area, repeating rows/columns, scale, gridlines, headings. Current sheet settings expanded. |
@@ -87,7 +87,7 @@ Formatting a range applies only to existing selected blocks. Empty cells have no
 | Named style | Identity and common style fields | Usage |
 | Comment thread | State/body/replies | Cell/text anchor and attribution |
 
-A range, row, or column can be a strong UI selection without pretending it has a persisted ID. `SheetChart` needs an `id` before first-class creation/editing ships: an ephemeral array index cannot safely support granular updates, remote reconciliation, retained selection, or comments. Until then, existing charts may render read-only and identify themselves by sheet/array position only for the current view.
+A range, row, or column can be a strong UI selection without pretending it has a persisted ID. Charts are different: the chart, categories, series, datums, axes, and added elements all have resource-local ids. Retained selection, granular revisions, and comments therefore address semantic parts rather than array positions or SVG nodes.
 
 Sheets, cells, charts, rows, and columns have no direct actor fields. Any nested attribution is derived from retained change sets and may be unavailable.
 

@@ -127,7 +127,8 @@ resource, and the resource keeps the metadata.
 
 **content** — [content block](content/content-block.md)
 
-**data** — [name manager](data/name-manager.md), [analysis](data/analysis.md)
+**data** — [name manager](data/name-manager.md), [analysis](data/analysis.md),
+[chart](data/chart.md), [chart system overview](data/chart-system-overview.md)
 
 **general resources** — [document](general-resources/document.md),
 [slides](general-resources/slides.md),

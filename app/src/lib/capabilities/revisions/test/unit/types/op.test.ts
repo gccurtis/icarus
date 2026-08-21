@@ -136,9 +136,24 @@ describe("opValidator", () => {
       expect(validate(opValidator, { op: "replace", target: "row", path: "rows/#r1" })).toBe(false);
     });
 
-    it("refuses an unknown target", () => {
+    it("accepts a chart now that it has ids, source, anchoring and a renderer", () => {
       expect(
         validate(opValidator, { op: "set", target: "chart", path: "charts/#c1", value: 1, was: 0 })
+      ).toBe(true);
+      expect(
+        validate(opValidator, {
+          op: "set",
+          target: "chartElement",
+          path: "charts/#c1/elements/#e1/label",
+          value: "Target",
+          was: null
+        })
+      ).toBe(true);
+    });
+
+    it("refuses an unknown target", () => {
+      expect(
+        validate(opValidator, { op: "set", target: "chartPart", path: "charts/#c1", value: 1, was: 0 })
       ).toBe(false);
     });
 
@@ -151,11 +166,13 @@ describe("opValidator", () => {
 });
 
 describe("opTargetValidator", () => {
-  it("names twelve targets", () => {
+  it("names fourteen targets", () => {
     expect(targets().sort()).toEqual([
       "atom",
       "block",
       "cell",
+      "chart",
+      "chartElement",
       "element",
       "field",
       "mark",
@@ -180,9 +197,8 @@ describe("opTargetValidator", () => {
     expect(targets()).toContain("range");
   });
 
-  it("defers chart rather than omitting it", () => {
-    // Charts need a data range, an anchoring model and a rendering surface,
-    // none of which exists. The target returns with them.
-    expect(targets()).not.toContain("chart");
+  it("separates a chart frame from an element inside it", () => {
+    expect(targets()).toContain("chart");
+    expect(targets()).toContain("chartElement");
   });
 });

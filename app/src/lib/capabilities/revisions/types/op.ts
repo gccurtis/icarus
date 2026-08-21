@@ -18,8 +18,9 @@ import { v, type Infer } from "convex/values";
  * **`range` is a member** because a path can address one: a formula's operands
  * and a print area both name a range rather than a cell.
  *
- * **`chart` is deferred, not omitted.** Charts need a data range, an anchoring
- * model and a rendering surface, none of which exists. It returns with them.
+ * A `chart` is the identified floating object; a `chartElement` is one of its
+ * own identified annotations. Keeping both lets a frame move without pretending
+ * it is the same conflict as editing a CAGR or reference line inside it.
  */
 export const opTargetValidator = v.union(
   v.literal("row"),
@@ -35,6 +36,8 @@ export const opTargetValidator = v.union(
   v.literal("cell"),
   v.literal("range"),
   v.literal("mergedCells"),
+  v.literal("chart"),
+  v.literal("chartElement"),
 
   v.literal("field")
 );
