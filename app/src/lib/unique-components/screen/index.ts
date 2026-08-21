@@ -31,3 +31,13 @@ export { default as ScreenStats } from "./screen-stats.svelte";
 export { default as ScreenStat } from "./screen-stat.svelte";
 export { default as ScreenStrip } from "./screen-strip.svelte";
 export { default as ScreenEmpty } from "./screen-empty.svelte";
+
+/**
+ * Something offered for a decision, with the decision on it.
+ *
+ * `ScreenCard` becomes a button the moment it is selectable, and a button cannot
+ * hold three more buttons — so Accept, Edit and Dismiss on a proposed finding had
+ * nowhere to go. Selecting a proposal and deciding it are two acts, and both have
+ * to be reachable.
+ */
+export { default as ScreenDecision } from "./screen-decision.svelte";

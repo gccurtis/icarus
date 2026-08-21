@@ -31,6 +31,7 @@
     when: whenClause,
     then: thenClause,
     tone = "default",
+    size = "row",
     onwhen,
     onthen
   }: {
@@ -44,6 +45,16 @@
     then: Snippet;
     /** `inactive` for a rule that is switched off, so the prose reads spent. */
     tone?: "default" | "inactive";
+    /**
+     * `row` inside a panel; `head` where the sentence is the heading of the
+     * screen editing it.
+     *
+     * A size rather than a second component, because the whole reason this is a
+     * component is that the library, the lens and the editor heading must not
+     * read one rule three ways. A `ScreenSentence` beside it would be the third
+     * way.
+     */
+    size?: "row" | "head";
     onwhen?: () => void;
     onthen?: () => void;
   } = $props();
@@ -53,7 +64,8 @@
 
 <p
   class={cn(
-    "text-body-sm m-0",
+    "m-0",
+    size === "head" ? "text-body" : "text-body-sm",
     tone === "inactive" ? "text-inactive-text" : "text-ink-secondary"
   )}
 >

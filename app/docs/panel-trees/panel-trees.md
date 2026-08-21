@@ -97,16 +97,18 @@ Two vocabularies, and a panel uses one of them.
 
 - [`unique-components/panel`](../../src/lib/unique-components/panel/index.ts) —
   `Panel`, `PanelSection`, `PanelRow`, `PanelFields`, `PanelField`, `PanelSearch`,
-  `PanelChoice`, `PanelSelect`, `PanelToggle`, `PanelEditableText`, `PanelPairs`,
-  `PanelPair`, `PanelActor`, `PanelFaces`, `PanelThumbs`, `PanelThumb`,
-  `PanelButton`, `PanelActions`, `PanelChip`, `PanelNote`, `PanelQuote`,
-  `PanelCode`, `PanelCrumbs`, `PanelLink`, `PanelProgress`, `PanelSkeleton`
+  `PanelChoice`, `PanelSelect`, `PanelToggle`, `PanelMarks`, `PanelColor`,
+  `PanelInput`, `PanelEditableText`, `PanelPairs`, `PanelPair`, `PanelTable`,
+  `PanelCards`, `PanelSentence`, `PanelActor`, `PanelFaces`, `PanelThumbs`,
+  `PanelThumb`, `PanelButton`, `PanelActions`, `PanelChip`, `PanelNote`,
+  `PanelQuote`, `PanelCode`, `PanelCrumbs`, `PanelLink`, `PanelProgress`,
+  `PanelSkeleton`
 - [`unique-components/screen`](../../src/lib/unique-components/screen/index.ts) —
   `ScreenSurface`, `ScreenHeader`, `ScreenBar`, `ScreenAction`, `ScreenFilters`,
   `ScreenTable`, `ScreenHeadCell`, `ScreenRow`, `ScreenCell`, `ScreenGroup`,
-  `ScreenCards`, `ScreenCard`, `ScreenShelf`, `ScreenShelfItem`, `ScreenThumb`,
-  `ScreenStats`, `ScreenStat`, `ScreenBanner`, `ScreenNote`, `ScreenStrip`,
-  `ScreenPlaceholder`, `ScreenEmpty`
+  `ScreenCards`, `ScreenCard`, `ScreenDecision`, `ScreenShelf`, `ScreenShelfItem`,
+  `ScreenThumb`, `ScreenStats`, `ScreenStat`, `ScreenBanner`, `ScreenNote`,
+  `ScreenStrip`, `ScreenPlaceholder`, `ScreenEmpty`
 
 Anything with a control inside it is `simple-components` underneath. Reach for
 those directly — `Button`, `Textarea`, `HoverCard`, `ToggleGroup`, `Separator`,
@@ -115,6 +117,17 @@ those directly — `Button`, `Textarea`, `HoverCard`, `ToggleGroup`, `Separator`
 **A component that does not exist gets built** in the vocabulary it belongs to,
 with a docstring saying what it is for and why it is not one of its neighbours.
 It is a primitive: it knows only its props and never reaches a door.
+
+**A prop before a sibling.** Three of the shapes the specifications wanted turned
+out to be sizes of something that already existed: a sentence at heading scale, a
+face without its name, an outline indented by more than one level. `PanelSentence`
+takes `size`, `PanelActor` takes `face`, `PanelRow` takes `depth`. A
+`ScreenSentence` beside `PanelSentence` would have been the third way to read one
+Automation, which is the thing that component exists to prevent.
+
+Crossing the two vocabularies is allowed for exactly that reason. A workspace
+reaches for `PanelSentence` and `PanelActor` where the alternative is a second
+renderer of the same object.
 
 ## Styling
 

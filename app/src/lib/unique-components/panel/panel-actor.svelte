@@ -45,7 +45,12 @@
     /** A real picture. Only people have one; the rest are always initials. */
     src?: string;
     /** `row` sits inside a field or a line of text; `head` heads a lens. */
-    size?: "row" | "head";
+    /**
+     * `row` sits inside a field or a line of text; `head` heads a lens; `face`
+     * is the picture alone, for a card whose own title already carries the name.
+     * Setting the name twice on one card is what `face` exists to stop.
+     */
+    size?: "row" | "head" | "face";
     /** Absent only where the actor is already the subject of the panel. */
     onselect?: () => void;
   } = $props();
@@ -72,9 +77,12 @@
 </script>
 
 <div class={cn("flex min-w-0 items-center gap-2", size === "head" && "items-start gap-3")}>
-  <Avatar.Root class={cn("shrink-0 border", KIND[kind], size === "row" ? "size-5" : "size-10")}>
+  <Avatar.Root
+    class={cn("shrink-0 border", KIND[kind], size === "row" ? "size-5" : "size-10")}
+    title={size === "face" ? `${name} — ${kind}` : undefined}
+  >
     {#if src}
-      <Avatar.Image {src} alt="" />
+      <Avatar.Image {src} alt={size === "face" ? name : ""} />
     {/if}
     <Avatar.Fallback
       class={cn("bg-transparent font-medium", size === "row" ? "text-[0.5rem]" : "text-body-sm")}
@@ -83,7 +91,12 @@
     </Avatar.Fallback>
   </Avatar.Root>
 
-  <div class="flex min-w-0 flex-col">
+  <!--
+    A face on its own still has to be named to anything that cannot see it, which
+    is what the title and the alt above are for. What `face` drops is the visible
+    name, not the accessible one.
+  -->
+  <div class="flex min-w-0 flex-col" class:sr-only={size === "face"}>
     {#if onselect}
       <PanelLink label={name} title={`${name} — ${kind}`} onselect={onselect} />
     {:else}
