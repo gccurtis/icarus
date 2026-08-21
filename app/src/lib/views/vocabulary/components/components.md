@@ -39,8 +39,12 @@ under each panel.
 - [`dragging.svelte`](dragging.svelte)
 - [`editing.svelte`](editing.svelte)
 - [`entry.svelte`](entry.svelte)
+- [`panel-facts.svelte`](panel-facts.svelte)
 - [`panel-parts.svelte`](panel-parts.svelte)
+- [`panel-shapes.svelte`](panel-shapes.svelte)
+- [`panel-values.svelte`](panel-values.svelte)
 - [`screen-parts.svelte`](screen-parts.svelte)
+- [`screen-plane.svelte`](screen-plane.svelte)
 - [`section-title.svelte`](section-title.svelte)
 - [`stage.svelte`](stage.svelte)
 <!-- generated:inventory:end -->

@@ -7,8 +7,12 @@
   import DataShapes from "$views/vocabulary/components/data-shapes.svelte";
   import Dragging from "$views/vocabulary/components/dragging.svelte";
   import Editing from "$views/vocabulary/components/editing.svelte";
+  import PanelFacts from "$views/vocabulary/components/panel-facts.svelte";
   import PanelParts from "$views/vocabulary/components/panel-parts.svelte";
+  import PanelShapes from "$views/vocabulary/components/panel-shapes.svelte";
+  import PanelValues from "$views/vocabulary/components/panel-values.svelte";
   import ScreenParts from "$views/vocabulary/components/screen-parts.svelte";
+  import ScreenPlane from "$views/vocabulary/components/screen-plane.svelte";
   import { createCommentLog, provideCommentLog } from "$views/vocabulary/shared/comment-log.svelte";
   import { Separator } from "$lib/simple-components/separator";
 
@@ -93,8 +97,28 @@
   <Separator />
   <Editing />
   <Separator />
+
+  <!--
+    The four sections the second pass added, in the order a reader meets them:
+    the controls, then what a panel shows without asking, then the shapes that
+    carry order and change, then the plane.
+
+    They sit after `Editing` rather than at the end because they are more of the
+    same two families, and a reader looking for a field should find every field
+    in one stretch. The three sections after them are compositions and questions
+    about data, which are a different kind of thing.
+  -->
+  <PanelValues />
+  <Separator />
+  <PanelFacts />
+  <Separator />
+  <PanelShapes />
+  <Separator />
   <ScreenParts />
   <Separator />
+  <ScreenPlane />
+  <Separator />
+
   <Dragging />
   <Separator />
   <Compositions />
