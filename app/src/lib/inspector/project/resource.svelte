@@ -1,0 +1,253 @@
+<script lang="ts">
+  import Copy from "@lucide/svelte/icons/copy";
+  import SquareArrowOutUpRight from "@lucide/svelte/icons/square-arrow-out-up-right";
+  import Trash2 from "@lucide/svelte/icons/trash-2";
+
+  import {
+    Panel,
+    PanelActions,
+    PanelButton,
+    PanelCrumbs,
+    PanelFaces,
+    PanelField,
+    PanelFields,
+    PanelLink,
+    PanelNote,
+    PanelRow,
+    PanelSection
+  } from "$lib/unique-components/panel";
+  import type { ResourceKind } from "$mock-capabilities/cast";
+  import { members, presenceFor } from "$mock-capabilities/collaboration";
+  import { findings, hypotheses, kindLabel, questions, threads } from "$mock-capabilities/library";
+  import { activity, resources } from "$mock-capabilities/project";
+  import { mockWorkbench } from "$mock-models/workbench.svelte";
+
+  /**
+   * The general lens for anything first-class in the project: what it is, who is
+   * in it, where it came from, what it touches.
+   *
+   * `docs/screen-panel-views/inspector/project/resource.md` is the
+   * specification. Kind-specific detail belongs to the screen that owns the
+   * kind; this one is about identity and relationships. The panel title is the
+   * resource's title, so the identity band does not repeat it.
+   *
+   * **Open and Duplicate sit in the action row rather than in the Actions
+   * section.** The specification names them twice — once under Identity and once
+   * at the foot — and drawing them twice in a 300px panel is two of the same
+   * button a reader has to tell apart. The foot keeps what only belongs there:
+   * the destructive one.
+   *
+   * **Updated by falls back and never guesses.** The record's own actor first,
+   * then the latest Activity entry attributable to this resource, then an em
+   * dash. Not every kind stores an updating actor, and inventing one is worse
+   * than leaving the field empty.
+   */
+  let { resourceId = "r-memo" }: { resourceId?: string } = $props();
+
+  const all = $derived(resources().current);
+  const resource = $derived(all.find((candidate) => candidate.id === resourceId) ?? all[0]);
+
+  /** Kind to the lens that owns it: the resolver the specification asks for. */
+  const OPENS: Record<ResourceKind, string> = {
+    document: "resource.document",
+    slides: "resource.deck",
+    spreadsheet: "resource.spreadsheet",
+    research: "research.research-thread",
+    analysis: "analysis.analysis",
+    file: "project.file",
+    finding: "research.accepted-finding",
+    connector: "project.connector",
+    context: "scope.context",
+    template: "library.template"
+  };
+
+  /** Presence, scoped to this resource: who has it open right now. */
+  const here = $derived(
+    members().current.filter((person) => presenceFor(person.id).current.at === resource.name)
+  );
+
+  const names = $derived(here.map((person) => person.name).join(", "));
+
+  const updatedBy = $derived(
+    resource.updatedBy.length > 0
+      ? resource.updatedBy
+      : (activity().current.find((entry) => entry.subject === resource.name)?.actor ?? "—")
+  );
+
+  const updater = $derived(members().current.find((person) => person.name === updatedBy));
+
+  type Link = {
+    readonly id: string;
+    readonly title: string;
+    readonly relation: string;
+    readonly key: string;
+    readonly kind: string;
+  };
+
+  /**
+   * A link query in the one direction the model has. Research links exist —
+   * a finding knows its thread and its hypothesis, a thread knows its question —
+   * so those are real rows. Citation links between ordinary resources do not.
+   */
+  const links: readonly Link[] = $derived.by(() => {
+    const found: Link[] = [];
+
+    const finding = findings().current.find((row) => row.title === resource.name);
+    if (finding !== undefined) {
+      const from = threads().current.find((row) => row.title === finding.from);
+      if (from !== undefined) {
+        found.push({
+          id: from.id,
+          title: from.title,
+          relation: "Came out of this thread",
+          key: "research.research-thread",
+          kind: "thread"
+        });
+      }
+      const bearsOn = hypotheses().current.find((row) => row.title === finding.bearsOn);
+      if (bearsOn !== undefined) {
+        found.push({
+          id: bearsOn.id,
+          title: bearsOn.title,
+          relation: "Bears on this hypothesis",
+          key: "research.hypothesis",
+          kind: "hypothesis"
+        });
+      }
+      return found;
+    }
+
+    const thread = threads().current.find((row) => row.title === resource.name);
+    if (thread !== undefined) {
+      const question = questions().current.find((row) => row.title === thread.title);
+      if (question !== undefined) {
+        found.push({
+          id: question.id,
+          title: question.title,
+          relation: "Linked question",
+          key: "research.question",
+          kind: "question"
+        });
+      }
+      for (const row of findings().current.filter((candidate) => candidate.from === thread.title)) {
+        found.push({
+          id: row.id,
+          title: row.title,
+          relation: "Accepted from this thread",
+          key: "research.accepted-finding",
+          kind: "finding"
+        });
+      }
+    }
+
+    return found;
+  });
+
+  /** Nothing writes a copy yet, so Duplicate lands here and the button says so. */
+  let duplicated = $state(false);
+
+  const open = () =>
+    mockWorkbench.inspect(OPENS[resource.kind], { kind: "resource", id: resource.id });
+</script>
+
+<Panel title={resource.name}>
+  {#snippet crumbs()}
+    <PanelCrumbs
+      trail={[
+        { label: mockWorkbench.project.name, key: "project.project" },
+        { label: resource.name }
+      ]}
+      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+    />
+  {/snippet}
+
+  {#snippet actions()}
+    <PanelButton label="Open" icon={SquareArrowOutUpRight} tone="primary" onclick={open} />
+    <PanelButton
+      label={duplicated ? "Duplicated" : "Duplicate"}
+      icon={Copy}
+      disabled={duplicated}
+      title={duplicated ? "A copy is already asked for" : "Make a copy in this project"}
+      onclick={() => (duplicated = true)}
+    />
+  {/snippet}
+
+  <PanelFields>
+    <PanelField label="Kind">{kindLabel(resource.kind)}</PanelField>
+    <PanelField label="ID" mono>{resource.id}</PanelField>
+  </PanelFields>
+
+  <!--
+    Faces and a line of text, because a strip of initials says who only to
+    someone who already knows them.
+  -->
+  <PanelSection title="Editing now" count={here.length} flush>
+    {#if here.length === 0}
+      <PanelNote>Nobody has this open.</PanelNote>
+    {:else}
+      <PanelFaces
+        actors={here.map((person) => ({ id: person.id, name: person.name }))}
+        label="Editing now"
+        onselect={(id: string) =>
+          mockWorkbench.inspect("collaboration.person", { kind: "person", id })}
+      />
+      <PanelNote>{names} {here.length === 1 ? "has" : "have"} this open right now.</PanelNote>
+    {/if}
+  </PanelSection>
+
+  <PanelSection title="Provenance" open={false} flush>
+    <PanelFields>
+      <PanelField label="Created by">—</PanelField>
+      <PanelField label="Updated by" stacked>
+        {#if updater === undefined}
+          {updatedBy}
+        {:else}
+          <PanelLink
+            label={updater.name}
+            title="{updater.name} — {updater.role}"
+            onselect={() =>
+              mockWorkbench.inspect("collaboration.person", { kind: "person", id: updater.id })}
+          />
+        {/if}
+      </PanelField>
+      <PanelField label="From template">—</PanelField>
+      <PanelField label="Updated">{resource.updated}</PanelField>
+    </PanelFields>
+    <PanelNote tone="gap">
+      No resource stores a creating actor or a template origin, so neither can be said here.
+    </PanelNote>
+  </PanelSection>
+
+  <PanelSection title="Relationships" count={links.length} open={false} flush>
+    {#each links as link (link.id)}
+      <PanelRow
+        title={link.title}
+        sub={link.relation}
+        onselect={() => mockWorkbench.inspect(link.key, { kind: link.kind, id: link.id })}
+      />
+    {/each}
+    {#if links.length === 0}
+      <PanelNote>No research link names this one.</PanelNote>
+    {/if}
+    <PanelNote tone="gap">
+      Citations between ordinary resources are not modeled, so nothing here can say what cites this.
+    </PanelNote>
+  </PanelSection>
+
+  <!-- Last and shut, and only the destructive one: the rest are in the action row. -->
+  <PanelSection title="Actions" open={false} flush>
+    <PanelActions>
+      <PanelButton
+        label="Delete"
+        icon={Trash2}
+        tone="danger"
+        disabled
+        title="Nothing queries what depends on this yet, so deletion cannot be offered safely"
+      />
+    </PanelActions>
+    <PanelNote tone="gap">
+      Deleting anything a Context can name is gated on a reverse-dependency query the model does not
+      have.
+    </PanelNote>
+  </PanelSection>
+</Panel>
