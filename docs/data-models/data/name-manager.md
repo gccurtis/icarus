@@ -18,7 +18,7 @@ interface NameVariable {
 
 type ValueType =
   | "text" | "number" | "logic" | "date" | "null"
-  | "list" | "record" | "table" | "function";
+  | "list" | "record" | "table" | "function" | "range";
 ```
 
 ## Two forms of the name
@@ -66,10 +66,27 @@ name manager is what makes that possible:
 | `list` | one column named for the variable, one row per element |
 | `scalar` | 1 × 1, one column named for the variable |
 | `function` | not usable as an input |
+| `range` | not usable as an input until something resolves it |
 
 So `TargetMargin` holding `42` is a one-row, one-column table whose single cell
 is 42. This is why an author never has to know whether something was declared as
 a list, a record, or a table before putting it on a shelf.
+
+## A range is a reference, and it is stored as one
+
+`range` names cells rather than holding them: `Outages!A1:D400` is what is stored,
+and it is stored as written. Nothing here reads the grid it points at.
+
+That is what keeps it a value rather than a live query. The name manager cannot
+resolve it — resolving is evaluation, and this capability performs none — so a
+caller that wants the cells asks the spreadsheet for them, exactly as a formula
+asks this for a bare name. Validation is that the reference parses, and nothing
+more: a range naming a sheet that no longer exists is stored, and the caller that
+resolves it is the one that reports the failure.
+
+The alternative was storing the resolved cells, which would go stale the moment
+the grid changed and would make this the one variable that lies about what a
+formula will get.
 
 ## It evaluates nothing
 
