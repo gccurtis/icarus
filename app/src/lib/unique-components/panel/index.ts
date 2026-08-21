@@ -118,3 +118,108 @@ export { default as PanelFaces } from "./panel-faces.svelte";
 export { default as PanelTable } from "./panel-table.svelte";
 export { default as PanelCards } from "./panel-cards.svelte";
 export { default as PanelSentence } from "./panel-sentence.svelte";
+
+/**
+ * A colour, shown rather than chosen.
+ *
+ * A deck theme lists its palette; a chart lists which colour is which series.
+ * Three panels were hand-rolling it with a local `<style>` block and a `.chip`
+ * div — at three different sizes, in three different layouts, for one shape.
+ *
+ * Not `PanelColor`, which is a `radiogroup` of round targets: some of these are
+ * not selectable at all, and the ones that are open a lens rather than setting a
+ * value. They are drawn square for that reason, so the two never read alike.
+ *
+ * A swatch carries its name as text. A row of colours with no words is unusable
+ * to anyone who cannot see them and unreadable to everyone else.
+ */
+export { default as PanelSwatches } from "./panel-swatches.svelte";
+export { default as PanelSwatch } from "./panel-swatch.svelte";
+
+/**
+ * A proportion that is a fact, and a record read as figures.
+ *
+ * `PanelMeter` is not `PanelProgress`, and the difference is a claim rather than
+ * a drawing: progress is `role="progressbar"` and its bar promises it is heading
+ * to the total. A lattice that has indexed 88 of 211 resources is not on its way
+ * to 211 — it may sit there forever. This is `role="meter"`, has no indeterminate
+ * form, and draws its track so the total is visible rather than implied.
+ *
+ * `PanelStats` is not `PanelFields`: a field is a labelled value and reads left
+ * to right; a record is a row of figures and reads across, which is why
+ * `41 tasks · 2 running · 128 findings` written as a sentence in a field
+ * disappears into the list around it. Not `ScreenStats` either — that carries a
+ * frame sized for the plane, and at 84px its one-line form is unreachable.
+ */
+export { default as PanelMeter } from "./panel-meter.svelte";
+export { default as PanelStats } from "./panel-stats.svelte";
+export { default as PanelStat } from "./panel-stat.svelte";
+
+/**
+ * Things in an order, and things in a shape.
+ *
+ * `PanelTimeline` is what happened: a rail is what makes "and then" visible, and
+ * a plain list of rows read out of order reads the same as one read in order. It
+ * takes a `size`, so a workspace uses this rather than a second way to draw one
+ * feed.
+ *
+ * `PanelSteps` is what is *meant* to happen. Drawn like a timeline it reads like
+ * one, and then a reader cannot tell a step that failed from an event that
+ * occurred — so it has no rail, and the five states are the component: each a
+ * fixed word, a fixed shape and a role, decided once instead of per surface.
+ *
+ * `PanelTree` collapses, which is the whole reason it is not `PanelRow` with
+ * `depth`: depth says where a row sits, but a tree of forty nodes is forty rows
+ * whatever you were looking for. A branch with nothing under it draws no twisty,
+ * because an empty disclosure is a control that lies.
+ *
+ * `PanelDiff` marks what changed. Two labelled values invite a reader to compare
+ * them character by character, which is exactly the work this should be doing for
+ * them; the marks are `<del>` and `<ins>` with signs on each side, so the change
+ * survives being read without colour.
+ */
+export { default as PanelTimeline } from "./panel-timeline.svelte";
+export { default as PanelSteps } from "./panel-steps.svelte";
+export { default as PanelTree } from "./panel-tree.svelte";
+export { default as PanelBranch } from "./panel-branch.svelte";
+export { default as PanelDiff } from "./panel-diff.svelte";
+
+/**
+ * What a panel says when it holds nothing, and when something is wrong.
+ *
+ * Both have a screen-scale counterpart and neither is it. `ScreenEmpty` is
+ * centred, `flex-1` and `max-w-sm`; every one of those would have to be
+ * overridden into its opposite at 276px. What survives the resizing is its one
+ * good distinction — a list never used and a filter that hid everything need
+ * different sentences and different ways out — and here they differ visually too:
+ * `nothing-yet` outlines the shape of the missing thing, `no-matches` does not,
+ * because that list is full and outlining it would be a lie.
+ *
+ * `PanelBanner` is not `PanelNote tone="gap"`: a gap note says the model cannot
+ * store this, and a banner says something is wrong *now*. It is the one place a
+ * panel may reach for the danger role, so it must always carry an action or a
+ * reason — the type enforces it, and a banner that only worries does not compile.
+ */
+export { default as PanelEmpty } from "./panel-empty.svelte";
+export { default as PanelBanner } from "./panel-banner.svelte";
+
+/**
+ * A shortcut, and the three values a field could not hold honestly.
+ *
+ * `PanelKeys` exists because of a design law: shortcuts accelerate visible paths
+ * and never replace them, so a shortcut nobody can see is the failure that law
+ * names. It takes the chord as parts rather than a string — a caller writing
+ * "Cmd+K" has already made the platform decision, and made it wrong on Linux.
+ *
+ * The other three are all the same argument against `PanelEditableText`: text
+ * has no floor, no ceiling, no step and no unit, so every caller re-implements
+ * four things and one of them gets it wrong. A date typed as text is a date in
+ * somebody's local format, and the difference between 03/04 and 04/03 is a
+ * filing deadline. `PanelRange` is not `PanelNumber` because a number is exact
+ * and a range is proportional — what a slider says that a field cannot is where
+ * the value sits between its ends, which is what you need when it has no unit.
+ */
+export { default as PanelKeys } from "./panel-keys.svelte";
+export { default as PanelDate } from "./panel-date.svelte";
+export { default as PanelNumber } from "./panel-number.svelte";
+export { default as PanelRange } from "./panel-range.svelte";

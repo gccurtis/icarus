@@ -30,6 +30,7 @@
     indent = false,
     depth = 0,
     onselect,
+    control,
     children
   }: {
     title: string;
@@ -62,6 +63,18 @@
      */
     depth?: 0 | 1 | 2 | 3;
     onselect?: () => void;
+    /**
+     * A control at the row's end: a switch, a remove, an overflow menu.
+     *
+     * Its presence changes what the row *is*. A row with an `onselect` and
+     * nothing else is a button, and a button cannot hold another button — so a
+     * row with a control becomes a container, and the title inside it becomes
+     * the button instead. `ScreenDecision` solved the same problem the same way.
+     *
+     * `meta` is a value and this is an action; a row may carry both, and the
+     * control is always last.
+     */
+    control?: Snippet;
     /** Replaces the title line, for a row that needs marked-up content in it. */
     children?: Snippet;
   } = $props();
@@ -94,19 +107,25 @@
   };
 </script>
 
+<!--
+  Three shapes, decided by what the row holds rather than by a prop that says so.
+  A row that only opens something is a button. A row that only shows something is
+  a `listitem`. A row that does both cannot be a button — a control inside one
+  fires it too — so it becomes a container and the title takes the press.
+-->
 <svelte:element
-  this={onselect ? "button" : "div"}
-  role={onselect ? undefined : "listitem"}
-  type={onselect ? "button" : undefined}
-  aria-current={onselect && selected ? "true" : undefined}
-  onclick={onselect}
+  this={onselect && !control ? "button" : "div"}
+  role={onselect && !control ? undefined : "listitem"}
+  type={onselect && !control ? "button" : undefined}
+  aria-current={onselect && !control && selected ? "true" : undefined}
+  onclick={onselect && !control ? onselect : undefined}
   class={cn(
     "flex w-full items-start gap-2 px-3 py-1.5 text-start",
     /* 24px is the floor for a pointer target; two lines of content clears it. */
     "min-h-6",
     /* `indent` is depth 1 by another name; whichever says more wins. */
     INDENT[Math.max(depth, indent ? 1 : 0) as 0 | 1 | 2 | 3],
-    onselect && "hover:bg-surface-panel-hover cursor-pointer",
+    onselect && !control && "hover:bg-surface-panel-hover cursor-pointer",
     selected && "bg-active-surface"
   )}
 >
@@ -119,6 +138,20 @@
   <span class="flex min-w-0 flex-1 flex-col">
     {#if children}
       {@render children()}
+    {:else if onselect && control}
+      <!-- The press moved here, because the row around it is holding a control. -->
+      <button
+        type="button"
+        {title}
+        aria-current={selected ? "true" : undefined}
+        onclick={onselect}
+        class={cn(
+          "text-body-sm truncate text-start hover:underline",
+          selected ? "text-active-text" : TITLE_TONE[titleTone ?? "default"]
+        )}
+      >
+        {title}
+      </button>
     {:else}
       <!-- Both lines truncate in a 300px panel, so both carry their own text. -->
       <span
@@ -138,5 +171,9 @@
 
   {#if meta}
     <span class="text-caption text-ink-muted shrink-0 tabular-nums">{meta}</span>
+  {/if}
+
+  {#if control}
+    <span class="flex shrink-0 items-center">{@render control()}</span>
   {/if}
 </svelte:element>
