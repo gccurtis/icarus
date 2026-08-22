@@ -14,7 +14,7 @@ import {
   DEFAULT_FRAME,
   INSPECTION_KEYS,
   SINGLETONS,
-  SUBSCREENS,
+  defaultSubscreen,
   defaultContext,
   isInspectionKey,
   isSingleton,
@@ -74,7 +74,7 @@ test("a tab starts on its screen's first subscreen, its rail's first view, and a
   const model = viewState();
   const tab = model.active;
 
-  assert.equal(tab.subscreen, SUBSCREENS[tab.screen][0]);
+  assert.equal(tab.subscreen, defaultSubscreen(tab.screen));
   assert.equal(model.context, defaultContext(tab.screen, tab.subscreen));
   assert.equal(model.inspected, "empty");
   assert.equal(model.selection, undefined);
@@ -329,13 +329,13 @@ test("showing answers for the centre, not for the screen alone", () => {
   model.open({ screen: "templates" });
 
   assert.equal(model.showing("templates"), true);
-  assert.equal(model.showing("templates", SUBSCREENS.templates[0]), true);
-  assert.equal(model.showing("templates", SUBSCREENS.templates[1]), false);
+  assert.equal(model.showing("templates", "library"), true);
+  assert.equal(model.showing("templates", "editor"), false);
   assert.equal(model.showing("research"), false);
 
-  model.showSubscreen(SUBSCREENS.templates[1]);
+  model.showSubscreen("editor");
 
-  assert.equal(model.showing("templates", SUBSCREENS.templates[1]), true);
+  assert.equal(model.showing("templates", "editor"), true);
 });
 
 // ------------------------------------------------------------------- context
@@ -344,7 +344,8 @@ test("selecting a view the rail does not offer throws", () => {
   const model = viewState();
   model.open({ screen: "research" });
 
-  assert.throws(() => model.selectContext(railFor("research", "one-question")[0]), /does not offer/);
+  // The tab opens on `all-threads`, so a view from the other centre is refused.
+  assert.throws(() => model.selectContext(railFor("research", "one-question")[1]), /does not offer/);
 });
 
 test("selecting a view the rail offers moves the rail", () => {
@@ -513,7 +514,7 @@ test("two view states share nothing", () => {
   assert.equal(b.tabs.length, SINGLETONS.length);
   assert.equal(b.frame.contextWidth, DEFAULT_FRAME.contextWidth);
   assert.equal(b.inspected, "empty");
-  assert.equal(b.tabs[1].subscreen, SUBSCREENS.research[0]);
+  assert.equal(b.tabs[1].subscreen, defaultSubscreen("research"));
   // The ids match — the counter is per instance, which is the point — so what
   // has to hold is that the tabs are not the same objects.
   assert.equal(a.tabs[0].id, b.tabs[0].id);

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { clientModel } from "$model/client";
+  import { provideViewState } from "$model/client/view-state";
   import CommandBar from "$views/command-bar/command-bar.svelte";
   import { dispatchCommands } from "$views/app/effects/dispatch-commands.svelte";
   import ContextPanel from "$views/context-panel/context-panel.svelte";
@@ -35,7 +36,16 @@
    * stylesheet, so there is one source of truth per dimension and each tab keeps
    * the geometry its user dragged.
    */
-  const { workbench, commands } = clientModel();
+  /**
+   * The frame is where the instance is handed down.
+   *
+   * The client graph built it; every panel below reads it out of context rather
+   * than out of `clientModel()`, which is what keeps all 197 of them renderable
+   * on their own. One provider, at the top, because a second one underneath
+   * would silently shadow it for everything below.
+   */
+  const { viewState, commands } = clientModel();
+  provideViewState(viewState);
 
   /**
    * One keydown listener for the whole application, mounted with the frame and
@@ -56,11 +66,11 @@
    * state and the work surface never has to reflow between two and three.
    */
   const contextWidth = $derived(
-    workbench.frame.contextCollapsed ? RAIL_WIDTH : RAIL_WIDTH + workbench.frame.contextWidth
+    viewState.frame.contextCollapsed ? RAIL_WIDTH : RAIL_WIDTH + viewState.frame.contextWidth
   );
 
   const inspectorWidth = $derived(
-    workbench.frame.inspectorCollapsed ? COLLAPSED_WIDTH : workbench.frame.inspectorWidth
+    viewState.frame.inspectorCollapsed ? COLLAPSED_WIDTH : viewState.frame.inspectorWidth
   );
 </script>
 

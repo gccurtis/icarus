@@ -4,18 +4,20 @@ Lives at `procedures/procedures.md`.
 
 | File | Holds |
 | --- | --- |
-| [`resolve-context.ts`](resolve-context.ts) | `CONTEXT_IDS`, `CONTEXTS_BY_SCREEN`, `resolveContext` |
 | [`rail-entries.ts`](rail-entries.ts) | `RAIL_ENTRIES` — a label and an icon for each of the ninety context views |
 
-## Why there are two vocabularies here at once
+## Why the vocabulary is no longer here
 
-`resolve-context.ts` serves the shell as it is: sixteen ids over twelve screens,
-with its own components. `rail-entries.ts` serves the shell as
-`docs/screen-panel-views` describes it: ninety views under `$context`, ordered by
-`$model/client/view-state`'s rails.
+It used to be. A procedure here held sixteen ids, which screen offered which, and
+what to do with a stored id that had drifted — all of it this panel's, because
+the workbench remembered a `contextId` and never interpreted it.
 
-They stand together only while the shell is being moved from one to the other.
-`resolve-context.ts` goes when the panel stops rendering its own components.
+The ninety views under `$context` are a different proposition. Which ones a
+screen offers is transcribed from the specifications and the ids are generated
+from the tree, so both belong with the state that remembers them:
+`$model/client/view-state` answers `railFor(screen, subscreen)`, and the drift
+fallback is its `context` getter. What is left here is the half that cannot be
+derived.
 
 ## Why the rail table is not generated
 

@@ -42,8 +42,10 @@ export type {
 export { DEFAULT_FRAME, SINGLETONS, isSingleton } from "$model/client/view-state/types";
 
 export {
+  DEFAULT_SUBSCREEN,
   RAILS,
   defaultContext,
+  defaultSubscreen,
   offersContext,
   railFor
 } from "$model/client/view-state/methods/shared/rails";

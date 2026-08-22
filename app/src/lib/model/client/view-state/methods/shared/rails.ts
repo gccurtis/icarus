@@ -193,6 +193,39 @@ export const railFor = (screen: Screen, subscreen: Subscreen): readonly ContextI
 export const defaultContext = (screen: Screen, subscreen: Subscreen): ContextId | undefined =>
   railFor(screen, subscreen)[0];
 
+/**
+ * The centre a screen opens on.
+ *
+ * **Named rather than derived, because neither thing it could be derived from is
+ * right.** The generated `SUBSCREENS` is sorted, and the alphabet puts Templates
+ * on `editor` — a screen opening on a template being authored rather than on the
+ * templates it has. The order of the tables in this file is the specification's
+ * order, and that puts Research on `one-question`, because its overview describes
+ * that subscreen first.
+ *
+ * The rule is the one the screen deck settled: **a permanent tab opens on its
+ * library.** Nothing is selected yet when a project loads, so the honest centre
+ * is the one that lists what there is and lets you open one — which object you
+ * are then on is view state.
+ */
+export const DEFAULT_SUBSCREEN: Record<Screen, Subscreen> = {
+  analysis: "all-analyses",
+  automations: "library",
+  context: "all-contexts",
+  personas: "library",
+  research: "all-threads",
+  templates: "library",
+
+  // One centre each; the generated name for it is `workspace`.
+  "document-editor": "workspace",
+  "new-tab": "workspace",
+  "project-overview": "workspace",
+  "slide-deck-editor": "workspace",
+  "spreadsheet-editor": "workspace"
+};
+
+export const defaultSubscreen = (screen: Screen): Subscreen => DEFAULT_SUBSCREEN[screen];
+
 /** Whether this rail holds this view — the test a caller selecting a context owes. */
 export const offersContext = (
   screen: Screen,

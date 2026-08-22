@@ -1,5 +1,4 @@
-import { SUBSCREENS } from "$model/client/view-state/methods/shared/keys";
-import { defaultContext } from "$model/client/view-state/methods/shared/rails";
+import { defaultContext, defaultSubscreen } from "$model/client/view-state/methods/shared/rails";
 import { DEFAULT_FRAME, type Tab, type TabId, type Target } from "$model/client/view-state/types";
 
 /**
@@ -18,7 +17,10 @@ import { DEFAULT_FRAME, type Tab, type TabId, type Target } from "$model/client/
  * held a reference to it would throw the first time anyone dragged an edge.
  */
 export const mintTab = (id: TabId, target: Target): Tab => {
-  const subscreen = target.subscreen ?? SUBSCREENS[target.screen][0];
+  // A permanent tab opens on its library — see `DEFAULT_SUBSCREEN`, which names
+  // it rather than deriving it, because neither the alphabet nor the order of
+  // the specification's tables gets it right for every screen.
+  const subscreen = target.subscreen ?? defaultSubscreen(target.screen);
   return {
     id,
     screen: target.screen,

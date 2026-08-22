@@ -3,6 +3,7 @@
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
 
   import { clientModel } from "$model/client";
+  import { viewState } from "$model/client/view-state";
   import type { Mode } from "$model/client/copilot";
   import * as Select from "$lib/simple-components/select";
 
@@ -24,7 +25,8 @@
    * so a refused mutation leaves the draft where the user can see it, and the
    * failure is this surface's to render.
    */
-  const { workbench, copilot } = clientModel();
+  const { copilot } = clientModel();
+  const view = viewState();
 
   /** Display copy for the model's three modes. The ids are the model's. */
   const MODES = [
@@ -78,16 +80,16 @@
     composer?.focus();
   });
 
-  const inspectingCopilot = $derived(workbench.inspectedNode?.startsWith("copilot.") === true);
-  const inspectorOpen = $derived(!workbench.frame.inspectorCollapsed);
+  const inspectingCopilot = $derived(view.inspected.startsWith("copilot."));
+  const inspectorOpen = $derived(!view.frame.inspectorCollapsed);
 
   /** Solid when in use. That includes the inspector showing the copilot — the
    *  bar and that panel are one surface. */
   const active = $derived(focused || (inspectingCopilot && inspectorOpen));
 
   const activate = () => {
-    workbench.inspect("copilot.home");
-    if (workbench.frame.inspectorCollapsed) workbench.resize({ inspectorCollapsed: false });
+    view.inspect("copilot.home");
+    if (view.frame.inspectorCollapsed) view.resize({ inspectorCollapsed: false });
   };
 
   /** Four lines, then it scrolls inside itself, so the bottom edge stays put. */
