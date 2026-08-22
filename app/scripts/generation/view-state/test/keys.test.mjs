@@ -74,7 +74,14 @@ const refuses = (root, ...args) => {
   }
 };
 
-const keysPath = (root) => join(root, "src", "lib", "view-state", "keys.ts");
+/**
+ * Where the script writes. It has to match `keys.mjs`'s own target exactly: the
+ * vocabulary lives under the model object that holds the state it names, and the
+ * model standard admits only a document, a door, types, a definition and a
+ * constructor at an object root — so it sits in `methods/shared/`.
+ */
+const keysPath = (root) =>
+  join(root, "src", "lib", "model", "client", "view-state", "methods", "shared", "keys.ts");
 const keys = (root) => readFileSync(keysPath(root), "utf8");
 
 /** The string members of one generated array, in the order they were written. */
