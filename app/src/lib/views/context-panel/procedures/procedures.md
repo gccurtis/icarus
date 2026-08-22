@@ -5,6 +5,31 @@ Lives at `procedures/procedures.md`.
 | File | Holds |
 | --- | --- |
 | [`resolve-context.ts`](resolve-context.ts) | `CONTEXT_IDS`, `CONTEXTS_BY_SCREEN`, `resolveContext` |
+| [`rail-entries.ts`](rail-entries.ts) | `RAIL_ENTRIES` — a label and an icon for each of the ninety context views |
+
+## Why there are two vocabularies here at once
+
+`resolve-context.ts` serves the shell as it is: sixteen ids over twelve screens,
+with its own components. `rail-entries.ts` serves the shell as
+`docs/screen-panel-views` describes it: ninety views under `$context`, ordered by
+`$model/client/view-state`'s rails.
+
+They stand together only while the shell is being moved from one to the other.
+`resolve-context.ts` goes when the panel stops rendering its own components.
+
+## Why the rail table is not generated
+
+The order and the membership already are — `view-state`'s `RAILS` is transcribed
+from the specifications and its ids are generated from the tree. What cannot be
+derived is what an entry *looks like*: a label is the view's name as its
+specification writes it, not its file name, and an icon is a judgement about what
+the view is for that also has to survive sitting next to its neighbours in the
+same rail.
+
+It is typed `Record<ContextId, RailEntry>` and not `Partial`, so a new context
+view fails to compile until it has been given both. A rail entry that cannot be
+drawn is a rail with a hole in it, and finding that at runtime is strictly worse
+than finding it at build time.
 
 ## Why the vocabulary is here and not in the model
 
