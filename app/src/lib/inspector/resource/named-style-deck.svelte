@@ -9,7 +9,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { deckStyle } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A named style in the deck's theme: typography edited once, for everywhere it
@@ -23,6 +23,8 @@
    * renaming the style is safe and re-keying it is not.
    */
   let { styleId = "ks-title" }: { styleId?: string } = $props();
+
+  const view = viewState();
 
   const style = $derived(deckStyle(styleId).current);
 
@@ -38,7 +40,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: "Theme", key: "resource.theme" }, { label: name }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key, { kind: "style", id: styleId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "style", id: styleId });
+      }}
     />
   {/snippet}
 

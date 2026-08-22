@@ -11,7 +11,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { documentRecord, textBlock, type TextBlock } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A whole block of the document body — a paragraph, a heading, a list.
@@ -33,6 +33,8 @@
     documentId = "r-memo",
     blockId = "b_3d7"
   }: { documentId?: string; blockId?: string } = $props();
+
+  const view = viewState();
 
   const doc = $derived(documentRecord(documentId).current);
   const block = $derived(textBlock(blockId).current);
@@ -68,7 +70,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: doc.title, key: "resource.document" }, { label: "Text block" }]}
-      onnavigate={(key) => mockWorkbench.inspect(key, { kind: "resource", id: documentId })}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "resource", id: documentId });
+      }}
     />
   {/snippet}
 

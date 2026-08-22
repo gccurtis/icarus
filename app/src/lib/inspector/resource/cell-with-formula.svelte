@@ -18,7 +18,7 @@
     spreadsheetRecord,
     type CellReference
   } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A cell whose content is an expression: what it evaluates to, the expression
@@ -41,6 +41,8 @@
     address = "G3"
   }: { spreadsheetId?: string; address?: string } = $props();
 
+  const view = viewState();
+
   const sheet = $derived(spreadsheetRecord(spreadsheetId).current);
   const row = $derived(cell(spreadsheetId, address).current);
   const style = $derived(row?.styleId === undefined ? undefined : sheetStyle(row.styleId).current);
@@ -60,7 +62,7 @@
    */
   const open = (reference: CellReference) => {
     if (reference.kind === "named range") {
-      mockWorkbench.inspect("resource.named-range", {
+      view.inspect("resource.named-range", {
         kind: "named-range",
         id: reference.address
       });
@@ -72,7 +74,7 @@
         : reference.kind === "formula"
           ? "resource.cell-with-formula"
           : "resource.cell";
-    mockWorkbench.inspect(key, { kind: "cell", id: reference.address });
+    view.inspect(key, { kind: "cell", id: reference.address });
   };
 
   const qualifies = (reference: CellReference) => reference.note ?? reference.kind;
@@ -82,7 +84,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: sheet.title, key: "resource.spreadsheet" }, { label: address }]}
-      onnavigate={(key) => mockWorkbench.inspect(key)}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -159,7 +163,7 @@
               label={style.name}
               title="Open the {style.name} style"
               onselect={() =>
-                mockWorkbench.inspect("resource.named-style-sheet", {
+                view.inspect("resource.named-style-sheet", {
                   kind: "cell-style",
                   id: style.id
                 })}

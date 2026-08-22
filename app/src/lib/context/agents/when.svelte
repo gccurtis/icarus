@@ -13,7 +13,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { triggersFor, type TriggerOption } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The trigger half of an Automation: the five things that can start a rule.
@@ -110,7 +112,7 @@
                   label={connector}
                   title="{connector} — connector"
                   onselect={() =>
-                    mockWorkbench.inspect("project.connector", {
+                    view.inspect("project.connector", {
                       kind: "connector",
                       id: connector
                     })}

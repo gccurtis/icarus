@@ -15,8 +15,9 @@
     PanelRow,
     PanelSection
   } from "$lib/unique-components/panel";
+  import { project } from "$mock-capabilities/project";
   import { bearingOn, question, type Bearing } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * One thing the project wants to know, and what bears on it.
@@ -33,6 +34,8 @@
    * so — a question with three accepted findings can still be open.
    */
   let { questionId = "q-14" }: { questionId?: string } = $props();
+
+  const view = viewState();
 
   const record = $derived(question(questionId).current);
   const bearings = $derived(bearingOn(questionId).current);
@@ -54,7 +57,7 @@
   const trail = $derived(
     record.parentId !== undefined && record.parentText !== undefined
       ? [{ label: record.parentText, key: record.parentId }, { label: record.ref }]
-      : [{ label: mockWorkbench.project.name }, { label: record.ref }]
+      : [{ label: project().current.name }, { label: record.ref }]
   );
 </script>
 
@@ -62,7 +65,7 @@
   {#snippet crumbs()}
     <PanelCrumbs
       {trail}
-      onnavigate={(key) => mockWorkbench.inspect("research.question", { kind: "question", id: key })}
+      onnavigate={(key) => view.inspect("research.question", { kind: "question", id: key })}
     />
   {/snippet}
 
@@ -79,7 +82,7 @@
             label={record.parentText}
             title="Open the question this one sits under"
             onselect={() =>
-              mockWorkbench.inspect("research.question", { kind: "question", id: parentId })}
+              view.inspect("research.question", { kind: "question", id: parentId })}
           />
         </PanelField>
       {/if}
@@ -99,7 +102,7 @@
         meta={link.ref}
         icon={Lightbulb}
         onselect={() =>
-          mockWorkbench.inspect("research.hypothesis", {
+          view.inspect("research.hypothesis", {
             kind: "hypothesis",
             id: link.ref.toLowerCase()
           })}
@@ -116,7 +119,7 @@
         icon={BEARING_ICON[link.bearing]}
         tone={BEARING_TONE[link.bearing]}
         onselect={() =>
-          mockWorkbench.inspect("research.accepted-finding", {
+          view.inspect("research.accepted-finding", {
             kind: "finding",
             id: link.ref.toLowerCase()
           })}

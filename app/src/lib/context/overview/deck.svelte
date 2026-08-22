@@ -16,7 +16,9 @@
   import { members } from "$mock-capabilities/collaboration";
   import { deckDraft } from "$mock-capabilities/library";
   import { deckRecord } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The deck as a whole.
@@ -94,7 +96,7 @@
         kind="person"
         role={person.id === VIEWER.id ? "you" : person.role}
         onselect={() =>
-          mockWorkbench.inspect("collaboration.person", { kind: "person", id: person.id })}
+          view.inspect("collaboration.person", { kind: "person", id: person.id })}
       />
     {/each}
 

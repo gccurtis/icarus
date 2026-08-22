@@ -19,7 +19,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { finding, thread, type Bearing } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A conclusion offered for acceptance: still editable, not yet part of the
@@ -36,6 +36,8 @@
    * wide blast radius rather than one button among four.
    */
   let { findingId = "f-nostudy" }: { findingId?: string } = $props();
+
+  const view = viewState();
 
   const record = $derived(finding(findingId).current);
   const origin = $derived(thread(record.threadId).current);
@@ -67,7 +69,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: origin.title, key: "research.thread" }, { label: title }]}
-      onnavigate={(key) => mockWorkbench.inspect(key, { kind: "thread", id: record.threadId })}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "thread", id: record.threadId });
+      }}
     />
   {/snippet}
 
@@ -116,7 +120,7 @@
         sub={citation.locator}
         icon={FileText}
         onselect={() =>
-          mockWorkbench.inspect("research.source", { kind: "source", id: citation.sourceId })}
+          view.inspect("research.source", { kind: "source", id: citation.sourceId })}
       />
     {/each}
 
@@ -135,7 +139,7 @@
         icon={BEARING_ICON[link.bearing]}
         tone={BEARING_TONE[link.bearing]}
         onselect={() =>
-          mockWorkbench.inspect(lensFor(link), { kind: link.kind, id: link.ref.toLowerCase() })}
+          view.inspect(lensFor(link), { kind: link.kind, id: link.ref.toLowerCase() })}
       />
     {/each}
   </PanelSection>

@@ -18,7 +18,9 @@
   import { ToggleGroup, ToggleGroupItem } from "$lib/simple-components/toggle-group";
   import { lastRunOf } from "$mock-capabilities/analysis";
   import { analyses, type AnalysisRow } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Analysis — all analyses: the library of every chart built on this project's
@@ -72,7 +74,7 @@
 
   const open = (row: AnalysisRow) => {
     onopen(row.id);
-    mockWorkbench.inspect("analysis.analysis", { kind: "analysis", id: row.id });
+    view.inspect("analysis.analysis", { kind: "analysis", id: row.id });
   };
 </script>
 
@@ -125,7 +127,7 @@
               title={row.name}
               sub="{row.chart} · {run.rows} of {run.of} rows"
               icon={CHART_ICON[row.chart]}
-              selected={mockWorkbench.selection?.id === row.id}
+              selected={view.selection?.id === row.id}
               onselect={() => open(row)}
             >
               {#snippet thumb()}

@@ -10,7 +10,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { commentsOn, element, slide, type ResourceComment } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Conversation on the deck.
@@ -27,11 +27,13 @@
    */
   let { deckId = "r-board", slideId = "sl-4" }: { deckId?: string; slideId?: string } = $props();
 
+  const view = viewState();
+
   const threads = $derived(commentsOn(deckId).current);
   const current = $derived(slide(slideId).current);
 
   const selectedElementId = $derived(
-    mockWorkbench.selection?.kind === "element" ? mockWorkbench.selection.id : undefined
+    view.selection?.kind === "element" ? view.selection.id : undefined
   );
   const elementName = $derived(
     selectedElementId === undefined ? undefined : element(selectedElementId).current.name
@@ -75,7 +77,7 @@
         icon={comment.mentionsViewer ? AtSign : MessageSquare}
         tone={comment.mentionsViewer ? "attention" : "default"}
         onselect={() =>
-          mockWorkbench.inspect("comment.thread", { kind: "comment", id: comment.id })}
+          view.inspect("collaboration.comment", { kind: "comment", id: comment.id })}
       >
         <!-- The title line carries the anchor as well as the author, so a row read
              out of the deck-wide list still says what it is about. -->
@@ -102,7 +104,7 @@
         meta={comment.age}
         icon={MessageSquare}
         onselect={() =>
-          mockWorkbench.inspect("comment.thread", { kind: "comment", id: comment.id })}
+          view.inspect("collaboration.comment", { kind: "comment", id: comment.id })}
       >
         {#snippet children()}
           <span class="flex min-w-0 items-baseline gap-1.5">

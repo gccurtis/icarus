@@ -14,7 +14,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { documentDraft } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * What a document will be, before it exists.
@@ -30,6 +30,8 @@
    * three-field form is its commit. It is inert: minting the resource and
    * rebinding the tab to it is a model step no door here has.
    */
+  const view = viewState();
+
   const draft = $derived(documentDraft().current);
 
   /** Undefined until touched, so an untouched field still reads from the door. */
@@ -45,7 +47,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: "New tab" }, { label: "Create" }, { label: "Document" }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

@@ -16,7 +16,7 @@
     PanelThumbs
   } from "$lib/unique-components/panel";
   import { deckDraft } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * What a slide deck will be, before it exists.
@@ -30,6 +30,8 @@
    * that re-frames every element on every slide, so the preview answers it in
    * the picture rather than repeating the words above it.
    */
+  const view = viewState();
+
   const draft = $derived(deckDraft().current);
 
   /** Undefined until touched, so an untouched field still reads from the door. */
@@ -44,7 +46,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: "New tab" }, { label: "Create" }, { label: "Slide deck" }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

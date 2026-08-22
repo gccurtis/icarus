@@ -21,7 +21,9 @@
     type TemplateTarget,
     type TemplateVariable
   } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * What a template is, what this project has, and what is selected.
@@ -105,7 +107,7 @@
         label="Open"
         icon={SquareArrowOutUpRight}
         onclick={() =>
-          mockWorkbench.inspect("library.template", { kind: "template", id: it.id })}
+          view.inspect("library.template", { kind: "template", id: it.id })}
       />
       <!-- Disabled, and the reason is the door's own sentence rather than a guess. -->
       <PanelButton
@@ -115,7 +117,7 @@
         disabled={!draft.canCreate}
         title={draft.canCreate ? "Make something from this template" : draft.blockedBecause}
         onclick={() =>
-          mockWorkbench.inspect("library.use-template", { kind: "template", id: it.id })}
+          view.inspect("library.use-template", { kind: "template", id: it.id })}
       />
     </PanelActions>
   </PanelSection>

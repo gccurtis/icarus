@@ -13,7 +13,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { spreadsheetDraft } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * What a spreadsheet will be, before it exists.
@@ -28,6 +28,8 @@
    * same reason as its siblings: minting the resource is a model step no door
    * here has.
    */
+  const view = viewState();
+
   const draft = $derived(spreadsheetDraft().current);
 
   /** Undefined until touched, so an untouched field still reads from the door. */
@@ -38,7 +40,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: "New tab" }, { label: "Create" }, { label: "Spreadsheet" }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

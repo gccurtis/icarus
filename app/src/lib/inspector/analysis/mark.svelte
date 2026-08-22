@@ -15,7 +15,7 @@
   } from "$lib/unique-components/panel";
   import { analysis, chartFor, mark, rowsUnder } from "$mock-capabilities/analysis";
   import type { ChartKindId } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One mark on the chart: what it stands for, and the rows underneath it.
@@ -35,6 +35,8 @@
    */
   let { markId = "m-1", analysisId = "r-minutes" }: { markId?: string; analysisId?: string } =
     $props();
+
+  const view = viewState();
 
   const record = $derived(analysis(analysisId).current);
   const one = $derived(mark(markId).current);
@@ -72,7 +74,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: record.title, key: "analysis.analysis" }, { label: stands.value }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

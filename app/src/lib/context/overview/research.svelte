@@ -18,7 +18,9 @@
   import { persona } from "$mock-capabilities/agents";
   import { PEOPLE } from "$mock-capabilities/cast";
   import { searchScope, thread } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The thread: what it is for, who is asking, what it can see, what it has
@@ -45,13 +47,11 @@
 
 <Panel title="Overview">
   {#snippet actions()}
-    <!-- A new enquiry starts from the thread library, where the existing ones are. -->
-    <PanelButton
-      label="New thread"
-      icon={Plus}
-      tone="primary"
-      onclick={() => mockWorkbench.selectContext("threads")}
-    />
+    <!--
+      A new enquiry starts from the thread library, which is the other subscreen
+      rather than an entry on this rail, so it is not a `selectContext`.
+    -->
+    <PanelButton label="New thread" icon={Plus} tone="primary" />
   {/snippet}
 
   <PanelFields>
@@ -69,7 +69,7 @@
           label="{it.anchor.ref} · {it.anchor.text}"
           title="Open what this thread is anchored to"
           onselect={() =>
-            mockWorkbench.inspect(
+            view.inspect(
               it.mode === "Hypothesis" ? "research.hypothesis" : "research.question",
               { kind: it.mode.toLowerCase(), id: it.anchor?.ref ?? "" }
             )}
@@ -85,7 +85,7 @@
       kind="agent"
       role={asking.describes}
       onselect={() =>
-        mockWorkbench.inspect("agents.persona", { kind: "persona", id: asking.id })}
+        view.inspect("agents.persona", { kind: "persona", id: asking.id })}
     />
     <PanelNote>
       Set once for the whole thread — there is no per-turn switch. The Copilot is
@@ -99,7 +99,7 @@
       sub="{scope.indexed} of {scope.resources} retrievable"
       meta={String(scope.resources)}
       icon={Search}
-      onselect={() => mockWorkbench.selectContext("context")}
+      onselect={() => view.selectContext("research.context")}
     />
     {#if scope.web}
       <PanelRow
@@ -132,7 +132,7 @@
             label={it.createdBy}
             title="{it.createdBy} — person"
             onselect={() =>
-              mockWorkbench.inspect("collaboration.person", { kind: "person", id: author.id })}
+              view.inspect("collaboration.person", { kind: "person", id: author.id })}
           />
         {:else}
           {it.createdBy}

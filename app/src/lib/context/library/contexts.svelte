@@ -12,7 +12,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { contexts } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Every saved scope in the project.
@@ -34,7 +36,7 @@
 
   const open = (id: string) => {
     selectedId = id;
-    mockWorkbench.inspect("scope.context", { kind: "context", id });
+    view.inspect("scope.context", { kind: "context", id });
   };
 </script>
 
@@ -44,7 +46,7 @@
       label="New"
       icon={Plus}
       tone="primary"
-      onclick={() => mockWorkbench.inspect("scope.context", { kind: "context", id: "new" })}
+      onclick={() => view.inspect("scope.context", { kind: "context", id: "new" })}
     />
     <PanelButton
       label="Open"
@@ -59,7 +61,7 @@
       disabled={selectedId === undefined}
       title={selectedId === undefined ? "Choose a Context first" : "Copy the chosen Context"}
       onclick={() =>
-        selectedId && mockWorkbench.inspect("scope.context", { kind: "context", id: selectedId })}
+        selectedId && view.inspect("scope.context", { kind: "context", id: selectedId })}
     />
   {/snippet}
 

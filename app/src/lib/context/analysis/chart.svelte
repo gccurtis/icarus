@@ -16,7 +16,9 @@
   } from "$lib/unique-components/panel";
   import { chartFor, chartKinds } from "$mock-capabilities/analysis";
   import type { ChartKindId } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * What kind of picture to draw.
@@ -52,7 +54,7 @@
 
   const choose = (next: ChartKindId) => {
     picked = next;
-    mockWorkbench.inspect("analysis.chart", { kind: "chart", id: analysisId });
+    view.inspect("analysis.chart", { kind: "chart", id: analysisId });
   };
 </script>
 

@@ -14,7 +14,7 @@
     PanelThumbs
   } from "$lib/unique-components/panel";
   import { layoutsIn, sectionsIn, slidesIn } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * The deck as an ordered list, one panel section per section of the deck.
@@ -29,13 +29,15 @@
    */
   let { deckId = "r-board", slideId = "sl-4" }: { deckId?: string; slideId?: string } = $props();
 
+  const view = viewState();
+
   const slides = $derived(slidesIn(deckId).current);
   const sections = $derived(sectionsIn(deckId).current);
   const layouts = $derived(layoutsIn(deckId).current);
 
-  /** The slide the editor is on: the workbench's, or the one the screen opened with. */
+  /** The slide the editor is on: view state's, or the one the screen opened with. */
   const currentId = $derived(
-    mockWorkbench.selection?.kind === "slide" ? mockWorkbench.selection.id : slideId
+    view.selection?.kind === "slide" ? view.selection.id : slideId
   );
 
   /**
@@ -61,7 +63,7 @@
   const discard = () => {
     if (current === undefined) return;
     discarded = [...discarded, current.id];
-    mockWorkbench.clear();
+    view.clear();
   };
 
   /** Both mint identifiers, which is the part no door answers. See the note below. */
@@ -102,8 +104,7 @@
             lines={placeholders(slide.layoutId)}
             selected={slide.id === currentId}
             hidden={isHidden(slide.id, slide.hidden)}
-            onselect={() =>
-              mockWorkbench.inspect("resource.slide", { kind: "slide", id: slide.id })}
+            onselect={() => view.inspect("resource.slide", { kind: "slide", id: slide.id })}
           />
         {/each}
       </PanelThumbs>

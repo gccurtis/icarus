@@ -24,7 +24,7 @@
     scopeTotal,
     suggestedScope
   } from "$mock-capabilities/copilot";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * What the Copilot can see — everything this request will be able to look up,
@@ -57,7 +57,9 @@
     ondone?: () => void;
   } = $props();
 
-  const projectId = $derived(mockWorkbench.project.id);
+  const view = viewState();
+
+  const projectId = $derived(view.project);
 
   const suggestions = $derived(suggestedScope(screenId).current);
   const saved = $derived(savedScopes(projectId).current);
@@ -90,7 +92,7 @@
 
 <Panel title="What the Copilot can see">
   {#snippet crumbs()}
-    <PanelCrumbs {trail} onnavigate={() => mockWorkbench.inspect("copilot.home")} />
+    <PanelCrumbs {trail} onnavigate={() => view.inspect("copilot.home")} />
   {/snippet}
 
   {#snippet actions()}
@@ -98,7 +100,7 @@
       label="Back"
       icon={ArrowLeft}
       title="Back to the Copilot"
-      onclick={() => mockWorkbench.inspect("copilot.home")}
+      onclick={() => view.inspect("copilot.home")}
     />
     <PanelButton
       label="Done"

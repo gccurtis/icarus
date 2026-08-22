@@ -35,7 +35,9 @@
     type TableField,
     type TableVariable
   } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Analysis — one analysis: the chart, then the controls that made it.
@@ -80,7 +82,7 @@
   const sort = $derived(sortIn(analysisId).current);
   const limit = $derived(limitIn(analysisId).current);
   const pairing = $derived(relationship(analysisId).current);
-  const tables = $derived(tablesIn(mockWorkbench.project.id).current);
+  const tables = $derived(tablesIn(view.project).current);
 
   const figure = (value: number): string => value.toLocaleString("en-GB");
 
@@ -142,7 +144,7 @@
 
   const inspectMark = (row: ResultRow) => {
     markedRow = row.id;
-    mockWorkbench.inspect("analysis.mark", { kind: "mark", id: row.id });
+    view.inspect("analysis.mark", { kind: "mark", id: row.id });
   };
 
   /**
@@ -170,7 +172,7 @@
   const openField = (value: string) => {
     const mark = value.indexOf(":");
     if (mark < 0) return;
-    mockWorkbench.inspect("analysis.variable", { kind: "variable", id: value.slice(0, mark) });
+    view.inspect("analysis.variable", { kind: "variable", id: value.slice(0, mark) });
   };
 
   const ZONES = [
@@ -186,13 +188,13 @@
   const elsewhere = (from: string) => ZONES.filter((zone) => zone.value !== from);
 
   const openPlacement = (placement: Placement) =>
-    mockWorkbench.inspect("analysis.placement", { kind: "placement", id: placement.id });
+    view.inspect("analysis.placement", { kind: "placement", id: placement.id });
 
   const openFilter = (filterId: string) =>
-    mockWorkbench.inspect("analysis.filter", { kind: "filter", id: filterId });
+    view.inspect("analysis.filter", { kind: "filter", id: filterId });
 
-  const openSort = () => mockWorkbench.inspect("analysis.sort");
-  const openLimit = () => mockWorkbench.inspect("analysis.limit");
+  const openSort = () => view.inspect("analysis.sort");
+  const openLimit = () => view.inspect("analysis.limit");
 
   /* ---------------- the relationship ---------------- */
 
@@ -482,7 +484,7 @@
             <Button
               variant="outline"
               size="sm"
-              onclick={() => mockWorkbench.inspect("analysis.relationship")}
+              onclick={() => view.inspect("analysis.relationship")}
             >
               Change the match
             </Button>

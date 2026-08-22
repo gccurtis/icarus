@@ -5,7 +5,9 @@
 
   import { Panel, PanelNote, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { editorKinds, type EditorKind } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState, type InspectionKey } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The three editors, listed.
@@ -23,7 +25,7 @@
 
   const ICON = { Document: FileText, "Slide deck": Presentation, Spreadsheet: TableIcon };
 
-  const LENS: Record<EditorKind["name"], string> = {
+  const LENS: Record<EditorKind["name"], InspectionKey> = {
     Document: "library.new-document",
     "Slide deck": "library.new-deck",
     Spreadsheet: "library.new-spreadsheet"
@@ -31,7 +33,7 @@
 
   const choose = (kind: EditorKind) => {
     selectedId = kind.id;
-    mockWorkbench.inspect(LENS[kind.name], { kind: "editor", id: kind.id });
+    view.inspect(LENS[kind.name], { kind: "editor", id: kind.id });
   };
 </script>
 

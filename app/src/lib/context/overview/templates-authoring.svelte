@@ -14,7 +14,9 @@
   } from "$lib/unique-components/panel";
   import { PEOPLE } from "$mock-capabilities/cast";
   import { template } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * This template: what it makes, what it asks for, whether it is saved.
@@ -80,7 +82,7 @@
             label={it.createdBy}
             title="{it.createdBy} — person"
             onselect={() =>
-              mockWorkbench.inspect("collaboration.person", { kind: "person", id: author.id })}
+              view.inspect("collaboration.person", { kind: "person", id: author.id })}
           />
         {:else}
           {it.createdBy}

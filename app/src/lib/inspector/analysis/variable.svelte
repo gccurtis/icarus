@@ -21,7 +21,7 @@
     tablesIn,
     variable
   } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A variable as the Analysis screen sees it: what is in it, how it lines up
@@ -43,10 +43,12 @@
     analysisId = "r-minutes"
   }: { variableId?: string; analysisId?: string } = $props();
 
+  const view = viewState();
+
   const record = $derived(analysis(analysisId).current);
   const lens = $derived(variable(variableId).current);
   const relations = $derived(relationsFor(variableId).current);
-  const tables = $derived(tablesIn(mockWorkbench.project.id).current);
+  const tables = $derived(tablesIn(view.project).current);
 
   const isTable = $derived(lens.type === "table");
   const table = $derived(tables.find((one) => one.name === lens.name));
@@ -77,7 +79,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: record.title, key: "analysis.analysis" }, { label: lens.name }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -116,7 +120,7 @@
         tone={relation.used ? "active" : "default"}
         selected={relation.used}
         onselect={() =>
-          mockWorkbench.inspect("analysis.relationship", {
+          view.inspect("analysis.relationship", {
             kind: "relationship",
             id: relation.id
           })}

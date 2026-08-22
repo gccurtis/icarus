@@ -9,7 +9,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { context, latticeNode } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * A lattice node: retrieval internals, for debugging.
@@ -31,6 +31,8 @@
     nodeId = "ln-relay"
   }: { contextId?: string; nodeId?: string } = $props();
 
+  const view = viewState();
+
   const scope = $derived(context(contextId).current);
   const node = $derived(latticeNode(nodeId).current);
 
@@ -46,7 +48,7 @@
     <PanelCrumbs
       {trail}
       onnavigate={() =>
-        mockWorkbench.inspect("scope.context", { kind: "context", id: contextId })}
+        view.inspect("scope.context", { kind: "context", id: contextId })}
     />
   {/snippet}
 

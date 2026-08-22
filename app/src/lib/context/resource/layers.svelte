@@ -17,7 +17,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { layersOn, layoutObjectsOn } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * What is on this slide, in stacking order, and which of it the slide may touch.
@@ -33,6 +33,8 @@
    */
   let { slideId = "sl-4" }: { slideId?: string } = $props();
 
+  const view = viewState();
+
   const layers = $derived(layersOn(slideId).current);
   const owned = $derived(layoutObjectsOn(slideId).current);
 
@@ -45,7 +47,7 @@
   });
 
   const selectedId = $derived(
-    mockWorkbench.selection?.kind === "element" ? mockWorkbench.selection.id : undefined
+    view.selection?.kind === "element" ? view.selection.id : undefined
   );
   const movable = $derived(stack.some((layer) => layer.id === selectedId));
 
@@ -105,8 +107,7 @@
         meta={depthOf(index, stack.length)}
         icon={KIND_ICON[layer.kind]}
         selected={layer.id === selectedId}
-        onselect={() =>
-          mockWorkbench.inspect("resource.element", { kind: "element", id: layer.id })}
+        onselect={() => view.inspect("resource.element", { kind: "element", id: layer.id })}
       />
     {/each}
   </PanelSection>
@@ -122,7 +123,7 @@
         sub="Locked · layout-owned"
         icon={Lock}
         onselect={() =>
-          mockWorkbench.inspect("resource.locked-element", {
+          view.inspect("resource.locked-element", {
             kind: "locked-element",
             id: object.id
           })}

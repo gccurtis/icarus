@@ -11,7 +11,7 @@
   } from "$lib/unique-components/panel";
   import { activityBy, commentsBy, member, presenceFor } from "$mock-capabilities/collaboration";
   import type { PersonId } from "$mock-capabilities/cast";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * A person, inside this project.
@@ -27,6 +27,8 @@
    * has none.
    */
   let { personId = "mira" }: { personId?: PersonId } = $props();
+
+  const view = viewState();
 
   const person = $derived(member(personId).current);
   const presence = $derived(presenceFor(personId).current);
@@ -106,7 +108,7 @@
         sub={comment.excerpt}
         meta={comment.resolved ? `${comment.age} · resolved` : comment.age}
         tone={comment.mentionsViewer ? "attention" : "default"}
-        onselect={() => mockWorkbench.inspect("comment.thread", { kind: "comment", id: comment.id })}
+        onselect={() => view.inspect("collaboration.comment", { kind: "comment", id: comment.id })}
       />
     {/each}
   </PanelSection>
@@ -121,7 +123,7 @@
       <PanelRow
         title="{entry.verb} {entry.subject}"
         meta={entry.age}
-        onselect={() => mockWorkbench.inspect("project.resource", { kind: "resource", id: entry.id })}
+        onselect={() => view.inspect("project.resource", { kind: "resource", id: entry.id })}
       />
     {/each}
   </PanelSection>

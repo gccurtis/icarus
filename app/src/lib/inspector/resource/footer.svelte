@@ -10,7 +10,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { documentFooter, documentRecord } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * The footer band, and the page number in it.
@@ -27,6 +27,8 @@
    */
   let { documentId = "r-memo" }: { documentId?: string } = $props();
 
+  const view = viewState();
+
   const doc = $derived(documentRecord(documentId).current);
   const footer = $derived(documentFooter(documentId).current);
 
@@ -38,7 +40,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: doc.title, key: "resource.document" }, { label: "Footer" }]}
-      onnavigate={(key) => mockWorkbench.inspect(key, { kind: "resource", id: documentId })}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "resource", id: documentId });
+      }}
     />
   {/snippet}
 
@@ -70,7 +74,7 @@
       <PanelLink
         label="Page view"
         title="Open the Page view"
-        onselect={() => mockWorkbench.selectContext("resource.page")}
+        onselect={() => view.selectContext("resource.page")}
       />
       and mirrored here. Which of the two is authoritative is unsettled.
     </PanelNote>

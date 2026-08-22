@@ -16,7 +16,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { documentRecord, marksFor, textSelection } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A range of text inside one block — the most common selection in the editor,
@@ -32,6 +32,8 @@
    */
   let { documentId = "r-memo" }: { documentId?: string } = $props();
 
+  const view = viewState();
+
   const doc = $derived(documentRecord(documentId).current);
   const selection = $derived(textSelection(documentId).current);
   const marks = $derived(marksFor("document").current);
@@ -40,13 +42,15 @@
   let pressed = $state<string[] | undefined>(undefined);
   const on = $derived(pressed ?? marks.filter((mark) => mark.active).map((mark) => mark.id));
 
-  const navigate = (key: string) =>
-    mockWorkbench.inspect(
+  const navigate = (key: string) => {
+    if (!isInspectionKey(key)) return;
+    view.inspect(
       key,
       key === "resource.document"
         ? { kind: "resource", id: documentId }
         : { kind: "block", id: selection.blockId }
     );
+  };
 </script>
 
 <Panel title="Text selection">
@@ -76,14 +80,14 @@
       <PanelButton
         label="Add link"
         icon={Link2}
-        onclick={() => mockWorkbench.inspect("resource.link")}
+        onclick={() => view.inspect("resource.link")}
       />
       <PanelButton
         label="Comment"
         icon={MessageSquarePlus}
         title="Start a thread anchored to this range"
         onclick={() =>
-          mockWorkbench.inspect("collaboration.comment", {
+          view.inspect("collaboration.comment", {
             kind: "selection",
             id: selection.blockId
           })}
@@ -98,7 +102,7 @@
           label={selection.styleName}
           title="Open the named style"
           onselect={() =>
-            mockWorkbench.inspect("resource.named-style-document", {
+            view.inspect("resource.named-style-document", {
               kind: "style",
               id: selection.styleId
             })}

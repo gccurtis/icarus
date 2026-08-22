@@ -5,7 +5,9 @@
 
   import { Panel, PanelNote, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { automationHealth, type HealthRow } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The state of every rule in one place — the view Project Overview's Health
@@ -19,7 +21,7 @@
    * retry model, no history beyond the last fire — so this shows a state and an
    * approximate count, and the tilde in front of the count is load-bearing.
    */
-  const rows = $derived(automationHealth(mockWorkbench.project.id).current);
+  const rows = $derived(automationHealth(view.project).current);
 
   /** The three groups, in the order the specification bands them. */
   const GROUPS: readonly HealthRow["group"][] = ["Not working", "Never fired", "Working"];
@@ -59,7 +61,7 @@
           tone={TONE[group]}
           titleTone={group === "Not working" ? "danger" : undefined}
           onselect={() =>
-            mockWorkbench.inspect("agents.last-fired", { kind: "automation", id: row.id })}
+            view.inspect("agents.last-fired", { kind: "automation", id: row.id })}
         />
       {/each}
 

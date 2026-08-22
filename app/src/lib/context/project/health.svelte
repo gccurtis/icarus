@@ -6,7 +6,7 @@
 
   import { Panel, PanelButton, PanelNote, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { health, type HealthIssue } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Health — only the things that genuinely cannot proceed.
@@ -23,6 +23,8 @@
    */
   let { onopen }: { onopen?: () => void } = $props();
 
+  const view = viewState();
+
   const problems = $derived(health().current);
 
   /** The three kinds of blockage, in the order the specification bands them. */
@@ -34,7 +36,7 @@
     Connectors: "project.connector",
     Extraction: "project.file",
     Automations: "agents.automation"
-  };
+  } as const;
 
   const SELECTED = { Connectors: "connector", Extraction: "file", Automations: "automation" };
 </script>
@@ -70,7 +72,7 @@
             tone={issue.tone}
             titleTone={issue.tone}
             onselect={() =>
-              mockWorkbench.inspect(LENS[group], { kind: SELECTED[group], id: issue.id })}
+              view.inspect(LENS[group], { kind: SELECTED[group], id: issue.id })}
           />
         {/each}
 

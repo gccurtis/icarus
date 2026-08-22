@@ -9,7 +9,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { templateKinds } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The four things a template can make, each with a way to start one.
@@ -24,9 +26,9 @@
    * the spreadsheet blurb reads "one grid" here and "sheets" in the
    * specification. The door is the one that has been corrected.
    *
-   * **New** opens a creation lens the inspector specifications do not yet name.
-   * The key carries the target, since the target is the whole of what pressing
-   * New decides.
+   * **No lens names creating a template**, so New opens the template lens and
+   * the selection carries the target, since the target is the whole of what
+   * pressing New decides.
    */
   const kinds = $derived(templateKinds().current);
 </script>
@@ -40,7 +42,7 @@
           label="New"
           icon={Plus}
           onclick={() =>
-            mockWorkbench.inspect("library.new-template", {
+            view.inspect("library.template", {
               kind: "template-target",
               id: kind.id
             })}

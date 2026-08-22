@@ -15,7 +15,7 @@
   } from "$lib/unique-components/panel";
   import { analysis, filter } from "$mock-capabilities/analysis";
   import type { FilterOperator } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One rule about which rows are kept.
@@ -33,6 +33,8 @@
     filterId = "f-1",
     analysisId = "r-minutes"
   }: { filterId?: string; analysisId?: string } = $props();
+
+  const view = viewState();
 
   const record = $derived(analysis(analysisId).current);
   const rule = $derived(filter(filterId).current);
@@ -62,15 +64,16 @@
   const removed = $derived(rule.rowsIn - rule.rowsKept);
 
   /** Removing the rule leaves nothing to inspect, so the panel falls back to the analysis. */
-  const remove = () =>
-    mockWorkbench.inspect("analysis.analysis", { kind: "analysis", id: analysisId });
+  const remove = () => view.inspect("analysis.analysis", { kind: "analysis", id: analysisId });
 </script>
 
 <Panel title={reads}>
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: record.title, key: "analysis.analysis" }, { label: reads }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

@@ -11,8 +11,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { AGENTS, actorName } from "$mock-capabilities/cast";
+  import { project } from "$mock-capabilities/project";
   import { searchScope, thread, type ThreadMode } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * The line of enquiry itself: its job, its agent, its scope.
@@ -28,6 +29,8 @@
    * reads as an omission.
    */
   let { threadId = "th-feeder" }: { threadId?: string } = $props();
+
+  const view = viewState();
 
   const record = $derived(thread(threadId).current);
   const scope = $derived(searchScope(threadId).current);
@@ -50,9 +53,10 @@
 <Panel title={title}>
   {#snippet crumbs()}
     <PanelCrumbs
-      trail={[{ label: mockWorkbench.project.name, key: "project.project" }, { label: title }]}
-      onnavigate={(key) =>
-        mockWorkbench.inspect(key, { kind: "project", id: mockWorkbench.project.id })}
+      trail={[{ label: project().current.name, key: "project.project" }, { label: title }]}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "project", id: view.project });
+      }}
     />
   {/snippet}
 
@@ -96,7 +100,7 @@
           kind="agent"
           role={persona?.purpose}
           onselect={() =>
-            mockWorkbench.inspect("agents.persona", { kind: "agent", id: record.agent })}
+            view.inspect("agents.persona", { kind: "agent", id: record.agent })}
         />
       </PanelField>
 

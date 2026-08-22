@@ -17,7 +17,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { element, layersOn, slide } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One element on a slide: the spatial box, where it sits, how it stacks, and how
@@ -38,6 +38,8 @@
     elementId = "el-title-4",
     slideId = "sl-4"
   }: { elementId?: string; slideId?: string } = $props();
+
+  const view = viewState();
 
   const el = $derived(element(elementId).current);
   const on = $derived(slide(slideId).current);
@@ -71,7 +73,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: `Slide ${on.index}`, key: "resource.slide" }, { label: el.name }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key, { kind: "slide", id: slideId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "slide", id: slideId });
+      }}
     />
   {/snippet}
 
@@ -83,7 +87,7 @@
         icon={Type}
         tone="primary"
         onclick={() =>
-          mockWorkbench.inspect("resource.text-block-deck", { kind: "block", id: elementId })}
+          view.inspect("resource.text-block-deck", { kind: "block", id: elementId })}
       />
     </PanelActions>
   </PanelSection>

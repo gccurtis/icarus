@@ -15,7 +15,7 @@
   } from "$lib/unique-components/panel";
   import { Separator } from "$lib/simple-components/separator";
   import { context, contextTerm } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * A reference to another saved Context, on either half.
@@ -32,6 +32,8 @@
     contextId = "cx-drafts",
     termId = "tm-corpus"
   }: { contextId?: string; termId?: string } = $props();
+
+  const view = viewState();
 
   const scope = $derived(context(contextId).current);
   const term = $derived(contextTerm(termId).current);
@@ -50,7 +52,7 @@
     <PanelCrumbs
       {trail}
       onnavigate={() =>
-        mockWorkbench.inspect("scope.context", { kind: "context", id: contextId })}
+        view.inspect("scope.context", { kind: "context", id: contextId })}
     />
   {/snippet}
 
@@ -60,7 +62,7 @@
       icon={ExternalLink}
       title="Switch the inspector to {term.label}"
       onclick={() =>
-        mockWorkbench.inspect("scope.context", { kind: "context", id: term.referencedId })}
+        view.inspect("scope.context", { kind: "context", id: term.referencedId })}
     />
   {/snippet}
 
@@ -107,6 +109,6 @@
   <Separator />
 
   <PanelActions>
-    <PanelButton label="Remove" icon={X} tone="danger" onclick={() => mockWorkbench.clear()} />
+    <PanelButton label="Remove" icon={X} tone="danger" onclick={() => view.clear()} />
   </PanelActions>
 </Panel>

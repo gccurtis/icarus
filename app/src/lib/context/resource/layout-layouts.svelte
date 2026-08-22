@@ -11,7 +11,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { layoutsIn } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Every layout in the deck, and which one is being edited.
@@ -27,10 +27,12 @@
   let { deckId = "r-board", layoutId = "ly-two-panes" }: { deckId?: string; layoutId?: string } =
     $props();
 
+  const view = viewState();
+
   const layouts = $derived(layoutsIn(deckId).current);
 
   const editingId = $derived(
-    mockWorkbench.selection?.kind === "layout" ? mockWorkbench.selection.id : layoutId
+    view.selection?.kind === "layout" ? view.selection.id : layoutId
   );
 
   const made = (placeholders: number, locked: number) =>
@@ -57,8 +59,7 @@
         meta="{candidate.usedBy} slides"
         icon={LayoutTemplate}
         selected={candidate.id === editingId}
-        onselect={() =>
-          mockWorkbench.inspect("resource.layout", { kind: "layout", id: candidate.id })}
+        onselect={() => view.inspect("resource.layout", { kind: "layout", id: candidate.id })}
       />
     {/each}
   </PanelSection>

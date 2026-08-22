@@ -11,7 +11,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { modelBindingOf, toolsFor, type ToolPermission } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * What this agent may do, and which model runs it.
@@ -44,7 +46,7 @@
   const allowed = $derived(shown.filter((tool: ToolPermission) => tool.allowed));
   const denied = $derived(shown.filter((tool: ToolPermission) => !tool.allowed));
 
-  const openTool = (id: string) => mockWorkbench.inspect("agents.tool", { kind: "tool", id });
+  const openTool = (id: string) => view.inspect("agents.tool", { kind: "tool", id });
 </script>
 
 <Panel title="Tools">
@@ -84,7 +86,7 @@
       title={binding.name}
       sub={binding.isDefault ? "The default binding" : "A binding, chosen for this persona"}
       icon={Cpu}
-      onselect={() => mockWorkbench.inspect("agents.model", { kind: "model", id: binding.name })}
+      onselect={() => view.inspect("agents.model", { kind: "model", id: binding.name })}
     />
     <PanelNote>
       A binding name, not a credential. Providers, credentials and deployment

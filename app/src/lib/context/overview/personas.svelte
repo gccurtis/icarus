@@ -25,7 +25,9 @@
     type ToolPermission
   } from "$mock-capabilities/agents";
   import { PEOPLE } from "$mock-capabilities/cast";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * This persona: who it is, what it has done, how it is set up.
@@ -90,20 +92,20 @@
       title="Behaviour"
       sub="{written} of {behaviour.length} written"
       icon={BookOpen}
-      onselect={() => mockWorkbench.selectContext("behaviour")}
+      onselect={() => view.selectContext("agents.behaviour")}
     />
     <PanelRow
       title="Can look up"
       sub={lookup.name}
       meta={String(lookup.contains)}
       icon={Search}
-      onselect={() => mockWorkbench.selectContext("context-persona")}
+      onselect={() => view.selectContext("agents.context-persona")}
     />
     <PanelRow
       title="May use"
       sub="{allowed} of {tools.length} tools"
       icon={ShieldCheck}
-      onselect={() => mockWorkbench.selectContext("tools")}
+      onselect={() => view.selectContext("agents.tools")}
     />
   </PanelSection>
 
@@ -119,7 +121,7 @@
             label={it.createdBy}
             title="{it.createdBy} — person"
             onselect={() =>
-              mockWorkbench.inspect("collaboration.person", { kind: "person", id: author.id })}
+              view.inspect("collaboration.person", { kind: "person", id: author.id })}
           />
         {:else}
           {it.createdBy}

@@ -18,7 +18,9 @@
   import { VIEWER } from "$mock-capabilities/cast";
   import { member, mentionsForViewer } from "$mock-capabilities/collaboration";
   import { activity, health, people, project, resources } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState, type InspectionKey } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The project itself — what it is, what state it is in, who is here, and what
@@ -58,7 +60,7 @@
   const unread = $derived(mentions.filter((comment) => !comment.resolved).length);
 
   /** A broken thing opens as what it is, rather than as a generic health row. */
-  const lensFor = (group: (typeof problems)[number]["group"]) =>
+  const lensFor = (group: (typeof problems)[number]["group"]): InspectionKey =>
     group === "Connectors"
       ? "project.connector"
       : group === "Extraction"
@@ -68,11 +70,8 @@
 
 <Panel title="Overview">
   {#snippet actions()}
-    <PanelButton
-      label="Settings"
-      icon={Settings}
-      onclick={() => mockWorkbench.selectContext("settings")}
-    />
+    <!-- No context view is the project's settings, so there is nowhere to go yet. -->
+    <PanelButton label="Settings" icon={Settings} />
   {/snippet}
 
   <PanelFields>
@@ -112,8 +111,8 @@
       actors={here}
       label="In the project now"
       onselect={(id: string) =>
-        mockWorkbench.inspect("collaboration.person", { kind: "person", id })}
-      onoverflow={() => mockWorkbench.inspect("collaboration.people")}
+        view.inspect("collaboration.person", { kind: "person", id })}
+      onoverflow={() => view.inspect("collaboration.people")}
     />
     {#if here.length === 0}
       <PanelNote>Nobody else is in the project right now.</PanelNote>
@@ -131,7 +130,7 @@
         sub="Unread"
         icon={AtSign}
         tone="attention"
-        onselect={() => mockWorkbench.selectContext("mentions")}
+        onselect={() => view.selectContext("project.mentions")}
       />
     {/if}
 
@@ -142,7 +141,7 @@
         icon={TriangleAlert}
         tone={problem.tone}
         onselect={() =>
-          mockWorkbench.inspect(lensFor(problem.group), { kind: "health", id: problem.id })}
+          view.inspect(lensFor(problem.group), { kind: "health", id: problem.id })}
       />
     {/each}
 

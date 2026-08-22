@@ -17,7 +17,7 @@
   import { VIEWER } from "$mock-capabilities/cast";
   import { member } from "$mock-capabilities/collaboration";
   import { activity, people, project } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * The project itself, and what the inspector shows when nothing more specific
@@ -35,6 +35,8 @@
    * requires at least one, so a single name in that slot would be a claim the
    * data cannot carry.
    */
+  const view = viewState();
+
   const record = $derived(project().current);
   const everyone = $derived(people().current);
   const viewer = $derived(member(VIEWER.id).current);
@@ -87,8 +89,8 @@
       actors={everyone.map((person) => ({ id: person.id, name: person.name }))}
       label="In this project"
       onselect={(id: string) =>
-        mockWorkbench.inspect("collaboration.person", { kind: "person", id })}
-      onoverflow={() => mockWorkbench.inspect("collaboration.people")}
+        view.inspect("collaboration.person", { kind: "person", id })}
+      onoverflow={() => view.inspect("collaboration.people")}
     />
   </PanelSection>
 
@@ -109,10 +111,11 @@
   -->
   <PanelSection title="Project actions" open={false} flush>
     <PanelActions>
+      <!-- There is no settings lens. What the settings surface is remains unspecified. -->
       <PanelButton
         label="Settings"
         icon={Settings}
-        onclick={() => mockWorkbench.inspect("project.settings")}
+        onclick={() => view.inspect("project.project")}
       />
     </PanelActions>
 

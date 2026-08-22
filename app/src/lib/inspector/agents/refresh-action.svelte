@@ -16,7 +16,7 @@
     type ActionOption,
     type GeneratedBlock
   } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Re-run a generated block: which block, and what re-running it actually does.
@@ -33,6 +33,8 @@
     automationId = "outage-summary",
     blockId = "block-outage-summary"
   }: { automationId?: string; blockId?: string } = $props();
+
+  const view = viewState();
 
   const rule = $derived(automation(automationId).current);
 
@@ -57,8 +59,9 @@
         { label: "Do this" },
         { label: block.name }
       ]}
-      onnavigate={(key: string) =>
-        mockWorkbench.inspect(key, { kind: "automation", id: automationId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "automation", id: automationId });
+      }}
     />
   {/snippet}
 
@@ -68,7 +71,7 @@
     <PanelQuote
       source="{block.resource} · {block.location}"
       sourceLabel="Lives in"
-      onopen={() => mockWorkbench.inspect("resource.prompt-block", { kind: "block", id: block.id })}
+      onopen={() => view.inspect("resource.prompt-block", { kind: "block", id: block.id })}
     >
       {block.prompt}
     </PanelQuote>
@@ -94,7 +97,7 @@
           label="{fire.result} · {fire.when}"
           title="Open the last fire"
           onselect={() =>
-            mockWorkbench.inspect("agents.last-fired", { kind: "automation", id: automationId })}
+            view.inspect("agents.last-fired", { kind: "automation", id: automationId })}
         />
       </PanelField>
     </PanelFields>

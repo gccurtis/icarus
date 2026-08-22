@@ -13,7 +13,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { documentRecord, inlineFormula } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A formula inside running text.
@@ -33,6 +33,8 @@
     formulaId = "if-1"
   }: { documentId?: string; formulaId?: string } = $props();
 
+  const view = viewState();
+
   const doc = $derived(documentRecord(documentId).current);
   const formula = $derived(inlineFormula(formulaId).current);
 
@@ -44,7 +46,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: doc.title, key: "resource.document" }, { label: "Formula" }]}
-      onnavigate={(key) => mockWorkbench.inspect(key, { kind: "resource", id: documentId })}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "resource", id: documentId });
+      }}
     />
   {/snippet}
 
@@ -71,7 +75,7 @@
         icon={FunctionSquare}
         title={formula.variable}
         onclick={() =>
-          mockWorkbench.inspect("project.variable", { kind: "variable", id: formula.variable })}
+          view.inspect("analysis.variable", { kind: "variable", id: formula.variable })}
       />
     </PanelActions>
   </PanelSection>

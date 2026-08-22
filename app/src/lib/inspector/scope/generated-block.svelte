@@ -13,7 +13,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { context, generatedBlock } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Something written against this Context, and where it lives.
@@ -35,6 +35,8 @@
     blockId = "gb-outage"
   }: { contextId?: string; blockId?: string } = $props();
 
+  const view = viewState();
+
   const scope = $derived(context(contextId).current);
   const block = $derived(generatedBlock(blockId).current);
 
@@ -50,7 +52,7 @@
     <PanelCrumbs
       {trail}
       onnavigate={() =>
-        mockWorkbench.inspect("scope.context", { kind: "context", id: contextId })}
+        view.inspect("scope.context", { kind: "context", id: contextId })}
     />
   {/snippet}
 
@@ -64,7 +66,7 @@
       sub="{block.location} · Prompt block"
       icon={FileText}
       onselect={() =>
-        mockWorkbench.inspect("project.resource", { kind: "resource", id: block.id })}
+        view.inspect("project.resource", { kind: "resource", id: block.id })}
     />
   </PanelSection>
 

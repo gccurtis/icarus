@@ -12,7 +12,9 @@
     type Cell,
     type NamedCellStyle
   } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Spreadsheet editor — the only state this screen has.
@@ -88,7 +90,7 @@
 
   const choose = (address: string) => {
     selected = address;
-    mockWorkbench.inspect(lensFor(at.get(address)), { kind: "cell", id: address });
+    view.inspect(lensFor(at.get(address)), { kind: "cell", id: address });
   };
 
   /** Zoom, by the same pinch mechanism as the document and the deck. */
@@ -169,7 +171,7 @@
                   type="button"
                   class="chart-body"
                   onclick={() =>
-                    mockWorkbench.inspect("resource.chart", {
+                    view.inspect("resource.chart", {
                       kind: "chart",
                       id: String(chart.index)
                     })}

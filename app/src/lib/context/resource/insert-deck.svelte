@@ -9,7 +9,7 @@
 
   import { Panel, PanelNote, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { insertOptions } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState, type InspectionKey } from "$model/client/view-state";
 
   /**
    * Putting something new on the slide.
@@ -25,6 +25,8 @@
    * The sections are the groups the door already carries, so an entry moving
    * between them is a change to the door rather than to this file.
    */
+  const view = viewState();
+
   const options = $derived(insertOptions("slides").current);
   const groups = $derived([...new Set(options.map((option) => option.group))]);
 
@@ -39,11 +41,11 @@
   } as const;
 
   /** Which lens the new thing lands in. An entry with no entry here lands on the element. */
-  const LENS: Record<string, string> = {
-    "ins-s-text": "resource.text-block",
-    "ins-s-formula": "resource.inline-formula",
+  const LENS: Record<string, InspectionKey> = {
+    "ins-s-text": "resource.text-block-deck",
+    "ins-s-formula": "resource.formula",
     "ins-s-prompt": "resource.prompt-block",
-    "ins-s-variable": "resource.inline-formula"
+    "ins-s-variable": "resource.formula"
   };
 </script>
 
@@ -59,7 +61,7 @@
           tone={option.blocked ? "attention" : "default"}
           onselect={option.blocked
             ? undefined
-            : () => mockWorkbench.inspect(LENS[option.id] ?? "resource.element")}
+            : () => view.inspect(LENS[option.id] ?? "resource.element")}
         />
       {/each}
     </PanelSection>

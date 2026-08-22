@@ -10,7 +10,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { thread, toolCall } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One step the agent took: what it asked for, and what came back.
@@ -31,6 +31,8 @@
     threadId = "th-feeder"
   }: { callId?: string; threadId?: string } = $props();
 
+  const view = viewState();
+
   const record = $derived(toolCall(callId).current);
   const origin = $derived(thread(threadId).current);
 
@@ -49,7 +51,9 @@
         { label: "Trace" },
         { label: record.name }
       ]}
-      onnavigate={(key) => mockWorkbench.inspect(key, { kind: "thread", id: threadId })}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "thread", id: threadId });
+      }}
     />
   {/snippet}
 

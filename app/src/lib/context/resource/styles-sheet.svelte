@@ -10,7 +10,7 @@
     PanelSearch
   } from "$lib/unique-components/panel";
   import { sheetStyles } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * The named cell styles this spreadsheet uses.
@@ -29,6 +29,8 @@
    */
   let { spreadsheetId = "r-cost" }: { spreadsheetId?: string } = $props();
 
+  const view = viewState();
+
   const styles = $derived(sheetStyles(spreadsheetId).current);
 
   let search = $state("");
@@ -45,7 +47,7 @@
       icon={Plus}
       tone="primary"
       title="Names the formatting on the current selection"
-      onclick={() => mockWorkbench.inspect("resource.named-style-sheet", { kind: "style", id: "" })}
+      onclick={() => view.inspect("resource.named-style-sheet", { kind: "style", id: "" })}
     />
   {/snippet}
 
@@ -64,7 +66,7 @@
         meta={`${style.usedByCells} cells`}
         icon={Palette}
         onselect={() =>
-          mockWorkbench.inspect("resource.named-style-sheet", { kind: "style", id: style.id })}
+          view.inspect("resource.named-style-sheet", { kind: "style", id: style.id })}
       />
     {/each}
   </PanelSearch>

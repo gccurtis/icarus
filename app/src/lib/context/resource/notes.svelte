@@ -7,7 +7,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { notesFor, notesIn } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Speaker notes, for this slide and across the deck.
@@ -23,8 +23,10 @@
    */
   let { deckId = "r-board", slideId = "sl-4" }: { deckId?: string; slideId?: string } = $props();
 
+  const view = viewState();
+
   const currentId = $derived(
-    mockWorkbench.selection?.kind === "slide" ? mockWorkbench.selection.id : slideId
+    view.selection?.kind === "slide" ? view.selection.id : slideId
   );
 
   const notes = $derived(notesFor(currentId).current);
@@ -53,8 +55,7 @@
         meta={entry.summary}
         tone={entry.summary === "No notes" ? "attention" : "default"}
         selected={entry.slideId === currentId}
-        onselect={() =>
-          mockWorkbench.inspect("resource.slide", { kind: "slide", id: entry.slideId })}
+        onselect={() => view.inspect("resource.slide", { kind: "slide", id: entry.slideId })}
       />
     {/each}
   </PanelSection>

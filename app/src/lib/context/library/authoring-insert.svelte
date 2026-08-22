@@ -4,7 +4,9 @@
 
   import { Panel, PanelNote, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { insertBlocks, variableKinds } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Putting content, or a variable, into the template body.
@@ -36,7 +38,7 @@
         sub={block.detail}
         icon={SquarePlus}
         onselect={() =>
-          mockWorkbench.inspect("library.body-entity", { kind: "block", id: block.id })}
+          view.inspect("library.body-entity", { kind: "block", id: block.id })}
       />
     {/each}
   </PanelSection>

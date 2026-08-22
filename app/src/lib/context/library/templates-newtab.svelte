@@ -6,7 +6,9 @@
 
   import { Panel, PanelButton, PanelRow, PanelSearch, PanelSection } from "$lib/unique-components/panel";
   import { templates, type LibraryTemplate } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Starting from something rather than from nothing.
@@ -51,7 +53,7 @@
       : `${row.scope} · ${row.variables} ${row.variables === 1 ? "variable" : "variables"}`;
 
   const start = (id: string) =>
-    mockWorkbench.inspect("library.start-from-template", { kind: "template", id });
+    view.inspect("library.start-from-template", { kind: "template", id });
 </script>
 
 <Panel title="Templates">

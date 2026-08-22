@@ -17,7 +17,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { documentRecord, promptBlock } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A block of the document body whose content is generated rather than typed.
@@ -41,6 +41,8 @@
     blockId = "b_5c2"
   }: { documentId?: string; blockId?: string } = $props();
 
+  const view = viewState();
+
   const doc = $derived(documentRecord(documentId).current);
   const source = $derived(promptBlock(blockId));
   const block = $derived(source.current);
@@ -61,7 +63,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: doc.title, key: "resource.document" }, { label: "Prompt block" }]}
-      onnavigate={(key) => mockWorkbench.inspect(key, { kind: "resource", id: documentId })}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "resource", id: documentId });
+      }}
     />
   {/snippet}
 
@@ -93,7 +97,7 @@
         icon={Copy}
         title="Make the output ordinary text and drop the prompt"
         onclick={() =>
-          mockWorkbench.inspect("resource.text-block-document", {
+          view.inspect("resource.text-block-document", {
             kind: "block",
             id: block.id
           })}
@@ -111,7 +115,7 @@
       title={block.scopeName}
       sub="What the block could look at when it ran"
       meta={`${block.scopeResolves}`}
-      onselect={() => mockWorkbench.inspect("scope.context", { kind: "scope", id: block.scopeId })}
+      onselect={() => view.inspect("scope.context", { kind: "scope", id: block.scopeId })}
     />
   </PanelSection>
 

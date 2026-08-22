@@ -3,7 +3,7 @@
 
   import { Panel, PanelButton, PanelRow, PanelSearch } from "$lib/unique-components/panel";
   import { documentStyles, type NamedTextStyle } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * The named styles this document uses.
@@ -20,6 +20,8 @@
    */
   let { documentId = "r-memo" }: { documentId?: string } = $props();
 
+  const view = viewState();
+
   const styles = $derived(documentStyles(documentId).current);
 
   let search = $state("");
@@ -29,10 +31,10 @@
   );
 
   const open = (styleId: string) =>
-    mockWorkbench.inspect("resource.named-style-document", { kind: "style", id: styleId });
+    view.inspect("resource.named-style-document", { kind: "style", id: styleId });
 
   const isOpen = (style: NamedTextStyle) =>
-    mockWorkbench.selection?.kind === "style" && mockWorkbench.selection.id === style.id;
+    view.selection?.kind === "style" && view.selection.id === style.id;
 </script>
 
 <Panel title="Styles">

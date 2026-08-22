@@ -10,7 +10,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { cell, sheetStyle, spillAt, spreadsheetRecord } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A cell holding a literal value: its address, what it draws, what is stored in
@@ -32,6 +32,8 @@
     address = "C3"
   }: { spreadsheetId?: string; address?: string } = $props();
 
+  const view = viewState();
+
   const sheet = $derived(spreadsheetRecord(spreadsheetId).current);
   const row = $derived(cell(spreadsheetId, address).current);
   const style = $derived(row?.styleId === undefined ? undefined : sheetStyle(row.styleId).current);
@@ -48,7 +50,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: sheet.title, key: "resource.spreadsheet" }, { label: address }]}
-      onnavigate={(key) => mockWorkbench.inspect(key)}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -94,7 +98,7 @@
               label={style.name}
               title="Open the {style.name} style"
               onselect={() =>
-                mockWorkbench.inspect("resource.named-style-sheet", {
+                view.inspect("resource.named-style-sheet", {
                   kind: "cell-style",
                   id: style.id
                 })}
@@ -122,7 +126,7 @@
                 label={spill.origin}
                 title="Open the formula that spilled here"
                 onselect={() =>
-                  mockWorkbench.inspect("resource.cell-with-formula", {
+                  view.inspect("resource.cell-with-formula", {
                     kind: "cell",
                     id: spill.origin
                   })}

@@ -11,7 +11,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { savedContexts } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Context — the project's saved scopes, and what each of them resolves to now.
@@ -27,6 +27,8 @@
    * panel has.
    */
   let { onopen }: { onopen?: () => void } = $props();
+
+  const view = viewState();
 
   const all = $derived(savedContexts().current);
 
@@ -73,7 +75,7 @@
           icon={context.resolves === 0 ? TriangleAlert : undefined}
           tone={context.resolves === 0 ? "attention" : "default"}
           onselect={() =>
-            mockWorkbench.inspect("scope.context", { kind: "context", id: context.id })}
+            view.inspect("scope.context", { kind: "context", id: context.id })}
         />
       {/each}
 

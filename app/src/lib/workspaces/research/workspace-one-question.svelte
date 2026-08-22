@@ -29,7 +29,9 @@
     thread,
     traceIn
   } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Research — one question: the turn you are on, and what it produced.
@@ -113,7 +115,7 @@
   const unpunctuated = (result: string): string => result.replace(/\.$/, "");
 
   const isSelected = (kind: string, id: string): boolean =>
-    mockWorkbench.selection?.kind === kind && mockWorkbench.selection.id === id;
+    view.selection?.kind === kind && view.selection.id === id;
 </script>
 
 <ScreenSurface wide>
@@ -183,7 +185,7 @@
               source={`${source.title} · ${source.locator}`}
               sourceLabel="Source"
               onopen={() =>
-                mockWorkbench.inspect("research.source", { kind: "source", id: source.id })}
+                view.inspect("research.source", { kind: "source", id: source.id })}
             >
               {source.excerpt}
             </PanelQuote>
@@ -204,7 +206,7 @@
                 type="button"
                 class="text-start"
                 onclick={() =>
-                  mockWorkbench.inspect("research.tool-call", { kind: "tool-call", id: call.id })}
+                  view.inspect("research.tool-call", { kind: "tool-call", id: call.id })}
               >
                 <PanelChip tone={call.outcome === "Nothing found" ? "attention" : "neutral"}>
                   <span class="font-mono">{call.name}</span>
@@ -234,7 +236,7 @@
               verdict={VERDICT[decision]}
               selected={isSelected("finding", found.id)}
               onselect={() =>
-                mockWorkbench.inspect("research.proposed-finding", {
+                view.inspect("research.proposed-finding", {
                   kind: "finding",
                   id: found.id
                 })}
@@ -266,7 +268,7 @@
                     size="xs"
                     variant="outline"
                     onclick={() =>
-                      mockWorkbench.inspect("research.proposed-finding", {
+                      view.inspect("research.proposed-finding", {
                         kind: "finding",
                         id: found.id
                       })}
@@ -302,7 +304,7 @@
               sub={found.derivation}
               selected={isSelected("finding", found.id)}
               onselect={() =>
-                mockWorkbench.inspect("research.accepted-finding", {
+                view.inspect("research.accepted-finding", {
                   kind: "finding",
                   id: found.id
                 })}

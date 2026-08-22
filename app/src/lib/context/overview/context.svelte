@@ -20,7 +20,9 @@
     usedBy,
     type Dependent
   } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * This Context: what it is, what it currently resolves to, whether it is
@@ -67,7 +69,7 @@
     <PanelButton
       label="Duplicate"
       icon={Copy}
-      onclick={() => mockWorkbench.inspect("scope.context", { kind: "context", id: it.id })}
+      onclick={() => view.inspect("scope.context", { kind: "context", id: it.id })}
     />
     <PanelButton label="Delete" icon={Trash2} tone="danger" disabled title={it.deleteBlocked} />
   {/snippet}
@@ -114,7 +116,7 @@
       <PanelRow
         title={entry.group}
         meta={String(entry.count)}
-        onselect={() => mockWorkbench.selectContext("used-by")}
+        onselect={() => view.selectContext("scope.used-by")}
       />
     {/each}
     <PanelNote tone="gap">

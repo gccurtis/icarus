@@ -13,7 +13,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { analysis, limitIn, sortIn } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * How much of the result is shown.
@@ -29,6 +29,8 @@
    * back to — and says so plainly when there is none.
    */
   let { analysisId = "r-minutes" }: { analysisId?: string } = $props();
+
+  const view = viewState();
 
   const record = $derived(analysis(analysisId).current);
   const rule = $derived(limitIn(analysisId).current);
@@ -47,15 +49,16 @@
   );
 
   /** Removing the rule leaves nothing to inspect, so the panel falls back to the analysis. */
-  const remove = () =>
-    mockWorkbench.inspect("analysis.analysis", { kind: "analysis", id: analysisId });
+  const remove = () => view.inspect("analysis.analysis", { kind: "analysis", id: analysisId });
 </script>
 
 <Panel title="Limit">
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: record.title, key: "analysis.analysis" }, { label: "Limit" }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

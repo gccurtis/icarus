@@ -20,7 +20,8 @@
   } from "$lib/unique-components/panel";
   import { connector, connectors } from "$mock-capabilities/library";
   import type { ConnectorDetail } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { project } from "$mock-capabilities/project";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One connection to an outside system: what it may read, how material
@@ -39,6 +40,8 @@
    * lived in this lens would be the same screen written twice.
    */
   let { connectorId = "cn-sharepoint" }: { connectorId?: string } = $props();
+
+  const view = viewState();
 
   const detail = $derived(connector(connectorId).current);
 
@@ -67,8 +70,10 @@
 <Panel title={detail.name}>
   {#snippet crumbs()}
     <PanelCrumbs
-      trail={[{ label: mockWorkbench.project.name, key: "project.project" }, { label: detail.name }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      trail={[{ label: project().current.name, key: "project.project" }, { label: detail.name }]}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -126,7 +131,7 @@
         label="Reconnect"
         icon={Plug}
         tone={expired ? "primary" : "default"}
-        onclick={() => mockWorkbench.inspect("library.connect", { kind: "connector", id: detail.id })}
+        onclick={() => view.inspect("library.connect", { kind: "connector", id: detail.id })}
       />
       <PanelButton
         label="Sync now"

@@ -8,7 +8,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { behaviourOf, type BehaviourSection } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The five sections of the agent's definition.
@@ -43,7 +45,7 @@
         meta={entry.characters === 0 ? "Empty" : `${entry.characters} characters`}
         icon={BookOpen}
         onselect={() =>
-          mockWorkbench.inspect("agents.behaviour-section", { kind: "section", id: entry.id })}
+          view.inspect("agents.behaviour-section", { kind: "section", id: entry.id })}
       />
     {/each}
 

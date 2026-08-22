@@ -212,29 +212,52 @@ different object with a different lifetime.
 - **No component type enters the model.** The `view-keys` rule enforces it.
 - **Nothing here is persisted.**
 
-## Not settled: how a panel reaches this object
+## How a panel reaches this object
 
-The 197 panels do not read this object. They read a module singleton,
-`mockWorkbench` from
-[`$mock-models/workbench.svelte`](../../../mock-models/workbench.svelte.ts) — 181
-of them import it today — and **that is what lets every one of them render on its
-own.** [`src/lib/independence.test.ts`](../../../independence.test.ts) proves it:
-each panel is rendered through `svelte/server` with nothing but a permissive prop
-bag, and one that reached for something it should not have throws.
+Through Svelte context, from [`index.ts`](index.ts):
 
-Routing them through `clientModel().viewState` would break that. `clientModel()`
-refuses on the server, and `render()` from `svelte/server` runs in Node.
+```ts
+const view = viewState();
+```
 
-Three candidate answers:
+The shell provides the instance the client graph built; a review page provides
+one of its own; a panel with no provider gets one to itself.
 
-1. **Panels read `clientModel().viewState`.** The independence test weakens from
-   "every panel renders on its own" to "every panel module loads".
-2. **Panels read it from Svelte context, with a fallback.** Standalone rendering
-   survives, at the cost of a second way in.
-3. **The mock stays** until the shell rewiring swaps them together, in one
-   change.
+**That last clause is the whole reason it is context rather than
+`clientModel()`.** All 197 panels render on their own, and
+[`src/lib/independence.test.ts`](../../../independence.test.ts) proves it by
+server-rendering each with nothing but a permissive prop bag. `clientModel()`
+refuses outside a browser and before the layout has run, so routing panels
+through it would end that for every one of them.
 
-None is chosen.
+The fallback is per reader rather than a module singleton: two panels rendered
+with no provider between them are two unrelated things, and one shared object
+would make a stray click in one move the other.
+
+**It must be read during initialisation**, like any context. A component that
+calls `viewState()` inside an event handler gets the fallback instead of the
+shell's instance, which is the one way to misuse this — read it once at the top
+and hold it.
+
+### What the move turned up
+
+The stand-in typed its key as `string` and accepted anything. This object's keys
+are generated unions over the files that exist, so eleven call sites were passing
+keys that named no lens — `actor.person`, `comment.thread`, `resource.text-block`
+and friends — each of which would have opened an empty inspector and never said
+why. `selectContext` was worse: most of its arguments were unqualified, and
+`"context"` was ambiguous across five real views.
+
+Two call sites could not be resolved and are buttons with no action, each with a
+comment:
+
+- **Settings**, on the project overview. No settings lens and no settings context
+  view exists anywhere in the specifications.
+- **New thread**, on the research overview. It means `library.threads`, which is
+  on the *all-threads* subscreen, while that panel only ever appears on
+  *one-question* — so the call compiles and throws. Reaching it needs
+  `showSubscreen` or a callback from the parent, which is a behaviour change
+  rather than a move.
 
 ## File Tree
 
@@ -248,15 +271,14 @@ view-state/
 └── methods/
     ├── methods.md
     ├── open.ts · activate.ts · close.ts · reopen-closed.ts
-    ├── show-subscreen.ts · select-context.ts
+    ├── show-subscreen.ts · select-context.ts · showing.ts
     ├── inspect.ts · clear.ts · resize.ts
     └── shared/
         ├── shared.md
         ├── keys.ts · rails.ts
         └── mint-tab.ts · target-key.ts
+└── test/unit/view-state.test.ts
 ```
-
-There is no `test/` yet.
 
 Two modules under `methods/shared/` are not methods: `keys.ts` is a generated
 vocabulary and `rails.ts` is a map transcribed from the specifications. Both sit

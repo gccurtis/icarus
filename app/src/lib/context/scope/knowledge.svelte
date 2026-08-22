@@ -12,7 +12,7 @@
     type GeneratedBlock,
     type LatticeNode
   } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * What can actually be retrieved from this scope, and what has been written
@@ -32,6 +32,8 @@
    * action row at all.
    */
   let { contextId = "cx-drafts" }: { contextId?: string } = $props();
+
+  const view = viewState();
 
   const retrieval = $derived(retrievabilityOf(contextId).current);
   const blocks = $derived(generatedBlocksUsing(contextId).current);
@@ -78,7 +80,7 @@
         icon={Sparkles}
         tone={block.ownerResolved ? "intelligence" : "attention"}
         onselect={() =>
-          mockWorkbench.inspect("scope.generated-block", { kind: "block", id: block.id })}
+          view.inspect("scope.generated-block", { kind: "block", id: block.id })}
       />
     {/each}
 
@@ -100,7 +102,7 @@
         title="{LEVEL[node.level]} · {node.label}"
         sub="Tier {node.tier} · {node.members} members"
         icon={Waypoints}
-        onselect={() => mockWorkbench.inspect("scope.lattice-node", { kind: "node", id: node.id })}
+        onselect={() => view.inspect("scope.lattice-node", { kind: "node", id: node.id })}
       />
     {/each}
 

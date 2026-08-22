@@ -10,7 +10,7 @@
     PanelSearch
   } from "$lib/unique-components/panel";
   import { findInSheet } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Search across this spreadsheet.
@@ -26,6 +26,8 @@
    * not offer a single control that would do either.
    */
   let { spreadsheetId = "r-cost" }: { spreadsheetId?: string } = $props();
+
+  const view = viewState();
 
   let query = $state("");
   let layer = $state<"all" | "formula" | "value">("all");
@@ -80,7 +82,7 @@
         meta={hit.layer === "formula" ? "fx" : "text"}
         icon={hit.layer === "formula" ? SquareFunction : Type}
         onselect={() =>
-          mockWorkbench.inspect(
+          view.inspect(
             hit.layer === "formula" ? "resource.cell-with-formula" : "resource.cell",
             { kind: "cell", id: hit.address }
           )}

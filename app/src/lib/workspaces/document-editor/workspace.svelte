@@ -17,7 +17,9 @@
     textBlock,
     type PageSetup
   } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState, type InspectionKey } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Document editor — the only state this screen has.
@@ -169,9 +171,9 @@
 
   let selected = $state<string | undefined>(undefined);
 
-  const inspect = (key: string, kind: string, id: string) => {
+  const inspect = (key: InspectionKey, kind: string, id: string) => {
     selected = id;
-    mockWorkbench.inspect(key, { kind, id });
+    view.inspect(key, { kind, id });
   };
 
   /**
@@ -223,7 +225,7 @@
                   type="button"
                   aria-label="Header"
                   class="band band-header text-caption text-ink-muted hover:bg-surface-panel-hover"
-                  onclick={() => mockWorkbench.inspect("resource.header")}
+                  onclick={() => view.inspect("resource.header")}
                 >
                   <span class="truncate">{headerOn(page.number)}</span>
                 </button>
@@ -319,7 +321,7 @@
                     type="button"
                     aria-label="Footer"
                     class="band band-footer text-caption text-ink-muted hover:bg-surface-panel-hover"
-                    onclick={() => mockWorkbench.inspect("resource.footer")}
+                    onclick={() => view.inspect("resource.footer")}
                   >
                     <span class="truncate">{footer.content.split("{page}")[0].trim()}</span>
                     {#if footer.content.includes("{page}")}

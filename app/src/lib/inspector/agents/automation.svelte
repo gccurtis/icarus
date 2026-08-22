@@ -19,7 +19,7 @@
   import { Separator } from "$lib/simple-components/separator";
   import { automation } from "$mock-capabilities/agents";
   import { PEOPLE, type Person } from "$mock-capabilities/cast";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * An Automation: the rule as a sentence, whether it is on, and what happened
@@ -36,6 +36,8 @@
    * labels.
    */
   let { automationId = "nightly-digest" }: { automationId?: string } = $props();
+
+  const view = viewState();
 
   const rule = $derived(automation(automationId).current);
 
@@ -70,7 +72,7 @@
       label="Open"
       icon={SquareArrowOutUpRight}
       title="Open the rule on the Automations screen"
-      onclick={() => mockWorkbench.selectContext("when")}
+      onclick={() => view.selectContext("agents.when")}
     />
     <PanelButton
       label="Run now"
@@ -123,7 +125,7 @@
           label={rule.lastFire.when}
           title="Open the last fire"
           onselect={() =>
-            mockWorkbench.inspect("agents.last-fired", { kind: "automation", id: automationId })}
+            view.inspect("agents.last-fired", { kind: "automation", id: automationId })}
         />
       </PanelField>
       <PanelField label="Result">
@@ -149,7 +151,7 @@
             name={creator.name}
             kind="person"
             onselect={() =>
-              mockWorkbench.inspect("collaboration.person", { kind: "person", id: creator.id })}
+              view.inspect("collaboration.person", { kind: "person", id: creator.id })}
           />
         {:else}
           {rule.createdBy}

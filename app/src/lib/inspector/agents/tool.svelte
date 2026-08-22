@@ -9,7 +9,7 @@
     PanelToggle
   } from "$lib/unique-components/panel";
   import { persona, toolsFor, type ToolPermission } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One tool permission, and what granting it means.
@@ -28,6 +28,8 @@
     personaId = "grid-analyst",
     toolId = "lattice.retrieve"
   }: { personaId?: string; toolId?: string } = $props();
+
+  const view = viewState();
 
   const profile = $derived(persona(personaId).current);
   const catalogue = $derived(toolsFor(personaId).current);
@@ -50,8 +52,9 @@
         { label: "Tools" },
         { label: tool.id }
       ]}
-      onnavigate={(key: string) =>
-        mockWorkbench.inspect(key, { kind: "persona", id: personaId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "persona", id: personaId });
+      }}
     />
   {/snippet}
 

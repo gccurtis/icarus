@@ -34,7 +34,9 @@
     type WorkItem
   } from "$mock-capabilities/agents";
   import { people } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Personas — one persona, entered from Open or Edit.
@@ -90,7 +92,7 @@
   type Dispatcher = { kind: "person" | "automation"; id: string; name: string };
 
   const everyone = $derived(people().current);
-  const rules = $derived(automationsIn(mockWorkbench.project.id).current);
+  const rules = $derived(automationsIn(view.project).current);
 
   const dispatcherOf = (name: string): Dispatcher => {
     const person = everyone.find((candidate) => candidate.name === name);
@@ -152,7 +154,7 @@
   const recorded = $derived(record.tasks + record.conversations);
 
   const openActor = (who: Dispatcher) =>
-    mockWorkbench.inspect(
+    view.inspect(
       who.kind === "person" ? "collaboration.person" : "agents.automation",
       { kind: who.kind, id: who.id }
     );
@@ -237,7 +239,7 @@
                       <PanelLink
                         label="What this section is for"
                         onselect={() =>
-                          mockWorkbench.inspect("agents.behaviour-section", {
+                          view.inspect("agents.behaviour-section", {
                             kind: "behaviour",
                             id: section.id
                           })}
@@ -268,7 +270,7 @@
             type="button"
             class="border-border-subtle hover:bg-surface-panel-hover flex flex-col gap-0.5 border-b px-3 py-2 text-start"
             onclick={() =>
-              mockWorkbench.inspect("agents.what-it-can-look-up", {
+              view.inspect("agents.what-it-can-look-up", {
                 kind: "scope",
                 id: lookup.id
               })}
@@ -282,7 +284,7 @@
             type="button"
             class="hover:bg-surface-panel-hover flex items-center justify-between gap-2 px-3 py-2 text-start"
             onclick={() =>
-              mockWorkbench.inspect("agents.tool", { kind: "tool", id: "web.search" })}
+              view.inspect("agents.tool", { kind: "tool", id: "web.search" })}
           >
             <span class="text-body-sm text-ink-primary">The web</span>
             <PanelChip tone={web?.allowed ? "success" : "inactive"}>
@@ -304,7 +306,7 @@
             <button
               type="button"
               class="border-border-subtle hover:bg-surface-panel-hover flex items-center justify-between gap-2 border-b px-3 py-2 text-start last:border-b-0"
-              onclick={() => mockWorkbench.inspect("agents.tool", { kind: "tool", id: tool.id })}
+              onclick={() => view.inspect("agents.tool", { kind: "tool", id: tool.id })}
             >
               <span class="text-body-sm text-ink-primary font-mono">{tool.id}</span>
               <PanelChip tone={tool.allowed ? "success" : "inactive"}>
@@ -325,7 +327,7 @@
                 name={row.title}
                 icon={row.conversation ? MessagesSquare : Bot}
                 onselect={() =>
-                  mockWorkbench.inspect("copilot.task", {
+                  view.inspect("copilot.task", {
                     kind: row.conversation ? "conversation" : "task",
                     id: row.id
                   })}

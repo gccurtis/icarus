@@ -10,7 +10,7 @@
   } from "$lib/unique-components/panel";
   import { PEOPLE } from "$mock-capabilities/cast";
   import { documentRecord, pageSetup } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * The document itself — the lens the inspector shows when nothing is selected.
@@ -29,6 +29,8 @@
    * one-entry trail with nowhere to go says nothing.
    */
   let { documentId = "r-memo" }: { documentId?: string } = $props();
+
+  const view = viewState();
 
   const doc = $derived(documentRecord(documentId).current);
   const setup = $derived(pageSetup(documentId).current);
@@ -63,7 +65,7 @@
     <PanelLink
       label="Insert"
       title="Open the Insert view"
-      onselect={() => mockWorkbench.selectContext("resource.insert-document")}
+      onselect={() => view.selectContext("resource.insert-document")}
     />
     is in the context panel.
   </PanelNote>
@@ -79,7 +81,7 @@
       <PanelLink
         label="Page view"
         title="Open the Page view"
-        onselect={() => mockWorkbench.selectContext("resource.page")}
+        onselect={() => view.selectContext("resource.page")}
       />.
     </PanelNote>
   </PanelSection>
@@ -92,7 +94,7 @@
             name={creator.name}
             kind="person"
             onselect={() =>
-              mockWorkbench.inspect("collaboration.person", { kind: "person", id: creator.id })}
+              view.inspect("collaboration.person", { kind: "person", id: creator.id })}
           />
         {:else}
           {doc.createdBy}

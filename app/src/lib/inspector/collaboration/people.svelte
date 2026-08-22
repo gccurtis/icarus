@@ -2,7 +2,7 @@
   import { Panel, PanelNote, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { VIEWER, type Person } from "$mock-capabilities/cast";
   import { members, presenceFor } from "$mock-capabilities/collaboration";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Everybody in the project at once, rather than one person.
@@ -18,6 +18,8 @@
    * else.
    */
   let { limit = 3 }: { limit?: number } = $props();
+
+  const view = viewState();
 
   const all = $derived(members().current);
 
@@ -46,8 +48,7 @@
       .join(" · ")
   );
 
-  const openPerson = (id: string) =>
-    mockWorkbench.inspect("collaboration.person", { kind: "person", id });
+  const openPerson = (id: string) => view.inspect("collaboration.person", { kind: "person", id });
 
   /** Where they are, and whether they are you. */
   const whereabouts = (person: Person) => {

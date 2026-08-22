@@ -14,7 +14,9 @@
   import { members } from "$mock-capabilities/collaboration";
   import { kindLabel } from "$mock-capabilities/library";
   import { documentRecord } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The document as a whole — what it is, who is in it, whether it is safe.
@@ -73,7 +75,7 @@
         kind="person"
         role={person.id === VIEWER.id ? "you" : person.role}
         onselect={() =>
-          mockWorkbench.inspect("collaboration.person", { kind: "person", id: person.id })}
+          view.inspect("collaboration.person", { kind: "person", id: person.id })}
       />
     {/each}
 
@@ -110,7 +112,7 @@
             label={it.createdBy}
             title="{it.createdBy} — person"
             onselect={() =>
-              mockWorkbench.inspect("collaboration.person", { kind: "person", id: author.id })}
+              view.inspect("collaboration.person", { kind: "person", id: author.id })}
           />
         {:else}
           {it.createdBy}

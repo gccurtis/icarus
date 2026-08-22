@@ -15,7 +15,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { analyses } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Every chart built on this project's variables.
@@ -43,7 +45,7 @@
 
   const open = (id: string) => {
     selectedId = id;
-    mockWorkbench.inspect("analysis.analysis", { kind: "analysis", id });
+    view.inspect("analysis.analysis", { kind: "analysis", id });
   };
 </script>
 
@@ -53,7 +55,7 @@
       label="New"
       icon={Plus}
       tone="primary"
-      onclick={() => mockWorkbench.inspect("analysis.analysis", { kind: "analysis", id: "new" })}
+      onclick={() => view.inspect("analysis.analysis", { kind: "analysis", id: "new" })}
     />
     <PanelButton
       label="Open"
@@ -69,7 +71,7 @@
       title={selectedId === undefined ? "Choose an analysis first" : "Copy the chosen analysis"}
       onclick={() =>
         selectedId &&
-        mockWorkbench.inspect("analysis.analysis", { kind: "analysis", id: selectedId })}
+        view.inspect("analysis.analysis", { kind: "analysis", id: selectedId })}
     />
   {/snippet}
 

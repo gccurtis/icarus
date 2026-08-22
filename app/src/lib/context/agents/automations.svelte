@@ -14,7 +14,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { automationGroup, automationsIn, type AutomationRow } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Every standing rule in this project, by state.
@@ -29,7 +31,7 @@
    * **A live rule is summarised by its trigger**, because that is what
    * distinguishes two rules that both ask an agent for something.
    */
-  const rules = $derived(automationsIn(mockWorkbench.project.id).current);
+  const rules = $derived(automationsIn(view.project).current);
 
   let search = $state("");
   let selectedId = $state<string | undefined>(undefined);
@@ -56,7 +58,7 @@
 
   const open = (id: string) => {
     selectedId = id;
-    mockWorkbench.inspect("agents.automation", { kind: "automation", id });
+    view.inspect("agents.automation", { kind: "automation", id });
   };
 </script>
 
@@ -67,7 +69,7 @@
       icon={Plus}
       tone="primary"
       onclick={() =>
-        mockWorkbench.inspect("agents.automation", { kind: "automation", id: "new" })}
+        view.inspect("agents.automation", { kind: "automation", id: "new" })}
     />
     <PanelButton
       label="Open"

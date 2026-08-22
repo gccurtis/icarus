@@ -14,7 +14,9 @@
     ScreenTable
   } from "$lib/unique-components/screen";
   import { acceptedIn, threadsIn, type ResearchThread } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Research — all threads: every line of enquiry in the project, as one table.
@@ -42,7 +44,7 @@
     onnewthread?: () => void;
   } = $props();
 
-  const all = $derived(threadsIn(mockWorkbench.project.id).current);
+  const all = $derived(threadsIn(view.project).current);
 
   let search = $state("");
   let mode = $state("all");
@@ -85,11 +87,11 @@
     row.proposed > 0 ? `${row.accepted} accepted · ${row.proposed} proposed` : `${row.accepted} accepted`;
 
   const isSelected = (id: string): boolean =>
-    mockWorkbench.selection?.kind === "thread" && mockWorkbench.selection.id === id;
+    view.selection?.kind === "thread" && view.selection.id === id;
 
   /** Opening a thread also puts it in the inspector: what you opened is what you are looking at. */
   const open = (id: string) => {
-    mockWorkbench.inspect("research.thread", { kind: "thread", id });
+    view.inspect("research.thread", { kind: "thread", id });
     onopen(id);
   };
 </script>

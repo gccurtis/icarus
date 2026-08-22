@@ -15,7 +15,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { source, thread } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Something that was read, and the passage that mattered.
@@ -33,6 +33,8 @@
     threadId = "th-feeder"
   }: { sourceId?: string; threadId?: string } = $props();
 
+  const view = viewState();
+
   const record = $derived(source(sourceId).current);
   const origin = $derived(thread(threadId).current);
 </script>
@@ -45,7 +47,9 @@
         { label: "Sources" },
         { label: record.title }
       ]}
-      onnavigate={(key) => mockWorkbench.inspect(key, { kind: "thread", id: threadId })}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "thread", id: threadId });
+      }}
     />
   {/snippet}
 
@@ -69,7 +73,7 @@
       source="{record.title} · {record.locator}"
       sourceLabel="From"
       onopen={() =>
-        mockWorkbench.inspect("project.resource", { kind: "resource", id: record.id })}
+        view.inspect("project.resource", { kind: "resource", id: record.id })}
     >
       {record.excerpt}
     </PanelQuote>
@@ -123,7 +127,7 @@
           label="Open resource"
           icon={FileText}
           onclick={() =>
-            mockWorkbench.inspect("project.resource", { kind: "resource", id: record.id })}
+            view.inspect("project.resource", { kind: "resource", id: record.id })}
         />
       {/if}
     </PanelActions>

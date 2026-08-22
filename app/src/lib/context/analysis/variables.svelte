@@ -15,7 +15,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { functionsIn, tablesIn, valuesIn } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * What can be charted, with each table's fields expanded underneath it.
@@ -29,7 +31,7 @@
    * field — there is nothing to inspect about a column on its own — so field
    * rows are not buttons and do not offer a hover fill.
    */
-  const projectId = mockWorkbench.project.id;
+  const projectId = view.project;
 
   const tables = $derived(tablesIn(projectId).current);
   const values = $derived(valuesIn(projectId).current);
@@ -89,9 +91,9 @@
           title={table.name}
           meta="{table.rows.toLocaleString('en-GB')} rows"
           icon={Table2}
-          selected={mockWorkbench.selection?.id === table.id}
+          selected={view.selection?.id === table.id}
           onselect={() =>
-            mockWorkbench.inspect("analysis.variable", { kind: "variable", id: table.id })}
+            view.inspect("analysis.variable", { kind: "variable", id: table.id })}
         />
 
         {#each table.fields as field (field.name)}
@@ -112,9 +114,9 @@
           sub={value.value}
           meta={value.type}
           icon={ICON[value.type]}
-          selected={mockWorkbench.selection?.id === value.id}
+          selected={view.selection?.id === value.id}
           onselect={() =>
-            mockWorkbench.inspect("analysis.variable", { kind: "variable", id: value.id })}
+            view.inspect("analysis.variable", { kind: "variable", id: value.id })}
         />
       {/each}
 

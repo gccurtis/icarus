@@ -16,7 +16,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { errorAt, readsOf, spreadsheetRecord } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A cell whose formula cannot resolve: what broke, the expression as written,
@@ -39,6 +39,8 @@
     address = "D8"
   }: { spreadsheetId?: string; address?: string } = $props();
 
+  const view = viewState();
+
   const sheet = $derived(spreadsheetRecord(spreadsheetId).current);
   const problem = $derived(errorAt(spreadsheetId, address).current);
   const broken = $derived(
@@ -53,7 +55,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: sheet.title, key: "resource.spreadsheet" }, { label: address }]}
-      onnavigate={(key) => mockWorkbench.inspect(key)}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -110,7 +114,7 @@
           icon={Eraser}
           tone="danger"
           title="Remove the formula. The lens falls back to the spreadsheet, because a cleared coordinate holds nothing to inspect"
-          onclick={() => mockWorkbench.inspect("resource.spreadsheet")}
+          onclick={() => view.inspect("resource.spreadsheet")}
         />
       </PanelActions>
     </PanelSection>

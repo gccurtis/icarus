@@ -14,7 +14,9 @@
   import type { ResourceKind } from "$mock-capabilities/cast";
   import { kindLabel, recents, type RecentRow } from "$mock-capabilities/library";
   import { resources } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * What you had open lately, and what changed lately.
@@ -69,7 +71,7 @@
   const DAYS = ["Today", "Yesterday", "Earlier"] as const;
 
   const open = (id: string) =>
-    mockWorkbench.inspect("library.recent-item", { kind: "resource", id });
+    view.inspect("library.recent-item", { kind: "resource", id });
 </script>
 
 <Panel title="Recent">

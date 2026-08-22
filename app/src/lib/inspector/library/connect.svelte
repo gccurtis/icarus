@@ -20,7 +20,7 @@
     type ConnectorScope,
     type ProviderRow
   } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Connecting to an outside system, or repairing a connection.
@@ -36,6 +36,8 @@
    * list looking like the whole of what is granted when it is not.
    */
   let { connectorId = "cn-sharepoint" }: { connectorId?: string } = $props();
+
+  const view = viewState();
 
   const detail = $derived(connector(connectorId).current);
   const provider = $derived(
@@ -56,7 +58,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: "New tab" }, { label: "Bring in" }, { label: detail.name }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

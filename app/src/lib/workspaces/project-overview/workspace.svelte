@@ -19,7 +19,9 @@
   import { Button } from "$lib/simple-components/button";
   import { mentionsForViewer } from "$mock-capabilities/collaboration";
   import { activity, health, people, project, resources } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Project Overview — the only state this screen has.
@@ -110,8 +112,8 @@
           <PanelFaces
             actors={faces}
             label="Here now"
-            onselect={(id) => mockWorkbench.inspect("actor.person", { kind: "person", id })}
-            onoverflow={() => mockWorkbench.inspect("actor.people")}
+            onselect={(id) => view.inspect("collaboration.person", { kind: "person", id })}
+            onoverflow={() => view.inspect("collaboration.people")}
           />
           <Button variant="outline" size="sm">Settings</Button>
         {/snippet}
@@ -142,7 +144,7 @@
             <Button
               variant="outline"
               size="sm"
-              onclick={() => mockWorkbench.inspect("project.connector")}
+              onclick={() => view.inspect("project.connector")}
             >
               Reconnect
             </Button>
@@ -177,7 +179,7 @@
               type="button"
               class="border-border-subtle hover:bg-surface-hover flex flex-col gap-0.5 border-b px-3 py-2 text-start last:border-b-0"
               onclick={() =>
-                mockWorkbench.inspect("comment.thread", { kind: "comment", id: mention.id })}
+                view.inspect("collaboration.comment", { kind: "comment", id: mention.id })}
             >
               <span class="text-body-sm text-ink-primary">
                 <strong>{mention.author === "mira" ? "Mira Jain" : "Tomas Kaur"}</strong>
@@ -199,7 +201,7 @@
               type="button"
               class="border-border-subtle hover:bg-surface-hover flex flex-col gap-0.5 border-b px-3 py-2 text-start last:border-b-0"
               onclick={() =>
-                mockWorkbench.inspect("project.activity", { kind: "activity", id: event.id })}
+                view.inspect("project.activity", { kind: "activity", id: event.id })}
             >
               <span class="text-body-sm text-ink-primary">
                 <strong>{event.actor}</strong>
@@ -259,7 +261,7 @@
             <ScreenCell
               name={row.name}
               onselect={() =>
-                mockWorkbench.inspect("project.resource", { kind: "resource", id: row.id })}
+                view.inspect("project.resource", { kind: "resource", id: row.id })}
             />
             <ScreenCell>{KIND_LABEL[row.kind]}</ScreenCell>
             <ScreenCell num>{row.updated}</ScreenCell>

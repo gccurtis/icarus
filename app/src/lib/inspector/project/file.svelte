@@ -14,8 +14,8 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { connectors, resourcesOfKind } from "$mock-capabilities/library";
-  import { health } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { health, project } from "$mock-capabilities/project";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A file that came in from somewhere, and whether anything in it can be read.
@@ -37,6 +37,8 @@
    * one.
    */
   let { fileId = "r-nerc" }: { fileId?: string } = $props();
+
+  const view = viewState();
 
   const files = $derived(resourcesOfKind("file").current);
   const file = $derived(files.find((candidate) => candidate.id === fileId) ?? files[0]);
@@ -69,8 +71,10 @@
 <Panel title={file.name}>
   {#snippet crumbs()}
     <PanelCrumbs
-      trail={[{ label: mockWorkbench.project.name, key: "project.project" }, { label: file.name }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      trail={[{ label: project().current.name, key: "project.project" }, { label: file.name }]}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -126,7 +130,7 @@
             label={source.name}
             title="Open the connector"
             onselect={() =>
-              mockWorkbench.inspect("project.connector", { kind: "connector", id: source.id })}
+              view.inspect("project.connector", { kind: "connector", id: source.id })}
           />
         </PanelField>
         <PanelField label="Still syncing" stacked>{stillSyncing}</PanelField>

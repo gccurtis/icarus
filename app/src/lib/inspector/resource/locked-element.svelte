@@ -10,7 +10,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { layout, lockedElement } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Content the layout owns and a slide cannot touch — a footer wordmark, a slide
@@ -29,6 +29,8 @@
     layoutId = "ly-two-panes"
   }: { elementId?: string; layoutId?: string } = $props();
 
+  const view = viewState();
+
   const el = $derived(lockedElement(elementId).current);
   const owner = $derived(layout(layoutId).current);
 
@@ -42,7 +44,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: owner.name, key: "resource.layout" }, { label: el.name }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key, { kind: "layout", id: layoutId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "layout", id: layoutId });
+      }}
     />
   {/snippet}
 

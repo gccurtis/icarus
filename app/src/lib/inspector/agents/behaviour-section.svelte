@@ -9,7 +9,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { behaviourOf, persona, type BehaviourSection } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One of the five sections of a persona's definition: what it is for, what it
@@ -27,6 +27,8 @@
     personaId = "grid-analyst",
     sectionId = "grid-analyst-focus"
   }: { personaId?: string; sectionId?: string } = $props();
+
+  const view = viewState();
 
   const profile = $derived(persona(personaId).current);
   const sections = $derived(behaviourOf(personaId).current);
@@ -50,8 +52,9 @@
         { label: "Behaviour" },
         { label: section.name }
       ]}
-      onnavigate={(key: string) =>
-        mockWorkbench.inspect(key, { kind: "persona", id: personaId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "persona", id: personaId });
+      }}
     />
   {/snippet}
 

@@ -15,7 +15,7 @@
 
   import { Panel, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { insertOptions, type InsertOption } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState, type InspectionKey } from "$model/client/view-state";
 
   /**
    * Putting something new into the document.
@@ -34,6 +34,8 @@
    * the screen explains; the row says what is missing instead.
    */
   let { documentId = "r-memo" }: { documentId?: string } = $props();
+
+  const view = viewState();
 
   const options = $derived(insertOptions("document").current);
 
@@ -76,24 +78,22 @@
    * `docs/screen-panel-views/inspector/resource/` where one exists; the rest name
    * the thing they made and the lens follows the name.
    */
-  const LENS: Readonly<Record<string, string>> = {
+  const LENS: Readonly<Record<string, InspectionKey>> = {
     "ins-d-text": "resource.text-block-document",
     "ins-d-heading": "resource.text-block-document",
     "ins-d-list": "resource.text-block-document",
     "ins-d-check": "resource.text-block-document",
-    "ins-d-image": "resource.image",
     "ins-d-table": "resource.table",
-    "ins-d-embed": "resource.embed",
     "ins-d-formula": "resource.formula",
     "ins-d-prompt": "resource.prompt-block",
-    "ins-d-variable": "resource.variable",
-    "ins-d-divider": "resource.divider-row",
-    "ins-d-break": "resource.page-break",
-    "ins-d-side": "resource.side-by-side-row"
+    // A variable reads as live text in the body, which is the inline formula lens.
+    "ins-d-variable": "resource.formula"
+    // Image, embed, divider, page break and side-by-side name no lens in the
+    // inspector tree, so they fall through to the block they insert.
   };
 
   const insert = (option: InsertOption) =>
-    mockWorkbench.inspect(LENS[option.id] ?? "resource.text-block-document", {
+    view.inspect(LENS[option.id] ?? "resource.text-block-document", {
       kind: "block",
       id: `${documentId}:${option.id}`
     });

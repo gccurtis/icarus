@@ -20,7 +20,7 @@
     type OutlineEntry,
     type PageRow
   } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState, type InspectionKey } from "$model/client/view-state";
 
   /**
    * Getting somewhere in a long document.
@@ -39,6 +39,9 @@
    * gutters change, which the note at the foot says out loud.
    */
   let { documentId = "r-memo" }: { documentId?: string } = $props();
+
+  /** Named `model` rather than `view`: `view` is already this panel's Outline/Pages chip. */
+  const model = viewState();
 
   const outline = $derived(outlineIn(documentId).current);
   const pages = $derived(pagesIn(documentId).current);
@@ -72,8 +75,10 @@
   /** Heading level as an indent: an H1 sits at the gutter, and every level below steps in once. */
   const DEPTH: Readonly<Record<OutlineEntry["level"], 0 | 1 | 2>> = { 1: 0, 2: 1, 3: 2 };
 
-  const FURNITURE_LENS: Readonly<Record<FurnitureRow["kind"], string>> = {
-    break: "resource.page-break",
+  // A page break has no lens of its own, so it lands on the document, which is
+  // where page setup is.
+  const FURNITURE_LENS: Readonly<Record<FurnitureRow["kind"], InspectionKey>> = {
+    break: "resource.document",
     header: "resource.header",
     footer: "resource.footer"
   };
@@ -85,7 +90,7 @@
   };
 
   const goToHeading = (entry: OutlineEntry) =>
-    mockWorkbench.inspect("resource.text-block-document", { kind: "block", id: entry.id });
+    model.inspect("resource.text-block-document", { kind: "block", id: entry.id });
 </script>
 
 <Panel title="Navigator">
@@ -124,7 +129,7 @@
           sub={pageSub(page)}
           icon={FileText}
           onselect={() =>
-            mockWorkbench.inspect("resource.document", { kind: "page", id: `${page.number}` })}
+            model.inspect("resource.document", { kind: "page", id: `${page.number}` })}
         />
       {/each}
     {/if}
@@ -142,7 +147,7 @@
         meta={row.page === undefined ? undefined : `p.${row.page}`}
         icon={FURNITURE_ICON[row.kind]}
         onselect={() =>
-          mockWorkbench.inspect(FURNITURE_LENS[row.kind], { kind: row.kind, id: row.id })}
+          model.inspect(FURNITURE_LENS[row.kind], { kind: row.kind, id: row.id })}
       />
     {/each}
   </PanelSection>

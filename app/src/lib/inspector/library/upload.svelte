@@ -12,7 +12,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { ingestion, uploads, type UploadRow } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Files on their way into the project.
@@ -27,6 +27,8 @@
    * under a bar for the batch says the same thing twice in a 300px column, so a
    * file in flight carries its percentage where its state would otherwise sit.
    */
+  const view = viewState();
+
   const staged = $derived(uploads().current);
   const batch = $derived(ingestion().current);
 
@@ -55,7 +57,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: "New tab" }, { label: "Bring in" }, { label: "Upload" }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

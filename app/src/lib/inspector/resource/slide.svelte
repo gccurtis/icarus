@@ -20,7 +20,7 @@
     PanelToggle
   } from "$lib/unique-components/panel";
   import { deckRecord, notesFor, slide } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A slide, selected in the Slides panel rather than something on it.
@@ -37,6 +37,8 @@
    * selection, because that much is true at the selection level.
    */
   let { slideId = "sl-4", deckId = "r-board" }: { slideId?: string; deckId?: string } = $props();
+
+  const view = viewState();
 
   const record = $derived(slide(slideId).current);
   const notes = $derived(notesFor(slideId).current);
@@ -56,7 +58,9 @@
         { label: record.sectionName },
         { label: `Slide ${record.index}` }
       ]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key, { kind: "deck", id: deckId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "deck", id: deckId });
+      }}
     />
   {/snippet}
 
@@ -67,7 +71,7 @@
         label="Edit notes"
         icon={SquarePen}
         onclick={() =>
-          mockWorkbench.inspect("resource.speaker-notes", { kind: "notes", id: slideId })}
+          view.inspect("resource.speaker-notes", { kind: "notes", id: slideId })}
       />
     </PanelActions>
   </PanelSection>
@@ -79,7 +83,7 @@
           label={record.layoutName}
           title="Open the layout"
           onselect={() =>
-            mockWorkbench.inspect("resource.layout", { kind: "layout", id: record.layoutId })}
+            view.inspect("resource.layout", { kind: "layout", id: record.layoutId })}
         />
       </PanelField>
       <PanelField label="Section">{record.sectionName}</PanelField>
@@ -96,7 +100,7 @@
     <PanelActions>
       <PanelButton label="Duplicate" icon={Copy} />
       <PanelButton label="New after" icon={Plus} />
-      <PanelButton label="Delete" icon={Trash2} tone="danger" onclick={() => mockWorkbench.clear()} />
+      <PanelButton label="Delete" icon={Trash2} tone="danger" onclick={() => view.clear()} />
     </PanelActions>
   </PanelSection>
 

@@ -9,7 +9,7 @@
     PanelSelect
   } from "$lib/unique-components/panel";
   import { modelBindingOf, persona } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Which binding runs this agent.
@@ -22,6 +22,8 @@
    * the place a settings screen would grow if nobody said so.
    */
   let { personaId = "grid-analyst" }: { personaId?: string } = $props();
+
+  const view = viewState();
 
   const profile = $derived(persona(personaId).current);
   const binding = $derived(modelBindingOf(personaId).current);
@@ -42,8 +44,9 @@
         { label: "Tools" },
         { label: "Model" }
       ]}
-      onnavigate={(key: string) =>
-        mockWorkbench.inspect(key, { kind: "persona", id: personaId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "persona", id: personaId });
+      }}
     />
   {/snippet}
 

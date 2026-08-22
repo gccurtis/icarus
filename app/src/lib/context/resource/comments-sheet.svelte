@@ -9,7 +9,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { commentsOn, type ResourceComment } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Conversation on this spreadsheet.
@@ -26,15 +26,15 @@
    */
   let { spreadsheetId = "r-cost" }: { spreadsheetId?: string } = $props();
 
+  const view = viewState();
+
   const threads = $derived(commentsOn(spreadsheetId).current);
 
   /**
    * The cell the grid is on. `C2` when nothing is selected — the address the
    * specification's example is about, so the narrow scope has something to show.
    */
-  const address = $derived(
-    mockWorkbench.selection?.kind === "cell" ? mockWorkbench.selection.id : "C2"
-  );
+  const address = $derived(view.selection?.kind === "cell" ? view.selection.id : "C2");
 
   let scope = $state<"everywhere" | "cell">("everywhere");
 
@@ -81,8 +81,7 @@
         meta={thread.age}
         icon={MessageSquare}
         tone={thread.mentionsViewer ? "attention" : "default"}
-        onselect={() =>
-          mockWorkbench.inspect("comment.thread", { kind: "comment", id: thread.id })}
+        onselect={() => view.inspect("collaboration.comment", { kind: "comment", id: thread.id })}
       />
     {/each}
   </PanelSection>

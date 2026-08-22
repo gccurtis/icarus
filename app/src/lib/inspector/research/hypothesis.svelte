@@ -13,8 +13,9 @@
     PanelRow,
     PanelSection
   } from "$lib/unique-components/panel";
+  import { project } from "$mock-capabilities/project";
   import { bearingOn, hypothesis } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One idea being tested, and the evidence on both sides.
@@ -31,6 +32,8 @@
    */
   let { hypothesisId = "h-3" }: { hypothesisId?: string } = $props();
 
+  const view = viewState();
+
   const record = $derived(hypothesis(hypothesisId).current);
   const evidence = $derived(bearingOn(hypothesisId).current);
 
@@ -43,9 +46,10 @@
 <Panel title={record.ref}>
   {#snippet crumbs()}
     <PanelCrumbs
-      trail={[{ label: mockWorkbench.project.name, key: "project.project" }, { label: record.ref }]}
-      onnavigate={(key) =>
-        mockWorkbench.inspect(key, { kind: "project", id: mockWorkbench.project.id })}
+      trail={[{ label: project().current.name, key: "project.project" }, { label: record.ref }]}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "project", id: view.project });
+      }}
     />
   {/snippet}
 
@@ -83,7 +87,7 @@
         icon={BEARING_ICON[link.bearing]}
         tone={BEARING_TONE[link.bearing]}
         onselect={() =>
-          mockWorkbench.inspect("research.accepted-finding", {
+          view.inspect("research.accepted-finding", {
             kind: "finding",
             id: link.ref.toLowerCase()
           })}

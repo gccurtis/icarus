@@ -19,7 +19,9 @@
     workBy,
     type WorkItem
   } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Everything this agent has done here, by state.
@@ -59,7 +61,7 @@
     failed.some((item: WorkItem) => item.detail.startsWith("Tool not permitted"))
   );
 
-  const openTask = (id: string) => mockWorkbench.inspect("copilot.task", { kind: "task", id });
+  const openTask = (id: string) => view.inspect("copilot.task", { kind: "task", id });
 </script>
 
 <Panel title="Work">
@@ -100,7 +102,7 @@
         <PanelButton
           label="Open Tools"
           icon={ShieldCheck}
-          onclick={() => mockWorkbench.selectContext("tools")}
+          onclick={() => view.selectContext("agents.tools")}
         />
       </PanelActions>
     {/if}
@@ -137,7 +139,7 @@
         meta={chat.age}
         icon={MessageSquare}
         onselect={() =>
-          mockWorkbench.inspect("copilot.conversation", { kind: "conversation", id: chat.id })}
+          view.inspect("copilot.conversation", { kind: "conversation", id: chat.id })}
       />
     {/each}
   </PanelSection>

@@ -10,7 +10,7 @@
     thread,
     type Finding
   } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * The same object in three states: proposed by this turn, accepted in this
@@ -27,6 +27,8 @@
    */
   let { threadId = "th-feeder" }: { threadId?: string } = $props();
 
+  const view = viewState();
+
   const turn = $derived(currentTurn(threadId).current);
   const proposed = $derived(proposedIn(turn.id).current);
   const accepted = $derived(acceptedIn(threadId).current);
@@ -42,7 +44,7 @@
   const from = (found: Finding) => thread(found.threadId).current.title;
 
   const open = (found: Finding) =>
-    mockWorkbench.inspect(
+    view.inspect(
       found.state === "proposed" ? "research.proposed-finding" : "research.accepted-finding",
       { kind: "finding", id: found.id }
     );

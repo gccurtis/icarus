@@ -26,7 +26,9 @@
     placeholdersIn,
     slide
   } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState, type InspectionKey } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Slide deck editor — every state this screen has.
@@ -114,9 +116,9 @@
 
   let selected = $state<string | undefined>(undefined);
 
-  const inspect = (key: string, kind: string, id: string) => {
+  const inspect = (key: InspectionKey, kind: string, id: string) => {
     selected = id;
-    mockWorkbench.inspect(key, { kind, id });
+    view.inspect(key, { kind, id });
   };
 
   /** The two questions inserting a slide actually involves, asked in one pass. */

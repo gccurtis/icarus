@@ -14,7 +14,9 @@
   } from "$lib/unique-components/panel";
   import { analysis, lastRunOf, limitIn } from "$mock-capabilities/analysis";
   import { PEOPLE } from "$mock-capabilities/cast";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The analysis itself: what it is called, whether it is saved, what it last
@@ -101,7 +103,7 @@
             label={it.updatedBy}
             title="{it.updatedBy} — person"
             onselect={() =>
-              mockWorkbench.inspect("collaboration.person", { kind: "person", id: author.id })}
+              view.inspect("collaboration.person", { kind: "person", id: author.id })}
           />
         {:else}
           {it.updatedBy}

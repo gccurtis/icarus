@@ -14,7 +14,7 @@
     rangeSelection,
     type NamedRange
   } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Names that mean something inside this spreadsheet only.
@@ -34,11 +34,13 @@
    */
   let { spreadsheetId = "r-cost" }: { spreadsheetId?: string } = $props();
 
+  const view = viewState();
+
   const ranges = $derived(namedRangesIn(spreadsheetId).current);
 
   /** The block the action row acts on: the grid's selection, as a range. */
   const selection = $derived(
-    rangeSelection(spreadsheetId, mockWorkbench.selection?.id ?? "A1").current
+    rangeSelection(spreadsheetId, view.selection?.id ?? "A1").current
   );
 
   /** Zero is worth a word rather than a digit — an unused name is the one to question. */
@@ -53,8 +55,7 @@
       icon={Plus}
       tone="primary"
       title={`Names ${selection.a1}, the current selection`}
-      onclick={() =>
-        mockWorkbench.inspect("resource.named-range", { kind: "range", id: selection.a1 })}
+      onclick={() => view.inspect("resource.named-range", { kind: "range", id: selection.a1 })}
     />
   {/snippet}
 
@@ -71,7 +72,7 @@
         meta={uses(range)}
         icon={Brackets}
         onselect={() =>
-          mockWorkbench.inspect("resource.named-range", { kind: "named-range", id: range.name })}
+          view.inspect("resource.named-range", { kind: "named-range", id: range.name })}
       />
     {/each}
   </PanelSection>

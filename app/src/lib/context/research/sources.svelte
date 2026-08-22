@@ -17,7 +17,7 @@
     sourcesInThread,
     type Source
   } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * What has been read: by this turn, and across the thread.
@@ -31,6 +31,8 @@
    * filter that empties the thread has emptied the turn with it.
    */
   let { threadId = "th-feeder" }: { threadId?: string } = $props();
+
+  const view = viewState();
 
   const turn = $derived(currentTurn(threadId).current);
   const forTurn = $derived(sourcesForTurn(turn.id).current);
@@ -65,7 +67,7 @@
       ? `Web · captured ${source.capturedAt ?? "never"}`
       : `${source.locator} · ${source.kind}`;
 
-  const open = (id: string) => mockWorkbench.inspect("research.source", { kind: "source", id });
+  const open = (id: string) => view.inspect("research.source", { kind: "source", id });
 </script>
 
 <Panel title="Sources">

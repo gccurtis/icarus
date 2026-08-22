@@ -54,11 +54,14 @@ export default {
       $workspaces: "src/lib/workspaces",
       $modals: "src/lib/modals",
 
-      // Stand-ins for the doors and objects the panels need and the application
-      // does not have yet. Both are shaped like the real thing so replacing one
-      // is an import change rather than a rewrite.
+      // Stand-ins for the doors the panels read and the store does not answer
+      // yet. Shaped like the real thing — the same `current` / `error` / `refresh`
+      // handle `$json-store/client` returns — so replacing one is an import
+      // change rather than a rewrite.
+      //
+      // There was a `$mock-models` beside this. It is gone: what a panel needed
+      // from it is now `$model/client/view-state`, which is the real object.
       "$mock-capabilities": "src/lib/mock-capabilities",
-      "$mock-models": "src/lib/mock-models",
 
       $access: "src/lib/capabilities/access",
       $content: "src/lib/capabilities/content",

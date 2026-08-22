@@ -9,7 +9,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { chartAt, spreadsheetRecord } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A chart floating over the grid: what it draws, where it reads from, and where
@@ -28,6 +28,8 @@
     index = 0
   }: { spreadsheetId?: string; index?: number } = $props();
 
+  const view = viewState();
+
   const sheet = $derived(spreadsheetRecord(spreadsheetId).current);
   const chart = $derived(chartAt(spreadsheetId, index).current);
 </script>
@@ -39,7 +41,9 @@
         { label: sheet.title, key: "resource.spreadsheet" },
         { label: chart?.title ?? "Chart" }
       ]}
-      onnavigate={(key) => mockWorkbench.inspect(key)}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -54,7 +58,7 @@
           label={chart.sourceRange}
           title="Select {chart.sourceRange} on the grid"
           onselect={() =>
-            mockWorkbench.inspect("resource.range", { kind: "range", id: chart.sourceRange })}
+            view.inspect("resource.range", { kind: "range", id: chart.sourceRange })}
         />
       </PanelField>
       <PanelField label="Title" stacked>{chart.title}</PanelField>

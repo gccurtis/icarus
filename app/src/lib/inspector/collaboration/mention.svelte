@@ -17,7 +17,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { member, resourceNamed, thread } from "$mock-capabilities/collaboration";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState, type InspectionKey } from "$model/client/view-state";
 
   /**
    * One comment addressed to you: who wrote it, where it sits, what it says, and
@@ -38,6 +38,8 @@
    */
   let { mentionId = "c-1" }: { mentionId?: string } = $props();
 
+  const view = viewState();
+
   const mention = $derived(thread(mentionId).current);
   const author = $derived(member(mention.author).current);
   const anchor = $derived(mention.anchor);
@@ -45,7 +47,7 @@
   /** Clearing it is local, because the read marker it would write does not exist. */
   let cleared = $state(false);
 
-  const WHOLE_RESOURCE: Record<string, string> = {
+  const WHOLE_RESOURCE: Record<string, InspectionKey> = {
     document: "resource.document",
     slides: "resource.deck",
     spreadsheet: "resource.spreadsheet"
@@ -56,14 +58,14 @@
     const resource = resourceNamed(anchor.resource);
     const id = resource?.id ?? anchor.resource;
     if (anchor.location !== undefined && resource?.kind === "spreadsheet") {
-      mockWorkbench.inspect("resource.cell", { kind: "cell", id: anchor.location });
+      view.inspect("resource.cell", { kind: "cell", id: anchor.location });
     } else if (anchor.location !== undefined && resource?.kind === "slides") {
-      mockWorkbench.inspect("resource.slide", { kind: "slide", id: anchor.location });
+      view.inspect("resource.slide", { kind: "slide", id: anchor.location });
     } else if (anchor.text !== undefined) {
-      mockWorkbench.inspect("resource.text-selection", { kind: "text", id });
+      view.inspect("resource.text-selection", { kind: "text", id });
     } else {
       const lens = WHOLE_RESOURCE[resource?.kind ?? "document"] ?? "resource.document";
-      mockWorkbench.inspect(lens, { kind: "resource", id });
+      view.inspect(lens, { kind: "resource", id });
     }
   };
 </script>
@@ -72,7 +74,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: anchor.resource, key: "resource.document" }, { label: "Mention" }]}
-      onnavigate={(key) => mockWorkbench.inspect(key)}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -87,7 +91,7 @@
       label="Reply"
       icon={Reply}
       onclick={() =>
-        mockWorkbench.inspect("comment.thread", { kind: "comment", id: mention.id })}
+        view.inspect("collaboration.comment", { kind: "comment", id: mention.id })}
     />
     <PanelButton
       label={cleared ? "Read" : "Mark read"}
@@ -106,7 +110,7 @@
         name={author.name}
         kind="person"
         onselect={() =>
-          mockWorkbench.inspect("collaboration.person", { kind: "person", id: author.id })}
+          view.inspect("collaboration.person", { kind: "person", id: author.id })}
       />
     </PanelField>
     <PanelField label="Where">

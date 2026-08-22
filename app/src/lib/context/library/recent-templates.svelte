@@ -6,7 +6,9 @@
 
   import { Panel, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { recentlyUpdatedTemplates, recentlyUsedTemplates } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * What has changed lately, and what has been used lately.
@@ -31,7 +33,7 @@
   };
 
   const inspect = (id: string) =>
-    mockWorkbench.inspect("library.template", { kind: "template", id });
+    view.inspect("library.template", { kind: "template", id });
 </script>
 
 <Panel title="Recent">

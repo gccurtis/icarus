@@ -4,7 +4,7 @@
   import { Panel, PanelNote, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { actorName } from "$mock-capabilities/cast";
   import { mentionsForViewer, type PersonComment } from "$mock-capabilities/collaboration";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Mentions — what a person addressed to you, and nothing else.
@@ -18,6 +18,8 @@
    * so opening a mention moves it to Read here and the two sections start over
    * next time. It is the marker's behaviour without the marker's memory.
    */
+  const view = viewState();
+
   const mentions = $derived(mentionsForViewer().current);
 
   let seen = $state<string[]>([]);
@@ -33,7 +35,7 @@
 
   const open = (mention: PersonComment) => {
     if (!seen.includes(mention.id)) seen.push(mention.id);
-    mockWorkbench.inspect("comment.mention", { kind: "comment", id: mention.id });
+    view.inspect("collaboration.mention", { kind: "comment", id: mention.id });
   };
 </script>
 

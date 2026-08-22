@@ -9,7 +9,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { context, searchHit } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * One result from a test search against this Context.
@@ -30,6 +30,8 @@
     hitId = "sr-1"
   }: { contextId?: string; hitId?: string } = $props();
 
+  const view = viewState();
+
   const scope = $derived(context(contextId).current);
   const hit = $derived(searchHit(hitId).current);
 
@@ -45,7 +47,7 @@
     <PanelCrumbs
       {trail}
       onnavigate={() =>
-        mockWorkbench.inspect("scope.context", { kind: "context", id: contextId })}
+        view.inspect("scope.context", { kind: "context", id: contextId })}
     />
   {/snippet}
 
@@ -54,7 +56,7 @@
       source={hit.source}
       sourceLabel="From"
       onopen={() =>
-        mockWorkbench.inspect("project.resource", { kind: "resource", id: hit.id })}
+        view.inspect("project.resource", { kind: "resource", id: hit.id })}
     >
       {hit.passage}
     </PanelQuote>

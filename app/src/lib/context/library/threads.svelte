@@ -12,7 +12,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { threads } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Every line of enquiry in the project.
@@ -45,7 +47,7 @@
   const turns = (count: number) => (count === 1 ? "1 turn" : `${count} turns`);
 
   const inspect = (id: string) =>
-    mockWorkbench.inspect("research.thread", { kind: "thread", id });
+    view.inspect("research.thread", { kind: "thread", id });
 </script>
 
 <Panel title="Threads">
@@ -54,7 +56,7 @@
       label="New thread"
       icon={Plus}
       tone="primary"
-      onclick={() => mockWorkbench.inspect("research.thread", { kind: "thread", id: "new" })}
+      onclick={() => view.inspect("research.thread", { kind: "thread", id: "new" })}
     />
   {/snippet}
 

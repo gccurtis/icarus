@@ -14,7 +14,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { context, resolvedResource } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * One resource that survived the rule, and the proof of why it did.
@@ -35,6 +35,8 @@
     contextId = "cx-drafts",
     resourceId = "sp-feeder-12-relay"
   }: { contextId?: string; resourceId?: string } = $props();
+
+  const view = viewState();
 
   const scope = $derived(context(contextId).current);
   const row = $derived(resolvedResource(contextId, resourceId).current);
@@ -57,7 +59,7 @@
     <PanelCrumbs
       {trail}
       onnavigate={() =>
-        mockWorkbench.inspect("scope.context", { kind: "context", id: contextId })}
+        view.inspect("scope.context", { kind: "context", id: contextId })}
     />
   {/snippet}
 
@@ -66,7 +68,7 @@
       label="Open"
       icon={ExternalLink}
       onclick={() =>
-        mockWorkbench.inspect("project.resource", { kind: "resource", id: row.id })}
+        view.inspect("project.resource", { kind: "resource", id: row.id })}
     />
   {/snippet}
 

@@ -16,7 +16,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { templates, type LibraryTemplate } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Every template available here, by scope.
@@ -59,7 +61,7 @@
 
   const choose = (id: string) => {
     selectedId = id;
-    mockWorkbench.inspect("library.template", { kind: "template", id });
+    view.inspect("library.template", { kind: "template", id });
   };
 </script>
 
@@ -69,7 +71,7 @@
       label="New"
       icon={Plus}
       tone="primary"
-      onclick={() => mockWorkbench.inspect("library.template", { kind: "template", id: "new" })}
+      onclick={() => view.inspect("library.template", { kind: "template", id: "new" })}
     />
     <PanelButton
       label="Edit"
@@ -78,7 +80,7 @@
       title={selected === undefined ? "Choose a template first" : "Author the chosen template"}
       onclick={() =>
         selected &&
-        mockWorkbench.inspect("library.body-entity", { kind: "template", id: selected.id })}
+        view.inspect("library.body-entity", { kind: "template", id: selected.id })}
     />
     <PanelButton
       label="Use"
@@ -91,7 +93,7 @@
           : "Make something from the chosen template"}
       onclick={() =>
         selected &&
-        mockWorkbench.inspect("library.use-template", { kind: "template", id: selected.id })}
+        view.inspect("library.use-template", { kind: "template", id: selected.id })}
     />
     <PanelButton
       label="Duplicate"
@@ -100,7 +102,7 @@
       title={selected === undefined ? "Choose a template first" : "Copy the chosen template"}
       onclick={() =>
         selected &&
-        mockWorkbench.inspect("library.template", { kind: "template", id: selected.id })}
+        view.inspect("library.template", { kind: "template", id: selected.id })}
     />
   {/snippet}
 

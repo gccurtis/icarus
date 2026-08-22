@@ -10,7 +10,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { automation, triggersFor, type TriggerOption } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A schedule trigger: when the rule fires, and when it fires next.
@@ -25,6 +25,8 @@
    * scheduler would be worse than one that said nothing.
    */
   let { automationId = "nightly-digest" }: { automationId?: string } = $props();
+
+  const view = viewState();
 
   const rule = $derived(automation(automationId).current);
 
@@ -57,8 +59,9 @@
         { label: "When" },
         { label: "Schedule" }
       ]}
-      onnavigate={(key: string) =>
-        mockWorkbench.inspect(key, { kind: "automation", id: automationId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "automation", id: automationId });
+      }}
     />
   {/snippet}
 

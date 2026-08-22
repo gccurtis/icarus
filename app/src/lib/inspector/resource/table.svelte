@@ -16,7 +16,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { documentRecord, documentTable } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A table in the document body.
@@ -37,6 +37,8 @@
    */
   let { documentId = "r-memo", tableId = "b_8d4" }: { documentId?: string; tableId?: string } =
     $props();
+
+  const view = viewState();
 
   const doc = $derived(documentRecord(documentId).current);
   const table = $derived(documentTable(tableId).current);
@@ -63,7 +65,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: doc.title, key: "resource.document" }, { label: "Table" }]}
-      onnavigate={(key) => mockWorkbench.inspect(key, { kind: "resource", id: documentId })}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "resource", id: documentId });
+      }}
     />
   {/snippet}
 
@@ -112,7 +116,7 @@
       label="Delete table"
       icon={Trash2}
       tone="danger"
-      onclick={() => mockWorkbench.inspect("resource.document", { kind: "resource", id: documentId })}
+      onclick={() => view.inspect("resource.document", { kind: "resource", id: documentId })}
     />
   </PanelActions>
 </Panel>

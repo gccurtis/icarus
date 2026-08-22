@@ -34,7 +34,9 @@
     type GeneratedBlock,
     type TriggerOption
   } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Automations — one rule, entered from Open.
@@ -165,7 +167,7 @@
               onselect={() => {
                 pickedTrigger = option.kind;
                 if (option.kind === "schedule" && option.chosen) {
-                  mockWorkbench.inspect("agents.schedule-trigger", {
+                  view.inspect("agents.schedule-trigger", {
                     kind: "trigger",
                     id: automationId
                   });
@@ -239,7 +241,7 @@
               onselect={() => {
                 pickedAction = option.kind;
                 if (option.chosen) {
-                  mockWorkbench.inspect(
+                  view.inspect(
                     option.kind === "ask-agent" ? "agents.agent-action" : "agents.refresh-action",
                     { kind: "action", id: automationId }
                   );
@@ -263,7 +265,7 @@
                   name={agentName}
                   kind="agent"
                   onselect={() =>
-                    mockWorkbench.inspect("agents.persona", { kind: "persona", id: agent })}
+                    view.inspect("agents.persona", { kind: "persona", id: agent })}
                 />
               </PanelField>
             </PanelFields>
@@ -318,7 +320,7 @@
                 <PanelLink
                   label={task.title}
                   title="What the fire started"
-                  onselect={() => mockWorkbench.inspect("copilot.task", { kind: "task", id: task.id })}
+                  onselect={() => view.inspect("copilot.task", { kind: "task", id: task.id })}
                 />
               </PanelField>
             {/if}
@@ -341,7 +343,7 @@
     type="button"
     class="border-border-subtle rounded-control hover:bg-surface-panel-hover flex flex-col gap-0.5 border px-2 py-1.5 text-start"
     class:bg-surface-work={chosen}
-    onclick={() => mockWorkbench.inspect("agents.refresh-action", { kind: "block", id: block.id })}
+    onclick={() => view.inspect("agents.refresh-action", { kind: "block", id: block.id })}
   >
     <span class="text-body-sm text-ink-primary flex items-center gap-1.5">
       {block.name}

@@ -9,7 +9,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { documentRecord, documentStyle } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One named text style: its typography and spacing, edited once for everywhere
@@ -33,6 +33,8 @@
     documentId = "r-memo",
     styleId = "ds-body"
   }: { documentId?: string; styleId?: string } = $props();
+
+  const view = viewState();
 
   const doc = $derived(documentRecord(documentId).current);
   const style = $derived(documentStyle(styleId).current);
@@ -61,8 +63,8 @@
   });
 
   const navigate = (key: string) => {
-    if (key === "resource.styles-document") mockWorkbench.selectContext(key);
-    else mockWorkbench.inspect(key, { kind: "resource", id: documentId });
+    if (key === "resource.styles-document") view.selectContext(key);
+    else if (isInspectionKey(key)) view.inspect(key, { kind: "resource", id: documentId });
   };
 </script>
 

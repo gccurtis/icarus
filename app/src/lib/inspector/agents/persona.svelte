@@ -24,7 +24,7 @@
     type BehaviourSection,
     type ToolPermission
   } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * A persona: who the agent is, what it has done, and what it may see and do.
@@ -39,6 +39,8 @@
    * policy exists and is merely unmet.
    */
   let { personaId = "grid-analyst" }: { personaId?: string } = $props();
+
+  const view = viewState();
 
   const profile = $derived(persona(personaId).current);
   const behaviour = $derived(behaviourOf(personaId).current);
@@ -151,7 +153,7 @@
       meta={`${scope.contains}`}
       icon={BookOpen}
       onselect={() =>
-        mockWorkbench.inspect("agents.what-it-can-look-up", { kind: "persona", id: personaId })}
+        view.inspect("agents.what-it-can-look-up", { kind: "persona", id: personaId })}
     />
   </PanelSection>
 

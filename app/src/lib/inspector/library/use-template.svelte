@@ -16,7 +16,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { template, useTemplateDraft, type InstantiationAsk } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * What using a template will make, and what has to be supplied first.
@@ -33,6 +33,8 @@
    * gives, which is the one fact this whole form has to admit.
    */
   let { templateId = "tp-filing" }: { templateId?: string } = $props();
+
+  const view = viewState();
 
   const draft = $derived(useTemplateDraft(templateId).current);
   const tpl = $derived(template(templateId).current);
@@ -58,7 +60,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: "Templates" }, { label: tpl.name, key: "library.template" }, { label: "Use" }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

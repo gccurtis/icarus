@@ -3,7 +3,9 @@
 
   import { Panel, PanelRow, PanelSearch, PanelSection } from "$lib/unique-components/panel";
   import { findings } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Everything this project has accepted, in one list.
@@ -44,7 +46,7 @@
           meta={row.age}
           icon={Lightbulb}
           onselect={() =>
-            mockWorkbench.inspect("research.accepted-finding", { kind: "finding", id: row.id })}
+            view.inspect("research.accepted-finding", { kind: "finding", id: row.id })}
         />
       {/each}
     </PanelSection>

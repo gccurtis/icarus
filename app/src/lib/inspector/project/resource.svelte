@@ -19,8 +19,8 @@
   import type { ResourceKind } from "$mock-capabilities/cast";
   import { members, presenceFor } from "$mock-capabilities/collaboration";
   import { findings, hypotheses, kindLabel, questions, threads } from "$mock-capabilities/library";
-  import { activity, resources } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { activity, project, resources } from "$mock-capabilities/project";
+  import { isInspectionKey, viewState, type InspectionKey } from "$model/client/view-state";
 
   /**
    * The general lens for anything first-class in the project: what it is, who is
@@ -44,11 +44,13 @@
    */
   let { resourceId = "r-memo" }: { resourceId?: string } = $props();
 
+  const view = viewState();
+
   const all = $derived(resources().current);
   const resource = $derived(all.find((candidate) => candidate.id === resourceId) ?? all[0]);
 
   /** Kind to the lens that owns it: the resolver the specification asks for. */
-  const OPENS: Record<ResourceKind, string> = {
+  const OPENS: Record<ResourceKind, InspectionKey> = {
     document: "resource.document",
     slides: "resource.deck",
     spreadsheet: "resource.spreadsheet",
@@ -80,7 +82,7 @@
     readonly id: string;
     readonly title: string;
     readonly relation: string;
-    readonly key: string;
+    readonly key: InspectionKey;
     readonly kind: string;
   };
 
@@ -147,17 +149,19 @@
   let duplicated = $state(false);
 
   const open = () =>
-    mockWorkbench.inspect(OPENS[resource.kind], { kind: "resource", id: resource.id });
+    view.inspect(OPENS[resource.kind], { kind: "resource", id: resource.id });
 </script>
 
 <Panel title={resource.name}>
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[
-        { label: mockWorkbench.project.name, key: "project.project" },
+        { label: project().current.name, key: "project.project" },
         { label: resource.name }
       ]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -189,7 +193,7 @@
         actors={here.map((person) => ({ id: person.id, name: person.name }))}
         label="Editing now"
         onselect={(id: string) =>
-          mockWorkbench.inspect("collaboration.person", { kind: "person", id })}
+          view.inspect("collaboration.person", { kind: "person", id })}
       />
       <PanelNote>{names} {here.length === 1 ? "has" : "have"} this open right now.</PanelNote>
     {/if}
@@ -206,7 +210,7 @@
             label={updater.name}
             title="{updater.name} — {updater.role}"
             onselect={() =>
-              mockWorkbench.inspect("collaboration.person", { kind: "person", id: updater.id })}
+              view.inspect("collaboration.person", { kind: "person", id: updater.id })}
           />
         {/if}
       </PanelField>
@@ -223,7 +227,7 @@
       <PanelRow
         title={link.title}
         sub={link.relation}
-        onselect={() => mockWorkbench.inspect(link.key, { kind: link.kind, id: link.id })}
+        onselect={() => view.inspect(link.key, { kind: link.kind, id: link.id })}
       />
     {/each}
     {#if links.length === 0}

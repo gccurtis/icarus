@@ -16,7 +16,7 @@
     rangeSelection,
     type InsertOption
   } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Putting something new into the spreadsheet.
@@ -33,12 +33,12 @@
    */
   let { spreadsheetId = "r-cost" }: { spreadsheetId?: string } = $props();
 
+  const view = viewState();
+
   const options = $derived(insertOptions("spreadsheet").current);
 
   /** Insert acts on the selection. `A9` is the first free row under the model. */
-  const address = $derived(
-    mockWorkbench.selection?.kind === "cell" ? mockWorkbench.selection.id : "A9"
-  );
+  const address = $derived(view.selection?.kind === "cell" ? view.selection.id : "A9");
 
   /** The same selection as a block, which is what the structural entries act on. */
   const block = $derived(rangeSelection(spreadsheetId, address).current.a1);
@@ -65,10 +65,10 @@
    */
   const insert = (option: InsertOption) => {
     if (option.group === "Structure") {
-      mockWorkbench.inspect("resource.range", { kind: "range", id: block });
+      view.inspect("resource.range", { kind: "range", id: block });
       return;
     }
-    mockWorkbench.inspect(
+    view.inspect(
       option.id === "ins-g-formula" ? "resource.cell-with-formula" : "resource.cell",
       { kind: "cell", id: address }
     );

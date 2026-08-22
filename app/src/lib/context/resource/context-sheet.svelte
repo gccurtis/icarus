@@ -9,7 +9,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { contextsFor } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * The saved Contexts a prompt block in this spreadsheet could look up.
@@ -30,6 +30,8 @@
     onopenscreen
   }: { spreadsheetId?: string; onopenscreen?: () => void } = $props();
 
+  const view = viewState();
+
   const scopes = $derived(contextsFor(spreadsheetId).current);
 </script>
 
@@ -44,7 +46,7 @@
       <PanelRow
         title={scope.name}
         meta={`${scope.resolves} resolved`}
-        onselect={() => mockWorkbench.inspect("scope.context", { kind: "context", id: scope.id })}
+        onselect={() => view.inspect("scope.context", { kind: "context", id: scope.id })}
       />
     {/each}
   </PanelSection>

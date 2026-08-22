@@ -15,7 +15,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { findInDocument, type DocumentHit } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Search and replace inside this document.
@@ -34,6 +34,8 @@
    * on them, and the note at the foot says why.
    */
   let { documentId = "r-memo" }: { documentId?: string } = $props();
+
+  const view = viewState();
 
   let query = $state("storm");
   let replacement = $state("");
@@ -66,7 +68,7 @@
 
   const choose = (hit: DocumentHit) => {
     hitId = hit.id;
-    mockWorkbench.inspect(
+    view.inspect(
       hit.replaceable ? "resource.text-block-document" : "resource.prompt-block",
       { kind: "block", id: hit.blockId ?? hit.id }
     );

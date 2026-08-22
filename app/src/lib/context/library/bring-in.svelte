@@ -13,7 +13,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { connectors, ingestion, providers, type ConnectorRow } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Getting outside material into the project.
@@ -39,7 +41,7 @@
     Expired: "danger"
   };
 
-  const connect = (id: string) => mockWorkbench.inspect("library.connect", { kind: "connector", id });
+  const connect = (id: string) => view.inspect("library.connect", { kind: "connector", id });
 </script>
 
 <Panel title="Bring in">
@@ -49,7 +51,7 @@
         label="Choose files…"
         icon={Upload}
         tone="primary"
-        onclick={() => mockWorkbench.inspect("library.upload")}
+        onclick={() => view.inspect("library.upload")}
       />
     </PanelActions>
     <PanelNote>{batch.then}</PanelNote>
@@ -81,7 +83,7 @@
         sub={provider.brings}
         icon={Plus}
         onselect={() =>
-          mockWorkbench.inspect("library.connect", { kind: "provider", id: provider.id })}
+          view.inspect("library.connect", { kind: "provider", id: provider.id })}
       />
     {/each}
   </PanelSection>

@@ -13,7 +13,9 @@
   } from "$lib/unique-components/screen";
   import { ToggleGroup, ToggleGroupItem } from "$lib/simple-components/toggle-group";
   import { personasIn, type PersonaRow } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Personas — all personas, entered from the Personas view.
@@ -31,7 +33,7 @@
    * card rather than behind it. The aggregate is the door's; counting tasks in
    * the browser would stop being true after the first page of them.
    */
-  const personas = $derived(personasIn(mockWorkbench.project.id).current);
+  const personas = $derived(personasIn(view.project).current);
 
   let search = $state("");
   /** `all`, or one of the two scopes a persona can have. */
@@ -101,7 +103,7 @@
               selected={opened === row.id}
               onselect={() => {
                 opened = row.id;
-                mockWorkbench.inspect("agents.persona", { kind: "persona", id: row.id });
+                view.inspect("agents.persona", { kind: "persona", id: row.id });
               }}
             >
               <!--

@@ -12,7 +12,7 @@
     unsavedChangesIn,
     type ResolvedResource
   } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * What survives the rule, with anything unsaved or broken above it.
@@ -30,6 +30,8 @@
    * nothing to check a surprising result against.
    */
   let { contextId = "cx-drafts" }: { contextId?: string } = $props();
+
+  const view = viewState();
 
   const scope = $derived(context(contextId).current);
   const problems = $derived(problemsIn(contextId).current);
@@ -95,7 +97,7 @@
         meta={row.updated}
         icon={FileText}
         onselect={() =>
-          mockWorkbench.inspect("scope.resolved-resource", { kind: "resource", id: row.id })}
+          view.inspect("scope.resolved-resource", { kind: "resource", id: row.id })}
       />
     {/each}
 

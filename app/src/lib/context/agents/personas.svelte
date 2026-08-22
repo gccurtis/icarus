@@ -13,7 +13,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { personasIn, type PersonaRow } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Every agent available here, grouped by where it is available.
@@ -30,7 +32,7 @@
    * conversations name a persona, and there is no tombstone policy that would
    * keep those labels readable after a hard delete.
    */
-  const all = $derived(personasIn(mockWorkbench.project.id).current);
+  const all = $derived(personasIn(view.project).current);
 
   let search = $state("");
   let selectedId = $state<string | undefined>(undefined);
@@ -48,7 +50,7 @@
 
   const open = (id: string) => {
     selectedId = id;
-    mockWorkbench.inspect("agents.persona", { kind: "persona", id });
+    view.inspect("agents.persona", { kind: "persona", id });
   };
 </script>
 
@@ -58,7 +60,7 @@
       label="New"
       icon={Plus}
       tone="primary"
-      onclick={() => mockWorkbench.inspect("agents.persona", { kind: "persona", id: "new" })}
+      onclick={() => view.inspect("agents.persona", { kind: "persona", id: "new" })}
     />
     <PanelButton
       label="Open"

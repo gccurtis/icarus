@@ -17,7 +17,7 @@
   } from "$lib/unique-components/panel";
   import { aggregationsFor, analysis, placement } from "$mock-capabilities/analysis";
   import type { Aggregation, PlacementAxis } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One field on an axis: which field, how it is summarised, what it is called on
@@ -39,6 +39,8 @@
     placementId = "p-y1",
     analysisId = "r-minutes"
   }: { placementId?: string; analysisId?: string } = $props();
+
+  const view = viewState();
 
   const record = $derived(analysis(analysisId).current);
   const placed = $derived(placement(placementId).current);
@@ -84,8 +86,7 @@
   };
 
   /** Removing the placement leaves nothing to inspect, so the panel falls back to the analysis. */
-  const remove = () =>
-    mockWorkbench.inspect("analysis.analysis", { kind: "analysis", id: analysisId });
+  const remove = () => view.inspect("analysis.analysis", { kind: "analysis", id: analysisId });
 </script>
 
 <Panel title={reads}>
@@ -97,7 +98,9 @@
         { label: ZONE[axis] },
         { label: reads }
       ]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

@@ -3,7 +3,9 @@
 
   import { Panel, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { outlineIn } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Getting around a template's content.
@@ -32,7 +34,7 @@
         icon={Heading}
         indent={heading.level === 2}
         onselect={() =>
-          mockWorkbench.inspect("library.body-entity", { kind: "entity", id: heading.id })}
+          view.inspect("library.body-entity", { kind: "entity", id: heading.id })}
       />
     {/each}
   </PanelSection>

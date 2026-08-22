@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Panel, PanelNote, PanelRow, PanelSearch } from "$lib/unique-components/panel";
   import { findInDeck, slidesIn, type DeckHit } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Search across the whole deck.
@@ -16,6 +16,8 @@
    * answered by the markup.
    */
   let { deckId = "r-board" }: { deckId?: string } = $props();
+
+  const view = viewState();
 
   let query = $state("");
 
@@ -43,13 +45,13 @@
    */
   const open = (hit: DeckHit) => {
     if (hit.blockId !== undefined) {
-      mockWorkbench.inspect("resource.text-block", { kind: "block", id: hit.blockId });
+      view.inspect("resource.text-block-deck", { kind: "block", id: hit.blockId });
       return;
     }
     const target = slides.find((candidate) => candidate.index === hit.slide);
     if (target === undefined) return;
-    mockWorkbench.inspect(
-      hit.source === "Speaker notes" ? "resource.notes" : "resource.slide",
+    view.inspect(
+      hit.source === "Speaker notes" ? "resource.speaker-notes" : "resource.slide",
       { kind: "slide", id: target.id }
     );
   };

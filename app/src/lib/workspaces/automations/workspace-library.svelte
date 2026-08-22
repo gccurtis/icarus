@@ -16,7 +16,9 @@
   import { Switch } from "$lib/simple-components/switch";
   import { ToggleGroup, ToggleGroupItem } from "$lib/simple-components/toggle-group";
   import { automationGroup, automationsIn, type AutomationRow } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Automations — all automations, the screen's default state.
@@ -38,7 +40,7 @@
    * **`Never` is an em dash in Result, not a chip.** A rule that has not fired
    * has no result, and tinting one would invent an outcome.
    */
-  const rules = $derived(automationsIn(mockWorkbench.project.id).current);
+  const rules = $derived(automationsIn(view.project).current);
 
   let search = $state("");
   /**
@@ -128,7 +130,7 @@
                 name={rule.name}
                 onselect={() => {
                   opened = rule.id;
-                  mockWorkbench.inspect("agents.automation", {
+                  view.inspect("agents.automation", {
                     kind: "automation",
                     id: rule.id
                   });

@@ -9,7 +9,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { lookupScopeOf, persona } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * The agent's scope: what it may look things up in, and how that combines with
@@ -26,6 +26,8 @@
    */
   let { personaId = "grid-analyst" }: { personaId?: string } = $props();
 
+  const view = viewState();
+
   const profile = $derived(persona(personaId).current);
   const scope = $derived(lookupScopeOf(personaId).current);
 </script>
@@ -38,8 +40,9 @@
         { label: "Context" },
         { label: "What it can look up" }
       ]}
-      onnavigate={(key: string) =>
-        mockWorkbench.inspect(key, { kind: "persona", id: personaId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "persona", id: personaId });
+      }}
     />
   {/snippet}
 
@@ -50,7 +53,7 @@
           label={scope.name}
           title="Open the Context"
           onselect={() =>
-            mockWorkbench.inspect("scope.context", { kind: "context", id: scope.id })}
+            view.inspect("scope.context", { kind: "context", id: scope.id })}
         />
       </PanelField>
       <PanelField label="Contains" mono>{scope.contains} resources</PanelField>

@@ -4,7 +4,9 @@
 
   import { Panel, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { hypotheses, questions, type HypothesisRow } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * What the project is trying to find out, without a current thread to anchor
@@ -37,7 +39,7 @@
   };
 
   const openQuestion = (id: string) =>
-    mockWorkbench.inspect("research.question", { kind: "question", id });
+    view.inspect("research.question", { kind: "question", id });
 </script>
 
 <Panel title="Inquiry">
@@ -69,7 +71,7 @@
         icon={FlaskConical}
         tone={ASSESSMENT[idea.assessment]}
         onselect={() =>
-          mockWorkbench.inspect("research.hypothesis", { kind: "hypothesis", id: idea.id })}
+          view.inspect("research.hypothesis", { kind: "hypothesis", id: idea.id })}
       />
     {/each}
   </PanelSection>

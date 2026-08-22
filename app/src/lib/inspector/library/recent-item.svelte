@@ -14,7 +14,7 @@
   } from "$lib/unique-components/panel";
   import { AGENTS, PEOPLE, type Agent, type Person } from "$mock-capabilities/cast";
   import { connectors, recentItem, type ConnectorRow } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Something that already exists, and the way to open it.
@@ -30,6 +30,8 @@
    */
   let { resourceId = "r-memo" }: { resourceId?: string } = $props();
 
+  const view = viewState();
+
   const item = $derived(recentItem(resourceId).current);
 
   /**
@@ -39,17 +41,17 @@
    */
   const actor = $derived.by(() => {
     const person = PEOPLE.find((candidate: Person) => candidate.name === item.updatedBy);
-    if (person) return { kind: "person" as const, lens: "collaboration.person", id: person.id };
+    if (person) return { kind: "person" as const, lens: "collaboration.person" as const, id: person.id };
 
     const agent = AGENTS.find((candidate: Agent) => candidate.name === item.updatedBy);
-    if (agent) return { kind: "agent" as const, lens: "agents.persona", id: agent.id };
+    if (agent) return { kind: "agent" as const, lens: "agents.persona" as const, id: agent.id };
 
     const connector = connectors().current.find(
       (candidate: ConnectorRow) => candidate.name === item.updatedBy
     );
     return {
       kind: "connector" as const,
-      lens: "library.connect",
+      lens: "library.connect" as const,
       id: connector?.id ?? item.updatedBy
     };
   });
@@ -59,7 +61,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: "New tab" }, { label: "Recent" }, { label: item.title }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -72,7 +76,7 @@
         <PanelActor
           name={item.updatedBy}
           kind={actor.kind}
-          onselect={() => mockWorkbench.inspect(actor.lens, { kind: actor.kind, id: actor.id })}
+          onselect={() => view.inspect(actor.lens, { kind: actor.kind, id: actor.id })}
         />
       </PanelField>
     </PanelFields>

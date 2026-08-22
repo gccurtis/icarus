@@ -11,7 +11,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { bodyEntity } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Content selected while authoring a template.
@@ -29,6 +29,8 @@
    */
   let { entityId = "be-1" }: { entityId?: string } = $props();
 
+  const view = viewState();
+
   const entity = $derived(bodyEntity(entityId).current);
 
   /** Undefined until touched, so an untouched value still reads from the door. */
@@ -44,7 +46,9 @@
         { label: entity.owner.name, key: "library.template" },
         { label: entity.text }
       ]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -76,7 +80,7 @@
           label={entity.owner.name}
           title="{entity.owner.name} — the template this content belongs to"
           onselect={() =>
-            mockWorkbench.inspect("library.template", {
+            view.inspect("library.template", {
               kind: "template",
               id: entity.owner.id
             })}

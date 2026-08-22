@@ -9,7 +9,7 @@
     textSelection,
     type ResourceComment
   } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Conversation on this document.
@@ -24,6 +24,8 @@
    * layout moves, which is the honest drawing of a number that is not an address.
    */
   let { documentId = "r-memo" }: { documentId?: string } = $props();
+
+  const view = viewState();
 
   const threads = $derived(commentsOn(documentId).current);
   const selection = $derived(textSelection(documentId).current);
@@ -56,7 +58,7 @@
   const count = (shown: number, all: number) => (shown === all ? shown : `${shown} of ${all}`);
 
   const openThread = (comment: ResourceComment) =>
-    mockWorkbench.inspect("comment.thread", { kind: "comment", id: comment.id });
+    view.inspect("collaboration.comment", { kind: "comment", id: comment.id });
 </script>
 
 <Panel title="Comments">

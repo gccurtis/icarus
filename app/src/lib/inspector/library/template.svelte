@@ -21,7 +21,7 @@
   } from "$lib/unique-components/panel";
   import { PEOPLE, type Person } from "$mock-capabilities/cast";
   import { previewOf, template, variablesIn } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A template in the library: what it makes, what it looks like, what it asks
@@ -39,6 +39,8 @@
    * subscreen and copying a record are steps no door here has.
    */
   let { templateId = "tp-filing" }: { templateId?: string } = $props();
+
+  const view = viewState();
 
   const tpl = $derived(template(templateId).current);
   const asks = $derived(variablesIn(templateId).current);
@@ -61,7 +63,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: "Templates" }, { label: tpl.name }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -120,7 +124,7 @@
       <PanelRow
         title={variable.key}
         onselect={() =>
-          mockWorkbench.inspect("library.template-variable", {
+          view.inspect("library.template-variable", {
             kind: "template-variable",
             id: variable.id
           })}
@@ -164,7 +168,7 @@
             name={creator.name}
             kind="person"
             onselect={() =>
-              mockWorkbench.inspect("collaboration.person", { kind: "person", id: creator.id })}
+              view.inspect("collaboration.person", { kind: "person", id: creator.id })}
           />
         {:else}
           {tpl.createdBy}

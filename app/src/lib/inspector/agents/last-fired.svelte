@@ -10,7 +10,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { automation, lastFireOf } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * The last fire: what happened the one time there is a record of.
@@ -24,6 +24,8 @@
    * line. That is why the distinction is a section rather than a tooltip.
    */
   let { automationId = "nightly-digest" }: { automationId?: string } = $props();
+
+  const view = viewState();
 
   const rule = $derived(automation(automationId).current);
   const fire = $derived(lastFireOf(automationId).current);
@@ -46,8 +48,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: rule.name, key: "agents.automation" }, { label: "Last fire" }]}
-      onnavigate={(key: string) =>
-        mockWorkbench.inspect(key, { kind: "automation", id: automationId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "automation", id: automationId });
+      }}
     />
   {/snippet}
 
@@ -90,7 +93,7 @@
       <PanelRow
         title={task.title}
         sub="{STATE[task.state]} · {task.detail}"
-        onselect={() => mockWorkbench.inspect("copilot.task", { kind: "task", id: task.id })}
+        onselect={() => view.inspect("copilot.task", { kind: "task", id: task.id })}
       />
       <PanelNote>The task is the whole trace, and it opens in the Copilot.</PanelNote>
     {:else}

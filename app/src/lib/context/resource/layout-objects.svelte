@@ -9,7 +9,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { lockedContentIn, placeholdersIn } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * What a layout owns, split by what a slide may touch.
@@ -24,6 +24,8 @@
    */
   let { layoutId = "ly-two-panes" }: { layoutId?: string } = $props();
 
+  const view = viewState();
+
   const locked = $derived(lockedContentIn(layoutId).current);
   const placeholders = $derived(placeholdersIn(layoutId).current);
 </script>
@@ -36,7 +38,7 @@
         sub={object.content}
         icon={Lock}
         onselect={() =>
-          mockWorkbench.inspect("resource.locked-element", {
+          view.inspect("resource.locked-element", {
             kind: "locked-element",
             id: object.id
           })}

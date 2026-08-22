@@ -15,7 +15,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { deckTextBlock, element, marksFor } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * The text inside an element: the ordinary content object, the same kind of
@@ -34,6 +34,8 @@
     blockId = "b_2c8",
     elementId = "el-body-4"
   }: { blockId?: string; elementId?: string } = $props();
+
+  const view = viewState();
 
   const block = $derived(deckTextBlock(blockId).current);
   const box = $derived(element(elementId).current);
@@ -62,7 +64,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: box.name, key: "resource.element" }, { label: "Text" }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key, { kind: "element", id: elementId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "element", id: elementId });
+      }}
     />
   {/snippet}
 
@@ -82,7 +86,7 @@
           label={block.styleName}
           title="Open the named style"
           onselect={() =>
-            mockWorkbench.inspect("resource.named-style-deck", {
+            view.inspect("resource.named-style-deck", {
               kind: "style",
               id: block.styleId
             })}
@@ -113,7 +117,7 @@
         sub="{formula.shows} · {formula.readsWhen}"
         icon={SquareFunction}
         onselect={() =>
-          mockWorkbench.inspect("project.variable", { kind: "variable", id: formula.id })}
+          view.inspect("analysis.variable", { kind: "variable", id: formula.id })}
       >
         <!-- An expression is retyped, so it is set in mono even inside a row. -->
         <span title={formula.expression} class="text-body-sm truncate font-mono">

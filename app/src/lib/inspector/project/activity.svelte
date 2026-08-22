@@ -16,8 +16,8 @@
   import { AGENTS, PEOPLE } from "$mock-capabilities/cast";
   import { resourceNamed } from "$mock-capabilities/collaboration";
   import { connectors } from "$mock-capabilities/library";
-  import { activity } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { activity, project } from "$mock-capabilities/project";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One recorded event: who, what, to what, when.
@@ -36,6 +36,8 @@
    */
   let { eventId = "ev-1" }: { eventId?: string } = $props();
 
+  const view = viewState();
+
   const events = $derived(activity().current);
   const entry = $derived(events.find((candidate) => candidate.id === eventId) ?? events[0]);
 
@@ -49,15 +51,15 @@
 
   const openActor = () => {
     if (person !== undefined) {
-      mockWorkbench.inspect("collaboration.person", { kind: "person", id: person.id });
+      view.inspect("collaboration.person", { kind: "person", id: person.id });
       return;
     }
     if (agent !== undefined) {
-      mockWorkbench.inspect("agents.persona", { kind: "agent", id: agent.id });
+      view.inspect("agents.persona", { kind: "agent", id: agent.id });
       return;
     }
     if (source !== undefined) {
-      mockWorkbench.inspect("project.connector", { kind: "connector", id: source.id });
+      view.inspect("project.connector", { kind: "connector", id: source.id });
     }
   };
 
@@ -68,7 +70,7 @@
 
   const openTarget = () => {
     if (target === undefined) return;
-    mockWorkbench.inspect("project.resource", { kind: "resource", id: target.id });
+    view.inspect("project.resource", { kind: "resource", id: target.id });
   };
 
   /** The feed groups by day, so a lens on one event carries the day itself. */
@@ -79,10 +81,12 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[
-        { label: mockWorkbench.project.name, key: "project.project" },
+        { label: project().current.name, key: "project.project" },
         { label: "Activity" }
       ]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

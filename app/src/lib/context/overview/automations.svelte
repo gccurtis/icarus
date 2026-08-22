@@ -19,7 +19,9 @@
     automationsIn,
     type AutomationRow
   } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * What an Automation is, what this project has, and what is selected.
@@ -35,7 +37,7 @@
    */
   let { automationId = "nightly-digest" }: { automationId?: string } = $props();
 
-  const rules = $derived(automationsIn(mockWorkbench.project.id).current);
+  const rules = $derived(automationsIn(view.project).current);
   const it = $derived(automation(automationId).current);
 
   const counted = (group: "on" | "off" | "not working") =>
@@ -110,7 +112,7 @@
       <PanelButton
         label="Open"
         icon={SquareArrowOutUpRight}
-        onclick={() => mockWorkbench.selectContext("when")}
+        onclick={() => view.selectContext("agents.when")}
       />
       <PanelButton
         label="Run now"

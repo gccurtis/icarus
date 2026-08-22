@@ -11,7 +11,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { contextsFor } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * What the prompt blocks in this deck can look up.
@@ -27,6 +27,8 @@
    * is showing.
    */
   let { resourceId = "r-board", onopen }: { resourceId?: string; onopen?: () => void } = $props();
+
+  const view = viewState();
 
   const all = $derived(contextsFor(resourceId).current);
 
@@ -69,8 +71,7 @@
           : `${scope.usedByBlocks} prompt blocks`}
         meta="{scope.resolves} resolved"
         icon={Library}
-        onselect={() =>
-          mockWorkbench.inspect("resource.context-scope", { kind: "scope", id: scope.id })}
+        onselect={() => view.inspect("scope.context", { kind: "scope", id: scope.id })}
       />
     {/each}
   </PanelSection>

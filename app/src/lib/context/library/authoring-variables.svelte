@@ -9,7 +9,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { variablesIn, type TemplateVariable } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * What this template will ask the person using it.
@@ -46,7 +48,7 @@
   };
 
   const inspect = (id: string) =>
-    mockWorkbench.inspect("library.template-variable", { kind: "template-variable", id });
+    view.inspect("library.template-variable", { kind: "template-variable", id });
 </script>
 
 <Panel title="Variables in this template">

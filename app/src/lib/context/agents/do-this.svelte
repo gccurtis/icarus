@@ -14,7 +14,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { actionsFor, type ActionOption } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The action half of an Automation: the two things a rule can do.
@@ -74,7 +76,7 @@
                   label={option.agentName}
                   title="{option.agentName} — agent"
                   onselect={() =>
-                    mockWorkbench.inspect("agents.persona", { kind: "persona", id: agentId })}
+                    view.inspect("agents.persona", { kind: "persona", id: agentId })}
                 />
               {:else}
                 No agent chosen yet

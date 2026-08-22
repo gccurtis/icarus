@@ -16,7 +16,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { multiSelection, slide } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Two or more elements, shift-clicked: the selection as a group.
@@ -33,6 +33,8 @@
    * which is the only honest way to edit three values through one field.
    */
   let { slideId = "sl-4" }: { slideId?: string } = $props();
+
+  const view = viewState();
 
   const on = $derived(slide(slideId).current);
   const selection = $derived(multiSelection(slideId).current);
@@ -66,7 +68,9 @@
         { label: `Slide ${on.index}`, key: "resource.slide" },
         { label: `${members.length} elements` }
       ]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key, { kind: "slide", id: slideId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "slide", id: slideId });
+      }}
     />
   {/snippet}
 
@@ -74,7 +78,7 @@
     {#each members as member (member.id)}
       <PanelRow
         title={member.name}
-        onselect={() => mockWorkbench.inspect("resource.element", { kind: "element", id: member.id })}
+        onselect={() => view.inspect("resource.element", { kind: "element", id: member.id })}
       />
     {/each}
     <PanelNote>Everything below applies to all {members.length} of them.</PanelNote>

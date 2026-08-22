@@ -16,7 +16,7 @@
     type Hypothesis,
     type Question
   } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * The questions and ideas this project is working on, above any one thread.
@@ -35,8 +35,10 @@
    * than lifted out of the tree: where it sits under its parent is half of what
    * it means.
    */
-  const questions = $derived(questionsIn(mockWorkbench.project.id).current);
-  const ideas = $derived(hypothesesIn(mockWorkbench.project.id).current);
+  const view = viewState();
+
+  const questions = $derived(questionsIn(view.project).current);
+  const ideas = $derived(hypothesesIn(view.project).current);
 
   const roots = $derived(questions.filter((row) => row.parentId === undefined));
   const childrenOf = (parentId: string) => questions.filter((row) => row.parentId === parentId);
@@ -55,10 +57,10 @@
   };
 
   const openQuestion = (id: string) =>
-    mockWorkbench.inspect("research.question", { kind: "question", id });
+    view.inspect("research.question", { kind: "question", id });
 
   const openHypothesis = (id: string) =>
-    mockWorkbench.inspect("research.hypothesis", { kind: "hypothesis", id });
+    view.inspect("research.hypothesis", { kind: "hypothesis", id });
 </script>
 
 <Panel title="Inquiry">

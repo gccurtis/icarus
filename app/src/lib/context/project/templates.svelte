@@ -13,7 +13,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { templates, type TemplateRow } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Templates — what is available here, grouped by what it makes.
@@ -28,6 +28,8 @@
    * would produce a document with the keys still in it.
    */
   let { onopen }: { onopen?: () => void } = $props();
+
+  const view = viewState();
 
   const all = $derived(templates().current);
 
@@ -60,7 +62,7 @@
         sub={about(template)}
         icon={ICON[makes]}
         onselect={() =>
-          mockWorkbench.inspect("library.template", { kind: "template", id: template.id })}
+          view.inspect("library.template", { kind: "template", id: template.id })}
       />
     {/each}
   </PanelSection>

@@ -13,7 +13,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { tasks, type TaskRow } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Tasks — agent work in this project, grouped by state.
@@ -31,6 +31,8 @@
    * say which of those it does is a control that guesses.
    */
   let { onopen }: { onopen?: () => void } = $props();
+
+  const view = viewState();
 
   const work = $derived(tasks().current);
 
@@ -60,7 +62,7 @@
         meta={task.age}
         icon={ICON[state]}
         tone={TONE[state]}
-        onselect={() => mockWorkbench.inspect("copilot.task", { kind: "task", id: task.id })}
+        onselect={() => view.inspect("copilot.task", { kind: "task", id: task.id })}
       />
     {/each}
 

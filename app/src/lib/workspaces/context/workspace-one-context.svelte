@@ -38,7 +38,9 @@
     type SearchHit,
     type TermRule
   } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState, type InspectionKey } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Context — one Context: what goes in, what comes out, and what survives.
@@ -87,7 +89,7 @@
    * Which lens a term opens. A term named by hand has none in the
    * specification's inspector table, so it is drawn but is not a target.
    */
-  const LENS: Partial<Record<TermRule, string>> = {
+  const LENS: Partial<Record<TermRule, InspectionKey>> = {
     everything: "scope.include-everything",
     context: "scope.include-context",
     kind: "scope.take-out-kind"
@@ -141,7 +143,7 @@
         <button
           type="button"
           class="border-border-subtle bg-surface-panel hover:bg-surface-panel-hover rounded-panel flex w-full items-center justify-between gap-3 border p-3 text-start"
-          onclick={() => mockWorkbench.inspect(lens, { kind: "term", id: term.id })}
+          onclick={() => view.inspect(lens, { kind: "term", id: term.id })}
         >
           {@render termBody(term)}
         </button>
@@ -175,7 +177,7 @@
     <div class="area-include">
       <ScreenGroup label="Include" tone="success" count="{figure(goingIn)} resources">
         {#snippet actions()}
-          <Button variant="outline" size="xs" onclick={() => mockWorkbench.selectContext("add")}>
+          <Button variant="outline" size="xs" onclick={() => view.selectContext("scope.add")}>
             <Plus aria-hidden="true" />
             Add
           </Button>
@@ -196,7 +198,7 @@
     <div class="area-take-out">
       <ScreenGroup label="Take out" tone="danger" count="{figure(takenOut)} resources">
         {#snippet actions()}
-          <Button variant="outline" size="xs" onclick={() => mockWorkbench.selectContext("add")}>
+          <Button variant="outline" size="xs" onclick={() => view.selectContext("scope.add")}>
             <Plus aria-hidden="true" />
             Add
           </Button>
@@ -234,11 +236,11 @@
           {:else}
             <ScreenTable columns={["Name", "Kind", "In because", "Updated"]}>
               {#each shown as row (row.id)}
-                <ScreenRow selected={mockWorkbench.selection?.id === row.id}>
+                <ScreenRow selected={view.selection?.id === row.id}>
                   <ScreenCell
                     name={row.name}
                     onselect={() =>
-                      mockWorkbench.inspect("scope.resolved-resource", {
+                      view.inspect("scope.resolved-resource", {
                         kind: "resource",
                         id: row.id
                       })}
@@ -305,11 +307,11 @@
           {#if ran}
             <ScreenTable columns={["Source", "What came back", "Relevance", "Density"]}>
               {#each hits as hit (hit.id)}
-                <ScreenRow selected={mockWorkbench.selection?.id === hit.id}>
+                <ScreenRow selected={view.selection?.id === hit.id}>
                   <ScreenCell
                     name="{hit.source}{hit.page === undefined ? '' : ` · page ${hit.page}`}"
                     onselect={() =>
-                      mockWorkbench.inspect("scope.search-result", { kind: "hit", id: hit.id })}
+                      view.inspect("scope.search-result", { kind: "hit", id: hit.id })}
                   />
                   <!-- The retrieved region, verbatim: a paraphrase is not what an agent gets. -->
                   <ScreenCell>

@@ -10,7 +10,7 @@
     PanelSelect
   } from "$lib/unique-components/panel";
   import { sheetStyle, spreadsheetRecord } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One named cell style, edited once for every cell using it.
@@ -31,6 +31,8 @@
     spreadsheetId = "r-cost",
     styleId = "cs-header"
   }: { spreadsheetId?: string; styleId?: string } = $props();
+
+  const view = viewState();
 
   const sheet = $derived(spreadsheetRecord(spreadsheetId).current);
   const style = $derived(sheetStyle(styleId).current);
@@ -70,7 +72,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: sheet.title, key: "resource.spreadsheet" }, { label: name }]}
-      onnavigate={(key) => mockWorkbench.inspect(key)}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

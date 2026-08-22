@@ -18,7 +18,7 @@
   } from "$lib/unique-components/panel";
   import type { Resource, ResourceKind } from "$mock-capabilities/cast";
   import { health, resources } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Resources — everything in the project, grouped by what it is.
@@ -31,6 +31,8 @@
    * interesting as the source of its files, and a row that nothing can be read
    * out of says so on its second line.
    */
+  const view = viewState();
+
   const all = $derived(resources().current);
   const problems = $derived(health().current);
 
@@ -78,11 +80,11 @@
 
   const openResource = (resource: Resource) => {
     if (resource.kind === "file") {
-      mockWorkbench.inspect("project.file", { kind: "file", id: resource.id });
+      view.inspect("project.file", { kind: "file", id: resource.id });
       return;
     }
 
-    mockWorkbench.inspect("project.resource", { kind: "resource", id: resource.id });
+    view.inspect("project.resource", { kind: "resource", id: resource.id });
   };
 </script>
 
@@ -145,7 +147,7 @@
           icon={Plug}
           tone={connector.tone}
           onselect={() =>
-            mockWorkbench.inspect("project.connector", {
+            view.inspect("project.connector", {
               kind: "connector",
               id: connector.id
             })}

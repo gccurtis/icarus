@@ -20,7 +20,9 @@
     type LibraryTemplate,
     type TemplateTarget
   } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Templates — all templates: everything available here, as shapes.
@@ -101,11 +103,11 @@
     `${row.makes} · ${row.scope} · ${row.variables} ${row.variables === 1 ? "variable" : "variables"}`;
 
   const isSelected = (id: string): boolean =>
-    mockWorkbench.selection?.kind === "template" && mockWorkbench.selection.id === id;
+    view.selection?.kind === "template" && view.selection.id === id;
 
   /** Selecting a template puts it in the lens; the lens is where Edit and Use are. */
   const select = (id: string) => {
-    mockWorkbench.inspect("library.template", { kind: "template", id });
+    view.inspect("library.template", { kind: "template", id });
     onopen(id);
   };
 </script>

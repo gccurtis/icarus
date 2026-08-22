@@ -5,7 +5,9 @@
 
   import { Panel, PanelRow, PanelSearch, PanelSection } from "$lib/unique-components/panel";
   import { connectors, resourcesOfKind, type ConnectorRow } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Everything a Context could name, grouped by kind.
@@ -39,7 +41,7 @@
   };
 
   const inspectResource = (id: string) =>
-    mockWorkbench.inspect("scope.resolved-resource", { kind: "resource", id });
+    view.inspect("scope.resolved-resource", { kind: "resource", id });
 </script>
 
 <Panel title="Resources">
@@ -85,7 +87,7 @@
           icon={Plug}
           tone={STATE[row.state]}
           onselect={() =>
-            mockWorkbench.inspect("project.connector", { kind: "connector", id: row.id })}
+            view.inspect("project.connector", { kind: "connector", id: row.id })}
         />
       {/each}
     </PanelSection>

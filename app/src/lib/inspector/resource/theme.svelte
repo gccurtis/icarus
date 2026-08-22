@@ -8,7 +8,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { deckRecord, deckTheme } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * The deck's theme: one background, one type family, four named colours.
@@ -25,6 +25,8 @@
    */
   let { deckId = "r-board" }: { deckId?: string } = $props();
 
+  const view = viewState();
+
   const theme = $derived(deckTheme(deckId).current);
   const deck = $derived(deckRecord(deckId).current);
 
@@ -38,7 +40,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: deck.title, key: "resource.deck" }, { label: "Theme" }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key, { kind: "deck", id: deckId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "deck", id: deckId });
+      }}
     />
   {/snippet}
 

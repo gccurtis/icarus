@@ -15,7 +15,7 @@
     PanelThumbs
   } from "$lib/unique-components/panel";
   import { previewOf, template, variablesIn } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A template, from the launcher: what it will ask you for, and using it.
@@ -32,6 +32,8 @@
    */
   let { templateId = "tp-filing" }: { templateId?: string } = $props();
 
+  const view = viewState();
+
   const tpl = $derived(template(templateId).current);
   const asks = $derived(variablesIn(templateId).current);
   const preview = $derived(previewOf(templateId).current);
@@ -44,7 +46,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: "New tab" }, { label: "Templates" }, { label: tpl.name }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -88,7 +92,7 @@
       <PanelRow
         title={variable.key}
         onselect={() =>
-          mockWorkbench.inspect("library.template-variable", {
+          view.inspect("library.template-variable", {
             kind: "template-variable",
             id: variable.id
           })}

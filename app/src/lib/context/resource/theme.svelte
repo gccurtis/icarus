@@ -8,7 +8,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { deckStyles, deckTheme } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Deck-wide colour, type and named styles — what every slide and every layout
@@ -22,6 +22,8 @@
    * opens this.
    */
   let { deckId = "r-board" }: { deckId?: string } = $props();
+
+  const view = viewState();
 
   const theme = $derived(deckTheme(deckId).current);
   const styles = $derived(deckStyles(deckId).current);
@@ -76,7 +78,7 @@
         sub="{style.shorthand} · {style.usedByElements} elements"
         meta={style.styleKey}
         onselect={() =>
-          mockWorkbench.inspect("resource.deck-style", { kind: "style", id: style.id })}
+          view.inspect("resource.named-style-deck", { kind: "style", id: style.id })}
       />
     {/each}
   </PanelSection>

@@ -10,7 +10,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { spillAt, spreadsheetRecord } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A cell filled by a formula somewhere else: where the value came from, and why
@@ -32,6 +32,8 @@
     address = "E3"
   }: { spreadsheetId?: string; address?: string } = $props();
 
+  const view = viewState();
+
   const sheet = $derived(spreadsheetRecord(spreadsheetId).current);
   const spill = $derived(spillAt(spreadsheetId, address).current);
 </script>
@@ -40,7 +42,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: sheet.title, key: "resource.spreadsheet" }, { label: address }]}
-      onnavigate={(key) => mockWorkbench.inspect(key)}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -59,7 +63,7 @@
             label={spill.origin}
             title="Open the formula that fills this range"
             onselect={() =>
-              mockWorkbench.inspect("resource.cell-with-formula", {
+              view.inspect("resource.cell-with-formula", {
                 kind: "cell",
                 id: spill.origin
               })}

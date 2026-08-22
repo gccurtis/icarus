@@ -13,7 +13,9 @@
     ScreenTable
   } from "$lib/unique-components/screen";
   import { contexts, type ContextRow } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * Context — all Contexts: every saved scope, with what each resolves to right
@@ -58,7 +60,7 @@
 
   const open = (row: ContextRow) => {
     onopen(row.id);
-    mockWorkbench.inspect("scope.context", { kind: "context", id: row.id });
+    view.inspect("scope.context", { kind: "context", id: row.id });
   };
 </script>
 
@@ -99,7 +101,7 @@
           columns={["Name", "The rule, in words", "Contains", "Retrievable", "Used by"]}
         >
           {#each shown as row (row.id)}
-            <ScreenRow selected={mockWorkbench.selection?.id === row.id}>
+            <ScreenRow selected={view.selection?.id === row.id}>
               <ScreenCell name={row.name} onselect={() => open(row)} />
               <ScreenCell>{row.inWords}</ScreenCell>
               <ScreenCell num>{row.contains}</ScreenCell>

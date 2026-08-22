@@ -19,7 +19,7 @@
     type TaskState,
     type TaskSummary
   } from "$mock-capabilities/copilot";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * The Copilot, opened — everything in flight and everything recent, in one list.
@@ -39,7 +39,9 @@
    * that matches nothing while a query is typed goes quiet rather than repeating
    * the panel's own "nothing matches".
    */
-  const projectId = $derived(mockWorkbench.project.id);
+  const view = viewState();
+
+  const projectId = $derived(view.project);
 
   const waiting = $derived(tasksIn(projectId, "waiting").current);
   const broken = $derived(tasksIn(projectId, "failed").current);
@@ -105,7 +107,7 @@
         meta={task.age}
         icon={ICON[state]}
         tone={TONE[state]}
-        onselect={() => mockWorkbench.inspect("copilot.task", { kind: "task", id: task.id })}
+        onselect={() => view.inspect("copilot.task", { kind: "task", id: task.id })}
       />
     {/each}
 
@@ -137,7 +139,7 @@
           meta={chat.lastActive}
           icon={MessageSquare}
           onselect={() =>
-            mockWorkbench.inspect("copilot.conversation", { kind: "conversation", id: chat.id })}
+            view.inspect("copilot.conversation", { kind: "conversation", id: chat.id })}
         />
       {/each}
 

@@ -4,7 +4,7 @@
 
   import { Panel, PanelButton, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { contextsFor, resolvedPreview, type ScopeInUse } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * What the prompt blocks in this document can look up.
@@ -27,6 +27,8 @@
     onopenscreen
   }: { documentId?: string; onopenscreen?: () => void } = $props();
 
+  const view = viewState();
+
   const scopes = $derived(contextsFor(documentId).current);
 
   let scopeId = $state("sc-field");
@@ -43,7 +45,7 @@
 
   const choose = (scope: ScopeInUse) => {
     scopeId = scope.id;
-    mockWorkbench.inspect("scope.context", { kind: "scope", id: scope.id });
+    view.inspect("scope.context", { kind: "scope", id: scope.id });
   };
 </script>
 
@@ -77,7 +79,7 @@
         title={member.name}
         meta={member.kind}
         onselect={() =>
-          mockWorkbench.inspect("scope.resolved-resource", { kind: "resource", id: member.id })}
+          view.inspect("scope.resolved-resource", { kind: "resource", id: member.id })}
       />
     {/each}
   </PanelSection>

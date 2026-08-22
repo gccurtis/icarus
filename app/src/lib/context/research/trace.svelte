@@ -5,7 +5,7 @@
 
   import { Panel, PanelNote, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { traceIn, type ToolCall } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * How the answers were arrived at: the agent's steps, grouped by turn, newest
@@ -21,6 +21,8 @@
    * the screen when a turn produced a weak answer.
    */
   let { threadId = "th-feeder" }: { threadId?: string } = $props();
+
+  const view = viewState();
 
   const turns = $derived(traceIn(threadId).current);
 
@@ -44,7 +46,7 @@
           icon={ICON[call.outcome]}
           tone={TONE[call.outcome]}
           onselect={() =>
-            mockWorkbench.inspect("research.tool-call", { kind: "tool-call", id: call.id })}
+            view.inspect("research.tool-call", { kind: "tool-call", id: call.id })}
         >
           <!-- A tool name is an identifier, so it is set as one. -->
           <span class="text-body-sm text-ink-primary truncate font-mono">{call.name}</span>

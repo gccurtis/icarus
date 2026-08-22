@@ -11,7 +11,7 @@
     PanelToggle
   } from "$lib/unique-components/panel";
   import { template, templateVariable } from "$mock-capabilities/library";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One thing a template will ask for.
@@ -27,6 +27,8 @@
    * not read from the insert menu.
    */
   let { variableId = "tv-docket" }: { variableId?: string } = $props();
+
+  const view = viewState();
 
   const variable = $derived(templateVariable(variableId).current);
   const owner = $derived(template(variable.templateId).current);
@@ -53,7 +55,9 @@
         { label: owner.name, key: "library.template" },
         { label: variable.label }
       ]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

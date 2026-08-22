@@ -10,7 +10,7 @@
   } from "$lib/unique-components/panel";
   import { AGENTS, PEOPLE } from "$mock-capabilities/cast";
   import { activity, type ActivityEntry } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Activity — everything an actor did in this project, newest first.
@@ -26,6 +26,8 @@
    * **The digest row is not built.** A day of many events collapsing into one row
    * needs a threshold to collapse at, and the specification leaves that open.
    */
+  const view = viewState();
+
   const events = $derived(activity().current);
 
   let search = $state("");
@@ -77,17 +79,17 @@
   const openActor = (name: string) => {
     const person = PEOPLE.find((candidate) => candidate.name === name);
     if (person) {
-      mockWorkbench.inspect("actor.person", { kind: "person", id: person.id });
+      view.inspect("collaboration.person", { kind: "person", id: person.id });
       return;
     }
 
     const agent = AGENTS.find((candidate) => candidate.name === name);
     if (agent) {
-      mockWorkbench.inspect("agents.persona", { kind: "agent", id: agent.id });
+      view.inspect("agents.persona", { kind: "agent", id: agent.id });
       return;
     }
 
-    mockWorkbench.inspect("project.connector", { kind: "connector", id: name });
+    view.inspect("project.connector", { kind: "connector", id: name });
   };
 </script>
 
@@ -153,7 +155,7 @@
                     label={event.subject}
                     title="Open this event"
                     onselect={() =>
-                      mockWorkbench.inspect("project.activity", {
+                      view.inspect("project.activity", {
                         kind: "activity",
                         id: event.id
                       })}

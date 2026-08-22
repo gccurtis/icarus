@@ -12,7 +12,7 @@
   } from "$lib/unique-components/panel";
   import { analysis, chartFor, chartKinds } from "$mock-capabilities/analysis";
   import type { ChartKindId, LegendPosition } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * How the result is drawn: the kind, the picture's own title, the axes, the
@@ -30,6 +30,8 @@
    * field opens an empty zone for it rather than refusing.
    */
   let { analysisId = "r-minutes" }: { analysisId?: string } = $props();
+
+  const view = viewState();
 
   const record = $derived(analysis(analysisId).current);
   const display = $derived(chartFor(analysisId).current);
@@ -66,7 +68,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: record.title, key: "analysis.analysis" }, { label: title }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

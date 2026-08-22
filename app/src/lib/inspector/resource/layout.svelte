@@ -14,7 +14,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { deckRecord, layout } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A layout: what it is made of, what it inherits, and what editing it will do.
@@ -31,6 +31,8 @@
     deckId = "r-board"
   }: { layoutId?: string; deckId?: string } = $props();
 
+  const view = viewState();
+
   const record = $derived(layout(layoutId).current);
   const deck = $derived(deckRecord(deckId).current);
 
@@ -44,7 +46,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: deck.title, key: "resource.deck" }, { label: name }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key, { kind: "deck", id: deckId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "deck", id: deckId });
+      }}
     />
   {/snippet}
 
@@ -85,7 +89,7 @@
         label="Done"
         icon={Check}
         tone="primary"
-        onclick={() => mockWorkbench.inspect("resource.deck", { kind: "deck", id: deckId })}
+        onclick={() => view.inspect("resource.deck", { kind: "deck", id: deckId })}
       />
       <PanelButton label="Duplicate" icon={Copy} />
     </PanelActions>

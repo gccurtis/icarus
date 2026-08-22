@@ -11,7 +11,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { lookupScopeOf } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * What this agent can look up.
@@ -52,7 +54,7 @@
       icon={Layers}
       tone={scope.contains === 0 ? "attention" : "default"}
       onselect={() =>
-        mockWorkbench.inspect("agents.what-it-can-look-up", { kind: "scope", id: scope.id })}
+        view.inspect("agents.what-it-can-look-up", { kind: "scope", id: scope.id })}
     />
 
     <!--
@@ -79,7 +81,7 @@
         title={name}
         icon={FileText}
         onselect={() =>
-          mockWorkbench.inspect("scope.resolved-resource", { kind: "resource", id: name })}
+          view.inspect("scope.resolved-resource", { kind: "resource", id: name })}
       />
     {/each}
 

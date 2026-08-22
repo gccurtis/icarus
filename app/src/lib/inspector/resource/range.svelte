@@ -23,7 +23,7 @@
     spreadsheetRecord,
     type SharedProperty
   } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Several cells selected together: what the block contains, where it agrees,
@@ -44,6 +44,8 @@
     spreadsheetId = "r-cost",
     a1 = "A1:G1"
   }: { spreadsheetId?: string; a1?: string } = $props();
+
+  const view = viewState();
 
   const sheet = $derived(spreadsheetRecord(spreadsheetId).current);
   const selection = $derived(rangeSelection(spreadsheetId, a1).current);
@@ -97,7 +99,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: sheet.title, key: "resource.spreadsheet" }, { label: selection.a1 }]}
-      onnavigate={(key) => mockWorkbench.inspect(key)}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -165,7 +169,7 @@
         label="Merge"
         icon={Combine}
         title="Merge {selection.a1} into one block anchored at {first}"
-        onclick={() => mockWorkbench.inspect("resource.cell", { kind: "cell", id: first })}
+        onclick={() => view.inspect("resource.cell", { kind: "cell", id: first })}
       />
     </PanelActions>
 

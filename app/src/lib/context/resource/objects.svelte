@@ -6,7 +6,7 @@
 
   import { Panel, PanelNote, PanelRow, PanelSection } from "$lib/unique-components/panel";
   import { objectsIn, type SheetObject } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Charts and overlays floating over the grid — the grid's equivalent of Layers.
@@ -24,6 +24,8 @@
    * whole reason this view exists.
    */
   let { spreadsheetId = "r-cost" }: { spreadsheetId?: string } = $props();
+
+  const view = viewState();
 
   const objects = $derived(objectsIn(spreadsheetId).current);
 
@@ -50,7 +52,7 @@
         icon={ICON[object.kind]}
         tone={object.overlapped ? "attention" : "default"}
         onselect={() =>
-          mockWorkbench.inspect("resource.chart", { kind: "chart", id: String(object.index) })}
+          view.inspect("resource.chart", { kind: "chart", id: String(object.index) })}
       />
     {/each}
   </PanelSection>

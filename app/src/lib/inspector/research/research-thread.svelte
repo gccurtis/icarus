@@ -13,8 +13,9 @@
     PanelNote,
     PanelSection
   } from "$lib/unique-components/panel";
+  import { project } from "$mock-capabilities/project";
   import { thread } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A Research thread, selected from the project's work table.
@@ -34,6 +35,8 @@
    */
   let { threadId = "th-feeder" }: { threadId?: string } = $props();
 
+  const view = viewState();
+
   const record = $derived(thread(threadId).current);
 
   const anchorLens = $derived(
@@ -46,11 +49,12 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[
-        { label: mockWorkbench.project.name, key: "project.project" },
+        { label: project().current.name, key: "project.project" },
         { label: record.title }
       ]}
-      onnavigate={(key) =>
-        mockWorkbench.inspect(key, { kind: "project", id: mockWorkbench.project.id })}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "project", id: view.project });
+      }}
     />
   {/snippet}
 
@@ -66,7 +70,7 @@
             label="{anchor.ref} · {anchor.text}"
             title="Open {anchor.ref}"
             onselect={() =>
-              mockWorkbench.inspect(anchorLens, {
+              view.inspect(anchorLens, {
                 kind: anchorKind,
                 id: anchor.ref.toLowerCase()
               })}
@@ -80,7 +84,7 @@
         label="Open in Research"
         icon={ArrowUpRight}
         tone="primary"
-        onclick={() => mockWorkbench.inspect("research.thread", { kind: "thread", id: threadId })}
+        onclick={() => view.inspect("research.thread", { kind: "thread", id: threadId })}
       />
     </PanelActions>
   </PanelSection>

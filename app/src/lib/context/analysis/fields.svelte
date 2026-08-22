@@ -15,7 +15,9 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { filtersIn, limitIn, placementsOn, sortIn } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * The builder: where each field has been put.
@@ -61,9 +63,9 @@
         sub={placed.label}
         meta={placed.type}
         icon={ICON[placed.type]}
-        selected={mockWorkbench.selection?.id === placed.id}
+        selected={view.selection?.id === placed.id}
         onselect={() =>
-          mockWorkbench.inspect("analysis.placement", { kind: "placement", id: placed.id })}
+          view.inspect("analysis.placement", { kind: "placement", id: placed.id })}
       />
     {/each}
 
@@ -80,9 +82,9 @@
         sub={placed.label}
         meta={placed.type}
         icon={ICON[placed.type]}
-        selected={mockWorkbench.selection?.id === placed.id}
+        selected={view.selection?.id === placed.id}
         onselect={() =>
-          mockWorkbench.inspect("analysis.placement", { kind: "placement", id: placed.id })}
+          view.inspect("analysis.placement", { kind: "placement", id: placed.id })}
       />
     {/each}
 
@@ -102,8 +104,8 @@
         sub="kept {rows(rule.rowsKept)} of {rows(rule.rowsIn)}"
         icon={Funnel}
         tone={rule.rowsKept === rule.rowsIn ? "attention" : "default"}
-        selected={mockWorkbench.selection?.id === rule.id}
-        onselect={() => mockWorkbench.inspect("analysis.filter", { kind: "filter", id: rule.id })}
+        selected={view.selection?.id === rule.id}
+        onselect={() => view.inspect("analysis.filter", { kind: "filter", id: rule.id })}
       />
     {/each}
 
@@ -124,8 +126,8 @@
       <PanelRow
         title="{sort.reads}, {sort.direction.toLowerCase()}"
         icon={ArrowDownWideNarrow}
-        selected={mockWorkbench.selection?.id === sort.id}
-        onselect={() => mockWorkbench.inspect("analysis.sort", { kind: "sort", id: sort.id })}
+        selected={view.selection?.id === sort.id}
+        onselect={() => view.inspect("analysis.sort", { kind: "sort", id: sort.id })}
       />
     {/if}
   </PanelSection>
@@ -138,8 +140,8 @@
         title="Top {limit.keep}"
         meta="of {rows(limit.of)}"
         icon={ListOrdered}
-        selected={mockWorkbench.selection?.id === limit.id}
-        onselect={() => mockWorkbench.inspect("analysis.limit", { kind: "limit", id: limit.id })}
+        selected={view.selection?.id === limit.id}
+        onselect={() => view.inspect("analysis.limit", { kind: "limit", id: limit.id })}
       />
     {/if}
   </PanelSection>

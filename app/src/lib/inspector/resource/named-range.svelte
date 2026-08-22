@@ -9,7 +9,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { namedRange, spreadsheetRecord } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One name that means a range, inside this spreadsheet only.
@@ -25,6 +25,8 @@
     spreadsheetId = "r-cost",
     name = "costModel"
   }: { spreadsheetId?: string; name?: string } = $props();
+
+  const view = viewState();
 
   const sheet = $derived(spreadsheetRecord(spreadsheetId).current);
   const range = $derived(namedRange(spreadsheetId, name).current);
@@ -42,7 +44,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: sheet.title, key: "resource.spreadsheet" }, { label: range.name }]}
-      onnavigate={(key) => mockWorkbench.inspect(key)}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 
@@ -55,7 +59,7 @@
         label={range.range}
         title="Select {range.range} on the grid"
         onselect={() =>
-          mockWorkbench.inspect("resource.range", { kind: "range", id: range.range })}
+          view.inspect("resource.range", { kind: "range", id: range.range })}
       />
     </PanelField>
   </PanelFields>

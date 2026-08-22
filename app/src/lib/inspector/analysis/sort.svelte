@@ -15,7 +15,7 @@
   } from "$lib/unique-components/panel";
   import { analysis, placementsOn, sortIn } from "$mock-capabilities/analysis";
   import type { SortRule } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * What the result is ordered by.
@@ -28,6 +28,8 @@
    * nothing beyond it.
    */
   let { analysisId = "r-minutes" }: { analysisId?: string } = $props();
+
+  const view = viewState();
 
   const record = $derived(analysis(analysisId).current);
   const rule = $derived(sortIn(analysisId).current);
@@ -52,15 +54,16 @@
   ] as const;
 
   /** Removing the rule leaves nothing to inspect, so the panel falls back to the analysis. */
-  const remove = () =>
-    mockWorkbench.inspect("analysis.analysis", { kind: "analysis", id: analysisId });
+  const remove = () => view.inspect("analysis.analysis", { kind: "analysis", id: analysisId });
 </script>
 
 <Panel title="Sort">
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: record.title, key: "analysis.analysis" }, { label: "Sort" }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

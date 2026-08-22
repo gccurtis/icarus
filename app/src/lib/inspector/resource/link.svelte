@@ -14,7 +14,7 @@
     PanelNote
   } from "$lib/unique-components/panel";
   import { documentRecord, link } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A link mark on a selection: where it goes, and the three things you do
@@ -33,6 +33,8 @@
   let { documentId = "r-memo", linkId = "lk-1" }: { documentId?: string; linkId?: string } =
     $props();
 
+  const view = viewState();
+
   const doc = $derived(documentRecord(documentId).current);
   const mark = $derived(link(linkId).current);
 
@@ -41,7 +43,7 @@
   /** An internal target is a resource in this project; an external one is a website. */
   const open = () => {
     if (mark.internal) {
-      mockWorkbench.inspect("project.resource", { kind: "resource", id: mark.url });
+      view.inspect("project.resource", { kind: "resource", id: mark.url });
     } else {
       window.open(mark.url, "_blank", "noopener,noreferrer");
     }
@@ -61,7 +63,9 @@
         { label: "Text selection", key: "resource.text-selection" },
         { label: "Link" }
       ]}
-      onnavigate={(key) => mockWorkbench.inspect(key, { kind: "resource", id: documentId })}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "resource", id: documentId });
+      }}
     />
   {/snippet}
 
@@ -90,7 +94,7 @@
       tone="danger"
       title="Take the link off, and keep the text"
       onclick={() =>
-        mockWorkbench.inspect("resource.text-selection", { kind: "resource", id: documentId })}
+        view.inspect("resource.text-selection", { kind: "resource", id: documentId })}
     />
   </PanelActions>
 </Panel>

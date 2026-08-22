@@ -8,7 +8,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { layout, placeholderAt } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * A placeholder in a layout: a frame and a style key that a slide fills in.
@@ -27,6 +27,8 @@
     index = 1
   }: { layoutId?: string; index?: number } = $props();
 
+  const view = viewState();
+
   const owner = $derived(layout(layoutId).current);
   const placeholder = $derived(placeholderAt(layoutId, index).current);
 
@@ -43,7 +45,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: owner.name, key: "resource.layout" }, { label: `Placeholder ${index + 1}` }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key, { kind: "layout", id: layoutId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "layout", id: layoutId });
+      }}
     />
   {/snippet}
 

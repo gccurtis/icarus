@@ -8,7 +8,7 @@
   } from "$lib/unique-components/panel";
   import { AGENTS, VIEWER } from "$mock-capabilities/cast";
   import { health, people, tasks } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * People — everything that can appear as "who did this".
@@ -22,6 +22,8 @@
    * the foot says the other thing the section cannot show: that only a person can
    * be written to.
    */
+  const view = viewState();
+
   const everyone = $derived(people().current);
   const work = $derived(tasks().current);
   const problems = $derived(health().current);
@@ -39,7 +41,7 @@
       name: agent.name,
       kind: "agent" as const,
       role: tally(agent.name) === 0 ? "Persona" : `Persona · ${tally(agent.name)} tasks`,
-      lens: "agents.persona",
+      lens: "agents.persona" as const,
       selected: "agent"
     })),
     ...problems
@@ -49,7 +51,7 @@
         name: issue.title,
         kind: "automation" as const,
         role: "Automation",
-        lens: "agents.automation",
+        lens: "agents.automation" as const,
         selected: "automation"
       })),
     ...problems
@@ -59,7 +61,7 @@
         name: issue.title,
         kind: "connector" as const,
         role: "Connector",
-        lens: "project.connector",
+        lens: "project.connector" as const,
         selected: "connector"
       }))
   ]);
@@ -95,7 +97,7 @@
           name={person.name}
           kind="person"
           role={standing(person.at ?? "", person.id)}
-          onselect={() => mockWorkbench.inspect("actor.person", { kind: "person", id: person.id })}
+          onselect={() => view.inspect("collaboration.person", { kind: "person", id: person.id })}
         />
       {/each}
 
@@ -110,7 +112,7 @@
           name={person.name}
           kind="person"
           role={person.role}
-          onselect={() => mockWorkbench.inspect("actor.person", { kind: "person", id: person.id })}
+          onselect={() => view.inspect("collaboration.person", { kind: "person", id: person.id })}
         />
       {/each}
     </PanelSection>
@@ -122,7 +124,7 @@
           kind={machine.kind}
           role={machine.role}
           onselect={() =>
-            mockWorkbench.inspect(machine.lens, { kind: machine.selected, id: machine.id })}
+            view.inspect(machine.lens, { kind: machine.selected, id: machine.id })}
         />
       {/each}
     </PanelSection>

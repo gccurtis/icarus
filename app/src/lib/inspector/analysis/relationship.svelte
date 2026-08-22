@@ -17,7 +17,7 @@
   } from "$lib/unique-components/panel";
   import { analysis, relationship, tablesIn } from "$mock-capabilities/analysis";
   import type { JoinMode } from "$mock-capabilities/analysis";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Two variables that need relating before a chart can be drawn, and the fix.
@@ -37,9 +37,11 @@
    */
   let { analysisId = "r-minutes" }: { analysisId?: string } = $props();
 
+  const view = viewState();
+
   const record = $derived(analysis(analysisId).current);
   const problem = $derived(relationship(analysisId).current);
-  const tables = $derived(tablesIn(mockWorkbench.project.id).current);
+  const tables = $derived(tablesIn(view.project).current);
 
   /** The pairing in use plus the ones the inference offered, in the order it gave them. */
   const candidates = $derived([problem.key, ...problem.alternatives]);
@@ -82,8 +84,7 @@
     `Matches ${key.matched} of ${key.of} rows`;
 
   /** Committing sends the reader back to the chart, which is the thing that changed. */
-  const use = () =>
-    mockWorkbench.inspect("analysis.analysis", { kind: "analysis", id: analysisId });
+  const use = () => view.inspect("analysis.analysis", { kind: "analysis", id: analysisId });
 
   const elsewhere = () => {
     if (picking) {
@@ -98,7 +99,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: record.title, key: "analysis.analysis" }, { label: "Relationship" }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key)}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

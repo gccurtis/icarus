@@ -7,7 +7,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { notesFor } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * One slide's speaker notes, on their own.
@@ -21,6 +21,8 @@
    */
   let { slideId = "sl-4" }: { slideId?: string } = $props();
 
+  const view = viewState();
+
   const notes = $derived(notesFor(slideId).current);
 
   let draft = $state<string | undefined>(undefined);
@@ -31,7 +33,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: `Slide ${notes.index}`, key: "resource.slide" }, { label: "Speaker notes" }]}
-      onnavigate={(key: string) => mockWorkbench.inspect(key, { kind: "slide", id: slideId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "slide", id: slideId });
+      }}
     />
   {/snippet}
 

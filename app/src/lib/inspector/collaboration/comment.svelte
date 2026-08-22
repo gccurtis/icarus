@@ -23,7 +23,7 @@
   } from "$lib/unique-components/panel";
   import { actorName, VIEWER } from "$mock-capabilities/cast";
   import { member, resourceNamed, thread } from "$mock-capabilities/collaboration";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState, type InspectionKey } from "$model/client/view-state";
 
   /**
    * One comment thread: what was said, what it is attached to, and the replies.
@@ -43,6 +43,8 @@
    * so a thread that leaned on the breadcrumb could not say what it is about.
    */
   let { commentId = "c-1" }: { commentId?: string } = $props();
+
+  const view = viewState();
 
   const comment = $derived(thread(commentId).current);
   const author = $derived(member(comment.author).current);
@@ -81,7 +83,7 @@
     return FileText;
   });
 
-  const WHOLE_RESOURCE: Record<string, string> = {
+  const WHOLE_RESOURCE: Record<string, InspectionKey> = {
     document: "resource.document",
     slides: "resource.deck",
     spreadsheet: "resource.spreadsheet"
@@ -95,26 +97,27 @@
     const resource = resourceNamed(anchor.resource);
     const id = resource?.id ?? anchor.resource;
     if (anchor.location !== undefined && resource?.kind === "spreadsheet") {
-      mockWorkbench.inspect("resource.cell", { kind: "cell", id: anchor.location });
+      view.inspect("resource.cell", { kind: "cell", id: anchor.location });
     } else if (anchor.location !== undefined && resource?.kind === "slides") {
-      mockWorkbench.inspect("resource.slide", { kind: "slide", id: anchor.location });
+      view.inspect("resource.slide", { kind: "slide", id: anchor.location });
     } else if (anchor.text !== undefined) {
-      mockWorkbench.inspect("resource.text-selection", { kind: "text", id });
+      view.inspect("resource.text-selection", { kind: "text", id });
     } else {
       const lens = WHOLE_RESOURCE[resource?.kind ?? "document"] ?? "resource.document";
-      mockWorkbench.inspect(lens, { kind: "resource", id });
+      view.inspect(lens, { kind: "resource", id });
     }
   };
 
-  const openPerson = (id: string) =>
-    mockWorkbench.inspect("collaboration.person", { kind: "person", id });
+  const openPerson = (id: string) => view.inspect("collaboration.person", { kind: "person", id });
 </script>
 
 <Panel title="Comment">
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: anchor.resource, key: "resource.document" }, { label: "Comment" }]}
-      onnavigate={(key) => mockWorkbench.inspect(key)}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key);
+      }}
     />
   {/snippet}
 

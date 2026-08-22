@@ -32,8 +32,10 @@
     type EditorKind,
     type LibraryTemplate
   } from "$mock-capabilities/library";
-  import { resources } from "$mock-capabilities/project";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { project, resources } from "$mock-capabilities/project";
+  import { viewState, type InspectionKey } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
    * New Tab — the only state this screen has.
@@ -63,6 +65,8 @@
   const recent = $derived(recents().current);
   const everything = $derived(resources().current);
   const all = $derived(templates().current);
+  /** The name is data, so it comes from the project door rather than from view state. */
+  const projectName = $derived(project().current.name);
 
   /** What the pill, the card or the row last handed the inspector. */
   let chosen = $state<string | undefined>(undefined);
@@ -73,7 +77,7 @@
     needle === "" ? [] : everything.filter((row) => row.name.toLowerCase().includes(needle))
   );
 
-  const LENS: Record<EditorKind["name"], string> = {
+  const LENS: Record<EditorKind["name"], InspectionKey> = {
     Document: "library.new-document",
     "Slide deck": "library.new-deck",
     Spreadsheet: "library.new-spreadsheet"
@@ -144,17 +148,17 @@
 
   const choose = (kind: EditorKind) => {
     chosen = kind.id;
-    mockWorkbench.inspect(LENS[kind.name], { kind: "editor", id: kind.id });
+    view.inspect(LENS[kind.name], { kind: "editor", id: kind.id });
   };
 
   const open = (id: string) => {
     chosen = id;
-    mockWorkbench.inspect("library.recent-item", { kind: "resource", id });
+    view.inspect("library.recent-item", { kind: "resource", id });
   };
 
   const start = (id: string) => {
     chosen = id;
-    mockWorkbench.inspect("library.start-from-template", { kind: "template", id });
+    view.inspect("library.start-from-template", { kind: "template", id });
   };
 </script>
 
@@ -177,7 +181,7 @@
         <InputGroup.Input
           type="search"
           bind:value={query}
-          placeholder="Search {mockWorkbench.project.name}"
+          placeholder="Search {projectName}"
           aria-label="Search this project"
           class="text-body [&::-webkit-search-cancel-button]:hidden"
         />

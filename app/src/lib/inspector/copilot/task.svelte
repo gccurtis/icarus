@@ -35,7 +35,8 @@
     type Dispatcher,
     type TaskToolCall
   } from "$mock-capabilities/copilot";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { project } from "$mock-capabilities/project";
+  import { viewState, type InspectionKey } from "$model/client/view-state";
 
   /**
    * A task — what was asked, who is doing it, the plan, and where it has got to.
@@ -68,6 +69,8 @@
     /** Stop the work. Absent where whoever mounted this cannot stop it. */
     oncancel?: () => void;
   } = $props();
+
+  const view = viewState();
 
   const record = $derived(task(taskId).current);
   const plan = $derived(planFor(taskId).current);
@@ -124,9 +127,9 @@
         ? call.outcome
         : `${call.outcome} — ${call.result}`;
 
-  const DISPATCHER_LENS = {
+  const DISPATCHER_LENS: Record<Dispatcher["kind"], InspectionKey> = {
     person: "collaboration.person",
-    automation: "automations.automation",
+    automation: "agents.automation",
     agent: "agents.persona"
   };
 
@@ -135,7 +138,7 @@
     who.id === undefined
       ? undefined
       : () =>
-          mockWorkbench.inspect(DISPATCHER_LENS[who.kind], {
+          view.inspect(DISPATCHER_LENS[who.kind], {
             kind: who.kind,
             id: who.id ?? ""
           });
@@ -147,7 +150,7 @@
       case "automation":
         return [{ label: record.startedBy.name, key: "dispatcher" }, { label: record.title }];
       case "project":
-        return [{ label: mockWorkbench.project.name, key: "project" }, { label: record.title }];
+        return [{ label: project().current.name, key: "project" }, { label: record.title }];
       default:
         return [{ label: "Copilot", key: "home" }, { label: record.title }];
     }
@@ -155,13 +158,13 @@
 
   const navigate = (key: string) => {
     if (key === "persona") {
-      mockWorkbench.inspect("agents.persona", { kind: "agent", id: record.agent });
+      view.inspect("agents.persona", { kind: "agent", id: record.agent });
     } else if (key === "dispatcher") {
       openDispatcher(record.startedBy)?.();
     } else if (key === "project") {
-      mockWorkbench.inspect("project.project", { kind: "project", id: mockWorkbench.project.id });
+      view.inspect("project.project", { kind: "project", id: view.project });
     } else {
-      mockWorkbench.inspect("copilot.home");
+      view.inspect("copilot.home");
     }
   };
 </script>
@@ -188,7 +191,7 @@
           name={agent}
           kind="agent"
           onselect={() =>
-            mockWorkbench.inspect("agents.persona", { kind: "agent", id: record.agent })}
+            view.inspect("agents.persona", { kind: "agent", id: record.agent })}
         />
       </PanelField>
     {/if}
@@ -262,7 +265,7 @@
         tone={output.promotedAs === undefined ? "default" : "success"}
         onselect={output.promotedAs === undefined
           ? undefined
-          : () => mockWorkbench.inspect("project.resource", { kind: "resource", id: output.id })}
+          : () => view.inspect("project.resource", { kind: "resource", id: output.id })}
       />
     {/each}
 

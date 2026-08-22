@@ -68,7 +68,7 @@ standing in for a query.
 | The store | `$json-store/client` | anything one of the thirty-four tables holds |
 | The model | `$model/client` | the real workbench, where a client instance exists |
 | A mock door | `$mock-capabilities/<subject>` | a table or projection that does not exist yet |
-| A mock model | `$mock-models/workbench.svelte` | inspection and selection, without a client instance |
+| View state | `$model/client/view-state` | what is open, the rail position, what is inspected and what is selected |
 
 **The project is never a prop.** It is read from `/app/[project]` once and carried
 on the model.

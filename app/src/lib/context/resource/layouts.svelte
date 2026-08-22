@@ -14,7 +14,6 @@
     PanelThumbs
   } from "$lib/unique-components/panel";
   import { layout, layoutsIn, slide } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
 
   /**
    * Which layout this slide uses, and what else it could use.
@@ -42,6 +41,9 @@
 
   const RESET_GATE =
     "Reset needs a slide element's placeholder to resolve to exactly one role, and a placeholder has no stable key.";
+
+  const LAYOUT_RAIL_GATE =
+    "The layout rail is not a subscreen, so the deck's rail does not offer resource.layout-layouts to select.";
 </script>
 
 <Panel title="Layouts">
@@ -61,11 +63,7 @@
       Entering the subscreen is a move of the whole rail, not a modal: the layout
       views replace the slide views for as long as a layout is being edited.
     -->
-    <PanelButton
-      label="Edit layout"
-      icon={Pencil}
-      onclick={() => mockWorkbench.selectContext("layout-layouts")}
-    />
+    <PanelButton label="Edit layout" icon={Pencil} disabled title={LAYOUT_RAIL_GATE} />
   {/snippet}
 
   <PanelSection title="Current">

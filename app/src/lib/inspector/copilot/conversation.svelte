@@ -16,7 +16,7 @@
   import { Separator } from "$lib/simple-components/separator";
   import { actorName } from "$mock-capabilities/cast";
   import { conversation, latestMessage } from "$mock-capabilities/copilot";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * One thread with one agent, summarised enough to decide whether to go back
@@ -47,6 +47,8 @@
     onstarttask?: () => void;
   } = $props();
 
+  const view = viewState();
+
   const chat = $derived(conversation(chatId).current);
   const latest = $derived(latestMessage(chatId).current);
 
@@ -57,7 +59,7 @@
 
 <Panel title={chat.title}>
   {#snippet crumbs()}
-    <PanelCrumbs {trail} onnavigate={() => mockWorkbench.inspect("copilot.home")} />
+    <PanelCrumbs {trail} onnavigate={() => view.inspect("copilot.home")} />
   {/snippet}
 
   {#snippet actions()}
@@ -85,7 +87,7 @@
           name={agent}
           kind="agent"
           onselect={() =>
-            mockWorkbench.inspect("agents.persona", { kind: "agent", id: chat.agent })}
+            view.inspect("agents.persona", { kind: "agent", id: chat.agent })}
         />
       </PanelField>
       <PanelField label="Turns" mono>{chat.turns}</PanelField>

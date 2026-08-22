@@ -12,7 +12,7 @@
   } from "$lib/unique-components/panel";
   import { searchScope } from "$mock-capabilities/research";
   import { contexts } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * What this thread can search, and what that came to when it last resolved.
@@ -31,13 +31,15 @@
    */
   let { threadId = "th-feeder" }: { threadId?: string } = $props();
 
+  const view = viewState();
+
   const scope = $derived(searchScope(threadId).current);
   const saved = $derived(contexts().current.find((row) => row.name === scope.name));
 
   const openSaved = $derived(
     saved === undefined
       ? undefined
-      : () => mockWorkbench.inspect("scope.context", { kind: "context", id: saved.id })
+      : () => view.inspect("scope.context", { kind: "context", id: saved.id })
   );
 </script>
 

@@ -13,7 +13,7 @@
     readsOf,
     type CellReference
   } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * What the current cell reads, what it feeds, and what is broken anywhere in
@@ -32,10 +32,10 @@
    */
   let { spreadsheetId = "r-cost" }: { spreadsheetId?: string } = $props();
 
+  const view = viewState();
+
   /** The cell the grid is on. `G3` when nothing is selected, as the specification has it. */
-  const address = $derived(
-    mockWorkbench.selection?.kind === "cell" ? mockWorkbench.selection.id : "G3"
-  );
+  const address = $derived(view.selection?.kind === "cell" ? view.selection.id : "G3");
 
   const reads = $derived(readsOf(spreadsheetId, address).current);
   const feeds = $derived(feedsOf(spreadsheetId, address).current);
@@ -58,12 +58,12 @@
     if (reference.kind === "broken") return undefined;
     if (reference.kind === "named range") {
       return () =>
-        mockWorkbench.inspect("resource.named-range", {
+        view.inspect("resource.named-range", {
           kind: "named-range",
           id: reference.address
         });
     }
-    return () => mockWorkbench.inspect("resource.cell", { kind: "cell", id: reference.address });
+    return () => view.inspect("resource.cell", { kind: "cell", id: reference.address });
   };
 </script>
 
@@ -95,7 +95,7 @@
         sub={reference.shows}
         icon={SquareFunction}
         onselect={() =>
-          mockWorkbench.inspect("resource.cell-with-formula", {
+          view.inspect("resource.cell-with-formula", {
             kind: "cell",
             id: reference.address
           })}
@@ -116,7 +116,7 @@
         tone="danger"
         titleTone="danger"
         onselect={() =>
-          mockWorkbench.inspect("resource.error-cell", { kind: "cell", id: problem.address })}
+          view.inspect("resource.error-cell", { kind: "cell", id: problem.address })}
       />
     {/each}
 

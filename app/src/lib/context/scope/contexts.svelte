@@ -12,7 +12,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { contexts, type ContextRow } from "$mock-capabilities/scope";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * Every saved Context, beside the one being worked on.
@@ -31,6 +31,8 @@
    */
   let { contextId = "cx-drafts" }: { contextId?: string } = $props();
 
+  const view = viewState();
+
   const all = $derived(contexts().current);
 
   let search = $state("");
@@ -46,7 +48,7 @@
 
   const open = (id: string) => {
     chosenId = id;
-    mockWorkbench.inspect("scope.context", { kind: "context", id });
+    view.inspect("scope.context", { kind: "context", id });
   };
 </script>
 
@@ -56,7 +58,7 @@
       label="New Context"
       icon={Plus}
       tone="primary"
-      onclick={() => mockWorkbench.inspect("scope.context", { kind: "context", id: "new" })}
+      onclick={() => view.inspect("scope.context", { kind: "context", id: "new" })}
     />
     <PanelButton
       label="Duplicate"

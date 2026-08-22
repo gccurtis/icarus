@@ -10,7 +10,7 @@
     PanelToggle
   } from "$lib/unique-components/panel";
   import { documentHeader, documentRecord } from "$mock-capabilities/resource";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * The header band, on any page.
@@ -26,6 +26,8 @@
    * reader cannot tell which of the two is on the page.
    */
   let { documentId = "r-memo" }: { documentId?: string } = $props();
+
+  const view = viewState();
 
   const doc = $derived(documentRecord(documentId).current);
   const header = $derived(documentHeader(documentId).current);
@@ -45,7 +47,9 @@
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[{ label: doc.title, key: "resource.document" }, { label: "Header" }]}
-      onnavigate={(key) => mockWorkbench.inspect(key, { kind: "resource", id: documentId })}
+      onnavigate={(key) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "resource", id: documentId });
+      }}
     />
   {/snippet}
 

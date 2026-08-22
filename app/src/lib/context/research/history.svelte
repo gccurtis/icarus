@@ -13,7 +13,7 @@
     PanelSection
   } from "$lib/unique-components/panel";
   import { currentTurn, otherThreads, turnsIn } from "$mock-capabilities/research";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * The earlier turns in this thread, and the other threads in the project.
@@ -33,6 +33,8 @@
    * one's history.
    */
   let { threadId = "th-feeder" }: { threadId?: string } = $props();
+
+  const view = viewState();
 
   const turns = $derived(turnsIn(threadId).current);
   const others = $derived(otherThreads(threadId).current);
@@ -63,7 +65,7 @@
       label="New thread"
       icon={Plus}
       tone="primary"
-      onclick={() => mockWorkbench.inspect("research.thread", { kind: "thread", id: "new" })}
+      onclick={() => view.inspect("research.thread", { kind: "thread", id: "new" })}
     />
   {/snippet}
 
@@ -94,7 +96,7 @@
         sub="{row.mode} · {turnCount(row.turns)}"
         meta={row.lastAsked}
         icon={MODE[row.mode]}
-        onselect={() => mockWorkbench.inspect("research.thread", { kind: "thread", id: row.id })}
+        onselect={() => view.inspect("research.thread", { kind: "thread", id: row.id })}
       />
     {/each}
   </PanelSection>

@@ -20,7 +20,7 @@
     type ActionOption,
     type ToolPermission
   } from "$mock-capabilities/agents";
-  import { mockWorkbench } from "$mock-models/workbench.svelte";
+  import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
    * Ask an agent: who is asked, what they are asked, and what comes out.
@@ -35,6 +35,8 @@
    * night, and the permission is the first place to look.
    */
   let { automationId = "nightly-digest" }: { automationId?: string } = $props();
+
+  const view = viewState();
 
   const rule = $derived(automation(automationId).current);
 
@@ -62,8 +64,9 @@
         { label: "Do this" },
         { label: "Ask an agent" }
       ]}
-      onnavigate={(key: string) =>
-        mockWorkbench.inspect(key, { kind: "automation", id: automationId })}
+      onnavigate={(key: string) => {
+        if (isInspectionKey(key)) view.inspect(key, { kind: "automation", id: automationId });
+      }}
     />
   {/snippet}
 
@@ -74,7 +77,7 @@
         kind="agent"
         role={profile.describes}
         size="head"
-        onselect={() => mockWorkbench.inspect("agents.persona", { kind: "agent", id: agentId })}
+        onselect={() => view.inspect("agents.persona", { kind: "agent", id: agentId })}
       />
     </PanelSection>
 
@@ -107,7 +110,7 @@
           title={task.title}
           sub="Started by {rule.name}"
           meta={task.detail}
-          onselect={() => mockWorkbench.inspect("copilot.task", { kind: "task", id: task.id })}
+          onselect={() => view.inspect("copilot.task", { kind: "task", id: task.id })}
         />
       {:else}
         <PanelNote>No task yet. The last fire did not make one.</PanelNote>
