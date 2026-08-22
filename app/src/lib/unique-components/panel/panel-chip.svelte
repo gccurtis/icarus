@@ -3,6 +3,7 @@
 
   import { Badge } from "$lib/simple-components/badge";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A small tinted label carrying a state or a category.
@@ -36,6 +37,9 @@
     children: Snippet;
   } = $props();
 
+  // The marker is forwarded through `Badge` onto the element it renders.
+  const trace = traceNode("PanelChip", () => ({ tone }));
+
   /**
    * Whole class strings rather than an interpolated role name: Tailwind's
    * scanner reads source text, and `bg-${tone}-surface` is not text it can find.
@@ -60,6 +64,7 @@
   radius rather than a pill, and caption rather than the registry's own step.
 -->
 <Badge
+  {...trace}
   variant="outline"
   class={cn("text-caption rounded-control border px-1.5 py-0.5 font-normal", TONE[tone])}
 >

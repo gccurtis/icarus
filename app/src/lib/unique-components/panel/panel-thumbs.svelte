@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
+
   /**
    * A column of previews inside a panel, one or two across.
    *
@@ -21,8 +23,10 @@
     across?: 1 | 2;
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("PanelThumbs", () => ({ across }));
 </script>
 
-<div class="grid gap-2 px-3" class:grid-cols-1={across === 1} class:grid-cols-2={across === 2}>
+<div {...trace} class="grid gap-2 px-3" class:grid-cols-1={across === 1} class:grid-cols-2={across === 2}>
   {@render children()}
 </div>

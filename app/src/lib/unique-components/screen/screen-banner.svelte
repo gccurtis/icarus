@@ -4,6 +4,7 @@
 
   import * as Alert from "$lib/simple-components/alert";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A statement across the width of a screen, about the whole of what is under
@@ -35,9 +36,13 @@
     /** The explanation, and what to do about it. */
     children?: Snippet;
   } = $props();
+
+  // `Alert.Root` forwards its rest props, so the marker lands on the element it renders.
+  const trace = traceNode("ScreenBanner", () => ({ title, tone, meta }));
 </script>
 
 <Alert.Root
+  {...trace}
   class={cn(
     "rounded-panel items-start gap-x-2 p-3",
     tone === "attention" && "border-attention-border bg-attention-surface text-attention-text",

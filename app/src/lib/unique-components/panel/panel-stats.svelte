@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * The record band in a flank: the figures a panel reports about its subject.
@@ -42,6 +43,8 @@
     /** `PanelStat`s. */
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("PanelStats", () => ({ label, columns, flush }));
 </script>
 
 <!--
@@ -50,6 +53,7 @@
   third of the panel above it.
 -->
 <div
+  {...trace}
   role="group"
   aria-label={label}
   class={cn(

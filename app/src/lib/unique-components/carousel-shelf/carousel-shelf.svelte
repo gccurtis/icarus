@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Carousel from "$lib/simple-components/carousel";
 	import { cn, type WithElementRef } from "$lib/simple-components/utils";
+	import { traceNode } from "$lib/trace/trace.svelte";
 	import type { HTMLAttributes } from "svelte/elements";
 
 	let {
@@ -10,6 +11,8 @@
 		children,
 		...restProps
 	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & { gap?: number } = $props();
+
+	const trace = traceNode("CarouselShelf", () => ({ gap }));
 </script>
 
 <!--
@@ -23,6 +26,7 @@
 	one.
 -->
 <div
+	{...trace}
 	bind:this={ref}
 	data-slot="carousel-shelf"
 	class={cn("relative", className)}

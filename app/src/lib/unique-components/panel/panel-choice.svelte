@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as ToggleGroup from "$lib/simple-components/toggle-group";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A small set of alternatives with exactly one on.
@@ -61,9 +62,13 @@
     flush?: boolean;
     onchange?: (next: string) => void;
   } = $props();
+
+  // The marker is forwarded through `ToggleGroup.Root` onto the element it renders.
+  const trace = traceNode("PanelChoice", () => ({ label, value, options, mixed, flush }));
 </script>
 
 <ToggleGroup.Root
+  {...trace}
   type="single"
   value={mixed ? "" : value}
   aria-label={label}

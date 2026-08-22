@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * The grab strip on a flank's inner edge.
@@ -49,6 +50,16 @@
     label: string;
     onchange: (next: { width: number; collapsed: boolean }) => void;
   } = $props();
+
+  const trace = traceNode("ResizeHandle", () => ({
+    side,
+    width,
+    collapsed,
+    min,
+    max,
+    collapseBelow,
+    label
+  }));
 
   let dragging = $state(false);
 
@@ -126,6 +137,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
+  {...trace}
   role="separator"
   aria-orientation="vertical"
   aria-label="Resize {label}"

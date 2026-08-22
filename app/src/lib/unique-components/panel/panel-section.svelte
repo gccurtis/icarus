@@ -4,6 +4,7 @@
 
   import * as Collapsible from "$lib/simple-components/collapsible";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * One disclosure inside a panel: a heading, a count, and what it holds.
@@ -45,6 +46,9 @@
     children: Snippet;
   } = $props();
 
+  // The marker is forwarded through `Collapsible.Root` onto the element it renders.
+  const trace = traceNode("PanelSection", () => ({ title, count, open, flush }));
+
   /**
    * `open` is the starting disclosure and nothing after that. Reading it once is
    * the intent: a section the user has shut must not spring open because its
@@ -54,7 +58,7 @@
   let expanded = $state(open);
 </script>
 
-<Collapsible.Root bind:open={expanded} class="flex flex-col">
+<Collapsible.Root {...trace} bind:open={expanded} class="flex flex-col">
   <Collapsible.Trigger
     class="text-ink-secondary hover:text-ink-primary flex items-center gap-1.5 px-3 py-1.5 text-start"
   >

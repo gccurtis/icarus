@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
+
   /**
    * A record, in one frame: the figures ruled apart rather than boxed apart.
    *
@@ -35,9 +37,12 @@
     label?: string;
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenStats", () => ({ minWidth, label }));
 </script>
 
 <div
+  {...trace}
   role="group"
   aria-label={label}
   style="--stat-min: {minWidth}"

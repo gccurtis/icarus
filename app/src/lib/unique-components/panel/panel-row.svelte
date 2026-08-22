@@ -2,6 +2,7 @@
   import type { Component, Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A line in a list: an icon, what it is, what qualifies it, and when.
@@ -79,6 +80,17 @@
     children?: Snippet;
   } = $props();
 
+  const trace = traceNode("PanelRow", () => ({
+    title,
+    sub,
+    meta,
+    tone,
+    titleTone,
+    selected,
+    indent,
+    depth
+  }));
+
   /**
    * One step per level, off the panel's own gutter. Four values rather than a
    * computed `padding-inline-start` because Tailwind cannot see a class it did
@@ -114,6 +126,7 @@
   fires it too — so it becomes a container and the title takes the press.
 -->
 <svelte:element
+  {...trace}
   this={onselect && !control ? "button" : "div"}
   role={onselect && !control ? undefined : "listitem"}
   type={onselect && !control ? "button" : undefined}

@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /** Where an object sits, as fractions of the stage. Never pixels. */
   type SlideFrame = {
@@ -72,6 +73,8 @@
     caption?: string;
   } = $props();
 
+  const trace = traceNode("ScreenSlide", () => ({ ratio, objects, selected, caption }));
+
   /** Percentages of the stage, so nothing on it depends on how big it is drawn. */
   const box = (item: SlideObject) =>
     `left: ${item.frame.x * 100}%; top: ${item.frame.y * 100}%; ` +
@@ -96,7 +99,7 @@
   {/if}
 {/snippet}
 
-<div class="stand">
+<div {...trace} class="stand">
   <div
     class="stage bg-surface-panel border-border-subtle border"
     style="aspect-ratio: {ratio.replace(':', ' / ')}"

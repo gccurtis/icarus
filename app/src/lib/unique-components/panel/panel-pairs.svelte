@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
   import Plus from "@lucide/svelte/icons/plus";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
   import PanelButton from "$lib/unique-components/panel/panel-button.svelte";
 
   /**
@@ -49,9 +50,11 @@
     /** `PanelPair`s. Empty is a legitimate state, and says so. */
     children?: Snippet;
   } = $props();
+
+  const trace = traceNode("PanelPairs", () => ({ columns, empty, count, addLabel }));
 </script>
 
-<div class="flex flex-col gap-1.5 px-3">
+<div {...trace} class="flex flex-col gap-1.5 px-3">
   <div
     class="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-0.5"
   >

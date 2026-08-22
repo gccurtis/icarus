@@ -2,6 +2,7 @@
   import type { Component, Snippet } from "svelte";
 
   import * as Empty from "$lib/simple-components/empty";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A workspace with nothing in it, saying which nothing this is.
@@ -36,9 +37,13 @@
     /** One sentence: what to do, or what would be here. */
     children?: Snippet;
   } = $props();
+
+  // `Empty.Root` forwards its rest props, so the marker lands on the element it renders.
+  const trace = traceNode("ScreenEmpty", () => ({ kind, title }));
 </script>
 
 <Empty.Root
+  {...trace}
   class="border-border-subtle bg-surface-panel rounded-panel flex-none gap-2 border border-dashed py-10"
 >
   <Empty.Header class="gap-2">

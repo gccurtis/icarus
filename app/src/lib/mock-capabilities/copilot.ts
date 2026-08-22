@@ -13,7 +13,7 @@
  * ids is a bug a reviewer would chase.
  */
 import { RESOURCES, type AgentId, type Resource } from "$mock-capabilities/cast";
-import { read, type Read } from "$mock-capabilities/read";
+import { read, type Read } from "$mock-capabilities/read.svelte";
 
 export type TaskState = "waiting" | "running" | "failed" | "completed";
 
@@ -506,56 +506,64 @@ export const tasksIn = (projectId: string, state: TaskState): Read<readonly Task
       state: task.state,
       detail: stateLine(task),
       age: task.age
-    }))
+    })),
+    "copilot.tasksIn"
   );
 };
 
 /** Threads with agents, most recent first. */
 export const conversationsIn = (projectId: string): Read<readonly Conversation[]> => {
   void projectId;
-  return read(CONVERSATIONS);
+  return read(CONVERSATIONS, "copilot.conversationsIn");
 };
 
 export const conversation = (chatId: string): Read<Conversation> =>
-  read(CONVERSATIONS.find((candidate: Conversation) => candidate.id === chatId) ?? CONVERSATIONS[0]);
+  read(
+    CONVERSATIONS.find((candidate: Conversation) => candidate.id === chatId) ?? CONVERSATIONS[0],
+    "copilot.conversation"
+  );
 
 /** The last thing said, which is how you tell whether this is the thread you meant. */
 export const latestMessage = (chatId: string): Read<LatestMessage> =>
-  read(LATEST[chatId] ?? LATEST["ch-1"]);
+  read(LATEST[chatId] ?? LATEST["ch-1"], "copilot.latestMessage");
 
 export const task = (taskId: string): Read<TaskDetail> =>
-  read(TASKS.find((candidate: TaskDetail) => candidate.id === taskId) ?? TASKS[0]);
+  read(TASKS.find((candidate: TaskDetail) => candidate.id === taskId) ?? TASKS[0], "copilot.task");
 
 export const planFor = (taskId: string): Read<readonly PlanStep[]> =>
-  read(PLANS[taskId] ?? PLANS["t-1"]);
+  read(PLANS[taskId] ?? PLANS["t-1"], "copilot.planFor");
 
 export const toolsUsedIn = (taskId: string): Read<readonly TaskToolCall[]> =>
-  read(TOOLS[taskId] ?? []);
+  read(TOOLS[taskId] ?? [], "copilot.toolsUsedIn");
 
 /** Empty until there is something to promote, which is the normal state of a running task. */
 export const producedBy = (taskId: string): Read<readonly TaskOutput[]> =>
-  read(PRODUCED[taskId] ?? []);
+  read(PRODUCED[taskId] ?? [], "copilot.producedBy");
 
 export const suggestedScope = (screenId: string): Read<readonly Suggestion[]> =>
-  read(SUGGESTED[screenId] ?? SUGGESTED.document);
+  read(SUGGESTED[screenId] ?? SUGGESTED.document, "copilot.suggestedScope");
 
 export const savedScopes = (projectId: string): Read<readonly SavedScope[]> => {
   void projectId;
-  return read(SAVED_SCOPES);
+  return read(SAVED_SCOPES, "copilot.savedScopes");
 };
 
 /** What the persona always has. Not switchable, and the shape says so rather than the panel. */
-export const personaScope = (agentId: AgentId): Read<PersonaScope> => read(PERSONA_SCOPES[agentId]);
+export const personaScope = (agentId: AgentId): Read<PersonaScope> =>
+  read(PERSONA_SCOPES[agentId], "copilot.personaScope");
 
 /**
  * The union, with membership applied after it. With nothing picked the total is
  * the persona's own scope, which is why it is read off that rather than stored.
  */
 export const scopeTotal = (agentId: AgentId): Read<ScopeTotal> =>
-  read({ resources: PERSONA_SCOPES[agentId].resources, membershipEnforced: true });
+  read(
+    { resources: PERSONA_SCOPES[agentId].resources, membershipEnforced: true },
+    "copilot.scopeTotal"
+  );
 
 /** What the scope panel's search runs over: a one-off resource for this request, saving no Context. */
 export const attachableIn = (projectId: string): Read<readonly Resource[]> => {
   void projectId;
-  return read(RESOURCES);
+  return read(RESOURCES, "copilot.attachableIn");
 };

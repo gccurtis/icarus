@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as Avatar from "$lib/simple-components/avatar";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
   import PanelLink from "$lib/unique-components/panel/panel-link.svelte";
 
   /**
@@ -55,6 +56,8 @@
     onselect?: () => void;
   } = $props();
 
+  const trace = traceNode("PanelActor", () => ({ name, kind, role, src, size }));
+
   const KIND: Record<NonNullable<typeof kind>, string> = {
     person: "bg-surface-panel text-ink-secondary border-border-subtle",
     agent: "bg-intelligence-surface text-intelligence-text border-intelligence-border",
@@ -76,7 +79,7 @@
   );
 </script>
 
-<div class={cn("flex min-w-0 items-center gap-2", size === "head" && "items-start gap-3")}>
+<div {...trace} class={cn("flex min-w-0 items-center gap-2", size === "head" && "items-start gap-3")}>
   <Avatar.Root
     class={cn("shrink-0 border", KIND[kind], size === "row" ? "size-5" : "size-10")}
     title={size === "face" ? `${name} — ${kind}` : undefined}

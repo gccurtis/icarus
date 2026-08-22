@@ -20,7 +20,7 @@
  * the project's 41 substations.
  */
 import { RESOURCES } from "$mock-capabilities/cast";
-import { read, type Read } from "$mock-capabilities/read";
+import { read, type Read } from "$mock-capabilities/read.svelte";
 
 /**
  * What a column holds, inferred by inspecting the value. It is what decides
@@ -527,46 +527,49 @@ export const analysis = (analysisId: string): Read<AnalysisRecord> => {
     revision: 12,
     updated: SAVED.updated,
     updatedBy: SAVED.updatedBy
-  });
+  }, "analysis.analysis");
 };
 
 export const tablesIn = (projectId: string): Read<readonly TableVariable[]> => {
   void projectId;
-  return read(TABLES);
+  return read(TABLES, "analysis.tablesIn");
 };
 
 export const valuesIn = (projectId: string): Read<readonly ValueVariable[]> => {
   void projectId;
-  return read(VALUES);
+  return read(VALUES, "analysis.valuesIn");
 };
 
 export const functionsIn = (projectId: string): Read<readonly FunctionVariable[]> => {
   void projectId;
-  return read(FUNCTIONS);
+  return read(FUNCTIONS, "analysis.functionsIn");
 };
 
 /** Derived from the three lists, so the lens can never disagree with the row it was opened from. */
 export const variable = (variableId: string): Read<VariableLens> => {
   const table = TABLES.find((candidate) => candidate.id === variableId);
   if (table !== undefined) {
-    return read({ id: table.id, name: table.name, type: "table", rows: table.rows });
+    return read({ id: table.id, name: table.name, type: "table", rows: table.rows }, "analysis.variable");
   }
   const fn = FUNCTIONS.find((candidate) => candidate.id === variableId);
   if (fn !== undefined) {
-    return read({ id: fn.id, name: fn.name, type: "function" });
+    return read({ id: fn.id, name: fn.name, type: "function" }, "analysis.variable");
   }
   const value = VALUES.find((candidate) => candidate.id === variableId) ?? VALUES[0];
-  return read({ id: value.id, name: value.name, type: value.type, value: value.value });
+  return read({ id: value.id, name: value.name, type: value.type, value: value.value }, "analysis.variable");
 };
 
 /** Tables only: a scalar shows its value, not a prefix of one. */
 export const previewOf = (variableId: string): Read<RowPreview> => {
   const table = TABLES.find((candidate) => candidate.id === variableId);
-  return read(PREVIEWS.find((preview) => preview.variable === table?.name) ?? PREVIEWS[0]);
+  return read(
+    PREVIEWS.find((preview) => preview.variable === table?.name) ?? PREVIEWS[0],
+    "analysis.previewOf"
+  );
 };
 
 export const relationsFor = (variableId: string): Read<readonly Relation[]> =>
-  read(RELATIONS[variableId] ?? []);
+  read(RELATIONS[variableId] ?? [], "analysis.relationsFor");
 
 export const chartKinds = (): Read<readonly ChartKind[]> =>
   read([
@@ -592,7 +595,7 @@ export const chartKinds = (): Read<readonly ChartKind[]> =>
       name: "Pie",
       needs: "One field to split by and one number to size the slices. Unreadable past about six."
     }
-  ]);
+  ], "analysis.chartKinds");
 
 export const chartFor = (analysisId: string): Read<ChartDisplay> => {
   void analysisId;
@@ -610,53 +613,57 @@ export const chartFor = (analysisId: string): Read<ChartDisplay> => {
       { id: "c-3", name: "Interactive", token: "--token-color-interactive-fill" },
       { id: "c-4", name: "Intelligence", token: "--token-color-intelligence-fill" }
     ]
-  });
+  }, "analysis.chartFor");
 };
 
 /** Answers empty for `colour`: it is a proposed zone, not something the definition can hold. */
 export const placementsOn = (analysisId: string, axis: PlacementAxis): Read<readonly Placement[]> => {
   void analysisId;
-  return read(PLACEMENTS.filter((placed) => placed.axis === axis));
+  return read(PLACEMENTS.filter((placed) => placed.axis === axis), "analysis.placementsOn");
 };
 
 export const placement = (placementId: string): Read<Placement> =>
-  read(PLACEMENTS.find((placed) => placed.id === placementId) ?? PLACEMENTS[0]);
+  read(PLACEMENTS.find((placed) => placed.id === placementId) ?? PLACEMENTS[0], "analysis.placement");
 
-export const aggregationsFor = (type: FieldType): Read<readonly Aggregation[]> => read(PERMITTED[type]);
+export const aggregationsFor = (type: FieldType): Read<readonly Aggregation[]> =>
+  read(PERMITTED[type], "analysis.aggregationsFor");
 
 export const filtersIn = (analysisId: string): Read<readonly FilterRule[]> => {
   void analysisId;
-  return read(FILTERS);
+  return read(FILTERS, "analysis.filtersIn");
 };
 
 export const filter = (filterId: string): Read<FilterRule> =>
-  read(FILTERS.find((rule) => rule.id === filterId) ?? FILTERS[0]);
+  read(FILTERS.find((rule) => rule.id === filterId) ?? FILTERS[0], "analysis.filter");
 
 /** Null when the zone is empty. Only one sort is offered; a tiebreak would need an ordered list. */
 export const sortIn = (analysisId: string): Read<SortRule | null> => {
   void analysisId;
-  return read(SORT);
+  return read(SORT, "analysis.sortIn");
 };
 
 export const limitIn = (analysisId: string): Read<LimitRule | null> => {
   void analysisId;
-  return read(LIMIT);
+  return read(LIMIT, "analysis.limitIn");
 };
 
 /** Read-only: editing it would break the round trip back to the builder, so it is a diagnostic. */
 export const compiledFor = (analysisId: string): Read<string> => {
   void analysisId;
-  return read(COMPILED);
+  return read(COMPILED, "analysis.compiledFor");
 };
 
 export const lastRunOf = (analysisId: string): Read<RunStats> => {
   void analysisId;
-  return read({ ran: "2 minutes ago", rows: RESULT.rows.length, of: RESULT.total, duration: "0.4 s" });
+  return read(
+    { ran: "2 minutes ago", rows: RESULT.rows.length, of: RESULT.total, duration: "0.4 s" },
+    "analysis.lastRunOf"
+  );
 };
 
 export const resultFor = (analysisId: string): Read<AnalysisResult> => {
   void analysisId;
-  return read(RESULT);
+  return read(RESULT, "analysis.resultFor");
 };
 
 export const mark = (markId: string): Read<Mark> => {
@@ -669,7 +676,7 @@ export const mark = (markId: string): Read<Mark> => {
       { placement: "sum of customerMinutes", value: "1,842,000" },
       { placement: "count of eventId", value: "3" }
     ]
-  });
+  }, "analysis.mark");
 };
 
 /**
@@ -688,7 +695,7 @@ export const rowsUnder = (markId: string): Read<RowPreview> => {
       { id: "E-8877", cells: ["E-8877", "3 Feb 2026", "Relay mis-coordination", "311,300"] }
     ],
     total: 3
-  });
+  }, "analysis.rowsUnder");
 };
 
 /** Present only because two variables are in play. The key is inferred, and it can be wrong. */
@@ -699,5 +706,5 @@ export const relationship = (analysisId: string): Read<Relationship> => {
     key: KEY_SUB,
     mode: "With a match",
     alternatives: [KEY_REGION, KEY_FEEDER]
-  });
+  }, "analysis.relationship");
 };

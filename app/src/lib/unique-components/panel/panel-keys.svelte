@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as Kbd from "$lib/simple-components/kbd";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   type Modifier = "mod" | "ctrl" | "alt" | "shift";
   type Platform = "apple" | "other";
@@ -56,6 +57,9 @@
     /** Drop the panel gutter. Only meaningful with `action`. */
     flush?: boolean;
   } = $props();
+
+  // Two roots: the marker goes on the labelled one, since the bare chord's root is a component.
+  const trace = traceNode("PanelKeys", () => ({ action, mods, key, platform, flush }));
 
   /** Apple prints ⌃⌥⇧⌘; everything else leads with its accelerator. */
   const ORDER: Record<Platform, readonly Modifier[]> = {
@@ -114,7 +118,7 @@
 {/snippet}
 
 {#if action}
-  <div class={cn("flex items-center gap-2 py-0.5", flush ? "px-0" : "px-3")}>
+  <div {...trace} class={cn("flex items-center gap-2 py-0.5", flush ? "px-0" : "px-3")}>
     <span class="text-caption text-ink-secondary min-w-0 truncate">{action}</span>
     <span class="ms-auto shrink-0">{@render chord()}</span>
   </div>

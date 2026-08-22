@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Nested lines that disclose. The group; `PanelBranch` is a node in it.
@@ -43,8 +44,10 @@
     /** The top-level branches. */
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("PanelTree", () => ({ label, flush }));
 </script>
 
-<div role="group" aria-label={label} class={cn("flex flex-col", flush ? "px-0" : "px-3")}>
+<div {...trace} role="group" aria-label={label} class={cn("flex flex-col", flush ? "px-0" : "px-3")}>
   {@render children()}
 </div>

@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import * as Empty from "$lib/simple-components/empty";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * What a workspace shows where a framework surface will go.
@@ -25,9 +26,11 @@
     /** What Icarus adds on top of it. */
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenPlaceholder", () => ({ framework }));
 </script>
 
-<div class="bg-surface-canvas flex h-full min-h-0 items-center justify-center p-6">
+<div {...trace} class="bg-surface-canvas flex h-full min-h-0 items-center justify-center p-6">
   <Empty.Root class="border-border-strong bg-surface-panel rounded-panel max-w-md flex-none gap-2 border border-dashed">
     <Empty.Header class="gap-2">
       <Empty.Media class="text-caption text-ink-muted mb-0 font-semibold tracking-wide uppercase">

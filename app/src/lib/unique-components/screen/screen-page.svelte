@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
+
   /**
    * One sheet of paper on a canvas, with its margins drawn and its furniture on
    * it.
@@ -69,6 +71,8 @@
     children?: Snippet;
   } = $props();
 
+  const trace = traceNode("ScreenPage", () => ({ paper, orientation, margins, caption }));
+
   /** The two papers, in inches, portrait. The only place 96dpi is written down. */
   const PAPER = {
     letter: { w: 8.5, h: 11 },
@@ -113,7 +117,7 @@
   {/if}
 {/snippet}
 
-<div class="sheet">
+<div {...trace} class="sheet">
   <article
     class="page bg-surface-panel border-border-subtle border"
     aria-label={caption}

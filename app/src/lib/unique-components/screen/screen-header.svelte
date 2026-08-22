@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
+
   /**
    * A screen's title, what it is for, and the one thing you make here.
    *
@@ -20,9 +22,11 @@
     about?: string;
     actions?: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenHeader", () => ({ title, about }));
 </script>
 
-<header class="flex flex-wrap items-start justify-between gap-4">
+<header {...trace} class="flex flex-wrap items-start justify-between gap-4">
   <div class="flex min-w-0 flex-col gap-1">
     <h1 class="text-h3 leading-h3 m-0 font-semibold tracking-tight">{title}</h1>
     {#if about}

@@ -3,6 +3,7 @@
   import ChevronLeft from "@lucide/svelte/icons/chevron-left";
 
   import { Button } from "$lib/simple-components/button";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * The strip that says which one of many you are editing, and how to get back.
@@ -31,9 +32,12 @@
     meta?: Snippet;
     actions?: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenBar", () => ({ title, backLabel }));
 </script>
 
 <div
+  {...trace}
   class="border-border-subtle bg-surface-panel flex h-9 shrink-0 items-center gap-2 border-b px-3"
 >
   {#if onback}

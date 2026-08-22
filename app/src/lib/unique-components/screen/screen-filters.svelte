@@ -5,6 +5,7 @@
 
   import * as InputGroup from "$lib/simple-components/input-group";
   import * as Select from "$lib/simple-components/select";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * The row above a table or a card grid: what narrows it, what orders it, and
@@ -51,13 +52,22 @@
     children?: Snippet;
   } = $props();
 
+  const trace = traceNode("ScreenFilters", () => ({
+    placeholder,
+    matched,
+    total,
+    sorts,
+    sort,
+    value
+  }));
+
   const count = $derived(
     matched !== undefined && total !== undefined ? `${matched} of ${total}` : undefined
   );
   const chosen = $derived(sorts?.find((option) => option.value === sort));
 </script>
 
-<div class="flex flex-wrap items-center gap-2">
+<div {...trace} class="flex flex-wrap items-center gap-2">
   <InputGroup.Root class="h-7 min-w-45 max-w-75 flex-1">
     <InputGroup.Addon class="text-ink-muted [&>svg]:size-3.5">
       <Search aria-hidden="true" />

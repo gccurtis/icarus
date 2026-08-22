@@ -4,6 +4,7 @@
   import { Button } from "$lib/simple-components/button";
   import * as Table from "$lib/simple-components/table";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * One cell, in the three shapes a table here actually uses.
@@ -31,6 +32,9 @@
     onselect?: () => void;
     children?: Snippet;
   } = $props();
+
+  // `Table.Cell` forwards its rest props, so the marker lands on the `<td>` it renders.
+  const trace = traceNode("ScreenCell", () => ({ name, num }));
 </script>
 
 {#snippet label()}
@@ -41,6 +45,7 @@
 {/snippet}
 
 <Table.Cell
+  {...trace}
   class={cn(
     "text-body-sm text-ink-secondary border-border-subtle border-b px-3 py-0 align-middle whitespace-normal",
     num && "tabular-nums"

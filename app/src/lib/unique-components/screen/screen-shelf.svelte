@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
   import { CarouselShelf } from "$lib/unique-components/carousel-shelf";
 
   /**
@@ -23,8 +24,11 @@
    * amount of pushing makes a row searchable.
    */
   let { children }: { children: Snippet } = $props();
+
+  // `CarouselShelf` forwards its rest props, so the marker lands on the element it renders.
+  const trace = traceNode("ScreenShelf");
 </script>
 
-<CarouselShelf>
+<CarouselShelf {...trace}>
   {@render children()}
 </CarouselShelf>

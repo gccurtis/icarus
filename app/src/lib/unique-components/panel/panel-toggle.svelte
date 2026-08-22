@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Switch } from "$lib/simple-components/switch";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * An on/off state inside a field.
@@ -34,9 +35,13 @@
     disabled?: boolean;
     onchange?: (next: boolean) => void;
   } = $props();
+
+  // The marker is forwarded through `Switch` onto the element it renders.
+  const trace = traceNode("PanelToggle", () => ({ checked, label, disabled }));
 </script>
 
 <Switch
+  {...trace}
   size="sm"
   {checked}
   aria-label={label}

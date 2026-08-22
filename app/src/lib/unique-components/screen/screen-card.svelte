@@ -2,6 +2,7 @@
   import type { Component, Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * One card: a shape, a name, and what qualifies it.
@@ -42,6 +43,9 @@
     children?: Snippet;
   } = $props();
 
+  // Three exclusive roots — anchor, button or div — so every arm carries the marker.
+  const trace = traceNode("ScreenCard", () => ({ title, sub, selected, href }));
+
   const shell = $derived(
     cn(
       "border-border-subtle bg-surface-panel rounded-panel flex flex-col gap-1.5 border p-3 text-start no-underline",
@@ -76,11 +80,12 @@
   tag it can see. The body is a snippet so the two arms cannot drift.
 -->
 {#if href}
-  <a {href} aria-current={selected ? "true" : undefined} class={shell}>
+  <a {...trace} {href} aria-current={selected ? "true" : undefined} class={shell}>
     {@render body()}
   </a>
 {:else if onselect}
   <button
+    {...trace}
     type="button"
     onclick={onselect}
     aria-current={selected ? "true" : undefined}
@@ -89,5 +94,5 @@
     {@render body()}
   </button>
 {:else}
-  <div class={shell}>{@render body()}</div>
+  <div {...trace} class={shell}>{@render body()}</div>
 {/if}

@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * The frame every context view and every inspector lens is built in.
@@ -56,9 +57,11 @@
     children: Snippet;
     class?: string;
   } = $props();
+
+  const trace = traceNode("Panel", () => ({ title }));
 </script>
 
-<section class={cn("flex h-full min-h-0 flex-col", className)}>
+<section {...trace} class={cn("flex h-full min-h-0 flex-col", className)}>
   {#if crumbs}
     {@render crumbs()}
   {/if}

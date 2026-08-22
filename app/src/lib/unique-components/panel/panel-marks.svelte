@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as ToggleGroup from "$lib/simple-components/toggle-group";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Several independent on-or-off options, as one row.
@@ -47,9 +48,13 @@
     flush?: boolean;
     onchange?: (next: string[]) => void;
   } = $props();
+
+  // The marker is forwarded through `ToggleGroup.Root` onto the element it renders.
+  const trace = traceNode("PanelMarks", () => ({ label, value, options, mixed, disabled, flush }));
 </script>
 
 <ToggleGroup.Root
+  {...trace}
   type="multiple"
   bind:value
   {disabled}

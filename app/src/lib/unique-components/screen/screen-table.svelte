@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import * as Table from "$lib/simple-components/table";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * The table eight screens use to list what they hold.
@@ -41,9 +42,11 @@
     /** `ScreenRow`s. */
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenTable", () => ({ columns }));
 </script>
 
-<div class="border-border-subtle rounded-panel overflow-hidden border">
+<div {...trace} class="border-border-subtle rounded-panel overflow-hidden border">
   <Table.Root class="border-collapse">
     <!--
       The registry's header draws the seam under the whole row. Here each

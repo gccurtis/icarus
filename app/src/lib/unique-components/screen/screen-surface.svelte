@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * The scrolling plane a screen's content sits on.
@@ -23,9 +24,12 @@
     children: Snippet;
     class?: string;
   } = $props();
+
+  const trace = traceNode("ScreenSurface", () => ({ wide }));
 </script>
 
 <div
+  {...trace}
   class={cn(
     "flex h-full min-h-0 flex-col gap-5 overflow-y-auto p-6",
     "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",

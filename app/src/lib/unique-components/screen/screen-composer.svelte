@@ -6,6 +6,7 @@
   import { Kbd, KbdGroup } from "$lib/simple-components/kbd";
   import { Textarea } from "$lib/simple-components/textarea";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Where a person writes the thing that gets sent.
@@ -83,6 +84,15 @@
     scope: Snippet;
   } = $props();
 
+  const trace = traceNode("ScreenComposer", () => ({
+    label,
+    value,
+    placeholder,
+    rows,
+    sendLabel,
+    submit
+  }));
+
   /**
    * Which modifier to draw. `Ctrl` on a Mac is wrong and `⌘` everywhere else is
    * worse, and both keys are accepted regardless of what is shown.
@@ -125,6 +135,7 @@
   looks focused.
 -->
 <form
+  {...trace}
   class={cn(
     "border-border-subtle bg-surface-panel rounded-panel flex flex-col gap-2 border p-2",
     "focus-within:border-interactive-border focus-within:ring-interactive-border/40 focus-within:ring-1"

@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * The quiet line under a workspace's content that qualifies it.
@@ -37,9 +38,12 @@
     meta?: string;
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenNote", () => ({ tone, meta }));
 </script>
 
 <div
+  {...trace}
   class={cn(
     "flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1",
     tone === "gap" &&

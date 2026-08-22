@@ -6,7 +6,7 @@
  * builder groups its result rows by — a taxonomy that is scanned rather than
  * operated, which is why it is on the row and not on a filter chip.
  */
-import { read, type Read } from "$mock-capabilities/read";
+import { read, type Read } from "$mock-capabilities/read.svelte";
 
 export type Builtin = {
   readonly id: string;
@@ -85,4 +85,4 @@ const BUILTINS: readonly Builtin[] = [
   }
 ];
 
-export const builtins = (): Read<readonly Builtin[]> => read(BUILTINS);
+export const builtins = (): Read<readonly Builtin[]> => read(BUILTINS, "formula.builtins");

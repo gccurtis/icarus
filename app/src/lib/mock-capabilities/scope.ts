@@ -14,7 +14,7 @@
  * six panels and are the same five numbers everywhere.
  */
 import { RESOURCES, type Resource, type ResourceKind } from "$mock-capabilities/cast";
-import { read, type Read } from "$mock-capabilities/read";
+import { read, type Read } from "$mock-capabilities/read.svelte";
 
 /** Which half of the subtraction a term sits on. There is no third side. */
 export type Side = "include" | "take-out";
@@ -579,97 +579,109 @@ const HITS: readonly SearchHit[] = [
   }
 ];
 
-export const contexts = (): Read<readonly ContextRow[]> => read(CONTEXTS);
+export const contexts = (): Read<readonly ContextRow[]> => read(CONTEXTS, "scope.contexts");
 
 export const context = (contextId: string): Read<ContextRecord> =>
-  read(RECORDS.find((record) => record.id === contextId) ?? RECORDS[0]);
+  read(RECORDS.find((record) => record.id === contextId) ?? RECORDS[0], "scope.context");
 
 export const includeTerms = (contextId: string): Read<readonly ScopeTerm[]> => {
   void contextId;
-  return read(TERMS.filter((term) => term.side === "include"));
+  return read(TERMS.filter((term) => term.side === "include"), "scope.includeTerms");
 };
 
 export const takeOutTerms = (contextId: string): Read<readonly ScopeTerm[]> => {
   void contextId;
-  return read(TERMS.filter((term) => term.side === "take-out"));
+  return read(TERMS.filter((term) => term.side === "take-out"), "scope.takeOutTerms");
 };
 
 export const everythingTerm = (termId: string): Read<EverythingTerm> => {
   void termId;
-  return read({
-    id: "tm-everything",
-    side: "include",
-    label: "Everything in this project",
-    rule: "everything",
-    what: "Including anything created later",
-    matches: 248,
-    unsaved: false,
-    ruleInWords:
-      "Every resource in this project, including anything created after this Context was saved.",
-    indexed: 103,
-    nothingIndexed: 145
-  });
+  return read(
+    {
+      id: "tm-everything",
+      side: "include",
+      label: "Everything in this project",
+      rule: "everything",
+      what: "Including anything created later",
+      matches: 248,
+      unsaved: false,
+      ruleInWords:
+        "Every resource in this project, including anything created after this Context was saved.",
+      indexed: 103,
+      nothingIndexed: 145
+    },
+    "scope.everythingTerm"
+  );
 };
 
 export const contextTerm = (termId: string): Read<ContextRefTerm> => {
   void termId;
-  return read({
-    id: "tm-corpus",
-    side: "include",
-    label: "Regulatory corpus",
-    rule: "context",
-    what: "Another saved Context, at its current contents",
-    matches: 34,
-    unsaved: true,
-    ruleInWords: "Whatever Regulatory corpus contains at the moment this one is read.",
-    referencedId: "cx-corpus",
-    circular: false,
-    chain: ["Everything but drafts", "Regulatory corpus", "Filings"]
-  });
+  return read(
+    {
+      id: "tm-corpus",
+      side: "include",
+      label: "Regulatory corpus",
+      rule: "context",
+      what: "Another saved Context, at its current contents",
+      matches: 34,
+      unsaved: true,
+      ruleInWords: "Whatever Regulatory corpus contains at the moment this one is read.",
+      referencedId: "cx-corpus",
+      circular: false,
+      chain: ["Everything but drafts", "Regulatory corpus", "Filings"]
+    },
+    "scope.contextTerm"
+  );
 };
 
 export const kindTerm = (termId: string): Read<KindTerm> => {
   void termId;
-  return read({
-    id: "tm-templates",
-    side: "take-out",
-    label: "Every template",
-    rule: "kind",
-    what: "By kind",
-    matches: 37,
-    unsaved: true,
-    ruleInWords: "Every resource whose kind is template, whenever this is read.",
-    kind: "template",
-    takesOut: 37,
-    sample: ["Regulatory filing shell", "Board update", "Cost model", "Section divider"]
-  });
+  return read(
+    {
+      id: "tm-templates",
+      side: "take-out",
+      label: "Every template",
+      rule: "kind",
+      what: "By kind",
+      matches: 37,
+      unsaved: true,
+      ruleInWords: "Every resource whose kind is template, whenever this is read.",
+      kind: "template",
+      takesOut: 37,
+      sample: ["Regulatory filing shell", "Board update", "Cost model", "Section divider"]
+    },
+    "scope.kindTerm"
+  );
 };
 
 /** The rule kinds Add offers. A rule keeps matching; a name does not. */
 export const ruleKinds = (): Read<readonly RuleOption[]> =>
-  read([
-    {
-      id: "rk-everything",
-      rule: "everything",
-      title: "Everything in this project",
-      detail: "Live — includes what is made later",
-      live: true
-    },
-    {
-      id: "rk-kind",
-      rule: "kind",
-      title: "Everything of one kind",
-      detail: "All documents, all findings…",
-      live: true
-    },
-    {
-      id: "rk-context",
-      rule: "context",
-      title: "Another saved Context",
-      detail: "At its current contents",
-      live: true
-    }
-  ]);
+  read(
+    [
+      {
+        id: "rk-everything",
+        rule: "everything",
+        title: "Everything in this project",
+        detail: "Live — includes what is made later",
+        live: true
+      },
+      {
+        id: "rk-kind",
+        rule: "kind",
+        title: "Everything of one kind",
+        detail: "All documents, all findings…",
+        live: true
+      },
+      {
+        id: "rk-context",
+        rule: "context",
+        title: "Another saved Context",
+        detail: "At its current contents",
+        live: true
+      }
+    ],
+    "scope.ruleKinds"
+  );
 
 /** Specific things, searched by name. Connectors sit here because a term may name one. */
 export const namedCandidates = (query: string): Read<readonly NamedCandidate[]> => {
@@ -694,29 +706,33 @@ export const namedCandidates = (query: string): Read<readonly NamedCandidate[]> 
   return read(
     needle === ""
       ? all
-      : all.filter((candidate: NamedCandidate) => candidate.name.toLowerCase().includes(needle))
+      : all.filter((candidate: NamedCandidate) => candidate.name.toLowerCase().includes(needle)),
+    "scope.namedCandidates"
   );
 };
 
 export const problemsIn = (contextId: string): Read<readonly ContextProblem[]> => {
   void contextId;
-  return read([
-    {
-      id: "pb-1",
-      title: "One named resource no longer exists",
-      term: "d_88a2",
-      detail: "Kept as written, on Take out. Repairing it silently would hide the term.",
-      tone: "attention"
-    },
-    {
-      id: "pb-2",
-      title: "A connector could not be re-read",
-      term: "SharePoint — Ops Reports",
-      detail:
-        "Authentication expired. Its 312 files resolved from the last successful sync, 6 Aug 2026.",
-      tone: "danger"
-    }
-  ]);
+  return read(
+    [
+      {
+        id: "pb-1",
+        title: "One named resource no longer exists",
+        term: "d_88a2",
+        detail: "Kept as written, on Take out. Repairing it silently would hide the term.",
+        tone: "attention"
+      },
+      {
+        id: "pb-2",
+        title: "A connector could not be re-read",
+        term: "SharePoint — Ops Reports",
+        detail:
+          "Authentication expired. Its 312 files resolved from the last successful sync, 6 Aug 2026.",
+        tone: "danger"
+      }
+    ],
+    "scope.problemsIn"
+  );
 };
 
 /**
@@ -726,32 +742,35 @@ export const problemsIn = (contextId: string): Read<readonly ContextProblem[]> =
  */
 export const unsavedChangesIn = (contextId: string): Read<readonly PendingChange[]> => {
   void contextId;
-  return read([
-    {
-      id: "pc-1",
-      name: "NERC-2025-winter-review.pdf",
-      effect: "added",
-      because: "Regulatory corpus was added to Include"
-    },
-    {
-      id: "pc-2",
-      name: "feeder-12-relay.pdf",
-      effect: "added",
-      because: "Regulatory corpus was added to Include"
-    },
-    {
-      id: "pc-3",
-      name: "Regulatory filing shell",
-      effect: "taken-out",
-      because: "Every template was added to Take out"
-    },
-    {
-      id: "pc-4",
-      name: "Board update",
-      effect: "taken-out",
-      because: "Every template was added to Take out"
-    }
-  ]);
+  return read(
+    [
+      {
+        id: "pc-1",
+        name: "NERC-2025-winter-review.pdf",
+        effect: "added",
+        because: "Regulatory corpus was added to Include"
+      },
+      {
+        id: "pc-2",
+        name: "feeder-12-relay.pdf",
+        effect: "added",
+        because: "Regulatory corpus was added to Include"
+      },
+      {
+        id: "pc-3",
+        name: "Regulatory filing shell",
+        effect: "taken-out",
+        because: "Every template was added to Take out"
+      },
+      {
+        id: "pc-4",
+        name: "Board update",
+        effect: "taken-out",
+        because: "Every template was added to Take out"
+      }
+    ],
+    "scope.unsavedChangesIn"
+  );
 };
 
 /**
@@ -761,7 +780,7 @@ export const unsavedChangesIn = (contextId: string): Read<readonly PendingChange
  */
 export const contentsOf = (contextId: string): Read<readonly ResolvedResource[]> => {
   void contextId;
-  return read(CONTENTS);
+  return read(CONTENTS, "scope.contentsOf");
 };
 
 export const resolvedResource = (
@@ -769,7 +788,10 @@ export const resolvedResource = (
   resourceId: string
 ): Read<ResolvedResource> => {
   void contextId;
-  return read(CONTENTS.find((row) => row.id === resourceId) ?? CONTENTS[0]);
+  return read(
+    CONTENTS.find((row) => row.id === resourceId) ?? CONTENTS[0],
+    "scope.resolvedResource"
+  );
 };
 
 /**
@@ -779,24 +801,24 @@ export const resolvedResource = (
  */
 export const retrievabilityOf = (contextId: string): Read<Retrievability> => {
   void contextId;
-  return read({ contains: 211, indexed: 88, nothingIndexed: 123 });
+  return read({ contains: 211, indexed: 88, nothingIndexed: 123 }, "scope.retrievabilityOf");
 };
 
 export const generatedBlocksUsing = (contextId: string): Read<readonly GeneratedBlock[]> => {
   void contextId;
-  return read(BLOCKS);
+  return read(BLOCKS, "scope.generatedBlocksUsing");
 };
 
 export const generatedBlock = (blockId: string): Read<GeneratedBlock> =>
-  read(BLOCKS.find((block) => block.id === blockId) ?? BLOCKS[0]);
+  read(BLOCKS.find((block) => block.id === blockId) ?? BLOCKS[0], "scope.generatedBlock");
 
 export const latticeNodesIn = (contextId: string): Read<readonly LatticeNode[]> => {
   void contextId;
-  return read(NODES);
+  return read(NODES, "scope.latticeNodesIn");
 };
 
 export const latticeNode = (nodeId: string): Read<LatticeNode> =>
-  read(NODES.find((node) => node.id === nodeId) ?? NODES[0]);
+  read(NODES.find((node) => node.id === nodeId) ?? NODES[0], "scope.latticeNode");
 
 /**
  * What depends on this Context, grouped. Only consumers that can be queried
@@ -805,38 +827,41 @@ export const latticeNode = (nodeId: string): Read<LatticeNode> =>
  */
 export const usedBy = (contextId: string): Read<readonly Dependent[]> => {
   void contextId;
-  return read([
-    {
-      id: "ub-1",
-      group: "Personas",
-      name: "Grid Analyst",
-      detail: "What it can look up"
-    },
-    {
-      id: "ub-2",
-      group: "Personas",
-      name: "Filing Editor",
-      detail: "What it can look up"
-    },
-    {
-      id: "ub-3",
-      group: "Prompt blocks",
-      name: "Q3 Resilience Memo · page 2",
-      detail: "Outage summary"
-    },
-    {
-      id: "ub-4",
-      group: "Prompt blocks",
-      name: "Storm Hardening Options · slide 3",
-      detail: "Storm precedent brief"
-    },
-    {
-      id: "ub-5",
-      group: "Prompt blocks",
-      name: "Regulatory Filing Draft · section 4",
-      detail: "Reliability section draft"
-    }
-  ]);
+  return read(
+    [
+      {
+        id: "ub-1",
+        group: "Personas",
+        name: "Grid Analyst",
+        detail: "What it can look up"
+      },
+      {
+        id: "ub-2",
+        group: "Personas",
+        name: "Filing Editor",
+        detail: "What it can look up"
+      },
+      {
+        id: "ub-3",
+        group: "Prompt blocks",
+        name: "Q3 Resilience Memo · page 2",
+        detail: "Outage summary"
+      },
+      {
+        id: "ub-4",
+        group: "Prompt blocks",
+        name: "Storm Hardening Options · slide 3",
+        detail: "Storm precedent brief"
+      },
+      {
+        id: "ub-5",
+        group: "Prompt blocks",
+        name: "Regulatory Filing Draft · section 4",
+        detail: "Reliability section draft"
+      }
+    ],
+    "scope.usedBy"
+  );
 };
 
 /**
@@ -848,8 +873,8 @@ export const usedBy = (contextId: string): Read<readonly Dependent[]> => {
 export const searchIn = (contextId: string, query: string): Read<readonly SearchHit[]> => {
   void contextId;
   void query;
-  return read(HITS);
+  return read(HITS, "scope.searchIn");
 };
 
 export const searchHit = (hitId: string): Read<SearchHit> =>
-  read(HITS.find((hit) => hit.id === hitId) ?? HITS[0]);
+  read(HITS.find((hit) => hit.id === hitId) ?? HITS[0], "scope.searchHit");

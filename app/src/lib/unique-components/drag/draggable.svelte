@@ -5,6 +5,7 @@
   import { Button } from "$lib/simple-components/button";
   import * as DropdownMenu from "$lib/simple-components/dropdown-menu";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Something you can pick up and put somewhere.
@@ -63,6 +64,8 @@
     children: Snippet;
   } = $props();
 
+  const trace = traceNode("Draggable", () => ({ id, label, destinations, disabled }));
+
   const movable = $derived(!disabled && destinations.length > 0 && onplace !== undefined);
 
   let lifted = $state(false);
@@ -111,6 +114,7 @@
   with nothing to announce.
 -->
 <div
+  {...trace}
   role="group"
   draggable={movable}
   aria-label={movable ? `${label} — draggable` : label}

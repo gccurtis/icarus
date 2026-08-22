@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
+
   /**
    * A row of controls inside a section, wrapping rather than overflowing.
    *
@@ -9,6 +11,8 @@
    * controls behind a gesture nobody makes, and truncation hides them entirely.
    */
   let { children }: { children: Snippet } = $props();
+
+  const trace = traceNode("PanelActions", () => ({}));
 </script>
 
-<div class="flex flex-wrap gap-1 px-3">{@render children()}</div>
+<div {...trace} class="flex flex-wrap gap-1 px-3">{@render children()}</div>

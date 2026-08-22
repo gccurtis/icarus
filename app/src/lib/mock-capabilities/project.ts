@@ -8,7 +8,7 @@
  * doors rather than a single blob.
  */
 import { PEOPLE, PROJECT, RESOURCES, type Person, type Resource } from "$mock-capabilities/cast";
-import { read, type Read } from "$mock-capabilities/read";
+import { read, type Read } from "$mock-capabilities/read.svelte";
 
 export type ProjectRecord = {
   readonly id: string;
@@ -94,11 +94,11 @@ export const project = (): Read<ProjectRecord> =>
     createdAt: PROJECT.createdAt,
     archived: false,
     counts: { resources: RESOURCES.length, people: PEOPLE.length }
-  });
+  }, "project.project");
 
-export const resources = (): Read<readonly Resource[]> => read(RESOURCES);
+export const resources = (): Read<readonly Resource[]> => read(RESOURCES, "project.resources");
 
-export const people = (): Read<readonly Person[]> => read(PEOPLE);
+export const people = (): Read<readonly Person[]> => read(PEOPLE, "project.people");
 
 export const activity = (): Read<readonly ActivityEntry[]> =>
   read([
@@ -142,7 +142,7 @@ export const activity = (): Read<readonly ActivityEntry[]> =>
       day: "Earlier",
       at: "4 days ago"
     }
-  ]);
+  ], "project.activity");
 
 export const tasks = (): Read<readonly TaskRow[]> =>
   read([
@@ -178,7 +178,7 @@ export const tasks = (): Read<readonly TaskRow[]> =>
       detail: "18 findings clustered",
       age: "2d"
     }
-  ]);
+  ], "project.tasks");
 
 export const health = (): Read<readonly HealthIssue[]> =>
   read([
@@ -203,7 +203,7 @@ export const health = (): Read<readonly HealthIssue[]> =>
       detail: "Could not start — the agent it asks for was deleted",
       tone: "danger"
     }
-  ]);
+  ], "project.health");
 
 export const savedContexts = (): Read<readonly SavedContext[]> =>
   read([
@@ -220,7 +220,7 @@ export const savedContexts = (): Read<readonly SavedContext[]> =>
       resolves: 9
     },
     { id: "sc-3", name: "Accepted findings", rule: "Findings, accepted", resolves: 18 }
-  ]);
+  ], "project.savedContexts");
 
 export const templates = (): Read<readonly TemplateRow[]> =>
   read([
@@ -234,7 +234,7 @@ export const templates = (): Read<readonly TemplateRow[]> =>
     { id: "tp-2", name: "Board update", makes: "Slide deck", scope: "Project", variables: 2 },
     { id: "tp-3", name: "Cost model", makes: "Spreadsheet", scope: "Global", variables: 0 },
     { id: "tp-4", name: "Section divider", makes: "Slide", scope: "Global", variables: 1 }
-  ]);
+  ], "project.templates");
 
 export const variables = (): Read<readonly Variable[]> =>
   read([
@@ -297,7 +297,7 @@ export const variables = (): Read<readonly Variable[]> =>
       value: "Outages!A1:D400",
       order: 7
     }
-  ]);
+  ], "project.variables");
 
 /** The three things Tables covers, the five Values does, and Functions alone. */
 export const variableFamily = (type: Variable["type"]): "tables" | "values" | "functions" =>

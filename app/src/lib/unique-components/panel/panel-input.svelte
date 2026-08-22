@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Input } from "$lib/simple-components/input";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A field that is not editing anything yet.
@@ -44,9 +45,18 @@
      */
     onenter?: (value: string) => void;
   } = $props();
+
+  const trace = traceNode("PanelInput", () => ({
+    label,
+    value,
+    placeholder,
+    mono,
+    disabled,
+    flush
+  }));
 </script>
 
-<div class={cn("flex", flush ? "px-0" : "px-3")}>
+<div {...trace} class={cn("flex", flush ? "px-0" : "px-3")}>
   <Input
     bind:value
     {placeholder}

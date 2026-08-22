@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/simple-components/button";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A name inside a sentence or a field that opens what it names.
@@ -32,9 +33,13 @@
     title?: string;
     onselect: () => void;
   } = $props();
+
+  // The marker is forwarded through `Button` onto the element it renders.
+  const trace = traceNode("PanelLink", () => ({ label, title }));
 </script>
 
 <Button
+  {...trace}
   variant="link"
   {title}
   onclick={onselect}

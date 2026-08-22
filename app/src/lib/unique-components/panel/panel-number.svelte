@@ -4,6 +4,7 @@
 
   import * as InputGroup from "$lib/simple-components/input-group";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A number, with its unit and a way to step it.
@@ -61,6 +62,17 @@
     onchange?: (next: number) => void;
   } = $props();
 
+  const trace = traceNode("PanelNumber", () => ({
+    label,
+    value,
+    unit,
+    min,
+    max,
+    step,
+    disabled,
+    flush
+  }));
+
   const inert = $derived(disabled || onchange === undefined);
 
   /**
@@ -110,7 +122,7 @@
   const atMax = $derived(max !== undefined && value >= max);
 </script>
 
-<div class={cn("flex", flush ? "px-0" : "px-3")}>
+<div {...trace} class={cn("flex", flush ? "px-0" : "px-3")}>
   <InputGroup.Root class="h-7">
     <!--
       The native spinners are suppressed because this draws its own: two sets of

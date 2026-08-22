@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Carousel from "$lib/simple-components/carousel";
 	import { cn } from "$lib/simple-components/utils";
+	import { traceNode } from "$lib/trace/trace.svelte";
 	import type { Snippet } from "svelte";
 
 	let {
@@ -8,6 +9,9 @@
 		gap = 16,
 		children,
 	}: { class?: string; gap?: number; children?: Snippet } = $props();
+
+	// The root is `Carousel.Item`, a component rather than an element, so nothing marks the DOM.
+	const trace = traceNode("CarouselShelfItem", () => ({ gap }));
 </script>
 
 <!--

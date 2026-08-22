@@ -1,6 +1,7 @@
 <script lang="ts">
   import { AreaChart, BarChart, Bars, Labels, LineChart, PieChart, ScatterChart, Spline } from "layerchart";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
   import { seriesColor } from "$lib/unique-components/chart/palette";
 
   /**
@@ -89,6 +90,20 @@
     /** Which series the pointer is over. Bindable, so a table can share it. */
     hovered?: string | undefined;
   } = $props();
+
+  const trace = traceNode("Chart", () => ({
+    kind,
+    data,
+    x,
+    series,
+    layout,
+    orientation,
+    labels,
+    lineSeries,
+    height,
+    legend,
+    hovered
+  }));
 
   const resolved = $derived(
     series.map((entry, index) => ({
@@ -223,7 +238,7 @@
   {/if}
 {/snippet}
 
-<div bind:this={host} class="text-ink-muted w-full" style="height: {height}px">
+<div {...trace} bind:this={host} class="text-ink-muted w-full" style="height: {height}px">
   {#if kind === "bar" || kind === "mixed"}
     <BarChart
       {data}

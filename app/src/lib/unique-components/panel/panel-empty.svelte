@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   import PanelButton from "./panel-button.svelte";
 
@@ -58,9 +59,12 @@
     /** Drop the panel gutter, for an empty state inside an already-padded section. */
     flush?: boolean;
   } = $props();
+
+  const trace = traceNode("PanelEmpty", () => ({ kind, title, action, flush }));
 </script>
 
 <div
+  {...trace}
   class={cn(
     "flex flex-col items-start gap-1.5 py-2",
     flush ? "mx-0" : "mx-3",

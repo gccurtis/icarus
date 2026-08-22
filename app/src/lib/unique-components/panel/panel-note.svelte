@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A line of explanation under what it explains.
@@ -23,9 +24,12 @@
     tone?: "muted" | "gap";
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("PanelNote", () => ({ tone }));
 </script>
 
 <p
+  {...trace}
   class={cn(
     "text-caption m-0 px-3 py-1",
     tone === "muted" && "text-ink-muted",

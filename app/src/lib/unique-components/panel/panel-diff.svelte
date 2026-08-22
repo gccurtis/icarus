@@ -3,6 +3,7 @@
   import Plus from "@lucide/svelte/icons/plus";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Two versions of one piece of text, with what changed marked.
@@ -57,6 +58,16 @@
     /** Drop the panel gutter, for a diff inside an already-padded region. */
     flush?: boolean;
   } = $props();
+
+  const trace = traceNode("PanelDiff", () => ({
+    before,
+    after,
+    beforeLabel,
+    afterLabel,
+    layout,
+    mono,
+    flush
+  }));
 
   /**
    * Words, and the runs of space between them kept as pieces of their own. The
@@ -183,6 +194,7 @@
 {/snippet}
 
 <div
+  {...trace}
   class={cn(
     "gap-2",
     layout === "side" ? "grid grid-cols-2 items-start" : "flex flex-col",

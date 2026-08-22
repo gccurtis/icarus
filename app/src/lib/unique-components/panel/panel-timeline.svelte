@@ -3,6 +3,7 @@
 
   import * as Avatar from "$lib/simple-components/avatar";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Events on a rail, in the order they happened.
@@ -86,6 +87,9 @@
     empty?: string;
   } = $props();
 
+  // Two roots, but only ever one of them: the marker goes on both branches.
+  const trace = traceNode("PanelTimeline", () => ({ entries, label, size, flush, empty }));
+
   const MARK: Record<Tone, string> = {
     default: "text-ink-muted",
     success: "text-success-text",
@@ -114,9 +118,9 @@
 </script>
 
 {#if entries.length === 0}
-  <p class={cn("text-caption text-ink-muted m-0", flush ? "px-0" : "px-3")}>{empty}</p>
+  <p {...trace} class={cn("text-caption text-ink-muted m-0", flush ? "px-0" : "px-3")}>{empty}</p>
 {:else}
-  <ol aria-label={label} class={cn("m-0 flex list-none flex-col p-0", flush ? "px-0" : "px-3")}>
+  <ol {...trace} aria-label={label} class={cn("m-0 flex list-none flex-col p-0", flush ? "px-0" : "px-3")}>
     {#each entries as entry, index (entry.id)}
       {@const last = index === entries.length - 1}
       {@const tone = MARK[entry.tone ?? "default"]}

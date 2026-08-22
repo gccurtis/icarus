@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * The colours a thing has, listed.
@@ -40,6 +41,8 @@
     /** `PanelSwatch`es. */
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("PanelSwatches", () => ({ label, layout, flush }));
 </script>
 
 <!--
@@ -47,6 +50,7 @@
   semantics in Safari, and this is a list whose length is the point.
 -->
 <ul
+  {...trace}
   role="list"
   aria-label={label}
   class={cn(

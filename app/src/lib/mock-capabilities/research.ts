@@ -12,7 +12,7 @@
  * proposal is editable and an acceptance is not.
  */
 import { actorName, type AgentId } from "$mock-capabilities/cast";
-import { read, type Read } from "$mock-capabilities/read";
+import { read, type Read } from "$mock-capabilities/read.svelte";
 
 /** The three jobs a thread can have, chosen when it starts. */
 export type ThreadMode = "Discover" | "Question" | "Hypothesis";
@@ -895,43 +895,49 @@ const BEARINGS: Record<string, readonly Bearing[]> = {
 
 /** The thread itself: its job, its agent, and what it has produced. */
 export const thread = (threadId: string): Read<ResearchThread> =>
-  read(THREADS.find((candidate) => candidate.id === threadId) ?? THREADS[0]);
+  read(THREADS.find((candidate) => candidate.id === threadId) ?? THREADS[0], "research.thread");
 
 export const threadsIn = (projectId: string): Read<readonly ResearchThread[]> => {
   void projectId;
-  return read(THREADS);
+  return read(THREADS, "research.threadsIn");
 };
 
 /** Adjacent enquiries, so switching does not require the library subscreen. */
 export const otherThreads = (threadId: string): Read<readonly ResearchThread[]> =>
-  read(THREADS.filter((candidate) => candidate.id !== threadId));
+  read(THREADS.filter((candidate) => candidate.id !== threadId), "research.otherThreads");
 
 /** The turn the screen is anchored to. Everything on the centre belongs to this one. */
 export const currentTurn = (threadId: string): Read<Turn> => {
   void threadId;
-  return read(TURNS[0]);
+  return read(TURNS[0], "research.currentTurn");
 };
 
 export const turnsIn = (threadId: string): Read<readonly Turn[]> => {
   void threadId;
-  return read(TURNS);
+  return read(TURNS, "research.turnsIn");
 };
 
 export const questionsIn = (projectId: string): Read<readonly Question[]> => {
   void projectId;
-  return read(QUESTIONS);
+  return read(QUESTIONS, "research.questionsIn");
 };
 
 export const question = (questionId: string): Read<Question> =>
-  read(QUESTIONS.find((candidate) => candidate.id === questionId) ?? QUESTIONS[1]);
+  read(
+    QUESTIONS.find((candidate) => candidate.id === questionId) ?? QUESTIONS[1],
+    "research.question"
+  );
 
 export const hypothesesIn = (projectId: string): Read<readonly Hypothesis[]> => {
   void projectId;
-  return read(HYPOTHESES);
+  return read(HYPOTHESES, "research.hypothesesIn");
 };
 
 export const hypothesis = (hypothesisId: string): Read<Hypothesis> =>
-  read(HYPOTHESES.find((candidate) => candidate.id === hypothesisId) ?? HYPOTHESES[0]);
+  read(
+    HYPOTHESES.find((candidate) => candidate.id === hypothesisId) ?? HYPOTHESES[0],
+    "research.hypothesis"
+  );
 
 /**
  * What bears on one question or one hypothesis. One door for both because the
@@ -939,26 +945,35 @@ export const hypothesis = (hypothesisId: string): Read<Hypothesis> =>
  * the hypothesis lens by `bearing`.
  */
 export const bearingOn = (targetId: string): Read<readonly Bearing[]> =>
-  read(BEARINGS[targetId] ?? []);
+  read(BEARINGS[targetId] ?? [], "research.bearingOn");
 
 /** What the current turn came up with, awaiting a decision. */
 export const proposedIn = (turnId: string): Read<readonly Finding[]> =>
-  read(FINDINGS.filter((finding) => finding.state === "proposed" && finding.turnId === turnId));
+  read(
+    FINDINGS.filter((finding) => finding.state === "proposed" && finding.turnId === turnId),
+    "research.proposedIn"
+  );
 
 export const acceptedIn = (threadId: string): Read<readonly Finding[]> =>
-  read(FINDINGS.filter((finding) => finding.state === "accepted" && finding.threadId === threadId));
+  read(
+    FINDINGS.filter((finding) => finding.state === "accepted" && finding.threadId === threadId),
+    "research.acceptedIn"
+  );
 
 /** What the project already knows, established somewhere other than here. */
 export const acceptedElsewhere = (threadId: string): Read<readonly Finding[]> =>
-  read(FINDINGS.filter((finding) => finding.state === "accepted" && finding.threadId !== threadId));
+  read(
+    FINDINGS.filter((finding) => finding.state === "accepted" && finding.threadId !== threadId),
+    "research.acceptedElsewhere"
+  );
 
 export const finding = (findingId: string): Read<Finding> =>
-  read(FINDINGS.find((candidate) => candidate.id === findingId) ?? FINDINGS[0]);
+  read(FINDINGS.find((candidate) => candidate.id === findingId) ?? FINDINGS[0], "research.finding");
 
 /** What this answer stands on. */
 export const sourcesForTurn = (turnId: string): Read<readonly Source[]> => {
   const ids = SOURCES_BY_TURN[turnId] ?? [];
-  return read(SOURCES.filter((source) => ids.includes(source.id)));
+  return read(SOURCES.filter((source) => ids.includes(source.id)), "research.sourcesForTurn");
 };
 
 /**
@@ -967,11 +982,11 @@ export const sourcesForTurn = (turnId: string): Read<readonly Source[]> => {
  */
 export const sourcesInThread = (threadId: string): Read<readonly Source[]> => {
   void threadId;
-  return read(SOURCES);
+  return read(SOURCES, "research.sourcesInThread");
 };
 
 export const source = (sourceId: string): Read<Source> =>
-  read(SOURCES.find((candidate) => candidate.id === sourceId) ?? SOURCES[0]);
+  read(SOURCES.find((candidate) => candidate.id === sourceId) ?? SOURCES[0], "research.source");
 
 /** The agent's steps, grouped by turn, newest first. */
 export const traceIn = (threadId: string): Read<readonly TurnTrace[]> => {
@@ -981,23 +996,27 @@ export const traceIn = (threadId: string): Read<readonly TurnTrace[]> => {
       turnId: turn.id,
       heading: index === 0 ? `This turn · ${turn.at}` : turn.at,
       calls: CALLS.filter((call: ToolCall) => call.turnId === turn.id)
-    }))
+    })),
+    "research.traceIn"
   );
 };
 
 export const toolCall = (callId: string): Read<ToolCall> =>
-  read(CALLS.find((candidate) => candidate.id === callId) ?? CALLS[0]);
+  read(CALLS.find((candidate) => candidate.id === callId) ?? CALLS[0], "research.toolCall");
 
 /** Set once for the thread: there is no per-turn scope switch. */
 export const searchScope = (threadId: string): Read<ThreadScope> => {
   void threadId;
-  return read({
-    name: "Field reports 2024–25",
-    resources: 96,
-    web: true,
-    resolvedAt: "10:21:04",
-    indexed: 88,
-    withoutMaterial: 8,
-    unbounded: false
-  });
+  return read(
+    {
+      name: "Field reports 2024–25",
+      resources: 96,
+      web: true,
+      resolvedAt: "10:21:04",
+      indexed: 88,
+      withoutMaterial: 8,
+      unbounded: false
+    },
+    "research.searchScope"
+  );
 };

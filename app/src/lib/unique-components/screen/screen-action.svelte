@@ -2,6 +2,7 @@
   import type { Component } from "svelte";
 
   import { Button } from "$lib/simple-components/button";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * The control in a screen's header: the one thing this screen makes.
@@ -39,9 +40,13 @@
     title?: string;
     onclick?: () => void;
   } = $props();
+
+  // `Button` forwards its rest props, so the marker lands on the element it renders.
+  const trace = traceNode("ScreenAction", () => ({ label, disabled, title }));
 </script>
 
 <Button
+  {...trace}
   size="default"
   {disabled}
   {title}

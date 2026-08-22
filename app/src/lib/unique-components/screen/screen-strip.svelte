@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
+
   /**
    * A row of cards you scroll, rather than one you step through.
    *
@@ -36,6 +38,8 @@
     /** `ScreenCard`s, directly. */
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenStrip", () => ({ width, label }));
 </script>
 
 <!--
@@ -48,6 +52,7 @@
 -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
+  {...trace}
   tabindex="0"
   role="group"
   aria-label={label}

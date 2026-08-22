@@ -5,6 +5,7 @@
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   import { gridSurface } from "./screen-grid.svelte";
 
@@ -66,6 +67,8 @@
     children?: Snippet;
   } = $props();
 
+  const trace = traceNode("ScreenGridCell", () => ({ address, align, state, note }));
+
   const grid = gridSurface();
 
   const current = $derived(grid?.address === address);
@@ -111,6 +114,7 @@
   sheet to a single tab stop.
 -->
 <td
+  {...trace}
   role="gridcell"
   data-address={address}
   tabindex={current ? 0 : -1}

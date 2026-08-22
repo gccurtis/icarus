@@ -40,6 +40,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A sheet: lettered columns, numbered rows, and a cell you can name.
@@ -104,6 +105,8 @@
     /** Exactly one `ScreenGridCell`, for every coordinate the grid asks for. */
     cell: Snippet<[GridAddress]>;
   } = $props();
+
+  const trace = traceNode("ScreenGrid", () => ({ label, columns, rows, address, range }));
 
   /** One treatment for all four headings, so the corner cannot drift from them. */
   const HEAD =
@@ -233,7 +236,11 @@
   const cursor = $derived(at(address));
 </script>
 
-<div bind:this={surface} class="surface border-border-subtle rounded-panel bg-surface-panel border">
+<div
+  {...trace}
+  bind:this={surface}
+  class="surface border-border-subtle rounded-panel bg-surface-panel border"
+>
   <table
     role="grid"
     aria-label={label}

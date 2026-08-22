@@ -6,6 +6,7 @@
 
   import * as Alert from "$lib/simple-components/alert";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   type Tone = "attention" | "danger" | "intelligence";
 
@@ -56,6 +57,9 @@
     | (Common & { children: Snippet; actions?: Snippet })
     | (Common & { children?: Snippet; actions: Snippet }) = $props();
 
+  // The marker is forwarded through `Alert.Root` onto the element it renders.
+  const trace = traceNode("PanelBanner", () => ({ title, tone }));
+
   /**
    * A different shape per tone, not only a different colour. A reader who
    * cannot separate the amber from the red still separates a triangle from a
@@ -76,7 +80,7 @@
   const Icon = $derived(ICON[tone]);
 </script>
 
-<Alert.Root class={cn("rounded-panel mx-3 items-start gap-x-2 p-2.5", TONE[tone])}>
+<Alert.Root {...trace} class={cn("rounded-panel mx-3 items-start gap-x-2 p-2.5", TONE[tone])}>
   <Icon aria-hidden="true" />
   <Alert.Title class="text-body-sm font-medium">{title}</Alert.Title>
   {#if children}

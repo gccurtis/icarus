@@ -2,6 +2,7 @@
   import * as Avatar from "$lib/simple-components/avatar";
   import { Button } from "$lib/simple-components/button";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Several actors at once, as faces rather than as a list.
@@ -36,6 +37,8 @@
     onoverflow?: () => void;
   } = $props();
 
+  const trace = traceNode("PanelFaces", () => ({ actors, limit, label }));
+
   const shown = $derived(actors.slice(0, limit));
   const hidden = $derived(Math.max(0, actors.length - limit));
 
@@ -54,7 +57,7 @@
       .join("");
 </script>
 
-<div class="flex items-center gap-1 px-3" role="group" aria-label={label}>
+<div {...trace} class="flex items-center gap-1 px-3" role="group" aria-label={label}>
   <Avatar.Group class="-space-x-1.5">
     {#each shown as actor (actor.id)}
       <Avatar.Root

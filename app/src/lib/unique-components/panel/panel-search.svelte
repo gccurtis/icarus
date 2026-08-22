@@ -3,6 +3,7 @@
 
   import { Input } from "$lib/simple-components/input";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A filter, and the things it filters, as one component.
@@ -61,6 +62,16 @@
     children: Snippet;
   } = $props();
 
+  const trace = traceNode("PanelSearch", () => ({
+    placeholder,
+    title,
+    matched,
+    total,
+    empty,
+    flush,
+    value
+  }));
+
   const count = $derived(
     matched !== undefined && total !== undefined ? `${matched} of ${total}` : undefined
   );
@@ -69,7 +80,7 @@
   const nothing = $derived(matched === 0);
 </script>
 
-<section class="flex flex-col">
+<section {...trace} class="flex flex-col">
   {#if title || count}
     <div class="flex items-center gap-1.5 px-3 pt-1.5">
       {#if title}

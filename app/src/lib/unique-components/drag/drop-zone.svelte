@@ -5,6 +5,7 @@
   import { Button } from "$lib/simple-components/button";
   import * as DropdownMenu from "$lib/simple-components/dropdown-menu";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A place something can be put.
@@ -54,6 +55,8 @@
     children?: Snippet;
   } = $props();
 
+  const trace = traceNode("DropZone", () => ({ label, empty, count, additions }));
+
   let over = $state(false);
 
   const idOf = (event: DragEvent) =>
@@ -83,6 +86,7 @@
 </script>
 
 <div
+  {...trace}
   role="group"
   aria-label={label}
   ondragover={over_}

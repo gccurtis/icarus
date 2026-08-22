@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A named band of the plane: a label, what it holds, and nothing else.
@@ -43,6 +44,8 @@
     children: Snippet;
   } = $props();
 
+  const trace = traceNode("ScreenGroup", () => ({ label, tone, count }));
+
   const TONE: Record<NonNullable<typeof tone>, string> = {
     default: "text-ink-muted",
     success: "text-success-text",
@@ -52,7 +55,7 @@
   };
 </script>
 
-<section class="flex min-w-0 flex-col gap-2">
+<section {...trace} class="flex min-w-0 flex-col gap-2">
   <div class="flex flex-wrap items-center gap-2">
     <span class={cn("text-caption font-semibold tracking-wide uppercase", TONE[tone])}>
       {label}

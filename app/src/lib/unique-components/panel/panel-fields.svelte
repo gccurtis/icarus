@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
+
   /**
    * A block of label-and-value pairs.
    *
@@ -15,8 +17,10 @@
    * which is `PanelField`'s `stacked`.
    */
   let { children }: { children: Snippet } = $props();
+
+  const trace = traceNode("PanelFields", () => ({}));
 </script>
 
-<dl class="m-0 grid grid-cols-[minmax(0,5rem)_minmax(0,1fr)] items-baseline gap-x-2 gap-y-1.5 px-3">
+<dl {...trace} class="m-0 grid grid-cols-[minmax(0,5rem)_minmax(0,1fr)] items-baseline gap-x-2 gap-y-1.5 px-3">
   {@render children()}
 </dl>

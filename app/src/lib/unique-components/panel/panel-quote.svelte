@@ -3,6 +3,7 @@
 
   import PanelLink from "$lib/unique-components/panel/panel-link.svelte";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Content quoted verbatim from somewhere else.
@@ -52,9 +53,12 @@
     onopen?: () => void;
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("PanelQuote", () => ({ tone, source, sourceLabel }));
 </script>
 
 <figure
+  {...trace}
   class={cn(
     "text-body-sm text-ink-secondary rounded-e-control mx-3 my-0 flex flex-col gap-1 border-s-2 py-1.5 ps-2 pe-2",
     tone === "quoted" && "border-border-strong bg-surface-panel-hover",

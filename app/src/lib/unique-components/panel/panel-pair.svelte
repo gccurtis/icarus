@@ -2,6 +2,7 @@
   import X from "@lucide/svelte/icons/x";
 
   import { Button } from "$lib/simple-components/button";
+  import { traceNode } from "$lib/trace/trace.svelte";
   import PanelEditableText from "$lib/unique-components/panel/panel-editable-text.svelte";
 
   /**
@@ -39,9 +40,12 @@
     /** Absent means this pair cannot be removed — a required one, say. */
     onremove?: () => void;
   } = $props();
+
+  // Three roots — the two cells and the remove cell — so the marker goes on the first.
+  const trace = traceNode("PanelPair", () => ({ name, value, placeholder, mono }));
 </script>
 
-<span class="min-w-0">
+<span {...trace} class="min-w-0">
   <PanelEditableText
     value={name}
     label="Name of this pair"

@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
+
   /**
    * A responsive grid of cards, for the libraries whose contents are shapes.
    *
@@ -17,8 +19,14 @@
     min?: string;
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenCards", () => ({ min }));
 </script>
 
-<div class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax({min}, 1fr))">
+<div
+  {...trace}
+  class="grid gap-3"
+  style="grid-template-columns: repeat(auto-fill, minmax({min}, 1fr))"
+>
   {@render children()}
 </div>

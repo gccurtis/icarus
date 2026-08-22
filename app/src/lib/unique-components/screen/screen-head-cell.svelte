@@ -3,6 +3,7 @@
 
   import * as Table from "$lib/simple-components/table";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * One heading cell inside a `ScreenTable`'s own `head` snippet.
@@ -32,9 +33,13 @@
     scope?: "col" | "colgroup";
     children: Snippet;
   } = $props();
+
+  // `Table.Head` forwards its rest props, so the marker lands on the `<th>` it renders.
+  const trace = traceNode("ScreenHeadCell", () => ({ span, rows, align, scope }));
 </script>
 
 <Table.Head
+  {...trace}
   {scope}
   colspan={span}
   rowspan={rows}

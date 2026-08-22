@@ -5,6 +5,7 @@
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * One figure, and the word for what it counts.
@@ -45,6 +46,8 @@
     tone?: "default" | "success" | "attention" | "danger";
   } = $props();
 
+  const trace = traceNode("PanelStat", () => ({ value, label, tone }));
+
   /** Figure and label alike: a toned stat is one claim, not a coloured number. */
   const INK: Record<NonNullable<typeof tone>, string> = {
     default: "text-ink-primary",
@@ -71,7 +74,7 @@
   Figure before label in the source as well as on the screen, so it is read as
   "41 tasks" rather than as a heading and a number.
 -->
-<div class={cn("flex min-w-0 flex-col gap-0.5", INK[tone])}>
+<div {...trace} class={cn("flex min-w-0 flex-col gap-0.5", INK[tone])}>
   <span class="text-body flex items-center gap-1 font-semibold tabular-nums">
     {#if Mark}
       <Mark size={12} aria-hidden="true" />

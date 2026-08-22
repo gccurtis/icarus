@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A colour, chosen from the ones this project actually has.
@@ -44,9 +45,12 @@
     flush?: boolean;
     onchange?: (next: string) => void;
   } = $props();
+
+  const trace = traceNode("PanelColor", () => ({ label, value, options, mixed, disabled, flush }));
 </script>
 
 <div
+  {...trace}
   role="radiogroup"
   aria-label={label}
   class={cn("flex flex-wrap items-center gap-1", flush ? "px-0" : "px-3")}

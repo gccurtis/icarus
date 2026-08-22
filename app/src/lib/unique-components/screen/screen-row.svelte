@@ -3,6 +3,7 @@
 
   import * as Table from "$lib/simple-components/table";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * One row of a `ScreenTable`.
@@ -24,9 +25,13 @@
     selected?: boolean;
     children: Snippet;
   } = $props();
+
+  // `Table.Row` forwards its rest props, so the marker lands on the `<tr>` it renders.
+  const trace = traceNode("ScreenRow", () => ({ selected }));
 </script>
 
 <Table.Row
+  {...trace}
   data-state={selected ? "selected" : undefined}
   class={cn(
     "border-b-0",

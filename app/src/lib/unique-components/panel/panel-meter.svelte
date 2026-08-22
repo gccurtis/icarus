@@ -5,6 +5,7 @@
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A proportion that is a fact rather than a promise.
@@ -63,6 +64,8 @@
     flush?: boolean;
   } = $props();
 
+  const trace = traceNode("PanelMeter", () => ({ label, detail, value, max, tone, flush }));
+
   /**
    * Clamped, because the caller's two numbers come from two queries and a
    * denominator that has moved is a bar that overshoots its own track.
@@ -97,7 +100,7 @@
   const Mark = $derived(MARK[tone]);
 </script>
 
-<div class={cn("flex flex-col gap-1", flush ? "px-0" : "px-3")}>
+<div {...trace} class={cn("flex flex-col gap-1", flush ? "px-0" : "px-3")}>
   <div class="flex items-baseline justify-between gap-2">
     <span class="text-caption text-ink-secondary truncate">{label}</span>
     <span class={cn("text-caption flex shrink-0 items-center gap-1 tabular-nums", INK[tone])}>

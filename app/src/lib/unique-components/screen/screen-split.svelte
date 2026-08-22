@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
+
   /**
    * Two halves and the operation between them.
    *
@@ -46,9 +48,11 @@
     /** The second half, which the operation is applied with. */
     right: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenSplit", () => ({ operator }));
 </script>
 
-<div class="split">
+<div {...trace} class="split">
   <div class="half-left">{@render left()}</div>
 
   <div class="operator">

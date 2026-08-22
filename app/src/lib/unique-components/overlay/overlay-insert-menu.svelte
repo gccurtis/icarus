@@ -31,6 +31,7 @@
   import * as Command from "$lib/simple-components/command";
   import * as Popover from "$lib/simple-components/popover";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A filtered list that puts something into what you are writing.
@@ -112,6 +113,18 @@
     /** Rendered through the primitive's child snippet, so it stays one element. */
     trigger?: Snippet<[{ props: Record<string, unknown> }]>;
   } = $props();
+
+  // The root is `Popover.Root`, a component rather than an element, so nothing marks the DOM.
+  const trace = traceNode("OverlayInsertMenu", () => ({
+    open,
+    entries,
+    label,
+    placeholder,
+    empty,
+    side,
+    align,
+    mono
+  }));
 
   let search = $state("");
   let highlighted = $state("");

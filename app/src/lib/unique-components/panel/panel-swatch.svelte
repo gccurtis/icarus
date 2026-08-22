@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * One colour, named, in a listing of colours.
@@ -55,6 +56,8 @@
      */
     onselect?: () => void;
   } = $props();
+
+  const trace = traceNode("PanelSwatch", () => ({ name, color, value, selected }));
 </script>
 
 {#snippet body()}
@@ -74,7 +77,7 @@
   {/if}
 {/snippet}
 
-<li class="list-none">
+<li {...trace} class="list-none">
   <!--
     Branched rather than a computed tag: a swatch that opens nothing must not be
     in the tab order, and Svelte only checks the accessibility of a tag it sees.

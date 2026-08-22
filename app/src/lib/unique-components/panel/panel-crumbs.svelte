@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Breadcrumb from "$lib/simple-components/breadcrumb";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Where the inspected thing sits, and the way back up.
@@ -30,9 +31,12 @@
     trail: readonly { label: string; key?: string }[];
     onnavigate: (key: string) => void;
   } = $props();
+
+  // The marker is forwarded through `Breadcrumb.Root` onto the element it renders.
+  const trace = traceNode("PanelCrumbs", () => ({ trail }));
 </script>
 
-<Breadcrumb.Root class="px-3 pt-2">
+<Breadcrumb.Root {...trace} class="px-3 pt-2">
   <Breadcrumb.List class="text-caption text-ink-muted gap-0.5">
     {#each trail as crumb, index (crumb.label)}
       {#if index > 0}

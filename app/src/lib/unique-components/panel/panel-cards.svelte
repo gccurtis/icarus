@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A small set chosen by its picture rather than its name.
@@ -30,9 +31,12 @@
     columns?: 2 | 3;
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("PanelCards", () => ({ label, columns }));
 </script>
 
 <div
+  {...trace}
   role="group"
   aria-label={label}
   class={cn("grid gap-1.5 px-3", columns === 2 ? "grid-cols-2" : "grid-cols-3")}

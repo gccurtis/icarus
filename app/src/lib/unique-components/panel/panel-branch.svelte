@@ -4,6 +4,7 @@
 
   import * as Collapsible from "$lib/simple-components/collapsible";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * One node of a `PanelTree`: a line, and whatever is under it.
@@ -61,6 +62,10 @@
     /** What is under it. Absent for a leaf — see above. */
     children?: Snippet;
   } = $props();
+
+  // Two roots, one per form: the leaf's `div` is marked, the disclosure's is
+  // `Collapsible.Root`, a component, so that form registers but marks no DOM.
+  const trace = traceNode("PanelBranch", () => ({ label, meta, open, selected }));
 
   /**
    * The twisty's box is 16px and the gap after it is 4px, so a level is 20px and
@@ -137,7 +142,7 @@
     </Collapsible.Content>
   </Collapsible.Root>
 {:else}
-  <div class={HEAD}>
+  <div {...trace} class={HEAD}>
     <!-- The twisty's width without the twisty, so a leaf's label lines up. -->
     <span class="size-4 shrink-0" aria-hidden="true"></span>
     {#if onselect}

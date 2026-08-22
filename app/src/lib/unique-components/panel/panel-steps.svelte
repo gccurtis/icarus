@@ -7,6 +7,7 @@
   import LoaderCircle from "@lucide/svelte/icons/loader-circle";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A plan, and what has become of each step in it.
@@ -69,6 +70,8 @@
     flush?: boolean;
   } = $props();
 
+  const trace = traceNode("PanelSteps", () => ({ steps, label, flush }));
+
   /**
    * The whole component, in a table. A state is its word, its shape and its
    * role colour together, and the three are never separable: the word survives
@@ -91,7 +94,7 @@
   };
 </script>
 
-<ol aria-label={label} class={cn("m-0 flex list-none flex-col p-0", flush ? "px-0" : "px-3")}>
+<ol {...trace} aria-label={label} class={cn("m-0 flex list-none flex-col p-0", flush ? "px-0" : "px-3")}>
   {#each steps as step (step.id)}
     {@const state = STATE[step.state]}
     {@const Icon = state.icon}

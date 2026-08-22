@@ -6,7 +6,7 @@
  * `Read` handle — so the panels above them do not change when the real one lands.
  */
 import { PEOPLE, RESOURCES, VIEWER, type Person, type PersonId } from "$mock-capabilities/cast";
-import { read, type Read } from "$mock-capabilities/read";
+import { read, type Read } from "$mock-capabilities/read.svelte";
 
 /** Whether someone is here now, and what they have open. */
 export type Presence = {
@@ -121,11 +121,14 @@ const ACTIVITY: readonly ActorActivity[] = [
 
 /** One person's membership in this project. */
 export const member = (id: PersonId): Read<Person> =>
-  read(PEOPLE.find((person) => person.id === id) ?? VIEWER);
+  read(PEOPLE.find((person) => person.id === id) ?? VIEWER, "collaboration.member");
 
 export const presenceFor = (id: PersonId): Read<Presence> => {
   const person = PEOPLE.find((candidate) => candidate.id === id);
-  return read(person?.at === undefined ? { here: false } : { here: true, at: person.at });
+  return read(
+    person?.at === undefined ? { here: false } : { here: true, at: person.at },
+    "collaboration.presenceFor"
+  );
 };
 
 /**
@@ -137,40 +140,43 @@ export const presenceFor = (id: PersonId): Read<Presence> => {
  * queries cannot both be the denominator.
  */
 export const commentsBy = (id: PersonId): Read<readonly PersonComment[]> =>
-  read(COMMENTS.filter((comment) => comment.author === id));
+  read(COMMENTS.filter((comment) => comment.author === id), "collaboration.commentsBy");
 
 export const activityBy = (id: PersonId): Read<readonly ActorActivity[]> => {
   void id;
-  return read(ACTIVITY);
+  return read(ACTIVITY, "collaboration.activityBy");
 };
 
 /** Everyone in the project, for the presence-overflow lens. */
-export const members = (): Read<readonly Person[]> => read(PEOPLE);
+export const members = (): Read<readonly Person[]> => read(PEOPLE, "collaboration.members");
 
 export const thread = (id: string): Read<Thread> => {
   void id;
-  return read({
-    id: "t-1",
-    state: "open",
-    mentionsViewer: true,
-    author: "mira",
-    started: "2 hours ago",
-    body: "@ana can you confirm 1,842,000 against the relay log? The event log says 1,840,200.",
-    anchor: {
-      resource: "Q3 Resilience Memo",
-      text: "nearly a third of customer-minutes lost",
-      resolution: "intact"
+  return read(
+    {
+      id: "t-1",
+      state: "open",
+      mentionsViewer: true,
+      author: "mira",
+      started: "2 hours ago",
+      body: "@ana can you confirm 1,842,000 against the relay log? The event log says 1,840,200.",
+      anchor: {
+        resource: "Q3 Resilience Memo",
+        text: "nearly a third of customer-minutes lost",
+        resolution: "intact"
+      },
+      replies: [
+        { id: "r-1", author: "ana", body: "Checking against the relay log.", age: "1h" },
+        { id: "r-2", author: "mira", body: "Thanks — no rush before Thursday.", age: "48m" }
+      ]
     },
-    replies: [
-      { id: "r-1", author: "ana", body: "Checking against the relay log.", age: "1h" },
-      { id: "r-2", author: "mira", body: "Thanks — no rush before Thursday.", age: "48m" }
-    ]
-  });
+    "collaboration.thread"
+  );
 };
 
 /** What a person addressed to the viewer, newest first. */
 export const mentionsForViewer = (): Read<readonly PersonComment[]> =>
-  read(COMMENTS.filter((comment) => comment.mentionsViewer));
+  read(COMMENTS.filter((comment) => comment.mentionsViewer), "collaboration.mentionsForViewer");
 
 /** The resource a comment hangs on, for a lens that needs to name it. */
 export const resourceNamed = (name: string) =>

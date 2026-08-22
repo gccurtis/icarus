@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
+
   /**
    * The ground a document, a deck or a template sits on. Not the thing itself:
    * the surround.
@@ -46,6 +48,8 @@
     /** `ScreenPage`s, `ScreenSlide`s, or whatever the surface floats. */
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenCanvas", () => ({ label }));
 </script>
 
 <!--
@@ -57,6 +61,7 @@
 -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
+  {...trace}
   tabindex="0"
   role="group"
   aria-label={label}

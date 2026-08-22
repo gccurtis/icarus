@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * One entry in a `ScreenList`: who, what they did, and enough of what they
@@ -67,6 +68,8 @@
     /** Controls acting on this entry. Their presence makes it a region. */
     actions?: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenItem", () => ({ title, excerpt, meta, selected }));
 </script>
 
 {#snippet titleLine()}
@@ -116,6 +119,7 @@
   survives a reader who cannot tell the fill from the surface.
 -->
 <div
+  {...trace}
   role="listitem"
   class={cn(
     "flex min-w-0 flex-col border-s-2",

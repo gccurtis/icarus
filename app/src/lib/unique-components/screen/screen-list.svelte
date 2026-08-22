@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A stack of entries on the plane, read top to bottom.
@@ -46,6 +47,8 @@
     /** `ScreenItem`s. */
     children: Snippet;
   } = $props();
+
+  const trace = traceNode("ScreenList", () => ({ label, scroll }));
 </script>
 
 <!--
@@ -54,6 +57,7 @@
   item, so a real `<ul>` would make the markup invalid the moment a feed ran dry.
 -->
 <div
+  {...trace}
   role="list"
   aria-label={label}
   class={cn(

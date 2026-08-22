@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { traceNode } from "$lib/trace/trace.svelte";
   import { CarouselShelfItem } from "$lib/unique-components/carousel-shelf";
 
   /**
@@ -24,6 +25,9 @@
     width?: string;
     children: Snippet;
   } = $props();
+
+  // Root is a component, not an element, so the node registers but marks no DOM.
+  const trace = traceNode("ScreenShelfItem", () => ({ width }));
 </script>
 
 <CarouselShelfItem class="border-none bg-transparent shadow-none">

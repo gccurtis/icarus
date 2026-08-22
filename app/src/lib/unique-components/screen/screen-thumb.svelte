@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A placeholder for a shape that will one day be rendered from real content.
@@ -24,9 +25,12 @@
     /** How many of the lines stand for an opening rather than content. */
     variables?: number;
   } = $props();
+
+  const trace = traceNode("ScreenThumb", () => ({ ratio, lines, variables }));
 </script>
 
 <span
+  {...trace}
   class="border-border-subtle bg-surface-canvas rounded-control flex flex-col justify-center gap-1.5 border p-2.5"
   style="aspect-ratio: {ratio}"
   aria-hidden="true"

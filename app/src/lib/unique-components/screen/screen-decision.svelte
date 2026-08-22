@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Something offered for a decision, with the decision on it.
@@ -49,6 +50,8 @@
     actions?: Snippet;
   } = $props();
 
+  const trace = traceNode("ScreenDecision", () => ({ title, meta, verdict, selected }));
+
   const VERDICT = {
     accepted: "text-success-text border-success-border bg-success-surface",
     dismissed: "text-inactive-text border-inactive-border bg-inactive-surface",
@@ -57,6 +60,7 @@
 </script>
 
 <article
+  {...trace}
   class={cn(
     "border-border-subtle rounded-panel bg-surface-panel flex flex-col border",
     selected && "border-active-border ring-active-border/40 ring-1"

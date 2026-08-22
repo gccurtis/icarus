@@ -6,6 +6,7 @@
   import { Button } from "$lib/simple-components/button";
   import * as Dialog from "$lib/simple-components/dialog";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Work that wants the whole screen: building a formula, defining a variable.
@@ -95,6 +96,19 @@
     /** Rendered through the primitive's child snippet, so it stays one element. */
     trigger?: Snippet<[{ props: Record<string, unknown> }]>;
   } = $props();
+
+  // The root is `Dialog.Root`, a component rather than an element, so nothing marks the DOM.
+  const trace = traceNode("OverlayModal", () => ({
+    open,
+    title,
+    description,
+    confirm,
+    blocked,
+    cancel,
+    tone,
+    width,
+    unsaved
+  }));
 
   const uid = $props.id();
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Slider } from "$lib/simple-components/slider";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A continuous value, with its extent visible.
@@ -62,11 +63,22 @@
     onchange?: (next: number) => void;
   } = $props();
 
+  const trace = traceNode("PanelRange", () => ({
+    label,
+    value,
+    min,
+    max,
+    step,
+    unit,
+    disabled,
+    flush
+  }));
+
   const inert = $derived(disabled || onchange === undefined);
   const figure = $derived(unit ? `${value} ${unit}` : String(value));
 </script>
 
-<div class={cn("flex flex-col gap-1.5", flush ? "px-0" : "px-3")}>
+<div {...trace} class={cn("flex flex-col gap-1.5", flush ? "px-0" : "px-3")}>
   <div class="flex items-baseline justify-between gap-2">
     <span class="text-caption text-ink-secondary truncate">{label}</span>
     <span class="text-caption text-ink-primary shrink-0 tabular-nums">{figure}</span>

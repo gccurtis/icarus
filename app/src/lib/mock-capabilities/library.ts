@@ -17,7 +17,7 @@ import {
   type Resource,
   type ResourceKind
 } from "$mock-capabilities/cast";
-import { read, type Read } from "$mock-capabilities/read";
+import { read, type Read } from "$mock-capabilities/read.svelte";
 
 /* ------------------------------------------------------------------ */
 /* Collections                                                         */
@@ -101,7 +101,7 @@ export const analyses = (): Read<readonly AnalysisRow[]> =>
     { id: "an-month", name: "Events by month", chart: "Line", ran: "3 days ago" },
     { id: "an-spend", name: "Spend against authorization", chart: "Table", ran: "1 week ago" },
     { id: "an-restore", name: "Restoration time by crew", chart: "Line", ran: "4 hours ago" }
-  ]);
+  ], "library.analyses");
 
 export const contexts = (): Read<readonly ContextRow[]> =>
   read([
@@ -136,11 +136,11 @@ export const contexts = (): Read<readonly ContextRow[]> =>
       resolves: 24
     },
     { id: "cx-accepted", name: "Accepted findings", rule: "Findings, accepted", resolves: 18 }
-  ]);
+  ], "library.contexts");
 
 /** What a Context could name, one kind at a time, from the one cast. */
 export const resourcesOfKind = (kind: ResourceKind): Read<readonly Resource[]> =>
-  read(byKind(kind));
+  read(byKind(kind), "library.resourcesOfKind");
 
 export const findings = (): Read<readonly FindingRow[]> =>
   read([
@@ -190,7 +190,7 @@ export const findings = (): Read<readonly FindingRow[]> =>
       acceptedBy: "Source Checker",
       age: "2 weeks ago"
     }
-  ]);
+  ], "library.findings");
 
 export const questions = (): Read<readonly QuestionRow[]> =>
   read([
@@ -210,7 +210,7 @@ export const questions = (): Read<readonly QuestionRow[]> =>
       parentId: "q-21"
     },
     { id: "q-08", title: "What did the 2024 study assume?", status: "Answered" }
-  ]);
+  ], "library.questions");
 
 export const hypotheses = (): Read<readonly HypothesisRow[]> =>
   read([
@@ -222,7 +222,7 @@ export const hypotheses = (): Read<readonly HypothesisRow[]> =>
       assessment: "Testing"
     },
     { id: "h-6", title: "Load growth outran the 2019 rebuild", assessment: "Untested" }
-  ]);
+  ], "library.hypotheses");
 
 export const threads = (): Read<readonly ThreadRow[]> =>
   read([
@@ -280,7 +280,7 @@ export const threads = (): Read<readonly ThreadRow[]> =>
       activity: "3 weeks ago",
       findings: 3
     }
-  ]);
+  ], "library.threads");
 
 export const recents = (): Read<readonly RecentRow[]> =>
   read([
@@ -356,7 +356,7 @@ export const recents = (): Read<readonly RecentRow[]> =>
       why: "Someone edited it",
       updatedBy: "SharePoint — Ops Reports"
     }
-  ]);
+  ], "library.recents");
 
 /* ------------------------------------------------------------------ */
 /* Templates                                                           */
@@ -597,10 +597,14 @@ const TEMPLATE_VARIABLES: readonly TemplateVariable[] = [
   }
 ];
 
-export const templates = (): Read<readonly LibraryTemplate[]> => read(TEMPLATES);
+export const templates = (): Read<readonly LibraryTemplate[]> =>
+  read(TEMPLATES, "library.templates");
 
 export const template = (templateId: string): Read<LibraryTemplate> =>
-  read(TEMPLATES.find((row: LibraryTemplate) => row.id === templateId) ?? TEMPLATES[0]);
+  read(
+    TEMPLATES.find((row: LibraryTemplate) => row.id === templateId) ?? TEMPLATES[0],
+    "library.template"
+  );
 
 export const templateKinds = (): Read<readonly TemplateKind[]> =>
   read([
@@ -621,17 +625,19 @@ export const templateKinds = (): Read<readonly TemplateKind[]> =>
       makes: "Spreadsheet",
       blurb: "One grid of cells holding text and formulas."
     }
-  ]);
+  ], "library.templateKinds");
 
 export const variablesIn = (templateId: string): Read<readonly TemplateVariable[]> =>
   read(
-    TEMPLATE_VARIABLES.filter((variable: TemplateVariable) => variable.templateId === templateId)
+    TEMPLATE_VARIABLES.filter((variable: TemplateVariable) => variable.templateId === templateId),
+    "library.variablesIn"
   );
 
 export const templateVariable = (variableId: string): Read<TemplateVariable> =>
   read(
     TEMPLATE_VARIABLES.find((variable: TemplateVariable) => variable.id === variableId) ??
-      TEMPLATE_VARIABLES[0]
+      TEMPLATE_VARIABLES[0],
+    "library.templateVariable"
   );
 
 export const previewOf = (templateId: string): Read<readonly PreviewLine[]> => {
@@ -648,12 +654,12 @@ export const previewOf = (templateId: string): Read<readonly PreviewLine[]> => {
     { id: "pl-4", text: "Outage record", style: "heading", variable: false },
     { id: "pl-5", text: "{outageTable}", style: "body", variable: true },
     { id: "pl-6", text: "Statutory basis", style: "heading", variable: false }
-  ]);
+  ], "library.previewOf");
 };
 
 /** Changed lately. A different question from used lately, and a different list. */
 export const recentlyUpdatedTemplates = (): Read<readonly LibraryTemplate[]> =>
-  read(TEMPLATES.slice(0, 3));
+  read(TEMPLATES.slice(0, 3), "library.recentlyUpdatedTemplates");
 
 /**
  * Used lately. Nothing counts uses — the resource made from a template records
@@ -661,7 +667,10 @@ export const recentlyUpdatedTemplates = (): Read<readonly LibraryTemplate[]> =>
  * `lastUsed` simply never appears.
  */
 export const recentlyUsedTemplates = (): Read<readonly LibraryTemplate[]> =>
-  read(TEMPLATES.filter((row: LibraryTemplate) => row.lastUsed !== undefined));
+  read(
+    TEMPLATES.filter((row: LibraryTemplate) => row.lastUsed !== undefined),
+    "library.recentlyUsedTemplates"
+  );
 
 /* ------------------------------------------------------------------ */
 /* Template authoring                                                  */
@@ -719,7 +728,7 @@ export const outlineIn = (templateId: string): Read<readonly OutlineHeading[]> =
     { id: "oh-4", text: "Relief requested", level: 1, page: 3 },
     { id: "oh-5", text: "Cost recovery", level: 2, page: 3 },
     { id: "oh-6", text: "Exhibits", level: 1, page: 4 }
-  ]);
+  ], "library.outlineIn");
 };
 
 export const stylesIn = (templateId: string): Read<readonly StyleRow[]> => {
@@ -729,12 +738,15 @@ export const stylesIn = (templateId: string): Read<readonly StyleRow[]> => {
     { id: "st-h1", name: "Heading 1", detail: "Source Sans · 18 pt · bold" },
     { id: "st-h2", name: "Heading 2", detail: "Source Sans · 14 pt · semibold" },
     { id: "st-quote", name: "Quotation", detail: "Source Serif · 11 pt · indented" }
-  ]);
+  ], "library.stylesIn");
 };
 
 export const pageSetupFor = (templateId: string): Read<PageSetup> => {
   void templateId;
-  return read({ paper: "Letter", orientation: "Portrait", gutters: "1 in all round" });
+  return read(
+    { paper: "Letter", orientation: "Portrait", gutters: "1 in all round" },
+    "library.pageSetupFor"
+  );
 };
 
 export const insertBlocks = (): Read<readonly InsertOption[]> =>
@@ -742,7 +754,7 @@ export const insertBlocks = (): Read<readonly InsertOption[]> =>
     { id: "ib-text", name: "Text block", detail: "A paragraph in the body style" },
     { id: "ib-heading", name: "Heading", detail: "Starts an outline entry" },
     { id: "ib-table", name: "Table", detail: "Rows and columns, fixed at insert" }
-  ]);
+  ], "library.insertBlocks");
 
 export const variableKinds = (): Read<readonly VariableKindOption[]> =>
   read([
@@ -766,7 +778,7 @@ export const variableKinds = (): Read<readonly VariableKindOption[]> =>
       // rather than an Insert of a prompt block.
       detail: "Becomes a prompt block in the result"
     }
-  ]);
+  ], "library.variableKinds");
 
 export const bodyEntity = (entityId: string): Read<BodyEntity> => {
   void entityId;
@@ -776,7 +788,7 @@ export const bodyEntity = (entityId: string): Read<BodyEntity> => {
     variant: "Heading 1",
     variants: ["Body", "Heading 1", "Heading 2"],
     owner: { kind: "Template", id: "tp-filing", name: "Regulatory filing shell" }
-  });
+  }, "library.bodyEntity");
 };
 
 /* ------------------------------------------------------------------ */
@@ -827,7 +839,7 @@ export const useTemplateDraft = (templateId: string): Read<Instantiation> => {
       .map(toAsk),
     canCreate: false,
     blockedBecause: "Nothing in a body records which variable it stands for."
-  });
+  }, "library.useTemplateDraft");
 };
 
 /* ------------------------------------------------------------------ */
@@ -911,7 +923,8 @@ const CONNECTORS: readonly ConnectorRow[] = [
   }
 ];
 
-export const connectors = (): Read<readonly ConnectorRow[]> => read(CONNECTORS);
+export const connectors = (): Read<readonly ConnectorRow[]> =>
+  read(CONNECTORS, "library.connectors");
 
 /** Deployment configuration rather than project data — see the spec's open question. */
 export const providers = (): Read<readonly ProviderRow[]> =>
@@ -924,7 +937,7 @@ export const providers = (): Read<readonly ProviderRow[]> =>
     { id: "pv-drive", name: "Google Drive", brings: "A shared drive or folder" },
     { id: "pv-confluence", name: "Confluence", brings: "A space, page by page" },
     { id: "pv-box", name: "Box", brings: "A folder and everything under it" }
-  ]);
+  ], "library.providers");
 
 export const connector = (connectorId: string): Read<ConnectorDetail> => {
   const row =
@@ -941,7 +954,7 @@ export const connector = (connectorId: string): Read<ConnectorDetail> => {
     ],
     auth: row.state === "Expired" ? "Expired" : "Connected",
     lastSync: row.state === "Expired" ? "4 days ago" : row.detail
-  });
+  }, "library.connector");
 };
 
 export const uploads = (): Read<readonly UploadRow[]> =>
@@ -970,7 +983,7 @@ export const uploads = (): Read<readonly UploadRow[]> =>
       percent: 0,
       state: "Queued"
     }
-  ]);
+  ], "library.uploads");
 
 export const ingestion = (): Read<Ingestion> =>
   read({
@@ -978,7 +991,7 @@ export const ingestion = (): Read<Ingestion> =>
     finished: 1,
     total: 3,
     then: "Extraction starts on arrival"
-  });
+  }, "library.ingestion");
 
 /* ------------------------------------------------------------------ */
 /* Launchers                                                           */
@@ -1031,7 +1044,7 @@ export const editorKinds = (): Read<readonly EditorKind[]> =>
     { id: "ek-document", name: "Document", detail: "A paginated body" },
     { id: "ek-deck", name: "Slide deck", detail: "Slides on a fixed canvas" },
     { id: "ek-sheet", name: "Spreadsheet", detail: "One grid of cells and formulas" }
-  ]);
+  ], "library.editorKinds");
 
 export const documentDraft = (): Read<DocumentDraft> =>
   read({
@@ -1041,7 +1054,7 @@ export const documentDraft = (): Read<DocumentDraft> =>
     orientation: "Portrait",
     orientations: ["Portrait", "Landscape"],
     margins: "1 in all round"
-  });
+  }, "library.documentDraft");
 
 export const deckDraft = (): Read<DeckDraft> =>
   read({
@@ -1049,10 +1062,10 @@ export const deckDraft = (): Read<DeckDraft> =>
     aspect: "16:9",
     aspects: ["16:9", "4:3"],
     firstSlide: { layout: "title-and-body", caption: "Title and body" }
-  });
+  }, "library.deckDraft");
 
 export const spreadsheetDraft = (): Read<SpreadsheetDraft> =>
-  read({ title: "Untitled spreadsheet" });
+  read({ title: "Untitled spreadsheet" }, "library.spreadsheetDraft");
 
 /** Reads well in a *Kind* row: the storage kind, worded as a person would say it. */
 export const kindLabel = (kind: ResourceKind): string =>
@@ -1079,5 +1092,5 @@ export const recentItem = (resourceId: string): Read<RecentItem> => {
     updated: resource.updated,
     updatedBy: resource.updatedBy,
     openNote: "If it is already open, that tab activates and this launcher closes."
-  });
+  }, "library.recentItem");
 };

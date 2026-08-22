@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * One label and its value, inside a `Fields` block.
@@ -35,6 +36,9 @@
     stacked?: boolean;
     children: Snippet;
   } = $props();
+
+  // Two roots — a `dt` and a `dd` — so the marker goes on the first of them.
+  const trace = traceNode("PanelField", () => ({ label, mono, stacked }));
 </script>
 
 <!--
@@ -42,7 +46,7 @@
   "Display name" and "Project work", and a truncated label with no way to
   recover it is a field whose meaning is gone.
 -->
-<dt
+<dt {...trace}
   title={stacked ? undefined : label}
   class={cn("text-caption text-ink-muted truncate", stacked && "col-span-2")}
 >

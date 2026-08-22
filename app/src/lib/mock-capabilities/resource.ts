@@ -14,7 +14,7 @@
  * agreeing.
  */
 import { PROJECT, RESOURCES, type PersonId, type Resource } from "$mock-capabilities/cast";
-import { read, type Read } from "$mock-capabilities/read";
+import { read, type Read } from "$mock-capabilities/read.svelte";
 
 /** The three editors. Narrower than `ResourceKind`, which also covers what is not edited. */
 export type EditorKind = "document" | "slides" | "spreadsheet";
@@ -323,20 +323,20 @@ const INSERT_OPTIONS: Readonly<Record<EditorKind, readonly InsertOption[]>> = {
 
 /** Every thread on one resource, open and resolved together, newest first. */
 export const commentsOn = (resourceId: string): Read<readonly ResourceComment[]> =>
-  read(COMMENTS.filter((comment) => comment.resourceId === resourceId));
+  read(COMMENTS.filter((comment) => comment.resourceId === resourceId), "resource.commentsOn");
 
 /** The Contexts this resource's prompt blocks run against, plus what is assignable. */
 export const contextsFor = (resourceId: string): Read<readonly ScopeInUse[]> => {
   void resourceId;
-  return read(SCOPES);
+  return read(SCOPES, "resource.contextsFor");
 };
 
 /** A bounded sample of one scope, so a scope that has drifted is visible before a block runs. */
 export const resolvedPreview = (scopeId: string): Read<readonly ScopeSample[]> =>
-  read(SCOPE_SAMPLES[scopeId] ?? []);
+  read(SCOPE_SAMPLES[scopeId] ?? [], "resource.resolvedPreview");
 
 export const insertOptions = (kind: EditorKind): Read<readonly InsertOption[]> =>
-  read(INSERT_OPTIONS[kind]);
+  read(INSERT_OPTIONS[kind], "resource.insertOptions");
 
 // ---------------------------------------------------------------------------
 // The document editor
@@ -660,7 +660,7 @@ export const documentRecord = (documentId: string): Read<DocumentRecord> => {
     saved: "All changes saved",
     createdBy: "Ana Reyes",
     updated: record.updated
-  });
+  }, "resource.documentRecord");
 };
 
 export const outlineIn = (documentId: string): Read<readonly OutlineEntry[]> => {
@@ -671,7 +671,7 @@ export const outlineIn = (documentId: string): Read<readonly OutlineEntry[]> => 
     { id: "o-3", text: "Recommendation", level: 2, page: 3 },
     { id: "o-4", text: "Statutory basis", level: 3, page: 3 },
     { id: "o-5", text: "Appendix — event log", level: 2, page: 5 }
-  ]);
+  ], "resource.outlineIn");
 };
 
 export const pagesIn = (documentId: string): Read<readonly PageRow[]> => {
@@ -682,7 +682,7 @@ export const pagesIn = (documentId: string): Read<readonly PageRow[]> => {
     { number: 3, firstHeading: "Recommendation" },
     { number: 4, continues: "Statutory basis" },
     { number: 5, firstHeading: "Appendix — event log" }
-  ]);
+  ], "resource.pagesIn");
 };
 
 /** Explicit structure the author put in, plus the routes to the two canonical furniture editors. */
@@ -692,7 +692,7 @@ export const furnitureIn = (documentId: string): Read<readonly FurnitureRow[]> =
     { id: "f-1", label: "Explicit page break", kind: "break", page: 4 },
     { id: "f-2", label: "Header", kind: "header" },
     { id: "f-3", label: "Footer", kind: "footer" }
-  ]);
+  ], "resource.furnitureIn");
 };
 
 export const pageSetup = (documentId: string): Read<PageSetup> => {
@@ -705,16 +705,19 @@ export const pageSetup = (documentId: string): Read<PageSetup> => {
     footerBand: "0.5 in",
     firstPageDiffers: true,
     numbering: { startAt: 1, position: "Footer, outside", showOnFirst: false }
-  });
+  }, "resource.pageSetup");
 };
 
 export const documentStyles = (documentId: string): Read<readonly NamedTextStyle[]> => {
   void documentId;
-  return read(DOCUMENT_STYLES);
+  return read(DOCUMENT_STYLES, "resource.documentStyles");
 };
 
 export const documentStyle = (styleId: string): Read<NamedTextStyle> =>
-  read(DOCUMENT_STYLES.find((style) => style.id === styleId) ?? DOCUMENT_STYLES[0]);
+  read(
+    DOCUMENT_STYLES.find((style) => style.id === styleId) ?? DOCUMENT_STYLES[0],
+    "resource.documentStyle"
+  );
 
 /**
  * Hits for one query. The mock answers the canonical query only — "storm" here,
@@ -768,11 +771,14 @@ export const findInDocument = (
       blockId: "b_8d4",
       replaceable: true
     }
-  ]);
+  ], "resource.findInDocument");
 };
 
 export const textBlock = (blockId: string): Read<TextBlock> =>
-  read(DOCUMENT_BLOCKS.find((block) => block.id === blockId) ?? DOCUMENT_BLOCKS[1]);
+  read(
+    DOCUMENT_BLOCKS.find((block) => block.id === blockId) ?? DOCUMENT_BLOCKS[1],
+    "resource.textBlock"
+  );
 
 /** The selection resolved to text. Offsets were internals and are not part of the answer. */
 export const textSelection = (documentId: string): Read<TextSelection> => {
@@ -783,7 +789,7 @@ export const textSelection = (documentId: string): Read<TextSelection> => {
     blockId: "b_4f1",
     styleId: "ds-body",
     styleName: "Body"
-  });
+  }, "resource.textSelection");
 };
 
 /** The mark set a body model supports. A deck block has no strike or code; a document has both. */
@@ -802,7 +808,8 @@ export const marksFor = (kind: EditorKind): Read<readonly MarkOption[]> =>
           { id: "m-underline", label: "Underline", active: false },
           { id: "m-strike", label: "Strike", active: false },
           { id: "m-code", label: "Code", active: false }
-        ]
+        ],
+    "resource.marksFor"
   );
 
 export const documentHeader = (documentId: string): Read<HeaderFurniture> => {
@@ -813,7 +820,7 @@ export const documentHeader = (documentId: string): Read<HeaderFurniture> => {
     height: "0.76 in",
     firstPageDiffers: true,
     firstPageContent: "Empty"
-  });
+  }, "resource.documentHeader");
 };
 
 export const documentFooter = (documentId: string): Read<FooterFurniture> => {
@@ -824,7 +831,7 @@ export const documentFooter = (documentId: string): Read<FooterFurniture> => {
     numberPosition: "Outside",
     startAt: 1,
     showOnFirst: false
-  });
+  }, "resource.documentFooter");
 };
 
 /**
@@ -845,7 +852,7 @@ export const promptBlock = (blockId: string): Read<PromptBlock> => {
     scopeResolves: 96,
     lastRun: "on open",
     model: "analyst-default"
-  });
+  }, "resource.promptBlock");
 };
 
 /** A document table is content: no addresses, no formulas, no calculation. */
@@ -857,7 +864,7 @@ export const documentTable = (tableId: string): Read<DocumentTable> => {
     headerRow: true,
     columns: 3,
     columnWidths: ["48%", "20%", "32%"]
-  });
+  }, "resource.documentTable");
 };
 
 export const link = (linkId: string): Read<LinkMark> => {
@@ -867,7 +874,7 @@ export const link = (linkId: string): Read<LinkMark> => {
     url: "https://nerc.gov/docket/2026-114",
     text: "the 2026 docket",
     internal: false
-  });
+  }, "resource.link");
 };
 
 export const inlineFormula = (formulaId: string): Read<InlineFormula> => {
@@ -880,7 +887,7 @@ export const inlineFormula = (formulaId: string): Read<InlineFormula> => {
     type: "number",
     readsWhen: "on open, and on every change",
     displayFormat: '$#,##0.0,,"M"'
-  });
+  }, "resource.inlineFormula");
 };
 
 // ---------------------------------------------------------------------------
@@ -1435,21 +1442,21 @@ export const deckRecord = (deckId: string): Read<DeckRecord> => {
     saved: "All changes saved",
     handout: { paper: "Letter", perPage: 3 },
     updated: record.updated
-  });
+  }, "resource.deckRecord");
 };
 
 export const slidesIn = (deckId: string): Read<readonly Slide[]> => {
   void deckId;
-  return read(SLIDES);
+  return read(SLIDES, "resource.slidesIn");
 };
 
 export const sectionsIn = (deckId: string): Read<readonly DeckSection[]> => {
   void deckId;
-  return read(DECK_SECTIONS);
+  return read(DECK_SECTIONS, "resource.sectionsIn");
 };
 
 export const slide = (slideId: string): Read<Slide> =>
-  read(SLIDES.find((candidate) => candidate.id === slideId) ?? SLIDES[3]);
+  read(SLIDES.find((candidate) => candidate.id === slideId) ?? SLIDES[3], "resource.slide");
 
 /** The slide's own objects, front to back. */
 export const layersOn = (slideId: string): Read<readonly SlideLayer[]> => {
@@ -1458,7 +1465,7 @@ export const layersOn = (slideId: string): Read<readonly SlideLayer[]> => {
     { id: "el-chart-4", name: "Chart element", kind: "chart", depth: "Front" },
     { id: "el-body-4", name: "Body text", kind: "text", depth: "Middle" },
     { id: "el-title-4", name: "Title", kind: "text", depth: "Back" }
-  ]);
+  ], "resource.layersOn");
 };
 
 /**
@@ -1469,31 +1476,34 @@ export const layersOn = (slideId: string): Read<readonly SlideLayer[]> => {
  */
 export const layoutObjectsOn = (slideId: string): Read<readonly LockedElement[]> => {
   void slideId;
-  return read(LOCKED_ELEMENTS);
+  return read(LOCKED_ELEMENTS, "resource.layoutObjectsOn");
 };
 
 export const layoutsIn = (deckId: string): Read<readonly SlideLayout[]> => {
   void deckId;
-  return read(LAYOUTS);
+  return read(LAYOUTS, "resource.layoutsIn");
 };
 
 export const layout = (layoutId: string): Read<SlideLayout> =>
-  read(LAYOUTS.find((candidate) => candidate.id === layoutId) ?? LAYOUTS[0]);
+  read(LAYOUTS.find((candidate) => candidate.id === layoutId) ?? LAYOUTS[0], "resource.layout");
 
 export const placeholdersIn = (layoutId: string): Read<readonly Placeholder[]> =>
-  read(PLACEHOLDERS[layoutId] ?? []);
+  read(PLACEHOLDERS[layoutId] ?? [], "resource.placeholdersIn");
 
 /** Addressed by position, because a placeholder has no stable key to address it by. */
 export const placeholderAt = (layoutId: string, index: number): Read<Placeholder | undefined> =>
-  read((PLACEHOLDERS[layoutId] ?? [])[index]);
+  read((PLACEHOLDERS[layoutId] ?? [])[index], "resource.placeholderAt");
 
 export const lockedContentIn = (layoutId: string): Read<readonly LockedElement[]> => {
   const record = LAYOUTS.find((candidate) => candidate.id === layoutId) ?? LAYOUTS[0];
-  return read(LOCKED_ELEMENTS.slice(0, record.locked));
+  return read(LOCKED_ELEMENTS.slice(0, record.locked), "resource.lockedContentIn");
 };
 
 export const lockedElement = (elementId: string): Read<LockedElement> =>
-  read(LOCKED_ELEMENTS.find((candidate) => candidate.id === elementId) ?? LOCKED_ELEMENTS[0]);
+  read(
+    LOCKED_ELEMENTS.find((candidate) => candidate.id === elementId) ?? LOCKED_ELEMENTS[0],
+    "resource.lockedElement"
+  );
 
 export const deckTheme = (deckId: string): Read<DeckTheme> => {
   void deckId;
@@ -1509,24 +1519,24 @@ export const deckTheme = (deckId: string): Read<DeckTheme> => {
     ],
     usedBySlides: SLIDES.length,
     usedByLayouts: LAYOUTS.length
-  });
+  }, "resource.deckTheme");
 };
 
 export const deckStyles = (deckId: string): Read<readonly NamedDeckStyle[]> => {
   void deckId;
-  return read(DECK_STYLES);
+  return read(DECK_STYLES, "resource.deckStyles");
 };
 
 export const deckStyle = (styleId: string): Read<NamedDeckStyle> =>
-  read(DECK_STYLES.find((style) => style.id === styleId) ?? DECK_STYLES[0]);
+  read(DECK_STYLES.find((style) => style.id === styleId) ?? DECK_STYLES[0], "resource.deckStyle");
 
 export const notesIn = (deckId: string): Read<readonly SlideNotes[]> => {
   void deckId;
-  return read(NOTES);
+  return read(NOTES, "resource.notesIn");
 };
 
 export const notesFor = (slideId: string): Read<SlideNotes> =>
-  read(NOTES.find((note) => note.slideId === slideId) ?? NOTES[3]);
+  read(NOTES.find((note) => note.slideId === slideId) ?? NOTES[3], "resource.notesFor");
 
 /** Deck-wide, and reaching into speaker notes, which are not on the canvas at all. */
 export const findInDeck = (deckId: string, query: string): Read<readonly DeckHit[]> => {
@@ -1566,11 +1576,11 @@ export const findInDeck = (deckId: string, query: string): Read<readonly DeckHit
       slide: 8,
       source: "Appendix table"
     }
-  ]);
+  ], "resource.findInDeck");
 };
 
 export const element = (elementId: string): Read<SlideElement> =>
-  read(ELEMENTS.find((candidate) => candidate.id === elementId) ?? ELEMENTS[0]);
+  read(ELEMENTS.find((candidate) => candidate.id === elementId) ?? ELEMENTS[0], "resource.element");
 
 export const deckTextBlock = (blockId: string): Read<DeckTextBlock> => {
   void blockId;
@@ -1588,7 +1598,7 @@ export const deckTextBlock = (blockId: string): Read<DeckTextBlock> => {
         readsWhen: "read when the slide is shown"
       }
     ]
-  });
+  }, "resource.deckTextBlock");
 };
 
 /** A multi-selection is a different thing from an element, not a degraded one. */
@@ -1611,7 +1621,7 @@ export const multiSelection = (slideId: string): Read<MultiSelection> => {
       { label: "Padding", value: "8 pt", mixed: false }
     ],
     canDistribute: true
-  });
+  }, "resource.multiSelection");
 };
 
 // ---------------------------------------------------------------------------
@@ -2163,17 +2173,17 @@ export const spreadsheetRecord = (spreadsheetId: string): Read<SpreadsheetRecord
     populatedCells: CELLS.length,
     saved: "All changes saved",
     updated: record.updated
-  });
+  }, "resource.spreadsheetRecord");
 };
 
 export const cellsIn = (spreadsheetId: string): Read<readonly Cell[]> => {
   void spreadsheetId;
-  return read(CELLS);
+  return read(CELLS, "resource.cellsIn");
 };
 
 export const cell = (spreadsheetId: string, address: string): Read<Cell | undefined> => {
   void spreadsheetId;
-  return read(CELLS.find((candidate) => candidate.address === address));
+  return read(CELLS.find((candidate) => candidate.address === address), "resource.cell");
 };
 
 export const readsOf = (
@@ -2181,7 +2191,7 @@ export const readsOf = (
   address: string
 ): Read<readonly CellReference[]> => {
   void spreadsheetId;
-  return read(READS[address] ?? []);
+  return read(READS[address] ?? [], "resource.readsOf");
 };
 
 export const feedsOf = (
@@ -2189,7 +2199,7 @@ export const feedsOf = (
   address: string
 ): Read<readonly CellReference[]> => {
   void spreadsheetId;
-  return read(FEEDS[address] ?? []);
+  return read(FEEDS[address] ?? [], "resource.feedsOf");
 };
 
 /** Every cell whose formula cannot resolve, for the whole spreadsheet rather than the selection. */
@@ -2208,7 +2218,7 @@ export const problemsIn = (spreadsheetId: string): Read<readonly CellProblem[]> 
       formula: "=F6/eventCount",
       explanation: "No name in this spreadsheet or this project is called eventCount."
     }
-  ]);
+  ], "resource.problemsIn");
 };
 
 /** The error at one address, with the formula kept exactly as written so it can be repaired. */
@@ -2218,7 +2228,8 @@ export const errorAt = (
 ): Read<CellProblem | undefined> => {
   void spreadsheetId;
   return read(
-    problemsIn(spreadsheetId).current.find((problem) => problem.address === address)
+    problemsIn(spreadsheetId).current.find((problem) => problem.address === address),
+    "resource.errorAt"
   );
 };
 
@@ -2229,34 +2240,37 @@ export const spillAt = (
 ): Read<SpillInfo | undefined> => {
   void spreadsheetId;
   const found = CELLS.find((candidate) => candidate.address === address);
-  if (found?.spillOrigin === undefined) return read(undefined);
+  if (found?.spillOrigin === undefined) return read(undefined, "resource.spillAt");
   return read({
     origin: found.spillOrigin,
     occupied: "E2:E5",
     status: found.address === found.spillOrigin ? "Origin" : "Read-only child",
     originFormula: "=avoidedMinutes(costModel)"
-  });
+  }, "resource.spillAt");
 };
 
 export const namedRangesIn = (spreadsheetId: string): Read<readonly NamedRange[]> => {
   void spreadsheetId;
-  return read(NAMED_RANGES);
+  return read(NAMED_RANGES, "resource.namedRangesIn");
 };
 
 export const namedRange = (spreadsheetId: string, name: string): Read<NamedRange> => {
   void spreadsheetId;
-  return read(NAMED_RANGES.find((range) => range.name === name) ?? NAMED_RANGES[0]);
+  return read(
+    NAMED_RANGES.find((range) => range.name === name) ?? NAMED_RANGES[0],
+    "resource.namedRange"
+  );
 };
 
 export const objectsIn = (spreadsheetId: string): Read<readonly SheetObject[]> => {
   void spreadsheetId;
-  return read(OBJECTS);
+  return read(OBJECTS, "resource.objectsIn");
 };
 
 /** By array position, which is all a chart without a stable id can be addressed by. */
 export const chartAt = (spreadsheetId: string, index: number): Read<SheetObject | undefined> => {
   void spreadsheetId;
-  return read(OBJECTS[index]);
+  return read(OBJECTS[index], "resource.chartAt");
 };
 
 export const printSetup = (spreadsheetId: string): Read<PrintSetup> => {
@@ -2270,16 +2284,19 @@ export const printSetup = (spreadsheetId: string): Read<PrintSetup> => {
     repeatColumns: "A:A",
     gridlines: false,
     headings: false
-  });
+  }, "resource.printSetup");
 };
 
 export const sheetStyles = (spreadsheetId: string): Read<readonly NamedCellStyle[]> => {
   void spreadsheetId;
-  return read(SHEET_STYLES);
+  return read(SHEET_STYLES, "resource.sheetStyles");
 };
 
 export const sheetStyle = (styleId: string): Read<NamedCellStyle> =>
-  read(SHEET_STYLES.find((style) => style.id === styleId) ?? SHEET_STYLES[0]);
+  read(
+    SHEET_STYLES.find((style) => style.id === styleId) ?? SHEET_STYLES[0],
+    "resource.sheetStyle"
+  );
 
 /** Two passes over two layers of text — stored formulas, and evaluated values. */
 export const findInSheet = (
@@ -2293,7 +2310,7 @@ export const findInSheet = (
     { id: "gh-2", address: "E1", content: "Avoided minutes (modelled)", layer: "value" },
     { id: "gh-3", address: "G1", content: "Cost per avoided minute", layer: "value" },
     { id: "gh-4", address: "E2", content: "=avoidedMinutes(costModel)", layer: "formula" }
-  ]);
+  ], "resource.findInSheet");
 };
 
 /**
@@ -2314,5 +2331,5 @@ export const rangeSelection = (spreadsheetId: string, a1: string): Read<RangeSel
     ],
     // No sum or average: every cell in the header row is text.
     aggregate: [{ label: "Count", value: "7" }]
-  });
+  }, "resource.rangeSelection");
 };

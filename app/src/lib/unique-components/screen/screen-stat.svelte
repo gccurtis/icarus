@@ -5,6 +5,7 @@
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * One number about what a thing has done, and the words for what it counts.
@@ -49,6 +50,8 @@
     tone?: "default" | "success" | "attention" | "danger";
   } = $props();
 
+  const trace = traceNode("ScreenStat", () => ({ value, label, tone }));
+
   /** Fill and ink together: a toned cell colours the figure and its label alike. */
   const CELL: Record<NonNullable<typeof tone>, string> = {
     default: "bg-surface-panel text-ink-primary",
@@ -78,7 +81,10 @@
   between sibling cells at all — what puts the figures on a line is that the
   cells share a top edge and the same padding, and this is what keeps them there.
 -->
-<div class={cn("flex flex-wrap content-start items-baseline gap-x-1.5 px-3 py-2", CELL[tone])}>
+<div
+  {...trace}
+  class={cn("flex flex-wrap content-start items-baseline gap-x-1.5 px-3 py-2", CELL[tone])}
+>
   {#if Mark}
     <span class="flex shrink-0 self-center">
       <Mark size={14} aria-hidden="true" />

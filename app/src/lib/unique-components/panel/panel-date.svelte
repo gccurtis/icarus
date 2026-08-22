@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Input } from "$lib/simple-components/input";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A date, chosen.
@@ -57,10 +58,12 @@
     onchange?: (next: string) => void;
   } = $props();
 
+  const trace = traceNode("PanelDate", () => ({ label, value, min, max, disabled, flush }));
+
   const inert = $derived(disabled || onchange === undefined);
 </script>
 
-<div class={cn("flex", flush ? "px-0" : "px-3")}>
+<div {...trace} class={cn("flex", flush ? "px-0" : "px-3")}>
   <Input
     type="date"
     {value}

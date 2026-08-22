@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * Text inside a content block, edited where it sits.
@@ -46,6 +47,16 @@
     fill?: boolean;
   } = $props();
 
+  const trace = traceNode("BlockText", () => ({
+    value,
+    align,
+    size,
+    weight,
+    placeholder,
+    label,
+    fill
+  }));
+
   const SIZE = {
     caption: "text-caption",
     "body-sm": "text-body-sm",
@@ -59,6 +70,7 @@
 </script>
 
 <textarea
+  {...trace}
   {value}
   oninput={(event) => oninput?.(event.currentTarget.value)}
   {placeholder}

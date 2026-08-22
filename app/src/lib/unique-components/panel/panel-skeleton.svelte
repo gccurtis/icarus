@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Skeleton } from "$lib/simple-components/skeleton";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * What a panel shows while it is finding out.
@@ -28,9 +29,11 @@
     shape?: "rows" | "fields";
     count?: number;
   } = $props();
+
+  const trace = traceNode("PanelSkeleton", () => ({ shape, count }));
 </script>
 
-<div class="flex flex-col gap-2 px-3 py-1" aria-hidden="true">
+<div {...trace} class="flex flex-col gap-2 px-3 py-1" aria-hidden="true">
   {#each Array.from({ length: count }) as _, index (index)}
     {#if shape === "rows"}
       <div class="flex items-center gap-2">

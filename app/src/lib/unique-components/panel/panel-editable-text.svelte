@@ -4,6 +4,7 @@
   import { Input } from "$lib/simple-components/input";
   import { Textarea } from "$lib/simple-components/textarea";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A value the reader can change, edited where it is shown.
@@ -72,6 +73,19 @@
     /** Absent means read-only, and the value renders as plain text. */
     onchange?: (next: string) => void;
   } = $props();
+
+  // Four roots, one per state, so the marker goes on each that is an element; the
+  // two editing branches are registry components and cannot carry it.
+  const trace = traceNode("PanelEditableText", () => ({
+    value,
+    label,
+    placeholder,
+    multiline,
+    mono,
+    activate,
+    mixed,
+    disabled
+  }));
 
   const editable = $derived(!disabled && onchange !== undefined);
 
@@ -154,6 +168,7 @@
   {/if}
 {:else if editable}
   <button
+    {...trace}
     type="button"
     onclick={activate === "click" ? start : undefined}
     ondblclick={start}
@@ -179,7 +194,7 @@
     />
   </button>
 {:else}
-  <span class={cn("min-w-0", mono && "text-mono font-mono tabular-nums", !value && "text-ink-muted italic")}>
+  <span {...trace} class={cn("min-w-0", mono && "text-mono font-mono tabular-nums", !value && "text-ink-muted italic")}>
     {value || placeholder}
   </span>
 {/if}

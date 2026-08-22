@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A bounded prefix of a tabular value, in a 300px column.
@@ -39,10 +40,12 @@
     empty?: string;
   } = $props();
 
+  const trace = traceNode("PanelTable", () => ({ columns, rows, total, unit, empty }));
+
   const showing = $derived(rows.length);
 </script>
 
-<div class="flex flex-col gap-1 px-3">
+<div {...trace} class="flex flex-col gap-1 px-3">
   {#if rows.length === 0}
     <p class="text-caption text-ink-muted m-0">{empty}</p>
   {:else}

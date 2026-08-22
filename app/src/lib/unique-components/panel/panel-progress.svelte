@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Progress } from "$lib/simple-components/progress";
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * How far through something is.
@@ -34,6 +35,8 @@
     tone?: "active" | "intelligence" | "attention";
   } = $props();
 
+  const trace = traceNode("PanelProgress", () => ({ label, detail, value, tone }));
+
   const FILL: Record<NonNullable<typeof tone>, string> = {
     active: "[&>div]:bg-active-fill",
     intelligence: "[&>div]:bg-intelligence-fill",
@@ -41,7 +44,7 @@
   };
 </script>
 
-<div class="flex flex-col gap-1 px-3">
+<div {...trace} class="flex flex-col gap-1 px-3">
   <div class="flex items-baseline justify-between gap-2">
     <span class="text-caption text-ink-secondary truncate">{label}</span>
     {#if detail}

@@ -3,6 +3,7 @@
   import EyeOff from "@lucide/svelte/icons/eye-off";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A preview that IS the thing's identity, because the thing has no name.
@@ -51,6 +52,16 @@
     /** A real render, once there is one. */
     children?: Snippet;
   } = $props();
+
+  // Two roots, but only ever one of them: the marker goes on both branches.
+  const trace = traceNode("PanelThumb", () => ({
+    ratio,
+    caption,
+    meta,
+    lines,
+    selected,
+    hidden
+  }));
 
   const frame = $derived(
     cn(
@@ -111,6 +122,7 @@
 -->
 {#if onselect}
   <button
+    {...trace}
     type="button"
     onclick={onselect}
     aria-current={selected ? "true" : undefined}
@@ -120,5 +132,5 @@
     {@render body()}
   </button>
 {:else}
-  <div class={frame}>{@render body()}</div>
+  <div {...trace} class={frame}>{@render body()}</div>
 {/if}

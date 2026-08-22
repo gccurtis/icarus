@@ -13,7 +13,7 @@
  * runs.
  */
 import { AGENTS, RESOURCES, actorName, type AgentId, type Resource } from "$mock-capabilities/cast";
-import { read, type Read } from "$mock-capabilities/read";
+import { read, type Read } from "$mock-capabilities/read.svelte";
 
 /** Who may be named as an agent here. The cast's three, plus one that is nobody's. */
 export type PersonaRef = AgentId | "skeptic";
@@ -588,7 +588,8 @@ export const personasIn = (projectId: string): Read<readonly PersonaRow[]> => {
         tasks: record.tasks,
         running: record.running
       };
-    })
+    }),
+    "agents.personasIn"
   );
 };
 
@@ -605,7 +606,7 @@ export const persona = (personaId: string): Read<PersonaProfile> => {
     createdBy: extra.createdBy,
     updated: extra.updated,
     record: extra.record
-  });
+  }, "agents.persona");
 };
 
 /**
@@ -614,18 +615,25 @@ export const persona = (personaId: string): Read<PersonaProfile> => {
  * the same set the sections are filled from.
  */
 export const workBy = (personaId: string): Read<readonly WorkItem[]> =>
-  read(WORK.filter((item: WorkItem) => item.persona === personaId));
+  read(WORK.filter((item: WorkItem) => item.persona === personaId), "agents.workBy");
 
 export const conversationsBy = (personaId: string): Read<readonly ConversationRow[]> =>
-  read(CONVERSATIONS.filter((chat: ConversationRow) => chat.persona === personaId));
+  read(
+    CONVERSATIONS.filter((chat: ConversationRow) => chat.persona === personaId),
+    "agents.conversationsBy"
+  );
 
 export const behaviourOf = (personaId: string): Read<readonly BehaviourSection[]> =>
-  read(BEHAVIOUR.filter((entry: BehaviourSection) => entry.persona === personaId));
+  read(
+    BEHAVIOUR.filter((entry: BehaviourSection) => entry.persona === personaId),
+    "agents.behaviourOf"
+  );
 
 export const lookupScopeOf = (personaId: string): Read<LookupScope> =>
   read(
     SCOPE_BINDINGS.find((binding: ScopeBinding) => binding.persona === personaId)?.scope ??
-      WHOLE_PROJECT
+      WHOLE_PROJECT,
+    "agents.lookupScopeOf"
   );
 
 /** The catalogue with this persona's allowance applied — allowed and not allowed
@@ -640,13 +648,17 @@ export const toolsFor = (personaId: string): Read<readonly ToolPermission[]> => 
         allowed: allowed.includes(tool.id),
         does: tool.does
       })
-    )
+    ),
+    "agents.toolsFor"
   );
 };
 
 export const modelBindingOf = (personaId: string): Read<ModelBinding> => {
   const name = MODELS.find((choice: ModelChoice) => choice.persona === personaId)?.name ?? BINDINGS[0];
-  return read({ name, isDefault: name === BINDINGS[0], available: [...BINDINGS] });
+  return read(
+    { name, isDefault: name === BINDINGS[0], available: [...BINDINGS] },
+    "agents.modelBindingOf"
+  );
 };
 
 /** A time, a repeat and a timezone. The timezone is stored, not inferred: "02:00"
@@ -977,11 +989,11 @@ const storedAction = (automationId: string): Action =>
 
 export const automationsIn = (projectId: string): Read<readonly AutomationRow[]> => {
   void projectId;
-  return read(RULES);
+  return read(RULES, "agents.automationsIn");
 };
 
 export const automation = (automationId: string): Read<AutomationRecord> =>
-  read(ruleOf(automationId));
+  read(ruleOf(automationId), "agents.automation");
 
 /** All five, always, with one marked. The five are the vocabulary of the feature,
  * and hiding the four that are not chosen makes the feature look smaller than it is. */
@@ -1022,7 +1034,7 @@ export const triggersFor = (automationId: string): Read<readonly TriggerOption[]
       blurb: "Never fires on its own. Run now is the point of it",
       chosen: stored.kind === "manual"
     }
-  ]);
+  ], "agents.triggersFor");
 };
 
 export const actionsFor = (automationId: string): Read<readonly ActionOption[]> => {
@@ -1045,7 +1057,7 @@ export const actionsFor = (automationId: string): Read<readonly ActionOption[]> 
       blocks: BLOCKS,
       chosenBlock: stored.kind === "refresh-block" ? stored.block : undefined
     }
-  ]);
+  ], "agents.actionsFor");
 };
 
 /**
@@ -1078,12 +1090,13 @@ export const automationHealth = (projectId: string): Read<readonly HealthRow[]> 
         lastFired: fire.when,
         firedAbout: fire.firedAbout
       };
-    })
+    }),
+    "agents.automationHealth"
   );
 };
 
 export const lastFireOf = (automationId: string): Read<LastFire> =>
-  read(ruleOf(automationId).lastFire);
+  read(ruleOf(automationId).lastFire, "agents.lastFireOf");
 
 /** The three sections of the Automations view, from the two fields that decide them. */
 export const automationGroup = (rule: AutomationRow): "not working" | "on" | "off" =>

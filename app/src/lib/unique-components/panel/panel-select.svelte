@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Select from "$lib/simple-components/select";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A value chosen from a fixed set.
@@ -40,6 +41,16 @@
     disabled?: boolean;
     onchange?: (next: string) => void;
   } = $props();
+
+  // The root is a component rather than an element, so this marks no DOM.
+  const trace = traceNode("PanelSelect", () => ({
+    value,
+    label,
+    options,
+    placeholder,
+    mixed,
+    disabled
+  }));
 
   const chosen = $derived(mixed ? undefined : options.find((option) => option.value === value));
 </script>

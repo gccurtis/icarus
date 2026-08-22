@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A rule read as a sentence, with its parts still selectable.
@@ -59,10 +60,13 @@
     onthen?: () => void;
   } = $props();
 
+  const trace = traceNode("PanelSentence", () => ({ lead, join, tone, size }));
+
   const CLAUSE = "rounded-control -mx-0.5 px-0.5 font-medium";
 </script>
 
 <p
+  {...trace}
   class={cn(
     "m-0",
     size === "head" ? "text-body" : "text-body-sm",

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cn } from "$lib/simple-components/utils";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A piece of content, and the three ways it can be sized.
@@ -60,6 +61,16 @@
     children: import("svelte").Snippet;
   } = $props();
 
+  const trace = traceNode("ContentBlock", () => ({
+    sizing,
+    chrome,
+    selected,
+    width,
+    height,
+    maxWidth,
+    label
+  }));
+
   const box = $derived(
     sizing === "fixed"
       ? `width: ${width ?? "16rem"}; height: ${height ?? "8rem"};`
@@ -88,6 +99,7 @@
 -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
+  {...trace}
   role="group"
   aria-label={label}
   aria-current={selected ? "true" : undefined}

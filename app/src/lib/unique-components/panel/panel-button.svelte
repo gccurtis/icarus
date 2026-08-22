@@ -2,6 +2,7 @@
   import type { Component } from "svelte";
 
   import { Button } from "$lib/simple-components/button";
+  import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
    * A control in a panel: in the action row under the title, or inside a
@@ -39,6 +40,9 @@
     onclick?: () => void;
   } = $props();
 
+  // The marker is forwarded through `Button` onto the element it renders.
+  const trace = traceNode("PanelButton", () => ({ label, tone, disabled, title }));
+
   /** The panel's four tones, said in the registry's vocabulary. */
   const VARIANT = {
     default: "outline",
@@ -52,7 +56,7 @@
   `xs` is the 24px step: the pointer-target floor, and the only size that leaves
   room for three controls across a 300px panel.
 -->
-<Button variant={VARIANT[tone]} size="xs" {disabled} {title} {onclick}>
+<Button {...trace} variant={VARIANT[tone]} size="xs" {disabled} {title} {onclick}>
   {#if Icon}
     <Icon aria-hidden="true" />
   {/if}
