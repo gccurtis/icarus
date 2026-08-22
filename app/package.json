@@ -22,6 +22,7 @@
     "new-view": "node scripts/generation/views/new-view.mjs",
     "new-view-part": "node scripts/generation/views/new-view-part.mjs",
     "new-style-theme": "node scripts/generation/styles/new-theme.mjs",
+    "view-state-keys": "node scripts/generation/view-state/keys.mjs",
     "test:scripts": "node --test \"scripts/*/*/test/*.test.mjs\"",
     "clean": "rm -rf build .svelte-kit"
   },

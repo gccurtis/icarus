@@ -4,6 +4,7 @@ import { createCopilot } from "$model/client/copilot";
 import { createResourceRuntimes } from "$model/client/resource-runtimes";
 import { createBrowserStorage } from "$model/client/storage";
 import type { ClientModel, ClientModelInput } from "$model/client/types";
+import { createViewState } from "$model/client/view-state";
 import { createWorkbench } from "$model/client/workbench";
 
 /**
@@ -39,8 +40,14 @@ export const buildClientModel = ({
 
   const workbench = createWorkbench(resourceRuntimes);
 
+  // Borrows nothing: what is open is decided by the person, not by anything else
+  // in the graph, so it could be built first. It is built here to keep the
+  // reading order of this function the order the objects were added in.
+  const viewState = createViewState(project);
+
   return {
     project,
+    viewState,
     configuration: settings,
     storage: store,
     resourceRuntimes,
