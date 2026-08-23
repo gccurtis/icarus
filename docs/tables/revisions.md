@@ -141,26 +141,14 @@ export const generalResourceTypeValidator = v.union(
   v.literal("spreadsheet")
 );
 
-const setTarget = v.union(
+const opTargetValidator = v.union(
   v.literal("row"), v.literal("block"), v.literal("atom"), v.literal("mark"),
   v.literal("slide"), v.literal("element"), v.literal("section"),
-  v.literal("cell"), v.literal("formatRule"), v.literal("field")
-);
-const insertTarget = v.union(
-  v.literal("row"), v.literal("block"), v.literal("atom"), v.literal("mark"),
-  v.literal("slide"), v.literal("element"), v.literal("section"),
-  v.literal("gridRow"), v.literal("gridColumn"), v.literal("formatRule")
-);
-const removeTarget = v.union(
-  v.literal("row"), v.literal("block"), v.literal("atom"), v.literal("mark"),
-  v.literal("slide"), v.literal("element"), v.literal("section"),
-  v.literal("cell"), v.literal("gridRow"), v.literal("gridColumn"),
-  v.literal("formatRule")
-);
-const moveTarget = v.union(
-  v.literal("row"), v.literal("block"),
-  v.literal("slide"), v.literal("element"), v.literal("section"),
-  v.literal("gridRow"), v.literal("gridColumn")
+  v.literal("sheet"), v.literal("cell"), v.literal("range"),
+  v.literal("mergedCells"),
+  v.literal("analytic"), v.literal("analyticComponent"),
+  v.literal("chart"), v.literal("chartElement"),
+  v.literal("field")
 );
 
 /**
@@ -188,21 +176,21 @@ const moveTarget = v.union(
 export const opValidator = v.union(
   v.object({
     op: v.literal("set"),
-    target: setTarget,
+    target: opTargetValidator,
     path: v.string(),
     value: v.any(),
     was: v.any()
   }),
   v.object({
     op: v.literal("insert"),
-    target: insertTarget,
+    target: opTargetValidator,
     path: v.string(),
     after: v.union(v.string(), v.null()),
     values: v.array(v.any())
   }),
   v.object({
     op: v.literal("remove"),
-    target: removeTarget,
+    target: opTargetValidator,
     path: v.string(),
     ids: v.array(v.string()),
     after: v.union(v.string(), v.null()),
@@ -210,7 +198,7 @@ export const opValidator = v.union(
   }),
   v.object({
     op: v.literal("move"),
-    target: moveTarget,
+    target: opTargetValidator,
     path: v.string(),
     id: v.string(),
     after: v.union(v.string(), v.null()),
@@ -227,20 +215,15 @@ export const opValidator = v.union(
 );
 ```
 
-**`gridRow` and `gridColumn` are not `row`.** A document row and a spreadsheet
-row are different things in different resources, and one literal for both would
-be a target whose meaning depends on what is applying it.
+`analytic` addresses the ordered computation. `analyticComponent` addresses its
+reusable materialized output. A chart component narrows further to `chart`, and
+one identified CAGR/reference/text/trend declaration uses `chartElement`.
+Surface placement remains on the owning block, slide element, or spreadsheet
+analytic reference.
 
-**`cell` takes no `insert` and no `move`.** A cell has no ordinal position to
-insert at — `set` is how one comes into being, and where it sits is which row and
-column it names. Moving cells is a `gridRow` or `gridColumn` operation.
-
-**A merge is a `set` on a cell**, writing a far corner, so there is no
-`mergedCells` target. **Formatting a region is a `formatRule`**, so there is no
-`range` target — a region's appearance is a rule and the cells under it are
-untouched.
-
-There is no `chart` target: charts arrive with a rendering surface.
+`range` remains a target because formula operands and print areas can name a
+region rather than one cell. `mergedCells` names the stored collection and is a
+noun like every other target.
 
 ---
 

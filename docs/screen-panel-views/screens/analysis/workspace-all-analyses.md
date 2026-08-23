@@ -35,15 +35,16 @@ faster than its title does.
 **Shows** — a bar-shaped thumbnail, then *Outage minutes by substation* — Bar · 6
 of 41 rows
 
-**Needs** — the project's analyses with display kind, and a thumbnail rendered by
-running each — or a defer to a placeholder shape.
+**Needs** — the project's analyses with display kind and last complete
+materialized component. A bounded thumbnail can derive from that component
+without executing every definition.
 
-**Open** — the row count on a card describes a result that no longer exists.
-Rendering a real thumbnail means evaluating every analysis to draw the library.
+**Open** — the row count and thumbnail describe the last materialization and may
+be stale. The card must show that status rather than imply current evaluation.
 
 ## Note
 
-One line: nothing about a result is stored, so opening one runs it again against
-the variables as they are now.
+One line: the last complete component is available immediately; opening one
+checks current variables and marks it stale while a newer result evaluates.
 
 **Needs** — nothing.

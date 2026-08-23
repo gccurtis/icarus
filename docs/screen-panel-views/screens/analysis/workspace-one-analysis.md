@@ -1,77 +1,76 @@
-# Analysis — one analysis
+# Analysis — one analytic
 
 | Workspace | What it is for | Regions |
 | --- | --- | --- |
-| The default state | The chart, then the controls that made it | Screen header · Chart · Drop zones · Relationship |
-
-The chart is centred at the top, before any control, because it is the thing
-being made. Everything below it is how it got that way.
+| The default state | Present the reusable answer, then show the ordered program that made it | Screen header · Analytic component · Customization section |
 
 ## Layout
 
 | 1fr |
 | --- |
 | screen header |
-| chart |
-| chart |
-| chart |
-| drop zones |
-| drop zones |
-| relationship |
+| analytic component |
+| analytic component |
+| customization section |
+| customization section |
 
-*Relationship* appears only when two variables are in play and need relating.
+The component comes before its controls because it is the thing being presented.
+The controls beneath it are an explanation of that answer rather than a second
+visual workspace.
 
 ## Screen header
 
-**Shows** — "Outage minutes by substation", `Saved`, **Duplicate**
+**Shows** — “Outage minutes by substation”, `Saved`, **Duplicate**.
 
-**Needs** — the analysis title and save state.
+**Needs** — the analytic title and save state.
 
-## Chart
+## Analytic component
 
-The picture, its title, the kind switcher, and the two honest captions under it.
+The exact `AnalyticComponent` used in a document block, slide, and spreadsheet
+overlay.
 
-**Shows** — the chart title; a row of kind chips with Bar active; bars with the
-tallest selected; then "Generated from current data — the result itself is not
-stored" on the left and "Showing 6 of 41 · limit 10" on the right.
+**Shows** — the current interactive chart/table and “Showing 6 of 41 · limit
+10.” If the definition becomes incomplete, the last complete output remains
+visible with stale/error state.
 
-Both captions matter. The first stops a chart being mistaken for a stored result;
-the second stops a truncated view being mistaken for the whole.
+**Needs** — `AnalyticModel.component`, materialization state, available size,
+and shared semantic selection.
 
-**Needs** — the evaluated result, the display definition, and the limit with the
-ungrouped total.
+There is no page-specific chart projection and no type translation between this
+screen and an embedded surface.
 
-## Drop zones
+## Customization section
 
-Six zones in a responsive strip, each a place to put a field: X, Y, Filters, Sort,
-Limit and Colour. An empty zone says what belongs in it rather than sitting blank.
+Two columns: a narrow vertical channel rail and a generous editing grid.
 
-**Shows** — `X — across` holding `substations.name`; `Y — up` holding two
-aggregates; `Filters` holding one, plus "drop a field to filter by it"; `Sort`;
-`Limit`; and `Colour` reading "this chart doesn't need one — drop a field to split
-the bars".
+The rail is chart-specific. The current stacked bar exposes X, optional Y, Data,
+and optional Labels. Pie would expose only Data and Labels; Bubble would add
+Size.
 
-Every zone also has an Add menu and a keyboard path. Nothing here is drag-only.
+The active grid shows:
 
-**Needs** — `AnalysisDefinition` axes, filters, sorts and limit. Colour is not a
-persisted encoding; that zone is a proposal.
+- X: `substations`, projected through its `name` column, followed by a drop well
+  for another Extend/Join input;
+- Y: an honest optional-empty state;
+- Labels: an optional custom-label list distinct from value labels;
+- Data: the explicit outer bridge `substations.id = outageEvents.subId`, then
+  filters, group, aggregate, sort, and limit in top-to-bottom execution order.
 
-**Open** — chart-kind minimum-field rules are undefined, so a zone cannot yet
-appear only when the chosen kind genuinely needs it.
+Every card opens the matching Inspector target. Variables can later drag into
+the active channel, but the grid must retain the same keyboard Add path and the
+same persisted list selector.
 
-## Relationship
+**Needs** — `AnalyticDataDefinition`, the chart-specific customization slot
+contract, relation/match diagnostics, and stable issue IDs.
 
-A banner, present only when two variables are in play with no stated relationship
-between them. It is a problem to solve, stated where the problem is — not a
-modelling step in front of the chart.
+## Relationship behavior
 
-**Shows** — "Two variables, no relationship" over "You dropped **substations.name**
-and **outageEvents.customerMinutes**. They line up on **subId → id**, which is
-what this chart is using. Change it, or pick a different pairing." — with **Change
-the match**.
+A relationship is no longer an inferred banner below unrelated shelves. It is
+an explicit `AnalyticBridge` in Data. If a dimension or measure source is not in
+`data.from`, Data shows a `missing-bridge` issue and the component keeps the last
+good materialization instead of silently guessing a join.
 
-**Needs** — key inference between the two variables, with the chosen pair and the
-alternatives.
+## Related
 
-**Open** — without a real key-inference contract this is a guess presented as a
-fact, and the chart above it is silently wrong when the guess is wrong.
+[Analysis screen specification](../../../screen-specs/analysis.md) ·
+[Analytic system overview](../../../data-models/data/analytic-system-overview.md)

@@ -18,7 +18,7 @@ between rows keeps its identity. An id is not a row.
 
 Content owns the shape of authored material and nothing about where it lives.
 
-**No owner accepts all five variants.** A comment takes text and image; a
+**No owner accepts all six variants.** A comment takes text and image; a
 derived output produces exactly one. The *owner* enforces its own subset — which
 is what keeps this union single rather than one per surface, and what bounds the
 recursion a table cell would otherwise open.
@@ -44,7 +44,7 @@ Content deliberately does not own:
 
 | File | Holds |
 | --- | --- |
-| [`types/block.ts`](types/block.ts) | `Atom`, `Mark`, `MarkLink`, `ContentBlock` and its five variants |
+| [`types/block.ts`](types/block.ts) | `Atom`, `Mark`, `MarkLink`, `ContentBlock` and its six variants |
 | [`types/format.ts`](types/format.ts) | `BlockFormat` — a block's own box |
 | [`types/value.ts`](types/value.ts) | `DateValue`, `FormulaColumn`, `FormulaValue` |
 
@@ -56,11 +56,11 @@ Content deliberately does not own:
 
 ## The union ships whole
 
-All five variants exist at once, including `prompt`, which names a
-`derivedOutputs` table. Every table is declared in one `defineSchema` and Convex
-allows reference cycles, so no variant waits on another capability landing — and
-a later pass wires up behaviour behind a variant that has been there all along,
-rather than widening a union every capability already imports.
+All six variants exist at once. `prompt` names a `derivedOutputs` table and
+`analytic` names an `analyses` table. Every table is declared in one
+`defineSchema` and Convex allows reference cycles, so no variant waits on another
+capability landing — and a later pass wires up behaviour behind a variant that
+has been there all along rather than widening a union every capability imports.
 
 ## Capability Invariants
 

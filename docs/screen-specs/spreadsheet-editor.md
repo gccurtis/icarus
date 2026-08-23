@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The spreadsheet editor presents a sparse `SpreadsheetBody` as a fast grid with native Icarus block content and formula semantics. The vendor editor is an interaction/rendering adapter only: Icarus owns cells, blocks, formulas, merges, spills, charts, styles, named ranges, printing, change sets, and computation.
+The spreadsheet editor presents a sparse `SpreadsheetBody` as a fast grid with native Icarus block content and formula semantics. The vendor editor is an interaction/rendering adapter only: Icarus owns cells, blocks, formulas, merges, spills, analytic references, styles, named ranges, printing, change sets, and computation.
 
 ## Center surface
 
@@ -18,7 +18,7 @@ The fixed editor header shows editable spreadsheet title, template origin, truth
 - Merge/unmerge.
 - Insert/delete rows and columns.
 - Freeze panes.
-- Insert chart after `SheetChart` gains stable identity; existing charts are read-only until then.
+- Create or place any compatible analytic component from the current selection; the analytic, nested chart/table, and internal parts have stable identity.
 - Comment.
 - Zoom and print preview.
 
@@ -43,7 +43,7 @@ Formatting a range applies only to existing selected blocks. Empty cells have no
 - Merged ranges are visibly one editable region.
 - Spill ranges show their generated boundary and block writes to occupied cells.
 - Frozen rows/columns stay visible through scrolling.
-- Floating charts remain anchored to a cell plus offsets and move with that anchor.
+- Floating analytic components remain anchored to a cell plus offsets and move with that anchor.
 
 ### Sheet tabs and status
 
@@ -59,8 +59,8 @@ Formatting a range applies only to existing selected blocks. Empty cells have no
 | `data` | Data & names | Workbook named ranges followed by project Name Manager variables. Keep the two scopes visibly separate; functions are valid formula values but not Analysis inputs. |
 | `find` | Find | Workbook search/replace with sheet and formula/display filters, result count, and virtualized navigation. |
 | `dependencies` | Dependencies | Derived direct precedents/dependents for the selected formula and cycle/error diagnostics. This is computed, not a persisted graph. |
-| `objects` | Objects | Floating charts/overlays by sheet and anchor, including overlapped items. First-class chart editing is gated on stable chart IDs. |
-| `insert` | Insert | Chart kinds, text/formula content, and import-as-materialized-cells affordances. There is no durable linked-data object. |
+| `objects` | Objects | Identified floating analytic components by anchor, including overlapped items. Selecting a row addresses the same analytic and nested part IDs as the canvas and inspector. |
+| `insert` | Insert | New analytic/chart kinds, existing saved analytics, text/formula content, and import-as-materialized-cells affordances. |
 | `styles` | Styles | Default and named workbook styles, search, create, duplicate, rename. Local cell overrides remain in inspector. |
 | `print` | Print | Page setup, area, repeating rows/columns, scale, gridlines, headings. Current sheet settings expanded. |
 | `comments` | Comments | Workbook/current-sheet-derived/current-cell filters. Exact persisted anchors are workbook, cell, or text range only. |
@@ -80,16 +80,17 @@ Formatting a range applies only to existing selected blocks. Empty cells have no
 | Column | Letter/index; point width | Populated-cell summary |
 | Merge | Range; unmerge | Contained source cell |
 | Spill | Origin formula; occupied range; read-only status | Current generated values |
-| Chart | Type; source range; series orientation; title | Anchor/offset/size; headers; change attribution when derivable |
+| Analytic component | Analytic identity; output kind; materialization state | Anchor/offset/size; definition summary; change attribution when derivable |
+| Chart or chart part | Type and type-specific formatting; selected mark/axis/element | Source provenance; analytic ancestry |
 | Named range | Name; sheet; range | Usage |
 | Project name | Authored/lookup name; declared type; stored value; definition order | Creator and updated time |
 | Print setup | Page setup; area/repeats/scale | Gridline/headings flags |
 | Named style | Identity and common style fields | Usage |
 | Comment thread | State/body/replies | Cell/text anchor and attribution |
 
-A range, row, or column can be a strong UI selection without pretending it has a persisted ID. `SheetChart` needs an `id` before first-class creation/editing ships: an ephemeral array index cannot safely support granular updates, remote reconciliation, retained selection, or comments. Until then, existing charts may render read-only and identify themselves by sheet/array position only for the current view.
+A range, row, or column can be a strong UI selection without pretending it has a persisted ID. Analytics are different: the analytic, component, chart/table, categories, series, datums, axes, added elements, table columns, rows, and cells all have semantic IDs. Retained selection and granular revisions therefore address model parts rather than array positions or SVG nodes.
 
-Sheets, cells, charts, rows, and columns have no direct actor fields. Any nested attribution is derived from retained change sets and may be unavailable.
+Sheets, cells, analytic references, rows, and columns have no direct actor fields. Any nested attribution is derived from retained change sets and may be unavailable.
 
 ## Formula and block semantics
 
@@ -134,14 +135,14 @@ User, accepted-local, remote, formula-display, and viewport origins prevent subs
 - Writes into spill cells fail with the origin/range identified.
 - Merge conflicts and structural rebase failures preserve buffered local work.
 - Formula errors remain attached to their raw formula and last display where available.
-- Spreadsheet comments cannot truthfully anchor to a range, chart, row, column, or sheet under the current model; a sheet-filtered list is derived from cell anchors.
+- Spreadsheet comments cannot truthfully anchor to a range, analytic component, row, column, or sheet under the current model; a sheet-filtered list is derived from cell anchors.
 - The model contains no persisted sheet filters or sorts, so the first editor must not imply they will survive unless the model is extended.
-- Row/column insertion and deletion require one native structural-rebase contract that updates populated A1 keys, formulas, comments, named ranges, merges, spills, chart anchors, current selections, and Copilot range attachments atomically or rejects the operation with work preserved.
+- Row/column insertion and deletion require one native structural-rebase contract that updates populated A1 keys, formulas, comments, named ranges, merges, spills, analytic anchors, current selections, and Copilot range attachments atomically or rejects the operation with work preserved.
 - Sheet tabs, selection status, and the final visible rows reserve the shared Copilot safe area.
 
 ## Deliberate navigation choices
 
-- Find owns workbook search; Dependencies is a computed formula view; Objects owns charts/overlays.
+- Find owns workbook search; Dependencies is a computed formula view; Objects owns analytic overlays.
 - Project Name Manager access remains in Data & names.
 - Rich History is deferred to change-set-derived attribution and project Activity.
 - AI task navigation remains in Project Tasks and the Copilot Inspector.

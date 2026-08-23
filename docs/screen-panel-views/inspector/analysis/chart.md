@@ -2,7 +2,7 @@
 
 | Selecting | What it is | Sections |
 | --- | --- | --- |
-| The chart itself, or a kind in the Chart view | How the result is drawn: kind, title, axes, legend, colour | Kind · Title · Axes · Legend · Colours · Not yet modeled |
+| The chart itself, or a kind in the Chart view | How the reusable result is drawn | Kind · Title · Chart-specific geometry · Axes · Legend · Colours · Labels · Elements |
 
 ## Layout
 
@@ -14,13 +14,14 @@
 | axes |
 | legend |
 | colours |
-| not yet modeled |
+| labels and elements |
 
 ## Kind
 
-**Shows** — Table · **Bar** · Line · Area · Scatter · Pie
+**Shows** — Table · **Bar** · Line · Area · Scatter · Bubble · Pie/Doughnut ·
+Waterfall · Mekko · Funnel · Radar · Heatmap · Treemap
 
-**Needs** — the display kind on `AnalysisDefinition`.
+**Needs** — the discriminated `ChartModel.type` inside the analytic component.
 
 ## Title
 
@@ -58,8 +59,12 @@ Starts collapsed.
 **Needs** — a colour set, ideally the same one the deck theme uses so a chart
 pasted into a slide is not a different palette.
 
-## Not yet modeled
+## Labels and elements
 
-**Open** — colour, size, detail, label and tooltip are not persisted encodings in
-`AnalysisDefinition`. The empty Colour zone the builder shows is a proposal, not
-something that can be saved today.
+Label modes are chart-specific and include a custom label carried by each datum.
+Selectable elements are constrained by the visual grammar: bars and lines can
+carry CAGR and axis lines, point charts can carry trend and axis lines, while a
+pie accepts text annotations but no meaningless axis or CAGR line.
+
+**Open** — tooltip content and provenance drill-through still need a persisted
+contract. They should not be inferred from transient SVG geometry.

@@ -26,7 +26,7 @@ interface Sheet {
   cells: Record<string, SheetCell>;    // keyed by A1 notation: "B7"
   merges: string[];                    // ["B2:D4"] — sparse
   spills: SpillRange[];
-  charts: SheetChart[];
+  analytics: SpreadsheetAnalytic[];
   rowCount: number;
   columnCount: number;
   columnWidths?: Record<string, number>;   // "B" -> points
@@ -46,15 +46,16 @@ interface SpillRange {
   range: string;                       // "B2:D10" — what it occupies
 }
 
-interface SheetChart {
-  anchor: { cell: string; dx: number; dy: number };   // top-left, offset in points
-  size: { width: number; height: number };            // points
-  kind: "line" | "bar" | "column" | "area" | "pie" | "scatter";
-  data: string;                        // "Sheet1!A1:D20"
-  seriesInColumns?: boolean;
-  title?: string;
-  hasHeaders?: boolean;
-}
+// See data/analysis.md for AnalyticModel. The sheet keeps a live reference;
+// placement is the spreadsheet's concern and analytic meaning is not copied.
+type SpreadsheetAnalytic = {
+  id: string;
+  analyticId: Id<"analyses">;
+  anchor: { rowId: string; columnId: string };
+  offset: { x: number; y: number };
+  size: { width: number; height: number };
+  zIndex?: number;
+};
 
 interface SheetPrint {
   page: PageSetup;
@@ -100,7 +101,8 @@ than a flag, so the resolver never guesses.
 
 ## Cells keep their A1 keys; everything else gets an id
 
-Sheets, charts, and the blocks inside cells carry ids like everywhere else. Cells
+Sheets, analytic references, analytic/chart parts, and the blocks inside cells
+carry ids like everywhere else. Cells
 do **not** — their key stays A1 notation.
 
 A cell's identity *is* its position. `B7` is what a formula references, what a
@@ -137,7 +139,7 @@ Sparse cells also merge well: a cell edit is one `set` at
 [disjoint ids](../../processes/change-conflicts.md) and never contend. A
 dense array would make every edit touch a shared structure.
 
-## Spills occupy cells; charts do not
+## Spills occupy cells; analytic components do not
 
 The two look similar and behave oppositely.
 
@@ -152,20 +154,20 @@ It is derived from formula results and materialized anyway, on the same terms as
 [`utc` on a date](../content/content-block.md#dates): the formula is the single
 authority, and the range is rewritten on recalculation, never edited.
 
-A **chart** is not data. It anchors to a cell with an offset and carries its own
-size, floating above the grid.
+An **analytic component** is not grid data. Its live reference anchors to a cell
+with an offset and carries its own size, floating above the grid.
 
-Charts were tempting to model as occupying a region — it is tidy, and it makes
-"where is the chart" a range. But it couples chart size to row and column
-dimensions, so resizing a chart means resizing rows; it prevents a chart from
-overlapping the data it plots, which is the normal layout; and it means a chart
-cannot be dragged a few points to line up with something. Anchoring costs one
-thing — the chart moves when rows are inserted above it — and that is the
-behaviour people expect anyway.
+Analytic components were tempting to model as occupying a region—it is tidy,
+and it makes “where is the chart” a range. But it couples component size to row
+and column dimensions, prevents overlap with source data, and removes
+point-level alignment. Anchoring costs one thing—the component moves when rows
+are inserted above it—and that is the expected behavior.
 
-`data` is a range string rather than extracted values, so the chart follows the
-sheet. A chart holding its own copy of the numbers is a chart that is wrong after
-the next edit.
+The wrapper references an `AnalyticModel`; it does not embed a second chart
+copy. That model carries the editable data definition and last complete
+chart/table component. The spreadsheet surface owns only anchor, offset, size,
+and z-order. See the shared [analytic model](../data/analysis.md) and nested
+[chart model](../data/chart.md#source).
 
 ## Print setup
 
@@ -211,6 +213,7 @@ formula feature rather than a workbook one.
 
 [content block](../content/content-block.md) · [page setup](page-setup.md) ·
 [style set](style-set.md) ·
+[analytic](../data/analysis.md) · [chart](../data/chart.md) ·
 [resource snapshot](../revisions/resource-snapshot.md) ·
 [change set](../revisions/change-set.md) ·
 [external file](../special-resources/external-file.md)

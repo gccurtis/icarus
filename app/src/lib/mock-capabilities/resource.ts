@@ -15,6 +15,14 @@
  */
 import { PROJECT, RESOURCES, type PersonId, type Resource } from "$mock-capabilities/cast";
 import { read, type Read } from "$mock-capabilities/read.svelte";
+import type { AnalyticListReference, AnalyticModel } from "$json-store/types/data/analytic";
+import type { ChartModel } from "$json-store/types/data/chart";
+import { asId } from "$json-store/types/core/id";
+import {
+  createBarChart,
+  createPieChart,
+  type ChartIdIssuer
+} from "$lib/unique-components/chart/chart-model";
 
 /** The three editors. Narrower than `ResourceKind`, which also covers what is not edited. */
 export type EditorKind = "document" | "slides" | "spreadsheet";
@@ -293,10 +301,19 @@ const INSERT_OPTIONS: Readonly<Record<EditorKind, readonly InsertOption[]>> = {
     }
   ],
   spreadsheet: [
-    { id: "ins-g-column", label: "Column", group: "Charts", blocked: "SheetChart has no stable id" },
-    { id: "ins-g-bar", label: "Bar", group: "Charts", blocked: "SheetChart has no stable id" },
-    { id: "ins-g-line", label: "Line", group: "Charts", blocked: "SheetChart has no stable id" },
-    { id: "ins-g-pie", label: "Pie", group: "Charts", blocked: "SheetChart has no stable id" },
+    { id: "ins-g-column", label: "Column", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-bar", label: "Bar", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-line", label: "Line", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-area", label: "Area", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-scatter", label: "Scatter", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-bubble", label: "Bubble", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-pie", label: "Pie", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-waterfall", label: "Waterfall", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-mekko", label: "Mekko", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-funnel", label: "Funnel", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-radar", label: "Radar", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-heatmap", label: "Heatmap", group: "Charts", blocked: "Range-to-chart creation is not wired" },
+    { id: "ins-g-treemap", label: "Treemap", group: "Charts", blocked: "Range-to-chart creation is not wired" },
     {
       id: "ins-g-formula",
       label: "Formula",
@@ -1703,18 +1720,19 @@ export type NamedRange = {
 };
 
 /**
- * A floating object over the grid. `index` is the identity because `SheetChart`
- * has no stable `id` — enough for a list, not enough for selection, granular
- * update, reconciliation or comments, which is what gates chart editing.
+ * A floating analytic over the grid. The exact same model renders on an
+ * analysis page, in a document block or on a slide; this projection adds only
+ * the A1 placement strings the spreadsheet surface owns.
  */
 export type SheetObject = {
-  readonly index: number;
-  readonly kind: "Column" | "Bar" | "Line" | "Pie";
+  readonly id: string;
+  readonly kind: "Column" | "Bar" | "Pie";
   readonly title: string;
   readonly sourceRange: string;
   readonly anchor: string;
-  readonly size: string;
+  readonly size: { width: number; height: number };
   readonly overlapped: boolean;
+  readonly model: AnalyticModel;
 };
 
 export type PrintSetup = {
@@ -2093,33 +2111,212 @@ const NAMED_RANGES: readonly NamedRange[] = [
   }
 ];
 
+const CHART_CATEGORIES = [
+  { key: "north", label: "North" },
+  { key: "central", label: "Central" },
+  { key: "south", label: "South" },
+  { key: "coastal", label: "Coastal" }
+] as const;
+let chartSequence = 0;
+const mockChartId: ChartIdIssuer = (kind) => `sheet-${kind}-${++chartSequence}`;
+const categoriesFor = (chartKey: string) =>
+  CHART_CATEGORIES.map((category) => ({
+    ...category,
+    id: `chart-${chartKey}-category-${category.key}`
+  }));
+const chartValues = (chartKey: string, seriesKey: string, values: readonly number[]) =>
+  categoriesFor(chartKey).map((category, index) => ({
+    id: `chart-${chartKey}-datum-${category.key}-${seriesKey}`,
+    categoryKey: category.key,
+    seriesKey,
+    value: values[index]
+  }));
+
+const MINUTES = createBarChart(
+  {
+    id: "chart-customer-minutes",
+    title: "Customer-minutes by substation",
+    source: {
+      kind: "spreadsheet-range",
+      resourceId: asId<"spreadsheets">(SHEET_ID),
+      range: {
+        from: { rowId: "row-1", columnId: "column-a" },
+        to: { rowId: "row-5", columnId: "column-c" }
+      },
+      seriesInColumns: true
+    },
+    data: {
+      categories: categoriesFor("minutes"),
+      series: [{ id: "chart-series-minutes", key: "minutes", label: "Customer-minutes" }],
+      values: chartValues("minutes", "minutes", [1842, 1310, 970, 620])
+    },
+    layout: "group",
+    labels: "value",
+    valueFormat: { style: "number", compact: true, maximumFractionDigits: 1 }
+  },
+  mockChartId
+);
+
+const AVOIDED = createPieChart(
+  {
+    id: "chart-avoided-share",
+    title: "Avoided minutes by event",
+    source: {
+      kind: "spreadsheet-range",
+      resourceId: asId<"spreadsheets">(SHEET_ID),
+      range: {
+        from: { rowId: "row-1", columnId: "column-a" },
+        to: { rowId: "row-5", columnId: "column-e" }
+      },
+      seriesInColumns: true
+    },
+    data: {
+      categories: categoriesFor("avoided"),
+      series: [{ id: "chart-series-avoided", key: "avoided", label: "Avoided minutes" }],
+      values: chartValues("avoided", "avoided", [480, 360, 250, 140])
+    },
+    labels: "percent",
+    innerRadius: 0.2,
+    legend: { visible: true, position: "end" }
+  },
+  mockChartId
+);
+
+const SPEND = createBarChart(
+  {
+    id: "chart-hardening-spend",
+    title: "Hardening spend by feeder",
+    source: {
+      kind: "spreadsheet-range",
+      resourceId: asId<"spreadsheets">(SHEET_ID),
+      range: {
+        from: { rowId: "row-1", columnId: "column-b" },
+        to: { rowId: "row-5", columnId: "column-f" }
+      },
+      seriesInColumns: true
+    },
+    data: {
+      categories: categoriesFor("spend"),
+      series: [{ id: "chart-series-spend", key: "spend", label: "Spend" }],
+      values: chartValues("spend", "spend", [4.2, 3.4, 2.8, 1.9])
+    },
+    orientation: "horizontal",
+    layout: "group",
+    labels: "value",
+    valueFormat: { style: "currency", currency: "USD", compact: true, maximumFractionDigits: 1 }
+  },
+  mockChartId
+);
+
+const analyticForChart = (
+  id: string,
+  chart: ChartModel,
+  variable: string,
+  dimensionKey: string,
+  measureKey: string
+): AnalyticModel => {
+  const inputId = `${id}-input`;
+  const dimensionId = `${id}-dimension`;
+  const dimension: AnalyticListReference = {
+    inputId,
+    selector: { kind: "column", key: dimensionKey }
+  };
+  const measure: AnalyticListReference = {
+    inputId,
+    selector: { kind: "column", key: measureKey }
+  };
+  const groupId = `${id}-group`;
+  const aggregateId = `${id}-aggregate`;
+  return {
+    id,
+    title: chart.title ?? "Analytic",
+    definition: {
+      inputs: [{ id: inputId, variable }],
+      dimensions: [{
+        id: dimensionId,
+        slot: chart.type === "pie" ? "labels" : "x",
+        inputs: [{ id: `${id}-binding`, inputId, values: dimension.selector }],
+        steps: [],
+        operations: []
+      }],
+      bridges: [],
+      data: {
+        from: { kind: "dimension", dimensionId },
+        operations: [
+          { id: groupId, kind: "group", by: [dimension] },
+          {
+            id: aggregateId,
+            kind: "aggregate",
+            input: { kind: "list", list: measure },
+            aggregation: "sum",
+            as: chart.data.series[0]?.label ?? "Value"
+          }
+        ],
+        outputs: [{
+          id: `${id}-output`,
+          label: chart.data.series[0]?.label ?? "Value",
+          value: { kind: "operation", operationId: aggregateId },
+          ...(chart.valueFormat === undefined ? {} : { format: chart.valueFormat })
+        }]
+      }
+    },
+    component: { kind: "chart", chart },
+    materialization: { state: "ready", issueIds: [] }
+  };
+};
+
+const MINUTES_ANALYTIC = analyticForChart(
+  "analytic-customer-minutes",
+  MINUTES,
+  "outageCostModel",
+  "substation",
+  "customerMinutes"
+);
+const AVOIDED_ANALYTIC = analyticForChart(
+  "analytic-avoided-share",
+  AVOIDED,
+  "outageCostModel",
+  "event",
+  "avoidedMinutes"
+);
+const SPEND_ANALYTIC = analyticForChart(
+  "analytic-hardening-spend",
+  SPEND,
+  "outageCostModel",
+  "feeder",
+  "spend"
+);
+
 const OBJECTS: readonly SheetObject[] = [
   {
-    index: 0,
+    id: MINUTES_ANALYTIC.id,
     kind: "Column",
     title: "Customer-minutes by substation",
     sourceRange: "A1:C5",
     anchor: "E9",
-    size: "360 × 220 px",
-    overlapped: false
+    size: { width: 360, height: 220 },
+    overlapped: false,
+    model: MINUTES_ANALYTIC
   },
   {
-    index: 1,
-    kind: "Line",
+    id: AVOIDED_ANALYTIC.id,
+    kind: "Pie",
     title: "Avoided minutes by event",
     sourceRange: "A1:E5",
     anchor: "A14",
-    size: "420 × 240 px",
-    overlapped: true
+    size: { width: 420, height: 240 },
+    overlapped: true,
+    model: AVOIDED_ANALYTIC
   },
   {
-    index: 2,
+    id: SPEND_ANALYTIC.id,
     kind: "Bar",
     title: "Hardening spend by feeder",
     sourceRange: "B1:B5,F1:F5",
     anchor: "A26",
-    size: "360 × 200 px",
-    overlapped: false
+    size: { width: 360, height: 200 },
+    overlapped: false,
+    model: SPEND_ANALYTIC
   }
 ];
 
@@ -2267,10 +2464,10 @@ export const objectsIn = (spreadsheetId: string): Read<readonly SheetObject[]> =
   return read(OBJECTS, "resource.objectsIn");
 };
 
-/** By array position, which is all a chart without a stable id can be addressed by. */
-export const chartAt = (spreadsheetId: string, index: number): Read<SheetObject | undefined> => {
+/** By stable chart id; reordering the object list does not change the result. */
+export const chartAt = (spreadsheetId: string, chartId: string): Read<SheetObject | undefined> => {
   void spreadsheetId;
-  return read(OBJECTS[index], "resource.chartAt");
+  return read(OBJECTS.find((object) => object.id === chartId), "resource.chartAt");
 };
 
 export const printSetup = (spreadsheetId: string): Read<PrintSetup> => {

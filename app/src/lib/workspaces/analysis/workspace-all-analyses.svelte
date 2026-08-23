@@ -36,10 +36,10 @@
    * identifies it faster than its title does — which is the same reason
    * Templates and Personas are card grids and the work table is not.
    *
-   * **The row count comes from running it.** `lastRunOf` is the door, and it
-   * answers the same figures for every analysis here because the mock holds one
-   * result. That is the honest shape of the gap the specification names: drawing
-   * this library truthfully means evaluating every analysis in it.
+   * **The row count describes the last materialization.** `lastRunOf` is the
+   * door, and it answers the same figures for every analysis here because the
+   * mock holds one result. A production card can render a bounded thumbnail
+   * from the saved component without replaying every analytic plan.
    */
   let {
     /** Enter the one-analysis state. Only a parent knows where that lives. */
@@ -133,9 +133,9 @@
               {#snippet thumb()}
                 <!--
                   A placeholder shape rather than a rendered one. The
-                  specification offers the choice and names its price: a real
-                  thumbnail means running every analysis in the project just to
-                  draw the library.
+                  full component renderer belongs in the one-analysis screen;
+                  the library can derive a bounded thumbnail from the last
+                  complete materialization without executing the definition.
                 -->
                 <ScreenThumb ratio="16 / 9" lines={4} />
               {/snippet}
@@ -148,8 +148,8 @@
 
     <div class="area-note">
       <ScreenNote>
-        Nothing about a result is stored. Opening one runs it again against the variables as they
-        are now, so the counts above describe results that no longer exist.
+        Each card can use the last complete materialized component. Opening one also checks the
+        current variables and marks that component stale while a newer result is evaluated.
       </ScreenNote>
     </div>
   </div>

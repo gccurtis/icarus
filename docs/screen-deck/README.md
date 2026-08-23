@@ -123,11 +123,12 @@ that.
 guide on every side, and header and footer as editable furniture. The ruler is
 gone; the margin is visible where the writing is.
 
-**Analysis has no inputs, joins or root.** Project variables are variables. You
-drop a field on X or Y and the chart appears, centred at the top before any
-control. When two variables are in play and need relating, the screen says so as
-a problem to solve — "two variables, no relationship" — with the match it picked
-and the alternatives, rather than a modelling step to get through first.
+**Analysis has no privileged root table.** Project variables normalize to tables,
+and the analytic records exactly which relation feeds its data program. Dropping
+a table into X, Y, labels, or size requires a list projection; multiple inputs
+can extend or join in order. Independently composed dimensions meet through an
+explicit bridge before aggregation. The screen presents this as an answer first
+and its ordered program second, not as a Tableau shelf replica.
 
 **Context is two halves.** Include and Take out, side by side with a minus
 between them, then a table of what survives with an "In because" column. The
@@ -233,7 +234,8 @@ merely constrain it:
 - No body entity carries a variable key, so template variables cannot be placed,
   highlighted, jumped to, or filled. Every template with variables is unusable
   until this exists.
-- `SheetChart` has no stable `id`, so chart creation and editing stay gated.
+- Spreadsheet analytic references now have stable IDs; production Convex
+  validators and mutations still need to adopt the contract.
 - Placeholders have no stable key, so duplicate-role reset and placeholder
   selection stay gated.
 - A proposed finding has no state in the model. Proposed, accepted and dismissed

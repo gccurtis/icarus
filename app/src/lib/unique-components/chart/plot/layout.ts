@@ -1,221 +1,226 @@
-import { markId, type Mark, type SeriesSpec } from "$lib/unique-components/chart/chart-spec";
+import type {
+  BarChartModel,
+  ChartAxisLineElement,
+  ChartCagrLineElement,
+  PieChartModel
+} from "$json-store/types/data/chart";
+import { cagrForLine } from "$lib/unique-components/chart/chart-model";
+import type { ChartBand, ChartBox, ChartMark } from "$lib/unique-components/chart/chart-spec";
 import { seriesColor } from "$lib/unique-components/chart/palette";
 
-/**
- * Turning data into positioned things, with no drawing anywhere in it.
- *
- * **This is the file the whole rewrite exists for.** A renderer that draws
- * straight from data can only be styled as a whole and can only be pointed at as
- * a whole. Producing marks first — one addressable rectangle per bar or segment,
- * each carrying where it is and what it means — is what makes selecting a single
- * bar of a cluster, labelling a segment in its own middle, or colouring one
- * slice differently into ordinary operations rather than fights with a library.
- *
- * It is pure functions over numbers, so the geometry can be checked by reading
- * it. The library we replaced put its geometry inside its components, which is
- * why its labels could be measured landing on top of one another but not
- * corrected.
- */
-export type Box = { x: number; y: number; width: number; height: number };
+export type Box = ChartBox;
 
 export type PlotSize = {
   width: number;
   height: number;
-  /** Room for the axes. The value side is wider because it holds figures. */
   pad: { top: number; right: number; bottom: number; left: number };
 };
 
-export type BarLayout = "stack" | "group" | "expand" | "overlap";
+export type BarLayout = BarChartModel["layout"];
 
-export type LaidOut = {
-  marks: Mark[];
-  /** Where each category's band sits, for axis labels and whole-column clicks. */
-  bands: { category: string; box: Box }[];
-  /** The value axis ticks, already positioned. */
+export type BarLayoutResult = {
+  marks: ChartMark[];
+  bands: ChartBand[];
   ticks: { value: number; at: number }[];
-  /** The plot rectangle itself, inside the padding. */
-  plot: Box;
-  /** The value axis maximum actually used. */
-  max: number;
+  plot: ChartBox;
+  domain: [number, number];
 };
 
-const numberAt = (row: Record<string, unknown>, key: string) => {
-  const value = Number(row[key]);
-  return Number.isFinite(value) ? value : 0;
+export type LaidOut = BarLayoutResult;
+
+const niceStep = (span: number, count: number) => {
+  const raw = span / Math.max(1, count);
+  const magnitude = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+  return [1, 2, 2.5, 5, 10].map((n) => n * magnitude).find((n) => n >= raw) ?? magnitude * 10;
 };
 
-/**
- * Nice round ticks covering `max`.
- *
- * Rounding up to a round number rather than ending the axis exactly at the
- * tallest bar: an axis whose top is 1,842 makes every bar look full-height and
- * makes two charts of the same quantity incomparable.
- */
+/** Nice round ticks from zero through a positive maximum. */
 export const ticksFor = (max: number, count = 4): number[] => {
   if (max <= 0) return [0];
-  const raw = max / count;
-  const magnitude = Math.pow(10, Math.floor(Math.log10(raw)));
-  const step = [1, 2, 2.5, 5, 10].map((n) => n * magnitude).find((n) => n >= raw) ?? magnitude * 10;
+  const step = niceStep(max, count);
   const top = Math.ceil(max / step) * step;
-
-  const out: number[] = [];
-  for (let value = 0; value <= top + step / 2; value += step) out.push(value);
-  return out;
+  const result: number[] = [];
+  for (let value = 0; value <= top + step / 2; value += step) result.push(value);
+  return result;
 };
 
-/**
- * Every bar, as a mark.
- *
- * Horizontal is not a transpose applied afterwards — the category axis and the
- * value axis are chosen up front and every box is built in final coordinates.
- * Rotating a finished vertical layout is what produced upside-down stacks and
- * mirrored groups in the version this replaces.
- */
-export const layoutBars = (
-  data: readonly Record<string, unknown>[],
-  categoryField: string,
-  series: readonly SeriesSpec[],
-  layout: BarLayout,
-  horizontal: boolean,
-  size: PlotSize
-): LaidOut => {
+export const niceDomain = (min: number, max: number, count = 4): [number, number] => {
+  if (min === max) return min === 0 ? [0, 1] : [Math.min(0, min), Math.max(0, max)];
+  const step = niceStep(max - min, count);
+  return [Math.floor(min / step) * step, Math.ceil(max / step) * step];
+};
+
+export const ticksIn = (domain: [number, number], count = 4) => {
+  const [min, max] = domain;
+  const step = niceStep(max - min, count);
+  const first = Math.ceil(min / step) * step;
+  const result: number[] = [];
+  for (let value = first; value <= max + step / 2; value += step) {
+    result.push(Math.abs(value) < step / 1_000_000 ? 0 : value);
+  }
+  if (result.length === 0) return [min, max];
+  return result;
+};
+
+const datumMap = (chart: BarChartModel) =>
+  new Map(chart.data.datums.map((entry) => [`${entry.categoryId}\u0000${entry.seriesId}`, entry]));
+
+const domainFor = (
+  chart: BarChartModel,
+  visibleSeriesIds: ReadonlySet<string>,
+  values: ReturnType<typeof datumMap>
+): [number, number] => {
+  const override = chart.axes.value.domain;
+  if (override !== undefined && override[0] < override[1]) return [...override];
+
+  if (chart.layout === "stack" || chart.layout === "expand") {
+    const ends = chart.data.categories.flatMap((category) => {
+      let positive = 0;
+      let negative = 0;
+      let divisor = 1;
+      if (chart.layout === "expand") {
+        divisor =
+          chart.data.series
+            .filter((series) => visibleSeriesIds.has(series.id))
+            .reduce(
+              (sum, series) =>
+                sum + Math.abs(values.get(`${category.id}\u0000${series.id}`)?.value ?? 0),
+              0
+            ) || 1;
+      }
+      for (const series of chart.data.series) {
+        if (!visibleSeriesIds.has(series.id)) continue;
+        const raw = values.get(`${category.id}\u0000${series.id}`)?.value ?? 0;
+        const value = raw / divisor;
+        if (value >= 0) positive += value;
+        else negative += value;
+      }
+      return [positive, negative];
+    });
+    return niceDomain(Math.min(0, ...ends), Math.max(0, ...ends));
+  }
+
+  const shown = chart.data.datums
+    .filter((datum) => visibleSeriesIds.has(datum.seriesId))
+    .map((datum) => datum.value);
+  return niceDomain(Math.min(0, ...shown), Math.max(0, ...shown));
+};
+
+/** Produce addressable bar geometry from the persisted, identified data. */
+export const layoutBars = (chart: BarChartModel, size: PlotSize): BarLayoutResult => {
   const { width, height, pad } = size;
-  const plot: Box = {
+  const horizontal = chart.orientation === "horizontal";
+  const plot: ChartBox = {
     x: pad.left,
     y: pad.top,
     width: Math.max(0, width - pad.left - pad.right),
     height: Math.max(0, height - pad.top - pad.bottom)
   };
 
-  const visible = series.filter((entry) => !entry.hidden);
-  const categories = data.map((row) => String(row[categoryField] ?? ""));
-
-  /** The axis the categories run along, and the one the values run along. */
+  const visible = chart.data.series.filter((entry) => !entry.hidden);
+  const visibleIds = new Set(visible.map((entry) => entry.id));
+  const values = datumMap(chart);
+  const domain = domainFor(chart, visibleIds, values);
+  const [domainMin, domainMax] = domain;
+  const span = domainMax - domainMin || 1;
   const categoryExtent = horizontal ? plot.height : plot.width;
-  const valueExtent = horizontal ? plot.width : plot.height;
-
-  const band = categories.length > 0 ? categoryExtent / categories.length : categoryExtent;
+  const band = chart.data.categories.length > 0 ? categoryExtent / chart.data.categories.length : categoryExtent;
   const bandInset = band * 0.18;
   const bandWidth = Math.max(1, band - bandInset * 2);
 
-  const totals = data.map((row) =>
-    visible.reduce((sum, entry) => sum + numberAt(row, entry.key), 0)
-  );
+  const positionOf = (value: number) =>
+    horizontal
+      ? plot.x + ((value - domainMin) / span) * plot.width
+      : plot.y + plot.height - ((value - domainMin) / span) * plot.height;
 
-  /** `expand` normalises each column to its own total, so the axis is a share. */
-  const max =
-    layout === "expand"
-      ? 1
-      : layout === "stack"
-        ? Math.max(0, ...totals)
-        : Math.max(
-            0,
-            ...data.flatMap((row) => visible.map((entry) => numberAt(row, entry.key)))
-          );
+  const ticks = ticksIn(domain).map((value) => ({ value, at: positionOf(value) }));
+  const marks: ChartMark[] = [];
+  const bands: ChartBand[] = [];
 
-  const ticks = (layout === "expand" ? [0, 0.25, 0.5, 0.75, 1] : ticksFor(max)).map((value) => ({
-    value,
-    at: 0
-  }));
-  const axisTop = layout === "expand" ? 1 : (ticks.at(-1)?.value ?? max) || 1;
-
-  /** A value as a distance along the value axis. */
-  const lengthOf = (value: number) => (axisTop === 0 ? 0 : (value / axisTop) * valueExtent);
-
-  for (const tick of ticks) {
-    tick.at = horizontal ? plot.x + lengthOf(tick.value) : plot.y + plot.height - lengthOf(tick.value);
-  }
-
-  const marks: Mark[] = [];
-  const bands: { category: string; box: Box }[] = [];
-
-  data.forEach((row, index) => {
-    const category = categories[index];
-    const bandStart = (horizontal ? plot.y : plot.x) + index * band + bandInset;
-
+  chart.data.categories.forEach((category, categoryIndex) => {
+    const bandStart = (horizontal ? plot.y : plot.x) + categoryIndex * band + bandInset;
     bands.push({
-      category,
+      categoryId: category.id,
+      label: category.label,
       box: horizontal
         ? { x: plot.x, y: bandStart, width: plot.width, height: bandWidth }
         : { x: bandStart, y: plot.y, width: bandWidth, height: plot.height }
     });
 
-    // `expand` divides by the column's own total; a column of nothing stays at
-    // nothing rather than becoming NaN geometry.
-    const divisor = layout === "expand" ? totals[index] || 1 : 1;
+    const divisor =
+      chart.layout === "expand"
+        ? visible.reduce(
+            (sum, series) =>
+              sum + Math.abs(values.get(`${category.id}\u0000${series.id}`)?.value ?? 0),
+            0
+          ) || 1
+        : 1;
+    let positiveCursor = 0;
+    let negativeCursor = 0;
 
-    let cursor = 0;
-    visible.forEach((entry, seriesIndex) => {
-      const raw = numberAt(row, entry.key);
-      const value = layout === "expand" ? raw / divisor : raw;
-      const length = lengthOf(Math.abs(value));
-      const color = entry.color ?? seriesColor(series.indexOf(entry));
+    visible.forEach((series, visibleIndex) => {
+      const datum = values.get(`${category.id}\u0000${series.id}`);
+      if (datum === undefined) return;
+      const drawnValue = chart.layout === "expand" ? datum.value / divisor : datum.value;
+      let from = 0;
+      let to = drawnValue;
 
-      let box: Box;
-
-      if (layout === "group") {
-        const slot = bandWidth / Math.max(1, visible.length);
-        const slotInset = slot * 0.08;
-        const thickness = Math.max(1, slot - slotInset * 2);
-        const along = bandStart + seriesIndex * slot + slotInset;
-
-        box = horizontal
-          ? { x: plot.x, y: along, width: length, height: thickness }
-          : { x: along, y: plot.y + plot.height - length, width: thickness, height: length };
-      } else if (layout === "overlap") {
-        // Widest first so a shorter series in front stays visible.
-        const thickness = bandWidth * (1 - seriesIndex * 0.18);
-        const along = bandStart + (bandWidth - thickness) / 2;
-
-        box = horizontal
-          ? { x: plot.x, y: along, width: length, height: thickness }
-          : { x: along, y: plot.y + plot.height - length, width: thickness, height: length };
-      } else {
-        box = horizontal
-          ? { x: plot.x + cursor, y: bandStart, width: length, height: bandWidth }
-          : {
-              x: bandStart,
-              y: plot.y + plot.height - cursor - length,
-              width: bandWidth,
-              height: length
-            };
-        cursor += length;
+      if (chart.layout === "stack" || chart.layout === "expand") {
+        if (drawnValue >= 0) {
+          from = positiveCursor;
+          to = positiveCursor + drawnValue;
+          positiveCursor = to;
+        } else {
+          from = negativeCursor;
+          to = negativeCursor + drawnValue;
+          negativeCursor = to;
+        }
       }
 
+      const fromAt = positionOf(from);
+      const toAt = positionOf(to);
+      let thickness = bandWidth;
+      let along = bandStart;
+
+      if (chart.layout === "group") {
+        const slot = bandWidth / Math.max(1, visible.length);
+        const inset = slot * 0.08;
+        thickness = Math.max(1, slot - inset * 2);
+        along = bandStart + visibleIndex * slot + inset;
+      } else if (chart.layout === "overlap") {
+        thickness = Math.max(1, bandWidth * (1 - visibleIndex * 0.18));
+        along = bandStart + (bandWidth - thickness) / 2;
+      }
+
+      const box: ChartBox = horizontal
+        ? { x: Math.min(fromAt, toAt), y: along, width: Math.abs(toAt - fromAt), height: thickness }
+        : { x: along, y: Math.min(fromAt, toAt), width: thickness, height: Math.abs(toAt - fromAt) };
+
       marks.push({
-        id: markId(category, entry.key),
-        kind: layout === "stack" || layout === "expand" ? "segment" : "bar",
-        category,
-        seriesKey: entry.key,
-        value: raw,
-        color,
+        id: datum.id,
+        datumId: datum.id,
+        kind: chart.layout === "stack" || chart.layout === "expand" ? "segment" : "bar",
+        categoryId: category.id,
+        categoryLabel: category.label,
+        seriesId: series.id,
+        seriesLabel: series.label,
+        value: datum.value,
+        label: datum.label,
+        color: datum.style?.color ?? series.color ?? seriesColor(chart.data.series.indexOf(series)),
+        opacity: datum.style?.opacity ?? 1,
         box
       });
     });
   });
 
-  return { marks, bands, ticks, plot, max: axisTop };
+  return { marks, bands, ticks, plot, domain };
 };
 
-/**
- * Where a figure goes, and whether it goes at all.
- *
- * **The rule that was missing.** A stacked segment's label belongs in the middle
- * of *that segment*, not in the middle of the column — which is the defect this
- * replaces, where three numbers were measured landing at the same y. A clustered
- * bar's label belongs directly above *that bar*, centred on it, not offset
- * diagonally into its neighbour.
- *
- * **A label that does not fit is dropped, never drawn overlapping.** The number
- * is still on the mark's `<title>`, so nothing is lost — a figure sitting across
- * two segments is worse than a figure you have to hover for.
- */
 export type PlacedLabel = {
   markId: string;
   text: string;
   x: number;
   y: number;
-  /** Inside a filled mark, so it needs on-fill ink. */
   inside: boolean;
 };
 
@@ -223,132 +228,233 @@ const MIN_INSIDE = 16;
 const MIN_ACROSS = 26;
 
 export const placeValueLabels = (
-  marks: readonly Mark[],
+  marks: readonly ChartMark[],
   layout: BarLayout,
   horizontal: boolean,
-  format: (value: number) => string
+  format: (value: number, mark: ChartMark) => string,
+  includeZero = false
 ): PlacedLabel[] => {
   const stacked = layout === "stack" || layout === "expand";
-
   return marks.flatMap((mark): PlacedLabel[] => {
-    const { box } = mark;
-    if (mark.value === 0) return [];
-
+    if (!includeZero && mark.value === 0) return [];
+    const text = format(mark.value, mark);
+    if (text.length === 0) return [];
+    const along = horizontal ? mark.box.width : mark.box.height;
+    const across = horizontal ? mark.box.height : mark.box.width;
     if (stacked) {
-      // Centred in its own segment, and only if the segment can hold it.
-      const along = horizontal ? box.width : box.height;
-      const across = horizontal ? box.height : box.width;
       if (along < MIN_INSIDE || across < MIN_ACROSS) return [];
-
-      return [
-        {
-          markId: mark.id,
-          text: format(mark.value),
-          x: box.x + box.width / 2,
-          y: box.y + box.height / 2,
-          inside: true
-        }
-      ];
-    }
-
-    // Clustered and overlaid: directly above the bar, centred on it.
-    if ((horizontal ? box.height : box.width) < MIN_ACROSS) return [];
-
-    return [
-      {
+      return [{
         markId: mark.id,
-        text: format(mark.value),
-        x: horizontal ? box.x + box.width + 4 : box.x + box.width / 2,
-        y: horizontal ? box.y + box.height / 2 : box.y - 5,
-        inside: false
-      }
-    ];
+        text,
+        x: mark.box.x + mark.box.width / 2,
+        y: mark.box.y + mark.box.height / 2,
+        inside: true
+      }];
+    }
+    if (across < MIN_ACROSS) return [];
+    return [{
+      markId: mark.id,
+      text,
+      x: horizontal
+        ? mark.value >= 0 ? mark.box.x + mark.box.width + 4 : mark.box.x - 4
+        : mark.box.x + mark.box.width / 2,
+      y: horizontal
+        ? mark.box.y + mark.box.height / 2
+        : mark.value >= 0 ? mark.box.y - 5 : mark.box.y + mark.box.height + 13,
+      inside: false
+    }];
   });
 };
 
-/** One figure per column, over the whole column or cluster. */
 export const placeTotalLabels = (
-  marks: readonly Mark[],
-  bands: readonly { category: string; box: Box }[],
+  marks: readonly ChartMark[],
+  bands: readonly ChartBand[],
   horizontal: boolean,
   format: (value: number) => string
 ): PlacedLabel[] =>
   bands.flatMap((band) => {
-    const own = marks.filter((mark) => mark.category === band.category);
+    const own = marks.filter((mark) => mark.categoryId === band.categoryId);
     if (own.length === 0) return [];
-
     const total = own.reduce((sum, mark) => sum + mark.value, 0);
     if (total === 0) return [];
-
-    // The top of the tallest thing in the band, whether that is a stack or the
-    // tallest bar of a cluster. Centred on the band, not on any one series —
-    // anchoring to the last series is what made the total read as its label.
     const edge = horizontal
-      ? Math.max(...own.map((mark) => mark.box.x + mark.box.width))
-      : Math.min(...own.map((mark) => mark.box.y));
-
-    return [
-      {
-        markId: `${band.category}::total`,
-        text: format(total),
-        x: horizontal ? edge + 6 : band.box.x + band.box.width / 2,
-        y: horizontal ? band.box.y + band.box.height / 2 : edge - 6,
-        inside: false
-      }
-    ];
+      ? total >= 0
+        ? Math.max(...own.map((mark) => mark.box.x + mark.box.width))
+        : Math.min(...own.map((mark) => mark.box.x))
+      : total >= 0
+        ? Math.min(...own.map((mark) => mark.box.y))
+        : Math.max(...own.map((mark) => mark.box.y + mark.box.height));
+    return [{
+      markId: `${band.categoryId}:total`,
+      text: format(total),
+      x: horizontal
+        ? edge + (total >= 0 ? 6 : -6)
+        : band.box.x + band.box.width / 2,
+      y: horizontal
+        ? band.box.y + band.box.height / 2
+        : edge + (total >= 0 ? -6 : 14),
+      inside: false
+    }];
   });
 
-/** Slices, as marks, for a pie. */
+const point = (centre: { x: number; y: number }, angle: number, radius: number) => ({
+  x: centre.x + Math.cos(angle) * radius,
+  y: centre.y + Math.sin(angle) * radius
+});
+
+const slicePath = (
+  centre: { x: number; y: number },
+  outer: number,
+  inner: number,
+  from: number,
+  to: number
+) => {
+  const sweep = Math.max(0, to - from);
+  if (sweep >= Math.PI * 2 - 0.000001) {
+    const top = point(centre, -Math.PI / 2, outer);
+    const bottom = point(centre, Math.PI / 2, outer);
+    if (inner <= 0) {
+      return `M ${centre.x} ${centre.y} L ${top.x} ${top.y} A ${outer} ${outer} 0 1 1 ${bottom.x} ${bottom.y} A ${outer} ${outer} 0 1 1 ${top.x} ${top.y} Z`;
+    }
+    const innerTop = point(centre, -Math.PI / 2, inner);
+    const innerBottom = point(centre, Math.PI / 2, inner);
+    return `M ${top.x} ${top.y} A ${outer} ${outer} 0 1 1 ${bottom.x} ${bottom.y} A ${outer} ${outer} 0 1 1 ${top.x} ${top.y} L ${innerTop.x} ${innerTop.y} A ${inner} ${inner} 0 1 0 ${innerBottom.x} ${innerBottom.y} A ${inner} ${inner} 0 1 0 ${innerTop.x} ${innerTop.y} Z`;
+  }
+
+  const outerStart = point(centre, from, outer);
+  const outerEnd = point(centre, to, outer);
+  const large = sweep > Math.PI ? 1 : 0;
+  if (inner <= 0) {
+    return `M ${centre.x} ${centre.y} L ${outerStart.x} ${outerStart.y} A ${outer} ${outer} 0 ${large} 1 ${outerEnd.x} ${outerEnd.y} Z`;
+  }
+  const innerEnd = point(centre, to, inner);
+  const innerStart = point(centre, from, inner);
+  return `M ${outerStart.x} ${outerStart.y} A ${outer} ${outer} 0 ${large} 1 ${outerEnd.x} ${outerEnd.y} L ${innerEnd.x} ${innerEnd.y} A ${inner} ${inner} 0 ${large} 0 ${innerStart.x} ${innerStart.y} Z`;
+};
+
+export type PieLayoutResult = {
+  marks: ChartMark[];
+  slices: { markId: string; path: string; mid: number }[];
+  centre: { x: number; y: number };
+  radius: number;
+  total: number;
+};
+
+/** Slices use datum ids exactly as bars do. */
 export const layoutPie = (
-  data: readonly Record<string, unknown>[],
-  categoryField: string,
-  valueField: string,
+  chart: PieChartModel,
   size: { width: number; height: number }
-): { marks: Mark[]; slices: { markId: string; path: string; mid: number }[]; centre: { x: number; y: number }; radius: number } => {
+): PieLayoutResult => {
   const centre = { x: size.width / 2, y: size.height / 2 };
-  const radius = Math.max(0, Math.min(size.width, size.height) / 2 - 8);
-
-  const values = data.map((row) => Math.max(0, numberAt(row, valueField)));
-  const total = values.reduce((sum, value) => sum + value, 0) || 1;
-
+  const radius = Math.max(0, Math.min(size.width, size.height) / 2 - 12);
+  const inner = radius * chart.innerRadius;
+  const series = chart.data.series[0];
+  const datumByCategory = new Map(
+    chart.data.datums
+      .filter((datum) => datum.seriesId === series?.id)
+      .map((datum) => [datum.categoryId, datum])
+  );
+  const values = chart.data.categories.map((category) =>
+    Math.max(0, datumByCategory.get(category.id)?.value ?? 0)
+  );
+  const total = values.reduce((sum, value) => sum + value, 0);
+  const divisor = total || 1;
   let angle = -Math.PI / 2;
-  const marks: Mark[] = [];
-  const slices: { markId: string; path: string; mid: number }[] = [];
+  const marks: ChartMark[] = [];
+  const slices: PieLayoutResult["slices"] = [];
 
-  data.forEach((row, index) => {
-    const category = String(row[categoryField] ?? index);
-    const share = values[index] / total;
-    const sweep = share * Math.PI * 2;
+  chart.data.categories.forEach((category, index) => {
+    const datum = datumByCategory.get(category.id);
+    if (datum === undefined) return;
+    const sweep = (values[index] / divisor) * Math.PI * 2;
     const from = angle;
     const to = angle + sweep;
     angle = to;
-
-    const point = (a: number, r: number) => ({
-      x: centre.x + Math.cos(a) * r,
-      y: centre.y + Math.sin(a) * r
-    });
-    const start = point(from, radius);
-    const end = point(to, radius);
-    const large = sweep > Math.PI ? 1 : 0;
-
-    const id = markId(category, valueField);
-    slices.push({
-      markId: id,
-      path: `M ${centre.x} ${centre.y} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${large} 1 ${end.x} ${end.y} Z`,
-      mid: (from + to) / 2
-    });
-
-    const mid = point((from + to) / 2, radius / 2);
+    const mid = (from + to) / 2;
+    const labelPoint = point(centre, mid, inner + (radius - inner) * 0.52);
+    slices.push({ markId: datum.id, path: slicePath(centre, radius, inner, from, to), mid });
     marks.push({
-      id,
+      id: datum.id,
+      datumId: datum.id,
       kind: "slice",
-      category,
-      seriesKey: valueField,
-      value: values[index],
-      color: seriesColor(index),
-      box: { x: mid.x - 1, y: mid.y - 1, width: 2, height: 2 }
+      categoryId: category.id,
+      categoryLabel: category.label,
+      seriesId: series?.id ?? datum.seriesId,
+      seriesLabel: series?.label ?? "Value",
+      value: datum.value,
+      label: datum.label,
+      color: datum.style?.color ?? seriesColor(index),
+      opacity: datum.style?.opacity ?? 1,
+      box: { x: labelPoint.x - 1, y: labelPoint.y - 1, width: 2, height: 2 }
     });
   });
 
-  return { marks, slices, centre, radius };
+  return { marks, slices, centre, radius, total };
+};
+
+export type ChartLineGeometry = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  labelX: number;
+  labelY: number;
+};
+
+export const lineForAxisElement = (
+  chart: BarChartModel,
+  layout: BarLayoutResult,
+  element: ChartAxisLineElement
+): ChartLineGeometry | undefined => {
+  const horizontal = chart.orientation === "horizontal";
+  if (element.position.kind === "category") {
+    const categoryId = element.position.categoryId;
+    const band = layout.bands.find((entry) => entry.categoryId === categoryId);
+    if (band === undefined) return undefined;
+    const at = horizontal ? band.box.y + band.box.height / 2 : band.box.x + band.box.width / 2;
+    return horizontal
+      ? { x1: layout.plot.x, y1: at, x2: layout.plot.x + layout.plot.width, y2: at, labelX: layout.plot.x + 4, labelY: at - 5 }
+      : { x1: at, y1: layout.plot.y, x2: at, y2: layout.plot.y + layout.plot.height, labelX: at + 4, labelY: layout.plot.y + 12 };
+  }
+
+  const [min, max] = layout.domain;
+  if (element.position.value < min || element.position.value > max) return undefined;
+  const share = (element.position.value - min) / (max - min || 1);
+  const at = horizontal
+    ? layout.plot.x + share * layout.plot.width
+    : layout.plot.y + layout.plot.height - share * layout.plot.height;
+  return horizontal
+    ? { x1: at, y1: layout.plot.y, x2: at, y2: layout.plot.y + layout.plot.height, labelX: at + 4, labelY: layout.plot.y + 12 }
+    : { x1: layout.plot.x, y1: at, x2: layout.plot.x + layout.plot.width, y2: at, labelX: layout.plot.x + 4, labelY: at - 5 };
+};
+
+export const lineForCagr = (
+  chart: BarChartModel,
+  layout: BarLayoutResult,
+  element: ChartCagrLineElement
+): (ChartLineGeometry & { rate: number }) | undefined => {
+  const from = layout.marks.find(
+    (mark) => mark.categoryId === element.fromCategoryId && mark.seriesId === element.seriesId
+  );
+  const to = layout.marks.find(
+    (mark) => mark.categoryId === element.toCategoryId && mark.seriesId === element.seriesId
+  );
+  const rate = cagrForLine(chart, element);
+  if (from === undefined || to === undefined || rate === undefined) return undefined;
+  const horizontal = chart.orientation === "horizontal";
+  const endpoint = (mark: ChartMark) =>
+    horizontal
+      ? { x: mark.box.x + mark.box.width, y: mark.box.y + mark.box.height / 2 }
+      : { x: mark.box.x + mark.box.width / 2, y: mark.box.y };
+  const a = endpoint(from);
+  const b = endpoint(to);
+  return {
+    x1: a.x,
+    y1: a.y,
+    x2: b.x,
+    y2: b.y,
+    labelX: (a.x + b.x) / 2,
+    labelY: (a.y + b.y) / 2 - 8,
+    rate
+  };
 };

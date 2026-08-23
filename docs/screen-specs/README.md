@@ -14,9 +14,9 @@ The source of truth for persisted objects remains [`docs/data-models`](../data-m
 | Document | [Document editor](document-editor.md) | Paginated rich-block document |
 | Slide deck | [Slide deck editor](slide-deck-editor.md) | Current slide canvas with ordered deck navigation |
 | New Slide | [New Slide](new-slide.md) | Layout and insertion-point chooser |
-| Spreadsheet | [Spreadsheet editor](spreadsheet-editor.md) | Sparse workbook grid and floating charts |
+| Spreadsheet | [Spreadsheet editor](spreadsheet-editor.md) | Sparse workbook grid and floating analytic components |
 | Research | [Research](research.md) | Mode-anchored research conversation and editorial promotion |
-| Analysis | [Analysis](analysis.md) | Shelves, inputs, and evaluated table or chart |
+| Analysis | [Analysis](analysis.md) | Reusable analytic component over an ordered customization section |
 | Context | [Context](context.md) | Saved Resource Set expression builder and live resolution |
 | Templates | [Templates](templates.md) | Template library and ordinary-editor authoring |
 | Personas | [Personas](personas.md) | Global/project Persona library and five-section editor |
@@ -33,7 +33,7 @@ The source of truth for persisted objects remains [`docs/data-models`](../data-m
 | Slide deck | Slides | Layers, Find, Layouts, Insert, Theme & styles, Notes, Comments, Context |
 | Spreadsheet | Sheets | Data & names, Find, Dependencies, Objects, Insert, Styles, Print, Comments, Context |
 | Research | Inquiry | Findings, Sources, Tool trace, Threads, Context |
-| Analysis | Data | Inputs & joins, Chart, Filters & sorts, Names |
+| Analysis | Analytics | Variables and output-type selection; detailed target editing stays in the Inspector |
 | Context | Saved Contexts | Resources, Operators, Resolved, Knowledge |
 | Templates, library | Library | Targets, Recent |
 | Templates, authoring | Body | Slots, Insert, Design |
@@ -78,10 +78,13 @@ The context panel is a map, not a second toolbar. Formatting and selected-object
 The screen documents preserve these as explicit open decisions:
 
 1. Template slots have no field that attaches a slot key to a body entity.
-2. `SheetChart` has no stable `id`; first-class chart selection and editing remain gated.
+2. Spreadsheet overlays now reference identified analytics; production Convex
+   validators and mutations still need to adopt the TypeScript contract.
 3. Research has no candidate-finding state or thread-level reviewed-source ledger.
 4. Persona threads, research threads, tasks, and messages have no request-level `SetExpression` for composer context.
-5. Analysis has no persisted color, size, detail, label, tooltip, or series shelves; joins, filters, and sorts also have no stable IDs.
+5. The analytic model now persists identified dimensions, bridges, ordered
+   operations, labels, size, and chart/table materialization; production plan
+   execution and atomic materialization remain to be connected.
 6. Spreadsheet comments cannot anchor to a range or chart.
 7. Natural document pages are computed views, not persisted entities.
 8. Retrieval currently treats absent and empty scopes alike as whole-project; zero-member Contexts need an explicit-empty contract before they can safely mean “search nothing.”

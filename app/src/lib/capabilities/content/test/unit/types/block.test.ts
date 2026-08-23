@@ -32,8 +32,8 @@ const paragraph = {
 };
 
 describe("blockValidator", () => {
-  it("names five variants, and the whole union ships at once", () => {
-    expect(types().sort()).toEqual(["formula", "image", "prompt", "table", "text"]);
+  it("names six variants, and the whole union ships at once", () => {
+    expect(types().sort()).toEqual(["analytic", "formula", "image", "prompt", "table", "text"]);
   });
 
   it("holds no embed variant", () => {
@@ -78,6 +78,21 @@ describe("blockValidator", () => {
       const prompt = Object.keys(variant("prompt"));
       expect(prompt).toContain("derivedOutputId");
       for (const shared of ["atoms", "display", "marks"]) expect(prompt).toContain(shared);
+    });
+
+    it("gives an analytic block one live analysis reference and no copied chart data", () => {
+      const analytic = Object.keys(variant("analytic"));
+      expect(analytic).toContain("analyticId");
+      expect(analytic).toContain("showTitle");
+      expect(analytic).not.toContain("chart");
+      expect(
+        validate(blockValidator, {
+          id: "b-analytic",
+          type: "analytic",
+          analyticId: "an-1",
+          showTitle: false
+        })
+      ).toBe(true);
     });
   });
 

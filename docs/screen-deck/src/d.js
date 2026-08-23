@@ -376,7 +376,7 @@ SCREENS["spreadsheet"] = {
     { id: "objects", label: "Objects", icon: "chart", body: () =>
       pane("Objects", [
         sec("Cost model", [row("Column chart", { icon: "chart", sub2: "Anchored to E9", inspect: "chart" }), row("Line chart", { icon: "chart", sub2: "Anchored to A14 · overlapped", inspect: "chart" })].join(""), { count: 2, flush: true }),
-        `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${gap("<code>SheetChart</code> has no stable <code>id</code>. Charts render read-only and identify themselves by array position for this view only.")}</div>`
+        `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${note("Spreadsheet overlays carry stable analytic references. The analytic, nested chart/table, and selectable parts retain semantic IDs across surfaces.")}</div>`
       ].join("")) },
 
     { id: "insert", label: "Insert", icon: "plus", body: () =>
@@ -484,7 +484,7 @@ SCREENS["spreadsheet"] = {
     retained: ["A1 selection, viewport anchor, zoom, find query", "Univer instance, nested block editor, calculation buffers and undo history stay in the tab runtime", "reload validates the range against the current extent and falls back to <code>A1</code>"],
     nav: ["Find owns search; Dependencies is computed; Objects owns charts and overlays.", "Icarus's formula engine is the only calculation authority — Univer's is bypassed entirely.", "Row and column insert/delete needs one structural-rebase contract covering A1 keys, formulas, comments, named ranges, merges, spills and chart anchors — atomically, or rejected with work preserved."],
     revised: ["A spreadsheet is one grid. The sheet tabs and the Sheets panel are gone — a tab is a spreadsheet, not a workbook of them, and the frozen-column rule went with them because a blue line between A and B explained nothing.", "The formula bar and the name box are gone. The inspector already names the cell and holds its formula, with what it reads and what it feeds underneath.", "The toolbar is gone. Formatting is a section of whatever cell or range is selected.", "Project variables and this spreadsheet's named ranges are two separate panels, so the two scopes cannot be mistaken for each other."],
-    gaps: ["<code>SheetChart</code> has no stable ID, so chart creation and editing are gated.", "Empty cells have no persisted block, so range styling of empty coordinates cannot be stored.", "Comments cannot anchor to a range, a chart, a row or a column — only to a cell.", "Editing a formula without a formula bar means in-cell editing must be excellent, and long formulas need somewhere to breathe in a 320px panel.", "Freezing rows and columns has no affordance now that the frozen-column rule is gone. It needs one that explains itself."]
+    gaps: ["Production Convex validators and mutations still need to adopt the spreadsheet analytic-reference contract.", "Empty cells have no persisted block, so range styling of empty coordinates cannot be stored.", "Comments cannot anchor to a range, an analytic component, a row or a column — only to a cell.", "Editing a formula without a formula bar means in-cell editing must be excellent, and long formulas need somewhere to breathe in a 320px panel.", "Freezing rows and columns has no affordance now that the frozen-column rule is gone. It needs one that explains itself."]
   }
 };
 

@@ -241,6 +241,19 @@ const tableBlockValidator = v.object({
 });
 
 /**
+ * A live reusable analytic rather than a copied chart image or duplicated chart
+ * declaration. The document or slide owns placement; the referenced analysis
+ * owns computation, materialization, and semantic interaction ids.
+ */
+const analyticBlockValidator = v.object({
+  id: v.string(),
+  type: v.literal("analytic"),
+  analyticId: v.id("analyses"),
+  showTitle: v.optional(v.boolean()),
+  format: v.optional(blockFormatValidator)
+});
+
+/**
  * A text block with a derived output behind it.
  *
  * It carries the same `atoms`, `display`, and `marks` as a text block and they
@@ -309,6 +322,7 @@ export const blockValidator = v.union(
   formulaBlockValidator,
   imageBlockValidator,
   tableBlockValidator,
+  analyticBlockValidator,
   promptBlockValidator
 );
 
@@ -325,5 +339,12 @@ export type TableCell = Omit<Infer<typeof tableCellValidator>, "blocks"> & {
 };
 export type TableRow = { id: string; cells: TableCell[] };
 export type TableBlock = Omit<Infer<typeof tableBlockValidator>, "rows"> & { rows: TableRow[] };
+export type AnalyticBlock = Infer<typeof analyticBlockValidator>;
 
-export type ContentBlock = TextBlock | FormulaBlock | ImageBlock | TableBlock | PromptBlock;
+export type ContentBlock =
+  | TextBlock
+  | FormulaBlock
+  | ImageBlock
+  | TableBlock
+  | AnalyticBlock
+  | PromptBlock;

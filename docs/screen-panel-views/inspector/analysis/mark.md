@@ -2,7 +2,7 @@
 
 | Selecting | What it is | Sections |
 | --- | --- | --- |
-| A bar, point or slice on the chart | One mark: what it stands for, and the rows underneath it | This bar · Underneath · Actions |
+| Any selectable chart mark | One mark: what it stands for, and the rows underneath it | This mark · Underneath · Actions |
 
 The way from the picture back to the data. It is what makes a chart
 investigable rather than decorative.
@@ -11,14 +11,18 @@ investigable rather than decorative.
 
 | 300px |
 | --- |
-| this bar |
-| this bar |
+| this mark |
+| this mark |
 | underneath |
 | actions |
 
-## This bar
+## This mark
 
 Every encoded value for this mark, named by what put it there.
+
+The section title uses the chart's semantic noun: **bar**, **point**, **bubble**,
+**slice**, **step**, **segment**, **stage**, **cell** or **tile**. The selection
+contract is the same even though the geometry differs.
 
 **Shows**
 
@@ -28,7 +32,8 @@ Every encoded value for this mark, named by what put it there.
 | sum of customerMinutes | 1,842,000 |
 | count of eventId | 3 |
 
-**Needs** — the result row behind the mark, keyed by placement.
+**Needs** — the stable analytic, chart, datum, category, and series identities;
+the materializer maps that semantic datum back to its output and provenance.
 
 ## Underneath
 

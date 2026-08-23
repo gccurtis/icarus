@@ -134,6 +134,15 @@ import { formatRuleValidator } from "$spreadsheets/types/format-rule";
 import { pageSetupValidator } from "$shared/types/page-setup";
 import { styleSetValidator } from "$shared/types/style-set";
 
+const spreadsheetAnalyticValidator = v.object({
+  id: v.string(),
+  analyticId: v.id("analyses"),
+  anchor: v.object({ rowId: v.string(), columnId: v.string() }),
+  offset: v.object({ x: v.number(), y: v.number() }),
+  size: v.object({ width: v.number(), height: v.number() }),
+  zIndex: v.optional(v.number())
+});
+
 export const sheetPrintValidator = v.object({
   page: pageSetupValidator,
   /** Absent prints the used range. */
@@ -179,6 +188,8 @@ export const spreadsheetBodyValidator = v.object({
   /** Entries per part, in part order. Read from part 0. */
   rowPartCounts: v.array(v.number()),
   formatRules: v.array(formatRuleValidator),
+  /** Live analytic references floating over the grid; the surface owns placement. */
+  analytics: v.array(spreadsheetAnalyticValidator),
   frozenRows: v.optional(v.number()),
   frozenColumns: v.optional(v.number()),
   print: sheetPrintValidator,
@@ -187,6 +198,18 @@ export const spreadsheetBodyValidator = v.object({
 
 export type SpreadsheetBody = Infer<typeof spreadsheetBodyValidator>;
 ```
+
+### Analytic references stay in the body
+
+Analytic overlays are bounded floating objects, so their live references live
+with grid shape rather than in the unbounded `sheetCells` table. Each stores the
+shared analytic ID plus row/column anchor, offset, size, and optional z-order.
+It does not embed a second chart copy.
+
+The referenced [analytic model](../data-models/data/analysis.md) carries its last
+complete chart/table component. The hand-built chart dispatcher supports all
+twelve declared chart types. Type-specific element restrictions live in the
+chart union and validator, not in a settings panel.
 
 ### Formatting is regional
 

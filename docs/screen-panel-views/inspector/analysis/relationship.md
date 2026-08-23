@@ -4,9 +4,10 @@
 | --- | --- | --- |
 | The relationship notice above the chart | Two variables that need relating before a chart can be drawn, and the fix | Why you are seeing this · Currently matching on · Other ways they line up · Actions |
 
-The replacement for a join step. It appears only when two variables are actually
-in play, and it is stated as a problem to solve rather than as a modelling stage
-to get through first.
+A relationship lens for either a dimension join or a bridge. It appears only
+when two relation sets need composition. The compact screen can frame a missing
+relationship as a problem to solve; the persisted definition still records the
+chosen keys, join kind, sides, and order explicitly.
 
 ## Layout
 
@@ -26,7 +27,8 @@ a chart needs to know which rows belong together.
 **Shows** — "**substations.name** and **outageEvents.customerMinutes** live in
 different variables. A chart needs to know which rows belong together."
 
-**Needs** — the two placements and their source variables.
+**Needs** — the two relation references and the identified source inputs behind
+their join keys.
 
 ## Currently matching on
 

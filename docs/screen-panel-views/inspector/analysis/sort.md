@@ -14,18 +14,20 @@
 
 ## Sort by
 
-The target and the direction. The target is what is on an axis, aggregation
-included — never a bare source field, because sorting by `customerMinutes` when
-the chart shows `sum of customerMinutes` means something different.
+The target and direction of one identified operation. It may reference a source
+list, a formula, or the output of an earlier operation. That distinction matters:
+sorting raw `customerMinutes` and sorting an aggregated sum are different
+programs.
 
 **Shows** — `Field · sum of customerMinutes`, `Direction · Low to high | **High to low**`
 
-**Needs** — the sort's target placement and direction.
+**Needs** — the sort operation's id, value reference, direction, and position in
+the ordered pipeline.
 
 ## Actions
 
 **Remove**.
 
-**Open** — only one sort is offered. Whether a second, as a tiebreak, is ever
-wanted is undecided; the model would need an ordered list rather than a single
-value.
+Multiple sorts are representable as separate operations. Their order is
+execution order, so a future tiebreak shorthand must compile to that same list
+rather than create a parallel sorting model.

@@ -28,8 +28,8 @@ export type AnalysisRow = {
   readonly name: string;
   readonly chart: "Bar" | "Line" | "Table" | "Area";
   /**
-   * When it last ran. A result is not stored, so this describes an artefact that
-   * no longer exists — which the Analyses view says out loud rather than hide.
+   * When it last materialized. The analytic retains its last complete component;
+   * this timestamp tells the reader how fresh that reusable output is.
    */
   readonly ran: string;
 };

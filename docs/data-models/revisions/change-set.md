@@ -30,7 +30,9 @@ type Op =
 type OpTarget =
   | "row" | "block" | "atom" | "mark"            // document, and content anywhere
   | "slide" | "element" | "section"              // slides
-  | "sheet" | "cell" | "range" | "mergedCells"   // spreadsheet
+  | "sheet" | "cell" | "range" | "mergedCells"   // spreadsheet grid
+  | "analytic" | "analyticComponent"              // computation and reusable output
+  | "chart" | "chartElement"                      // nested visual and annotation
   | "field";                                     // a structural field: page setup, styles, theme
 ```
 
@@ -133,6 +135,10 @@ Only certain pairings are legal:
 | `cell` | ● | | ● | | |
 | `range` | ● | | | | |
 | `mergedCells` | | ● | ● | | |
+| `analytic` | ● | ● | ● | | |
+| `analyticComponent` | ● | | | | |
+| `chart` | ● | | | | |
+| `chartElement` | ● | ● | ● | ● | |
 | `field` | ● | | | | |
 
 `cell` takes no `insert` or `move` because cells are keyed by address rather than
@@ -144,12 +150,11 @@ operands and a print area both name a rectangle rather than a cell.
 **`mergedCells`, not `merge`.** Every other target is a noun naming a thing;
 `merge` read as the verb for the operation being performed on it.
 
-**There is no `chart` target yet.** A chart needs a data range, an anchoring
-model, and a rendering surface, none of which exists — so the target returns with
-them rather than describing something that cannot be built. When it does, it
-takes no `move`: a chart anchors to a cell with an offset and floats above the
-grid, so repositioning it is a `set` on its anchor and there is no `after` for it
-to move past.
+`analytic` addresses the ordered input/dimension/bridge/data definition;
+`analyticComponent` addresses its last complete reusable output. A chart output
+narrows to `chart`, while an identified CAGR, reference line, trend line, or text
+annotation narrows to `chartElement`. Placement is a field on the owning block,
+slide element, or spreadsheet analytic reference rather than chart content.
 
 **`text` targets literal atoms only.** A formula atom is changed by `set`ting its
 `formulaId` — the expression is [a row of its

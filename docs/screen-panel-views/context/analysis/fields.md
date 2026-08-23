@@ -1,60 +1,56 @@
-# Fields
+# Customization
 
 | View | What it is for | Sections |
 | --- | --- | --- |
-| Fields | Where each field has been put | X · Y · Filters · Sort · Limit |
+| Customization | How source tables become the current visual | Chart-specific slots · Ordered operations |
 
-The builder. Each section is a drop zone; each row is a placement that opens its
-own lens.
+The compact companion to the always-visible customization section. Its available
+slots come from the current chart grammar rather than a universal shelf list:
+pie exposes Data and Labels, while a bubble exposes X, Y, Data, Size, and optional
+Labels.
 
-The zones are named for what they do to the picture — *across*, *up* — rather than
-for the query operation behind them.
+X, Y, Labels, and Size accept lists. Dropping a table opens a selector for any
+body column, any data row, or a function that returns a list. Data accepts a
+relation and an ordered pipeline.
 
 ## Layout
 
 | 300px |
 | --- |
-| x — across |
-| y — up |
-| y — up |
-| filters |
-| sort |
-| limit |
+| slots supported by this visual |
+| selected slot's inputs and selectors |
+| extend / join steps |
+| data relation / bridge |
+| ordered operations |
 
 ## X — across
 
 **Shows** — `substations.name`
 
-**Needs** — the analysis definition's X placement.
+**Needs** — the X dimension's identified inputs, list selectors, composition
+steps, and ordered operations.
 
 ## Y — up
 
-Several are allowed; each is a series.
+Y is structurally identical to X. Whether it draws a numeric axis, a second
+category, or is unsupported is decided by the selected visual grammar.
 
 **Shows** — `sum of customerMinutes`; `count of eventId`
 
-**Needs** — the Y placements, each with a field and an aggregation.
+**Needs** — the Y dimension when the selected output exposes one.
 
-## Filters
+## Data program
 
-**Shows** — `eventDate ≥ 2026-01-01`
+**Shows** — the explicit input, dimension, or bridge in `data.from`, followed by
+filter, group, aggregate, sort, limit, and formula operations in execution order.
 
-**Needs** — the definition's filter list.
+**Needs** — the data relation, operations, and named outputs.
 
-**Open** — filters have no stable IDs in the model, so the UI cannot promise
-durable selection or collaboration on an individual one.
+Every input, dimension, step, bridge, operation, and output has a stable id, so
+the inspector, revisions, and future collaboration can address semantic objects
+instead of array positions.
 
-## Sort
+## Order is meaning
 
-**Shows** — `sum of customerMinutes, high to low`
-
-**Needs** — the sort target and direction. A sort targets what is on an axis,
-aggregation included — never a bare source field.
-
-**Open** — sorts have no stable IDs either.
-
-## Limit
-
-**Shows** — `top 10`
-
-**Needs** — the limit value.
+Filtering then sorting is not interchangeable with sorting then filtering. The
+array order is therefore persisted execution order and is shown top to bottom.

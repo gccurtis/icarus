@@ -42,8 +42,10 @@ the definition.
 
 **Shows** — `Rows · 6 of 41`, `Limit · 10`, `Evaluated · 2 minutes ago`
 
-Results are replaceable projections, not resources. Nothing about them is stored,
-which is why this section can only describe the most recent run.
+The editable definition and last complete analytic component are persisted
+together. A new evaluation replaces that materialization only when it completes;
+until then every surface can continue to render the last good chart or table and
+show its freshness or issue state.
 
 **Needs** — the evaluator's last result metadata.
 

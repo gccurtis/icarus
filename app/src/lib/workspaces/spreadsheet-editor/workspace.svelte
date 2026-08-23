@@ -1,8 +1,11 @@
 <script lang="ts">
-  import ChartColumn from "@lucide/svelte/icons/chart-column";
-  import Lock from "@lucide/svelte/icons/lock";
-
   import { ScreenNote, ScreenSurface } from "$lib/unique-components/screen";
+  import { AnalyticElement } from "$lib/unique-components/analytic";
+  import {
+    createChartSelection,
+    type ChartFrame,
+    type ChartSelection
+  } from "$lib/unique-components/chart";
   import {
     cellsIn,
     objectsIn,
@@ -30,7 +33,7 @@
    * would be its. What is drawn here is the part that is ours: a sparse grid
    * where an empty coordinate really is empty, a spill that names its origin and
    * whose children are read-only, errors that read as repair jobs, and charts
-   * anchored to a cell and left read-only because they have no stable id.
+   * anchored to a cell and rendered through the native identified chart model.
    *
    * **Every value on this grid came out of Icarus's formula engine.** Univer's is
    * bypassed rather than configured: two engines would mean two answers, and only
@@ -64,9 +67,6 @@
   const columnIndex = (address: string) => address.replace(/[0-9]/g, "").charCodeAt(0) - 65;
   const rowIndex = (address: string) => Number(address.replace(/[A-Z]/g, ""));
 
-  /** "360 × 220 px" as it is stored; the object record is the only place a size lives. */
-  const sized = (size: string) => size.split("×").map((part) => Number.parseFloat(part.trim()));
-
   const ALIGN: Record<Cell["alignment"], string> = {
     left: "text-start",
     center: "text-center",
@@ -74,6 +74,32 @@
   };
 
   let selected = $state<string>("C2");
+  let selectedChart = $state<string | undefined>(undefined);
+  let frames = $state<Record<string, ChartFrame>>({});
+  const chartSelections = new Map<string, ChartSelection>();
+
+  // The mock grid uses the same dimensions as the CSS variables below. A real
+  // adapter resolves row/column ids through the body before supplying a frame.
+  const SHEET_STUB = 44;
+  const SHEET_COLUMN = 112;
+  const SHEET_ROW = 24;
+  const sheetBounds = { width: SHEET_STUB + COLUMNS.length * SHEET_COLUMN, height: ROWS.length * SHEET_ROW };
+
+  const frameFor = (chart: (typeof charts)[number]): ChartFrame =>
+    frames[chart.id] ?? {
+      x: SHEET_STUB + columnIndex(chart.anchor) * SHEET_COLUMN,
+      y: rowIndex(chart.anchor) * SHEET_ROW,
+      width: chart.size.width,
+      height: chart.size.height
+    };
+
+  const selectionFor = (chartId: string): ChartSelection => {
+    const held = chartSelections.get(chartId);
+    if (held !== undefined) return held;
+    const created = createChartSelection();
+    chartSelections.set(chartId, created);
+    return created;
+  };
 
   /**
    * Which lens a cell opens is decided by what the cell *is*, not by a menu. An
@@ -90,6 +116,7 @@
 
   const choose = (address: string) => {
     selected = address;
+    selectedChart = undefined;
     view.inspect(lensFor(at.get(address)), { kind: "cell", id: address });
   };
 
@@ -152,45 +179,21 @@
               {/each}
             {/each}
 
-            <!--
-              Charts float over the grid, anchored to a cell. They are read-only:
-              `SheetChart` has no stable id, which is enough for a list and not
-              enough for selection, granular update, reconciliation or comments.
-            -->
-            {#each charts as chart (chart.index)}
-              {@const measure = sized(chart.size)}
-              <div
-                class="chart bg-surface-panel border-border-subtle rounded-panel border"
-                style="left: calc(var(--sheet-stub) + {columnIndex(
-                  chart.anchor
-                )} * var(--sheet-col)); top: calc({rowIndex(
-                  chart.anchor
-                )} * var(--sheet-row)); width: {measure[0]}px; height: {measure[1]}px"
-              >
-                <button
-                  type="button"
-                  class="chart-body"
-                  onclick={() =>
-                    view.inspect("resource.chart", {
-                      kind: "chart",
-                      id: String(chart.index)
-                    })}
-                >
-                  <span class="text-caption text-ink-secondary flex items-center gap-1.5">
-                    <ChartColumn size={14} aria-hidden="true" />
-                    <span class="truncate">{chart.title}</span>
-                    <Lock size={12} aria-hidden="true" class="text-ink-muted ms-auto shrink-0" />
-                  </span>
-                  <span class="plot" aria-hidden="true">
-                    {#each [58, 84, 41, 72, 63] as height, index (index)}
-                      <span class="bar bg-border-strong" style="height: {height}%"></span>
-                    {/each}
-                  </span>
-                  <span class="text-caption text-ink-muted font-mono truncate">
-                    {chart.sourceRange}{chart.overlapped ? " · overlapped" : ""}
-                  </span>
-                </button>
-              </div>
+            <!-- Each object owns placement; only its handle moves it, leaving plot interactions intact. -->
+            {#each charts as chart (chart.id)}
+              <AnalyticElement
+                analytic={chart.model}
+                frame={frameFor(chart)}
+                chartSelection={selectionFor(chart.id)}
+                selected={selectedChart === chart.id}
+                bounds={sheetBounds}
+                scale={zoom}
+                onframechange={(next) => (frames[chart.id] = next)}
+                onselect={() => {
+                  selectedChart = chart.id;
+                  view.inspect("resource.chart", { kind: "chart", id: chart.id });
+                }}
+              />
             {/each}
           </div>
         </div>
@@ -317,36 +320,6 @@
   .cell.is-selected {
     outline: 2px solid var(--token-color-active-border);
     outline-offset: -1px;
-  }
-
-  .chart {
-    position: absolute;
-    z-index: 1;
-    overflow: hidden;
-    box-shadow: var(--token-shadow-panel);
-  }
-
-  .chart-body {
-    display: flex;
-    height: 100%;
-    width: 100%;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 2);
-    padding: calc(var(--token-spacing-unit) * 2);
-    text-align: start;
-  }
-
-  .plot {
-    display: flex;
-    flex: 1;
-    align-items: flex-end;
-    gap: calc(var(--token-spacing-unit) * 2);
-    min-height: 0;
-  }
-
-  .bar {
-    flex: 1;
-    border-radius: var(--token-radius-control) var(--token-radius-control) 0 0;
   }
 
   .under {

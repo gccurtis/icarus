@@ -1,92 +1,79 @@
 <script lang="ts">
-  import type { ChartSelection } from "$lib/unique-components/chart/chart-selection.svelte";
-  import type { SeriesSpec } from "$lib/unique-components/chart/chart-spec";
+  import type { BarChartModel } from "$json-store/types/data/chart";
+  import { formatChartValue } from "$lib/unique-components/chart/chart-model";
+  import type { ChartSelection, ChartSelectionTarget } from "$lib/unique-components/chart/chart-selection.svelte";
   import {
     layoutBars,
+    lineForAxisElement,
+    lineForCagr,
     placeTotalLabels,
-    placeValueLabels,
-    type BarLayout
+    placeValueLabels
   } from "$lib/unique-components/chart/plot/layout";
 
-  /**
-   * Bars, drawn by us.
-   *
-   * **Every mark is a thing you can point at.** That is the difference this
-   * component exists to make. A click selects one; shift or meta adds to the
-   * selection; clicking a category label takes the whole column; clicking a
-   * legend entry takes the whole series; clicking the background clears. A
-   * selected mark carries a ring drawn *outside* its own edge, so selecting
-   * something never changes its size or its colour — the two things that would
-   * make a selected bar unreadable as data.
-   *
-   * **The geometry is `layout.ts` and nothing here.** This file positions
-   * nothing; it draws what it is handed. That split is why the labels can be
-   * checked by reading the maths rather than by measuring the screen, which is
-   * how the previous version shipped three numbers on top of each other twice.
-   */
   let {
-    data,
-    x,
-    series,
-    layout = "stack",
-    horizontal = false,
-    labels = "none",
-    height = 300,
-    format = (value: number) => value.toLocaleString(),
+    chart,
     selection,
-    hovered = $bindable(undefined),
+    width = 1000,
+    height = 300,
+    hoveredSeriesId = $bindable(undefined),
     ref = $bindable(null)
   }: {
-    data: readonly Record<string, unknown>[];
-    x: string;
-    series: readonly SeriesSpec[];
-    layout?: BarLayout;
-    horizontal?: boolean;
-    labels?: "none" | "value" | "total";
-    height?: number;
-    format?: (value: number) => string;
+    chart: BarChartModel;
     selection: ChartSelection;
-    hovered?: string | undefined;
+    width?: number;
+    height?: number;
+    hoveredSeriesId?: string | undefined;
     ref?: SVGSVGElement | null;
   } = $props();
 
-  /* A fixed internal coordinate space, as the Marimekko uses: it scales to any
-     container without a resize observer and serializes at any size. */
-  const W = 1000;
-  const PAD = { top: 22, right: 16, bottom: 34, left: 56 };
-
-  const size = $derived({ width: W, height, pad: PAD });
-  const model = $derived(layoutBars(data, x, series, layout, horizontal, size));
-
+  const PAD = { top: 24, right: 18, bottom: 40, left: 64 };
+  const model = $derived(layoutBars(chart, { width, height, pad: PAD }));
+  const format = (value: number) => formatChartValue(value, chart.valueFormat);
+  const horizontal = $derived(chart.orientation === "horizontal");
   const valueLabels = $derived(
-    labels === "value" ? placeValueLabels(model.marks, layout, horizontal, format) : []
+    chart.labels === "value" || chart.labels === "custom"
+      ? placeValueLabels(
+          model.marks,
+          chart.layout,
+          horizontal,
+          chart.labels === "custom" ? (_, mark) => mark.label ?? "" : format,
+          chart.labels === "custom"
+        )
+      : []
   );
   const totalLabels = $derived(
-    labels === "total" ? placeTotalLabels(model.marks, model.bands, horizontal, format) : []
+    chart.labels === "total" ? placeTotalLabels(model.marks, model.bands, horizontal, format) : []
   );
-
+  const dimmed = (seriesId: string) =>
+    hoveredSeriesId !== undefined && hoveredSeriesId !== seriesId;
+  const additive = (event: MouseEvent | KeyboardEvent) =>
+    event.shiftKey || event.metaKey || event.ctrlKey;
+  const axisTarget = (axisId: string): ChartSelectionTarget => ({
+    kind: "axis",
+    chartId: chart.id,
+    axisId
+  });
+  const elementTarget = (elementId: string): ChartSelectionTarget => ({
+    kind: "element",
+    chartId: chart.id,
+    elementId
+  });
   const tickText = (value: number) =>
-    layout === "expand" ? `${Math.round(value * 100)}%` : format(value);
-
-  const dim = (key: string) => hovered !== undefined && hovered !== key;
+    chart.layout === "expand"
+      ? formatChartValue(value, { style: "percent", maximumFractionDigits: 0 })
+      : formatChartValue(value, chart.axes.value.format ?? chart.valueFormat);
 </script>
 
-<!--
-  The listener is on the svg because clearing the selection is what clicking the
-  *background* means, and the background is the svg itself — there is no inner
-  element that is "the empty part of the chart". The rule below wants a widget;
-  the widgets here are the marks inside, each of which is one.
--->
+<!-- The background clears only chart-part selection; a containing frame can still remain selected. -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <svg
   bind:this={ref}
-  viewBox="0 0 {W} {height}"
+  viewBox="0 0 {width} {height}"
   width="100%"
-  {height}
+  height="100%"
   role="img"
-  aria-label="Bar chart"
+  aria-label={chart.title === undefined ? "Bar chart" : `Bar chart: ${chart.title}`}
   onclick={(event) => {
-    // A click that reached the background and not a mark clears the selection.
     if (event.target === event.currentTarget) selection.clear();
   }}
   onkeydown={(event) => {
@@ -95,52 +82,84 @@
   tabindex="-1"
   class="overflow-visible"
 >
-  <!-- Gridlines first, so every mark sits over them. -->
-  {#each model.ticks as tick (tick.value)}
-    {#if horizontal}
+  {#if chart.axes.value.grid}
+    {#each model.ticks as tick (tick.value)}
       <line
-        x1={tick.at}
-        y1={model.plot.y}
-        x2={tick.at}
-        y2={model.plot.y + model.plot.height}
+        x1={horizontal ? tick.at : model.plot.x}
+        y1={horizontal ? model.plot.y : tick.at}
+        x2={horizontal ? tick.at : model.plot.x + model.plot.width}
+        y2={horizontal ? model.plot.y + model.plot.height : tick.at}
         class="stroke-border-subtle"
         stroke-width="1"
+        pointer-events="none"
       />
-      <text x={tick.at} y={height - PAD.bottom + 16} text-anchor="middle" class="fill-ink-muted" font-size="12">
-        {tickText(tick.value)}
-      </text>
-    {:else}
-      <line
-        x1={model.plot.x}
-        y1={tick.at}
-        x2={model.plot.x + model.plot.width}
-        y2={tick.at}
-        class="stroke-border-subtle"
-        stroke-width="1"
-      />
-      <text x={PAD.left - 8} y={tick.at + 4} text-anchor="end" class="fill-ink-muted" font-size="12">
-        {tickText(tick.value)}
-      </text>
-    {/if}
-  {/each}
+    {/each}
+  {/if}
 
-  {#each model.marks as mark (mark.id)}
-    {@const chosen = selection.has(mark.id)}
+  {#if chart.axes.value.visible}
     <g
       role="button"
       tabindex="0"
-      aria-label={`${mark.category}, ${mark.seriesKey}, ${format(mark.value)}`}
-      aria-pressed={chosen}
-      onpointerenter={() => (hovered = mark.seriesKey)}
-      onpointerleave={() => (hovered = undefined)}
+      aria-label="Value axis"
+      aria-pressed={selection.has(axisTarget(chart.axes.value.id))}
       onclick={(event) => {
         event.stopPropagation();
-        selection.click(mark.id, event.shiftKey || event.metaKey || event.ctrlKey);
+        selection.click(axisTarget(chart.axes.value.id), additive(event));
       }}
       onkeydown={(event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
         event.preventDefault();
-        selection.click(mark.id, event.shiftKey);
+        selection.click(axisTarget(chart.axes.value.id), additive(event));
+      }}
+      class="cursor-pointer outline-none"
+    >
+      <line
+        x1={horizontal ? model.plot.x : model.plot.x}
+        y1={horizontal ? model.plot.y + model.plot.height : model.plot.y}
+        x2={horizontal ? model.plot.x + model.plot.width : model.plot.x}
+        y2={horizontal ? model.plot.y + model.plot.height : model.plot.y + model.plot.height}
+        class={selection.has(axisTarget(chart.axes.value.id)) ? "stroke-active-border" : "stroke-border-strong"}
+        stroke-width={selection.has(axisTarget(chart.axes.value.id)) ? 2 : 1}
+      />
+      {#each model.ticks as tick (tick.value)}
+        <text
+          x={horizontal ? tick.at : PAD.left - 8}
+          y={horizontal ? height - PAD.bottom + 18 : tick.at + 4}
+          text-anchor={horizontal ? "middle" : "end"}
+          class="fill-ink-muted"
+          font-size="12"
+        >{tickText(tick.value)}</text>
+      {/each}
+      {#if chart.axes.value.title}
+        <text
+          x={horizontal ? model.plot.x + model.plot.width / 2 : 14}
+          y={horizontal ? height - 4 : model.plot.y + model.plot.height / 2}
+          text-anchor="middle"
+          transform={horizontal ? undefined : `rotate(-90 14 ${model.plot.y + model.plot.height / 2})`}
+          class="fill-ink-secondary"
+          font-size="12"
+        >{chart.axes.value.title}</text>
+      {/if}
+    </g>
+  {/if}
+
+  {#each model.marks as mark (mark.id)}
+    {@const chosen = selection.hasDatum(chart.id, mark.datumId)}
+    <g
+      role="button"
+      tabindex="0"
+      aria-label={`${mark.categoryLabel}, ${mark.seriesLabel}, ${format(mark.value)}`}
+      aria-pressed={chosen}
+      onpointerenter={() => (hoveredSeriesId = mark.seriesId)}
+      onpointerleave={() => (hoveredSeriesId = undefined)}
+      onclick={(event) => {
+        event.stopPropagation();
+        selection.mark(chart.id, mark, additive(event));
+      }}
+      onkeydown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        selection.mark(chart.id, mark, additive(event));
       }}
       class="cursor-pointer outline-none"
     >
@@ -150,18 +169,12 @@
         width={Math.max(0, mark.box.width)}
         height={Math.max(0, mark.box.height)}
         fill={mark.color}
-        opacity={dim(mark.seriesKey) ? 0.2 : 1}
+        opacity={dimmed(mark.seriesId) ? mark.opacity * 0.2 : mark.opacity}
         class="stroke-surface-panel"
         stroke-width="1"
       >
-        <title>{mark.category} · {mark.seriesKey} · {format(mark.value)}</title>
+        <title>{mark.categoryLabel} · {mark.seriesLabel} · {format(mark.value)}</title>
       </rect>
-
-      <!--
-        The selection ring sits outside the mark's own edge and paints nothing
-        inside it. Changing a selected bar's fill would change what the chart
-        says; changing its size would move everything beside it.
-      -->
       {#if chosen}
         <rect
           x={mark.box.x - 2}
@@ -169,8 +182,8 @@
           width={Math.max(0, mark.box.width + 4)}
           height={Math.max(0, mark.box.height + 4)}
           fill="none"
-          class="stroke-ink-primary"
-          stroke-width="2"
+          class="stroke-active-border"
+          stroke-width="3"
           rx="2"
           pointer-events="none"
         />
@@ -178,7 +191,111 @@
     </g>
   {/each}
 
-  <!-- Labels last, so nothing is drawn over a figure. -->
+  {#each chart.elements as element (element.id)}
+    {@const chosen = selection.has(elementTarget(element.id))}
+    {#if element.kind === "axis-line"}
+      {@const line = lineForAxisElement(chart, model, element)}
+      {#if line}
+        <g
+          role="button"
+          tabindex="0"
+          aria-label={element.label ?? "Reference line"}
+          aria-pressed={chosen}
+          onclick={(event) => {
+            event.stopPropagation();
+            selection.click(elementTarget(element.id), additive(event));
+          }}
+          onkeydown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            selection.click(elementTarget(element.id), additive(event));
+          }}
+          class="cursor-pointer outline-none"
+        >
+          <line
+            x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
+            stroke="transparent"
+            stroke-width="12"
+          />
+          <line
+            x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
+            class={chosen ? "stroke-active-border" : "stroke-ink-secondary"}
+            stroke-width={chosen ? 3 : 2}
+            stroke-dasharray="7 5"
+            pointer-events="none"
+          />
+          {#if element.label}
+            <text x={line.labelX} y={line.labelY} class="fill-ink-secondary" font-size="12" pointer-events="none">
+              {element.label}
+            </text>
+          {/if}
+        </g>
+      {/if}
+    {:else if element.kind === "cagr-line"}
+      {@const line = lineForCagr(chart, model, element)}
+      {#if line}
+        <g
+          role="button"
+          tabindex="0"
+          aria-label={element.label ?? "CAGR line"}
+          aria-pressed={chosen}
+          onclick={(event) => {
+            event.stopPropagation();
+            selection.click(elementTarget(element.id), additive(event));
+          }}
+          onkeydown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            selection.click(elementTarget(element.id), additive(event));
+          }}
+          class="cursor-pointer outline-none"
+        >
+          <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} stroke="transparent" stroke-width="14" />
+          <line
+            x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
+            class={chosen ? "stroke-active-border" : "stroke-intelligence-fill"}
+            stroke-width={chosen ? 4 : 3}
+            pointer-events="none"
+          />
+          <circle cx={line.x1} cy={line.y1} r="4" class="fill-intelligence-fill" pointer-events="none" />
+          <circle cx={line.x2} cy={line.y2} r="4" class="fill-intelligence-fill" pointer-events="none" />
+          <text
+            x={line.labelX}
+            y={line.labelY}
+            text-anchor="middle"
+            class="fill-intelligence-text"
+            font-size="12"
+            font-weight="600"
+            pointer-events="none"
+          >
+            {element.label ?? "CAGR"}{element.showRate
+              ? ` ${formatChartValue(line.rate, { style: "percent", maximumFractionDigits: 1 })}`
+              : ""}
+          </text>
+        </g>
+      {/if}
+    {:else}
+      <text
+        x={element.position.x * width}
+        y={element.position.y * height}
+        role="button"
+        tabindex="0"
+        aria-pressed={chosen}
+        class={chosen ? "fill-active-text cursor-pointer font-semibold" : "fill-ink-primary cursor-pointer"}
+        font-size="13"
+        onclick={(event) => {
+          event.stopPropagation();
+          selection.click(elementTarget(element.id), additive(event));
+        }}
+        onkeydown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          selection.click(elementTarget(element.id), additive(event));
+        }}
+      >{element.text}</text>
+    {/if}
+  {/each}
+
   {#each valueLabels as label (label.markId)}
     <text
       x={label.x}
@@ -188,9 +305,7 @@
       class={label.inside ? "fill-ink-on-fill" : "fill-ink-secondary"}
       font-size="12"
       pointer-events="none"
-    >
-      {label.text}
-    </text>
+    >{label.text}</text>
   {/each}
 
   {#each totalLabels as label (label.markId)}
@@ -203,32 +318,63 @@
       font-size="12"
       font-weight="600"
       pointer-events="none"
-    >
-      {label.text}
-    </text>
+    >{label.text}</text>
   {/each}
 
-  <!-- Category labels are click targets: they select the whole column. -->
-  {#each model.bands as band (band.category)}
-    <text
-      x={horizontal ? PAD.left - 8 : band.box.x + band.box.width / 2}
-      y={horizontal ? band.box.y + band.box.height / 2 + 4 : height - PAD.bottom + 16}
-      text-anchor={horizontal ? "end" : "middle"}
+  {#if chart.axes.category.visible}
+    <g
       role="button"
       tabindex="0"
+      aria-label="Category axis"
+      aria-pressed={selection.has(axisTarget(chart.axes.category.id))}
       onclick={(event) => {
         event.stopPropagation();
-        selection.category(band.category, series, event.shiftKey || event.metaKey);
+        selection.click(axisTarget(chart.axes.category.id), additive(event));
       }}
       onkeydown={(event) => {
-        if (event.key !== "Enter") return;
+        if (event.key !== "Enter" && event.key !== " ") return;
         event.preventDefault();
-        selection.category(band.category, series, event.shiftKey);
+        selection.click(axisTarget(chart.axes.category.id), additive(event));
       }}
-      class="fill-ink-secondary cursor-pointer"
-      font-size="12"
     >
-      {band.category}
-    </text>
-  {/each}
+      <line
+        x1={horizontal ? model.plot.x : model.plot.x}
+        y1={horizontal ? model.plot.y : model.plot.y + model.plot.height}
+        x2={horizontal ? model.plot.x : model.plot.x + model.plot.width}
+        y2={horizontal ? model.plot.y + model.plot.height : model.plot.y + model.plot.height}
+        class={selection.has(axisTarget(chart.axes.category.id)) ? "stroke-active-border" : "stroke-border-strong"}
+        stroke-width={selection.has(axisTarget(chart.axes.category.id)) ? 2 : 1}
+      />
+      {#each model.bands as band (band.categoryId)}
+        <text
+          x={horizontal ? PAD.left - 8 : band.box.x + band.box.width / 2}
+          y={horizontal ? band.box.y + band.box.height / 2 + 4 : height - PAD.bottom + 18}
+          text-anchor={horizontal ? "end" : "middle"}
+          role="button"
+          tabindex="0"
+          onclick={(event) => {
+            event.stopPropagation();
+            selection.category(chart, band.categoryId, additive(event));
+          }}
+          onkeydown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            selection.category(chart, band.categoryId, additive(event));
+          }}
+          class="fill-ink-secondary cursor-pointer"
+          font-size="12"
+        >{band.label}</text>
+      {/each}
+      {#if chart.axes.category.title}
+        <text
+          x={horizontal ? 14 : model.plot.x + model.plot.width / 2}
+          y={horizontal ? model.plot.y + model.plot.height / 2 : height - 4}
+          text-anchor="middle"
+          transform={horizontal ? `rotate(-90 14 ${model.plot.y + model.plot.height / 2})` : undefined}
+          class="fill-ink-secondary"
+          font-size="12"
+        >{chart.axes.category.title}</text>
+      {/if}
+    </g>
+  {/if}
 </svg>
