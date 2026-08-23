@@ -140,6 +140,16 @@ export type TableBlock = {
   format?: BlockFormat;
 };
 
+/** A live reusable analytic. The owning surface supplies flow or fixed placement. */
+export type AnalyticBlock = {
+  id: string;
+  type: "analytic";
+  analyticId: Id<"analyses">;
+  /** The surrounding document/slide may already provide the presentation title. */
+  showTitle?: boolean;
+  format?: BlockFormat;
+};
+
 /** A prompt block's five states are the derived output's exactly. */
 export type PromptState = "idle" | "fresh" | "stale" | "generating" | "error";
 
@@ -166,4 +176,10 @@ export type PromptBlock = {
 };
 
 /** The one content primitive. Each owner enforces its own subset. */
-export type ContentBlock = TextBlock | FormulaBlock | ImageBlock | TableBlock | PromptBlock;
+export type ContentBlock =
+  | TextBlock
+  | FormulaBlock
+  | ImageBlock
+  | TableBlock
+  | AnalyticBlock
+  | PromptBlock;

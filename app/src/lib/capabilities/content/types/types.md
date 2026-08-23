@@ -12,7 +12,7 @@ validator is what Convex enforces at the door and the type is generated from it.
 
 | File | Holds |
 | --- | --- |
-| [`block.ts`](block.ts) | `Atom`, `Mark`, `MarkLink`, `ContentBlock` and its five variants |
+| [`block.ts`](block.ts) | `Atom`, `Mark`, `MarkLink`, `ContentBlock` and its six variants |
 | [`format.ts`](format.ts) | `BlockFormat` |
 | [`value.ts`](value.ts) | `DateValue`, `FormulaColumn`, `FormulaValue` |
 

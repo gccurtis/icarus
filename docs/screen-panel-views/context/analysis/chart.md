@@ -18,7 +18,8 @@ in a context panel where content is laid out across rather than down.
 
 ## The kinds
 
-**Shows** — Table · Bar · Line · Area · Scatter · Pie
+**Shows** — Table · Bar · Line · Area · Scatter · Bubble · Pie/Doughnut ·
+Waterfall · Mekko · Funnel · Radar · Heatmap · Treemap
 
 Table is the safe default: it needs no encoding decisions and can display any
 result. Picking a kind that needs another field adds an empty drop zone for it

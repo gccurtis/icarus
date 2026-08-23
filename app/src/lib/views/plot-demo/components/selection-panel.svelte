@@ -1,10 +1,15 @@
 <script lang="ts">
-  import type { ChartSelection } from "$lib/unique-components/chart";
-  import { readMarkId } from "$lib/unique-components/chart";
+  import type { ChartModel } from "$json-store/types/data/chart";
+  import {
+    chartAxes,
+    chartTargetKey,
+    formatChartValue,
+    type ChartSelection,
+    type ChartSelectionTarget
+  } from "$lib/unique-components/chart";
   import {
     Panel,
     PanelButton,
-    PanelActions,
     PanelChip,
     PanelField,
     PanelFields,
@@ -13,52 +18,58 @@
     PanelSection
   } from "$lib/unique-components/panel";
 
-  /**
-   * What is selected in the chart, and what could be done with it.
-   *
-   * **The panel is the argument for marks.** A chart that is one picture can
-   * only be inspected as one picture; a chart made of addressable marks can be
-   * asked "what is this bar", and everything a presentation tool does — recolour
-   * this one, pull that slice out, annotate this segment — hangs off the answer.
-   * None of those actions exist yet, and the panel says so rather than drawing
-   * buttons that do nothing.
-   *
-   * **What it offers depends on the selection's shape.** One bar, a whole
-   * column, a whole series and an arbitrary handful are four different subjects,
-   * and a panel that showed the same fields for all four would be describing
-   * none of them.
-   */
-  let {
-    selection,
-    data,
-    series,
-    format
-  }: {
-    selection: ChartSelection;
-    data: readonly Record<string, unknown>[];
-    series: readonly { key: string; label?: string }[];
-    format: (value: number) => string;
-  } = $props();
+  let { selection, chart }: { selection: ChartSelection; chart: ChartModel } = $props();
 
-  const labelOf = (key: string) => series.find((entry) => entry.key === key)?.label ?? key;
+  const datumDetails = (target: Extract<ChartSelectionTarget, { kind: "datum" }>) => {
+    const datum = chart.data.datums.find((entry) => entry.id === target.datumId);
+    const category = chart.data.categories.find((entry) => entry.id === target.categoryId);
+    const series = chart.data.series.find((entry) => entry.id === target.seriesId);
+    return {
+      target,
+      title: `${category?.label ?? target.categoryId} · ${series?.label ?? target.seriesId}`,
+      value: datum?.value ?? 0
+    };
+  };
 
-  const chosen = $derived(
-    selection.ids.map((id) => {
-      const { category, seriesKey } = readMarkId(id);
-      const row = data.find((entry) => String(entry.region) === category);
-      const value = seriesKey === "total" ? 0 : Number(row?.[seriesKey] ?? 0);
-      return { id, category, seriesKey, value };
-    })
+  const chosenDatums = $derived(
+    selection.targets
+      .filter(
+        (target): target is Extract<ChartSelectionTarget, { kind: "datum" }> =>
+          target.kind === "datum"
+      )
+      .map(datumDetails)
   );
-
-  const sum = $derived(chosen.reduce((total, mark) => total + mark.value, 0));
-
+  const sum = $derived(chosenDatums.reduce((total, entry) => total + entry.value, 0));
+  const one = $derived(selection.targets[0]);
   const SHAPE: Record<string, string> = {
     none: "Nothing",
-    one: "One mark",
-    category: "A whole column",
+    one: "One chart part",
+    category: "A whole category",
     series: "A whole series",
-    many: "Several marks"
+    axis: "One axis",
+    element: "One added element",
+    many: "Several chart parts"
+  };
+
+  const describe = (target: ChartSelectionTarget) => {
+    if (target.kind === "datum") return datumDetails(target).title;
+    if (target.kind === "axis") {
+      const axis = chartAxes(chart).find((entry) => entry.id === target.axisId);
+      return axis === undefined
+        ? target.axisId
+        : axis.title ?? `${axis.kind[0].toUpperCase()}${axis.kind.slice(1)} axis`;
+    }
+    if (target.kind === "element") {
+      const element = chart.elements.find((entry) => entry.id === target.elementId);
+      return element?.kind === "cagr-line"
+        ? "CAGR line"
+        : element?.kind === "trend-line"
+          ? "Trend line"
+        : element?.kind === "axis-line"
+          ? "Axis line"
+          : "Text annotation";
+    }
+    return target.kind;
   };
 </script>
 
@@ -71,50 +82,47 @@
 
   {#if selection.isEmpty}
     <PanelNote>
-      Click a bar or a slice. Shift-click to add another, click a category label
-      for the whole column, or a legend entry for the whole series.
+      Click a mark, axis, or annotation. Shift-click adds another target; category labels and
+      legend entries select semantic groups.
     </PanelNote>
   {:else}
     <PanelSection title="What is selected" count={selection.count}>
       <PanelFields>
-        <PanelField label="Shape">
-          <PanelChip tone="active">{SHAPE[selection.shape]}</PanelChip>
-        </PanelField>
-        {#if selection.shape === "one"}
-          <PanelField label="Region">{chosen[0].category}</PanelField>
-          <PanelField label="Cause">{labelOf(chosen[0].seriesKey)}</PanelField>
-          <PanelField label="Value" mono>{format(chosen[0].value)}</PanelField>
-        {:else}
-          <PanelField label="Marks" mono>{selection.count}</PanelField>
-          <PanelField label="Sum" mono>{format(sum)}</PanelField>
+        <PanelField label="Shape"><PanelChip tone="active">{SHAPE[selection.shape]}</PanelChip></PanelField>
+        {#if selection.count === 1 && one}
+          <PanelField label="Part">{describe(one)}</PanelField>
+          <PanelField label="Stable id" mono>
+            {one.kind === "datum"
+              ? one.datumId
+              : one.kind === "axis"
+                ? one.axisId
+                : one.kind === "element"
+                  ? one.elementId
+                  : one.chartId}
+          </PanelField>
+          {#if one.kind === "datum"}
+            <PanelField label="Value" mono>
+              {formatChartValue(datumDetails(one).value, chart.valueFormat)}
+            </PanelField>
+          {/if}
+        {:else if chosenDatums.length > 0}
+          <PanelField label="Data marks" mono>{chosenDatums.length}</PanelField>
+          <PanelField label="Sum" mono>{formatChartValue(sum, chart.valueFormat)}</PanelField>
         {/if}
       </PanelFields>
     </PanelSection>
 
     {#if selection.count > 1}
-      <PanelSection title="Each one" count={selection.count} flush>
-        {#each chosen as mark (mark.id)}
-          <PanelRow
-            title={`${mark.category} · ${labelOf(mark.seriesKey)}`}
-            meta={format(mark.value)}
-            onselect={() => selection.click(mark.id)}
-          />
+      <PanelSection title="Each target" count={selection.count} flush>
+        {#each selection.targets as target (chartTargetKey(target))}
+          <PanelRow title={describe(target)} meta={target.kind} onselect={() => selection.click(target)} />
         {/each}
       </PanelSection>
     {/if}
 
-    <PanelSection title="What you could do">
-      <PanelActions>
-        <PanelButton label="Recolour" disabled title="Per-mark colour is not built yet" />
-        <PanelButton label="Annotate" disabled title="Annotations are not built yet" />
-        <PanelButton label="Pull out" disabled title="Only a pie slice can be pulled out, and only by selecting it" />
-      </PanelActions>
-      <PanelNote tone="gap">
-        None of these exist yet. They are drawn disabled with their reason because
-        they are the point of having marks at all — every one of them is an
-        operation on a selection, and until now there was no selection to hang
-        them from.
-      </PanelNote>
-    </PanelSection>
+    <PanelNote tone="gap">
+      This panel receives semantic targets, not DOM nodes or array positions. The same target can
+      drive formatting, comments, revisions, and an inspector after the chart is redrawn.
+    </PanelNote>
   {/if}
 </Panel>

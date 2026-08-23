@@ -18,8 +18,11 @@ import { v, type Infer } from "convex/values";
  * **`range` is a member** because a path can address one: a formula's operands
  * and a print area both name a range rather than a cell.
  *
- * **`chart` is deferred, not omitted.** Charts need a data range, an anchoring
- * model and a rendering surface, none of which exists. It returns with them.
+ * An `analytic` is the saved ordered computation. `analyticComponent` is its
+ * reusable materialized output, `chart` is the nested visual declaration, and
+ * `chartElement` is one identified annotation inside that chart. Keeping all
+ * four prevents a data-pipeline edit, placement change, visual-format edit and
+ * CAGR/reference-line edit from becoming the same conflict.
  */
 export const opTargetValidator = v.union(
   v.literal("row"),
@@ -35,6 +38,10 @@ export const opTargetValidator = v.union(
   v.literal("cell"),
   v.literal("range"),
   v.literal("mergedCells"),
+  v.literal("analytic"),
+  v.literal("analyticComponent"),
+  v.literal("chart"),
+  v.literal("chartElement"),
 
   v.literal("field")
 );

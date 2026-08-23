@@ -6,7 +6,7 @@ SCREENS["analysis"] = {
   name: "Analysis",
   path: "docs/screen-specs/analysis.md",
   purpose:
-    "Drop a field on an axis and see a chart. Project variables are just variables — there is no root table and no join step to get through first. If two fields cannot be related, the screen says so and offers the fix.",
+    "Present one reusable analytic component, then expose the explicit ordered table program that produced it. Variables normalize to tables, lists are selected deliberately, and independently built dimensions are bridged before data is aggregated.",
   init: { ctx: "overview", inspect: "placement", mode: "one" },
   modes: [["one", "One analysis", "This one"], ["library", "All analyses", "All"]],
 
@@ -32,7 +32,7 @@ SCREENS["analysis"] = {
             </span>
             <span class="card-t">${n}</span><span class="card-s">${m}</span></button>`).join("")}
       </div>
-      ${note("Nothing about a result is stored. Opening one runs it again against the variables as they are now.")}
+      ${note("Each card can render the last complete materialized component. Opening one checks current variables and marks it stale while a newer result evaluates.")}
     </div>` : `
     <div class="shead">
       <span class="shead-t">Outage minutes by substation</span>
@@ -49,7 +49,7 @@ SCREENS["analysis"] = {
             .map(([n, h, on]) => `<span class="bar-g${on ? " is-on" : ""}" data-inspect="mark"><span class="bar" style="height:${h}%"></span><span class="bar-l">${n}</span></span>`).join("")}
         </div>
         <div class="chips">
-          <span class="note">Generated from current data — the result itself is not stored.</span>
+          <span class="note">Last complete reusable component · current definition ready</span>
           <span style="margin-inline-start:auto" class="note">Showing 6 of 41 · limit 10</span>
         </div>
       </div>
@@ -112,7 +112,7 @@ SCREENS["analysis"] = {
       pane("Overview", [
         sec("This analysis", `<div class="fld"><span class="fld-k">Title</span><span class="fld-v"><span class="inp is-filled">Outage minutes by substation</span></span></div><div class="fld" style="margin-top:6px"><span class="fld-k">Description</span><span class="fld-v"><span class="inp is-filled">Storm-season load on the worst substations.</span></span></div>`),
         sec("Saved", `${chip("Saved · revision 12", "ok")}` + note("Revision-CAS current state. Undo covers unsaved builder actions only — there is no durable change-set history here.")),
-        sec("Result", kv([["Rows", "6 of 41", { mono: true }], ["Limit", "10", { mono: true }], ["Evaluated", "2 minutes ago", { mono: true }]]) + note("Replaceable projections, not resources. Nothing about the result is stored.")),
+        sec("Result", kv([["Rows", "6 of 41", { mono: true }], ["Limit", "10", { mono: true }], ["Evaluated", "2 minutes ago", { mono: true }]]) + note("The last complete analytic component remains materialized while a changed definition evaluates or reports issues.")),
         sec("Attribution", kv([["Created by", who("Mira Jain", "actor")], ["Updated", "2 minutes ago", { mono: true }]]), { shut: true })
       ].join(""), { actions: btn("Run again", { icon: "play", sm: true, k: "pri" }) }) },
 
@@ -130,8 +130,8 @@ SCREENS["analysis"] = {
           row("undergroundPct", { sub2: "number", sub: true })
         ].join(""), { count: 2, flush: true }),
         sec("Values", [row("hardeningBudget", { icon: "sigma", sub2: "number", inspect: "variable" }), row("filingDeadline", { icon: "calendar", sub2: "date", inspect: "variable" })].join(""), { count: 2, flush: true }),
-        sec("Functions", row("avoidedMinutes(t)", { icon: "wrench", sub2: "not a chart input", inspect: "variable" }), { count: 2, flush: true, shut: true }),
-        `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${note("Drag a field onto an axis, a filter or a sort. Every drop also has an Add menu and a keyboard path — nothing here is drag-only.")}</div>`
+        sec("Functions", row("avoidedMinutes(t)", { icon: "wrench", sub2: "table-to-list function", inspect: "variable" }), { count: 2, flush: true, shut: true }),
+        `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${note("Drag a variable into a chart-supported slot. Tables then ask for a column, row, or list-returning function. Every drop also has a keyboard path.")}</div>`
       ].join(""), { search: search("Search variables") }) },
 
     { id: "chart", label: "Chart", icon: "chart", body: () =>
@@ -151,7 +151,7 @@ SCREENS["analysis"] = {
         sec("Filters", row("eventDate ≥ 2026-01-01", { icon: "filter", inspect: "filter" }), { count: 1, flush: true }),
         sec("Sort", row("sum of customerMinutes, high to low", { icon: "sort", inspect: "sort" }), { count: 1, flush: true }),
         sec("Limit", row("top 10", { icon: "filter", inspect: "limit" }), { count: 1, flush: true }),
-        `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${gap("Filters and sorts have no stable IDs in the model yet, so the UI cannot promise durable selection or collaboration on each one.")}</div>`
+        `<div style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">${note("Every input, selector, composition step and operation has a stable id; top-to-bottom order is execution order.")}</div>`
       ].join("")) },
 
     { id: "formula", label: "Formula", icon: "sigma", body: () =>
@@ -206,12 +206,12 @@ SCREENS["analysis"] = {
     ].join("") },
 
     display: { crumbs: [["Analysis", "analysis"], ["Chart", null]], body: [
-      sec("Kind", `<div class="chips">${chip("Table")}${chip("Bar", "act")}${chip("Line")}${chip("Area")}${chip("Scatter")}${chip("Pie")}</div>`),
+      sec("Kind", `<div class="chips">${chip("Table")}${chip("Bar", "act")}${chip("Line")}${chip("Area")}${chip("Scatter")}${chip("Bubble")}${chip("Pie")}${chip("Waterfall")}${chip("Mekko")}${chip("Funnel")}${chip("Radar")}${chip("Heatmap")}${chip("Treemap")}</div>`),
       sec("Title", `<div class="inp is-filled"><span class="inp-w">Customer-minutes by substation, 2026 storms</span></div>`),
-      sec("Axes", kv([["X label", "Substation"], ["Y label", "Customer-minutes"], ["Y starts at zero", `<span class="tog is-on"></span>`], ["Stacked", `<span class="tog"></span>`]])),
+      sec("Axes", kv([["X label", "Substation"], ["Y label", "Customer-minutes"], ["Y starts at zero", `<span class="tog is-on"></span>`], ["Stacked", `<span class="tog is-on"></span>`]])),
       sec("Legend", `<div class="chips">${chip("None")}${chip("Right", "act")}${chip("Bottom")}</div>`, { shut: true }),
       sec("Colours", `<div class="chips">${chip("&nbsp;", "int")}${chip("&nbsp;", "act")}${chip("&nbsp;", "a2")}${chip("&nbsp;", "a1")}</div>`, { shut: true }),
-      sec("Not yet modeled", gap("Colour, size, detail, label and tooltip are not persisted encodings in <code>AnalysisDefinition</code>. The empty Colour zone in the centre is a proposal, not something that can be saved today."))
+      sec("Labels and elements", note("Custom labels persist on identified data. Added text, CAGR, axis and trend lines are constrained by the selected chart grammar; tooltip provenance remains an explicit future contract."))
     ].join("") },
 
     mark: { crumbs: [["Analysis", "analysis"], ["Chart", "display"], ["Feeder 12", null]], body: [
@@ -236,9 +236,9 @@ SCREENS["analysis"] = {
 
   notes: {
     retained: ["selected placement, filter, sort or mark; result scroll and zoom", "axes, filters, sorts and display live in <code>AnalysisBody</code> — persisted model state, never duplicated into view state", "evaluator caches and drag previews stay in the tab runtime"],
-    nav: ["Any non-function variable can normalise to a table and be charted. Functions are visible but never inputs.", "The compiled formula is a read-only diagnostic; editing it would break round-tripping."],
-    revised: ["Inputs, joins and Root are gone. Variables are variables — you drop a field and the chart appears, with no modelling step in front of it.", "The chart is centred at the top, before any control, because it is the thing being made.", "Shelves became X, Y, Filters, Sort, Limit — plus a Colour zone that appears only when a chart kind can use one.", "A relationship is stated as a problem to solve, only when two variables are actually in play: “Two variables, no relationship”, with the match it picked and the alternatives."],
-    gaps: ["No persisted colour, size, detail, label or tooltip encodings.", "Filters and sorts have no stable IDs.", "Automatic relationship discovery — “they line up on subId → id” — needs a real key-inference contract, or it becomes a guess presented as a fact.", "Chart-kind minimum-field rules need defining before an empty zone can appear only when it is genuinely needed."]
+    nav: ["Every resolved variable normalises to a table. A function participates only when applied as an explicit transformation.", "The compiled formula is a read-only diagnostic generated from the same ordered definition."],
+    revised: ["The page presents the answer first and its program second.", "The same analytic component renders in Analysis, documents, slides and spreadsheets.", "Every visual exposes only the slots its grammar supports.", "Dimensions extend or join their inputs; a bridge connects independently composed dimensions before the data program runs."],
+    gaps: ["Automatic relationship discovery — “they line up on subId → id” — needs a scored key-inference contract, or it becomes a guess presented as fact.", "Tooltip content and provenance drill-through still need explicit contracts."]
   }
 };
 

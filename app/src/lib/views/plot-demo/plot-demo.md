@@ -5,8 +5,9 @@ document linked below.
 
 ## Purpose
 
-The hand-rolled SVG charts, at `/demo/plot`, and the thing they exist for:
-being able to point at one bar.
+The native SVG chart system, at `/demo/plot`: twelve type-dispatched chart
+models, selectable chart parts, type-specific added elements, and a draggable
+frame.
 
 A separate page from `/demo/analysis` deliberately. That one is the library
 version and stays as the comparison — its remaining defects are the argument for
@@ -40,18 +41,23 @@ these have tens.
 
 ## The model
 
-`chart-spec.ts` holds what a chart *is*, apart from how it is drawn, and
-`settingsFor(type)` says which settings a type can even answer — so a pie is
-offered no stacking mode rather than being offered one it ignores.
+`$json-store/types/data/chart.ts` holds the persisted discriminated union.
+`chart-model.ts` creates and validates those objects and exposes the capability
+matrix. The same discriminant decides which renderer, axes, legend semantics,
+selectable mark, and additions are legal.
 
-`layout.ts` turns a spec and a size into **marks**: one addressable rectangle per
-bar or segment, each carrying where it is and what it means. Ids come from the
-category and the series rather than from position, so sorting or filtering leaves
-a selection pointing at the same things.
+`layout.ts` and `layout-additional.ts` turn a model and size into **marks**:
+one addressable shape per bar, segment, slice, point, bubble, waterfall step,
+funnel stage, radar point, heatmap cell, or treemap tile. Its id is the persisted
+datum id, so sorting, refreshing, and resizing leave a selection pointing at the
+same fact.
 
 `chart-selection.svelte.ts` holds what is selected, and reports the selection's
-*shape* — one mark, a whole column, a whole series, or an arbitrary handful —
-because those afford different actions.
+*shape*. Its targets include axes and added elements as well as data marks.
+
+`chart-element.svelte` owns frame movement and resizing through dedicated
+handles. It never treats the chart body as a drag handle, which preserves all
+interactions inside the plot.
 
 ## Boundary
 
@@ -70,7 +76,7 @@ the charts, the layout maths, the spec or the selection, all of which live in
 
 ## Dependencies
 
-- `$lib/unique-components/chart` — the spec, the marks and the selection
+- `$lib/unique-components/chart` — model construction, renderer, frame, marks and selection
 - `$lib/unique-components/panel` — the controls and the selection panel
 - `$lib/unique-components/screen` — the surface
 

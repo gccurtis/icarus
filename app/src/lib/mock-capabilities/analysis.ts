@@ -4,15 +4,14 @@
  *
  * `docs/screen-panel-views/context/analysis/` and `inspector/analysis/` are what
  * these serve — the Variables list with each table's fields expanded, the chart
- * kinds, the six drop zones, the compiled formula, and the lenses on a
- * placement, a filter, the sort, the limit, a mark and a relationship.
+ * kinds, the chart-specific customization slots, the compiled ordered program,
+ * and the lenses on a dimension, operation, mark and relationship.
  *
- * **Nothing about a result is stored.** `resultFor`, `rowsUnder`, `lastRunOf`
- * and every match count under `relationship` are projections of running the
- * definition against the variables as they are now: replaceable, and gone the
- * moment the data moves. Only the definition persists, which is why the result
- * doors are separate doors rather than fields on the analysis record — a panel
- * that reads one is reading a fresh run, not a saved answer.
+ * **The last complete component is materialized; diagnostics remain
+ * projections.** `resultFor`, `rowsUnder`, `lastRunOf` and every match count
+ * under `relationship` describe the current run for panels. `ANALYTIC` carries
+ * the replaceable chart/table output that every embedding surface renders while
+ * a new or temporarily invalid definition is evaluated.
  *
  * The numbers chain, so a reviewer can follow them rather than suspect them:
  * 4,182 outage events, 2,904 after the storm-window filter, 27 after the named-
@@ -21,6 +20,9 @@
  */
 import { RESOURCES } from "$mock-capabilities/cast";
 import { read, type Read } from "$mock-capabilities/read.svelte";
+import { asId } from "$json-store/types/core/id";
+import type { AnalyticModel } from "$json-store/types/data/analytic";
+import { createBarChart, type ChartIdIssuer } from "$lib/unique-components/chart/chart-model";
 
 /**
  * What a column holds, inferred by inspecting the value. It is what decides
@@ -123,7 +125,20 @@ export type Relationship = {
   readonly alternatives: readonly KeyPair[];
 };
 
-export type ChartKindId = "table" | "bar" | "line" | "area" | "scatter" | "pie";
+export type ChartKindId =
+  | "table"
+  | "bar"
+  | "line"
+  | "area"
+  | "scatter"
+  | "bubble"
+  | "pie"
+  | "waterfall"
+  | "mekko"
+  | "funnel"
+  | "radar"
+  | "heatmap"
+  | "treemap";
 
 export type ChartKind = {
   readonly id: ChartKindId;
@@ -518,6 +533,138 @@ const RESULT: AnalysisResult = {
   total: 41
 };
 
+let analysisChartSequence = 0;
+const analysisChartId: ChartIdIssuer = (kind) => `analysis-${kind}-${++analysisChartSequence}`;
+
+/**
+ * The reusable analytic rendered by the Analysis page and any embedding
+ * surface. The old panel projections below remain so their existing lenses can
+ * inspect the same authored intent while the backend migration is underway.
+ */
+const ANALYTIC: AnalyticModel = {
+  id: "analytic-customer-minutes",
+  title: "Customer-minutes by substation, 2026 storms",
+  definition: {
+    inputs: [
+      { id: "input-outage-events", variable: "outageEvents" },
+      { id: "input-substations", variable: "substations" }
+    ],
+    dimensions: [{
+      id: "dimension-x-substation",
+      slot: "x",
+      inputs: [{
+        id: "binding-x-substation",
+        inputId: "input-substations",
+        values: { kind: "column", key: "name" },
+        label: "Substation"
+      }],
+      steps: [],
+      operations: []
+    }],
+    bridges: [{
+      id: "bridge-outages-substations",
+      kind: "join",
+      left: { kind: "dimension", dimensionId: "dimension-x-substation" },
+      right: { kind: "input", inputId: "input-outage-events" },
+      leftKey: {
+        inputId: "input-substations",
+        selector: { kind: "column", key: "id" }
+      },
+      rightKey: {
+        inputId: "input-outage-events",
+        selector: { kind: "column", key: "subId" }
+      },
+      join: "outer"
+    }],
+    data: {
+      from: { kind: "bridge", bridgeId: "bridge-outages-substations" },
+      operations: [
+        {
+          id: "filter-storm-window",
+          kind: "filter",
+          predicate: { kind: "formula", formulaId: asId<"formulas">("formula-storm-window") }
+        },
+        {
+          id: "filter-under-storm",
+          kind: "filter",
+          predicate: { kind: "formula", formulaId: asId<"formulas">("formula-under-storm") }
+        },
+        {
+          id: "group-substation",
+          kind: "group",
+          by: [{
+            inputId: "input-substations",
+            selector: { kind: "column", key: "name" }
+          }]
+        },
+        {
+          id: "sum-customer-minutes",
+          kind: "aggregate",
+          input: {
+            kind: "list",
+            list: {
+              inputId: "input-outage-events",
+              selector: { kind: "column", key: "customerMinutes" }
+            }
+          },
+          aggregation: "sum",
+          as: "Customer-minutes"
+        },
+        {
+          id: "sort-customer-minutes",
+          kind: "sort",
+          by: { kind: "operation", operationId: "sum-customer-minutes" },
+          direction: "desc"
+        },
+        { id: "limit-substations", kind: "limit", count: 10 }
+      ],
+      outputs: [{
+        id: "output-customer-minutes",
+        label: "Customer-minutes",
+        value: { kind: "operation", operationId: "sum-customer-minutes" },
+        format: { style: "number", compact: true, maximumFractionDigits: 1 }
+      }]
+    }
+  },
+  component: {
+    kind: "chart",
+    chart: createBarChart(
+      {
+        id: "chart-customer-minutes",
+        title: "Customer-minutes by substation, 2026 storms",
+        source: { kind: "analysis", analysisId: asId<"analyses">("an-minutes") },
+        data: {
+          categories: RESULT.rows.map((row) => ({
+            id: `category-${row.id}`,
+            key: row.id,
+            label: row.group
+          })),
+          series: [{
+            id: "series-customer-minutes",
+            key: "customer-minutes",
+            label: "Customer-minutes",
+            color: "var(--token-color-accent-1-fill)"
+          }],
+          values: RESULT.rows.map((row) => ({
+            id: `datum-${row.id}`,
+            categoryKey: row.id,
+            seriesKey: "customer-minutes",
+            value: row.values[0]
+          }))
+        },
+        labels: "value",
+        axes: {
+          category: { title: "Substation" },
+          value: { title: "Customer-minutes" }
+        },
+        valueFormat: { style: "number", compact: true, maximumFractionDigits: 1 }
+      },
+      analysisChartId
+    )
+  },
+  materialization: { state: "ready", issueIds: [] }
+};
+
 export const analysis = (analysisId: string): Read<AnalysisRecord> => {
   void analysisId;
   return read({
@@ -528,6 +675,11 @@ export const analysis = (analysisId: string): Read<AnalysisRecord> => {
     updated: SAVED.updated,
     updatedBy: SAVED.updatedBy
   }, "analysis.analysis");
+};
+
+export const analyticModel = (analysisId: string): Read<AnalyticModel> => {
+  void analysisId;
+  return read(ANALYTIC, "analysis.analyticModel");
 };
 
 export const tablesIn = (projectId: string): Read<readonly TableVariable[]> => {
@@ -591,9 +743,44 @@ export const chartKinds = (): Read<readonly ChartKind[]> =>
       needs: "A number on X and a number on Y, one point per row, nothing summarised."
     },
     {
+      id: "bubble",
+      name: "Bubble",
+      needs: "Scatter's X and Y plus a non-negative number for bubble area."
+    },
+    {
       id: "pie",
       name: "Pie",
       needs: "One field to split by and one number to size the slices. Unreadable past about six."
+    },
+    {
+      id: "waterfall",
+      name: "Waterfall",
+      needs: "One ordered category and one measure, with explicit subtotal categories."
+    },
+    {
+      id: "mekko",
+      name: "Mekko",
+      needs: "A category width, a series split, and non-negative values for share-of-share."
+    },
+    {
+      id: "funnel",
+      name: "Funnel",
+      needs: "One ordered stage field and one non-negative measure."
+    },
+    {
+      id: "radar",
+      name: "Radar",
+      needs: "At least three comparable category measures and one or more series."
+    },
+    {
+      id: "heatmap",
+      name: "Heatmap",
+      needs: "A category on X, a series on Y, and a measure for colour intensity."
+    },
+    {
+      id: "treemap",
+      name: "Treemap",
+      needs: "One category and one non-negative measure for tile area."
     }
   ], "analysis.chartKinds");
 

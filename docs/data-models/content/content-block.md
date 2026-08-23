@@ -49,6 +49,7 @@ type ContentBlock =
   | TableBlock
   | EmbedBlock
   | FormulaBlock
+  | AnalyticBlock
   | PromptBlock;
 
 // every variant carries these
@@ -97,6 +98,7 @@ They differ whenever the block contains something that resolves.
 | text | atoms, some of them formulas | the resolved string |
 | formula | `=SUM(A1:A10)` | `42` |
 | image | an upload or a URL | the standardized rendered asset |
+| analytic | a live analysis id | the last complete interactive chart/table component |
 | prompt | a link to a derived output | the generated blocks |
 
 For a block with nothing to resolve the two are trivially related — display is
@@ -418,6 +420,30 @@ presenting a handful of rows inside prose.
 Styling is per cell, via each cell's own `format`. A table-wide style is applied
 by writing it onto the cells, not by a separate table stylesheet, so there is
 one place a renderer has to look.
+
+## Analytic blocks
+
+```ts
+interface AnalyticBlock {
+  id: string;
+  type: "analytic";
+  analyticId: Id<"analyses">;
+  showTitle?: boolean;
+  format?: BlockFormat;
+}
+```
+
+An analytic block is a live reference to the same
+[`AnalyticComponent`](../data/analytic-system-overview.md#one-component-many-surfaces)
+shown on the Analysis page. It does not store a screenshot, a translated chart,
+or a second data definition.
+
+The document owns flow placement. A slide element owns the fixed frame around
+the block. `showTitle` avoids duplicating a heading already supplied by the
+surrounding content; it does not change the analytic's identity or chart data.
+
+The referenced analytic carries the last complete chart/table materialization,
+so the block remains renderable while a new definition is stale or invalid.
 
 ## Embed blocks
 

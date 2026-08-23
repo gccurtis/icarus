@@ -43,22 +43,21 @@ currently shows one anyway.
 
 ## Values
 
-Scalars. They can be charted as a reference line or used in a filter, not dropped
-on an axis.
+Scalars normalize to a one-column, one-row table whose header is `Value`. They
+can therefore use the same list-selection path as every other input; the chosen
+chart grammar still decides whether that single value is meaningful in a slot.
 
 **Shows** — `hardeningBudget` — number; `filingDeadline` — date
 
 **Needs** — name, type and value.
 
-**Open** — what a scalar actually does when dropped is undefined. It should either
-be undraggable or have a defined result.
-
 ## Functions
 
-Visible but never inputs — a function is not a value and cannot be charted.
-Starts collapsed.
+Visible as transformations, not unresolved data. A list selector may reference a
+function whose lambda receives the normalized table and returns a list. An
+unapplied function never reaches materialization. Starts collapsed.
 
-**Shows** — `avoidedMinutes(t)` — not a chart input
+**Shows** — `avoidedMinutes(t)` — table-to-list function
 
 **Needs** — the function list.
 

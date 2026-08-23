@@ -1,8 +1,10 @@
 # Analysis — panels
 
-Drop a field on an axis and see a chart. Project variables are just variables:
-there is no root table and no join step to get through first. When two fields
-cannot be related, the screen says so and offers the fix.
+Present the answer, then reveal the program that produced it. Project variables
+normalize to tables, but there is no privileged root table. A dimension projects
+one or more tables into lists, composes them with ordered extends or joins, and
+the data channel names the relation it evaluates. When independently composed
+dimensions do not yet share a relation, the screen says so and offers a bridge.
 
 Two subscreens: **one analysis** and **all analyses**. One Analysis tab; which
 analysis you are on is view state.
@@ -28,14 +30,14 @@ analysis you are on is view state.
 
 | Selecting | What it is | File |
 | --- | --- | --- |
-| A field on an axis | One placement: the field, how it is summarised, what it is called | [placement.md](../../inspector/analysis/placement.md) |
+| A list in a dimension | Its source table, selector, operations, and display label | [placement.md](../../inspector/analysis/placement.md) |
 | A variable in the Variables view | A table or value, its contents, and how it relates to others | [variable.md](../../inspector/analysis/variable.md) |
 | The relationship warning | Two variables that need relating, and the fix | [relationship.md](../../inspector/analysis/relationship.md) |
 | A filter | One rule about which rows are kept | [filter.md](../../inspector/analysis/filter.md) |
 | The sort | What the result is ordered by | [sort.md](../../inspector/analysis/sort.md) |
 | The limit | How much of the result is shown | [limit.md](../../inspector/analysis/limit.md) |
 | The chart | Kind, title, axes, legend, colours | [chart.md](../../inspector/analysis/chart.md) |
-| A bar, point or slice | One mark, and the rows underneath it | [mark.md](../../inspector/analysis/mark.md) |
+| Any selectable chart mark | One bar, point, slice, step, segment, stage, cell or tile and the rows underneath it | [mark.md](../../inspector/analysis/mark.md) |
 | Nothing | The analysis itself | [analysis.md](../../inspector/analysis/analysis.md) |
 | A person, or any "who" link | Their profile in this project | [person.md](../../inspector/collaboration/person.md) |
 
@@ -43,20 +45,20 @@ analysis you are on is view state.
 
 | State | What is in the centre | File |
 | --- | --- | --- |
-| One analysis | The chart first, then the drop zones that made it | [workspace-one-analysis.md](workspace-one-analysis.md) |
+| One analysis | Title, reusable analytic component, then chart-specific customization | [workspace-one-analysis.md](workspace-one-analysis.md) |
 | All analyses | Every chart, as shapes | [workspace-all-analyses.md](workspace-all-analyses.md) |
 
 ## The rules this screen keeps
 
-**There is no root, no input and no join step.** Variables are variables. You drop
-a field and the chart appears.
+**There is no privileged root table.** Every input is named, every list projection
+is explicit, and `data.from` names the relation on which ordered operations run.
 
-**A relationship is a problem to solve, not a modelling step.** It appears only
-when two variables are actually in play, stated as "two variables, no
-relationship", with the match the system picked and the alternatives.
+**Relationships appear only when composition requires them.** Extend stacks
+compatible dimension lists. Join matches two inputs. A bridge joins independently
+composed relation sets before the data channel can aggregate across them.
 
-**Nothing about the result is stored.** Results are replaceable projections. The
-definition is what persists.
+**The definition and last good component persist together.** A stale or invalid
+edit keeps the last complete chart or table visible with stable issue ids.
 
 **Nothing is drag-only.** Every drop zone also has an Add menu and a keyboard
 path.

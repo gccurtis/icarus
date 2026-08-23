@@ -12,34 +12,34 @@
   import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
-   * A chart floating over the grid: what it draws, where it reads from, and where
-   * it sits.
+   * An analytic component floating over the grid: its reusable output,
+   * materialization state, and surface-owned placement.
    *
    * `docs/screen-panel-views/inspector/resource/chart.md` is the specification.
    *
-   * **Nothing here is editable, and the Status band says why rather than leaving a
-   * reader to discover it.** A chart is addressed by its position in the sheet's
-   * object list because `SheetChart` has no stable id, and a position is enough
-   * for a list and not enough for a granular update, a reconciliation, a retained
-   * selection or a comment.
+   * The analytic, chart and internal parts are identified. This lens can therefore
+   * describe the same target the renderer selected rather than an array position.
    */
   let {
     spreadsheetId = "r-cost",
-    index = 0
-  }: { spreadsheetId?: string; index?: number } = $props();
+    chartId = "analytic-customer-minutes"
+  }: { spreadsheetId?: string; chartId?: string } = $props();
 
   const view = viewState();
 
   const sheet = $derived(spreadsheetRecord(spreadsheetId).current);
-  const chart = $derived(chartAt(spreadsheetId, index).current);
+  const chart = $derived(chartAt(spreadsheetId, chartId).current);
+  const renderedChart = $derived(
+    chart?.model.component.kind === "chart" ? chart.model.component.chart : undefined
+  );
 </script>
 
-<Panel title={chart?.title ?? "Chart"}>
+<Panel title={chart?.title ?? "Analytic"}>
   {#snippet crumbs()}
     <PanelCrumbs
       trail={[
         { label: sheet.title, key: "resource.spreadsheet" },
-        { label: chart?.title ?? "Chart" }
+        { label: chart?.title ?? "Analytic" }
       ]}
       onnavigate={(key) => {
         if (isInspectionKey(key)) view.inspect(key);
@@ -48,7 +48,7 @@
   {/snippet}
 
   {#if chart === undefined}
-    <PanelNote>There is no object at position {index + 1} in this spreadsheet.</PanelNote>
+    <PanelNote>There is no analytic with id {chartId} in this spreadsheet.</PanelNote>
   {:else}
     <!-- The head of the lens has no heading: the title already names the chart. -->
     <PanelFields>
@@ -68,22 +68,24 @@
     <PanelSection title="Placement" open={false}>
       <PanelFields>
         <PanelField label="Anchor" mono>{chart.anchor}</PanelField>
-        <PanelField label="Size" mono>{chart.size}</PanelField>
+        <PanelField label="Size" mono>{chart.size.width} × {chart.size.height} px</PanelField>
       </PanelFields>
       <PanelNote>
-        The anchor is an address, so the chart moves when rows and columns are inserted above or
+        The anchor is an address, so the analytic moves when rows and columns are inserted above or
         to the left of it.
       </PanelNote>
     </PanelSection>
 
     <PanelSection title="Status">
       <PanelFields>
-        <PanelField label="Addressed by">Position {index + 1} in the object list</PanelField>
+        <PanelField label="Addressed by" mono>{chart.id}</PanelField>
+        <PanelField label="Data marks">{renderedChart?.data.datums.length ?? 0}</PanelField>
+        <PanelField label="Added elements">{renderedChart?.elements.length ?? 0}</PanelField>
+        <PanelField label="Materialization">{chart.model.materialization.state}</PanelField>
       </PanelFields>
       <PanelNote tone="gap">
-        Read-only. Without a stable id an array position cannot carry a granular update, remote
-        reconciliation, a selection that survives a reload, or a comment — which gates creating a
-        chart as much as editing one.
+        Placement belongs to the spreadsheet reference. Analytic, component, chart, and internal
+        element edits use distinct revision targets.
       </PanelNote>
     </PanelSection>
   {/if}

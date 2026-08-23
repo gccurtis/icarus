@@ -1,104 +1,209 @@
-import { markId, readMarkId, type Mark } from "$lib/unique-components/chart/chart-spec";
+import type { ChartModel } from "$json-store/types/data/chart";
+import { chartAxes } from "$lib/unique-components/chart/chart-model";
+import type { ChartMark } from "$lib/unique-components/chart/chart-spec";
+
+export type ChartSelectionTarget =
+  | { kind: "chart"; chartId: string }
+  | {
+      kind: "datum";
+      chartId: string;
+      datumId: string;
+      categoryId: string;
+      seriesId: string;
+    }
+  | { kind: "category"; chartId: string; categoryId: string }
+  | { kind: "series"; chartId: string; seriesId: string }
+  | { kind: "axis"; chartId: string; axisId: string }
+  | { kind: "element"; chartId: string; elementId: string };
+
+export type ChartSelectionShape =
+  | "none"
+  | "one"
+  | "category"
+  | "series"
+  | "axis"
+  | "element"
+  | "many";
+
+/** A stable key for DOM state only; persisted identity stays in the target. */
+export const chartTargetKey = (target: ChartSelectionTarget): string => {
+  switch (target.kind) {
+    case "chart":
+      return `${target.chartId}:chart`;
+    case "datum":
+      return `${target.chartId}:datum:${target.datumId}`;
+    case "category":
+      return `${target.chartId}:category:${target.categoryId}`;
+    case "series":
+      return `${target.chartId}:series:${target.seriesId}`;
+    case "axis":
+      return `${target.chartId}:axis:${target.axisId}`;
+    case "element":
+      return `${target.chartId}:element:${target.elementId}`;
+  }
+};
+
+const targetForMark = (chartId: string, mark: ChartMark): ChartSelectionTarget => ({
+  kind: "datum",
+  chartId,
+  datumId: mark.datumId,
+  categoryId: mark.categoryId,
+  seriesId: mark.seriesId
+});
 
 /**
- * What is selected in a chart.
+ * Selection for one chart surface.
  *
- * **A chart is not a picture, it is a set of things you can point at.** That is
- * the whole difference between a chart you can present from and one you can only
- * look at: selecting one bar of a cluster, or three slices, is what every
- * subsequent operation — recolour this one, annotate that one, pull this slice
- * out — has to be built on. Without a selection there is nowhere to hang any of
- * them.
- *
- * **Selection is by id, not by index.** Ids come from the category and the
- * series, so sorting the chart, filtering a category out or hiding a series
- * leaves the selection pointing at the same things it did before. An
- * index-keyed selection silently moves to different bars the moment the order
- * changes, which is the bug that makes a selection feel haunted.
- *
- * **The gestures are the ones people already have.** Click replaces, shift-click
- * or meta-click adds, clicking the same thing again with a modifier removes it,
- * clicking empty space clears. Selecting a whole category or a whole series is a
- * separate call rather than a modifier, because those are reached by clicking an
- * axis label or a legend entry — different targets, so they need no modifier of
- * their own.
- *
- * One instance per chart, created by the chart and handed down. Not a module
- * singleton: two charts on one screen have two selections, and a shared one
- * would make selecting in either clear the other.
+ * Targets carry semantic ids rather than positions. Sorting categories,
+ * refreshing values or relaying the SVG therefore cannot move a selection to a
+ * different bar. The store can also represent axes and annotations, which are
+ * interactive chart parts but are not data marks.
  */
 export const createChartSelection = () => {
-  let ids = $state<string[]>([]);
+  let targets = $state<ChartSelectionTarget[]>([]);
 
-  const set = (next: readonly string[]) => {
-    ids = [...new Set(next)];
+  const set = (next: readonly ChartSelectionTarget[]) => {
+    const unique = new Map(next.map((target) => [chartTargetKey(target), target]));
+    targets = [...unique.values()];
+  };
+
+  const toggle = (target: ChartSelectionTarget, additive: boolean) => {
+    const key = chartTargetKey(target);
+    const held = targets.some((entry) => chartTargetKey(entry) === key);
+    if (!additive) {
+      set(held && targets.length === 1 ? [] : [target]);
+      return;
+    }
+    set(held ? targets.filter((entry) => chartTargetKey(entry) !== key) : [...targets, target]);
   };
 
   return {
+    get targets(): readonly ChartSelectionTarget[] {
+      return targets;
+    },
+    /** Compatibility for simple consumers; these are stable target keys. */
     get ids(): readonly string[] {
-      return ids;
+      return targets.map(chartTargetKey);
     },
     get count(): number {
-      return ids.length;
+      return targets.length;
     },
     get isEmpty(): boolean {
-      return ids.length === 0;
+      return targets.length === 0;
     },
 
-    has: (id: string) => ids.includes(id),
-
-    /**
-     * The ordinary click. `additive` is shift or meta being held: it toggles
-     * rather than adds, so a modifier-click on something already selected takes
-     * it out — which is what makes a mis-click recoverable without starting the
-     * selection over.
-     */
-    click(id: string, additive = false) {
-      if (!additive) {
-        set(ids.length === 1 && ids[0] === id ? [] : [id]);
-        return;
-      }
-      set(ids.includes(id) ? ids.filter((held) => held !== id) : [...ids, id]);
+    has(target: ChartSelectionTarget): boolean {
+      const key = chartTargetKey(target);
+      return targets.some((entry) => chartTargetKey(entry) === key);
     },
 
-    /** Everything in one column or slice group — an axis label's click. */
-    category(category: string, series: readonly { key: string }[], additive = false) {
-      const next = series.map((entry) => markId(category, entry.key));
-      set(additive ? [...ids, ...next] : next);
+    hasDatum(chartId: string, datumId: string): boolean {
+      return targets.some(
+        (target) =>
+          target.kind === "datum" && target.chartId === chartId && target.datumId === datumId
+      );
     },
 
-    /** One series across every category — a legend entry's click. */
-    series(seriesKey: string, categories: readonly string[], additive = false) {
-      const next = categories.map((category) => markId(category, seriesKey));
-      set(additive ? [...ids, ...next] : next);
+    click(target: ChartSelectionTarget, additive = false) {
+      toggle(target, additive);
     },
 
-    /** Everything drawn. */
-    all(marks: readonly Mark[]) {
-      set(marks.map((mark) => mark.id));
+    mark(chartId: string, mark: ChartMark, additive = false) {
+      toggle(targetForMark(chartId, mark), additive);
+    },
+
+    category(chart: ChartModel, categoryId: string, additive = false) {
+      const visibleSeriesIds = new Set(
+        chart.data.series.filter((entry) => !entry.hidden).map((entry) => entry.id)
+      );
+      const next = chart.data.datums
+        .filter(
+          (entry) =>
+            entry.categoryId === categoryId && visibleSeriesIds.has(entry.seriesId)
+        )
+        .map((entry): ChartSelectionTarget => ({
+          kind: "datum",
+          chartId: chart.id,
+          datumId: entry.id,
+          categoryId: entry.categoryId,
+          seriesId: entry.seriesId
+        }));
+      set(additive ? [...targets, ...next] : next);
+    },
+
+    series(chart: ChartModel, seriesId: string, additive = false) {
+      const next = chart.data.datums
+        .filter((entry) => entry.seriesId === seriesId)
+        .map((entry): ChartSelectionTarget => ({
+          kind: "datum",
+          chartId: chart.id,
+          datumId: entry.id,
+          categoryId: entry.categoryId,
+          seriesId: entry.seriesId
+        }));
+      set(additive ? [...targets, ...next] : next);
+    },
+
+    all(chartId: string, marks: readonly ChartMark[]) {
+      set(marks.map((mark) => targetForMark(chartId, mark)));
+    },
+
+    /** Drop references that no longer exist after a source refresh. */
+    prune(chart: ChartModel) {
+      const datumById = new Map(chart.data.datums.map((entry) => [entry.id, entry]));
+      const categoryIds = new Set(chart.data.categories.map((entry) => entry.id));
+      const seriesIds = new Set(chart.data.series.map((entry) => entry.id));
+      const elementIds = new Set(chart.elements.map((entry) => entry.id));
+      const axisIds = new Set(chartAxes(chart).map((axis) => axis.id));
+
+      set(
+        targets.flatMap((target): ChartSelectionTarget[] => {
+          if (target.chartId !== chart.id) return [];
+          switch (target.kind) {
+            case "chart":
+              return [target];
+            case "datum": {
+              const current = datumById.get(target.datumId);
+              return current === undefined
+                ? []
+                : [{
+                    ...target,
+                    categoryId: current.categoryId,
+                    seriesId: current.seriesId
+                  }];
+            }
+            case "category":
+              return categoryIds.has(target.categoryId) ? [target] : [];
+            case "series":
+              return seriesIds.has(target.seriesId) ? [target] : [];
+            case "element":
+              return elementIds.has(target.elementId) ? [target] : [];
+            case "axis":
+              return axisIds.has(target.axisId) ? [target] : [];
+          }
+        })
+      );
     },
 
     clear() {
       set([]);
     },
 
-    /**
-     * What is selected, described.
-     *
-     * A count is not enough for the thing that reads this — a panel inspecting
-     * the selection needs to know whether it is looking at one bar, one whole
-     * series, or an arbitrary handful, because those offer different actions.
-     */
-    get shape(): "none" | "one" | "category" | "series" | "many" {
-      if (ids.length === 0) return "none";
-      if (ids.length === 1) return "one";
-
-      const parts = ids.map(readMarkId);
-      const categories = new Set(parts.map((part) => part.category));
-      const seriesKeys = new Set(parts.map((part) => part.seriesKey));
-
-      if (categories.size === 1) return "category";
-      if (seriesKeys.size === 1) return "series";
+    get shape(): ChartSelectionShape {
+      if (targets.length === 0) return "none";
+      if (targets.length === 1) {
+        const kind = targets[0].kind;
+        if (kind === "axis" || kind === "element") return kind;
+        return "one";
+      }
+      if (targets.every((target) => target.kind === "datum")) {
+        const datums = targets.filter(
+          (target): target is Extract<ChartSelectionTarget, { kind: "datum" }> =>
+            target.kind === "datum"
+        );
+        if (new Set(datums.map((target) => target.categoryId)).size === 1) return "category";
+        if (new Set(datums.map((target) => target.seriesId)).size === 1) return "series";
+      }
       return "many";
     }
   };

@@ -1,8 +1,10 @@
 <script lang="ts">
   import ChartBar from "@lucide/svelte/icons/chart-bar";
+  import ChartArea from "@lucide/svelte/icons/chart-area";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
   import ChartLine from "@lucide/svelte/icons/chart-line";
   import ChartPie from "@lucide/svelte/icons/chart-pie";
+  import ChartScatter from "@lucide/svelte/icons/chart-scatter";
   import Columns3 from "@lucide/svelte/icons/columns-3";
   import Rows3 from "@lucide/svelte/icons/rows-3";
   import Sparkles from "@lucide/svelte/icons/sparkles";
@@ -27,9 +29,9 @@
    * form of its own.
    *
    * **A blocked entry is drawn, not hidden, and it is not a target.** It carries
-   * the reason it cannot be used on the row: a person looking for a chart needs
-   * to find out that charts are blocked, and an entry that vanished would send
-   * them looking for it somewhere else.
+   * the reason it cannot be used on the row. Existing chart objects are
+   * interactive; creation remains blocked until the selected-range adapter can
+   * build their identified data in one mutation.
    */
   let { spreadsheetId = "r-cost" }: { spreadsheetId?: string } = $props();
 
@@ -47,7 +49,16 @@
     "ins-g-column": ChartColumn,
     "ins-g-bar": ChartBar,
     "ins-g-line": ChartLine,
+    "ins-g-area": ChartArea,
+    "ins-g-scatter": ChartScatter,
+    "ins-g-bubble": ChartScatter,
     "ins-g-pie": ChartPie,
+    "ins-g-waterfall": ChartColumn,
+    "ins-g-mekko": ChartColumn,
+    "ins-g-funnel": ChartPie,
+    "ins-g-radar": ChartArea,
+    "ins-g-heatmap": ChartColumn,
+    "ins-g-treemap": ChartColumn,
     "ins-g-formula": SquareFunction,
     "ins-g-variable": Variable,
     "ins-g-prompt": Sparkles,
@@ -88,9 +99,9 @@
     {/each}
 
     <PanelNote tone="gap">
-      Charts render read-only. A chart has no stable id, which is what gates
-      creating one — and equally selecting, updating and commenting on the ones
-      already there.
+      All twelve native chart types are identified and interactive. Creating one
+      still needs the mutation that resolves the selected range into stable
+      categories, series and datums and validates the selected type's channels.
     </PanelNote>
   </PanelSection>
 

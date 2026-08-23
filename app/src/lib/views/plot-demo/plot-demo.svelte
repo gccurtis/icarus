@@ -1,211 +1,517 @@
 <script lang="ts">
   import SelectionPanel from "$views/plot-demo/components/selection-panel.svelte";
   import {
+    addAxisLine,
+    addCagrLine,
+    addChartText,
+    addTrendLine,
+    capabilitiesFor,
+    ChartElement,
+    createAreaChart,
+    createBarChart,
+    createBubbleChart,
     createChartSelection,
-    settingsFor,
+    createFunnelChart,
+    createHeatmapChart,
+    createLineChart,
+    createMekkoChart,
+    createPieChart,
+    createRadarChart,
+    createScatterChart,
+    createTreemapChart,
+    createWaterfallChart,
+    removeChartElements,
+    setChartDatumStyle,
+    type ChartFrame,
+    type ChartIdIssuer,
+    type ChartModel,
     type ChartType
   } from "$lib/unique-components/chart";
-  import { PlotBars, PlotPie } from "$lib/unique-components/chart/plot";
-  import { PanelChoice, PanelNote } from "$lib/unique-components/panel";
+  import { PanelButton, PanelChoice, PanelNote } from "$lib/unique-components/panel";
   import { ScreenGroup, ScreenNote, ScreenSurface } from "$lib/unique-components/screen";
 
-  /**
-   * The hand-rolled charts, and the thing they exist for: selection.
-   *
-   * A separate page from `/demo/analysis` on purpose. That one is the library
-   * version and stays as the comparison — the defects it still has are the
-   * argument for this one, and deleting the evidence would leave only an
-   * assertion.
-   *
-   * **Click a bar. Click a slice.** That is the whole demonstration. Shift-click
-   * adds; clicking a category label under the chart takes the whole column;
-   * clicking a legend entry takes the whole series; Escape or a click on the
-   * background clears. The panel on the right reads the selection and says what
-   * shape it is, because a selection of one bar and a selection of a whole
-   * series afford different things.
-   */
-  const DATA = [
-    { region: "Eastbrook", storm: 1180, equipment: 460, planned: 202 },
-    { region: "Harlow", storm: 610, equipment: 380, planned: 200 },
-    { region: "Ward 3", storm: 402, equipment: 338, planned: 200 },
-    { region: "Millbrook", storm: 250, equipment: 220, planned: 150 },
-    { region: "Deering", storm: 140, equipment: 130, planned: 110 }
-  ];
+  const CATEGORIES = [
+    { id: "category-2021", key: "2021", label: "2021" },
+    { id: "category-2022", key: "2022", label: "2022" },
+    { id: "category-2023", key: "2023", label: "2023" },
+    { id: "category-2024", key: "2024", label: "2024" },
+    { id: "category-2025", key: "2025", label: "2025" }
+  ] as const;
 
   const SERIES = [
-    { key: "storm", label: "Storm" },
-    { key: "equipment", label: "Equipment" },
-    { key: "planned", label: "Planned" }
+    { id: "series-revenue", key: "revenue", label: "Revenue" },
+    { id: "series-services", key: "services", label: "Services" },
+    { id: "series-planned", key: "planned", label: "Planned" }
+  ] as const;
+
+  const ROWS = [
+    [620, 230, 120],
+    [710, 270, 140],
+    [860, 310, 160],
+    [990, 360, 190],
+    [1180, 420, 220]
+  ] as const;
+
+  const TYPE_OPTIONS: { value: ChartType; label: string }[] = [
+    { value: "bar", label: "Bar" },
+    { value: "pie", label: "Pie / doughnut" },
+    { value: "line", label: "Line" },
+    { value: "area", label: "Area" },
+    { value: "scatter", label: "Scatter" },
+    { value: "bubble", label: "Bubble" },
+    { value: "waterfall", label: "Waterfall" },
+    { value: "mekko", label: "Mekko" },
+    { value: "funnel", label: "Funnel" },
+    { value: "radar", label: "Radar" },
+    { value: "heatmap", label: "Heatmap" },
+    { value: "treemap", label: "Treemap" }
   ];
 
-  const TOTALS = DATA.map((row) => ({
-    region: row.region,
-    total: row.storm + row.equipment + row.planned
-  }));
+  let sequence = 0;
+  const demoId: ChartIdIssuer = (kind) => `demo-${kind}-${++sequence}`;
+  const categoricalValues = CATEGORIES.flatMap((category, categoryIndex) =>
+    SERIES.map((series, seriesIndex) => ({
+      id: `datum-${category.key}-${series.key}`,
+      categoryKey: category.key,
+      seriesKey: series.key,
+      value: ROWS[categoryIndex][seriesIndex]
+    }))
+  );
+  const categoryData = {
+    categories: CATEGORIES,
+    series: SERIES,
+    values: categoricalValues
+  };
+  const singleSeriesData = {
+    categories: CATEGORIES,
+    series: [{ id: "series-total", key: "total", label: "Operating value" }],
+    values: CATEGORIES.map((category, index) => ({
+      id: `datum-${category.key}-total`,
+      categoryKey: category.key,
+      seriesKey: "total",
+      value: ROWS[index].reduce((sum, value) => sum + value, 0)
+    }))
+  };
+  const pointData = {
+    categories: CATEGORIES.map((entry, index) => ({ ...entry, label: `Business ${index + 1}` })),
+    series: SERIES.slice(0, 2),
+    values: CATEGORIES.flatMap((category, categoryIndex) =>
+      SERIES.slice(0, 2).map((series, seriesIndex) => ({
+        id: `point-${category.key}-${series.key}`,
+        categoryKey: category.key,
+        seriesKey: series.key,
+        x: 18 + categoryIndex * 13 + seriesIndex * 5,
+        value: 22 + categoryIndex * 17 + seriesIndex * 12,
+        size: 30 + categoryIndex * 25 + seriesIndex * 18,
+        label: `${category.label} · ${series.label}`
+      }))
+    )
+  };
 
-  let type = $state<ChartType>("bar");
-  let layout = $state("stack");
-  let orientation = $state("vertical");
-  let labels = $state("value");
-  let hovered = $state<string | undefined>(undefined);
+  const makeChart = (type: ChartType): ChartModel => {
+    switch (type) {
+      case "bar":
+        return createBarChart(
+          {
+            id: "chart-operating-value-bar",
+            title: "Operating value by year",
+            data: categoryData,
+            layout: "stack",
+            labels: "value",
+            valueFormat: { style: "number", compact: true, maximumFractionDigits: 1 }
+          },
+          demoId
+        );
+      case "pie":
+        return createPieChart(
+          {
+            id: "chart-operating-value-pie",
+            title: "Operating value contribution",
+            data: singleSeriesData,
+            labels: "percent",
+            innerRadius: 0.25,
+            legend: { visible: true, position: "end" }
+          },
+          demoId
+        );
+      case "line":
+        return createLineChart(
+          {
+            id: "chart-operating-value-line",
+            title: "Operating value trajectory",
+            data: categoryData,
+            curve: "smooth",
+            points: "all",
+            valueFormat: { style: "number", compact: true, maximumFractionDigits: 1 }
+          },
+          demoId
+        );
+      case "area":
+        return createAreaChart(
+          {
+            id: "chart-operating-value-area",
+            title: "Operating value composition",
+            data: categoryData,
+            layout: "stack",
+            curve: "smooth",
+            valueFormat: { style: "number", compact: true, maximumFractionDigits: 1 }
+          },
+          demoId
+        );
+      case "scatter":
+        return createScatterChart(
+          {
+            id: "chart-return-scatter",
+            title: "Scale versus return",
+            data: pointData,
+            labels: "custom",
+            axes: { x: { title: "Scale" }, y: { title: "Return" } }
+          },
+          demoId
+        );
+      case "bubble":
+        return createBubbleChart(
+          {
+            id: "chart-return-bubble",
+            title: "Scale, return, and investment",
+            data: pointData,
+            labels: "category",
+            axes: { x: { title: "Scale" }, y: { title: "Return" } }
+          },
+          demoId
+        );
+      case "waterfall": {
+        const categories = [
+          { id: "category-start", key: "start", label: "2024" },
+          { id: "category-price", key: "price", label: "Price" },
+          { id: "category-volume", key: "volume", label: "Volume" },
+          { id: "category-cost", key: "cost", label: "Cost" },
+          { id: "category-end", key: "end", label: "2025" }
+        ];
+        return createWaterfallChart(
+          {
+            id: "chart-ebitda-waterfall",
+            title: "EBITDA bridge",
+            data: {
+              categories,
+              series: [{ id: "series-change", key: "change", label: "Change" }],
+              values: [900, 120, 80, -140, 960].map((value, index) => ({
+                id: `waterfall-${categories[index].key}`,
+                categoryKey: categories[index].key,
+                seriesKey: "change",
+                value
+              }))
+            },
+            totals: ["category-start", "category-end"],
+            valueFormat: { style: "currency", currency: "USD", compact: true }
+          },
+          demoId
+        );
+      }
+      case "mekko":
+        return createMekkoChart(
+          {
+            id: "chart-market-mekko",
+            title: "Market share of segment",
+            data: categoryData,
+            widths: { kind: "total" },
+            labels: "percent"
+          },
+          demoId
+        );
+      case "funnel": {
+        const categories = [
+          { id: "category-leads", key: "leads", label: "Leads" },
+          { id: "category-qualified", key: "qualified", label: "Qualified" },
+          { id: "category-proposals", key: "proposals", label: "Proposals" },
+          { id: "category-wins", key: "wins", label: "Wins" }
+        ];
+        return createFunnelChart(
+          {
+            id: "chart-sales-funnel",
+            title: "Commercial funnel",
+            data: {
+              categories,
+              series: [{ id: "series-count", key: "count", label: "Opportunities" }],
+              values: [1000, 610, 280, 125].map((value, index) => ({
+                id: `funnel-${categories[index].key}`,
+                categoryKey: categories[index].key,
+                seriesKey: "count",
+                value
+              }))
+            },
+            labels: "percent"
+          },
+          demoId
+        );
+      }
+      case "radar":
+        return createRadarChart(
+          {
+            id: "chart-capability-radar",
+            title: "Capability profile",
+            data: categoryData,
+            labels: "none",
+            valueFormat: { style: "number", compact: true }
+          },
+          demoId
+        );
+      case "heatmap":
+        return createHeatmapChart(
+          {
+            id: "chart-performance-heatmap",
+            title: "Performance matrix",
+            data: categoryData,
+            labels: "value",
+            valueFormat: { style: "number", compact: true }
+          },
+          demoId
+        );
+      case "treemap":
+        return createTreemapChart(
+          {
+            id: "chart-portfolio-treemap",
+            title: "Portfolio contribution",
+            data: singleSeriesData,
+            labels: "category"
+          },
+          demoId
+        );
+    }
+  };
 
+  let chart = $state<ChartModel>(makeChart("bar"));
+  let frame = $state<ChartFrame>({ x: 20, y: 18, width: 720, height: 350 });
+  let canvasWidth = $state(900);
+  let selected = $state(true);
   const selection = createChartSelection();
+  const offered = $derived(capabilitiesFor(chart.type));
+  const selectedDatumIds = $derived(
+    selection.targets.flatMap((target) => (target.kind === "datum" ? [target.datumId] : []))
+  );
+  const selectedElementIds = $derived(
+    selection.targets.flatMap((target) => (target.kind === "element" ? [target.elementId] : []))
+  );
 
-  /** Which controls this type can even answer. A pie is offered none of them. */
-  const offered = $derived(settingsFor(type));
+  const chooseType = (type: ChartType) => {
+    selection.clear();
+    chart = makeChart(type);
+  };
 
-  const format = (value: number) => value.toLocaleString();
+  const addCagr = () => {
+    if (chart.type !== "bar" && chart.type !== "line" && chart.type !== "area") return;
+    chart = addCagrLine(
+      chart,
+      {
+        seriesId: "series-revenue",
+        fromCategoryId: "category-2021",
+        toCategoryId: "category-2025",
+        periods: 4,
+        label: "Revenue growth",
+        showRate: true
+      },
+      demoId
+    );
+  };
+
+  const addReference = () => {
+    let axisId: string;
+    let value: number;
+    switch (chart.type) {
+      case "bar":
+      case "line":
+      case "area":
+        axisId = chart.axes.value.id;
+        value = 1000;
+        break;
+      case "waterfall":
+        axisId = chart.axes.value.id;
+        value = 900;
+        break;
+      case "mekko":
+        axisId = chart.axes.value.id;
+        value = 0.5;
+        break;
+      case "scatter":
+      case "bubble":
+        axisId = chart.axes.y.id;
+        value = 75;
+        break;
+      default:
+        return;
+    }
+    chart = addAxisLine(
+      chart,
+      { axisId, position: { kind: "value", value }, label: "Review threshold" },
+      demoId
+    );
+  };
+
+  const addTrend = () => {
+    if (chart.type !== "scatter" && chart.type !== "bubble") return;
+    chart = addTrendLine(
+      chart,
+      {
+        seriesId: "series-revenue",
+        showEquation: true,
+        showRSquared: true,
+        label: "Revenue trend"
+      },
+      demoId
+    );
+  };
+
+  const addText = () => {
+    chart = addChartText(
+      chart,
+      { text: "Review with operations", position: { x: 0.7, y: 0.12 } },
+      demoId
+    );
+  };
+
+  const highlightSelection = () => {
+    chart = setChartDatumStyle(chart, selectedDatumIds, {
+      color: "var(--token-color-accent-1-fill)",
+      opacity: 0.85
+    });
+  };
+
+  const deleteSelectedElements = () => {
+    chart = removeChartElements(chart, selectedElementIds);
+    selection.prune(chart);
+  };
 </script>
 
 <svelte:head>
-  <title>Charts, hand-rolled — Icarus</title>
+  <title>Native chart system — Icarus</title>
 </svelte:head>
 
 <div class="flex h-full min-h-0">
   <ScreenSurface wide class="flex-1">
-    <a href="/demo/analysis" class="text-caption text-interactive-text w-fit hover:underline">
-      ← The library version, for comparison
-    </a>
-
-    <h1 class="text-h3 leading-h3 m-0 font-semibold tracking-tight">Charts, hand-rolled</h1>
+    <h1 class="text-h3 leading-h3 m-0 font-semibold tracking-tight">Native chart system</h1>
     <p class="text-body-sm text-ink-muted m-0 max-w-prose">
-      Every bar and every slice is a thing you can point at. Click one. Shift-click
-      to add another. Click a category label to take the whole column, or a legend
-      entry to take the whole series. Escape clears.
+      Twelve chart types share one persisted identity and interaction system. Drag the title strip
+      or resize from the lower-right corner, then select marks, axes, legends, and generated
+      elements without changing the frame.
     </p>
 
-    <ScreenGroup label="Chart">
-      {#snippet actions()}
-        <!-- The legend is a control: each entry selects its whole series. -->
-        <div class="flex flex-wrap items-center gap-2">
-          {#each SERIES as entry, index (entry.key)}
-            <button
-              type="button"
-              onmouseenter={() => (hovered = entry.key)}
-              onmouseleave={() => (hovered = undefined)}
-              onclick={(event) =>
-                selection.series(
-                  entry.key,
-                  DATA.map((row) => row.region),
-                  event.shiftKey || event.metaKey
-                )}
-              class="text-caption border-border-subtle bg-surface-panel hover:border-interactive-border rounded-control inline-flex cursor-pointer items-center gap-1.5 border px-1.5 py-1"
-            >
-              <span
-                class="size-3 shrink-0 rounded-full"
-                style="background: var(--color-{['accent-1', 'accent-2', 'interactive'][index]}-fill)"
-              ></span>
-              {entry.label}
-            </button>
-          {/each}
-        </div>
-      {/snippet}
-
-      <div class="border-border-subtle rounded-panel bg-surface-panel border p-4">
-        {#if type === "pie"}
-          <!-- No axes, no grid, no frame. A pie has none of those to have. -->
-          <PlotPie data={TOTALS} x="region" value="total" {selection} {format} height={320} />
-        {:else}
-          <PlotBars
-            data={DATA}
-            x="region"
-            series={SERIES}
-            layout={layout as "stack" | "group" | "expand" | "overlap"}
-            horizontal={orientation === "horizontal"}
-            labels={labels as "none" | "value" | "total"}
-            {selection}
-            bind:hovered
-            {format}
-            height={320}
-          />
-        {/if}
+    <ScreenGroup label="Interactive chart object">
+      <div
+        class="chart-canvas bg-surface-canvas border-border-subtle rounded-panel relative h-105 overflow-hidden border"
+        bind:clientWidth={canvasWidth}
+        onclick={(event) => {
+          if (event.target === event.currentTarget) selected = false;
+        }}
+        role="presentation"
+      >
+        <ChartElement
+          {chart}
+          bind:frame
+          bind:selected
+          {selection}
+          bounds={{ width: canvasWidth, height: 420 }}
+        />
       </div>
     </ScreenGroup>
 
-    <ScreenGroup label="How it is drawn">
-      <div class="flex flex-wrap items-start gap-6">
+    <ScreenGroup label="Chart model">
+      <div class="flex flex-wrap items-end gap-4">
         <div class="flex flex-col gap-1">
-          <span class="text-caption text-ink-muted">Kind</span>
+          <span class="text-caption text-ink-muted">Type</span>
           <PanelChoice
-            label="Chart kind"
-            value={type}
-            options={[
-              { value: "bar", label: "Bar" },
-              { value: "pie", label: "Pie" }
-            ]}
-            onchange={(next) => (type = next as ChartType)}
+            label="Chart type"
+            value={chart.type}
+            options={TYPE_OPTIONS}
+            onchange={(next) => chooseType(next as ChartType)}
           />
         </div>
 
-        <!--
-          Absent rather than disabled. `settingsFor` says which controls a type
-          can answer, so a pie is not offered a stacking mode it would ignore —
-          which is what the library version does and what makes its panel a lie.
-        -->
-        {#if offered.layout}
+        {#if chart.type === "bar"}
           <div class="flex flex-col gap-1">
             <span class="text-caption text-ink-muted">Series together</span>
             <PanelChoice
-              label="How series share the space"
-              value={layout}
+              label="Bar layout"
+              value={chart.layout}
               options={[
                 { value: "stack", label: "Stacked" },
                 { value: "group", label: "Clustered" },
                 { value: "expand", label: "100%" },
                 { value: "overlap", label: "Overlaid" }
               ]}
-              onchange={(next) => (layout = next)}
+              onchange={(next) => {
+                if (chart.type === "bar") chart = { ...chart, layout: next as typeof chart.layout };
+              }}
             />
           </div>
-        {/if}
-
-        {#if offered.orientation}
           <div class="flex flex-col gap-1">
             <span class="text-caption text-ink-muted">Orientation</span>
             <PanelChoice
-              label="Orientation"
-              value={orientation}
+              label="Bar orientation"
+              value={chart.orientation}
               options={[
                 { value: "vertical", label: "Vertical" },
                 { value: "horizontal", label: "Horizontal" }
               ]}
-              onchange={(next) => (orientation = next)}
+              onchange={(next) => {
+                if (chart.type === "bar") {
+                  chart = { ...chart, orientation: next as typeof chart.orientation };
+                }
+              }}
             />
           </div>
-        {/if}
-
-        {#if offered.labels && type !== "pie"}
+        {:else if chart.type === "area"}
           <div class="flex flex-col gap-1">
-            <span class="text-caption text-ink-muted">Figures</span>
+            <span class="text-caption text-ink-muted">Areas together</span>
             <PanelChoice
-              label="Figures on the bars"
-              value={labels}
+              label="Area layout"
+              value={chart.layout}
               options={[
-                { value: "none", label: "None" },
-                { value: "value", label: "Each value" },
-                { value: "total", label: "Total above" }
+                { value: "overlap", label: "Overlaid" },
+                { value: "stack", label: "Stacked" },
+                { value: "expand", label: "100%" }
               ]}
-              onchange={(next) => (labels = next)}
+              onchange={(next) => {
+                if (chart.type === "area") chart = { ...chart, layout: next as typeof chart.layout };
+              }}
             />
           </div>
         {/if}
       </div>
 
+      <div class="flex flex-wrap gap-2">
+        {#if offered.addableElements.includes("cagr-line")}
+          <PanelButton label="Add generated CAGR" onclick={addCagr} />
+        {/if}
+        {#if offered.addableElements.includes("trend-line")}
+          <PanelButton label="Add linear trend" onclick={addTrend} />
+        {/if}
+        {#if offered.addableElements.includes("axis-line")}
+          <PanelButton label="Add axis line" onclick={addReference} />
+        {/if}
+        <PanelButton label="Add text" onclick={addText} />
+        {#if selectedDatumIds.length > 0}
+          <PanelButton label="Recolour selection" onclick={highlightSelection} />
+        {/if}
+        {#if selectedElementIds.length > 0}
+          <PanelButton label="Delete selected elements" onclick={deleteSelectedElements} />
+        {/if}
+      </div>
+
       <PanelNote>
-        The controls a kind cannot answer are absent rather than greyed out. A pie
-        is offered no stacking mode, because there is no honest thing for one to
-        do.
+        Capabilities come from the same discriminated type the renderer switches on. Pie, funnel,
+        radar, heatmap, and treemap never receive Cartesian-only elements; scatter and bubble offer
+        derived regressions; growth charts offer derived CAGR lines.
       </PanelNote>
     </ScreenGroup>
 
     <ScreenNote>
-      Drawn from `layout.ts`, which is pure functions over numbers — the geometry
-      can be checked by reading it. That is the thing the library could not offer:
-      its labels could be measured landing on top of each other but not corrected.
+      Every chart, category, series, datum, axis, and added element has a stable id. Geometry and
+      frame placement are derived around those identities, so switching size or refreshing values
+      cannot silently move a selection to another fact.
     </ScreenNote>
   </ScreenSurface>
 
   <div class="border-border-subtle bg-surface-panel w-75 shrink-0 border-s">
-    <SelectionPanel {selection} data={DATA} series={SERIES} {format} />
+    <SelectionPanel {selection} {chart} />
   </div>
 </div>

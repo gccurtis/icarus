@@ -29,9 +29,9 @@ Each analysis with its chart kind and when it last ran.
 
 **Needs** — the project's analyses with their display kind and last-run time.
 
-**Open** — "run 1w ago" is about a result that no longer exists, since nothing
-about a result is stored. Whether the timestamp is useful, or misleading, is worth
-deciding.
+The timestamp describes the saved analytic's last complete materialization. That
+chart or table remains available for every embedding surface while a changed
+definition is evaluating, stale, or temporarily invalid.
 
 ## Panel furniture
 
