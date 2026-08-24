@@ -97,7 +97,14 @@
 
   <PanelSection title="Create" flush>
     <PanelActions>
-      <PanelButton label="Create deck" icon={Plus} tone="primary" />
+      <!-- Keyed by the title, so a second press lands on the same tab. -->
+      <PanelButton
+        label="Create deck"
+        icon={Plus}
+        tone="primary"
+        onclick={() =>
+          view.open({ screen: "slide-deck-editor", resourceId: title ?? draft.title })}
+      />
     </PanelActions>
     <PanelNote>This tab becomes the deck. It does not open a second one.</PanelNote>
   </PanelSection>

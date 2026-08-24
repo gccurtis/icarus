@@ -38,8 +38,8 @@
   const asks = $derived(variablesIn(templateId).current);
   const preview = $derived(previewOf(templateId).current);
 
-  /** The library words it *Project | Global*; a person asks where they can use it. */
-  const where = $derived(tpl.scope === "Project" ? "This project" : "Everywhere");
+  /** Whose it is, in the library's own words. */
+  const where = $derived(tpl.scope);
 </script>
 
 <Panel title={tpl.name}>

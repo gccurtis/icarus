@@ -1,73 +1,167 @@
 <script lang="ts">
   import { PanelChip } from "$lib/unique-components/panel";
-  import { ScreenBar, ScreenNote, ScreenSurface } from "$lib/unique-components/screen";
+  import {
+    ScreenBar,
+    ScreenCanvas,
+    ScreenGrid,
+    ScreenGridCell,
+    ScreenNote,
+    ScreenPage,
+    ScreenSlide,
+    ScreenSurface
+  } from "$lib/unique-components/screen";
+  import { Input } from "$lib/simple-components/input";
   import {
     outlineIn,
     pageSetupFor,
     previewOf,
     template,
     variablesIn,
+    type PageSetup,
     type PreviewLine,
+    type TemplateTarget,
     type TemplateVariable,
     type VariableType
   } from "$mock-capabilities/library";
   import { project } from "$mock-capabilities/project";
+  import { viewState } from "$model/client/view-state";
+
+  const view = viewState();
 
   /**
-   * Templates — one template: the body, authored on the surface it will become.
+   * Templates — one template, authored on the surface it will become.
    *
-   * `docs/screen-panel-views/screens/templates/workspace-editor.md` is the
-   * specification. Authoring a template is authoring the thing it makes, so the
-   * library is replaced by the matching surface — and the one thing this state
-   * adds is the strip across the top saying which template you are in and how to
-   * get out. Without it the screen is indistinguishable from editing the real
-   * document.
+   * **Which template is view state, not a prop.** The library gets here by
+   * choosing one — `showSubscreen("editor", id)` — and `focus` is where that
+   * choice lands, so this file reads it rather than taking a default that would
+   * quietly show the wrong template the moment anything else changed.
    *
-   * **The tracks are `1fr 816px 1fr`** — the page is a fixed measure and the
-   * pasteboard is whatever is left either side of it. That is what makes the
-   * template read as an object being made rather than as a document being
-   * written in. 816px is written off the spacing unit because every dimension
-   * here is, and 204 units is exactly it.
+   * **The surface is the resource's, not a template editor's.** Authoring a
+   * template is authoring the thing it makes, so a Document gets a page on a
+   * canvas, a deck or a slide gets a stage, and a Spreadsheet gets a grid. The
+   * three real editors are still mockups, so what is drawn here is those three
+   * shapes filled from the preview door — which the note under the bar says out
+   * loud rather than letting the surface imply otherwise.
    *
-   * **The pasteboard is placed by line rather than named in the areas.** A
-   * surround is a frame, and a frame is not a rectangle: `grid-template-areas`
-   * can only name rectangles, so the pasteboard is one rectangle under the whole
-   * page stack and the page sits on top of it. The rows carry no gap, so the
-   * header, the body and the footer are one continuous sheet.
-   *
-   * **The body is the gate on this screen.** Nothing in a body records which
-   * variable it stands for, so the three kinds of opening are drawn from the
-   * preview door and the variable list beside it — which can say how a text, a
-   * table and a generated variable each read, and cannot say where any of them
-   * actually sits. The note at the top of the page says so rather than letting
-   * the surface imply otherwise.
-   *
-   * Header and footer furniture is not on the model either. The running head is
-   * the project's name and the foot is the outline's page count, so that the two
-   * regions are drawn from doors rather than from invented sample text.
+   * **The strip across the top is the whole of what this state costs.** Without
+   * it the screen is indistinguishable from editing the real document, and there
+   * is no way back to the library.
    */
-  let {
-    templateId = "tp-filing",
-    onback = () => {}
-  }: {
-    templateId?: string;
-    /** Back to the library. Absent only where this state was not entered from one. */
-    onback?: () => void;
-  } = $props();
+  const focus = $derived(view.active.focus);
 
-  const it = $derived(template(templateId).current);
-  const lines = $derived(previewOf(templateId).current);
-  const variables = $derived(variablesIn(templateId).current);
-  const setup = $derived(pageSetupFor(templateId).current);
-  const outline = $derived(outlineIn(templateId).current);
+  /**
+   * A template that does not exist yet.
+   *
+   * The kind picker is not built, so a blank one is a Document — the commonest
+   * of the four and the only one whose empty state is a page you can type on.
+   */
+  const fresh = $derived(focus === undefined || focus === "new");
+  const id = $derived(focus ?? "new");
+
+  const BLANK: readonly PreviewLine[] = [
+    { id: "pl-blank", text: "", style: "body", variable: false }
+  ];
+
+  const it = $derived(template(id).current);
+  const lines = $derived(fresh ? BLANK : previewOf(id).current);
+  const variables = $derived<readonly TemplateVariable[]>(fresh ? [] : variablesIn(id).current);
+  const outline = $derived(fresh ? [] : outlineIn(id).current);
+  const setup = $derived<PageSetup>(pageSetupFor(id).current);
   const projectName = $derived(project().current.name);
 
+  const name = $derived(fresh ? "Untitled template" : it.name);
+  const makes = $derived<TemplateTarget>(fresh ? "Document" : it.makes);
+
   const pages = $derived(outline.reduce((most: number, entry) => Math.max(most, entry.page), 1));
+
+  /** The door states page setup as a person would; `ScreenPage` takes the setting. */
+  const PAPER = { Letter: "letter", A4: "a4" } as const;
+  const TURN = { Portrait: "portrait", Landscape: "landscape" } as const;
 
   /** Generated variables never sit in running prose: they are blocks in their own right. */
   const generated = $derived(
     variables.filter((variable: TemplateVariable) => variable.type === "Generated")
   );
+
+  /* ---------------------------------------------------------------- saving ---- */
+
+  /**
+   * Saved / Saving…, held here and written nowhere.
+   *
+   * A template has no draft state: every change to one is a change to the
+   * template, which is the difference between authoring a template and filling
+   * one in. So the honest indicator is not a Save button but a report that the
+   * writing has already happened — and this one reports about a write that does
+   * not happen at all, because the doors are reads.
+   */
+  let saving = $state(false);
+  let settle: ReturnType<typeof setTimeout> | undefined;
+
+  const touch = () => {
+    saving = true;
+    clearTimeout(settle);
+    settle = setTimeout(() => (saving = false), 900);
+  };
+
+  $effect(() => () => clearTimeout(settle));
+
+  /* ----------------------------------------------------------------- body ---- */
+
+  /**
+   * What has been typed, by template and line. The door's text stands until
+   * something replaces it.
+   *
+   * Keyed by both because the body door hands every template the same six line
+   * ids: keyed by line alone, a sentence typed into one template would appear in
+   * the next one opened.
+   */
+  let edits = $state<Record<string, string>>({});
+  let editing = $state<string | undefined>(undefined);
+  let draft = $state("");
+  let control = $state<HTMLElement | null>(null);
+
+  const keyOf = (line: PreviewLine): string => `${id}/${line.id}`;
+
+  const textOf = (line: PreviewLine): string => edits[keyOf(line)] ?? line.text;
+
+  const start = (line: PreviewLine) => {
+    draft = textOf(line);
+    editing = keyOf(line);
+  };
+
+  const commit = () => {
+    if (editing === undefined) return;
+    const key = editing;
+    editing = undefined;
+    if (edits[key] === draft) return;
+    edits[key] = draft;
+    touch();
+  };
+
+  $effect(() => {
+    const field = control as HTMLInputElement | null;
+    field?.focus();
+    field?.select();
+  });
+
+  /**
+   * Escape abandons, Enter commits, and nothing reaches the surface underneath.
+   *
+   * The last of those is what the grid needs: a sheet owns its arrow keys, so an
+   * arrow pressed inside a field would move the cursor off the cell being typed
+   * into and take the field with it.
+   */
+  const keys = (event: KeyboardEvent) => {
+    event.stopPropagation();
+    if (event.key === "Escape") {
+      event.preventDefault();
+      editing = undefined;
+      return;
+    }
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    commit();
+  };
 
   type Piece =
     | { readonly kind: "text"; readonly text: string }
@@ -94,10 +188,45 @@
 
   /** A line that is nothing but a table variable is a placed block, not a sentence. */
   const placedTable = (line: PreviewLine): string | undefined => {
-    const parts = piecesOf(line.text);
+    const parts = piecesOf(textOf(line));
     const only = parts.length === 1 ? parts[0] : undefined;
     return only?.kind === "variable" && only.type === "Table" ? only.key : undefined;
   };
+
+  /* ---------------------------------------------------------------- stage ---- */
+
+  /**
+   * The body, placed on a stage.
+   *
+   * A line carrying an opening is drawn dashed and a fixed line solid, which is
+   * `ScreenSlide`'s own distinction read across to a template: dashed is what
+   * whatever uses this will fill in, solid is what the template keeps.
+   */
+  const objects = $derived([
+    ...lines.slice(0, 6).map((line: PreviewLine, index: number) => ({
+      id: line.id,
+      frame: { x: 0.08, y: 0.06 + index * 0.13, w: 0.84, h: 0.11 },
+      label: textOf(line) || "Empty line",
+      outline: (line.variable ? "dashed" : "solid") as "dashed" | "solid"
+    })),
+    ...generated.map((variable: TemplateVariable, index: number) => ({
+      id: variable.id,
+      frame: { x: 0.08, y: 0.06 + (lines.slice(0, 6).length + index) * 0.13, w: 0.84, h: 0.11 },
+      label: `Generated · ${variable.key}`,
+      outline: "dashed" as const
+    }))
+  ]);
+
+  const lineFor = (objectId: string): PreviewLine | undefined =>
+    lines.find((line: PreviewLine) => line.id === objectId);
+
+  /* ---------------------------------------------------------------- sheet ---- */
+
+  let cursor = $state("A1");
+
+  /** Column A is the body; a sheet's cells are the nearest thing a grid has to lines. */
+  const lineAt = (row: number): PreviewLine | undefined => lines[row - 1];
+  const blockAt = (row: number): TemplateVariable | undefined => generated[row - 1 - lines.length];
 </script>
 
 <!-- Running prose, with each opening rendered as the atom it will be replaced by. -->
@@ -108,207 +237,181 @@
   {/each}
 {/snippet}
 
-<!-- The page's content, drawn the same way whatever surface it is sitting on. -->
-{#snippet content()}
-  <!--
-    On the page rather than beside it: this is a statement about the content
-    that is missing, and there is nowhere beside the page that is not the
-    pasteboard.
-  -->
-  <ScreenNote tone="gap">
-    The openings are drawn from the variable list, not from the body. Nothing in a body records
-    which variable it stands for, so none of the three can be placed, highlighted or jumped to —
-    the surface can be drawn and nothing can be put in it.
-  </ScreenNote>
+<!--
+  One line, read or written.
 
-  {#each lines as line (line.id)}
-    {@const table = placedTable(line)}
-    {#if table}
-      <!-- A table variable is a block, dashed and labelled with its key. -->
-      <div class="border-border-strong rounded-control flex flex-col gap-1 border border-dashed p-4">
-        <span class="text-caption text-ink-muted">
-          table variable · <span class="font-mono">{table}</span>
-        </span>
-        <span class="text-caption text-ink-muted">The supplied table, set as ordinary rows.</span>
-      </div>
-    {:else if line.style === "heading"}
-      <h2 class="text-h3 text-ink-primary m-0 font-semibold">{@render run(line.text)}</h2>
-    {:else}
-      <p class="text-body text-ink-primary m-0">{@render run(line.text)}</p>
-    {/if}
-  {/each}
-
-  {#each generated as variable (variable.id)}
+  Idle it is prose with its openings tinted; typing it is the raw `{key}` text,
+  because the braces are what you actually type and an atom is not editable. The
+  width is a parameter because the grid's columns are a fixed measure and a page's
+  are not — a field sized to a container the sheet does not have collapses.
+-->
+{#snippet editable(line: PreviewLine, width: string)}
+  {#if editing === keyOf(line)}
+    <Input
+      bind:ref={control}
+      bind:value={draft}
+      onblur={commit}
+      onkeydown={keys}
+      aria-label="Template line"
+      class="text-body-sm h-5 rounded-none border-0 bg-transparent px-0 {width}"
+    />
+  {:else}
     <!--
-      Placed last because placement is exactly what the model cannot say. A
-      generated variable is never a question at instantiation, which is why it
-      is an opening rather than an insert.
+      The idle line wraps rather than truncating: a page is where a long sentence
+      is supposed to run on, and clipping it here meant a line typed in full came
+      back as an ellipsis the moment it was committed. The two surfaces that do
+      have to clip already do — a grid cell truncates its own contents and a
+      slide object hides its overflow.
     -->
-    <div
-      class="border-intelligence-border bg-intelligence-surface rounded-control flex flex-col gap-1 border p-4"
+    <button
+      type="button"
+      title="Change this line"
+      class="hover:bg-surface-panel-hover rounded-control -mx-1 max-w-full cursor-text px-1 text-start"
+      onclick={() => start(line)}
     >
-      <span class="text-caption text-intelligence-text">
-        Generated · <span class="font-mono">{variable.key}</span>
-      </span>
-      <span class="text-body-sm text-ink-secondary">
-        {variable.becomes ?? "A prompt block in the result"}, which runs on first open.
-      </span>
-    </div>
-  {/each}
+      {#if textOf(line)}
+        {@render run(textOf(line))}
+      {:else}
+        <span class="text-ink-muted italic">Empty line</span>
+      {/if}
+    </button>
+  {/if}
+{/snippet}
+
+<!-- A generated variable is never a question at instantiation; it is a block. -->
+{#snippet block(variable: TemplateVariable)}
+  <div
+    class="border-intelligence-border bg-intelligence-surface rounded-control flex flex-col gap-1 border p-3"
+  >
+    <span class="text-caption text-intelligence-text">
+      Generated · <span class="font-mono">{variable.key}</span>
+    </span>
+    <span class="text-caption text-ink-secondary">
+      {variable.becomes ?? "A prompt block in the result"}, which runs on first open.
+    </span>
+  </div>
 {/snippet}
 
 <ScreenSurface wide class="gap-0 p-0">
-  <div class="board">
-    <!--
-      The one thing this state adds: which template, and the way back. The tab
-      is still a Templates screen and has to say so.
-    -->
-    <div class="area-header">
-      <ScreenBar title={it.name} {onback}>
-        {#snippet meta()}
-          <PanelChip>Template</PanelChip>
-          <span class="text-caption text-ink-muted">
-            Saved · revision <span class="tabular-nums">{it.revision}</span>
-          </span>
-        {/snippet}
-      </ScreenBar>
-    </div>
+  <!-- Which template, whether it is saved, and the way back. -->
+  <ScreenBar
+    title={name}
+    backLabel="All templates"
+    onback={() => view.showSubscreen("library")}
+  >
+    {#snippet meta()}
+      <PanelChip>{makes}</PanelChip>
+      <PanelChip tone={saving ? "attention" : "success"}>
+        {saving ? "Saving…" : "Saved"}
+      </PanelChip>
+      {#if !fresh}
+        <span class="text-caption text-ink-muted">
+          revision <span class="tabular-nums">{it.revision}</span>
+        </span>
+      {/if}
+    {/snippet}
+  </ScreenBar>
 
-    <!--
-      The surround. It holds nothing: what it does is give the page an edge, so
-      the template reads as an object rather than as the whole tab.
-    -->
-    <div class="area-pasteboard" aria-hidden="true"></div>
-
-    {#if it.makes === "Document"}
-      <!--
-        Furniture is carried into every copy made from this template. The
-        regions exist only for a document: a slide has no running head.
-      -->
-      <div class="area-page-header">
-        <span class="text-caption text-ink-muted">{projectName}</span>
-        <span class="text-caption text-ink-muted tabular-nums">{setup.paper} · {setup.orientation}</span>
-      </div>
-
-      <div class="area-body">
-        {@render content()}
-      </div>
-
-      <div class="area-page-footer">
-        <span class="text-caption text-ink-muted">{it.name}</span>
-        <span class="text-caption text-ink-muted tabular-nums">Page 1 of {pages}</span>
-      </div>
-    {:else if it.makes === "Spreadsheet"}
-      <!-- A spreadsheet template puts a grid in the same place; the surround does not change. -->
-      <div class="area-body sheet">
-        {@render content()}
-      </div>
-    {:else}
-      <!-- A deck or slide template puts a canvas in the same place, at 16:9. -->
-      <div class="area-body">
-        <div class="canvas">
-          {@render content()}
-        </div>
-      </div>
-    {/if}
+  <div class="px-4 pt-3">
+    <ScreenNote tone="gap">
+      The document, deck and spreadsheet editors are not wired in yet, so this is the shape of the
+      one this template makes, filled from the body door. Lines can be typed; nothing else on the
+      surface acts, and nothing is written back.
+    </ScreenNote>
   </div>
+
+  {#if makes === "Document"}
+    <ScreenCanvas label="{name} — the page this template makes">
+      <ScreenPage
+        paper={PAPER[setup.paper]}
+        orientation={TURN[setup.orientation]}
+        caption="{makes} template"
+      >
+        <!--
+          Furniture is carried into every copy made from this template, and none
+          of it is on the model — so the running head is the project's name and
+          the page setup rather than invented sample text. The count is the
+          outline's, so the footer cannot disagree with the body above it.
+        -->
+        {#snippet header()}
+          <span class="text-caption text-ink-muted">{projectName}</span>
+          <span class="text-caption text-ink-muted">{setup.paper} · {setup.orientation}</span>
+        {/snippet}
+        {#snippet footer()}
+          <span class="text-caption text-ink-muted">{name}</span>
+          <span class="text-caption text-ink-muted tabular-nums">Page 1 of {pages}</span>
+        {/snippet}
+
+        {#each lines as line (line.id)}
+          {@const table = placedTable(line)}
+          {#if table}
+            <!-- A table variable is a block, dashed and labelled with its key. -->
+            <div
+              class="border-border-strong rounded-control flex flex-col gap-1 border border-dashed p-3"
+            >
+              <span class="text-caption text-ink-muted">
+                table variable · <span class="font-mono">{table}</span>
+              </span>
+              <span class="text-caption text-ink-muted">The supplied table, set as ordinary rows.</span>
+            </div>
+          {:else if line.style === "heading"}
+            <h2 class="text-h3 text-ink-primary m-0 font-semibold">
+              {@render editable(line, "w-full")}
+            </h2>
+          {:else}
+            <p class="text-body-sm text-ink-primary m-0">{@render editable(line, "w-full")}</p>
+          {/if}
+        {/each}
+
+        {#each generated as variable (variable.id)}
+          {@render block(variable)}
+        {/each}
+      </ScreenPage>
+    </ScreenCanvas>
+  {:else if makes === "Spreadsheet"}
+    <ScreenCanvas label="{name} — the sheet this template makes">
+      <ScreenGrid label="{name} template" columns={4} rows={10} bind:address={cursor}>
+        {#snippet cell(spot)}
+          {@const line = spot.column === "A" ? lineAt(spot.row) : undefined}
+          {@const generatedHere = spot.column === "A" ? blockAt(spot.row) : undefined}
+          <ScreenGridCell
+            address={spot.address}
+            state={generatedHere ? "read-only" : undefined}
+            note={generatedHere ? `Generated · ${generatedHere.key}` : undefined}
+          >
+            {#if line}
+              {@render editable(line, "w-24")}
+            {:else if generatedHere}
+              <span class="font-mono">{generatedHere.key}</span>
+            {/if}
+          </ScreenGridCell>
+        {/snippet}
+      </ScreenGrid>
+    </ScreenCanvas>
+  {:else}
+    <ScreenCanvas label="{name} — the slide this template makes">
+      <!--
+        No `onselect`: an object on a stage nobody is editing renders as a div,
+        and that is the only arm that may hold a control. Selecting an object is
+        the deck editor's job, and it does not exist yet.
+      -->
+      <ScreenSlide ratio="16:9" {objects} caption="{makes} template">
+        {#snippet object(item)}
+          {@const line = lineFor(item.id)}
+          {#if line}
+            <span class="text-body-sm text-ink-primary min-w-0">
+              {@render editable(line, "w-full")}
+            </span>
+          {:else}
+            <span class="text-caption text-intelligence-text truncate">{item.label}</span>
+          {/if}
+        {/snippet}
+      </ScreenSlide>
+    </ScreenCanvas>
+  {/if}
 </ScreenSurface>
 
 <style>
-  /**
-   * The specification's layout table. The middle track is the page's own
-   * measure and the two outer ones are the pasteboard; the rows give the body
-   * three bands to the one each the furniture gets, which is the proportion a
-   * page actually has.
-   */
-  .board {
-    display: grid;
-    flex: 1 1 auto;
-    min-height: 0;
-    gap: 0;
-    grid-template-columns: 1fr calc(var(--token-spacing-unit) * 204) 1fr;
-    grid-template-rows:
-      auto
-      minmax(calc(var(--token-spacing-unit) * 6), 1fr)
-      auto
-      minmax(0, 1fr)
-      minmax(0, 1fr)
-      minmax(0, 1fr)
-      auto;
-    grid-template-areas:
-      "header header      header"
-      ".      .           ."
-      ".      page-header ."
-      ".      body        ."
-      ".      body        ."
-      ".      body        ."
-      ".      page-footer .";
-  }
-
-  .area-header {
-    grid-area: header;
-  }
-
-  /*
-    Placed by line rather than named: a surround is a frame, and a frame is not
-    a rectangle. This one rectangle covers everything under the strip, and the
-    page stack is painted over it.
-  */
-  .area-pasteboard {
-    grid-column: 1 / -1;
-    grid-row: 2 / -1;
-    background: var(--token-surface-canvas);
-  }
-
-  .area-page-header,
-  .area-page-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: calc(var(--token-spacing-unit) * 4);
-    background: var(--token-surface-work);
-    padding: calc(var(--token-spacing-unit) * 4) calc(var(--token-spacing-unit) * 24);
-  }
-
-  .area-body {
-    grid-area: body;
-    display: flex;
-    min-height: 0;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 4);
-    overflow-y: auto;
-    background: var(--token-surface-work);
-    /* The page setup's one-inch gutter, at the 96px an inch is on a screen. */
-    padding: calc(var(--token-spacing-unit) * 6) calc(var(--token-spacing-unit) * 24);
-  }
-
-  .area-page-header {
-    grid-area: page-header;
-    border-bottom: 1px solid var(--token-border-subtle);
-  }
-
-  .area-page-footer {
-    grid-area: page-footer;
-    border-top: 1px solid var(--token-border-subtle);
-  }
-
-  /* A grid template's surface: cells rather than a measure, so the gutter goes. */
-  .sheet {
-    padding: calc(var(--token-spacing-unit) * 4);
-  }
-
-  /* A deck or slide template's surface, at the aspect its slides will be. */
-  .canvas {
-    display: flex;
-    aspect-ratio: 16 / 9;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 3);
-    overflow-y: auto;
-    border: 1px solid var(--token-border-subtle);
-    background: var(--token-surface-work);
-    padding: calc(var(--token-spacing-unit) * 6);
-  }
-
   /**
    * A text variable is an atom in running prose: it reads as one thing that
    * will be replaced, rather than as a word that happens to be styled.
@@ -319,38 +422,5 @@
     background: var(--token-color-intelligence-surface);
     color: var(--token-color-intelligence-text);
     padding: 0 calc(var(--token-spacing-unit) * 1);
-  }
-
-  /*
-    Below the width where a fixed measure and a surround both fit, the surround
-    is what goes: the page takes the tab, and the strip that says which template
-    this is stays first.
-  */
-  @media (max-width: 60rem) {
-    .board {
-      flex: 0 0 auto;
-      grid-template-columns: 1fr;
-      grid-template-rows: none;
-      grid-template-areas:
-        "header"
-        "page-header"
-        "body"
-        "page-footer";
-    }
-
-    .area-pasteboard {
-      grid-column: 1 / -1;
-      grid-row: 2 / -1;
-    }
-
-    .area-body {
-      overflow-y: visible;
-      padding: calc(var(--token-spacing-unit) * 6) calc(var(--token-spacing-unit) * 6);
-    }
-
-    .area-page-header,
-    .area-page-footer {
-      padding: calc(var(--token-spacing-unit) * 4) calc(var(--token-spacing-unit) * 6);
-    }
   }
 </style>

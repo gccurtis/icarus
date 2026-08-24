@@ -22,9 +22,9 @@
    * specification. The shortest of the three launchers: a spreadsheet has
    * nothing to decide up front — no paper, no aspect ratio, no sheets to name.
    *
-   * **There is no Workbook section, deliberately.** The design deck still shows
-   * one asking for a first sheet name, left over from before a spreadsheet
-   * became one grid rather than a workbook of sheets. Create is inert for the
+   * **There is no Workbook section, deliberately.** A spreadsheet is one grid
+   * rather than a workbook of sheets, so the first sheet name the design deck
+   * asks for is a question this model does not have. Create is inert for the
    * same reason as its siblings: minting the resource is a model step no door
    * here has.
    */
@@ -61,7 +61,14 @@
 
   <PanelSection title="Create" flush>
     <PanelActions>
-      <PanelButton label="Create spreadsheet" icon={Plus} tone="primary" />
+      <!-- Keyed by the title, so a second press lands on the same tab. -->
+      <PanelButton
+        label="Create spreadsheet"
+        icon={Plus}
+        tone="primary"
+        onclick={() =>
+          view.open({ screen: "spreadsheet-editor", resourceId: title ?? draft.title })}
+      />
     </PanelActions>
     <PanelNote>This tab becomes the spreadsheet. It does not open a second one.</PanelNote>
   </PanelSection>

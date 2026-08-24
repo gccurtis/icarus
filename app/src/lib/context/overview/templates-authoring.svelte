@@ -37,8 +37,8 @@
 
   let nameDraft = $state("");
 
-  /** The library words scope Project/Global; a lens words it as reach. */
-  const reach = $derived(it.scope === "Project" ? "This project" : "Everywhere");
+  /** Whose it is, in the library's own words. */
+  const reach = $derived(it.scope);
 
   const author = $derived(PEOPLE.find((person) => person.name === it.createdBy));
 </script>

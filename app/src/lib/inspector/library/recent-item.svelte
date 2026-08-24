@@ -12,8 +12,15 @@
     PanelNote,
     PanelSection
   } from "$lib/unique-components/panel";
-  import { AGENTS, PEOPLE, type Agent, type Person } from "$mock-capabilities/cast";
+  import {
+    AGENTS,
+    PEOPLE,
+    type Agent,
+    type Person,
+    type ResourceKind
+  } from "$mock-capabilities/cast";
   import { connectors, recentItem, type ConnectorRow } from "$mock-capabilities/library";
+  import { openingFor } from "$mock-capabilities/opening";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 
   /**
@@ -33,6 +40,17 @@
   const view = viewState();
 
   const item = $derived(recentItem(resourceId).current);
+
+  /**
+   * Open means the thing itself. Where each kind goes is
+   * [`openingFor`](../../mock-capabilities/opening.ts)'s to answer; nothing means
+   * no screen holds it, which for a recent entry cannot happen — every kind that
+   * reaches this list is one a screen shows.
+   */
+  const open = () => {
+    const target = openingFor(item.kind as ResourceKind, item.id, item.title);
+    if (target) view.open(target);
+  };
 
   /**
    * Who touched it last, resolved to something inspectable. The record carries a
@@ -84,7 +102,12 @@
 
   <PanelSection title="Open" flush>
     <PanelActions>
-      <PanelButton label="Open" icon={ArrowUpRight} tone="primary" />
+      <PanelButton
+        label="Open"
+        icon={ArrowUpRight}
+        tone="primary"
+        onclick={open}
+      />
     </PanelActions>
     <PanelNote>{item.openNote}</PanelNote>
   </PanelSection>

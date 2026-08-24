@@ -109,11 +109,16 @@
     </PanelFields>
 
     <PanelActions>
+      <!--
+        Disabled, and the reason is a provider handshake rather than a missing
+        button: signing in leaves the application, and there is no capability to
+        leave through or to come back to.
+      -->
       <PanelButton
         label="Reconnect"
         icon={RefreshCw}
-        tone={detail.auth === "Connected" ? "default" : "primary"}
-        title="Signs in again and returns to this launcher tab with its selection restored."
+        disabled
+        title="Signing in again needs a provider handshake no capability performs yet."
       />
     </PanelActions>
 

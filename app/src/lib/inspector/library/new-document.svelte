@@ -101,7 +101,18 @@
 
   <PanelSection title="Create" flush>
     <PanelActions>
-      <PanelButton label="Create document" icon={Plus} tone="primary" />
+      <!--
+        The launcher tab becomes the document, which is why this opens rather
+        than minting beside it: `open` is keyed by the title, so a second press
+        lands on the same tab instead of stacking two blank documents.
+      -->
+      <PanelButton
+        label="Create document"
+        icon={Plus}
+        tone="primary"
+        onclick={() =>
+          view.open({ screen: "document-editor", resourceId: title ?? draft.title })}
+      />
     </PanelActions>
     <PanelNote>This tab becomes the document. It does not open a second one.</PanelNote>
   </PanelSection>

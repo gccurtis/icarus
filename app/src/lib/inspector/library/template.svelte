@@ -50,10 +50,11 @@
   let name = $state<string>();
   let scope = $state<string>();
 
-  /** Stored as scope; a lens words it as where you can reach it from. */
+  /** Who owns it. The library groups by the same three words. */
   const SCOPES = [
-    { value: "Project", label: "This project" },
-    { value: "Global", label: "Everywhere" }
+    { value: "Project", label: "Project" },
+    { value: "Shared", label: "Shared" },
+    { value: "Personal", label: "Personal" }
   ] as const;
 
   const creator = $derived(PEOPLE.find((person: Person) => person.name === tpl.createdBy));
@@ -148,7 +149,8 @@
         label="Edit"
         icon={SquarePen}
         tone="primary"
-        title="Enters the authoring subscreen."
+        title="Opens it in the authoring centre."
+        onclick={() => view.open({ screen: "templates", subscreen: "editor", focus: tpl.id })}
       />
       <PanelButton
         label="Use"
@@ -156,7 +158,14 @@
         disabled
         title="Nothing in a body records which variable it stands for, so a supplied value has nowhere to go."
       />
-      <PanelButton label="Duplicate" icon={Copy} title="Copies it, with its variables." />
+      <!-- Disabled, and the reason is the same one Use carries: nothing writes a
+           template back, so a copy would exist only until the next read. -->
+      <PanelButton
+        label="Duplicate"
+        icon={Copy}
+        disabled
+        title="No capability writes a template, so a copy would not survive the next read."
+      />
     </PanelActions>
   </PanelSection>
 

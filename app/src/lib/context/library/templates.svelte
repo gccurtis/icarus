@@ -49,7 +49,8 @@
   );
 
   const project = $derived(shown.filter((row) => row.scope === "Project"));
-  const global = $derived(shown.filter((row) => row.scope === "Global"));
+  const shared = $derived(shown.filter((row) => row.scope === "Shared"));
+  const personal = $derived(shown.filter((row) => row.scope === "Personal"));
 
   const selected = $derived(all.find((row) => row.id === selectedId));
 
@@ -128,11 +129,24 @@
 
     <!--
       Copying one of these into project scope makes a second template. There is
-      no shared ownership, so the two diverge from that moment — which is why
-      global templates are a separate section rather than a badge on a row.
+      no shared ownership across the boundary, so the two diverge from that
+      moment — which is why these are separate sections rather than a badge.
     -->
-    <PanelSection title="Global" count={global.length} flush>
-      {#each global as row (row.id)}
+    <PanelSection title="Shared" count={shared.length} flush>
+      {#each shared as row (row.id)}
+        <PanelRow
+          title={row.name}
+          sub={says(row)}
+          meta={row.updated}
+          icon={MAKES[row.makes]}
+          selected={row.id === selectedId}
+          onselect={() => choose(row.id)}
+        />
+      {/each}
+    </PanelSection>
+
+    <PanelSection title="Personal" count={personal.length} flush>
+      {#each personal as row (row.id)}
         <PanelRow
           title={row.name}
           sub={says(row)}

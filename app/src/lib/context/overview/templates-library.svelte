@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Plus from "@lucide/svelte/icons/plus";
   import SquareArrowOutUpRight from "@lucide/svelte/icons/square-arrow-out-up-right";
   import WandSparkles from "@lucide/svelte/icons/wand-sparkles";
 
@@ -48,7 +49,7 @@
   const variables = $derived(variablesIn(templateId).current);
 
   const mine = $derived(all.filter((row: LibraryTemplate) => row.scope === "Project"));
-  const global = $derived(all.filter((row: LibraryTemplate) => row.scope === "Global"));
+  const elsewhere = $derived(all.filter((row: LibraryTemplate) => row.scope !== "Project"));
 
   /** A single slide is not a deck, so the plural has to say which one it means. */
   const PLURAL: Record<TemplateTarget, string> = {
@@ -68,6 +69,23 @@
 </script>
 
 <Panel title="Overview">
+  {#snippet actions()}
+    <!--
+      Making a template is an act of the map, not of the title: the library's
+      header lists what there is, and what you can add to it belongs beside the
+      counts that say how much there already is.
+
+      The kind picker is not built yet, so this lands on a blank Document rather
+      than asking what to make first.
+    -->
+    <PanelButton
+      label="New template"
+      icon={Plus}
+      tone="primary"
+      onclick={() => view.showSubscreen("editor", "new")}
+    />
+  {/snippet}
+
   <PanelNote>
     A template is an ordinary body with some of it left open. Authoring one is
     authoring a document, a deck, a slide or a spreadsheet — there is no separate
@@ -85,13 +103,13 @@
     </PanelFields>
   </PanelSection>
 
-  <PanelSection title="Available everywhere">
+  <PanelSection title="From outside this project">
     <PanelFields>
-      <PanelField label="Templates" mono>{global.length}</PanelField>
+      <PanelField label="Templates" mono>{elsewhere.length}</PanelField>
     </PanelFields>
     <PanelNote tone="gap">
-      A global template can be used here. Who may edit one is undefined by the
-      model, so this panel does not claim either way.
+      A shared or personal template can be used here. Who may edit one is
+      undefined by the model, so this panel does not claim either way.
     </PanelNote>
   </PanelSection>
 
