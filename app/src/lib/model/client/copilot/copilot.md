@@ -45,16 +45,18 @@ would be a message the user can neither see nor has chosen to keep.
 
 ## The two surfaces
 
-**The dock** — [`views/copilot-dock/`](../../../views/copilot-dock/copilot-dock.md)
+**The status bar** — [`views/status-bar/`](../../../views/status-bar/status-bar.md)
 — is deliberately small: the composer, the mode and the persona, and nothing
-else.
+else. It is the middle of three parts, under the work surface, which is where the
+floating dock ended up once it was clear that hovering over the work meant being
+translucent over it.
 
 **The inspector** is where a request is assembled. Every selector and every
-attachment is chosen there. If the dock grows an attachment affordance it opens
-the inspector rather than holding state of its own.
+attachment is chosen there. If the composer grows an attachment affordance it
+opens the inspector rather than holding state of its own.
 
-The split matters because the dock is always visible and the inspector is not. A
-composer that grew a scope editor would take permanent vertical space for
+The split matters because the composer is always visible and the inspector is
+not. A composer that grew a scope editor would take permanent vertical space for
 something used occasionally.
 
 ## Exposed State

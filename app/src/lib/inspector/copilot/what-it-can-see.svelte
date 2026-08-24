@@ -40,9 +40,9 @@
    * tick.
    *
    * **Back and Done are in the actions row, not pinned at the foot.** The
-   * specification asks for a footer; `Panel` has none, because every control that
-   * ended up in one was buried under a list of unbounded length. The row under the
-   * title is where a control is found.
+   * specification asks for a footer; `Panel` has none, because a control pinned
+   * below a list of unbounded length is a control nobody scrolls to. The row
+   * under the title is where a control is found.
    */
   let {
     screenId = "document",
