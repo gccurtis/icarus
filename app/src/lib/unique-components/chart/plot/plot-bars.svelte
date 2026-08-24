@@ -21,8 +21,8 @@
    *
    * **The geometry is `layout.ts` and nothing here.** This file positions
    * nothing; it draws what it is handed. That split is why the labels can be
-   * checked by reading the maths rather than by measuring the screen, which is
-   * how the previous version shipped three numbers on top of each other twice.
+   * checked by reading the maths rather than by measuring the screen — and three
+   * numbers landing on top of each other is a defect only measuring ever catches.
    */
   let {
     data,

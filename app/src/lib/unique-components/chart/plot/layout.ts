@@ -4,7 +4,7 @@ import { seriesColor } from "$lib/unique-components/chart/palette";
 /**
  * Turning data into positioned things, with no drawing anywhere in it.
  *
- * **This is the file the whole rewrite exists for.** A renderer that draws
+ * **This is the file the whole family exists for.** A renderer that draws
  * straight from data can only be styled as a whole and can only be pointed at as
  * a whole. Producing marks first — one addressable rectangle per bar or segment,
  * each carrying where it is and what it means — is what makes selecting a single
@@ -12,9 +12,8 @@ import { seriesColor } from "$lib/unique-components/chart/palette";
  * slice differently into ordinary operations rather than fights with a library.
  *
  * It is pure functions over numbers, so the geometry can be checked by reading
- * it. The library we replaced put its geometry inside its components, which is
- * why its labels could be measured landing on top of one another but not
- * corrected.
+ * it. Geometry sealed inside somebody else's components can be measured landing
+ * labels on top of one another, and not corrected.
  */
 export type Box = { x: number; y: number; width: number; height: number };
 
@@ -68,8 +67,8 @@ export const ticksFor = (max: number, count = 4): number[] => {
  *
  * Horizontal is not a transpose applied afterwards — the category axis and the
  * value axis are chosen up front and every box is built in final coordinates.
- * Rotating a finished vertical layout is what produced upside-down stacks and
- * mirrored groups in the version this replaces.
+ * Rotating a finished vertical layout is what gives upside-down stacks and
+ * mirrored groups.
  */
 export const layoutBars = (
   data: readonly Record<string, unknown>[],
@@ -200,11 +199,11 @@ export const layoutBars = (
 /**
  * Where a figure goes, and whether it goes at all.
  *
- * **The rule that was missing.** A stacked segment's label belongs in the middle
- * of *that segment*, not in the middle of the column — which is the defect this
- * replaces, where three numbers were measured landing at the same y. A clustered
- * bar's label belongs directly above *that bar*, centred on it, not offset
- * diagonally into its neighbour.
+ * **The rule.** A stacked segment's label belongs in the middle of *that
+ * segment*, not in the middle of the column — a label placed against the column
+ * puts every segment's figure at the same y, three numbers on top of each other.
+ * A clustered bar's label belongs directly above *that bar*, centred on it, not
+ * offset diagonally into its neighbour.
  *
  * **A label that does not fit is dropped, never drawn overlapping.** The number
  * is still on the mark's `<title>`, so nothing is lost — a figure sitting across

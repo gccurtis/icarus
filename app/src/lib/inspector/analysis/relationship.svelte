@@ -23,7 +23,7 @@
    * Two variables that need relating before a chart can be drawn, and the fix.
    *
    * `docs/screen-panel-views/inspector/analysis/relationship.md` is the
-   * specification. This is the replacement for a join step: it appears only when
+   * specification. This is what a join step becomes here: it appears only when
    * two variables are actually in play, and it is stated as a problem to solve
    * rather than as a modelling stage to get through first.
    *

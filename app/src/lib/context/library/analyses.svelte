@@ -43,19 +43,35 @@
     all.filter((row) => row.name.toLowerCase().includes(search.trim().toLowerCase()))
   );
 
+  /**
+   * Choosing an analysis puts it in the centre, and inspects it.
+   *
+   * This panel is the only way to change which analysis the screen is on, so a
+   * click that only inspected would leave the workspace showing one analysis
+   * while the lens described another.
+   *
+   * `showSubscreen` rather than a bare assignment, because the screen has one
+   * centre and this is a change of *subject*: the rail has to stay put and the
+   * stale inspection has to go, which is exactly what landing on a centre does.
+   */
   const open = (id: string) => {
     selectedId = id;
+    view.showSubscreen("workspace", id);
     view.inspect("analysis.analysis", { kind: "analysis", id });
   };
 </script>
 
 <Panel title="Analyses">
   {#snippet actions()}
+    <!--
+      Nothing creates an analysis, so New lands the centre on a blank id rather
+      than inventing a row this panel would then fail to list.
+    -->
     <PanelButton
       label="New"
       icon={Plus}
       tone="primary"
-      onclick={() => view.inspect("analysis.analysis", { kind: "analysis", id: "new" })}
+      onclick={() => open("new")}
     />
     <PanelButton
       label="Open"

@@ -5,11 +5,11 @@
   /**
    * A pie, drawn by us.
    *
-   * **It has no axes, and that is not a detail.** The version this replaces put
-   * a pie inside a chart frame and drew a value axis and gridlines behind it — a
-   * pie has no axes to have, and the frame was there because the frame belonged
-   * to the library rather than to the chart. Drawing our own means a pie is a
-   * circle and nothing else.
+   * **It has no axes, and that is not a detail.** A pie dropped into a general
+   * chart frame gets a value axis and gridlines drawn behind it — a pie has no
+   * axes to have, and the frame is there because the frame belongs to the
+   * library rather than to the chart. Drawing our own means a pie is a circle
+   * and nothing else.
    *
    * **A selected slice pulls out.** That is the convention every presentation
    * tool uses, and it is better here than a ring: a ring around a wedge is hard

@@ -4,9 +4,9 @@
   /**
    * A Marimekko: columns whose *width* is a quantity too.
    *
-   * The one chart in this set that is not `layerchart`'s, because no general
-   * library has it — width-varying stacked columns are not a variant of a bar
-   * chart, they are a different geometry. It is drawn here in plain SVG for the
+   * Not `layerchart`'s, because no general library has it — width-varying
+   * stacked columns are not a variant of a bar chart, they are a different
+   * geometry. It is drawn here in plain SVG for the
    * same reason the others are SVG: it styles from tokens and it serializes, so
    * `copyChart` works on it exactly as it does on the rest.
    *
