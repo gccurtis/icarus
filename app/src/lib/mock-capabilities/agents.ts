@@ -18,8 +18,14 @@ import { read, type Read } from "$mock-capabilities/read.svelte";
 /** Who may be named as an agent here. The cast's three, plus one that is nobody's. */
 export type PersonaRef = AgentId | "skeptic";
 
-/** A global persona is not this project's to edit, which is what the grouping is for. */
-export type PersonaScope = "This project" | "Everywhere";
+/**
+ * Who owns a persona, and therefore who may edit it.
+ *
+ * Three, not two. A persona you built for yourself, one a few people share, and
+ * one the project owns — the library groups by this because the second question
+ * anybody asks of an agent is whose it is.
+ */
+export type PersonaScope = "Personal" | "Shared" | "Project";
 
 /** A row in the roster. The counts are the identifying detail: two personas with
  * similar prose are told apart by what they have done. */
@@ -146,15 +152,15 @@ type PersonaExtra = {
   readonly record: PersonaRecord;
 };
 
-/** The Skeptic is not in the cast: it is available everywhere, belongs to no
- * project, and does its six tasks elsewhere. Everything else here is the cast's. */
+/** The Skeptic is not in the cast: one person built it, it belongs to no project,
+ * and it does its six tasks elsewhere. Everything else here is the cast's. */
 const NAMED: readonly Named[] = [
   ...AGENTS,
   {
     id: "skeptic",
     name: "Skeptic",
     purpose: "Argues the other side of a position before anyone files it.",
-    scope: "Everywhere"
+    scope: "Personal"
   }
 ];
 
@@ -1101,3 +1107,280 @@ export const lastFireOf = (automationId: string): Read<LastFire> =>
 /** The three sections of the Automations view, from the two fields that decide them. */
 export const automationGroup = (rule: AutomationRow): "not working" | "on" | "off" =>
   !rule.enabled ? "off" : rule.lastFire.result === "Couldn't start" ? "not working" : "on";
+
+// ------------------------------------------------------------------ tasks ----
+
+/**
+ * An agentic task: one job handed to a persona, running or finished.
+ *
+ * **An Automation is a task with a trigger.** `firedBy` is what makes it one —
+ * present when an Automation dispatched it, absent when a person did. There is
+ * no second table and no `isAutomation` boolean, because a boolean beside a
+ * rule id is a second place for the same fact to be wrong.
+ */
+export type TaskState = WorkItem["state"];
+
+export type TaskRow = {
+  readonly id: string;
+  readonly title: string;
+  readonly persona: PersonaRef;
+  /** The person who asked, always — an Automation still runs on someone's behalf. */
+  readonly startedBy: string;
+  /** The Automation that dispatched it. Absent when a person started it directly. */
+  readonly firedBy?: string;
+  readonly state: TaskState;
+  /** When it started, as a phrase. Sorting uses `age` below rather than parsing this. */
+  readonly started: string;
+  /** Minutes since it started. The sortable form of `started`. */
+  readonly age: number;
+  /** How far along, 0–1. `1` for anything that has stopped. */
+  readonly progress: number;
+  readonly results: number;
+};
+
+/** One line of what a task produced. */
+export type TaskResult = {
+  readonly id: string;
+  readonly title: string;
+  readonly detail: string;
+  /** Where it landed, when it landed somewhere. */
+  readonly resource?: string;
+};
+
+/** One turn of steering. The user's or the agent's. */
+export type TaskTurn = {
+  readonly id: string;
+  readonly from: "you" | "agent";
+  readonly text: string;
+  readonly at: string;
+};
+
+/** A configuration line: what the task was told, rather than what it did. */
+export type TaskSetting = {
+  readonly id: string;
+  readonly name: string;
+  readonly value: string;
+};
+
+export type TaskRecord = TaskRow & {
+  /** What it was asked, in full. The row's title is this, shortened. */
+  readonly prompt: string;
+  readonly step: string;
+  readonly settings: readonly TaskSetting[];
+};
+
+const TASKS: readonly TaskRow[] = [
+  {
+    id: "t-feeder12",
+    title: "Reconcile Feeder 12 relay logs against the outage record",
+    persona: "grid-analyst",
+    startedBy: "Mira Jain",
+    state: "running",
+    started: "12 minutes ago",
+    age: 12,
+    progress: 0.62,
+    results: 3
+  },
+  {
+    id: "t-filing",
+    title: "Draft the Q3 filing section from accepted findings",
+    persona: "filing-editor",
+    startedBy: "You",
+    state: "waiting",
+    started: "34 minutes ago",
+    age: 34,
+    progress: 0.15,
+    results: 0
+  },
+  {
+    id: "t-cites",
+    title: "Check every citation in the Q3 Resilience Memo",
+    persona: "source-checker",
+    startedBy: "You",
+    firedBy: "finding-brief",
+    state: "completed",
+    started: "2 hours ago",
+    age: 120,
+    progress: 1,
+    results: 11
+  },
+  {
+    id: "t-storm",
+    title: "Summarise winter-storm precedents in neighbouring utilities",
+    persona: "grid-analyst",
+    startedBy: "Tomas Kaur",
+    state: "completed",
+    started: "yesterday",
+    age: 1_500,
+    progress: 1,
+    results: 6
+  },
+  {
+    id: "t-vegetation",
+    title: "Rebuild the vegetation-management comparison",
+    persona: "grid-analyst",
+    startedBy: "Ana Reyes",
+    firedBy: "nightly-digest",
+    state: "failed",
+    started: "2 days ago",
+    age: 2_900,
+    progress: 1,
+    results: 0
+  },
+  {
+    id: "t-register",
+    title: "Re-file the register appendix after the numbering change",
+    persona: "filing-editor",
+    startedBy: "Mira Jain",
+    state: "completed",
+    started: "3 days ago",
+    age: 4_300,
+    progress: 1,
+    results: 2
+  }
+];
+
+const PROMPTS: Record<string, string> = {
+  "t-feeder12":
+    "Take the relay logs for Feeder 12 between 03:10 and 04:40 and line them up against the outage record. Say where the two disagree and by how much. Do not speculate past the record.",
+  "t-filing":
+    "Draft the resilience section of the Q3 filing using only findings marked accepted. Keep the commission's register numbering.",
+  "t-cites":
+    "For every citation in the Q3 Resilience Memo, confirm the source carries the claim. Flag anything the source only implies.",
+  "t-storm":
+    "Find how neighbouring utilities described winter-storm hardening in their last two filings.",
+  "t-vegetation":
+    "Rebuild the vegetation-management comparison with this quarter's spans included.",
+  "t-register": "Re-file the register appendix against the new numbering."
+};
+
+const STEPS: Record<string, string> = {
+  "t-feeder12": "Reading relay log 4 of 7",
+  "t-filing": "Waiting on two findings still marked proposed",
+  "t-cites": "Finished — 11 citations checked, 2 flagged",
+  "t-storm": "Finished — 6 precedents summarised",
+  "t-vegetation": "Failed — the span table changed shape mid-run",
+  "t-register": "Finished — appendix re-filed"
+};
+
+const SETTINGS: readonly TaskSetting[] = [
+  { id: "s-scope", name: "Can look up", value: "Grid Operations context" },
+  { id: "s-tools", name: "Tools", value: "Search, Read resource, Write finding" },
+  { id: "s-verify", name: "Verification", value: "Every claim carries a source" },
+  { id: "s-stop", name: "Stops when", value: "Nothing new after two passes" }
+];
+
+const RESULTS: Record<string, readonly TaskResult[]> = {
+  "t-feeder12": [
+    {
+      id: "tr-1",
+      title: "Relay 12-B trips 90 seconds before the recorded outage",
+      detail: "Consistent across all three log files.",
+      resource: "Feeder 12 relay export"
+    },
+    {
+      id: "tr-2",
+      title: "Two entries have no counterpart in the outage record",
+      detail: "03:41 and 03:44. Both are momentary.",
+      resource: "Outage record Q3"
+    },
+    {
+      id: "tr-3",
+      title: "Clock skew of about 4 seconds between the two sources",
+      detail: "Steady, so it can be corrected rather than argued about."
+    }
+  ],
+  "t-cites": [
+    {
+      id: "tr-4",
+      title: "9 citations carried by their source",
+      detail: "No change needed."
+    },
+    {
+      id: "tr-5",
+      title: "2 citations the source only implies",
+      detail: "Both in the hardening paragraph.",
+      resource: "Q3 Resilience Memo"
+    }
+  ],
+  "t-storm": [
+    {
+      id: "tr-6",
+      title: "Six precedents, four of them with cost figures",
+      detail: "Two filings describe hardening without pricing it."
+    }
+  ],
+  "t-vegetation": [],
+  "t-filing": [],
+  "t-register": [
+    { id: "tr-7", title: "Appendix re-filed under the new numbering", detail: "No content changed." },
+    { id: "tr-8", title: "Two cross-references updated", detail: "Both pointed at the old §4.2." }
+  ]
+};
+
+const CHATS: Record<string, readonly TaskTurn[]> = {
+  "t-feeder12": [
+    {
+      id: "tt-1",
+      from: "you",
+      text: "Start with the relay logs rather than the outage record — the record is the thing I doubt.",
+      at: "12 minutes ago"
+    },
+    {
+      id: "tt-2",
+      from: "agent",
+      text: "Understood. Reading the relay export first and treating the outage record as the claim under test.",
+      at: "12 minutes ago"
+    },
+    {
+      id: "tt-3",
+      from: "agent",
+      text: "Relay 12-B trips 90 seconds early, consistently. That is not skew — the skew is a separate 4 seconds.",
+      at: "4 minutes ago"
+    }
+  ],
+  "t-filing": [
+    {
+      id: "tt-4",
+      from: "agent",
+      text: "Two of the findings you pointed me at are still proposed. Hold, or draft around them?",
+      at: "20 minutes ago"
+    }
+  ],
+  "t-cites": [],
+  "t-storm": [],
+  "t-vegetation": [
+    {
+      id: "tt-5",
+      from: "agent",
+      text: "The span table gained a column mid-run and the comparison no longer lines up. Stopping rather than guessing at the mapping.",
+      at: "2 days ago"
+    }
+  ],
+  "t-register": []
+};
+
+const taskOf = (taskId: string): TaskRow => TASKS.find((row) => row.id === taskId) ?? TASKS[0];
+
+export const tasksIn = (projectId: string): Read<readonly TaskRow[]> => {
+  void projectId;
+  return read(TASKS, "agents.tasksIn");
+};
+
+export const task = (taskId: string): Read<TaskRecord> => {
+  const row = taskOf(taskId);
+  return read(
+    { ...row, prompt: PROMPTS[row.id] ?? row.title, step: STEPS[row.id] ?? "", settings: SETTINGS },
+    "agents.task"
+  );
+};
+
+export const resultsOf = (taskId: string): Read<readonly TaskResult[]> =>
+  read(RESULTS[taskOf(taskId).id] ?? [], "agents.resultsOf");
+
+export const chatIn = (taskId: string): Read<readonly TaskTurn[]> =>
+  read(CHATS[taskOf(taskId).id] ?? [], "agents.chatIn");
+
+/** The three states a task table groups by. Waiting is a kind of running. */
+export const taskGroup = (row: TaskRow): "running" | "done" | "failed" =>
+  row.state === "failed" ? "failed" : row.state === "completed" ? "done" : "running";

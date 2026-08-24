@@ -780,7 +780,7 @@ export const textBlock = (blockId: string): Read<TextBlock> =>
     "resource.textBlock"
   );
 
-/** The selection resolved to text. Offsets were internals and are not part of the answer. */
+/** The selection resolved to text. Offsets are internals and are not part of the answer. */
 export const textSelection = (documentId: string): Read<TextSelection> => {
   void documentId;
   return read({
@@ -1696,7 +1696,8 @@ export type SpillInfo = {
 export type NamedRange = {
   readonly id: string;
   readonly name: string;
-  /** Left over from when a spreadsheet was a workbook of sheets, and due to go. */
+  /** The grid the name resolves against. A spreadsheet is one grid, so every
+   * name in one carries the same value here. */
   readonly sheet: string;
   readonly range: string;
   readonly referencedByFormulas: number;

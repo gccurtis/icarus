@@ -365,8 +365,15 @@ export const recents = (): Read<readonly RecentRow[]> =>
 /** Fixed at creation: what a template makes cannot be changed afterwards. */
 export type TemplateTarget = "Document" | "Slide deck" | "Slide" | "Spreadsheet";
 
-/** Stored as scope; the library words it *Project | Global*, a lens *This project | Everywhere*. */
-export type TemplateScope = "Project" | "Global";
+/**
+ * Who owns a template, and therefore who may edit it.
+ *
+ * The same three a persona has, and deliberately the same words. Not a single
+ * *Global* bucket: that is one word doing two jobs — a template you keep for
+ * yourself and one a team agreed on are not the same thing, and only the second
+ * is worth trusting.
+ */
+export type TemplateScope = "Project" | "Personal" | "Shared";
 
 export type LibraryTemplate = {
   readonly id: string;
@@ -484,7 +491,7 @@ const TEMPLATES: readonly LibraryTemplate[] = [
     id: "tp-incident",
     name: "Incident review",
     makes: "Document",
-    scope: "Global",
+    scope: "Shared",
     variables: 0,
     updated: "6 months ago",
     createdBy: "Devi Okonkwo",
@@ -494,7 +501,7 @@ const TEMPLATES: readonly LibraryTemplate[] = [
     id: "tp-divider",
     name: "Section divider",
     makes: "Slide",
-    scope: "Global",
+    scope: "Personal",
     variables: 1,
     updated: "7 months ago",
     createdBy: "Devi Okonkwo",

@@ -30,7 +30,8 @@ export type Agent = {
   readonly id: AgentId;
   readonly name: string;
   readonly purpose: string;
-  readonly scope: "This project" | "Everywhere";
+  /** Who owns it: one person, a set of people, or the project itself. */
+  readonly scope: "Personal" | "Shared" | "Project";
 };
 
 export type ResourceKind =
@@ -102,19 +103,19 @@ export const AGENTS: readonly Agent[] = [
     id: "grid-analyst",
     name: "Grid Analyst",
     purpose: "Reads field data and relay logs; refuses to speculate past the record.",
-    scope: "This project"
+    scope: "Project"
   },
   {
     id: "filing-editor",
     name: "Filing Editor",
     purpose: "Turns findings into filing prose in the commission's register.",
-    scope: "This project"
+    scope: "Shared"
   },
   {
     id: "source-checker",
     name: "Source Checker",
     purpose: "Verifies that a claim is carried by the source it cites.",
-    scope: "Everywhere"
+    scope: "Personal"
   }
 ];
 

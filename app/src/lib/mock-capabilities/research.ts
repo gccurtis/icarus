@@ -200,7 +200,7 @@ const THREADS: readonly ResearchThread[] = [
     updated: "yesterday"
   },
   {
-    id: "th-underground",
+    id: "th-under",
     title: "Undergrounding beats vegetation management",
     mode: "Hypothesis",
     job: "Test an idea",
@@ -247,6 +247,45 @@ const THREADS: readonly ResearchThread[] = [
     toolsAllowed: 4,
     createdBy: actorName("ana"),
     revision: 6,
+    updated: "3 weeks ago"
+  },
+
+  // The two answered threads. They carry no turns of their own — every door
+  // below falls back to the open thread's — and they are here because the
+  // Research screen holds threads open by id, and a rail that lists six threads
+  // over a table of four is a list where two entries silently open a fifth.
+  {
+    id: "th-2024",
+    title: "What did the 2024 study assume?",
+    mode: "Question",
+    job: "Answer one question",
+    anchor: { ref: "Q-11", text: "What did the 2024 coordination study assume?" },
+    turns: 6,
+    accepted: 2,
+    proposed: 0,
+    sources: 9,
+    lastAsked: "2 weeks ago",
+    agent: "source-checker",
+    toolsAllowed: 3,
+    createdBy: actorName("mira"),
+    revision: 9,
+    updated: "2 weeks ago"
+  },
+  {
+    id: "th-2019",
+    title: "Did the 2019 hardening program hit its targets?",
+    mode: "Hypothesis",
+    job: "Test an idea",
+    anchor: { ref: "H-3", text: "The 2019 hardening program met its stated targets" },
+    turns: 9,
+    accepted: 3,
+    proposed: 0,
+    sources: 22,
+    lastAsked: "3 weeks ago",
+    agent: "grid-analyst",
+    toolsAllowed: 4,
+    createdBy: actorName("tomas"),
+    revision: 15,
     updated: "3 weeks ago"
   }
 ];
@@ -605,7 +644,7 @@ const FINDINGS: readonly Finding[] = [
     state: "accepted",
     title: "Undergrounding cut SAIDI 38%",
     body: "The 4.1 km undergrounded in Ward 3 in 2023 cut SAIDI by 38% across the two following winters, against 6% on comparable overhead feeders.",
-    threadId: "th-underground",
+    threadId: "th-under",
     turnId: "tn-u12",
     derivation: "Inference",
     acceptedBy: actorName("mira"),

@@ -67,8 +67,8 @@ const handle = <T>(current: T): Read<T> => ({
 /**
  * Wrap a value in the handle shape.
  *
- * `id` is optional so that a door written before this existed still compiles,
- * but a door without one is invisible to a review page — name every door.
+ * `id` is optional so a door compiles without one, but a door without one is
+ * invisible to a review page — name every door.
  */
 export const read = <T>(current: T, id?: string): Read<T> => {
   if (id === undefined) return handle(current);
