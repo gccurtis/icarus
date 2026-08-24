@@ -4,8 +4,9 @@
 | --- | --- | --- |
 | Threads | Every line of enquiry in the project | Open · Answered |
 
-The first rail entry of the library subscreen. Opening one brings it to the
-centre and switches back to the single-question subscreen.
+The map onto every line of enquiry, and the last entry on the Research rail —
+getting to a different thread is a thing you do after the one you are on. Opening
+a row mints its tab, or activates the tab already on it.
 
 ## Layout
 

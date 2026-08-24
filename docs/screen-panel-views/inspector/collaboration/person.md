@@ -17,7 +17,7 @@ under someone's name would be a private channel in a project that has none.
 
 | Source | Kind | Provides |
 | --- | --- | --- |
-| `tab.viewState.selection` | Model | which person is inspected — the id the whole panel reads against |
+| `view.selection` | Model | which person is inspected — the id the whole panel reads against |
 | `capabilities.people.member` | Capability | the `User`, and their membership in this project: role, joined date |
 | `capabilities.presence.forPerson` | Capability | whether they are here now, and what they are in |
 | `capabilities.comments.byActor` | Capability | their comments in this project, each flagged for whether it mentions the viewer and whether its thread is resolved |

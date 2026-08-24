@@ -10,7 +10,7 @@
 
 | Source | Kind | Provides |
 | --- | --- | --- |
-| {{`tab.viewState`, or another field of the client model}} | Model | {{what it answers}} |
+| {{`view.active.focus`, or another field of the client model}} | Model | {{what it answers}} |
 | {{`capabilities.<name>.<door>`}} | Capability | {{the entity it returns}} |
 | {{a value no source above can supply}} | Prop | {{why it cannot come from a source}} |
 

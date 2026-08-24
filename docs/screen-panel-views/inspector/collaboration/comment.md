@@ -19,7 +19,7 @@ A thread that cannot say what it is about is not a thread.
 
 | Source | Kind | Provides |
 | --- | --- | --- |
-| `tab.viewState.selection` | Model | which comment is inspected |
+| `view.selection` | Model | which comment is inspected |
 | `capabilities.comments.thread` | Capability | the root comment, its replies, the thread's state, and each author |
 | `capabilities.comments.anchor` | Capability | the anchor resolved against the resource as it is now |
 | `capabilities.comments.reply` | Capability | writes a reply onto the thread |

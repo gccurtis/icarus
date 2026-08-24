@@ -19,6 +19,7 @@ settles, it becomes the thing that gets built.
 screens/<screen>/
   overview.md        what this screen is, and every view and lens it reaches
   workspace*.md      the centre of the screen; one file, or one per state
+screens/_shared/     surfaces that belong to no screen — the status bar
 context/<subject>/   one file per context-panel view
 inspector/<subject>/ one file per kind of thing you can select
 modals/              work that wants the whole screen rather than a flank
@@ -32,7 +33,16 @@ it — the Variables view is the same view on a document, a deck and Project
 Overview, and writing it three times is how three copies drift.
 
 A screen's `overview.md` is therefore a list of what it reaches, not a container
-for it. Eleven screens, named as in [`docs/screen-specs`](../screen-specs/).
+for it. Nine screens: `agents`, `analysis`, `document-editor`, `new-tab`,
+`project-overview`, `research`, `slide-deck-editor`, `spreadsheet-editor`,
+`templates` — four of them permanent tabs, and the other five minted by opening
+something.
+
+**A surface that belongs to no screen goes in
+[`screens/_shared/`](screens/_shared/).** The status bar is one: it is a plane
+with regions rather than a stack in a 300px column, so it is written against the
+workspace reference, and putting it under a screen would be a claim that one tab
+owns it.
 
 ### The subjects
 
@@ -48,14 +58,15 @@ it appears:
 | `scope/` | Contexts — what a question is allowed to look at |
 | `analysis/` | fields, charts, and what an analysis is made of |
 | `research/` | inquiry, findings, sources, and the trace behind them |
-| `agents/` | personas and automations: what they are, what they may do, what they did |
+| `agents/` | personas, tasks and automations: what they are, what they may do, what they did |
 | `collaboration/` | people and comments *(inspector only)* |
 | `copilot/` | the surface that belongs to no tab *(inspector only)* |
 
 A file whose name repeats across subjects is qualified by its surface —
 `find-document`, `find-deck`, `find-sheet` — until someone reads the three and
-decides whether they are one view. Where they are, they become one file, the way
-[the comment lens](inspector/collaboration/comment.md) did.
+decides whether they are one view. Where they are, they become one file:
+[the comment lens](inspector/collaboration/comment.md) is one such, answering for
+a thread on a document, a deck and a spreadsheet alike.
 
 ## The shape of a file
 
@@ -165,9 +176,16 @@ of what a panel promises.
 
 A workspace file describes the centre of a screen. A second file is warranted only
 when the centre becomes a genuinely different thing — a template library and a
-template being authored, a Context resolved and every Context listed. A state
-*inside* one surface is not a second workspace: choosing a new slide happens in
-the slide editor, and belongs to it.
+template being authored, a persona and the task it is running. A state *inside*
+one surface is not a second workspace: choosing a new slide happens in the slide
+editor and belongs to it, and four research threads open at once are four tabs on
+one workspace rather than four centres.
+
+**A list of things is not a centre.** Choosing which thread or which analysis to
+look at is navigation, and navigation belongs in the context panel, so Research
+and Analysis each reach their library from the rail. Templates holds a pair only
+because that library has folders and holds templates from outside the project —
+it is a place rather than a list.
 
 **Three screens are the exception, and only three.** The document editor, the
 slide deck editor and the spreadsheet editor each get one workspace file whose
@@ -177,9 +195,9 @@ Those files say something different instead: which framework, what we take from
 it, what we deliberately do not, what Icarus builds on top, and what is
 configurable.
 
-Every other centre is drawn in full, including the screens that also edit
-something — Context, Analysis, Personas, Automations and template authoring all
-have complete grids, because none of them is a framework surface.
+Every other centre is drawn in full, including the ones that also edit something
+— Analysis, all four Agents centres and template authoring have complete grids,
+because none of them is a framework surface.
 
 ## What is not here
 

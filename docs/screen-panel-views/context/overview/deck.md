@@ -4,8 +4,9 @@
 | --- | --- | --- |
 | Overview | The deck as a whole | This deck · Editing now · Saved · From template |
 
-Where the deck's identity lives now that there is no header bar. Second in the
-rail rather than first, because on a deck the slide list is what orients you.
+Where the deck's identity lives. The editor has no header bar, so this panel is
+the one place its title and its shape are stated. Second in the rail rather than
+first, because on a deck the slide list is what orients you.
 
 ## Layout
 

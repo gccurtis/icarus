@@ -4,8 +4,8 @@
 | --- | --- | --- |
 | Overview | The spreadsheet as a whole | This spreadsheet · Calculation · Saved · From template |
 
-Where the spreadsheet's identity lives now that there is no header bar and no
-name box.
+Where the spreadsheet's identity lives. The editor has no header bar and no name
+box, so this panel is the one place its title and its extent are stated.
 
 ## Layout
 

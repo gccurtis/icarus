@@ -2,11 +2,11 @@
 
 | Selecting | What it is | Sections |
 | --- | --- | --- |
-| A Research row in the work table | A line of enquiry, and the way into the Research tab | Identity · Provenance · Note |
+| A Research row in the work table | A line of enquiry, and the way into its tab | Identity · Provenance · Note |
 
-A Research thread is not a resource and is not a tab. It appears in the project's
-work table because it is work, and opening it selects it inside the single
-Research tab.
+A Research thread is not a resource, but it is work, so it has a row in the
+project's work table alongside the documents and decks. This lens is what that
+row opens: enough of the thread to recognise it, and the way in.
 
 ## Layout
 
@@ -42,8 +42,10 @@ Starts collapsed.
 
 ## Note
 
-Opening this activates the singleton Research tab with the thread selected. It
-does not mint a tab of its own — which thread you are on is view state.
+Opening this mints a research tab keyed by the thread, or activates the one that
+is already open on it — the same thing a document row does, because a line of
+enquiry is opened, worked in and closed just as a document is.
 
-Worth saying in the panel because every other row in the same table opens a tab,
-and this one behaves differently.
+Worth saying in the panel because a thread is not a resource, and a reader who
+has noticed that could reasonably expect it to behave like a lens rather than
+like a row.

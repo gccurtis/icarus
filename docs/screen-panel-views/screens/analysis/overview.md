@@ -1,62 +1,101 @@
 # Analysis — panels
 
-Drop a field on an axis and see a chart. Project variables are just variables:
-there is no root table and no join step to get through first. When two fields
-cannot be related, the screen says so and offers the fix.
+A space to explore, analyse and synthesise data. Project variables are just
+variables: there is no root table and no join step to get through first. Where
+two fields need relating, the join is stated inside the axis that needs it.
 
-Two subscreens: **one analysis** and **all analyses**. One Analysis tab; which
-analysis you are on is view state.
+**One centre.** Choosing which analysis to look at is navigation and navigation
+belongs in the map, so the library of analyses is a rail view — opening the tab
+lands on the last analysis you had open, or a new one, and never on a list.
 
-## Context panel — one analysis
+The chart on this screen is the analytic component the document, deck and
+spreadsheet editors also embed. What Analysis adds is the interface for building
+and customising it.
 
-| View | What it is for | Sections |
-| --- | --- | --- |
-| [Overview](../../context/overview/analysis.md) | The analysis itself, and running it | This analysis · Saved · Result · Attribution |
-| [Variables](../../context/analysis/variables.md) | What can be charted, with fields expanded | Tables · Values · Functions |
-| [Chart](../../context/analysis/chart.md) | What kind of picture to draw | The kinds |
-| [Fields](../../context/analysis/fields.md) | Where each field has been put | X · Y · Filters · Sort · Limit |
-| [Formula](../../context/analysis/formula.md) | What the builder compiled to | Compiled · Evaluation |
-
-## Context panel — all analyses
+## Context panel
 
 | View | What it is for | Sections |
 | --- | --- | --- |
-| [Analyses](../../context/library/analyses.md) | Every chart in the project | In this project |
+| [Overview](../../context/overview/analysis.md) | The analysis itself: what it is called, whether it is saved, what it last produced | This analysis · Saved · Result · Attribution |
 | [Variables](../../context/project/variables.md) | The project's named values | Actions · Search · Filters · Variables |
+| [Analyses](../../context/library/analyses.md) | Every chart built on this project's variables | In this project |
+
+Overview carries **Copy formula**, **Duplicate** and **Delete**. They are facts
+about the analysis as an object rather than moves you make while building one, so
+they are in the panel that holds the rest of those facts and not in the screen's
+header.
+
+**Variables is the project's own Name Manager, not a second copy of it.** The
+same view answers here as on a document, a deck and Project Overview, because a
+variable is a project-wide name and writing the panel twice is how two copies
+drift.
+
+[Chart](../../context/analysis/chart.md),
+[Fields](../../context/analysis/fields.md),
+[Formula](../../context/analysis/formula.md) and
+[a field-expanded Variables view](../../context/analysis/variables.md) are
+written and are on no rail. The kind switcher and the four-button customization
+panel hold what the first three offer, on the plane beside the picture they act
+on. The fourth is the Analysis reading of the Name Manager — every table's fields
+listed under it, because a chart takes a field and a formula takes a name — and
+it stays written rather than railed until dragging a field is a thing that
+happens.
 
 ## Inspector panel
 
 | Selecting | What it is | File |
 | --- | --- | --- |
-| A field on an axis | One placement: the field, how it is summarised, what it is called | [placement.md](../../inspector/analysis/placement.md) |
+| The X-Axis button | Data selection, join, sort and conditions for the horizontal | [x-axis.md](../../inspector/analysis/x-axis.md) |
+| The Y-Axis button | Data selection, join, sort and conditions for the vertical | [y-axis.md](../../inspector/analysis/y-axis.md) |
+| The Data button | Data selection, aggregation and conditions for what is measured | [data-button.md](../../inspector/analysis/data-button.md) |
+| The Labels button | What is written on the chart, and what it is written as | [labels.md](../../inspector/analysis/labels.md) |
+| A table chart | The table as a whole: its columns, its order, its shape | [table-graph.md](../../inspector/analysis/table-graph.md) |
+| A bar chart | The bar chart as a whole: its scale, its base, its series | [bar-graph.md](../../inspector/analysis/bar-graph.md) |
+| One bar | One mark, and the rows underneath it | [bars.md](../../inspector/analysis/bars.md) |
+| Several bars | What the selected marks have in common, and how they compare | [bars-multi.md](../../inspector/analysis/bars-multi.md) |
+| One table row | One row of the result, and where its values came from | [row.md](../../inspector/analysis/row.md) |
+| Several table rows | The selection as a subtotal | [rows-multi.md](../../inspector/analysis/rows-multi.md) |
+| One table column | One column: what it reads, how it is summarised | [column.md](../../inspector/analysis/column.md) |
+| Several table columns | The selected columns side by side | [columns-multi.md](../../inspector/analysis/columns-multi.md) |
+| One table cell | One value, and the rows behind it | [cell.md](../../inspector/analysis/cell.md) |
+| Several table cells | The selected values, aggregated | [cells-multi.md](../../inspector/analysis/cells-multi.md) |
 | A variable in the Variables view | A table or value, its contents, and how it relates to others | [variable.md](../../inspector/analysis/variable.md) |
-| The relationship warning | Two variables that need relating, and the fix | [relationship.md](../../inspector/analysis/relationship.md) |
-| A filter | One rule about which rows are kept | [filter.md](../../inspector/analysis/filter.md) |
-| The sort | What the result is ordered by | [sort.md](../../inspector/analysis/sort.md) |
-| The limit | How much of the result is shown | [limit.md](../../inspector/analysis/limit.md) |
-| The chart | Kind, title, axes, legend, colours | [chart.md](../../inspector/analysis/chart.md) |
-| A bar, point or slice | One mark, and the rows underneath it | [mark.md](../../inspector/analysis/mark.md) |
 | Nothing | The analysis itself | [analysis.md](../../inspector/analysis/analysis.md) |
 | A person, or any "who" link | Their profile in this project | [person.md](../../inspector/collaboration/person.md) |
+
+Seven lenses are not on that list and are reached *through* it:
+[chart.md](../../inspector/analysis/chart.md) from either graph lens,
+[placement.md](../../inspector/analysis/placement.md) from a series or a column,
+[filter.md](../../inspector/analysis/filter.md) from a condition,
+[sort.md](../../inspector/analysis/sort.md) and
+[limit.md](../../inspector/analysis/limit.md) from the table's Rows band,
+[relationship.md](../../inspector/analysis/relationship.md) from Create join, and
+[mark.md](../../inspector/analysis/mark.md) from any *What is underneath*.
+
+**A lens per button, not per placement.** The plane has four buttons, so the
+lenses it opens are about those four things — which field is on an axis is the
+first question such a lens *asks*, not the thing it was opened on. A placement is
+still a lens, reached through the button rather than being the way in.
 
 ## Workspace
 
 | State | What is in the centre | File |
 | --- | --- | --- |
-| One analysis | The chart first, then the drop zones that made it | [workspace-one-analysis.md](workspace-one-analysis.md) |
-| All analyses | Every chart, as shapes | [workspace-all-analyses.md](workspace-all-analyses.md) |
+| The only one | The title, the chart, the twelve kinds, and the customization panel | [workspace.md](workspace.md) |
 
 ## The rules this screen keeps
 
-**There is no root, no input and no join step.** Variables are variables. You drop
-a field and the chart appears.
+**There is no root, no input and no join step.** Variables are variables. A join
+is a control inside the axis that needs one, not a stage in front of the chart.
 
-**A relationship is a problem to solve, not a modelling step.** It appears only
-when two variables are actually in play, stated as "two variables, no
-relationship", with the match the system picked and the alternatives.
+**Only Table and Bar draw.** The other ten kinds are named because the set is the
+vocabulary; a kind that is not built says so rather than drawing something else.
 
 **Nothing about the result is stored.** Results are replaceable projections. The
-definition is what persists.
+definition is what persists, which is why the chart carries "generated from
+current data" under it.
 
-**Nothing is drag-only.** Every drop zone also has an Add menu and a keyboard
-path.
+**Nothing is drag-only.** Every control has a menu and a keyboard path.
+
+**One title.** The screen has a title; the chart may draw its own, and that is a
+different thing.

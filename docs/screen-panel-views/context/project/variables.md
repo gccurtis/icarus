@@ -94,8 +94,8 @@ The chips do not follow `ValueType`, and that is deliberate. Nine types is a
 storage taxonomy, not a question anyone asks: ten pills wrapping to three lines
 in a 300px column is more chrome than the list it filters, and it makes a person
 read a type system to find a name. The question they actually ask is whether a
-thing has rows, holds a value, or gets called — which is the same three the panel
-used to be sectioned by, and what `PanelChoice` exists for. Tables covers
+thing has rows, holds a value, or gets called — three answers, which is the size
+`PanelChoice` exists for. Tables covers
 `table`, `record` and `list`, which the model already treats as tables
 degenerately; Values covers the scalars; Functions covers `function`. A case
 needing the exact type belongs in the search field as `type:table`, not in a
@@ -153,7 +153,6 @@ is the same thing the shell already needs so that inspecting never derives from
 focus. Without it there is no caret to insert into by the time the click lands.
 
 Nothing here opens an inspector. A variable's name, type and value are all on the
-row already, so a lens would be the same four facts in a second column — which is
-why the shared one was removed. Analysis keeps
-[a variant of its own](../../inspector/analysis/variable.md), because there a
-variable has fields and relationships that do not fit a row.
+row already, so a shared lens would be the same four facts in a second column.
+Analysis keeps [a variant of its own](../../inspector/analysis/variable.md),
+because there a variable has fields and relationships that do not fit a row.

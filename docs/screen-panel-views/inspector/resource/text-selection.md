@@ -4,7 +4,8 @@
 | --- | --- | --- |
 | A range of text inside one block | The selected text, the marks on it, and the named style it belongs to | Selected text · Marks · Text style |
 
-The most common selection in the editor, and the one that used to be a toolbar.
+The most common selection in the editor, and the one carrying everything a
+formatting toolbar would.
 
 ## Layout
 

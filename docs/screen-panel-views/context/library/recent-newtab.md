@@ -32,7 +32,8 @@ lists that this view merges.
 
 **Shows** — *Outage Cost Model* — 1d, *Why did Feeder 12 fail twice?* — 1d
 
-**Needs** — as above. A Research thread here opens the Research tab, not a new one.
+**Needs** — as above. A Research thread here opens that thread's own tab, the same
+way a document row opens the document's.
 
 ## Earlier
 

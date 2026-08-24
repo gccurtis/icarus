@@ -20,7 +20,7 @@ Selecting the slide rather than something on it.
 ## Speaker notes
 
 The notes, first, because they belong to the slide and the slide is where you
-look for them now that they are off the canvas.
+look for them. They are off the canvas: what a slide says is not what it shows.
 
 **Shows** — "Lead with the relay finding, not the spend. If asked about the 2024
 precedent, the docket number is in the appendix."

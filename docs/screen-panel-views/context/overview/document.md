@@ -4,8 +4,9 @@
 | --- | --- | --- |
 | Overview | The document as a whole — what it is, who is in it, whether it is safe | This document · Editing now · Saved · From template · Attribution |
 
-The first rail entry, and where the document's identity lives now that there is
-no header bar across the top of the editor.
+The first rail entry, and where the document's identity lives. Nothing runs
+across the top of the editor, so this panel is the one place its title and its
+size are stated.
 
 ## Layout
 

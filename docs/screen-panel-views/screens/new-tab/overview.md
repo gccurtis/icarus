@@ -1,8 +1,10 @@
 # New Tab — panels
 
 One question: which editor do you need? Three things to make, plus what you
-already have. Research, Analysis, Context, Templates, Personas and Automations
-are not here — they are permanent tabs and are never not open.
+already have. Overview, Analysis, Templates and Agents are not here — they are
+permanent tabs and are never not open, so offering to create one would imply they
+can be absent. A research thread is a tab like a document, but nothing in the
+model starts one, so an offer to make one would be an offer nothing can keep.
 
 One subscreen.
 

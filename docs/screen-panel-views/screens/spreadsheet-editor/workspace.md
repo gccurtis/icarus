@@ -81,5 +81,5 @@ creation is gated.
 **Open** — with no formula bar, in-cell editing has to be excellent, and a long
 formula needs somewhere to breathe.
 
-**Open** — freezing rows and columns has no affordance now that the frozen-column
-rule is gone. It needs one that explains itself.
+**Open** — freezing rows and columns has no affordance. It needs one that
+explains itself, since a frozen edge is invisible until you scroll past it.

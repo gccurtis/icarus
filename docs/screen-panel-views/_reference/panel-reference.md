@@ -10,7 +10,7 @@
 
 | Source | Kind | Provides |
 | --- | --- | --- |
-| {{`workbench.<accessor>`, or another field of the client model}} | Model | {{what it answers}} |
+| {{`view.selection`, or another field of the client model}} | Model | {{what it answers}} |
 | {{`capabilities.<name>.<door>`}} | Capability | {{the entity it returns}} |
 | {{a value no source above can supply}} | Prop | {{why it cannot come from a source}} |
 
