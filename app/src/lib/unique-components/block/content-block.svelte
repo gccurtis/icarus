@@ -31,7 +31,7 @@
    *   passenger.
    *
    * **Overflow is visible in `fixed` and only there.** A fixed box whose content
-   * no longer fits is a mistake the author has to be able to see; clipping it
+   * outgrows it is a mistake the author has to be able to see; clipping it
    * silently is how a slide gets printed with half a sentence.
    */
   let {
@@ -94,8 +94,8 @@
 <!--
   The rule below wants the listener on a widget. Here the widget is *inside* —
   the textarea the block is made of — and the block is the region around it that
-  notices when focus arrives. Making the region itself a widget is what produced
-  the invalid nesting in the first place.
+  notices when focus arrives. Making the region itself a widget is what produces
+  the invalid nesting above.
 -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div

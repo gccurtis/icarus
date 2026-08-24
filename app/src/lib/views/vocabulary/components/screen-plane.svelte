@@ -363,7 +363,7 @@
   <Entry
     name="ScreenList"
     use="A stack of entries on the plane, read top to bottom: a mentions feed, an activity feed, a thread of research turns, the tools a persona is allowed. The seams between entries belong to the list, so nothing inside it has to know whether it is last."
-    instead="a table or a grid of cards. A table is columnar and its whole value is that the second row's third cell sits under the first row's third — reach for it the moment two entries have the same fields in the same order. A card is a tile in a grid, sized by its picture. A feed entry is a paragraph and aligns with nothing above it, which is why five workspaces hand-rolled this on raw buttons with three different hover fills between them."
+    instead="a table or a grid of cards. A table is columnar and its whole value is that the second row's third cell sits under the first row's third — reach for it the moment two entries have the same fields in the same order. A card is a tile in a grid, sized by its picture. A feed entry is a paragraph and aligns with nothing above it, so neither shape holds one — and without a word for it every workspace draws its own on raw buttons, at its own density and with its own hover fill."
     code={CODE.list}
     width="screen"
   >
@@ -637,7 +637,7 @@
   <Entry
     name="ScreenSplit"
     use="Two halves and the operation between them, in a middle column exactly as wide as the sign. The operator is a symbol and a word in one prop, so neither can arrive without the other, and only the word is read out — hearing “minus minus” helps nobody."
-    instead="two ScreenGroups side by side. That reads as two lists, and Include and Take out are not “things in” and “other things in” — they are a subtraction, and the sign between them is the only thing on the screen that says so. The nested expression tree was removed on the strength of that argument. Narrow the plane and the operator becomes the middle row rather than moving away: a sign no longer between the two things it relates has stopped saying anything. It is not a control — what relates the halves is decided where the set is defined."
+    instead="two ScreenGroups side by side. That reads as two lists, and Include and Take out are not “things in” and “other things in” — they are a subtraction, and the sign between them is the only thing on the screen that says so — which is the whole argument against a nested expression tree, too. Narrow the plane and the operator becomes the middle row rather than moving away: a sign that is not between the two things it relates has stopped saying anything. It is not a control — what relates the halves is decided where the set is defined."
     code={CODE.split}
     width="screen"
   >
@@ -697,7 +697,7 @@
   <Entry
     name="PanelActor face"
     use="The picture on its own, for a workspace card whose own title already carries the name. What face drops is the visible name, never the accessible one — the circle keeps a tooltip and the name stays in the card's reading order."
-    instead="a screen-scale actor of its own. A second renderer of one object is exactly the drift this component exists to prevent — a persona screen hand-rolled a 56px initials circle because there was no word for one — so a workspace asks the panel word for a size. Setting the name twice on one card is what face is here to stop."
+    instead="a screen-scale actor of its own. A second renderer of one object is exactly the drift this component exists to prevent: without a word for a 56px initials circle, every screen that wants one invents it. So a workspace asks the panel word for a size instead. Setting the name twice on one card is what face is here to stop."
     code={CODE.face}
   >
     <div class="p-3">

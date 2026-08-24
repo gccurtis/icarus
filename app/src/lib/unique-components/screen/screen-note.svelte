@@ -7,10 +7,10 @@
   /**
    * The quiet line under a workspace's content that qualifies it.
    *
-   * Seven workspaces name a `note` region in their layout grid and every one of
-   * them wrote its own paragraph, which had already split into two type sizes
-   * across six files. This is `PanelNote`'s counterpart on the plane, and it
-   * exists for the same reason that one does: the sentence is the point, and the
+   * Seven workspaces name a `note` region in their layout grid, and without a
+   * word for it each writes its own paragraph — a caption in one file, body text
+   * in the next. This is `PanelNote`'s counterpart on the plane, and it exists
+   * for the same reason that one does: the sentence is the point, and the
    * sentence is worth nothing if each screen re-decides how loudly to say it.
    *
    * **It is not a `ScreenBanner`, and the difference is loudness.** A banner

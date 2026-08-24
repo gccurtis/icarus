@@ -44,14 +44,14 @@
    * anyone used that setting. The conversion to percentages happens here, once,
    * so nothing above this line ever holds a pixel.
    *
-   * **Speaker notes are not on it.** They left the canvas for the inspector and
-   * the Notes panel, because a tray under a 16:9 stage takes exactly the height
-   * that zooming needs, and zoom is what makes a slide editable at all.
+   * **Speaker notes are not on it.** They belong to the inspector and the Notes
+   * panel, because a tray under a 16:9 stage takes exactly the height that
+   * zooming needs, and zoom is what makes a slide editable at all.
    *
    * **Selection is a ring, not a fill.** An object is usually the thing being
    * looked at, so filling it would hide what it says at the moment it matters
-   * most. The ring is a shape that was not there before, which is what stops the
-   * state being carried by colour alone.
+   * most. The ring is a shape appearing where there was none, which is what
+   * stops the state being carried by colour alone.
    */
   let {
     ratio = "16:9",

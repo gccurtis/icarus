@@ -7,10 +7,10 @@
    * The ground a document, a deck or a template sits on. Not the thing itself:
    * the surround.
    *
-   * Three workspaces hand-rolled the same four rules — a darker fill, the only
-   * scroll in the region, a centred column, and room on all four sides — because
-   * a page that butts the edge of its zone stops reading as a sheet of paper and
-   * starts reading as a background.
+   * Three workspaces need the same four rules — a darker fill, the only scroll
+   * in the region, a centred column, and room on all four sides — because a page
+   * that butts the edge of its zone stops reading as a sheet of paper and starts
+   * reading as a background.
    *
    * **Not `ScreenSurface`.** That is a workspace's own padding, measure and
    * scroll for ordinary content, and its job is to get out of the way. A canvas
@@ -27,8 +27,8 @@
    * `--canvas-zoom`, which defaults to 1 and which nothing here ever sets. Zoom
    * is a gesture on the work surface — a pinch arrives as a wheel event carrying
    * `ctrlKey`, and only the surface knows whether it should be caught — so a
-   * `zoom` prop here would have decided for all three surfaces that they zoom,
-   * and decided it the same way. A surface that zooms sets the variable on an
+   * `zoom` prop here would decide for all three surfaces that they zoom, and
+   * decide it the same way. A surface that zooms sets the variable on an
    * ancestor and takes the gesture through `onwheel`; a surface that does not,
    * does nothing, and gets a canvas that never scales.
    */

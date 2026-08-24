@@ -57,10 +57,10 @@
      * How many levels in, for a list nested more than once — a document outline
      * by heading level, a lattice, a question and its children.
      *
-     * `indent` is a boolean, so an H3 sat exactly where an H2 did and the outline
-     * read as two levels however deep it went. Capped at three: a fourth step in
-     * a 300px column leaves the title nowhere to be, and a tree that deep wants
-     * the centre rather than a flank.
+     * `indent` is a boolean, so an H3 would sit exactly where an H2 does and the
+     * outline would read as two levels however deep it ran. Capped at three: a
+     * fourth step in a 300px column leaves the title nowhere to be, and a tree
+     * that deep wants the centre rather than a flank.
      */
     depth?: 0 | 1 | 2 | 3;
     onselect?: () => void;
@@ -152,7 +152,7 @@
     {#if children}
       {@render children()}
     {:else if onselect && control}
-      <!-- The press moved here, because the row around it is holding a control. -->
+      <!-- The press is on the title, because the row around it is holding a control. -->
       <button
         type="button"
         {title}

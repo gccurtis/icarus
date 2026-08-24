@@ -12,14 +12,13 @@
    * `<p>`, an aside about something else on the screen. This *is* the body: it
    * stands where the rows would have been, and it has a control in it. A note
    * cannot hold a control and should not start doing so, because a footnote with
-   * a button in it is the thing that put controls under lists of unbounded
-   * length in the first place.
+   * a button in it is how a control ends up under a list of unbounded length.
    *
-   * **The two kinds are `ScreenEmpty`'s and they are kept.** A flank never used
-   * and a filter that hid everything look identical and are entirely different
-   * situations: one wants an invitation to make the first thing, the other wants
-   * its filter cleared. A single "No results" reads as failure on the first and
-   * as emptiness on the second, and is wrong both times.
+   * **The two kinds are `ScreenEmpty`'s.** A flank never used and a filter that
+   * hid everything look identical and are entirely different situations: one
+   * wants an invitation to make the first thing, the other wants its filter
+   * cleared. A single "No results" reads as failure on the first and as
+   * emptiness on the second, and is wrong both times.
    *
    * **The two kinds also look different, not only read differently.**
    * `nothing-yet` draws a dashed outline — the shape of the thing that is

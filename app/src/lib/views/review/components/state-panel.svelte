@@ -67,7 +67,7 @@
         <div class="flex flex-col">
           <button
             type="button"
-            class="hover:bg-surface-hover flex items-baseline gap-3 px-2 py-1 text-start"
+            class="hover:bg-surface-panel-hover flex items-baseline gap-3 px-2 py-1 text-start"
             onclick={() => (open = open === door.id ? undefined : door.id)}
           >
             <span class="text-body-sm text-ink-primary font-mono">{door.id}</span>

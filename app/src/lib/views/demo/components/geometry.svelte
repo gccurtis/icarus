@@ -14,9 +14,9 @@
     { token: "overlay", cls: "duration-overlay" },
   ];
 
-  /** The 4px scale, shown as multiples of the one declared token. Named zone
-   * dimensions used to live here; they named an application rather than a
-   * design dimension and were removed — see
+  /** The 4px scale, shown as multiples of the one declared token. The system
+   * names no zone dimensions: a bar height names an application rather than a
+   * design dimension, so it belongs to the frame that owns it — see
    * styles/semantic-tokens/semantic-tokens.md. */
   const STEPS = [
     { cls: "w-1", label: "1 — 4px" },

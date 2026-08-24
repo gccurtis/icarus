@@ -6,11 +6,11 @@
   /**
    * A column of previews inside a panel, one or two across.
    *
-   * The decision this holds is the one that was being re-made in view files:
-   * how wide a preview is in a 300px column. A deck inspector imported the
-   * *workspace* thumbnail into a panel and then hand-wrote its own padding and
-   * `max-width: 12rem` to make it survive — panel width re-decided outside the
-   * panel vocabulary, which is exactly what the vocabulary exists to prevent.
+   * The decision this holds is how wide a preview is in a 300px column. Without
+   * it a deck inspector reaches for the *workspace* thumbnail and hand-writes
+   * its own padding and `max-width: 12rem` to make it survive — panel width
+   * re-decided in a view file, which is exactly what the vocabulary exists to
+   * prevent.
    *
    * **Two across is the maximum**, and it is for slides. At 300px, three 16:9
    * previews are 80px wide each and stop being pictures.

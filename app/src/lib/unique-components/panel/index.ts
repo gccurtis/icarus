@@ -37,10 +37,9 @@ export { default as PanelCode } from "./panel-code.svelte";
  * The words for things a panel identifies by something other than a string.
  *
  * An actor is identified by a face, and a slide by its picture — neither has a
- * title to put in a row. Both were being faked before they were named: a persona
- * screen hand-rolled an initials circle, and a deck inspector pulled the
- * *workspace* thumbnail into a 300px column and re-declared its width in a view
- * file.
+ * title to put in a row. Without a word for either, a persona screen hand-rolls
+ * an initials circle and a deck inspector pulls the *workspace* thumbnail into a
+ * 300px column, re-declaring the panel's width in a view file.
  */
 export { default as PanelActor } from "./panel-actor.svelte";
 export { default as PanelThumbs } from "./panel-thumbs.svelte";
@@ -68,7 +67,7 @@ export { default as PanelPairs } from "./panel-pairs.svelte";
 export { default as PanelPair } from "./panel-pair.svelte";
 
 /**
- * The three the specifications asked for that the first pass did not have.
+ * Three the shapes above cannot express.
  *
  * `PanelInput` is the field the other two leave out: `PanelSearch` contains what
  * it filters and `PanelEditableText` edits a value already on screen, and a
@@ -123,8 +122,8 @@ export { default as PanelSentence } from "./panel-sentence.svelte";
  * A colour, shown rather than chosen.
  *
  * A deck theme lists its palette; a chart lists which colour is which series.
- * Three panels were hand-rolling it with a local `<style>` block and a `.chip`
- * div — at three different sizes, in three different layouts, for one shape.
+ * Without a word for it, three panels draw the same shape with a local `<style>`
+ * block and a `.chip` div — at three sizes, in three layouts.
  *
  * Not `PanelColor`, which is a `radiogroup` of round targets: some of these are
  * not selectable at all, and the ones that are open a lens rather than setting a

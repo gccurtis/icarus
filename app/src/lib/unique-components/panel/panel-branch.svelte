@@ -20,7 +20,7 @@
    * **Indentation comes from the nesting.** A branch renders its children inside
    * its own body, so a level is one step of padding applied here rather than a
    * number the caller counts and carries down. `PanelRow`'s `depth` is that
-   * number, and having to pass it is why it had to be capped.
+   * number, and having to pass it is why it is capped.
    *
    * **A disclosure tree, not `role="tree"`.** An ARIA tree owes the reader
    * roving tabindex, arrow-key movement, type-ahead and Home/End, and the

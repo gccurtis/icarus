@@ -6,12 +6,12 @@
   /**
    * A record, in one frame: the figures ruled apart rather than boxed apart.
    *
-   * **One border for the set, not one per number.** Each stat used to be its own
-   * bordered card in an auto-fit grid, which cost a band eighty pixels deep to
-   * say four short things — and read worse than it measured. Four boxes are four
-   * unrelated claims, when the whole point of a record is that the numbers
-   * qualify each other: 41 run and 1 failed is a sentence, and it stops being
-   * one the moment the two sit in separate tiles.
+   * **One border for the set, not one per number.** A bordered card per stat in
+   * an auto-fit grid costs a band eighty pixels deep to say four short things,
+   * and reads worse than it measures. Four boxes are four unrelated claims, when
+   * the whole point of a record is that the numbers qualify each other: 41 run
+   * and 1 failed is a sentence, and it stops being one the moment the two sit in
+   * separate tiles.
    *
    * **The rules are the gaps.** The cells sit on a `border-subtle` fill with a
    * 1px gap between them, so the fill is what shows through — the same material

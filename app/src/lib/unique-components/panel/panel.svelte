@@ -10,21 +10,20 @@
    * Three bands: an optional trail, a title with its controls, and the body.
    * The body scrolls; nothing else does.
    *
-   * **Controls are at the top, and there is nowhere else to put them.** The
-   * frame had a pinned footer band, and every button that ended up in it was
-   * buried: last in reading order, below content of unbounded length, in the one
-   * part of a full-height panel a reader has no reason to look at. What a panel
-   * offers has to be visible before what it lists, because the list is why the
-   * reader is looking down. Anything the panel wants to say *after* its contents
-   * is a `PanelNote` at the end of the body — prose at the bottom is a footnote,
-   * which is a thing worth having; a control at the bottom is a control nobody
-   * finds.
+   * **Controls are at the top, and there is nowhere else to put them.** A
+   * pinned footer band buries every button in it: last in reading order, below
+   * content of unbounded length, in the one part of a full-height panel a reader
+   * has no reason to look at. What a panel offers has to be visible before what
+   * it lists, because the list is why the reader is looking down. Anything the
+   * panel wants to say *after* its contents is a `PanelNote` at the end of the
+   * body — prose at the bottom is a footnote, which is a thing worth having; a
+   * control at the bottom is a control nobody finds.
    *
-   * **There is no search band either.** The frame used to pin one, which made
-   * the scope of the field unanswerable — this component rendered it and had no
-   * idea what was below it, so what any given search actually filtered was a
-   * convention held in the caller. `PanelSearch` now contains what it searches,
-   * so the question is answered by the markup instead of by a convention.
+   * **There is no search band either.** A field pinned by the frame leaves the
+   * scope of the search unanswerable: this component renders it and can know
+   * nothing of what is below it, so what any given search filters is a
+   * convention held in the caller. `PanelSearch` contains what it searches, so
+   * the question is answered by the markup rather than by a convention.
    *
    * **It owns the zone's only scroll.** The flank views hand this their full
    * height and do not scroll themselves, because nesting scroll contexts inside

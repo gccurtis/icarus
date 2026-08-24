@@ -25,13 +25,12 @@
    * **A lead is a snippet, not an icon prop.** Half of these are faces, and
    * `PanelActor` is already the word for a face; an `icon` prop typed as a
    * component would make a mentions feed choose between the wrong renderer and
-   * none, which is how a persona screen ended up hand-rolling an initials
-   * circle.
+   * none, which is what makes a persona screen hand-roll an initials circle.
    *
    * **Controls turn the entry into a region.** A button cannot hold another
    * button, so an entry that carries Accept and Dismiss stops being one and its
-   * title line becomes the target instead. `ScreenDecision` solved this first
-   * and this is the same solution, because it is the same problem.
+   * title line becomes the target instead. `ScreenDecision` answers the same
+   * problem the same way, because it is the same problem.
    */
   let {
     title,

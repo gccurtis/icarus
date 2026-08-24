@@ -8,12 +8,11 @@
    * A stack of entries on the plane, read top to bottom.
    *
    * A mentions feed, an activity feed, a thread of research turns, the tools a
-   * persona is allowed. Five workspaces drew this by hand and none of them
-   * agreed: two reached for `hover:bg-surface-hover`, one for
-   * `hover:bg-surface-panel-hover`, and every one of them re-typed
+   * persona is allowed. Several workspaces draw this shape, and without a word
+   * for it none of them would agree: each would re-type
    * `flex flex-col gap-0.5 border-b px-3 py-2 text-start last:border-b-0` onto a
-   * raw `<button>`. A shape copied five times with three different hover fills
-   * is a shape this vocabulary was missing a word for.
+   * raw `<button>` and pick its own hover fill. One shape drawn five ways is five
+   * densities and three hover fills.
    *
    * **Not `ScreenTable`.** A table is columnar, and its whole value is that the
    * second row's third cell sits under the first row's third cell. A feed entry
@@ -25,10 +24,10 @@
    * for things recognised by looking. These run the full width and are scanned
    * as language.
    *
-   * **The seams belong to the list, not to the entry.** An entry that drew its
-   * own bottom rule needed `last:border-b-0` to stop it doubling the frame's,
-   * and that is the exact line every hand-rolled copy got from somewhere else.
-   * A rule between siblings is a fact about the stack.
+   * **The seams belong to the list, not to the entry.** An entry that draws its
+   * own bottom rule needs `last:border-b-0` to stop it doubling the frame's — a
+   * correction every copy of the entry has to carry, and the first one to be
+   * forgotten. A rule between siblings is a fact about the stack.
    *
    * **`scroll` is for a feed that is a band of a grid**, where the band has a
    * height and the list has to give in to it. A list that simply runs down the

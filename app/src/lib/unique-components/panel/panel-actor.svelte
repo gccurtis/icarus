@@ -7,12 +7,12 @@
   /**
    * A face, the name beside it, and the one line saying what it is.
    *
-   * Neither family could draw a face. `PanelLink` is the current answer to "who"
-   * — its own comment says every "who" in the application is one of these — but
-   * it renders a text button, so a spec asking for "Grid Analyst, as an avatar
-   * that opens the agent" loses the avatar. `PanelRow`'s `icon` slot renders at
-   * 14px, and a picture at 14px is a dot. So a persona screen hand-rolled a 56px
-   * initials circle, because there was no word for one.
+   * Neither family draws a face otherwise. `PanelLink` is the answer to "who" —
+   * its own comment says every "who" in the application is one of these — but it
+   * renders a text button, so a spec asking for "Grid Analyst, as an avatar that
+   * opens the agent" loses the avatar. `PanelRow`'s `icon` slot renders at 14px,
+   * and a picture at 14px is a dot. Without a word for a face, a persona screen
+   * hand-rolls a 56px initials circle.
    *
    * `simple-components/avatar` underneath for the circle and its fallback — but
    * the registry knows nothing about whether the circle is clickable or what a
@@ -45,7 +45,6 @@
     role?: string;
     /** A real picture. Only people have one; the rest are always initials. */
     src?: string;
-    /** `row` sits inside a field or a line of text; `head` heads a lens. */
     /**
      * `row` sits inside a field or a line of text; `head` heads a lens; `face`
      * is the picture alone, for a card whose own title already carries the name.

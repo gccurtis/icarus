@@ -4,7 +4,7 @@
  * A companion to `unique-components/panel`, and a separate family because a
  * workspace is not a panel. A panel is 300px and vertical; a workspace is the
  * generous plane, and its recurring shapes are a header, a filter row, a table
- * or a grid of cards. Eight of the eleven screens are exactly that sequence.
+ * or a grid of cards. Most of the nine screens are exactly that sequence.
  *
  * Like the panel vocabulary, these know only their props. What goes in them is
  * the view's business.
@@ -45,9 +45,9 @@ export { default as ScreenDecision } from "./screen-decision.svelte";
 /**
  * Entries that are neither records nor tiles.
  *
- * The largest gap the first build turned up: five workspaces hand-rolled a feed
- * with raw `<button>` elements and their own hover classes. A mentions feed, an
- * activity feed, a list of research turns, a persona's work.
+ * A mentions feed, an activity feed, a list of research turns, a persona's work.
+ * Five workspaces show a stack of entries, and without a word for the shape each
+ * one is raw `<button>` elements and its own hover classes.
  *
  * Not `ScreenTable`: a table is columnar and its cells align down the page. A
  * feed entry is a paragraph — an actor, what they did, where, and enough of what
@@ -74,14 +74,14 @@ export { default as ScreenItem } from "./screen-item.svelte";
  *
  * `ScreenPage` is a real page at a real size, where `ScreenThumb` is an abstract
  * placeholder at an aspect ratio. Its margins are a dashed guide on every side —
- * the ruler is gone and the margin is visible where the writing is. It takes a
+ * there is no ruler, so the margin is visible where the writing is. It takes a
  * paper size, not a pixel width: 816px is US Letter at 96dpi and no caller should
  * have to know that.
  *
  * `ScreenSlide` is not a page. A page is a flow of content down a sheet; a slide
  * is a fixed stage with objects placed on it by coordinate — as percentages of
  * the stage, or nothing survives being resized. Speaker notes are not on it: they
- * left the canvas for the inspector, because a tray under a 16:9 slide costs the
+ * belong to the inspector, because a tray under a 16:9 slide costs exactly the
  * height that zooming needs.
  */
 export { default as ScreenCanvas } from "./screen-canvas.svelte";
@@ -99,9 +99,9 @@ export { default as ScreenSlide } from "./screen-slide.svelte";
  * the inspector already names the cell you are on and holds the formula in it.
  *
  * `ScreenSplit` exists for its minus. Include minus Take out, side by side, and
- * the nested expression tree gone — the operator between the halves is what makes
- * that readable without a tree, and it has to stay between them when they
- * collapse to one column.
+ * no nested expression tree — the operator between the halves is what makes that
+ * readable without one, and it has to stay between them when they collapse to one
+ * column.
  *
  * `ScreenComposer` is not the Copilot's bar, which lives in the status bar and is
  * disabled on Research precisely because that screen already has one of these. It

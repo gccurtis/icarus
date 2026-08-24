@@ -8,12 +8,12 @@
   /**
    * A filter, and the things it filters, as one component.
    *
-   * **It contains what it searches, and that is the whole design.** This used to
-   * be a bare field that `Panel` pinned under the title, which left "what does
-   * it filter?" unanswerable from any one place: the frame rendered the field
-   * and knew nothing of the content, and each caller filtered its own sections
-   * with no structure saying so. The scope was a convention, and a convention
-   * that a reader has to reconstruct from two files is a scope nobody can check.
+   * **It contains what it searches, and that is the whole design.** A bare field
+   * pinned under the panel's title leaves "what does it filter?" unanswerable
+   * from any one place: the frame renders the field and knows nothing of the
+   * content, and each caller filters its own sections with no structure saying
+   * so. That scope is a convention, and a convention a reader has to reconstruct
+   * from two files is a scope nobody can check.
    *
    * Here the answer is the markup. What is inside is what is searched.
    *
@@ -24,9 +24,9 @@
    *
    * **It counts, rather than being handed a count.** `matched` and `total` are
    * numbers because the rule they enforce is not optional: a filtered list
-   * showing a bare number claims the filtered set is the whole set. Handing this
-   * a preformatted string made that the caller's discipline; handing it two
-   * numbers makes it impossible to get wrong.
+   * showing a bare number claims the filtered set is the whole set. A
+   * preformatted string would make that the caller's discipline; two numbers
+   * make it impossible to get wrong.
    *
    * **Nothing matching is a state this owns.** It is the one outcome a filter
    * has that its caller cannot draw better — an empty result renders as an empty

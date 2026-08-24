@@ -5,10 +5,10 @@
   /**
    * A bounded prefix of a tabular value, in a 300px column.
    *
-   * The panel vocabulary had no word for a table because a panel is the wrong
-   * place for one — and a variable holding 4,182 rows still has to show what it
-   * holds, or the reader cannot tell whether it is the one they meant. Three rows
-   * and a count answers that; a scrollable grid in a flank does not.
+   * A panel is the wrong place for a table — and a variable holding 4,182 rows
+   * still has to show what it holds, or the reader cannot tell whether it is the
+   * one they meant. Three rows and a count answers that; a scrollable grid in a
+   * flank does not.
    *
    * **It is a prefix, and it says so.** `total` is required and is rendered
    * under the rows as "3 of 4,182 rows". A sample that reports a bare row count

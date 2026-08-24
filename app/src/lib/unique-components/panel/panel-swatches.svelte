@@ -8,10 +8,10 @@
    * The colours a thing has, listed.
    *
    * A deck theme's four named colours, a chart's series assignment, the key to a
-   * status map. It exists because three panels had already written it by hand —
-   * the theme inspector, the theme context and the chart inspector each carry a
-   * `<style>` block with `.swatches`, `.swatch` and `.chip` in it, at three
-   * different sizes, which is the tell that a word was missing.
+   * status map. Without a word for it the shape is written by hand three times
+   * over — the theme inspector, the theme context and the chart inspector each
+   * carrying a `<style>` block with `.swatches`, `.swatch` and `.chip` in it, at
+   * three different sizes.
    *
    * **Not `PanelColor`.** That is a radiogroup: its swatches are targets, one of
    * them is checked, and pressing one sets a fill. This is a listing. Most of

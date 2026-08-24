@@ -10,13 +10,13 @@
    * lists, and two lists is the reading the Context screen exists to prevent:
    * Include and Take out are not "things in" and "other things in", they are a
    * subtraction, and the sign between them is the only thing on the screen that
-   * says so. The nested expression tree was removed on the strength of that
+   * says so. There is no nested expression tree, on the strength of that same
    * argument — the whole model is meant to be read as arithmetic — so the
    * operator is not decoration on this layout, it is the layout's reason.
    *
-   * **Not a two-track grid in the workspace's own stylesheet,** which is where
-   * this started. The operator has to sit *between* the halves and go on sitting
-   * between them when the plane narrows and they stack — an `auto` track that
+   * **Not a two-track grid in the workspace's own stylesheet.** The operator has
+   * to sit *between* the halves and go on sitting between them when the plane
+   * narrows and they stack — an `auto` track that
    * becomes a middle row rather than a column that goes somewhere else. Getting
    * that right is one decision, and one decision made in a workspace's own CSS
    * is a decision every other screen with two related sets has to make again.
@@ -106,9 +106,8 @@
 
   /*
    * One column below the width where two halves stop being readable side by
-   * side. The operator becomes the middle row, because a sign that is no longer
-   * between the two things it relates is a sign that has stopped saying
-   * anything.
+   * side. The operator becomes the middle row, because a sign that is not
+   * between the two things it relates is a sign that says nothing.
    */
   @media (max-width: 60rem) {
     .split {

@@ -7,11 +7,11 @@
   /**
    * A named band of the plane: a label, what it holds, and nothing else.
    *
-   * Twelve of these were hand-set across six workspace files, every one of them
-   * copying `PanelSection`'s trigger typography — `text-caption font-semibold
-   * tracking-wide uppercase` — onto the plane. Callers reaching into a panel
-   * component's internal class string is the loudest possible evidence that the
-   * screen family was missing a word for a region that is named.
+   * Twelve of these sit across six workspace files. Without a word for a named
+   * region each one copies `PanelSection`'s trigger typography — `text-caption
+   * font-semibold tracking-wide uppercase` — onto the plane, and callers
+   * reaching into a panel component's internal class string is the loudest
+   * possible evidence that the screen family needs the word.
    *
    * **It never collapses, and that is the decision.** Disclosure is a 300px
    * problem: a panel hides sections because it has no room, and a plane has

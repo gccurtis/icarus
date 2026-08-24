@@ -41,7 +41,7 @@
 
 <li>
   <div
-    class="hover:bg-surface-hover flex items-baseline gap-1.5"
+    class="hover:bg-surface-panel-hover flex items-baseline gap-1.5"
     style:padding-inline-start="{depth * 12}px"
     onmouseenter={() => onhover(node.id)}
     onmouseleave={() => onhover(undefined)}

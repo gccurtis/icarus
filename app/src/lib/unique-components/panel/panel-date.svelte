@@ -6,8 +6,8 @@
   /**
    * A date, chosen.
    *
-   * A variable's default, a deadline, the day a scope starts. The create-variable
-   * form wanted one and the vocabulary had no word for it.
+   * A variable's default, a deadline, the day a scope starts. The
+   * create-variable form asks for one.
    *
    * **Not `PanelEditableText`.** A date typed as free text is a date in
    * somebody's local format, and the difference between 03/04 and 04/03 is a

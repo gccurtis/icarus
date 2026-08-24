@@ -13,8 +13,8 @@
    *
    * The three belong together because they answer one question — *which of these
    * am I seeing, and in what order* — and splitting them puts half the answer
-   * somewhere else. Sorting was the half that was missing, and its absence was
-   * doing real damage: a table showing "6 of 41" in an order nobody chose is a
+   * somewhere else. Sorting is the half most easily left out, and leaving it out
+   * does real damage: a table showing "6 of 41" in an order nobody chose is a
    * table whose first row looks like a ranking.
    *
    * `simple-components/input-group` for the field and `select` for the order, so

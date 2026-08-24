@@ -224,7 +224,7 @@
   <Entry
     name="PanelSwatches"
     use="The colours a thing has, listed: a deck theme's four named colours, a chart's series assignment, the key to a status map. layout follows the names — wrap where they are “Paper” and “Accent 1”, column where they are “Peak demand (winter)” or where each carries its value."
-    instead="a hand-rolled row of divs. Three panels had already written this — the theme inspector, the theme context and the chart inspector each with a local style block, at three sizes — which is the tell that a word was missing."
+    instead="a hand-rolled row of divs. Three panels want this shape — the theme inspector, the theme context and the chart inspector — and without a word for it each writes its own local style block at its own size, which is the tell that a word is missing."
     code={CODE.swatches}
   >
     <div class="flex flex-col gap-4 py-3">
