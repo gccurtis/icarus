@@ -61,8 +61,9 @@
   const describes = $derived(redescribed ?? profile.describes);
 
   const AVAILABLE = [
-    { value: "This project", label: "This project" },
-    { value: "Everywhere", label: "Everywhere" }
+    { value: "Project", label: "Project" },
+    { value: "Shared", label: "Shared" },
+    { value: "Personal", label: "Personal" }
   ] as const;
 
   const written = $derived(behaviour.filter((entry: BehaviourSection) => entry.text.trim() !== ""));

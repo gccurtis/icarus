@@ -12,7 +12,7 @@
     PanelSearch,
     PanelSection
   } from "$lib/unique-components/panel";
-  import { personasIn, type PersonaRow } from "$mock-capabilities/agents";
+  import { personasIn, type PersonaRow, type PersonaScope } from "$mock-capabilities/agents";
   import { viewState } from "$model/client/view-state";
 
   const view = viewState();
@@ -40,6 +40,9 @@
   const shown = $derived(
     all.filter((row: PersonaRow) => row.name.toLowerCase().includes(search.trim().toLowerCase()))
   );
+
+  /** The three owners, in the order a project's own agents are looked for. */
+  const SCOPES: readonly PersonaScope[] = ["Project", "Shared", "Personal"];
 
   const inScope = (scope: PersonaRow["scope"]): readonly PersonaRow[] =>
     shown.filter((row: PersonaRow) => row.scope === scope);
@@ -85,35 +88,24 @@
     bind:value={search}
     flush
   >
-    <PanelSection title="This project" count={inScope("This project").length} flush>
-      {#each inScope("This project") as row (row.id)}
-        <PanelRow
-          title={row.name}
-          sub={record(row)}
-          icon={Bot}
-          tone={row.running > 0 ? "active" : "default"}
-          selected={row.id === selectedId}
-          onselect={() => open(row.id)}
-        />
-      {/each}
-    </PanelSection>
+    {#each SCOPES as scope (scope)}
+      <PanelSection title={scope} count={inScope(scope).length} flush>
+        {#each inScope(scope) as row (row.id)}
+          <PanelRow
+            title={row.name}
+            sub={record(row)}
+            icon={Bot}
+            tone={row.running > 0 ? "active" : "default"}
+            selected={row.id === selectedId}
+            onselect={() => open(row.id)}
+          />
+        {/each}
+      </PanelSection>
+    {/each}
 
-    <PanelSection title="Everywhere" count={inScope("Everywhere").length} flush>
-      {#each inScope("Everywhere") as row (row.id)}
-        <PanelRow
-          title={row.name}
-          sub={record(row)}
-          icon={Bot}
-          tone={row.running > 0 ? "active" : "default"}
-          selected={row.id === selectedId}
-          onselect={() => open(row.id)}
-        />
-      {/each}
-
-      <PanelNote tone="gap">
-        Whether a persona available everywhere may be edited from here is a
-        deployment rule the model does not carry, so the row cannot say.
-      </PanelNote>
-    </PanelSection>
+    <PanelNote tone="gap">
+      Whether a shared or personal persona may be edited from here is a
+      deployment rule the model does not carry, so the row cannot say.
+    </PanelNote>
   </PanelSearch>
 </Panel>

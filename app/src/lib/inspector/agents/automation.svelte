@@ -71,7 +71,7 @@
     <PanelButton
       label="Open"
       icon={SquareArrowOutUpRight}
-      title="Open the rule on the Automations screen"
+      title="Open the trigger in the rail"
       onclick={() => view.selectContext("agents.when")}
     />
     <PanelButton
