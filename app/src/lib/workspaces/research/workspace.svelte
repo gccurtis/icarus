@@ -4,6 +4,7 @@
   import Library from "@lucide/svelte/icons/library";
   import Plus from "@lucide/svelte/icons/plus";
   import Send from "@lucide/svelte/icons/send";
+  import X from "@lucide/svelte/icons/x";
 
   import { PanelChip, PanelQuote } from "$lib/unique-components/panel";
   import {
@@ -12,7 +13,6 @@
     ScreenDecision,
     ScreenEmpty,
     ScreenGroup,
-    ScreenHeader,
     ScreenNote,
     ScreenSurface
   } from "$lib/unique-components/screen";
@@ -27,19 +27,31 @@
     searchScope,
     sourcesForTurn,
     thread,
-    traceIn
+    threadsIn,
+    traceIn,
+    type ResearchThread
   } from "$mock-capabilities/research";
   import { viewState } from "$model/client/view-state";
 
   const view = viewState();
 
   /**
-   * Research — one question: the turn you are on, and what it produced.
+   * One line of enquiry: the turn you are on, and what it produced.
    *
-   * `docs/screen-panel-views/screens/research/workspace-one-question.md` is the
-   * specification. The screen is anchored to a single turn rather than scrolled
-   * through all of them; earlier turns are the History view in the context
-   * panel, not scrollback here.
+   * **A thread is a tab.** It is a thing you open, work in and close — like a
+   * document and unlike a library — so it is keyed by its own id in the frame's
+   * strip, several are open at once, and closing one is closing a tab. A private
+   * strip inside this screen would be a second answer to a question the frame
+   * already answers.
+   *
+   * **Which threads exist is the rail's business; which are open is the frame's.**
+   * The context panel lists every thread in the project and opening one mints or
+   * activates its tab. A list of threads is a map, and a map belongs in the panel
+   * that holds maps rather than in a centre of its own.
+   *
+   * The screen is anchored to a single turn rather than scrolled through all of
+   * them; earlier turns are the History view in the context panel, not scrollback
+   * here.
    *
    * **The tracks are 1.35fr and 1fr because the judgment is made across them.**
    * Accepting a finding is decided while reading the answer, so the two have to
@@ -63,13 +75,30 @@
    * write. A decided proposal stays where it was: a card that vanished on Accept
    * would leave the reader unable to check what they had just done.
    */
-  let {
-    threadId = "th-feeder",
-    onnewthread = () => {}
-  }: {
-    threadId?: string;
-    onnewthread?: () => void;
-  } = $props();
+  /**
+   * Which thread this is.
+   *
+   * `resourceId`, because it is what makes two threads two tabs — the same field
+   * a document tab is keyed by, for the same reason. The fallback is the
+   * isolation test's, where a panel is rendered with an empty prop bag.
+   */
+  const threadId = $derived(view.active.resourceId ?? "th-feeder");
+
+  const everyThread = $derived(threadsIn(view.project).current);
+
+  /**
+   * A new thread is a real one from the library, chosen for having no tab yet.
+   *
+   * Nothing creates a thread, so inventing an id would put a row in the strip
+   * that no door can answer for.
+   */
+  const startThread = () => {
+    const open = new Set(
+      view.tabs.filter((tab) => tab.screen === "research").map((tab) => tab.resourceId)
+    );
+    const fresh = everyThread.find((row: ResearchThread) => !open.has(row.id));
+    if (fresh) view.open({ screen: "research", resourceId: fresh.id });
+  };
 
   const it = $derived(thread(threadId).current);
   const turn = $derived(currentTurn(threadId).current);
@@ -93,8 +122,8 @@
   const proposed = $derived(proposedIn(turn.id).current);
   const accepted = $derived(acceptedIn(threadId).current);
 
-  /** The decision as a word. `proposed` is the state of one nothing has been
-   * done to yet, which is a thing to say now that the band holds all three. */
+  /** The decision as a word. The band holds all three, so `proposed` — the state
+   * of one nothing has been done to yet — is worth saying rather than assuming. */
   const VERDICT = {
     proposed: { label: "Proposed", tone: "pending" },
     accepted: { label: "Accepted", tone: "accepted" },
@@ -121,32 +150,31 @@
 <ScreenSurface wide>
   <div class="board">
     <!--
-      Which thread, what job it has, who is answering, and the way to a new one.
-      The mode chip is the job named, and it is not a control: what a thread is
-      for is chosen when it starts.
+      The thread's name, what job it has, and who is answering. The mode chip is
+      the job named, and it is not a control: what a thread is for is chosen when
+      it starts.
     -->
-    <div class="area-header">
-      <ScreenHeader title={it.title}>
-        {#snippet actions()}
-          <PanelChip>{it.mode}</PanelChip>
-          <Select.Root
-            type="single"
-            value={agent}
-            onValueChange={(chosen: string) => (chosenAgent = chosen)}
-          >
-            <Select.Trigger size="sm" aria-label="Answering as" class="text-caption w-auto gap-1.5">
-              <Bot class="text-ink-muted size-3.5" aria-hidden="true" />
-              {actorName(agent)}
-            </Select.Trigger>
-            <Select.Content>
-              {#each AGENTS as persona (persona.id)}
-                <Select.Item value={persona.id} label={persona.name}>{persona.name}</Select.Item>
-              {/each}
-            </Select.Content>
-          </Select.Root>
-          <ScreenAction label="New thread" icon={Plus} onclick={onnewthread} />
-        {/snippet}
-      </ScreenHeader>
+    <div class="area-header flex flex-wrap items-center gap-2">
+      <h1 class="text-h3 leading-h3 m-0 me-1 font-semibold tracking-tight">{it.title}</h1>
+      <PanelChip>{it.mode}</PanelChip>
+      <Select.Root
+        type="single"
+        value={agent}
+        onValueChange={(chosen: string) => (chosenAgent = chosen)}
+      >
+        <Select.Trigger size="sm" aria-label="Answering as" class="text-caption w-auto gap-1.5">
+          <Bot class="text-ink-muted size-3.5" aria-hidden="true" />
+          {actorName(agent)}
+        </Select.Trigger>
+        <Select.Content>
+          {#each AGENTS as persona (persona.id)}
+            <Select.Item value={persona.id} label={persona.name}>{persona.name}</Select.Item>
+          {/each}
+        </Select.Content>
+      </Select.Root>
+      <span class="ms-auto">
+        <ScreenAction label="New thread" icon={Plus} onclick={startThread} />
+      </span>
     </div>
 
     <!-- The prompt, as a card, with what it was allowed to look at. -->

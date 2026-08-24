@@ -46,17 +46,37 @@
 
   const turns = (count: number) => (count === 1 ? "1 turn" : `${count} turns`);
 
-  const inspect = (id: string) =>
+  /**
+   * Choosing a thread opens its tab, and inspects it.
+   *
+   * Two acts in one call, and deliberately: this panel is the map onto a screen
+   * that has no list of its own, so a click that only inspected would leave the
+   * map with no way onto the territory. `open` is idempotent, so a thread
+   * reached from here, from a finding and from the work table is one tab.
+   */
+  const inspect = (id: string) => {
+    view.open({ screen: "research", resourceId: id });
     view.inspect("research.thread", { kind: "thread", id });
+  };
 </script>
 
 <Panel title="Threads">
   {#snippet actions()}
+    <!--
+      There is no capability that starts a thread, so this opens the first one
+      the screen is not already holding rather than pretending to create.
+    -->
     <PanelButton
       label="New thread"
       icon={Plus}
       tone="primary"
-      onclick={() => view.inspect("research.thread", { kind: "thread", id: "new" })}
+      onclick={() => {
+        const open = new Set(
+          view.tabs.filter((tab) => tab.screen === "research").map((tab) => tab.resourceId)
+        );
+        const fresh = all.find((row) => !open.has(row.id));
+        if (fresh) inspect(fresh.id);
+      }}
     />
   {/snippet}
 

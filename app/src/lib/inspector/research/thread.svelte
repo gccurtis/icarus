@@ -1,7 +1,10 @@
 <script lang="ts">
+  import ArrowUpRight from "@lucide/svelte/icons/arrow-up-right";
+
   import {
     Panel,
     PanelActor,
+    PanelButton,
     PanelChoice,
     PanelCrumbs,
     PanelEditableText,
@@ -27,6 +30,10 @@
    * **The agent is set once, for the whole thread.** There is no per-turn
    * persona switch and the section says so, because an absence nobody names
    * reads as an omission.
+   *
+   * **Open is in the action row.** This lens is reached from the map of threads
+   * and from anything that cites one, and a description of a line of enquiry
+   * with no way onto it is a dead end.
    */
   let { threadId = "th-feeder" }: { threadId?: string } = $props();
 
@@ -57,6 +64,16 @@
       onnavigate={(key) => {
         if (isInspectionKey(key)) view.inspect(key, { kind: "project", id: view.project });
       }}
+    />
+  {/snippet}
+
+  {#snippet actions()}
+    <!-- A thread is a tab keyed by itself, so this mints one or activates the one already open. -->
+    <PanelButton
+      label="Open thread"
+      icon={ArrowUpRight}
+      tone="primary"
+      onclick={() => view.open({ screen: "research", resourceId: threadId })}
     />
   {/snippet}
 

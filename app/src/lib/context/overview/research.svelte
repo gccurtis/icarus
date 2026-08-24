@@ -17,7 +17,7 @@
   } from "$lib/unique-components/panel";
   import { persona } from "$mock-capabilities/agents";
   import { PEOPLE } from "$mock-capabilities/cast";
-  import { searchScope, thread } from "$mock-capabilities/research";
+  import { searchScope, thread, threadsIn } from "$mock-capabilities/research";
   import { viewState } from "$model/client/view-state";
 
   const view = viewState();
@@ -43,15 +43,33 @@
   let titleDraft = $state("");
 
   const author = $derived(PEOPLE.find((person) => person.name === it.createdBy));
+
+  /**
+   * A new enquiry is a real thread from the library, chosen for having no tab
+   * yet. Nothing creates a thread, so minting an id would put a tab in the strip
+   * that no door can answer for.
+   */
+  const startThread = () => {
+    const open = new Set(
+      view.tabs.filter((tab) => tab.screen === "research").map((tab) => tab.resourceId)
+    );
+    const fresh = threadsIn(view.project).current.find((row) => !open.has(row.id));
+    if (fresh) view.open({ screen: "research", resourceId: fresh.id });
+  };
 </script>
 
 <Panel title="Overview">
   {#snippet actions()}
     <!--
-      A new enquiry starts from the thread library, which is the other subscreen
-      rather than an entry on this rail, so it is not a `selectContext`.
+      A new enquiry is a new tab, not a state of this one — so this opens rather
+      than selecting a context.
     -->
-    <PanelButton label="New thread" icon={Plus} tone="primary" />
+    <PanelButton
+      label="New thread"
+      icon={Plus}
+      tone="primary"
+      onclick={startThread}
+    />
   {/snippet}
 
   <PanelFields>

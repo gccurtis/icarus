@@ -22,12 +22,11 @@
    *
    * `docs/screen-panel-views/inspector/research/research-thread.md` is the
    * specification. A thread is work rather than a resource, which is why it is in
-   * that table at all — and it is not a tab either.
+   * that table at all.
    *
-   * **Opening it does not mint a tab.** Every other row in the same table opens
-   * one; this one activates the single Research tab with the thread selected,
-   * and the note at the end says so rather than leaving the difference to be
-   * noticed.
+   * **Opening it lands on the thread's own tab.** A line of enquiry is opened,
+   * worked in and closed exactly as a document is, so it is keyed by its own id
+   * in the strip and several can stand open beside one another.
    *
    * **The anchor's reference is its identifier.** `Q-14` is the question `q-14`
    * and `H-7` the hypothesis `h-7`, so the mode decides which lens the anchor
@@ -79,12 +78,19 @@
       {/if}
     </PanelFields>
 
+    <!--
+      Two acts in one press: the tab it lands on opens with an empty inspector,
+      and emptying the panel the reader was already in is a cost for nothing.
+    -->
     <PanelActions>
       <PanelButton
         label="Open in Research"
         icon={ArrowUpRight}
         tone="primary"
-        onclick={() => view.inspect("research.thread", { kind: "thread", id: threadId })}
+        onclick={() => {
+          view.open({ screen: "research", resourceId: threadId });
+          view.inspect("research.thread", { kind: "thread", id: threadId });
+        }}
       />
     </PanelActions>
   </PanelSection>
@@ -99,8 +105,7 @@
   </PanelSection>
 
   <PanelNote>
-    Opening this activates the single Research tab with the thread selected. It
-    does not mint a tab of its own — which thread you are on is view state, and
-    every other row in this table behaves differently.
+    Opening this puts the thread in the tab strip beside the documents and decks
+    the same table opens, and closing that tab closes the thread.
   </PanelNote>
 </Panel>
