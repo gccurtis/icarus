@@ -41,8 +41,8 @@ export const buildClientModel = ({
   const workbench = createWorkbench(resourceRuntimes);
 
   // Borrows nothing: what is open is decided by the person, not by anything else
-  // in the graph, so it could be built first. It is built here to keep the
-  // reading order of this function the order the objects were added in.
+  // in the graph, so its position here is a reading order rather than a
+  // dependency — it would be just as correct first.
   const viewState = createViewState(project);
 
   return {

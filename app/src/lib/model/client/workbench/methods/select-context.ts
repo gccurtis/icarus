@@ -9,11 +9,10 @@ import { activeTab } from "$model/client/workbench/methods/shared/active-tab";
  * one is called, and what happens to a stored id that is no longer on the rail
  * all belong to `views/context-panel/` — this object remembers a string.
  *
- * That is the same relationship the inspector already had, and making the two
- * symmetric is what stops this object growing a fifty-member union as screens
- * arrive. The cost is that it can no longer refuse an id the rail never offered;
- * the panel resolves an unknown one to its own default, which is where the
- * knowledge to do that lives.
+ * That is the same relationship the inspector keeps, and the symmetry is what
+ * stops this object growing a fifty-member union as screens arrive. The cost is
+ * that it cannot refuse an id the rail never offered; the panel resolves an
+ * unknown one to its own default, which is where the knowledge to do that lives.
  *
  * Separate from `resize` deliberately. A drag can never move the rail and a rail
  * click can never resize a panel, structurally rather than by convention.

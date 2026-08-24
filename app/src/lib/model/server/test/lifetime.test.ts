@@ -8,8 +8,8 @@ import { beforeEach, test, vi } from "vitest";
  * The build moment is the point. `hooks.server.ts`'s `init` hook runs before the
  * server answers its first request, so there is exactly one build — which is why
  * there is no in-flight promise to cache, no race between concurrent first
- * callers, and no failed build to evict. All three used to be tested here, and
- * all three are now unreachable.
+ * callers, and no failed build to evict. None of those three has a test here
+ * because none of them is reachable.
  *
  * The composition itself is replaced, because none of what is proven here is
  * about what a graph contains — and building a real one would read configuration

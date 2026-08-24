@@ -99,23 +99,20 @@ identity.
 
 `frame.contextId` and `Tab.inspected` are both opaque strings.
 
-This is the decision that let the workbench land on its own. The rail's
-vocabulary used to live here as a `CONTEXT_IDS` union with a
-`Record<ScreenKind, …>` beside it, and that meant a model type grew a member
-every time a screen arrived — the stated blocker to landing this without the
-screens existing.
+This is the decision that lets the workbench stand on its own. A `CONTEXT_IDS`
+union with a `Record<ScreenKind, …>` beside it would grow a member every time a
+screen arrived, so a model type would be edited by the arrival of a screen it
+knows nothing about.
 
-The inspector had already solved it: a key, routed on its prefix by the panel
-that renders it. Making the rail symmetric moved `CONTEXT_IDS`,
-`CONTEXTS_BY_SCREEN` and the drift fallback into
+The inspector's answer serves both: a key, routed on its prefix by the panel that
+renders it. The rail's vocabulary and its drift fallback therefore belong to
 [`views/context-panel/procedures/`](../../../views/context-panel/procedures/procedures.md),
-and `availableContexts`/`activeContext` off this object entirely.
+and neither `availableContexts` nor `activeContext` is on this object.
 
-What it costs: `selectContext` can no longer refuse an id the rail never offered,
-because there is no rail here to check against. The panel resolves an unknown one
-to its own default, which is where the knowledge to do that lives — and that
-fallback is unit-tested there, in `procedures/`, rather than being untestable in
-markup.
+What it costs: `selectContext` cannot refuse an id the rail never offered, because
+there is no rail here to check against. The panel resolves an unknown one to its
+own default, which is where the knowledge to do that lives — and that fallback is
+unit-tested there, in `procedures/`, rather than being untestable in markup.
 
 ## `viewState`
 
@@ -150,10 +147,10 @@ honestly give.
 | `frame` | file | accessor | The active tab's geometry |
 | `runtimeFor` | file | accessor | The only route from a view to a runtime |
 
-Fourteen. Gone from the version this replaced: `attachRuntime`, `runtime`,
-`retiring` and the whole retire machinery, all the register's now;
-`availableContexts` and `activeContext`, both the context panel's; and
-`selectTabs`/`selectedIds`, deferred until the strip has a drag gesture.
+Fourteen, and the boundaries they draw are as much a part of the surface as the
+methods themselves. Runtime attachment and retirement belong to the register;
+which contexts a rail offers belongs to the context panel; multiple selection
+waits on the strip having a drag gesture to select with.
 
 `assignState` is not a public method and should not become one. It is the
 procedure in `methods/shared/` that `update`, `resize` and `selectContext` route

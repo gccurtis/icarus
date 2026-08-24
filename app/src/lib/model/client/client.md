@@ -5,7 +5,7 @@ tab is active, and everything a tab carries.
 
 ## A client instance
 
-This is a single-page application. The `/app` layout persists, tabs are workbench
+This is a single-page application. The `/app` layout persists, tabs are client
 state rather than route state, and views do not remount on navigation. A client
 instance is therefore **one browser tab holding the application** — one desktop
 window later — and it owns one client model for its whole life.
@@ -14,23 +14,22 @@ window later — and it owns one client model for its whole life.
 | --- | --- | --- |
 | [`configuration`](configuration/configuration.md) | The settings the server published to this tab | no |
 | [`storage`](storage/storage.md) | This project's browser store, and the format of what survives a reload | no |
-| [`workbench`](workbench/workbench.md) | What is open, which tab is active, and everything a tab holds | yes |
+| [`workbench`](workbench/workbench.md) | What is open, which tab is active, and everything a tab holds, over the shell's own vocabulary | yes |
+| [`view-state`](view-state/view-state.md) | The same three questions over the four panel trees: what is open, which tab is active, and what is being looked at inside it | yes |
 | [`commands`](commands/commands.md) | Every argument-free action, the chords bound to them, and whether the bar is showing | yes |
 | [`resource-runtimes`](resource-runtimes/resource-runtimes.md) | One runtime per open resource: the unsent buffer, the submit protocol, the undo stack | yes |
 | [`copilot`](copilot/copilot.md) | The message that has not been sent: its text, mode, addressee, scope and attachments | yes |
 
 In construction order, which is dependency order: configuration depends on
 nothing, the register is built before the workbench that borrows it, and commands
-and the copilot both close over the workbench.
+and the copilot both close over the workbench. `view-state` borrows nothing at
+all, so its position in that sequence is a reading order rather than a
+constraint.
 
 **Storage is built and read by nothing.** The workbench does not persist while
 its stored shape is unsettled — see
 [workbench.md](workbench/workbench.md) — and storage holds exactly that one
 section. It stands intact and unused rather than being torn out and rebuilt.
-
-`activities` and `inspector` were pure getters over the workbench, and
-`preferences` held four numbers that became per tab. See
-[workbench.md](workbench/workbench.md) for the fold and what each surface became.
 
 ## Initialization, not a lazy singleton
 
@@ -88,13 +87,13 @@ and other live state belong to an instance a root built.
 
 `/app/[project]` is parameterized, so navigating between two projects
 client-side reuses the same layout component and its `<script>` never re-runs.
-The model would go on serving the previous project's workbench, silently. Project
+The model would go on serving the previous project's tabs, silently. Project
 links carry `data-sveltekit-reload`, and that attribute is load-bearing: it is
 the only thing standing between a project switch and a stale graph, because there
 is no other moment at which the layout script runs again.
 
 That is not a workaround for the initializer. A fresh client instance is what a
-project switch is: another workbench, another storage key, another scope.
+project switch is: another set of open tabs, another storage key, another scope.
 
 ## Why `/app` is client-rendered
 
@@ -161,9 +160,9 @@ whole isolation argument rests on there being one.
 
 Two smaller ones, both of which look harmless:
 
-- **A module-level counter.** The workbench's `nextId` was one before this tree
-  existed. It is not user data, so it reads as safe — but one counter per process
-  mints ids for every client instance at once.
+- **A module-level counter.** The `nextId` behind a tab id is the tempting case:
+  it is not user data, so it reads as safe — but one counter per process mints
+  ids for every client instance at once. It belongs to the instance.
 - **`$state(DEFAULTS)` instead of `$state({ ...DEFAULTS })`**, which wraps the
   module constant itself in the reactive proxy so a deep write reaches every
   later reader. `DEFAULTS` is frozen so that mistake throws instead of leaking.

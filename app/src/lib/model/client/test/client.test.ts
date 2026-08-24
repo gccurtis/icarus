@@ -149,9 +149,8 @@ test("close releases every runtime the workbench opened", () => {
 });
 
 test("one model's writes reach only its own graph", () => {
-  // Storage used to be the visible proof of this. With persistence paused, the
-  // frame is where a write lands, and it is per tab — so the assertion moves
-  // rather than going away.
+  // The frame is what a write lands in while persistence is paused, and it is
+  // per tab — so it is the cheapest thing to prove two graphs do not share.
   const a = buildClientModel({ project: "alpha", configuration: settings, storage: fakeStorage() });
   const b = buildClientModel({ project: "beta", configuration: settings, storage: fakeStorage() });
 

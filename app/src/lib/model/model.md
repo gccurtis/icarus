@@ -64,14 +64,18 @@ not cover it — only the `*.server.*` basename pattern does, and only on files
 carrying it. Several internals import nothing but types, so after erasure they
 have no runtime imports at all and would bundle cleanly into a browser build.
 
-That gap used to be convention. It is now the `environment` rule, which walks the
-browser's actual import graph rather than trusting a filename.
+The `environment` rule closes that gap: it walks the browser's actual import
+graph rather than trusting a filename.
 
 ## Client
 
-Two objects: `storage` owns what survives a reload, `workbench` owns what is
-open. Three more used to exist and were folded into `workbench` — they held no
-state of their own, which is the test for whether something is an object at all.
+Seven objects, and the test for whether something belongs on that list is whether
+it owns state of its own. `view-state` owns what is open and what is being looked
+at inside it; `resource-runtimes` owns one live runtime per open resource;
+`commands` owns every argument-free action; `copilot` owns the message that has
+not been sent; `configuration` owns what the server published to this tab;
+`storage` owns the format of what survives a reload; and `workbench` is the shell
+state the panel trees replace as each surface moves onto `view-state`.
 
 **Nothing here builds itself.** The layout that owns a client instance calls
 `initClientModel`; everything else calls `clientModel()`, which throws until that

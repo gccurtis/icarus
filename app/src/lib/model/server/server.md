@@ -50,8 +50,8 @@ report it.
 Not on the first request either, which is what `init` buys. One build at a known
 moment means there is no in-flight promise to cache, no race between concurrent
 first callers reading configuration twice and opening the same log file, and no
-failed build to evict — all three of which this file used to carry. A bad
-configuration now fails startup rather than one unlucky request.
+failed build to evict. A bad configuration fails startup rather than one unlucky
+request.
 
 The accessor is therefore synchronous, and it distinguishes its two refusals: a
 caller arriving during the drain hears "shutting down", and one arriving before
