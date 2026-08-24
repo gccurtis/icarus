@@ -1,11 +1,9 @@
 <script lang="ts">
   import AtSign from "@lucide/svelte/icons/at-sign";
-  import Settings from "@lucide/svelte/icons/settings";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
   import {
     Panel,
-    PanelButton,
     PanelChip,
     PanelEditableText,
     PanelFaces,
@@ -68,12 +66,12 @@
         : "agents.automation";
 </script>
 
+<!--
+  No Settings control here or on the screen. It belongs in the top bar, which is
+  not built — and a button with nowhere to go is worse than no button, because it
+  is the one thing on the panel that teaches you not to trust the others.
+-->
 <Panel title="Overview">
-  {#snippet actions()}
-    <!-- No context view is the project's settings, so there is nowhere to go yet. -->
-    <PanelButton label="Settings" icon={Settings} />
-  {/snippet}
-
   <PanelFields>
     <PanelField label="Name" stacked>
       <PanelEditableText
