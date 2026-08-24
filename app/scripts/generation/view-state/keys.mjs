@@ -6,8 +6,8 @@
  *     pnpm view-state-keys -- --check
  *
  * A key is a path. `context/project/variables.svelte` is `"project.variables"`,
- * and `workspaces/research/workspace-one-question.svelte` is the `research`
- * screen's `"one-question"`. Nothing outside the trees gets a vote, which is what
+ * and `workspaces/agents/workspace-persona.svelte` is the `agents`
+ * screen's `"persona"`. Nothing outside the trees gets a vote, which is what
  * makes a key naming no file a compile error rather than a blank panel — so
  * `--check`, which exits non-zero when the written file and the trees disagree,
  * is the part of this script worth putting in CI.
@@ -174,8 +174,8 @@ const file = (contexts, inspections, screens) => {
  *     ${COMMAND}
  *
  * A key is a path: \`context/project/variables.svelte\` is \`"project.variables"\`,
- * and \`workspaces/research/workspace-one-question.svelte\` is the \`research\`
- * screen's \`"one-question"\`.
+ * and \`workspaces/agents/workspace-persona.svelte\` is the \`agents\`
+ * screen's \`"persona"\`.
  *
  * \`${COMMAND} -- --check\` fails when this file and the trees
  * disagree, which is what stops a key naming something that is not there.
@@ -196,7 +196,7 @@ ${vocabulary("SCREENS", "Screen", [...screens.keys()])}
 /**
  * What each screen can show in its centre, with the prefix its files carry
  * stripped: \`workspace.svelte\` is \`"workspace"\` and
- * \`workspace-one-question.svelte\` is \`"one-question"\`.
+ * \`workspace-persona.svelte\` is \`"persona"\`.
  *
  * \`as const satisfies\` rather than a plain annotation, so the members stay
  * literal — \`Subscreen\` is read back off this table — while a screen missing

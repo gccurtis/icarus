@@ -27,6 +27,7 @@ export const mintTab = (id: TabId, target: Target): Tab => {
     subscreen,
     resourceId: target.resourceId,
     contextId: defaultContext(target.screen, subscreen),
+    focus: target.focus,
     inspected: "empty",
     frame: { ...DEFAULT_FRAME }
   };

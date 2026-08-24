@@ -146,8 +146,8 @@ export class ViewState implements ViewStateModel {
     return reopenClosed(this.#state);
   }
 
-  showSubscreen(subscreen: Subscreen): void {
-    showSubscreen(this.#state, subscreen);
+  showSubscreen(subscreen: Subscreen, focus?: string): void {
+    showSubscreen(this.#state, subscreen, focus);
   }
 
   selectContext(id: ContextId): void {

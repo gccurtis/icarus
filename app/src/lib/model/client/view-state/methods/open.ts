@@ -1,5 +1,6 @@
 import type { ViewStateData } from "$model/client/view-state/definition.svelte";
 import { mintTab } from "$model/client/view-state/methods/shared/mint-tab";
+import { landOn } from "$model/client/view-state/methods/shared/land-on";
 import { targetKey } from "$model/client/view-state/methods/shared/target-key";
 import type { Tab, Target } from "$model/client/view-state/types";
 
@@ -13,6 +14,12 @@ import type { Tab, Target } from "$model/client/view-state/types";
  *
  * A launcher has no identity, so `targetKey` gives `undefined` and this falls
  * through to minting every time.
+ *
+ * **A target that names a centre gets it, open or not.** Choosing a persona from
+ * the Overview means the Agents tab lands on that persona — activating the tab
+ * and leaving it wherever it was last would ignore half of what was asked for.
+ * It routes through `landOn` rather than assigning, so the rail follows and the
+ * stale inspection clears exactly as it does when a person switches by hand.
  */
 export const open = (state: ViewStateData, target: Target): Tab => {
   const key = targetKey(target);
@@ -21,6 +28,8 @@ export const open = (state: ViewStateData, target: Target): Tab => {
 
   if (existing) {
     state.activeId = existing.id;
+    if (target.subscreen !== undefined) landOn(existing, target.subscreen, target.focus);
+    else if (target.focus !== undefined) existing.focus = target.focus;
     return existing;
   }
 

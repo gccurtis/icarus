@@ -4,8 +4,8 @@
  *     pnpm view-state-keys
  *
  * A key is a path: `context/project/variables.svelte` is `"project.variables"`,
- * and `workspaces/research/workspace-one-question.svelte` is the `research`
- * screen's `"one-question"`.
+ * and `workspaces/agents/workspace-persona.svelte` is the `agents`
+ * screen's `"persona"`.
  *
  * `pnpm view-state-keys -- --check` fails when this file and the trees
  * disagree, which is what stops a key naming something that is not there.
@@ -19,6 +19,7 @@ export const CONTEXT_IDS = [
   "agents.do-this",
   "agents.health",
   "agents.personas",
+  "agents.tasks",
   "agents.tools",
   "agents.when",
   "agents.work",
@@ -39,16 +40,16 @@ export const CONTEXT_IDS = [
   "library.recent-newtab",
   "library.recent-templates",
   "library.resources",
+  "library.template",
   "library.template-kinds",
   "library.templates",
   "library.templates-newtab",
   "library.threads",
+  "overview.agents",
   "overview.analysis",
-  "overview.automations",
   "overview.context",
   "overview.deck",
   "overview.document",
-  "overview.personas",
   "overview.project",
   "overview.research",
   "overview.spreadsheet",
@@ -57,6 +58,7 @@ export const CONTEXT_IDS = [
   "project.activity",
   "project.contexts",
   "project.health",
+  "project.history",
   "project.mentions",
   "project.people",
   "project.resources",
@@ -123,17 +125,35 @@ export const INSPECTION_KEYS = [
   "agents.persona",
   "agents.refresh-action",
   "agents.schedule-trigger",
+  "agents.task",
+  "agents.task-behaviour",
+  "agents.task-results",
   "agents.tool",
+  "agents.trigger",
   "agents.what-it-can-look-up",
   "analysis.analysis",
+  "analysis.bar-graph",
+  "analysis.bars",
+  "analysis.bars-multi",
+  "analysis.cell",
+  "analysis.cells-multi",
   "analysis.chart",
+  "analysis.column",
+  "analysis.columns-multi",
+  "analysis.data-button",
   "analysis.filter",
+  "analysis.labels",
   "analysis.limit",
   "analysis.mark",
   "analysis.placement",
   "analysis.relationship",
+  "analysis.row",
+  "analysis.rows-multi",
   "analysis.sort",
+  "analysis.table-graph",
   "analysis.variable",
+  "analysis.x-axis",
+  "analysis.y-axis",
   "collaboration.comment",
   "collaboration.mention",
   "collaboration.people",
@@ -210,12 +230,10 @@ export type InspectionKey = (typeof INSPECTION_KEYS)[number];
 
 /** Every screen: one per directory under `workspaces/`. */
 export const SCREENS = [
+  "agents",
   "analysis",
-  "automations",
-  "context",
   "document-editor",
   "new-tab",
-  "personas",
   "project-overview",
   "research",
   "slide-deck-editor",
@@ -228,21 +246,19 @@ export type Screen = (typeof SCREENS)[number];
 /**
  * What each screen can show in its centre, with the prefix its files carry
  * stripped: `workspace.svelte` is `"workspace"` and
- * `workspace-one-question.svelte` is `"one-question"`.
+ * `workspace-persona.svelte` is `"persona"`.
  *
  * `as const satisfies` rather than a plain annotation, so the members stay
  * literal — `Subscreen` is read back off this table — while a screen missing
  * from it still fails to compile.
  */
 export const SUBSCREENS = {
-  "analysis": ["all-analyses", "one-analysis"],
-  "automations": ["library", "rule"],
-  "context": ["all-contexts", "one-context"],
+  "agents": ["automation", "library", "persona", "task"],
+  "analysis": ["workspace"],
   "document-editor": ["workspace"],
   "new-tab": ["workspace"],
-  "personas": ["library", "profile"],
   "project-overview": ["workspace"],
-  "research": ["all-threads", "one-question"],
+  "research": ["workspace"],
   "slide-deck-editor": ["workspace"],
   "spreadsheet-editor": ["workspace"],
   "templates": ["editor", "library"]

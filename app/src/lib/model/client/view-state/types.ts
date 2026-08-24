@@ -8,9 +8,9 @@ import type {
 /**
  * What a person has open, and what they are looking at inside it.
  *
- * The vocabulary is in [`keys.ts`](keys.ts) and is generated from the four panel
- * trees, so everything named here exists as a file. This module holds only the
- * shapes that are decisions rather than inventory.
+ * The vocabulary is in [`keys.ts`](methods/shared/keys.ts) and is generated from
+ * the four panel trees, so everything named here resolves to a file. This module
+ * holds only the shapes that are decisions rather than inventory.
  */
 
 /** A tab's identity for this browser tab's lifetime. Never persisted. */
@@ -19,20 +19,18 @@ export type TabId = string;
 /**
  * What the inspector is showing.
  *
- * `"empty"` is here rather than in the generated keys because nothing selected
- * is a state the application has, not a file in the tree. Every other member is
- * a lens.
+ * `"empty"` belongs here rather than in the generated keys: nothing selected is
+ * a state the application has, not a file in the tree. Every other member is a
+ * lens.
  */
 export type Inspected = InspectionKey | "empty";
 
 /**
- * What is selected inside the centre.
+ * What is picked out inside the centre.
  *
  * **The key never carries the detail.** An inspection key is a namespaced label
- * and nothing more; the thing it is about lives here, once. The two used to be
- * one — `block.text-selection` held `{ blockId, from, to }` — and that was a
- * second record of what the user had selected, beside the one already in view
- * state.
+ * and nothing more; what it is about lives here, once, so there is a single
+ * record of what the user has selected.
  */
 export type Selection = {
   /** What kind of thing: `resource`, `comment`, `slide`, `cell`, `finding`. */
@@ -60,16 +58,23 @@ export type Frame = {
 /**
  * One tab.
  *
- * `screen` and `subscreen` together name the centre — `research` +
- * `one-question` resolves to `workspaces/research/workspace-one-question.svelte`.
- * A screen with one centre has the single subscreen `workspace`.
+ * `screen` and `subscreen` together name the centre: `agents` + `persona`
+ * resolves to `workspaces/agents/workspace-persona.svelte`, and a screen with
+ * one centre has the single subscreen `workspace`.
  *
- * **A subscreen is view state, never a second tab.** Research on one question and
- * Research on every thread are one tab in two states; a tab per investigation
- * would make the strip the navigation for a screen that already has its own.
+ * **A subscreen is view state, never a second tab.** The Agents screen on its
+ * library and on one persona are one tab in two states.
  *
- * `resourceId` is present only where the screen edits an identified thing — a
- * document, a deck, a spreadsheet. It is what makes two document tabs two tabs.
+ * **Three fields name a subject, and each answers a different question.**
+ * `resourceId` is what the tab is *for* and is fixed at mint, so two documents
+ * are two tabs and one document reached three ways is one. `focus` is what the
+ * centre is currently *about*, and is writable, so a permanent tab can move
+ * between personas without minting anything. `selection` is what is picked out
+ * *inside* the centre, and drives the inspector.
+ *
+ * Which of the first two a subject gets is the decision that shapes a screen: a
+ * thing you open, work in and close earns a tab, and a thing you switch between
+ * inside one screen earns a focus.
  */
 export type Tab = {
   readonly id: TabId;
@@ -80,11 +85,12 @@ export type Tab = {
    * Where the rail is. Always one this subscreen offers; see `rails.ts`.
    *
    * Undefined where the subscreen has no rail at all, which is a real state
-   * rather than a gap to paper over: the specification gives the slide deck a
-   * layout rail with no subscreen to hang it on, and inventing a position for it
-   * would hide that.
+   * rather than a gap to paper over: the slide deck's layout rail hangs on no
+   * subscreen, and inventing a position for it would hide that.
    */
   contextId: ContextId | undefined;
+  /** What the centre is about. Undefined on a screen showing a library. */
+  focus?: string;
   inspected: Inspected;
   selection?: Selection;
   frame: Frame;
@@ -95,23 +101,28 @@ export type Target = {
   readonly screen: Screen;
   readonly subscreen?: Subscreen;
   readonly resourceId?: string;
+  /** What the centre should be about on arrival. See `Tab.focus`. */
+  readonly focus?: string;
 };
 
 /**
- * The seven screens that are one per project and always open.
+ * The screens that are one per project and always open.
  *
- * Permanence is not a stored field: it is `SINGLETONS.includes(tab.screen)`,
+ * Permanence is derived rather than stored — `SINGLETONS.includes(tab.screen)` —
  * which removes the one place a boolean and a screen could disagree. You do not
  * close one any more than you close Project Overview.
+ *
+ * Each is a *place*: somewhere the project's work of one kind is gathered, and
+ * somewhere you return to rather than arrive at. A screen that holds one
+ * identified thing at a time is not one of these; it is a tab keyed by that
+ * thing, and Research is the case that makes the line visible — a line of
+ * enquiry is opened, worked in and closed, so each one is its own tab.
  */
 export const SINGLETONS = [
   "project-overview",
-  "research",
   "analysis",
-  "context",
   "templates",
-  "personas",
-  "automations"
+  "agents"
 ] as const satisfies readonly Screen[];
 
 export type Singleton = (typeof SINGLETONS)[number];
@@ -142,13 +153,13 @@ export interface ViewStateModel {
   /** The project this instance acts on. Read from the route once. */
   readonly project: string;
 
-  /** Singletons first, then what the person opened, in their order. */
+  /** The permanent screens first, then what the person opened, in their order. */
   readonly tabs: readonly Tab[];
   readonly activeId: TabId;
   /** The reopen queue, newest first, capped at ten. Whole tabs, not identities. */
   readonly closed: readonly Tab[];
 
-  /** Never undefined: a singleton cannot be closed, so one always remains. */
+  /** Never undefined: a permanent tab cannot be closed, so one always remains. */
   readonly active: Tab;
   readonly frame: Frame;
   /** The rail position, or this subscreen's default if it has drifted. */
@@ -158,11 +169,12 @@ export interface ViewStateModel {
 
   open(target: Target): Tab;
   activate(id: TabId): void;
-  /** Throws for a singleton, because not being on one *is* closing it. */
+  /** Throws for a permanent screen, because not being on one *is* closing it. */
   close(id: TabId): void;
   reopenClosed(): Tab | undefined;
 
-  showSubscreen(subscreen: Subscreen): void;
+  /** Switch the centre, and say what it is about where that is a thing. */
+  showSubscreen(subscreen: Subscreen, focus?: string): void;
   selectContext(id: ContextId): void;
 
   inspect(key: Inspected, selection?: Selection): void;

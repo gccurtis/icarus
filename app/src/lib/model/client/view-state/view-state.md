@@ -7,53 +7,96 @@ question.
 ## Description
 
 View state holds **what a person has open, and what they are looking at inside
-it**, for the four panel trees: `context/` (90 views), `inspector/` (89 lenses),
-`workspaces/` (17 centres over 11 screens) and `modals/`.
+it**, for the four panel trees: `context/` (92 views), `inspector/` (107 lenses,
+and the tree is still being filled in), `workspaces/` (13 centres over 9 screens)
+and `modals/`.
 
 One object, and the five shell surfaces are functions of it — the tab strip, the
 context panel, the centre, the inspector and the status bar own almost nothing
 between them and write back only through these methods. There is no event bus, no
 store subscription and no surface-to-surface communication: the state is `$state`
-and Svelte's reactivity is the whole delivery mechanism. That reasoning is the
-workbench's and carries over unchanged; it is set out in
+and Svelte's reactivity is the whole delivery mechanism, and the case for that is
+set out in
 [the workbench design record](../../../../../../docs/client-model/workbench.md).
 
-## Why this is a new object rather than a wider workbench
+## Why this is its own object and not a wider workbench
 
-The two answer the same three questions for two different sets of screens: the
-workbench for the shell as it is, this for the shell as
-[`docs/panel-trees`](../../../../../docs/panel-trees/panel-trees.md) and the
-specifications behind it describe it. They cannot be one object during the
-change, because the key vocabularies are different sizes — eighteen context ids
-against ninety, a two-arm inspection union against eighty-nine — and both are
-consumed through total `Record` maps. Widening a const array under a total map is
-a rewrite of every consumer rather than an edit, which is the blocker
-[`ClientModel`](../types.ts) records and the one the workbench record's landing
-section already named.
+The two answer the same three questions, and they cannot be one object because
+they disagree about what a key *is*. The workbench types a context id and an
+inspection key as a bare `string` — an opaque label it remembers per tab and
+never interprets, so the view that renders the rail decides what it means. This
+object types both as unions generated from the trees, which is what makes a key
+naming no file a compile error.
 
-So they stand beside each other. The workbench goes when the shell stops
-rendering `views/workspace`.
+One vocabulary cannot be both. Widening these back to `string` gives that up for
+every panel in the four trees; narrowing the workbench's is a rewrite of
+everything that reads it rather than an edit. So the workbench keeps what still
+speaks its own vocabulary — `commands`, `copilot`, and the stored shape in
+`storage` — and this holds the trees. [`ClientModel`](../types.ts) records the
+same division at the field.
 
-**What carries over from the workbench, unchanged in substance:** singletons that
-are one per project and always open; permanence derived rather than stored; one
-identity function deciding "already open"; the launcher that never dedupes; the
-reopen queue holding whole tabs; the two deliberate asymmetries around the rail;
-the model holding values while views hold bounds; and no component type entering
-the model.
+**What the two share, deliberately:** permanent tabs that are one per project and
+always open; permanence derived rather than stored; one identity function
+deciding "already open"; the reopen queue holding whole tabs; the two asymmetries
+around the rail; the model holding values while views hold bounds; and no
+component type entering the model. These are the parts of the design that are
+about tabs rather than about vocabularies, and neither object has a reason to
+answer them differently.
 
-**What is new here:** the subscreen, as a first-class part of what a tab is; a
-key vocabulary generated from the trees instead of hand-written in `views/`; the
-selection kept once, beside the inspection key rather than inside it; and no
-persistence at all — this object takes no storage, so it has no counterpart to
-`PERSISTED_FIELDS`.
+**What is particular to this one:** the subscreen, as a first-class part of what
+a tab is; a key vocabulary generated from the trees rather than hand-written in
+`views/`; the selection kept once, beside the inspection key rather than inside
+it; a tab that knows what its centre is *about*; and no persistence at all — this
+object takes no storage, so it has no `PERSISTED_FIELDS`.
+
+## Four tabs are places, and everything else is a thing
+
+The permanent tabs are Overview, Analysis, Templates and Agents. Each is somewhere
+the project's work of one kind is gathered, and somewhere you *return* to rather
+than arrive at. Not being on one *is* closing it, so `close` refuses them.
+
+A screen that holds one identified thing at a time is not a place. It is a tab
+keyed by that thing, and Research is the case that draws the line: a line of
+enquiry is opened, worked in and closed, so each thread is its own tab keyed by
+its `resourceId`, exactly as a document is keyed by the document. Two threads are
+two tabs in the strip, each with its own rail position and its own inspection;
+one thread reached from a finding, from a mention and from the thread library is
+one tab, in the state the person left it. The `library.threads` context view is
+the map onto them, which is why it sits on the thread's own rail: you get to
+another thread from the one you are in.
+
+The rejected alternative is a permanent Research screen with the threads inside
+it. It fails on what a tab strip is *for*: closing the last thread would have to
+either close a permanent screen or leave an editor open on nothing, and the strip
+would stop being the answer to "what am I working on".
+
+## Navigation is selection-driven
+
+**There is no subscreen switcher.** You get to a persona by choosing a persona;
+the double click that chooses it is the same call that switches the centre, and
+you come back with the back button the centre's own bar draws. That is why
+`showSubscreen` takes what the centre is about as its second argument, and why
+passing nothing is how a library is returned to.
+
+The alternative — picking a centre from the panel and then picking a thing inside
+it — makes "which centre" and "which thing" two acts, and the second one can be
+skipped. An editor open on nothing is the state that produces.
+
+The consequence for this object is `Tab.focus`. It cannot be `resourceId`: that
+is fixed at mint and is what makes two documents two tabs, while a permanent tab
+is one tab that moves between subjects all day. It cannot be `selection` either:
+`selection` is what has been picked out *inside* the centre and is what the
+inspector is about. A persona is in focus while a tool in its list is selected —
+two questions, and each field answers one.
 
 ## Ownership Boundary
 
 View state owns:
 
 - What is open, in what order, and which one is active
-- Everything a tab carries: its screen and subscreen, the resource it edits, its
-  rail position, its inspection, its selection and its frame
+- Everything a tab carries: its screen and subscreen, the resource it is for, its
+  rail position, what its centre is about, its inspection, its selection and its
+  frame
 - The reopen queue
 - **The rail map** — which context views each subscreen offers, and which one it
   opens on
@@ -73,9 +116,8 @@ Consumers own:
 ## A key is a path
 
 `"project.variables"` is `context/project/variables.svelte`.
-`"collaboration.person"` is `inspector/collaboration/person.svelte`. The
-`research` screen's `"one-question"` is
-`workspaces/research/workspace-one-question.svelte`.
+`"collaboration.person"` is `inspector/collaboration/person.svelte`. The `agents`
+screen's `"persona"` is `workspaces/agents/workspace-persona.svelte`.
 
 The vocabulary in [`methods/shared/keys.ts`](methods/shared/keys.ts) is
 **generated** from the trees by `pnpm view-state-keys`, and
@@ -87,20 +129,19 @@ the application has, not a file in the tree, so it is unioned in by hand as
 `Inspected`.
 
 **An inspection key never carries a payload.** It is a namespaced label and
-nothing more; what it is about lives in `selection`, once. The two were one field
-before — `block.text-selection` held `{ blockId, from, to }` — and that was a
-second record of what the user had selected, beside the one already in view
-state.
+nothing more; what it is about lives in `selection`, once. A key that carried
+`{ blockId, from, to }` would be a second record of what the user has selected,
+beside the one already in view state, and two records of one thing disagree.
 
 ## Lifetime
 
 - **Instance:** one per client instance
-- **Constructed by:** `buildClientModel`, after the workbench
+- **Constructed by:** `buildClientModel`
 - **Released by:** nothing — it holds nothing releasable
 
 **Nothing here is persisted.** The constructor takes only the project, so there
 is no restore path, no stored shape and no read that reports a default it never
-stored. The seven singleton tabs are built rather than restored, which is what
+stored. The four permanent tabs are built rather than restored, which is what
 makes "`activeId` names a real tab, always" an invariant rather than a hope.
 
 ## Public Methods
@@ -111,33 +152,33 @@ supporting flow. Every one is still a file.
 
 | Method | Shape | Effect | Description |
 | ------ | ----- | ------ | ----------- |
-| `open` | file | mutator | Open a target, or activate the tab already on it |
+| `open` | file | mutator | Open a target, or move the tab already on it to what the target asked for |
 | `activate` | file | mutator | Move to a tab |
-| `close` | file | mutator | Close a tab and remember it; throws for a singleton |
+| `close` | file | mutator | Close a tab and remember it; throws for a permanent screen |
 | `reopenClosed` | file | mutator | Put back the most recently closed tab, with the state it had |
-| `showSubscreen` | file | mutator | Switch which centre this screen is showing |
+| `showSubscreen` | file | mutator | Switch which centre this screen is showing, and say what it is about |
 | `selectContext` | file | mutator | Move the rail |
 | `inspect` | file | mutator | Open a lens, and record what it is about |
 | `clear` | file | mutator | Nothing selected |
 | `resize` | file | mutator | Record a drag |
-| `showing` | none | accessor | Whether the active tab is on a given centre right now |
+| `showing` | file | accessor | Whether the active tab is on a given centre right now |
 
 A simple method has no document of its own.
 [`methods/methods.md`](methods/methods.md) lists them.
 
-`showing` is answered in the definition rather than in `methods/`. It compares
-two fields on the active tab and calls nothing, and the code gives no reason for
-the departure; the standard would put it in `methods/` with the rest.
+`showing` is the only accessor among the ten, and it has a file like the rest of
+them: the definition being one call per method is what keeps that class readable,
+so a body doing its own work there would be the one place a reader has to stop.
 
 ## Exposed State
 
 | Field | Type | Meaning |
 | ----- | ---- | ------- |
 | `project` | `readonly string` | The project this instance acts on. Read from the route once |
-| `tabs` | `readonly Tab[]` | Singletons first, then what the person opened, in their order |
+| `tabs` | `readonly Tab[]` | The permanent tabs first, then what the person opened, in their order |
 | `activeId` | `readonly TabId` | Which tab everything else is about |
 | `closed` | `readonly Tab[]` | The reopen queue, newest first, capped at ten. Whole tabs, not identities |
-| `active` | `readonly Tab` | Never undefined: a singleton cannot be closed, so one always remains |
+| `active` | `readonly Tab` | Never undefined: a permanent tab cannot be closed, so one always remains |
 | `frame` | `readonly Frame` | The active tab's panel geometry — two widths, two collapse flags |
 | `context` | `readonly ContextId \| undefined` | The rail position, or this subscreen's default if it has drifted |
 | `inspected` | `readonly Inspected` | Which lens, or `"empty"` |
@@ -146,8 +187,14 @@ the departure; the standard would put it in `methods/` with the rest.
 The last five read the active tab, so a tab switch changes all of them at once
 and no surface has to be told.
 
+**`focus` is deliberately not promoted to the top level** the way `context` and
+`inspected` are. Those are read by surfaces that are about the shell — the rail,
+the inspector, the resizers — and every screen reads them. What a centre is about
+is read by that one centre, which already has `active` in hand, and a shortcut on
+the model would suggest the shell knows what it means.
+
 **`context` is derived rather than stored.** A subscreen change cannot leave the
-panel pointing at a view its rail no longer offers, even if nothing reset it.
+panel pointing at a view the new rail does not offer, even if nothing reset it.
 
 No field is a Svelte `Component` or a registry of them. This object exposes
 stable keys and the view layer resolves them, so the model stays testable without
@@ -159,9 +206,9 @@ a DOM.
 export const createViewState = (project: string): ViewStateModel => ...;
 ```
 
-Every call returns a fresh object, with its seven permanent tabs already open.
-Ids are per instance and never persisted, so a counter on the instance is enough;
-nothing lives at module scope.
+Every call returns a fresh object, with its four permanent tabs already open —
+Overview, Analysis, Templates and Agents. Ids are per instance and never
+persisted, so a counter on the instance is enough; nothing lives at module scope.
 
 | Dependency | Ownership | Usage |
 | ---------- | --------- | ----- |
@@ -169,11 +216,10 @@ nothing lives at module scope.
 
 **It borrows nothing**, and that is a statement about the graph rather than an
 omission: what is open and what is being looked at is decided by the person, not
-by anything else in the model, which is why this takes only the project and why
-it could be built first. It is built after the workbench in
-[`buildClientModel`](../constructor.ts) to keep the reading order of that function
-the order the objects were added in. The dependency runs the other way — the
-copilot borrows an object of this shape, and is handed the workbench today.
+by anything else in the model, which is why this takes only the project. Its
+position in [`buildClientModel`](../constructor.ts) is therefore a reading order
+and not a constraint — it would be just as correct first. Every dependency runs
+the other way, from the objects that read a tab towards this one.
 
 ## Terminal Behaviour
 
@@ -188,11 +234,12 @@ different object with a different lifetime.
 - **It touches no browser API** — no storage, no timers, no `window`. The root's
   `browser` guard is therefore not load-bearing for this object's own behaviour;
   it is load-bearing for reaching it, because `clientModel()` refuses on the
-  server. That distinction is the whole of the open question below.
+  server. That distinction is why a panel reads this through context rather than
+  through the root.
 
 ## Invariants
 
-- **`activeId` names a real tab, always.** The singleton set is built in the
+- **`activeId` names a real tab, always.** The permanent tabs are built in the
   constructor and cannot be closed, so there is always something to fall back to.
 - **One identity function.** `targetKey` is the whole definition of "already
   open", and `mintTab` is the only place a tab is minted.
@@ -201,11 +248,16 @@ different object with a different lifetime.
 - **An inspection key never carries a payload.** The selection lives once, beside
   it.
 - **Permanence is derived, not stored:** `SINGLETONS.includes(tab.screen)`.
+- **`resourceId` is fixed at mint and `focus` is writable.** What a tab is *for*
+  cannot change; what its centre is *about* changes all day.
 - **The rail position is one this subscreen offers**, or that subscreen's
   default. `undefined` only where the subscreen has no rail at all, which is a
   real state rather than a gap.
-- **A subscreen is view state, never a second tab.** Research on one question and
-  Research on every thread are one tab in two states.
+- **A subscreen is view state, never a second tab.** Agents on a persona and
+  Agents on the library it was chosen from are one tab in two states.
+- **A centre change takes its rail and its inspection with it.**
+  [`landOn`](methods/shared/land-on.ts) is the single path, so a tab reached from
+  another screen lands in exactly the state it would have reached by hand.
 - **`resize` cannot reach `contextId`.** A drag can never move the rail and a
   rail click can never resize a panel, structurally rather than by convention.
 - **The model holds values; views hold bounds.**
@@ -224,7 +276,7 @@ The shell provides the instance the client graph built; a review page provides
 one of its own; a panel with no provider gets one to itself.
 
 **That last clause is the whole reason it is context rather than
-`clientModel()`.** All 197 panels render on their own, and
+`clientModel()`.** Every panel in the four trees renders on its own, and
 [`src/lib/independence.test.ts`](../../../independence.test.ts) proves it by
 server-rendering each with nothing but a permissive prop bag. `clientModel()`
 refuses outside a browser and before the layout has run, so routing panels
@@ -239,26 +291,6 @@ calls `viewState()` inside an event handler gets the fallback instead of the
 shell's instance, which is the one way to misuse this — read it once at the top
 and hold it.
 
-### What the move turned up
-
-The stand-in typed its key as `string` and accepted anything. This object's keys
-are generated unions over the files that exist, so eleven call sites were passing
-keys that named no lens — `actor.person`, `comment.thread`, `resource.text-block`
-and friends — each of which would have opened an empty inspector and never said
-why. `selectContext` was worse: most of its arguments were unqualified, and
-`"context"` was ambiguous across five real views.
-
-Two call sites could not be resolved and are buttons with no action, each with a
-comment:
-
-- **Settings**, on the project overview. No settings lens and no settings context
-  view exists anywhere in the specifications.
-- **New thread**, on the research overview. It means `library.threads`, which is
-  on the *all-threads* subscreen, while that panel only ever appears on
-  *one-question* — so the call compiles and throws. Reaching it needs
-  `showSubscreen` or a callback from the parent, which is a behaviour change
-  rather than a move.
-
 ## File Tree
 
 ```text
@@ -268,15 +300,15 @@ view-state/
 ├── types.ts
 ├── definition.svelte.ts
 ├── constructor.ts
-└── methods/
-    ├── methods.md
-    ├── open.ts · activate.ts · close.ts · reopen-closed.ts
-    ├── show-subscreen.ts · select-context.ts · showing.ts
-    ├── inspect.ts · clear.ts · resize.ts
-    └── shared/
-        ├── shared.md
-        ├── keys.ts · rails.ts
-        └── mint-tab.ts · target-key.ts
+├── methods/
+│   ├── methods.md
+│   ├── open.ts · activate.ts · close.ts · reopen-closed.ts
+│   ├── show-subscreen.ts · select-context.ts · showing.ts
+│   ├── inspect.ts · clear.ts · resize.ts
+│   └── shared/
+│       ├── shared.md
+│       ├── keys.ts · rails.ts
+│       └── land-on.ts · mint-tab.ts · target-key.ts
 └── test/unit/view-state.test.ts
 ```
 
