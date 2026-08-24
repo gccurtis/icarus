@@ -22,8 +22,8 @@
    * The document as a whole — what it is, who is in it, whether it is safe.
    *
    * `docs/screen-panel-views/context/overview/document.md` is the specification.
-   * The first rail entry, and where the document's identity lives now that there
-   * is no header bar across the top of the editor.
+   * The first rail entry, and where the document's identity lives: the editor
+   * carries no header bar across its top, so the page is the page.
    *
    * **The identity band is not a section**, for the same reason the title is not
    * behind a disclosure anywhere else: hiding the name of the thing you are

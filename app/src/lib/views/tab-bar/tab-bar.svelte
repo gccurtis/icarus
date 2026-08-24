@@ -12,9 +12,10 @@
    * back. This view renders the list and reports two intents; the model owns
    * order, activation, and what happens after a close.
    *
-   * **The strip separates the permanent from the opened.** The seven singletons
-   * are icon-only behind a divider — they are always there, so a label on each
-   * spends the width that the tabs a person actually opened need for their names.
+   * **The strip separates the permanent from the opened.** The four permanent
+   * tabs are icon-only behind a divider — they are always there, so a label on
+   * each spends the width that the tabs a person actually opened need for their
+   * names.
    *
    * **Not an ARIA tablist.** That pattern owes a `tabpanel` relationship and
    * roving tabindex, and a tab whose element also contains a focusable close
@@ -143,7 +144,7 @@
   }
 
   .close:hover {
-    background-color: var(--token-surface-hover);
+    background-color: var(--token-surface-panel-hover);
     color: var(--token-ink-primary);
   }
 

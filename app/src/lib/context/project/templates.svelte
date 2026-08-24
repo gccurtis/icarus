@@ -74,7 +74,7 @@
       label="Open Templates"
       icon={ArrowRight}
       disabled={onopen === undefined}
-      title="Every template, on the Library screen"
+      title="Every template, on the Templates screen"
       onclick={onopen}
     />
   {/snippet}

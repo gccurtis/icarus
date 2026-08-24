@@ -2,7 +2,7 @@
   import type { Component } from "svelte";
 
   import { ResizeHandle } from "$lib/unique-components/resize-handle";
-  import { SUBSCREENS, railFor, viewState, type ContextId } from "$model/client/view-state";
+  import { railFor, viewState, type ContextId } from "$model/client/view-state";
   import { RAIL_ENTRIES } from "$views/context-panel/procedures/rail-entries";
   import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH, RAIL_WIDTH } from "$views/context-panel/types";
 
@@ -25,6 +25,12 @@
    * like cannot be derived and lives in
    * [`rail-entries`](procedures/rail-entries.ts); which entries this screen
    * offers, and in what order, belongs to the model.
+   *
+   * **There is no subscreen switch here.** A screen with several centres is
+   * moved between by choosing something — a persona, a template, a task — not by
+   * a pair of buttons above the rail. A control that names the states of a
+   * screen is a control that has to be kept in step with them, and it offers a
+   * way to reach an editor without choosing what it edits.
    */
   const VIEWS = import.meta.glob("$lib/context/**/*.svelte") as Record<
     string,
@@ -36,9 +42,6 @@
   const rail = $derived(railFor(view.active.screen, view.active.subscreen));
   const active = $derived(view.context);
   const collapsed = $derived(view.frame.contextCollapsed);
-
-  /** The two centres a screen can be on, where it has two. */
-  const subscreens = $derived(SUBSCREENS[view.active.screen]);
 
   const load = $derived(
     active === undefined
@@ -100,26 +103,6 @@
 
   {#if !collapsed}
     <div class="content">
-      <!--
-        The subscreen switch lives here rather than in a bar across the
-        application: it is a property of the screen you are on, and only six of
-        the eleven have one.
-      -->
-      {#if subscreens.length > 1}
-        <div class="modes">
-          {#each subscreens as name (name)}
-            <button
-              type="button"
-              class="mode"
-              class:on={name === view.active.subscreen}
-              onclick={() => view.showSubscreen(name)}
-            >
-              {name.replace(/-/g, " ")}
-            </button>
-          {/each}
-        </div>
-      {/if}
-
       <div class="body">
         {#if Content}
           {#key active}
@@ -177,7 +160,7 @@
   }
 
   .pin:hover {
-    background-color: var(--token-surface-hover);
+    background-color: var(--token-surface-panel-hover);
     color: var(--token-ink-primary);
   }
 
@@ -199,25 +182,4 @@
     flex: 1;
   }
 
-  .modes {
-    display: flex;
-    gap: var(--token-spacing-unit);
-    border-bottom: 1px solid var(--token-border-subtle);
-    padding: calc(var(--token-spacing-unit) * 2);
-  }
-
-  .mode {
-    border-radius: var(--token-radius-control);
-    border: 1px solid var(--token-border-subtle);
-    padding: calc(var(--token-spacing-unit) * 0.5) calc(var(--token-spacing-unit) * 1.5);
-    font-size: var(--token-text-caption);
-    color: var(--token-ink-secondary);
-    text-transform: capitalize;
-  }
-
-  .mode.on {
-    border-color: var(--token-color-active-border);
-    background-color: var(--token-color-active-surface);
-    color: var(--token-color-active-text);
-  }
 </style>

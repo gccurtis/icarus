@@ -51,12 +51,14 @@
   </PanelSection>
 
   <!--
-    The omission is stated rather than left to be noticed. Offering to create a
-    Research thread, an Analysis, a Context, a Template, a Persona or an
-    Automation would imply those tabs can be absent, and they cannot.
+    The omission is stated rather than left to be noticed. Overview, Analysis,
+    Templates and Agents are permanent tabs, and offering to create one would
+    imply they can be absent; a research thread is a tab like a document, but
+    nothing in the model starts one, so an offer to make one is an offer nothing
+    can keep.
   -->
   <PanelNote>
-    Research, Analysis, Context, Templates, Personas and Automations are permanent tabs. They
-    are never not open, so there is nothing here to create.
+    Overview, Analysis, Templates and Agents are permanent tabs. They are never not open, so
+    there is nothing here to create.
   </PanelNote>
 </Panel>

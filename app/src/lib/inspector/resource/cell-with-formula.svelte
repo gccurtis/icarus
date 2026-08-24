@@ -100,8 +100,9 @@
     </PanelFields>
 
     <!--
-      Stacked and multiline, which is the whole point of the band: a 300px panel
-      is the only place a long expression has to breathe now that the bar is gone.
+      Stacked and multiline, which is the whole point of the band: the grid carries
+      no formula bar, so a 300px panel is the only place a long expression has to
+      breathe.
     -->
     <PanelSection title="Formula">
       <PanelFields>

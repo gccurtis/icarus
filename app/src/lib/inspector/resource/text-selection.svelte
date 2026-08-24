@@ -20,11 +20,12 @@
 
   /**
    * A range of text inside one block — the most common selection in the editor,
-   * and the one that used to be a toolbar.
+   * and the one whose formatting is read here rather than off a toolbar floating
+   * over the words it is about to change.
    *
    * `docs/screen-panel-views/inspector/resource/text-selection.md` is the
-   * specification. Offsets and atom counts were internals and are not shown:
-   * what you selected is the useful confirmation, not where it starts.
+   * specification. Offsets and atom counts are internals and are not shown: what
+   * you selected is the useful confirmation, not where it starts.
    *
    * **Family, size and spacing are not here.** They belong to the named style,
    * and the section says so rather than offering a local override that would

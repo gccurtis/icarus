@@ -26,7 +26,7 @@ This view owns:
 It does not own:
 
 - which contexts exist, which are offered, or which is selected. The model
-  decides all three from the active tab's screen kind.
+  decides all three from the active tab's screen and subscreen.
 - the panel's total width. That is a column in the frame, sized from the model.
 - the bounds of a resize. Values are the model's, bounds belong to the drag that
   does not exist yet.
@@ -58,7 +58,7 @@ alike.
 
 | Door | Usage |
 | --- | --- |
-| `$model/client` | `workbench.active`, `workbench.frame`; calls `selectContext` and `resize` |
+| `$model/client/view-state` | `active`, `context`, `frame`, `railFor`; calls `selectContext` and `resize` |
 
 ### Capabilities
 
@@ -83,7 +83,11 @@ alike.
 
 | Concern | Document | What it owns |
 | --- | --- | --- |
-| Components | [components.md](components/components.md) | The rail, the context content, and the key map between them |
+| Procedures | [procedures.md](procedures/procedures.md) | What each context view is called and which icon stands for it |
+
+No components directory. The rail and the content half are twenty lines of
+markup between them, and a context id names its own file — so there is nothing
+here for a component to hold that the panel does not already say in one place.
 
 ## Rendered States
 
@@ -97,14 +101,15 @@ alike.
 | Failure | `None` | — | — |
 | Denied | `None` | — | — |
 
-No unknown-context state. The panel resolves the tab's remembered id to one the active
-tab's kind offers, falling back to that kind's default when a stored id no longer
-resolves, so there is no branch here for a key that does not map.
+No unknown-context state. The model's `context` getter answers with a view the
+active subscreen offers, or that subscreen's default when a remembered id has
+drifted out of range, so there is no branch here for an id that does not resolve.
 
-**What the rail offers changes with the active tab**, because
-`CONTEXTS_BY_KIND` is keyed by screen kind. A `project-overview` tab offers one
-entry; a `document` offers two. That is the most visible proof that this panel is
-a projection over the workbench rather than a surface holding its own state.
+**What the rail offers changes with the active tab**, because `railFor` is keyed
+by screen and subscreen. Project Overview offers four entries; a research thread
+offers eight; a template being authored offers a set disjoint from the library it
+was chosen from. That is the most visible proof that this panel is a projection
+over view state rather than a surface holding its own.
 
 ## Accessibility
 
@@ -136,8 +141,9 @@ a projection over the workbench rather than a surface holding its own state.
   resolving one.
 - **Selection never rides on colour alone.** The tint is paired with a marker on
   the inline edge and with `aria-current`.
-- **The context map is total.** `Record<ContextId, …>` means a new context fails
-  to compile until it has a label, an icon, and something to show.
+- **The rail table is total.** `Record<ContextId, RailEntry>` means a new context
+  view fails to compile until it has a label and an icon. What it *shows* needs
+  no entry at all: an id is a path, so the file is the registry.
 - **The rail is one number.** `RAIL_WIDTH` sizes the rail and is what the frame
   adds to the model's content width; nothing restates it.
 - **Collapsing never destroys the width.** A gesture that shuts the panel

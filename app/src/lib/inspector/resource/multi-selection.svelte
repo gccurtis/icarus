@@ -120,7 +120,14 @@
 
   <PanelSection title="Arrange">
     <PanelActions>
-      <PanelButton label="Group" icon={Group} />
+      <!-- Disabled rather than drawn and inert: there is no group object to make,
+           and the note below says which decision is missing. -->
+      <PanelButton
+        label="Group"
+        icon={Group}
+        disabled
+        title="There is no group in the model to make."
+      />
       <PanelButton
         label="Front"
         icon={BringToFront}
@@ -135,7 +142,6 @@
     {#if applied?.section === "arrange"}
       <PanelNote>{applied.said}</PanelNote>
     {/if}
-    <!-- Group is drawn and does nothing: there is no group object to make. -->
     <PanelNote tone="gap">
       Grouping is offered and there is no group in the model behind it. Either a
       group is a thing that survives a reload or this is a selection convenience,

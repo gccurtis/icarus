@@ -91,7 +91,12 @@
         tone="primary"
         onclick={() => view.inspect("resource.deck", { kind: "deck", id: deckId })}
       />
-      <PanelButton label="Duplicate" icon={Copy} />
+      <PanelButton
+        label="Duplicate"
+        icon={Copy}
+        disabled
+        title="Nothing writes a layout, so a copy would not survive the next read."
+      />
     </PanelActions>
     <!-- Deliberately no delete: the Layouts view owns what happens to the slides. -->
     <PanelNote tone="gap">

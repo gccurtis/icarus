@@ -83,6 +83,7 @@ export const RAIL_ENTRIES: Record<ContextId, RailEntry> = {
   "agents.do-this": { label: "Do this", icon: Play },
   "agents.health": { label: "Health", icon: HeartPulse },
   "agents.personas": { label: "Personas", icon: Bot },
+  "agents.tasks": { label: "Tasks", icon: Sparkles },
   "agents.tools": { label: "Tools", icon: Wrench },
   "agents.when": { label: "When", icon: Zap },
   "agents.work": { label: "Work", icon: Activity },
@@ -111,6 +112,7 @@ export const RAIL_ENTRIES: Record<ContextId, RailEntry> = {
   "library.recent-newtab": { label: "Recent", icon: Clock },
   "library.recent-templates": { label: "Recent", icon: Clock },
   "library.resources": { label: "Resources", icon: Layers },
+  "library.template": { label: "Template", icon: LayoutTemplate },
   "library.template-kinds": { label: "Kinds", icon: Shapes },
   "library.templates": { label: "Library", icon: LayoutTemplate },
   "library.templates-newtab": { label: "Templates", icon: LayoutTemplate },
@@ -122,12 +124,11 @@ export const RAIL_ENTRIES: Record<ContextId, RailEntry> = {
    * because the rails that lead with an Overview also carry Templates and
    * Layouts, and those three panel glyphs are not tellable apart at rail size.
    */
+  "overview.agents": { label: "Overview", icon: Info },
   "overview.analysis": { label: "Overview", icon: Info },
-  "overview.automations": { label: "Overview", icon: Info },
   "overview.context": { label: "Overview", icon: Info },
   "overview.deck": { label: "Overview", icon: Info },
   "overview.document": { label: "Overview", icon: Info },
-  "overview.personas": { label: "Overview", icon: Info },
   "overview.project": { label: "Overview", icon: Info },
   "overview.research": { label: "Overview", icon: Info },
   "overview.spreadsheet": { label: "Overview", icon: Info },
@@ -143,6 +144,7 @@ export const RAIL_ENTRIES: Record<ContextId, RailEntry> = {
   "project.activity": { label: "Activity", icon: Activity },
   "project.contexts": { label: "Context", icon: Target },
   "project.health": { label: "Health", icon: HeartPulse },
+  "project.history": { label: "History", icon: Clock },
   "project.mentions": { label: "Mentions", icon: AtSign },
   "project.people": { label: "People", icon: Users },
   "project.resources": { label: "Resources", icon: Layers },

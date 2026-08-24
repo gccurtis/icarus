@@ -29,11 +29,13 @@
     kindLabel,
     recents,
     templates,
+    threads,
     type EditorKind,
     type LibraryTemplate
   } from "$mock-capabilities/library";
+  import { openingFor } from "$mock-capabilities/opening";
   import { project, resources } from "$mock-capabilities/project";
-  import { viewState, type InspectionKey } from "$model/client/view-state";
+  import { viewState, type Screen } from "$model/client/view-state";
 
   const view = viewState();
 
@@ -57,18 +59,21 @@
    * whose whole job is one question, and a mode change nobody asked for is worse
    * than a list that pushes the shelves down.
    *
-   * **Nothing here makes anything.** A pill only changes the inspector — the
-   * Create button lives in that lens — which is why the three are ordinary
-   * controls and not the screen's one interactive action.
+   * **Every entry here opens something.** This is a launcher, and a launcher
+   * whose rows only moved the inspector would ask its one question and then
+   * stop: a pill opens a blank editor, and a recent row or a search hit opens
+   * whatever it names. Templates are the exception, because taking one asks for
+   * values before it can make anything.
    */
   const kinds = $derived(editorKinds().current);
   const recent = $derived(recents().current);
   const everything = $derived(resources().current);
   const all = $derived(templates().current);
+  const everyThread = $derived(threads().current);
   /** The name is data, so it comes from the project door rather than from view state. */
   const projectName = $derived(project().current.name);
 
-  /** What the pill, the card or the row last handed the inspector. */
+  /** Which template last handed the inspector its variables. */
   let chosen = $state<string | undefined>(undefined);
 
   let query = $state("");
@@ -77,11 +82,12 @@
     needle === "" ? [] : everything.filter((row) => row.name.toLowerCase().includes(needle))
   );
 
-  const LENS: Record<EditorKind["name"], InspectionKey> = {
-    Document: "library.new-document",
-    "Slide deck": "library.new-deck",
-    Spreadsheet: "library.new-spreadsheet"
-  };
+  /** Which editor a pill opens, and what the strip calls the blank thing there. */
+  const BLANK = {
+    Document: { screen: "document-editor", noun: "document" },
+    "Slide deck": { screen: "slide-deck-editor", noun: "deck" },
+    Spreadsheet: { screen: "spreadsheet-editor", noun: "spreadsheet" }
+  } as const satisfies Record<EditorKind["name"], { screen: Screen; noun: string }>;
 
   const EDITOR_ICON: Record<EditorKind["name"], typeof FileText> = {
     Document: FileText,
@@ -146,14 +152,45 @@
 
   const blocked = $derived(startable.filter((row) => row.variables > 0).length);
 
-  const choose = (kind: EditorKind) => {
-    chosen = kind.id;
-    view.inspect(LENS[kind.name], { kind: "editor", id: kind.id });
+  /**
+   * The tab strip labels an editor tab by its `resourceId`, so a minted id has
+   * to read as a name rather than as a key. The number steps past whatever that
+   * screen already holds, because `open` is keyed by the id: two blank documents
+   * are two things, and two that share a name are one tab.
+   */
+  const untitled = (screen: Screen, noun: string): string => {
+    const taken = new Set(
+      view.tabs.filter((tab) => tab.screen === screen).map((tab) => tab.resourceId)
+    );
+    let count = 1;
+    while (taken.has(`Untitled ${noun} ${count}`)) count += 1;
+    return `Untitled ${noun} ${count}`;
   };
 
-  const open = (id: string) => {
-    chosen = id;
-    view.inspect("library.recent-item", { kind: "resource", id });
+  const create = (kind: EditorKind) => {
+    const { screen, noun } = BLANK[kind.name];
+    view.open({ screen, resourceId: untitled(screen, noun) });
+  };
+
+  /**
+   * A search hit and a recent card are two rows of different shapes over the
+   * same three facts, so one function launches both rather than each holding
+   * its own idea of what a document opens in.
+   */
+  type Entry = { readonly id: string; readonly name: string; readonly kind: ResourceKind };
+
+  /**
+   * What an entry opens. Where each kind goes is
+   * [`openingFor`](../../mock-capabilities/opening.ts)'s to answer, because this
+   * launcher is not the only surface that asks.
+   *
+   * Nothing means no screen holds that kind, and saying so out loud is honest
+   * where a click that appears to do nothing is not.
+   */
+  const launch = (row: Entry) => {
+    const target = openingFor(row.kind, row.id, row.name);
+    if (target) view.open(target);
+    else console.log(`No screen opens a ${kindLabel(row.kind).toLowerCase()}`);
   };
 
   const start = (id: string) => {
@@ -204,8 +241,7 @@
             <button
               type="button"
               class="border-border-subtle hover:bg-surface-panel-hover flex items-center gap-2 border-b px-3 py-2 text-start last:border-b-0"
-              class:bg-active-surface={chosen === row.id}
-              onclick={() => open(row.id)}
+              onclick={() => launch(row)}
             >
               <span class="text-ink-muted flex shrink-0"><Icon size={14} aria-hidden="true" /></span>
               <span class="text-body-sm text-ink-primary min-w-0 flex-1 truncate">{row.name}</span>
@@ -218,18 +254,19 @@
     </div>
 
     <!--
-      Three pills and nothing else. Research, Analysis, Context, Templates,
-      Personas and Automations are permanent tabs; offering to create one would
-      imply they can be absent.
+      Three pills and nothing else. Overview, Analysis, Templates and Agents are
+      permanent tabs, and offering to create one would imply they can be absent;
+      a research thread is a tab like a document, but nothing in the model starts
+      one, so an offer to make one would be an offer nothing can keep.
     -->
     <div class="area-editors flex flex-wrap items-center justify-center gap-2">
       {#each kinds as kind (kind.id)}
         {@const Icon = EDITOR_ICON[kind.name]}
         <Button
-          variant={chosen === kind.id ? "default" : "outline"}
+          variant="outline"
           size="lg"
           title={kind.detail}
-          onclick={() => choose(kind)}
+          onclick={() => create(kind)}
           class="rounded-control text-body-sm px-4"
         >
           <Icon aria-hidden="true" />
@@ -254,8 +291,7 @@
                 title={row.name}
                 sub="{kindLabel(row.kind)} · {row.age}"
                 icon={Icon}
-                selected={chosen === row.id}
-                onselect={() => open(row.id)}
+                onselect={() => launch(row)}
               >
                 {#snippet thumb()}
                   <ScreenThumb ratio={KIND_RATIO[row.kind]} lines={4} />
@@ -296,7 +332,7 @@
                   />
                 {/snippet}
                 <span class="text-caption text-ink-muted truncate">
-                  {row.scope === "Project" ? "This project" : "Everywhere"} · {row.updated}
+                  {row.scope} · {row.updated}
                 </span>
               </ScreenCard>
             </ScreenShelfItem>

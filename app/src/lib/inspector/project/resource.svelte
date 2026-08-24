@@ -16,9 +16,15 @@
     PanelRow,
     PanelSection
   } from "$lib/unique-components/panel";
-  import type { ResourceKind } from "$mock-capabilities/cast";
   import { members, presenceFor } from "$mock-capabilities/collaboration";
-  import { findings, hypotheses, kindLabel, questions, threads } from "$mock-capabilities/library";
+  import {
+    findings,
+    hypotheses,
+    kindLabel,
+    questions,
+    threads
+  } from "$mock-capabilities/library";
+  import { openingFor } from "$mock-capabilities/opening";
   import { activity, project, resources } from "$mock-capabilities/project";
   import { isInspectionKey, viewState, type InspectionKey } from "$model/client/view-state";
 
@@ -48,19 +54,20 @@
 
   const all = $derived(resources().current);
   const resource = $derived(all.find((candidate) => candidate.id === resourceId) ?? all[0]);
+  const everyThread = $derived(threads().current);
 
-  /** Kind to the lens that owns it: the resolver the specification asks for. */
-  const OPENS: Record<ResourceKind, InspectionKey> = {
-    document: "resource.document",
-    slides: "resource.deck",
-    spreadsheet: "resource.spreadsheet",
-    research: "research.research-thread",
-    analysis: "analysis.analysis",
+  /**
+   * The kinds no screen holds, and the lens that owns each.
+   *
+   * A connector is read rather than edited, a finding is a conclusion rather
+   * than a body, and a Context is a rule — so Open hands these to the inspector
+   * instead of minting a tab with nothing to draw in it.
+   */
+  const OPENS: Record<"file" | "finding" | "connector" | "context", InspectionKey> = {
     file: "project.file",
     finding: "research.accepted-finding",
     connector: "project.connector",
-    context: "scope.context",
-    template: "library.template"
+    context: "scope.context"
   };
 
   /** Presence, scoped to this resource: who has it open right now. */
@@ -96,7 +103,7 @@
 
     const finding = findings().current.find((row) => row.title === resource.name);
     if (finding !== undefined) {
-      const from = threads().current.find((row) => row.title === finding.from);
+      const from = everyThread.find((row) => row.title === finding.from);
       if (from !== undefined) {
         found.push({
           id: from.id,
@@ -119,7 +126,7 @@
       return found;
     }
 
-    const thread = threads().current.find((row) => row.title === resource.name);
+    const thread = everyThread.find((row) => row.title === resource.name);
     if (thread !== undefined) {
       const question = questions().current.find((row) => row.title === thread.title);
       if (question !== undefined) {
@@ -148,8 +155,19 @@
   /** Nothing writes a copy yet, so Duplicate lands here and the button says so. */
   let duplicated = $state(false);
 
-  const open = () =>
-    view.inspect(OPENS[resource.kind], { kind: "resource", id: resource.id });
+  /**
+   * Open means the thing itself.
+   *
+   * Where it opens is [`openingFor`](../../mock-capabilities/opening.ts)'s to
+   * answer, because four surfaces ask it. Nothing means no screen holds this
+   * kind — a file, a finding, a connector, a Context — and those are things you
+   * look at rather than places you go, so they get their lens.
+   */
+  const open = () => {
+    const target = openingFor(resource.kind, resource.id, resource.name);
+    if (target) view.open(target);
+    else view.inspect(OPENS[resource.kind as keyof typeof OPENS], { kind: "resource", id: resource.id });
+  };
 </script>
 
 <Panel title={resource.name}>

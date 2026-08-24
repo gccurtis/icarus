@@ -17,7 +17,7 @@ than an absent one.
 
 This view owns:
 
-- what each inspection looks like, once there is one to show;
+- turning an inspection key into the path of a lens, and loading it;
 - the nothing-inspected state, which is the panel at its most useful rather than
   its least;
 - one scroll context.
@@ -27,8 +27,8 @@ It does not own:
 - what is inspected. Only an explicit `inspect()` call sets that, never focus —
   clicking into this panel blurs the editor and collapses the caret, and an
   inspection derived from focus would empty the panel the user is reaching for.
-- the ancestry above the innermost node, which the model holds and this view
-  does not yet offer a way to walk.
+- what a lens contains. Each of the lenses under `$lib/inspector/` renders
+  itself and is otherwise opaque to this view.
 - its own width, or the bounds of a resize.
 
 ## Public Contract
@@ -54,7 +54,7 @@ panel's, so a user who learns one edge has learned the other.
 
 | Door | Usage |
 | --- | --- |
-| `$model/client` | `workbench.inspectedNode` |
+| `$model/client/view-state` | `inspected`, `frame`; calls `resize` |
 
 ### Capabilities
 
@@ -76,36 +76,31 @@ panel's, so a user who learns one edge has learned the other.
 
 ## Directory Documents
 
-| Concern | Document | What it owns |
-| --- | --- | --- |
-| Components | [components.md](components/components.md) | One component per inspection kind that has a view, and the partial map between them |
-
-No other concern directory. This view reads one value and renders it; there is
-nothing to coordinate and nothing to observe.
+No concern directories. This view reads one key, resolves it to a path and
+renders what it loads; there is no vocabulary to hold, nothing to coordinate and
+nothing to observe.
 
 ## Rendered States
 
 | State | Trigger | Visible result | Available recovery |
 | --- | --- | --- | --- |
-| Initial | A tab nobody has inspected in | Nothing selected | — |
-| Collapsed | A drag inside `COLLAPSE_BELOW` | A 44px rail carrying the agent icon | Click the rail |
-| Loading | `None` | — | — |
-| Empty | `inspectedNode` is undefined | "Nothing selected" | — |
+| Initial | A tab nobody has inspected in | "Nothing selected" | — |
+| Lens | An `inspect()` call naming a key | That key's lens, about the selection beside it | — |
+| Collapsed | A drag inside `COLLAPSE_BELOW` | A 44px rail carrying the panel glyph | Click the rail |
+| Empty | `inspected` is `"empty"` | "Nothing selected" | — |
+| Loading | A lens's chunk is in flight | Nothing, for one frame | — |
+| Unresolved | A key that names no file | The key, named | — |
 | Stale | `None` | — | — |
 | Failure | `None` | — | — |
 | Denied | `None` | — | — |
-| Selection | A drag inside a document block | The block and its offsets | — |
-| Caret | A click inside a document block | The block | — |
-| Unmapped | An inspection whose kind has no view | The kind, named | — |
 
-**An inspection lives on the tab, so switching tabs switches this panel** — and
-a tab returned to still shows what was inspected in it. That is the model's
-doing, not this view's: it reads `inspectedNode` and re-renders.
+**An inspection lives on the tab, so switching tabs switches this panel** — and a
+tab returned to still shows what was inspected in it. That is the model's doing,
+not this view's: it reads `inspected` and re-renders.
 
-The last three states are reachable only through the workspace's document
-component, which is the one caller of `inspect()` in the application. It is a
-fixture, so the two mapped states are proof that the path works rather than
-finished surface.
+Unresolved cannot be reached through the model, because the key type is generated
+from the very tree the glob reads. It means the two have been allowed to
+disagree, and naming the key is the only useful thing to show.
 
 ## Accessibility
 
@@ -131,13 +126,16 @@ finished surface.
 
 ## View Invariants
 
-- **The kind map is partial, deliberately.** `InspectionKey` names six kinds;
-  two are built, because two are all any surface can currently produce.
-  Components for the rest would be files nothing can reach. Each new producer
-  brings the view its node needs.
-- **A node is never a payload.** The model hands over ids and offsets, and this
-  view fetches whatever it needs from them. Carrying content would put a copy of
-  something that lives elsewhere into state that is deliberately not persisted.
+- **The registry is the filesystem.** A key is a path —
+  `"collaboration.person"` is `inspector/collaboration/person.svelte` — so there
+  is no map here to keep in step with the tree. A map would be a second list of
+  what exists, and the first one is the directory.
+- **A key is never a payload.** The key is a namespaced label and nothing more;
+  what the lens is *about* is the selection the model carries beside it. A key
+  holding `{ blockId, from, to }` would be a second record of what the user has
+  selected, and two records of one thing disagree.
+- **Nothing selected is a state, not an absence.** It has a sentence of its own
+  rather than rendering blank, because a blank flank reads as broken.
 - **Collapsed is a rail, never nothing.** A flank that vanishes leaves no way
   back but finding a 4px edge. What remains is the same width the context panel
   collapses to, and the whole strip is the control rather than an icon sitting

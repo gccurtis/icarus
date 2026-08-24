@@ -14,8 +14,9 @@
    * The spreadsheet as a whole.
    *
    * `docs/screen-panel-views/context/overview/spreadsheet.md` is the
-   * specification. Where the spreadsheet's identity lives now that there is no
-   * header bar and no name box.
+   * specification. Where the spreadsheet's identity lives: the grid carries no
+   * header bar and no name box, because a sheet's chrome belongs in the rail
+   * where every other resource keeps it.
    *
    * **Calculation carries no recalculate.** Every formula reads its inputs when
    * it runs, so there is no cached result that could fall behind — the section

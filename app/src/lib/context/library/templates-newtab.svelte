@@ -23,9 +23,9 @@
    * only question this tab asks.
    *
    * The specification puts **Open Templates** at the foot. A panel has no footer
-   * — every control that ended up in one was buried under a list of unbounded
-   * length — so it is in the action row, and it is the parent's to perform: this
-   * panel cannot reach another screen.
+   * — a control pinned below a list of unbounded length is a control nobody
+   * scrolls to — so it is in the action row, and it is the parent's to perform:
+   * this panel cannot reach another screen.
    */
   let { onopentemplates }: { onopentemplates?: () => void } = $props();
 

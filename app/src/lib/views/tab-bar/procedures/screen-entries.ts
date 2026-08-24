@@ -1,26 +1,25 @@
 import type { Component } from "svelte";
+import Bot from "@lucide/svelte/icons/bot";
 import ChartNoAxesColumn from "@lucide/svelte/icons/chart-no-axes-column";
 import FileText from "@lucide/svelte/icons/file-text";
 import FlaskConical from "@lucide/svelte/icons/flask-conical";
 import LayoutDashboard from "@lucide/svelte/icons/layout-dashboard";
 import LayoutTemplate from "@lucide/svelte/icons/layout-template";
-import Library from "@lucide/svelte/icons/library";
 import Plus from "@lucide/svelte/icons/plus";
 import Presentation from "@lucide/svelte/icons/presentation";
 import Sheet from "@lucide/svelte/icons/sheet";
-import Users from "@lucide/svelte/icons/users";
-import Workflow from "@lucide/svelte/icons/workflow";
 
 import type { Screen, Tab } from "$model/client/view-state";
+import { nameOf } from "$mock-capabilities/naming";
 
 /**
  * What a tab is called, and what it looks like.
  *
  * Display copy for a screen lives here because this is the surface that displays
- * it — the workspace maps the same key to a component and the context panel maps
- * its rail. Three maps on one vocabulary is deliberate: a label, an icon and a
- * component are different decisions, and the model publishes keys precisely so
- * that each surface can make its own.
+ * it — the context panel reads the same vocabulary for its rail, and the
+ * workspace reads it as a path. Each surface deciding for itself is deliberate:
+ * a name and a path are different decisions, and the model publishes keys
+ * precisely so that neither has to be its business.
  *
  * **A label is a function of the whole tab, not of its screen.** Every document
  * tab would otherwise read "Document", which is the one thing a tab strip exists
@@ -34,26 +33,20 @@ export type ScreenEntry = {
   readonly icon: Component;
 };
 
-/**
- * A resource tab is named by what it holds. The id stands in until a title
- * arrives: a title lives on the metadata row rather than in the body, so it is
- * an ordinary query the day the table answers — and a placeholder that reads as
- * an id is better than one that reads as a name and is not.
- */
-const resourceId = (tab: Tab): string => tab.resourceId ?? "Untitled";
+/** A tab that holds one identified thing is named by that thing. */
+const subject = (tab: Tab): string =>
+  tab.resourceId === undefined ? "Untitled" : nameOf(tab.resourceId);
 
 export const SCREEN_ENTRIES: Record<Screen, ScreenEntry> = {
   "project-overview": { label: () => "Overview", icon: LayoutDashboard },
-  research: { label: () => "Research", icon: FlaskConical },
   analysis: { label: () => "Analysis", icon: ChartNoAxesColumn },
-  context: { label: () => "Context", icon: Library },
   templates: { label: () => "Templates", icon: LayoutTemplate },
-  personas: { label: () => "Personas", icon: Users },
-  automations: { label: () => "Automations", icon: Workflow },
+  agents: { label: () => "Agents", icon: Bot },
 
-  "document-editor": { label: resourceId, icon: FileText },
-  "slide-deck-editor": { label: resourceId, icon: Presentation },
-  "spreadsheet-editor": { label: resourceId, icon: Sheet },
+  research: { label: subject, icon: FlaskConical },
+  "document-editor": { label: subject, icon: FileText },
+  "slide-deck-editor": { label: subject, icon: Presentation },
+  "spreadsheet-editor": { label: subject, icon: Sheet },
   "new-tab": { label: () => "New tab", icon: Plus }
 };
 

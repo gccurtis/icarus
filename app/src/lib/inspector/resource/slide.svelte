@@ -28,9 +28,9 @@
    * `docs/screen-panel-views/inspector/resource/slide.md` is the specification.
    *
    * **Speaker notes come first and are read-only here.** They belong to the slide
-   * and this is where a person looks for them now that they are off the canvas,
-   * but the notes lens is the editor — two writable copies of the same paragraph
-   * is how one of them quietly wins.
+   * and the canvas carries none of them, so this is where a person looks; but the
+   * notes lens is the editor — two writable copies of the same paragraph is how
+   * one of them quietly wins.
    *
    * **Duplicate and New after carry no handler.** Both mint ids for the slide and
    * every identified descendant, which is the real model's job; Delete clears the
@@ -98,8 +98,20 @@
 
   <PanelSection title="Actions">
     <PanelActions>
-      <PanelButton label="Duplicate" icon={Copy} />
-      <PanelButton label="New after" icon={Plus} />
+      <!-- Both mint a slide, and nothing writes a deck. Delete is different: it
+           clears the inspection, which is a real thing this panel can do. -->
+      <PanelButton
+        label="Duplicate"
+        icon={Copy}
+        disabled
+        title="Nothing writes a deck, so a new slide would not survive the next read."
+      />
+      <PanelButton
+        label="New after"
+        icon={Plus}
+        disabled
+        title="Nothing writes a deck, so a new slide would not survive the next read."
+      />
       <PanelButton label="Delete" icon={Trash2} tone="danger" onclick={() => view.clear()} />
     </PanelActions>
   </PanelSection>

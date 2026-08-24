@@ -4,58 +4,31 @@ Lives at `procedures/procedures.md`.
 
 | File | Holds |
 | --- | --- |
-| [`rail-entries.ts`](rail-entries.ts) | `RAIL_ENTRIES` — a label and an icon for each of the ninety context views |
+| [`rail-entries.ts`](rail-entries.ts) | `RAIL_ENTRIES` — a label and an icon for each of the ninety-two context views |
 
-## Why the vocabulary is no longer here
+## What is here, and what belongs to the model
 
-It used to be. A procedure here held sixteen ids, which screen offered which, and
-what to do with a stored id that had drifted — all of it this panel's, because
-the workbench remembered a `contextId` and never interpreted it.
+One thing: what a rail entry *looks like*. Which views exist, which subscreen
+offers which, in what order, and what to do with a stored id that has drifted out
+of range all belong to `$model/client/view-state` — it answers
+`railFor(screen, subscreen)`, and the drift fallback is its `context` getter.
 
-The ninety views under `$context` are a different proposition. Which ones a
-screen offers is transcribed from the specifications and the ids are generated
-from the tree, so both belong with the state that remembers them:
-`$model/client/view-state` answers `railFor(screen, subscreen)`, and the drift
-fallback is its `context` getter. What is left here is the half that cannot be
-derived.
+That split follows the shape of the two halves. The ids are generated from the
+`context/` tree and the rails are transcribed from the specifications, so both
+are facts the state that remembers a rail position can hold and check. A label
+and an icon are judgements: a label is the view's name as its specification
+writes it rather than its file name, and an icon has to say what the view is for
+*and* survive sitting next to its neighbours in the same rail. Neither can be
+derived from a path, so neither is generated.
 
-## Why the rail table is not generated
+## Why the rail table is not markup
 
-The order and the membership already are — `view-state`'s `RAILS` is transcribed
-from the specifications and its ids are generated from the tree. What cannot be
-derived is what an entry *looks like*: a label is the view's name as its
-specification writes it, not its file name, and an icon is a judgement about what
-the view is for that also has to survive sitting next to its neighbours in the
-same rail.
+`Record<ContextId, RailEntry>` is total rather than `Partial`, so a new context
+view fails to compile until it has been given both halves. A rail entry that
+cannot be drawn is a rail with a hole in it, and finding that at runtime is
+strictly worse than finding it at build time — in the markup the same lookup
+would silently render nothing.
 
-It is typed `Record<ContextId, RailEntry>` and not `Partial`, so a new context
-view fails to compile until it has been given both. A rail entry that cannot be
-drawn is a rail with a hole in it, and finding that at runtime is strictly worse
-than finding it at build time.
-
-## Why the vocabulary is here and not in the model
-
-The workbench remembers a `contextId` per tab and **never interprets it** —
-exactly as it remembers an inspection key. Which contexts exist, which screen
-offers which, and what to do with a stored id that is no longer on the rail are
-all this panel's.
-
-The alternative put the menu in the model, and the cost was a model type that
-grew a member for every screen that arrived. Keeping it here means the model's
-surface stops changing when a screen does, which is what let the workbench land
-without the screens existing.
-
-## Why `resolveContext` is a procedure
-
-**Because the fallback has a wrong answer.** A tab's remembered context can drift
-out of range — a templates tab switching mode swaps to a disjoint rail, and a
-stored id can outlive the context it named. A reset rail is harmless; a crash
-during paint is not.
-
-That is the one piece of context logic worth testing, and there is no
-component-render harness in this project. In `procedures/` it is a pure function
-over `(screen, stored)` with a unit test; inside the component it would be a
-line nothing could reach.
-
-The rest — which icon, which label, which component — stays in the markup, where
-adding a context is an edit to the surface that renders it.
+The rest — which component a chosen id resolves to — stays in
+[`context-panel.svelte`](../context-panel.svelte), where an id is a path and
+there is no map to keep in step at all.

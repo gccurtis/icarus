@@ -22,9 +22,10 @@
    * which is not modelled. That is why each target is a section with its own
    * **New** rather than a choice inside a single create form.
    *
-   * The kinds and their wording come from the door rather than from this file, so
-   * the spreadsheet blurb reads "one grid" here and "sheets" in the
-   * specification. The door is the one that has been corrected.
+   * The kinds and their wording come from the door rather than from this file:
+   * where the specification and the door disagree — the spreadsheet blurb reads
+   * "one grid" here and "sheets" there — the door is what a person reads, so the
+   * door is the authority.
    *
    * **No lens names creating a template**, so New opens the template lens and
    * the selection carries the target, since the target is the whole of what
