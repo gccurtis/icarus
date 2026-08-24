@@ -18,12 +18,13 @@ This view owns:
 - the frame's own dimensions — the two bar heights and the status height;
 - placement of every zone, so no zone declares a position in a grid it does not
   own;
-- the two flank widths, read from the active tab and applied as column sizes;
-- the top bar and the status bar, which read nothing and are components here.
+- the two flank widths, read from the active tab and applied as column sizes.
 
 It does not own:
 
 - the client instance. The route above builds it; this view reads it.
+- the application's appearance. The top bar holds the theme; the frame paints in
+  whichever one is active and never names a colour of its own.
 - anything a zone renders. Each zone view is reached through its root and is
   otherwise opaque.
 - what fills the centre. The workspace resolves that from the active tab.
@@ -36,7 +37,7 @@ It does not own:
 
 | Kind | Name | Type | Required | Purpose |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | Nothing. The frame takes no props and no `children`: tabs are workbench state, so there is no route content to thread through it. |
+| — | — | — | — | Nothing. The frame takes no props and no `children`: tabs are view state, so there is no route content to thread through it. |
 
 ## Dependencies
 
@@ -44,7 +45,7 @@ It does not own:
 
 | Door | Usage |
 | --- | --- |
-| `$model/client` | `workbench.panels`, for the two flank column widths; `commands`, handed to the dispatch effect |
+| `$model/client` | `viewState`, provided to every panel below through context, and read here for the two flank column widths; `commands`, handed to the dispatch effect |
 
 ### Capabilities
 
@@ -58,11 +59,12 @@ Views reached through their root component only.
 
 | View | Root imported | Usage |
 | --- | --- | --- |
+| `top-bar` | `top-bar.svelte` | The head: the wordmark, and the theme the whole application is painted in |
 | `tab-bar` | `tab-bar.svelte` | What is open and which one is active |
 | `context-panel` | `context-panel.svelte`, `types.ts` | The left flank; `types.ts` for the rail width the column math needs |
 | `inspector` | `inspector.svelte`, `types.ts` | The right flank; `types.ts` for the width it collapses to |
 | `workspace` | `workspace.svelte` | The centre |
-| `copilot-dock` | `copilot-dock.svelte` | Floats over the centre, bottom-anchored |
+| `status-bar` | `status-bar.svelte` | The foot: what is on the surface, the Copilot, and what is waiting for you |
 | `command-bar` | `command-bar.svelte` | The command overlay. Rendered outside the grid, because it belongs to no zone |
 
 ### Presentation
@@ -73,9 +75,12 @@ Views reached through their root component only.
 
 ## Directory Documents
 
+One concern. Every zone is a sibling view reached through its root, so the
+frame's own tree is a grid and six wrappers — there is nothing here for a
+component document to describe.
+
 | Concern | Document | What it owns |
 | --- | --- | --- |
-| Components | [components.md](components/components.md) | The two zones that read nothing yet |
 | Effects | [effects.md](effects/effects.md) | The one keydown listener, and what it does with a chord |
 
 ## Rendered States
@@ -122,8 +127,8 @@ at which it has nothing to paint.
 ## View Invariants
 
 - **Every zone is placed by this view.** A zone view that declared its own
-  `grid-area` could not be rendered anywhere else, which would undo the reason
-  it was promoted.
+  `grid-area` could not be rendered anywhere else — a test included — and being
+  renderable anywhere is the point of a zone being a view of its own.
 - **The frame owns the viewport and nothing else does.** Exactly one element
   is `100vh`; a second would produce two scroll contexts stacked on each other.
 - **A flank's width has one source.** The model holds it, this view applies it,
