@@ -124,10 +124,14 @@ export type Target = {
  * library in the centre — the list of them is a rail entry, because choosing
  * which chart to look at is navigation.
  */
+/*
+ * The order is the strip's order, and it runs from the project outward: where
+ * you are, then what is working, then what it works from.
+ */
 export const SINGLETONS = [
   "project-overview",
-  "templates",
-  "agents"
+  "agents",
+  "templates"
 ] as const satisfies readonly Screen[];
 
 export type Singleton = (typeof SINGLETONS)[number];

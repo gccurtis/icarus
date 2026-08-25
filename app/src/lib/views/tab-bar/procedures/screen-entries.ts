@@ -3,7 +3,7 @@ import Bot from "@lucide/svelte/icons/bot";
 import ChartNoAxesColumn from "@lucide/svelte/icons/chart-no-axes-column";
 import FileText from "@lucide/svelte/icons/file-text";
 import FlaskConical from "@lucide/svelte/icons/flask-conical";
-import LayoutDashboard from "@lucide/svelte/icons/layout-dashboard";
+import House from "@lucide/svelte/icons/house";
 import LayoutTemplate from "@lucide/svelte/icons/layout-template";
 import Plus from "@lucide/svelte/icons/plus";
 import Presentation from "@lucide/svelte/icons/presentation";
@@ -38,9 +38,11 @@ const subject = (tab: Tab): string =>
   tab.resourceId === undefined ? "Untitled" : nameOf(tab.resourceId);
 
 export const SCREEN_ENTRIES: Record<Screen, ScreenEntry> = {
-  "project-overview": { label: () => "Overview", icon: LayoutDashboard },
-  templates: { label: () => "Templates", icon: LayoutTemplate },
+  // The house, because this is the one tab that is where you came from rather
+  // than a kind of work: every other permanent tab is a collection.
+  "project-overview": { label: () => "Overview", icon: House },
   agents: { label: () => "Agents", icon: Bot },
+  templates: { label: () => "Templates", icon: LayoutTemplate },
 
   // A chart is opened, worked in and closed like a thread, so its tab is named
   // by the chart rather than by the screen: two of them are two tabs, and two
