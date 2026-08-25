@@ -38,33 +38,50 @@ because the question is asked in one breath: *what have I missed*.
 | --- | --- | --- |
 | A comment, or a mention row | One thread: what was said, what it is attached to, and the replies | [comment.md](../../inspector/collaboration/comment.md) |
 | An activity row | One recorded event | [activity.md](../../inspector/project/activity.md) |
-| A resource row | Any first-class thing in the project | [resource.md](../../inspector/project/resource.md) |
+| A document, deck, spreadsheet, analysis or template row | Any first-class thing in the project | [resource.md](../../inspector/project/resource.md) |
 | Nothing, or the project header | The project itself | [project.md](../../inspector/project/project.md) |
 | A Research row | A thread, and the way into the Research tab | [research-thread.md](../../inspector/research/research-thread.md) |
-| An external file | A synced file and whether anything can be read out of it | [file.md](../../inspector/project/file.md) |
-| The "+4 more" presence chip | Everyone at once, rather than one person | [people.md](../../inspector/collaboration/people.md) |
-| A person, or any "who" link | Their profile in this project | [person.md](../../inspector/collaboration/person.md) |
+| An external file row | A synced file and whether anything can be read out of it | [file.md](../../inspector/project/file.md) |
+| A finding row | A conclusion the project has adopted | [accepted-finding.md](../../inspector/research/accepted-finding.md) |
+| A name in the presence menu | Their profile in this project | [person.md](../../inspector/collaboration/person.md) |
+
+**A row opens the lens that answers for its kind.** Resource is the general one —
+identity and relationships, which is the whole question about a document — and
+the three below it are there because what there is to say about a file, a finding
+and a line of enquiry is not that shape. The kind is what decides, so nothing on
+the plane has to know which lens it is reaching.
 
 Comment, Activity and Resource are the three this screen is built around; the
 rest are reached through them. [mention.md](../../inspector/collaboration/mention.md)
 is the status bar's lens for the unresolved count — a mention row on the plane
 opens the comment itself, because a mention *is* a comment with your name in it.
 
+[people.md](../../inspector/collaboration/people.md) is not reached from the
+plane. The presence chip opens the roster as a menu under itself, because a list
+of four names fits where the question was asked; the panel is what the context
+panel's Overview reaches, where there is room for what a menu cannot hold.
+
 ## Workspace
 
 | State | What is in the centre | File |
 | --- | --- | --- |
-| The only one | Identity, then Create and Review side by side, then five rows of everything the project holds | [workspace.md](workspace.md) |
+| The only one | Identity, then Create and Review side by side, then everything the project holds | [workspace.md](workspace.md) |
 
 ## The rules this screen keeps
 
-**A row is a thing, not a health report.** There is no Status column on the work
-table: something that cannot proceed appears in the status bar, and everything
-else is left to be what it is.
+**A row is a thing, not a health report.** There is no Status column on the
+Resources table: something that cannot proceed appears in the status bar, and
+everything else is left to be what it is.
 
-**The screen does not scroll.** Five creation pills, three rows of Review and
-five rows of work. Anything that wants more than that is a rail view or another
-tab.
+**The screen does not scroll; two of its bands do.** Five creation pills, a
+Review frame three entries tall, and a table that takes the rest of the plane.
+Where a band holds more than its height, the band scrolls — never the board, and
+never the page. Anything that wants a shape this one cannot give it is a rail
+view or another tab.
+
+**Nothing here is a picture of a control.** Every button, filter and row does
+what it says, and where a capability does not exist yet the control says so
+rather than doing nothing.
 
 **Settings are not here.** They belong to the top bar, which is about the project
 as an installation rather than about the work in it.
