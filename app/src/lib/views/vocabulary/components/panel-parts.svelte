@@ -144,11 +144,21 @@
   …
 {/if}`,
     faces: `<PanelFaces
-  actors={presence.here}
-  limit={4}
+  actors={everyone}
+  limit={3}
   onselect={(id) => workbench.inspect(\`actor.\${id}\`)}
-  onoverflow={() => selectContext("people")}
-/>`,
+>
+  {#snippet overflow()}
+    {#each everyone as person (person.id)}
+      <DropdownMenu.Item onSelect={() => open(person.id)}>
+        {person.name}
+      </DropdownMenu.Item>
+    {/each}
+  {/snippet}
+</PanelFaces>
+
+<!-- Or send the reader somewhere that holds more than a menu can. -->
+<PanelFaces actors={everyone} onoverflow={() => selectContext("people")} />`,
     link: `<PanelField label="Created by">
   <PanelLink label="Ana Reyes"
     title="Ana Reyes — Owner"
@@ -555,16 +565,16 @@
 
   <Entry
     name="PanelFaces"
-    use="Several actors at once, as faces rather than as a list. Presence is the case — who is here now, in a strip narrow enough to sit in a header."
+    use="Several actors at once, as faces rather than as a list. Who is here now goes in a halo and in every face's title, in a strip narrow enough to sit in a header."
     instead="a plus-three you cannot press. The overflow is a control, because this shape exists to say who, and a number hides three of the who behind it."
     code={CODE.faces}
   >
     <div class="py-3">
       <PanelFaces
         actors={[
-          { id: "ana", name: "Ana Reyes" },
+          { id: "ana", name: "Ana Reyes", present: true },
           { id: "tomas", name: "Tomas Kaur" },
-          { id: "mira", name: "Mira Jain" },
+          { id: "mira", name: "Mira Jain", present: true },
           { id: "grid", name: "Grid Analyst", kind: "agent" },
           { id: "digest", name: "Nightly filing digest", kind: "automation" },
           { id: "lee", name: "Sam Lee" }

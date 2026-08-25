@@ -33,6 +33,10 @@
    * height and the list has to give in to it. A list that simply runs down the
    * page must not take it: two scrolls inside one `ScreenSurface` is how a
    * reader loses the bottom of the page.
+   *
+   * **It scrolls without a scrollbar**, on the same rule as every other surface
+   * here: an entry cut off at the frame already says there is more, and a gutter
+   * would spend width repeating it.
    */
   let {
     label,
@@ -62,7 +66,10 @@
   class={cn(
     "border-border-subtle rounded-panel flex min-w-0 flex-col overflow-hidden border",
     "[&>*+*]:border-t [&>*+*]:border-t-border-subtle",
-    scroll && "min-h-0 overflow-y-auto"
+    // No bar, for the reason every surface here has none: the frame is bounded
+    // and the entries run to its edge, so a gutter would spend width saying what
+    // the clipped entry already says.
+    scroll && "min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
   )}
 >
   {@render children()}

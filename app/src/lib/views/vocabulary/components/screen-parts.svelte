@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ArrowDownNarrowWide from "@lucide/svelte/icons/arrow-down-narrow-wide";
+  import ArrowUpNarrowWide from "@lucide/svelte/icons/arrow-up-narrow-wide";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
   import FileText from "@lucide/svelte/icons/file-text";
   import Plus from "@lucide/svelte/icons/plus";
@@ -6,6 +8,7 @@
 
   import Entry from "$views/vocabulary/components/entry.svelte";
   import SectionTitle from "$views/vocabulary/components/section-title.svelte";
+  import { Button } from "$lib/simple-components/button";
   import { PanelButton, PanelChip, PanelChoice } from "$lib/unique-components/panel";
   import {
     ScreenAction,
@@ -58,6 +61,7 @@
   let query = $state("");
   let kind = $state("all");
   let sort = $state("recent");
+  let ascending = $state(true);
 
   const shown = $derived.by(() => {
     const needle = query.trim().toLowerCase();
@@ -65,10 +69,11 @@
       (item) =>
         (kind === "all" || item.kind === kind) && item.name.toLowerCase().includes(needle)
     );
+    const way = ascending ? 1 : -1;
     return [...kept].sort((a, b) => {
-      if (sort === "name") return a.name.localeCompare(b.name);
-      if (sort === "kind") return a.kind.localeCompare(b.kind) || a.order - b.order;
-      return a.order - b.order;
+      if (sort === "name") return way * a.name.localeCompare(b.name);
+      if (sort === "kind") return way * (a.kind.localeCompare(b.kind) || a.order - b.order);
+      return way * (a.order - b.order);
     });
   });
 
@@ -115,8 +120,16 @@
 >
   <PanelChoice label="Kind" value={kind} options={KINDS}
     onchange={(next) => (kind = next)} />
+
+  {#snippet order()}
+    <Button variant="ghost" size="icon-sm"
+      title={ascending ? "Newest first" : "Oldest first"}
+      onclick={() => (ascending = !ascending)}>
+      <ArrowUpNarrowWide />
+    </Button>
+  {/snippet}
 </ScreenFilters>`,
-    table: `<ScreenTable columns={["Name", "Kind", "Updated"]}>
+    table: `<ScreenTable scroll columns={["Name", "Kind", "Updated"]}>
   <ScreenRow>
     <ScreenCell name="Q3 Resilience Memo" icon={FileText}
       onselect={() => workbench.inspect("project.resource")} />
@@ -231,7 +244,7 @@
 
   <Entry
     name="ScreenFilters"
-    use="The row above a table or a grid: what narrows it, what orders it, and how much of it you are looking at. All three, because they answer one question — which of these am I seeing, and in what order — and splitting them puts half the answer somewhere else."
+    use="The row above a table or a grid: what narrows it, what orders it, which way that order runs, and how much of it you are looking at. They answer one question — which of these am I seeing, and in what order — and splitting them puts half the answer somewhere else. The direction shares the order's frame, because it is half of that one decision."
     instead="a bare number, or an unnamed order. '24' could be the whole project or a tenth of it; and a list in an order nobody chose is a list whose first row looks like a ranking."
     code={CODE.filters}
     width="screen"
@@ -259,6 +272,22 @@
           ]}
           onchange={(next) => (kind = next)}
         />
+
+        {#snippet order()}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title={ascending ? "Newest first" : "Oldest first"}
+            aria-label={ascending ? "Newest first" : "Oldest first"}
+            onclick={() => (ascending = !ascending)}
+          >
+            {#if ascending}
+              <ArrowUpNarrowWide aria-hidden="true" />
+            {:else}
+              <ArrowDownNarrowWide aria-hidden="true" />
+            {/if}
+          </Button>
+        {/snippet}
       </ScreenFilters>
 
       <ScreenTable columns={["Name", "Kind", "Changed"]}>
@@ -272,9 +301,9 @@
       </ScreenTable>
 
       <ScreenNote>
-        All three controls work. Type, switch the kind, change the order — the
-        table and the count follow, so what each one does is visible rather than
-        described.
+        Every control works. Type, switch the kind, change the order, flip its
+        direction — the table and the count follow, so what each one does is
+        visible rather than described.
       </ScreenNote>
     </div>
   </Entry>

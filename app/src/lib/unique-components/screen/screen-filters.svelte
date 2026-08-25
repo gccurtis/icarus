@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import ArrowDownWideNarrow from "@lucide/svelte/icons/arrow-down-wide-narrow";
   import Search from "@lucide/svelte/icons/search";
 
   import * as InputGroup from "$lib/simple-components/input-group";
   import * as Select from "$lib/simple-components/select";
+  import { cn } from "$lib/simple-components/utils";
   import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
@@ -27,6 +27,16 @@
    * **Order is a choice, never an accident.** When `sorts` is given the current
    * one is named, because "sorted by whatever the query returned" is the state
    * that makes people trust the wrong row.
+   *
+   * **The order names itself and wears no glyph.** A control reading *Updated*
+   * has already said it is the order; an arrow beside the word is the same claim
+   * a second time, and the one arrow on this row that carries meaning is the
+   * direction's.
+   *
+   * **The direction shares a surface with the order.** Which way a sort runs is
+   * half of one decision, and two separately bordered controls sitting next to
+   * each other read as two — so when `order` is given, the two are drawn inside
+   * one frame with a seam between them.
    */
   let {
     placeholder,
@@ -36,6 +46,7 @@
     sort = $bindable(""),
     value = $bindable(""),
     onsort,
+    order,
     children
   }: {
     /** Says what will be searched. */
@@ -48,6 +59,12 @@
     sort?: string;
     value?: string;
     onsort?: (next: string) => void;
+    /**
+     * Which way the order runs, drawn inside the order's own frame. A control
+     * rather than a flag, because what "ascending" means depends on what is
+     * being ordered and only the caller knows how to say it.
+     */
+    order?: Snippet;
     /** Filter controls, between the field and the order. */
     children?: Snippet;
   } = $props();
@@ -86,24 +103,46 @@
   {/if}
 
   {#if sorts && sorts.length > 0}
-    <Select.Root
-      type="single"
-      value={sort}
-      onValueChange={(next: string) => {
-        sort = next;
-        onsort?.(next);
-      }}
-    >
-      <Select.Trigger size="sm" aria-label="Order" class="text-caption w-auto gap-1.5">
-        <ArrowDownWideNarrow class="text-ink-muted size-3.5" aria-hidden="true" />
-        {chosen?.label ?? "Order"}
-      </Select.Trigger>
-      <Select.Content>
-        {#each sorts as option (option.value)}
-          <Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
-        {/each}
-      </Select.Content>
-    </Select.Root>
+    {#snippet picker()}
+      <Select.Root
+        type="single"
+        value={sort}
+        onValueChange={(next: string) => {
+          sort = next;
+          onsort?.(next);
+        }}
+      >
+        <!-- Inside the shared frame the trigger gives up its own edge, so the
+             two controls read as one thing rather than as two touching. -->
+        <Select.Trigger
+          size="sm"
+          aria-label="Order"
+          class={cn(
+            "text-caption w-auto gap-1.5",
+            // `dark:` as well, because the registry's trigger paints a dark fill
+            // through a `dark:` rule that an unprefixed one cannot reach.
+            order && "border-transparent bg-transparent dark:bg-transparent"
+          )}
+        >
+          {chosen?.label ?? "Order"}
+        </Select.Trigger>
+        <Select.Content>
+          {#each sorts as option (option.value)}
+            <Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
+          {/each}
+        </Select.Content>
+      </Select.Root>
+    {/snippet}
+
+    {#if order}
+      <div class="border-border-subtle bg-surface-panel rounded-control flex items-center border">
+        {@render picker()}
+        <span class="bg-border-subtle h-4 w-px" aria-hidden="true"></span>
+        {@render order()}
+      </div>
+    {:else}
+      {@render picker()}
+    {/if}
   {/if}
 
   {#if count}

@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import * as Table from "$lib/simple-components/table";
+  import { cn } from "$lib/simple-components/utils";
   import { traceNode } from "$lib/trace/trace.svelte";
 
   /**
@@ -20,9 +21,21 @@
    * report — what cannot proceed lives in a health view and in the status bar.
    * The one exception is a table *about* dispatch, where the last result is the
    * subject rather than a judgment.
+   *
+   * **`scroll` is for a table that is a band of a grid**, where the band has a
+   * height and the table has to give in to it — the same bargain `ScreenList`
+   * strikes for a feed. The headings stay put while the rows move, because a
+   * column you cannot name is a column you have to scroll back up to read. A
+   * table that simply runs down the page must not take it: two scrolls inside
+   * one `ScreenSurface` is how a reader loses the bottom of the page.
+   *
+   * **It scrolls without a scrollbar**, on the same rule as every other surface
+   * here: a row cut off at the frame already says there is more, and a gutter
+   * would take width from the last column to repeat it.
    */
   let {
     columns = [],
+    scroll = false,
     head,
     children
   }: {
@@ -39,14 +52,35 @@
      * `ScreenHeadCell`'s job to keep.
      */
     head?: Snippet;
+    /** The rows scroll inside the frame, for a table in a bounded band. */
+    scroll?: boolean;
     /** `ScreenRow`s. */
     children: Snippet;
   } = $props();
 
-  const trace = traceNode("ScreenTable", () => ({ columns }));
+  const trace = traceNode("ScreenTable", () => ({ columns, scroll }));
 </script>
 
-<div {...trace} class="border-border-subtle rounded-panel overflow-hidden border">
+<!--
+  The registry's `Table.Root` puts the rows in their own container, and that
+  container is where the scrolling has to happen: it already carries
+  `overflow-x`, which makes it the scroll container for both axes whatever this
+  frame says. So the frame becomes a column, the container takes the height that
+  is left, and the headings stick to the top of it.
+
+  A sticky heading draws its own seam as an inset shadow rather than a border.
+  The table collapses its borders, which hands every border to the collapsed
+  grid — so the heading's would stay behind at the top of the rows while the
+  heading itself travelled, and the first row would scroll up over a naked edge.
+-->
+<div
+  {...trace}
+  class={cn(
+    "border-border-subtle rounded-panel overflow-hidden border",
+    scroll &&
+      "flex min-h-0 flex-1 flex-col [&>[data-slot=table-container]]:min-h-0 [&>[data-slot=table-container]]:flex-1 [&>[data-slot=table-container]]:[scrollbar-width:none] [&>[data-slot=table-container]::-webkit-scrollbar]:hidden [&_thead_th]:bg-surface-elevated [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:shadow-[inset_0_-1px_0_var(--token-border-subtle)]"
+  )}
+>
   <Table.Root class="border-collapse">
     <!--
       The registry's header draws the seam under the whole row. Here each

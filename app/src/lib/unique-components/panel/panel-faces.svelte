@@ -1,6 +1,9 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import * as Avatar from "$lib/simple-components/avatar";
   import { Button } from "$lib/simple-components/button";
+  import * as DropdownMenu from "$lib/simple-components/dropdown-menu";
   import { cn } from "$lib/simple-components/utils";
   import { traceNode } from "$lib/trace/trace.svelte";
 
@@ -19,22 +22,39 @@
    * **Order carries no meaning and must not appear to.** Presence has no
    * ranking, so the caller's order is passed through untouched and nothing here
    * sorts, promotes, or marks a first.
+   *
+   * **`present` is drawn as a halo, and never as the only sign.** Colour alone
+   * cannot carry a fact, so every face names its own standing in its title and
+   * the overflow says it again in words — the ring is the glance, not the claim.
+   *
+   * **The overflow is a menu or a destination, never both.** `overflow` opens
+   * the rest here, under the chip that hid them; `onoverflow` sends the reader
+   * to a panel that holds more than a menu can. Pass one.
    */
   let {
     actors,
     limit = 4,
     label = "Here now",
     onselect,
-    onoverflow
+    onoverflow,
+    overflow
   }: {
-    actors: readonly { id: string; name: string; kind?: "person" | "agent" | "automation" }[];
+    actors: readonly {
+      id: string;
+      name: string;
+      kind?: "person" | "agent" | "automation";
+      /** Here now. Absent and false are the same claim: not that we know of. */
+      present?: boolean;
+    }[];
     /** How many faces before the rest become a count. */
     limit?: number;
     /** Names the group, since a strip of initials says nothing on its own. */
     label?: string;
     onselect?: (id: string) => void;
-    /** Opens the full list. Required in spirit whenever anyone is hidden. */
+    /** Opens the full list somewhere else. Required in spirit whenever anyone is hidden. */
     onoverflow?: () => void;
+    /** The rest, opened under the chip. `DropdownMenu` items. */
+    overflow?: Snippet;
   } = $props();
 
   const trace = traceNode("PanelFaces", () => ({ actors, limit, label }));
@@ -60,13 +80,23 @@
 <div {...trace} class="flex items-center gap-1 px-3" role="group" aria-label={label}>
   <Avatar.Group class="-space-x-1.5">
     {#each shown as actor (actor.id)}
+      <!--
+        The ring is what keeps overlapping faces apart, so presence changes its
+        colour rather than adding a second ring: a dot in a corner would be
+        covered by the next face in the stack.
+
+        Important, and it has to be: `Avatar.Group` paints a blanket ring on
+        every child through a descendant selector, which outranks anything a
+        single face can say about itself.
+      -->
       <Avatar.Root
         class={cn(
-          "ring-surface-panel size-5 border ring-2",
+          "size-5 border ring-2",
+          actor.present ? "ring-success-fill!" : "ring-surface-panel!",
           KIND[actor.kind ?? "person"],
           onselect && "cursor-pointer"
         )}
-        title={actor.name}
+        title={actor.present ? `${actor.name} · here now` : actor.name}
         onclick={() => onselect?.(actor.id)}
       >
         <Avatar.Fallback class="bg-transparent text-[0.5rem] font-medium">
@@ -77,14 +107,37 @@
   </Avatar.Group>
 
   {#if hidden > 0}
-    <Button
-      variant="ghost"
-      size="xs"
-      class="text-caption text-ink-muted h-5 px-1"
-      onclick={onoverflow}
-      title={`${hidden} more`}
-    >
-      +{hidden}
-    </Button>
+    <!--
+      The chip is the same button either way, and the trigger's own props are
+      spread last so the menu's click, keys and `aria-expanded` land on the
+      element a keyboard actually reaches.
+    -->
+    {#snippet chip(trigger: Record<string, unknown> = {})}
+      <Button
+        variant="ghost"
+        size="xs"
+        class="text-caption text-ink-muted h-5 px-1"
+        title={`${hidden} more`}
+        onclick={onoverflow}
+        {...trigger}
+      >
+        +{hidden}
+      </Button>
+    {/snippet}
+
+    {#if overflow}
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            {@render chip(props)}
+          {/snippet}
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="end" class="w-56">
+          {@render overflow()}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    {:else}
+      {@render chip()}
+    {/if}
   {/if}
 </div>
