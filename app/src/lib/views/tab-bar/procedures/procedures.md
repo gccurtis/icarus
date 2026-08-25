@@ -19,7 +19,7 @@ arrives.
 ## Why a label is a function of the whole tab
 
 Every document tab would otherwise read "Document", which is the one thing a tab
-strip exists to prevent. So `label` takes the tab: the four permanent tabs ignore
+strip exists to prevent. So `label` takes the tab: the permanent tabs ignore
 it and answer with their name, New Tab does the same, and the four screens keyed
 by a resource — a research thread, a document, a deck, a spreadsheet — answer
 with what they hold.

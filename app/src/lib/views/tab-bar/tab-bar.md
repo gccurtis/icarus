@@ -17,7 +17,7 @@ no arrangement of URL segments describes a set of open objects with an order.
 This view owns:
 
 - how a tab looks, including which cues say "active";
-- the division between the four permanent tabs and the tabs a person opened;
+- the division between the permanent tabs and the tabs a person opened;
 - display copy — the label and icon — for every screen a tab can hold. A label is
   a function of the whole tab rather than of its screen alone, or every document
   tab would read "Document", which is the one thing a tab strip exists to
@@ -82,7 +82,7 @@ gesture, bounds, and a keyboard equivalent to own.
 
 | State | Trigger | Visible result | Available recovery |
 | --- | --- | --- | --- |
-| Initial | Always | The four permanent tabs, icon-only, one of them active | — |
+| Initial | Always | The permanent tabs, icon-only, one of them active | — |
 | Several | Something was opened | A divider, then one tab per opened thing; only those show a close control | Closing returns to a neighbour |
 | Loading | `None` | — | — |
 | Empty | `None` | — | — |

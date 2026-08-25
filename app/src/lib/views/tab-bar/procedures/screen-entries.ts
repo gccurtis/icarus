@@ -39,9 +39,13 @@ const subject = (tab: Tab): string =>
 
 export const SCREEN_ENTRIES: Record<Screen, ScreenEntry> = {
   "project-overview": { label: () => "Overview", icon: LayoutDashboard },
-  analysis: { label: () => "Analysis", icon: ChartNoAxesColumn },
   templates: { label: () => "Templates", icon: LayoutTemplate },
   agents: { label: () => "Agents", icon: Bot },
+
+  // A chart is opened, worked in and closed like a thread, so its tab is named
+  // by the chart rather than by the screen: two of them are two tabs, and two
+  // tabs both reading "Analysis" would be a strip you cannot navigate by.
+  analysis: { label: subject, icon: ChartNoAxesColumn },
 
   research: { label: subject, icon: FlaskConical },
   "document-editor": { label: subject, icon: FileText },
