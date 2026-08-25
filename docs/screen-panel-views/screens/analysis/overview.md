@@ -4,9 +4,15 @@ A space to explore, analyse and synthesise data. Project variables are just
 variables: there is no root table and no join step to get through first. Where
 two fields need relating, the join is stated inside the axis that needs it.
 
+**A tab is one analysis**, keyed by the chart the same way a Research tab is
+keyed by its thread: a chart is opened, worked in and closed, so two of them are
+two tabs and one reached three ways is one tab. Analysis is therefore not a
+permanent tab — there is no place here you return to, only charts you open.
+
 **One centre.** Choosing which analysis to look at is navigation and navigation
-belongs in the map, so the library of analyses is a rail view — opening the tab
-lands on the last analysis you had open, or a new one, and never on a list.
+belongs in the map, so the library of analyses is a rail view rather than a
+centre of its own. A screen whose whole subject is one chart should not spend
+half its states not showing one.
 
 The chart on this screen is the analytic component the document, deck and
 spreadsheet editors also embed. What Analysis adds is the interface for building

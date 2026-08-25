@@ -7,7 +7,10 @@
 **One centre, because a screen whose whole subject is one chart should not spend
 half its states not showing one.** Which analyses exist is a map, so the library
 of them is [a rail view](../../context/library/analyses.md) and the centre shows
-whatever `view.active.focus` names.
+whatever the tab is keyed by. That key is `resourceId`, the same field that makes
+two threads two tabs: two charts stand open beside one another, and one chart
+reached from the Create band, from the Resources table and from the library is
+one tab.
 
 **One title.** The screen has the analysis' own name; the chart's title, its save
 state and Duplicate belong to

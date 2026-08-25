@@ -35,10 +35,10 @@ first is a mode change in a tab whose whole job is one question.
 
 Three pills, centred: Document, Slide deck, Spreadsheet. Nothing else.
 
-Overview, Analysis, Templates and Agents are permanent tabs, and offering to
-create one would imply they can be absent. A research thread is a tab like a
-document, but nothing in the model starts one, so an offer to make one would be
-an offer nothing can keep.
+Overview, Templates and Agents are permanent tabs, and offering to create one
+would imply they can be absent. A research thread and an analysis are each a tab
+like a document, but nothing in the model starts either, so an offer to make one
+would be an offer nothing can keep.
 
 **Needs** — the three editor kinds. Selecting one changes the inspector; nothing
 is made until the inspector's Create.

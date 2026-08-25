@@ -27,8 +27,8 @@ created until the inspector's Create button.
 
 ## Why nothing else is here
 
-Overview, Analysis, Templates and Agents are permanent tabs, and offering to
-create one would imply they can be absent. A research thread is a tab like a
-document, but nothing in the model starts one, so an offer to make one would be
-an offer nothing can keep. The panel states the omission in a line under the
+Overview, Templates and Agents are permanent tabs, and offering to create one
+would imply they can be absent. A research thread and an analysis are each a tab
+like a document, but nothing in the model starts either, so an offer to make one
+would be an offer nothing can keep. The panel states the omission in a line under the
 section rather than leaving it to be noticed.

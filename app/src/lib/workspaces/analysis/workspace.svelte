@@ -61,11 +61,14 @@
   /**
    * Analysis — one analysis, drawn, and the controls that drew it.
    *
+   * **An analysis tab is the analysis.** It is keyed by `resourceId`, the same
+   * field that makes two threads two tabs, so two charts stand open beside one
+   * another and one chart reached three ways is one tab.
+   *
    * **There is one centre and one title.** Which analyses exist is a map, and a
-   * map belongs in the rail rather than in a centre of its own, so this screen
-   * shows whatever `view.active.focus` names. The title on it is the analysis'
-   * own — the chart's title, the save state and Duplicate all belong to the
-   * overview panel, not to a second header on the plane.
+   * map belongs in the rail rather than in a centre of its own. The title on the
+   * plane is the analysis' own — the chart's title, the save state and Duplicate
+   * all belong to the overview panel, not to a second header.
    *
    * **Three bands, and the picture takes what the other two do not.** The chart
    * is the thing being made; the twelve kinds and the customisation grid are how
@@ -98,10 +101,10 @@
   const everyAnalysis = $derived(analyses().current);
 
   /**
-   * The focus is the analysis. The fallback is the first the library holds
-   * rather than a hard-coded id, so an empty focus lands on something real.
+   * The tab is the analysis. The fallback is the first the library holds rather
+   * than a hard-coded id, so a tab minted without one lands on something real.
    */
-  const analysisId = $derived(view.active.focus ?? everyAnalysis[0]?.id ?? "");
+  const analysisId = $derived(view.active.resourceId ?? everyAnalysis[0]?.id ?? "");
 
   const record = $derived(analysis(analysisId).current);
   const chosen = $derived(everyAnalysis.find((row: AnalysisRow) => row.id === analysisId));

@@ -44,19 +44,16 @@
   );
 
   /**
-   * Choosing an analysis puts it in the centre, and inspects it.
+   * Choosing an analysis opens its tab, and inspects it.
    *
-   * This panel is the only way to change which analysis the screen is on, so a
-   * click that only inspected would leave the workspace showing one analysis
-   * while the lens described another.
-   *
-   * `showSubscreen` rather than a bare assignment, because the screen has one
-   * centre and this is a change of *subject*: the rail has to stay put and the
-   * stale inspection has to go, which is exactly what landing on a centre does.
+   * Two acts in one call, and deliberately: this panel is the map onto a screen
+   * that has no list of its own, so a click that only inspected would leave the
+   * map with no way onto the territory. `open` is idempotent, so an analysis
+   * reached from here, from the Create band and from the work table is one tab.
    */
   const open = (id: string) => {
     selectedId = id;
-    view.showSubscreen("workspace", id);
+    view.open({ screen: "analysis", resourceId: id });
     view.inspect("analysis.analysis", { kind: "analysis", id });
   };
 </script>

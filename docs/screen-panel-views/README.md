@@ -35,7 +35,7 @@ Overview, and writing it three times is how three copies drift.
 A screen's `overview.md` is therefore a list of what it reaches, not a container
 for it. Nine screens: `agents`, `analysis`, `document-editor`, `new-tab`,
 `project-overview`, `research`, `slide-deck-editor`, `spreadsheet-editor`,
-`templates` — four of them permanent tabs, and the other five minted by opening
+`templates` — three of them permanent tabs, and the other six minted by opening
 something.
 
 **A surface that belongs to no screen goes in
