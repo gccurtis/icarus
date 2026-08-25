@@ -161,8 +161,9 @@ export const findings = (): Read<readonly FindingRow[]> =>
       age: "6 days ago"
     },
     {
-      id: "f-study",
-      title: "No coordination study after the 2024 reconductoring",
+      // Keyed and worded as the research tables hold it: one finding, one id.
+      id: "f-nostudy",
+      title: "No coordination study exists after the 2024 reconductoring",
       from: "Why did Feeder 12 fail twice?",
       bearsOn: "Coordination was never redone",
       acceptedBy: "Mira Jain",

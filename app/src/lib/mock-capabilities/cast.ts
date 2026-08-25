@@ -98,6 +98,16 @@ export const PEOPLE: readonly Person[] = [
 /** The viewer. Every "you" in a panel is this person. */
 export const VIEWER = PEOPLE[1];
 
+/**
+ * A selection's id as a person's, where it names one.
+ *
+ * A selection carries a plain string, because the model has no opinion about
+ * what kinds of thing exist. A lens about a person needs a `PersonId`, and the
+ * only honest way across is to ask whether anybody answers to it.
+ */
+export const asPersonId = (id: string | undefined): PersonId | undefined =>
+  PEOPLE.find((person) => person.id === id)?.id;
+
 export const AGENTS: readonly Agent[] = [
   {
     id: "grid-analyst",

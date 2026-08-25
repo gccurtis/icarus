@@ -16,7 +16,7 @@
  * with a row that opens a blank plane.
  */
 import type { ResourceKind } from "$mock-capabilities/cast";
-import { analyses, threads } from "$mock-capabilities/library";
+import { analysisFor, threadFor } from "$mock-capabilities/joins";
 import type { Target } from "$model/client/view-state";
 
 /**
@@ -30,24 +30,11 @@ const EDITOR: Partial<Record<ResourceKind, Target["screen"]>> = {
 };
 
 /**
- * A row in the project's work names its subject; the screen behind it is keyed by
- * its own id, and the title is the only join the mock data carries.
- *
- * Making the join matters: without it a thread reached from the work table and
- * the same thread reached from the threads map would be two tabs.
- */
-const threadFor = (name: string): string | undefined =>
-  threads().current.find((row) => row.title === name)?.id;
-
-const analysisFor = (name: string): string | undefined =>
-  analyses().current.find((row) => row.name === name)?.id;
-
-/**
  * What opens this thing, or nothing where no screen holds its kind.
  *
- * `name` is what makes the join above possible; a caller that has only an id
- * passes it as both, which is correct for every kind that is keyed by the id it
- * was given.
+ * `name` is what makes the [title joins](joins.ts) possible; a caller that has
+ * only an id passes it as both, which is correct for every kind that is keyed by
+ * the id it was given.
  */
 export const openingFor = (
   kind: ResourceKind,
@@ -57,10 +44,10 @@ export const openingFor = (
   const editor = EDITOR[kind];
   if (editor) return { screen: editor, resourceId: id };
 
-  // A thread earns a tab of its own; an analysis and a template are places you
-  // return to, so those move a permanent tab onto the subject instead.
+  // A thread and an analysis each earn a tab of their own; a template is a place
+  // you return to, so that one moves a permanent tab onto the subject instead.
   if (kind === "research") return { screen: "research", resourceId: threadFor(name) ?? id };
-  if (kind === "analysis") return { screen: "analysis", focus: analysisFor(name) ?? id };
+  if (kind === "analysis") return { screen: "analysis", resourceId: analysisFor(name) ?? id };
   if (kind === "template") return { screen: "templates", subscreen: "editor", focus: id };
 
   return undefined;
