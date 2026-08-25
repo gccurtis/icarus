@@ -81,10 +81,12 @@ row wider than the card grid it filters.
 **Scope is not a filter at all** — it is the folder, and then a colour on the
 card.
 
-**Direction is beside the order and not part of it: which way is a second
-question.** Ascending is what anybody wants of both *Updated* and *Name* — the
-smallest age is the newest — so the arrow starts pointed the way either order is
-usually read, and the button says the word as well as drawing the arrow.
+**Direction shares the order's frame: which way a sort runs is half of that one
+decision.** Two separately bordered controls beside each other read as two
+questions rather than as one asked twice. Ascending is what anybody wants of both
+*Updated* and *Name* — the smallest age is the newest — so the arrow starts
+pointed the way either order is usually read, and the button says the word as
+well as drawing the arrow.
 
 *Updated* is prose — "2 weeks ago", "6 months ago" — so ordering by it means
 reading it. The door's own order is not recency, so trusting the array as it

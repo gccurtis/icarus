@@ -59,7 +59,7 @@
   let folder = $state<TemplateScope | undefined>(undefined);
   let search = $state("");
   let makes = $state("all");
-  let order = $state("updated");
+  let sortBy = $state("updated");
   let ascending = $state(true);
 
   const SORTS = [
@@ -143,9 +143,9 @@
    * newest, so the arrow starts pointed the way either order is usually read.
    */
   const compare = (a: LibraryTemplate, b: LibraryTemplate): number => {
-    if (order === "name") return a.name.localeCompare(b.name);
-    if (order === "makes") return a.makes.localeCompare(b.makes);
-    if (order === "variables") return a.variables - b.variables;
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    if (sortBy === "makes") return a.makes.localeCompare(b.makes);
+    if (sortBy === "variables") return a.variables - b.variables;
     return ago(a.updated) - ago(b.updated);
   };
 
@@ -194,7 +194,7 @@
         matched={counted}
         total={all.length}
         sorts={SORTS}
-        bind:sort={order}
+        bind:sort={sortBy}
         bind:value={search}
       >
         {#if folder !== undefined && !searching}
@@ -214,20 +214,26 @@
           {/each}
         </select>
 
-        <!-- Beside the order and not part of it: which way is a second question. -->
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={() => (ascending = !ascending)}
-          title={ascending ? "Sorted ascending" : "Sorted descending"}
-        >
-          {#if ascending}
-            <ArrowUpNarrowWide size={14} aria-hidden="true" />
-          {:else}
-            <ArrowDownWideNarrow size={14} aria-hidden="true" />
-          {/if}
-          {ascending ? "Ascending" : "Descending"}
-        </Button>
+        <!--
+          Inside the order's own frame: which way a sort runs is half of that one
+          decision, and two separately bordered controls beside each other read
+          as two.
+        -->
+        {#snippet order()}
+          <Button
+            variant="ghost"
+            size="sm"
+            onclick={() => (ascending = !ascending)}
+            title={ascending ? "Sorted ascending" : "Sorted descending"}
+          >
+            {#if ascending}
+              <ArrowUpNarrowWide size={14} aria-hidden="true" />
+            {:else}
+              <ArrowDownWideNarrow size={14} aria-hidden="true" />
+            {/if}
+            {ascending ? "Ascending" : "Descending"}
+          </Button>
+        {/snippet}
       </ScreenFilters>
     </div>
 
