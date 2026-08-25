@@ -2,11 +2,16 @@
 
 | Selecting | What it is | Sections |
 | --- | --- | --- |
-| A Research row in the work table | A line of enquiry, and the way into its tab | Identity · Provenance · Note |
+| A Research row in the Resources table | A line of enquiry, and the way into its tab | Identity · Provenance · Note |
 
 A Research thread is not a resource, but it is work, so it has a row in the
-project's work table alongside the documents and decks. This lens is what that
-row opens: enough of the thread to recognise it, and the way in.
+project's Resources table alongside the documents and decks. This lens is what
+that row opens: enough of the thread to recognise it, and the way in.
+
+**The row and the thread are two ids.** The table keys its row by the project's
+id for it and the research tables key the thread by their own, so what reaches
+this lens is already the research id — the join belongs to whatever resolved the
+row, not to a panel that would then have to accept either.
 
 ## Layout
 

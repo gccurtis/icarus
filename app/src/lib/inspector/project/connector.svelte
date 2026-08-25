@@ -39,14 +39,21 @@
    * Re-authenticating is the same flow as authenticating, and a second one that
    * lived in this lens would be the same screen written twice.
    */
-  let { connectorId = "cn-sharepoint" }: { connectorId?: string } = $props();
+  let { connectorId }: { connectorId?: string } = $props();
 
   const view = viewState();
 
-  const detail = $derived(connector(connectorId).current);
+  const id = $derived(connectorId ?? view.selection?.id ?? "cn-sharepoint");
 
-  /** The row carries the synced file count; the detail carries everything else. */
-  const row = $derived(connectors().current.find((candidate) => candidate.id === connectorId));
+  const detail = $derived(connector(id).current);
+
+  /**
+   * The row carries the synced file count; the detail carries everything else.
+   * Found by what the detail answered rather than by what was asked for, so an
+   * id no connector answers to leaves the two halves describing one connector
+   * rather than one of them describing none.
+   */
+  const row = $derived(connectors().current.find((candidate) => candidate.id === detail.id));
 
   const STATUS: Record<ConnectorDetail["auth"], string> = {
     Connected: "Connected",

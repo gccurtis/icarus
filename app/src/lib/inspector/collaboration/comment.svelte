@@ -42,11 +42,13 @@
    * comment was reached from it and a person when it was reached from a profile,
    * so a thread that leaned on the breadcrumb could not say what it is about.
    */
-  let { commentId = "c-1" }: { commentId?: string } = $props();
+  let { commentId }: { commentId?: string } = $props();
 
   const view = viewState();
 
-  const comment = $derived(thread(commentId).current);
+  const id = $derived(commentId ?? view.selection?.id ?? "c-1");
+
+  const comment = $derived(thread(id).current);
   const author = $derived(member(comment.author).current);
   const anchor = $derived(comment.anchor);
 

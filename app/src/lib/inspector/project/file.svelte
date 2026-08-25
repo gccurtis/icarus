@@ -36,12 +36,14 @@
    * which is not the same claim as text having come out, and is not written as
    * one.
    */
-  let { fileId = "r-nerc" }: { fileId?: string } = $props();
+  let { fileId }: { fileId?: string } = $props();
 
   const view = viewState();
 
+  const id = $derived(fileId ?? view.selection?.id ?? "r-nerc");
+
   const files = $derived(resourcesOfKind("file").current);
-  const file = $derived(files.find((candidate) => candidate.id === fileId) ?? files[0]);
+  const file = $derived(files.find((candidate) => candidate.id === id) ?? files[0]);
 
   /** The record has no MIME type. The extension is the only thing in it that says what this is. */
   const dot = $derived(file.name.lastIndexOf("."));

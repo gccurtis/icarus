@@ -34,12 +34,14 @@
    * feed stores the subject by name, so whether it is still there is a lookup
    * and the answer decides which of the two this section draws.
    */
-  let { eventId = "ev-1" }: { eventId?: string } = $props();
+  let { eventId }: { eventId?: string } = $props();
 
   const view = viewState();
 
+  const id = $derived(eventId ?? view.selection?.id ?? "ev-1");
+
   const events = $derived(activity().current);
-  const entry = $derived(events.find((candidate) => candidate.id === eventId) ?? events[0]);
+  const entry = $derived(events.find((candidate) => candidate.id === id) ?? events[0]);
 
   /** The feed names its actor. Which of the three kinds it is comes from the cast. */
   const person = $derived(PEOPLE.find((candidate) => candidate.name === entry.actor));

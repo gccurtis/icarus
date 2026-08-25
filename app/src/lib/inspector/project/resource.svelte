@@ -24,6 +24,7 @@
     questions,
     threads
   } from "$mock-capabilities/library";
+  import { inspectionFor } from "$mock-capabilities/inspecting";
   import { openingFor } from "$mock-capabilities/opening";
   import { activity, project, resources } from "$mock-capabilities/project";
   import { isInspectionKey, viewState, type InspectionKey } from "$model/client/view-state";
@@ -48,27 +49,15 @@
    * dash. Not every kind stores an updating actor, and inventing one is worse
    * than leaving the field empty.
    */
-  let { resourceId = "r-memo" }: { resourceId?: string } = $props();
+  let { resourceId }: { resourceId?: string } = $props();
 
   const view = viewState();
 
-  const all = $derived(resources().current);
-  const resource = $derived(all.find((candidate) => candidate.id === resourceId) ?? all[0]);
-  const everyThread = $derived(threads().current);
+  const id = $derived(resourceId ?? view.selection?.id ?? "r-memo");
 
-  /**
-   * The kinds no screen holds, and the lens that owns each.
-   *
-   * A connector is read rather than edited, a finding is a conclusion rather
-   * than a body, and a Context is a rule — so Open hands these to the inspector
-   * instead of minting a tab with nothing to draw in it.
-   */
-  const OPENS: Record<"file" | "finding" | "connector" | "context", InspectionKey> = {
-    file: "project.file",
-    finding: "research.accepted-finding",
-    connector: "project.connector",
-    context: "scope.context"
-  };
+  const all = $derived(resources().current);
+  const resource = $derived(all.find((candidate) => candidate.id === id) ?? all[0]);
+  const everyThread = $derived(threads().current);
 
   /** Presence, scoped to this resource: who has it open right now. */
   const here = $derived(
@@ -159,14 +148,21 @@
    * Open means the thing itself.
    *
    * Where it opens is [`openingFor`](../../mock-capabilities/opening.ts)'s to
-   * answer, because four surfaces ask it. Nothing means no screen holds this
-   * kind — a file, a finding, a connector, a Context — and those are things you
-   * look at rather than places you go, so they get their lens.
+   * answer and which lens reads it is
+   * [`inspectionFor`](../../mock-capabilities/inspecting.ts)'s, because several
+   * surfaces ask both. Nothing means no screen holds this kind — a file, a
+   * finding, a connector, a Context — and those are things you look at rather
+   * than places you go, so they get their lens, under whatever id that lens
+   * keys by.
    */
   const open = () => {
     const target = openingFor(resource.kind, resource.id, resource.name);
-    if (target) view.open(target);
-    else view.inspect(OPENS[resource.kind as keyof typeof OPENS], { kind: "resource", id: resource.id });
+    if (target) {
+      view.open(target);
+      return;
+    }
+    const { key, selection } = inspectionFor(resource.kind, resource.id, resource.name);
+    view.inspect(key, selection);
   };
 </script>
 

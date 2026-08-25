@@ -5,12 +5,13 @@
     PanelChoice,
     PanelField,
     PanelFields,
+    PanelNote,
     PanelRow,
     PanelSection,
     PanelToggle
   } from "$lib/unique-components/panel";
   import { activityBy, commentsBy, member, presenceFor } from "$mock-capabilities/collaboration";
-  import type { PersonId } from "$mock-capabilities/cast";
+  import { asPersonId, type PersonId } from "$mock-capabilities/cast";
   import { viewState } from "$model/client/view-state";
 
   /**
@@ -26,14 +27,16 @@
    * composer under someone's name would be a private channel in a project that
    * has none.
    */
-  let { personId = "mira" }: { personId?: PersonId } = $props();
+  let { personId }: { personId?: PersonId } = $props();
 
   const view = viewState();
 
-  const person = $derived(member(personId).current);
-  const presence = $derived(presenceFor(personId).current);
-  const comments = $derived(commentsBy(personId).current);
-  const activity = $derived(activityBy(personId).current);
+  const id = $derived(personId ?? asPersonId(view.selection?.id) ?? "mira");
+
+  const person = $derived(member(id).current);
+  const presence = $derived(presenceFor(id).current);
+  const comments = $derived(commentsBy(id).current);
+  const activity = $derived(activityBy(id).current);
 
   /** Which comments, and whether settled ones are still worth showing. */
   let show = $state<"all" | "mentions">("all");
@@ -120,11 +123,17 @@
   -->
   <PanelSection title="Activity" open={false} flush>
     {#each activity as entry (entry.id)}
+      <!-- Only what left a resource behind is a row you can follow. -->
       <PanelRow
         title="{entry.verb} {entry.subject}"
         meta={entry.age}
-        onselect={() => view.inspect("project.resource", { kind: "resource", id: entry.id })}
+        onselect={entry.subjectId === undefined
+          ? undefined
+          : () =>
+              view.inspect("project.resource", { kind: "resource", id: entry.subjectId ?? "" })}
       />
+    {:else}
+      <PanelNote>Nothing yet in this project.</PanelNote>
     {/each}
   </PanelSection>
 </Panel>

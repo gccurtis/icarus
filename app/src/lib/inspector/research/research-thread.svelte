@@ -32,11 +32,13 @@
    * and `H-7` the hypothesis `h-7`, so the mode decides which lens the anchor
    * opens.
    */
-  let { threadId = "th-feeder" }: { threadId?: string } = $props();
+  let { threadId }: { threadId?: string } = $props();
 
   const view = viewState();
 
-  const record = $derived(thread(threadId).current);
+  const id = $derived(threadId ?? view.selection?.id ?? "th-feeder");
+
+  const record = $derived(thread(id).current);
 
   const anchorLens = $derived(
     record.mode === "Hypothesis" ? "research.hypothesis" : "research.question"
@@ -88,8 +90,8 @@
         icon={ArrowUpRight}
         tone="primary"
         onclick={() => {
-          view.open({ screen: "research", resourceId: threadId });
-          view.inspect("research.thread", { kind: "thread", id: threadId });
+          view.open({ screen: "research", resourceId: id });
+          view.inspect("research.thread", { kind: "thread", id });
         }}
       />
     </PanelActions>

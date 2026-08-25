@@ -2,7 +2,12 @@
 
 | Selecting | What it is | Sections |
 | --- | --- | --- |
-| An accepted finding, from any of the Findings views | A conclusion the project has adopted: retrievable everywhere, and no longer editable in place | Finding · Body · Standing on · Bears on · Actions |
+| An accepted finding, from any of the Findings views or from a finding row in the project's Resources table | A conclusion the project has adopted: retrievable everywhere, and no longer editable in place | Finding · Body · Standing on · Bears on · Actions |
+
+A finding is a conclusion rather than a body, so no screen holds one and this
+lens is what *open* means for it. The Resources table keys its row by the
+project's id and the research tables key the finding by their own, so what
+reaches this lens is already the research id.
 
 ## Layout
 

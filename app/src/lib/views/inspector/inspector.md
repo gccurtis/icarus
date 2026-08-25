@@ -134,6 +134,21 @@ disagree, and naming the key is the only useful thing to show.
   what the lens is *about* is the selection the model carries beside it. A key
   holding `{ blockId, from, to }` would be a second record of what the user has
   selected, and two records of one thing disagree.
+- **A lens's lifetime is its subject, not its key.** Two things of one kind open
+  the same component, so a lens re-created only when the key changed would carry
+  whatever it was holding for the reader — a half-written reply, an unsent
+  Withdraw — onto the next thing and draw it as that thing's. A draft belongs to
+  what it was written about.
+- **A lens reads the selection itself; this view hands it nothing.** The lens is
+  rendered with no props at all, so a lens that took its subject as a prop would
+  be a lens permanently about whatever its default said — the panel would open on
+  the right file and answer about the wrong thing. Each one reads
+  `view.selection` and falls back to a literal only for the review page, which
+  renders every lens with no model to read.
+- **The kind that decides which lens opens is the caller's, not this view's.**
+  Two rows of different kinds in the same table reach two different lenses, and
+  what makes that so is the key the caller passed. Nothing here inspects the
+  selection to choose.
 - **Nothing selected is a state, not an absence.** It has a sentence of its own
   rather than rendering blank, because a blank flank reads as broken.
 - **Collapsed is a rail, never nothing.** A flank that vanishes leaves no way

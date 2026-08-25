@@ -222,12 +222,22 @@
     because an unanswered mention is the one thing here worth acting on.
   -->
   <div class="part end">
+    <!--
+      Named, because a lens is about something. Opening this without saying
+      which mention would leave whatever was last selected as the subject, and
+      the panel would answer about a row nobody pointed at.
+    -->
     <button
       type="button"
       class="mentions"
       class:waiting={unresolved.length > 0}
-      title="{unresolved.length} unresolved mentions"
-      onclick={() => view.inspect("collaboration.mention")}
+      disabled={unresolved.length === 0}
+      title={unresolved.length === 0
+        ? "Nothing addressed to you"
+        : `${unresolved.length} unresolved mentions`}
+      onclick={() =>
+        unresolved[0] &&
+        view.inspect("collaboration.mention", { kind: "comment", id: unresolved[0].id })}
     >
       <AtSign size={12} aria-hidden="true" />
       <span class="tabular-nums">{unresolved.length}</span>

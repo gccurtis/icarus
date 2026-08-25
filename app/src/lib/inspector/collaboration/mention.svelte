@@ -36,11 +36,13 @@
    * beside the rest of the conversation, and a second place to write one would
    * be a second draft nobody can find again.
    */
-  let { mentionId = "c-1" }: { mentionId?: string } = $props();
+  let { mentionId }: { mentionId?: string } = $props();
 
   const view = viewState();
 
-  const mention = $derived(thread(mentionId).current);
+  const id = $derived(mentionId ?? view.selection?.id ?? "c-1");
+
+  const mention = $derived(thread(id).current);
   const author = $derived(member(mention.author).current);
   const anchor = $derived(mention.anchor);
 

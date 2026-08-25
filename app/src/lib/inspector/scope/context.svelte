@@ -14,6 +14,7 @@
   } from "$lib/unique-components/panel";
   import { Separator } from "$lib/simple-components/separator";
   import { context } from "$mock-capabilities/scope";
+  import { viewState } from "$model/client/view-state";
 
   /**
    * A Context: the scope itself, its rule in plain words, and what it resolves
@@ -30,9 +31,13 @@
    * every Context, Persona and prompt block depending on this one — deleting
    * blind creates scopes that fail at retrieval time rather than at delete time.
    */
-  let { contextId = "cx-drafts" }: { contextId?: string } = $props();
+  let { contextId }: { contextId?: string } = $props();
 
-  const record = $derived(context(contextId).current);
+  const view = viewState();
+
+  const id = $derived(contextId ?? view.selection?.id ?? "cx-drafts");
+
+  const record = $derived(context(id).current);
 
   /**
    * Both editable values are held here rather than written back: the door is a

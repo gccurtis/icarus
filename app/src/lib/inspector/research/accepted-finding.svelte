@@ -18,6 +18,7 @@
     PanelRow,
     PanelSection
   } from "$lib/unique-components/panel";
+  import { resourceFor } from "$mock-capabilities/joins";
   import { finding, thread, type Bearing } from "$mock-capabilities/research";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 
@@ -35,12 +36,16 @@
    * have to be the same text, so changing it is a withdrawal rather than a
    * keystroke.
    */
-  let { findingId = "f-relay" }: { findingId?: string } = $props();
+  let { findingId }: { findingId?: string } = $props();
 
   const view = viewState();
 
-  const record = $derived(finding(findingId).current);
+  const id = $derived(findingId ?? view.selection?.id ?? "f-relay");
+
+  const record = $derived(finding(id).current);
   const origin = $derived(thread(record.threadId).current);
+
+  const asResource = $derived(resourceFor(record.title));
 
   let withdrawn = $state(false);
 
@@ -141,12 +146,21 @@
 
   <PanelSection title="Actions" flush>
     <PanelActions>
+      <!--
+        The project keys its row by an id of its own, so this asks for it by
+        name. A finding the project holds no row for is not a resource, and the
+        button says so rather than opening whichever row sorts first.
+      -->
       <PanelButton
         label="Open as resource"
         icon={FileText}
-        title="An accepted finding is a resource of the project"
+        disabled={asResource === undefined}
+        title={asResource === undefined
+          ? "The project holds no resource for this finding"
+          : "An accepted finding is a resource of the project"}
         onclick={() =>
-          view.inspect("project.resource", { kind: "resource", id: record.id })}
+          asResource !== undefined &&
+          view.inspect("project.resource", { kind: "resource", id: asResource })}
       />
       <PanelButton
         label="Withdraw"
