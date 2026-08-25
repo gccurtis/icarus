@@ -26,10 +26,15 @@ export const RAILS: Record<Screen, Partial<Record<Subscreen, readonly ContextId[
   },
 
   /**
-   * One centre, and the library of analyses is a rail entry rather than a centre
-   * of its own: choosing which analysis to look at is navigation, and navigation
-   * belongs in the map. A screen whose whole subject is one chart should not
-   * spend half its states not showing one.
+   * A chart's own rail, because an analysis tab *is* one analysis — the same
+   * shape as Research, and for the same reason.
+   *
+   * Overview leads: the tab was opened onto this chart, so landing on the list
+   * of every other one would be the map arriving before the territory.
+   * `library.analyses` is last for the same reason it is present at all — it is
+   * how you get to a different chart, which is a thing you do after this one,
+   * and a screen whose whole subject is one chart should not spend half its
+   * states not showing one.
    */
   analysis: {
     workspace: ["overview.analysis", "project.variables", "library.analyses"]

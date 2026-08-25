@@ -115,12 +115,17 @@ export type Target = {
  * Each is a *place*: somewhere the project's work of one kind is gathered, and
  * somewhere you return to rather than arrive at. A screen that holds one
  * identified thing at a time is not one of these; it is a tab keyed by that
- * thing, and Research is the case that makes the line visible — a line of
- * enquiry is opened, worked in and closed, so each one is its own tab.
+ * thing. Research and Analysis are the cases that make the line visible — a line
+ * of enquiry and a chart are each opened, worked in and closed, and two of
+ * either are two tabs, so neither screen is a place you return to.
+ *
+ * Templates and Agents are, and the difference is what they open on: a library
+ * of everything of that kind, from which you choose one. An analysis has no such
+ * library in the centre — the list of them is a rail entry, because choosing
+ * which chart to look at is navigation.
  */
 export const SINGLETONS = [
   "project-overview",
-  "analysis",
   "templates",
   "agents"
 ] as const satisfies readonly Screen[];

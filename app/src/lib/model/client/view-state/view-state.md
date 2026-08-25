@@ -141,7 +141,7 @@ beside the one already in view state, and two records of one thing disagree.
 
 **Nothing here is persisted.** The constructor takes only the project, so there
 is no restore path, no stored shape and no read that reports a default it never
-stored. The four permanent tabs are built rather than restored, which is what
+stored. The permanent tabs are built rather than restored, which is what
 makes "`activeId` names a real tab, always" an invariant rather than a hope.
 
 ## Public Methods
@@ -206,8 +206,8 @@ a DOM.
 export const createViewState = (project: string): ViewStateModel => ...;
 ```
 
-Every call returns a fresh object, with its four permanent tabs already open —
-Overview, Analysis, Templates and Agents. Ids are per instance and never
+Every call returns a fresh object, with its three permanent tabs already open —
+Overview, Templates and Agents. Ids are per instance and never
 persisted, so a counter on the instance is enough; nothing lives at module scope.
 
 | Dependency | Ownership | Usage |

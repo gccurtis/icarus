@@ -29,7 +29,7 @@ import {
  * What view state guarantees.
  *
  * Five invariants carry the object and most of what is here is one of them or a
- * consequence: the four permanent tabs exist from construction and cannot be
+ * consequence: the permanent tabs exist from construction and cannot be
  * closed, `activeId` always names a real tab, one target with an identity is one
  * tab, a centre change takes its rail and its inspection with it, and every key
  * names a file.
@@ -69,7 +69,7 @@ const selection: Selection = { kind: "resource", id: "k57", at: "C2" };
 
 // -------------------------------------------------------------- construction
 
-test("opens on the four permanent tabs, in order, with the first active", () => {
+test("opens on the permanent tabs, in order, with the first active", () => {
   const model = viewState();
 
   assert.deepEqual(
