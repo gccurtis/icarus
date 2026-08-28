@@ -45,7 +45,7 @@ It does not own:
 
 | Door | Usage |
 | --- | --- |
-| `$model/client` | `viewState`, provided to every panel below through context, and read here for the two flank column widths; `commands`, handed to the dispatch effect |
+| `$runtime/client` | `viewState`, provided to every panel below through context, and read here for the two flank column widths; `commands`, handed to the dispatch effect |
 
 ### Capabilities
 

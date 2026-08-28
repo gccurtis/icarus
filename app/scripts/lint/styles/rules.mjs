@@ -356,9 +356,16 @@ export const checkStyleDeclarations = ({ stylesRoot, packageRoot }) => {
 
 export const checkStyleConsumers = ({ sourceRoot, stylesRoot, packageRoot }) => {
   const out = collector(packageRoot);
-  const diagnostic = join(sourceRoot, "lib", "views", "demo", "components", "palette.svelte");
+  const diagnostic = join(
+    sourceRoot, "lib", "views", "development", "demo", "components", "palette.svelte"
+  );
   for (const path of walk(sourceRoot, (candidate) => /\.(?:svelte|ts|js|css)$/.test(candidate))) {
-    if (path.startsWith(stylesRoot + sep) || path.includes(`${sep}simple-components${sep}`)) continue;
+    if (
+      path.startsWith(stylesRoot + sep) ||
+      path.includes(`${sep}components${sep}vendor${sep}`)
+    ) {
+      continue;
+    }
     const text = source(path);
     const privateNames = [...text.matchAll(PRIVATE)].map((match) => match[0]);
     for (const name of privateNames) {
@@ -387,7 +394,7 @@ export const checkStyleConsumers = ({ sourceRoot, stylesRoot, packageRoot }) => 
  */
 export const checkRegistrySurface = ({ sourceRoot, stylesRoot, packageRoot }) => {
   const out = collector(packageRoot);
-  const registryRoot = join(sourceRoot, "lib", "simple-components");
+  const registryRoot = join(sourceRoot, "lib", "components", "vendor");
   const tailwind = join(stylesRoot, "x-integrations", "tailwind", "tailwind.css");
   if (!existsSync(registryRoot) || !existsSync(tailwind)) return out.failures;
 

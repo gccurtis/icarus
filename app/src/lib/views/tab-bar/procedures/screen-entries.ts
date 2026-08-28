@@ -10,7 +10,7 @@ import Presentation from "@lucide/svelte/icons/presentation";
 import Sheet from "@lucide/svelte/icons/sheet";
 
 import type { Screen, Tab } from "$model/client/view-state";
-import { nameOf } from "$mock-capabilities/naming";
+import { nameOf } from "$capabilities/naming";
 
 /**
  * What a tab is called, and what it looks like.

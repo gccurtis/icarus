@@ -5,8 +5,6 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "dev:convex": "convex dev",
-    "seed": "convex run capabilities/access:seed",
     "build": "pnpm typecheck && vite build",
     "preview": "vite preview",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -31,9 +29,6 @@
     "@fontsource/ibm-plex-sans": "latest",
     "bits-ui": "latest",
     "clsx": "latest",
-    "convex": "latest",
-    "convex-helpers": "latest",
-    "convex-svelte": "latest",
     "layerchart": "^2.2.0",
     "pino": "latest",
     "tailwind-merge": "latest",

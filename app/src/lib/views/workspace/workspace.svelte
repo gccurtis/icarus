@@ -13,7 +13,7 @@
    *
    * **The registry is the filesystem.** There is no map from screen to component
    * here, because a map is a second list of what exists and the first one is
-   * `src/lib/workspaces/`. A screen and a subscreen name a path — `research` and
+   * `src/lib/views/workspaces/`. A screen and a subscreen name a path — `research` and
    * `one-question` are `workspaces/research/workspace-one-question.svelte` — and
    * the same fact generates the vocabulary the model publishes, so the two
    * cannot disagree.
@@ -23,7 +23,7 @@
    * itself threw — and the difference between "still loading" and "this screen
    * is broken" is the whole diagnosis.
    */
-  const CENTRES = import.meta.glob("$lib/workspaces/**/*.svelte") as Record<
+  const CENTRES = import.meta.glob("$lib/views/workspaces/**/*.svelte") as Record<
     string,
     () => Promise<{ default: Component }>
   >;
@@ -32,7 +32,7 @@
 
   /** A screen with one centre calls it `workspace`; the rest qualify it. */
   const path = $derived(
-    `/src/lib/workspaces/${view.active.screen}/${
+    `/src/lib/views/workspaces/${view.active.screen}/${
       view.active.subscreen === "workspace" ? "workspace" : `workspace-${view.active.subscreen}`
     }.svelte`
   );

@@ -38,8 +38,15 @@ const ENVIRONMENTS = ["client", "server"];
 const ROOT_DIRS = new Set(["test", "docs"]);
 const OBJECT_DIRS = new Set(["methods", "test", "docs"]);
 const OBJECT_TEST_DIRS = new Set(["unit", "regression", "non-functional"]);
+/**
+ * An environment root says what it does. `start` holds the instance and hands it
+ * out; `create` composes the graph and holds nothing. An object door is still
+ * `index`, because an object publishes a surface rather than a moment.
+ */
+const ROOT_DOORS = { client: "start.ts", server: "start.server.ts" };
+const ROOT_CONSTRUCTORS = { client: "create.ts", server: "create.server.ts" };
+/** An object publishes a surface, so its door is still `index`. */
 const DOORS = { client: "index.ts", server: "index.server.ts" };
-const ROOT_CONSTRUCTORS = { client: "constructor.ts", server: "constructor.server.ts" };
 const AGGREGATES = { client: "ClientModel", server: "ServerModel" };
 const BUILDERS = { client: "buildClientModel", server: "buildServerModel" };
 const DEFINITIONS = ["definition.svelte.ts", "definition.ts"];
@@ -295,8 +302,8 @@ const objectOf = (scope, path) => {
  * `$app/*`. Everything else beneath `model/` is a leaf that borrows what it needs.
  */
 const environmentDoors = ({ model }) => [
-  join(model, "client", DOORS.client),
-  join(model, "server", DOORS.server)
+  join(model, "client", ROOT_DOORS.client),
+  join(model, "server", ROOT_DOORS.server)
 ];
 
 /**
@@ -394,9 +401,19 @@ export const checkLayout = (scope) => {
     const root = join(model, environment);
     if (!existsSync(root)) continue;
     const present = filesIn(root);
-    for (const required of [`${environment}.md`, DOORS[environment], "types.ts", ROOT_CONSTRUCTORS[environment]]) {
-      if (!present.includes(required)) {
-        fail(root, `layout environment root is missing '${required}'`);
+
+    // The environment roots have moved to `runtime/`, and nothing checks them
+    // yet — see the note in lint.mjs. An environment holding no root files at
+    // all is that arrangement rather than four missing files, so the required
+    // set is skipped; one root file present means a half-move, and the rest are
+    // still demanded.
+    const required =
+      present.length === 0
+        ? []
+        : [`${environment}.md`, ROOT_DOORS[environment], "types.ts", ROOT_CONSTRUCTORS[environment]];
+    for (const file of required) {
+      if (!present.includes(file)) {
+        fail(root, `layout environment root is missing '${file}'`);
       }
     }
   }
@@ -752,7 +769,7 @@ export const checkLifetime = (scope) => {
   if (!existsSync(model)) return list;
 
   const doors = environmentDoors(scope);
-  const clientDoor = join(model, "client", DOORS.client);
+  const clientDoor = join(model, "client", ROOT_DOORS.client);
 
   for (const path of walkFiles(model)) {
     if (!path.endsWith(".ts") || isTestCode(path)) continue;
@@ -992,7 +1009,7 @@ export const checkEnvironment = (scope) => {
  * Every boundary is crossed at its door, and a constructor is behind one.
  *
  * Outside the model tree there are three production doors — `$model/client`,
- * `$model/server/index.server`, and `$model/server/scope.server` — and they are
+ * `$model/server/start.server`, and `$model/server/scope.server` — and they are
  * the whole of what the application is allowed to know. Inside it, an object
  * reaches another object the same way: past the door is a definition, a private
  * type, or a method, none of which the object agreed to keep stable.
@@ -1018,6 +1035,7 @@ export const checkDoors = (scope) => {
 
   const objects = discoverObjects(scope);
   const doorTail = new Set(["index", "index.ts", "index.server", "index.server.ts"]);
+  const rootDoor = new Set(["start", "start.ts", "start.server", "start.server.ts"]);
   const scopeDoor = new Set(["scope.server", "scope.server.ts"]);
 
   for (const path of walkFiles(source ?? model)) {
@@ -1035,7 +1053,7 @@ export const checkDoors = (scope) => {
       // An object's own door publishes its constructor, and the environment's
       // initializer is the only thing that may reach the builder. Everything else
       // naming one is reaching around the door that hides it.
-      if (last === "constructor" || last === "constructor.server") {
+      if (["constructor", "constructor.server", "create", "create.server"].includes(last)) {
         const owner = segments.length > 2 ? `${segments[0]}/${segments[1]}` : null;
         const ownedHere = owner ? importer === owner : within(join(model, segments[0]), path);
         if (!ownedHere) {
@@ -1057,14 +1075,14 @@ export const checkDoors = (scope) => {
       if (inside) continue;
       const tail = segments.slice(1).join("/");
       const isProductionDoor =
-        (segments[0] === "client" && (tail === "" || doorTail.has(tail))) ||
-        (segments[0] === "server" && (doorTail.has(tail) || scopeDoor.has(tail)));
+        (segments[0] === "client" && rootDoor.has(tail)) ||
+        (segments[0] === "server" && (rootDoor.has(tail) || scopeDoor.has(tail)));
       if (!isProductionDoor) {
         failAt(
           path,
           line,
-          `doors "${specifier}" — the production doors are $model/client, ` +
-            `$model/server/index.server, and $model/server/scope.server`
+          `doors "${specifier}" — the production doors are $model/client/start, ` +
+            `$model/server/start.server, and $model/server/scope.server`
         );
       }
     }

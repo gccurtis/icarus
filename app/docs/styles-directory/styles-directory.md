@@ -380,11 +380,11 @@ rules:
 
 | Directory | Contents | Rule |
 | --- | --- | --- |
-| `simple-components/` | vendored shadcn, run as shipped | `restrict-registry-surface` — bridge vocabulary only |
-| `unique-components/` | authored here, real engineering on top | `restrict-consumer-surface` — `--token-*` required, no literal colors |
+| `components/vendor/` | vendored shadcn, run as shipped | `restrict-registry-surface` — bridge vocabulary only |
+| `components/authored/` | authored here, real engineering on top | `restrict-consumer-surface` — `--token-*` required, no literal colors |
 
 A component that needs more than the bridge already gives it belongs in
-`unique-components/`. Anything in `simple-components/` that looks wrong is
+`components/authored/`. Anything in `components/vendor/` that looks wrong is
 fixed in `bridge.css`, not in the component.
 
 The palette demo is the only diagnostics exception: it may read `--palette-*`,
@@ -412,8 +412,8 @@ the thing it names — so a failure says what was violated without a lookup tabl
 | `pin-meaning-hues` | Meaning roles bind their fixed hues; no identity or brand role reuses a meaning hue; no role spans more than one chromatic family. |
 | `confine-integration-boundary` | Integration CSS declares only external compatibility namespaces or variants and references only public tokens. The integration document names every authored and generated file in its directory. |
 | `quarantine-generated-css` | `x-integrations/shadcn/generated.css` is the exact `components.json` CSS target, has the quarantine header, and is not imported anywhere. No other file is silently exempt from reachability. |
-| `restrict-consumer-surface` | Authored consumers — including `unique-components/` — cannot reference private stage variables, import an internal stylesheet, or contain literal colors. Only the named palette diagnostic may read `--palette-*`. |
-| `restrict-registry-surface` | Registry components under `simple-components/` use shadcn's bridge vocabulary only. A utility whose root is a first-party `--color-*` alias registered by the Tailwind adapter is rejected: a registry component that looks wrong is fixed in `bridge.css`. |
+| `restrict-consumer-surface` | Authored consumers — including `components/authored/` — cannot reference private stage variables, import an internal stylesheet, or contain literal colors. Only the named palette diagnostic may read `--palette-*`. |
+| `restrict-registry-surface` | Registry components under `components/vendor/` use shadcn's bridge vocabulary only. A utility whose root is a first-party `--color-*` alias registered by the Tailwind adapter is rejected: a registry component that looks wrong is fixed in `bridge.css`. |
 
 Contrast is deliberately not a structural rule. A separate contract test parses
 theme values, resolves the light and dark slot mappings, and measures each

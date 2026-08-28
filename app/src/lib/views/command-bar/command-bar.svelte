@@ -1,9 +1,9 @@
 <script lang="ts">
   import { browser } from "$app/environment";
 
-  import { clientModel, type CommandId } from "$model/client";
-  import * as Command from "$lib/simple-components/command";
-  import { Kbd } from "$lib/simple-components/kbd";
+  import { clientModel, type CommandId } from "$runtime/client/start";
+  import * as Command from "$lib/components/vendor/command";
+  import { Kbd } from "$lib/components/vendor/kbd";
 
   /**
    * The command bar — every action this application can perform, by name.

@@ -1,6 +1,6 @@
 import type { Handle, ServerInit } from "@sveltejs/kit";
-import { closeServerModel, initServerModel, serverModel } from "$model/server/index.server";
-import { resolveSession } from "$model/server/scope.server";
+import { closeServerModel, initServerModel, serverModel } from "$runtime/server/start.server";
+import { resolveSession } from "$runtime/server/scope.server";
 
 /**
  * Builds the one server graph, before this process answers its first request.

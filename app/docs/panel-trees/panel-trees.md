@@ -6,20 +6,20 @@ there becomes one component here, at the same path.
 
 | Tree | Alias | Holds | Shape |
 | --- | --- | --- | --- |
-| `context/` | `$context` | one component per context-panel view | a vertical stack |
-| `inspector/` | `$inspector` | one component per kind of thing you can select | a vertical stack |
-| `workspaces/` | `$workspaces` | the centre of a screen, one file or one per state | a grid |
-| `modals/` | `$modals` | work that wants the whole screen | a grid inside `OverlayModal` |
+| `views/panels/context/` | `$panels/context` | one component per context-panel view | a vertical stack |
+| `views/panels/inspector/` | `$panels/inspector` | one component per kind of thing you can select | a vertical stack |
+| `views/workspaces/` | `$workspaces` | the centre of a screen, one file or one per state | a grid |
+| `views/modals/` | `$modals` | work that wants the whole screen | a grid inside `OverlayModal` |
 
 ```text
 docs/screen-panel-views/context/project/variables.md
-  → src/lib/context/project/variables.svelte
+  → src/lib/views/panels/context/project/variables.svelte
 
 docs/screen-panel-views/inspector/collaboration/person.md
-  → src/lib/inspector/collaboration/person.svelte
+  → src/lib/views/panels/inspector/collaboration/person.svelte
 
 docs/screen-panel-views/screens/project-overview/workspace.md
-  → src/lib/workspaces/project-overview/workspace.svelte
+  → src/lib/views/workspaces/project-overview/workspace.svelte
 ```
 
 These are not views. `src/lib/views/` and its standard are untouched: a view knows
@@ -65,10 +65,12 @@ standing in for a query.
 
 | Door | Import | For |
 | --- | --- | --- |
-| The store | `$json-store/client` | anything one of the thirty-four tables holds |
-| The model | `$model/client` | the real workbench, where a client instance exists |
-| A mock door | `$mock-capabilities/<subject>` | a table or projection that does not exist yet |
+| A capability | `$capabilities/<subject>` | anything the project holds |
+| The model | `$runtime/client` | the real workbench, where a client instance exists |
 | View state | `$model/client/view-state` | what is open, the rail position, what is inspected and what is selected |
+
+A panel never reaches `$representation`. The vocabulary is what a capability
+answers *in*, not something a surface asks directly.
 
 **The project is never a prop.** It is read from `/app/[project]` once and carried
 on the model.
@@ -76,16 +78,17 @@ on the model.
 A prop is for what no door can supply — a callback upward, an id the parent alone
 knows. `personId`, `onback`, `open`. Nothing else.
 
-### Mock doors
+### Capabilities
 
-One module per subject, mirroring the subject directories in the specifications:
-`project`, `resource`, `library`, `scope`, `analysis`, `research`, `agents`,
-`collaboration`, `copilot`, `formula`. Every door returns a
-[`Read<T>`](../../src/lib/mock-capabilities/read.ts) — the same `current` /
-`error` / `refresh` handle `$json-store/client` returns — so swapping a mock for
-the real door is an import change rather than a rewrite.
+One directory per subject, mirroring the subject directories in the
+specifications: `project`, `resource`, `library`, `scope`, `analysis`,
+`research`, `agents`, `collaboration`, `copilot`, `formula`. `index.ts` is the
+whole of what a panel imports, and every door on it answers with a
+[`Read<T>`](../../src/lib/capabilities/read.svelte.ts) — so a capability that
+starts answering from the store is a change inside that directory and nowhere
+else.
 
-Sample content comes from [`cast.ts`](../../src/lib/mock-capabilities/cast.ts) and
+Sample content comes from [`cast.ts`](../../src/lib/capabilities/cast.ts) and
 nowhere else. One project, one set of people, one set of resources, so a name in
 the Mentions panel is the same person as the avatar in the comment lens. Sample
 content that disagrees with itself across three panels makes a reviewer chase a
@@ -95,7 +98,7 @@ bug that does not exist.
 
 Two vocabularies, and a panel uses one of them.
 
-- [`unique-components/panel`](../../src/lib/unique-components/panel/index.ts) —
+- [`components/authored/panel`](../../src/lib/components/authored/panel/index.ts) —
   `Panel`, `PanelSection`, `PanelRow`, `PanelFields`, `PanelField`, `PanelSearch`,
   `PanelChoice`, `PanelSelect`, `PanelToggle`, `PanelMarks`, `PanelColor`,
   `PanelInput`, `PanelEditableText`, `PanelPairs`, `PanelPair`, `PanelTable`,
@@ -103,14 +106,14 @@ Two vocabularies, and a panel uses one of them.
   `PanelThumb`, `PanelButton`, `PanelActions`, `PanelChip`, `PanelNote`,
   `PanelQuote`, `PanelCode`, `PanelCrumbs`, `PanelLink`, `PanelProgress`,
   `PanelSkeleton`
-- [`unique-components/screen`](../../src/lib/unique-components/screen/index.ts) —
+- [`components/authored/screen`](../../src/lib/components/authored/screen/index.ts) —
   `ScreenSurface`, `ScreenHeader`, `ScreenBar`, `ScreenAction`, `ScreenFilters`,
   `ScreenTable`, `ScreenHeadCell`, `ScreenRow`, `ScreenCell`, `ScreenGroup`,
   `ScreenCards`, `ScreenCard`, `ScreenDecision`, `ScreenShelf`, `ScreenShelfItem`,
   `ScreenThumb`, `ScreenStats`, `ScreenStat`, `ScreenBanner`, `ScreenNote`,
   `ScreenStrip`, `ScreenPlaceholder`, `ScreenEmpty`
 
-Anything with a control inside it is `simple-components` underneath. Reach for
+Anything with a control inside it is `components/vendor` underneath. Reach for
 those directly — `Button`, `Textarea`, `HoverCard`, `ToggleGroup`, `Separator`,
 `Tabs` — where the panel vocabulary has no word for what is needed.
 

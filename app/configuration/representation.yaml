@@ -1,0 +1,14 @@
+# The representation store: where the JSON tables live.
+#
+# One file per table, named for the table, under `directory`. The path is
+# relative to the process working directory — `app/` is the only place the
+# server is run from, so the default resolves to `app/data/`. Git-ignored.
+#
+# Nothing reads this yet. The store is still constructed from a constant in
+# `src/lib/representation/store/store.server.ts`; this file is what the server
+# model's store object will be handed when it exists, and it is here so that the
+# directory is a setting from the first day that object has a lifetime rather
+# than a literal to find and replace afterwards.
+representation:
+  store:
+    directory: data

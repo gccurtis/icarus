@@ -34,13 +34,24 @@ const BASE = [
 ];
 
 /**
+ * Where a short path sits in the tree. A test says `context/project/x.svelte`
+ * because that is the key it is about; the two stack trees live under
+ * `views/panels/` and everything else directly under `views/`.
+ */
+const treePath = (root, path) => {
+  const [tree, ...rest] = path.split("/");
+  const under = tree === "context" || tree === "inspector" ? ["panels", tree] : [tree];
+  return join(root, "src", "lib", "views", ...under, ...rest);
+};
+
+/**
  * A package holding nothing but panels. Their contents never matter — the whole
  * vocabulary is in the paths.
  */
 const makePackage = (paths) => {
   const root = mkdtempSync(join(tmpdir(), "view-state-keys-"));
   for (const path of paths) {
-    const file = join(root, "src", "lib", ...path.split("/"));
+    const file = treePath(root, path);
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, "<script lang=\"ts\"></script>\n");
   }
@@ -236,7 +247,7 @@ test("--check fails on a panel added since, and names the key it would gain", ()
   withPackage([], (root) => {
     run(root);
 
-    const added = join(root, "src", "lib", "context", "library", "templates.svelte");
+    const added = treePath(root, "context/library/templates.svelte");
     mkdirSync(dirname(added), { recursive: true });
     writeFileSync(added, "<script lang=\"ts\"></script>\n");
 
@@ -250,7 +261,7 @@ test("--check fails on a panel added since, and names the key it would gain", ()
 test("--check fails on a panel removed since, and names the key it would lose", () => {
   withPackage(["context/library/templates.svelte"], (root) => {
     run(root);
-    rmSync(join(root, "src", "lib", "context", "library"), { recursive: true, force: true });
+    rmSync(treePath(root, "context/library"), { recursive: true, force: true });
 
     assert.match(refuses(root, "--check"), /- "library\.templates",?/);
   });
@@ -278,7 +289,7 @@ test("--check writes nothing, so it is safe in CI", () => {
     run(root);
     const before = keys(root);
 
-    const added = join(root, "src", "lib", "inspector", "copilot", "home.svelte");
+    const added = treePath(root, "inspector/copilot/home.svelte");
     mkdirSync(dirname(added), { recursive: true });
     writeFileSync(added, "");
 
@@ -291,7 +302,7 @@ test("--check writes nothing, so it is safe in CI", () => {
 
 test("a panel at a tree root is reported rather than dropped", () => {
   withPackage([], (root) => {
-    writeFileSync(join(root, "src", "lib", "context", "orphan.svelte"), "");
+    writeFileSync(treePath(root, "context/orphan.svelte"), "");
     assert.match(refuses(root), /orphan\.svelte {2}sits at the tree root/);
   });
 });
@@ -310,14 +321,14 @@ test("a workspace file the naming rule cannot read names no subscreen", () => {
 
 test("a screen directory with nothing to render is reported", () => {
   withPackage([], (root) => {
-    mkdirSync(join(root, "src", "lib", "workspaces", "hollow"), { recursive: true });
+    mkdirSync(treePath(root, "workspaces/hollow"), { recursive: true });
     assert.match(refuses(root), /has no workspace file/);
   });
 });
 
 test("a missing panel tree is reported rather than generating an empty union", () => {
   withPackage([], (root) => {
-    rmSync(join(root, "src", "lib", "inspector"), { recursive: true, force: true });
+    rmSync(treePath(root, "inspector"), { recursive: true, force: true });
     assert.match(refuses(root), /no such panel tree/);
   });
 });

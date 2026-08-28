@@ -306,13 +306,13 @@ test("view-keys finds nothing to resolve in a tree that exposes keys", () => {
 test("reads imports from a Svelte component's script block", () => {
   const path = join(workspace, "clean/routes/app/+layout.svelte");
   const [first] = importsOf(path);
-  assert.equal(first.specifier, "$model/client");
+  assert.equal(first.specifier, "$model/client/start");
   assert.deepEqual(first.names, ["initClientModel"]);
   assert.equal(first.line, 2);
 });
 
 test("reads imports and their bound names from TypeScript", () => {
-  const path = join(workspace, "clean/lib/model/client/constructor.ts");
+  const path = join(workspace, "clean/lib/model/client/create.ts");
   assert.deepEqual(
     importsOf(path).map((i) => i.specifier),
     ["$model/client/storage", "$model/client/workbench", "$model/client/types"]

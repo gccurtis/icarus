@@ -1,4 +1,4 @@
-import type { Configuration } from "$model/server/index.server";
+import type { Configuration } from "$runtime/server/start.server";
 import type { LayoutServerLoad } from "./$types";
 
 /**

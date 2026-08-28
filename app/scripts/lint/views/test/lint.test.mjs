@@ -185,7 +185,7 @@ test("restrict-imports rejects a relative import", () => {
 
 test("restrict-imports rejects a server-only import", () => {
   fired(
-    broken((f) => write(f, "workspace/procedures/load.ts", 'import { db } from "$model/server/index.server";\nexport const x = db;\n')),
+    broken((f) => write(f, "workspace/procedures/load.ts", 'import { db } from "$model/server/start.server";\nexport const x = db;\n')),
     "restrict-imports",
     "server-only"
   );

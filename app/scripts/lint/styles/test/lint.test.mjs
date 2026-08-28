@@ -115,14 +115,14 @@ test("restrict-consumer-surface consumer surface", () => expectRule("restrict-co
 }));
 
 test("restrict-registry-surface registry surface", () => expectRule("restrict-registry-surface", ({ packageRoot }) => {
-  const registry = join(packageRoot, "src", "lib", "simple-components", "toggle");
+  const registry = join(packageRoot, "src", "lib", "components", "vendor", "toggle");
   mkdirSync(registry, { recursive: true });
   writeFileSync(join(registry, "toggle.svelte"), '<div class="bg-active-surface"></div>\n');
 }));
 
 test("restrict-registry-surface permits shadcn bridge names", () => {
   const failures = run(({ packageRoot }) => {
-    const registry = join(packageRoot, "src", "lib", "simple-components", "button");
+    const registry = join(packageRoot, "src", "lib", "components", "vendor", "button");
     mkdirSync(registry, { recursive: true });
     writeFileSync(
       join(registry, "button.svelte"),

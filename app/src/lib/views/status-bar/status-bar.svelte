@@ -3,11 +3,11 @@
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
   import AtSign from "@lucide/svelte/icons/at-sign";
 
-  import * as Select from "$lib/simple-components/select";
-  import { VIEWER } from "$mock-capabilities/cast";
-  import { mentionsForViewer, type PersonComment } from "$mock-capabilities/collaboration";
-  import { subject as subjectDoor } from "$mock-capabilities/naming";
-  import { clientModel } from "$model/client";
+  import * as Select from "$lib/components/vendor/select";
+  import { VIEWER } from "$capabilities/cast";
+  import { mentionsForViewer, type PersonComment } from "$capabilities/collaboration";
+  import { subject as subjectDoor } from "$capabilities/naming";
+  import { clientModel } from "$runtime/client/start";
   import { viewState } from "$model/client/view-state";
   import type { Mode } from "$model/client/copilot";
 

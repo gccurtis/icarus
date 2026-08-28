@@ -40,35 +40,28 @@ export default {
     // compiler and the bundler cannot drift. There is no second map to keep in
     // step, which is a rule the backend needed and this does not.
     alias: {
-      $convex: "src/convex",
-      "$json-store": "src/lib/json-store",
+      $capabilities: "src/lib/capabilities",
+      $components: "src/lib/components",
       $model: "src/lib/model",
+      $representation: "src/lib/representation",
+      $runtime: "src/lib/runtime",
       $views: "src/lib/views",
 
-      // The four panel trees, one per surface the specifications describe.
-      // `docs/screen-panel-views` is their source of truth: a context view and an
-      // inspector lens are vertical stacks of panel components, a workspace and a
-      // modal are grids of screen components.
-      $context: "src/lib/context",
-      $inspector: "src/lib/inspector",
-      $workspaces: "src/lib/workspaces",
-      $modals: "src/lib/modals",
+      // Three trees inside views/ that are reached by name rather than through
+      // `$views`, because a panel is not a view: it knows only its doors, which
+      // is what lets it render in a gallery, in a test, or on a screen it was
+      // not written for. `docs/screen-panel-views` is their source of truth.
+      $panels: "src/lib/views/panels",
+      $workspaces: "src/lib/views/workspaces",
+      $modals: "src/lib/views/modals",
 
-      // Stand-ins for the doors the panels read and the store does not answer
-      // yet. Shaped like the real thing — the same `current` / `error` / `refresh`
-      // handle `$json-store/client` returns — so replacing one is an import
-      // change rather than a rewrite.
+      // No `$development`. Nothing may import a development surface, so an
+      // alias pointing at one would be an invitation.
       //
-      // There was a `$mock-models` beside this. It is gone: what a panel needed
-      // from it is now `$model/client/view-state`, which is the real object.
-      "$mock-capabilities": "src/lib/mock-capabilities",
-
-      $access: "src/lib/capabilities/access",
-      $content: "src/lib/capabilities/content",
-      $messages: "src/lib/capabilities/messages",
-      $revisions: "src/lib/capabilities/revisions",
-      $settings: "src/lib/capabilities/settings",
-      $shared: "src/lib/capabilities/shared",
+      // No alias for the vendored components either: `components.json` points
+      // the shadcn CLI at `$lib/components/vendor`, and it rewrites those
+      // imports in its own files on every regeneration. That spelling is the
+      // one documented exception rather than a tree we forgot.
     },
   },
 };

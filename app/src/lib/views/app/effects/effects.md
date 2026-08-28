@@ -11,7 +11,7 @@ Every entry here is `.svelte.ts`.
 ```text
 a keydown anywhere in the document        dispatch-commands.svelte.ts
 ├── read the event into ChordParts
-├── spell it                              $model/client → chordOf
+├── spell it                              $runtime/client → chordOf
 ├── look the chord up in the bindings
 └── check enabled, then run
 ```
@@ -34,7 +34,7 @@ rewritten. Every effect appears here and is described under Lifecycles below.
 - **Writes:** nothing of its own. It calls `run`, and the command writes.
 - **External resource:** one `window` listener. It is held, and released below.
 - **General procedures:** `None`. `chordOf` is the model's, reached through
-  `$model/client`.
+  `$runtime/client`.
 
 #### Setup
 

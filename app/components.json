@@ -5,9 +5,9 @@
     "baseColor": "slate"
   },
   "aliases": {
-    "components": "$lib/simple-components",
-    "utils": "$lib/simple-components/utils",
-    "ui": "$lib/simple-components",
+    "components": "$lib/components/vendor",
+    "utils": "$lib/components/vendor/utils",
+    "ui": "$lib/components/vendor",
     "hooks": "$lib/hooks",
     "lib": "$lib"
   },

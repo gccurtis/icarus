@@ -243,9 +243,9 @@ if ((flag !== undefined && flag !== "--check") || rest.length > 0) {
   stopIfFailed();
 }
 
-const contexts = panelKeys(requireTree(join(libRoot, "context")));
-const inspections = panelKeys(requireTree(join(libRoot, "inspector")));
-const screens = screenSubscreens(requireTree(join(libRoot, "workspaces")));
+const contexts = panelKeys(requireTree(join(libRoot, "views", "panels", "context")));
+const inspections = panelKeys(requireTree(join(libRoot, "views", "panels", "inspector")));
+const screens = screenSubscreens(requireTree(join(libRoot, "views", "workspaces")));
 stopIfFailed();
 
 const contents = file(contexts, inspections, screens);

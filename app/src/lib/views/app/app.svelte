@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { clientModel } from "$model/client";
+  import { clientModel } from "$runtime/client/start";
   import { provideViewState } from "$model/client/view-state";
   import CommandBar from "$views/command-bar/command-bar.svelte";
   import { dispatchCommands } from "$views/app/effects/dispatch-commands.svelte";

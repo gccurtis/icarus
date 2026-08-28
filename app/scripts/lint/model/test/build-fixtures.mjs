@@ -40,7 +40,7 @@ export const ALIASES = { $model: MODEL, $lib: "lib" };
  */
 const CLIENT_DOOR =
   'import { browser } from "$app/environment";\n' +
-  'import { buildClientModel } from "$model/client/constructor";\n' +
+  'import { buildClientModel } from "$model/client/create";\n' +
   'import type { ClientModel, ClientModelInput } from "$model/client/types";\n\n' +
   "let instance: ClientModel | undefined;\n\n" +
   "/** Called once by the layout that owns this client instance. */\n" +
@@ -70,7 +70,7 @@ const clean = (root) => {
 
   // ------------------------------------------------------------- client root ----
   model("client/client.md", "# The Client Model\n");
-  model("client/index.ts", CLIENT_DOOR);
+  model("client/start.ts", CLIENT_DOOR);
   model(
     "client/types.ts",
     'import type { StorageModel } from "$model/client/storage";\n' +
@@ -82,7 +82,7 @@ const clean = (root) => {
       "}\n"
   );
   model(
-    "client/constructor.ts",
+    "client/create.ts",
     'import { createStorage } from "$model/client/storage";\n' +
       'import { createWorkbench } from "$model/client/workbench";\n' +
       'import type { ClientModel, ClientModelInput } from "$model/client/types";\n\n' +
@@ -206,8 +206,8 @@ const clean = (root) => {
   // ------------------------------------------------------------- server root ----
   model("server/server.md", "# The Server Model\n");
   model(
-    "server/index.server.ts",
-    'import { buildServerModel } from "$model/server/constructor.server";\n' +
+    "server/start.server.ts",
+    'import { buildServerModel } from "$model/server/create.server";\n' +
       'import type { ServerModel } from "$model/server/types";\n\n' +
       "let process: ServerModel | undefined;\n\n" +
       "export const serverModel = (): ServerModel => (process ??= buildServerModel());\n"
@@ -218,7 +218,7 @@ const clean = (root) => {
       "export interface ServerModel {\n  readonly observability: ObservabilityModel;\n}\n"
   );
   model(
-    "server/constructor.server.ts",
+    "server/create.server.ts",
     'import { createObservability } from "$model/server/observability/index.server";\n' +
       'import type { ServerModel } from "$model/server/types";\n\n' +
       "export const buildServerModel = (): ServerModel => ({\n  observability: createObservability()\n});\n"
@@ -258,7 +258,7 @@ const clean = (root) => {
     root,
     "routes/app/+layout.svelte",
     '<script lang="ts">\n' +
-      '  import { initClientModel } from "$model/client";\n\n' +
+      '  import { initClientModel } from "$model/client/start";\n\n' +
       "  const { data, children } = $props();\n" +
       "  initClientModel({ projectId: data.projectId });\n" +
       "</script>\n\n{@render children()}\n"
@@ -267,14 +267,14 @@ const clean = (root) => {
     root,
     "routes/app/[project]/+page.svelte",
     '<script lang="ts">\n' +
-      '  import { clientModel } from "$model/client";\n\n' +
+      '  import { clientModel } from "$model/client/start";\n\n' +
       "  const { workbench } = clientModel();\n" +
       "</script>\n\n<p>{workbench.tabs.length}</p>\n"
   );
   write(
     root,
     "hooks.server.ts",
-    'import { serverModel } from "$model/server/index.server";\n\n' +
+    'import { serverModel } from "$model/server/start.server";\n\n' +
       "export const handle = async ({ event, resolve }) => {\n" +
       "  event.locals.model = serverModel();\n  return resolve(event);\n};\n"
   );
@@ -330,7 +330,7 @@ export const FIXTURES = {
     clean(root);
     write(
       root,
-      `${MODEL}/client/constructor.ts`,
+      `${MODEL}/client/create.ts`,
       'import { createStorage } from "$model/client/storage";\n' +
         'import { createWorkbench } from "$model/client/workbench";\n' +
         'import type { ClientModel, ClientModelInput } from "$model/client/types";\n\n' +
@@ -348,7 +348,7 @@ export const FIXTURES = {
     clean(root);
     write(
       root,
-      `${MODEL}/client/constructor.ts`,
+      `${MODEL}/client/create.ts`,
       'import { createStorage } from "$model/client/storage";\n' +
         'import { createWorkbench } from "$model/client/workbench";\n' +
         'import type { ClientModel, ClientModelInput } from "$model/client/types";\n\n' +
@@ -398,7 +398,7 @@ export const FIXTURES = {
     clean(root);
     write(
       root,
-      `${MODEL}/client/constructor.ts`,
+      `${MODEL}/client/create.ts`,
       'import { createStorage } from "$model/client/storage";\n' +
         'import { createWorkbench } from "$model/client/workbench";\n' +
         'import type { ClientModel, ClientModelInput } from "$model/client/types";\n\n' +
@@ -431,8 +431,8 @@ export const FIXTURES = {
     clean(root);
     write(
       root,
-      `${MODEL}/client/index.ts`,
-      'import { buildClientModel } from "$model/client/constructor";\n' +
+      `${MODEL}/client/start.ts`,
+      'import { buildClientModel } from "$model/client/create";\n' +
         'import type { ClientModel, ClientModelInput } from "$model/client/types";\n\n' +
         "let instance: ClientModel | undefined;\n\n" +
         "export const initClientModel = (input: ClientModelInput): ClientModel =>\n" +
@@ -462,7 +462,7 @@ export const FIXTURES = {
       root,
       "routes/app/[project]/+page.svelte",
       '<script lang="ts">\n' +
-        '  import { initClientModel } from "$model/client";\n\n' +
+        '  import { initClientModel } from "$model/client/start";\n\n' +
         "  const { workbench } = initClientModel({ projectId: \"p\" });\n" +
         "</script>\n\n<p>{workbench.tabs.length}</p>\n"
     );
@@ -474,7 +474,7 @@ export const FIXTURES = {
     write(
       root,
       "routes/public/+page.svelte",
-      '<script lang="ts">\n  import { clientModel } from "$model/client";\n\n' +
+      '<script lang="ts">\n  import { clientModel } from "$model/client/start";\n\n' +
         "  const { workbench } = clientModel();\n</script>\n\n<p>{workbench.tabs.length}</p>\n"
     );
   },
@@ -485,7 +485,7 @@ export const FIXTURES = {
     write(
       root,
       "routes/app/[project]/+page.svelte",
-      '<script lang="ts">\n  import { serverModel } from "$model/server/index.server";\n\n' +
+      '<script lang="ts">\n  import { serverModel } from "$model/server/start.server";\n\n' +
         "  const { observability } = serverModel();\n</script>\n\n<p>{observability}</p>\n"
     );
   },
@@ -592,7 +592,7 @@ export const FIXTURES = {
     clean(root);
     write(
       root,
-      `${MODEL}/client/constructor.ts`,
+      `${MODEL}/client/create.ts`,
       'import { createStorage } from "$model/client/storage";\n' +
         'import { Workbench } from "$model/client/workbench/definition.svelte";\n' +
         'import type { ClientModel, ClientModelInput } from "$model/client/types";\n\n' +

@@ -1,5 +1,5 @@
-import type { CommandsModel } from "$model/client";
-import { chordOf } from "$model/client";
+import type { CommandsModel } from "$runtime/client/start";
+import { chordOf } from "$runtime/client/start";
 
 /**
  * Turns keystrokes into commands, for as long as the frame is mounted.

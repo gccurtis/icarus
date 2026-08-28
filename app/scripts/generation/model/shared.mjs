@@ -65,7 +65,7 @@ const templatesRoot = join(packageRoot, "docs", "model-directory", "templates");
 /** The environment-shaped facts, spelled the way the standard and the linter spell them. */
 export const ENVIRONMENTS = ["client", "server"];
 export const DOORS = { client: "index.ts", server: "index.server.ts" };
-export const ROOT_CONSTRUCTORS = { client: "constructor.ts", server: "constructor.server.ts" };
+export const ROOT_CONSTRUCTORS = { client: "create.ts", server: "create.server.ts" };
 export const AGGREGATES = { client: "ClientModel", server: "ServerModel" };
 export const BUILDERS = { client: "buildClientModel", server: "buildServerModel" };
 export const DOCUMENTS = { client: "client.md", server: "server.md" };
@@ -144,7 +144,7 @@ export const modelAliases = async () => {
   const aliases = config.default?.kit?.alias ?? {};
   const declared = aliases.$model;
 
-  if (declared !== "src/lib/model" && declared !== "src/lib/model/") {
+  if (declared !== "src/lib/model") {
     fail(
       "svelte.config.js",
       "no $model alias points at src/lib/model — every import this writes is spelled through it, so add it to kit.alias and run this again:\n" +

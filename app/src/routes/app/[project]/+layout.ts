@@ -12,6 +12,6 @@
  * client router fetches them. `/` and `/demo` are unaffected and still render on
  * the server.
  *
- * See src/lib/model/client/client.md.
+ * See src/lib/runtime/client/client.md.
  */
 export const ssr = false;

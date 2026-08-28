@@ -45,7 +45,7 @@ It does not own:
 
 | Door | Usage |
 | --- | --- |
-| `$model/client` | `commands.ids`, `enabled`, `bindingsFor`, `open`, `hide`, `run` |
+| `$runtime/client` | `commands.ids`, `enabled`, `bindingsFor`, `open`, `hide`, `run` |
 
 ### Capabilities
 
@@ -63,8 +63,8 @@ It does not own:
 
 | Dependency | Usage |
 | --- | --- |
-| `$lib/simple-components/command` | The dialog, input, list, group, and items |
-| `$lib/simple-components/kbd` | One key per element in a chord |
+| `$lib/components/vendor/command` | The dialog, input, list, group, and items |
+| `$lib/components/vendor/kbd` | One key per element in a chord |
 | Token domains: color, typography, spacing | Label, description, and the chord row |
 
 ## Directory Documents

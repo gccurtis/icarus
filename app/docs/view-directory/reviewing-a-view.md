@@ -5,7 +5,7 @@
 1. **Does it know the application exists?** A view reads the client model, calls
    a capability browser door, or owns state coordinating the tree it renders.
    Something that only takes props and renders them belongs in its parent's
-   `components/`, or in `simple-components/` / `unique-components/`.
+   `components/`, or in `components/vendor/` / `components/authored/`.
 
 2. **Did a promoted child earn its own directory?** A view holding a root
    component and nothing else is a file in its parent's tree.

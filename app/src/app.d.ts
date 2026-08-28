@@ -1,6 +1,6 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
-import type { ServerModel } from "$model/server/index.server";
-import type { Session } from "$model/server/scope.server";
+import type { ServerModel } from "$runtime/server/start.server";
+import type { Session } from "$runtime/server/scope.server";
 
 declare global {
   namespace App {

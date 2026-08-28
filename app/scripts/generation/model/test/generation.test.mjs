@@ -83,9 +83,9 @@ const makePackage = () => {
   );
   file(
     root,
-    `${MODEL}/client/index.ts`,
+    `${MODEL}/client/start.ts`,
     'import { browser } from "$app/environment";\n' +
-      'import { buildClientModel } from "$model/client/constructor";\n' +
+      'import { buildClientModel } from "$model/client/create";\n' +
       'import type { ClientModel, ClientModelInput } from "$model/client/types";\n\n' +
       "let instance: ClientModel | undefined;\n\n" +
       "/** Called once by the layout that owns this client instance. */\n" +
@@ -116,7 +116,7 @@ const makePackage = () => {
   // dependency argument has to be read out of.
   file(
     root,
-    `${MODEL}/client/constructor.ts`,
+    `${MODEL}/client/create.ts`,
     'import { createBrowserStorage } from "$model/client/storage";\n' +
       'import type { ClientModel, ClientModelInput } from "$model/client/types";\n' +
       'import { createWorkbench } from "$model/client/workbench";\n\n' +
@@ -200,8 +200,8 @@ const makePackage = () => {
   );
   file(
     root,
-    `${MODEL}/server/index.server.ts`,
-    'import { buildServerModel } from "$model/server/constructor.server";\n' +
+    `${MODEL}/server/start.server.ts`,
+    'import { buildServerModel } from "$model/server/create.server";\n' +
       'import type { ServerModel } from "$model/server/types";\n\n' +
       "let building: Promise<ServerModel> | undefined;\n\n" +
       "export const serverModel = (): Promise<ServerModel> => (building ??= buildServerModel());\n"
@@ -217,7 +217,7 @@ const makePackage = () => {
   );
   file(
     root,
-    `${MODEL}/server/constructor.server.ts`,
+    `${MODEL}/server/create.server.ts`,
     'import { createConfiguration } from "$model/server/configuration/index.server";\n' +
       'import type { ServerModel } from "$model/server/types";\n\n' +
       "export const buildServerModel = async (): Promise<ServerModel> => {\n" +
@@ -339,7 +339,7 @@ test("a synchronously built server object passes lint", () => {
 
   const constructor = read(root, `${MODEL}/server/telemetry/constructor.ts`);
   assert.match(constructor, /export const createTelemetry = \(\): TelemetryModel =>/);
-  assert.doesNotMatch(read(root, `${MODEL}/server/constructor.server.ts`), /await createTelemetry/);
+  assert.doesNotMatch(read(root, `${MODEL}/server/create.server.ts`), /await createTelemetry/);
 });
 
 test("an asynchronously built server object is awaited by the root", () => {
@@ -350,7 +350,7 @@ test("an asynchronously built server object is awaited by the root", () => {
     read(root, `${MODEL}/server/telemetry/constructor.ts`),
     /export const createTelemetry = async \(\): Promise<TelemetryModel>/
   );
-  assert.match(read(root, `${MODEL}/server/constructor.server.ts`), /telemetry: await createTelemetry\(\)/);
+  assert.match(read(root, `${MODEL}/server/create.server.ts`), /telemetry: await createTelemetry\(\)/);
 });
 
 // ------------------------------------------------------------- dependencies ----
@@ -361,7 +361,7 @@ test("a dependency is passed under the binding the root already has for it", () 
 
   // The builder binds storage as `store`, so passing `storage` would have named
   // the optional input parameter instead.
-  assert.match(read(root, `${MODEL}/client/constructor.ts`), /session: createSession\(store\)/);
+  assert.match(read(root, `${MODEL}/client/create.ts`), /session: createSession\(store\)/);
   assert.match(
     read(root, `${MODEL}/client/session/constructor.ts`),
     /createSession = \(storage: ClientStorage\): SessionModel/
@@ -372,7 +372,7 @@ test("a dependency with no binding is named before the return rather than rebuil
   const root = generate(["client", "session", "--definition", "plain", "--depends", "workbench"]);
   assert.deepEqual(lint(root), []);
 
-  const constructor = read(root, `${MODEL}/client/constructor.ts`);
+  const constructor = read(root, `${MODEL}/client/create.ts`);
   assert.match(constructor, /const workbench = createWorkbench\(store\);/);
   assert.match(constructor, /session: createSession\(workbench\)/);
   // One call, one instance: hoisting must not leave the original behind.
@@ -390,7 +390,7 @@ test("an object is built after everything it depends on", () => {
   ]);
   assert.deepEqual(lint(root), []);
 
-  const constructor = read(root, `${MODEL}/client/constructor.ts`);
+  const constructor = read(root, `${MODEL}/client/create.ts`);
   assert.ok(
     constructor.indexOf("workbench,") < constructor.indexOf("session:"),
     "the dependency is assigned before the object that takes it"
@@ -421,10 +421,10 @@ test("several objects accumulate without the root drifting", () => {
   );
   assert.deepEqual(lint(root), []);
 
-  const client = read(root, `${MODEL}/client/constructor.ts`);
+  const client = read(root, `${MODEL}/client/create.ts`);
   assert.ok(client.indexOf("session:") < client.indexOf("history:"));
 
-  const server = read(root, `${MODEL}/server/constructor.server.ts`);
+  const server = read(root, `${MODEL}/server/create.server.ts`);
   assert.ok(server.indexOf("telemetry:") < server.indexOf("clock:"));
 });
 
@@ -559,7 +559,7 @@ test("refuses async construction when the root cannot await one", () => {
   workspaces.push(root);
   file(
     root,
-    `${MODEL}/server/constructor.server.ts`,
+    `${MODEL}/server/create.server.ts`,
     'import { createConfiguration } from "$model/server/configuration/index.server";\n' +
       'import type { ServerModel } from "$model/server/types";\n\n' +
       "export const buildServerModel = (): ServerModel => {\n" +
@@ -610,7 +610,7 @@ test("a failed write restores the bytes of every file already edited", { skip: a
   workspaces.push(root);
 
   const types = read(root, `${MODEL}/client/types.ts`);
-  const constructor = read(root, `${MODEL}/client/constructor.ts`);
+  const constructor = read(root, `${MODEL}/client/create.ts`);
 
   // The document is the last file written, and the two edits above it have
   // already landed by the time it refuses.
@@ -623,7 +623,7 @@ test("a failed write restores the bytes of every file already edited", { skip: a
   chmodSync(join(root, MODEL, "client/client.md"), 0o644);
 
   assert.equal(read(root, `${MODEL}/client/types.ts`), types);
-  assert.equal(read(root, `${MODEL}/client/constructor.ts`), constructor);
+  assert.equal(read(root, `${MODEL}/client/create.ts`), constructor);
   assert.ok(!existsSync(join(root, MODEL, "client/session")));
   assert.deepEqual(lint(root), []);
 });

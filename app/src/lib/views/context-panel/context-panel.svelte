@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Component } from "svelte";
 
-  import { ResizeHandle } from "$lib/unique-components/resize-handle";
+  import { ResizeHandle } from "$components/authored/resize-handle";
   import { railFor, viewState, type ContextId } from "$model/client/view-state";
   import { RAIL_ENTRIES } from "$views/context-panel/procedures/rail-entries";
   import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH, RAIL_WIDTH } from "$views/context-panel/types";
@@ -32,7 +32,7 @@
    * screen is a control that has to be kept in step with them, and it offers a
    * way to reach an editor without choosing what it edits.
    */
-  const VIEWS = import.meta.glob("$lib/context/**/*.svelte") as Record<
+  const VIEWS = import.meta.glob("$lib/views/panels/context/**/*.svelte") as Record<
     string,
     () => Promise<{ default: Component }>
   >;
@@ -46,7 +46,7 @@
   const load = $derived(
     active === undefined
       ? undefined
-      : VIEWS[`/src/lib/context/${active.replace(".", "/")}.svelte`]
+      : VIEWS[`/src/lib/views/panels/context/${active.replace(".", "/")}.svelte`]
   );
 
   let Content = $state<Component | undefined>(undefined);

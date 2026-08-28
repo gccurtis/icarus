@@ -10,15 +10,13 @@
  * but half of the standard is about the boundary around it: which routes may reach
  * the client model, which modules may reach the server tree, and who may call a
  * constructor. Those questions are answered at the import site, which is usually
- * outside `model/`. So the rules are given `src/` as well, and only a specifier
- * naming a model path can produce a finding — foreign code under `src/` is walked
- * but never judged by the model template.
+ * outside `runtime/`. So the rules are given `src/` as well, and only a specifier
+ * naming a runtime path can produce a finding — foreign code under `src/` is
+ * walked but never judged by the template.
  *
  * Aliases come from svelte.config.js because that is the single map: SvelteKit
  * generates the TypeScript paths from it, so the compiler and the bundler cannot
- * disagree. `$model` is defaulted for the window in which the tree is being
- * introduced — the alias arrives with the code that needs it, and until then the
- * rules still resolve what they are asked about.
+ * disagree.
  */
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";

@@ -59,7 +59,7 @@ It does not own:
 | --- | --- | --- |
 | `None` | — | — |
 
-The thirteen centres under `$lib/workspaces/` are reached through a glob rather
+The thirteen centres under `$lib/views/workspaces/` are reached through a glob rather
 than by import, so none of them is named here. A centre that grows past a screen
 becomes a sibling view and is imported through its root. None has yet.
 
@@ -119,7 +119,7 @@ broken" is the whole value of the two branches.
 
 - **The registry is the filesystem.** There is no map from screen to component
   here, because a map is a second list of what exists and the first one is
-  `src/lib/workspaces/`. A screen and a subscreen name a path, and the same fact
+  `src/lib/views/workspaces/`. A screen and a subscreen name a path, and the same fact
   generates the vocabulary the model publishes, so the two cannot disagree.
 - **A model key is never a component.** View state exposes stable keys precisely
   so it stays testable without a DOM; resolving them is this layer's job.

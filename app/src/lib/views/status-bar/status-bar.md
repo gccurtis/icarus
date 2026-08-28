@@ -67,16 +67,16 @@ It does not own:
 
 | Door | Usage |
 | --- | --- |
-| `$model/client` | `copilot`: mode, persona, draft, `focusRequests`, `blocked`; calls `setMode`, `selectPersona`, `write`, `sent` |
+| `$runtime/client` | `copilot`: mode, persona, draft, `focusRequests`, `blocked`; calls `setMode`, `selectPersona`, `write`, `sent` |
 | `$model/client/view-state` | `active`, `frame`; calls `inspect` and `resize` |
 
 ### Capabilities
 
 | Browser door | Usage |
 | --- | --- |
-| `$mock-capabilities/naming` | `subject` — the name and kind behind an id |
-| `$mock-capabilities/collaboration` | `mentionsForViewer` — what is addressed to you |
-| `$mock-capabilities/cast` | `VIEWER` — who you are |
+| `$capabilities/naming` | `subject` — the name and kind behind an id |
+| `$capabilities/collaboration` | `mentionsForViewer` — what is addressed to you |
+| `$capabilities/cast` | `VIEWER` — who you are |
 
 ### Composed views
 
@@ -88,7 +88,7 @@ It does not own:
 
 | Dependency | Usage |
 | --- | --- |
-| `$lib/simple-components/select` | Mode and persona |
+| `$lib/components/vendor/select` | Mode and persona |
 | `@lucide/svelte` | The submit glyph and the mention mark |
 | Token domains: color, spacing, shape, typography | Every value |
 

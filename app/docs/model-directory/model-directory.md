@@ -2,7 +2,7 @@
 
 **Status:** The standard for model objects in this application. Read it before
 adding a model object, a public method, or an environment root. It governs
-`src/lib/model/`, and model lint (`pnpm lint:model`) enforces its structure.
+`src/lib/runtime/`, and model lint (`pnpm lint:model`) enforces its structure.
 
 **This document describes structure, not design.** What shape a directory takes,
 which file may import which, and what a reviewer can check are here. *Why this
@@ -12,9 +12,9 @@ code that decides it:
 
 | Question | Answered in |
 | --- | --- |
-| What is here, and why the two halves differ | [`model/model.md`](../../src/lib/model/model.md) |
-| How a client instance is built, held, and released | [`model/client/client.md`](../../src/lib/model/client/client.md) |
-| How the process graph is built and shut down | [`model/server/server.md`](../../src/lib/model/server/server.md) |
+| What is here, and why the two halves differ | [`model/model.md`](../../src/lib/runtime/model.md) |
+| How a client instance is built, held, and released | [`model/client/client.md`](../../src/lib/runtime/client/client.md) |
+| How the process graph is built and shut down | [`model/server/server.md`](../../src/lib/runtime/server/server.md) |
 | What one object owns, and what it promises | that object's `<object>.md` |
 
 **Document templates:** [`templates/`](templates/templates.md).
@@ -43,7 +43,7 @@ data and hold nothing between calls. Model objects are the stateful half.
 ## Target layout
 
 ```text
-src/lib/model/
+src/lib/runtime/
 ├── model.md
 ├── client/
 │   ├── client.md                    client-instance lifetime and initialization
@@ -236,8 +236,8 @@ have a supporting tree.
 
 ## Exposure rules
 
-- `$model/client` and `$model/server/index.server` are the production doors,
-  plus `$model/server/scope.server` for request identity.
+- `$runtime/client` and `$runtime/server/start.server` are the production doors,
+  plus `$runtime/server/scope.server` for request identity.
 - **`scope.server.ts` is a door rather than an internal file**, and it has to be
   one. It resolves who is asking and about which project, so a remote wrapper and
   `hooks.server.ts` both reach it directly. Folding it behind `index.server.ts`

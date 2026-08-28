@@ -16,15 +16,17 @@ import { join, relative, resolve } from "node:path";
 const ALLOWED_DIRS = new Set(["docs", "types", "api", "test"]);
 
 /**
- * A capability has no door. Its public surface is the registration file under
- * the deployment root, because a Convex module's path is its public name and
- * nothing outside that directory can be called.
+ * `index.ts` is the capability's browser door: the stubs, and nothing else. It
+ * is here because the deployment root is not — under Convex a module's path was
+ * its public name, so the registration file was the surface and a capability
+ * needed no door of its own. Without one, a caller has to import the capability
+ * itself, and one file has to be the whole of what it may reach.
  *
  * `schema.ts` is one file rather than a directory because a capability declares
  * tables and nothing else about storage — no queries to hold beside them, no
  * DDL. A directory would exist to hold one file and its document.
  */
-const ALLOWED_ROOT_FILES = new Set(["overview.md", "errors.ts", "schema.ts"]);
+const ALLOWED_ROOT_FILES = new Set(["overview.md", "index.ts", "errors.ts", "schema.ts"]);
 
 /** Convex rejects a hyphen in a module path, so a door is named in camelCase. */
 const camelOf = (kebab) => kebab.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());

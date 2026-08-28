@@ -27,7 +27,7 @@ It does not own:
 - what is inspected. Only an explicit `inspect()` call sets that, never focus —
   clicking into this panel blurs the editor and collapses the caret, and an
   inspection derived from focus would empty the panel the user is reaching for.
-- what a lens contains. Each of the lenses under `$lib/inspector/` renders
+- what a lens contains. Each of the lenses under `$lib/views/panels/inspector/` renders
   itself and is otherwise opaque to this view.
 - its own width, or the bounds of a resize.
 
