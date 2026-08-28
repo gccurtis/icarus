@@ -79,6 +79,23 @@ export const MUTATIONS = [
     ]
   },
   {
+    check: "capability-layout",
+    subject: "permitted-entries",
+    says: "a capability root grows a directory that is not one of the four",
+    names: "probe/helpers",
+    changes: [
+      { path: "src/lib/capabilities/probe/index.remote.ts", write: `export {};\n` },
+      { path: "src/lib/capabilities/probe/helpers/thing.ts", write: `export const thing = 1;\n` }
+    ]
+  },
+  {
+    check: "capability-layout",
+    subject: "has-a-door",
+    says: "a capability has no door",
+    names: "capabilities/probe",
+    changes: [{ path: "src/lib/capabilities/probe/types/probe.ts", write: `export type Probe = string;\n` }]
+  },
+  {
     check: "tests-are-one-of-three-kinds",
     tree: "capabilities",
     says: "a test sits directly under test/",

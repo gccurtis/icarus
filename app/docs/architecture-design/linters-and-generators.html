@@ -239,7 +239,7 @@
         <div class="flow-row">
           <div class="node"><span class="t">view · client model</span><span class="sub">client</span></div>
           <span class="arrow">→</span>
-          <div class="node cross"><span class="t">index.ts</span><span class="sub">the door</span></div>
+          <div class="node cross"><span class="t">index.remote.ts</span><span class="sub">the door</span></div>
           <span class="arrow">→</span>
           <div class="node cross"><span class="t">api/&lt;procedure&gt;</span><span class="sub">server · validates first</span></div>
           <span class="arrow">→</span>
@@ -262,6 +262,7 @@
         <li><b>It holds nothing between calls.</b> Two requests share a process; anything one leaves behind is the next one's bug.</li>
         <li><b>It never reaches a view, a client model, or another capability's insides.</b></li>
         <li><b>The directory is the call tree.</b> A procedure with supporting steps is a directory holding them.</li>
+        <li><b>What it declares and what it does are separate.</b> <code>types/</code> is erased, <code>constants/</code> is the vocabulary the capability is made of, and <code>api/</code> is everything that runs.</li>
       </ul>
     </div>
 
@@ -269,9 +270,10 @@
       <h3>Layout it asserts</h3>
       <pre class="layout">&lt;capability&gt;/
 ├── &lt;capability&gt;.md
-├── index.ts                     <span class="c">the door — stubs only</span>
+├── index.remote.ts              <span class="c">the door — remote functions only</span>
 ├── errors.ts                    <span class="c">optional</span>
-├── types/&lt;name&gt;.ts              <span class="c">call and return shapes</span>
+├── types/&lt;name&gt;.ts              <span class="c">declares — erased</span>
+├── constants/&lt;name&gt;.ts          <span class="c">declares values — survives erasure</span>
 ├── api/
 │   ├── shared/&lt;step&gt;.ts         <span class="c">optional</span>
 │   └── &lt;procedure&gt;/
@@ -285,11 +287,11 @@
       <div class="list">
         <div class="item">
           <span class="n">door-is-the-only-entry</span>
-          <span class="d">No import from outside a capability names anything below its <code>index.ts</code>.</span>
+          <span class="d">No import from outside a capability names anything below its door.</span>
         </div>
         <div class="item">
           <span class="n">door-holds-no-logic</span>
-          <span class="d"><code>index.ts</code> exports stubs and the types they speak in. It runs no statement of its own, so nothing bypasses the validated path.</span>
+          <span class="d"><code>index.remote.ts</code> exports stubs and the types they speak in. It runs no statement of its own, so nothing bypasses the validated path.</span>
         </div>
         <div class="item">
           <span class="n">procedure-validates-first</span>
@@ -322,6 +324,14 @@
         <div class="item">
           <span class="n">entry-matches-directory</span>
           <span class="d">Every directory under <code>api/</code> holds a file of the same name, at every depth. Without it a procedure's entry point is a guess.</span>
+        </div>
+        <div class="item">
+          <span class="n">capability-layout</span>
+          <span class="d">A capability holds its door, its types, its constants, and its procedures.</span>
+          <ul class="subs">
+            <li><span class="sn">has-a-door</span> — a capability with no door has no surface.</li>
+            <li><span class="sn">permitted-entries</span> — nothing else sits at the root. <span class="tag fails">14 fail</span> every capability names its document <code>overview.md</code> rather than <code>&lt;capability&gt;.md</code>.</li>
+          </ul>
         </div>
         <div class="item">
           <span class="n">tests-are-one-of-three-kinds</span>

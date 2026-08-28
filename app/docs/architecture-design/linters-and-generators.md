@@ -61,7 +61,7 @@ views/                           has structure
 
 The boundary is the door. What is on the right of it is a server model object, never storage — a capability holds nothing between calls, so it has nothing to open a file with.
 
-**view · client model** (client) → **index.ts** (the door) → **api/<procedure>** (server · validates first) → **model/server/<object>** (server)
+**view · client model** (client) → **index.remote.ts** (the door) → **api/<procedure>** (server · validates first) → **model/server/<object>** (server)
 
 ### Invariants
 
@@ -71,15 +71,17 @@ The boundary is the door. What is on the right of it is a server model object, n
 - **It holds nothing between calls.** Two requests share a process; anything one leaves behind is the next one's bug.
 - **It never reaches a view, a client model, or another capability's insides.**
 - **The directory is the call tree.** A procedure with supporting steps is a directory holding them.
+- **What it declares and what it does are separate.** `types/` is erased, `constants/` is the vocabulary the capability is made of, and `api/` is everything that runs.
 
 ### Layout it asserts
 
 ```text
 <capability>/
 ├── <capability>.md
-├── index.ts                     the door — stubs only
+├── index.remote.ts              the door — remote functions only
 ├── errors.ts                    optional
-├── types/<name>.ts              call and return shapes
+├── types/<name>.ts              declares — erased
+├── constants/<name>.ts          declares values — survives erasure
 ├── api/
 │   ├── shared/<step>.ts         optional
 │   └── <procedure>/
@@ -90,9 +92,9 @@ The boundary is the door. What is on the right of it is a server model object, n
 
 ### Checks
 
-**door-is-the-only-entry** — No import from outside a capability names anything below its `index.ts`.
+**door-is-the-only-entry** — No import from outside a capability names anything below its door.
 
-**door-holds-no-logic** — `index.ts` exports stubs and the types they speak in. It runs no statement of its own, so nothing bypasses the validated path.
+**door-holds-no-logic** — `index.remote.ts` exports stubs and the types they speak in. It runs no statement of its own, so nothing bypasses the validated path.
 
 **procedure-validates-first** — Every `api/<procedure>` entry validates its argument before its first other statement.
 
@@ -111,6 +113,11 @@ The boundary is the door. What is on the right of it is a server model object, n
 - `no-construction-at-load` — nothing is built when the module is imported.
 
 **entry-matches-directory** — Every directory under `api/` holds a file of the same name, at every depth. Without it a procedure's entry point is a guess.
+
+**capability-layout** — A capability holds its door, its types, its constants, and its procedures.
+
+- `has-a-door` — a capability with no door has no surface.
+- `permitted-entries` — nothing else sits at the root. 14 fail every capability names its document `overview.md` rather than `<capability>.md`.
 
 **tests-are-one-of-three-kinds** — Nothing under `test/` outside `unit/`, `regression/`, `non-functional/`.
 
