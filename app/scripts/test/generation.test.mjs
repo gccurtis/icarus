@@ -72,6 +72,13 @@ const GENERATORS = [
     before: ["capabilities/new-capability.mjs", ["probe"]],
     trees: ["capabilities"]
   },
+  {
+    name: "new-constant",
+    script: "capabilities/new-constant.mjs",
+    args: ["probe", "kinds"],
+    before: ["capabilities/new-capability.mjs", ["probe"]],
+    trees: ["capabilities"]
+  },
   { name: "new-vocabulary", script: "components/new-vocabulary.mjs", args: ["probe"], trees: ["components"] },
   {
     name: "new-component",
