@@ -125,6 +125,8 @@ The boundary is the door. What is on the right of it is a server model object, n
 
 **new-capability** — The directory, an empty door, and `types/`. No `api/` — a capability with no procedure is a legal state.
 
+**new-constant** — A file under `constants/`. Nothing is added to the door — a door exports remote functions only, so a constant a caller outside the capability needs is served by a procedure.
+
 **new-procedure** — The procedure directory, the entry with its validator already calling it, the stub added to the door, and a failing test.
 
 ## components
