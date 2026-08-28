@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { traceNode } from "$development-components/trace.svelte";
+
   import type { ChartSelection } from "$authored-components/chart/chart-selection.svelte";
   import { layoutPie } from "$authored-components/chart/plot/layout";
 
@@ -40,6 +42,8 @@
     ref?: SVGSVGElement | null;
   } = $props();
 
+  const trace = traceNode("PlotPie", () => ({ x, value, height }));
+
   const W = 1000;
   const model = $derived(layoutPie(data, x, value, { width: W, height }));
   const total = $derived(model.marks.reduce((sum, mark) => sum + mark.value, 0) || 1);
@@ -50,6 +54,7 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <svg
+  {...trace}
   bind:this={ref}
   viewBox="0 0 {W} {height}"
   width="100%"

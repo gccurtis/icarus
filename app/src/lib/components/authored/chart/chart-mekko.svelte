@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { traceNode } from "$development-components/trace.svelte";
+
   import { seriesColor } from "$authored-components/chart/palette";
 
   /**
@@ -38,6 +40,8 @@
     height?: number;
     ref?: SVGSVGElement | null;
   } = $props();
+
+  const trace = traceNode("ChartMekko", () => ({ x, weight, series, height }));
 
   /* A viewBox rather than measured pixels: the chart scales to its container
      without a resize observer, and serializes at any size. */
@@ -92,6 +96,7 @@
 </script>
 
 <svg
+  {...trace}
   bind:this={ref}
   viewBox="0 0 {W} {height}"
   width="100%"

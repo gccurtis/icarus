@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { traceNode } from "$development-components/trace.svelte";
+
   import { asPercent, cagr, elementOverElement } from "$authored-components/chart/growth";
   import { cn } from "$vendored-components/utils";
 
@@ -34,11 +36,13 @@
     showCagr?: boolean;
   } = $props();
 
+  const trace = traceNode("ChartGrowth", () => ({ labels, values, showCagr }));
+
   const steps = $derived(elementOverElement(values, labels));
   const compound = $derived(cagr(values));
 </script>
 
-<div class="flex flex-col gap-1">
+<div {...trace} class="flex flex-col gap-1">
   <div class="flex" role="row" aria-label="Change from the previous element">
     {#each steps as step (step.label)}
       <div class="flex flex-1 justify-center px-1">

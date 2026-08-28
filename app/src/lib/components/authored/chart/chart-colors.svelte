@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { traceNode } from "$development-components/trace.svelte";
+
   import { Input } from "$vendored-components/input";
   import * as Popover from "$vendored-components/popover";
   import { cn } from "$vendored-components/utils";
@@ -38,6 +40,8 @@
     onreset?: () => void;
   } = $props();
 
+  const trace = traceNode("ChartColors", () => ({ series, colors }));
+
   /** A hex the browser will accept. Anything else is rejected rather than guessed. */
   const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
@@ -48,7 +52,7 @@
   };
 </script>
 
-<div class="flex flex-wrap items-center gap-2">
+<div {...trace} class="flex flex-wrap items-center gap-2">
   {#each series as entry (entry.key)}
     {@const current = colors[entry.key]}
     <Popover.Root>

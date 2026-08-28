@@ -12,3 +12,16 @@
 representation:
   store:
     directory: data
+
+  domains:
+    agents: [content, core]
+    collaboration: [core]
+    content: [core]
+    core: []
+    data: [core]
+    external: [core]
+    investigation: [core]
+    knowledge: [core]
+    resources: [content, core]
+    revisions: []
+    templates: [content, core, resources]

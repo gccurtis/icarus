@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { traceNode } from "$development-components/trace.svelte";
+
   import type { ChartSelection } from "$authored-components/chart/chart-selection.svelte";
   import type { SeriesSpec } from "$authored-components/chart/chart-spec";
   import {
@@ -50,6 +52,8 @@
     ref?: SVGSVGElement | null;
   } = $props();
 
+  const trace = traceNode("PlotBars", () => ({ x, series, layout, horizontal, height }));
+
   /* A fixed internal coordinate space, as the Marimekko uses: it scales to any
      container without a resize observer and serializes at any size. */
   const W = 1000;
@@ -79,6 +83,7 @@
 -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <svg
+  {...trace}
   bind:this={ref}
   viewBox="0 0 {W} {height}"
   width="100%"
