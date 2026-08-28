@@ -8,7 +8,7 @@
     PanelNote,
     PanelSection,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { documentHeader, documentRecord } from "$capabilities/resource";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

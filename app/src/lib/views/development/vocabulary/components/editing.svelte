@@ -11,7 +11,7 @@
     PanelEditableText,
     PanelSection,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
 
   /**
    * The words that hand a value back.

@@ -1,16 +1,16 @@
 <script lang="ts">
   import SectionHeading from "$views/development/demo/components/section-heading.svelte";
-  import { Checkbox } from "$lib/components/vendor/checkbox";
-  import * as Field from "$lib/components/vendor/field";
-  import * as InputGroup from "$lib/components/vendor/input-group";
-  import { Label } from "$lib/components/vendor/label";
-  import * as RadioGroup from "$lib/components/vendor/radio-group";
-  import * as Select from "$lib/components/vendor/select";
-  import { Slider } from "$lib/components/vendor/slider";
-  import { Switch } from "$lib/components/vendor/switch";
-  import { Textarea } from "$lib/components/vendor/textarea";
-  import { Toggle } from "$lib/components/vendor/toggle";
-  import * as ToggleGroup from "$lib/components/vendor/toggle-group";
+  import { Checkbox } from "$vendored-components/checkbox";
+  import * as Field from "$vendored-components/field";
+  import * as InputGroup from "$vendored-components/input-group";
+  import { Label } from "$vendored-components/label";
+  import * as RadioGroup from "$vendored-components/radio-group";
+  import * as Select from "$vendored-components/select";
+  import { Slider } from "$vendored-components/slider";
+  import { Switch } from "$vendored-components/switch";
+  import { Textarea } from "$vendored-components/textarea";
+  import { Toggle } from "$vendored-components/toggle";
+  import * as ToggleGroup from "$vendored-components/toggle-group";
 
   let bold = $state(false);
   let marks = $state<string[]>([]);

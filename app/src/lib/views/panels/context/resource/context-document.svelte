@@ -2,7 +2,7 @@
   import ExternalLink from "@lucide/svelte/icons/external-link";
   import Library from "@lucide/svelte/icons/library";
 
-  import { Panel, PanelButton, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelButton, PanelRow, PanelSection } from "$authored-components/panel";
   import { contextsFor, resolvedPreview, type ScopeInUse } from "$capabilities/resource";
   import { viewState } from "$model/client/view-state";
 

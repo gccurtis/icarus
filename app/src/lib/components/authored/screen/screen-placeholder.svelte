@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import * as Empty from "$lib/components/vendor/empty";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as Empty from "$vendored-components/empty";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * What a workspace shows where a framework surface will go.

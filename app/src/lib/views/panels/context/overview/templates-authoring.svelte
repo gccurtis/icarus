@@ -11,7 +11,7 @@
     PanelLink,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { PEOPLE } from "$capabilities/cast";
   import { template } from "$capabilities/library";
   import { viewState } from "$model/client/view-state";

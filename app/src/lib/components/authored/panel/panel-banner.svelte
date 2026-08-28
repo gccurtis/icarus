@@ -4,9 +4,9 @@
   import Sparkles from "@lucide/svelte/icons/sparkles";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
-  import * as Alert from "$lib/components/vendor/alert";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as Alert from "$vendored-components/alert";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   type Tone = "attention" | "danger" | "intelligence";
 

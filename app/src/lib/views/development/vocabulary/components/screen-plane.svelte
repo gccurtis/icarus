@@ -8,7 +8,7 @@
     PanelButton,
     PanelChip,
     PanelSentence
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     ScreenCanvas,
     ScreenCard,
@@ -24,7 +24,7 @@
     ScreenPage,
     ScreenSlide,
     ScreenSplit
-  } from "$components/authored/screen";
+  } from "$authored-components/screen";
 
   /**
    * The plane's other shapes: the ones a table and a grid of cards cannot hold.

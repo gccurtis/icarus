@@ -37,6 +37,7 @@
     "new-workspace": "node scripts/generation/workspaces/new-workspace.mjs",
     "view-state-keys": "node scripts/generation/view-state/keys.mjs",
     "aliases": "node scripts/generation/across/aliases.mjs",
+    "imports": "node scripts/generation/across/imports.mjs",
 
     "clean": "rm -rf build .svelte-kit"
   },

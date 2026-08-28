@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Skeleton } from "$lib/components/vendor/skeleton";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Skeleton } from "$vendored-components/skeleton";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * What a panel shows while it is finding out.

@@ -14,7 +14,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { persona } from "$capabilities/agents";
   import { PEOPLE } from "$capabilities/cast";
   import { searchScope, thread, threadsIn } from "$capabilities/research";

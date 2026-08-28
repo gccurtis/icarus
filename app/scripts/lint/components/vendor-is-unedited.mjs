@@ -6,20 +6,21 @@ import { check } from "../shared/check.mjs";
  * other reach is something a person added, and the next regeneration eats it.
  */
 const FIRST_PARTY = new Set([
-  "capabilities", "model", "runtime", "representation", "views", "panels", "workspaces", "modals"
+  "capabilities", "model", "runtime", "representation", "views", "panels", "workspaces", "modals",
+  "development-components"
 ]);
 
 export default check({
   name: "vendor-is-unedited",
-  says: "No file under vendor/ imports $components/authored or any door.",
+  says: "No file under vendored/ imports $authored-components or any door.",
   run(tree) {
     const found = [];
-    for (const path of tree.under(tree.path("components", "vendor"))) {
+    for (const path of tree.under(tree.path("components", "vendored"))) {
       if (!/\.(ts|js|svelte)$/.test(path)) continue;
       for (const record of tree.imports(path)) {
         const target = tree.aliasTarget(record.specifier);
         if (!target) continue;
-        if (target.tree === "components" && target.segments[0] === "authored") {
+        if (target.tree === "authored-components") {
           found.push({ path, line: record.line, message: `takes an authored component: ${record.specifier}` });
           continue;
         }

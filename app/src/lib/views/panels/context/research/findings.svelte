@@ -1,7 +1,7 @@
 <script lang="ts">
   import Lightbulb from "@lucide/svelte/icons/lightbulb";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import {
     acceptedElsewhere,
     acceptedIn,

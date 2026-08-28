@@ -11,7 +11,7 @@
     PanelLink,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { triggersFor, type TriggerOption } from "$capabilities/agents";
   import { viewState } from "$model/client/view-state";
 

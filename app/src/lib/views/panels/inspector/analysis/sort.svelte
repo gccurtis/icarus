@@ -12,7 +12,7 @@
     PanelNote,
     PanelSection,
     PanelSelect
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { analysis, placementsOn, sortIn } from "$capabilities/analysis";
   import type { SortRule } from "$capabilities/analysis";
   import { isInspectionKey, viewState } from "$model/client/view-state";

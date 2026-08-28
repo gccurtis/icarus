@@ -7,7 +7,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { context, latticeNode } from "$capabilities/scope";
   import { viewState } from "$model/client/view-state";
 

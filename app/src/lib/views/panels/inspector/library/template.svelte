@@ -18,7 +18,7 @@
     PanelSection,
     PanelThumb,
     PanelThumbs
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { PEOPLE, type Person } from "$capabilities/cast";
   import { previewOf, template, variablesIn } from "$capabilities/library";
   import { isInspectionKey, viewState } from "$model/client/view-state";

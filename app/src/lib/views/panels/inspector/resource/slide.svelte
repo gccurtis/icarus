@@ -5,7 +5,7 @@
   import SquarePen from "@lucide/svelte/icons/square-pen";
   import Trash2 from "@lucide/svelte/icons/trash-2";
 
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
   import {
     Panel,
     PanelActions,
@@ -18,7 +18,7 @@
     PanelNote,
     PanelSection,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { deckRecord, notesFor, slide } from "$capabilities/resource";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

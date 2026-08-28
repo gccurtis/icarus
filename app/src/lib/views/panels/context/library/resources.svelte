@@ -3,7 +3,7 @@
   import Lightbulb from "@lucide/svelte/icons/lightbulb";
   import Plug from "@lucide/svelte/icons/plug";
 
-  import { Panel, PanelRow, PanelSearch, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelRow, PanelSearch, PanelSection } from "$authored-components/panel";
   import { connectors, resourcesOfKind, type ConnectorRow } from "$capabilities/library";
   import { viewState } from "$model/client/view-state";
 

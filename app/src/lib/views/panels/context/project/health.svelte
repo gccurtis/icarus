@@ -4,7 +4,7 @@
   import ScanText from "@lucide/svelte/icons/scan-text";
   import Workflow from "@lucide/svelte/icons/workflow";
 
-  import { Panel, PanelButton, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelButton, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import { health, type HealthIssue } from "$capabilities/project";
   import { viewState } from "$model/client/view-state";
 

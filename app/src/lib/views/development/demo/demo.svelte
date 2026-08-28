@@ -19,7 +19,7 @@
   import Structure from "$views/development/demo/components/structure.svelte";
   import Surfaces from "$views/development/demo/components/surfaces.svelte";
   import Typography from "$views/development/demo/components/typography.svelte";
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
 </script>
 
 <svelte:head>

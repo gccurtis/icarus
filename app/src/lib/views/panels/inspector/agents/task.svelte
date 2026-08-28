@@ -10,7 +10,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import Ban from "@lucide/svelte/icons/ban";
   import Maximize2 from "@lucide/svelte/icons/maximize-2";
   import RotateCcw from "@lucide/svelte/icons/rotate-ccw";

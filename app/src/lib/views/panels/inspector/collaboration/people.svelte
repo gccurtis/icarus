@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import { VIEWER, type Person } from "$capabilities/cast";
   import { members, presenceFor } from "$capabilities/collaboration";
   import { viewState } from "$model/client/view-state";

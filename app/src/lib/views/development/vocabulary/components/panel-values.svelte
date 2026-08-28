@@ -22,7 +22,7 @@
     PanelRange,
     PanelRow,
     PanelThumb
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
 
   /**
    * The controls, and every one of them is the same argument made about a

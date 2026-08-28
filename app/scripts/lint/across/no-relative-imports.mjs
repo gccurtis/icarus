@@ -12,7 +12,7 @@ const isFrameworkPath = (specifier) =>
  * The vendored tree spells its own imports, and the CLI rewrites them on every
  * regeneration. `vendor-keeps-its-own-spelling` is what governs them.
  */
-const isVendored = (tree, path) => tree.within(tree.path("components", "vendor"), path);
+const isVendored = (tree, path) => tree.within(tree.path("components", "vendored"), path);
 
 export default check({
   name: "no-relative-imports",

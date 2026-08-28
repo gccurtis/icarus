@@ -26,9 +26,9 @@ export default check({
 
       for (const record of tree.imports(path)) {
         const target = tree.aliasTarget(record.specifier);
-        if (target?.tree !== "components") continue;
-        const [where, vocabulary, ...rest] = target.segments;
-        if (where !== "authored" || !vocabulary) continue;
+        if (target?.tree !== "authored-components") continue;
+        const [vocabulary, ...rest] = target.segments;
+        if (!vocabulary) continue;
         if (self?.name === vocabulary) continue;
         if (rest.length === 0) continue;
 

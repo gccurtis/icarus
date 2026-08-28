@@ -14,8 +14,8 @@
     ScreenNote,
     ScreenSurface,
     ScreenThumb
-  } from "$components/authored/screen";
-  import { Button } from "$lib/components/vendor/button";
+  } from "$authored-components/screen";
+  import { Button } from "$vendored-components/button";
   import {
     templateKinds,
     templates,

@@ -8,7 +8,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     automation as automationDoor,
     triggersFor,

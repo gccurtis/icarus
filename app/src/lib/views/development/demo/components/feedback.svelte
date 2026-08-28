@@ -1,11 +1,11 @@
 <script lang="ts">
   import SectionHeading from "$views/development/demo/components/section-heading.svelte";
-  import * as Alert from "$lib/components/vendor/alert";
-  import * as Avatar from "$lib/components/vendor/avatar";
-  import { Button } from "$lib/components/vendor/button";
-  import * as Empty from "$lib/components/vendor/empty";
-  import { Progress } from "$lib/components/vendor/progress";
-  import { Spinner } from "$lib/components/vendor/spinner";
+  import * as Alert from "$vendored-components/alert";
+  import * as Avatar from "$vendored-components/avatar";
+  import { Button } from "$vendored-components/button";
+  import * as Empty from "$vendored-components/empty";
+  import { Progress } from "$vendored-components/progress";
+  import { Spinner } from "$vendored-components/spinner";
 </script>
 
 <section class="flex flex-col gap-4">

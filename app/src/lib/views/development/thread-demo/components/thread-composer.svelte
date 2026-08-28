@@ -1,9 +1,9 @@
 <script lang="ts">
   import SendHorizontal from "@lucide/svelte/icons/send-horizontal";
 
-  import { Textarea } from "$lib/components/vendor/textarea";
-  import { PanelChip } from "$components/authored/panel";
-  import { ScreenAction } from "$components/authored/screen";
+  import { Textarea } from "$vendored-components/textarea";
+  import { PanelChip } from "$authored-components/panel";
+  import { ScreenAction } from "$authored-components/screen";
 
   /**
    * The next message, at the foot of the thread.

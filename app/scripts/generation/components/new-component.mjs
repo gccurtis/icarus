@@ -35,7 +35,7 @@ plan.create(
   `<script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { traceNode } from "$components/development/trace.svelte";
+  import { traceNode } from "$development-components/trace.svelte";
 
   let { children }: { children?: Snippet } = $props();
 
@@ -49,7 +49,7 @@ plan.create(
 );
 
 plan.edit(join(root, "index.ts"), (text) => {
-  const line = `export { default as ${Export} } from "$components/authored/${vocabulary}/${file}";`;
+  const line = `export { default as ${Export} } from "$authored-components/${vocabulary}/${file}";`;
   if (text.includes(line)) return text;
   const body = text.replace(/^export \{\};\n?$/m, "").replace(/\n+$/, "");
   return `${body ? `${body}\n` : ""}${line}\n`;

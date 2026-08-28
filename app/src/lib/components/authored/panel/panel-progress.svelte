@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Progress } from "$lib/components/vendor/progress";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Progress } from "$vendored-components/progress";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * How far through something is.

@@ -12,7 +12,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { analysis, chartFor, mark, rowsUnder } from "$capabilities/analysis";
   import type { ChartKindId } from "$capabilities/analysis";
   import { isInspectionKey, viewState } from "$model/client/view-state";

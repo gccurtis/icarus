@@ -12,7 +12,7 @@
     PanelSection,
     PanelThumb,
     PanelThumbs
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { layout, layoutsIn, slide } from "$capabilities/resource";
 
   /**

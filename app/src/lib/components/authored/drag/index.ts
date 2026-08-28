@@ -12,5 +12,5 @@
  * keyboard path cannot be the thing that gets left out of the fourth surface
  * someone builds.
  */
-export { default as Draggable } from "./draggable.svelte";
-export { default as DropZone } from "./drop-zone.svelte";
+export { default as Draggable } from "$authored-components/drag/draggable.svelte";
+export { default as DropZone } from "$authored-components/drag/drop-zone.svelte";

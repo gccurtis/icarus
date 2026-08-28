@@ -7,7 +7,7 @@
     PanelButton,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { templateKinds } from "$capabilities/library";
   import { viewState } from "$model/client/view-state";
 

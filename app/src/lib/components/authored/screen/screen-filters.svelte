@@ -2,10 +2,10 @@
   import type { Snippet } from "svelte";
   import Search from "@lucide/svelte/icons/search";
 
-  import * as InputGroup from "$lib/components/vendor/input-group";
-  import * as Select from "$lib/components/vendor/select";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as InputGroup from "$vendored-components/input-group";
+  import * as Select from "$vendored-components/select";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * The row above a table or a card grid: what narrows it, what orders it, and

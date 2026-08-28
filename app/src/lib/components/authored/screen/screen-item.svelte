@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * One entry in a `ScreenList`: who, what they did, and enough of what they

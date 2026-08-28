@@ -8,8 +8,8 @@
 
   import Entry from "$views/development/vocabulary/components/entry.svelte";
   import SectionTitle from "$views/development/vocabulary/components/section-title.svelte";
-  import { Button } from "$lib/components/vendor/button";
-  import { PanelButton, PanelChip, PanelChoice } from "$components/authored/panel";
+  import { Button } from "$vendored-components/button";
+  import { PanelButton, PanelChip, PanelChoice } from "$authored-components/panel";
   import {
     ScreenAction,
     ScreenBanner,
@@ -32,7 +32,7 @@
     ScreenStrip,
     ScreenTable,
     ScreenThumb
-  } from "$components/authored/screen";
+  } from "$authored-components/screen";
 
   /** The workspace family: the shapes the centre of a screen is built from. */
   const SHELF = [

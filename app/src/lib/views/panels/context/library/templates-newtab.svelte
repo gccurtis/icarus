@@ -4,7 +4,7 @@
   import Presentation from "@lucide/svelte/icons/presentation";
   import TableIcon from "@lucide/svelte/icons/table";
 
-  import { Panel, PanelButton, PanelRow, PanelSearch, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelButton, PanelRow, PanelSearch, PanelSection } from "$authored-components/panel";
   import { templates, type LibraryTemplate } from "$capabilities/library";
   import { viewState } from "$model/client/view-state";
 

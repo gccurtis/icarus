@@ -6,11 +6,11 @@ const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 /**
  * Two trees are named by somebody else. `routes/` is named by SvelteKit's
- * conventions — `+page.svelte`, `[project]` — and `components/vendor/` is
+ * conventions — `+page.svelte`, `[project]` — and `components/vendored/` is
  * written by the shadcn CLI, which rewrites it on every regeneration.
  */
 const isSomebodyElses = (tree, path) =>
-  tree.within(tree.routes, path) || tree.within(tree.path("components", "vendor"), path);
+  tree.within(tree.routes, path) || tree.within(tree.path("components", "vendored"), path);
 
 export default check({
   name: "names-are-kebab-case",

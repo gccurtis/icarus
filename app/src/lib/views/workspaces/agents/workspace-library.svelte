@@ -5,7 +5,7 @@
   import Plus from "@lucide/svelte/icons/plus";
   import Zap from "@lucide/svelte/icons/zap";
 
-  import { PanelActor, PanelChip } from "$components/authored/panel";
+  import { PanelActor, PanelChip } from "$authored-components/panel";
   import {
     ScreenAction,
     ScreenCard,
@@ -18,8 +18,8 @@
     ScreenRow,
     ScreenSurface,
     ScreenTable
-  } from "$components/authored/screen";
-  import { Button } from "$lib/components/vendor/button";
+  } from "$authored-components/screen";
+  import { Button } from "$vendored-components/button";
   import {
     personasIn,
     tasksIn,

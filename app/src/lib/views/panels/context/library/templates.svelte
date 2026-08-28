@@ -14,7 +14,7 @@
     PanelRow,
     PanelSearch,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { templates, type LibraryTemplate } from "$capabilities/library";
   import { viewState } from "$model/client/view-state";
 

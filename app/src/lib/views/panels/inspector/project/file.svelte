@@ -12,7 +12,7 @@
     PanelLink,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { connectors, resourcesOfKind } from "$capabilities/library";
   import { health, project } from "$capabilities/project";
   import { isInspectionKey, viewState } from "$model/client/view-state";

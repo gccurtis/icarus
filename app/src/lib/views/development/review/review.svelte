@@ -2,7 +2,7 @@
   import type { Component } from "svelte";
 
   import { forgetDoors } from "$capabilities/read.svelte";
-  import { provideTrace } from "$components/development/trace.svelte";
+  import { provideTrace } from "$development-components/trace.svelte";
   import GridMap from "$views/development/review/components/grid-map.svelte";
   import Picker from "$views/development/review/components/picker.svelte";
   import StatePanel from "$views/development/review/components/state-panel.svelte";

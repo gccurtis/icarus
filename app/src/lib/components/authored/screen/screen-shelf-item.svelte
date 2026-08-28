@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { traceNode } from "$components/development/trace.svelte";
-  import { CarouselShelfItem } from "$components/authored/carousel-shelf";
+  import { traceNode } from "$development-components/trace.svelte";
+  import { CarouselShelfItem } from "$authored-components/carousel-shelf";
 
   /**
    * One place on the shelf, sized for a card.

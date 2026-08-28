@@ -1,7 +1,7 @@
 <script lang="ts">
-	import * as Carousel from "$lib/components/vendor/carousel";
-	import { cn, type WithElementRef } from "$lib/components/vendor/utils";
-	import { traceNode } from "$components/development/trace.svelte";
+	import * as Carousel from "$vendored-components/carousel";
+	import { cn, type WithElementRef } from "$vendored-components/utils";
+	import { traceNode } from "$development-components/trace.svelte";
 	import type { HTMLAttributes } from "svelte/elements";
 
 	let {

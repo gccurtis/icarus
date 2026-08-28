@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { Input } from "$lib/components/vendor/input";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Input } from "$vendored-components/input";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A filter, and the things it filters, as one component.

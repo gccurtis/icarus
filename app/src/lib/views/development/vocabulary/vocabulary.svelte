@@ -14,7 +14,7 @@
   import ScreenParts from "$views/development/vocabulary/components/screen-parts.svelte";
   import ScreenPlane from "$views/development/vocabulary/components/screen-plane.svelte";
   import { createCommentLog, provideCommentLog } from "$views/development/vocabulary/shared/comment-log.svelte";
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
 
   /**
    * The composition vocabulary, rendered at `/demo/vocabulary`.

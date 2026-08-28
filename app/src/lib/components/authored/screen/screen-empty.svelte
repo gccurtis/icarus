@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Component, Snippet } from "svelte";
 
-  import * as Empty from "$lib/components/vendor/empty";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as Empty from "$vendored-components/empty";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A workspace with nothing in it, saying which nothing this is.

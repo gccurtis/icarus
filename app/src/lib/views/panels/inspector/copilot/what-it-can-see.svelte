@@ -15,7 +15,7 @@
     PanelRow,
     PanelSearch,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import type { AgentId } from "$capabilities/cast";
   import {
     attachableIn,

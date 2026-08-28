@@ -12,7 +12,7 @@
     PanelFields,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { AGENTS, actorName } from "$capabilities/cast";
   import { project } from "$capabilities/project";
   import { searchScope, thread, type ThreadMode } from "$capabilities/research";

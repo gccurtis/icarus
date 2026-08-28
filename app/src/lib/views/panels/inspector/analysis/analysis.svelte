@@ -5,7 +5,7 @@
     PanelFields,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { analysis, lastRunOf } from "$capabilities/analysis";
 
   /**

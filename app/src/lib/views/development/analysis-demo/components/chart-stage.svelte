@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Chart, ChartGrowth, ChartMekko } from "$components/authored/chart";
+  import { Chart, ChartGrowth, ChartMekko } from "$authored-components/chart";
 
   /**
    * The chart, framed, with the growth strip under it where one applies.

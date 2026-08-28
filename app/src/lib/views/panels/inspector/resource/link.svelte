@@ -3,7 +3,7 @@
   import ExternalLink from "@lucide/svelte/icons/external-link";
   import Unlink from "@lucide/svelte/icons/unlink";
 
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
   import {
     Panel,
     PanelActions,
@@ -12,7 +12,7 @@
     PanelField,
     PanelFields,
     PanelNote
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { documentRecord, link } from "$capabilities/resource";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

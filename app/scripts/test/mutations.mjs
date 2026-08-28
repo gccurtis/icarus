@@ -120,18 +120,18 @@ export const MUTATIONS = [
   {
     check: "vendor-is-unedited",
     says: "a vendored file takes an authored component",
-    names: "vendor/button/edited.ts",
+    names: "vendored/button/edited.ts",
     changes: [
-      { path: "src/lib/components/vendor/button/edited.ts", write: `export { Panel } from "$components/authored/panel";\n` }
+      { path: "src/lib/components/vendored/button/edited.ts", write: `export { Panel } from "$authored-components/panel";\n` }
     ]
   },
   {
     check: "vendor-keeps-its-own-spelling",
     subject: "import-spelling",
     says: "a vendored import is spelled with a first-party alias",
-    names: "vendor/button/respelled.ts",
+    names: "vendored/button/respelled.ts",
     changes: [
-      { path: "src/lib/components/vendor/button/respelled.ts", write: `export * from "$components/vendor/button/index";\n` }
+      { path: "src/lib/components/vendored/button/respelled.ts", write: `export * from "$lib/components/vendored/button/index";\n` }
     ]
   },
 

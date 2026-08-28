@@ -7,7 +7,7 @@
     PanelButton,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { variablesIn, type TemplateVariable } from "$capabilities/library";
   import { viewState } from "$model/client/view-state";
 

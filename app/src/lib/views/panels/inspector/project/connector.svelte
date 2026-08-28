@@ -3,7 +3,7 @@
   import RefreshCw from "@lucide/svelte/icons/refresh-cw";
   import Unplug from "@lucide/svelte/icons/unplug";
 
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
   import {
     Panel,
     PanelActions,
@@ -17,7 +17,7 @@
     PanelProgress,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { connector, connectors } from "$capabilities/library";
   import type { ConnectorDetail } from "$capabilities/library";
   import { project } from "$capabilities/project";

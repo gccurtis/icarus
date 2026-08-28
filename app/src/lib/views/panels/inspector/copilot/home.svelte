@@ -11,7 +11,7 @@
     PanelRow,
     PanelSearch,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { actorName } from "$capabilities/cast";
   import {
     conversationsIn,

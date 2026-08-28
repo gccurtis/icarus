@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { PanelChip } from "$components/authored/panel";
+  import { PanelChip } from "$authored-components/panel";
 
   /**
    * What the agent ran to produce the message above it, and what came back.

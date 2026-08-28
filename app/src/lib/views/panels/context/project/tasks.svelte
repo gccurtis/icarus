@@ -11,7 +11,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { tasks, type TaskRow } from "$capabilities/project";
   import { viewState } from "$model/client/view-state";
 

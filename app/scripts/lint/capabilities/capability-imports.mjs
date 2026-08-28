@@ -3,7 +3,15 @@ import { capabilities, unitOf } from "../shared/trees.mjs";
 
 /** The one runtime door a procedure may reach: the server graph, at its accessor. */
 const RUNTIME_DOOR = "server/start.server";
-const CLIENT_TREES = new Set(["views", "panels", "workspaces", "modals", "components"]);
+const CLIENT_TREES = new Set([
+  "views",
+  "panels",
+  "workspaces",
+  "modals",
+  "authored-components",
+  "vendored-components",
+  "development-components"
+]);
 
 export default check({
   name: "capability-imports",

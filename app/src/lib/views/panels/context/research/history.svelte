@@ -11,7 +11,7 @@
     PanelRow,
     PanelSearch,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { currentTurn, otherThreads, turnsIn } from "$capabilities/research";
   import { viewState } from "$model/client/view-state";
 

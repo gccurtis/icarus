@@ -13,7 +13,7 @@
     PanelRow,
     PanelSearch,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { functionsIn, tablesIn, valuesIn } from "$capabilities/analysis";
   import { viewState } from "$model/client/view-state";
 

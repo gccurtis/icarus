@@ -1,6 +1,6 @@
 <script lang="ts">
-  import * as Select from "$lib/components/vendor/select";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as Select from "$vendored-components/select";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A value chosen from a fixed set.

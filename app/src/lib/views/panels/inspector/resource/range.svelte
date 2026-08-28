@@ -3,7 +3,7 @@
   import Eraser from "@lucide/svelte/icons/eraser";
   import Tag from "@lucide/svelte/icons/tag";
 
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
   import {
     Panel,
     PanelActions,
@@ -16,7 +16,7 @@
     PanelNote,
     PanelSection,
     PanelSelect
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     rangeSelection,
     sheetStyles,

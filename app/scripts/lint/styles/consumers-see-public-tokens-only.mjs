@@ -20,7 +20,7 @@ export default check({
   run(tree) {
     const found = [];
     const styles = stylesRoot(tree);
-    const vendor = tree.path("components", "vendor");
+    const vendor = tree.path("components", "vendored");
     const diagnostic = tree.path(...DIAGNOSTIC);
 
     for (const path of tree.files) {

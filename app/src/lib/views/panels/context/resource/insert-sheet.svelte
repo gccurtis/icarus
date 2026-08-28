@@ -10,7 +10,7 @@
   import TableCellsMerge from "@lucide/svelte/icons/table-cells-merge";
   import Variable from "@lucide/svelte/icons/variable";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import {
     insertOptions,
     rangeSelection,

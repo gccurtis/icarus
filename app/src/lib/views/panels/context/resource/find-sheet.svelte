@@ -8,7 +8,7 @@
     PanelNote,
     PanelRow,
     PanelSearch
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { findInSheet } from "$capabilities/resource";
   import { viewState } from "$model/client/view-state";
 

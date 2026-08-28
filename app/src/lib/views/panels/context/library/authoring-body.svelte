@@ -1,7 +1,7 @@
 <script lang="ts">
   import Heading from "@lucide/svelte/icons/heading";
 
-  import { Panel, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelRow, PanelSection } from "$authored-components/panel";
   import { outlineIn } from "$capabilities/library";
   import { viewState } from "$model/client/view-state";
 

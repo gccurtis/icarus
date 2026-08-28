@@ -13,7 +13,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { filtersIn, limitIn, placementsOn, sortIn } from "$capabilities/analysis";
   import { viewState } from "$model/client/view-state";
 

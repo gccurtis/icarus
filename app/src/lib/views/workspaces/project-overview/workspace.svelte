@@ -7,7 +7,7 @@
   import Presentation from "@lucide/svelte/icons/presentation";
   import Sheet from "@lucide/svelte/icons/sheet";
 
-  import { PanelFaces } from "$components/authored/panel";
+  import { PanelFaces } from "$authored-components/panel";
   import {
     ScreenCell,
     ScreenEmpty,
@@ -19,10 +19,10 @@
     ScreenRow,
     ScreenSurface,
     ScreenTable
-  } from "$components/authored/screen";
-  import { Button } from "$lib/components/vendor/button";
-  import * as DropdownMenu from "$lib/components/vendor/dropdown-menu";
-  import { ToggleGroup, ToggleGroupItem } from "$lib/components/vendor/toggle-group";
+  } from "$authored-components/screen";
+  import { Button } from "$vendored-components/button";
+  import * as DropdownMenu from "$vendored-components/dropdown-menu";
+  import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
   import { actorName, type Resource, type ResourceKind } from "$capabilities/cast";
   import { mentionsForViewer } from "$capabilities/collaboration";
   import { inspectionFor } from "$capabilities/inspecting";

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BlockText, ContentBlock } from "$components/authored/block";
+  import { BlockText, ContentBlock } from "$authored-components/block";
 
   /**
    * A slide: a fixed canvas, blocks placed on it, chrome on.

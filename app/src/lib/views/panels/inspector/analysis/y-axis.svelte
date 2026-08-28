@@ -17,7 +17,7 @@
     PanelSection,
     PanelSelect,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     analysis,
     filtersIn,

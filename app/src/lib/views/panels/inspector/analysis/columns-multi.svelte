@@ -16,7 +16,7 @@
     PanelSelect,
     PanelStat,
     PanelStats
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { aggregationsFor, analysis, placementsOn, resultFor } from "$capabilities/analysis";
   import type { Aggregation } from "$capabilities/analysis";
   import { isInspectionKey, viewState } from "$model/client/view-state";

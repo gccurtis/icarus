@@ -11,7 +11,7 @@
     PanelNote,
     PanelSection,
     PanelSelect
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { VIEWER } from "$capabilities/cast";
   import { members } from "$capabilities/collaboration";
   import { deckDraft } from "$capabilities/library";

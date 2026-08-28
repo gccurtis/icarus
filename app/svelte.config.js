@@ -32,36 +32,20 @@ export default {
     },
 
     alias: {
-      // One alias per tree that code reaches across; `$lib` is built in.
-      //
-      // SvelteKit generates .svelte-kit/tsconfig.json paths from this, so the
-      // compiler and the bundler read one list and cannot drift. Generated
-      // from the tree by `pnpm aliases`, which is what stops a second list
-      // existing — an edit here is overwritten rather than kept.
-      $capabilities: "src/lib/capabilities",
-      $components: "src/lib/components",
-      $model: "src/lib/model",
-      $representation: "src/lib/representation",
-      $runtime: "src/lib/runtime",
-      $styles: "src/lib/styles",
-      $views: "src/lib/views",
+      "$capabilities": "src/lib/capabilities",
+      "$model": "src/lib/model",
+      "$representation": "src/lib/representation",
+      "$runtime": "src/lib/runtime",
+      "$styles": "src/lib/styles",
+      "$views": "src/lib/views",
 
-      // Three trees inside views/ that are reached by name rather than through
-      // `$views`, because a panel is not a view: it knows only its doors, which
-      // is what lets it render in a gallery, in a test, or on a screen it was
-      // not written for.
-      $panels: "src/lib/views/panels",
-      $workspaces: "src/lib/views/workspaces",
-      $modals: "src/lib/views/modals",
+      "$authored-components": "src/lib/components/authored",
+      "$development-components": "src/lib/components/development",
+      "$vendored-components": "src/lib/components/vendored",
 
-      // No `$development`. It is a directory inside two trees rather than a
-      // tree of its own, and nothing shipped may import a development surface,
-      // so an alias pointing at one would be an invitation.
-      //
-      // No alias for the vendored components either: `components.json` points
-      // the shadcn CLI at `$lib/components/vendor`, and it rewrites those
-      // imports in its own files on every regeneration. That spelling is the
-      // one documented exception rather than a tree we forgot.
+      "$panels": "src/lib/views/panels",
+      "$workspaces": "src/lib/views/workspaces",
+      "$modals": "src/lib/views/modals",
     },
   },
 };

@@ -13,7 +13,7 @@
     PanelRow,
     PanelSearch,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { findInDocument, type DocumentHit } from "$capabilities/resource";
   import { viewState } from "$model/client/view-state";
 

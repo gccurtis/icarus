@@ -2,8 +2,8 @@
   import type { Snippet } from "svelte";
   import Plus from "@lucide/svelte/icons/plus";
 
-  import { traceNode } from "$components/development/trace.svelte";
-  import PanelButton from "$components/authored/panel/panel-button.svelte";
+  import { traceNode } from "$development-components/trace.svelte";
+  import PanelButton from "$authored-components/panel/panel-button.svelte";
 
   /**
    * A block of pairs the reader creates, names and fills in.

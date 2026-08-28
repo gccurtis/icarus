@@ -4,7 +4,7 @@
   import Sparkles from "@lucide/svelte/icons/sparkles";
   import Waypoints from "@lucide/svelte/icons/waypoints";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import {
     generatedBlocksUsing,
     latticeNodesIn,

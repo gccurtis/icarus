@@ -2,9 +2,9 @@
   import Minus from "@lucide/svelte/icons/minus";
   import Plus from "@lucide/svelte/icons/plus";
 
-  import * as InputGroup from "$lib/components/vendor/input-group";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as InputGroup from "$vendored-components/input-group";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A number, with its unit and a way to step it.

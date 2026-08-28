@@ -4,10 +4,10 @@
     createChartSelection,
     settingsFor,
     type ChartType
-  } from "$components/authored/chart";
-  import { PlotBars, PlotPie } from "$components/authored/chart/plot";
-  import { PanelChoice, PanelNote } from "$components/authored/panel";
-  import { ScreenGroup, ScreenNote, ScreenSurface } from "$components/authored/screen";
+  } from "$authored-components/chart";
+  import { PlotBars, PlotPie } from "$authored-components/chart/plot";
+  import { PanelChoice, PanelNote } from "$authored-components/panel";
+  import { ScreenGroup, ScreenNote, ScreenSurface } from "$authored-components/screen";
 
   /**
    * The hand-rolled charts, and the thing they exist for: selection.

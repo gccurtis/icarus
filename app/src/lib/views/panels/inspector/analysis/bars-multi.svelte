@@ -16,7 +16,7 @@
     PanelSelect,
     PanelStat,
     PanelStats
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { analysis, chartFor, placementsOn, resultFor } from "$capabilities/analysis";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

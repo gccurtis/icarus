@@ -13,7 +13,7 @@
     PanelFields,
     PanelNote,
     PanelThumb
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { chartFor, chartKinds } from "$capabilities/analysis";
   import type { ChartKindId } from "$capabilities/analysis";
   import { viewState } from "$model/client/view-state";

@@ -11,5 +11,5 @@
  * The three sizings are the three surfaces: `flow` is a document's paragraph,
  * `grow` is a slide's text object, `fixed` is a shape.
  */
-export { default as ContentBlock } from "./content-block.svelte";
-export { default as BlockText } from "./block-text.svelte";
+export { default as ContentBlock } from "$authored-components/block/content-block.svelte";
+export { default as BlockText } from "$authored-components/block/block-text.svelte";

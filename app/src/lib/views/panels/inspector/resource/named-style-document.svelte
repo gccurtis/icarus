@@ -7,7 +7,7 @@
     PanelFields,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { documentRecord, documentStyle } from "$capabilities/resource";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

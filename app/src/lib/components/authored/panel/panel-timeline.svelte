@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Component } from "svelte";
 
-  import * as Avatar from "$lib/components/vendor/avatar";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as Avatar from "$vendored-components/avatar";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * Events on a rail, in the order they happened.

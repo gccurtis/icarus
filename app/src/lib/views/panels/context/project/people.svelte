@@ -5,7 +5,7 @@
     PanelNote,
     PanelSearch,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { AGENTS, VIEWER } from "$capabilities/cast";
   import { health, people, tasks } from "$capabilities/project";
   import { viewState } from "$model/client/view-state";

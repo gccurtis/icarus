@@ -12,8 +12,8 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
-  import { Separator } from "$lib/components/vendor/separator";
+  } from "$authored-components/panel";
+  import { Separator } from "$vendored-components/separator";
   import { context, kindTerm } from "$capabilities/scope";
   import { viewState } from "$model/client/view-state";
 

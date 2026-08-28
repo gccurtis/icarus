@@ -29,7 +29,7 @@
  * gutter and its body adds no horizontal padding of its own, so a `PanelFields`
  * block dropped in lines up with the title above it.
  */
-export { default as OverlayInsertMenu } from "./overlay-insert-menu.svelte";
-export { default as OverlayModal } from "./overlay-modal.svelte";
+export { default as OverlayInsertMenu } from "$authored-components/overlay/overlay-insert-menu.svelte";
+export { default as OverlayModal } from "$authored-components/overlay/overlay-modal.svelte";
 
-export type { InsertEntry } from "./overlay-insert-menu.svelte";
+export type { InsertEntry } from "$authored-components/overlay/overlay-insert-menu.svelte";

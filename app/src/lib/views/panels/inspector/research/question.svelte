@@ -14,7 +14,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { project } from "$capabilities/project";
   import { bearingOn, question, type Bearing } from "$capabilities/research";
   import { viewState } from "$model/client/view-state";

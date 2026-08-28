@@ -7,7 +7,7 @@
     PanelNote,
     PanelSection,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { persona, toolsFor, type ToolPermission } from "$capabilities/agents";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

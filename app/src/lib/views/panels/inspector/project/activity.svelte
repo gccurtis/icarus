@@ -12,7 +12,7 @@
     PanelLink,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { AGENTS, PEOPLE } from "$capabilities/cast";
   import { resourceNamed } from "$capabilities/collaboration";
   import { connectors } from "$capabilities/library";

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { PanelActor } from "$components/authored/panel";
+  import { PanelActor } from "$authored-components/panel";
 
   /**
    * One message in a thread: who said it, when, and everything it carries.

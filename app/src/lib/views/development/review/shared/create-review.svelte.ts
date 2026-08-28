@@ -2,7 +2,7 @@ import { tick } from "svelte";
 import type { Component } from "svelte";
 
 import { doorCalls, forgetDoors, watchDoors, type DoorCall } from "$capabilities/read.svelte";
-import { createTrace, type TraceRun } from "$components/development/trace.svelte";
+import { createTrace, type TraceRun } from "$development-components/trace.svelte";
 
 /**
  * One review session: what is on the stage, what it turned out to be a function

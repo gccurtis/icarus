@@ -10,7 +10,7 @@
   import Presentation from "@lucide/svelte/icons/presentation";
   import TableIcon from "@lucide/svelte/icons/table";
 
-  import { Panel, PanelRow, PanelSearch, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelRow, PanelSearch, PanelSection } from "$authored-components/panel";
   import type { ResourceKind } from "$capabilities/cast";
   import { kindLabel, recents, type RecentRow } from "$capabilities/library";
   import { resources } from "$capabilities/project";

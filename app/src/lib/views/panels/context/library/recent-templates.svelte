@@ -4,7 +4,7 @@
   import RectangleHorizontal from "@lucide/svelte/icons/rectangle-horizontal";
   import TableIcon from "@lucide/svelte/icons/table";
 
-  import { Panel, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelRow, PanelSection } from "$authored-components/panel";
   import { recentlyUpdatedTemplates, recentlyUsedTemplates } from "$capabilities/library";
   import { viewState } from "$model/client/view-state";
 

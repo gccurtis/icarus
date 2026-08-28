@@ -1,1 +1,1 @@
-export { default as ResizeHandle } from "./resize-handle.svelte";
+export { default as ResizeHandle } from "$authored-components/resize-handle/resize-handle.svelte";

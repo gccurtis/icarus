@@ -8,7 +8,7 @@
     PanelSearch,
     PanelSection,
     PanelSelect
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     personasIn,
     taskGroup,

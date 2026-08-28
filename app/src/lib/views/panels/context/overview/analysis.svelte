@@ -11,7 +11,7 @@
     PanelLink,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { analysis, lastRunOf, limitIn } from "$capabilities/analysis";
   import { PEOPLE } from "$capabilities/cast";
   import { viewState } from "$model/client/view-state";

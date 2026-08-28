@@ -7,7 +7,7 @@
     PanelNote,
     PanelSection,
     PanelSelect
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { modelBindingOf, persona } from "$capabilities/agents";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

@@ -29,7 +29,7 @@
     PanelThumb,
     PanelThumbs,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
 
   /**
    * The panel family, each word shown at the width it will actually be used at.

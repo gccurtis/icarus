@@ -1,5 +1,5 @@
-import { markId, type Mark, type SeriesSpec } from "$components/authored/chart/chart-spec";
-import { seriesColor } from "$components/authored/chart/palette";
+import { markId, type Mark, type SeriesSpec } from "$authored-components/chart/chart-spec";
+import { seriesColor } from "$authored-components/chart/palette";
 
 /**
  * Turning data into positioned things, with no drawing anywhere in it.

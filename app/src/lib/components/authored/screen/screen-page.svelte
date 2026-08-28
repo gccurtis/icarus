@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { traceNode } from "$components/development/trace.svelte";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * One sheet of paper on a canvas, with its margins drawn and its furniture on

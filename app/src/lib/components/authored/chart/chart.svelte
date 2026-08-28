@@ -1,8 +1,8 @@
 <script lang="ts">
   import { AreaChart, BarChart, Bars, Labels, LineChart, PieChart, ScatterChart, Spline } from "layerchart";
 
-  import { traceNode } from "$components/development/trace.svelte";
-  import { seriesColor } from "$components/authored/chart/palette";
+  import { traceNode } from "$development-components/trace.svelte";
+  import { seriesColor } from "$authored-components/chart/palette";
 
   /**
    * A chart, of whichever kind is asked for.

@@ -12,7 +12,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     context,
     retrievabilityOf,

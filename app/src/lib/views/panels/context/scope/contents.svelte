@@ -4,7 +4,7 @@
   import FileText from "@lucide/svelte/icons/file-text";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import {
     contentsOf,
     context,

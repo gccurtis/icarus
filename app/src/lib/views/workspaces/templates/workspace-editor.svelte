@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { PanelChip } from "$components/authored/panel";
+  import { PanelChip } from "$authored-components/panel";
   import {
     ScreenBar,
     ScreenCanvas,
@@ -9,8 +9,8 @@
     ScreenPage,
     ScreenSlide,
     ScreenSurface
-  } from "$components/authored/screen";
-  import { Input } from "$lib/components/vendor/input";
+  } from "$authored-components/screen";
+  import { Input } from "$vendored-components/input";
   import {
     outlineIn,
     pageSetupFor,

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { asPercent, cagr, elementOverElement } from "$components/authored/chart/growth";
-  import { cn } from "$lib/components/vendor/utils";
+  import { asPercent, cagr, elementOverElement } from "$authored-components/chart/growth";
+  import { cn } from "$vendored-components/utils";
 
   /**
    * The change between one element and the next, over the chart it belongs to.

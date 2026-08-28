@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type { ChartSelection } from "$components/authored/chart/chart-selection.svelte";
-  import type { SeriesSpec } from "$components/authored/chart/chart-spec";
+  import type { ChartSelection } from "$authored-components/chart/chart-selection.svelte";
+  import type { SeriesSpec } from "$authored-components/chart/chart-spec";
   import {
     layoutBars,
     placeTotalLabels,
     placeValueLabels,
     type BarLayout
-  } from "$components/authored/chart/plot/layout";
+  } from "$authored-components/chart/plot/layout";
 
   /**
    * Bars, drawn by us.

@@ -4,7 +4,7 @@
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import Shapes from "@lucide/svelte/icons/shapes";
 
-  import { ScreenCard, ScreenCards } from "$components/authored/screen";
+  import { ScreenCard, ScreenCards } from "$authored-components/screen";
 
   /**
    * The other demo pages, from the one everybody opens first.

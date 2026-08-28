@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Input } from "$lib/components/vendor/input";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Input } from "$vendored-components/input";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A field that is not editing anything yet.

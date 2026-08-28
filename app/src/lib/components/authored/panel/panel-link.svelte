@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Button } from "$lib/components/vendor/button";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Button } from "$vendored-components/button";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A name inside a sentence or a field that opens what it names.

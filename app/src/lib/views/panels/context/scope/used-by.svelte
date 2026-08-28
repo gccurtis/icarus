@@ -2,7 +2,7 @@
   import Bot from "@lucide/svelte/icons/bot";
   import Sparkles from "@lucide/svelte/icons/sparkles";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import { context, usedBy, type Dependent } from "$capabilities/scope";
 
   /**

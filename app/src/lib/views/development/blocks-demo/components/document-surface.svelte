@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BlockText, ContentBlock } from "$components/authored/block";
+  import { BlockText, ContentBlock } from "$authored-components/block";
 
   /**
    * A page of a document: one column, blocks stacked down it, no chrome.

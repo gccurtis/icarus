@@ -1,10 +1,10 @@
 <script lang="ts">
   import SectionHeading from "$views/development/demo/components/section-heading.svelte";
-  import { Badge } from "$lib/components/vendor/badge";
-  import { Button } from "$lib/components/vendor/button";
-  import * as Card from "$lib/components/vendor/card";
-  import { Input } from "$lib/components/vendor/input";
-  import { Label } from "$lib/components/vendor/label";
+  import { Badge } from "$vendored-components/badge";
+  import { Button } from "$vendored-components/button";
+  import * as Card from "$vendored-components/card";
+  import { Input } from "$vendored-components/input";
+  import { Label } from "$vendored-components/label";
 
   let inputValue = $state("");
 </script>

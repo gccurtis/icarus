@@ -3,7 +3,7 @@
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
   import AtSign from "@lucide/svelte/icons/at-sign";
 
-  import * as Select from "$lib/components/vendor/select";
+  import * as Select from "$vendored-components/select";
   import { VIEWER } from "$capabilities/cast";
   import { mentionsForViewer, type PersonComment } from "$capabilities/collaboration";
   import { subject as subjectDoor } from "$capabilities/naming";

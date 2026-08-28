@@ -3,7 +3,7 @@
   import CircleSlash from "@lucide/svelte/icons/circle-slash";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import { automationHealth, type HealthRow } from "$capabilities/agents";
   import { viewState } from "$model/client/view-state";
 

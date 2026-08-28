@@ -1,7 +1,7 @@
 <script lang="ts">
   import Sparkles from "@lucide/svelte/icons/sparkles";
 
-  import { ScreenNote, ScreenSurface } from "$components/authored/screen";
+  import { ScreenNote, ScreenSurface } from "$authored-components/screen";
   import {
     documentFooter,
     documentHeader,

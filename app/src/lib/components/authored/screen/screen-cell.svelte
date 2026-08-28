@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { Component, Snippet } from "svelte";
 
-  import { Button } from "$lib/components/vendor/button";
-  import * as Table from "$lib/components/vendor/table";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Button } from "$vendored-components/button";
+  import * as Table from "$vendored-components/table";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * One cell, in the three shapes a table here actually uses.

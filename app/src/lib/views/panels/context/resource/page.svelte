@@ -9,7 +9,7 @@
     PanelSection,
     PanelSelect,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { pageSetup, type PageSetup } from "$capabilities/resource";
 
   /**

@@ -6,7 +6,7 @@
   import Send from "@lucide/svelte/icons/send";
   import X from "@lucide/svelte/icons/x";
 
-  import { PanelChip, PanelQuote } from "$components/authored/panel";
+  import { PanelChip, PanelQuote } from "$authored-components/panel";
   import {
     ScreenAction,
     ScreenCard,
@@ -15,10 +15,10 @@
     ScreenGroup,
     ScreenNote,
     ScreenSurface
-  } from "$components/authored/screen";
-  import { Button } from "$lib/components/vendor/button";
-  import * as Select from "$lib/components/vendor/select";
-  import { Textarea } from "$lib/components/vendor/textarea";
+  } from "$authored-components/screen";
+  import { Button } from "$vendored-components/button";
+  import * as Select from "$vendored-components/select";
+  import { Textarea } from "$vendored-components/textarea";
   import { AGENTS, actorName } from "$capabilities/cast";
   import {
     acceptedIn,

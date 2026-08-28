@@ -1,7 +1,7 @@
 <script lang="ts">
   import CommentBox from "$views/development/vocabulary/components/comment-box.svelte";
   import SectionTitle from "$views/development/vocabulary/components/section-title.svelte";
-  import { PanelChip } from "$components/authored/panel";
+  import { PanelChip } from "$authored-components/panel";
 
   /**
    * What each form implies about the query behind it.

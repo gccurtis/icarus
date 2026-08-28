@@ -9,7 +9,7 @@
     PanelRow,
     PanelSection,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { activityBy, commentsBy, member, presenceFor } from "$capabilities/collaboration";
   import { asPersonId, type PersonId } from "$capabilities/cast";
   import { viewState } from "$model/client/view-state";

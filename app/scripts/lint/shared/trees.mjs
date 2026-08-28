@@ -37,8 +37,8 @@ export const objects = (tree) => {
 /** `components/authored/<vocabulary>/`. */
 export const vocabularies = (tree) => named(tree, tree.path("components", "authored"));
 
-/** `components/vendor/<component>/`. */
-export const vendored = (tree) => named(tree, tree.path("components", "vendor"));
+/** `components/vendored/<component>/`. */
+export const vendored = (tree) => named(tree, tree.path("components", "vendored"));
 
 /** `representation/data/types/<domain>/`, and the behaviour directories beside them. */
 export const domains = (tree) => ({

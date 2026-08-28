@@ -7,7 +7,7 @@
   import Type from "@lucide/svelte/icons/type";
   import Variable from "@lucide/svelte/icons/variable";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import { insertOptions } from "$capabilities/resource";
   import { viewState, type InspectionKey } from "$model/client/view-state";
 

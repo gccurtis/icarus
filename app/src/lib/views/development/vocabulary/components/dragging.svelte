@@ -5,8 +5,8 @@
 
   import Entry from "$views/development/vocabulary/components/entry.svelte";
   import SectionTitle from "$views/development/vocabulary/components/section-title.svelte";
-  import { Draggable, DropZone } from "$components/authored/drag";
-  import { PanelChip, PanelNote } from "$components/authored/panel";
+  import { Draggable, DropZone } from "$authored-components/drag";
+  import { PanelChip, PanelNote } from "$authored-components/panel";
 
   /**
    * Moving something from one place to another.

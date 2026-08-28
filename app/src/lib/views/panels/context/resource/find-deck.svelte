@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Panel, PanelNote, PanelRow, PanelSearch } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSearch } from "$authored-components/panel";
   import { findInDeck, slidesIn, type DeckHit } from "$capabilities/resource";
   import { viewState } from "$model/client/view-state";
 

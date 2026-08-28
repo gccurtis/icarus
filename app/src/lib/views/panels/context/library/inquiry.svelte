@@ -2,7 +2,7 @@
   import CircleQuestionMark from "@lucide/svelte/icons/circle-question-mark";
   import FlaskConical from "@lucide/svelte/icons/flask-conical";
 
-  import { Panel, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelRow, PanelSection } from "$authored-components/panel";
   import { hypotheses, questions, type HypothesisRow } from "$capabilities/library";
   import { viewState } from "$model/client/view-state";
 

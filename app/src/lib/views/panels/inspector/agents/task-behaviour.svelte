@@ -8,7 +8,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { task as taskDoor, type TaskSetting } from "$capabilities/agents";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

@@ -3,15 +3,15 @@
 
   import ChartStage from "$views/development/analysis-demo/components/chart-stage.svelte";
   import DataTable from "$views/development/analysis-demo/components/data-table.svelte";
-  import { ChartColors, copyChart } from "$components/authored/chart";
-  import { PanelChoice, PanelNote } from "$components/authored/panel";
+  import { ChartColors, copyChart } from "$authored-components/chart";
+  import { PanelChoice, PanelNote } from "$authored-components/panel";
   import {
     ScreenAction,
     ScreenGroup,
     ScreenHeader,
     ScreenNote,
     ScreenSurface
-  } from "$components/authored/screen";
+  } from "$authored-components/screen";
 
   /**
    * The Analysis workspace, working.

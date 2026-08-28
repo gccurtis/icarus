@@ -2,7 +2,7 @@
   import Braces from "@lucide/svelte/icons/braces";
   import SquarePlus from "@lucide/svelte/icons/square-plus";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import { insertBlocks, variableKinds } from "$capabilities/library";
   import { viewState } from "$model/client/view-state";
 

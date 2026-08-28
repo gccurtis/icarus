@@ -15,7 +15,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { layersOn, layoutObjectsOn } from "$capabilities/resource";
   import { viewState } from "$model/client/view-state";
 

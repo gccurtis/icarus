@@ -9,28 +9,28 @@
  * Like the panel vocabulary, these know only their props. What goes in them is
  * the view's business.
  */
-export { default as ScreenSurface } from "./screen-surface.svelte";
-export { default as ScreenHeader } from "./screen-header.svelte";
-export { default as ScreenAction } from "./screen-action.svelte";
-export { default as ScreenGroup } from "./screen-group.svelte";
-export { default as ScreenNote } from "./screen-note.svelte";
-export { default as ScreenBar } from "./screen-bar.svelte";
-export { default as ScreenFilters } from "./screen-filters.svelte";
-export { default as ScreenTable } from "./screen-table.svelte";
-export { default as ScreenHeadCell } from "./screen-head-cell.svelte";
-export { default as ScreenRow } from "./screen-row.svelte";
-export { default as ScreenCell } from "./screen-cell.svelte";
-export { default as ScreenCards } from "./screen-cards.svelte";
-export { default as ScreenCard } from "./screen-card.svelte";
-export { default as ScreenShelf } from "./screen-shelf.svelte";
-export { default as ScreenShelfItem } from "./screen-shelf-item.svelte";
-export { default as ScreenThumb } from "./screen-thumb.svelte";
-export { default as ScreenPlaceholder } from "./screen-placeholder.svelte";
-export { default as ScreenBanner } from "./screen-banner.svelte";
-export { default as ScreenStats } from "./screen-stats.svelte";
-export { default as ScreenStat } from "./screen-stat.svelte";
-export { default as ScreenStrip } from "./screen-strip.svelte";
-export { default as ScreenEmpty } from "./screen-empty.svelte";
+export { default as ScreenSurface } from "$authored-components/screen/screen-surface.svelte";
+export { default as ScreenHeader } from "$authored-components/screen/screen-header.svelte";
+export { default as ScreenAction } from "$authored-components/screen/screen-action.svelte";
+export { default as ScreenGroup } from "$authored-components/screen/screen-group.svelte";
+export { default as ScreenNote } from "$authored-components/screen/screen-note.svelte";
+export { default as ScreenBar } from "$authored-components/screen/screen-bar.svelte";
+export { default as ScreenFilters } from "$authored-components/screen/screen-filters.svelte";
+export { default as ScreenTable } from "$authored-components/screen/screen-table.svelte";
+export { default as ScreenHeadCell } from "$authored-components/screen/screen-head-cell.svelte";
+export { default as ScreenRow } from "$authored-components/screen/screen-row.svelte";
+export { default as ScreenCell } from "$authored-components/screen/screen-cell.svelte";
+export { default as ScreenCards } from "$authored-components/screen/screen-cards.svelte";
+export { default as ScreenCard } from "$authored-components/screen/screen-card.svelte";
+export { default as ScreenShelf } from "$authored-components/screen/screen-shelf.svelte";
+export { default as ScreenShelfItem } from "$authored-components/screen/screen-shelf-item.svelte";
+export { default as ScreenThumb } from "$authored-components/screen/screen-thumb.svelte";
+export { default as ScreenPlaceholder } from "$authored-components/screen/screen-placeholder.svelte";
+export { default as ScreenBanner } from "$authored-components/screen/screen-banner.svelte";
+export { default as ScreenStats } from "$authored-components/screen/screen-stats.svelte";
+export { default as ScreenStat } from "$authored-components/screen/screen-stat.svelte";
+export { default as ScreenStrip } from "$authored-components/screen/screen-strip.svelte";
+export { default as ScreenEmpty } from "$authored-components/screen/screen-empty.svelte";
 
 /**
  * Something offered for a decision, with the decision on it.
@@ -40,7 +40,7 @@ export { default as ScreenEmpty } from "./screen-empty.svelte";
  * nowhere to go. Selecting a proposal and deciding it are two acts, and both have
  * to be reachable.
  */
-export { default as ScreenDecision } from "./screen-decision.svelte";
+export { default as ScreenDecision } from "$authored-components/screen/screen-decision.svelte";
 
 /**
  * Entries that are neither records nor tiles.
@@ -56,8 +56,8 @@ export { default as ScreenDecision } from "./screen-decision.svelte";
  * 300px and truncates both its lines; on the plane an excerpt has room to be two
  * lines and should be.
  */
-export { default as ScreenList } from "./screen-list.svelte";
-export { default as ScreenItem } from "./screen-item.svelte";
+export { default as ScreenList } from "$authored-components/screen/screen-list.svelte";
+export { default as ScreenItem } from "$authored-components/screen/screen-item.svelte";
 
 /**
  * The plane a thing sits ON, and the two things that sit on it.
@@ -84,9 +84,9 @@ export { default as ScreenItem } from "./screen-item.svelte";
  * belong to the inspector, because a tray under a 16:9 slide costs exactly the
  * height that zooming needs.
  */
-export { default as ScreenCanvas } from "./screen-canvas.svelte";
-export { default as ScreenPage } from "./screen-page.svelte";
-export { default as ScreenSlide } from "./screen-slide.svelte";
+export { default as ScreenCanvas } from "$authored-components/screen/screen-canvas.svelte";
+export { default as ScreenPage } from "$authored-components/screen/screen-page.svelte";
+export { default as ScreenSlide } from "$authored-components/screen/screen-slide.svelte";
 
 /**
  * A grid, two sets related by an operator, and where a message is written.
@@ -108,7 +108,7 @@ export { default as ScreenSlide } from "./screen-slide.svelte";
  * carries what the message will be able to see, because a request states its
  * scope where the request is written.
  */
-export { default as ScreenGrid } from "./screen-grid.svelte";
-export { default as ScreenGridCell } from "./screen-grid-cell.svelte";
-export { default as ScreenSplit } from "./screen-split.svelte";
-export { default as ScreenComposer } from "./screen-composer.svelte";
+export { default as ScreenGrid } from "$authored-components/screen/screen-grid.svelte";
+export { default as ScreenGridCell } from "$authored-components/screen/screen-grid-cell.svelte";
+export { default as ScreenSplit } from "$authored-components/screen/screen-split.svelte";
+export { default as ScreenComposer } from "$authored-components/screen/screen-composer.svelte";

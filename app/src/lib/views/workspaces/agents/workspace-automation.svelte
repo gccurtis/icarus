@@ -3,7 +3,7 @@
   import Clock from "@lucide/svelte/icons/clock";
   import Play from "@lucide/svelte/icons/play";
 
-  import { PanelActor, PanelChip } from "$components/authored/panel";
+  import { PanelActor, PanelChip } from "$authored-components/panel";
   import {
     ScreenBar,
     ScreenCell,
@@ -17,9 +17,9 @@
     ScreenStats,
     ScreenSurface,
     ScreenTable
-  } from "$components/authored/screen";
-  import { Button } from "$lib/components/vendor/button";
-  import { Switch } from "$lib/components/vendor/switch";
+  } from "$authored-components/screen";
+  import { Button } from "$vendored-components/button";
+  import { Switch } from "$vendored-components/switch";
   import {
     actionsFor,
     automation as automationDoor,

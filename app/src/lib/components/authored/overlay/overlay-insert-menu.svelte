@@ -28,10 +28,10 @@
   import type { Snippet } from "svelte";
   import { computeCommandScore } from "bits-ui";
 
-  import * as Command from "$lib/components/vendor/command";
-  import * as Popover from "$lib/components/vendor/popover";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as Command from "$vendored-components/command";
+  import * as Popover from "$vendored-components/popover";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A filtered list that puts something into what you are writing.

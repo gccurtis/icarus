@@ -9,9 +9,9 @@
     PanelField,
     PanelFields,
     PanelSearch
-  } from "$components/authored/panel";
-  import { HoverCard, HoverCardContent, HoverCardTrigger } from "$lib/components/vendor/hover-card";
-  import { Separator } from "$lib/components/vendor/separator";
+  } from "$authored-components/panel";
+  import { HoverCard, HoverCardContent, HoverCardTrigger } from "$vendored-components/hover-card";
+  import { Separator } from "$vendored-components/separator";
   import { variableFamily, variables } from "$capabilities/project";
   import VariablesCreate from "$panels/context/project/variables-create.svelte";
   import FunctionBuilder from "$modals/function-builder.svelte";

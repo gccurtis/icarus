@@ -12,7 +12,7 @@
     PanelFields,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { deckRecord, layout } from "$capabilities/resource";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

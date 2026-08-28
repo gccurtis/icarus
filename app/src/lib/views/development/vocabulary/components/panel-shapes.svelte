@@ -22,7 +22,7 @@
     PanelTimeline,
     PanelToggle,
     PanelTree
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
 
   /**
    * The words for an order, a nesting, a change, and a panel with nothing in it

@@ -9,7 +9,7 @@
     PanelNote,
     PanelQuote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { documentRecord, textBlock, type TextBlock } from "$capabilities/resource";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

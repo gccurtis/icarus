@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { traceNode } from "$components/development/trace.svelte";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A row of cards you scroll, rather than one you step through.

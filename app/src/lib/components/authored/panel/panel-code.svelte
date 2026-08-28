@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { traceNode } from "$components/development/trace.svelte";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A formula, an expression, or a call's arguments — set as what it is.

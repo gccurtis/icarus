@@ -12,7 +12,7 @@
     PanelRow,
     PanelSearch,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     namedCandidates,
     ruleKinds,

@@ -16,7 +16,7 @@
     PanelRow,
     PanelSection,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { analysis, placementsOn, resultFor, sortIn } from "$capabilities/analysis";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

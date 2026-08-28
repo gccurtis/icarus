@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { traceNode } from "$components/development/trace.svelte";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * The ground a document, a deck or a template sits on. Not the thing itself:

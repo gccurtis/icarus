@@ -2,10 +2,10 @@
   import type { Snippet } from "svelte";
   import Plus from "@lucide/svelte/icons/plus";
 
-  import { Button } from "$lib/components/vendor/button";
-  import * as DropdownMenu from "$lib/components/vendor/dropdown-menu";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Button } from "$vendored-components/button";
+  import * as DropdownMenu from "$vendored-components/dropdown-menu";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A place something can be put.

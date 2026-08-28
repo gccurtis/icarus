@@ -1,8 +1,8 @@
 <script lang="ts">
-  import * as Avatar from "$lib/components/vendor/avatar";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
-  import PanelLink from "$components/authored/panel/panel-link.svelte";
+  import * as Avatar from "$vendored-components/avatar";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
+  import PanelLink from "$authored-components/panel/panel-link.svelte";
 
   /**
    * A face, the name beside it, and the one line saying what it is.

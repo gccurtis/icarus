@@ -1,10 +1,10 @@
 <script lang="ts">
   import SectionHeading from "$views/development/demo/components/section-heading.svelte";
-  import { Button } from "$lib/components/vendor/button";
-  import * as Dialog from "$lib/components/vendor/dialog";
-  import * as DropdownMenu from "$lib/components/vendor/dropdown-menu";
-  import * as Sheet from "$lib/components/vendor/sheet";
-  import * as Tooltip from "$lib/components/vendor/tooltip";
+  import { Button } from "$vendored-components/button";
+  import * as Dialog from "$vendored-components/dialog";
+  import * as DropdownMenu from "$vendored-components/dropdown-menu";
+  import * as Sheet from "$vendored-components/sheet";
+  import * as Tooltip from "$vendored-components/tooltip";
 </script>
 
 <section class="flex flex-col gap-4">

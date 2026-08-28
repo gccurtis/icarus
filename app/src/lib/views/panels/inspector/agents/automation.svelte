@@ -15,8 +15,8 @@
     PanelSection,
     PanelSentence,
     PanelToggle
-  } from "$components/authored/panel";
-  import { Separator } from "$lib/components/vendor/separator";
+  } from "$authored-components/panel";
+  import { Separator } from "$vendored-components/separator";
   import { automation } from "$capabilities/agents";
   import { PEOPLE, type Person } from "$capabilities/cast";
   import { viewState } from "$model/client/view-state";

@@ -2,7 +2,7 @@
   import Check from "@lucide/svelte/icons/check";
   import X from "@lucide/svelte/icons/x";
 
-  import { PanelActions, PanelButton, PanelChip, PanelLink } from "$components/authored/panel";
+  import { PanelActions, PanelButton, PanelChip, PanelLink } from "$authored-components/panel";
 
   /**
    * A conclusion the thread produced, offered for keeping.

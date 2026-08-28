@@ -8,7 +8,7 @@
     PanelNote,
     PanelSection,
     PanelSelect
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { sheetStyle, spreadsheetRecord } from "$capabilities/resource";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ChartSelection } from "$components/authored/chart/chart-selection.svelte";
-  import { layoutPie } from "$components/authored/chart/plot/layout";
+  import type { ChartSelection } from "$authored-components/chart/chart-selection.svelte";
+  import { layoutPie } from "$authored-components/chart/plot/layout";
 
   /**
    * A pie, drawn by us.

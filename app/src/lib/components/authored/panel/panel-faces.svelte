@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import * as Avatar from "$lib/components/vendor/avatar";
-  import { Button } from "$lib/components/vendor/button";
-  import * as DropdownMenu from "$lib/components/vendor/dropdown-menu";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as Avatar from "$vendored-components/avatar";
+  import { Button } from "$vendored-components/button";
+  import * as DropdownMenu from "$vendored-components/dropdown-menu";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * Several actors at once, as faces rather than as a list.

@@ -20,9 +20,9 @@
     ScreenShelfItem,
     ScreenSurface,
     ScreenThumb
-  } from "$components/authored/screen";
-  import { Button } from "$lib/components/vendor/button";
-  import * as InputGroup from "$lib/components/vendor/input-group";
+  } from "$authored-components/screen";
+  import { Button } from "$vendored-components/button";
+  import * as InputGroup from "$vendored-components/input-group";
   import type { ResourceKind } from "$capabilities/cast";
   import {
     editorKinds,

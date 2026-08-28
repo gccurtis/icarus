@@ -10,9 +10,9 @@
     ScreenNote,
     ScreenSurface,
     ScreenThumb
-  } from "$components/authored/screen";
-  import { Button } from "$lib/components/vendor/button";
-  import { ToggleGroup, ToggleGroupItem } from "$lib/components/vendor/toggle-group";
+  } from "$authored-components/screen";
+  import { Button } from "$vendored-components/button";
+  import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
   import {
     deckRecord,
     deckTextBlock,

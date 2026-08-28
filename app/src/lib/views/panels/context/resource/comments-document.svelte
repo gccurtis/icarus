@@ -2,7 +2,7 @@
   import AtSign from "@lucide/svelte/icons/at-sign";
   import MessageSquare from "@lucide/svelte/icons/message-square";
 
-  import { Panel, PanelChoice, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelChoice, PanelRow, PanelSection } from "$authored-components/panel";
   import {
     commentsOn,
     textBlock,

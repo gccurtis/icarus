@@ -18,9 +18,9 @@
     type ChartSelection,
     type ChartSpec,
     type Mark
-  } from "$components/authored/chart";
-  import { PlotBars } from "$components/authored/chart/plot";
-  import { PanelInput, PanelSelect, PanelToggle } from "$components/authored/panel";
+  } from "$authored-components/chart";
+  import { PlotBars } from "$authored-components/chart/plot";
+  import { PanelInput, PanelSelect, PanelToggle } from "$authored-components/panel";
   import {
     ScreenCell,
     ScreenEmpty,
@@ -30,9 +30,9 @@
     ScreenRow,
     ScreenSurface,
     ScreenTable
-  } from "$components/authored/screen";
-  import { Button } from "$lib/components/vendor/button";
-  import { ToggleGroup, ToggleGroupItem } from "$lib/components/vendor/toggle-group";
+  } from "$authored-components/screen";
+  import { Button } from "$vendored-components/button";
+  import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
   import {
     aggregationsFor,
     analysis,

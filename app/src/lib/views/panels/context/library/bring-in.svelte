@@ -11,7 +11,7 @@
     PanelProgress,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { connectors, ingestion, providers, type ConnectorRow } from "$capabilities/library";
   import { viewState } from "$model/client/view-state";
 

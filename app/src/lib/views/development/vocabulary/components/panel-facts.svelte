@@ -12,7 +12,7 @@
     PanelSwatch,
     PanelSwatches,
     PanelTable
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
 
   /**
    * The words a panel uses to show rather than to ask: figures, a level, the

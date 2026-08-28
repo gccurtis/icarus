@@ -7,7 +7,7 @@
     PanelSearch,
     PanelSection,
     PanelSelect
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { AGENTS, PEOPLE } from "$capabilities/cast";
   import { activity, type ActivityEntry } from "$capabilities/project";
   import { viewState } from "$model/client/view-state";

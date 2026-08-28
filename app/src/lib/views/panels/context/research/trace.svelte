@@ -3,7 +3,7 @@
   import CircleSlash from "@lucide/svelte/icons/circle-slash";
   import CircleX from "@lucide/svelte/icons/circle-x";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import { traceIn, type ToolCall } from "$capabilities/research";
   import { viewState } from "$model/client/view-state";
 

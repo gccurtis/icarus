@@ -2,8 +2,8 @@
   import type { Snippet } from "svelte";
   import EyeOff from "@lucide/svelte/icons/eye-off";
 
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A preview that IS the thing's identity, because the thing has no name.

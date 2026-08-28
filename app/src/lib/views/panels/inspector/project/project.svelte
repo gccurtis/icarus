@@ -2,7 +2,7 @@
   import Archive from "@lucide/svelte/icons/archive";
   import Settings from "@lucide/svelte/icons/settings";
 
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
   import {
     Panel,
     PanelActions,
@@ -13,7 +13,7 @@
     PanelFields,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { VIEWER } from "$capabilities/cast";
   import { member } from "$capabilities/collaboration";
   import { activity, people, project } from "$capabilities/project";

@@ -3,7 +3,7 @@
   import Reply from "@lucide/svelte/icons/reply";
   import SquareArrowOutUpRight from "@lucide/svelte/icons/square-arrow-out-up-right";
 
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
   import {
     Panel,
     PanelActor,
@@ -15,7 +15,7 @@
     PanelNote,
     PanelQuote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { member, resourceNamed, thread } from "$capabilities/collaboration";
   import { isInspectionKey, viewState, type InspectionKey } from "$model/client/view-state";
 

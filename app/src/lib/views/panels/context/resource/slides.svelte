@@ -12,7 +12,7 @@
     PanelSection,
     PanelThumb,
     PanelThumbs
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { layoutsIn, sectionsIn, slidesIn } from "$capabilities/resource";
   import { viewState } from "$model/client/view-state";
 

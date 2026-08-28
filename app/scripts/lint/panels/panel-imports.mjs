@@ -2,7 +2,7 @@ import { check } from "../shared/check.mjs";
 import { panelLeaves } from "../shared/trees.mjs";
 
 /** Capabilities, view state and components. Nothing else. */
-const ALLOWED = new Set(["capabilities", "components"]);
+const ALLOWED = new Set(["capabilities", "authored-components", "vendored-components", "development-components"]);
 const VIEW_STATE = ["client", "view-state"];
 
 const isViewState = (segments) => VIEW_STATE.every((part, index) => segments[index] === part);

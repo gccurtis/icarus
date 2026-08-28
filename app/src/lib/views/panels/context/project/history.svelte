@@ -7,7 +7,7 @@
     PanelSearch,
     PanelSection,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { AGENTS, PEOPLE, actorName } from "$capabilities/cast";
   import { mentionsForViewer, type PersonComment } from "$capabilities/collaboration";
   import { activity, type ActivityEntry } from "$capabilities/project";

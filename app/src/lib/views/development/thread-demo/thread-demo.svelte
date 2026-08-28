@@ -6,14 +6,14 @@
   import ThreadTurn from "$views/development/thread-demo/components/thread-turn.svelte";
   import TurnFinding from "$views/development/thread-demo/components/turn-finding.svelte";
   import TurnTools from "$views/development/thread-demo/components/turn-tools.svelte";
-  import { PanelProgress, PanelQuote } from "$components/authored/panel";
+  import { PanelProgress, PanelQuote } from "$authored-components/panel";
   import {
     ScreenEmpty,
     ScreenGroup,
     ScreenHeader,
     ScreenNote,
     ScreenSurface
-  } from "$components/authored/screen";
+  } from "$authored-components/screen";
 
   /**
    * A message thread that works, and an argument about what a thread has to

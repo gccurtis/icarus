@@ -7,7 +7,7 @@
     PanelFields,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
 
   /**
    * The inspector for whichever block is selected.

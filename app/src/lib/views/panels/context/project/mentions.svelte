@@ -1,7 +1,7 @@
 <script lang="ts">
   import AtSign from "@lucide/svelte/icons/at-sign";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import { actorName } from "$capabilities/cast";
   import { mentionsForViewer, type PersonComment } from "$capabilities/collaboration";
   import { viewState } from "$model/client/view-state";

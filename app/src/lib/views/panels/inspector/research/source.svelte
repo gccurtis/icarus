@@ -13,7 +13,7 @@
     PanelQuote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { source, thread } from "$capabilities/research";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

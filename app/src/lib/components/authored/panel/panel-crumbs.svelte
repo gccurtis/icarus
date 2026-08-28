@@ -1,6 +1,6 @@
 <script lang="ts">
-  import * as Breadcrumb from "$lib/components/vendor/breadcrumb";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as Breadcrumb from "$vendored-components/breadcrumb";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * Where the inspected thing sits, and the way back up.

@@ -2,7 +2,7 @@
   import ChartColumn from "@lucide/svelte/icons/chart-column";
   import Lock from "@lucide/svelte/icons/lock";
 
-  import { ScreenNote, ScreenSurface } from "$components/authored/screen";
+  import { ScreenNote, ScreenSurface } from "$authored-components/screen";
   import {
     cellsIn,
     objectsIn,

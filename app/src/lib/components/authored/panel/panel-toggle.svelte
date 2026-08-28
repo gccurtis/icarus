@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Switch } from "$lib/components/vendor/switch";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Switch } from "$vendored-components/switch";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * An on/off state inside a field.

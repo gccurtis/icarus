@@ -3,7 +3,7 @@
   import Presentation from "@lucide/svelte/icons/presentation";
   import TableIcon from "@lucide/svelte/icons/table";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import { editorKinds, type EditorKind } from "$capabilities/library";
   import { viewState, type InspectionKey } from "$model/client/view-state";
 

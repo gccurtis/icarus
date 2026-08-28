@@ -2,11 +2,11 @@
   import type { Snippet } from "svelte";
   import Send from "@lucide/svelte/icons/send";
 
-  import { Button } from "$lib/components/vendor/button";
-  import { Kbd, KbdGroup } from "$lib/components/vendor/kbd";
-  import { Textarea } from "$lib/components/vendor/textarea";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Button } from "$vendored-components/button";
+  import { Kbd, KbdGroup } from "$vendored-components/kbd";
+  import { Textarea } from "$vendored-components/textarea";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * Where a person writes the thing that gets sent.

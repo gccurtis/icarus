@@ -156,9 +156,14 @@ describe("every generator is named here", () => {
           .map((file) => `${entry.name}/${file}`)
       );
 
-    // `aliases` rewrites a block rather than adding to a tree, and `keys` is run
-    // as the second half of two entries above rather than on its own.
-    const covered = new Set([...GENERATORS.map(({ script }) => script), "across/aliases.mjs", "view-state/keys.mjs"]);
+    // `aliases` and `imports` rewrite what is already there rather than adding to
+    // a tree, and `keys` runs as the second half of two entries above.
+    const covered = new Set([
+      ...GENERATORS.map(({ script }) => script),
+      "across/aliases.mjs",
+      "across/imports.mjs",
+      "view-state/keys.mjs"
+    ]);
     assert.deepEqual(dirs.filter((script) => !covered.has(script)), []);
   });
 });

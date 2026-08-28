@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Slider } from "$lib/components/vendor/slider";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Slider } from "$vendored-components/slider";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A continuous value, with its extent visible.

@@ -3,7 +3,7 @@
   import Rows3 from "@lucide/svelte/icons/rows-3";
   import Trash2 from "@lucide/svelte/icons/trash-2";
 
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
   import {
     Panel,
     PanelActions,
@@ -14,7 +14,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { documentRecord, documentTable } from "$capabilities/resource";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

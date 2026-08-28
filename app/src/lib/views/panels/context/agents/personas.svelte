@@ -11,7 +11,7 @@
     PanelRow,
     PanelSearch,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { personasIn, type PersonaRow, type PersonaScope } from "$capabilities/agents";
   import { viewState } from "$model/client/view-state";
 

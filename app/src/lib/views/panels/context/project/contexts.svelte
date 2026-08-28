@@ -9,7 +9,7 @@
     PanelRow,
     PanelSearch,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { savedContexts } from "$capabilities/project";
   import { viewState } from "$model/client/view-state";
 

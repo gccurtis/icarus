@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TraceNode } from "$components/development/trace.svelte";
+  import type { TraceNode } from "$development-components/trace.svelte";
   import TreeNode from "$views/development/review/components/tree-node.svelte";
 
   /**

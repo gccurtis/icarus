@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { PanelEditableText } from "$components/authored/panel";
+  import { PanelEditableText } from "$authored-components/panel";
   import {
     ScreenCell,
     ScreenNote,
     ScreenRow,
     ScreenTable
-  } from "$components/authored/screen";
+  } from "$authored-components/screen";
 
   /**
    * The numbers, editable in place.

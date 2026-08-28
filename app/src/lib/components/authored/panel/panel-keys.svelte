@@ -1,7 +1,7 @@
 <script lang="ts">
-  import * as Kbd from "$lib/components/vendor/kbd";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as Kbd from "$vendored-components/kbd";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   type Modifier = "mod" | "ctrl" | "alt" | "shift";
   type Platform = "apple" | "other";

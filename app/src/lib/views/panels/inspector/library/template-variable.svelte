@@ -9,7 +9,7 @@
     PanelNote,
     PanelSection,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { template, templateVariable } from "$capabilities/library";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

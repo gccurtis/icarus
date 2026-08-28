@@ -1,12 +1,12 @@
 <script lang="ts">
   import SectionHeading from "$views/development/demo/components/section-heading.svelte";
-  import { Badge } from "$lib/components/vendor/badge";
-  import * as Carousel from "$lib/components/vendor/carousel";
-  import * as Shelf from "$components/authored/carousel-shelf";
-  import { Label } from "$lib/components/vendor/label";
-  import * as Pagination from "$lib/components/vendor/pagination";
-  import { Slider } from "$lib/components/vendor/slider";
-  import * as Table from "$lib/components/vendor/table";
+  import { Badge } from "$vendored-components/badge";
+  import * as Carousel from "$vendored-components/carousel";
+  import * as Shelf from "$authored-components/carousel-shelf";
+  import { Label } from "$vendored-components/label";
+  import * as Pagination from "$vendored-components/pagination";
+  import { Slider } from "$vendored-components/slider";
+  import * as Table from "$vendored-components/table";
 
   // Carousel geometry, live-adjustable. A card has its own size and the window
   // has its own; how many cards are visible is the quotient, not a setting.

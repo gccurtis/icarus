@@ -13,7 +13,7 @@
     PanelRow,
     PanelSection,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     connector,
     providers,

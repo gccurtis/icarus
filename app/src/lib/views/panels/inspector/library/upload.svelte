@@ -10,7 +10,7 @@
     PanelProgress,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { ingestion, uploads, type UploadRow } from "$capabilities/library";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

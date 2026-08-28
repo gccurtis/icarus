@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
 
 import Person from "$panels/inspector/collaboration/person.svelte";
-import { createTrace, type TraceNode } from "$components/development/trace.svelte";
+import { createTrace, type TraceNode } from "$development-components/trace.svelte";
 
 /**
  * A run seeded through context, rendered, and handed back.

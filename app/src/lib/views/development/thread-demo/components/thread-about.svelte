@@ -16,7 +16,7 @@
     PanelRow,
     PanelSection,
     PanelSkeleton
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
 
   /**
    * What the thread is about, beside the thread.

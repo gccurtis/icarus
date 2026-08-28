@@ -1,7 +1,7 @@
 <script lang="ts">
-  import * as ToggleGroup from "$lib/components/vendor/toggle-group";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import * as ToggleGroup from "$vendored-components/toggle-group";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * Several independent on-or-off options, as one row.

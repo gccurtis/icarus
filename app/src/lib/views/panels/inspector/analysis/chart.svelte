@@ -9,7 +9,7 @@
     PanelNote,
     PanelSection,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { analysis, chartFor, chartKinds } from "$capabilities/analysis";
   import type { ChartKindId, LegendPosition } from "$capabilities/analysis";
   import { isInspectionKey, viewState } from "$model/client/view-state";

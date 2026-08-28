@@ -12,7 +12,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { VIEWER } from "$capabilities/cast";
   import { member, mentionsForViewer } from "$capabilities/collaboration";
   import { activity, health, people, project, resources } from "$capabilities/project";

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ChartSelection } from "$components/authored/chart";
-  import { readMarkId } from "$components/authored/chart";
+  import type { ChartSelection } from "$authored-components/chart";
+  import { readMarkId } from "$authored-components/chart";
   import {
     Panel,
     PanelButton,
@@ -11,7 +11,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
 
   /**
    * What is selected in the chart, and what could be done with it.

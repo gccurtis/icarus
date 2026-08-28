@@ -1,10 +1,10 @@
 <script lang="ts">
   import Pencil from "@lucide/svelte/icons/pencil";
 
-  import { Input } from "$lib/components/vendor/input";
-  import { Textarea } from "$lib/components/vendor/textarea";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Input } from "$vendored-components/input";
+  import { Textarea } from "$vendored-components/textarea";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A value the reader can change, edited where it is shown.

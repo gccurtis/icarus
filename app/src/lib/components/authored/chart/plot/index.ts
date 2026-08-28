@@ -16,8 +16,8 @@
  * checked by reading it — which is what geometry sealed inside somebody else's
  * components does not allow.
  */
-export { default as PlotBars } from "./plot-bars.svelte";
-export { default as PlotPie } from "./plot-pie.svelte";
+export { default as PlotBars } from "$authored-components/chart/plot/plot-bars.svelte";
+export { default as PlotPie } from "$authored-components/chart/plot/plot-pie.svelte";
 export {
   layoutBars,
   layoutPie,
@@ -29,4 +29,4 @@ export {
   type LaidOut,
   type PlacedLabel,
   type PlotSize
-} from "./layout";
+} from "$authored-components/chart/plot/layout";

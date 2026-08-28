@@ -17,21 +17,21 @@
  * belongs here is the panel's vocabulary over the top: the tones, the labels,
  * the widths.
  */
-export { default as Panel } from "./panel.svelte";
-export { default as PanelSection } from "./panel-section.svelte";
-export { default as PanelRow } from "./panel-row.svelte";
-export { default as PanelFields } from "./panel-fields.svelte";
-export { default as PanelField } from "./panel-field.svelte";
-export { default as PanelChip } from "./panel-chip.svelte";
-export { default as PanelNote } from "./panel-note.svelte";
-export { default as PanelButton } from "./panel-button.svelte";
-export { default as PanelSearch } from "./panel-search.svelte";
-export { default as PanelCrumbs } from "./panel-crumbs.svelte";
-export { default as PanelQuote } from "./panel-quote.svelte";
-export { default as PanelActions } from "./panel-actions.svelte";
-export { default as PanelLink } from "./panel-link.svelte";
-export { default as PanelToggle } from "./panel-toggle.svelte";
-export { default as PanelCode } from "./panel-code.svelte";
+export { default as Panel } from "$authored-components/panel/panel.svelte";
+export { default as PanelSection } from "$authored-components/panel/panel-section.svelte";
+export { default as PanelRow } from "$authored-components/panel/panel-row.svelte";
+export { default as PanelFields } from "$authored-components/panel/panel-fields.svelte";
+export { default as PanelField } from "$authored-components/panel/panel-field.svelte";
+export { default as PanelChip } from "$authored-components/panel/panel-chip.svelte";
+export { default as PanelNote } from "$authored-components/panel/panel-note.svelte";
+export { default as PanelButton } from "$authored-components/panel/panel-button.svelte";
+export { default as PanelSearch } from "$authored-components/panel/panel-search.svelte";
+export { default as PanelCrumbs } from "$authored-components/panel/panel-crumbs.svelte";
+export { default as PanelQuote } from "$authored-components/panel/panel-quote.svelte";
+export { default as PanelActions } from "$authored-components/panel/panel-actions.svelte";
+export { default as PanelLink } from "$authored-components/panel/panel-link.svelte";
+export { default as PanelToggle } from "$authored-components/panel/panel-toggle.svelte";
+export { default as PanelCode } from "$authored-components/panel/panel-code.svelte";
 
 /**
  * The words for things a panel identifies by something other than a string.
@@ -41,16 +41,16 @@ export { default as PanelCode } from "./panel-code.svelte";
  * an initials circle and a deck inspector pulls the *workspace* thumbnail into a
  * 300px column, re-declaring the panel's width in a view file.
  */
-export { default as PanelActor } from "./panel-actor.svelte";
-export { default as PanelThumbs } from "./panel-thumbs.svelte";
-export { default as PanelThumb } from "./panel-thumb.svelte";
+export { default as PanelActor } from "$authored-components/panel/panel-actor.svelte";
+export { default as PanelThumbs } from "$authored-components/panel/panel-thumbs.svelte";
+export { default as PanelThumb } from "$authored-components/panel/panel-thumb.svelte";
 
 /**
  * One of a small set, shown rather than hidden. Separate from `PanelSelect`
  * because the set being visible is the whole point: these sit above the list
  * they narrow, as a region of the layout rather than behind a trigger.
  */
-export { default as PanelChoice } from "./panel-choice.svelte";
+export { default as PanelChoice } from "$authored-components/panel/panel-choice.svelte";
 
 /**
  * The editing vocabulary: the three ways a value is changed, and the one
@@ -61,10 +61,10 @@ export { default as PanelChoice } from "./panel-choice.svelte";
  * set, on or off — which is not a coincidence: a panel is where a form goes when
  * the thing being edited is already on the screen beside it.
  */
-export { default as PanelEditableText } from "./panel-editable-text.svelte";
-export { default as PanelSelect } from "./panel-select.svelte";
-export { default as PanelPairs } from "./panel-pairs.svelte";
-export { default as PanelPair } from "./panel-pair.svelte";
+export { default as PanelEditableText } from "$authored-components/panel/panel-editable-text.svelte";
+export { default as PanelSelect } from "$authored-components/panel/panel-select.svelte";
+export { default as PanelPairs } from "$authored-components/panel/panel-pairs.svelte";
+export { default as PanelPair } from "$authored-components/panel/panel-pair.svelte";
 
 /**
  * Three the shapes above cannot express.
@@ -83,20 +83,20 @@ export { default as PanelPair } from "./panel-pair.svelte";
  * from a theme or a style set, so the set is small and named, and a free picker
  * would let an author put a colour in a deck its theme has never heard of.
  */
-export { default as PanelInput } from "./panel-input.svelte";
-export { default as PanelMarks } from "./panel-marks.svelte";
-export { default as PanelColor } from "./panel-color.svelte";
+export { default as PanelInput } from "$authored-components/panel/panel-input.svelte";
+export { default as PanelMarks } from "$authored-components/panel/panel-marks.svelte";
+export { default as PanelColor } from "$authored-components/panel/panel-color.svelte";
 
 /**
  * What a panel says while it is finding out, and what it says about work that
  * is under way. Both are states a panel is in rather than things it holds,
  * which is why neither is a section.
  */
-export { default as PanelProgress } from "./panel-progress.svelte";
-export { default as PanelSkeleton } from "./panel-skeleton.svelte";
+export { default as PanelProgress } from "$authored-components/panel/panel-progress.svelte";
+export { default as PanelSkeleton } from "$authored-components/panel/panel-skeleton.svelte";
 
 /** Several actors at once, as faces. `PanelActor` is one of them, named. */
-export { default as PanelFaces } from "./panel-faces.svelte";
+export { default as PanelFaces } from "$authored-components/panel/panel-faces.svelte";
 
 /**
  * Three shapes a flank has to hold that are not lists of one thing.
@@ -114,9 +114,9 @@ export { default as PanelFaces } from "./panel-faces.svelte";
  * Three surfaces draw the same Automation — the library, the lens and the editor
  * heading — and three hand-written renderings is three ways to read one rule.
  */
-export { default as PanelTable } from "./panel-table.svelte";
-export { default as PanelCards } from "./panel-cards.svelte";
-export { default as PanelSentence } from "./panel-sentence.svelte";
+export { default as PanelTable } from "$authored-components/panel/panel-table.svelte";
+export { default as PanelCards } from "$authored-components/panel/panel-cards.svelte";
+export { default as PanelSentence } from "$authored-components/panel/panel-sentence.svelte";
 
 /**
  * A colour, shown rather than chosen.
@@ -132,8 +132,8 @@ export { default as PanelSentence } from "./panel-sentence.svelte";
  * A swatch carries its name as text. A row of colours with no words is unusable
  * to anyone who cannot see them and unreadable to everyone else.
  */
-export { default as PanelSwatches } from "./panel-swatches.svelte";
-export { default as PanelSwatch } from "./panel-swatch.svelte";
+export { default as PanelSwatches } from "$authored-components/panel/panel-swatches.svelte";
+export { default as PanelSwatch } from "$authored-components/panel/panel-swatch.svelte";
 
 /**
  * A proportion that is a fact, and a record read as figures.
@@ -150,9 +150,9 @@ export { default as PanelSwatch } from "./panel-swatch.svelte";
  * disappears into the list around it. Not `ScreenStats` either — that carries a
  * frame sized for the plane, and at 84px its one-line form is unreachable.
  */
-export { default as PanelMeter } from "./panel-meter.svelte";
-export { default as PanelStats } from "./panel-stats.svelte";
-export { default as PanelStat } from "./panel-stat.svelte";
+export { default as PanelMeter } from "$authored-components/panel/panel-meter.svelte";
+export { default as PanelStats } from "$authored-components/panel/panel-stats.svelte";
+export { default as PanelStat } from "$authored-components/panel/panel-stat.svelte";
 
 /**
  * Things in an order, and things in a shape.
@@ -177,11 +177,11 @@ export { default as PanelStat } from "./panel-stat.svelte";
  * them; the marks are `<del>` and `<ins>` with signs on each side, so the change
  * survives being read without colour.
  */
-export { default as PanelTimeline } from "./panel-timeline.svelte";
-export { default as PanelSteps } from "./panel-steps.svelte";
-export { default as PanelTree } from "./panel-tree.svelte";
-export { default as PanelBranch } from "./panel-branch.svelte";
-export { default as PanelDiff } from "./panel-diff.svelte";
+export { default as PanelTimeline } from "$authored-components/panel/panel-timeline.svelte";
+export { default as PanelSteps } from "$authored-components/panel/panel-steps.svelte";
+export { default as PanelTree } from "$authored-components/panel/panel-tree.svelte";
+export { default as PanelBranch } from "$authored-components/panel/panel-branch.svelte";
+export { default as PanelDiff } from "$authored-components/panel/panel-diff.svelte";
 
 /**
  * What a panel says when it holds nothing, and when something is wrong.
@@ -199,8 +199,8 @@ export { default as PanelDiff } from "./panel-diff.svelte";
  * panel may reach for the danger role, so it must always carry an action or a
  * reason — the type enforces it, and a banner that only worries does not compile.
  */
-export { default as PanelEmpty } from "./panel-empty.svelte";
-export { default as PanelBanner } from "./panel-banner.svelte";
+export { default as PanelEmpty } from "$authored-components/panel/panel-empty.svelte";
+export { default as PanelBanner } from "$authored-components/panel/panel-banner.svelte";
 
 /**
  * A shortcut, and the three values a field could not hold honestly.
@@ -218,7 +218,7 @@ export { default as PanelBanner } from "./panel-banner.svelte";
  * and a range is proportional — what a slider says that a field cannot is where
  * the value sits between its ends, which is what you need when it has no unit.
  */
-export { default as PanelKeys } from "./panel-keys.svelte";
-export { default as PanelDate } from "./panel-date.svelte";
-export { default as PanelNumber } from "./panel-number.svelte";
-export { default as PanelRange } from "./panel-range.svelte";
+export { default as PanelKeys } from "$authored-components/panel/panel-keys.svelte";
+export { default as PanelDate } from "$authored-components/panel/panel-date.svelte";
+export { default as PanelNumber } from "$authored-components/panel/panel-number.svelte";
+export { default as PanelRange } from "$authored-components/panel/panel-range.svelte";

@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Component } from "svelte";
 
-  import { Button } from "$lib/components/vendor/button";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Button } from "$vendored-components/button";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * The control in a screen's header: the one thing this screen makes.

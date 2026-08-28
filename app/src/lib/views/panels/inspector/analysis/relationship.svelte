@@ -14,7 +14,7 @@
     PanelRow,
     PanelSection,
     PanelSelect
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { analysis, relationship, tablesIn } from "$capabilities/analysis";
   import type { JoinMode } from "$capabilities/analysis";
   import { isInspectionKey, viewState } from "$model/client/view-state";

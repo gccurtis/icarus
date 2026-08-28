@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
-  import PanelButton from "./panel-button.svelte";
+  import PanelButton from "$authored-components/panel/panel-button.svelte";
 
   /**
    * A panel with nothing in it, saying what belongs there and offering the way

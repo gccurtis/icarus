@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { OverlayModal } from "$components/authored/overlay";
+  import { OverlayModal } from "$authored-components/overlay";
   import {
     PanelEditableText,
     PanelField,
     PanelFields
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     ScreenCell,
     ScreenEmpty,
@@ -12,9 +12,9 @@
     ScreenGroup,
     ScreenRow,
     ScreenTable
-  } from "$components/authored/screen";
-  import { Textarea } from "$lib/components/vendor/textarea";
-  import { ToggleGroup, ToggleGroupItem } from "$lib/components/vendor/toggle-group";
+  } from "$authored-components/screen";
+  import { Textarea } from "$vendored-components/textarea";
+  import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
   import { builtins } from "$capabilities/formula";
   import { variables } from "$capabilities/project";
 

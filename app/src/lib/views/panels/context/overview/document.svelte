@@ -9,7 +9,7 @@
     PanelLink,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { PEOPLE, VIEWER } from "$capabilities/cast";
   import { members } from "$capabilities/collaboration";
   import { kindLabel } from "$capabilities/library";

@@ -12,7 +12,7 @@
     PanelLink,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { project } from "$capabilities/project";
   import { thread } from "$capabilities/research";
   import { isInspectionKey, viewState } from "$model/client/view-state";

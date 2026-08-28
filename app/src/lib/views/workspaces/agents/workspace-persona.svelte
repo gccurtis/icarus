@@ -2,7 +2,7 @@
   import Boxes from "@lucide/svelte/icons/boxes";
   import Wrench from "@lucide/svelte/icons/wrench";
 
-  import { PanelActor, PanelChip } from "$components/authored/panel";
+  import { PanelActor, PanelChip } from "$authored-components/panel";
   import {
     ScreenBar,
     ScreenCell,
@@ -15,7 +15,7 @@
     ScreenStats,
     ScreenSurface,
     ScreenTable
-  } from "$components/authored/screen";
+  } from "$authored-components/screen";
   import {
     behaviourOf,
     lookupScopeOf,

@@ -19,9 +19,9 @@
  * peer range stops at Svelte 4), `@observablehq/plot` (ISC, SVG, but it renders
  * a whole plot from a spec rather than composing, which the Marimekko needs).
  */
-export { default as Chart } from "./chart.svelte";
-export { default as ChartMekko } from "./chart-mekko.svelte";
-export { SERIES_COLORS, seriesColor } from "./palette";
+export { default as Chart } from "$authored-components/chart/chart.svelte";
+export { default as ChartMekko } from "$authored-components/chart/chart-mekko.svelte";
+export { SERIES_COLORS, seriesColor } from "$authored-components/chart/palette";
 
 /**
  * What a chart is, apart from how it is drawn — and what can be pointed at
@@ -43,9 +43,9 @@ export {
   type Orientation,
   type SeriesLayout,
   type SeriesSpec
-} from "./chart-spec";
-export { createChartSelection, type ChartSelection } from "./chart-selection.svelte";
-export { default as ChartColors } from "./chart-colors.svelte";
-export { default as ChartGrowth } from "./chart-growth.svelte";
-export { chartToPng, copyChart } from "./copy-chart";
-export { asPercent, cagr, elementOverElement } from "./growth";
+} from "$authored-components/chart/chart-spec";
+export { createChartSelection, type ChartSelection } from "$authored-components/chart/chart-selection.svelte";
+export { default as ChartColors } from "$authored-components/chart/chart-colors.svelte";
+export { default as ChartGrowth } from "$authored-components/chart/chart-growth.svelte";
+export { chartToPng, copyChart } from "$authored-components/chart/copy-chart";
+export { asPercent, cagr, elementOverElement } from "$authored-components/chart/growth";

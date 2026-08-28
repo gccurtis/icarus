@@ -6,7 +6,7 @@
   import SquareFunction from "@lucide/svelte/icons/square-function";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import {
     feedsOf,
     problemsIn,

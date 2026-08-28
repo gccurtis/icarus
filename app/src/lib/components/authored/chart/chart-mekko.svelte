@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { seriesColor } from "$components/authored/chart/palette";
+  import { seriesColor } from "$authored-components/chart/palette";
 
   /**
    * A Marimekko: columns whose *width* is a quantity too.

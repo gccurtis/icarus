@@ -4,7 +4,7 @@
   import Minus from "@lucide/svelte/icons/minus";
   import X from "@lucide/svelte/icons/x";
 
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
   import {
     Panel,
     PanelActions,
@@ -17,7 +17,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { finding, thread, type Bearing } from "$capabilities/research";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

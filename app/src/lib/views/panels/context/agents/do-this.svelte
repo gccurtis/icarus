@@ -12,7 +12,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { actionsFor, type ActionOption } from "$capabilities/agents";
   import { viewState } from "$model/client/view-state";
 

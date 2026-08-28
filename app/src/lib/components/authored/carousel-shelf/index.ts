@@ -1,5 +1,5 @@
-import Item from "./carousel-shelf-item.svelte";
-import Root from "./carousel-shelf.svelte";
+import Item from "$authored-components/carousel-shelf/carousel-shelf-item.svelte";
+import Root from "$authored-components/carousel-shelf/carousel-shelf.svelte";
 
 export {
 	Root,

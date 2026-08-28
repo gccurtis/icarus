@@ -5,7 +5,7 @@
   import Undo2 from "@lucide/svelte/icons/undo-2";
   import X from "@lucide/svelte/icons/x";
 
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
   import {
     Panel,
     PanelActions,
@@ -17,7 +17,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { resourceFor } from "$capabilities/joins";
   import { finding, thread, type Bearing } from "$capabilities/research";
   import { isInspectionKey, viewState } from "$model/client/view-state";

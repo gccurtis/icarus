@@ -9,7 +9,7 @@
     PanelRow,
     PanelSearch,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { modelBindingOf, toolsFor, type ToolPermission } from "$capabilities/agents";
   import { viewState } from "$model/client/view-state";
 

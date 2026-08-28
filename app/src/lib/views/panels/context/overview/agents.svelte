@@ -11,7 +11,7 @@
     PanelSection,
     PanelStat,
     PanelStats
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     automationsIn,
     personasIn,

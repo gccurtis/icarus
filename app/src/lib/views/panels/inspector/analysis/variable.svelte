@@ -13,7 +13,7 @@
     PanelSection,
     PanelSelect,
     PanelTable
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     analysis,
     previewOf,

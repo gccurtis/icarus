@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Component, Snippet } from "svelte";
 
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * A line in a list: an icon, what it is, what qualifies it, and when.

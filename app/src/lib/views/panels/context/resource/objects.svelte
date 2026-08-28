@@ -4,7 +4,7 @@
   import ChartLine from "@lucide/svelte/icons/chart-line";
   import ChartPie from "@lucide/svelte/icons/chart-pie";
 
-  import { Panel, PanelNote, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelNote, PanelRow, PanelSection } from "$authored-components/panel";
   import { objectsIn, type SheetObject } from "$capabilities/resource";
   import { viewState } from "$model/client/view-state";
 

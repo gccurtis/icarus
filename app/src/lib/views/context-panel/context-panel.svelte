@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Component } from "svelte";
 
-  import { ResizeHandle } from "$components/authored/resize-handle";
+  import { ResizeHandle } from "$authored-components/resize-handle";
   import { railFor, viewState, type ContextId } from "$model/client/view-state";
   import { RAIL_ENTRIES } from "$views/context-panel/procedures/rail-entries";
   import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH, RAIL_WIDTH } from "$views/context-panel/types";

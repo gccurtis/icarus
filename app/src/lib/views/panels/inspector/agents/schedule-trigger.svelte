@@ -8,7 +8,7 @@
     PanelFields,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { automation, triggersFor, type TriggerOption } from "$capabilities/agents";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

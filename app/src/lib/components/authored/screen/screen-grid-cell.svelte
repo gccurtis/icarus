@@ -4,10 +4,10 @@
   import Lock from "@lucide/svelte/icons/lock";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
-  import { gridSurface } from "./screen-grid.svelte";
+  import { gridSurface } from "$authored-components/screen/screen-grid.svelte";
 
   /**
    * One coordinate on a `ScreenGrid`: what it shows, and what it cannot show.

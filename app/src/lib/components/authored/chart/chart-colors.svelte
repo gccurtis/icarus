@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Input } from "$lib/components/vendor/input";
-  import * as Popover from "$lib/components/vendor/popover";
-  import { cn } from "$lib/components/vendor/utils";
-  import { SERIES_COLORS } from "$components/authored/chart/palette";
+  import { Input } from "$vendored-components/input";
+  import * as Popover from "$vendored-components/popover";
+  import { cn } from "$vendored-components/utils";
+  import { SERIES_COLORS } from "$authored-components/chart/palette";
 
   /**
    * Choosing what each series is drawn in.

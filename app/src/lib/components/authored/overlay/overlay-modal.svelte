@@ -3,10 +3,10 @@
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
   import X from "@lucide/svelte/icons/x";
 
-  import { Button } from "$lib/components/vendor/button";
-  import * as Dialog from "$lib/components/vendor/dialog";
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Button } from "$vendored-components/button";
+  import * as Dialog from "$vendored-components/dialog";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * Work that wants the whole screen: building a formula, defining a variable.

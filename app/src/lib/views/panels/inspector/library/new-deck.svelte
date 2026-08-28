@@ -14,7 +14,7 @@
     PanelSection,
     PanelThumb,
     PanelThumbs
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { deckDraft } from "$capabilities/library";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

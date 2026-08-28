@@ -15,7 +15,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { members, presenceFor } from "$capabilities/collaboration";
   import {
     findings,

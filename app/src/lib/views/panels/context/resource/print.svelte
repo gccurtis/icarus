@@ -8,7 +8,7 @@
     PanelSection,
     PanelSelect,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { printSetup, type PrintSetup } from "$capabilities/resource";
 
   /**

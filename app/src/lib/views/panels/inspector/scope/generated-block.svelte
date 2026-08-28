@@ -11,7 +11,7 @@
     PanelQuote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { context, generatedBlock } from "$capabilities/scope";
   import { viewState } from "$model/client/view-state";
 

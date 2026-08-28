@@ -13,7 +13,7 @@
   import TableIcon from "@lucide/svelte/icons/table";
   import Variable from "@lucide/svelte/icons/variable";
 
-  import { Panel, PanelRow, PanelSection } from "$components/authored/panel";
+  import { Panel, PanelRow, PanelSection } from "$authored-components/panel";
   import { insertOptions, type InsertOption } from "$capabilities/resource";
   import { viewState, type InspectionKey } from "$model/client/view-state";
 

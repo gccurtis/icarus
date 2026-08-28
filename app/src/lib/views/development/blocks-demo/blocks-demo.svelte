@@ -2,7 +2,7 @@
   import BlockInspector from "$views/development/blocks-demo/components/block-inspector.svelte";
   import DocumentSurface from "$views/development/blocks-demo/components/document-surface.svelte";
   import SlideSurface from "$views/development/blocks-demo/components/slide-surface.svelte";
-  import { ScreenGroup, ScreenNote, ScreenSurface } from "$components/authored/screen";
+  import { ScreenGroup, ScreenNote, ScreenSurface } from "$authored-components/screen";
 
   /**
    * Content blocks on the two surfaces that hold them, with the panel that

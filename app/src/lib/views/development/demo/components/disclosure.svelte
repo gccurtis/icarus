@@ -2,16 +2,16 @@
   import { browser } from "$app/environment";
 
   import SectionHeading from "$views/development/demo/components/section-heading.svelte";
-  import * as Accordion from "$lib/components/vendor/accordion";
-  import * as AlertDialog from "$lib/components/vendor/alert-dialog";
-  import * as Breadcrumb from "$lib/components/vendor/breadcrumb";
-  import { Button } from "$lib/components/vendor/button";
-  import * as Collapsible from "$lib/components/vendor/collapsible";
-  import * as Command from "$lib/components/vendor/command";
-  import * as ContextMenu from "$lib/components/vendor/context-menu";
-  import * as HoverCard from "$lib/components/vendor/hover-card";
-  import { Kbd } from "$lib/components/vendor/kbd";
-  import * as Popover from "$lib/components/vendor/popover";
+  import * as Accordion from "$vendored-components/accordion";
+  import * as AlertDialog from "$vendored-components/alert-dialog";
+  import * as Breadcrumb from "$vendored-components/breadcrumb";
+  import { Button } from "$vendored-components/button";
+  import * as Collapsible from "$vendored-components/collapsible";
+  import * as Command from "$vendored-components/command";
+  import * as ContextMenu from "$vendored-components/context-menu";
+  import * as HoverCard from "$vendored-components/hover-card";
+  import { Kbd } from "$vendored-components/kbd";
+  import * as Popover from "$vendored-components/popover";
 
   let commandOpen = $state(false);
   let lastRan = $state("");

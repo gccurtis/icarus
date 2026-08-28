@@ -5,8 +5,8 @@
     THEMES,
     type ThemeName
   } from "$views/development/demo/effects/apply-appearance.svelte";
-  import { Label } from "$lib/components/vendor/label";
-  import * as Select from "$lib/components/vendor/select";
+  import { Label } from "$vendored-components/label";
+  import * as Select from "$vendored-components/select";
 
   const initial = storedAppearance();
   let theme = $state<ThemeName>(initial.theme);

@@ -2,7 +2,7 @@
   import Crosshair from "@lucide/svelte/icons/crosshair";
   import Eraser from "@lucide/svelte/icons/eraser";
 
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
   import {
     Panel,
     PanelActions,
@@ -14,7 +14,7 @@
     PanelFields,
     PanelNote,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { errorAt, readsOf, spreadsheetRecord } from "$capabilities/resource";
   import { isInspectionKey, viewState } from "$model/client/view-state";
 

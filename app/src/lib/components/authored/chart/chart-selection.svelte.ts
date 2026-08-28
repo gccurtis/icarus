@@ -1,4 +1,4 @@
-import { markId, readMarkId, type Mark } from "$components/authored/chart/chart-spec";
+import { markId, readMarkId, type Mark } from "$authored-components/chart/chart-spec";
 
 /**
  * What is selected in a chart.

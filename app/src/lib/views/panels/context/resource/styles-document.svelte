@@ -1,7 +1,7 @@
 <script lang="ts">
   import Plus from "@lucide/svelte/icons/plus";
 
-  import { Panel, PanelButton, PanelRow, PanelSearch } from "$components/authored/panel";
+  import { Panel, PanelButton, PanelRow, PanelSearch } from "$authored-components/panel";
   import { documentStyles, type NamedTextStyle } from "$capabilities/resource";
   import { viewState } from "$model/client/view-state";
 

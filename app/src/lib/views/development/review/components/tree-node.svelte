@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { behaviourProps, readableProps, type TraceNode } from "$components/development/trace.svelte";
+  import { behaviourProps, readableProps, type TraceNode } from "$development-components/trace.svelte";
   import Self from "$views/development/review/components/tree-node.svelte";
 
   /**

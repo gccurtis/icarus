@@ -4,14 +4,6 @@
  *
  *     pnpm aliases
  *     pnpm aliases -- --check
- *
- * SvelteKit generates the TypeScript paths from that block, so it is the one map
- * the compiler and the bundler share. Writing it from the tree is what stops a
- * second map existing: an alias pointing at nothing, or a tree nothing can
- * name, both fail here rather than at the first import.
- *
- * `--check` exits non-zero when the block and the tree disagree, which is the
- * part of this worth putting in CI.
  */
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -25,65 +17,48 @@ const base = packageRoot(import.meta.url);
 const lib = libRoot(import.meta.url);
 const config = join(base, "svelte.config.js");
 
-/**
- * Every tree gets one. `development/` is not a tree — it is a directory inside
- * `views/` and inside `components/` — so there is nothing here to leave out, and
- * an alias pointing at a development surface would be an invitation.
- */
-const UNALIASED = new Set([]);
+/** Trees whose subdirectories hold the variety; the alias names the subdirectory. */
+const SPLIT = { components: (name) => `$${name}-components` };
 
-/**
- * Three trees inside `views/` are reached by name rather than through `$views`,
- * because a panel is not a view: it knows only its doors, which is what lets it
- * render in a gallery, in a test, or on a screen it was not written for.
- */
+/** Trees inside views/ reached by name rather than through `$views`. */
 const NAMED_INSIDE_VIEWS = ["panels", "workspaces", "modals"];
 
-const trees = readdirSync(lib, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && !UNALIASED.has(entry.name))
-  .map((entry) => entry.name)
-  .sort();
+const subdirectories = (dir) =>
+  readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
 
 const wanted = new Map();
-for (const tree of trees) wanted.set(`$${tree}`, `src/lib/${tree}`);
-for (const name of NAMED_INSIDE_VIEWS) {
-  if (!existsSync(join(lib, "views", name))) continue;
-  wanted.set(`$${name}`, `src/lib/views/${name}`);
+const groups = [];
+
+for (const tree of subdirectories(lib)) {
+  const split = SPLIT[tree];
+  if (!split) {
+    wanted.set(`$${tree}`, `src/lib/${tree}`);
+    continue;
+  }
+  const group = [];
+  for (const name of subdirectories(join(lib, tree))) {
+    wanted.set(split(name), `src/lib/${tree}/${name}`);
+    group.push(split(name));
+  }
+  groups.push(group);
 }
 
-/**
- * The block is written whole, comments included. Preserving hand-written ones
- * around generated lines would mean guessing which comment belongs to which
- * alias; carrying the reasoning here instead keeps it beside the rule that
- * produces it.
- */
-const line = (alias, path) => `      ${alias}: "${path}",`;
+const inViews = NAMED_INSIDE_VIEWS.filter((name) => existsSync(join(lib, "views", name)));
+for (const name of inViews) wanted.set(`$${name}`, `src/lib/views/${name}`);
+
+const line = (alias) => `      "${alias}": "${wanted.get(alias)}",`;
+const plain = [...wanted.keys()].filter(
+  (alias) => !groups.flat().includes(alias) && !inViews.includes(alias.slice(1))
+);
 
 const block = [
-  "      // One alias per tree that code reaches across; `$lib` is built in.",
-  "      //",
-  "      // SvelteKit generates .svelte-kit/tsconfig.json paths from this, so the",
-  "      // compiler and the bundler read one list and cannot drift. Generated",
-  "      // from the tree by `pnpm aliases`, which is what stops a second list",
-  "      // existing — an edit here is overwritten rather than kept.",
-  ...trees.map((tree) => line(`$${tree}`, `src/lib/${tree}`)),
+  ...plain.sort().map(line),
+  ...groups.flatMap((group) => ["", ...group.map(line)]),
   "",
-  "      // Three trees inside views/ that are reached by name rather than through",
-  "      // `$views`, because a panel is not a view: it knows only its doors, which",
-  "      // is what lets it render in a gallery, in a test, or on a screen it was",
-  "      // not written for.",
-  ...NAMED_INSIDE_VIEWS.filter((name) => wanted.has(`$${name}`)).map((name) =>
-    line(`$${name}`, `src/lib/views/${name}`)
-  ),
-  "",
-  "      // No `$development`. It is a directory inside two trees rather than a",
-  "      // tree of its own, and nothing shipped may import a development surface,",
-  "      // so an alias pointing at one would be an invitation.",
-  "      //",
-  "      // No alias for the vendored components either: `components.json` points",
-  "      // the shadcn CLI at `$lib/components/vendor`, and it rewrites those",
-  "      // imports in its own files on every regeneration. That spelling is the",
-  "      // one documented exception rather than a tree we forgot."
+  ...inViews.map((name) => line(`$${name}`))
 ].join("\n");
 
 const text = readFileSync(config, "utf8");

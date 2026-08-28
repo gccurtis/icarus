@@ -3,7 +3,7 @@
   import Boxes from "@lucide/svelte/icons/boxes";
   import User from "@lucide/svelte/icons/user";
 
-  import { PanelActor, PanelChip } from "$components/authored/panel";
+  import { PanelActor, PanelChip } from "$authored-components/panel";
   import {
     ScreenBar,
     ScreenComposer,
@@ -15,7 +15,7 @@
     ScreenStat,
     ScreenStats,
     ScreenSurface
-  } from "$components/authored/screen";
+  } from "$authored-components/screen";
   import {
     chatIn,
     personasIn,

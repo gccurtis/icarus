@@ -1,9 +1,9 @@
 <script lang="ts">
   import X from "@lucide/svelte/icons/x";
 
-  import { Button } from "$lib/components/vendor/button";
-  import { traceNode } from "$components/development/trace.svelte";
-  import PanelEditableText from "$components/authored/panel/panel-editable-text.svelte";
+  import { Button } from "$vendored-components/button";
+  import { traceNode } from "$development-components/trace.svelte";
+  import PanelEditableText from "$authored-components/panel/panel-editable-text.svelte";
 
   /**
    * One pair inside a `PanelPairs` block: a name the reader chose, its value,

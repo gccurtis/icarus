@@ -6,7 +6,7 @@
   import RotateCcw from "@lucide/svelte/icons/rotate-ccw";
   import Sheet from "@lucide/svelte/icons/sheet";
 
-  import { Separator } from "$lib/components/vendor/separator";
+  import { Separator } from "$vendored-components/separator";
   import {
     Panel,
     PanelActor,
@@ -20,7 +20,7 @@
     PanelQuote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { actorName, VIEWER } from "$capabilities/cast";
   import { member, resourceNamed, thread } from "$capabilities/collaboration";
   import { isInspectionKey, viewState, type InspectionKey } from "$model/client/view-state";

@@ -4,8 +4,8 @@
   import CircleX from "@lucide/svelte/icons/circle-x";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
-  import { cn } from "$lib/components/vendor/utils";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { cn } from "$vendored-components/utils";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * One number about what a thing has done, and the words for what it counts.

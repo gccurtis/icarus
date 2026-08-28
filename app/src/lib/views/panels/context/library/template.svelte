@@ -11,7 +11,7 @@
     PanelRow,
     PanelSection,
     PanelSelect
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { PEOPLE } from "$capabilities/cast";
   import {
     recentlyUsedTemplates,

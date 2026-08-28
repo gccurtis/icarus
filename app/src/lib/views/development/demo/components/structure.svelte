@@ -1,9 +1,9 @@
 <script lang="ts">
   import SectionHeading from "$views/development/demo/components/section-heading.svelte";
-  import * as Resizable from "$lib/components/vendor/resizable";
-  import { ScrollArea } from "$lib/components/vendor/scroll-area";
-  import { Skeleton } from "$lib/components/vendor/skeleton";
-  import * as Tabs from "$lib/components/vendor/tabs";
+  import * as Resizable from "$vendored-components/resizable";
+  import { ScrollArea } from "$vendored-components/scroll-area";
+  import { Skeleton } from "$vendored-components/skeleton";
+  import * as Tabs from "$vendored-components/tabs";
 
   const ROWS = Array.from({ length: 12 }, (_, i) => `Row ${i + 1}`);
 </script>

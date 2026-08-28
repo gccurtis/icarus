@@ -9,7 +9,7 @@
     PanelNote,
     PanelRow,
     PanelSection
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import { searchScope } from "$capabilities/research";
   import { contexts } from "$capabilities/scope";
   import { viewState } from "$model/client/view-state";

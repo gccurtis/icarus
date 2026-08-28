@@ -2,8 +2,8 @@
   import type { Snippet } from "svelte";
   import ChevronLeft from "@lucide/svelte/icons/chevron-left";
 
-  import { Button } from "$lib/components/vendor/button";
-  import { traceNode } from "$components/development/trace.svelte";
+  import { Button } from "$vendored-components/button";
+  import { traceNode } from "$development-components/trace.svelte";
 
   /**
    * The strip that says which one of many you are editing, and how to get back.

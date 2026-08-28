@@ -17,7 +17,7 @@
     PanelSwatch,
     PanelSwatches,
     PanelToggle
-  } from "$components/authored/panel";
+  } from "$authored-components/panel";
   import {
     analysis,
     chartFor,
