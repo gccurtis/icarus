@@ -61,8 +61,11 @@ const line = (alias, path) => `      ${alias}: "${path}",`;
 
 const block = [
   "      // One alias per tree that code reaches across; `$lib` is built in.",
-  "      // Generated from the tree by `pnpm aliases` — a second map is what this",
-  "      // exists to prevent, and an edit here is overwritten rather than kept.",
+  "      //",
+  "      // SvelteKit generates .svelte-kit/tsconfig.json paths from this, so the",
+  "      // compiler and the bundler read one list and cannot drift. Generated",
+  "      // from the tree by `pnpm aliases`, which is what stops a second list",
+  "      // existing — an edit here is overwritten rather than kept.",
   ...trees.map((tree) => line(`$${tree}`, `src/lib/${tree}`)),
   "",
   "      // Three trees inside views/ that are reached by name rather than through",

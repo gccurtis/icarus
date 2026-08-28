@@ -31,18 +31,13 @@ export default {
       remoteFunctions: true,
     },
 
-    // One alias per tree that code reaches across; `$lib` is built in.
-    // Per-capability aliases arrive with their capabilities — an alias map full
-    // of forward declarations pointing at nothing is exactly the rot the lint's
-    // resolve check exists to prevent.
-    //
-    // SvelteKit generates .svelte-kit/tsconfig.json paths from this, so the
-    // compiler and the bundler cannot drift. There is no second map to keep in
-    // step, which is a rule the backend needed and this does not.
     alias: {
       // One alias per tree that code reaches across; `$lib` is built in.
-      // Generated from the tree by `pnpm aliases` — a second map is what this
-      // exists to prevent, and an edit here is overwritten rather than kept.
+      //
+      // SvelteKit generates .svelte-kit/tsconfig.json paths from this, so the
+      // compiler and the bundler read one list and cannot drift. Generated
+      // from the tree by `pnpm aliases`, which is what stops a second list
+      // existing — an edit here is overwritten rather than kept.
       $capabilities: "src/lib/capabilities",
       $components: "src/lib/components",
       $model: "src/lib/model",
