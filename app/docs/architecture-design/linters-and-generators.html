@@ -1,0 +1,1202 @@
+<title>Linters and Generators for the Icarus Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --ground: #eff2f5;
+    --plate: #ffffff;
+    --sunk: #e3e8ed;
+    --ink: #12161c;
+    --ink-2: #4c5663;
+    --ink-3: #6f7987;
+    --rule: #cbd3db;
+    --rule-soft: #e0e6eb;
+
+    --accent: #1c5e7a;
+    --accent-soft: #dfecf1;
+    --has: #12664e;
+    --has-soft: #d9eee6;
+    --needs: #8a5a0b;
+    --needs-soft: #f7eed8;
+    --fails: #963230;
+    --fails-soft: #f8e4e3;
+
+    --measure: 70ch;
+    --s--2: .6875rem;
+    --s--1: .8125rem;
+    --s-0: .9375rem;
+    --s-1: 1.0625rem;
+    --s-2: 1.25rem;
+    --s-3: 1.6875rem;
+    --s-4: 2.375rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0d1116; --plate: #151a21; --sunk: #1b222a;
+      --ink: #e4e9ef; --ink-2: #9ba5b2; --ink-3: #7a8593;
+      --rule: #2a323c; --rule-soft: #212831;
+      --accent: #6fb6d3; --accent-soft: #102a36;
+      --has: #4bc09c; --has-soft: #0b2721;
+      --needs: #dda553; --needs-soft: #2b2210;
+      --fails: #ec8c88; --fails-soft: #2e1615;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0d1116; --plate: #151a21; --sunk: #1b222a;
+    --ink: #e4e9ef; --ink-2: #9ba5b2; --ink-3: #7a8593;
+    --rule: #2a323c; --rule-soft: #212831;
+    --accent: #6fb6d3; --accent-soft: #102a36;
+    --has: #4bc09c; --has-soft: #0b2721;
+    --needs: #dda553; --needs-soft: #2b2210;
+    --fails: #ec8c88; --fails-soft: #2e1615;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: var(--s-0);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace; }
+  code { font-size: .875em; background: var(--sunk); border-radius: 3px; padding: .08em .34em; }
+
+  .wrap { max-width: 80rem; margin: 0 auto; padding: 3.5rem 1.5rem 5rem; display: flex; flex-direction: column; gap: 3rem; }
+
+  header { display: flex; flex-direction: column; gap: .6rem; }
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: var(--s--1); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
+  h1 { margin: 0; font-size: var(--s-4); font-weight: 600; letter-spacing: -.02em; text-wrap: balance; }
+  .lede { margin: 0; max-width: var(--measure); color: var(--ink-2); font-size: var(--s-1); }
+
+  p { margin: 0; max-width: var(--measure); color: var(--ink-2); }
+  p strong { color: var(--ink); font-weight: 600; }
+
+  h2 {
+    margin: 0; font-size: var(--s-2); font-weight: 600; letter-spacing: -.01em;
+    padding-bottom: .5rem; border-bottom: 1px solid var(--rule);
+    display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap;
+  }
+  h2 .path { font-family: "IBM Plex Mono", monospace; font-size: var(--s--1); color: var(--ink-3); font-weight: 400; }
+
+  h3 { margin: 0; font-size: var(--s--1); font-family: "IBM Plex Mono", monospace; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; }
+
+  .section { display: flex; flex-direction: column; gap: 1.4rem; }
+  .block { display: flex; flex-direction: column; gap: .7rem; }
+
+  /* ── Tree ─────────────────────────────────────────────────────────── */
+  .tree { background: var(--plate); border: 1px solid var(--rule); border-radius: 4px; overflow-x: auto; }
+  .tree table { border-collapse: collapse; width: 100%; min-width: 40rem; font-size: var(--s--1); }
+  .tree th { text-align: left; font-family: "IBM Plex Mono", monospace; font-size: var(--s--2); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; padding: .7rem 1rem; border-bottom: 1px solid var(--rule); background: var(--sunk); }
+  .tree td { padding: .24rem 1rem; vertical-align: baseline; border-bottom: 1px solid var(--rule-soft); }
+  .tree tr:last-child td { border-bottom: 0; }
+  .tree td.p { font-family: "IBM Plex Mono", monospace; white-space: pre; color: var(--ink); }
+  .tree td.p .dim { color: var(--ink-3); }
+  .tree tr.top td { background: var(--sunk); }
+  .tree tr.top td.p { font-weight: 600; }
+  .tree td.s { font-family: "IBM Plex Mono", monospace; font-size: var(--s--2); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+
+  /* ── Layout blocks ────────────────────────────────────────────────── */
+  pre.layout {
+    margin: 0; background: var(--plate); border: 1px solid var(--rule); border-radius: 4px;
+    padding: 1rem 1.2rem; overflow-x: auto;
+    font-family: "IBM Plex Mono", monospace; font-size: var(--s--1); line-height: 1.55; color: var(--ink);
+  }
+  pre.layout .c { color: var(--ink-3); }
+
+  /* ── Checks and generators ────────────────────────────────────────── */
+  .list { background: var(--plate); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+  .item { display: grid; grid-template-columns: minmax(13rem, 22%) 1fr; gap: 0 1.2rem; padding: .6rem 1.2rem; border-bottom: 1px solid var(--rule-soft); align-items: baseline; }
+  .item:last-child { border-bottom: 0; }
+  .item .n { font-family: "IBM Plex Mono", monospace; font-size: var(--s--1); color: var(--accent); font-weight: 500; }
+  .item .d { color: var(--ink-2); font-size: var(--s--1); }
+  .item .d b { color: var(--ink); font-weight: 600; }
+  @media (max-width: 44rem) { .item { grid-template-columns: 1fr; gap: .15rem; } }
+
+  ul.subs { margin: .35rem 0 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: .3rem; border-left: 2px solid var(--rule-soft); }
+  ul.subs li { padding-left: .8rem; color: var(--ink-2); font-size: var(--s--1); }
+  ul.subs li .sn { font-family: "IBM Plex Mono", monospace; color: var(--ink); }
+
+  ul.inv { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: .4rem; }
+  ul.inv li { color: var(--ink-2); max-width: var(--measure); }
+  ul.inv li b { color: var(--ink); font-weight: 600; }
+
+  /* ── Flow diagram ─────────────────────────────────────────────────── */
+  .flow { background: var(--plate); border: 1px solid var(--rule); border-radius: 4px; padding: 1.1rem 1.2rem; overflow-x: auto; }
+  .flow-row { display: flex; align-items: stretch; gap: .5rem; min-width: max-content; font-family: "IBM Plex Mono", monospace; font-size: var(--s--1); }
+  .node { border: 1px solid var(--rule); border-radius: 3px; padding: .45rem .7rem; background: var(--sunk); display: flex; flex-direction: column; gap: .1rem; }
+  .node .t { color: var(--ink); }
+  .node .sub { font-size: var(--s--2); color: var(--ink-3); }
+  .node.cross { border-color: var(--accent); background: var(--accent-soft); }
+  .node.cross .t { color: var(--accent); }
+  .arrow { align-self: center; color: var(--ink-3); }
+  .flow-note { margin-top: .7rem; font-size: var(--s--1); color: var(--ink-3); max-width: var(--measure); }
+  .flow-row + .flow-row { margin-top: .5rem; }
+  .lane { align-self: center; font-family: "IBM Plex Mono", monospace; font-size: var(--s--2); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); width: 4.5rem; flex: none; }
+
+  .tag { font-family: "IBM Plex Mono", monospace; font-size: var(--s--2); letter-spacing: .06em; text-transform: uppercase; padding: .14rem .45rem; border-radius: 3px; white-space: nowrap; }
+  .tag.fails { background: var(--fails-soft); color: var(--fails); }
+  .tag.has { background: var(--has-soft); color: var(--has); }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 1rem; color: var(--ink-3); font-size: var(--s--1); font-family: "IBM Plex Mono", monospace; }
+
+  @media (max-width: 40rem) { .wrap { padding: 2.5rem 1rem 3rem; gap: 2.25rem; } h1 { font-size: var(--s-3); } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Icarus · src/lib · the state to build toward</div>
+    <h1>Linters and Generators for the Icarus Tree</h1>
+    <p class="lede">
+      One check per invariant, named for the invariant it holds. Nothing here
+      describes what exists — it describes what should, and where today's tree
+      already breaks it.
+    </p>
+    <p>
+      A check that needs a paragraph to explain is two checks. A check that can
+      fail for two unrelated reasons is two checks. Every name below is an
+      assertion you can read without looking anything up.
+    </p>
+  </header>
+
+  <!-- ══ TREE ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2>The tree</h2>
+    <div class="tree">
+      <table>
+        <thead><tr><th style="width:60%">Path</th><th></th></tr></thead>
+        <tbody>
+          <tr class="top"><td class="p">capabilities/</td><td class="s"></td></tr>
+          <tr><td class="p">├── capabilities.md</td><td class="s"></td></tr>
+          <tr><td class="p">├── cast.ts</td><td class="s"></td></tr>
+          <tr><td class="p">├── read.svelte.ts</td><td class="s"></td></tr>
+          <tr><td class="p">└── &lt;capability&gt;/<span class="dim"> ×14</span></td><td class="s">has structure</td></tr>
+
+          <tr class="top"><td class="p">components/</td><td class="s"></td></tr>
+          <tr><td class="p">├── authored/</td><td class="s"></td></tr>
+          <tr><td class="p">│   └── &lt;vocabulary&gt;/<span class="dim"> ×8</span></td><td class="s">has structure</td></tr>
+          <tr><td class="p">├── vendor/</td><td class="s"></td></tr>
+          <tr><td class="p">│   └── &lt;component&gt;/<span class="dim"> ×43</span></td><td class="s">has structure</td></tr>
+          <tr><td class="p">└── development/</td><td class="s"></td></tr>
+
+          <tr class="top"><td class="p">model/</td><td class="s">has structure</td></tr>
+          <tr><td class="p">├── model.md</td><td class="s"></td></tr>
+          <tr><td class="p">├── client/&lt;object&gt;/<span class="dim"> ×7</span></td><td class="s"></td></tr>
+          <tr><td class="p">└── server/&lt;object&gt;/<span class="dim"> ×2</span></td><td class="s"></td></tr>
+
+          <tr class="top"><td class="p">representation/</td><td class="s"></td></tr>
+          <tr><td class="p">├── representation.md</td><td class="s"></td></tr>
+          <tr><td class="p">├── data/</td><td class="s"></td></tr>
+          <tr><td class="p">│   ├── types/&lt;domain&gt;/<span class="dim"> ×11</span></td><td class="s">has structure</td></tr>
+          <tr><td class="p">│   └── behavior/&lt;domain&gt;/</td><td class="s">has structure</td></tr>
+          <tr><td class="p">└── store/</td><td class="s">has structure</td></tr>
+
+          <tr class="top"><td class="p">runtime/</td><td class="s">has structure</td></tr>
+          <tr><td class="p">├── runtime.md</td><td class="s"></td></tr>
+          <tr><td class="p">├── client/</td><td class="s"></td></tr>
+          <tr><td class="p">└── server/</td><td class="s"></td></tr>
+
+          <tr class="top"><td class="p">styles/</td><td class="s"></td></tr>
+          <tr><td class="p">├── app.css</td><td class="s"></td></tr>
+          <tr><td class="p">├── chromatic-themes/</td><td class="s"></td></tr>
+          <tr><td class="p">│   └── &lt;theme&gt;/<span class="dim"> ×2</span></td><td class="s">has structure</td></tr>
+          <tr><td class="p">├── semantic-tokens/</td><td class="s">has structure</td></tr>
+          <tr><td class="p">└── x-integrations/</td><td class="s"></td></tr>
+          <tr><td class="p">    └── &lt;target&gt;/<span class="dim"> ×2</span></td><td class="s">has structure</td></tr>
+
+          <tr class="top"><td class="p">views/</td><td class="s">has structure</td></tr>
+          <tr><td class="p">├── panels/</td><td class="s">has structure</td></tr>
+          <tr><td class="p">│   ├── context/&lt;subject&gt;/</td><td class="s"></td></tr>
+          <tr><td class="p">│   └── inspector/&lt;subject&gt;/</td><td class="s"></td></tr>
+          <tr><td class="p">├── workspaces/&lt;screen&gt;/<span class="dim"> ×9</span></td><td class="s">has structure</td></tr>
+          <tr><td class="p">├── modals/</td><td class="s"></td></tr>
+          <tr><td class="p">├── development/&lt;surface&gt;/<span class="dim"> ×7</span></td><td class="s"></td></tr>
+          <tr><td class="p">└── &lt;surface&gt;/<span class="dim"> ×8</span></td><td class="s"></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ CAPABILITIES ═══════════════════════════════════════════════ -->
+  <div class="section">
+    <h2>capabilities <span class="path">capabilities/&lt;capability&gt;/</span></h2>
+
+    <div class="block">
+      <h3>What it is</h3>
+      <p>
+        <b>A capability bridges the client and the server model.</b> One directory
+        per subject. It is the only thing that exists on both sides of the process
+        boundary, which is what makes one directory the whole audit.
+      </p>
+      <div class="flow">
+        <div class="flow-row">
+          <div class="node"><span class="t">view · client model</span><span class="sub">client</span></div>
+          <span class="arrow">→</span>
+          <div class="node cross"><span class="t">index.ts</span><span class="sub">the door</span></div>
+          <span class="arrow">→</span>
+          <div class="node cross"><span class="t">api/&lt;procedure&gt;</span><span class="sub">server · validates first</span></div>
+          <span class="arrow">→</span>
+          <div class="node"><span class="t">model/server/&lt;object&gt;</span><span class="sub">server</span></div>
+        </div>
+        <p class="flow-note">
+          The boundary is the door. What is on the right of it is a server model
+          object, never storage — a capability holds nothing between calls, so it
+          has nothing to open a file with.
+        </p>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Invariants</h3>
+      <ul class="inv">
+        <li><b>A caller reaches a capability at its door and nowhere else.</b> If a panel can import a procedure, the door stops being the surface.</li>
+        <li><b>Input is checked before anything happens.</b> A procedure's first statement validates; a type is a claim, not a check.</li>
+        <li><b>Stored state is reached through a server model object.</b> A procedure asks the server graph for the object that owns the lifetime; it opens nothing itself.</li>
+        <li><b>It holds nothing between calls.</b> Two requests share a process; anything one leaves behind is the next one's bug.</li>
+        <li><b>It never reaches a view, a client model, or another capability's insides.</b></li>
+        <li><b>The directory is the call tree.</b> A procedure with supporting steps is a directory holding them.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <h3>Layout it asserts</h3>
+      <pre class="layout">&lt;capability&gt;/
+├── &lt;capability&gt;.md
+├── index.ts                     <span class="c">the door — stubs only</span>
+├── errors.ts                    <span class="c">optional</span>
+├── types/&lt;name&gt;.ts              <span class="c">call and return shapes</span>
+├── api/
+│   ├── shared/&lt;step&gt;.ts         <span class="c">optional</span>
+│   └── &lt;procedure&gt;/
+│       ├── &lt;procedure&gt;.ts       <span class="c">entry, named for its directory</span>
+│       └── &lt;step&gt;/&lt;step&gt;.ts     <span class="c">recursive</span>
+└── test/{unit,regression,non-functional}/</pre>
+    </div>
+
+    <div class="block">
+      <h3>Checks</h3>
+      <div class="list">
+        <div class="item">
+          <span class="n">door-is-the-only-entry</span>
+          <span class="d">No import from outside a capability names anything below its <code>index.ts</code>.</span>
+        </div>
+        <div class="item">
+          <span class="n">door-holds-no-logic</span>
+          <span class="d"><code>index.ts</code> exports stubs and the types they speak in. It runs no statement of its own, so nothing bypasses the validated path.</span>
+        </div>
+        <div class="item">
+          <span class="n">procedure-validates-first</span>
+          <span class="d">Every <code>api/&lt;procedure&gt;</code> entry validates its argument before its first other statement.</span>
+        </div>
+        <div class="item">
+          <span class="n">storage-through-a-model</span>
+          <span class="d">Nothing under <code>capabilities/</code> imports <code>$representation/store</code>. The object that owns the lifetime is the only way in.</span>
+        </div>
+        <div class="item">
+          <span class="n">capability-imports</span>
+          <div class="d">Where a capability may reach.
+            <ul class="subs">
+              <li><span class="sn">server-object-doors</span> — a server model object is named at its door, never a path inside it.</li>
+              <li><span class="sn">runtime-door</span> — the server graph is reached through <code>start.server</code>.</li>
+              <li><span class="sn">no-client</span> — nothing here imports a view or a client model. <span class="tag fails">2 fail</span> <code>opening</code> and <code>inspecting</code> take types from <code>view-state</code>.</li>
+              <li><span class="sn">no-sideways</span> — another capability is named at its door, never a path inside it.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">capability-holds-nothing</span>
+          <div class="d">Nothing survives a call.
+            <ul class="subs">
+              <li><span class="sn">no-module-state</span> — no mutable module-scope binding.</li>
+              <li><span class="sn">no-construction-at-load</span> — nothing is built when the module is imported.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">entry-matches-directory</span>
+          <span class="d">Every directory under <code>api/</code> holds a file of the same name, at every depth. Without it a procedure's entry point is a guess.</span>
+        </div>
+        <div class="item">
+          <span class="n">tests-are-one-of-three-kinds</span>
+          <span class="d">Nothing under <code>test/</code> outside <code>unit/</code>, <code>regression/</code>, <code>non-functional/</code>.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Generators</h3>
+      <div class="list">
+        <div class="item"><span class="n">new-capability</span><span class="d">The directory, an empty door, and <code>types/</code>. No <code>api/</code> — a capability with no procedure is a legal state.</span></div>
+        <div class="item"><span class="n">new-procedure</span><span class="d">The procedure directory, the entry with its validator already calling it, the stub added to the door, and a failing test.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ COMPONENTS ═════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2>components <span class="path">components/authored/&lt;vocabulary&gt;/ · components/vendor/&lt;component&gt;/</span></h2>
+
+    <div class="block">
+      <h3>What it is</h3>
+      <p>
+        Two vocabularies with opposite ownership. <b>authored</b> is ours and is
+        checked for what it must not do. <b>vendor</b> is written by the shadcn CLI
+        and is checked for evidence that someone edited it by hand.
+      </p>
+      <p>
+        Both hold the same claim: <b>a component knows only its props.</b> Give it
+        the same props twice and it renders the same thing twice, wherever it is
+        mounted from.
+      </p>
+    </div>
+
+    <div class="block">
+      <h3>Invariants</h3>
+      <ul class="inv">
+        <li><b>A component reaches no door.</b> Not a capability, not a model object, not the runtime, not representation.</li>
+        <li><b>A vocabulary is entered at its index.</b> Its internal file names are its own business.</li>
+        <li><b>A vendored file is the CLI's output.</b> Its shape and its import spelling come from the tool, and the next regeneration overwrites anything else.</li>
+        <li><b>A primitive announces itself to trace</b>, or a review page renders a tree it cannot describe.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <h3>Layout it asserts</h3>
+      <pre class="layout">authored/&lt;vocabulary&gt;/
+├── index.ts                     <span class="c">the whole export surface</span>
+├── &lt;vocabulary&gt;-&lt;name&gt;.svelte
+└── &lt;vocabulary&gt;-&lt;name&gt;.ts       <span class="c">pure; optional</span>
+
+vendor/&lt;component&gt;/
+├── index.ts
+└── …                            <span class="c">whatever the CLI writes</span></pre>
+    </div>
+
+    <div class="block">
+      <h3>Checks</h3>
+      <div class="list">
+        <div class="item">
+          <span class="n">component-reaches-no-door</span>
+          <span class="d">No file under <code>components/</code> imports <code>$capabilities</code>, <code>$model</code>, <code>$runtime</code> or <code>$representation</code>.</span>
+        </div>
+        <div class="item">
+          <span class="n">vocabulary-is-entered-at-index</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">index-exists</span> — every vocabulary directory holds an <code>index.ts</code>.</li>
+              <li><span class="sn">no-deep-import</span> — no import from outside a vocabulary names a path below its index.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">file-is-named-for-its-directory</span>
+          <span class="d">Every file under <code>authored/</code> is kebab-case and prefixed by the directory it sits in.</span>
+        </div>
+        <div class="item">
+          <span class="n">primitive-registers-with-trace</span>
+          <span class="d">Every <code>.svelte</code> under <code>authored/</code> calls the trace registration. <span class="tag fails">5 fail</span> all under <code>chart/</code>.</span>
+        </div>
+        <div class="item">
+          <span class="n">vendor-is-unedited</span>
+          <span class="d">No file under <code>vendor/</code> imports <code>$components/authored</code> or any door. The closest a check gets to "nobody touched it" without diffing the registry.</span>
+        </div>
+        <div class="item">
+          <span class="n">vendor-keeps-its-own-spelling</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">import-spelling</span> — imports inside <code>vendor/</code> are <code>$lib/components/vendor/…</code>, which is what the CLI writes.</li>
+              <li><span class="sn">matches-components-json</span> — that path is <code>aliases.ui</code>, so the CLI and the check cannot disagree about where the tree is.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Generators</h3>
+      <div class="list">
+        <div class="item"><span class="n">new-component</span><span class="d">The <code>.svelte</code> file under a named vocabulary, with the trace registration already in it, and its export added to <code>index.ts</code>.</span></div>
+        <div class="item"><span class="n">new-vocabulary</span><span class="d">The directory and an empty <code>index.ts</code>.</span></div>
+        <div class="item"><span class="n">— for vendor</span><span class="d">None. <code>shadcn-svelte add</code> is the generator; a second one would be a second opinion about a tree we do not own.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODEL ══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2>model <span class="path">model/{client,server}/&lt;object&gt;/</span></h2>
+
+    <div class="block">
+      <h3>What it is</h3>
+      <p>
+        One directory per thing that owns state surviving a call. Definitional: it
+        says what an object is and how it behaves, and never decides when one comes
+        into existence. That decision is the runtime's.
+      </p>
+      <p>
+        <b>The split is by lifetime, not by tidiness.</b> The two halves take the
+        same template and differ in how many of each thing exists and for how long.
+      </p>
+      <div class="flow">
+        <div class="flow-row">
+          <span class="lane">client</span>
+          <div class="node"><span class="t">one browser tab</span><span class="sub">7 objects</span></div>
+          <span class="arrow">—</span>
+          <div class="node"><span class="t">may hold runes</span><span class="sub">definition.svelte.ts</span></div>
+          <span class="arrow">—</span>
+          <div class="node"><span class="t">released with the layout</span><span class="sub">reverse construction order</span></div>
+        </div>
+        <div class="flow-row">
+          <span class="lane">server</span>
+          <div class="node"><span class="t">one process</span><span class="sub">2 objects</span></div>
+          <span class="arrow">—</span>
+          <div class="node"><span class="t">nothing per-user</span><span class="sub">identity arrives per request</span></div>
+          <span class="arrow">—</span>
+          <div class="node"><span class="t">released on shutdown</span><span class="sub">one-way</span></div>
+        </div>
+        <p class="flow-note">
+          Same template, two lifetimes. A client object may be reactive and reach
+          the browser; a server object may do neither, and must not be reachable
+          from a browser bundle at all.
+        </p>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Invariants</h3>
+      <ul class="inv">
+        <li><b>Nothing constructs at module load.</b> A constructor returns a fresh object and caches nothing, so importing a module never produces a second instance of something the graph already holds one of.</li>
+        <li><b>An object is entered at its door.</b> Past it is a definition, a private type, or a method — none of which the object promised to keep stable.</li>
+        <li><b>The directory is the call tree.</b> A method is a file until it has supporting steps; then it is a directory named for its entry, holding them, recursively.</li>
+        <li><b>Runes are declared in the file extension.</b> A definition holding state the compiler must transform says so in its name.</li>
+        <li><b>An object exposes keys, never components.</b> What a key renders as is the view's decision, and a model that named a component would decide it twice.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <h3>Layout it asserts</h3>
+      <pre class="layout">&lt;object&gt;/
+├── &lt;object&gt;.md
+├── index.ts | index.server.ts    <span class="c">the door</span>
+├── types.ts                      <span class="c">interface and public values</span>
+├── definition.ts | .svelte.ts    <span class="c">holds the state</span>
+├── constructor.ts                <span class="c">returns a fresh object</span>
+├── methods/
+│   ├── &lt;method&gt;.ts
+│   ├── &lt;method&gt;/&lt;method&gt;.ts      <span class="c">recursive</span>
+│   └── shared/&lt;step&gt;.ts          <span class="c">optional</span>
+└── test/{unit,regression,non-functional}/</pre>
+    </div>
+
+    <div class="block">
+      <h3>Checks</h3>
+      <div class="list">
+        <div class="item">
+          <span class="n">nothing-builds-at-module-load</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">no-construction</span> — no constructor call runs when a module is imported.</li>
+              <li><span class="sn">no-module-state</span> — no mutable module-scope binding anywhere under <code>model/</code>. Holding an instance is the runtime's job.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">object-is-entered-at-its-door</span>
+          <span class="d">An import from outside an object names its <code>index</code>, never a path below it.</span>
+        </div>
+        <div class="item">
+          <span class="n">constructor-is-called-by-the-runtime</span>
+          <span class="d">Nothing outside <code>runtime/</code> and the object's own files imports a <code>constructor.ts</code>. A second caller is a second instance of something meant to be one.</span>
+        </div>
+        <div class="item">
+          <span class="n">method-entry-matches-directory</span>
+          <span class="d">Every method directory holds a file of the same name, at every depth.</span>
+        </div>
+        <div class="item">
+          <span class="n">runes-match-the-extension</span>
+          <div class="d">Checked both ways, because either direction is a file that will not behave as written.
+            <ul class="subs">
+              <li><span class="sn">runes-need-svelte-ts</span> — a file declaring a rune is <code>.svelte.ts</code>, or the rune is never compiled.</li>
+              <li><span class="sn">svelte-ts-needs-runes</span> — a <code>.svelte.ts</code> file declares one, or it is paying for a transform it does not use.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">object-exposes-no-component</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">no-component-type</span> — no model type names or imports a Svelte <code>Component</code>.</li>
+              <li><span class="sn">no-svelte-file</span> — no model file is a <code>.svelte</code>.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">object-layout</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">required-files</span> — the door, types, definition and constructor all exist.</li>
+              <li><span class="sn">permitted-root-entries</span> — nothing else sits at the object root; what an object does lives under <code>methods/</code>.</li>
+              <li><span class="sn">door-matches-environment</span> — a server object's door carries <code>.server</code>, so a browser import of it fails at build rather than at runtime.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">method-tree-paths-resolve</span>
+          <span class="d">Where a method document draws a call tree, every path in it exists.</span>
+        </div>
+        <div class="item">
+          <span class="n">tests-are-one-of-three-kinds</span>
+          <span class="d">Nothing under <code>test/</code> outside the three named directories.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Generators</h3>
+      <div class="list">
+        <div class="item"><span class="n">new-model-object</span><span class="d">Document, types, definition, constructor and door. Adds the field to the runtime's aggregate and the call to its builder, in dependency order. Refuses a cycle.</span></div>
+        <div class="item"><span class="n">new-method</span><span class="d">A method file, or a directory with its entry when the method already has steps.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ REPRESENTATION ═════════════════════════════════════════════ -->
+  <div class="section">
+    <h2>representation <span class="path">representation/data/{types,behavior}/&lt;domain&gt;/ · representation/store/</span></h2>
+
+    <div class="block">
+      <h3>What it is</h3>
+      <p>
+        Everything the system knows, in one vocabulary belonging to neither process.
+        Split by what a file <em>is</em>, not what it is about: <b>types</b>
+        compiles to nothing, <b>behavior</b> is pure functions over it, and
+        <b>store</b> says what a table is on disk without opening one.
+      </p>
+      <div class="flow">
+        <div class="flow-row">
+          <div class="node"><span class="t">data/types</span><span class="sub">declares · erased</span></div>
+          <span class="arrow">←</span>
+          <div class="node"><span class="t">data/behavior</span><span class="sub">pure functions</span></div>
+          <span class="arrow">←</span>
+          <div class="node"><span class="t">store</span><span class="sub">tables, reads, writes</span></div>
+        </div>
+        <p class="flow-note">
+          Every arrow points one way, and the chain stops here. Nothing in this
+          tree imports any other tree, and opening one of these tables is a
+          lifetime — which is somebody else's.
+        </p>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Invariants</h3>
+      <ul class="inv">
+        <li><b>A file declares or computes, never both.</b> A mixed file is where importing a type quietly pulls a runtime value into a bundle that should not have one.</li>
+        <li><b>Nothing here runs.</b> No filesystem, no environment, no framework, no clock — which is what makes every file safe for either process to take.</li>
+        <li><b>The domain graph is declared and acyclic.</b></li>
+        <li><b>The store describes; it does not hold.</b> Opening a file is a lifetime, and lifetimes are the runtime's.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <h3>Layout it asserts</h3>
+      <pre class="layout">data/
+├── types/&lt;domain&gt;/&lt;name&gt;.ts      <span class="c">no runtime export</span>
+└── behavior/&lt;domain&gt;/&lt;name&gt;.ts   <span class="c">pure</span>
+
+store/
+├── tables.ts                     <span class="c">table declarations</span>
+├── store.server.ts               <span class="c">what a read and a write are</span>
+└── admission.ts                  <span class="c">a name is not yet a path</span></pre>
+    </div>
+
+    <div class="block">
+      <h3>Checks</h3>
+      <div class="list">
+        <div class="item">
+          <span class="n">types-emit-nothing</span>
+          <span class="d">A file under <code>types/</code> produces no runtime export — <b>checked against compiled output</b>, because a re-export that survives erasure is invisible in source.</span>
+        </div>
+        <div class="item">
+          <span class="n">behavior-is-pure</span>
+          <div class="d">Same arguments, same answer, on either side of the boundary.
+            <ul class="subs">
+              <li><span class="sn">no-framework</span> — no Svelte, no SvelteKit, no rune.</li>
+              <li><span class="sn">no-node</span> — no <code>node:*</code>, so the file is loadable in a browser.</li>
+              <li><span class="sn">no-server-module</span> — nothing whose name marks it as the server's.</li>
+              <li><span class="sn">no-ambient-state</span> — no clock, no environment, no global read.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">representation-imports-nothing-else</span>
+          <span class="d">No file in this tree imports any other tree. A vocabulary that depended on a consumer would not be one.</span>
+        </div>
+        <div class="item">
+          <span class="n">domain-graph-is-declared</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">declaration-matches-imports</span> — a domain imports exactly the domains it declares it may.</li>
+              <li><span class="sn">no-cycle</span> — the real graph is acyclic.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">store-opens-nothing</span>
+          <span class="d">No file under <code>store/</code> touches the filesystem or holds a handle. <span class="tag fails">2 fail</span> <code>createStore</code> and <code>createJsonStore</code>.</span>
+        </div>
+        <div class="item">
+          <span class="n">representation-layout</span>
+          <span class="d">Every file is under <code>data/types/</code>, <code>data/behavior/</code> or <code>store/</code>. There is no fourth place, so no file can be ambiguous about which rules apply to it.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Generators</h3>
+      <div class="list">
+        <div class="item"><span class="n">new-domain</span><span class="d">A directory under <code>types/</code> with its import declaration and one file. The matching <code>behavior/</code> directory only when asked — most domains never have one.</span></div>
+        <div class="item"><span class="n">new-table</span><span class="d">A table declaration, its name in <code>TABLE_NAMES</code>, and its row type. Three edits that must agree, which is what a generator is for.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RUNTIME ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2>runtime <span class="path">runtime/{client,server}/</span></h2>
+
+    <div class="block">
+      <h3>What it is</h3>
+      <p>
+        The only tree that executes. One file per environment, read top to bottom:
+        compose the graph, hold it, hand it out, and on the server, close it.
+      </p>
+      <div class="flow">
+        <div class="flow-row">
+          <div class="node"><span class="t">build&lt;Env&gt;Model</span><span class="sub">not exported · holds nothing</span></div>
+          <span class="arrow">→</span>
+          <div class="node cross"><span class="t">init&lt;Env&gt;Model</span><span class="sub">one caller · assigns the instance</span></div>
+          <span class="arrow">→</span>
+          <div class="node"><span class="t">&lt;env&gt;Model()</span><span class="sub">guards, then returns</span></div>
+          <span class="arrow">→</span>
+          <div class="node"><span class="t">close&lt;Env&gt;Model</span><span class="sub">server only · one-way</span></div>
+        </div>
+        <p class="flow-note">
+          The one caller is the <code>/app</code> layout on the client and the
+          <code>init</code> hook on the server. Everything else calls the accessor.
+        </p>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Invariants</h3>
+      <ul class="inv">
+        <li><b>There is one published way to stand up a graph.</b> A second one produces two graphs over one storage key, and neither is wrong on its own.</li>
+        <li><b>One place holds the instance.</b></li>
+        <li><b>The graph is assembled in dependency order</b>, every object constructed once, every aggregate field assigned once, no cycle.</li>
+        <li><b>The accessor refuses rather than returns nothing.</b> Before build and after shutdown, in different words — they are different mistakes.</li>
+        <li><b>The two halves never meet.</b> A browser bundle that reached the server graph would ship the filesystem with it.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <h3>Layout it asserts</h3>
+      <pre class="layout">client/                          server/
+├── client.md                    ├── server.md
+├── start.ts                     ├── start.server.ts
+├── types.ts                     ├── types.ts
+└── test/                        ├── scope.server.ts
+                                 └── test/</pre>
+    </div>
+
+    <div class="block">
+      <h3>Checks</h3>
+      <div class="list">
+        <div class="item">
+          <span class="n">builder-is-not-exported</span>
+          <span class="d">No <code>build&lt;Env&gt;Model</code> leaves its module. The initializer returns what it built, so nothing needs a second way in.</span>
+        </div>
+        <div class="item">
+          <span class="n">one-holder-of-the-instance</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">state-only-in-start</span> — a mutable module-scope binding appears in <code>start*</code>.</li>
+              <li><span class="sn">no-state-elsewhere</span> — and nowhere else in the repository.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">one-caller-of-the-initializer</span>
+          <span class="d">Exactly one module calls <code>init&lt;Env&gt;Model</code>, and it is the layout or the hook. Two callers is two graphs, one of which is unreachable.</span>
+        </div>
+        <div class="item">
+          <span class="n">graph-matches-its-aggregate</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">declared-is-built</span> — every field <code>types.ts</code> names is returned by the builder.</li>
+              <li><span class="sn">built-is-declared</span> — and nothing else is.</li>
+              <li><span class="sn">assigned-once</span> — no field is written twice.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">objects-are-built-in-order</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">after-dependencies</span> — an object is constructed after everything it is passed.</li>
+              <li><span class="sn">constructed-once</span> — each object door is called exactly once.</li>
+              <li><span class="sn">no-cycle</span> — the dependency graph is acyclic.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">accessor-refuses-twice</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">client-guards-browser</span> — reaching a tab's graph from the server is a category error, and says so.</li>
+              <li><span class="sn">client-guards-absence</span> — reaching it before the layout ran is a question of order, and says that instead.</li>
+              <li><span class="sn">server-guards-shutdown</span> — a request arriving mid-drain hears "shutting down", not "not built".</li>
+              <li><span class="sn">server-guards-absence</span> — and one arriving before <code>init</code> hears the opposite.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">framework-only-at-the-root</span>
+          <span class="d">Only <code>start*</code> imports <code>$app/*</code>. An object taking its identity from ambient routing is one that cannot be built twice.</span>
+        </div>
+        <div class="item">
+          <span class="n">runtime-layout</span>
+          <span class="d">Only the named files exist. Something new here is a decision, not an addition.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Generators</h3>
+      <div class="list">
+        <div class="item"><span class="n">— none</span><span class="d">Twelve files that change when the graph changes. <code>new-model-object</code> edits them, which is where that work belongs.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STYLES ═════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2>styles <span class="path">styles/chromatic-themes/&lt;theme&gt;/ · semantic-tokens/ · x-integrations/&lt;target&gt;/</span></h2>
+
+    <div class="block">
+      <h3>What it is</h3>
+      <p>
+        Four stages, each naming values from the one behind it and never reaching
+        forward. A consumer sees the last stage only.
+      </p>
+      <div class="flow">
+        <div class="flow-row">
+          <div class="node"><span class="t">chromatic-themes</span><span class="sub">--palette-* --theme-*</span></div>
+          <span class="arrow">→</span>
+          <div class="node"><span class="t">slots</span><span class="sub">--chromatic-*</span></div>
+          <span class="arrow">→</span>
+          <div class="node cross"><span class="t">semantic-tokens</span><span class="sub">--token-* · public</span></div>
+          <span class="arrow">→</span>
+          <div class="node"><span class="t">x-integrations</span><span class="sub">tailwind · shadcn</span></div>
+        </div>
+        <p class="flow-note">
+          Only the third stage is public. A component naming anything to the left of
+          it has reached behind the boundary, and the value it found changes when a
+          theme does.
+        </p>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Invariants</h3>
+      <ul class="inv">
+        <li><b>A literal colour exists in exactly one place</b> — a theme file. Anywhere else it is a value a theme switch cannot reach.</li>
+        <li><b>A stage declares its own namespace and no other.</b></li>
+        <li><b>References point backward.</b> A stage reads the stage behind it, never ahead, and never past the public boundary.</li>
+        <li><b>One door.</b> Two entry points is two cascade orders, and which one wins depends on load order.</li>
+        <li><b>Generated CSS is inert.</b></li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <h3>Checks</h3>
+      <div class="list">
+        <div class="item">
+          <span class="n">literal-colours-in-themes-only</span>
+          <span class="d">A colour is written in <code>&lt;theme&gt;/&lt;theme&gt;.css</code> and named everywhere else.</span>
+        </div>
+        <div class="item">
+          <span class="n">stage-owns-its-namespace</span>
+          <span class="d">Themes declare <code>--palette-*</code> and <code>--theme-*</code>, slots <code>--chromatic-*</code>, tokens <code>--token-*</code>, integrations none of them.</span>
+        </div>
+        <div class="item">
+          <span class="n">references-point-backward</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">stage-reads-behind-it</span> — a theme reads its own palette, slots read theme values, tokens read theme or chromatic values. Never forward.</li>
+              <li><span class="sn">integration-reads-public-only</span> — an integration names public tokens and nothing behind them.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">one-stylesheet-door</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">single-entry</span> — the root layout imports <code>app.css</code> once, and nothing else imports a stylesheet.</li>
+              <li><span class="sn">every-file-reachable</span> — every authored stage file is imported by <code>app.css</code> exactly once, so nothing is silently absent.</li>
+              <li><span class="sn">import-order</span> — imports are contiguous and in stage order, default theme first, slots after every theme.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">consumers-see-public-tokens-only</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">authored-consumer</span> — no private stage variable, no internal stylesheet import, no literal colour.</li>
+              <li><span class="sn">registry-consumer</span> — a vendored component uses shadcn's bridge vocabulary, so a first-party alias never reaches it.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">themes-agree-with-each-other</span>
+          <div class="d">A token present in one theme and missing in another is a value that resolves to nothing under the second.
+            <ul class="subs">
+              <li><span class="sn">same-token-set</span> — every theme declares the same tokens, and exactly one binds <code>:root</code>.</li>
+              <li><span class="sn">registration-matches</span> — the default agrees with <code>app.html</code>, and dark themes match Tailwind's <code>dark</code> variant.</li>
+              <li><span class="sn">complete-role-families</span> — every colour role declares all seven slots, each a direct alias whose slot matches.</li>
+              <li><span class="sn">meaning-hues-pinned</span> — meaning roles hold their fixed hues, and no role spans two chromatic families.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">generated-css-is-inert</span>
+          <span class="d">The shadcn output is the exact <code>components.json</code> target, carries its quarantine header, and is imported by nothing.</span>
+        </div>
+        <div class="item">
+          <span class="n">styles-layout</span>
+          <span class="d">Only <code>app.css</code> and the three stage directories at the root; token domains stay files rather than becoming directories.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Generators</h3>
+      <div class="list">
+        <div class="item"><span class="n">new-theme</span><span class="d">A chromatic theme with every declared token present, and its registration in <code>app.css</code> and <code>app.html</code>.</span></div>
+        <div class="item"><span class="n">new-token</span><span class="d">A semantic token across every theme at once, so a token that exists in one and not another is unreachable rather than possible.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VIEWS ══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2>views <span class="path">views/ — shared by every surface</span></h2>
+
+    <div class="block">
+      <h3>What it is</h3>
+      <p>
+        Everything a person looks at. Four kinds — a stack, the centre of a screen,
+        chrome that persists across every screen, and a surface for inspecting the
+        other three — and one contract all of them keep.
+      </p>
+    </div>
+
+    <div class="block">
+      <h3>Invariants</h3>
+      <ul class="inv">
+        <li><b>A layout is a named grid.</b> <code>grid-template-areas</code> with regions named for what they hold, so what appears where survives a reorder of the markup.</li>
+        <li><b>Data comes from a door, never a prop.</b> A prop carries a callback, or an id its parent alone knows. Content arriving as a prop is content two surfaces can disagree about.</li>
+        <li><b>A concern declares what it is by extension.</b> Everything under <code>effects/</code> holds runes; nothing under <code>procedures/</code> or <code>interactions/</code> does.</li>
+        <li><b>Shared state dies with the mount.</b> A module singleton would outlive the surface and be handed to the next one.</li>
+        <li><b>No surface reaches inside another.</b> Its root and its types, or nothing.</li>
+        <li><b>Nothing imports a development surface.</b> It may import anything; the trade only holds in one direction.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <h3>Layout it asserts</h3>
+      <pre class="layout">views/
+├── panels/                       <span class="c">own structure — below</span>
+├── workspaces/                   <span class="c">own structure — below</span>
+├── modals/&lt;modal&gt;.svelte
+├── development/&lt;surface&gt;/
+└── &lt;surface&gt;/
+    ├── &lt;surface&gt;.md
+    ├── &lt;surface&gt;.svelte
+    ├── types.ts
+    ├── components/ effects/ interactions/ procedures/ shared/
+    └── test/{unit,regression,non-functional}/</pre>
+    </div>
+
+    <div class="block">
+      <h3>Checks</h3>
+      <div class="list">
+        <div class="item">
+          <span class="n">surface-is-a-named-grid</span>
+          <span class="d">Every surface lays itself out with <code>grid-template-areas</code> and named regions. <span class="tag fails">9 fail</span> 7 of 8 shell surfaces, 2 of 13 workspaces.</span>
+        </div>
+        <div class="item">
+          <span class="n">data-comes-from-a-door</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">no-content-prop</span> — a prop is a callback or an id, never the thing being displayed.</li>
+              <li><span class="sn">no-standin-constant</span> — no literal array or object stands where a query belongs.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">concern-is-one-of-five</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">permitted-root-entries</span> — a surface root holds its document, its component, its types, and the five concerns.</li>
+              <li><span class="sn">banned-names</span> — no <code>utils/</code>, <code>helpers/</code>, <code>stores/</code>, <code>index.ts</code>: names that hide what a file is for.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">effects-declare-runes</span>
+          <div class="d">Checked both ways — either direction is a file that does not do what it looks like.
+            <ul class="subs">
+              <li><span class="sn">effects-are-svelte-ts</span> — everything under <code>effects/</code> is compiled, or its runes never run.</li>
+              <li><span class="sn">others-declare-no-rune</span> — nothing under <code>procedures/</code> or <code>interactions/</code> holds one.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">shared-is-a-constructor</span>
+          <span class="d"><code>shared/</code> exports a constructor or a context accessor, never an instantiated module singleton.</span>
+        </div>
+        <div class="item">
+          <span class="n">surface-imports</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">no-server-code</span> — nothing marked as the server's reaches a rendered surface.</li>
+              <li><span class="sn">no-route-internals</span> — no generated route type or route-local module.</li>
+              <li><span class="sn">no-reaching-inside</span> — another surface is named at its root or its types, never below.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">surface-shape</span>
+          <span class="d">A surface directory holds a document and a root component, both named for it, so the entry point is never a guess.</span>
+        </div>
+        <div class="item">
+          <span class="n">nothing-imports-development</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">no-inbound-import</span> — nothing outside <code>development/</code> imports a development surface.</li>
+              <li><span class="sn">has-a-demo-route</span> — every development surface is reachable from a <code>/demo</code> route, so an unreachable one is a failure rather than a leftover.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">documented-paths-resolve</span>
+          <span class="d">Where a concern document names a path, that path exists.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Generators</h3>
+      <div class="list">
+        <div class="item"><span class="n">new-surface</span><span class="d">Document and root component, with the grid skeleton in place. Takes which tree it is for.</span></div>
+        <div class="item"><span class="n">new-concern-entry</span><span class="d">One entry under a named concern, with the extension that concern requires.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VIEWS / PANELS ═════════════════════════════════════════════ -->
+  <div class="section">
+    <h2>views · panels <span class="path">views/panels/{context,inspector}/&lt;subject&gt;/</span></h2>
+
+    <div class="block">
+      <h3>What it is</h3>
+      <p>
+        A vertical stack, one file per key. <b><code>context/</code> and
+        <code>inspector/</code> are the same shape</b> and take the same checks —
+        both are flat <code>&lt;subject&gt;/&lt;key&gt;.svelte</code>, no nested
+        directories and no other file kind, across all 199 leaves. What separates
+        them is which stack they appear in, and nothing in the tree.
+      </p>
+    </div>
+
+    <div class="block">
+      <h3>Invariants</h3>
+      <ul class="inv">
+        <li><b>It renders alone.</b> No client instance, no route, no parent threading content down. This is the claim the tree is built on, and the thing that lets 199 leaves be reviewed one at a time.</li>
+        <li><b>Its path is its key.</b> The key vocabulary is generated from these paths, so a key naming no file cannot compile.</li>
+        <li><b>It holds no concerns.</b> 199 leaves have never needed one.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <h3>Layout it asserts</h3>
+      <pre class="layout">panels/{context,inspector}/&lt;subject&gt;/&lt;key&gt;.svelte</pre>
+    </div>
+
+    <div class="block">
+      <h3>Checks</h3>
+      <div class="list">
+        <div class="item">
+          <span class="n">panel-renders-alone</span>
+          <span class="d">Every leaf server-renders with an empty prop bag. The 213-leaf test, promoted from a test to a check.</span>
+        </div>
+        <div class="item">
+          <span class="n">panel-holds-no-concerns</span>
+          <span class="d">A subject directory holds <code>.svelte</code> files and nothing else.</span>
+        </div>
+        <div class="item">
+          <span class="n">panel-imports</span>
+          <span class="d">Capabilities, view state and components. Nothing else — no other panel, no surface.</span>
+        </div>
+        <div class="item">
+          <span class="n">key-vocabulary-matches-the-tree</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">every-file-has-a-key</span> — a leaf the vocabulary does not name is unreachable.</li>
+              <li><span class="sn">every-key-has-a-file</span> — a key naming no leaf renders nothing at all.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Generators</h3>
+      <div class="list">
+        <div class="item"><span class="n">new-panel</span><span class="d">The leaf at the path its key names. Runs the key generator after.</span></div>
+        <div class="item"><span class="n">view-state-keys</span><span class="d">The key unions, read off these paths. <code>--check</code> in CI, writer on demand.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VIEWS / WORKSPACES ═════════════════════════════════════════ -->
+  <div class="section">
+    <h2>views · workspaces <span class="path">views/workspaces/&lt;screen&gt;/</span></h2>
+
+    <div class="block">
+      <h3>What it is</h3>
+      <p>
+        The centre of one screen. One file per screen-and-subscreen the key
+        vocabulary declares — which is what makes it a different contract from a
+        panel rather than a larger one.
+      </p>
+    </div>
+
+    <div class="block">
+      <h3>Invariants</h3>
+      <ul class="inv">
+        <li><b>One exists for every screen the vocabulary declares</b>, at the path it names. The filesystem is the registry; a map beside it would be a second list of what exists.</li>
+        <li><b>It reaches a resource runtime through view state</b>, never by attaching one itself — two attachments to one resource is two edit buffers.</li>
+        <li><b>It renders alone</b>, like a panel.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <h3>Layout it asserts</h3>
+      <pre class="layout">workspaces/&lt;screen&gt;/workspace.svelte              <span class="c">one centre</span>
+workspaces/&lt;screen&gt;/workspace-&lt;subscreen&gt;.svelte <span class="c">one per state</span></pre>
+    </div>
+
+    <div class="block">
+      <h3>Checks</h3>
+      <div class="list">
+        <div class="item">
+          <span class="n">workspace-exists-for-every-screen</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">declared-resolves</span> — every screen-and-subscreen the vocabulary names resolves to a file, or that screen renders blank.</li>
+              <li><span class="sn">file-is-declared</span> — every file resolves to a declared screen, or it is unreachable.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">workspace-renders-alone</span>
+          <span class="d">Server-renders with an empty prop bag, like a panel.</span>
+        </div>
+        <div class="item">
+          <span class="n">runtime-through-view-state</span>
+          <span class="d">No workspace attaches a resource runtime itself.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Generators</h3>
+      <div class="list">
+        <div class="item"><span class="n">new-workspace</span><span class="d">The file, its key, and a <code>grid-template-areas</code> skeleton carrying the specification's region names.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ EVERY TREE ═════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2>Across every tree</h2>
+
+    <div class="block">
+      <h3>Invariants</h3>
+      <ul class="inv">
+        <li><b>A module belongs to one process and says which by where it sits.</b> Client, server, or both. A both-module imports only both-modules.</li>
+        <li><b>One name for one target.</b> Each tree is reached through one alias, and the alias map has one copy — a second copy is a second answer to where a file is.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <h3>Checks</h3>
+      <div class="list">
+        <div class="item">
+          <span class="n">module-has-one-home</span>
+          <div class="d">
+            <ul class="subs">
+              <li><span class="sn">by-filename</span> — a framework suffix decides first, because the toolchain already enforces it.</li>
+              <li><span class="sn">by-tree</span> — otherwise the directory decides.</li>
+              <li><span class="sn">unresolved-is-a-failure</span> — a module neither rule reaches has no stated home, and every other check here assumes it has one.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">processes-do-not-mix</span>
+          <div class="d">Transitively, following the real graph.
+            <ul class="subs">
+              <li><span class="sn">client-does-not-import-server</span> — or the browser bundle carries the filesystem and the secrets.</li>
+              <li><span class="sn">server-does-not-import-client</span> — or the process carries state belonging to one tab.</li>
+              <li><span class="sn">both-imports-only-both</span> — what makes a shared module safe for either side to take.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="item">
+          <span class="n">node-is-server-only</span>
+          <span class="d"><code>node:*</code> appears in no client or both module.</span>
+        </div>
+        <div class="item">
+          <span class="n">one-crossing</span>
+          <span class="d">The only client→server edge in the repository is a capability door. One crossing can be audited; five cannot.</span>
+        </div>
+        <div class="item">
+          <span class="n">no-relative-imports</span>
+          <span class="d">Every cross-file import is spelled through an alias — which is what makes every import check above decidable from the specifier alone.</span>
+        </div>
+        <div class="item">
+          <span class="n">names-are-kebab-case</span>
+          <span class="d">Checked per dot-separated segment. Case is the one naming difference that resolves on one filesystem and fails on another.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Generators</h3>
+      <div class="list">
+        <div class="item"><span class="n">aliases</span><span class="d">The alias block in <code>svelte.config.js</code>, read off the tree. <code>--check</code> in CI, writer on demand — so a second map cannot exist.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Icarus · src/lib · 7 trees · main at c437341</footer>
+</div>

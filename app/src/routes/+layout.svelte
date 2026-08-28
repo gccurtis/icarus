@@ -3,7 +3,7 @@
 
   // The single style entry, imported once at the root so every route inherits
   // it. See lib/styles/app.css for the complete execution manifest.
-  import "$lib/styles/app.css";
+  import "$styles/app.css";
 
   let { children }: { children: Snippet } = $props();
 </script>

@@ -40,23 +40,28 @@ export default {
     // compiler and the bundler cannot drift. There is no second map to keep in
     // step, which is a rule the backend needed and this does not.
     alias: {
+      // One alias per tree that code reaches across; `$lib` is built in.
+      // Generated from the tree by `pnpm aliases` — a second map is what this
+      // exists to prevent, and an edit here is overwritten rather than kept.
       $capabilities: "src/lib/capabilities",
       $components: "src/lib/components",
       $model: "src/lib/model",
       $representation: "src/lib/representation",
       $runtime: "src/lib/runtime",
+      $styles: "src/lib/styles",
       $views: "src/lib/views",
 
       // Three trees inside views/ that are reached by name rather than through
       // `$views`, because a panel is not a view: it knows only its doors, which
       // is what lets it render in a gallery, in a test, or on a screen it was
-      // not written for. `docs/screen-panel-views` is their source of truth.
+      // not written for.
       $panels: "src/lib/views/panels",
       $workspaces: "src/lib/views/workspaces",
       $modals: "src/lib/views/modals",
 
-      // No `$development`. Nothing may import a development surface, so an
-      // alias pointing at one would be an invitation.
+      // No `$development`. It is a directory inside two trees rather than a
+      // tree of its own, and nothing shipped may import a development surface,
+      // so an alias pointing at one would be an invitation.
       //
       // No alias for the vendored components either: `components.json` points
       // the shadcn CLI at `$lib/components/vendor`, and it rewrites those
