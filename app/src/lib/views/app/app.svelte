@@ -10,7 +10,7 @@
   import StatusBar from "$views/status-bar/status-bar.svelte";
   import TabBar from "$views/tab-bar/tab-bar.svelte";
   import TopBar from "$views/top-bar/top-bar.svelte";
-  import Workspace from "$views/workspace/workspace.svelte";
+  import Core from "$views/core/core.svelte";
 
   /**
    * The application frame. Six zones, one grid, and nothing else.
@@ -83,7 +83,7 @@
   <div class="zone tab-bar"><TabBar /></div>
   <div class="zone context"><ContextPanel /></div>
   <main class="zone work">
-    <div class="surface"><Workspace /></div>
+    <div class="surface"><Core /></div>
   </main>
   <div class="zone inspector"><Inspector /></div>
   <div class="zone status"><StatusBar /></div>

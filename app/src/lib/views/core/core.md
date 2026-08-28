@@ -1,6 +1,6 @@
-# Workspace
+# Core
 
-Lives at `src/lib/views/workspace/workspace.md`. Trees live in the concern
+Lives at `src/lib/views/core/core.md`. Trees live in the concern
 documents linked below.
 
 ## Purpose
@@ -32,7 +32,7 @@ It does not own:
 
 ## Public Contract
 
-- **Entry:** [`workspace.svelte`](workspace.svelte)
+- **Entry:** [`core.svelte`](core.svelte)
 - **Types:** `None`
 
 | Kind | Name | Type | Required | Purpose |
