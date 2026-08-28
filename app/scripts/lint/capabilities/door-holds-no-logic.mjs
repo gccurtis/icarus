@@ -51,7 +51,9 @@ export default check({
   run(tree) {
     const found = [];
     for (const { name, path } of capabilities(tree)) {
-      const door = tree.exists(path + "/index.ts") ? path + "/index.ts" : null;
+      const door = ["index.remote.ts", "index.ts"]
+        .map((file) => `${path}/${file}`)
+        .find((candidate) => tree.isFile(candidate));
       if (!door) continue;
 
       for (const statement of tree.source(door).statements) {

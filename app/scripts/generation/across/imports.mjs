@@ -49,7 +49,10 @@ const canonical = (file) => {
     const rest = relative(root, file).split(sep).join("/");
     if (!rest) return alias;
     const spelled = trimmed(rest);
-    return spelled.endsWith("/index") ? `${alias}/${spelled.slice(0, -"/index".length)}` : `${alias}/${spelled}`;
+    for (const door of ["/index", "/index.remote"]) {
+      if (spelled.endsWith(door)) return `${alias}/${spelled.slice(0, -door.length)}`;
+    }
+    return `${alias}/${spelled}`;
   }
   return null;
 };

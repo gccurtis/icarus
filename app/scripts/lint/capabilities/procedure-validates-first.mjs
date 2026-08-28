@@ -9,7 +9,7 @@ import { capabilities } from "../shared/trees.mjs";
  * procedure that reads as validating and is not is the failure this exists to
  * catch, and a name is the only thing a linter can read.
  */
-const VALIDATORS = /^(parse|validate|assert|require|check)[A-Z]?/;
+const VALIDATORS = /^(as|parse|validate|assert|require|check)[A-Z]/;
 const METHODS = new Set(["parse", "safeParse", "validate", "assert"]);
 
 const unwrap = (node) => {

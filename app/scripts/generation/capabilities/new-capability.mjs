@@ -34,14 +34,8 @@ plan.create(
 );
 
 plan.create(
-  join(root, "index.ts"),
-  `/**
- * The ${name} capability.
- *
- * This file is the whole public surface. Everything past it is
- * \`api/<procedure>\`, which validates before it does anything.
- */
-export type {} from "$capabilities/${name}/types/${name}";
+  join(root, "index.remote.ts"),
+  `export type {} from "$capabilities/${name}/types/${name}";
 `
 );
 

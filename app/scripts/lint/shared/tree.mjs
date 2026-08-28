@@ -296,7 +296,8 @@ export class Tree {
       `${target}.svelte.ts`,
       target.endsWith(".js") ? `${target.slice(0, -3)}.ts` : null,
       join(target, "index.ts"),
-      join(target, "index.server.ts")
+      join(target, "index.server.ts"),
+      join(target, "index.remote.ts")
     ].filter(Boolean);
 
     for (const candidate of candidates) if (this.isFile(candidate)) return candidate;

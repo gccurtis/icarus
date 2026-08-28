@@ -3,6 +3,9 @@ import { capabilities, unitOf } from "../shared/trees.mjs";
 
 /** The one runtime door a procedure may reach: the server graph, at its accessor. */
 const RUNTIME_DOOR = "server/start.server";
+/** `index` or `index.server` — naming the door explicitly is still the door. */
+const isDoor = (rest) => rest.length === 0 || (rest.length === 1 && /^index(\.server)?$/.test(rest[0]));
+
 const CLIENT_TREES = new Set([
   "views",
   "panels",
@@ -48,7 +51,7 @@ export default check({
             finding("no-client", `reaches a client model object: ${record.specifier}`);
           } else if (!object) {
             finding("server-object-doors", `names the model tree rather than an object: ${record.specifier}`);
-          } else if (rest.length > 0) {
+          } else if (!isDoor(rest)) {
             finding("server-object-doors", `reaches past ${object}'s door: ${record.specifier}`);
           }
           continue;

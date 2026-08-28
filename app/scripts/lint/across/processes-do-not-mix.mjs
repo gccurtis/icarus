@@ -40,8 +40,24 @@ export default check({
       );
 
     const found = [];
+
     for (const [path, { home }] of where) {
       if (home === TEST || home === null) continue;
+
+      // The door is the crossing, so reaching the server is what it is for.
+      // Reaching the client is not: that pulls a browser module into the
+      // process on the other side of it.
+      if (isCapabilityDoor(tree, path)) {
+        const chain = walk(path, CLIENT);
+        if (chain) {
+          found.push({
+            subject: "both-imports-only-both",
+            path,
+            message: `a door reaches ${CLIENT} code: ${describeChain(tree, chain)}`
+          });
+        }
+        continue;
+      }
 
       const forbidden = home === CLIENT ? SERVER : home === SERVER ? CLIENT : null;
       if (forbidden) {

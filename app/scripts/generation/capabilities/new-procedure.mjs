@@ -97,13 +97,27 @@ test.fails("${procedure} answers", async () => {
 `
 );
 
-// The door names the procedure and its shapes, and nothing else — a stub is
-// what makes the door the surface rather than a re-export of the tree.
-plan.edit(join(root, "index.ts"), (text) => {
-  if (text.includes(`api/${procedure}/${procedure}`)) return text;
-  const stub = `export { ${call} } from "$capabilities/${capability}/api/${procedure}/${procedure}";\n` +
-    `export type { ${Input}, ${Result} } from "$capabilities/${capability}/types/${procedure}";\n`;
-  return `${text.replace(/\n+$/, "\n")}\n${stub}`;
-});
+const door = ["index.remote.ts", "index.ts"]
+  .map((file) => join(root, file))
+  .find((candidate) => existsSync(candidate));
+
+if (!door) plan.fail(capability, "has no door to add a stub to");
+else {
+  plan.edit(door, (text) => {
+    if (text.includes(`api/${procedure}/${procedure}`)) return text;
+
+    const remote = door.endsWith(".remote.ts");
+    const factory = remote ? `query("unchecked", ${call}Procedure)` : `${call}Procedure`;
+    const opening = remote && !text.includes('from "$app/server"')
+      ? 'import { query } from "$app/server";\n\n'
+      : "";
+
+    const stub =
+      `import { ${call} as ${call}Procedure } from "$capabilities/${capability}/api/${procedure}/${procedure}";\n` +
+      `\nexport const ${call} = ${factory};\n` +
+      `export type { ${Input}, ${Result} } from "$capabilities/${capability}/types/${procedure}";\n`;
+    return `${opening}${text.replace(/\n+$/, "\n")}\n${stub}`;
+  });
+}
 
 plan.run({ dryRun: flags.has("dry-run"), what: "new-procedure" });
