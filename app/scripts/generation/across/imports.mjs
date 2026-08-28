@@ -71,13 +71,13 @@ for (const path of tree.files) {
   if (!/\.(ts|js|svelte)$/.test(path) || path.endsWith(".d.ts")) continue;
 
   const inRoutes = tree.within(tree.routes, path);
-  const inVendored = tree.within(tree.path("components", "vendored"), path);
+  // The CLI writes and rewrites every specifier in its own tree.
+  if (tree.within(tree.path("components", "vendored"), path)) continue;
   const changes = [];
 
   for (const record of tree.imports(path)) {
     const { specifier } = record;
     if (inRoutes && framework(specifier)) continue;
-    if (inVendored && specifier.startsWith(".")) continue;
     if (PROVIDED.test(specifier)) continue;
 
     const file = tree.resolve(specifier, path) ?? viaRetired(specifier, path);
