@@ -37,6 +37,15 @@ vi.mock("$model/server/observability/index.server", () => ({
   errorFields: (error: unknown) => ({ errorMessage: String(error) })
 }));
 
+vi.mock("$model/server/store/index.server", () => ({
+  createStore: () => ({
+    create: () => "projects:1",
+    read: () => undefined,
+    update: () => {},
+    remove: () => {}
+  })
+}));
+
 beforeEach(() => {
   graph.order = [];
   graph.records = [];
@@ -47,6 +56,7 @@ test("the graph names every object it built", async () => {
 
   assert.ok(model.configuration);
   assert.ok(model.observability);
+  assert.ok(model.store);
   assert.deepEqual(graph.records, ["model.started"]);
 });
 

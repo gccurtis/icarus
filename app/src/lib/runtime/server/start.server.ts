@@ -1,5 +1,6 @@
 import { createConfiguration } from "$model/server/configuration/index.server";
 import { createObservability } from "$model/server/observability/index.server";
+import { createStore } from "$model/server/store/index.server";
 import type { ServerModel } from "$runtime/server/types";
 
 export type { ServerModel } from "$runtime/server/types";
@@ -43,12 +44,14 @@ export type { Logger } from "$model/server/observability/index.server";
 const buildServerModel = async (): Promise<ServerModel> => {
   const configuration = await createConfiguration();
   const observability = createObservability(configuration);
+  const store = createStore(configuration);
 
   observability.logger.info("model.started");
 
   return {
     configuration,
     observability,
+    store,
     close: () => observability.close()
   };
 };

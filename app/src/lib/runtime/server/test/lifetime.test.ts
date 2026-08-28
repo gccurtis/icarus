@@ -37,6 +37,15 @@ vi.mock("$model/server/observability/index.server", () => ({
   })
 }));
 
+vi.mock("$model/server/store/index.server", () => ({
+  createStore: () => ({
+    create: () => "projects:1",
+    read: () => undefined,
+    update: () => {},
+    remove: () => {}
+  })
+}));
+
 /** A fresh module registry per test, because the door holds process state. */
 const door = () => import("$runtime/server/start.server");
 

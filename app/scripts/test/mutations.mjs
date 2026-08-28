@@ -557,7 +557,7 @@ export const MUTATIONS = [
     says: "a client module reaches server code",
     names: "reaches-the-server.ts",
     changes: [
-      view("reaches-the-server", `import { pathFor } from "$representation/store/store.server";\nexport const where = pathFor;\n`)
+      view("reaches-the-server", `import { resolveScope } from "$runtime/server/scope.server";\nexport const scope = resolveScope;\n`)
     ]
   },
   {

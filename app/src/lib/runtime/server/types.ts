@@ -1,5 +1,6 @@
 import type { Configuration } from "$model/server/configuration/index.server";
 import type { Observability } from "$model/server/observability/index.server";
+import type { StoreModel } from "$model/server/store/index.server";
 
 /**
  * The server model: everything held for one process's lifetime.
@@ -20,5 +21,6 @@ import type { Observability } from "$model/server/observability/index.server";
 export interface ServerModel {
   readonly configuration: Configuration;
   readonly observability: Observability;
+  readonly store: StoreModel;
   close(): Promise<void>;
 }
