@@ -511,12 +511,9 @@ views/
 - `no-route-internals` — no generated route type or route-local module.
 - `no-reaching-inside` — another surface is named at its root or its types, never below.
 
-**surface-shape** — A surface directory holds a document and a root component, both named for it, so the entry point is never a guess.
+**surface-shape** — A surface directory holds a root component named for it, so the entry point is never a guess.
 
-**nothing-imports-development**
-
-- `no-inbound-import` — nothing outside `development/` imports a development surface.
-- `has-a-demo-route` — every development surface is reachable from a `/demo` route, so an unreachable one is a failure rather than a leftover.
+**nothing-imports-development** — Nothing outside `development/` imports a development surface. It may import anything; the trade only holds in one direction.
 
 **documented-paths-resolve** — Where a concern document names a path, that path exists.
 

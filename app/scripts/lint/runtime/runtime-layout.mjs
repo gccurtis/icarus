@@ -8,9 +8,13 @@ import { check } from "../shared/check.mjs";
  * directory that quietly grows.
  */
 const LAYOUT = {
-  "": { files: ["runtime.md"], dirs: ["client", "server"] },
-  client: { files: ["client.md", "start.ts", "types.ts"], dirs: ["test"] },
-  server: { files: ["server.md", "start.server.ts", "types.ts", "scope.server.ts"], dirs: ["test"] }
+  "": { files: [], documents: ["runtime.md"], dirs: ["client", "server"] },
+  client: { files: ["start.ts", "types.ts"], documents: ["client.md"], dirs: ["test"] },
+  server: {
+    files: ["start.server.ts", "types.ts", "scope.server.ts"],
+    documents: ["server.md"],
+    dirs: ["test"]
+  }
 };
 
 export default check({
@@ -18,7 +22,7 @@ export default check({
   says: "Only the named files exist. Something new here is a decision, not an addition.",
   run(tree) {
     const found = [];
-    for (const [where, { files, dirs }] of Object.entries(LAYOUT)) {
+    for (const [where, { files, documents, dirs }] of Object.entries(LAYOUT)) {
       const dir = where ? tree.path("runtime", where) : tree.path("runtime");
 
       for (const name of files) {
@@ -26,7 +30,7 @@ export default check({
         found.push({ path: join(dir, name), message: "is named by the layout and is not there" });
       }
       for (const name of tree.filesIn(dir)) {
-        if (files.includes(name)) continue;
+        if (files.includes(name) || documents.includes(name)) continue;
         found.push({ path: join(dir, name), message: "is not one of the files this tree holds" });
       }
       for (const name of tree.dirsIn(dir)) {

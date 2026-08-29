@@ -472,7 +472,6 @@ export const MUTATIONS = [
   },
   {
     check: "nothing-imports-development",
-    subject: "no-inbound-import",
     says: "something shipped imports a development surface",
     names: "imports-development.ts",
     changes: [

@@ -991,16 +991,11 @@ store/
         </div>
         <div class="item">
           <span class="n">surface-shape</span>
-          <span class="d">A surface directory holds a document and a root component, both named for it, so the entry point is never a guess.</span>
+          <span class="d">A surface directory holds a root component named for it, so the entry point is never a guess.</span>
         </div>
         <div class="item">
           <span class="n">nothing-imports-development</span>
-          <div class="d">
-            <ul class="subs">
-              <li><span class="sn">no-inbound-import</span> — nothing outside <code>development/</code> imports a development surface.</li>
-              <li><span class="sn">has-a-demo-route</span> — every development surface is reachable from a <code>/demo</code> route, so an unreachable one is a failure rather than a leftover.</li>
-            </ul>
-          </div>
+          <span class="d">Nothing outside <code>development/</code> imports a development surface. It may import anything; the trade only holds in one direction.</span>
         </div>
         <div class="item">
           <span class="n">documented-paths-resolve</span>
