@@ -374,7 +374,6 @@
         <li><b>A component reaches no door.</b> Not a capability, not a model object, not the runtime, not representation.</li>
         <li><b>A vocabulary is entered at its index.</b> Its internal file names are its own business.</li>
         <li><b>A vendored file is the CLI's output.</b> Its shape and its import spelling come from the tool, and the next regeneration overwrites anything else.</li>
-        <li><b>A primitive announces itself to trace</b>, or a review page renders a tree it cannot describe.</li>
       </ul>
     </div>
 
@@ -411,10 +410,6 @@ vendor/&lt;component&gt;/
           <span class="d">Every file under <code>authored/</code> is kebab-case and prefixed by the directory it sits in.</span>
         </div>
         <div class="item">
-          <span class="n">primitive-registers-with-trace</span>
-          <span class="d">Every <code>.svelte</code> under <code>authored/</code> calls the trace registration. <span class="tag fails">5 fail</span> all under <code>chart/</code>.</span>
-        </div>
-        <div class="item">
           <span class="n">vendor-is-unedited</span>
           <span class="d">No file under <code>vendor/</code> imports <code>$components/authored</code> or any door. The closest a check gets to "nobody touched it" without diffing the registry.</span>
         </div>
@@ -433,7 +428,7 @@ vendor/&lt;component&gt;/
     <div class="block">
       <h3>Generators</h3>
       <div class="list">
-        <div class="item"><span class="n">new-component</span><span class="d">The <code>.svelte</code> file under a named vocabulary, with the trace registration already in it, and its export added to <code>index.ts</code>.</span></div>
+        <div class="item"><span class="n">new-component</span><span class="d">The <code>.svelte</code> file under a named vocabulary, and its export added to <code>index.ts</code>.</span></div>
         <div class="item"><span class="n">new-vocabulary</span><span class="d">The directory and an empty <code>index.ts</code>.</span></div>
         <div class="item"><span class="n">— for vendor</span><span class="d">None. <code>shadcn-svelte add</code> is the generator; a second one would be a second opinion about a tree we do not own.</span></div>
       </div>

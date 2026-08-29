@@ -144,7 +144,6 @@ Both hold the same claim: **a component knows only its props.** Give it the same
 - **A component reaches no door.** Not a capability, not a model object, not the runtime, not representation.
 - **A vocabulary is entered at its index.** Its internal file names are its own business.
 - **A vendored file is the CLI's output.** Its shape and its import spelling come from the tool, and the next regeneration overwrites anything else.
-- **A primitive announces itself to trace**, or a review page renders a tree it cannot describe.
 
 ### Layout it asserts
 
@@ -170,8 +169,6 @@ vendor/<component>/
 
 **file-is-named-for-its-directory** — Every file under `authored/` is kebab-case and prefixed by the directory it sits in.
 
-**primitive-registers-with-trace** — Every `.svelte` under `authored/` calls the trace registration. 5 fail all under `chart/`.
-
 **vendor-is-unedited** — No file under `vendor/` imports `$components/authored` or any door. The closest a check gets to "nobody touched it" without diffing the registry.
 
 **vendor-keeps-its-own-spelling**
@@ -181,7 +178,7 @@ vendor/<component>/
 
 ### Generators
 
-**new-component** — The `.svelte` file under a named vocabulary, with the trace registration already in it, and its export added to `index.ts`.
+**new-component** — The `.svelte` file under a named vocabulary, and its export added to `index.ts`.
 
 **new-vocabulary** — The directory and an empty `index.ts`.
 

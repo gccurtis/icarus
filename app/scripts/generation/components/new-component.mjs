@@ -4,9 +4,6 @@
  *
  *     pnpm new-component -- <vocabulary> <name>
  *
- * The trace registration is written in rather than left to be remembered: a
- * component that skips it renders correctly and makes the review page draw a
- * tree it cannot describe, which is the kind of omission nobody notices.
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -24,7 +21,6 @@ requireKebab(name, "component name", LINE);
 const lib = libRoot(import.meta.url);
 const root = join(lib, "components", "authored", vocabulary);
 const file = `${vocabulary}-${name}.svelte`;
-const Component = pascal(`${vocabulary}-${name}`);
 const Export = pascal(name);
 
 const plan = new Plan(join(lib, "..", ".."));
@@ -35,14 +31,10 @@ plan.create(
   `<script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { traceNode } from "$development-components/trace.svelte";
-
   let { children }: { children?: Snippet } = $props();
-
-  const trace = traceNode("${Component}", () => ({}));
 </script>
 
-<div {...trace}>
+<div>
   {@render children?.()}
 </div>
 `

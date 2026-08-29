@@ -129,12 +129,6 @@ export const MUTATIONS = [
     changes: [{ path: "src/lib/components/authored/panel/wrong-name.svelte", write: `<div></div>\n` }]
   },
   {
-    check: "primitive-registers-with-trace",
-    says: "a primitive does not register",
-    names: "panel-untraced.svelte",
-    changes: [{ path: "src/lib/components/authored/panel/panel-untraced.svelte", write: `<div></div>\n` }]
-  },
-  {
     check: "vendor-is-unedited",
     says: "a vendored file takes an authored component",
     names: "vendored/button/edited.ts",
