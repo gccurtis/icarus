@@ -52,7 +52,7 @@ export const stylesheets = (tree, { includeGenerated = false } = {}) =>
 /** Which stage a stylesheet belongs to. Everything downstream branches on this. */
 export const stageOf = (tree, path) => {
   const root = stylesRoot(tree);
-  if (path === appCss(tree)) return "door";
+  if (path === appCss(tree)) return "entry";
   if (path === slotsCss(tree)) return "slots";
   if (path.startsWith(join(root, "chromatic-themes") + sep)) return "theme";
   if (path.startsWith(join(root, TOKEN_STAGE) + sep)) return "token";
@@ -74,5 +74,5 @@ export const READS = {
   slots: (name) => /^--(?:palette|theme)-/.test(name),
   token: (name) => /^--(?:token|theme|chromatic)-/.test(name),
   integration: (name) => name.startsWith("--token-"),
-  door: (name) => name.startsWith("--token-")
+  entry: (name) => name.startsWith("--token-")
 };

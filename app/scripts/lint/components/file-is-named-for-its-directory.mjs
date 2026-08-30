@@ -4,7 +4,7 @@ import { check } from "../shared/check.mjs";
 import { vocabularies } from "../shared/trees.mjs";
 
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-/** The door and the vocabulary's own document answer to their own names. */
+/** The index and the vocabulary's own document answer to their own names. */
 const EXEMPT = (vocabulary, name) => name === "index.ts" || name === `${vocabulary}.md`;
 
 export default check({

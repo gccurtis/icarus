@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * A new capability: the directory, an empty door, and `types/`.
+ * A new capability: the directory, an empty index, and `types/`.
  *
  *     pnpm new-capability -- <name>
  *

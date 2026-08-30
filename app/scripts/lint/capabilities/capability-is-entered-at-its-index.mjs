@@ -2,7 +2,7 @@ import { check } from "../shared/check.mjs";
 import { capabilities, unitOf } from "../shared/trees.mjs";
 
 export default check({
-  name: "door-is-the-only-entry",
+  name: "capability-is-entered-at-its-index",
   says: "No import from outside a capability names anything below its index.ts.",
   // Importers inside `capabilities/` are `capability-imports · no-sideways`.
   // The same rule, but a sibling reaching in is a different mistake from a view
@@ -22,12 +22,12 @@ export default check({
         const [name, ...rest] = target.segments;
         if (!name) continue;
         if (importer) continue; // a sibling's reach is no-sideways' business
-        if (rest.length === 0) continue; // the door itself
+        if (rest.length === 0) continue; // the index itself
 
         found.push({
           path,
           line: record.line,
-          message: `reaches past ${name}'s door: ${record.specifier}`
+          message: `reaches past ${name}'s index: ${record.specifier}`
         });
       }
     }

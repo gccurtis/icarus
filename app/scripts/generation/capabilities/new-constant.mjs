@@ -4,7 +4,7 @@
  *
  *     pnpm new-constant -- <capability> <name>
  *
- * Nothing is added to the door. A door exports remote functions only, so a
+ * Nothing is added to the index. An index exports remote functions only, so a
  * constant a caller outside the capability needs is served by a procedure.
  */
 import { existsSync } from "node:fs";

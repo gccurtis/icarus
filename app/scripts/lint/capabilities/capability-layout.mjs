@@ -3,15 +3,15 @@ import { join } from "node:path";
 import { check } from "../shared/check.mjs";
 import { capabilities } from "../shared/trees.mjs";
 
-const DOORS = ["index.remote.ts", "index.ts"];
+const INDEXES = ["index.remote.ts", "index.ts"];
 const FILES = ["errors.ts"];
 const DIRECTORIES = ["types", "constants", "api", "test"];
 
 export default check({
   name: "capability-layout",
-  says: "A capability holds its door, its types, its constants, and its procedures.",
+  says: "A capability holds its index, its types, its constants, and its procedures.",
   subjects: {
-    "has-a-door": "a capability with no door has no surface",
+    "has-an-index": "a capability with no index has no surface",
     "permitted-entries": "nothing else sits at the root"
   },
   run(tree) {
@@ -19,11 +19,11 @@ export default check({
     for (const { name, path } of capabilities(tree)) {
       const files = tree.filesIn(path);
 
-      if (!DOORS.some((door) => files.includes(door))) {
-        found.push({ subject: "has-a-door", path, message: `no ${DOORS[0]}` });
+      if (!INDEXES.some((index) => files.includes(index))) {
+        found.push({ subject: "has-an-index", path, message: `no ${INDEXES[0]}` });
       }
 
-      const permitted = new Set([...DOORS, ...FILES, `${name}.md`]);
+      const permitted = new Set([...INDEXES, ...FILES, `${name}.md`]);
       for (const file of files) {
         if (permitted.has(file)) continue;
         found.push({

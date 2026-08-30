@@ -43,7 +43,7 @@ export default check({
           subject: "authored-consumer",
           path,
           line: lineAt(text, internal.index),
-          message: `imports ${internal[0]} rather than the door`
+          message: `imports ${internal[0]} rather than app.css`
         });
       }
       const colour = text.match(/#[0-9a-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch|color)\(/i);

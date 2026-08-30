@@ -9,14 +9,14 @@
  * tree decides. A module neither rule reaches has no stated home, which is a
  * finding of its own — every boundary check assumes every module has one.
  *
- * `both` is the interesting one. A both-module is safe for either side to take,
- * which is only true if it takes nothing that is not also both.
+ * `shared` is the interesting one. A shared module is one either process may
+ * load, which is only true if what it loads is also shared.
  */
 import { sep } from "node:path";
 
 export const CLIENT = "client";
 export const SERVER = "server";
-export const BOTH = "both";
+export const SHARED = "shared";
 /** Runs under the test runner and ships nowhere, so the boundary rules pass over it. */
 export const TEST = "test";
 
@@ -31,28 +31,28 @@ const BY_TREE = [
   [["model", "server"], SERVER],
   [["runtime", "client"], CLIENT],
   [["runtime", "server"], SERVER],
-  [["representation"], BOTH]
+  [["representation"], SHARED]
 ];
 
 const startsWith = (segments, prefix) => prefix.every((part, index) => segments[index] === part);
 
 /**
- * A capability is the one tree whose files do not share a home. Its door is
- * `both` — that is what makes it the crossing — and everything a procedure is
+ * A capability is the one tree whose files do not share a home. Its index is
+ * `shared` — that is what makes it the crossing — and everything a procedure is
  * built from is the server's.
  */
 const capabilityHome = (segments) => {
   if (segments[0] !== "capabilities") return null;
-  if (segments.length === 2) return BOTH; // capabilities.md, cast.ts, and friends
+  if (segments.length === 2) return SHARED; // capabilities.md, cast.ts, and friends
   const inside = segments.slice(2);
   if (inside[0] === "api") return SERVER;
   if (inside[0] === "test") return TEST;
-  return BOTH; // the door, its types, its errors
+  return SHARED; // the index, its types, its errors
 };
 
 /** Routes take the framework's own rules; nothing here is ours to decide. */
 const routeHome = (name) => {
-  if (/^\+(page|layout)\.(ts|js)$/.test(name)) return BOTH;
+  if (/^\+(page|layout)\.(ts|js)$/.test(name)) return SHARED;
   return null;
 };
 

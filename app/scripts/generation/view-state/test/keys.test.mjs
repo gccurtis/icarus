@@ -88,7 +88,7 @@ const refuses = (root, ...args) => {
 /**
  * Where the script writes. It has to match `keys.mjs`'s own target exactly: the
  * vocabulary lives under the model object that holds the state it names, and the
- * model standard admits only a document, a door, types, a definition and a
+ * model standard admits only a document, an index, types, a definition and a
  * constructor at an object root — so it sits in `methods/shared/`.
  */
 const keysPath = (root) =>

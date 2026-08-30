@@ -67,7 +67,7 @@ export default check({
   says: "The graph is assembled in dependency order, every object constructed once.",
   subjects: {
     "after-dependencies": "an object is constructed after everything it is passed",
-    "constructed-once": "each object door is called exactly once",
+    "constructed-once": "each object constructor is called exactly once",
     "no-cycle": "the dependency graph is acyclic"
   },
   run(tree) {

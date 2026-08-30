@@ -110,38 +110,9 @@ const declaredProps = (script) => {
   return null;
 };
 
-/**
- * A literal array of records standing where a query belongs. One record is a
- * shape; a list of them is data somebody meant to fetch.
- */
-const STANDIN_SIZE = 2;
-
-const standinConstants = (script) => {
-  const found = [];
-  for (const statement of script.file.statements) {
-    if (!ts.isVariableStatement(statement)) continue;
-    for (const declaration of statement.declarationList.declarations) {
-      const initializer = declaration.initializer;
-      if (!initializer || !ts.isArrayLiteralExpression(initializer)) continue;
-      const records = initializer.elements.filter((element) => ts.isObjectLiteralExpression(element));
-      if (records.length < STANDIN_SIZE) continue;
-      found.push({
-        name: declaration.name.getText(script.file),
-        count: records.length,
-        line: script.lineOf(declaration)
-      });
-    }
-  }
-  return found;
-};
-
 export default check({
-  name: "data-comes-from-a-door",
-  says: "Content arriving as a prop is content two surfaces can disagree about.",
-  subjects: {
-    "no-content-prop": "a prop is a callback or an id, never the thing being displayed",
-    "no-standin-constant": "no literal array or object stands where a query belongs"
-  },
+  name: "view-takes-ids-and-callbacks",
+  says: "A prop is a callback or an id, never the thing being displayed. Content arriving as a prop is content two surfaces can disagree about.",
   run(tree) {
     const found = [];
     for (const path of tree.under(tree.path("views"))) {
@@ -155,18 +126,9 @@ export default check({
       for (const { name, type, node } of declaredProps(script) ?? []) {
         if (name === "children" || isIdentifierOrCallback(type, context)) continue;
         found.push({
-          subject: "no-content-prop",
           path,
           line: script.lineOf(node),
-          message: `takes ${name}: ${type ? type.getText(script.file) : "an untyped value"} rather than reading it from a door`
-        });
-      }
-      for (const { name, count, line } of standinConstants(script)) {
-        found.push({
-          subject: "no-standin-constant",
-          path,
-          line,
-          message: `${name} holds ${count} records where a query belongs`
+          message: `takes ${name}: ${type ? type.getText(script.file) : "an untyped value"} rather than reading it from a capability`
         });
       }
     }

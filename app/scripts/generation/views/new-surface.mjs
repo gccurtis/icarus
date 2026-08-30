@@ -31,7 +31,7 @@ plan.create(
   join(root, `${name}.md`),
   `# ${name}
 
-<!-- What a person sees here, and which doors it reads. -->
+<!-- What a person sees here, and which capabilities it reads. -->
 `
 );
 
@@ -41,9 +41,9 @@ plan.create(
   /**
    * ${name}.
    *
-   * Data comes from a door. A prop carries a callback or an id its parent alone
-   * knows; content arriving as a prop is content two surfaces can disagree
-   * about.
+   * Data comes from a capability. A prop carries a callback or an id its parent
+   * alone knows; content arriving as a prop is content two surfaces can
+   * disagree about.
    */
 </script>
 

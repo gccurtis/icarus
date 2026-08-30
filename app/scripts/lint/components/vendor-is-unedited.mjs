@@ -12,7 +12,7 @@ const FIRST_PARTY = new Set([
 
 export default check({
   name: "vendor-is-unedited",
-  says: "No file under vendored/ imports $authored-components or any door.",
+  says: "No file under vendored/ imports $authored-components or any first-party tree.",
   run(tree) {
     const found = [];
     for (const path of tree.under(tree.path("components", "vendored"))) {
@@ -25,7 +25,7 @@ export default check({
           continue;
         }
         if (FIRST_PARTY.has(target.tree)) {
-          found.push({ path, line: record.line, message: `reaches a door: ${record.specifier}` });
+          found.push({ path, line: record.line, message: `reaches a first-party tree: ${record.specifier}` });
         }
       }
     }

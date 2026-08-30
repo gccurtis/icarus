@@ -25,7 +25,7 @@ const packageRoot =
 const libRoot = join(packageRoot, "src", "lib");
 // The vocabulary belongs to the model object that holds the state it names. It
 // sits under `methods/shared/` rather than at the object root because the model
-// standard admits only a document, a door, types, a definition and a constructor
+// standard admits only a document, an index, types, a definition and a constructor
 // there — and `lint:model` enforces it. Three methods and the definition read
 // these, which is exactly what `shared/` is for.
 const target = join(libRoot, "model", "client", "view-state", "methods", "shared", "keys.ts");

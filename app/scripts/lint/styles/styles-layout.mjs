@@ -16,7 +16,7 @@ export default check({
       found.push({ path: join(root, name), message: "the root holds app.css and nothing else" });
     }
     if (!tree.isFile(join(root, "app.css"))) {
-      found.push({ path: join(root, "app.css"), message: "there is no door" });
+      found.push({ path: join(root, "app.css"), message: "there is no app.css" });
     }
     for (const name of tree.dirsIn(root)) {
       if (STAGES.includes(name)) continue;

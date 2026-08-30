@@ -272,7 +272,7 @@ export class Tree {
    * A specifier's file on disk, through the same alias map the bundler shares.
    *
    * Extensions are added rather than assumed: `.../definition.svelte` is a
-   * `.svelte.ts` module, and a bare tree name is a directory door.
+   * `.svelte.ts` module, and a bare tree name is a directory index.
    */
   resolve(specifier, from) {
     let target = null;
@@ -308,7 +308,7 @@ export class Tree {
    * The tree a specifier names, read from the alias rather than from disk.
    *
    * The spelling is what every import in the standard uses, so reading it
-   * directly means the door rules still fire where resolution finds nothing.
+   * directly means the entry rules still fire where resolution finds nothing.
    * Returns `{ tree, rest }`, or null for anything outside `src/lib`.
    */
   aliasTarget(specifier) {

@@ -12,14 +12,14 @@ const appended = (text) => ({ edit: (before) => `${before}\n${text}\n` });
 export const MUTATIONS = [
   // ------------------------------------------------------------ capabilities ----
   {
-    check: "door-is-the-only-entry",
-    says: "a view reaches past a capability's door",
+    check: "capability-is-entered-at-its-index",
+    says: "a view reaches past a capability's index",
     names: "reaches-inside.ts",
     changes: [view("reaches-inside", `import type { EditorKind } from "$capabilities/resource/types/resource";\nexport type X = EditorKind;\n`)]
   },
   {
-    check: "door-holds-no-logic",
-    says: "a door runs a statement of its own",
+    check: "capability-lists-its-procedures",
+    says: "an index defines a value of its own",
     names: "probe/index.ts",
     changes: [
       { path: "src/lib/capabilities/probe/index.ts", write: `export const total = [1, 2].length;\n` }
@@ -90,8 +90,8 @@ export const MUTATIONS = [
   },
   {
     check: "capability-layout",
-    subject: "has-a-door",
-    says: "a capability has no door",
+    subject: "has-an-index",
+    says: "a capability has no index",
     names: "capabilities/probe",
     changes: [{ path: "src/lib/capabilities/probe/types/probe.ts", write: `export type Probe = string;\n` }]
   },
@@ -105,8 +105,8 @@ export const MUTATIONS = [
 
   // -------------------------------------------------------------- components ----
   {
-    check: "component-reaches-no-door",
-    says: "a component reaches a model door",
+    check: "component-takes-only-props",
+    says: "a component reaches a model",
     names: "panel-reaches.svelte",
     changes: [
       {
@@ -157,10 +157,10 @@ export const MUTATIONS = [
     ]
   },
   {
-    check: "object-is-entered-at-its-door",
-    says: "an import reaches past an object's door",
-    names: "past-the-door.ts",
-    changes: [view("past-the-door", `import type { WorkbenchModel } from "$model/client/workbench/types";\nexport type X = WorkbenchModel;\n`)]
+    check: "object-is-entered-at-its-index",
+    says: "an import reaches past an object's index",
+    names: "past-the-index.ts",
+    changes: [view("past-the-index", `import type { WorkbenchModel } from "$model/client/workbench/types";\nexport type X = WorkbenchModel;\n`)]
   },
   {
     check: "constructor-is-called-by-the-runtime",
@@ -307,7 +307,7 @@ export const MUTATIONS = [
   {
     check: "objects-are-built-in-order",
     subject: "constructed-once",
-    says: "one object door is called twice",
+    says: "one object constructor is called twice",
     names: "client/start.ts",
     changes: [
       {
@@ -367,7 +367,7 @@ export const MUTATIONS = [
     ]
   },
   {
-    check: "one-stylesheet-door",
+    check: "one-stylesheet-entry",
     subject: "single-entry",
     says: "something other than the layout imports a stylesheet",
     names: "imports-a-stylesheet.ts",
@@ -405,7 +405,7 @@ export const MUTATIONS = [
   },
   {
     check: "styles-layout",
-    says: "the styles root holds something other than the door",
+    says: "the styles root holds something other than app.css",
     names: "styles/loose.css",
     changes: [{ path: "src/lib/styles/loose.css", write: `:root {\n  --token-loose: 1px;\n}\n` }]
   },
@@ -421,8 +421,7 @@ export const MUTATIONS = [
     ]
   },
   {
-    check: "data-comes-from-a-door",
-    subject: "no-content-prop",
+    check: "view-takes-ids-and-callbacks",
     says: "a surface takes its content as a prop",
     names: "project/takes-content.svelte",
     changes: [
@@ -504,13 +503,14 @@ export const MUTATIONS = [
     changes: [{ path: "src/lib/views/panels/context/project/helper.ts", write: `export const helper = 1;\n` }]
   },
   {
-    check: "panel-imports",
-    says: "a leaf reaches something that is not a door it knows",
+    check: "panel-imports-no-other-view",
+    subject: "no-other-panel",
+    says: "a leaf imports another panel",
     names: "project/reaches-far.svelte",
     changes: [
       {
         path: "src/lib/views/panels/context/project/reaches-far.svelte",
-        write: `<script lang="ts">\n  import type { Id } from "$representation/data/types/core/id";\n  let id: Id<"documents"> | undefined = undefined;\n</script>\n\n<div>{id}</div>\n`
+        write: `<script lang="ts">\n  import Health from "$panels/context/project/health.svelte";\n</script>\n\n<Health />\n`
       }
     ]
   },
@@ -562,8 +562,8 @@ export const MUTATIONS = [
     changes: [{ path: "src/lib/homeless.ts", write: `export const homeless = 1;\n` }]
   },
   {
-    check: "processes-do-not-mix",
-    subject: "client-does-not-import-server",
+    check: "client-server-separation",
+    subject: "client-takes-no-server-code",
     says: "a client module reaches server code",
     names: "reaches-the-server.ts",
     changes: [
@@ -578,7 +578,7 @@ export const MUTATIONS = [
   },
   {
     check: "one-crossing",
-    says: "a client module crosses somewhere that is not a capability door",
+    says: "a client module crosses somewhere that is not a capability index",
     names: "second-crossing.ts",
     changes: [
       view("second-crossing", `import { createConfiguration } from "$model/server/configuration/index.server";\nexport const make = createConfiguration;\n`)

@@ -59,13 +59,13 @@ views/                           has structure
 
 **A capability bridges the client and the server model.** One directory per subject. It is the only thing that exists on both sides of the process boundary, which is what makes one directory the whole audit.
 
-The boundary is the door. What is on the right of it is a server model object, never storage — a capability holds nothing between calls, so it has nothing to open a file with.
+The boundary is the index. What is on the right of it is a server model object, never storage — a capability holds nothing between calls, so it has nothing to open a file with.
 
-**view · client model** (client) → **index.remote.ts** (the door) → **api/<procedure>** (server · validates first) → **model/server/<object>** (server)
+**view · client model** (client) → **index.remote.ts** (the index) → **api/<procedure>** (server · validates first) → **model/server/<object>** (server)
 
 ### Invariants
 
-- **A caller reaches a capability at its door and nowhere else.** If a panel can import a procedure, the door stops being the surface.
+- **A caller reaches a capability at its index and nowhere else.** If a panel can import a procedure, the index stops being the surface.
 - **Input is checked before anything happens.** A procedure's first statement validates; a type is a claim, not a check.
 - **Stored state is reached through a server model object.** A procedure asks the server graph for the object that owns the lifetime; it opens nothing itself.
 - **It holds nothing between calls.** Two requests share a process; anything one leaves behind is the next one's bug.
@@ -78,7 +78,7 @@ The boundary is the door. What is on the right of it is a server model object, n
 ```text
 <capability>/
 ├── <capability>.md
-├── index.remote.ts              the door — remote functions only
+├── index.remote.ts              the index — remote functions only
 ├── errors.ts                    optional
 ├── types/<name>.ts              declares — erased
 ├── constants/<name>.ts          declares values — survives erasure
@@ -92,9 +92,9 @@ The boundary is the door. What is on the right of it is a server model object, n
 
 ### Checks
 
-**door-is-the-only-entry** — No import from outside a capability names anything below its door.
+**capability-is-entered-at-its-index** — No import from outside a capability names anything below its `index.ts`.
 
-**door-holds-no-logic** — `index.remote.ts` exports stubs and the types they speak in. It runs no statement of its own, so nothing bypasses the validated path.
+**capability-lists-its-procedures** — `index.ts` names what a capability offers. It imports each procedure, declares it, and names the types it speaks in. Nothing is defined here.
 
 **procedure-validates-first** — Every `api/<procedure>` entry validates its argument before its first other statement.
 
@@ -102,10 +102,10 @@ The boundary is the door. What is on the right of it is a server model object, n
 
 **capability-imports**
 
-- `server-object-doors` — a server model object is named at its door, never a path inside it.
-- `runtime-door` — the server graph is reached through `start.server`.
+- `server-object-index` — a server model object is named at its index, never a path inside it.
+- `runtime-entry` — the server graph is reached through `start.server`.
 - `no-client` — nothing here imports a view or a client model. 2 fail `opening` and `inspecting` take types from `view-state`.
-- `no-sideways` — another capability is named at its door, never a path inside it.
+- `no-sideways` — another capability is named at its index, never a path inside it.
 
 **capability-holds-nothing**
 
@@ -114,20 +114,20 @@ The boundary is the door. What is on the right of it is a server model object, n
 
 **entry-matches-directory** — Every directory under `api/` holds a file of the same name, at every depth. Without it a procedure's entry point is a guess.
 
-**capability-layout** — A capability holds its door, its types, its constants, and its procedures.
+**capability-layout** — A capability holds its index, its types, its constants, and its procedures.
 
-- `has-a-door` — a capability with no door has no surface.
-- `permitted-entries` — nothing else sits at the root. 14 fail every capability names its document `overview.md` rather than `<capability>.md`.
+- `has-an-index` — a capability with no index has no surface.
+- `permitted-entries` — nothing else sits at the root.
 
 **tests-are-one-of-three-kinds** — Nothing under `test/` outside `unit/`, `regression/`, `non-functional/`.
 
 ### Generators
 
-**new-capability** — The directory, an empty door, and `types/`. No `api/` — a capability with no procedure is a legal state.
+**new-capability** — The directory, an empty index, and `types/`. No `api/` — a capability with no procedure is a legal state.
 
-**new-constant** — A file under `constants/`. Nothing is added to the door — a door exports remote functions only, so a constant a caller outside the capability needs is served by a procedure.
+**new-constant** — A file under `constants/`. Nothing is added to the index — an index exports remote functions only, so a constant a caller outside the capability needs is served by a procedure.
 
-**new-procedure** — The procedure directory, the entry with its validator already calling it, the stub added to the door, and a failing test.
+**new-procedure** — The procedure directory, the entry with its validator already calling it, the declaration added to the index, and a failing test.
 
 ## components
 
@@ -141,7 +141,7 @@ Both hold the same claim: **a component knows only its props.** Give it the same
 
 ### Invariants
 
-- **A component reaches no door.** Not a capability, not a model object, not the runtime, not representation.
+- **A component takes only props.** Not a capability, not a model object, not the runtime, not representation.
 - **A vocabulary is entered at its index.** Its internal file names are its own business.
 - **A vendored file is the CLI's output.** Its shape and its import spelling come from the tool, and the next regeneration overwrites anything else.
 
@@ -160,7 +160,7 @@ vendor/<component>/
 
 ### Checks
 
-**component-reaches-no-door** — No file under `components/` imports `$capabilities`, `$model`, `$runtime` or `$representation`.
+**component-takes-only-props** — No file under `components/` imports `$capabilities`, `$model`, `$runtime` or `$representation`.
 
 **vocabulary-is-entered-at-index**
 
@@ -169,7 +169,7 @@ vendor/<component>/
 
 **file-is-named-for-its-directory** — Every file under `authored/` is kebab-case and prefixed by the directory it sits in.
 
-**vendor-is-unedited** — No file under `vendor/` imports `$components/authored` or any door. The closest a check gets to "nobody touched it" without diffing the registry.
+**vendor-is-unedited** — No file under `vendored/` imports `$authored-components` or any first-party tree. The closest a check gets to "nobody touched it" without diffing the registry.
 
 **vendor-keeps-its-own-spelling**
 
@@ -203,7 +203,7 @@ Same template, two lifetimes. A client object may be reactive and reach the brow
 ### Invariants
 
 - **Nothing constructs at module load.** A constructor returns a fresh object and caches nothing, so importing a module never produces a second instance of something the graph already holds one of.
-- **An object is entered at its door.** Past it is a definition, a private type, or a method — none of which the object promised to keep stable.
+- **An object is entered at its index.** Past it is a definition, a private type, or a method — none of which the object promised to keep stable.
 - **The directory is the call tree.** A method is a file until it has supporting steps; then it is a directory named for its entry, holding them, recursively.
 - **Runes are declared in the file extension.** A definition holding state the compiler must transform says so in its name.
 - **An object exposes keys, never components.** What a key renders as is the view's decision, and a model that named a component would decide it twice.
@@ -213,7 +213,7 @@ Same template, two lifetimes. A client object may be reactive and reach the brow
 ```text
 <object>/
 ├── <object>.md
-├── index.ts | index.server.ts    the door
+├── index.ts | index.server.ts    the index
 ├── types.ts                      interface and public values
 ├── definition.ts | .svelte.ts    holds the state
 ├── constructor.ts                returns a fresh object
@@ -231,7 +231,7 @@ Same template, two lifetimes. A client object may be reactive and reach the brow
 - `no-construction` — no constructor call runs when a module is imported.
 - `no-module-state` — no mutable module-scope binding anywhere under `model/`. Holding an instance is the runtime's job.
 
-**object-is-entered-at-its-door** — An import from outside an object names its `index`, never a path below it.
+**object-is-entered-at-its-index** — An import from outside an object names its `index`, never a path below it.
 
 **constructor-is-called-by-the-runtime** — Nothing outside `runtime/` and the object's own files imports a `constructor.ts`. A second caller is a second instance of something meant to be one.
 
@@ -249,9 +249,9 @@ Same template, two lifetimes. A client object may be reactive and reach the brow
 
 **object-layout**
 
-- `required-files` — the door, types, definition and constructor all exist.
+- `required-files` — the index, types, definition and constructor all exist.
 - `permitted-root-entries` — nothing else sits at the object root; what an object does lives under `methods/`.
-- `door-matches-environment` — a server object's door carries `.server`, so a browser import of it fails at build rather than at runtime.
+- `index-matches-environment` — a server object's index carries `.server`, so a browser import of it fails at build rather than at runtime.
 
 **method-tree-paths-resolve** — Where a method document draws a call tree, every path in it exists.
 
@@ -259,7 +259,7 @@ Same template, two lifetimes. A client object may be reactive and reach the brow
 
 ### Generators
 
-**new-model-object** — Document, types, definition, constructor and door. Adds the field to the runtime's aggregate and the call to its builder, in dependency order. Refuses a cycle.
+**new-model-object** — Document, types, definition, constructor and index. Adds the field to the runtime's aggregate and the call to its builder, in dependency order. Refuses a cycle.
 
 **new-method** — A method file, or a directory with its entry when the method already has steps.
 
@@ -313,7 +313,7 @@ store/
 - `declaration-matches-imports` — a domain imports exactly the domains it declares it may.
 - `no-cycle` — the real graph is acyclic.
 
-**store-opens-nothing** — No file under `store/` touches the filesystem or holds a handle. 2 fail `createStore` and `createJsonStore`.
+**store-opens-nothing** — No file under `store/` touches the filesystem or holds a handle.
 
 **representation-layout** — Every file is under `data/types/`, `data/behavior/` or `store/`. There is no fourth place, so no file can be ambiguous about which rules apply to it.
 
@@ -374,7 +374,7 @@ client/                          server/
 **objects-are-built-in-order**
 
 - `after-dependencies` — an object is constructed after everything it is passed.
-- `constructed-once` — each object door is called exactly once.
+- `constructed-once` — each object constructor is called exactly once.
 - `no-cycle` — the dependency graph is acyclic.
 
 **accessor-refuses-twice**
@@ -409,7 +409,7 @@ Only the third stage is public. A component naming anything to the left of it ha
 - **A literal colour exists in exactly one place** — a theme file. Anywhere else it is a value a theme switch cannot reach.
 - **A stage declares its own namespace and no other.**
 - **References point backward.** A stage reads the stage behind it, never ahead, and never past the public boundary.
-- **One door.** Two entry points is two cascade orders, and which one wins depends on load order.
+- **One entry.** Two entry points is two cascade orders, and which one wins depends on load order.
 - **Generated CSS is inert.**
 
 ### Checks
@@ -423,7 +423,7 @@ Only the third stage is public. A component naming anything to the left of it ha
 - `stage-reads-behind-it` — a theme reads its own palette, slots read theme values, tokens read theme or chromatic values. Never forward.
 - `integration-reads-public-only` — an integration names public tokens and nothing behind them.
 
-**one-stylesheet-door**
+**one-stylesheet-entry**
 
 - `single-entry` — the root layout imports `app.css` once, and nothing else imports a stylesheet.
 - `every-file-reachable` — every authored stage file is imported by `app.css` exactly once, so nothing is silently absent.
@@ -462,7 +462,7 @@ Everything a person looks at. Four kinds — a stack, the centre of a screen, ch
 ### Invariants
 
 - **A layout is a named grid.** `grid-template-areas` with regions named for what they hold, so what appears where survives a reorder of the markup.
-- **Data comes from a door, never a prop.** A prop carries a callback, or an id its parent alone knows. Content arriving as a prop is content two surfaces can disagree about.
+- **Data comes from a capability, never a prop.** A prop carries a callback, or an id its parent alone knows. Content arriving as a prop is content two surfaces can disagree about.
 - **A concern declares what it is by extension.** Everything under `effects/` holds runes; nothing under `procedures/` or `interactions/` does.
 - **Shared state dies with the mount.** A module singleton would outlive the surface and be handed to the next one.
 - **No surface reaches inside another.** Its root and its types, or nothing.
@@ -486,12 +486,9 @@ views/
 
 ### Checks
 
-**surface-is-a-named-grid** — Every surface lays itself out with `grid-template-areas` and named regions. 9 fail 7 of 8 shell surfaces, 2 of 13 workspaces.
+**surface-is-a-named-grid** — Every surface lays itself out with `grid-template-areas` and named regions. 15 fail 7 shell surfaces, 6 development surfaces, 2 workspaces.
 
-**data-comes-from-a-door**
-
-- `no-content-prop` — a prop is a callback or an id, never the thing being displayed.
-- `no-standin-constant` — no literal array or object stands where a query belongs.
+**view-takes-ids-and-callbacks** — A prop is a callback or an id, never the thing being displayed. Content arriving as a prop is content two surfaces can disagree about.
 
 **concern-is-one-of-five**
 
@@ -549,7 +546,11 @@ panels/{context,inspector}/<subject>/<key>.svelte
 
 **panel-holds-no-concerns** — A subject directory holds `.svelte` files and nothing else.
 
-**panel-imports** — Capabilities, view state and components. Nothing else — no other panel, no surface.
+**panel-imports-no-other-view**
+
+- `no-other-panel` — a panel shows another panel by key, so view state stays the one record of what is open.
+- `no-surface` — a panel is rendered inside a surface; reaching back out to one is a cycle.
+- `no-other-tree` — capabilities, components, view state and modals; a panel needs nothing else.
 
 **key-vocabulary-matches-the-tree**
 
@@ -613,15 +614,15 @@ workspaces/<screen>/workspace-<subscreen>.svelte one per state
 - `by-tree` — otherwise the directory decides.
 - `unresolved-is-a-failure` — a module neither rule reaches has no stated home, and every other check here assumes it has one.
 
-**processes-do-not-mix**
+**client-server-separation**
 
-- `client-does-not-import-server` — or the browser bundle carries the filesystem and the secrets.
-- `server-does-not-import-client` — or the process carries state belonging to one tab.
-- `both-imports-only-both` — what makes a shared module safe for either side to take.
+- `client-takes-no-server-code` — or the browser bundle carries the filesystem and the secrets.
+- `server-takes-no-client-code` — or the process carries state belonging to one tab.
+- `shared-takes-only-shared-code` — a module either process may load can only load what either process may load.
 
 **node-is-server-only** — `node:*` appears in no client or both module.
 
-**one-crossing** — The only client→server edge in the repository is a capability door. One crossing can be audited; five cannot.
+**one-crossing** — The only client→server edge in the repository is a capability index. One crossing can be audited; five cannot.
 
 **no-relative-imports** — Every cross-file import is spelled through an alias — which is what makes every import check above decidable from the specifier alone.
 

@@ -239,14 +239,14 @@
         <div class="flow-row">
           <div class="node"><span class="t">view · client model</span><span class="sub">client</span></div>
           <span class="arrow">→</span>
-          <div class="node cross"><span class="t">index.remote.ts</span><span class="sub">the door</span></div>
+          <div class="node cross"><span class="t">index.remote.ts</span><span class="sub">the index</span></div>
           <span class="arrow">→</span>
           <div class="node cross"><span class="t">api/&lt;procedure&gt;</span><span class="sub">server · validates first</span></div>
           <span class="arrow">→</span>
           <div class="node"><span class="t">model/server/&lt;object&gt;</span><span class="sub">server</span></div>
         </div>
         <p class="flow-note">
-          The boundary is the door. What is on the right of it is a server model
+          The boundary is the index. What is on the right of it is a server model
           object, never storage — a capability holds nothing between calls, so it
           has nothing to open a file with.
         </p>
@@ -256,7 +256,7 @@
     <div class="block">
       <h3>Invariants</h3>
       <ul class="inv">
-        <li><b>A caller reaches a capability at its door and nowhere else.</b> If a panel can import a procedure, the door stops being the surface.</li>
+        <li><b>A caller reaches a capability at its index and nowhere else.</b> If a panel can import a procedure, the index stops being the surface.</li>
         <li><b>Input is checked before anything happens.</b> A procedure's first statement validates; a type is a claim, not a check.</li>
         <li><b>Stored state is reached through a server model object.</b> A procedure asks the server graph for the object that owns the lifetime; it opens nothing itself.</li>
         <li><b>It holds nothing between calls.</b> Two requests share a process; anything one leaves behind is the next one's bug.</li>
@@ -270,7 +270,7 @@
       <h3>Layout it asserts</h3>
       <pre class="layout">&lt;capability&gt;/
 ├── &lt;capability&gt;.md
-├── index.remote.ts              <span class="c">the door — remote functions only</span>
+├── index.remote.ts              <span class="c">the index — remote functions only</span>
 ├── errors.ts                    <span class="c">optional</span>
 ├── types/&lt;name&gt;.ts              <span class="c">declares — erased</span>
 ├── constants/&lt;name&gt;.ts          <span class="c">declares values — survives erasure</span>
@@ -286,12 +286,12 @@
       <h3>Checks</h3>
       <div class="list">
         <div class="item">
-          <span class="n">door-is-the-only-entry</span>
-          <span class="d">No import from outside a capability names anything below its door.</span>
+          <span class="n">capability-is-entered-at-its-index</span>
+          <span class="d">No import from outside a capability names anything below its <code>index.ts</code>.</span>
         </div>
         <div class="item">
-          <span class="n">door-holds-no-logic</span>
-          <span class="d"><code>index.remote.ts</code> exports stubs and the types they speak in. It runs no statement of its own, so nothing bypasses the validated path.</span>
+          <span class="n">capability-lists-its-procedures</span>
+          <span class="d"><code>index.ts</code> names what a capability offers. It imports each procedure, declares it, and names the types it speaks in. Nothing is defined here.</span>
         </div>
         <div class="item">
           <span class="n">procedure-validates-first</span>
@@ -305,10 +305,10 @@
           <span class="n">capability-imports</span>
           <div class="d">Where a capability may reach.
             <ul class="subs">
-              <li><span class="sn">server-object-doors</span> — a server model object is named at its door, never a path inside it.</li>
-              <li><span class="sn">runtime-door</span> — the server graph is reached through <code>start.server</code>.</li>
+              <li><span class="sn">server-object-index</span> — a server model object is named at its index, never a path inside it.</li>
+              <li><span class="sn">runtime-entry</span> — the server graph is reached through <code>start.server</code>.</li>
               <li><span class="sn">no-client</span> — nothing here imports a view or a client model. <span class="tag fails">2 fail</span> <code>opening</code> and <code>inspecting</code> take types from <code>view-state</code>.</li>
-              <li><span class="sn">no-sideways</span> — another capability is named at its door, never a path inside it.</li>
+              <li><span class="sn">no-sideways</span> — another capability is named at its index, never a path inside it.</li>
             </ul>
           </div>
         </div>
@@ -327,10 +327,10 @@
         </div>
         <div class="item">
           <span class="n">capability-layout</span>
-          <span class="d">A capability holds its door, its types, its constants, and its procedures.</span>
+          <span class="d">A capability holds its index, its types, its constants, and its procedures.</span>
           <ul class="subs">
-            <li><span class="sn">has-a-door</span> — a capability with no door has no surface.</li>
-            <li><span class="sn">permitted-entries</span> — nothing else sits at the root. <span class="tag fails">14 fail</span> every capability names its document <code>overview.md</code> rather than <code>&lt;capability&gt;.md</code>.</li>
+            <li><span class="sn">has-an-index</span> — a capability with no index has no surface.</li>
+            <li><span class="sn">permitted-entries</span> — nothing else sits at the root.</li>
           </ul>
         </div>
         <div class="item">
@@ -343,9 +343,9 @@
     <div class="block">
       <h3>Generators</h3>
       <div class="list">
-        <div class="item"><span class="n">new-capability</span><span class="d">The directory, an empty door, and <code>types/</code>. No <code>api/</code> — a capability with no procedure is a legal state.</span></div>
-        <div class="item"><span class="n">new-constant</span><span class="d">A file under <code>constants/</code>. Nothing is added to the door — a door exports remote functions only, so a constant a caller outside the capability needs is served by a procedure.</span></div>
-        <div class="item"><span class="n">new-procedure</span><span class="d">The procedure directory, the entry with its validator already calling it, the stub added to the door, and a failing test.</span></div>
+        <div class="item"><span class="n">new-capability</span><span class="d">The directory, an empty index, and <code>types/</code>. No <code>api/</code> — a capability with no procedure is a legal state.</span></div>
+        <div class="item"><span class="n">new-constant</span><span class="d">A file under <code>constants/</code>. Nothing is added to the index — an index exports remote functions only, so a constant a caller outside the capability needs is served by a procedure.</span></div>
+        <div class="item"><span class="n">new-procedure</span><span class="d">The procedure directory, the entry with its validator already calling it, the declaration added to the index, and a failing test.</span></div>
       </div>
     </div>
   </div>
@@ -371,7 +371,7 @@
     <div class="block">
       <h3>Invariants</h3>
       <ul class="inv">
-        <li><b>A component reaches no door.</b> Not a capability, not a model object, not the runtime, not representation.</li>
+        <li><b>A component takes only props.</b> Not a capability, not a model object, not the runtime, not representation.</li>
         <li><b>A vocabulary is entered at its index.</b> Its internal file names are its own business.</li>
         <li><b>A vendored file is the CLI's output.</b> Its shape and its import spelling come from the tool, and the next regeneration overwrites anything else.</li>
       </ul>
@@ -393,7 +393,7 @@ vendor/&lt;component&gt;/
       <h3>Checks</h3>
       <div class="list">
         <div class="item">
-          <span class="n">component-reaches-no-door</span>
+          <span class="n">component-takes-only-props</span>
           <span class="d">No file under <code>components/</code> imports <code>$capabilities</code>, <code>$model</code>, <code>$runtime</code> or <code>$representation</code>.</span>
         </div>
         <div class="item">
@@ -411,7 +411,7 @@ vendor/&lt;component&gt;/
         </div>
         <div class="item">
           <span class="n">vendor-is-unedited</span>
-          <span class="d">No file under <code>vendor/</code> imports <code>$components/authored</code> or any door. The closest a check gets to "nobody touched it" without diffing the registry.</span>
+          <span class="d">No file under <code>vendored/</code> imports <code>$authored-components</code> or any first-party tree. The closest a check gets to "nobody touched it" without diffing the registry.</span>
         </div>
         <div class="item">
           <span class="n">vendor-keeps-its-own-spelling</span>
@@ -479,7 +479,7 @@ vendor/&lt;component&gt;/
       <h3>Invariants</h3>
       <ul class="inv">
         <li><b>Nothing constructs at module load.</b> A constructor returns a fresh object and caches nothing, so importing a module never produces a second instance of something the graph already holds one of.</li>
-        <li><b>An object is entered at its door.</b> Past it is a definition, a private type, or a method — none of which the object promised to keep stable.</li>
+        <li><b>An object is entered at its index.</b> Past it is a definition, a private type, or a method — none of which the object promised to keep stable.</li>
         <li><b>The directory is the call tree.</b> A method is a file until it has supporting steps; then it is a directory named for its entry, holding them, recursively.</li>
         <li><b>Runes are declared in the file extension.</b> A definition holding state the compiler must transform says so in its name.</li>
         <li><b>An object exposes keys, never components.</b> What a key renders as is the view's decision, and a model that named a component would decide it twice.</li>
@@ -490,7 +490,7 @@ vendor/&lt;component&gt;/
       <h3>Layout it asserts</h3>
       <pre class="layout">&lt;object&gt;/
 ├── &lt;object&gt;.md
-├── index.ts | index.server.ts    <span class="c">the door</span>
+├── index.ts | index.server.ts    <span class="c">the index</span>
 ├── types.ts                      <span class="c">interface and public values</span>
 ├── definition.ts | .svelte.ts    <span class="c">holds the state</span>
 ├── constructor.ts                <span class="c">returns a fresh object</span>
@@ -514,7 +514,7 @@ vendor/&lt;component&gt;/
           </div>
         </div>
         <div class="item">
-          <span class="n">object-is-entered-at-its-door</span>
+          <span class="n">object-is-entered-at-its-index</span>
           <span class="d">An import from outside an object names its <code>index</code>, never a path below it.</span>
         </div>
         <div class="item">
@@ -547,9 +547,9 @@ vendor/&lt;component&gt;/
           <span class="n">object-layout</span>
           <div class="d">
             <ul class="subs">
-              <li><span class="sn">required-files</span> — the door, types, definition and constructor all exist.</li>
+              <li><span class="sn">required-files</span> — the index, types, definition and constructor all exist.</li>
               <li><span class="sn">permitted-root-entries</span> — nothing else sits at the object root; what an object does lives under <code>methods/</code>.</li>
-              <li><span class="sn">door-matches-environment</span> — a server object's door carries <code>.server</code>, so a browser import of it fails at build rather than at runtime.</li>
+              <li><span class="sn">index-matches-environment</span> — a server object's index carries <code>.server</code>, so a browser import of it fails at build rather than at runtime.</li>
             </ul>
           </div>
         </div>
@@ -567,7 +567,7 @@ vendor/&lt;component&gt;/
     <div class="block">
       <h3>Generators</h3>
       <div class="list">
-        <div class="item"><span class="n">new-model-object</span><span class="d">Document, types, definition, constructor and door. Adds the field to the runtime's aggregate and the call to its builder, in dependency order. Refuses a cycle.</span></div>
+        <div class="item"><span class="n">new-model-object</span><span class="d">Document, types, definition, constructor and index. Adds the field to the runtime's aggregate and the call to its builder, in dependency order. Refuses a cycle.</span></div>
         <div class="item"><span class="n">new-method</span><span class="d">A method file, or a directory with its entry when the method already has steps.</span></div>
       </div>
     </div>
@@ -656,7 +656,7 @@ store/
         </div>
         <div class="item">
           <span class="n">store-opens-nothing</span>
-          <span class="d">No file under <code>store/</code> touches the filesystem or holds a handle. <span class="tag fails">2 fail</span> <code>createStore</code> and <code>createJsonStore</code>.</span>
+          <span class="d">No file under <code>store/</code> touches the filesystem or holds a handle.</span>
         </div>
         <div class="item">
           <span class="n">representation-layout</span>
@@ -757,7 +757,7 @@ store/
           <div class="d">
             <ul class="subs">
               <li><span class="sn">after-dependencies</span> — an object is constructed after everything it is passed.</li>
-              <li><span class="sn">constructed-once</span> — each object door is called exactly once.</li>
+              <li><span class="sn">constructed-once</span> — each object constructor is called exactly once.</li>
               <li><span class="sn">no-cycle</span> — the dependency graph is acyclic.</li>
             </ul>
           </div>
@@ -826,7 +826,7 @@ store/
         <li><b>A literal colour exists in exactly one place</b> — a theme file. Anywhere else it is a value a theme switch cannot reach.</li>
         <li><b>A stage declares its own namespace and no other.</b></li>
         <li><b>References point backward.</b> A stage reads the stage behind it, never ahead, and never past the public boundary.</li>
-        <li><b>One door.</b> Two entry points is two cascade orders, and which one wins depends on load order.</li>
+        <li><b>One entry.</b> Two entry points is two cascade orders, and which one wins depends on load order.</li>
         <li><b>Generated CSS is inert.</b></li>
       </ul>
     </div>
@@ -852,7 +852,7 @@ store/
           </div>
         </div>
         <div class="item">
-          <span class="n">one-stylesheet-door</span>
+          <span class="n">one-stylesheet-entry</span>
           <div class="d">
             <ul class="subs">
               <li><span class="sn">single-entry</span> — the root layout imports <code>app.css</code> once, and nothing else imports a stylesheet.</li>
@@ -918,7 +918,7 @@ store/
       <h3>Invariants</h3>
       <ul class="inv">
         <li><b>A layout is a named grid.</b> <code>grid-template-areas</code> with regions named for what they hold, so what appears where survives a reorder of the markup.</li>
-        <li><b>Data comes from a door, never a prop.</b> A prop carries a callback, or an id its parent alone knows. Content arriving as a prop is content two surfaces can disagree about.</li>
+        <li><b>Data comes from a capability, never a prop.</b> A prop carries a callback, or an id its parent alone knows. Content arriving as a prop is content two surfaces can disagree about.</li>
         <li><b>A concern declares what it is by extension.</b> Everything under <code>effects/</code> holds runes; nothing under <code>procedures/</code> or <code>interactions/</code> does.</li>
         <li><b>Shared state dies with the mount.</b> A module singleton would outlive the surface and be handed to the next one.</li>
         <li><b>No surface reaches inside another.</b> Its root and its types, or nothing.</li>
@@ -946,16 +946,11 @@ store/
       <div class="list">
         <div class="item">
           <span class="n">surface-is-a-named-grid</span>
-          <span class="d">Every surface lays itself out with <code>grid-template-areas</code> and named regions. <span class="tag fails">9 fail</span> 7 of 8 shell surfaces, 2 of 13 workspaces.</span>
+          <span class="d">Every surface lays itself out with <code>grid-template-areas</code> and named regions. <span class="tag fails">15 fail</span> 7 shell surfaces, 6 development surfaces, 2 workspaces.</span>
         </div>
         <div class="item">
-          <span class="n">data-comes-from-a-door</span>
-          <div class="d">
-            <ul class="subs">
-              <li><span class="sn">no-content-prop</span> — a prop is a callback or an id, never the thing being displayed.</li>
-              <li><span class="sn">no-standin-constant</span> — no literal array or object stands where a query belongs.</li>
-            </ul>
-          </div>
+          <span class="n">view-takes-ids-and-callbacks</span>
+          <span class="d">A prop is a callback or an id, never the thing being displayed. Content arriving as a prop is content two surfaces can disagree about.</span>
         </div>
         <div class="item">
           <span class="n">concern-is-one-of-five</span>
@@ -1054,8 +1049,14 @@ store/
           <span class="d">A subject directory holds <code>.svelte</code> files and nothing else.</span>
         </div>
         <div class="item">
-          <span class="n">panel-imports</span>
-          <span class="d">Capabilities, view state and components. Nothing else — no other panel, no surface.</span>
+          <span class="n">panel-imports-no-other-view</span>
+          <div class="d">A panel does not import another panel, a surface, or a workspace. It renders on its own and holds no part of what is around it.
+            <ul class="subs">
+              <li><span class="sn">no-other-panel</span> — a panel shows another panel by key, so view state stays the one record of what is open.</li>
+              <li><span class="sn">no-surface</span> — a panel is rendered inside a surface; reaching back out to one is a cycle.</li>
+              <li><span class="sn">no-other-tree</span> — capabilities, components, view state and modals; a panel needs nothing else.</li>
+            </ul>
+          </div>
         </div>
         <div class="item">
           <span class="n">key-vocabulary-matches-the-tree</span>
@@ -1163,12 +1164,12 @@ workspaces/&lt;screen&gt;/workspace-&lt;subscreen&gt;.svelte <span class="c">one
           </div>
         </div>
         <div class="item">
-          <span class="n">processes-do-not-mix</span>
-          <div class="d">Transitively, following the real graph.
+          <span class="n">client-server-separation</span>
+          <div class="d">A module runs in one process. What it imports, transitively, must be able to run there too.
             <ul class="subs">
-              <li><span class="sn">client-does-not-import-server</span> — or the browser bundle carries the filesystem and the secrets.</li>
-              <li><span class="sn">server-does-not-import-client</span> — or the process carries state belonging to one tab.</li>
-              <li><span class="sn">both-imports-only-both</span> — what makes a shared module safe for either side to take.</li>
+              <li><span class="sn">client-takes-no-server-code</span> — or the browser bundle carries the filesystem and the secrets.</li>
+              <li><span class="sn">server-takes-no-client-code</span> — or the process carries state belonging to one tab.</li>
+              <li><span class="sn">shared-takes-only-shared-code</span> — a module either process may load can only load what either process may load.</li>
             </ul>
           </div>
         </div>
@@ -1178,7 +1179,7 @@ workspaces/&lt;screen&gt;/workspace-&lt;subscreen&gt;.svelte <span class="c">one
         </div>
         <div class="item">
           <span class="n">one-crossing</span>
-          <span class="d">The only client→server edge in the repository is a capability door. One crossing can be audited; five cannot.</span>
+          <span class="d">The only client→server edge in the repository is a capability index. One crossing can be audited; five cannot.</span>
         </div>
         <div class="item">
           <span class="n">no-relative-imports</span>

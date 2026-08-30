@@ -2,10 +2,10 @@ import { check } from "../shared/check.mjs";
 import { objects, unitOf } from "../shared/trees.mjs";
 
 /** `index` or `index.server` — the environment decides which, and `object-layout` checks that. */
-const isDoor = (rest) => rest.length === 1 && /^index(\.server)?$/.test(rest[0]);
+const isIndex = (rest) => rest.length === 1 && /^index(\.server)?$/.test(rest[0]);
 
 export default check({
-  name: "object-is-entered-at-its-door",
+  name: "object-is-entered-at-its-index",
   says: "An import from outside an object names its index, never a path below it.",
   run(tree) {
     const units = objects(tree);
@@ -22,12 +22,12 @@ export default check({
         const [environment, name, ...rest] = target.segments;
         if (!name) continue;
         if (self && self.id === `${environment}/${name}`) continue;
-        if (rest.length === 0 || isDoor(rest)) continue;
+        if (rest.length === 0 || isIndex(rest)) continue;
 
         found.push({
           path,
           line: record.line,
-          message: `reaches past ${environment}/${name}'s door: ${record.specifier}`
+          message: `reaches past ${environment}/${name}'s index: ${record.specifier}`
         });
       }
     }

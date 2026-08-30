@@ -14,8 +14,8 @@ import {
   stylesheets
 } from "../shared/styles.mjs";
 
-const DOOR = "src/routes/+layout.svelte";
-const DOOR_IMPORT = '"$styles/app.css"';
+const LAYOUT = "src/routes/+layout.svelte";
+const LAYOUT_IMPORT = '"$styles/app.css"';
 
 /** A theme binds `:root` when it is the default; the alternates bind their attribute only. */
 const isDefault = (tree, path) =>
@@ -53,7 +53,7 @@ const expectedOrder = (tree) => {
 };
 
 export default check({
-  name: "one-stylesheet-door",
+  name: "one-stylesheet-entry",
   says: "Two entry points is two cascade orders, and which one wins depends on load order.",
   subjects: {
     "single-entry": "the root layout imports app.css once, and nothing else imports a stylesheet",
@@ -64,7 +64,7 @@ export default check({
     const found = [];
     const app = appCss(tree);
     if (!tree.isFile(app)) {
-      return [{ subject: "single-entry", path: app, message: "there is no door" }];
+      return [{ subject: "single-entry", path: app, message: "there is no app.css" }];
     }
 
     const taken = importsIn(tree.read(app), app)
@@ -89,7 +89,7 @@ export default check({
     }
 
     // A stage stylesheet that pulls in another is a second cascade order hidden
-    // one level down, where the door's list does not show it.
+    // one level down, where app.css's list does not show it.
     for (const path of stylesheets(tree)) {
       if (path === app) continue;
       for (const { target, relative, line } of importsIn(tree.read(path), path)) {
@@ -98,22 +98,22 @@ export default check({
       }
     }
 
-    const door = join(tree.base, ...DOOR.split("/"));
-    const times = tree.exists(door) ? tree.read(door).split(DOOR_IMPORT).length - 1 : 0;
+    const layout = join(tree.base, ...LAYOUT.split("/"));
+    const times = tree.exists(layout) ? tree.read(layout).split(LAYOUT_IMPORT).length - 1 : 0;
     if (times !== 1) {
       found.push({
         subject: "single-entry",
-        path: door,
-        message: `imports the door ${times} times, not once`
+        path: layout,
+        message: `imports app.css ${times} times, not once`
       });
     }
 
     for (const path of tree.files) {
       if (!/\.(svelte|ts|js|css)$/.test(path)) continue;
-      if (path === door || tree.within(stylesRoot(tree), path)) continue;
+      if (path === layout || tree.within(stylesRoot(tree), path)) continue;
       const match = tree.read(path).match(/\$(?:lib\/)?styles\/[^"']+\.css/);
       if (!match) continue;
-      found.push({ subject: "single-entry", path, message: `imports ${match[0]} rather than the door` });
+      found.push({ subject: "single-entry", path, message: `imports ${match[0]} rather than app.css` });
     }
     return found;
   }

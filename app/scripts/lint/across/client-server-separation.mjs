@@ -1,24 +1,25 @@
 import { check } from "../shared/check.mjs";
-import { BOTH, CLIENT, SERVER, TEST, homes } from "../shared/home.mjs";
+import { CLIENT, SERVER, SHARED, TEST, homes } from "../shared/home.mjs";
 import { buildGraph, describeChain, shortestPathTo } from "../shared/graph.mjs";
 
 /**
- * A capability door is the one edge allowed to change process, so the walk stops
+ * A capability index is the one edge allowed to change process, so the walk stops
  * there rather than reporting every procedure behind it. `one-crossing` is what
- * says there is only one such door in the first place.
+ * says there is only one such index in the first place.
  */
-const isCapabilityDoor = (tree, path) => {
+const isCapabilityIndex = (tree, path) => {
   const segments = tree.rel(path).split("/");
   return segments[2] === "capabilities" && segments.length === 5 && segments[4].startsWith("index.");
 };
 
 export default check({
-  name: "processes-do-not-mix",
-  says: "Transitively, following the real graph.",
+  name: "client-server-separation",
+  says: "A module runs in one process. What it imports, transitively, must be able to run there too.",
   subjects: {
-    "client-does-not-import-server": "or the browser bundle carries the filesystem and the secrets",
-    "server-does-not-import-client": "or the process carries state belonging to one tab",
-    "both-imports-only-both": "what makes a shared module safe for either side to take"
+    "client-takes-no-server-code": "or the browser bundle carries the filesystem and the secrets",
+    "server-takes-no-client-code": "or the process carries state belonging to one tab",
+    "shared-takes-only-shared-code":
+      "a module either process may load can only load what either process may load"
   },
   run(tree) {
     const graph = buildGraph(tree);
@@ -32,10 +33,10 @@ export default check({
       shortestPathTo(
         graph,
         from,
-        (to, edge) => carries(edge) && homeOf(to) === forbidden && !isCapabilityDoor(tree, to),
+        (to, edge) => carries(edge) && homeOf(to) === forbidden && !isCapabilityIndex(tree, to),
         {
           cross: (to, edge) =>
-            carries(edge) && homeOf(to) === BOTH && !isCapabilityDoor(tree, to)
+            carries(edge) && homeOf(to) === SHARED && !isCapabilityIndex(tree, to)
         }
       );
 
@@ -44,16 +45,16 @@ export default check({
     for (const [path, { home }] of where) {
       if (home === TEST || home === null) continue;
 
-      // The door is the crossing, so reaching the server is what it is for.
+      // The index is the crossing, so reaching the server is what it is for.
       // Reaching the client is not: that pulls a browser module into the
       // process on the other side of it.
-      if (isCapabilityDoor(tree, path)) {
+      if (isCapabilityIndex(tree, path)) {
         const chain = walk(path, CLIENT);
         if (chain) {
           found.push({
-            subject: "both-imports-only-both",
+            subject: "shared-takes-only-shared-code",
             path,
-            message: `a door reaches ${CLIENT} code: ${describeChain(tree, chain)}`
+            message: `reaches ${CLIENT} code: ${describeChain(tree, chain)}`
           });
         }
         continue;
@@ -64,7 +65,7 @@ export default check({
         const chain = walk(path, forbidden);
         if (chain) {
           found.push({
-            subject: home === CLIENT ? "client-does-not-import-server" : "server-does-not-import-client",
+            subject: home === CLIENT ? "client-takes-no-server-code" : "server-takes-no-client-code",
             path,
             message: `reaches ${forbidden} code: ${describeChain(tree, chain)}`
           });
@@ -72,12 +73,12 @@ export default check({
         continue;
       }
 
-      // A both-module may take only both-modules, so either side is a finding.
+      // A shared module may take only shared modules, so either side is a finding.
       for (const other of [CLIENT, SERVER]) {
         const chain = walk(path, other);
         if (chain) {
           found.push({
-            subject: "both-imports-only-both",
+            subject: "shared-takes-only-shared-code",
             path,
             message: `reaches ${other} code: ${describeChain(tree, chain)}`
           });

@@ -5,7 +5,7 @@
  *     pnpm new-procedure -- <capability> <procedure>
  *
  * Writes the procedure directory, the entry with its validator already the first
- * statement, the stub added to the door, and a failing test. The validator call
+ * statement, the declaration added to the index, and a failing test. The validator call
  * is generated rather than left to a comment because
  * `procedure-validates-first` reads exactly that first statement — a template
  * that trips its own check on the first run is a template nobody trusts.
@@ -97,26 +97,26 @@ test.fails("${procedure} answers", async () => {
 `
 );
 
-const door = ["index.remote.ts", "index.ts"]
+const index = ["index.remote.ts", "index.ts"]
   .map((file) => join(root, file))
   .find((candidate) => existsSync(candidate));
 
-if (!door) plan.fail(capability, "has no door to add a stub to");
+if (!index) plan.fail(capability, "has no index to declare a procedure in");
 else {
-  plan.edit(door, (text) => {
+  plan.edit(index, (text) => {
     if (text.includes(`api/${procedure}/${procedure}`)) return text;
 
-    const remote = door.endsWith(".remote.ts");
+    const remote = index.endsWith(".remote.ts");
     const factory = remote ? `query("unchecked", ${call}Procedure)` : `${call}Procedure`;
     const opening = remote && !text.includes('from "$app/server"')
       ? 'import { query } from "$app/server";\n\n'
       : "";
 
-    const stub =
+    const declaration =
       `import { ${call} as ${call}Procedure } from "$capabilities/${capability}/api/${procedure}/${procedure}";\n` +
       `\nexport const ${call} = ${factory};\n` +
       `export type { ${Input}, ${Result} } from "$capabilities/${capability}/types/${procedure}";\n`;
-    return `${opening}${text.replace(/\n+$/, "\n")}\n${stub}`;
+    return `${opening}${text.replace(/\n+$/, "\n")}\n${declaration}`;
   });
 }
 

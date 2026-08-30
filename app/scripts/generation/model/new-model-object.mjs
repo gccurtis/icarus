@@ -4,7 +4,7 @@
  *
  *     pnpm new-model-object -- <client|server> <name> [--depends-on=a,b]
  *
- * Writes the document, types, definition, constructor and door, then adds the
+ * Writes the document, types, definition, constructor and index, then adds the
  * field to the runtime's aggregate and the call to its builder — after
  * everything it is handed, because `objects-are-built-in-order` reads exactly
  * that. An object nobody builds is a directory; the edits to `runtime/` are
@@ -32,7 +32,7 @@ const base = join(lib, "..", "..");
 const root = join(lib, "model", environment, name);
 
 const isServer = environment === "server";
-const door = isServer ? "index.server.ts" : "index.ts";
+const index = isServer ? "index.server.ts" : "index.ts";
 const definition = isServer ? "definition.ts" : "definition.svelte.ts";
 const Model = `${pascal(name)}Model`;
 const create = `create${pascal(name)}`;
@@ -110,7 +110,7 @@ export const ${create} = (${dependsOn.map((one) => `${camel(one)}: unknown`).joi
 );
 
 plan.create(
-  join(root, door),
+  join(root, index),
   `export { ${create} } from "$model/${environment}/${name}/constructor";
 export type { ${Model} } from "$model/${environment}/${name}/types";
 `
@@ -120,7 +120,7 @@ export type { ${Model} } from "$model/${environment}/${name}/types";
 
 plan.edit(runtime.types, (text) => {
   if (text.includes(`readonly ${field}:`)) return text;
-  const importLine = `import type { ${Model} } from "$model/${environment}/${name}/${door.replace(/\.ts$/, "")}";\n`;
+  const importLine = `import type { ${Model} } from "$model/${environment}/${name}/${index.replace(/\.ts$/, "")}";\n`;
   const withImport = text.includes(importLine) ? text : importLine + text;
 
   const marker = new RegExp(`(export interface ${runtime.aggregate} \\{\\n)`);
@@ -131,7 +131,7 @@ plan.edit(runtime.types, (text) => {
 plan.edit(runtime.start, (text) => {
   if (text.includes(`${create}(`)) return text;
 
-  const importLine = `import { ${create} } from "$model/${environment}/${name}/${door.replace(/\.ts$/, "")}";\n`;
+  const importLine = `import { ${create} } from "$model/${environment}/${name}/${index.replace(/\.ts$/, "")}";\n`;
   let next = text.includes(importLine) ? text : text.replace(/^(import .*\n)(?![\s\S]*^import )/m, `$1${importLine}`);
 
   // After everything it is handed. With no dependencies it goes first, which is
