@@ -55,14 +55,16 @@ import type { ContextId } from "$model/client/view-state";
  * views a screen offers, and in what order, is not here: that is `RAILS`.
  *
  * **`Record<ContextId, …>` rather than a partial map**, so a context view with
- * no rail entry fails to compile rather than failing to draw. A new panel is not
- * finished until it has been given a name and an icon.
+ * no rail entry fails to compile rather than failing to draw. Every key in the
+ * vocabulary has an entry here whether or not its panel is built yet — the rail
+ * is how an unbuilt view is reached, and a key with no way to reach it cannot be
+ * proved to route at all.
  *
- * **The labels are transcribed, not derived.** Each one is the first cell of the
- * first table of `docs/screen-panel-views/context/<subject>/<name>.md`, copied as
- * written — never inferred from the id or the file name. Where two ids carry the
- * same label that is intended: every screen has an "Overview" and no two show
- * the same thing, so the label names the job and the id names the content.
+ * **The labels are written, not derived.** Never inferred from the id or the
+ * file name; the subject document beside the panels is where the wording is
+ * argued. Where two ids carry the same label that is intended: every screen has
+ * an "Overview" and no two show the same thing, so the label names the job and
+ * the id names the content.
  *
  * **The icons follow the subject, not the word.** The same subject looks the same
  * on every screen that carries it — Variables is always a hash, Context always a
