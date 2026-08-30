@@ -21,8 +21,7 @@ This view owns:
 
 It does not own:
 
-- the tokens or themes themselves — those belong to
-  [the styles directory](../../../../docs/styles-directory/styles-directory.md);
+- the tokens or themes themselves — those belong to `$styles`;
 - the primitive components it demonstrates, which belong to
   `simple-components/` and are consumed unmodified;
 - the default appearance at first paint, which `app.html` declares.

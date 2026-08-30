@@ -22,11 +22,8 @@ fresh one, and the only caller is `runtime/{client,server}/start*`, which compos
 the graph and decides the order. An object never holds an instance of another; it
 is handed what it depends on.
 
-The written standard is
-[`docs/model-directory/model-directory.md`](../../docs/model-directory/model-directory.md),
-enforced by `scripts/lint/model/`. Both still describe the environment roots as
-though they lived here; they moved to `runtime/`, and the rules about them are
-unchecked until that standard is rewritten.
+The standard is `scripts/lint/model/`. There is no second copy of it in prose,
+because a copy is a thing that can disagree with what runs.
 
 ## The two halves are not symmetric
 
@@ -36,5 +33,5 @@ to lose: **what varies is how many of each thing exists, and for how long.**
 A client object belongs to one browser tab, and there is one per tab. A server
 object belongs to the process, and there is exactly one. Nothing on the server
 side is per-user — identity arrives per request as `Scope`, from
-`runtime/server/scope.server.ts`, which is why that is a door of its own rather
+`runtime/server/scope.server.ts`, which is why that is an entry of its own rather
 than something reachable off an object.

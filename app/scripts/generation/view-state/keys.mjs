@@ -56,7 +56,7 @@ const stopIfFailed = () => {
   if (problems.length === 0) return;
   console.error(`view-state-keys: ${problems.length} problem${problems.length === 1 ? "" : "s"}\n`);
   for (const problem of problems) console.error(`  ${problem}`);
-  console.error("\nSee docs/panel-trees/panel-trees.md.");
+  console.error("\nRun `pnpm lint panels` for what the tree is expected to look like.");
   process.exit(1);
 };
 
