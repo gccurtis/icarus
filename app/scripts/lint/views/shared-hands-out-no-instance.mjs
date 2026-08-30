@@ -9,8 +9,8 @@ import { surfaces } from "../shared/trees.mjs";
 const OFFERS = /^(create|make|build|use|get)[A-Z]/;
 
 export default check({
-  name: "shared-is-a-constructor",
-  says: "shared/ exports a constructor or a context accessor, never an instantiated module singleton. A module singleton would outlive the surface and be handed to the next one.",
+  name: "shared-hands-out-no-instance",
+  says: "shared/ constructs nothing at module load and exports nothing already made. An instance here outlives the mount and is handed to the next one, so two tabs share it.",
   run(tree) {
     const found = [];
     for (const { path } of surfaces(tree)) {

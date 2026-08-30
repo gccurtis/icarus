@@ -971,8 +971,8 @@ store/
           </div>
         </div>
         <div class="item">
-          <span class="n">shared-is-a-constructor</span>
-          <span class="d"><code>shared/</code> exports a constructor or a context accessor, never an instantiated module singleton.</span>
+          <span class="n">shared-hands-out-no-instance</span>
+          <span class="d"><code>shared/</code> constructs nothing at module load and exports nothing already made. An instance here outlives the mount and is handed to the next one, so two tabs share it.</span>
         </div>
         <div class="item">
           <span class="n">surface-imports</span>

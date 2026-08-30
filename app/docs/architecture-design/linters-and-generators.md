@@ -500,7 +500,7 @@ views/
 - `effects-are-svelte-ts` — everything under `effects/` is compiled, or its runes never run.
 - `others-declare-no-rune` — nothing under `procedures/` or `interactions/` holds one.
 
-**shared-is-a-constructor** — `shared/` exports a constructor or a context accessor, never an instantiated module singleton.
+**shared-hands-out-no-instance** — `shared/` constructs nothing at module load and exports nothing already made. An instance here outlives the mount and is handed to the next one, so two tabs share it.
 
 **surface-imports**
 

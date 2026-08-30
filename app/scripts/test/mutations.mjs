@@ -446,7 +446,7 @@ export const MUTATIONS = [
     changes: [{ path: "src/lib/views/top-bar/effects/uncompiled.ts", write: `export const run = (): void => {};\n` }]
   },
   {
-    check: "shared-is-a-constructor",
+    check: "shared-hands-out-no-instance",
     says: "shared/ hands out something already made",
     names: "shared/already-made.ts",
     changes: [{ path: "src/lib/views/top-bar/shared/already-made.ts", write: `export const registry = { open: false };\n` }]
