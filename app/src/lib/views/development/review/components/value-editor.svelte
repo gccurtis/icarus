@@ -1,29 +1,32 @@
 <script lang="ts">
-  import { clearOverride, overrideDoor } from "$capabilities/read.svelte";
+  import type { Review } from "$views/development/review/shared/create-review.svelte";
 
   /**
-   * One door's answer, as something a reader can change.
+   * One answer, as something a reader can change.
    *
-   * Three shapes, because a door answers three kinds of thing and one editor for
-   * all of them would be a JSON box for a string. A scalar gets a field, a flat
-   * record gets a row per key, and everything else gets JSON — which is honest
-   * rather than lazy: a list of forty rows has no editor that is better than the
-   * text of it, and pretending otherwise builds a form nobody can use.
+   * Three shapes, because a capability answers three kinds of thing and one
+   * editor for all of them would be a JSON box for a string. A scalar gets a
+   * field, a flat record gets a row per key, and everything else gets JSON —
+   * which is honest rather than lazy: a list of forty rows has no editor that is
+   * better than the text of it, and pretending otherwise builds a form nobody
+   * can use.
    *
-   * **A change is an override, not an edit.** The sample data is never written
-   * to, so *Reset* puts the door back and two panels reading the same door still
-   * agree with each other.
+   * **A change is an override, not an edit.** What the capability returned is
+   * never written to, so *Reset* puts it back and two panels reading the same
+   * thing still agree with each other.
    */
   let {
+    review,
     id,
     value,
     overridden,
     onchange
   }: {
+    review: Review;
     id: string;
     value: unknown;
     overridden: boolean;
-    /** The page re-reads the door log; this says when. */
+    /** The page re-reads the log; this says when. */
     onchange: () => void;
   } = $props();
 
@@ -43,14 +46,14 @@
   let problem = $state<string | undefined>(undefined);
 
   $effect(() => {
-    // Re-seed when the door changes underneath, but never while it is being typed.
+    // Re-seed when the answer changes underneath, but never while it is being typed.
     if (document.activeElement?.getAttribute("data-json") !== id) {
       draft = JSON.stringify(value, null, 2);
     }
   });
 
   const set = (next: unknown) => {
-    overrideDoor(id, next);
+    review.override(id, next);
     onchange();
   };
 
@@ -64,7 +67,7 @@
   };
 
   const reset = () => {
-    clearOverride(id);
+    review.clearOverride(id);
     problem = undefined;
     onchange();
   };
@@ -123,7 +126,7 @@
 
   {#if overridden}
     <button type="button" class="text-caption text-attention-text w-fit hover:underline" onclick={reset}>
-      Overridden — put the sample back
+      Overridden — put the answer back
     </button>
   {/if}
 </div>

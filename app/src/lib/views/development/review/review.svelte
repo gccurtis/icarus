@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Component } from "svelte";
 
-  import { forgetDoors } from "$capabilities/read.svelte";
   import { provideTrace } from "$development-components/trace.svelte";
   import GridMap from "$views/development/review/components/grid-map.svelte";
   import Picker from "$views/development/review/components/picker.svelte";
@@ -21,7 +20,7 @@
    * **The state is above and the composition is beside, and only one of them is
    * writable.** Everything on the right is derived from what is at the top, so a
    * second place to change it would be a second answer to what the panel is a
-   * function of. Change a door, watch the tree and the stage both move.
+   * function of. Change a read, watch the tree and the stage both move.
    *
    * **The stage is a real flank.** A context view and a lens render at 300px
    * against canvas, because that is the width they will have, and a shape that
@@ -60,10 +59,10 @@
   const flank = $derived(kind !== "workspace");
 
   /**
-   * The panel is held rather than awaited in the markup, because the door log can
+   * The panel is held rather than awaited in the markup, because the read log can
    * only be read once the panel has actually rendered — and an `{#await}` block
    * resolves after every effect on this component has already run. Awaiting
-   * inline showed every panel as reading no door at all.
+   * inline showed every panel as reading nothing at all.
    */
   let Stage = $state<Component | undefined>(undefined);
   let failure = $state<string | undefined>(undefined);
@@ -81,9 +80,9 @@
         if (!current) return;
         // The one window where the old panel is gone and the new one has not
         // rendered. Clearing in `select` instead leaves the outgoing panel a
-        // frame in which to answer again, and its doors turn up beside the
+        // frame in which to answer again, and its reads turn up beside the
         // incoming one's.
-        forgetDoors();
+        review.forget();
         Stage = module.default;
       })
       .catch((error: unknown) => {
@@ -95,10 +94,10 @@
   });
 
   /**
-   * The door log is written during the render that just happened, so it is read
+   * The read log is written during the render that just happened, so it is read
    * back a tick later — and again whenever an override changes what was asked.
    *
-   * **It must not depend on `review.doors`.** `refresh()` writes that, so reading
+   * **It must not depend on `review.reads`.** `refresh()` writes that, so reading
    * it here makes the effect its own trigger and the page spins until the tab
    * gives up. What genuinely changes what gets asked is the panel arriving and an
    * override landing, and those are the whole dependency list.
@@ -144,7 +143,7 @@
       {/if}
     </div>
 
-    <StatePanel doors={review.doors} onchange={() => (review.revision += 1)} />
+    <StatePanel {review} onchange={() => (review.revision += 1)} />
   </header>
 
   <main class="stage" data-review-stage>
@@ -166,7 +165,7 @@
     {#if kind === "workspace"}
       <GridMap
         root={review.run.root}
-        revision={review.revision + review.doors.length}
+        revision={review.revision + review.reads.length}
         onhover={(id) => (lit = id)}
       />
     {:else}

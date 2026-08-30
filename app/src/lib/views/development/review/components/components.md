@@ -31,7 +31,7 @@ would have to earn back.
 
 ## Why the state editor has three shapes
 
-A door answers three kinds of thing. A scalar gets a field, a flat record gets a
+A capability answers three kinds of thing. A scalar gets a field, a flat record gets a
 row per key, and everything else gets JSON. One editor for all of them would be a
 JSON box for a string; a form for all of them would be a form nobody can use for
 a list of forty rows. The JSON box is honest about the case it covers rather than
@@ -45,7 +45,7 @@ unusable.
 
 Everything in it is derived from the state above the stage. A prop editable here
 would be a second answer to what the panel is a function of, and the two would
-disagree the moment a door changed. Change the door; watch this move.
+disagree the moment an answer changed. Change the answer; watch this move.
 
 ## Why `grid-map` reads the DOM
 

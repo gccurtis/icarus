@@ -7,7 +7,7 @@
    *
    * **Read-only, and that is the point.** Everything here is derived from the
    * state above the stage; a second place to change it would be a second answer
-   * about what the panel is a function of. Change the door, watch this move.
+   * about what the panel is a function of. Change the answer, watch this move.
    *
    * The props are read through the node's thunk at render time, so a value that
    * changes upstream changes here without the tree being rebuilt.

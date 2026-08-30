@@ -13,8 +13,8 @@ picker enumerates.
 It exists because a gallery answers the wrong question. Seeing a panel tells you
 whether it looks right; it does not tell you what it reads, what it hands to what,
 or what would change if the data were different. This is the surface where a
-reorganisation is proposed against something concrete: change a door at the top,
-watch the stage and the composition column both move.
+reorganisation is proposed against something concrete: change an answer at the
+top, watch the stage and the composition column both move.
 
 ## Why there is no modal route
 
@@ -30,16 +30,15 @@ This view owns:
 - the frame: the head, the stage, the composition column, and the one number that
   splits them;
 - which panel is on the stage, and remounting when that changes;
-- turning door recording on, and reading the log back after a render;
-- the overrides a reader puts in front of a door, and putting them back;
+- recording what a render read, and reading the log back after it;
+- the overrides a reader puts in front of an answer, and putting them back;
 - pointing at what a name on the right drew on the left.
 
 It does not own:
 
 - the panels. Each is loaded through the glob its route hands in and is otherwise
   opaque.
-- what a panel reads. The doors are `$capabilities`; this only records and
-  intercepts them.
+- what a panel reads. That is `$capabilities`; this only records and intercepts.
 - what a panel is made of. Each primitive registers itself through
   [`$components/development`](../../trace/trace.svelte.ts); this only reads the tree.
 
@@ -57,15 +56,15 @@ It does not own:
 
 ### Client models
 
-| Door | Usage |
+| Object | Usage |
 | --- | --- |
-| `None` | The panels reach the mock model themselves; this view does not |
+| `None` | The panels reach what they need themselves; this view does not |
 
 ### Capabilities
 
-| Browser door | Usage |
+| Capability | Usage |
 | --- | --- |
-| `$capabilities/read.svelte` | `watchDoors`, `doorCalls`, `overrideDoor`, `clearOverride` — the recording and the overrides |
+| `None` | The recording and the overrides are the review session's own state |
 
 ### Composed views
 
@@ -90,15 +89,15 @@ the same component being reviewed.
 | Concern | Document | What it owns |
 | --- | --- | --- |
 | Components | [components.md](components/components.md) | The picker, the state editor, and the two ways of reading a composition |
-| Shared | [shared.md](shared/shared.md) | The session: what is selected, what the doors answered |
+| Shared | [shared.md](shared/shared.md) | The session: what is selected, what was read, what is overridden |
 
 ## Rendered States
 
 | State | Trigger | Visible result | Available recovery |
 | --- | --- | --- | --- |
-| Initial | The route rendered it | The first entry of the tree, its doors, its composition | — |
+| Initial | The route rendered it | The first entry of the tree, what it read, its composition | — |
 | Loading | A panel is being fetched | "Loading…" on the stage | — |
-| Empty | A panel read no door | The state panel says so in a sentence | — |
+| Empty | A panel read nothing | The state panel says so in a sentence | — |
 | Stale | `None` | — | — |
 | Failure | A panel's module failed to load | The error on the stage, in the danger role | Pick another |
 | Denied | `None` | — | — |
@@ -125,16 +124,16 @@ as text.
   holds its share of the split.
 - **Scroll owner:** the head, the stage and the column, each for itself. The
   frame sets `overflow: hidden` so the page never scrolls as a whole.
-- **Minimum and maximum geometry:** the head is capped at 45vh, because a door
-  answering forty rows would otherwise push the panel off the bottom.
+- **Minimum and maximum geometry:** the head is capped at 45vh, because an answer
+  of forty rows would otherwise push the panel off the bottom.
 
 ## View Invariants
 
 - **The state is writable and the composition is not.** Everything in the column
   is derived from what is at the top; a second place to change it would be a
   second answer to what the panel is a function of.
-- **An override never writes to the sample.** Two panels reading one door always
-  agree, and *reset* is always available.
+- **An override never writes to what was returned.** Two panels reading the same
+  thing always agree, and *reset* is always available.
 - **The stage is a real flank.** A context view and a lens render at 300px, which
   is the width they will have.
 - **The trace is off unless this page is open.** `traceNode` finds no run in
@@ -145,4 +144,4 @@ as text.
 | Document | Subject |
 | --- | --- |
 | [`$components/development/trace.svelte.ts`](../../trace/trace.svelte.ts) | How a primitive registers itself, and why props are a thunk |
-| [`$capabilities/read.svelte.ts`](../../mock-capabilities/read.svelte.ts) | How a door names itself, and why an override sits in front |
+| [`shared.md`](shared/shared.md) | Why the log is a snapshot, and why an override sits in front |
