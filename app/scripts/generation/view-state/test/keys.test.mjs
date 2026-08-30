@@ -1,17 +1,21 @@
 /**
- * The generator's central claim is that the key vocabulary is the panel trees
- * and nothing else. These tests check the two halves of it: that a path becomes
- * exactly one key, and that `--check` refuses a file the trees no longer agree
- * with.
+ * The generator's central claim is that the screen vocabulary is the workspace
+ * tree and nothing else. These tests check the two halves of it: that a path
+ * becomes exactly one screen and one subscreen, and that `--check` refuses a
+ * file the tree no longer agrees with.
  *
  * The second half is the one that earns its keep. A generator that writes the
  * right file is only useful while somebody remembers to run it, and the drift
  * check is what turns "somebody remembers" into a failing build — so a test that
  * only asserted the happy path would be testing the less important claim.
  *
+ * Panels are not here. Their vocabulary is hand-written in `panel-keys.ts`,
+ * because a panel that has not been built yet still has to be nameable, and
+ * `key-vocabulary-matches-the-tree` is what holds that file to the tree.
+ *
  * The last test runs the check against the real package rather than a fixture,
  * which is deliberately a test of the repository and not of this script: adding
- * a panel without regenerating `keys.ts` should turn something red here.
+ * a workspace without regenerating `keys.ts` should turn something red here.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -26,27 +30,15 @@ const generators = dirname(here);
 const generator = join(generators, "keys.mjs");
 const realPackageRoot = dirname(dirname(dirname(generators)));
 
-/** One valid file in each tree, so a fixture only has to say what it is about. */
-const BASE = [
-  "context/project/variables.svelte",
-  "inspector/collaboration/person.svelte",
-  "workspaces/project-overview/workspace.svelte"
-];
+/** One valid screen, so a fixture only has to say what it is about. */
+const BASE = ["workspaces/project-overview/workspace.svelte"];
+
+/** Where a short path sits in the tree. */
+const treePath = (root, path) => join(root, "src", "lib", "views", ...path.split("/"));
 
 /**
- * Where a short path sits in the tree. A test says `context/project/x.svelte`
- * because that is the key it is about; the two stack trees live under
- * `views/panels/` and everything else directly under `views/`.
- */
-const treePath = (root, path) => {
-  const [tree, ...rest] = path.split("/");
-  const under = tree === "context" || tree === "inspector" ? ["panels", tree] : [tree];
-  return join(root, "src", "lib", "views", ...under, ...rest);
-};
-
-/**
- * A package holding nothing but panels. Their contents never matter — the whole
- * vocabulary is in the paths.
+ * A package holding nothing but workspaces. Their contents never matter — the
+ * whole vocabulary is in the paths.
  */
 const makePackage = (paths) => {
   const root = mkdtempSync(join(tmpdir(), "view-state-keys-"));
@@ -103,13 +95,11 @@ const members = (source, constant) => {
   return [...block.matchAll(/"([^"]+)"/g)].map(([, value]) => value);
 };
 
-// --------------------------------------------------------- a key is a path ----
+// --------------------------------------------------------- a path is a key ----
 
-test("a panel path becomes exactly one key", () => {
+test("a workspace path becomes exactly one screen and one subscreen", () => {
   withPackage(
     [
-      "context/library/templates.svelte",
-      "inspector/copilot/home.svelte",
       "workspaces/research/workspace-one-question.svelte",
       "workspaces/research/workspace-all-threads.svelte"
     ],
@@ -117,8 +107,6 @@ test("a panel path becomes exactly one key", () => {
       run(root);
       const source = keys(root);
 
-      assert.deepEqual(members(source, "CONTEXT_IDS"), ["library.templates", "project.variables"]);
-      assert.deepEqual(members(source, "INSPECTION_KEYS"), ["collaboration.person", "copilot.home"]);
       assert.deepEqual(members(source, "SCREENS"), ["project-overview", "research"]);
       assert.match(source, /"research": \["all-threads", "one-question"\]/);
     }
@@ -151,10 +139,12 @@ test("Subscreen is read back off the table rather than declared beside it", () =
   });
 });
 
-test("INSPECTION_KEYS carries no 'empty' member", () => {
-  withPackage(["inspector/copilot/home.svelte"], (root) => {
+test("the panel vocabulary is not written here", () => {
+  withPackage([], (root) => {
     run(root);
-    assert.ok(!members(keys(root), "INSPECTION_KEYS").includes("empty"));
+    const source = keys(root);
+    assert.ok(!source.includes("CONTEXT_IDS"), "contexts are hand-written in panel-keys.ts");
+    assert.ok(!source.includes("INSPECTION_KEYS"), "lenses are hand-written in panel-keys.ts");
   });
 });
 
@@ -166,17 +156,13 @@ test("the banner names the command that rewrites the file", () => {
   });
 });
 
-test("the guards narrow to the three generated unions", () => {
+test("the guard narrows to the generated union", () => {
   withPackage([], (root) => {
     run(root);
-    const source = keys(root);
-    for (const [guard, type] of [
-      ["isContextId", "ContextId"],
-      ["isInspectionKey", "InspectionKey"],
-      ["isScreen", "Screen"]
-    ]) {
-      assert.ok(source.includes(`export const ${guard} = (value: string): value is ${type} =>`), guard);
-    }
+    assert.ok(
+      keys(root).includes("export const isScreen = (value: string): value is Screen =>"),
+      "isScreen"
+    );
   });
 });
 
@@ -185,10 +171,6 @@ test("the guards narrow to the three generated unions", () => {
 test("every generated list is sorted", () => {
   withPackage(
     [
-      "context/scope/add.svelte",
-      "context/agents/work.svelte",
-      "inspector/scope/context.svelte",
-      "inspector/agents/model.svelte",
       "workspaces/templates/workspace-library.svelte",
       "workspaces/analysis/workspace-one-analysis.svelte",
       "workspaces/analysis/workspace-all-analyses.svelte"
@@ -197,25 +179,21 @@ test("every generated list is sorted", () => {
       run(root);
       const source = keys(root);
 
-      for (const constant of ["CONTEXT_IDS", "INSPECTION_KEYS", "SCREENS"]) {
-        const found = members(source, constant);
-        assert.deepEqual(found, [...found].sort(), `${constant} is not sorted`);
-      }
+      const found = members(source, "SCREENS");
+      assert.deepEqual(found, [...found].sort(), "SCREENS is not sorted");
       assert.match(source, /"analysis": \["all-analyses", "one-analysis"\]/);
     }
   );
 });
 
 test("the order files were created in does not change the bytes", () => {
-  const panels = [
-    "context/scope/add.svelte",
-    "context/agents/work.svelte",
-    "inspector/agents/model.svelte",
+  const workspaces = [
+    "workspaces/templates/workspace-library.svelte",
     "workspaces/analysis/workspace-one-analysis.svelte",
     "workspaces/analysis/workspace-all-analyses.svelte"
   ];
 
-  const [first, second] = [panels, [...panels].reverse()].map((order) =>
+  const [first, second] = [workspaces, [...workspaces].reverse()].map((order) =>
     withPackage(order, (root) => {
       run(root);
       return keys(root);
@@ -226,7 +204,7 @@ test("the order files were created in does not change the bytes", () => {
 });
 
 test("a second run over an unchanged tree writes the same bytes", () => {
-  withPackage(["context/library/templates.svelte"], (root) => {
+  withPackage(["workspaces/research/workspace.svelte"], (root) => {
     run(root);
     const first = keys(root);
     assert.match(run(root), /unchanged/);
@@ -237,44 +215,46 @@ test("a second run over an unchanged tree writes the same bytes", () => {
 // -------------------------------------------------------------------- drift ----
 
 test("--check passes on the file the generator just wrote", () => {
-  withPackage(["context/library/templates.svelte"], (root) => {
+  withPackage(["workspaces/research/workspace.svelte"], (root) => {
     run(root);
-    assert.match(run(root, "--check"), /in step with the panel trees/);
+    assert.match(run(root, "--check"), /in step with the workspace tree/);
   });
 });
 
-test("--check fails on a panel added since, and names the key it would gain", () => {
+test("--check fails on a screen added since, and names what it would gain", () => {
   withPackage([], (root) => {
     run(root);
 
-    const added = treePath(root, "context/library/templates.svelte");
+    const added = treePath(root, "workspaces/research/workspace.svelte");
     mkdirSync(dirname(added), { recursive: true });
     writeFileSync(added, "<script lang=\"ts\"></script>\n");
 
     const said = refuses(root, "--check");
-    assert.match(said, /has drifted from the panel trees/);
-    assert.match(said, /\+ "library\.templates",?/);
+    assert.match(said, /has drifted from the workspace tree/);
+    assert.match(said, /\+ "research",?/);
     assert.match(said, /pnpm view-state-keys/, "it says how to fix it");
   });
 });
 
-test("--check fails on a panel removed since, and names the key it would lose", () => {
-  withPackage(["context/library/templates.svelte"], (root) => {
+test("--check fails on a screen removed since, and names what it would lose", () => {
+  withPackage(["workspaces/research/workspace.svelte"], (root) => {
     run(root);
-    rmSync(treePath(root, "context/library"), { recursive: true, force: true });
+    rmSync(treePath(root, "workspaces/research"), { recursive: true, force: true });
 
-    assert.match(refuses(root, "--check"), /- "library\.templates",?/);
+    assert.match(refuses(root, "--check"), /- "research",?/);
   });
 });
 
-test("--check fails on a hand-edited file even when no panel moved", () => {
-  withPackage(["context/library/templates.svelte"], (root) => {
+// `analysis` rather than `research`, because it sorts before the base screen and
+// so carries the trailing comma the drift lines are compared with.
+test("--check fails on a hand-edited file even when no screen moved", () => {
+  withPackage(["workspaces/analysis/workspace.svelte"], (root) => {
     run(root);
-    writeFileSync(keysPath(root), keys(root).replace('"library.templates"', '"library.invented"'));
+    writeFileSync(keysPath(root), keys(root).replace('"analysis"', '"invented"'));
 
     const said = refuses(root, "--check");
-    assert.match(said, /\+ "library\.templates",/, "the key the trees have");
-    assert.match(said, /- "library\.invented",/, "the key only the file has");
+    assert.match(said, /\+ "analysis",/, "the screen the tree has");
+    assert.match(said, /- "invented",/, "the screen only the file has");
   });
 });
 
@@ -289,7 +269,7 @@ test("--check writes nothing, so it is safe in CI", () => {
     run(root);
     const before = keys(root);
 
-    const added = treePath(root, "inspector/copilot/home.svelte");
+    const added = treePath(root, "workspaces/research/workspace.svelte");
     mkdirSync(dirname(added), { recursive: true });
     writeFileSync(added, "");
 
@@ -300,16 +280,10 @@ test("--check writes nothing, so it is safe in CI", () => {
 
 // ----------------------------------------------------------------- refusals ----
 
-test("a panel at a tree root is reported rather than dropped", () => {
+test("a workspace at the tree root is reported rather than dropped", () => {
   withPackage([], (root) => {
-    writeFileSync(treePath(root, "context/orphan.svelte"), "");
+    writeFileSync(treePath(root, "workspaces/orphan.svelte"), "");
     assert.match(refuses(root), /orphan\.svelte {2}sits at the tree root/);
-  });
-});
-
-test("a third level under a panel tree is reported", () => {
-  withPackage(["inspector/resource/nested/deep.svelte"], (root) => {
-    assert.match(refuses(root), /is a third level, and a key is <subject>\.<name>/);
   });
 });
 
@@ -326,10 +300,10 @@ test("a screen directory with nothing to render is reported", () => {
   });
 });
 
-test("a missing panel tree is reported rather than generating an empty union", () => {
+test("a missing workspace tree is reported rather than generating an empty union", () => {
   withPackage([], (root) => {
-    rmSync(treePath(root, "inspector"), { recursive: true, force: true });
-    assert.match(refuses(root), /no such panel tree/);
+    rmSync(treePath(root, "workspaces"), { recursive: true, force: true });
+    assert.match(refuses(root), /no such tree/);
   });
 });
 
@@ -348,25 +322,25 @@ test("an option that is not --check is refused", () => {
 test("the leading -- pnpm forwards is not read as an argument", () => {
   withPackage([], (root) => {
     run(root, "--");
-    assert.match(run(root, "--", "--check"), /in step with the panel trees/);
+    assert.match(run(root, "--", "--check"), /in step with the workspace tree/);
   });
 });
 
 test("the generator runs identically from any working directory", () => {
-  withPackage(["context/library/templates.svelte"], (root) => {
+  withPackage(["workspaces/research/workspace.svelte"], (root) => {
     execFileSync(process.execPath, [generator], {
       cwd: tmpdir(),
       env: { ...process.env, ICARUS_PACKAGE_ROOT: root },
       encoding: "utf8",
       stdio: "pipe"
     });
-    assert.ok(members(keys(root), "CONTEXT_IDS").includes("library.templates"));
+    assert.ok(members(keys(root), "SCREENS").includes("research"));
   });
 });
 
-// ------------------------------------------------------------ the real trees ----
+// ------------------------------------------------------------ the real tree ----
 
-test("the committed keys.ts is in step with the panel trees", () => {
+test("the committed keys.ts is in step with the workspace tree", () => {
   execFileSync(process.execPath, [generator, "--check"], {
     env: { ...process.env, ICARUS_PACKAGE_ROOT: realPackageRoot },
     encoding: "utf8",

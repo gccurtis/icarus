@@ -3,8 +3,9 @@
  *
  * The composition root takes the constructor; the five shell surfaces take the
  * types and the vocabulary. The vocabulary is re-exported from here rather than
- * reached through `keys` directly, so a surface imports one path and the fact
- * that the keys are generated stays this object's business.
+ * reached directly, so a surface imports one path and where each half comes from
+ * — screens generated from the workspace tree, panels hand-written — stays this
+ * object's business.
  */
 import { getContext, hasContext, setContext } from "svelte";
 
@@ -13,21 +14,16 @@ import type { ViewStateModel } from "$model/client/view-state/types";
 
 export { createViewState } from "$model/client/view-state/constructor";
 
-export type {
-  ContextId,
-  InspectionKey,
-  Screen,
-  Subscreen
-} from "$model/client/view-state/methods/shared/keys";
+export type { Screen, Subscreen } from "$model/client/view-state/methods/shared/keys";
+export { SCREENS, SUBSCREENS, isScreen } from "$model/client/view-state/methods/shared/keys";
+
+export type { ContextId, InspectionKey } from "$model/client/view-state/methods/shared/panel-keys";
 export {
   CONTEXT_IDS,
   INSPECTION_KEYS,
-  SCREENS,
-  SUBSCREENS,
   isContextId,
-  isInspectionKey,
-  isScreen
-} from "$model/client/view-state/methods/shared/keys";
+  isInspectionKey
+} from "$model/client/view-state/methods/shared/panel-keys";
 
 export type {
   Frame,

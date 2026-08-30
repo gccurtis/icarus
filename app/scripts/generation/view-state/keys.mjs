@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 /**
- * Generates the view-state key vocabulary from the panel trees themselves.
+ * Generates the screen vocabulary from the workspace tree itself.
  *
  *     pnpm view-state-keys
  *     pnpm view-state-keys -- --check
  *
- * A key is a path. `context/project/variables.svelte` is `"project.variables"`,
- * and `workspaces/agents/workspace-persona.svelte` is the `agents`
- * screen's `"persona"`. Nothing outside the trees gets a vote, which is what
- * makes a key naming no file a compile error rather than a blank panel — so
- * `--check`, which exits non-zero when the written file and the trees disagree,
- * is the part of this script worth putting in CI.
+ * A screen is a directory and a subscreen is a file:
+ * `workspaces/agents/workspace-persona.svelte` is the `agents` screen's
+ * `"persona"`. Nothing outside the tree gets a vote, so `--check`, which exits
+ * non-zero when the written file and the tree disagree, is the part of this
+ * script worth putting in CI.
+ *
+ * The panel vocabulary was generated here too, from the panel trees. It is now
+ * hand-written in `panel-keys.ts`: a panel that has not been built yet still has
+ * to be nameable, and a vocabulary derived from the tree cannot say that.
  *
  * There is no shared module beside this one. Everything here is either about the
  * shape of a key or about the single file that holds them, and a second consumer
@@ -81,34 +84,8 @@ const panels = (root) =>
 
 /** A tree the vocabulary is read from has to be there to read. */
 const requireTree = (root) => {
-  if (!existsSync(root)) fail(at(root), "no such panel tree — the vocabulary is generated from it");
+  if (!existsSync(root)) fail(at(root), "no such tree — the vocabulary is generated from it");
   return root;
-};
-
-/**
- * Every `"<subject>.<name>"` under `context/` or `inspector/`.
- *
- * Exactly two levels, because that is what a key can express. A panel at the tree
- * root and a panel below a third directory both name nothing, so both are
- * reported rather than dropped — a file invisible to the vocabulary is the
- * failure this whole script exists to prevent.
- */
-const panelKeys = (root) => {
-  const keys = [];
-
-  for (const name of panels(root)) {
-    fail(at(join(root, `${name}.svelte`)), "sits at the tree root, so it names no key");
-  }
-
-  for (const subject of directories(root)) {
-    const subjectRoot = join(root, subject);
-    for (const nested of directories(subjectRoot)) {
-      fail(at(join(subjectRoot, nested)), "is a third level, and a key is <subject>.<name>");
-    }
-    for (const name of panels(subjectRoot)) keys.push(`${subject}.${name}`);
-  }
-
-  return sorted(keys);
 };
 
 /** `workspace.svelte` and `workspace-<name>.svelte`, and nothing else. */
@@ -163,34 +140,27 @@ const guard = (name, constant, type) => `export const ${name} = (value: string):
   (${constant} as readonly string[]).includes(value);
 `;
 
-const file = (contexts, inspections, screens) => {
+const file = (screens) => {
   const table = [...screens]
     .map(([screen, subscreens]) => `  "${screen}": [${subscreens.map((name) => `"${name}"`).join(", ")}]`)
     .join(",\n");
 
   return `/**
- * Every key the panel trees define. Generated — do not edit.
+ * Every screen the workspace tree defines. Generated — do not edit.
  *
  *     ${COMMAND}
  *
- * A key is a path: \`context/project/variables.svelte\` is \`"project.variables"\`,
- * and \`workspaces/agents/workspace-persona.svelte\` is the \`agents\`
- * screen's \`"persona"\`.
+ * A screen is a directory and a subscreen is a file:
+ * \`workspaces/agents/workspace-persona.svelte\` is the \`agents\` screen's
+ * \`"persona"\`.
  *
- * \`${COMMAND} -- --check\` fails when this file and the trees
- * disagree, which is what stops a key naming something that is not there.
+ * The panel vocabulary is not here. It is hand-written in \`panel-keys.ts\`,
+ * because a panel that has not been built yet still has to be nameable.
+ *
+ * \`${COMMAND} -- --check\` fails when this file and the tree
+ * disagree, which is what stops a screen naming something that is not there.
  */
 
-/** Every context-panel view: one id per file under \`context/\`. */
-${vocabulary("CONTEXT_IDS", "ContextId", contexts)}
-/**
- * Every inspector lens: one key per file under \`inspector/\`.
- *
- * \`"empty"\` is deliberately absent. Nothing being inspected is a state of the
- * model rather than a file in the tree, so it belongs to the hand-written type
- * that unions the two.
- */
-${vocabulary("INSPECTION_KEYS", "InspectionKey", inspections)}
 /** Every screen: one per directory under \`workspaces/\`. */
 ${vocabulary("SCREENS", "Screen", [...screens.keys()])}
 /**
@@ -208,8 +178,6 @@ ${table}
 
 export type Subscreen = (typeof SUBSCREENS)[Screen][number];
 
-${guard("isContextId", "CONTEXT_IDS", "ContextId")}
-${guard("isInspectionKey", "INSPECTION_KEYS", "InspectionKey")}
 ${guard("isScreen", "SCREENS", "Screen")}`;
 };
 
@@ -243,30 +211,26 @@ if ((flag !== undefined && flag !== "--check") || rest.length > 0) {
   stopIfFailed();
 }
 
-const contexts = panelKeys(requireTree(join(libRoot, "views", "panels", "context")));
-const inspections = panelKeys(requireTree(join(libRoot, "views", "panels", "inspector")));
 const screens = screenSubscreens(requireTree(join(libRoot, "views", "workspaces")));
 stopIfFailed();
 
-const contents = file(contexts, inspections, screens);
+const contents = file(screens);
 const current = existsSync(target) ? readFileSync(target, "utf8") : null;
 
 const subscreens = [...screens.values()];
 const counts = [
-  `${contexts.length}  context ids`,
-  `${inspections.length}  inspection keys`,
   `${screens.size}  screens`,
   `${new Set(subscreens.flat()).size}  subscreens, over ${subscreens.flat().length} workspace files`
 ];
 
 if (flag === "--check") {
   if (current === contents) {
-    console.log(`view-state-keys: ${at(target)} is in step with the panel trees\n`);
+    console.log(`view-state-keys: ${at(target)} is in step with the workspace tree\n`);
     for (const count of counts) console.log(`  ${count}`);
     process.exit(0);
   }
 
-  console.error(`view-state-keys: ${at(target)} ${current === null ? "has not been generated" : "has drifted from the panel trees"}\n`);
+  console.error(`view-state-keys: ${at(target)} ${current === null ? "has not been generated" : "has drifted from the workspace tree"}\n`);
   if (current !== null) for (const line of drift(contents, current)) console.error(`  ${line}`);
   console.error(`\nRun '${COMMAND}' to rewrite it.`);
   process.exit(1);

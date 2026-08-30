@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * A panel leaf, at the path its key names.
+ * A panel leaf, at the path its key names, and the key beside it.
  *
  *     pnpm new-panel -- <context|inspector> <subject> <name>
  *
- * Run `pnpm view-state-keys` after: the vocabulary is generated from these
- * paths, so until it is rewritten the new key does not exist and nothing can
- * open the panel.
+ * Two writes rather than one, because the vocabulary is no longer derived from
+ * the tree: `panel-keys.ts` is hand-written so a panel can be named before it is
+ * built, and `key-vocabulary-matches-the-tree` refuses a file the vocabulary
+ * does not name. Adding the key here is what stops that being a step to forget.
  */
 import { join } from "node:path";
 
@@ -43,6 +44,34 @@ plan.create(
 `
 );
 
-plan.run({ dryRun: flags.has("dry-run"), what: "new-panel" });
+/**
+ * The key, inserted in sorted order.
+ *
+ * The list is one string per line and code-unit sorted, so the insertion point
+ * is the first member that sorts after the new one — and appending at the end
+ * would be a diff nobody can read the second time.
+ */
+const CONSTANT = { context: "CONTEXT_IDS", inspector: "INSPECTION_KEYS" };
+const key = `${subject}.${name}`;
 
-if (!flags.has("dry-run")) console.log("\n  next: pnpm view-state-keys");
+plan.edit(
+  join(lib, "model", "client", "view-state", "methods", "shared", "panel-keys.ts"),
+  (text) => {
+    const constant = CONSTANT[stack];
+    const opened = text.indexOf(`export const ${constant} = [\n`);
+    if (opened === -1) throw new Error(`no ${constant} to add ${key} to`);
+
+    const start = opened + `export const ${constant} = [\n`.length;
+    const end = text.indexOf("] as const;", start);
+    const members = text.slice(start, end).split("\n").filter((line) => line.trim() !== "");
+    if (members.some((line) => line.includes(`"${key}"`))) return text;
+
+    const at = members.findIndex((line) => line.replace(/\D*"([^"]+)".*/, "$1") > key);
+    const index = at === -1 ? members.length : at;
+    members.splice(index, 0, `  "${key}"`);
+
+    return `${text.slice(0, start)}${members.join(",\n").replace(/,+$/, "")}\n${text.slice(end)}`;
+  }
+);
+
+plan.run({ dryRun: flags.has("dry-run"), what: "new-panel" });

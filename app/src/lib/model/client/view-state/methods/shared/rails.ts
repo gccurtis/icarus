@@ -1,4 +1,5 @@
-import type { ContextId, Screen, Subscreen } from "$model/client/view-state/methods/shared/keys";
+import type { Screen, Subscreen } from "$model/client/view-state/methods/shared/keys";
+import type { ContextId } from "$model/client/view-state/methods/shared/panel-keys";
 
 /**
  * Which context views a screen's rail offers, in order, and which one it opens on.

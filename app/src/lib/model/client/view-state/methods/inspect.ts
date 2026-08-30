@@ -1,5 +1,5 @@
 import type { ViewStateData } from "$model/client/view-state/definition.svelte";
-import { isInspectionKey } from "$model/client/view-state/methods/shared/keys";
+import { isInspectionKey } from "$model/client/view-state/methods/shared/panel-keys";
 import type { Inspected, Selection } from "$model/client/view-state/types";
 
 /**

@@ -1,16 +1,13 @@
-import type {
-  ContextId,
-  InspectionKey,
-  Screen,
-  Subscreen
-} from "$model/client/view-state/methods/shared/keys";
+import type { Screen, Subscreen } from "$model/client/view-state/methods/shared/keys";
+import type { ContextId, InspectionKey } from "$model/client/view-state/methods/shared/panel-keys";
 
 /**
  * What a person has open, and what they are looking at inside it.
  *
- * The vocabulary is in [`keys.ts`](methods/shared/keys.ts) and is generated from
- * the four panel trees, so everything named here resolves to a file. This module
- * holds only the shapes that are decisions rather than inventory.
+ * Screens are generated from the workspace tree in
+ * [`keys.ts`](methods/shared/keys.ts); panels are hand-written in
+ * [`panel-keys.ts`](methods/shared/panel-keys.ts). This module holds only the
+ * shapes that are decisions rather than inventory.
  */
 
 /** A tab's identity for this browser tab's lifetime. Never persisted. */

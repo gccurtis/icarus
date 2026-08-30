@@ -1,5 +1,5 @@
 import type { ViewStateData } from "$model/client/view-state/definition.svelte";
-import type { ContextId } from "$model/client/view-state/methods/shared/keys";
+import type { ContextId } from "$model/client/view-state/methods/shared/panel-keys";
 import { offersContext } from "$model/client/view-state/methods/shared/rails";
 
 /**

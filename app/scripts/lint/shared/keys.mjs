@@ -1,13 +1,18 @@
 /**
- * The generated key vocabulary, read back.
+ * The key vocabulary, read back from the two files that hold it.
  *
- * The check computes the keys from the trees itself rather than calling the
- * generator: a generator and a check that share a code path agree by
- * construction, which is exactly the agreement nobody needs proved.
+ * A check computes what it expects itself rather than calling the generator: a
+ * generator and a check that share a code path agree by construction, which is
+ * exactly the agreement nobody needs proved.
  */
 import ts from "typescript";
 
-export const KEYS_FILE = ["model", "client", "view-state", "methods", "shared", "keys.ts"];
+const SHARED = ["model", "client", "view-state", "methods", "shared"];
+
+/** Generated from the workspace tree. */
+export const KEYS_FILE = [...SHARED, "keys.ts"];
+/** Hand-written: the panels this application intends to have. */
+export const PANEL_KEYS_FILE = [...SHARED, "panel-keys.ts"];
 
 const arrayNamed = (tree, path, wanted) => {
   for (const statement of tree.source(path).statements) {
@@ -52,17 +57,19 @@ const objectNamed = (tree, path, wanted) => {
   return null;
 };
 
-/** @returns {{ path: string, contexts: string[]|null, inspections: string[]|null, screens: string[]|null, subscreens: Map<string,string[]>|null }} */
+/** @returns {{ path: string, panelPath: string, contexts: string[]|null, inspections: string[]|null, screens: string[]|null, subscreens: Map<string,string[]>|null }} */
 export const vocabulary = (tree) => {
   const path = tree.path(...KEYS_FILE);
-  if (!tree.isFile(path)) {
-    return { path, contexts: null, inspections: null, screens: null, subscreens: null };
-  }
+  const panelPath = tree.path(...PANEL_KEYS_FILE);
+  const inKeys = (name) => (tree.isFile(path) ? arrayNamed(tree, path, name) : null);
+  const inPanelKeys = (name) => (tree.isFile(panelPath) ? arrayNamed(tree, panelPath, name) : null);
+
   return {
     path,
-    contexts: arrayNamed(tree, path, "CONTEXT_IDS"),
-    inspections: arrayNamed(tree, path, "INSPECTION_KEYS"),
-    screens: arrayNamed(tree, path, "SCREENS"),
-    subscreens: objectNamed(tree, path, "SUBSCREENS")
+    panelPath,
+    contexts: inPanelKeys("CONTEXT_IDS"),
+    inspections: inPanelKeys("INSPECTION_KEYS"),
+    screens: inKeys("SCREENS"),
+    subscreens: tree.isFile(path) ? objectNamed(tree, path, "SUBSCREENS") : null
   };
 };

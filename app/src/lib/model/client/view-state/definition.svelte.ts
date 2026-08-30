@@ -1,8 +1,5 @@
-import type {
-  ContextId,
-  Screen,
-  Subscreen
-} from "$model/client/view-state/methods/shared/keys";
+import type { Screen, Subscreen } from "$model/client/view-state/methods/shared/keys";
+import type { ContextId } from "$model/client/view-state/methods/shared/panel-keys";
 import { activate } from "$model/client/view-state/methods/activate";
 import { clear } from "$model/client/view-state/methods/clear";
 import { close } from "$model/client/view-state/methods/close";

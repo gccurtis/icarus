@@ -24,7 +24,7 @@ export default check({
       if (!declared) {
         found.push({
           subject: "every-file-has-a-key",
-          path: generated.path,
+          path: generated.panelPath,
           message: `declares no vocabulary for ${stack}/`
         });
         continue;
@@ -39,7 +39,7 @@ export default check({
       }
       for (const key of declared) {
         if (keys.has(key)) continue;
-        found.push({ subject: "every-key-has-a-file", path: generated.path, message: `${key} names no leaf` });
+        found.push({ subject: "every-key-has-a-file", path: generated.panelPath, message: `${key} names no leaf` });
       }
     }
     return found;

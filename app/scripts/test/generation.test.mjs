@@ -121,7 +121,6 @@ const GENERATORS = [
     name: "new-panel",
     script: "panels/new-panel.mjs",
     args: ["context", "project", "probe"],
-    then: ["view-state/keys.mjs", []],
     trees: ["panels"]
   },
   {

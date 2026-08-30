@@ -143,7 +143,6 @@ export const RAIL_ENTRIES: Record<ContextId, RailEntry> = {
    */
   "project.activity": { label: "Activity", icon: Activity },
   "project.contexts": { label: "Context", icon: Target },
-  "project.health": { label: "Health", icon: HeartPulse },
   "project.history": { label: "History", icon: Clock },
   "project.mentions": { label: "Mentions", icon: AtSign },
   "project.people": { label: "People", icon: Users },
