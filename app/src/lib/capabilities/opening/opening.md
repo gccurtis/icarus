@@ -10,4 +10,4 @@ all, and a surface that only ever received a side effect could not ask.
 **Nothing is a real answer** — a file, a finding and a connector have no screen
 that holds them.
 
-**It answers from sample rows.** No `api/` yet.
+**It answers nothing yet.** The views that call it name what it owes them.

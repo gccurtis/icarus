@@ -9,5 +9,4 @@ the persona it names. Splitting them would put that answer in neither.
 
 Serves `docs/screen-panel-views/{context,inspector}/agents/`.
 
-**It answers from sample rows.** `index.ts` holds the stubs a panel calls; there
-is no `api/` yet, so nothing here reaches the store.
+**It answers nothing yet.** The views that call it name what it owes them.

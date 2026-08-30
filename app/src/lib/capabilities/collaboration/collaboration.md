@@ -5,4 +5,4 @@ what.
 
 Serves `docs/screen-panel-views/inspector/collaboration/`.
 
-**It answers from sample rows.** No `api/` yet.
+**It answers nothing yet.** The views that call it name what it owes them.

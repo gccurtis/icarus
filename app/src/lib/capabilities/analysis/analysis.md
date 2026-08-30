@@ -9,4 +9,4 @@ that can disagree.
 
 Serves `docs/screen-panel-views/{context,inspector}/analysis/`.
 
-**It answers from sample rows.** No `api/` yet.
+**It answers nothing yet.** The views that call it name what it owes them.

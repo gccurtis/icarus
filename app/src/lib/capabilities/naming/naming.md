@@ -10,4 +10,4 @@ to neither.
 **Every table is consulted in turn.** An id is unique across the project and a
 caller holding one does not know which table its subject came from.
 
-**It answers from sample rows.** No `api/` yet.
+**It answers nothing yet.** The views that call it name what it owes them.

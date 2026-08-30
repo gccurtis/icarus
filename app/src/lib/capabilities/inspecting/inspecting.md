@@ -9,4 +9,4 @@ panel knows how to read it.
 
 **A key and a selection, never a call.** Deciding and doing are separate acts.
 
-**It answers from sample rows.** No `api/` yet.
+**It answers nothing yet.** The views that call it name what it owes them.

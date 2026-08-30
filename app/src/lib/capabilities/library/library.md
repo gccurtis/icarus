@@ -10,4 +10,4 @@ because those defaults are what the editor will show once Create is pressed.
 
 Serves `docs/screen-panel-views/{context,inspector}/library/`.
 
-**It answers from sample rows.** No `api/` yet.
+**It answers nothing yet.** The views that call it name what it owes them.
