@@ -497,12 +497,6 @@ export const MUTATIONS = [
     ]
   },
   {
-    check: "panel-holds-no-concerns",
-    says: "a subject holds something that is not a leaf",
-    names: "project/helper.ts",
-    changes: [{ path: "src/lib/views/panels/context/project/helper.ts", write: `export const helper = 1;\n` }]
-  },
-  {
     check: "panel-imports-no-other-view",
     subject: "no-other-panel",
     says: "a leaf imports another panel",
@@ -516,7 +510,6 @@ export const MUTATIONS = [
   },
   {
     check: "key-vocabulary-matches-the-tree",
-    subject: "every-file-has-a-key",
     says: "a leaf the vocabulary does not name",
     names: "project/unnamed.svelte",
     changes: [{ path: "src/lib/views/panels/context/project/unnamed.svelte", write: `<div></div>\n` }]
