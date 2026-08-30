@@ -1,5 +1,5 @@
 /**
- * The door for view state.
+ * The entry for view state.
  *
  * The composition root takes the constructor; the five shell surfaces take the
  * types and the vocabulary. The vocabulary is re-exported from here rather than
@@ -63,8 +63,8 @@ export {
  * So the shell provides the instance the client graph already built, a review
  * page provides one of its own, and a panel with no provider gets one to itself.
  *
- * This lives in the door rather than in `methods/` because it is not a step any
- * method takes — it is how the object is reached, which is what a door is for.
+ * This lives in the index rather than in `methods/` because it is not a step any
+ * method takes — it is how the object is reached, which is what the index is for.
  */
 const KEY = Symbol.for("icarus.view-state");
 

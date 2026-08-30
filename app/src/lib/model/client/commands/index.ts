@@ -1,5 +1,5 @@
 /**
- * The door for Commands.
+ * The entry for Commands.
  *
  * The composition root takes the constructor; every other object takes the type.
  * Nothing outside this directory reaches past this file, because a definition, a

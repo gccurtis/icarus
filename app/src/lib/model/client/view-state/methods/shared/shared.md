@@ -17,7 +17,7 @@ them and they preserve an invariant spanning both. Two are not methods at all.
 
 `keys.ts` is **generated** and `rails.ts` is **transcribed**. Neither is a method,
 and both would read more naturally at the object root — which is exactly where
-neither can go: the standard admits only a document, a door, types, a definition
+neither can go: the standard admits only a document, an index, types, a definition
 and a constructor there, and `lint:model` enforces it.
 
 The model directory already covers this case. A module that is not a public

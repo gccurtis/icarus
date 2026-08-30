@@ -1,5 +1,5 @@
 /**
- * The door for Observability.
+ * The entry for Observability.
  *
  * The composition root takes the constructor and the `Observability` type;
  * everything else takes `Logger` and `errorFields`, which are what a capability

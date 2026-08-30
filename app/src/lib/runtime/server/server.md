@@ -61,7 +61,7 @@ ordinary shutdown in the same words.
 ## Shutdown is one-way
 
 `closeServerModel()` latches a flag as well as releasing the instance, and the
-flag is the part that matters. Releasing alone would leave the door unable to
+flag is the part that matters. Releasing alone would leave the accessor unable to
 tell a request arriving mid-drain from one arriving before startup — and the
 window is real: the Node adapter drains in-flight requests for up to thirty
 seconds after the signal, and keep-alive connections keep delivering.
@@ -73,7 +73,7 @@ the graph.
 ## Scoped accessors live on this root
 
 Configuration and the logger are one per process and vary with nothing, so a
-caller takes them off the graph the door hands back.
+caller takes them off the graph `serverModel()` hands back.
 
 Anything that varies with the request cannot be taken off the graph, because the
 value depends on something known only when the procedure runs. It is a call on
@@ -87,9 +87,9 @@ The graph names one field per object and no shortcuts through them. A `logger`
 beside the `observability` that owns it would be a second name for one thing,
 free to disagree with the first the moment either moved.
 
-## The doors
+## The entries
 
-`start.server.ts` and `scope.server.ts`, and nothing else. Identity is a door of
+`start.server.ts` and `scope.server.ts`, and nothing else. Identity is an entry of
 its own because `scope.server.ts` reaches the graph to read configuration —
 folding it behind `start.server.ts` would mean the root re-exporting values from
 a module that imports the root back out. It stays narrow: identity in, `Scope`

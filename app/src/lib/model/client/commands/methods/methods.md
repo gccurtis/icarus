@@ -36,7 +36,7 @@ by name; the constructor calls it once, and `enabled` and `run` reach what it
 built through `shared/command.ts`.
 
 It lives here rather than at the object root because the root holds what this
-object **is** — its document, its door, its types, its state, and its
+object **is** — its document, its index, its types, its state, and its
 constructor — and everything it *does* lives below. A table of behaviour is
 execution even when nothing calls it directly.
 

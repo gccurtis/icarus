@@ -1,5 +1,5 @@
 /**
- * The door for ResourceRuntimes.
+ * The entry for ResourceRuntimes.
  *
  * The composition root takes the constructor; every other object takes the
  * types. The workbench takes `ResourceRuntimesModel` to attach and release, and

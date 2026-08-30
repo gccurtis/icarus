@@ -69,8 +69,8 @@ export {
  * a graph is the one failure this file's shape exists to prevent, and exporting
  * it for tests would have been exactly that.
  *
- * Each object is reached through its own door rather than its constructor
- * module, so the set of objects the runtime knows about is the set of doors it
+ * Each object is reached through its own index rather than its constructor
+ * module, so the set of objects the runtime knows about is the set of indexes it
  * imports.
  */
 const buildClientModel = ({

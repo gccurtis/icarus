@@ -25,7 +25,7 @@ nothing. It has a file anyway, because the definition being one call per method
 is what makes that class readable: a body that did its own work there would be
 the one place a reader has to stop and check.
 
-## Two doors onto a centre, and one rule behind them
+## Two ways in to a centre, and one rule behind them
 
 The shell has no subscreen switcher: a centre is changed by choosing something in
 it. Two methods therefore land a tab on a centre, and both go through
@@ -91,7 +91,7 @@ Five, and two of them are data rather than methods — see
 
 | File | Callers | Invariant |
 | --- | --- | --- |
-| `keys.ts` | `inspect`, `select-context`, `show-subscreen`, `showing`, `land-on`, `rails`, the types and the door | Every key names a file in the panel trees |
+| `keys.ts` | `inspect`, `select-context`, `show-subscreen`, `showing`, `land-on`, `rails`, the types and the index | Every key names a file in the panel trees |
 | `rails.ts` | `select-context`, `land-on`, `mint-tab`, the definition's `context` getter | The rail position is one this subscreen offers |
 | `land-on.ts` | `show-subscreen`, `open` | A centre change takes its rail and its inspection with it |
 | `mint-tab.ts` | the constructor, `open` | Every tab starts the same way |
@@ -124,7 +124,7 @@ Four methods throw, and each rejects something a caller could not have meant:
 
 `showSubscreen` refuses inside `landOn` rather than in its own body, so `open`
 refuses the same thing for a target that names a centre on a tab that is already
-open. One rule, both doors — which is the reason the module exists at all.
+open. One rule, both ways in — which is the reason the module exists at all.
 `mintTab` is the gap in that: it is the branch of `open` that does not go through
 `landOn`, and [`shared/shared.md`](shared/shared.md) says so where the check
 belongs.

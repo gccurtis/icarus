@@ -31,7 +31,7 @@ construction. Both are the same idea — the format this object's two directions
 pass through — so they are one file rather than one per direction.
 
 It sits under `methods/` rather than at the object root because the root holds
-what an object *is*: its document, its door, its types, its state, and its
+what an object *is*: its document, its index, its types, its state, and its
 constructor. Everything else an object does lives here.
 
 ## State Access

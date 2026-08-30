@@ -8,12 +8,12 @@ export type { Scope, Session } from "$runtime/server/scope.server";
 export type { Configuration } from "$model/server/configuration/index.server";
 
 /**
- * Re-exported so a capability records a failure without reaching past this door.
+ * Re-exported so a capability records a failure without reaching past this file.
  *
  * `errorFields` is the shape every log line about a fault is written in, and it
  * belongs to observability. A caller that had to import it from there would be
  * holding two references to the server tree to write one line, and the second
- * one would be the only place the door was not the whole seam.
+ * one would be the only place this file was not the whole seam.
  */
 export { errorFields } from "$model/server/observability/index.server";
 export type { Logger } from "$model/server/observability/index.server";
@@ -39,7 +39,7 @@ export type { Logger } from "$model/server/observability/index.server";
  *
  * Not exported: `initServerModel` is the only way to build one, and it returns
  * what it built, so a test asserts on the returned graph rather than needing a
- * second door onto the composition.
+ * second way in to the composition.
  */
 const buildServerModel = async (): Promise<ServerModel> => {
   const configuration = await createConfiguration();
@@ -103,7 +103,7 @@ export const serverModel = (): ServerModel => {
 /**
  * Closes the graph if one was built. Idempotent, and one-way.
  *
- * Everything this door hands back is one per process, so a caller imports it.
+ * Everything `serverModel()` hands back is one per process, so a caller imports it.
  * Anything that varies with the request instead — where an import could not name
  * the right one — needs a scoped accessor here, taking what it varies by, and
  * gets its own name rather than joining a bundle everyone then has to grow a

@@ -1,5 +1,5 @@
 /**
- * The door for Configuration.
+ * The entry for Configuration.
  *
  * The composition root takes the constructor; every other object takes the type.
  * `requiredNumber` crosses too, because reading a key that must be present is

@@ -1,5 +1,5 @@
 /**
- * The door for Copilot.
+ * The entry for Copilot.
  *
  * The composition root takes the constructor; the dock and the inspector take
  * the types. `Selector`, `ResourceSetExpression` and `ResourceRef` are not

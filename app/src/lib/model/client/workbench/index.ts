@@ -1,5 +1,5 @@
 /**
- * The door for Workbench.
+ * The entry for Workbench.
  *
  * The composition root takes the constructor; every other object and every view
  * takes the types. `isPermanent` and `screenKindOf` cross too: both are

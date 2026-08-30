@@ -1,5 +1,5 @@
 /**
- * The door for Configuration.
+ * The entry for Configuration.
  *
  * The composition root takes the constructor; every other object takes the
  * `Configuration` type and reads its own keys through it. `requiredString`

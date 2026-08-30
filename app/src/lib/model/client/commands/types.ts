@@ -1,7 +1,7 @@
 /**
  * The surface Commands offers, and the values that cross it.
  *
- * A consumer depends on this and on nothing else in the directory. Past the door
+ * A consumer depends on this and on nothing else in the directory. Past the index
  * are a definition, its state, and its methods — none of which this object
  * promised to keep stable.
  *

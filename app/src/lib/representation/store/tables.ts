@@ -716,7 +716,7 @@ export type Activity = Row<"activity"> & ActivityFields;
 // ── the store ─────────────────────────────────────────────────────────────
 
 /**
- * Every table, as a value. A door that takes a table name needs this to reject
+ * Every table, as a value. A procedure that takes a table name needs this to reject
  * one it does not have — a name is a path segment, so an unchecked one is a way
  * to read and write files outside the data directory.
  */

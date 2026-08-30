@@ -73,10 +73,10 @@ Collapsing them would report both in whichever words fit one of them.
 
 The guard is not what stops the model being built on the server; `ssr = false`
 already does that. It is what makes **browser-only a fact about this module**
-rather than a consequence of a flag on a route, so the door is safe to import
+rather than a consequence of a flag on a route, so `start.ts` is safe to import
 from anywhere without a consumer having to know which routes render where.
 
-The guard belongs to the door and nowhere else. What holds everywhere beneath it
+The guard belongs to `start.ts` and nowhere else. What holds everywhere beneath it
 is narrower: **no module in this tree constructs an object at module load, and
 none but this file reaches `$app/*`.** A module is imported on the server whether
 or not SSR is on — SvelteKit loads a route's component modules to link their CSS

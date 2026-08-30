@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { beforeEach, test, vi } from "vitest";
 
 /**
- * What the door promises about the one graph: it is built once, at a known
- * moment, and shutdown is one-way.
+ * What `start.server.ts` promises about the one graph: it is built once, at a
+ * known moment, and shutdown is one-way.
  *
  * The build moment is the point. `hooks.server.ts`'s `init` hook runs before the
  * server answers its first request, so there is exactly one build — which is why
@@ -13,8 +13,8 @@ import { beforeEach, test, vi } from "vitest";
  *
  * **The objects are replaced, not the composition.** None of what is proven here
  * is about what a graph contains, and building a real one would read
- * configuration and open a log stream per test — so the two object doors the
- * runtime imports are mocked and the real `buildServerModel` runs over them.
+ * configuration and open a log stream per test — so the two objects the runtime
+ * imports are mocked and the real `buildServerModel` runs over them.
  * Substituting the builder itself is no longer possible: it shares a module with
  * the accessor under test, which is what makes them one file.
  */
@@ -46,8 +46,8 @@ vi.mock("$model/server/store/index.server", () => ({
   })
 }));
 
-/** A fresh module registry per test, because the door holds process state. */
-const door = () => import("$runtime/server/start.server");
+/** A fresh module registry per test, because the module holds process state. */
+const entry = () => import("$runtime/server/start.server");
 
 beforeEach(() => {
   vi.resetModules();
@@ -59,14 +59,14 @@ beforeEach(() => {
 test("the accessor throws before the model is built", async () => {
   // An accessor returning `undefined` hands the failure to whoever reached the
   // model too early, and it surfaces later and elsewhere.
-  const { serverModel } = await door();
+  const { serverModel } = await entry();
 
   assert.throws(() => serverModel(), /has not been built/);
   assert.equal(build.calls, 0);
 });
 
 test("the initializer's graph is what the accessor returns", async () => {
-  const { initServerModel, serverModel } = await door();
+  const { initServerModel, serverModel } = await entry();
 
   const built = await initServerModel();
 
@@ -80,7 +80,7 @@ test("the initializer's graph is what the accessor returns", async () => {
 test("a failed build leaves nothing reachable", async () => {
   // The rejection is `init`'s to report, which fails startup. What matters here
   // is that no half-built graph is left behind for a request to find.
-  const { initServerModel, serverModel } = await door();
+  const { initServerModel, serverModel } = await entry();
 
   build.fail = true;
   await assert.rejects(initServerModel(), /configuration was invalid/);
@@ -89,7 +89,7 @@ test("a failed build leaves nothing reachable", async () => {
 });
 
 test("shutdown closes the graph once, however many times it is called", async () => {
-  const { initServerModel, closeServerModel } = await door();
+  const { initServerModel, closeServerModel } = await entry();
 
   await initServerModel();
   await closeServerModel();
@@ -102,7 +102,7 @@ test("nothing reaches the graph after shutdown begins", async () => {
   // The message has to say "shutting down" rather than "not built": a request
   // arriving during the drain is a different situation from one arriving before
   // startup finished, and only one of them is a defect.
-  const { initServerModel, serverModel, closeServerModel } = await door();
+  const { initServerModel, serverModel, closeServerModel } = await entry();
 
   await initServerModel();
   await closeServerModel();
@@ -112,7 +112,7 @@ test("nothing reaches the graph after shutdown begins", async () => {
 });
 
 test("shutdown with nothing built still refuses a later caller", async () => {
-  const { serverModel, closeServerModel } = await door();
+  const { serverModel, closeServerModel } = await entry();
 
   await closeServerModel();
 

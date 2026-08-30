@@ -38,8 +38,8 @@ define them.
 
 **`scope.server.ts` is here because it executes, not because it starts.** It runs
 per request and reads the one server graph to do it. Identity is the one thing
-that cannot be imported: it arrives with the request, which is why it is a door of
-its own rather than something reachable off an object.
+that cannot be imported: it arrives with the request, which is why it is an entry
+of its own rather than something reachable off an object.
 
 Nothing checks this tree yet. `scripts/lint/model/` governs `model/`, so the
 rules about construction order, the single holder and the accessor's guards are

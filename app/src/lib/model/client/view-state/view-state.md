@@ -315,7 +315,7 @@ view-state/
 Two modules under `methods/shared/` are not methods: `keys.ts` is a generated
 vocabulary and `rails.ts` is a map transcribed from the specifications. Both sit
 there rather than at the object root because the root holds what this object
-**is** — its document, its door, its types, its state and its constructor — and
+**is** — its document, its index, its types, its state and its constructor — and
 `lint:model` admits nothing else.
 [`methods/shared/shared.md`](methods/shared/shared.md) names the callers each
 serves.

@@ -10,7 +10,7 @@ import type { Id } from "$representation/data/types/core/id";
  *
  * The caller that used to sit in front of this was a remote function here, and
  * it has been removed — a public surface belongs in `capabilities/`, not in the
- * vocabulary. These stay because the guard is the store's, not the door's.
+ * vocabulary. These stay because the guard is the store's, not the caller's.
  */
 
 /** A name the store actually has. An unvalidated one reads and writes outside the data directory. */

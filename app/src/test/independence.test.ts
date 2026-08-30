@@ -5,14 +5,14 @@ import type { Component } from "svelte";
 /**
  * Every panel renders on its own.
  *
- * The claim the four trees are built on is that a panel knows only its doors —
+ * The claim the four trees are built on is that a panel knows only its capabilities —
  * no client instance, no route, no parent threading content down. This is what
  * checks it: each one is rendered in isolation, with nothing but a permissive
  * prop bag, and a panel that reached for something it should not have throws.
  *
  * **Server rendering rather than a DOM.** `svelte/server` runs in Node, so this
  * needs no jsdom and no browser, and it exercises the part that matters — props,
- * derivations, doors and markup. Effects do not run on the server, so an effect
+ * derivations, reads and markup. Effects do not run on the server, so an effect
  * that reached for `window` is not covered here.
  */
 const MODULES = import.meta.glob<{ default: Component }>(

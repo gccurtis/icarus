@@ -299,7 +299,7 @@ test("a centre asked for with no focus clears the one that was there", () => {
 
 test("a target naming a centre the screen has not got is refused by open, not just by showSubscreen", () => {
   // The refusal lives in `landOn`, which both methods go through, so there is one
-  // rule and two doors rather than a check on the door people happen to use.
+  // rule and two ways in rather than a check on the one people happen to use.
   const model = viewState();
   model.open(thread("th-1"));
 

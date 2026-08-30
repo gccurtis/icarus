@@ -8,9 +8,9 @@ import { resolveSession } from "$runtime/server/scope.server";
  * This is the whole of the model's construction, and it happens once. A request
  * is the wrong moment: it would make the first caller pay for configuration,
  * logging, and the database registry, and it would mean concurrent first
- * requests could race to open the same log file — which is why the door used to
- * carry an in-flight promise cache and a failed-build eviction, and why neither
- * exists any more.
+ * requests could race to open the same log file — which is why `start.server.ts`
+ * used to carry an in-flight promise cache and a failed-build eviction, and why
+ * neither exists any more.
  *
  * A configuration error now fails startup rather than one unlucky request.
  */

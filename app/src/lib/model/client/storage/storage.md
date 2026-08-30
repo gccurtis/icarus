@@ -66,7 +66,7 @@ is open.
 lets it be tested directly rather than through a fake DOM. It sits in `methods/`
 because that is the execution behind this object's surface: `encode` is what
 happens behind `saveWorkbench`, and `decode` is what happens behind construction.
-The object root holds what storage *is* — its document, door, types, state, and
+The object root holds what storage *is* — its document, index, types, state, and
 constructor — and everything it *does* lives one directory down. See
 [`methods/methods.md`](methods/methods.md).
 
