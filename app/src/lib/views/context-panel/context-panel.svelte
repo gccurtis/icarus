@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Component } from "svelte";
 
+  import { PanelPlaceholder } from "$authored-components/panel";
   import { ResizeHandle } from "$authored-components/resize-handle";
   import { railFor, viewState, type ContextId } from "$model/client/view-state";
   import { RAIL_ENTRIES } from "$views/context-panel/procedures/rail-entries";
@@ -108,6 +109,17 @@
           {#key active}
             <Content />
           {/key}
+        {:else if active !== undefined}
+          <!--
+            A key the rail offers and the tree has no file for: a view that has
+            been designed and not built. Blank was the state before, which is
+            indistinguishable from a panel that failed to load.
+          -->
+          <PanelPlaceholder
+            panel={active}
+            screen={view.active.screen}
+            subscreen={view.active.subscreen}
+          />
         {/if}
       </div>
     </div>

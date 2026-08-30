@@ -203,6 +203,17 @@ export { default as PanelEmpty } from "$authored-components/panel/panel-empty.sv
 export { default as PanelBanner } from "$authored-components/panel/panel-banner.svelte";
 
 /**
+ * A key that arrived and found nothing.
+ *
+ * `PanelPlaceholder` is not `PanelEmpty`: an empty panel is a panel that
+ * rendered and had nothing to show, which is a fact about the project. This is
+ * a panel that does not exist yet, which is a fact about the application — and
+ * conflating the two would let an unbuilt flank read as a project with no
+ * resources in it.
+ */
+export { default as PanelPlaceholder } from "$authored-components/panel/panel-placeholder.svelte";
+
+/**
  * A shortcut, and the three values a field could not hold honestly.
  *
  * `PanelKeys` exists because of a design law: shortcuts accelerate visible paths
