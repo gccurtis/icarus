@@ -43,9 +43,12 @@ import type {
   LatticeRemoval,
   LatticeWindow
 } from "$representation/data/types/knowledge/lattice";
-import type { ResourceBody } from "$representation/data/types/resources/resource-body";
-import type { AspectRatio } from "$representation/data/types/resources/slide-deck-body";
-import type { GeneralResourceType, Op } from "$representation/data/types/revisions/change";
+import type { DocumentBody } from "$representation/data/types/resources/document-body";
+import type { AspectRatio, SlideDeckBody } from "$representation/data/types/resources/slide-deck-body";
+import type { SpreadsheetBody } from "$representation/data/types/resources/spreadsheet-body";
+import type { DocumentOp } from "$representation/data/types/revisions/document-op";
+import type { SlideDeckOp } from "$representation/data/types/revisions/slide-deck-op";
+import type { SpreadsheetOp } from "$representation/data/types/revisions/spreadsheet-op";
 import type { ChangeTier, SnapshotRole } from "$representation/data/types/revisions/snapshot";
 import type {
   TemplateBody,
@@ -96,41 +99,87 @@ export type Membership = Row<"memberships"> & MembershipFields;
 // ── revisions ─────────────────────────────────────────────────────────────
 
 /**
- * A materialized body at a revision. `(generalResourceType, resourceId)` is the
- * whole key — two resources of different kinds may carry the same id.
- * `resourceId` is a plain string so the machinery never branches on type.
+ * A materialized body at a revision, and one accepted mutation. One pair of
+ * tables per resource: the table names the kind, so no row carries one and each
+ * body, op array and `resourceId` is typed to its own resource.
+ *
+ * `touched` holds the deepest thing each op addresses, never its ancestors —
+ * including them would report a collision on every shared container.
  */
-export type ResourceSnapshotFields = {
+export type DocumentSnapshotFields = {
   projectId: Id<"projects">;
-  generalResourceType: GeneralResourceType;
-  resourceId: string;
+  resourceId: Id<"documents">;
   revision: number;
   role: SnapshotRole;
   part: number;
-  body: ResourceBody;
+  body: DocumentBody;
   at: number;
 };
-export type ResourceSnapshot = Row<"resourceSnapshots"> & ResourceSnapshotFields;
+export type DocumentSnapshot = Row<"documentSnapshots"> & DocumentSnapshotFields;
 
-/**
- * One accepted mutation. `touched` holds the deepest thing each op addresses,
- * never its ancestors — including them would report a collision on every shared
- * container.
- */
-export type ChangeSetFields = {
+export type DocumentChangeSetFields = {
   projectId: Id<"projects">;
-  generalResourceType: GeneralResourceType;
-  resourceId: string;
+  resourceId: Id<"documents">;
   revision: number;
   /** What its author was looking at. */
   baseRevision: number;
   tier: ChangeTier;
-  ops: Op[];
+  ops: DocumentOp[];
   touched: string[];
   actor: Actor;
   at: number;
 };
-export type ChangeSet = Row<"changeSets"> & ChangeSetFields;
+export type DocumentChangeSet = Row<"documentChangeSets"> & DocumentChangeSetFields;
+
+export type SlideDeckSnapshotFields = {
+  projectId: Id<"projects">;
+  resourceId: Id<"slideDecks">;
+  revision: number;
+  role: SnapshotRole;
+  part: number;
+  body: SlideDeckBody;
+  at: number;
+};
+export type SlideDeckSnapshot = Row<"slideDeckSnapshots"> & SlideDeckSnapshotFields;
+
+export type SlideDeckChangeSetFields = {
+  projectId: Id<"projects">;
+  resourceId: Id<"slideDecks">;
+  revision: number;
+  baseRevision: number;
+  tier: ChangeTier;
+  ops: SlideDeckOp[];
+  touched: string[];
+  actor: Actor;
+  at: number;
+};
+export type SlideDeckChangeSet = Row<"slideDeckChangeSets"> & SlideDeckChangeSetFields;
+
+/** The grid's shape. The cells themselves are rows in `sheetCells`. */
+export type SpreadsheetSnapshotFields = {
+  projectId: Id<"projects">;
+  resourceId: Id<"spreadsheets">;
+  revision: number;
+  role: SnapshotRole;
+  part: number;
+  body: SpreadsheetBody;
+  at: number;
+};
+export type SpreadsheetSnapshot = Row<"spreadsheetSnapshots"> & SpreadsheetSnapshotFields;
+
+/** One stream for both: a cell op and a grid op advance the same revision. */
+export type SpreadsheetChangeSetFields = {
+  projectId: Id<"projects">;
+  resourceId: Id<"spreadsheets">;
+  revision: number;
+  baseRevision: number;
+  tier: ChangeTier;
+  ops: SpreadsheetOp[];
+  touched: string[];
+  actor: Actor;
+  at: number;
+};
+export type SpreadsheetChangeSet = Row<"spreadsheetChangeSets"> & SpreadsheetChangeSetFields;
 
 // ── general resources ─────────────────────────────────────────────────────
 
@@ -723,14 +772,15 @@ export type Activity = Row<"activity"> & ActivityFields;
 export const TABLE_NAMES = [
   "activity",
   "agentTasks",
-  "changeSets",
   "comments",
   "commentThreads",
   "connections",
   "connectors",
   "dataBackReferences",
   "derivedOutputs",
+  "documentChangeSets",
   "documents",
+  "documentSnapshots",
   "externalFiles",
   "findings",
   "formulas",
@@ -746,10 +796,13 @@ export const TABLE_NAMES = [
   "questions",
   "researchThreads",
   "resourceSets",
-  "resourceSnapshots",
   "sheetCells",
+  "slideDeckChangeSets",
   "slideDecks",
+  "slideDeckSnapshots",
+  "spreadsheetChangeSets",
   "spreadsheets",
+  "spreadsheetSnapshots",
   "templates",
   "templateVersions",
   "threadParts",
@@ -768,14 +821,15 @@ export type TableName = (typeof TABLE_NAMES)[number];
 export type TableFields = {
   activity: ActivityFields;
   agentTasks: AgentTaskFields;
-  changeSets: ChangeSetFields;
   comments: CommentFields;
   commentThreads: CommentThreadFields;
   connections: ConnectionFields;
   connectors: ConnectorFields;
   dataBackReferences: DataBackReferenceFields;
   derivedOutputs: DerivedOutputFields;
+  documentChangeSets: DocumentChangeSetFields;
   documents: DocumentFields;
+  documentSnapshots: DocumentSnapshotFields;
   externalFiles: ExternalFileFields;
   findings: FindingFields;
   formulas: FormulaFields;
@@ -791,10 +845,13 @@ export type TableFields = {
   questions: QuestionFields;
   researchThreads: ResearchThreadFields;
   resourceSets: NamedResourceSetFields;
-  resourceSnapshots: ResourceSnapshotFields;
   sheetCells: SheetCellFields;
+  slideDeckChangeSets: SlideDeckChangeSetFields;
   slideDecks: SlideDeckFields;
+  slideDeckSnapshots: SlideDeckSnapshotFields;
+  spreadsheetChangeSets: SpreadsheetChangeSetFields;
   spreadsheets: SpreadsheetFields;
+  spreadsheetSnapshots: SpreadsheetSnapshotFields;
   templates: TemplateFields;
   templateVersions: TemplateVersionFields;
   threadParts: ThreadPartFields;
