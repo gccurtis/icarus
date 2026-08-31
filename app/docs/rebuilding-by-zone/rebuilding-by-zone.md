@@ -38,8 +38,8 @@ and review pages. Those never called a mock capability and still compile.
 
 | | step | needs | why here |
 | --- | --- | --- | --- |
-| 1 | **tab-bar and status-bar** | `naming`, `collaboration`, identity | Both ask `naming` what the thing behind an id is called, and they are its only two callers. Split apart, the second one rebuilds what the first one just built. |
-| 2 | **the function builder** | `formula`, `project` | The one surviving modal. It is where a command runs rather than where data is read, which is the other half of what a capability is. |
+| 1 | ~~tab-bar and status-bar~~ | `store` | Done. Both ask what the thing behind an id is called, and each reads it from the store itself. |
+| 2 | ~~the function builder~~ | none | Done. The builtins are a constant and the variables are a store read. Nothing imports `$modals`, so it renders nowhere yet. |
 | 3 | **the client models** | nothing | `$shared` and `$revisions` are not aliases. Not a capability question at all. |
 | 4 | **the workspaces** | `project`, `library`, `resource`, `analysis`, `agents`, `research` | The work surface, and the point of the application. Nine of them, and three quarters of the remaining errors. |
 
@@ -50,6 +50,26 @@ reached through a glob and fails alone.
 
 The two flanks and the top bar are not in the list. The flanks are emptied, and
 the top bar already compiles.
+
+### Inside step 3
+
+Four specifiers, and only one of them is a missing module.
+
+| specifier | imports | where it lives now |
+| --- | --- | --- |
+| `$revisions/types/op` | 11 | `$representation/data/types/revisions/change` |
+| `$revisions/types/resource` | 6 | the same file |
+| `$shared/types/resource` | 1 | `$representation/data/types/core/resource` |
+| `$shared/types/resource-set-expression` | 11 | **nowhere** |
+
+The first three are import rewrites: the types survived the rebuild into
+`representation/` and the specifiers did not follow. The fourth gives the copilot
+`Selector`, `ResourceSetExpression` and `normalize`, and is recoverable from the
+commit before the six trees — written against Convex, so it is a port rather than
+a restore.
+
+Two `.md` files still name the trees those aliases pointed at, which is what
+`method-tree-paths-resolve` has been reporting all along.
 
 ### Inside step 4
 
