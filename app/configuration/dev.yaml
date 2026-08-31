@@ -10,5 +10,6 @@
 # because a developer has to type it.
 development:
   userId: default-user
+  username: Ana Duarte
   projectId: default
   projectToken: dev-project

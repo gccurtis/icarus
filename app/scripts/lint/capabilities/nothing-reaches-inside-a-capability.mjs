@@ -1,9 +1,12 @@
 import { check } from "../shared/check.mjs";
 import { capabilities, unitOf } from "../shared/trees.mjs";
 
+/** `index` or `index.remote` — naming the index explicitly is still the index. */
+const isIndex = (rest) => rest.length === 0 || (rest.length === 1 && /^index(\.remote)?$/.test(rest[0]));
+
 export default check({
-  name: "capability-is-entered-at-its-index",
-  says: "No import from outside a capability names anything below its index.ts.",
+  name: "nothing-reaches-inside-a-capability",
+  says: "No import from outside a capability names a path below its index. A capability that crosses to the server is entered at index.remote, which is that capability's index.",
   // Importers inside `capabilities/` are `capability-imports · no-sideways`.
   // The same rule, but a sibling reaching in is a different mistake from a view
   // doing it, and one line should produce one finding.
@@ -22,7 +25,7 @@ export default check({
         const [name, ...rest] = target.segments;
         if (!name) continue;
         if (importer) continue; // a sibling's reach is no-sideways' business
-        if (rest.length === 0) continue; // the index itself
+        if (isIndex(rest)) continue;
 
         found.push({
           path,

@@ -12,7 +12,7 @@ const appended = (text) => ({ edit: (before) => `${before}\n${text}\n` });
 export const MUTATIONS = [
   // ------------------------------------------------------------ capabilities ----
   {
-    check: "capability-is-entered-at-its-index",
+    check: "nothing-reaches-inside-a-capability",
     says: "a view reaches past a capability's index",
     names: "reaches-inside.ts",
     changes: [view("reaches-inside", `import type { EditorKind } from "$capabilities/resource/types/resource";\nexport type X = EditorKind;\n`)]
@@ -27,13 +27,25 @@ export const MUTATIONS = [
   },
   {
     check: "procedure-validates-first",
-    says: "a procedure acts before it validates",
+    says: "a procedure acts on its input before checking it",
     names: "act/act.ts",
     changes: [
       { path: "src/lib/capabilities/probe/index.ts", write: `export {};\n` },
       {
         path: "src/lib/capabilities/probe/api/act/act.ts",
-        write: `export const act = (input: { project: string }): string => {\n  const name = input.project.trim();\n  return name;\n};\n`
+        write: `import { requireScope } from "$runtime/server/scope.server";\n\nexport const act = async (input: { project: string }): Promise<string> => {\n  await requireScope();\n  const name = input.project.trim();\n  return name;\n};\n`
+      }
+    ]
+  },
+  {
+    check: "no-procedure-acts-outside-a-scope",
+    says: "a procedure runs without establishing who is asking",
+    names: "act/act.ts",
+    changes: [
+      { path: "src/lib/capabilities/probe/index.ts", write: `export {};\n` },
+      {
+        path: "src/lib/capabilities/probe/api/act/act.ts",
+        write: `export const act = (input: { project: string }): string => {\n  const project = validateAct(input);\n  return project;\n};\n\nconst validateAct = (input: { project: string }): string => input.project;\n`
       }
     ]
   },

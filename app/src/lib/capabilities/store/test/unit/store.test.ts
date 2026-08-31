@@ -18,6 +18,9 @@ const model = vi.hoisted(() => ({
 }));
 
 vi.mock("$runtime/server/start.server", () => ({ serverModel: () => model }));
+vi.mock("$runtime/server/scope.server", () => ({
+  requireScope: () => Promise.resolve({ projectId: "p", userId: "u", username: "You" })
+}));
 
 const { create } = await import("$capabilities/store/api/create/create");
 const { read } = await import("$capabilities/store/api/read/read");
@@ -25,45 +28,45 @@ const { update } = await import("$capabilities/store/api/update/update");
 const { remove } = await import("$capabilities/store/api/remove/remove");
 
 describe("what a procedure refuses before it acts", () => {
-  it("refuses an input that is not an object", () => {
+  it("refuses an input that is not an object", async () => {
     for (const procedure of [create, read, update, remove]) {
-      expect(() => procedure("documents.x")).toThrow(/an input is an object/);
+      await expect(procedure("documents.x")).rejects.toThrow(/an input is an object/);
     }
   });
 
-  it("refuses a path that is not a non-empty string", () => {
+  it("refuses a path that is not a non-empty string", async () => {
     for (const procedure of [read, update, remove]) {
-      expect(() => procedure({ path: "", value: 1 })).toThrow(/non-empty string/);
-      expect(() => procedure({ path: 7, value: 1 })).toThrow(/non-empty string/);
+      await expect(procedure({ path: "", value: 1 })).rejects.toThrow(/non-empty string/);
+      await expect(procedure({ path: 7, value: 1 })).rejects.toThrow(/non-empty string/);
     }
   });
 
-  it("refuses fields that are not an object", () => {
-    expect(() => create({ table: "projects", fields: [] })).toThrow(/fields is an object/);
-    expect(() => create({ table: "", fields: {} })).toThrow(/non-empty string/);
+  it("refuses fields that are not an object", async () => {
+    await expect(create({ table: "projects", fields: [] })).rejects.toThrow(/fields is an object/);
+    await expect(create({ table: "", fields: {} })).rejects.toThrow(/non-empty string/);
   });
 
-  it("refuses an update with no value", () => {
-    expect(() => update({ path: "projects.projects:1.name" })).toThrow(/value is required/);
+  it("refuses an update with no value", async () => {
+    await expect(update({ path: "projects.projects:1.name" })).rejects.toThrow(/value is required/);
   });
 
-  it("does not reach the store when it refuses", () => {
+  it("does not reach the store when it refuses", async () => {
     model.calls.length = 0;
-    expect(() => read({ path: "" })).toThrow();
+    await expect(read({ path: "" })).rejects.toThrow();
     assert.deepEqual(model.calls, []);
   });
 });
 
 describe("what it passes through", () => {
-  it("hands each call to the store and answers with what came back", () => {
+  it("hands each call to the store and answers with what came back", async () => {
     model.calls.length = 0;
 
-    assert.deepEqual(create({ table: "projects", fields: { name: "Q3" } }), { id: "projects:1" });
-    assert.deepEqual(read({ path: "projects" }), { table: "projects", kind: "table", rows: [] });
-    assert.deepEqual(update({ path: "projects.projects:1.name", value: "Q4" }), {
+    assert.deepEqual(await create({ table: "projects", fields: { name: "Q3" } }), { id: "projects:1" });
+    assert.deepEqual(await read({ path: "projects" }), { table: "projects", kind: "table", rows: [] });
+    assert.deepEqual(await update({ path: "projects.projects:1.name", value: "Q4" }), {
       path: "projects.projects:1.name"
     });
-    assert.deepEqual(remove({ path: "projects.projects:1" }), { path: "projects.projects:1" });
+    assert.deepEqual(await remove({ path: "projects.projects:1" }), { path: "projects.projects:1" });
 
     assert.deepEqual(model.calls, [
       'create projects {"name":"Q3"}',
@@ -73,8 +76,8 @@ describe("what it passes through", () => {
     ]);
   });
 
-  it("answers null rather than undefined when a read finds nothing", () => {
+  it("answers null rather than undefined when a read finds nothing", async () => {
     model.store.read = () => undefined as never;
-    expect(read({ path: "projects.projects:9" })).toBeNull();
+    expect(await read({ path: "projects.projects:9" })).toBeNull();
   });
 });

@@ -1,10 +1,13 @@
 import { check } from "../shared/check.mjs";
 import { capabilities, unitOf } from "../shared/trees.mjs";
 
-/** The one runtime entry a procedure may reach: the server graph, at its accessor. */
-const RUNTIME_ENTRY = "server/start.server";
+/** The runtime entries a procedure may reach: the server graph, and the gate. */
+const RUNTIME_ENTRIES = new Set(["server/start.server", "server/scope.server"]);
 /** `index` or `index.server` — naming the index explicitly is still the index. */
 const isIndex = (rest) => rest.length === 0 || (rest.length === 1 && /^index(\.server)?$/.test(rest[0]));
+/** A capability that crosses to the server is entered at `index.remote`. */
+const isCapabilityIndex = (rest) =>
+  rest.length === 0 || (rest.length === 1 && /^index(\.remote)?$/.test(rest[0]));
 
 const CLIENT_TREES = new Set([
   "views",
@@ -61,8 +64,8 @@ export default check({
           const rest = segments.join("/");
           if (rest.startsWith("client")) {
             finding("no-client", `reaches the client runtime: ${record.specifier}`);
-          } else if (rest !== RUNTIME_ENTRY) {
-            finding("runtime-entry", `the server graph is reached at $runtime/${RUNTIME_ENTRY}, not ${record.specifier}`);
+          } else if (!RUNTIME_ENTRIES.has(rest)) {
+            finding("runtime-entry", `$runtime is reached at ${[...RUNTIME_ENTRIES].join(" or ")}, not ${record.specifier}`);
           }
           continue;
         }
@@ -70,7 +73,7 @@ export default check({
         if (name === "capabilities") {
           const [other, ...rest] = segments;
           if (!other || self?.name === other) continue;
-          if (rest.length > 0) {
+          if (!isCapabilityIndex(rest)) {
             finding("no-sideways", `reaches past ${other}'s index: ${record.specifier}`);
           }
         }

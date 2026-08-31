@@ -29,6 +29,7 @@ vi.mock("$runtime/server/start.server", () => ({
 beforeEach(() => {
   configured.values = new Map<string, unknown>([
     ["development.userId", "dev-user"],
+    ["development.username", "Dev User"],
     ["development.projectToken", "dev-token"],
     ["development.projectId", "default"]
   ]);
@@ -52,7 +53,7 @@ const rejects = async (run: () => Promise<unknown>, status: number, note: string
 test("a session is the user the configuration names", async () => {
   const session = await resolveSession({ get: () => undefined });
 
-  assert.deepEqual(session, { userId: "dev-user" });
+  assert.deepEqual(session, { userId: "dev-user", username: "Dev User" });
 });
 
 test("a missing development user is a startup-shaped failure, not a 401", async () => {
@@ -69,36 +70,36 @@ test("a missing development user is a startup-shaped failure, not a 401", async 
 // --------------------------------------------------------------- scope ----
 
 test("a valid handle resolves to the project it names, for the asking user", async () => {
-  const scope = await resolveScope({ userId: "dev-user" }, "dev-token");
+  const scope = await resolveScope({ userId: "dev-user", username: "Dev User" }, "dev-token");
 
-  assert.deepEqual(scope, { projectId: "default", userId: "dev-user" });
+  assert.deepEqual(scope, { projectId: "default", userId: "dev-user", username: "Dev User" });
 });
 
 test("no token is a 400 — the caller left something out", async () => {
-  await rejects(() => resolveScope({ userId: "dev-user" }, undefined), 400, "absent token");
-  await rejects(() => resolveScope({ userId: "dev-user" }, ""), 400, "empty token");
+  await rejects(() => resolveScope({ userId: "dev-user", username: "Dev User" }, undefined), 400, "absent token");
+  await rejects(() => resolveScope({ userId: "dev-user", username: "Dev User" }, ""), 400, "empty token");
 });
 
 test("an unknown handle is a 404, never a fallback", async () => {
   // The failure that matters: resolving to *something* would hand the caller a
   // project they never asked for and hold no authority over.
-  await rejects(() => resolveScope({ userId: "dev-user" }, "not-a-handle"), 404, "unknown token");
+  await rejects(() => resolveScope({ userId: "dev-user", username: "Dev User" }, "not-a-handle"), 404, "unknown token");
 });
 
 test("another user's handle is a 404 for this user", async () => {
   // The lookup is the authorization. A handle is only ever resolved within the
   // asking user's own rows, so a valid token belonging to someone else resolves
   // to nothing at all — there is no separate membership check to forget.
-  await rejects(() => resolveScope({ userId: "someone-else" }, "dev-token"), 404, "other user");
+  await rejects(() => resolveScope({ userId: "someone-else", username: "Someone Else" }, "dev-token"), 404, "other user");
 });
 
 test("an unauthorized caller is not told the project exists", async () => {
   // 404 rather than 403, deliberately: distinguishing "not yours" from "no such
   // project" is itself a disclosure.
-  const unknown = await resolveScope({ userId: "dev-user" }, "nope").catch(
+  const unknown = await resolveScope({ userId: "dev-user", username: "Dev User" }, "nope").catch(
     (thrown: unknown) => thrown
   );
-  const others = await resolveScope({ userId: "someone-else" }, "dev-token").catch(
+  const others = await resolveScope({ userId: "someone-else", username: "Someone Else" }, "dev-token").catch(
     (thrown: unknown) => thrown
   );
 
@@ -109,8 +110,8 @@ test("a scope never carries authority the caller named", async () => {
   // Every field is derived: the user from the session cookie, the project from a
   // lookup. Nothing a caller sent appears in the result, which is why no input
   // type carries a projectId or a userId.
-  const scope = await resolveScope({ userId: "dev-user" }, "dev-token");
+  const scope = await resolveScope({ userId: "dev-user", username: "Dev User" }, "dev-token");
 
   assert.notEqual(scope.projectId, "dev-token");
-  assert.deepEqual(Object.keys(scope).sort(), ["projectId", "userId"]);
+  assert.deepEqual(Object.keys(scope).sort(), ["projectId", "userId", "username"]);
 });

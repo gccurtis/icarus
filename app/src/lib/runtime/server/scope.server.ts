@@ -1,4 +1,5 @@
 import { error } from "@sveltejs/kit";
+import { getRequestEvent } from "$app/server";
 import type { Configuration } from "$model/server/configuration/index.server";
 import { requiredString } from "$model/server/configuration/index.server";
 import { serverModel } from "$runtime/server/start.server";
@@ -12,6 +13,8 @@ import { serverModel } from "$runtime/server/start.server";
  */
 export type Session = {
   readonly userId: string;
+  /** What to call them on screen. */
+  readonly username: string;
 };
 
 /**
@@ -28,6 +31,7 @@ export type Session = {
 export type Scope = {
   readonly projectId: string;
   readonly userId: string;
+  readonly username: string;
 };
 
 /**
@@ -47,7 +51,10 @@ export const resolveSession = async (cookies: {
 }): Promise<Session> => {
   void cookies;
 
-  return { userId: requiredString(configurationOf(), "development.userId") };
+  return {
+    userId: requiredString(configurationOf(), "development.userId"),
+    username: requiredString(configurationOf(), "development.username")
+  };
 };
 
 /**
@@ -76,7 +83,33 @@ export const resolveScope = async (
   const projectId = await projectForToken(session.userId, projectToken);
   if (!projectId) error(404, "No such project");
 
-  return { projectId, userId: session.userId };
+  return { projectId, userId: session.userId, username: session.username };
+};
+
+/**
+ * The scope this request runs in. The one gate.
+ *
+ * Every capability procedure calls this before it does anything else, which is
+ * what `no-procedure-acts-outside-a-scope` reads.
+ *
+ * Two values meet here. The session comes from the cookie and is resolved once
+ * per request in `hooks.server.ts`. The project token comes from the pathname
+ * the call was made from — kit rewrites `event.url` from `x-sveltekit-pathname`
+ * for a remote request, so it is the page's own address rather than a field a
+ * caller assembles.
+ *
+ * Neither is a credential on its own. The lookup is keyed on both, so a token
+ * only resolves inside the asking user's own rows.
+ */
+export const requireScope = async (): Promise<Scope> => {
+  const event = getRequestEvent();
+  return resolveScope(event.locals.session, projectTokenIn(event.url.pathname));
+};
+
+/** `/app/<token>`, which is the only route a capability is called from. */
+const projectTokenIn = (pathname: string): string | undefined => {
+  const [, first, token] = pathname.split("/");
+  return first === "app" ? token : undefined;
 };
 
 /**

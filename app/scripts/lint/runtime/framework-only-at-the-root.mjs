@@ -10,6 +10,9 @@ export default check({
     for (const path of tree.under(tree.path("runtime"))) {
       if (!/\.(ts|js)$/.test(path) || path.includes("/test/")) continue;
       if (basename(path).startsWith("start.")) continue;
+      // The one file whose subject is the request. Identity comes from the
+      // caller and can come from nowhere else, and it builds nothing.
+      if (basename(path) === "scope.server.ts") continue;
 
       for (const record of tree.imports(path)) {
         if (!record.specifier.startsWith("$app/")) continue;

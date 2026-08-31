@@ -92,18 +92,20 @@ The boundary is the index. What is on the right of it is a server model object, 
 
 ### Checks
 
-**capability-is-entered-at-its-index** — No import from outside a capability names anything below its `index.ts`.
+**nothing-reaches-inside-a-capability** — No import from outside a capability names a path below its index. A capability that crosses to the server is entered at `index.remote`.
 
 **capability-lists-its-procedures** — `index.ts` names what a capability offers. It imports each procedure, declares it, and names the types it speaks in. Nothing is defined here.
 
-**procedure-validates-first** — Every `api/<procedure>` entry validates its argument before its first other statement.
+**no-procedure-acts-outside-a-scope** — Every `api/<procedure>` entry opens with `requireScope()`. One function establishes who is asking and which project, so a procedure cannot be reached without one.
+
+**procedure-validates-first** — Every `api/<procedure>` entry that takes an input checks it before acting on it, straight after the gate.
 
 **storage-through-a-model** — Nothing under `capabilities/` imports `$representation/store`. The object that owns the lifetime is the only way in.
 
 **capability-imports**
 
 - `server-object-index` — a server model object is named at its index, never a path inside it.
-- `runtime-entry` — the server graph is reached through `start.server`.
+- `runtime-entry` — `$runtime` is reached at `start.server` or `scope.server`, and nowhere else.
 - `no-client` — nothing here imports a view or a client model. 2 fail `opening` and `inspecting` take types from `view-state`.
 - `no-sideways` — another capability is named at its index, never a path inside it.
 
@@ -384,7 +386,7 @@ client/                          server/
 - `server-guards-shutdown` — a request arriving mid-drain hears "shutting down", not "not built".
 - `server-guards-absence` — and one arriving before `init` hears the opposite.
 
-**framework-only-at-the-root** — Only `start*` imports `$app/*`. An object taking its identity from ambient routing is one that cannot be built twice.
+**framework-only-at-the-root** — Only `start*` and `scope.server` import `$app/*`. An object taking its identity from ambient routing is one that cannot be built twice; `scope.server` builds none, and the request is its subject.
 
 **runtime-layout** — Only the named files exist. Something new here is a decision, not an addition.
 

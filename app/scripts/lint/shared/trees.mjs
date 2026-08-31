@@ -99,5 +99,24 @@ export const themes = (tree) =>
 export const integrations = (tree) => named(tree, tree.path("styles", "x-integrations"));
 
 /** The unit a path belongs to, or null. Used wherever "outside this unit" is the question. */
+/** Every `api/<procedure>/…/<entry>.ts`. A directory's entry is named for it. */
+export const procedureEntries = (tree) => {
+  const found = [];
+  const walk = (dir) => {
+    for (const name of tree.dirsIn(dir)) {
+      if (name === "shared") continue;
+      const child = join(dir, name);
+      const entry = join(child, `${name}.ts`);
+      if (tree.isFile(entry)) found.push(entry);
+      walk(child);
+    }
+  };
+  for (const { path } of capabilities(tree)) {
+    const api = join(path, "api");
+    if (tree.exists(api)) walk(api);
+  }
+  return found;
+};
+
 export const unitOf = (tree, units, path) =>
   units.find((unit) => tree.within(unit.path, path)) ?? null;

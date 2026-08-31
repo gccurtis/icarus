@@ -4,11 +4,12 @@
  *
  *     pnpm new-procedure -- <capability> <procedure>
  *
- * Writes the procedure directory, the entry with its validator already the first
- * statement, the declaration added to the index, and a failing test. The validator call
- * is generated rather than left to a comment because
- * `procedure-validates-first` reads exactly that first statement — a template
- * that trips its own check on the first run is a template nobody trusts.
+ * Writes the procedure directory, the entry already gated and validating, the
+ * declaration added to the index, and a failing test. Both calls are generated
+ * rather than left to a comment because two checks read exactly those
+ * statements — `no-procedure-acts-outside-a-scope` the first,
+ * `procedure-validates-first` the next. A template that trips its own checks on
+ * the first run is a template nobody trusts.
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -37,16 +38,21 @@ if (!existsSync(root)) plan.fail(capability, "no such capability — run pnpm ne
 
 plan.create(
   join(directory, `${procedure}.ts`),
-  `import type { ${Input}, ${Result} } from "$capabilities/${capability}/types/${procedure}";
+  `import { requireScope } from "$runtime/server/scope.server";
+
+import type { ${Input}, ${Result} } from "$capabilities/${capability}/types/${procedure}";
 import { validate${pascal(procedure)} } from "$capabilities/${capability}/api/${procedure}/validate-${procedure}";
 
 /**
  * ${procedure}.
  *
- * Validation is the first statement, before anything has happened. A type is a
- * claim about what a caller said it sent; this is the check.
+ * The gate first: who is asking and about which project, before anything has
+ * happened. Then the input, because a type is a claim about what a caller said
+ * it sent and this is the check.
  */
 export const ${call} = async (input: ${Input}): Promise<${Result}> => {
+  await requireScope();
+
   const ${call}Input = validate${pascal(procedure)}(input);
 
   throw new Error(\`${capability}/${procedure} is not implemented: \${${call}Input.project}\`);
@@ -84,8 +90,13 @@ export type ${Result} = {
 plan.create(
   join(root, "test", "unit", `${procedure}.test.ts`),
   `import assert from "node:assert/strict";
-import { test } from "vitest";
-import { ${call} } from "$capabilities/${capability}/api/${procedure}/${procedure}";
+import { test, vi } from "vitest";
+
+vi.mock("$runtime/server/scope.server", () => ({
+  requireScope: () => Promise.resolve({ projectId: "p", userId: "u", username: "You" })
+}));
+
+const { ${call} } = await import("$capabilities/${capability}/api/${procedure}/${procedure}");
 
 test("${procedure} refuses an input it cannot act on", async () => {
   await assert.rejects(() => ${call}({ project: "" }));
