@@ -84,9 +84,10 @@ export const provideViewState = (model: ViewStateModel): ViewStateModel => {
  * would make a stray click in one move the other. Under a provider — every case
  * that matters — they share the one the shell built.
  *
- * Read during initialisation, like any context. A component that calls this in
- * an event handler gets the fallback instead, which is the one way to misuse it:
- * read it once at the top and hold it.
+ * Read during initialisation, like any context: Svelte throws
+ * `lifecycle_outside_component` anywhere else, so an event handler calling this
+ * fails loudly rather than reaching the fallback. Read it once at the top and
+ * hold it.
  */
 export const viewState = (): ViewStateModel =>
   hasContext(KEY) ? getContext<ViewStateModel>(KEY) : createViewState("dev-project");

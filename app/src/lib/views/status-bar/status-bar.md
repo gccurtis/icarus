@@ -65,18 +65,17 @@ It does not own:
 
 ### Client models
 
-| Door | Usage |
+| Model | Usage |
 | --- | --- |
 | `$runtime/client` | `copilot`: mode, persona, draft, `focusRequests`, `blocked`; calls `setMode`, `selectPersona`, `write`, `sent` |
-| `$model/client/view-state` | `active`, `frame`; calls `inspect` and `resize` |
+| `$model/client/view-state` | `active`, `frame`; calls `resize` |
 
 ### Capabilities
 
-| Browser door | Usage |
+| Capability | Usage |
 | --- | --- |
-| `$capabilities/naming` | `subject` — the name and kind behind an id |
-| `$capabilities/collaboration` | `mentionsForViewer` — what is addressed to you |
-| `$capabilities/cast` | `VIEWER` — who you are |
+| `$capabilities/store` | `read` — the row behind an id, through `procedures/resource-name.ts` |
+| `$capabilities/development` | `username` — who you are, until authentication exists |
 
 ### Composed views
 
@@ -89,13 +88,17 @@ It does not own:
 | Dependency | Usage |
 | --- | --- |
 | `$lib/components/vendor/select` | Mode and persona |
-| `@lucide/svelte` | The submit glyph and the mention mark |
+| `@lucide/svelte` | The submit glyph |
 | Token domains: color, spacing, shape, typography | Every value |
 
 ## Directory Documents
 
-No concern directories. Three parts, one form, and nothing to coordinate between
-them.
+| Concern | Document | What it owns |
+| --- | --- | --- |
+| Procedures | [`resource-name.ts`](procedures/resource-name.ts) | What a row is called, and what word to call its kind |
+
+Its own copy rather than the tab bar's: a surface is entered at its root, so
+there is no path from here to `tab-bar/procedures/`.
 
 ## Rendered States
 

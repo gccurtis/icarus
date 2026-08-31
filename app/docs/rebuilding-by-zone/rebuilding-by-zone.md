@@ -36,49 +36,47 @@ and review pages. Those never called a mock capability and still compile.
 
 ## The order
 
-Smallest first, and each one proves a capability the next one needs.
-
-| | zone | needs | why here |
+| | step | needs | why here |
 | --- | --- | --- | --- |
-| 1 | **tab-bar** | `naming` | One error. A tab needs a name for the thing it is open on, which is the smallest real capability in the tree. |
-| 2 | **status-bar** | `naming`, `collaboration`, identity | Four errors, and three of them are the same `naming` call the tab bar just proved. Identity — who the viewer is — arrives here for the first time. |
-| 3 | **command-bar** | `formula`, `project` | The overlay and its one modal. Five errors, and it is where a command runs rather than where data is read. |
-| 4 | **core** | `project`, `library`, `resource`, `analysis`, `agents`, `research` | The work surface, and the point of the application. Nine workspaces, 155 errors. |
-| — | **context** | — | Emptied. See below. |
-| — | **inspector** | — | Emptied. See below. |
-| — | **top-bar** | — | Already compiles. |
+| 1 | **tab-bar and status-bar** | `naming`, `collaboration`, identity | Both ask `naming` what the thing behind an id is called, and they are its only two callers. Split apart, the second one rebuilds what the first one just built. |
+| 2 | **the function builder** | `formula`, `project` | The one surviving modal. It is where a command runs rather than where data is read, which is the other half of what a capability is. |
+| 3 | **the client models** | nothing | `$shared` and `$revisions` are not aliases. Not a capability question at all. |
+| 4 | **the workspaces** | `project`, `library`, `resource`, `analysis`, `agents`, `research` | The work surface, and the point of the application. Nine of them, and three quarters of the remaining errors. |
 
-Within core, `project-overview` comes first: 20 errors, and the capabilities it
-needs — `project`, `library`, `collaboration`, `opening`, `inspecting` — are the
-same ones the status bar and the modal are waiting on.
+Steps 1 and 3 are what the application boots on. The status bar and the client
+models are both imported eagerly, so until each compiles Vite serves a 500 and
+nothing renders — including the zones that are already finished. A workspace is
+reached through a glob and fails alone.
+
+The two flanks and the top bar are not in the list. The flanks are emptied, and
+the top bar already compiles.
+
+### Inside step 4
+
+Most of the time here goes to the stable workspaces — the ones with the most
+design behind them — rather than to whichever has the most errors. An error
+count measures how much a workspace asks for, not how settled its answer is.
 
 ## Why the flanks are emptied rather than rebuilt
 
-The two flanks hold 204 of the 218 view files and 986 of the 1,151 errors — 86%
-of the problem, and none of it is the work surface. They are panels for
-capabilities that do not exist, written against sample rows that disagreed with
-representation. Rebuilding them before one workspace works end to end is
-building the wide part first.
+The two flanks held 204 of the 218 view files and 86% of the errors — none of it
+the work surface. They were panels for capabilities that do not exist, written
+against sample rows that disagreed with representation. Rebuilding them before
+one workspace works end to end is building the wide part first.
 
-**The file names stay. Only the bodies go.** A panel's path is its key, and that
-key is load-bearing in four places:
+**The design was kept and the components were not.** Each of the seventeen
+subject directories holds a document saying what its panels are, what each one
+shows, and where it routes. The components are gone.
 
-| | |
-| --- | --- |
-| `view-state/methods/shared/keys.ts` | generated from the tree — every key names a file |
-| `view-state/methods/shared/rails.ts` | which context views a subscreen offers, by key |
-| `context-panel/procedures/rail-entries.ts` | a label and an icon per key |
-| `workspaces/**` | `inspect("resource.element", …)` and its siblings, as literals |
+**The vocabulary outlived the tree.** `panel-keys.ts` is hand-written and names
+every panel this application intends to have, so a key whose file does not exist
+is a panel not built yet rather than a broken reference. Both containers render
+a placeholder that names the key it was sent, which is what keeps the rail, every
+`inspect()` call, and every context id pointing at something real.
 
-Deleting the trees would empty the first three and break every `inspect()` call
-in the fourth — adding errors to the zone being rebuilt. Emptying the bodies
-changes none of them: the rail still carries its labels, `inspect()` still names
-something real, and every panel says what it is and that it is not built.
+The vocabulary is the plan; the tree is progress against it.
 
-Each emptied panel is a to-do the checks already track. `panel-renders-alone`
-proves it mounts; `key-vocabulary-matches-the-tree` proves nothing was lost.
-
-## What a zone is done
+## When a zone is done
 
 A zone is finished when its files compile and its checks are clean. There is no
 separate acceptance list, because a check that is not in `scripts/lint/` is a

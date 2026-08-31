@@ -44,15 +44,15 @@ It does not own:
 
 ### Client models
 
-| Door | Usage |
+| Model | Usage |
 | --- | --- |
 | `$model/client/view-state` | `tabs`, `activeId`, `isSingleton`; calls `activate` and `close` |
 
 ### Capabilities
 
-| Browser door | Usage |
+| Capability | Usage |
 | --- | --- |
-| `None` | — |
+| `$capabilities/store` | `nameOf` — what the thing a tab holds is called |
 
 ### Composed views
 
@@ -84,10 +84,10 @@ gesture, bounds, and a keyboard equivalent to own.
 | --- | --- | --- | --- |
 | Initial | Always | The permanent tabs, icon-only, one of them active | — |
 | Several | Something was opened | A divider, then one tab per opened thing; only those show a close control | Closing returns to a neighbour |
-| Loading | `None` | — | — |
+| Loading | A name has not arrived | The tab reads `…` | The name replaces it in place |
 | Empty | `None` | — | — |
 | Stale | `None` | — | — |
-| Failure | `None` | — | — |
+| Failure | The store answered with no name | The tab reads `Disconnected` | None here. The reference is broken, not slow |
 | Denied | `None` | — | — |
 
 There is no empty state, and that is a model invariant rather than an omission: a

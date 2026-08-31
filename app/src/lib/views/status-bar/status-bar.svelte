@@ -1,12 +1,10 @@
 <script lang="ts">
   import { tick } from "svelte";
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
-  import AtSign from "@lucide/svelte/icons/at-sign";
 
   import * as Select from "$vendored-components/select";
-  import { VIEWER } from "$capabilities/cast";
-  import { mentionsForViewer, type PersonComment } from "$capabilities/collaboration";
-  import { subject as subjectDoor } from "$capabilities/naming";
+  import { username } from "$capabilities/development/index.remote";
+  import { kindOf, nameOf } from "$views/status-bar/procedures/resource-name";
   import { clientModel } from "$runtime/client/start";
   import { viewState } from "$model/client/view-state";
   import type { Mode } from "$model/client/copilot";
@@ -50,12 +48,13 @@
    */
   const subjectId = $derived(view.active.resourceId ?? view.active.focus);
 
-  const on = $derived(subjectId === undefined ? undefined : subjectDoor(subjectId).current);
+  const name = $derived(subjectId === undefined ? undefined : nameOf(subjectId));
+  const kind = $derived(subjectId === undefined ? undefined : kindOf(subjectId));
 
   // ----------------------------------------------------------------- you ----
 
-  const mentions = $derived(mentionsForViewer().current);
-  const unresolved = $derived(mentions.filter((c: PersonComment) => !c.resolved));
+  /** From `configuration/dev.yaml` until authentication exists. */
+  const you = $derived(username().current);
 
   // ------------------------------------------------------------- copilot ----
 
@@ -138,11 +137,11 @@
     opens what it names — a status bar that acted on things would be a toolbar.
   -->
   <div class="part start">
-    {#if on}
-      <span class="subject" title={on.name}>{on.name}</span>
-      {#if on.kind}
+    {#if name !== undefined}
+      <span class="subject" title={name}>{name}</span>
+      {#if kind !== undefined}
         <span class="sep" aria-hidden="true">·</span>
-        <span class="label">{on.kind}</span>
+        <span class="label">{kind}</span>
       {/if}
     {:else}
       <span class="label">Nothing open</span>
@@ -217,33 +216,9 @@
   </form>
   </div>
 
-  <!--
-    You: what is addressed to you, and who you are. The count is a button
-    because an unanswered mention is the one thing here worth acting on.
-  -->
+  <!-- You. What is addressed to you arrives here when comments are built. -->
   <div class="part end">
-    <!--
-      Named, because a lens is about something. Opening this without saying
-      which mention would leave whatever was last selected as the subject, and
-      the panel would answer about a row nobody pointed at.
-    -->
-    <button
-      type="button"
-      class="mentions"
-      class:waiting={unresolved.length > 0}
-      disabled={unresolved.length === 0}
-      title={unresolved.length === 0
-        ? "Nothing addressed to you"
-        : `${unresolved.length} unresolved mentions`}
-      onclick={() =>
-        unresolved[0] &&
-        view.inspect("collaboration.mention", { kind: "comment", id: unresolved[0].id })}
-    >
-      <AtSign size={12} aria-hidden="true" />
-      <span class="tabular-nums">{unresolved.length}</span>
-    </button>
-    <span class="sep" aria-hidden="true">·</span>
-    <span class="label">{VIEWER.name}</span>
+    <span class="label">{you ?? "…"}</span>
   </div>
 </footer>
 
@@ -289,25 +264,6 @@
 
   .sep {
     color: var(--token-border-strong);
-  }
-
-  .mentions {
-    display: flex;
-    align-items: center;
-    gap: calc(var(--token-spacing-unit) * 0.75);
-    border-radius: var(--token-radius-control);
-    padding-inline: calc(var(--token-spacing-unit) * 1);
-  }
-
-  .mentions:hover {
-    background-color: var(--token-surface-panel-hover);
-    color: var(--token-ink-primary);
-  }
-
-  /* The one place in the bar that raises its voice, and only when something is
-     actually waiting. */
-  .mentions.waiting {
-    color: var(--token-color-attention-text);
   }
 
   /**

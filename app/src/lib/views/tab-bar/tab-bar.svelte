@@ -1,56 +1,82 @@
 <script lang="ts">
+  import Bot from "@lucide/svelte/icons/bot";
+  import House from "@lucide/svelte/icons/house";
+  import LayoutTemplate from "@lucide/svelte/icons/layout-template";
   import X from "@lucide/svelte/icons/x";
 
-  import { isSingleton, viewState } from "$model/client/view-state";
-  import { SCREEN_ENTRIES, labelOf } from "$views/tab-bar/procedures/screen-entries";
+  import { viewState } from "$model/client/view-state";
+  import { SCREEN_ENTRIES, isOpened, labelOf } from "$views/tab-bar/procedures/screen-entries";
 
   /**
    * The tab bar — what is open, and which one is active.
    *
-   * It sits in the frame rather than in a route because tabs are view state, not
-   * route state: opening one is not a navigation and closing one does not go
-   * back. This view renders the list and reports two intents; the model owns
+   * Tabs are view state, not route state, so the strip sits in the frame rather
+   * than in a route. It renders the list and reports two intents; the model owns
    * order, activation, and what happens after a close.
    *
-   * **The strip separates the permanent from the opened.** The permanent tabs
-   * are icon-only behind a divider — they are always there, so a label on each
-   * spends the width that the tabs a person actually opened need for their
-   * names.
+   * The three permanent tabs are written out. `open` on one of those screens
+   * finds the tab already there and activates it, so none of them needs an id.
    *
-   * **Not an ARIA tablist.** That pattern owes a `tabpanel` relationship and
-   * roving tabindex, and a tab whose element also contains a focusable close
-   * button is not a `role="tab"`. Each is an ordinary button carrying
-   * `aria-current`, which is honest about what is implemented.
+   * **Not an ARIA tablist.** A `role="tab"` makes its children presentational,
+   * and these contain a focusable close button. Each is an ordinary button
+   * carrying `aria-current`.
    */
   const view = viewState();
 
-  const permanent = $derived(view.tabs.filter((tab) => isSingleton(tab.screen)));
-  const opened = $derived(view.tabs.filter((tab) => !isSingleton(tab.screen)));
+  const here = $derived(view.active.screen);
 
-  /** Hoisted: a component position takes a name or a dotted path, not an index. */
+  /** A label is read once per tab per render; the markup asks for it three times. */
+  const opened = $derived(
+    view.tabs.filter(isOpened).map((tab) => ({
+      tab,
+      label: labelOf(tab),
+      Icon: SCREEN_ENTRIES[tab.screen].icon
+    }))
+  );
+
   const NewTab = SCREEN_ENTRIES["new-tab"].icon;
 </script>
 
 <div class="strip" role="toolbar" aria-label="Open tabs">
-  {#each permanent as tab (tab.id)}
-    {@const entry = SCREEN_ENTRIES[tab.screen]}
-    <button
-      type="button"
-      class="tab icon"
-      class:on={tab.id === view.activeId}
-      aria-current={tab.id === view.activeId ? "page" : undefined}
-      title={labelOf(tab)}
-      aria-label={labelOf(tab)}
-      onclick={() => view.activate(tab.id)}
-    >
-      <entry.icon size={15} aria-hidden="true" />
-    </button>
-  {/each}
+  <button
+    type="button"
+    class="tab icon"
+    class:on={here === "project-overview"}
+    aria-current={here === "project-overview" ? "page" : undefined}
+    title="Overview"
+    aria-label="Overview"
+    onclick={() => view.open({ screen: "project-overview" })}
+  >
+    <House size={15} aria-hidden="true" />
+  </button>
+
+  <button
+    type="button"
+    class="tab icon"
+    class:on={here === "agents"}
+    aria-current={here === "agents" ? "page" : undefined}
+    title="Agents"
+    aria-label="Agents"
+    onclick={() => view.open({ screen: "agents" })}
+  >
+    <Bot size={15} aria-hidden="true" />
+  </button>
+
+  <button
+    type="button"
+    class="tab icon"
+    class:on={here === "templates"}
+    aria-current={here === "templates" ? "page" : undefined}
+    title="Templates"
+    aria-label="Templates"
+    onclick={() => view.open({ screen: "templates" })}
+  >
+    <LayoutTemplate size={15} aria-hidden="true" />
+  </button>
 
   <span class="divider" aria-hidden="true"></span>
 
-  {#each opened as tab (tab.id)}
-    {@const entry = SCREEN_ENTRIES[tab.screen]}
+  {#each opened as { tab, label, Icon } (tab.id)}
     <div class="tab named" class:on={tab.id === view.activeId}>
       <button
         type="button"
@@ -58,14 +84,14 @@
         aria-current={tab.id === view.activeId ? "page" : undefined}
         onclick={() => view.activate(tab.id)}
       >
-        <entry.icon size={14} aria-hidden="true" />
-        <span class="truncate">{labelOf(tab)}</span>
+        <Icon size={14} aria-hidden="true" />
+        <span class="truncate">{label}</span>
       </button>
       <button
         type="button"
         class="close"
-        title="Close {labelOf(tab)}"
-        aria-label="Close {labelOf(tab)}"
+        title="Close {label}"
+        aria-label="Close {label}"
         onclick={() => view.close(tab.id)}
       >
         <X size={12} aria-hidden="true" />
