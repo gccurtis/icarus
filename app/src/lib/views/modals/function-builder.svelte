@@ -15,32 +15,21 @@
   } from "$authored-components/screen";
   import { Textarea } from "$vendored-components/textarea";
   import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
-  import { builtins } from "$capabilities/formula";
-  import { variables } from "$capabilities/project";
+  import { read } from "$capabilities/store/index.remote";
+  import { BUILTINS } from "$views/modals/builtins";
 
   /**
-   * Writing an expression against everything the project can refer to, with the
-   * whole vocabulary in front of you.
+   * Writing an expression against everything the project can refer to.
    *
-   * `docs/screen-panel-views/modals/function-builder.md` is the specification. It
-   * is a modal rather than a panel because an expression has to be *constructed* —
-   * it has parts that must agree, and a 300px column is not where that happens.
-   *
-   * **The tracks are 2fr/3fr, not 1fr/3fr.** A quarter of 672px is 160px, and the
-   * identity column carries a name *and* a value: `hardeningBudget` beside
-   * `46,000,000` does not fit in 160px.
+   * A modal rather than a panel: an expression has parts that must agree, and a
+   * 300px column is not where that happens.
    */
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
   let expression = $state("");
   let search = $state("");
   let name = $state("");
-  /**
-   * Three chips on one axis. Six — Functions, Variables, List/Range, Text, Maths,
-   * Statistics — are two axes wearing one row: a person choosing Variables and
-   * Maths together has asked for nothing and the control cannot say so. The
-   * function categories are bands in the list below instead.
-   */
+  /** One axis. The function categories are bands in the list, not chips here. */
   let kinds = $state<string[]>([]);
 
   type Entry = {
@@ -52,16 +41,23 @@
     description: string;
   };
 
+  const answer = $derived(read({ path: "variables" }));
+  const rows = $derived(
+    answer.current?.kind === "table" && answer.current.table === "variables"
+      ? answer.current.rows
+      : []
+  );
+
   const entries = $derived<Entry[]>([
-    ...variables().current.map((variable) => ({
-      id: variable.id,
+    ...rows.map((variable) => ({
+      id: variable._id,
       name: variable.name,
-      right: variable.preview ?? variable.value,
+      right: variable.value.kind,
       group: "Variables",
       kind: "variable" as const,
       description: ""
     })),
-    ...builtins().current.map((builtin) => ({
+    ...BUILTINS.map((builtin) => ({
       id: builtin.id,
       name: builtin.signature,
       right: "function",
@@ -89,15 +85,13 @@
   let selected = $state<string | undefined>(undefined);
   let expanded = $state<string | undefined>(undefined);
 
-  /** Selecting inserts at the caret. Inserting is what the modal exists for. */
+  /** Selecting inserts. */
   const insert = (entry: Entry) => {
     selected = entry.id;
     expression = expression === "" ? entry.name : `${expression}${entry.name}`;
   };
 
-  const taken = $derived(
-    new Set(variables().current.map((variable) => variable.name.toLowerCase()))
-  );
+  const taken = $derived(new Set(rows.map((variable) => variable.name.toLowerCase())));
   const conflict = $derived(name.trim() !== "" && taken.has(name.trim().toLowerCase()));
 </script>
 
@@ -116,11 +110,7 @@
   }}
 >
   <div class="grid gap-3 px-3">
-    <!--
-      The expression spans both tracks because it is the subject; the two result
-      columns are the reference beneath it. It grows with what is typed, because
-      an expression that has outgrown its box is one you can no longer check.
-    -->
+    <!-- Spans both tracks, and grows with what is typed. -->
     <PanelFields>
       <PanelField label="Expression" stacked>
         <Textarea
@@ -149,12 +139,7 @@
         No variable or function has that in its name or its description.
       </ScreenEmpty>
     {:else}
-      <!--
-        One table across both columns, so the seam between the list and the
-        descriptions is the table's rather than a border drawn twice. Two tables
-        side by side would have their own row heights and drift apart the moment a
-        description expanded.
-      -->
+      <!-- One table across both columns: two would drift apart on row height. -->
       <ScreenTable columns={["Name", "Value", "What it does"]}>
         {#each groups as group (group)}
           <ScreenGroup
@@ -184,11 +169,7 @@
       </ScreenTable>
     {/if}
 
-    <!--
-      The name is the last row of the body rather than part of the frame's footer:
-      `OverlayModal`'s footer takes a confirm label and nothing else, and the name
-      is what decides which label that is.
-    -->
+    <!-- In the body, not the footer: the name decides the confirm label. -->
     <PanelFields>
       <PanelField label="Name" stacked>
         <PanelEditableText
