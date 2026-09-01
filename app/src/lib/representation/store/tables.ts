@@ -43,13 +43,24 @@ import type {
   LatticeRemoval,
   LatticeWindow
 } from "$representation/data/types/knowledge/lattice";
-import type { DocumentBody } from "$representation/data/types/resources/document-body";
-import type { AspectRatio, SlideDeckBody } from "$representation/data/types/resources/slide-deck-body";
-import type { SpreadsheetBody } from "$representation/data/types/resources/spreadsheet-body";
-import type { DocumentOp } from "$representation/data/types/revisions/document-op";
-import type { SlideDeckOp } from "$representation/data/types/revisions/slide-deck-op";
-import type { SpreadsheetOp } from "$representation/data/types/revisions/spreadsheet-op";
-import type { ChangeTier, SnapshotRole } from "$representation/data/types/revisions/snapshot";
+import type { DocumentBody } from "$representation/data/types/documents/body";
+import type { DocumentOp } from "$representation/data/types/documents/op";
+import type {
+  DocumentChangeTier,
+  DocumentSnapshotRole
+} from "$representation/data/types/documents/snapshot";
+import type { AspectRatio, SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
+import type {
+  SlideDeckChangeTier,
+  SlideDeckSnapshotRole
+} from "$representation/data/types/slide-decks/snapshot";
+import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
+import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
+import type {
+  SpreadsheetChangeTier,
+  SpreadsheetSnapshotRole
+} from "$representation/data/types/spreadsheets/snapshot";
 import type {
   TemplateBody,
   TemplateKind,
@@ -110,7 +121,7 @@ export type DocumentSnapshotFields = {
   projectId: Id<"projects">;
   resourceId: Id<"documents">;
   revision: number;
-  role: SnapshotRole;
+  role: DocumentSnapshotRole;
   part: number;
   body: DocumentBody;
   at: number;
@@ -123,7 +134,7 @@ export type DocumentChangeSetFields = {
   revision: number;
   /** What its author was looking at. */
   baseRevision: number;
-  tier: ChangeTier;
+  tier: DocumentChangeTier;
   ops: DocumentOp[];
   touched: string[];
   actor: Actor;
@@ -135,7 +146,7 @@ export type SlideDeckSnapshotFields = {
   projectId: Id<"projects">;
   resourceId: Id<"slideDecks">;
   revision: number;
-  role: SnapshotRole;
+  role: SlideDeckSnapshotRole;
   part: number;
   body: SlideDeckBody;
   at: number;
@@ -147,7 +158,7 @@ export type SlideDeckChangeSetFields = {
   resourceId: Id<"slideDecks">;
   revision: number;
   baseRevision: number;
-  tier: ChangeTier;
+  tier: SlideDeckChangeTier;
   ops: SlideDeckOp[];
   touched: string[];
   actor: Actor;
@@ -160,7 +171,7 @@ export type SpreadsheetSnapshotFields = {
   projectId: Id<"projects">;
   resourceId: Id<"spreadsheets">;
   revision: number;
-  role: SnapshotRole;
+  role: SpreadsheetSnapshotRole;
   part: number;
   body: SpreadsheetBody;
   at: number;
@@ -173,7 +184,7 @@ export type SpreadsheetChangeSetFields = {
   resourceId: Id<"spreadsheets">;
   revision: number;
   baseRevision: number;
-  tier: ChangeTier;
+  tier: SpreadsheetChangeTier;
   ops: SpreadsheetOp[];
   touched: string[];
   actor: Actor;

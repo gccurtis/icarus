@@ -1,5 +1,5 @@
-import type { SpreadsheetBody } from "$representation/data/types/resources/spreadsheet-body";
-import type { SpreadsheetOp } from "$representation/data/types/revisions/spreadsheet-op";
+import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
+import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 
 export type SyncState =
   | "loading"

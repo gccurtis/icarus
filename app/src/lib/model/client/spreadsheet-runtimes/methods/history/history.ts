@@ -1,4 +1,4 @@
-import type { SpreadsheetOp } from "$representation/data/types/revisions/spreadsheet-op";
+import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 import type { Runtime } from "$model/client/spreadsheet-runtimes/definition.svelte";
 import { invertAll } from "$model/client/spreadsheet-runtimes/methods/history/invert";
 

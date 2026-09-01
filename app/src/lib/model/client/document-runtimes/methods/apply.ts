@@ -1,4 +1,4 @@
-import type { DocumentOp } from "$representation/data/types/revisions/document-op";
+import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { Runtime } from "$model/client/document-runtimes/definition.svelte";
 
 export const buffer = (runtime: Runtime, ops: readonly DocumentOp[]): void => {

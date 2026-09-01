@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test, vi } from "vitest";
-import type { SlideDeckOp } from "$representation/data/types/revisions/slide-deck-op";
+import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import { createConfiguration } from "$model/client/configuration";
 import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
 import { Runtime } from "$model/client/slide-deck-runtimes/definition.svelte";

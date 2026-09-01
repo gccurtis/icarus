@@ -1,6 +1,6 @@
 import { SvelteMap } from "svelte/reactivity";
-import type { DocumentBody } from "$representation/data/types/resources/document-body";
-import type { DocumentOp } from "$representation/data/types/revisions/document-op";
+import type { DocumentBody } from "$representation/data/types/documents/body";
+import type { DocumentOp } from "$representation/data/types/documents/op";
 import { apply, buffer } from "$model/client/document-runtimes/methods/apply";
 import { attach } from "$model/client/document-runtimes/methods/attach";
 import { flush } from "$model/client/document-runtimes/methods/flush/flush";

@@ -1,4 +1,4 @@
-import type { SlideDeckOp } from "$representation/data/types/revisions/slide-deck-op";
+import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 
 const related = (a: string, b: string): boolean =>
   a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);

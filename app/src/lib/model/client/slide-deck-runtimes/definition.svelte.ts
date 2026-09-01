@@ -1,6 +1,6 @@
 import { SvelteMap } from "svelte/reactivity";
-import type { SlideDeckBody } from "$representation/data/types/resources/slide-deck-body";
-import type { SlideDeckOp } from "$representation/data/types/revisions/slide-deck-op";
+import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import { apply, buffer } from "$model/client/slide-deck-runtimes/methods/apply";
 import { attach } from "$model/client/slide-deck-runtimes/methods/attach";
 import { flush } from "$model/client/slide-deck-runtimes/methods/flush/flush";

@@ -1,6 +1,6 @@
 import { SvelteMap } from "svelte/reactivity";
-import type { SpreadsheetBody } from "$representation/data/types/resources/spreadsheet-body";
-import type { SpreadsheetOp } from "$representation/data/types/revisions/spreadsheet-op";
+import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
+import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 import { apply, buffer } from "$model/client/spreadsheet-runtimes/methods/apply";
 import { attach } from "$model/client/spreadsheet-runtimes/methods/attach";
 import { flush } from "$model/client/spreadsheet-runtimes/methods/flush/flush";

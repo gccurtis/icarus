@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test, vi } from "vitest";
-import type { SpreadsheetOp } from "$representation/data/types/revisions/spreadsheet-op";
+import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 import { createConfiguration } from "$model/client/configuration";
 import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
 import { Runtime } from "$model/client/spreadsheet-runtimes/definition.svelte";

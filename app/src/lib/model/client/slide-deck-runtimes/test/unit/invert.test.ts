@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import type { SlideDeckOp } from "$representation/data/types/revisions/slide-deck-op";
+import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import { invert, invertAll } from "$model/client/slide-deck-runtimes/methods/history/invert";
 
 test("a set exchanges value and was", () => {

@@ -1,4 +1,4 @@
-import type { SpreadsheetOp } from "$representation/data/types/revisions/spreadsheet-op";
+import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 
 const related = (a: string, b: string): boolean =>
   a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);

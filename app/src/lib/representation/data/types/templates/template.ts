@@ -2,11 +2,11 @@ import type { BlockFormat } from "$representation/data/types/content/block-forma
 import type { Mark } from "$representation/data/types/content/content-block";
 import type { VariableValue } from "$representation/data/types/content/variable-value";
 import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
-import type { DocumentBody } from "$representation/data/types/resources/document-body";
-import type { PageSetup } from "$representation/data/types/resources/page-setup";
-import type { AspectRatio, SlideDeckBody } from "$representation/data/types/resources/slide-deck-body";
-import type { PrintScale } from "$representation/data/types/resources/spreadsheet-body";
-import type { StyleSet } from "$representation/data/types/resources/style-set";
+import type { DocumentBody } from "$representation/data/types/documents/body";
+import type { AspectRatio, SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { PrintScale } from "$representation/data/types/spreadsheets/body";
+import type { PageSetup } from "$representation/data/types/spreadsheets/page-setup";
+import type { StyleSet } from "$representation/data/types/spreadsheets/style-set";
 
 /**
  * What the author made, which is not the same as which body it holds.

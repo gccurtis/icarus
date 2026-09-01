@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test, vi } from "vitest";
-import type { DocumentOp } from "$representation/data/types/revisions/document-op";
+import type { DocumentOp } from "$representation/data/types/documents/op";
 import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
 import type { DocumentRuntime } from "$model/client/document-runtimes";

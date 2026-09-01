@@ -1,5 +1,5 @@
-import type { DocumentBody } from "$representation/data/types/resources/document-body";
-import type { DocumentOp } from "$representation/data/types/revisions/document-op";
+import type { DocumentBody } from "$representation/data/types/documents/body";
+import type { DocumentOp } from "$representation/data/types/documents/op";
 
 export type SyncState =
   | "loading"

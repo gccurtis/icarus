@@ -1,4 +1,4 @@
-import type { DocumentOp } from "$representation/data/types/revisions/document-op";
+import type { DocumentOp } from "$representation/data/types/documents/op";
 
 const related = (a: string, b: string): boolean =>
   a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);

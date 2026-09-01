@@ -1,4 +1,4 @@
-import type { SlideDeckOp } from "$representation/data/types/revisions/slide-deck-op";
+import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import type { Runtime } from "$model/client/slide-deck-runtimes/definition.svelte";
 
 export const buffer = (runtime: Runtime, ops: readonly SlideDeckOp[]): void => {

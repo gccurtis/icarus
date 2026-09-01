@@ -1,4 +1,4 @@
-import type { SlideDeckOp } from "$representation/data/types/revisions/slide-deck-op";
+import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 
 export const invert = (op: SlideDeckOp): SlideDeckOp => {
   switch (op.op) {

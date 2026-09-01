@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import type { SpreadsheetOp } from "$representation/data/types/revisions/spreadsheet-op";
+import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 import { coalesce } from "$model/client/spreadsheet-runtimes/methods/flush/coalesce";
 
 const cell = (path: string, value: unknown, was: unknown): SpreadsheetOp => ({

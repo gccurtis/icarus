@@ -1,4 +1,4 @@
-import type { SpreadsheetOp } from "$representation/data/types/revisions/spreadsheet-op";
+import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 
 export const invert = (op: SpreadsheetOp): SpreadsheetOp => {
   switch (op.op) {

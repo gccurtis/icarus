@@ -1,6 +1,3 @@
-import type { After } from "$representation/data/types/revisions/op";
-
-/** Clearing a cell is a `set`; a `set` materializes the cell if it is not there. */
 export type SpreadsheetOp =
   | { op: "set"; target: "cell" | "formatRule" | "mark"; path: string; value: unknown; was: unknown }
   | {
@@ -8,7 +5,7 @@ export type SpreadsheetOp =
       target: "gridRow" | "gridColumn" | "formatRule";
       path: string;
       ids: string[];
-      after: After;
+      after: string | null;
       values: unknown[];
     }
   | {
@@ -16,7 +13,7 @@ export type SpreadsheetOp =
       target: "gridRow" | "gridColumn" | "formatRule";
       path: string;
       ids: string[];
-      after: After;
+      after: string | null;
       values: unknown[];
     }
   | {
@@ -24,6 +21,6 @@ export type SpreadsheetOp =
       target: "gridRow" | "gridColumn";
       path: string;
       id: string;
-      after: After;
-      wasAfter: After;
+      after: string | null;
+      wasAfter: string | null;
     };

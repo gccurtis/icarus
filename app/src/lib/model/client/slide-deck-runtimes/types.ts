@@ -1,5 +1,5 @@
-import type { SlideDeckBody } from "$representation/data/types/resources/slide-deck-body";
-import type { SlideDeckOp } from "$representation/data/types/revisions/slide-deck-op";
+import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 
 export type SyncState =
   | "loading"

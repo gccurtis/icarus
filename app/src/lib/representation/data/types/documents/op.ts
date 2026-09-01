@@ -1,9 +1,3 @@
-import type { After } from "$representation/data/types/revisions/op";
-
-/**
- * What a document is made of: rows, the blocks in them, and the atoms and marks
- * in those.
- */
 export type DocumentOp =
   | { op: "set"; target: "row" | "block" | "atom" | "mark"; path: string; value: unknown; was: unknown }
   | {
@@ -11,7 +5,7 @@ export type DocumentOp =
       target: "row" | "block" | "atom" | "mark";
       path: string;
       ids: string[];
-      after: After;
+      after: string | null;
       values: unknown[];
     }
   | {
@@ -19,9 +13,15 @@ export type DocumentOp =
       target: "row" | "block" | "atom" | "mark";
       path: string;
       ids: string[];
-      after: After;
+      after: string | null;
       values: unknown[];
     }
-  | { op: "move"; target: "row" | "block"; path: string; id: string; after: After; wasAfter: After }
-  /** Literal atoms only. A formula atom changes by `set`ting its expression. */
+  | {
+      op: "move";
+      target: "row" | "block";
+      path: string;
+      id: string;
+      after: string | null;
+      wasAfter: string | null;
+    }
   | { op: "text"; target: "atom"; path: string; at: number; insert: string; remove: string };

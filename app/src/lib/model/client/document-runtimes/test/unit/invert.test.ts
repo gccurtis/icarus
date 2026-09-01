@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import type { DocumentOp } from "$representation/data/types/revisions/document-op";
+import type { DocumentOp } from "$representation/data/types/documents/op";
 import { invert, invertAll } from "$model/client/document-runtimes/methods/history/invert";
 
 test("a set exchanges value and was", () => {

@@ -1,4 +1,4 @@
-import type { DocumentOp } from "$representation/data/types/revisions/document-op";
+import type { DocumentOp } from "$representation/data/types/documents/op";
 
 export const invert = (op: DocumentOp): DocumentOp => {
   switch (op.op) {
