@@ -1,0 +1,956 @@
+<title>Ledger As Built</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  :root {
+    --paper: #eff1ee;
+    --sheet: #f8f9f7;
+    --sunk: #e6e9e5;
+    --ink: #1b2320;
+    --ink-2: #4a544e;
+    --ink-3: #79837c;
+    --rule: #c9d0cb;
+    --rule-2: #dde2dd;
+    --mark: #b4482e;
+    --mark-soft: #f0dcd5;
+    --grow: #3e6b57;
+    --grow-soft: #d9e5de;
+    --shadow: 0 1px 0 rgba(27, 35, 32, .04);
+
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #141816;
+      --sheet: #1b201d;
+      --sunk: #101412;
+      --ink: #dfe5e1;
+      --ink-2: #a3ada7;
+      --ink-3: #79837c;
+      --rule: #333b36;
+      --rule-2: #262d29;
+      --mark: #de7358;
+      --mark-soft: #3a221b;
+      --grow: #7bb096;
+      --grow-soft: #1e3229;
+      --shadow: 0 1px 0 rgba(0, 0, 0, .3);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #141816;
+    --sheet: #1b201d;
+    --sunk: #101412;
+    --ink: #dfe5e1;
+    --ink-2: #a3ada7;
+    --ink-3: #79837c;
+    --rule: #333b36;
+    --rule-2: #262d29;
+    --mark: #de7358;
+    --mark-soft: #3a221b;
+    --grow: #7bb096;
+    --grow-soft: #1e3229;
+    --shadow: 0 1px 0 rgba(0, 0, 0, .3);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  /* ---------------------------------------------------------- title block */
+
+  .titleblock {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    border-bottom: 2px solid var(--ink);
+    padding: 56px 0 26px;
+    margin-bottom: 8px;
+  }
+
+  @media (min-width: 880px) {
+    .titleblock { grid-template-columns: minmax(0, 1fr) 300px; align-items: end; }
+  }
+
+  .eyebrow {
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 14px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(38px, 7vw, 66px);
+    line-height: .96;
+    letter-spacing: -.028em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin: 0;
+    max-width: 46ch;
+    font-size: 18px;
+    color: var(--ink-2);
+  }
+
+  .lede em { color: var(--ink); font-style: italic; }
+
+  .checks {
+    margin: 0;
+    border: 1px solid var(--rule);
+    background: var(--sheet);
+    box-shadow: var(--shadow);
+  }
+
+  .checks div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 12px;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--rule-2);
+  }
+
+  .checks div:last-child { border-bottom: 0; }
+
+  .checks dt {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-2);
+  }
+
+  .checks dd {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .was { color: var(--ink-3); }
+  .arrow { color: var(--rule); padding: 0 3px; }
+  .now { color: var(--ink); font-weight: 500; }
+  .now.good { color: var(--grow); }
+
+  /* ------------------------------------------------------------- sections */
+
+  section { padding-top: 54px; }
+
+  .band {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    border-top: 1px solid var(--rule);
+    padding-top: 14px;
+    margin-bottom: 26px;
+  }
+
+  @media (min-width: 760px) {
+    .band { grid-template-columns: 76px minmax(0, 1fr); gap: 28px; align-items: start; }
+  }
+
+  .ref {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: var(--mark);
+    padding-top: 8px;
+  }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(24px, 3.6vw, 33px);
+    letter-spacing: -.02em;
+    line-height: 1.12;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+
+  .band p {
+    margin: 0;
+    max-width: 68ch;
+    color: var(--ink-2);
+  }
+
+  h3 {
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 40px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--rule-2);
+  }
+
+  .col { max-width: 72ch; }
+  .col p { margin: 0 0 16px; }
+  .col p:last-child { margin-bottom: 0; }
+
+  strong { font-weight: 600; color: var(--ink); }
+  em { font-style: italic; }
+
+  code {
+    font-family: var(--mono);
+    font-size: .855em;
+    background: var(--sunk);
+    padding: .1em .34em;
+    border-radius: 2px;
+  }
+
+  /* --------------------------------------------------------------- tables */
+
+  .scroll { overflow-x: auto; margin: 0 0 6px; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 560px;
+    font-family: var(--display);
+    font-size: 13.5px;
+  }
+
+  thead th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 10.5px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding: 0 14px 7px 0;
+    border-bottom: 1px solid var(--ink);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 9px 14px 9px 0;
+    border-bottom: 1px solid var(--rule-2);
+    vertical-align: top;
+    color: var(--ink-2);
+  }
+
+  tbody td:first-child { color: var(--ink); font-weight: 500; }
+  tbody tr:last-child td { border-bottom: 1px solid var(--rule); }
+
+  td code, th code { background: none; padding: 0; font-size: 12.5px; }
+
+  .gone { color: var(--mark); }
+  .kept { color: var(--ink-3); }
+  .new { color: var(--grow); }
+
+  /* ------------------------------------------------------------- diagrams */
+
+  figure {
+    margin: 0 0 8px;
+    border: 1px solid var(--rule);
+    background: var(--sheet);
+    box-shadow: var(--shadow);
+    padding: 22px 20px;
+    overflow-x: auto;
+  }
+
+  figure pre {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--ink-2);
+    white-space: pre;
+  }
+
+  figure pre b { color: var(--ink); font-weight: 700; }
+  figure pre i { color: var(--mark); font-style: normal; }
+  figure pre s { color: var(--ink-3); text-decoration: none; }
+
+  figcaption {
+    font-family: var(--display);
+    font-size: 11.5px;
+    color: var(--ink-3);
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--rule-2);
+  }
+
+  .note {
+    border-left: 2px solid var(--mark);
+    padding: 2px 0 2px 16px;
+    margin: 22px 0;
+    max-width: 66ch;
+    color: var(--ink-2);
+  }
+
+  .note strong { color: var(--ink); }
+
+  /* -------------------------------------------------------------- summary */
+
+  .tally {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    border: 1px solid var(--rule);
+    background: var(--sheet);
+    box-shadow: var(--shadow);
+    margin-bottom: 26px;
+  }
+
+  .tally div {
+    padding: 16px 18px;
+    border-right: 1px solid var(--rule-2);
+  }
+
+  .tally div:last-child { border-right: 0; }
+
+  .tally dt {
+    font-family: var(--display);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 6px;
+  }
+
+  .tally dd {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tally dd span {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-3);
+    letter-spacing: 0;
+    margin-left: 6px;
+  }
+
+  /* ------------------------------------------------------------- manifest */
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 18px;
+  }
+
+  .filters button {
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    background: var(--sheet);
+    border: 1px solid var(--rule);
+    padding: 7px 13px;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+
+  .filters button:hover { border-color: var(--ink-3); }
+
+  .filters button[aria-pressed="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+
+  .filters button:focus-visible { outline: 2px solid var(--mark); outline-offset: 2px; }
+
+  .group {
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--sunk);
+    padding: 8px 10px;
+    margin: 26px 0 0;
+    border-left: 2px solid var(--mark);
+  }
+
+  .group span { color: var(--ink-3); font-weight: 500; letter-spacing: .06em; margin-left: 8px; }
+
+  ol.files { list-style: none; margin: 0; padding: 0; }
+
+  ol.files li {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    gap: 10px;
+    align-items: baseline;
+    padding: 5px 0 5px 10px;
+    border-bottom: 1px solid var(--rule-2);
+  }
+
+  @media (min-width: 820px) {
+    ol.files li { grid-template-columns: 16px minmax(0, 1fr) 74px 96px; }
+  }
+
+  .glyph {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  li.add .glyph { color: var(--grow); }
+  li.mod .glyph { color: var(--ink-3); }
+  li.del .glyph { color: var(--mark); }
+
+  .path {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink);
+    word-break: break-all;
+    line-height: 1.45;
+  }
+
+  li.del .path { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--rule); }
+
+  .path b { font-weight: 700; }
+  .path em { color: var(--ink-3); font-style: normal; }
+
+  .why {
+    display: block;
+    font-family: var(--display);
+    font-size: 11.5px;
+    color: var(--ink-3);
+    margin-top: 1px;
+    word-break: normal;
+  }
+
+  .n {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .bar { display: none; }
+
+  @media (min-width: 820px) {
+    .bar {
+      display: block;
+      height: 5px;
+      background: var(--rule-2);
+      position: relative;
+      top: -2px;
+    }
+    .bar i {
+      display: block;
+      height: 100%;
+      width: calc(var(--n) * 0.26%);
+      max-width: 100%;
+      background: var(--ink-3);
+    }
+    li.add .bar i { background: var(--grow); }
+    li.del .bar i { background: var(--mark); }
+  }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 2px solid var(--ink);
+    font-size: 14px;
+    color: var(--ink-3);
+    max-width: 72ch;
+  }
+
+  footer p { margin: 0 0 10px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="sheet">
+
+  <header class="titleblock">
+    <div>
+      <p class="eyebrow">Icarus · representation · model/client · capabilities · runtime</p>
+      <h1>Ledger As Built</h1>
+      <p class="lede">View state became a ledger: a stored row per person, an append-only history behind it, and every gesture recorded as an operation that knows its own inverse. Four phases, <em>93 files</em>, and one surface deliberately unmoved.</p>
+    </div>
+
+    <dl class="checks">
+      <div><dt>pnpm lint --all</dt><dd><span class="was">73</span><span class="arrow">→</span><span class="now good">65</span></dd></div>
+      <div><dt>pnpm typecheck</dt><dd><span class="was">170</span><span class="arrow">→</span><span class="now">170</span></dd></div>
+      <div><dt>pnpm test</dt><dd><span class="was">326</span><span class="arrow">→</span><span class="now good">358</span></dd></div>
+      <div><dt>pnpm test:scripts</dt><dd><span class="was">109</span><span class="arrow">→</span><span class="now good">111</span></dd></div>
+    </dl>
+  </header>
+
+  <!-- ===================================================== orientation === -->
+
+  <section>
+    <div class="band">
+      <div class="ref">00</div>
+      <div>
+        <h2>Four categories, in the order they had to happen</h2>
+        <p>Each phase is a precondition for the next. The representation has to exist before a capability can speak it; the split has to exist before there is a single writer to log; the log has to exist before there is anything to persist.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <figure>
+<pre><b>01  THE REPRESENTATION</b>   the vocabulary and the stored shapes move
+    │                    out of the model and into a <i>views</i> domain
+    ▼
+<b>02  THE SPLIT</b>            one object becomes three, and the middle
+    │                    one becomes the only writer
+    ▼
+<b>03  THE LOG</b>              every gesture becomes a ViewOp with an
+    │                    exact inverse; the reopen queue dissolves
+    ▼
+<b>04  PERSISTENCE</b>          two tables, two procedures, a debounce —
+                         the same shape the three resources use</pre>
+        <figcaption>Why the order is forced: <code>capability-imports</code> forbids a procedure from reaching <code>$model/client/*</code>, so 04 can only speak types that 01 put in <code>representation/</code>. And a log written by two objects is not a log, so 03 needs 02.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ======================================================== phase 01 === -->
+
+  <section>
+    <div class="band">
+      <div class="ref">01</div>
+      <div>
+        <h2>The representation</h2>
+        <p>What a tab <em>is</em> stopped being a model type. The screen and panel vocabularies, the stored tab shapes, the operation union and its inversion moved into a <code>views</code> domain under <code>representation/</code> — because <code>representation-imports-nothing-else</code> forbids that tree from reaching back into the model, and a stored <code>TabView</code> names a <code>Subscreen</code>.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <figure>
+<pre><b>representation/data/types/views/</b>          emits nothing
+├── screens.ts    Screen, Subscreen           <i>generated</i>
+├── panels.ts     ContextId, InspectionKey
+├── tab.ts        TabId TabRecord TabView Target
+│                 Frame Selection Inspected Landing
+└── op.ts         ViewOp
+
+<b>representation/data/behavior/views/</b>       pure, no clock, no globals
+├── screens.ts    SCREENS SUBSCREENS isScreen  <i>generated</i>
+├── panels.ts     CONTEXT_IDS INSPECTION_KEYS + guards
+└── invert.ts     invert(op), invertAll(ops)
+
+<b>model/client/view-state/methods/shared/</b>   stayed behind
+├── rails.ts      RAILS railFor defaultContext offersContext
+└── defaults.ts   SINGLETONS isSingleton DEFAULT_FRAME</pre>
+        <figcaption>The line: representation holds only what a stored row holds. Rails and defaults say what a tab that does not exist yet <em>will be</em>, and no reader of a row consults either.</figcaption>
+      </figure>
+
+      <h3>State changes</h3>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>What</th><th>Before</th><th>After</th></tr></thead>
+          <tbody>
+            <tr><td><code>Screen</code>, <code>Subscreen</code></td><td>model, one generated file</td><td>representation, two generated files</td></tr>
+            <tr><td><code>Subscreen</code> shape</td><td><code>(typeof SUBSCREENS)[Screen][number]</code></td><td>a flat union, declared first</td></tr>
+            <tr><td><code>ContextId</code>, <code>InspectionKey</code></td><td>one hand-written file</td><td>union in <code>types/</code>, list + guards in <code>behavior/</code>, held together by a compile-time exhaustiveness check</td></tr>
+            <tr><td>Stored nullability</td><td><code>undefined</code> throughout</td><td><code>null</code> in the row — an absent JSON key and a null are two spellings of one state</td></tr>
+            <tr><td>Store tables</td><td>38</td><td>40 — <code>viewSnapshots</code>, <code>viewRevisions</code></td></tr>
+            <tr><td>The generator</td><td><code>pnpm view-state-keys</code>, one file into the model</td><td><code>pnpm screen-keys</code>, two files into representation</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note"><strong>Nothing outside the object imported the vocabulary directly.</strong> Every consumer already went through <code>$model/client/view-state</code>, which kept re-exporting the same names — so 26 files that read screens, rails and lenses were untouched.</div>
+    </div>
+  </section>
+
+  <!-- ======================================================== phase 02 === -->
+
+  <section>
+    <div class="band">
+      <div class="ref">02</div>
+      <div>
+        <h2>The split</h2>
+        <p>The seam was already written out six times: every method that touched what a tab was <em>showing</em> opened with <code>const tab = state.active</code>, and no list method touched anything but <code>activeId</code>. Two objects came out of that, and the one left in the middle became the only thing that writes.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <figure>
+<pre>   <b>tab-list</b>   ─────►   <b>view-state</b>   ◄─────   <b>tab-views</b>
+   what exists            coordinator            what each tab
+   the order              the composition        is looking at
+   which is active        the only writer        copy on write
+
+   TabRecord[]            Tab = record + view    SvelteMap&lt;TabId, TabView&gt;
+   activeId               the log, undo
+   the id counter         every decision</pre>
+        <figcaption><code>tabList</code> and <code>tabViews</code> are the first two model objects that are <em>not</em> fields on <code>ClientModel</code>. The runtime builds them, hands them to <code>createViewState</code>, and does not return them — a view that reached <code>tabList.add(…)</code> through the graph would move a tab without leaving a record.</figcaption>
+      </figure>
+
+      <h3>State changes</h3>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>What</th><th>Before</th><th>After</th></tr></thead>
+          <tbody>
+            <tr><td>Construction</td><td><code>createViewState(project)</code></td><td><code>createViewState(project, tabs, views, configuration)</code></td></tr>
+            <tr><td><code>Tab</code></td><td>a stored record, mutated in place</td><td>a composition, built per read by <code>compose</code></td></tr>
+            <tr><td>Reactivity of a view</td><td><code>$state</code> deep proxy, edited field by field</td><td><code>SvelteMap</code> entry replaced whole on every write</td></tr>
+            <tr><td>Null at the surface</td><td>n/a</td><td><code>compose</code> turns the row's <code>null</code>s back into the <code>undefined</code>s every view already narrows against</td></tr>
+            <tr><td><code>ClientModel</code> fields</td><td>9</td><td>9 — the two new objects are deliberately absent</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note"><strong>The acceptance test was that nothing happened.</strong> The whole 800-line view-state suite passed unchanged against the coordinator, and no file under <code>views/</code> was edited in this phase. The surface was supposed to stay fixed; if a view had to change, the split had leaked.</div>
+    </div>
+  </section>
+
+  <!-- ======================================================== phase 03 === -->
+
+  <section>
+    <div class="band">
+      <div class="ref">03</div>
+      <div>
+        <h2>The log</h2>
+        <p>A method no longer writes state. It reads the <code>was</code> half off the tab, builds a <code>ViewOp</code>, and hands it to <code>perform</code>, which applies it and appends it. Every member carries both sides of what it changed, so <code>invert</code> is a payload swap that reads no state and undo is an ordinary change rather than a rewind.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <h3>Seven operations, each its own inverse</h3>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Operation</th><th>Carries</th><th>What it does</th><th>Inverted by</th></tr></thead>
+          <tbody>
+            <tr><td><code>open</code></td><td><code>tab at target view</code></td><td>stores a view, inserts a record at an index</td><td><code>close</code>, same payload</td></tr>
+            <tr><td><code>close</code></td><td><code>tab at target view</code></td><td>removes both halves</td><td><code>open</code>, same payload</td></tr>
+            <tr><td><code>activate</code></td><td><code>was now</code></td><td>moves the cursor</td><td>swap <code>was</code> ⇄ <code>now</code></td></tr>
+            <tr><td><code>land</code></td><td><code>was now</code> (whole <code>Landing</code>)</td><td>switches the centre, defaults the rail, clears the lens</td><td>swap the whole landing</td></tr>
+            <tr><td><code>context</code></td><td><code>was now</code></td><td>moves the rail</td><td>swap <code>was</code> ⇄ <code>now</code></td></tr>
+            <tr><td><code>inspect</code></td><td>two <code>was</code>/<code>now</code> pairs</td><td>points the inspector at something</td><td>swap both pairs</td></tr>
+            <tr><td><code>resize</code></td><td><code>was now</code> (whole <code>Frame</code>)</td><td>drags a flank</td><td>swap <code>was</code> ⇄ <code>now</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note"><strong>One departure from the design.</strong> <code>open</code> and <code>close</code> no longer move the cursor — an <code>activate</code> op does. Opening is <code>open</code> then <code>activate</code>; closing the active tab is <code>activate</code> to the neighbour then <code>close</code>. Without that, <code>close</code> picks a neighbour it has nothing in the op to restore from, and the tab you were on before is unrecoverable. It costs four ops per open-and-close gesture and buys an exact round trip.</div>
+
+      <h3>Behaviour changes</h3>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Gesture</th><th>Before</th><th>After</th></tr></thead>
+          <tbody>
+            <tr><td>Any mutation</td><td>assigns a field on a <code>Tab</code></td><td>records a <code>ViewOp</code>; one arm of <code>apply</code> is the only place it becomes a change</td></tr>
+            <tr><td>Undo</td><td class="gone">did not exist — only <code>reopenClosed</code>, one operation, special-cased</td><td class="new">every op, unbounded, plus <code>redo</code></td></tr>
+            <tr><td>Redo</td><td class="gone">did not exist</td><td class="new">until the next gesture drops the stack</td></tr>
+            <tr><td>Reopening a tab</td><td>pop a ten-deep array of whole <code>Tab</code>s</td><td>invert the most recent <code>close</code> with no later <code>open</code> for that tab — and the reopen is itself recorded</td></tr>
+            <tr><td>The reopen cap</td><td>10, oldest dropped silently</td><td class="gone">gone — nothing is kept beside the log to be dropped from</td></tr>
+            <tr><td><code>closed</code> on the surface</td><td><code>readonly Tab[]</code></td><td class="gone">deleted; nothing under <code>views/</code> read it</td></tr>
+            <tr><td>Landing undo</td><td>n/a</td><td>restores all five fields a landing writes, because the op carries the whole <code>Landing</code> on both sides</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== phase 04 === -->
+
+  <section>
+    <div class="band">
+      <div class="ref">04</div>
+      <div>
+        <h2>Persistence</h2>
+        <p>A <code>view</code> capability with two procedures, each opening on <code>requireScope()</code> — which already yields <code>{ projectId, userId, username }</code>, so neither takes a key and neither can be asked for somebody else's row. One writer per row means no rebase ladder, no conflict, no <code>needs-review</code>.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <figure>
+<pre><b>viewSnapshots</b>  one row per (userId, projectId), replaced in place
+    projectId  userId  revision  tabs  activeId  views  at
+
+<b>viewRevisions</b>  append only, never rewritten
+    projectId  userId  revision  baseRevision  ops  at
+
+<b>readViewState()</b>        the row for this scope, or nothing
+<b>submitViewChanges(…)</b>   append a revision, replace the snapshot
+
+    <s>gesture ──► buffer ──► 8 ops or 750ms ──► one change set ──► revision+1</s>
+    <s>          a refusal puts the ops back at the front and says so</s></pre>
+        <figcaption>The materialization travels with the ops because nothing on the server side could replay them — applying a <code>ViewOp</code> is the client model's, and a second applier would be a second answer to what an op means.</figcaption>
+      </figure>
+
+      <h3>New behaviour</h3>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>What</th><th>How it behaves</th></tr></thead>
+          <tbody>
+            <tr><td><code>restore()</code></td><td>Called by the <code>/app</code> layout, not the constructor — the graph is built synchronously so the first paint has the singletons to draw. A row that lands after the person has already acted is dropped rather than applied.</td></tr>
+            <tr><td><code>flush()</code></td><td>Cancels the debounce and submits; two concurrent flushes join one write. <code>ClientModel.close()</code> calls it before the three resource registers release.</td></tr>
+            <tr><td><code>sync</code>, <code>pending</code>, <code>revision</code></td><td>New readable state: <code>loading</code> → <code>saved</code> / <code>saving</code> / <code>error</code>, the count of unsent ops, and the revision the server last accepted.</td></tr>
+            <tr><td>A refused submit</td><td>Puts its ops back at the front of the buffer and reports <code>error</code>. Unsent work is never dropped.</td></tr>
+            <tr><td>Restored tab ids</td><td><code>tab-list.add</code> now advances its counter past any id it accepts, so a restored <code>t7</code> can never be minted a second time.</td></tr>
+            <tr><td>Zero thresholds</td><td>A panel rendering with no provider gets a view state that buffers nothing and submits nothing. It is a component being looked at, not a session being kept.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================= surface summary === -->
+
+  <section>
+    <div class="band">
+      <div class="ref">05</div>
+      <div>
+        <h2>The surface, before and after</h2>
+        <p>One member left and eight arrived. Everything the five shell surfaces already called is spelled exactly as it was.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Member</th><th>Status</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td><code>tabs</code> <code>activeId</code> <code>active</code> <code>frame</code> <code>context</code> <code>inspected</code> <code>selection</code></td><td class="kept">unchanged</td><td>Five of them still read the active tab, so a tab switch changes all of them at once</td></tr>
+            <tr><td><code>open</code> <code>activate</code> <code>close</code> <code>reopenClosed</code> <code>showSubscreen</code> <code>selectContext</code> <code>inspect</code> <code>clear</code> <code>resize</code> <code>showing</code></td><td class="kept">unchanged</td><td>Same signatures, same refusals, same return types</td></tr>
+            <tr><td><code>closed</code></td><td class="gone">removed</td><td>The ten-deep queue collapsed into the log</td></tr>
+            <tr><td><code>undo</code> <code>redo</code> <code>canUndo</code> <code>canRedo</code></td><td class="new">added</td><td>Two readers of one structure, where the first used to be a special case</td></tr>
+            <tr><td><code>restore</code> <code>flush</code> <code>revision</code> <code>sync</code> <code>pending</code></td><td class="new">added</td><td>The persistence half, shaped like the three resource runtimes</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================================== manifest ===== -->
+
+  <section>
+    <div class="band">
+      <div class="ref">06</div>
+      <div>
+        <h2>Every file</h2>
+        <p>Ninety-three, grouped by the phase that touched them. The bar is the line count — added for a new file, changed for a modified one, removed for a deleted one.</p>
+      </div>
+    </div>
+
+    <dl class="tally">
+      <div><dt>New files</dt><dd>50<span>+2,545</span></dd></div>
+      <div><dt>Modified</dt><dd>38<span>±955</span></dd></div>
+      <div><dt>Deleted</dt><dd>5<span>−910</span></dd></div>
+      <div><dt>Untouched under views/</dt><dd>2<span>maps only</span></dd></div>
+    </dl>
+
+    <div class="filters">
+      <button type="button" data-show="all" aria-pressed="true">All</button>
+      <button type="button" data-show="add" aria-pressed="false">New</button>
+      <button type="button" data-show="mod" aria-pressed="false">Changed</button>
+      <button type="button" data-show="del" aria-pressed="false">Deleted</button>
+    </div>
+
+    <div id="manifest">
+
+      <p class="group">01 · Representation <span>the views domain, the tables, the generator</span></p>
+      <ol class="files">
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/representation/data/types/views/<b>screens.ts</b><em class="why">Screen and Subscreen, generated</em></span><span class="n">25 lines</span><span class="bar" style="--n:25"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/representation/data/types/views/<b>panels.ts</b><em class="why">ContextId and InspectionKey, hand-written</em></span><span class="n">201 lines</span><span class="bar" style="--n:201"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/representation/data/types/views/<b>tab.ts</b><em class="why">TabRecord, TabView, Landing, Target, Frame, Selection</em></span><span class="n">46 lines</span><span class="bar" style="--n:46"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/representation/data/types/views/<b>op.ts</b><em class="why">the seven-member ViewOp union</em></span><span class="n">26 lines</span><span class="bar" style="--n:26"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/representation/data/behavior/views/<b>screens.ts</b><em class="why">SCREENS, SUBSCREENS, isScreen — generated</em></span><span class="n">34 lines</span><span class="bar" style="--n:34"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/representation/data/behavior/views/<b>panels.ts</b><em class="why">the lists, the guards, and the check that they match the unions</em></span><span class="n">217 lines</span><span class="bar" style="--n:217"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/representation/data/behavior/views/<b>invert.ts</b><em class="why">invert and invertAll — pure, reads no state</em></span><span class="n">34 lines</span><span class="bar" style="--n:34"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/representation/store/<b>tables.ts</b><em class="why">two row types, two TABLE_NAMES entries, two TableFields entries</em></span><span class="n">29 changed</span><span class="bar" style="--n:29"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/representation/data/types/<b>types.md</b><em class="why">what the views domain is, and what it deliberately excludes</em></span><span class="n">5 changed</span><span class="bar" style="--n:5"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">configuration/<b>representation.yaml</b><em class="why">views: [] — the domain imports nothing</em></span><span class="n">1 changed</span><span class="bar" style="--n:1"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">scripts/generation/representation/<b>screens.mjs</b><em class="why">moved from generation/view-state/keys.mjs; writes two files</em></span><span class="n">240 lines</span><span class="bar" style="--n:240"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">scripts/generation/representation/test/<b>screens.test.mjs</b><em class="why">25 tests, including that the committed vocabulary is in step</em></span><span class="n">376 lines</span><span class="bar" style="--n:376"><i></i></span></li>
+        <li class="del"><span class="glyph">−</span><span class="path">scripts/generation/view-state/<b>keys.mjs</b></span><span class="n">243 gone</span><span class="bar" style="--n:243"><i></i></span></li>
+        <li class="del"><span class="glyph">−</span><span class="path">scripts/generation/view-state/test/<b>keys.test.mjs</b></span><span class="n">349 gone</span><span class="bar" style="--n:349"><i></i></span></li>
+        <li class="del"><span class="glyph">−</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>keys.ts</b></span><span class="n">56 gone</span><span class="bar" style="--n:56"><i></i></span></li>
+        <li class="del"><span class="glyph">−</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>panel-keys.ts</b></span><span class="n">228 gone</span><span class="bar" style="--n:228"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">scripts/lint/shared/<b>keys.mjs</b><em class="why">both vocabularies now read from behavior/views/; unwraps `satisfies`</em></span><span class="n">13 changed</span><span class="bar" style="--n:13"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">scripts/generation/panels/<b>new-panel.mjs</b><em class="why">three writes: the leaf, the union, the list</em></span><span class="n">76 changed</span><span class="bar" style="--n:76"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">scripts/generation/workspaces/<b>new-workspace.mjs</b><em class="why">the closing "next:" line</em></span><span class="n">4 changed</span><span class="bar" style="--n:4"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">scripts/test/<b>generation.test.mjs</b><em class="why">the then: on new-workspace, and the covered set</em></span><span class="n">6 changed</span><span class="bar" style="--n:6"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path"><b>package.json</b><em class="why">view-state-keys → screen-keys</em></span><span class="n">2 changed</span><span class="bar" style="--n:2"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/views/tab-bar/procedures/<b>resource-name.ts</b><em class="why">two NAMED_FIELD entries — exhaustive over TableName</em></span><span class="n">4 changed</span><span class="bar" style="--n:4"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/views/status-bar/procedures/<b>resource-name.ts</b><em class="why">the same two entries</em></span><span class="n">4 changed</span><span class="bar" style="--n:4"><i></i></span></li>
+      </ol>
+
+      <p class="group">02 · The split <span>two new objects, the coordinator rewritten</span></p>
+      <ol class="files">
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-list/<b>tab-list.md</b><em class="why">what it owns, and why it decides nothing</em></span><span class="n">123 lines</span><span class="bar" style="--n:123"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-list/<b>types.ts</b></span><span class="n">15 lines</span><span class="bar" style="--n:15"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-list/<b>definition.svelte.ts</b><em class="why">$state records, activeId, the id counter</em></span><span class="n">61 lines</span><span class="bar" style="--n:61"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-list/<b>constructor.ts</b></span><span class="n">4 lines</span><span class="bar" style="--n:4"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-list/<b>index.ts</b></span><span class="n">2 lines</span><span class="bar" style="--n:2"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-list/methods/<b>methods.md</b></span><span class="n">20 lines</span><span class="bar" style="--n:20"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-list/methods/<b>mint.ts</b><em class="why">advances the counter; adds nothing</em></span><span class="n">11 lines</span><span class="bar" style="--n:11"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-list/methods/<b>add.ts</b><em class="why">splices in, clamped; keeps the counter ahead of any id it accepts</em></span><span class="n">15 lines</span><span class="bar" style="--n:15"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-list/methods/<b>remove.ts</b></span><span class="n">10 lines</span><span class="bar" style="--n:10"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-list/methods/<b>activate.ts</b></span><span class="n">6 lines</span><span class="bar" style="--n:6"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-views/<b>tab-views.md</b><em class="why">why copy on write, and why it is definition.ts not .svelte.ts</em></span><span class="n">132 lines</span><span class="bar" style="--n:132"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-views/<b>types.ts</b></span><span class="n">24 lines</span><span class="bar" style="--n:24"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-views/<b>definition.ts</b><em class="why">SvelteMap; nine mutators, each one call to patch</em></span><span class="n">62 lines</span><span class="bar" style="--n:62"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-views/<b>constructor.ts</b></span><span class="n">4 lines</span><span class="bar" style="--n:4"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-views/<b>index.ts</b></span><span class="n">2 lines</span><span class="bar" style="--n:2"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-views/methods/<b>methods.md</b></span><span class="n">17 lines</span><span class="bar" style="--n:17"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-views/methods/<b>of.ts</b><em class="why">a missing view throws rather than defaulting</em></span><span class="n">8 lines</span><span class="bar" style="--n:8"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/tab-views/methods/<b>patch.ts</b><em class="why">copy on write lives here</em></span><span class="n">7 lines</span><span class="bar" style="--n:7"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>compose.ts</b><em class="why">record + view → Tab, and where null becomes undefined</em></span><span class="n">14 lines</span><span class="bar" style="--n:14"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>defaults.ts</b><em class="why">SINGLETONS, isSingleton, DEFAULT_FRAME — out of types.ts</em></span><span class="n">20 lines</span><span class="bar" style="--n:20"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>mint-view.ts</b><em class="why">replaces mint-tab; a record is tab-list's to mint</em></span><span class="n">15 lines</span><span class="bar" style="--n:15"><i></i></span></li>
+        <li class="del"><span class="glyph">−</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>mint-tab.ts</b></span><span class="n">34 gone</span><span class="bar" style="--n:34"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/<b>types.ts</b><em class="why">Tab stays; the vocabulary and defaults leave</em></span><span class="n">165 changed</span><span class="bar" style="--n:165"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/<b>definition.svelte.ts</b><em class="why">borrows both halves; every getter composes</em></span><span class="n">203 changed</span><span class="bar" style="--n:203"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/<b>constructor.ts</b><em class="why">four arguments; reads two thresholds at construction</em></span><span class="n">30 changed</span><span class="bar" style="--n:30"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/<b>index.ts</b><em class="why">re-exports from representation; the standalone fallback</em></span><span class="n">84 changed</span><span class="bar" style="--n:84"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>land-on.ts</b><em class="why">takes the coordinator's state; computes a Landing</em></span><span class="n">74 changed</span><span class="bar" style="--n:74"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>rails.ts</b><em class="why">imports the vocabulary from representation; comments stripped</em></span><span class="n">90 changed</span><span class="bar" style="--n:90"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>target-key.ts</b><em class="why">now keyed on a TabRecord rather than a Tab</em></span><span class="n">21 changed</span><span class="bar" style="--n:21"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/runtime/client/<b>start.ts</b><em class="why">two locals built before view-state and never returned</em></span><span class="n">54 changed</span><span class="bar" style="--n:54"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/runtime/client/<b>types.ts</b><em class="why">ClientModel keeps nine fields; stale workbench prose removed</em></span><span class="n">65 changed</span><span class="bar" style="--n:65"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/runtime/client/<b>client.md</b><em class="why">the two objects the graph does not return</em></span><span class="n">15 changed</span><span class="bar" style="--n:15"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/test/<b>keys-route.test.ts</b><em class="why">constructs the three-object graph</em></span><span class="n">9 changed</span><span class="bar" style="--n:9"><i></i></span></li>
+      </ol>
+
+      <p class="group">03 · The log <span>ops, undo, redo, and the queue that dissolved</span></p>
+      <ol class="files">
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>apply.ts</b><em class="why">seven arms; the only place an op becomes a change</em></span><span class="n">39 lines</span><span class="bar" style="--n:39"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>perform.ts</b><em class="why">apply, log, buffer, schedule — nothing changes without a record</em></span><span class="n">19 lines</span><span class="bar" style="--n:19"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>landing.ts</b><em class="why">the was half of a landing, read the same way every time</em></span><span class="n">9 lines</span><span class="bar" style="--n:9"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/methods/<b>undo.ts</b></span><span class="n">11 lines</span><span class="bar" style="--n:11"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/methods/<b>redo.ts</b></span><span class="n">11 lines</span><span class="bar" style="--n:11"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/test/unit/<b>invert.test.ts</b><em class="why">every member inverts to itself; a gesture inverts in reverse</em></span><span class="n">86 lines</span><span class="bar" style="--n:86"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/<b>open.ts</b><em class="why">an open op then an activate op; a focus-only target is a land</em></span><span class="n">63 changed</span><span class="bar" style="--n:63"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/<b>close.ts</b><em class="why">moves off the tab first, then removes it</em></span><span class="n">47 changed</span><span class="bar" style="--n:47"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/<b>reopen-closed.ts</b><em class="why">the most recent close with no later open, inverted</em></span><span class="n">35 changed</span><span class="bar" style="--n:35"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/<b>activate.ts</b></span><span class="n">15 changed</span><span class="bar" style="--n:15"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/<b>select-context.ts</b></span><span class="n">24 changed</span><span class="bar" style="--n:24"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/<b>inspect.ts</b></span><span class="n">33 changed</span><span class="bar" style="--n:33"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/<b>clear.ts</b><em class="why">an inspect op back to "empty" — no member of its own</em></span><span class="n">23 changed</span><span class="bar" style="--n:23"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/<b>resize.ts</b><em class="why">carries a whole frame on both sides</em></span><span class="n">19 changed</span><span class="bar" style="--n:19"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/<b>show-subscreen.ts</b></span><span class="n">16 changed</span><span class="bar" style="--n:16"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/<b>showing.ts</b></span><span class="n">17 changed</span><span class="bar" style="--n:17"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/test/unit/<b>view-state.test.ts</b><em class="why">the closed-queue tests became log tests; eight undo/redo tests added</em></span><span class="n">145 changed</span><span class="bar" style="--n:145"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">scripts/test/<b>mutations.mjs</b><em class="why">the objects-are-built-in-order mutation follows the new call</em></span><span class="n">5 changed</span><span class="bar" style="--n:5"><i></i></span></li>
+      </ol>
+
+      <p class="group">04 · Persistence <span>the capability, the cadence, the restore</span></p>
+      <ol class="files">
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/capabilities/view/<b>index.remote.ts</b><em class="why">a query and a command — the one crossing</em></span><span class="n">13 lines</span><span class="bar" style="--n:13"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/capabilities/view/<b>view.md</b></span><span class="n">3 lines</span><span class="bar" style="--n:3"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/capabilities/view/types/<b>read-view-state.ts</b><em class="why">no key on the wire — a caller could not have asked for another</em></span><span class="n">8 lines</span><span class="bar" style="--n:8"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/capabilities/view/types/<b>submit-view-changes.ts</b><em class="why">the ops and the state they produced, together</em></span><span class="n">12 lines</span><span class="bar" style="--n:12"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/capabilities/view/api/read-view-state/<b>read-view-state.ts</b><em class="why">the scope decides the row; there is nothing to validate</em></span><span class="n">18 lines</span><span class="bar" style="--n:18"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/capabilities/view/api/submit-view-changes/<b>submit-view-changes.ts</b><em class="why">append a revision, replace the snapshot, in that order</em></span><span class="n">48 lines</span><span class="bar" style="--n:48"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/capabilities/view/api/submit-view-changes/<b>validate-submit-view-changes.ts</b><em class="why">the envelope, not the contents</em></span><span class="n">31 lines</span><span class="bar" style="--n:31"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/capabilities/view/test/unit/<b>view.test.ts</b><em class="why">reads only its own row; two writes that agree on the revision</em></span><span class="n">146 lines</span><span class="bar" style="--n:146"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>submit.ts</b><em class="why">buffer out, ops back on a refusal</em></span><span class="n">43 lines</span><span class="bar" style="--n:43"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/methods/<b>flush.ts</b></span><span class="n">4 lines</span><span class="bar" style="--n:4"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/methods/<b>restore.ts</b><em class="why">dropped if the person acted first</em></span><span class="n">34 lines</span><span class="bar" style="--n:34"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">src/lib/model/client/view-state/test/unit/<b>persistence.test.ts</b><em class="why">13 tests over a faked capability</em></span><span class="n">221 lines</span><span class="bar" style="--n:221"><i></i></span></li>
+        <li class="add"><span class="glyph">+</span><span class="path">configuration/<b>views.yaml</b><em class="why">flushAfterOps: 8, flushAfterMs: 750 — smaller than a resource's</em></span><span class="n">18 lines</span><span class="bar" style="--n:18"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/routes/app/[project]/<b>+layout.server.ts</b><em class="why">two keys added to the publish allowlist</em></span><span class="n">4 changed</span><span class="bar" style="--n:4"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/routes/app/[project]/<b>+layout.svelte</b><em class="why">one effect: restore()</em></span><span class="n">2 changed</span><span class="bar" style="--n:2"><i></i></span></li>
+      </ol>
+
+      <p class="group">Documents <span>rewritten alongside the code they describe</span></p>
+      <ol class="files">
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/<b>view-state.md</b><em class="why">three objects behind one surface; the workbench section deleted</em></span><span class="n">205 changed</span><span class="bar" style="--n:205"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/shared/<b>shared.md</b><em class="why">nine modules; apply, perform, landing, compose documented</em></span><span class="n">225 changed</span><span class="bar" style="--n:225"><i></i></span></li>
+        <li class="mod"><span class="glyph">~</span><span class="path">src/lib/model/client/view-state/methods/<b>methods.md</b><em class="why">twelve methods; no method writes state directly</em></span><span class="n">62 changed</span><span class="bar" style="--n:62"><i></i></span></li>
+      </ol>
+
+    </div>
+  </section>
+
+  <!-- ==================================================== not changed ==== -->
+
+  <section>
+    <div class="band">
+      <div class="ref">07</div>
+      <div>
+        <h2>What did not change, and what is still broken</h2>
+        <p>Two are worth stating plainly, because a report that only lists what moved reads as though everything did.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <p><strong>Under <code>views/</code>, two files.</strong> Both are the <code>NAMED_FIELD</code> maps in the tab bar and the status bar, which are exhaustive over <code>TableName</code> and fail to compile without the two new tables. The other 24 files that read view state — every workspace, the context panel, the inspector, the app shell — were not touched, which was the point.</p>
+      <p><strong>Thirteen tests still fail, and they are the same thirteen.</strong> Every one is a workspace that will not render alone, from before this change: <code>$capabilities/cast</code> does not exist, and seven capability procedures are named but not built. The count did not move in either direction.</p>
+      <p><strong>170 typecheck errors, unchanged.</strong> Fifteen are the copilot, still importing <code>$shared/types/resource-set-expression</code> from a pre-Convex tree; the rest are <code>views/workspaces</code>.</p>
+
+      <h3>Two things to fix, not fixed here</h3>
+      <p><code>pnpm new-table</code> writes broken TypeScript when the new name sorts last: <code>insertSorted</code> appends without giving the previous final entry a comma, which is how both view tables arrived as <code>"variables"</code> then <code>"viewRevisions",</code>. Fixed by hand in the file; still present in the generator, and its own test misses it because <code>probeThings</code> sorts into the middle.</p>
+      <p><code>docs/architecture-design/linters-and-generators.md</code> still names <code>view-state-keys</code>. It is a mirrored artifact, so correcting it means republishing.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>Measured on <code>main</code>, on top of <code>efb9c93</code>. The 93 files land as eight commits.</p>
+    <p>The design this was built against is <em>View State Ledger</em>; this sheet is what was actually put in.</p>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var buttons = document.querySelectorAll(".filters button");
+    var items = document.querySelectorAll("#manifest li");
+    var groups = document.querySelectorAll("#manifest .group");
+    var lists = document.querySelectorAll("#manifest ol.files");
+
+    function show(which) {
+      items.forEach(function (item) {
+        item.hidden = which !== "all" && !item.classList.contains(which);
+      });
+      lists.forEach(function (list, index) {
+        var empty = list.querySelectorAll("li:not([hidden])").length === 0;
+        list.hidden = empty;
+        if (groups[index]) groups[index].hidden = empty;
+      });
+      buttons.forEach(function (button) {
+        button.setAttribute("aria-pressed", String(button.dataset.show === which));
+      });
+    }
+
+    buttons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        show(button.dataset.show);
+      });
+    });
+  })();
+</script>
