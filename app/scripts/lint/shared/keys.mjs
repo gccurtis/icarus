@@ -7,12 +7,12 @@
  */
 import ts from "typescript";
 
-const SHARED = ["model", "client", "view-state", "methods", "shared"];
+const BEHAVIOR = ["representation", "data", "behavior", "views"];
 
 /** Generated from the workspace tree. */
-export const KEYS_FILE = [...SHARED, "keys.ts"];
+export const KEYS_FILE = [...BEHAVIOR, "screens.ts"];
 /** Hand-written: the panels this application intends to have. */
-export const PANEL_KEYS_FILE = [...SHARED, "panel-keys.ts"];
+export const PANEL_KEYS_FILE = [...BEHAVIOR, "panels.ts"];
 
 const arrayNamed = (tree, path, wanted) => {
   for (const statement of tree.source(path).statements) {
@@ -20,7 +20,12 @@ const arrayNamed = (tree, path, wanted) => {
     for (const declaration of statement.declarationList.declarations) {
       if (!ts.isIdentifier(declaration.name) || declaration.name.text !== wanted) continue;
       let initializer = declaration.initializer;
-      while (initializer && (ts.isAsExpression(initializer) || ts.isParenthesizedExpression(initializer))) {
+      while (
+        initializer &&
+        (ts.isAsExpression(initializer) ||
+          ts.isSatisfiesExpression?.(initializer) ||
+          ts.isParenthesizedExpression(initializer))
+      ) {
         initializer = initializer.expression;
       }
       if (initializer && ts.isArrayLiteralExpression(initializer)) {

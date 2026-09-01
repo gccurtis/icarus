@@ -4,10 +4,11 @@
  *
  *     pnpm new-panel -- <context|inspector> <subject> <name>
  *
- * Two writes rather than one, because the vocabulary is no longer derived from
- * the tree: `panel-keys.ts` is hand-written so a panel can be named before it is
- * built, and `key-vocabulary-matches-the-tree` refuses a file the vocabulary
- * does not name. Adding the key here is what stops that being a step to forget.
+ * Three writes rather than one, because the vocabulary is no longer derived from
+ * the tree: the `views` domain's panel keys are hand-written so a panel can be
+ * named before it is built, and `key-vocabulary-matches-the-tree` refuses a file
+ * the vocabulary does not name. Adding the key here is what stops that being a
+ * step to forget.
  */
 import { join } from "node:path";
 
@@ -45,33 +46,62 @@ plan.create(
 );
 
 /**
- * The key, inserted in sorted order.
+ * The key, inserted in sorted order into both halves of the vocabulary.
  *
- * The list is one string per line and code-unit sorted, so the insertion point
- * is the first member that sorts after the new one — and appending at the end
- * would be a diff nobody can read the second time.
+ * The union is what a stored `TabView` names, so it lives under `data/types/`
+ * where a file compiles to nothing; the list and its guard are a runtime value
+ * over that union, so they live under `data/behavior/`. Both are one key per
+ * line and code-unit sorted, so the insertion point is the first member that
+ * sorts after the new one — appending at the end would be a diff nobody can
+ * read the second time.
  */
 const CONSTANT = { context: "CONTEXT_IDS", inspector: "INSPECTION_KEYS" };
+const UNION = { context: "ContextId", inspector: "InspectionKey" };
 const key = `${subject}.${name}`;
 
-plan.edit(
-  join(lib, "model", "client", "view-state", "methods", "shared", "panel-keys.ts"),
-  (text) => {
-    const constant = CONSTANT[stack];
-    const opened = text.indexOf(`export const ${constant} = [\n`);
-    if (opened === -1) throw new Error(`no ${constant} to add ${key} to`);
+/**
+ * Splices the key into the block between `opens` and `closes`, in sorted order.
+ * `line` spells one member and `separator` is what stands between two.
+ */
+const insert = ({ text, what, opens, closes, line, separator }) => {
+  const opened = text.indexOf(opens);
+  if (opened === -1) throw new Error(`no ${what} to add ${key} to`);
 
-    const start = opened + `export const ${constant} = [\n`.length;
-    const end = text.indexOf("] as const;", start);
-    const members = text.slice(start, end).split("\n").filter((line) => line.trim() !== "");
-    if (members.some((line) => line.includes(`"${key}"`))) return text;
+  const start = opened + opens.length;
+  const end = text.indexOf(closes, start);
+  const members = text
+    .slice(start, end)
+    .split("\n")
+    .map((member) => member.replace(/,\s*$/, ""))
+    .filter((member) => member.trim() !== "");
+  if (members.some((member) => member.includes(`"${key}"`))) return text;
 
-    const at = members.findIndex((line) => line.replace(/\D*"([^"]+)".*/, "$1") > key);
-    const index = at === -1 ? members.length : at;
-    members.splice(index, 0, `  "${key}"`);
+  const at = members.findIndex((member) => member.replace(/\D*"([^"]+)".*/, "$1") > key);
+  members.splice(at === -1 ? members.length : at, 0, line);
 
-    return `${text.slice(0, start)}${members.join(",\n").replace(/,+$/, "")}\n${text.slice(end)}`;
-  }
+  return `${text.slice(0, start)}${members.join(separator)}${text.slice(end)}`;
+};
+
+plan.edit(join(lib, "representation", "data", "types", "views", "panels.ts"), (text) =>
+  insert({
+    text,
+    what: UNION[stack],
+    opens: `export type ${UNION[stack]} =\n`,
+    closes: ";\n",
+    line: `  | "${key}"`,
+    separator: "\n"
+  })
+);
+
+plan.edit(join(lib, "representation", "data", "behavior", "views", "panels.ts"), (text) =>
+  insert({
+    text,
+    what: CONSTANT[stack],
+    opens: `export const ${CONSTANT[stack]} = [\n`,
+    closes: "\n] as const satisfies",
+    line: `  "${key}"`,
+    separator: ",\n"
+  })
 );
 
 plan.run({ dryRun: flags.has("dry-run"), what: "new-panel" });

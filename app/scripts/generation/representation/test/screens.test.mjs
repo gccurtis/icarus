@@ -9,13 +9,13 @@
  * check is what turns "somebody remembers" into a failing build — so a test that
  * only asserted the happy path would be testing the less important claim.
  *
- * Panels are not here. Their vocabulary is hand-written in `panel-keys.ts`,
+ * Panels are not here. Their vocabulary is hand-written in the same domain,
  * because a panel that has not been built yet still has to be nameable, and
- * `key-vocabulary-matches-the-tree` is what holds that file to the tree.
+ * `key-vocabulary-matches-the-tree` is what holds those files to the tree.
  *
  * The last test runs the check against the real package rather than a fixture,
  * which is deliberately a test of the repository and not of this script: adding
- * a workspace without regenerating `keys.ts` should turn something red here.
+ * a workspace without regenerating should turn something red here.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -27,7 +27,7 @@ import { test } from "node:test";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const generators = dirname(here);
-const generator = join(generators, "keys.mjs");
+const generator = join(generators, "screens.mjs");
 const realPackageRoot = dirname(dirname(dirname(generators)));
 
 /** One valid screen, so a fixture only has to say what it is about. */
@@ -41,7 +41,7 @@ const treePath = (root, path) => join(root, "src", "lib", "views", ...path.split
  * whole vocabulary is in the paths.
  */
 const makePackage = (paths) => {
-  const root = mkdtempSync(join(tmpdir(), "view-state-keys-"));
+  const root = mkdtempSync(join(tmpdir(), "screen-keys-"));
   for (const path of paths) {
     const file = treePath(root, path);
     mkdirSync(dirname(file), { recursive: true });
@@ -70,28 +70,33 @@ const run = (root, ...args) =>
 const refuses = (root, ...args) => {
   try {
     run(root, ...args);
-    assert.fail(`keys.mjs ${args.join(" ")} was expected to refuse`);
+    assert.fail(`screens.mjs ${args.join(" ")} was expected to refuse`);
   } catch (error) {
-    assert.notEqual(error.status, 0, "keys.mjs exited 0");
+    assert.notEqual(error.status, 0, "screens.mjs exited 0");
     return `${error.stdout ?? ""}${error.stderr ?? ""}`;
   }
 };
 
 /**
- * Where the script writes. It has to match `keys.mjs`'s own target exactly: the
- * vocabulary lives under the model object that holds the state it names, and the
- * model standard admits only a document, an index, types, a definition and a
- * constructor at an object root — so it sits in `methods/shared/`.
+ * Where the script writes, which has to match `screens.mjs`'s own targets
+ * exactly. Two files, because `representation/` splits on what a file emits: the
+ * unions under `data/types/`, which compiles to nothing, and the lists, the
+ * table and the guard under `data/behavior/`.
  */
-const keysPath = (root) =>
-  join(root, "src", "lib", "model", "client", "view-state", "methods", "shared", "keys.ts");
-const keys = (root) => readFileSync(keysPath(root), "utf8");
+const unionsPath = (root) =>
+  join(root, "src", "lib", "representation", "data", "types", "views", "screens.ts");
+const listsPath = (root) =>
+  join(root, "src", "lib", "representation", "data", "behavior", "views", "screens.ts");
+
+const unions = (root) => readFileSync(unionsPath(root), "utf8");
+const lists = (root) => readFileSync(listsPath(root), "utf8");
+const both = (root) => `${unions(root)}${lists(root)}`;
 
 /** The string members of one generated array, in the order they were written. */
 const members = (source, constant) => {
   const opened = source.indexOf(`export const ${constant} = [`);
   assert.notEqual(opened, -1, `${constant} is missing`);
-  const block = source.slice(opened, source.indexOf("] as const;", opened));
+  const block = source.slice(opened, source.indexOf("] as const satisfies", opened));
   return [...block.matchAll(/"([^"]+)"/g)].map(([, value]) => value);
 };
 
@@ -105,10 +110,9 @@ test("a workspace path becomes exactly one screen and one subscreen", () => {
     ],
     (root) => {
       run(root);
-      const source = keys(root);
 
-      assert.deepEqual(members(source, "SCREENS"), ["project-overview", "research"]);
-      assert.match(source, /"research": \["all-threads", "one-question"\]/);
+      assert.deepEqual(members(lists(root), "SCREENS"), ["project-overview", "research"]);
+      assert.match(lists(root), /"research": \["all-threads", "one-question"\]/);
     }
   );
 });
@@ -122,37 +126,50 @@ test("a subscreen is its file name with the workspace prefix stripped", () => {
     ],
     (root) => {
       run(root);
-      const source = keys(root);
 
-      assert.match(source, /"templates": \["editor", "library"\]/);
-      assert.match(source, /"new-tab": \["workspace"\]/, "a bare workspace.svelte keeps the name 'workspace'");
-      assert.ok(!source.includes("workspace-editor"), "the prefix is stripped rather than kept");
+      assert.match(lists(root), /"templates": \["editor", "library"\]/);
+      assert.match(lists(root), /"new-tab": \["workspace"\]/, "a bare workspace.svelte keeps the name 'workspace'");
+      assert.ok(!both(root).includes("workspace-editor"), "the prefix is stripped rather than kept");
     }
   );
 });
 
-test("Subscreen is read back off the table rather than declared beside it", () => {
+test("the unions are declared where a file compiles to nothing", () => {
   withPackage(["workspaces/research/workspace-one-question.svelte"], (root) => {
     run(root);
-    assert.match(keys(root), /export type Subscreen = \(typeof SUBSCREENS\)\[Screen\]\[number\];/);
-    assert.match(keys(root), /\} as const satisfies Record<Screen, readonly string\[\]>;/);
+
+    assert.match(unions(root), /export type Screen =\n {2}\| "project-overview"\n {2}\| "research";/);
+    assert.match(unions(root), /export type Subscreen =\n {2}\| "one-question"\n {2}\| "workspace";/);
+    assert.ok(!unions(root).includes("export const"), "types/ emits nothing");
+  });
+});
+
+test("the lists satisfy the unions rather than declaring their own", () => {
+  withPackage([], (root) => {
+    run(root);
+
+    assert.match(lists(root), /import type \{ Screen, Subscreen \} from "\$representation\/data\/types\/views\/screens";/);
+    assert.match(lists(root), /\] as const satisfies readonly Screen\[\];/);
+    assert.match(lists(root), /\} as const satisfies Record<Screen, readonly Subscreen\[\]>;/);
   });
 });
 
 test("the panel vocabulary is not written here", () => {
   withPackage([], (root) => {
     run(root);
-    const source = keys(root);
-    assert.ok(!source.includes("CONTEXT_IDS"), "contexts are hand-written in panel-keys.ts");
-    assert.ok(!source.includes("INSPECTION_KEYS"), "lenses are hand-written in panel-keys.ts");
+    const source = both(root);
+    assert.ok(!source.includes("CONTEXT_IDS"), "contexts are hand-written beside these");
+    assert.ok(!source.includes("INSPECTION_KEYS"), "lenses are hand-written beside these");
   });
 });
 
 test("the banner names the command that rewrites the file", () => {
   withPackage([], (root) => {
     run(root);
-    assert.match(keys(root), /pnpm view-state-keys/);
-    assert.match(keys(root), /do not edit/i);
+    for (const source of [unions(root), lists(root)]) {
+      assert.match(source, /pnpm screen-keys/);
+      assert.match(source, /do not edit/i);
+    }
   });
 });
 
@@ -160,7 +177,7 @@ test("the guard narrows to the generated union", () => {
   withPackage([], (root) => {
     run(root);
     assert.ok(
-      keys(root).includes("export const isScreen = (value: string): value is Screen =>"),
+      lists(root).includes("export const isScreen = (value: string): value is Screen =>"),
       "isScreen"
     );
   });
@@ -177,11 +194,10 @@ test("every generated list is sorted", () => {
     ],
     (root) => {
       run(root);
-      const source = keys(root);
 
-      const found = members(source, "SCREENS");
+      const found = members(lists(root), "SCREENS");
       assert.deepEqual(found, [...found].sort(), "SCREENS is not sorted");
-      assert.match(source, /"analysis": \["all-analyses", "one-analysis"\]/);
+      assert.match(lists(root), /"analysis": \["all-analyses", "one-analysis"\]/);
     }
   );
 });
@@ -196,7 +212,7 @@ test("the order files were created in does not change the bytes", () => {
   const [first, second] = [workspaces, [...workspaces].reverse()].map((order) =>
     withPackage(order, (root) => {
       run(root);
-      return keys(root);
+      return both(root);
     })
   );
 
@@ -206,15 +222,15 @@ test("the order files were created in does not change the bytes", () => {
 test("a second run over an unchanged tree writes the same bytes", () => {
   withPackage(["workspaces/research/workspace.svelte"], (root) => {
     run(root);
-    const first = keys(root);
+    const first = both(root);
     assert.match(run(root), /unchanged/);
-    assert.equal(keys(root), first);
+    assert.equal(both(root), first);
   });
 });
 
 // -------------------------------------------------------------------- drift ----
 
-test("--check passes on the file the generator just wrote", () => {
+test("--check passes on the files the generator just wrote", () => {
   withPackage(["workspaces/research/workspace.svelte"], (root) => {
     run(root);
     assert.match(run(root, "--check"), /in step with the workspace tree/);
@@ -232,7 +248,7 @@ test("--check fails on a screen added since, and names what it would gain", () =
     const said = refuses(root, "--check");
     assert.match(said, /has drifted from the workspace tree/);
     assert.match(said, /\+ "research",?/);
-    assert.match(said, /pnpm view-state-keys/, "it says how to fix it");
+    assert.match(said, /pnpm screen-keys/, "it says how to fix it");
   });
 });
 
@@ -250,7 +266,7 @@ test("--check fails on a screen removed since, and names what it would lose", ()
 test("--check fails on a hand-edited file even when no screen moved", () => {
   withPackage(["workspaces/analysis/workspace.svelte"], (root) => {
     run(root);
-    writeFileSync(keysPath(root), keys(root).replace('"analysis"', '"invented"'));
+    writeFileSync(listsPath(root), lists(root).replace('"analysis"', '"invented"'));
 
     const said = refuses(root, "--check");
     assert.match(said, /\+ "analysis",/, "the screen the tree has");
@@ -258,23 +274,34 @@ test("--check fails on a hand-edited file even when no screen moved", () => {
   });
 });
 
-test("--check fails when the file has never been generated", () => {
+test("--check fails when a file has never been generated", () => {
   withPackage([], (root) => {
     assert.match(refuses(root, "--check"), /has not been generated/);
+  });
+});
+
+test("--check fails when only one of the two was written", () => {
+  withPackage([], (root) => {
+    run(root);
+    rmSync(listsPath(root));
+
+    const said = refuses(root, "--check");
+    assert.match(said, /behavior\/views\/screens\.ts has not been generated/);
+    assert.ok(!said.includes("types/views/screens.ts has"), "the one still in step is not reported");
   });
 });
 
 test("--check writes nothing, so it is safe in CI", () => {
   withPackage([], (root) => {
     run(root);
-    const before = keys(root);
+    const before = both(root);
 
     const added = treePath(root, "workspaces/research/workspace.svelte");
     mkdirSync(dirname(added), { recursive: true });
     writeFileSync(added, "");
 
     refuses(root, "--check");
-    assert.equal(keys(root), before);
+    assert.equal(both(root), before);
   });
 });
 
@@ -334,13 +361,13 @@ test("the generator runs identically from any working directory", () => {
       encoding: "utf8",
       stdio: "pipe"
     });
-    assert.ok(members(keys(root), "SCREENS").includes("research"));
+    assert.ok(members(lists(root), "SCREENS").includes("research"));
   });
 });
 
 // ------------------------------------------------------------ the real tree ----
 
-test("the committed keys.ts is in step with the workspace tree", () => {
+test("the committed screen vocabulary is in step with the workspace tree", () => {
   execFileSync(process.execPath, [generator, "--check"], {
     env: { ...process.env, ICARUS_PACKAGE_ROOT: realPackageRoot },
     encoding: "utf8",

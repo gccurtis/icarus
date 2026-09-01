@@ -7,7 +7,7 @@
  * With no subscreen this writes `workspace.svelte`, which is the screen's one
  * centre. With one it writes `workspace-<subscreen>.svelte`, which is one state
  * that centre can be in. Either way the key comes from the path, so
- * `pnpm view-state-keys` is what makes it reachable.
+ * `pnpm screen-keys` is what makes it reachable.
  */
 import { join } from "node:path";
 
@@ -67,4 +67,4 @@ plan.create(
 
 plan.run({ dryRun: flags.has("dry-run"), what: "new-workspace" });
 
-if (!flags.has("dry-run")) console.log("\n  next: pnpm view-state-keys");
+if (!flags.has("dry-run")) console.log("\n  next: pnpm screen-keys");

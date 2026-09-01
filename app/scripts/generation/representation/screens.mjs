@@ -2,22 +2,19 @@
 /**
  * Generates the screen vocabulary from the workspace tree itself.
  *
- *     pnpm view-state-keys
- *     pnpm view-state-keys -- --check
+ *     pnpm screen-keys
+ *     pnpm screen-keys -- --check
  *
  * A screen is a directory and a subscreen is a file:
  * `workspaces/agents/workspace-persona.svelte` is the `agents` screen's
  * `"persona"`. Nothing outside the tree gets a vote, so `--check`, which exits
- * non-zero when the written file and the tree disagree, is the part of this
+ * non-zero when a written file and the tree disagree, is the part of this
  * script worth putting in CI.
  *
- * The panel vocabulary was generated here too, from the panel trees. It is now
- * hand-written in `panel-keys.ts`: a panel that has not been built yet still has
- * to be nameable, and a vocabulary derived from the tree cannot say that.
- *
- * There is no shared module beside this one. Everything here is either about the
- * shape of a key or about the single file that holds them, and a second consumer
- * is the thing that would justify pulling it out.
+ * Two files, because `representation/` splits on what a file emits: the unions
+ * belong under `data/types/`, which compiles to nothing, and the lists, the
+ * table and the guard belong under `data/behavior/`, which is where a runtime
+ * value over them is allowed to live.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -26,15 +23,14 @@ import { fileURLToPath } from "node:url";
 const packageRoot =
   process.env.ICARUS_PACKAGE_ROOT ?? dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
 const libRoot = join(packageRoot, "src", "lib");
-// The vocabulary belongs to the model object that holds the state it names. It
-// sits under `methods/shared/` rather than at the object root because the model
-// standard admits only a document, an index, types, a definition and a constructor
-// there — and `lint:model` enforces it. Three methods and the definition read
-// these, which is exactly what `shared/` is for.
-const target = join(libRoot, "model", "client", "view-state", "methods", "shared", "keys.ts");
 
-/** How the generated file tells a reader who rewrites it, and how CI checks it. */
-const COMMAND = "pnpm view-state-keys";
+const targets = {
+  types: join(libRoot, "representation", "data", "types", "views", "screens.ts"),
+  behavior: join(libRoot, "representation", "data", "behavior", "views", "screens.ts")
+};
+
+/** How a generated file tells a reader who rewrites it, and how CI checks it. */
+const COMMAND = "pnpm screen-keys";
 
 /**
  * The arguments this command was invoked with, minus the separator pnpm leaves
@@ -42,7 +38,7 @@ const COMMAND = "pnpm view-state-keys";
  *
  * Every standard documents its generator as `pnpm <script> -- <args>`, and pnpm
  * forwards that `--` to the script rather than consuming it. Reading `argv`
- * directly therefore makes `pnpm view-state-keys -- --check` fail on its first
+ * directly therefore makes `pnpm screen-keys -- --check` fail on its first
  * word — the one invocation anybody will copy.
  */
 const commandArgs = () =>
@@ -57,7 +53,7 @@ const at = (absolute) => relative(packageRoot, absolute) || ".";
 /** Reports in the same `path  message` format lint uses, then stops. */
 const stopIfFailed = () => {
   if (problems.length === 0) return;
-  console.error(`view-state-keys: ${problems.length} problem${problems.length === 1 ? "" : "s"}\n`);
+  console.error(`screen-keys: ${problems.length} problem${problems.length === 1 ? "" : "s"}\n`);
   for (const problem of problems) console.error(`  ${problem}`);
   console.error("\nRun `pnpm lint panels` for what the tree is expected to look like.");
   process.exit(1);
@@ -127,58 +123,44 @@ const screenSubscreens = (root) => {
 
 // --------------------------------------------------------------- rendering ----
 
-const members = (values) => values.map((value) => `  "${value}"`).join(",\n");
-
-const vocabulary = (constant, type, values) => `export const ${constant} = [
-${members(values)}
-] as const;
-
-export type ${type} = (typeof ${constant})[number];
+const banner = () => `// Every screen the workspace tree defines. Generated — do not edit.
+//
+//     ${COMMAND}
+//
+// \`${COMMAND} -- --check\` fails when a file and the tree disagree,
+// which is what stops a screen naming something that is not there.
 `;
 
-const guard = (name, constant, type) => `export const ${name} = (value: string): value is ${type} =>
-  (${constant} as readonly string[]).includes(value);
+const union = (name, values) => `export type ${name} =
+${values.map((value) => `  | "${value}"`).join("\n")};
 `;
 
-const file = (screens) => {
+const typesFile = (screens) => {
+  const subscreens = sorted(new Set([...screens.values()].flat()));
+  return `${banner()}
+${union("Screen", [...screens.keys()])}
+${union("Subscreen", subscreens)}`;
+};
+
+const behaviorFile = (screens) => {
+  const members = [...screens.keys()].map((screen) => `  "${screen}"`).join(",\n");
   const table = [...screens]
     .map(([screen, subscreens]) => `  "${screen}": [${subscreens.map((name) => `"${name}"`).join(", ")}]`)
     .join(",\n");
 
-  return `/**
- * Every screen the workspace tree defines. Generated — do not edit.
- *
- *     ${COMMAND}
- *
- * A screen is a directory and a subscreen is a file:
- * \`workspaces/agents/workspace-persona.svelte\` is the \`agents\` screen's
- * \`"persona"\`.
- *
- * The panel vocabulary is not here. It is hand-written in \`panel-keys.ts\`,
- * because a panel that has not been built yet still has to be nameable.
- *
- * \`${COMMAND} -- --check\` fails when this file and the tree
- * disagree, which is what stops a screen naming something that is not there.
- */
+  return `${banner()}import type { Screen, Subscreen } from "$representation/data/types/views/screens";
 
-/** Every screen: one per directory under \`workspaces/\`. */
-${vocabulary("SCREENS", "Screen", [...screens.keys()])}
-/**
- * What each screen can show in its centre, with the prefix its files carry
- * stripped: \`workspace.svelte\` is \`"workspace"\` and
- * \`workspace-persona.svelte\` is \`"persona"\`.
- *
- * \`as const satisfies\` rather than a plain annotation, so the members stay
- * literal — \`Subscreen\` is read back off this table — while a screen missing
- * from it still fails to compile.
- */
+export const SCREENS = [
+${members}
+] as const satisfies readonly Screen[];
+
 export const SUBSCREENS = {
 ${table}
-} as const satisfies Record<Screen, readonly string[]>;
+} as const satisfies Record<Screen, readonly Subscreen[]>;
 
-export type Subscreen = (typeof SUBSCREENS)[Screen][number];
-
-${guard("isScreen", "SCREENS", "Screen")}`;
+export const isScreen = (value: string): value is Screen =>
+  (SCREENS as readonly string[]).includes(value);
+`;
 };
 
 // ------------------------------------------------------------------- drift ----
@@ -214,8 +196,10 @@ if ((flag !== undefined && flag !== "--check") || rest.length > 0) {
 const screens = screenSubscreens(requireTree(join(libRoot, "views", "workspaces")));
 stopIfFailed();
 
-const contents = file(screens);
-const current = existsSync(target) ? readFileSync(target, "utf8") : null;
+const wanted = [
+  { target: targets.types, contents: typesFile(screens) },
+  { target: targets.behavior, contents: behaviorFile(screens) }
+];
 
 const subscreens = [...screens.values()];
 const counts = [
@@ -224,20 +208,33 @@ const counts = [
 ];
 
 if (flag === "--check") {
-  if (current === contents) {
-    console.log(`view-state-keys: ${at(target)} is in step with the workspace tree\n`);
+  const stale = wanted.filter(
+    ({ target, contents }) => (existsSync(target) ? readFileSync(target, "utf8") : null) !== contents
+  );
+
+  if (stale.length === 0) {
+    console.log(`screen-keys: ${wanted.map(({ target }) => at(target)).join(", ")} in step with the workspace tree\n`);
     for (const count of counts) console.log(`  ${count}`);
     process.exit(0);
   }
 
-  console.error(`view-state-keys: ${at(target)} ${current === null ? "has not been generated" : "has drifted from the workspace tree"}\n`);
-  if (current !== null) for (const line of drift(contents, current)) console.error(`  ${line}`);
+  console.error("screen-keys:\n");
+  for (const { target, contents } of stale) {
+    const current = existsSync(target) ? readFileSync(target, "utf8") : null;
+    console.error(`  ${at(target)} ${current === null ? "has not been generated" : "has drifted from the workspace tree"}`);
+    if (current !== null) for (const line of drift(contents, current)) console.error(`    ${line}`);
+  }
   console.error(`\nRun '${COMMAND}' to rewrite it.`);
   process.exit(1);
 }
 
-mkdirSync(dirname(target), { recursive: true });
-writeFileSync(target, contents);
+const written = [];
+for (const { target, contents } of wanted) {
+  const current = existsSync(target) ? readFileSync(target, "utf8") : null;
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, contents);
+  written.push(`${current === contents ? "unchanged" : "wrote"} ${at(target)}`);
+}
 
-console.log(`view-state-keys: ${current === contents ? "unchanged" : "wrote"} ${at(target)}\n`);
+console.log(`screen-keys: ${written.join(", ")}\n`);
 for (const count of counts) console.log(`  ${count}`);
