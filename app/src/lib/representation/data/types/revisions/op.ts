@@ -9,8 +9,12 @@ export type After = string | null;
  * Five ops over a path, one set per resource.
  *
  * Every op is closed under inversion, which is what the extra payloads buy:
- * `was` reverses a set, `values` and `after` reverse a remove, `wasAfter`
- * reverses a move. An undo is an ordinary change set, not a rewind.
+ * `was` reverses a set, `ids`, `values` and `after` reverse an insert or a
+ * remove, `wasAfter` reverses a move. An undo is an ordinary change set, not a
+ * rewind.
+ *
+ * `insert` names its `ids` for that reason alone: applying one does not need
+ * them, and inverting one to a remove does.
  *
  * `value` and `values` are `unknown` because a payload is whatever sits at the
  * path. Naming them would be this type knowing what a slide is.

@@ -10,6 +10,7 @@ export type DocumentOp =
       op: "insert";
       target: "row" | "block" | "atom" | "mark";
       path: string;
+      ids: string[];
       after: After;
       values: unknown[];
     }

@@ -8,7 +8,7 @@ type DeckTarget = "slide" | "element" | "section" | "block" | "atom" | "mark";
 
 export type SlideDeckOp =
   | { op: "set"; target: DeckTarget; path: string; value: unknown; was: unknown }
-  | { op: "insert"; target: DeckTarget; path: string; after: After; values: unknown[] }
+  | { op: "insert"; target: DeckTarget; path: string; ids: string[]; after: After; values: unknown[] }
   | {
       op: "remove";
       target: DeckTarget;
