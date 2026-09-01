@@ -55,6 +55,7 @@ export type DeckTheme = {
 };
 
 export type SlideDeckBody = {
+  aspectRatio: AspectRatio;
   theme: DeckTheme;
   styles: StyleSet;
   layouts: SlideLayout[];

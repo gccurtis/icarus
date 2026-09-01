@@ -49,7 +49,7 @@ import type {
   DocumentChangeTier,
   DocumentSnapshotRole
 } from "$representation/data/types/documents/snapshot";
-import type { AspectRatio, SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import type {
   SlideDeckChangeTier,
@@ -178,10 +178,24 @@ export type DocumentFields = {
 };
 export type Document = Row<"documents"> & DocumentFields;
 
-export type SlideDeckFields = DocumentFields & { aspectRatio: AspectRatio };
+export type SlideDeckFields = {
+  projectId: Id<"projects">;
+  title: string;
+  templateId?: Id<"templates">;
+  createdBy: Actor;
+  updatedBy: Actor;
+  updatedAt: number;
+};
 export type SlideDeck = Row<"slideDecks"> & SlideDeckFields;
 
-export type SpreadsheetFields = DocumentFields;
+export type SpreadsheetFields = {
+  projectId: Id<"projects">;
+  title: string;
+  templateId?: Id<"templates">;
+  createdBy: Actor;
+  updatedBy: Actor;
+  updatedAt: number;
+};
 export type Spreadsheet = Row<"spreadsheets"> & SpreadsheetFields;
 
 export type SheetCellFields = {

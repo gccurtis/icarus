@@ -3,7 +3,7 @@ import type { Mark } from "$representation/data/types/content/content-block";
 import type { VariableValue } from "$representation/data/types/content/variable-value";
 import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 import type { DocumentBody } from "$representation/data/types/documents/body";
-import type { AspectRatio, SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import type { PrintScale } from "$representation/data/types/spreadsheets/body";
 import type { PageSetup } from "$representation/data/types/spreadsheets/page-setup";
 import type { StyleSet } from "$representation/data/types/spreadsheets/style-set";
@@ -100,5 +100,5 @@ export type SpreadsheetTemplate = {
  */
 export type TemplateBody =
   | ({ resource: "document" } & DocumentBody)
-  | ({ resource: "slides"; aspectRatio: AspectRatio } & SlideDeckBody)
+  | ({ resource: "slides" } & SlideDeckBody)
   | ({ resource: "spreadsheet" } & SpreadsheetTemplate);
