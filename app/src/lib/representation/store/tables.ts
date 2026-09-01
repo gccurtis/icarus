@@ -66,6 +66,8 @@ import type {
   TemplateKind,
   TemplateVariable
 } from "$representation/data/types/templates/template";
+import type { ViewOp } from "$representation/data/types/views/op";
+import type { TabId, TabRecord, TabView } from "$representation/data/types/views/tab";
 
 export type UserFields = {
   authSubject: string;
@@ -524,6 +526,27 @@ export type ActivityFields = {
 };
 export type Activity = Row<"activity"> & ActivityFields;
 
+export type ViewSnapshotFields = {
+  projectId: Id<"projects">;
+  userId: Id<"users">;
+  revision: number;
+  tabs: TabRecord[];
+  activeId: TabId;
+  views: Record<TabId, TabView>;
+  at: number;
+};
+export type ViewSnapshot = Row<"viewSnapshots"> & ViewSnapshotFields;
+
+export type ViewRevisionFields = {
+  projectId: Id<"projects">;
+  userId: Id<"users">;
+  revision: number;
+  baseRevision: number;
+  ops: ViewOp[];
+  at: number;
+};
+export type ViewRevision = Row<"viewRevisions"> & ViewRevisionFields;
+
 export const TABLE_NAMES = [
   "activity",
   "agentTasks",
@@ -563,7 +586,9 @@ export const TABLE_NAMES = [
   "threadParts",
   "threads",
   "users",
-  "variables"
+  "variables",
+  "viewRevisions",
+  "viewSnapshots"
 ] as const;
 
 export type TableName = (typeof TABLE_NAMES)[number];
@@ -608,6 +633,8 @@ export type TableFields = {
   threads: ThreadFields;
   users: UserFields;
   variables: VariableFields;
+  viewRevisions: ViewRevisionFields;
+  viewSnapshots: ViewSnapshotFields;
 };
 
 export type TableRow<T extends TableName> = Row<T> & TableFields[T];

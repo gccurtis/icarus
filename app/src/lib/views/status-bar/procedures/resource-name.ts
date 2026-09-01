@@ -41,7 +41,9 @@ const NAMED_FIELD = {
   threadParts: null,
   threads: null,
   users: "displayName",
-  variables: "name"
+  variables: "name",
+  viewRevisions: null,
+  viewSnapshots: null
 } as const satisfies Record<TableName, string | null>;
 
 /**
