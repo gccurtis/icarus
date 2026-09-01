@@ -1,7 +1,7 @@
 import type { ContextId } from "$representation/data/types/workspace/panels";
-import type { Screen, Subscreen } from "$representation/data/types/workspace/screens";
+import type { Category, Subscreen } from "$representation/data/types/workspace/categories";
 
-export const RAILS: Record<Screen, Partial<Record<Subscreen, readonly ContextId[]>>> = {
+export const RAILS: Record<Category, Partial<Record<Subscreen, readonly ContextId[]>>> = {
   "project-overview": {
     workspace: ["overview.project", "project.history", "project.variables", "project.contexts"]
   },
@@ -112,13 +112,13 @@ export const RAILS: Record<Screen, Partial<Record<Subscreen, readonly ContextId[
 
 const NONE: readonly ContextId[] = Object.freeze([]);
 
-export const railFor = (screen: Screen, subscreen: Subscreen): readonly ContextId[] =>
-  RAILS[screen][subscreen] ?? NONE;
+export const railFor = (category: Category, subscreen: Subscreen): readonly ContextId[] =>
+  RAILS[category][subscreen] ?? NONE;
 
-export const defaultContext = (screen: Screen, subscreen: Subscreen): ContextId | undefined =>
-  railFor(screen, subscreen)[0];
+export const defaultContext = (category: Category, subscreen: Subscreen): ContextId | undefined =>
+  railFor(category, subscreen)[0];
 
-export const DEFAULT_SUBSCREEN: Record<Screen, Subscreen> = {
+export const DEFAULT_SUBSCREEN: Record<Category, Subscreen> = {
   agents: "library",
   templates: "library",
   analysis: "workspace",
@@ -130,7 +130,7 @@ export const DEFAULT_SUBSCREEN: Record<Screen, Subscreen> = {
   "spreadsheet-editor": "workspace"
 };
 
-export const defaultSubscreen = (screen: Screen): Subscreen => DEFAULT_SUBSCREEN[screen];
+export const defaultSubscreen = (category: Category): Subscreen => DEFAULT_SUBSCREEN[category];
 
-export const offersContext = (screen: Screen, subscreen: Subscreen, id: ContextId): boolean =>
-  railFor(screen, subscreen).includes(id);
+export const offersContext = (category: Category, subscreen: Subscreen, id: ContextId): boolean =>
+  railFor(category, subscreen).includes(id);

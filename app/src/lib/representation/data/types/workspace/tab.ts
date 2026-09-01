@@ -1,5 +1,5 @@
 import type { ContextId, InspectionKey } from "$representation/data/types/workspace/panels";
-import type { Screen, Subscreen } from "$representation/data/types/workspace/screens";
+import type { Category, Subscreen } from "$representation/data/types/workspace/categories";
 
 export type TabId = string;
 
@@ -20,7 +20,7 @@ export type Frame = {
 
 export type TabRecord = {
   readonly id: TabId;
-  readonly screen: Screen;
+  readonly category: Category;
   readonly resourceId?: string;
 };
 
@@ -39,7 +39,7 @@ export type Landing = Pick<
 >;
 
 export type Target = {
-  readonly screen: Screen;
+  readonly category: Category;
   readonly subscreen?: Subscreen;
   readonly resourceId?: string;
   readonly focus?: string;

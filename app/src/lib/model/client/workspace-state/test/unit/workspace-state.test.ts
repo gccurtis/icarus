@@ -18,7 +18,7 @@ import {
   DEFAULT_FRAME,
   INSPECTION_KEYS,
   RAILS,
-  SCREENS,
+  CATEGORIES,
   SINGLETONS,
   SUBSCREENS,
   defaultSubscreen,
@@ -39,21 +39,21 @@ import {
  *
  * **Keys are read out of the generated vocabulary rather than typed out.** A
  * hard-coded key that later stops existing is a test that fails for the wrong
- * reason; the thing that should fail is `pnpm screen-keys -- --check`.
+ * reason; the thing that should fail is `pnpm category-keys -- --check`.
  *
- * **Agents is the screen with four centres and Templates the screen with two**,
- * so everything about moving between centres is written against one of those.
- * Every other screen has the single centre `workspace`, and a subject inside one
- * of those screens is a `focus` rather than a centre.
+ * **Agents is the category with four centres and Templates the category with
+ * two**, so everything about moving between centres is written against one of
+ * those. Every other category has the single centre `workspace`, and a subject
+ * inside one of those categories is a `focus` rather than a centre.
  */
 const UNPERSISTED = { workspace: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } } };
 
 const workspaceState = (): WorkspaceStateModel =>
   createWorkspaceState("p1", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
 
-const document = (id: string): Target => ({ screen: "document-editor", resourceId: id });
-const thread = (id: string): Target => ({ screen: "research", resourceId: id });
-const launcher: Target = { screen: "new-tab" };
+const document = (id: string): Target => ({ category: "document-editor", resourceId: id });
+const thread = (id: string): Target => ({ category: "research", resourceId: id });
+const launcher: Target = { category: "new-tab" };
 
 /** Read a tab back out of the model rather than holding the one `open` returned. */
 const tabOf = (model: WorkspaceStateModel, id: TabId): Tab => {
@@ -79,99 +79,100 @@ test("opens on the permanent tabs, in order, with the first active", () => {
   const model = workspaceState();
 
   assert.deepEqual(
-    model.tabs.map((tab) => tab.screen),
+    model.tabs.map((tab) => tab.category),
     [...SINGLETONS]
   );
   assert.equal(model.activeId, model.tabs[0].id);
-  assert.equal(model.active.screen, SINGLETONS[0]);
+  assert.equal(model.active.category, SINGLETONS[0]);
   assert.equal(model.project, "p1");
 });
 
-test("a permanent tab is a place, so its screen is its whole identity", () => {
+test("a permanent tab is a place, so its category is its whole identity", () => {
   // Nothing is selected when a project loads, so a permanent tab is for a kind of
   // work rather than for one thing: it edits no resource, and asking for its
-  // screen a second time hands back the tab that is already there.
+  // category a second time hands back the tab that is already there.
   const model = workspaceState();
 
   for (const tab of model.tabs) {
     assert.equal(tab.resourceId, undefined);
-    assert.equal(isSingleton(tab.screen), true);
-    assert.equal(model.open({ screen: tab.screen }).id, tab.id);
+    assert.equal(isSingleton(tab.category), true);
+    assert.equal(model.open({ category: tab.category }).id, tab.id);
   }
 
   assert.equal(model.tabs.length, SINGLETONS.length);
 });
 
-test("every permanent tab starts on its screen's default centre, its rail's first view, and nothing open inside it", () => {
+test("every permanent tab starts on its category's default centre, its rail's first view, and nothing open inside it", () => {
   // Asserted over all four rather than the active one, because the default is
-  // named per screen: Agents and Templates open on their library, the rest on
+  // named per category: Agents and Templates open on their library, the rest on
   // their one workspace, and a table that got one wrong would still pass a test
   // that only looked at Project Overview.
   const model = workspaceState();
 
   for (const tab of model.tabs) {
-    assert.equal(tab.subscreen, defaultSubscreen(tab.screen));
-    assert.equal(tab.contextId, defaultContext(tab.screen, tab.subscreen));
+    assert.equal(tab.subscreen, defaultSubscreen(tab.category));
+    assert.equal(tab.contextId, defaultContext(tab.category, tab.subscreen));
     assert.equal(tab.focus, undefined);
     assert.equal(tab.inspected, "empty");
     assert.equal(tab.selection, undefined);
   }
 
-  assert.equal(model.context, defaultContext(model.active.screen, model.active.subscreen));
+  assert.equal(model.context, defaultContext(model.active.category, model.active.subscreen));
   assert.equal(model.inspected, "empty");
   assert.equal(model.selection, undefined);
   assert.deepEqual({ ...model.frame }, { ...DEFAULT_FRAME });
 });
 
-test("permanence is derived, so a tab cannot disagree with its screen", () => {
+test("permanence is derived, so a tab cannot disagree with its category", () => {
   const model = workspaceState();
   const tab = model.open(document("k57"));
 
-  assert.equal(model.tabs.slice(0, SINGLETONS.length).every((t) => isSingleton(t.screen)), true);
-  assert.equal(isSingleton(tab.screen), false);
+  assert.equal(model.tabs.slice(0, SINGLETONS.length).every((t) => isSingleton(t.category)), true);
+  assert.equal(isSingleton(tab.category), false);
   assert.equal("permanent" in tab, false);
 });
 
 // ---------------------------------------------------------------- vocabulary
 
-test("every screen opens on a centre it actually has", () => {
-  // `DEFAULT_SUBSCREEN` is total over screens but its values are the union of
-  // every screen's centres, so `agents: "workspace"` would compile and then throw
-  // on the first `showSubscreen`. Nothing but this checks the two tables agree.
-  for (const screen of SCREENS) {
-    const offered: readonly string[] = SUBSCREENS[screen];
+test("every category opens on a centre it actually has", () => {
+  // `DEFAULT_SUBSCREEN` is total over categories but its values are the union of
+  // every category's centres, so `agents: "workspace"` would compile and then
+  // throw on the first `showSubscreen`. Nothing but this checks the two tables
+  // agree.
+  for (const category of CATEGORIES) {
+    const offered: readonly string[] = SUBSCREENS[category];
     assert.ok(
-      offered.includes(defaultSubscreen(screen)),
-      `'${screen}' opens on a centre it has not got`
+      offered.includes(defaultSubscreen(category)),
+      `'${category}' opens on a centre it has not got`
     );
   }
 });
 
-test("every rail is keyed by a centre its screen has, and offers no view twice", () => {
-  // `RAILS` is partial over subscreens for a good reason — no screen has all of
+test("every rail is keyed by a centre its category has, and offers no view twice", () => {
+  // `RAILS` is partial over subscreens for a good reason — no category has all of
   // them — and the cost is that a transcription typo is a row nothing ever reads.
-  for (const screen of SCREENS) {
-    const offered: readonly string[] = SUBSCREENS[screen];
+  for (const category of CATEGORIES) {
+    const offered: readonly string[] = SUBSCREENS[category];
 
-    for (const subscreen of Object.keys(RAILS[screen])) {
-      assert.ok(offered.includes(subscreen), `'${screen}' has no centre '${subscreen}'`);
+    for (const subscreen of Object.keys(RAILS[category])) {
+      assert.ok(offered.includes(subscreen), `'${category}' has no centre '${subscreen}'`);
 
-      const rail = railFor(screen, subscreen as Subscreen);
-      assert.equal(new Set(rail).size, rail.length, `'${screen}/${subscreen}' repeats a view`);
+      const rail = railFor(category, subscreen as Subscreen);
+      assert.equal(new Set(rail).size, rail.length, `'${category}/${subscreen}' repeats a view`);
     }
   }
 });
 
 // ---------------------------------------------------------------------- open
 
-test("opening a permanent screen returns the tab already there", () => {
+test("opening a permanent category returns the tab already there", () => {
   const model = workspaceState();
   const before = model.tabs.length;
 
-  const tab = model.open({ screen: "templates" });
+  const tab = model.open({ category: "templates" });
 
   assert.equal(model.tabs.length, before);
-  assert.equal(model.tabs.filter((candidate) => candidate.screen === "templates").length, 1);
+  assert.equal(model.tabs.filter((candidate) => candidate.category === "templates").length, 1);
   assert.equal(model.activeId, tab.id);
 });
 
@@ -198,11 +199,11 @@ test("two resources are two tabs", () => {
   assert.equal(model.tabs.length, SINGLETONS.length + 2);
 });
 
-test("one id under two screens is two tabs", () => {
+test("one id under two categories is two tabs", () => {
   const model = workspaceState();
 
   const a = model.open(document("shared"));
-  const b = model.open({ screen: "spreadsheet-editor", resourceId: "shared" });
+  const b = model.open({ category: "spreadsheet-editor", resourceId: "shared" });
 
   assert.notEqual(a.id, b.id);
 });
@@ -219,7 +220,7 @@ test("two research threads are two tabs", () => {
   assert.notEqual(first.id, second.id);
   assert.equal(isSingleton("research"), false);
   assert.equal(model.tabs.length, SINGLETONS.length + 2);
-  assert.equal(model.tabs.filter((tab) => tab.screen === "research").length, 2);
+  assert.equal(model.tabs.filter((tab) => tab.category === "research").length, 2);
 });
 
 test("one research thread reached twice is one tab, in the state it was left", () => {
@@ -255,14 +256,14 @@ test("opening an already-open permanent tab onto a centre moves it, resets the r
   // for, and the state left over from the old centre would outlive what it was
   // about — which is why this routes through `landOn` rather than assigning.
   const model = workspaceState();
-  model.open({ screen: "agents" });
+  model.open({ category: "agents" });
   const stale = railFor("agents", "library")[2];
   model.selectContext(stale);
   model.inspect(lens, selection);
   model.open(document("k57"));
   const before = model.tabs.length;
 
-  const tab = model.open({ screen: "agents", subscreen: "persona", focus: "pa-3" });
+  const tab = model.open({ category: "agents", subscreen: "persona", focus: "pa-3" });
 
   assert.equal(model.tabs.length, before);
   assert.equal(model.activeId, tab.id);
@@ -275,7 +276,7 @@ test("opening an already-open permanent tab onto a centre moves it, resets the r
 });
 
 test("a target with a focus and no centre says what the tab is about without moving it", () => {
-  // The narrower half of the same call, and the one a thread needs: the screen
+  // The narrower half of the same call, and the one a thread needs: the category
   // has one centre, so arriving at a question inside it is a change of subject and
   // nothing else. Resetting the rail here would throw away a position nothing
   // invalidated.
@@ -285,7 +286,7 @@ test("a target with a focus and no centre says what the tab is about without mov
   model.selectContext(where);
   model.open(document("k57"));
 
-  model.open({ screen: "research", resourceId: "th-1", focus: "q-4" });
+  model.open({ category: "research", resourceId: "th-1", focus: "q-4" });
 
   assert.equal(model.activeId, first.id);
   assert.equal(model.active.focus, "q-4");
@@ -295,9 +296,9 @@ test("a target with a focus and no centre says what the tab is about without mov
 
 test("a centre asked for with no focus clears the one that was there", () => {
   const model = workspaceState();
-  model.open({ screen: "agents", subscreen: "persona", focus: "pa-3" });
+  model.open({ category: "agents", subscreen: "persona", focus: "pa-3" });
 
-  model.open({ screen: "agents", subscreen: "library" });
+  model.open({ category: "agents", subscreen: "library" });
 
   assert.equal(model.active.subscreen, "library");
   assert.equal(model.active.focus, undefined);
@@ -310,7 +311,7 @@ test("a target naming a centre the screen has not got is refused by open, not ju
   model.open(thread("th-1"));
 
   assert.throws(
-    () => model.open({ screen: "research", resourceId: "th-1", subscreen: "persona" }),
+    () => model.open({ category: "research", resourceId: "th-1", subscreen: "persona" }),
     /has no subscreen/
   );
   assert.equal(model.active.subscreen, defaultSubscreen("research"));
@@ -320,7 +321,7 @@ test("a minted tab arrives on the subject it was opened onto, and on none when i
   const model = workspaceState();
 
   const withFocus = model.open({
-    screen: "document-editor",
+    category: "document-editor",
     resourceId: "k57",
     focus: "sec-2"
   });
@@ -350,7 +351,7 @@ test("closing the last tab a person opened falls back onto a permanent one", () 
 
   assert.equal(model.tabs.length, SINGLETONS.length);
   assert.equal(model.tabs.some((candidate) => candidate.id === model.activeId), true);
-  assert.equal(isSingleton(model.active.screen), true);
+  assert.equal(isSingleton(model.active.category), true);
 });
 
 test("closing a tab that is not active leaves the active one alone", () => {
@@ -448,7 +449,7 @@ test("a closed tab comes back whole, not as an identity", () => {
   assert.equal(reopened.resourceId, "k57");
 });
 
-test("reopening restores the rail, the inspection and the widths — not just the screen", () => {
+test("reopening restores the rail, the inspection and the widths — not just the category", () => {
   const model = workspaceState();
   const tab = model.open(document("k57"));
   const where = railFor("document-editor", "workspace")[3];
@@ -475,12 +476,12 @@ test("a closed thread comes back as the same thread, with the subject it was on"
   // that recoverable: the thread comes back by id, on the question it was on,
   // rather than as a second tab about the same thread.
   const model = workspaceState();
-  const tab = model.open({ screen: "research", resourceId: "th-1", focus: "q-4" });
+  const tab = model.open({ category: "research", resourceId: "th-1", focus: "q-4" });
   const where = railFor("research", "workspace")[4];
   model.selectContext(where);
 
   model.close(tab.id);
-  assert.equal(model.tabs.some((candidate) => candidate.screen === "research"), false);
+  assert.equal(model.tabs.some((candidate) => candidate.category === "research"), false);
 
   const reopened = model.reopenClosed();
 
@@ -490,7 +491,7 @@ test("a closed thread comes back as the same thread, with the subject it was on"
   assert.equal(reopened.focus, "q-4");
   assert.equal(model.context, where);
   assert.equal(model.open(thread("th-1")).id, tab.id);
-  assert.equal(model.tabs.filter((candidate) => candidate.screen === "research").length, 1);
+  assert.equal(model.tabs.filter((candidate) => candidate.category === "research").length, 1);
 });
 
 test("reopening walks back through every close, newest first", () => {
@@ -528,7 +529,7 @@ test("a subscreen is view state, never a second tab", () => {
   // Agents on a persona and Agents on the library it was chosen from are one tab
   // in two states.
   const model = workspaceState();
-  model.open({ screen: "agents" });
+  model.open({ category: "agents" });
   const before = model.tabs.length;
   const id = model.activeId;
 
@@ -543,7 +544,7 @@ test("the rail moves to the new subscreen's default when the old view is not off
   // Templates is the case that makes this visible: a library and the thing being
   // authored share no rail entry at all.
   const model = workspaceState();
-  model.open({ screen: "templates" });
+  model.open({ category: "templates" });
   const stale = railFor("templates", "library")[1];
   model.selectContext(stale);
 
@@ -558,7 +559,7 @@ test("the rail stays where it is when the new subscreen offers it too", () => {
   // views that say what is running — and moving off one of those on a subscreen
   // change would be losing a position for no reason.
   const model = workspaceState();
-  model.open({ screen: "agents" });
+  model.open({ category: "agents" });
   const where = railFor("agents", "library")[1];
   model.selectContext(where);
 
@@ -569,7 +570,7 @@ test("the rail stays where it is when the new subscreen offers it too", () => {
 
 test("changing subscreen clears the inspection and what it was about", () => {
   const model = workspaceState();
-  model.open({ screen: "agents" });
+  model.open({ category: "agents" });
   model.inspect(lens, selection);
 
   model.showSubscreen("persona");
@@ -583,7 +584,7 @@ test("a centre is switched with what it is about, and switching without one says
   // choosing and switching are a single call, and going back to a library is the
   // same call with the subject left off.
   const model = workspaceState();
-  model.open({ screen: "agents" });
+  model.open({ category: "agents" });
 
   model.showSubscreen("persona", "pa-3");
   assert.equal(model.active.focus, "pa-3");
@@ -596,9 +597,9 @@ test("a centre is switched with what it is about, and switching without one says
   assert.equal(model.active.focus, undefined);
 });
 
-test("showing answers for the centre, not for the screen alone", () => {
+test("showing answers for the centre, not for the category alone", () => {
   const model = workspaceState();
-  model.open({ screen: "templates" });
+  model.open({ category: "templates" });
 
   assert.equal(model.showing("templates"), true);
   assert.equal(model.showing("templates", "library"), true);
@@ -619,7 +620,7 @@ test("what a centre is about belongs to its tab", () => {
   const a = model.open(thread("th-1"));
   const b = model.open(thread("th-2"));
 
-  model.open({ screen: "research", resourceId: "th-1", focus: "q-4" });
+  model.open({ category: "research", resourceId: "th-1", focus: "q-4" });
 
   assert.equal(model.activeId, a.id);
   assert.equal(model.active.focus, "q-4");
@@ -635,7 +636,7 @@ test("what a centre is about belongs to its tab", () => {
 
 test("selecting a view the rail does not offer throws", () => {
   const model = workspaceState();
-  model.open({ screen: "agents" });
+  model.open({ category: "agents" });
 
   // The tab opens on `library`, so a view from another of the four centres is
   // refused.
@@ -672,7 +673,7 @@ test("a stranded rail position reads as the subscreen's default rather than thro
   // `landOn` resets the position as it goes — so the drift is written in by hand,
   // which is the case the getter exists for.
   const model = workspaceState();
-  model.open({ screen: "agents" });
+  model.open({ category: "agents" });
   model.showSubscreen("persona");
   const stranded = railFor("agents", "library")[2];
 
@@ -802,12 +803,12 @@ test("two view states share nothing", () => {
 
   a.open(document("only-in-a"));
   a.open(thread("th-1"));
-  a.open({ screen: "agents" });
+  a.open({ category: "agents" });
   a.showSubscreen("persona", "pa-3");
   a.resize({ contextWidth: 400 });
   a.inspect(lens, selection);
 
-  const agentsInB = b.tabs.find((tab) => tab.screen === "agents");
+  const agentsInB = b.tabs.find((tab) => tab.category === "agents");
   assert.ok(agentsInB);
 
   assert.equal(b.tabs.length, SINGLETONS.length);
@@ -886,7 +887,7 @@ test("a new gesture drops what was undone", () => {
 
 test("undoing a landing restores all five fields it wrote", () => {
   const model = workspaceState();
-  model.open({ screen: "agents" });
+  model.open({ category: "agents" });
   const where = railFor("agents", "library")[2];
   model.selectContext(where);
   model.inspect(lens, selection);

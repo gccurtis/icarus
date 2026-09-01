@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Generates the screen vocabulary from the workspace tree itself.
+ * Generates the category vocabulary from the workspace tree itself.
  *
- *     pnpm screen-keys
- *     pnpm screen-keys -- --check
+ *     pnpm category-keys
+ *     pnpm category-keys -- --check
  *
- * A screen is a directory and a subscreen is a file:
- * `workspaces/agents/workspace-persona.svelte` is the `agents` screen's
+ * A category is a directory and a subscreen is a file:
+ * `workspaces/agents/workspace-persona.svelte` is the `agents` category's
  * `"persona"`. Nothing outside the tree gets a vote, so `--check`, which exits
  * non-zero when a written file and the tree disagree, is the part of this
  * script worth putting in CI.
@@ -25,12 +25,12 @@ const packageRoot =
 const libRoot = join(packageRoot, "src", "lib");
 
 const targets = {
-  types: join(libRoot, "representation", "data", "types", "workspace", "screens.ts"),
-  behavior: join(libRoot, "representation", "data", "behavior", "workspace", "screens.ts")
+  types: join(libRoot, "representation", "data", "types", "workspace", "categories.ts"),
+  behavior: join(libRoot, "representation", "data", "behavior", "workspace", "categories.ts")
 };
 
 /** How a generated file tells a reader who rewrites it, and how CI checks it. */
-const COMMAND = "pnpm screen-keys";
+const COMMAND = "pnpm category-keys";
 
 /**
  * The arguments this command was invoked with, minus the separator pnpm leaves
@@ -38,7 +38,7 @@ const COMMAND = "pnpm screen-keys";
  *
  * Every standard documents its generator as `pnpm <script> -- <args>`, and pnpm
  * forwards that `--` to the script rather than consuming it. Reading `argv`
- * directly therefore makes `pnpm screen-keys -- --check` fail on its first
+ * directly therefore makes `pnpm category-keys -- --check` fail on its first
  * word — the one invocation anybody will copy.
  */
 const commandArgs = () =>
@@ -53,7 +53,7 @@ const at = (absolute) => relative(packageRoot, absolute) || ".";
 /** Reports in the same `path  message` format lint uses, then stops. */
 const stopIfFailed = () => {
   if (problems.length === 0) return;
-  console.error(`screen-keys: ${problems.length} problem${problems.length === 1 ? "" : "s"}\n`);
+  console.error(`category-keys: ${problems.length} problem${problems.length === 1 ? "" : "s"}\n`);
   for (const problem of problems) console.error(`  ${problem}`);
   console.error("\nRun `pnpm lint panels` for what the tree is expected to look like.");
   process.exit(1);
@@ -88,78 +88,78 @@ const requireTree = (root) => {
 const WORKSPACE = /^workspace(?:-([a-z0-9]+(?:-[a-z0-9]+)*))?$/;
 
 /**
- * Each screen and the subscreens it can show, keyed by directory name.
+ * Each category and the subscreens it can show, keyed by directory name.
  *
- * A screen with no workspace file has nothing to render, which is worth a refusal
- * here: it would otherwise generate an empty member of `SUBSCREENS` that type
- * checks and then fails at paint.
+ * A category with no workspace file has nothing to render, which is worth a
+ * refusal here: it would otherwise generate an empty member of `SUBSCREENS` that
+ * type checks and then fails at paint.
  */
-const screenSubscreens = (root) => {
-  const screens = new Map();
+const categorySubscreens = (root) => {
+  const categories = new Map();
 
   for (const name of panels(root)) {
-    fail(at(join(root, `${name}.svelte`)), "sits at the tree root, so it belongs to no screen");
+    fail(at(join(root, `${name}.svelte`)), "sits at the tree root, so it belongs to no category");
   }
 
-  for (const screen of directories(root)) {
-    const screenRoot = join(root, screen);
+  for (const category of directories(root)) {
+    const categoryRoot = join(root, category);
     const subscreens = [];
 
-    for (const name of panels(screenRoot)) {
+    for (const name of panels(categoryRoot)) {
       const match = WORKSPACE.exec(name);
       if (match === null) {
-        fail(at(join(screenRoot, `${name}.svelte`)), "is not 'workspace' or 'workspace-<name>', so it names no subscreen");
+        fail(at(join(categoryRoot, `${name}.svelte`)), "is not 'workspace' or 'workspace-<name>', so it names no subscreen");
         continue;
       }
       subscreens.push(match[1] ?? "workspace");
     }
 
-    if (subscreens.length === 0) fail(at(screenRoot), "has no workspace file, so the screen has nothing to render");
-    screens.set(screen, sorted(subscreens));
+    if (subscreens.length === 0) fail(at(categoryRoot), "has no workspace file, so the category has nothing to render");
+    categories.set(category, sorted(subscreens));
   }
 
-  return screens;
+  return categories;
 };
 
 // --------------------------------------------------------------- rendering ----
 
-const banner = () => `// Every screen the workspace tree defines. Generated — do not edit.
+const banner = () => `// Every category the workspace tree defines. Generated — do not edit.
 //
 //     ${COMMAND}
 //
 // \`${COMMAND} -- --check\` fails when a file and the tree disagree,
-// which is what stops a screen naming something that is not there.
+// which is what stops a category naming something that is not there.
 `;
 
 const union = (name, values) => `export type ${name} =
 ${values.map((value) => `  | "${value}"`).join("\n")};
 `;
 
-const typesFile = (screens) => {
-  const subscreens = sorted(new Set([...screens.values()].flat()));
+const typesFile = (categories) => {
+  const subscreens = sorted(new Set([...categories.values()].flat()));
   return `${banner()}
-${union("Screen", [...screens.keys()])}
+${union("Category", [...categories.keys()])}
 ${union("Subscreen", subscreens)}`;
 };
 
-const behaviorFile = (screens) => {
-  const members = [...screens.keys()].map((screen) => `  "${screen}"`).join(",\n");
-  const table = [...screens]
-    .map(([screen, subscreens]) => `  "${screen}": [${subscreens.map((name) => `"${name}"`).join(", ")}]`)
+const behaviorFile = (categories) => {
+  const members = [...categories.keys()].map((category) => `  "${category}"`).join(",\n");
+  const table = [...categories]
+    .map(([category, subscreens]) => `  "${category}": [${subscreens.map((name) => `"${name}"`).join(", ")}]`)
     .join(",\n");
 
-  return `${banner()}import type { Screen, Subscreen } from "$representation/data/types/workspace/screens";
+  return `${banner()}import type { Category, Subscreen } from "$representation/data/types/workspace/categories";
 
-export const SCREENS = [
+export const CATEGORIES = [
 ${members}
-] as const satisfies readonly Screen[];
+] as const satisfies readonly Category[];
 
 export const SUBSCREENS = {
 ${table}
-} as const satisfies Record<Screen, readonly Subscreen[]>;
+} as const satisfies Record<Category, readonly Subscreen[]>;
 
-export const isScreen = (value: string): value is Screen =>
-  (SCREENS as readonly string[]).includes(value);
+export const isCategory = (value: string): value is Category =>
+  (CATEGORIES as readonly string[]).includes(value);
 `;
 };
 
@@ -193,17 +193,17 @@ if ((flag !== undefined && flag !== "--check") || rest.length > 0) {
   stopIfFailed();
 }
 
-const screens = screenSubscreens(requireTree(join(libRoot, "views", "workspaces")));
+const categories = categorySubscreens(requireTree(join(libRoot, "views", "workspaces")));
 stopIfFailed();
 
 const wanted = [
-  { target: targets.types, contents: typesFile(screens) },
-  { target: targets.behavior, contents: behaviorFile(screens) }
+  { target: targets.types, contents: typesFile(categories) },
+  { target: targets.behavior, contents: behaviorFile(categories) }
 ];
 
-const subscreens = [...screens.values()];
+const subscreens = [...categories.values()];
 const counts = [
-  `${screens.size}  screens`,
+  `${categories.size}  categories`,
   `${new Set(subscreens.flat()).size}  subscreens, over ${subscreens.flat().length} workspace files`
 ];
 
@@ -213,12 +213,12 @@ if (flag === "--check") {
   );
 
   if (stale.length === 0) {
-    console.log(`screen-keys: ${wanted.map(({ target }) => at(target)).join(", ")} in step with the workspace tree\n`);
+    console.log(`category-keys: ${wanted.map(({ target }) => at(target)).join(", ")} in step with the workspace tree\n`);
     for (const count of counts) console.log(`  ${count}`);
     process.exit(0);
   }
 
-  console.error("screen-keys:\n");
+  console.error("category-keys:\n");
   for (const { target, contents } of stale) {
     const current = existsSync(target) ? readFileSync(target, "utf8") : null;
     console.error(`  ${at(target)} ${current === null ? "has not been generated" : "has drifted from the workspace tree"}`);
@@ -236,5 +236,5 @@ for (const { target, contents } of wanted) {
   written.push(`${current === contents ? "unchanged" : "wrote"} ${at(target)}`);
 }
 
-console.log(`screen-keys: ${written.join(", ")}\n`);
+console.log(`category-keys: ${written.join(", ")}\n`);
 for (const count of counts) console.log(`  ${count}`);

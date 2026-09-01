@@ -34,7 +34,7 @@ export const open = (state: WorkspaceStateData, target: Target): Tab => {
     op: "open",
     tab: record.id,
     at: state.tabs.tabs.length,
-    target: { screen: record.screen, resourceId: record.resourceId },
+    target: { category: record.category, resourceId: record.resourceId },
     view: mintView(target)
   });
   perform(state, { op: "activate", was, now: record.id });

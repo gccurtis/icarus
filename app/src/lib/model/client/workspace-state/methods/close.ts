@@ -8,8 +8,8 @@ export const close = (state: WorkspaceStateData, id: TabId): void => {
   if (at < 0) return;
 
   const record = state.tabs.tabs[at];
-  if (isSingleton(record.screen)) {
-    throw new Error(`'${record.screen}' is one per project and cannot be closed`);
+  if (isSingleton(record.category)) {
+    throw new Error(`'${record.category}' is one per project and cannot be closed`);
   }
 
   if (state.tabs.activeId === id) {
@@ -24,7 +24,7 @@ export const close = (state: WorkspaceStateData, id: TabId): void => {
     op: "close",
     tab: id,
     at,
-    target: { screen: record.screen, resourceId: record.resourceId },
+    target: { category: record.category, resourceId: record.resourceId },
     view: state.views.of(id)
   });
 };

@@ -29,7 +29,7 @@
   import { analyses, threads } from "$capabilities/library";
   import { openingFor } from "$capabilities/opening";
   import { activity, people, project, resources } from "$capabilities/project";
-  import { workspaceState, type Screen } from "$model/client/workspace-state";
+  import { workspaceState, type Category } from "$model/client/workspace-state";
 
   const view = workspaceState();
 
@@ -54,7 +54,7 @@
    * in the status bar rather than in the place a person comes to re-orient.
    *
    * **The header carries no Settings.** Settings is a property of the project
-   * rather than of this screen, so it lives in the top bar.
+   * rather than of this category, so it lives in the top bar.
    */
   const it = $derived(project().current);
   const everyone = $derived(people().current);
@@ -175,20 +175,20 @@
 
   /** Which editor a blank thing opens in, and what the strip calls it there. */
   const BLANK = {
-    document: { screen: "document-editor", noun: "document" },
-    slides: { screen: "slide-deck-editor", noun: "deck" },
-    spreadsheet: { screen: "spreadsheet-editor", noun: "spreadsheet" }
-  } as const satisfies Record<string, { screen: Screen; noun: string }>;
+    document: { category: "document-editor", noun: "document" },
+    slides: { category: "slide-deck-editor", noun: "deck" },
+    spreadsheet: { category: "spreadsheet-editor", noun: "spreadsheet" }
+  } as const satisfies Record<string, { category: Category; noun: string }>;
 
   /**
    * The tab strip labels an editor tab by its `resourceId`, so a minted id has to
    * read as a name rather than as a key. The number steps past whatever that
-   * screen already holds, because `open` is keyed by the id: two blank documents
+   * category already holds, because `open` is keyed by the id: two blank documents
    * are two things, and two that share a name are one tab.
    */
-  const untitled = (screen: Screen, noun: string): string => {
+  const untitled = (category: Category, noun: string): string => {
     const taken = new Set(
-      view.tabs.filter((tab) => tab.screen === screen).map((tab) => tab.resourceId)
+      view.tabs.filter((tab) => tab.category === category).map((tab) => tab.resourceId)
     );
     let count = 1;
     while (taken.has(`Untitled ${noun} ${count}`)) count += 1;
@@ -203,18 +203,18 @@
    * Inventing an id would put a tab in the strip that no door can answer for;
    * doing nothing would be a control that appears broken.
    */
-  const landOnFree = (screen: Screen, rows: readonly { id: string }[]) => {
+  const landOnFree = (category: Category, rows: readonly { id: string }[]) => {
     const held = new Set(
-      view.tabs.filter((tab) => tab.screen === screen).map((tab) => tab.resourceId)
+      view.tabs.filter((tab) => tab.category === category).map((tab) => tab.resourceId)
     );
     const landing = rows.find((row) => !held.has(row.id)) ?? rows[0];
-    if (landing) view.open({ screen, resourceId: landing.id });
+    if (landing) view.open({ category, resourceId: landing.id });
   };
 
   const make = (key: (typeof CREATE)[number]["key"]) => {
     if (key === "document" || key === "slides" || key === "spreadsheet") {
-      const { screen, noun } = BLANK[key];
-      view.open({ screen, resourceId: untitled(screen, noun) });
+      const { category, noun } = BLANK[key];
+      view.open({ category, resourceId: untitled(category, noun) });
     } else if (key === "research") {
       landOnFree("research", everyThread);
     } else {
@@ -226,9 +226,9 @@
    * What a row opens, by what it is.
    *
    * A body and a thread each earn a tab of their own, keyed by the thing rather
-   * than by the screen. An analysis and a template are places you return to, so
+   * than by the category. An analysis and a template are places you return to, so
    * those move the permanent tab onto the row instead of minting one. The
-   * remaining kinds have no screen at all — a file, a finding, a connector and a
+   * remaining kinds have no category at all — a file, a finding, a connector and a
    * Context are things you look at rather than places you go — so opening one
    * means opening its lens, which is the same thing the resource lens does.
    */

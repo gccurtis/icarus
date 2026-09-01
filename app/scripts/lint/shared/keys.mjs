@@ -10,7 +10,7 @@ import ts from "typescript";
 const BEHAVIOR = ["representation", "data", "behavior", "workspace"];
 
 /** Generated from the workspace tree. */
-export const KEYS_FILE = [...BEHAVIOR, "screens.ts"];
+export const KEYS_FILE = [...BEHAVIOR, "categories.ts"];
 /** Hand-written: the panels this application intends to have. */
 export const PANEL_KEYS_FILE = [...BEHAVIOR, "panels.ts"];
 
@@ -62,7 +62,7 @@ const objectNamed = (tree, path, wanted) => {
   return null;
 };
 
-/** @returns {{ path: string, panelPath: string, contexts: string[]|null, inspections: string[]|null, screens: string[]|null, subscreens: Map<string,string[]>|null }} */
+/** @returns {{ path: string, panelPath: string, contexts: string[]|null, inspections: string[]|null, categories: string[]|null, subscreens: Map<string,string[]>|null }} */
 export const vocabulary = (tree) => {
   const path = tree.path(...KEYS_FILE);
   const panelPath = tree.path(...PANEL_KEYS_FILE);
@@ -74,7 +74,7 @@ export const vocabulary = (tree) => {
     panelPath,
     contexts: inPanelKeys("CONTEXT_IDS"),
     inspections: inPanelKeys("INSPECTION_KEYS"),
-    screens: inKeys("SCREENS"),
+    categories: inKeys("CATEGORIES"),
     subscreens: tree.isFile(path) ? objectNamed(tree, path, "SUBSCREENS") : null
   };
 };

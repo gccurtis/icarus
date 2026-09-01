@@ -11,7 +11,7 @@ export const buildRegistry = (state: CommandsState): Record<CommandId, Command> 
   },
 
   "tab.close": {
-    enabled: () => !isSingleton(state.view.active.screen),
+    enabled: () => !isSingleton(state.view.active.category),
     run: () => state.view.close(state.view.activeId)
   },
 

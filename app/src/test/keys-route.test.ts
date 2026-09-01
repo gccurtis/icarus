@@ -9,7 +9,7 @@ import { createTabViews } from "$model/client/tab-views";
 import {
   CONTEXT_IDS,
   INSPECTION_KEYS,
-  SCREENS,
+  CATEGORIES,
   SUBSCREENS,
   createWorkspaceState,
   railFor
@@ -38,15 +38,15 @@ describe("every key the vocabulary declares reaches something", () => {
   it("renders a context for every entry of every rail", () => {
     const reached = new Set<string>();
 
-    for (const screen of SCREENS) {
-      for (const subscreen of SUBSCREENS[screen]) {
-        for (const id of railFor(screen, subscreen)) {
+    for (const category of CATEGORIES) {
+      for (const subscreen of SUBSCREENS[category]) {
+        for (const id of railFor(category, subscreen)) {
           const model = createWorkspaceState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
-          model.open({ screen, subscreen });
+          model.open({ category, subscreen });
           model.selectContext(id);
 
           const { body } = render(ContextPanel, withModel(model));
-          expect(body, `${screen}/${subscreen} → ${id}`).toContain(id);
+          expect(body, `${category}/${subscreen} → ${id}`).toContain(id);
           reached.add(id);
         }
       }

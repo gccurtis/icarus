@@ -17,7 +17,7 @@
   const view = workspaceState();
 
   /**
-   * Spreadsheet editor — the only state this screen has.
+   * Spreadsheet editor — the only state this category has.
    *
    * `docs/screen-panel-views/screens/spreadsheet-editor/workspace.md` is the
    * specification. **One region, `editor`, and one track** — a grid edge to edge,

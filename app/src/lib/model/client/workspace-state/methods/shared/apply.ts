@@ -6,7 +6,7 @@ export const apply = (state: WorkspaceStateData, op: WorkspaceOp): void => {
     case "open":
       state.views.set(op.tab, op.view);
       state.tabs.add(
-        { id: op.tab, screen: op.target.screen, resourceId: op.target.resourceId },
+        { id: op.tab, category: op.target.category, resourceId: op.target.resourceId },
         op.at
       );
       return;

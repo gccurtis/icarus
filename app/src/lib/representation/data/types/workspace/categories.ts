@@ -1,11 +1,11 @@
-// Every screen the workspace tree defines. Generated — do not edit.
+// Every category the workspace tree defines. Generated — do not edit.
 //
-//     pnpm screen-keys
+//     pnpm category-keys
 //
-// `pnpm screen-keys -- --check` fails when a file and the tree disagree,
-// which is what stops a screen naming something that is not there.
+// `pnpm category-keys -- --check` fails when a file and the tree disagree,
+// which is what stops a category naming something that is not there.
 
-export type Screen =
+export type Category =
   | "agents"
   | "analysis"
   | "document-editor"

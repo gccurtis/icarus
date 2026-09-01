@@ -34,7 +34,7 @@
   /**
    * Agents — every persona in reach, and every task they are running.
    *
-   * One screen, not two. An Automation is a task with a trigger and a persona is
+   * One category, not two. An Automation is a task with a trigger and a persona is
    * what runs one, so Personas and Automations are not two subjects: they are one
    * subject cut down the middle, and the cut falls exactly where the interesting
    * question is — *what is this agent doing right now*.

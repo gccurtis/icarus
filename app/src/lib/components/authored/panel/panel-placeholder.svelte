@@ -21,7 +21,7 @@
    */
   let {
     panel,
-    screen,
+    category,
     subscreen,
     kind,
     id,
@@ -30,7 +30,7 @@
     /** The key that routed here: `project.variables`, `collaboration.person`. */
     panel: string;
     /** Context only: the tab that scopes it. */
-    screen?: string;
+    category?: string;
     subscreen?: string;
     /** Inspector only: what the lens is about. */
     kind?: string;
@@ -38,15 +38,15 @@
     at?: string;
   } = $props();
 
-  const trace = traceNode("PanelPlaceholder", () => ({ panel, screen, subscreen, kind, id, at }));
+  const trace = traceNode("PanelPlaceholder", () => ({ panel, category, subscreen, kind, id, at }));
 
   /** Absent and empty read the same to a person: neither is an answer. */
   const shown = (value: string | undefined) => (value === undefined || value === "" ? "—" : value);
 
   const address = $derived(
-    screen !== undefined || subscreen !== undefined
+    category !== undefined || subscreen !== undefined
       ? [
-          ["screen", shown(screen)],
+          ["category", shown(category)],
           ["subscreen", shown(subscreen)]
         ]
       : [

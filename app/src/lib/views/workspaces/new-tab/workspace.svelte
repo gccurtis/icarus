@@ -35,12 +35,12 @@
   } from "$capabilities/library";
   import { openingFor } from "$capabilities/opening";
   import { project, resources } from "$capabilities/project";
-  import { workspaceState, type Screen } from "$model/client/workspace-state";
+  import { workspaceState, type Category } from "$model/client/workspace-state";
 
   const view = workspaceState();
 
   /**
-   * New Tab — the only state this screen has.
+   * New Tab — the only state this category has.
    *
    * `docs/screen-panel-views/screens/new-tab/workspace.md` is the specification.
    * A funnel, top to bottom, answering one question: which editor do you need?
@@ -84,10 +84,10 @@
 
   /** Which editor a pill opens, and what the strip calls the blank thing there. */
   const BLANK = {
-    Document: { screen: "document-editor", noun: "document" },
-    "Slide deck": { screen: "slide-deck-editor", noun: "deck" },
-    Spreadsheet: { screen: "spreadsheet-editor", noun: "spreadsheet" }
-  } as const satisfies Record<EditorKind["name"], { screen: Screen; noun: string }>;
+    Document: { category: "document-editor", noun: "document" },
+    "Slide deck": { category: "slide-deck-editor", noun: "deck" },
+    Spreadsheet: { category: "spreadsheet-editor", noun: "spreadsheet" }
+  } as const satisfies Record<EditorKind["name"], { category: Category; noun: string }>;
 
   const EDITOR_ICON: Record<EditorKind["name"], typeof FileText> = {
     Document: FileText,
@@ -140,7 +140,7 @@
   /**
    * Slide templates are left out. One makes a single slide, which is not an
    * editor this tab can open, so it would be a card that cannot answer the only
-   * question the screen asks.
+   * question the category asks.
    */
   const startable = $derived(all.filter((row) => row.makes !== "Slide"));
 
@@ -155,12 +155,12 @@
   /**
    * The tab strip labels an editor tab by its `resourceId`, so a minted id has
    * to read as a name rather than as a key. The number steps past whatever that
-   * screen already holds, because `open` is keyed by the id: two blank documents
+   * category already holds, because `open` is keyed by the id: two blank documents
    * are two things, and two that share a name are one tab.
    */
-  const untitled = (screen: Screen, noun: string): string => {
+  const untitled = (category: Category, noun: string): string => {
     const taken = new Set(
-      view.tabs.filter((tab) => tab.screen === screen).map((tab) => tab.resourceId)
+      view.tabs.filter((tab) => tab.category === category).map((tab) => tab.resourceId)
     );
     let count = 1;
     while (taken.has(`Untitled ${noun} ${count}`)) count += 1;
@@ -168,8 +168,8 @@
   };
 
   const create = (kind: EditorKind) => {
-    const { screen, noun } = BLANK[kind.name];
-    view.open({ screen, resourceId: untitled(screen, noun) });
+    const { category, noun } = BLANK[kind.name];
+    view.open({ category, resourceId: untitled(category, noun) });
   };
 
   /**
@@ -184,13 +184,13 @@
    * [`openingFor`](../../mock-capabilities/opening.ts)'s to answer, because this
    * launcher is not the only surface that asks.
    *
-   * Nothing means no screen holds that kind, and saying so out loud is honest
+   * Nothing means no category holds that kind, and saying so out loud is honest
    * where a click that appears to do nothing is not.
    */
   const launch = (row: Entry) => {
     const target = openingFor(row.kind, row.id, row.name);
     if (target) view.open(target);
-    else console.log(`No screen opens a ${kindLabel(row.kind).toLowerCase()}`);
+    else console.log(`No category opens a ${kindLabel(row.kind).toLowerCase()}`);
   };
 
   const start = (id: string) => {

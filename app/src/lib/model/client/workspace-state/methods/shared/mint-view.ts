@@ -3,11 +3,11 @@ import { DEFAULT_FRAME } from "$model/client/workspace-state/methods/shared/defa
 import { defaultContext, defaultSubscreen } from "$model/client/workspace-state/methods/shared/rails";
 
 export const mintView = (target: Target): TabView => {
-  const subscreen = target.subscreen ?? defaultSubscreen(target.screen);
+  const subscreen = target.subscreen ?? defaultSubscreen(target.category);
   return {
     subscreen,
     focus: target.focus ?? null,
-    contextId: defaultContext(target.screen, subscreen) ?? null,
+    contextId: defaultContext(target.category, subscreen) ?? null,
     inspected: "empty",
     selection: null,
     frame: { ...DEFAULT_FRAME }

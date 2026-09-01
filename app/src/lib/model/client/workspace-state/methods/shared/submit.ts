@@ -23,7 +23,7 @@ const send = async (state: WorkspaceStateData): Promise<void> => {
       ops,
       tabs: state.tabs.tabs.map((record) => ({
         id: record.id,
-        screen: record.screen,
+        category: record.category,
         resourceId: record.resourceId
       })),
       activeId: state.tabs.activeId,

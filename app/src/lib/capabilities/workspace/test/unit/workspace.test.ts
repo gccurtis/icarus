@@ -50,7 +50,7 @@ const view = {
 const change = (baseRevision: number) => ({
   baseRevision,
   ops: [{ op: "activate", was: "t1", now: "t2" }],
-  tabs: [{ id: "t1", screen: "project-overview" }],
+  tabs: [{ id: "t1", category: "project-overview" }],
   activeId: "t1",
   views: { t1: view }
 });

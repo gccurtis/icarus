@@ -22,7 +22,7 @@
   const view = workspaceState();
 
   /**
-   * Document editor — the only state this screen has.
+   * Document editor — the only state this category has.
    *
    * `docs/screen-panel-views/screens/document-editor/workspace.md` is the
    * specification. **One region, `editor`, and one track.** A rich-text editor is

@@ -35,9 +35,9 @@
   // ------------------------------------------------------------ the work ----
 
   /**
-   * What is on the surface, and nothing about which screen is showing it.
+   * What is on the surface, and nothing about which category is showing it.
    *
-   * The screen has a tab two rows up; naming it again here would spend the one
+   * The category has a tab two rows up; naming it again here would spend the one
    * always-visible line on the least surprising fact in the application. What
    * the tab strip cannot say is which *thing* a permanent tab is on, because it
    * moves between subjects without ever minting a tab — the Agents tab on a

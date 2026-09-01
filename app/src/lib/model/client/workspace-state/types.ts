@@ -1,5 +1,5 @@
 import type { ContextId } from "$representation/data/types/workspace/panels";
-import type { Screen, Subscreen } from "$representation/data/types/workspace/screens";
+import type { Category, Subscreen } from "$representation/data/types/workspace/categories";
 import type {
   Frame,
   Inspected,
@@ -10,7 +10,7 @@ import type {
 
 export type Tab = {
   readonly id: TabId;
-  readonly screen: Screen;
+  readonly category: Category;
   subscreen: Subscreen;
   readonly resourceId?: string;
   contextId: ContextId | undefined;
@@ -47,7 +47,7 @@ export interface WorkspaceStateModel {
 
   resize(patch: Partial<Frame>): void;
 
-  showing(screen: Screen, subscreen?: Subscreen): boolean;
+  showing(category: Category, subscreen?: Subscreen): boolean;
 
   undo(): void;
   redo(): void;

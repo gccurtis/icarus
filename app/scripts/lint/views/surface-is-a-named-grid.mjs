@@ -25,7 +25,7 @@ export default check({
       found.push({ path: root, message: "does not name its regions with grid-template-areas" });
     }
 
-    // A workspace is the centre of a screen, so it is a surface for this rule
+    // A workspace is the centre of a category, so it is a surface for this rule
     // even though its directory holds one file per subscreen rather than a root.
     for (const { path } of workspaceFiles(tree)) {
       if (laysItselfOut(tree.read(path))) continue;

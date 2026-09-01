@@ -38,8 +38,8 @@
   /**
    * One Automation: the trigger, what it does, and what it has produced.
    *
-   * **An Automation is a task with a trigger**, which is why this screen is a
-   * sibling of the task manager rather than a screen of its own kind. Everything
+   * **An Automation is a task with a trigger**, which is why this centre is a
+   * sibling of the task manager rather than a category of its own kind. Everything
    * below the details band is tasks — the ones this rule dispatched.
    *
    * **Behaviour left, trigger right.** What it does is the part someone writes

@@ -30,7 +30,7 @@ const persona: Landing = {
 };
 
 const view: TabView = { ...library, frame };
-const target = { screen: "document-editor", resourceId: "k57" } as const;
+const target = { category: "document-editor", resourceId: "k57" } as const;
 
 const OPS: readonly WorkspaceOp[] = [
   { op: "open", tab: "t9", at: 3, target, view },

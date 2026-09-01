@@ -30,7 +30,7 @@
   /**
    * Templates — the library: a place rather than a list.
    *
-   * The one screen that keeps a library-and-editor pair, and this half is why:
+   * The one category that keeps a library-and-editor pair, and this half is why:
    * the library has folders and holds templates that were never made here, so it
    * is somewhere you navigate rather than a table you read down.
    *
@@ -88,7 +88,7 @@
    *
    * accent-1 and accent-2 exist for exactly this — categorical work claimed by no
    * meaning role — and the project's own templates take `primary`, because the
-   * project is the ground everything else on this screen is measured against. No
+   * project is the ground everything else on this centre is measured against. No
    * meaning role is borrowed: whose a template is, is not a success or a warning.
    */
   const SCOPE_TONE: Record<TemplateScope, string> = {

@@ -5,7 +5,7 @@
   import X from "@lucide/svelte/icons/x";
 
   import { workspaceState } from "$model/client/workspace-state";
-  import { SCREEN_ENTRIES, isOpened, labelOf } from "$views/tab-bar/procedures/screen-entries";
+  import { CATEGORY_ENTRIES, isOpened, labelOf } from "$views/tab-bar/procedures/category-entries";
 
   /**
    * The tab bar — what is open, and which one is active.
@@ -14,7 +14,7 @@
    * than in a route. It renders the list and reports two intents; the model owns
    * order, activation, and what happens after a close.
    *
-   * The three permanent tabs are written out. `open` on one of those screens
+   * The three permanent tabs are written out. `open` on one of those categories
    * finds the tab already there and activates it, so none of them needs an id.
    *
    * **Not an ARIA tablist.** A `role="tab"` makes its children presentational,
@@ -23,18 +23,18 @@
    */
   const view = workspaceState();
 
-  const here = $derived(view.active.screen);
+  const here = $derived(view.active.category);
 
   /** A label is read once per tab per render; the markup asks for it three times. */
   const opened = $derived(
     view.tabs.filter(isOpened).map((tab) => ({
       tab,
       label: labelOf(tab),
-      Icon: SCREEN_ENTRIES[tab.screen].icon
+      Icon: CATEGORY_ENTRIES[tab.category].icon
     }))
   );
 
-  const NewTab = SCREEN_ENTRIES["new-tab"].icon;
+  const NewTab = CATEGORY_ENTRIES["new-tab"].icon;
 </script>
 
 <div class="strip" role="toolbar" aria-label="Open tabs">
@@ -45,7 +45,7 @@
     aria-current={here === "project-overview" ? "page" : undefined}
     title="Overview"
     aria-label="Overview"
-    onclick={() => view.open({ screen: "project-overview" })}
+    onclick={() => view.open({ category: "project-overview" })}
   >
     <House size={15} aria-hidden="true" />
   </button>
@@ -57,7 +57,7 @@
     aria-current={here === "agents" ? "page" : undefined}
     title="Agents"
     aria-label="Agents"
-    onclick={() => view.open({ screen: "agents" })}
+    onclick={() => view.open({ category: "agents" })}
   >
     <Bot size={15} aria-hidden="true" />
   </button>
@@ -69,7 +69,7 @@
     aria-current={here === "templates" ? "page" : undefined}
     title="Templates"
     aria-label="Templates"
-    onclick={() => view.open({ screen: "templates" })}
+    onclick={() => view.open({ category: "templates" })}
   >
     <LayoutTemplate size={15} aria-hidden="true" />
   </button>
@@ -104,7 +104,7 @@
     class="tab icon"
     title="New tab"
     aria-label="New tab"
-    onclick={() => view.open({ screen: "new-tab" })}
+    onclick={() => view.open({ category: "new-tab" })}
   >
     <NewTab size={15} aria-hidden="true" />
   </button>

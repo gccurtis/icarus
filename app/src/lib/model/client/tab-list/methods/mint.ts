@@ -5,7 +5,7 @@ export const mint = (state: TabListData, target: Target): TabRecord => {
   state.counter += 1;
   return {
     id: `t${state.counter}`,
-    screen: target.screen,
+    category: target.category,
     resourceId: target.resourceId
   };
 };

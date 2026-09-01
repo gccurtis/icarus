@@ -11,16 +11,16 @@
    * what is open is expressible as a URL segment, and a work surface that took
    * route content could not follow a tab.
    *
-   * **The registry is the filesystem.** There is no map from screen to component
+   * **The registry is the filesystem.** There is no map from category to component
    * here, because a map is a second list of what exists and the first one is
-   * `src/lib/views/workspaces/`. A screen and a subscreen name a path — `research` and
+   * `src/lib/views/workspaces/`. A category and a subscreen name a path — `research` and
    * `one-question` are `workspaces/research/workspace-one-question.svelte` — and
    * the same fact generates the vocabulary the model publishes, so the two
    * cannot disagree.
    *
    * **A chunk that fails to arrive is a state, not a blank plane.** The glob
    * cannot name a file that is not there, so a rejected import means the module
-   * itself threw — and the difference between "still loading" and "this screen
+   * itself threw — and the difference between "still loading" and "this category
    * is broken" is the whole diagnosis.
    */
   const CENTRES = import.meta.glob("$lib/views/workspaces/**/*.svelte") as Record<
@@ -30,9 +30,9 @@
 
   const view = workspaceState();
 
-  /** A screen with one centre calls it `workspace`; the rest qualify it. */
+  /** A category with one centre calls it `workspace`; the rest qualify it. */
   const path = $derived(
-    `/src/lib/views/workspaces/${view.active.screen}/${
+    `/src/lib/views/workspaces/${view.active.category}/${
       view.active.subscreen === "workspace" ? "workspace" : `workspace-${view.active.subscreen}`
     }.svelte`
   );
@@ -66,7 +66,7 @@
 </script>
 
 <!--
-  Keyed on the tab rather than the screen, so switching between two tabs of the
+  Keyed on the tab rather than the category, so switching between two tabs of the
   same kind remounts instead of reusing one component's state for both. Two open
   documents are not one document.
 -->

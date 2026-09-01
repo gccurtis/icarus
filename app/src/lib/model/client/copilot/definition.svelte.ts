@@ -31,7 +31,7 @@ import { emptyScope } from "$model/client/copilot/types";
  *
  * The workbench is held rather than read at construction, because what the
  * active tab is changes. It is borrowed — the root built it and the root owns
- * it — and today nothing here reads it: the screen describes its own selection
+ * it — and today nothing here reads it: the category describes its own selection
  * as a `part` selector and the inspector passes it in. The dependency is
  * declared because it is what the inspector's scope editor will resolve through,
  * and because the composition order the standard checks has to say so.

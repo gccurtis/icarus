@@ -7,8 +7,8 @@ export const selectContext = (state: WorkspaceStateData, id: ContextId): void =>
   const record = state.tabs.active;
   const view = state.views.of(record.id);
 
-  if (!offersContext(record.screen, view.subscreen, id)) {
-    throw new Error(`'${record.screen}/${view.subscreen}' does not offer '${id}'`);
+  if (!offersContext(record.category, view.subscreen, id)) {
+    throw new Error(`'${record.category}/${view.subscreen}' does not offer '${id}'`);
   }
 
   perform(state, { op: "context", tab: record.id, was: view.contextId, now: id });

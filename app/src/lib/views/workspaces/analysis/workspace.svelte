@@ -74,7 +74,7 @@
    * is the thing being made; the twelve kinds and the customisation grid are how
    * it got that way, so they are `auto` rows and the chart is `minmax(0, 1fr)`.
    * Nothing scrolls — a chart you have to scroll to is a chart you cannot read
-   * against its own controls, which is the entire argument for this screen
+   * against its own controls, which is the entire argument for this category
    * existing rather than an editor's inspector doing the job.
    *
    * **The bars draw one measure, and the sort names it.** Y holds two aggregates
@@ -86,7 +86,7 @@
    * **Twelve kinds are offered and two are built.** The other ten are selectable
    * and say what they are rather than being greyed out — the vocabulary is what
    * a person is choosing from, and hiding ten of it to avoid admitting they are
-   * unbuilt would misrepresent the screen.
+   * unbuilt would misrepresent the category.
    *
    * **What can act on the result acts; what would rewrite the definition opens a
    * lens.** Sort, the conditions and the label options run over what came back,
@@ -152,7 +152,7 @@
   const referenceOf = (placed: Placement | undefined): string =>
     placed === undefined ? "" : `${placed.variable}.${placed.field}`;
 
-  /* ---------------- the result, as the screen shows it ---------------- */
+  /* ---------------- the result, as the centre shows it ---------------- */
 
   const groupColumn = $derived(
     result.columns.find((column: ResultColumn) => column.role === "group") ?? result.columns[0]
@@ -184,7 +184,7 @@
    *
    * `sortIn` answers with a single rule and says why — a tiebreak would need an
    * ordered list — so two sort controls writing to different places would let
-   * this screen hold a contradiction the definition cannot express. What the
+   * this category hold a contradiction the definition cannot express. What the
    * axis decides is which fields are worth offering, not how many sorts there
    * are.
    */
@@ -372,7 +372,7 @@
    * Wrapped rather than watched with an `$effect`: an effect over `ids` also
    * fires on mount, so arriving at Analysis would throw the inspector onto the
    * chart lens before anyone had touched anything. `PlotBars` owns the gestures;
-   * what a gesture *means* to the rest of the screen is this screen's business.
+   * what a gesture *means* to the rest of the centre is this category's business.
    */
   const selection: ChartSelection = {
     get ids() {

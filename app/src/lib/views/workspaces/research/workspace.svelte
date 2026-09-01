@@ -41,7 +41,7 @@
    * **A thread is a tab.** It is a thing you open, work in and close — like a
    * document and unlike a library — so it is keyed by its own id in the frame's
    * strip, several are open at once, and closing one is closing a tab. A private
-   * strip inside this screen would be a second answer to a question the frame
+   * strip inside this category would be a second answer to a question the frame
    * already answers.
    *
    * **Which threads exist is the rail's business; which are open is the frame's.**
@@ -49,7 +49,7 @@
    * activates its tab. A list of threads is a map, and a map belongs in the panel
    * that holds maps rather than in a centre of its own.
    *
-   * The screen is anchored to a single turn rather than scrolled through all of
+   * The centre is anchored to a single turn rather than scrolled through all of
    * them; earlier turns are the History view in the context panel, not scrollback
    * here.
    *
@@ -65,7 +65,7 @@
    * matters. Proportion is kept where it is load-bearing: whatever height the
    * ask does not want, the answer takes.
    *
-   * **The Copilot's composer is disabled on this screen.** This is already a
+   * **The Copilot's composer is disabled on this category.** This is already a
    * conversation with an agent, and the composer at the foot is the one place to
    * say the next thing.
    *
@@ -94,10 +94,10 @@
    */
   const startThread = () => {
     const open = new Set(
-      view.tabs.filter((tab) => tab.screen === "research").map((tab) => tab.resourceId)
+      view.tabs.filter((tab) => tab.category === "research").map((tab) => tab.resourceId)
     );
     const fresh = everyThread.find((row: ResearchThread) => !open.has(row.id));
-    if (fresh) view.open({ screen: "research", resourceId: fresh.id });
+    if (fresh) view.open({ category: "research", resourceId: fresh.id });
   };
 
   const it = $derived(thread(threadId).current);

@@ -5,7 +5,7 @@
  *     pnpm new-panel -- <context|inspector> <subject> <name>
  *
  * Three writes rather than one, because the vocabulary is no longer derived from
- * the tree: the `views` domain's panel keys are hand-written so a panel can be
+ * the tree: the `workspace` domain's panel keys are hand-written so a panel can be
  * named before it is built, and `key-vocabulary-matches-the-tree` refuses a file
  * the vocabulary does not name. Adding the key here is what stops that being a
  * step to forget.

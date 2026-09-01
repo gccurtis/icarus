@@ -69,15 +69,15 @@ export const panelLeaves = (tree) => {
   return found;
 };
 
-/** `views/workspaces/<screen>/workspace[-<subscreen>].svelte`. */
+/** `views/workspaces/<category>/workspace[-<subscreen>].svelte`. */
 export const workspaceFiles = (tree) => {
   const found = [];
-  for (const { name: screen, path } of named(tree, tree.path("views", "workspaces"))) {
+  for (const { name: category, path } of named(tree, tree.path("views", "workspaces"))) {
     for (const file of tree.filesIn(path)) {
       if (!file.endsWith(".svelte")) continue;
       const match = file.match(/^workspace(?:-(.+))?\.svelte$/);
       found.push({
-        screen,
+        category,
         file,
         path: join(path, file),
         subscreen: match ? (match[1] ?? null) : undefined

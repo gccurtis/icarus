@@ -34,7 +34,7 @@
     "new-concern-entry": "node scripts/generation/views/new-concern-entry.mjs",
     "new-panel": "node scripts/generation/panels/new-panel.mjs",
     "new-workspace": "node scripts/generation/workspaces/new-workspace.mjs",
-    "screen-keys": "node scripts/generation/representation/screens.mjs",
+    "category-keys": "node scripts/generation/representation/categories.mjs",
     "aliases": "node scripts/generation/across/aliases.mjs",
     "imports": "node scripts/generation/across/imports.mjs",
     "clean": "rm -rf build .svelte-kit"

@@ -1,6 +1,6 @@
 import type { WorkspaceOp } from "$representation/data/types/workspace/op";
 import type { ContextId } from "$representation/data/types/workspace/panels";
-import type { Screen, Subscreen } from "$representation/data/types/workspace/screens";
+import type { Category, Subscreen } from "$representation/data/types/workspace/categories";
 import type {
   Frame,
   Inspected,
@@ -50,9 +50,9 @@ export class WorkspaceStateData {
     readonly views: TabViewsModel,
     readonly thresholds: Thresholds
   ) {
-    for (const screen of SINGLETONS) {
-      const record = this.tabs.mint({ screen });
-      this.views.set(record.id, mintView({ screen }));
+    for (const category of SINGLETONS) {
+      const record = this.tabs.mint({ category });
+      this.views.set(record.id, mintView({ category }));
       this.tabs.add(record);
     }
     this.tabs.activate(this.tabs.tabs[0].id);
@@ -123,9 +123,9 @@ export class WorkspaceState implements WorkspaceStateModel {
   get context(): ContextId | undefined {
     const record = this.#state.tabs.active;
     const { subscreen, contextId } = this.#state.views.of(record.id);
-    return contextId !== null && offersContext(record.screen, subscreen, contextId)
+    return contextId !== null && offersContext(record.category, subscreen, contextId)
       ? contextId
-      : defaultContext(record.screen, subscreen);
+      : defaultContext(record.category, subscreen);
   }
 
   get inspected(): Inspected {
@@ -192,8 +192,8 @@ export class WorkspaceState implements WorkspaceStateModel {
     resize(this.#state, patch);
   }
 
-  showing(screen: Screen, subscreen?: Subscreen): boolean {
-    return showing(this.#state, screen, subscreen);
+  showing(category: Category, subscreen?: Subscreen): boolean {
+    return showing(this.#state, category, subscreen);
   }
 
   undo(): void {

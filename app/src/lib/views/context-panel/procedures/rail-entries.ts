@@ -52,7 +52,7 @@ import type { ContextId } from "$model/client/workspace-state";
  * The rail is a vertical strip of icons down the left of the context panel, and
  * collapsed it is all that is left of the panel — so the icon is the whole
  * affordance, and an entry that does not say what it opens is a dead end. Which
- * views a screen offers, and in what order, is not here: that is `RAILS`.
+ * views a category offers, and in what order, is not here: that is `RAILS`.
  *
  * **`Record<ContextId, …>` rather than a partial map**, so a context view with
  * no rail entry fails to compile rather than failing to draw. Every key in the
@@ -62,12 +62,12 @@ import type { ContextId } from "$model/client/workspace-state";
  *
  * **The labels are written, not derived.** Never inferred from the id or the
  * file name; the subject document beside the panels is where the wording is
- * argued. Where two ids carry the same label that is intended: every screen has
+ * argued. Where two ids carry the same label that is intended: every category has
  * an "Overview" and no two show the same thing, so the label names the job and
  * the id names the content.
  *
  * **The icons follow the subject, not the word.** The same subject looks the same
- * on every screen that carries it — Variables is always a hash, Context always a
+ * on every category that carries it — Variables is always a hash, Context always a
  * target, Overview always the same mark — while two entries in one rail never
  * share one, which is the only collision that matters when the panel is closed.
  */

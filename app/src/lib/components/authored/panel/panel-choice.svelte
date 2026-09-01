@@ -8,7 +8,7 @@
    *
    * The scope a list is narrowed to — `Deck` · `Slide 4` · `Element` — the
    * region a panel is switched to, or a value short enough to show rather than
-   * hide. Five screens draw these as a region of their layout grid, above the
+   * hide. Five categories draw these as a region of their layout grid, above the
    * thing they narrow.
    *
    * **It exists because the application was faking it.** A deck inspector wrote

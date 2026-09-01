@@ -44,7 +44,7 @@
    * loud rather than letting the surface imply otherwise.
    *
    * **The strip across the top is the whole of what this state costs.** Without
-   * it the screen is indistinguishable from editing the real document, and there
+   * it the centre is indistinguishable from editing the real document, and there
    * is no way back to the library.
    */
   const focus = $derived(view.active.focus);

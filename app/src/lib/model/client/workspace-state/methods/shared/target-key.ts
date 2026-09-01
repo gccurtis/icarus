@@ -1,10 +1,10 @@
-import type { Screen } from "$representation/data/types/workspace/screens";
+import type { Category } from "$representation/data/types/workspace/categories";
 import { isSingleton } from "$model/client/workspace-state/methods/shared/defaults";
 
-type Identified = { readonly screen: Screen; readonly resourceId?: string };
+type Identified = { readonly category: Category; readonly resourceId?: string };
 
 export const targetKey = (target: Identified): string | undefined => {
-  if (isSingleton(target.screen)) return target.screen;
-  if (target.resourceId !== undefined) return `${target.screen}:${target.resourceId}`;
+  if (isSingleton(target.category)) return target.category;
+  if (target.resourceId !== undefined) return `${target.category}:${target.resourceId}`;
   return undefined;
 };

@@ -132,7 +132,7 @@ const GENERATORS = [
     name: "new-workspace",
     script: "workspaces/new-workspace.mjs",
     args: ["agents", "probe"],
-    then: ["representation/screens.mjs", []],
+    then: ["representation/categories.mjs", []],
     trees: ["workspaces"]
   }
 ];
@@ -168,12 +168,12 @@ describe("every generator is named here", () => {
       );
 
     // `aliases` and `imports` rewrite what is already there rather than adding to
-    // a tree, and `screens` runs as the second half of one entry above.
+    // a tree, and `categories` runs as the second half of one entry above.
     const covered = new Set([
       ...GENERATORS.map(({ script }) => script),
       "across/aliases.mjs",
       "across/imports.mjs",
-      "representation/screens.mjs"
+      "representation/categories.mjs"
     ]);
     assert.deepEqual(dirs.filter((script) => !covered.has(script)), []);
   });

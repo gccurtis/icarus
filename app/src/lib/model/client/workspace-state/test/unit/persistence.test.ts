@@ -28,7 +28,7 @@ const thresholds = (flushAfterOps: number, flushAfterMs: number) =>
 const workspaceState = (afterOps = 3, afterMs = 60_000) =>
   createWorkspaceState("p1", createTabList(), createTabViews(), thresholds(afterOps, afterMs));
 
-const document = (id: string) => ({ screen: "document-editor", resourceId: id }) as const;
+const document = (id: string) => ({ category: "document-editor", resourceId: id }) as const;
 
 const view = {
   subscreen: "workspace",
@@ -152,8 +152,8 @@ test("a stored row comes back whole — the tabs, the widths and the tab that wa
   wire.row = {
     revision: 12,
     tabs: [
-      { id: "t1", screen: "project-overview" },
-      { id: "t7", screen: "document-editor", resourceId: "k57" }
+      { id: "t1", category: "project-overview" },
+      { id: "t7", category: "document-editor", resourceId: "k57" }
     ],
     activeId: "t7",
     views: { t1: view, t7: view }
@@ -176,7 +176,7 @@ test("a stored row comes back whole — the tabs, the widths and the tab that wa
 test("a restored id cannot be minted again", async () => {
   wire.row = {
     revision: 1,
-    tabs: [{ id: "t7", screen: "project-overview" }],
+    tabs: [{ id: "t7", category: "project-overview" }],
     activeId: "t7",
     views: { t7: view }
   };
@@ -193,7 +193,7 @@ test("a restored id cannot be minted again", async () => {
 test("restoring does not overwrite what the person has already done", async () => {
   wire.row = {
     revision: 3,
-    tabs: [{ id: "t1", screen: "project-overview" }],
+    tabs: [{ id: "t1", category: "project-overview" }],
     activeId: "t1",
     views: { t1: view }
   };

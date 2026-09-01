@@ -1,16 +1,16 @@
-import type { Screen } from "$representation/data/types/workspace/screens";
+import type { Category } from "$representation/data/types/workspace/categories";
 import type { Frame } from "$representation/data/types/workspace/tab";
 
 export const SINGLETONS = [
   "project-overview",
   "agents",
   "templates"
-] as const satisfies readonly Screen[];
+] as const satisfies readonly Category[];
 
 export type Singleton = (typeof SINGLETONS)[number];
 
-export const isSingleton = (screen: Screen): screen is Singleton =>
-  (SINGLETONS as readonly Screen[]).includes(screen);
+export const isSingleton = (category: Category): category is Singleton =>
+  (SINGLETONS as readonly Category[]).includes(category);
 
 export const DEFAULT_FRAME: Frame = Object.freeze({
   contextWidth: 276,

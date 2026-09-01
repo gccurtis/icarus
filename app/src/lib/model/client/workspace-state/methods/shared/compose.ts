@@ -3,7 +3,7 @@ import type { Tab } from "$model/client/workspace-state/types";
 
 export const compose = (record: TabRecord, view: TabView): Tab => ({
   id: record.id,
-  screen: record.screen,
+  category: record.category,
   resourceId: record.resourceId,
   subscreen: view.subscreen,
   contextId: view.contextId ?? undefined,

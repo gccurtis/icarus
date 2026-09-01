@@ -24,13 +24,13 @@
    * `"project.variables"` is `context/project/variables.svelte` — so there is no
    * map from id to component here. What each entry is *called* and what it looks
    * like cannot be derived and lives in
-   * [`rail-entries`](procedures/rail-entries.ts); which entries this screen
+   * [`rail-entries`](procedures/rail-entries.ts); which entries this category
    * offers, and in what order, belongs to the model.
    *
-   * **There is no subscreen switch here.** A screen with several centres is
+   * **There is no subscreen switch here.** A category with several centres is
    * moved between by choosing something — a persona, a template, a task — not by
    * a pair of buttons above the rail. A control that names the states of a
-   * screen is a control that has to be kept in step with them, and it offers a
+   * category is a control that has to be kept in step with them, and it offers a
    * way to reach an editor without choosing what it edits.
    */
   const VIEWS = import.meta.glob("$lib/views/panels/context/**/*.svelte") as Record<
@@ -40,7 +40,7 @@
 
   const view = workspaceState();
 
-  const rail = $derived(railFor(view.active.screen, view.active.subscreen));
+  const rail = $derived(railFor(view.active.category, view.active.subscreen));
   const active = $derived(view.context);
   const collapsed = $derived(view.frame.contextCollapsed);
 
@@ -117,7 +117,7 @@
           -->
           <PanelPlaceholder
             panel={active}
-            screen={view.active.screen}
+            category={view.active.category}
             subscreen={view.active.subscreen}
           />
         {/if}

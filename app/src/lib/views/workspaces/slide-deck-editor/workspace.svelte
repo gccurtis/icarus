@@ -31,7 +31,7 @@
   const view = workspaceState();
 
   /**
-   * Slide deck editor — every state this screen has.
+   * Slide deck editor — every state this category has.
    *
    * `docs/screen-panel-views/screens/slide-deck-editor/workspace.md` is the
    * specification. **One region, `editor`, and one track.** Editing a slide,
@@ -48,7 +48,7 @@
    * **The state comes in as ids, not as a mode switch on the canvas.** New,
    * duplicate, delete and hide live at the top of the Slides panel and layout
    * editing is entered from the Layouts panel — a toolbar across the canvas is
-   * exactly what this screen refuses — so `layoutId` puts the editor in layout
+   * exactly what this category refuses — so `layoutId` puts the editor in layout
    * mode and `choosing` raises the chooser, both set by the panel that already
    * holds the thing they act on.
    *

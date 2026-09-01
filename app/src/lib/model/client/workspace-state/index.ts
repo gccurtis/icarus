@@ -8,8 +8,8 @@ import type { WorkspaceStateModel } from "$model/client/workspace-state/types";
 
 export { createWorkspaceState } from "$model/client/workspace-state/constructor";
 
-export type { Screen, Subscreen } from "$representation/data/types/workspace/screens";
-export { SCREENS, SUBSCREENS, isScreen } from "$representation/data/behavior/workspace/screens";
+export type { Category, Subscreen } from "$representation/data/types/workspace/categories";
+export { CATEGORIES, SUBSCREENS, isCategory } from "$representation/data/behavior/workspace/categories";
 
 export type { ContextId, InspectionKey } from "$representation/data/types/workspace/panels";
 export {
