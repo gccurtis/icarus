@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Vocabulary from "$views/development/vocabulary/vocabulary.svelte";
+  import Vocabulary from "$development-views/vocabulary/vocabulary.svelte";
 </script>
 
 <Vocabulary />

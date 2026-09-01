@@ -32,20 +32,22 @@ export default {
     },
 
     alias: {
+      "$app-views": "src/lib/app-views",
       "$capabilities": "src/lib/capabilities",
+      "$development-views": "src/lib/development-views",
       "$model": "src/lib/model",
       "$representation": "src/lib/representation",
       "$runtime": "src/lib/runtime",
       "$styles": "src/lib/styles",
-      "$views": "src/lib/views",
+      "$surfaces": "src/lib/surfaces",
 
       "$authored-components": "src/lib/components/authored",
       "$development-components": "src/lib/components/development",
       "$vendored-components": "src/lib/components/vendored",
 
-      "$panels": "src/lib/views/panels",
-      "$workspaces": "src/lib/views/workspaces",
-      "$modals": "src/lib/views/modals",
+      "$panels": "src/lib/app-views/panels",
+      "$workspaces": "src/lib/app-views/workspaces",
+      "$modals": "src/lib/app-views/modals",
     },
   },
 };

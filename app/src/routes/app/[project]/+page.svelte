@@ -1,5 +1,5 @@
 <script lang="ts">
-  import App from "$views/app/app.svelte";
+  import App from "$surfaces/app/app.svelte";
 
   /**
    * /app/[project] — the application.

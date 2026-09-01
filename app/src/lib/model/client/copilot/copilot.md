@@ -45,7 +45,7 @@ would be a message the user can neither see nor has chosen to keep.
 
 ## The two surfaces
 
-**The status bar** — [`views/status-bar/`](../../../views/status-bar/status-bar.md)
+**The status bar** — [`surfaces/status-bar/`](../../../surfaces/status-bar/status-bar.md)
 — is deliberately small: the composer, the mode and the persona, and nothing
 else. It is the middle of three parts, under the work surface, which is where the
 floating dock ended up once it was clear that hovering over the work meant being

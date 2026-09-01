@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ThreadDemo from "$views/development/thread-demo/thread-demo.svelte";
+  import ThreadDemo from "$development-views/thread-demo/thread-demo.svelte";
 </script>
 
 <ThreadDemo />

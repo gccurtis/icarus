@@ -16,7 +16,7 @@ import type { Component } from "svelte";
  * that reached for `window` is not covered here.
  */
 const MODULES = import.meta.glob<{ default: Component }>(
-  "/src/lib/views/{panels/context,panels/inspector,workspaces,modals}/**/*.svelte"
+  "/src/lib/app-views/{panels/context,panels/inspector,workspaces,modals}/**/*.svelte"
 );
 
 /**

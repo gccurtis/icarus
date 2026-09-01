@@ -26,7 +26,7 @@
    * that omits it produces a frame pointed at one project and a model still
    * holding another. See lib/runtime/client/client.md.
    *
-   * It renders nothing itself. The frame is `$views/app`, composed by the page
+   * It renders nothing itself. The frame is `$surfaces/app`, composed by the page
    * below, and this file holds no markup and no CSS so that lifetime and
    * appearance stay separable.
    */

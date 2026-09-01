@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Demo from "$views/development/demo/demo.svelte";
+  import Demo from "$development-views/demo/demo.svelte";
 </script>
 
 <Demo />

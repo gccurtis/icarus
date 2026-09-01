@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
 
-import ContextPanel from "$views/context-panel/context-panel.svelte";
-import Inspector from "$views/inspector/inspector.svelte";
+import ContextPanel from "$surfaces/context/context.svelte";
+import Inspector from "$surfaces/inspector/inspector.svelte";
 import { createConfiguration } from "$model/client/configuration";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";

@@ -124,7 +124,7 @@ Consumers own:
 `"project.variables"` is the `project/variables` leaf of `context/`, and
 `"collaboration.person"` is `collaboration/person` under `inspector/`. The
 `agents` category's `"persona"` is
-[`views/workspaces/agents/workspace-persona.svelte`](../../../views/workspaces/agents/workspace-persona.svelte).
+[`app-views/workspaces/agents/workspace-persona.svelte`](../../../app-views/workspaces/agents/workspace-persona.svelte).
 
 The vocabulary is the `workspace` domain's, under `representation/`: the unions in
 `data/types/workspace/`, their lists and guards in `data/behavior/workspace/`. Categories
