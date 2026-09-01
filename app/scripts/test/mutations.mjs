@@ -68,7 +68,7 @@ export const MUTATIONS = [
     changes: [
       {
         path: "src/lib/capabilities/probe/api/reaches-client.ts",
-        write: `import type { ViewStateModel } from "$model/client/view-state";\nexport type X = ViewStateModel;\n`
+        write: `import type { WorkspaceStateModel } from "$model/client/workspace-state";\nexport type X = WorkspaceStateModel;\n`
       }
     ]
   },
@@ -326,9 +326,9 @@ export const MUTATIONS = [
         path: "src/lib/runtime/client/start.ts",
         edit: (text) =>
           text.replace(
-            "  const viewState = createViewState(project, tabList, tabViews, settings);",
-            "  const viewState = createViewState(project, tabList, tabViews, settings);\n" +
-              "  const probe = createViewState(project, tabList, tabViews, settings);\n  void probe;"
+            "  const workspaceState = createWorkspaceState(project, tabList, tabViews, settings);",
+            "  const workspaceState = createWorkspaceState(project, tabList, tabViews, settings);\n" +
+              "  const probe = createWorkspaceState(project, tabList, tabViews, settings);\n  void probe;"
           )
       }
     ]
@@ -548,7 +548,7 @@ export const MUTATIONS = [
     ]
   },
   {
-    check: "runtime-through-view-state",
+    check: "runtime-through-workspace-state",
     says: "a workspace attaches a runtime itself",
     names: "agents/workspace-attaches.svelte",
     changes: [

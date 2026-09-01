@@ -8,7 +8,7 @@ import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
 import { createBrowserStorage } from "$model/client/storage";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
-import { createViewState } from "$model/client/view-state";
+import { createWorkspaceState } from "$model/client/workspace-state";
 import type { ClientModel, ClientModelInput } from "$runtime/client/types";
 
 export type { ClientModel, ClientModelInput } from "$runtime/client/types";
@@ -46,21 +46,21 @@ const buildClientModel = ({
 
   const tabList = createTabList();
   const tabViews = createTabViews();
-  const viewState = createViewState(project, tabList, tabViews, settings);
+  const workspaceState = createWorkspaceState(project, tabList, tabViews, settings);
 
   return {
     project,
-    viewState,
+    workspaceState,
     configuration: settings,
     storage: store,
     documentRuntimes,
     slideDeckRuntimes,
     spreadsheetRuntimes,
-    commands: createCommands(viewState),
+    commands: createCommands(workspaceState),
     copilot: createCopilot(),
 
     close: () => {
-      void viewState.flush().catch(() => undefined);
+      void workspaceState.flush().catch(() => undefined);
       documentRuntimes.releaseAll();
       slideDeckRuntimes.releaseAll();
       spreadsheetRuntimes.releaseAll();

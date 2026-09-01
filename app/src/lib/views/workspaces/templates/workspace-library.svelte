@@ -23,9 +23,9 @@
     type TemplateScope,
     type TemplateTarget
   } from "$capabilities/library";
-  import { viewState } from "$model/client/view-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
-  const view = viewState();
+  const view = workspaceState();
 
   /**
    * Templates — the library: a place rather than a list.

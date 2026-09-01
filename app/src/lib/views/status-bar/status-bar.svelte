@@ -6,7 +6,7 @@
   import { username } from "$capabilities/development/index.remote";
   import { kindOf, nameOf } from "$views/status-bar/procedures/resource-name";
   import { clientModel } from "$runtime/client/start";
-  import { viewState } from "$model/client/view-state";
+  import { workspaceState } from "$model/client/workspace-state";
   import type { Mode } from "$model/client/copilot";
 
   /**
@@ -30,7 +30,7 @@
    * ends is what stops the bar becoming a single run of unrelated chips.
    */
   const { copilot } = clientModel();
-  const view = viewState();
+  const view = workspaceState();
 
   // ------------------------------------------------------------ the work ----
 

@@ -25,9 +25,9 @@
     type TaskRow,
     type TaskTurn
   } from "$capabilities/agents";
-  import { viewState } from "$model/client/view-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
-  const view = viewState();
+  const view = workspaceState();
 
   /**
    * One agentic task: what it was asked, how it is going, and how to steer it.

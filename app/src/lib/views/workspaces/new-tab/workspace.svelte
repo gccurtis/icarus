@@ -35,9 +35,9 @@
   } from "$capabilities/library";
   import { openingFor } from "$capabilities/opening";
   import { project, resources } from "$capabilities/project";
-  import { viewState, type Screen } from "$model/client/view-state";
+  import { workspaceState, type Screen } from "$model/client/workspace-state";
 
-  const view = viewState();
+  const view = workspaceState();
 
   /**
    * New Tab — the only state this screen has.

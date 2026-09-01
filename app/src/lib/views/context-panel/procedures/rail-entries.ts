@@ -44,7 +44,7 @@ import Workflow from "@lucide/svelte/icons/workflow";
 import Wrench from "@lucide/svelte/icons/wrench";
 import Zap from "@lucide/svelte/icons/zap";
 
-import type { ContextId } from "$model/client/view-state";
+import type { ContextId } from "$model/client/workspace-state";
 
 /**
  * What each context view looks like in the rail: a name and an icon.

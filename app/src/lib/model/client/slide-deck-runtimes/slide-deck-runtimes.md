@@ -7,7 +7,7 @@ their question.
 ## Description
 
 Slide deck runtimes keep decks in sync while somebody edits them. Companion to
-[view-state](../view-state/view-state.md), which owns what is *open* while this
+[workspace-state](../workspace-state/workspace-state.md), which owns what is *open* while this
 owns what is being *changed*.
 
 Two members carry the whole design:

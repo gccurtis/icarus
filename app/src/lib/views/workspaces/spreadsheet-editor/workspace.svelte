@@ -12,9 +12,9 @@
     type Cell,
     type NamedCellStyle
   } from "$capabilities/resource";
-  import { viewState } from "$model/client/view-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
-  const view = viewState();
+  const view = workspaceState();
 
   /**
    * Spreadsheet editor — the only state this screen has.

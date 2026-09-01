@@ -5,10 +5,10 @@ linked below.
 
 ## Purpose
 
-Which objects are open, and which one is active. It renders view state's tab list
+Which objects are open, and which one is active. It renders workspace state's tab list
 and reports two intents back to it — activate this one, close that one.
 
-It sits in the frame rather than in a route because tabs are view state and not
+It sits in the frame rather than in a route because tabs are workspace state and not
 route state: opening a tab is not a navigation, closing one does not go back, and
 no arrangement of URL segments describes a set of open objects with an order.
 
@@ -38,7 +38,7 @@ It does not own:
 
 | Kind | Name | Type | Required | Purpose |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | Nothing. It reads view state directly, so a parent has nothing to hand it. |
+| — | — | — | — | Nothing. It reads workspace state directly, so a parent has nothing to hand it. |
 
 ## Dependencies
 
@@ -46,7 +46,7 @@ It does not own:
 
 | Model | Usage |
 | --- | --- |
-| `$model/client/view-state` | `tabs`, `activeId`, `isSingleton`; calls `activate` and `close` |
+| `$model/client/workspace-state` | `tabs`, `activeId`, `isSingleton`; calls `activate` and `close` |
 
 ### Capabilities
 

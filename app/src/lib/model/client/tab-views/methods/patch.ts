@@ -1,4 +1,4 @@
-import type { TabId, TabView } from "$representation/data/types/views/tab";
+import type { TabId, TabView } from "$representation/data/types/workspace/tab";
 import type { TabViewsData } from "$model/client/tab-views/definition";
 import { of } from "$model/client/tab-views/methods/of";
 

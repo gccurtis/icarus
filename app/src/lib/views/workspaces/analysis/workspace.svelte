@@ -54,9 +54,9 @@
     type TableVariable
   } from "$capabilities/analysis";
   import { analyses, type AnalysisRow } from "$capabilities/library";
-  import { viewState } from "$model/client/view-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
-  const view = viewState();
+  const view = workspaceState();
 
   /**
    * Analysis — one analysis, drawn, and the controls that drew it.

@@ -82,7 +82,7 @@ const insert = ({ text, what, opens, closes, line, separator }) => {
   return `${text.slice(0, start)}${members.join(separator)}${text.slice(end)}`;
 };
 
-plan.edit(join(lib, "representation", "data", "types", "views", "panels.ts"), (text) =>
+plan.edit(join(lib, "representation", "data", "types", "workspace", "panels.ts"), (text) =>
   insert({
     text,
     what: UNION[stack],
@@ -93,7 +93,7 @@ plan.edit(join(lib, "representation", "data", "types", "views", "panels.ts"), (t
   })
 );
 
-plan.edit(join(lib, "representation", "data", "behavior", "views", "panels.ts"), (text) =>
+plan.edit(join(lib, "representation", "data", "behavior", "workspace", "panels.ts"), (text) =>
   insert({
     text,
     what: CONSTANT[stack],

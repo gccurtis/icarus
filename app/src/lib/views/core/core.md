@@ -8,7 +8,7 @@ documents linked below.
 The work surface: whatever the active tab holds, rendered on the generous plane
 at the centre of the frame.
 
-It fills from view state rather than from the route, and that is what makes tabs
+It fills from workspace state rather than from the route, and that is what makes tabs
 possible at all. Switching tabs is not a navigation, so nothing about what is
 open is expressible as a URL segment — a centre that took route content could not
 follow a tab.
@@ -37,7 +37,7 @@ It does not own:
 
 | Kind | Name | Type | Required | Purpose |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | Nothing. It reads view state directly. |
+| — | — | — | — | Nothing. It reads workspace state directly. |
 
 ## Dependencies
 
@@ -45,7 +45,7 @@ It does not own:
 
 | Door | Usage |
 | --- | --- |
-| `$model/client/view-state` | `active.screen`, `active.subscreen`, `activeId` |
+| `$model/client/workspace-state` | `active.screen`, `active.subscreen`, `activeId` |
 
 ### Capabilities
 
@@ -121,7 +121,7 @@ broken" is the whole value of the two branches.
   here, because a map is a second list of what exists and the first one is
   `src/lib/views/workspaces/`. A screen and a subscreen name a path, and the same fact
   generates the vocabulary the model publishes, so the two cannot disagree.
-- **A model key is never a component.** View state exposes stable keys precisely
+- **A model key is never a component.** Workspace state exposes stable keys precisely
   so it stays testable without a DOM; resolving them is this layer's job.
 - **A chunk that fails to arrive is a state, not a blank plane.** Rendering
   nothing for a broken module leaves a reader looking at an empty centre with no

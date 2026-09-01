@@ -31,9 +31,9 @@
     traceIn,
     type ResearchThread
   } from "$capabilities/research";
-  import { viewState } from "$model/client/view-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
-  const view = viewState();
+  const view = workspaceState();
 
   /**
    * One line of enquiry: the turn you are on, and what it produced.

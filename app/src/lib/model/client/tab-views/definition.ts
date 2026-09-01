@@ -1,6 +1,6 @@
 import { SvelteMap } from "svelte/reactivity";
 
-import type { ContextId } from "$representation/data/types/views/panels";
+import type { ContextId } from "$representation/data/types/workspace/panels";
 import type {
   Frame,
   Inspected,
@@ -8,7 +8,7 @@ import type {
   Selection,
   TabId,
   TabView
-} from "$representation/data/types/views/tab";
+} from "$representation/data/types/workspace/tab";
 import { of } from "$model/client/tab-views/methods/of";
 import { patch } from "$model/client/tab-views/methods/patch";
 import type { TabViewsModel } from "$model/client/tab-views/types";

@@ -7,7 +7,7 @@
  */
 import ts from "typescript";
 
-const BEHAVIOR = ["representation", "data", "behavior", "views"];
+const BEHAVIOR = ["representation", "data", "behavior", "workspace"];
 
 /** Generated from the workspace tree. */
 export const KEYS_FILE = [...BEHAVIOR, "screens.ts"];

@@ -90,14 +90,19 @@ const GENERATORS = [
   {
     name: "new-model-object",
     script: "model/new-model-object.mjs",
-    args: ["client", "probe", "--depends-on=view-state"],
+    args: ["client", "probe", "--depends-on=workspace-state"],
     trees: ["model", "runtime"]
   },
-  { name: "new-method", script: "model/new-method.mjs", args: ["client", "view-state", "probe"], trees: ["model"] },
+  {
+    name: "new-method",
+    script: "model/new-method.mjs",
+    args: ["client", "workspace-state", "probe"],
+    trees: ["model"]
+  },
   {
     name: "new-method (promoting)",
     script: "model/new-method.mjs",
-    args: ["client", "view-state", "resize/probe"],
+    args: ["client", "workspace-state", "resize/probe"],
     trees: ["model"]
   },
   {

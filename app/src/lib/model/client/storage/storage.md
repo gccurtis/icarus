@@ -4,8 +4,8 @@
 >
 > Everything it persists is workbench state, and the workbench does not persist
 > while its stored shape is unsettled — a target instead of a `ResourceRef`, an
-> eleven-arm view state instead of an options blob. See
-> [view-state.md](../view-state/view-state.md).
+> eleven-arm workspace state instead of an options blob. See
+> [workspace-state.md](../workspace-state/workspace-state.md).
 >
 > It is left **intact and unused** rather than torn out: the serialisation, the
 > version policy and the per-project key are all still right, and the section

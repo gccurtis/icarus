@@ -11,16 +11,16 @@ import type {
   CommandsModel
 } from "$model/client/commands/types";
 import { COMMAND_IDS, DEFAULT_BINDINGS } from "$model/client/commands/types";
-import type { ViewStateModel } from "$model/client/view-state";
+import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
 export class CommandsState {
   open = $state(false);
 
-  readonly view: ViewStateModel;
+  readonly view: WorkspaceStateModel;
   readonly registry: Record<CommandId, Command>;
   readonly bindings: Readonly<Record<Chord, CommandId>> = DEFAULT_BINDINGS;
 
-  constructor(view: ViewStateModel) {
+  constructor(view: WorkspaceStateModel) {
     this.view = view;
     this.registry = buildRegistry(this);
   }
@@ -29,7 +29,7 @@ export class CommandsState {
 export class Commands implements CommandsModel {
   #state: CommandsState;
 
-  constructor(view: ViewStateModel) {
+  constructor(view: WorkspaceStateModel) {
     this.#state = new CommandsState(view);
   }
 

@@ -25,8 +25,8 @@ const packageRoot =
 const libRoot = join(packageRoot, "src", "lib");
 
 const targets = {
-  types: join(libRoot, "representation", "data", "types", "views", "screens.ts"),
-  behavior: join(libRoot, "representation", "data", "behavior", "views", "screens.ts")
+  types: join(libRoot, "representation", "data", "types", "workspace", "screens.ts"),
+  behavior: join(libRoot, "representation", "data", "behavior", "workspace", "screens.ts")
 };
 
 /** How a generated file tells a reader who rewrites it, and how CI checks it. */
@@ -148,7 +148,7 @@ const behaviorFile = (screens) => {
     .map(([screen, subscreens]) => `  "${screen}": [${subscreens.map((name) => `"${name}"`).join(", ")}]`)
     .join(",\n");
 
-  return `${banner()}import type { Screen, Subscreen } from "$representation/data/types/views/screens";
+  return `${banner()}import type { Screen, Subscreen } from "$representation/data/types/workspace/screens";
 
 export const SCREENS = [
 ${members}

@@ -56,7 +56,7 @@ It does not own:
 
 | Kind | Name | Type | Required | Purpose |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | Nothing. It reads view state directly and is placed by the frame. |
+| — | — | — | — | Nothing. It reads workspace state directly and is placed by the frame. |
 
 - **Entry:** [`status-bar.svelte`](status-bar.svelte)
 - **Types:** `None`
@@ -68,7 +68,7 @@ It does not own:
 | Model | Usage |
 | --- | --- |
 | `$runtime/client` | `copilot`: mode, persona, draft, `focusRequests`, `blocked`; calls `setMode`, `selectPersona`, `write`, `sent` |
-| `$model/client/view-state` | `active`, `frame`; calls `resize` |
+| `$model/client/workspace-state` | `active`, `frame`; calls `resize` |
 
 ### Capabilities
 

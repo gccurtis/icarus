@@ -37,7 +37,7 @@ It does not own:
 
 | Kind | Name | Type | Required | Purpose |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | Nothing. The frame takes no props and no `children`: tabs are view state, so there is no route content to thread through it. |
+| — | — | — | — | Nothing. The frame takes no props and no `children`: tabs are workspace state, so there is no route content to thread through it. |
 
 ## Dependencies
 
@@ -45,7 +45,7 @@ It does not own:
 
 | Door | Usage |
 | --- | --- |
-| `$runtime/client` | `viewState`, provided to every panel below through context, and read here for the two flank column widths; `commands`, handed to the dispatch effect |
+| `$runtime/client` | `workspaceState`, provided to every panel below through context, and read here for the two flank column widths; `commands`, handed to the dispatch effect |
 
 ### Capabilities
 

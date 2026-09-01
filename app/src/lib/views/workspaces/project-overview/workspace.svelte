@@ -29,9 +29,9 @@
   import { analyses, threads } from "$capabilities/library";
   import { openingFor } from "$capabilities/opening";
   import { activity, people, project, resources } from "$capabilities/project";
-  import { viewState, type Screen } from "$model/client/view-state";
+  import { workspaceState, type Screen } from "$model/client/workspace-state";
 
-  const view = viewState();
+  const view = workspaceState();
 
   /**
    * Project Overview — the grounding zone. Reset, re-align, launch.

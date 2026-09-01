@@ -10,17 +10,19 @@ const REACHABLE = new Set([
   "modals"
 ]);
 const AROUND_IT = new Set(["views", "workspaces"]);
-const VIEW_STATE = ["client", "view-state"];
+const WORKSPACE_STATE = ["client", "workspace-state"];
 
-const isViewState = (segments) => VIEW_STATE.every((part, index) => segments[index] === part);
+const isWorkspaceState = (segments) =>
+  WORKSPACE_STATE.every((part, index) => segments[index] === part);
 
 export default check({
   name: "panel-imports-no-other-view",
   says: "A panel does not import another panel, a surface, or a workspace. It renders on its own and holds no part of what is around it.",
   subjects: {
-    "no-other-panel": "a panel shows another panel by key, so view state stays the one record of what is open",
+    "no-other-panel":
+      "a panel shows another panel by key, so workspace state stays the one record of what is open",
     "no-surface": "a panel is rendered inside a surface; reaching back out to one is a cycle",
-    "no-other-tree": "capabilities, components, view state and modals — a panel needs nothing else"
+    "no-other-tree": "capabilities, components, workspace state and modals — a panel needs nothing else"
   },
   run(tree) {
     const found = [];
@@ -31,7 +33,7 @@ export default check({
         const target = tree.aliasTarget(record.specifier);
         if (!target) continue; // a package
         if (REACHABLE.has(target.tree)) continue;
-        if (target.tree === "model" && isViewState(target.segments)) continue;
+        if (target.tree === "model" && isWorkspaceState(target.segments)) continue;
 
         const subject =
           target.tree === "panels"

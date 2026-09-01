@@ -1,4 +1,4 @@
-import type { TabRecord, Target } from "$representation/data/types/views/tab";
+import type { TabRecord, Target } from "$representation/data/types/workspace/tab";
 import type { TabListData } from "$model/client/tab-list/definition.svelte";
 
 export const mint = (state: TabListData, target: Target): TabRecord => {

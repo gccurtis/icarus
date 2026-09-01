@@ -5,7 +5,7 @@ import type { DocumentRuntimesModel } from "$model/client/document-runtimes";
 import type { SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
 import type { SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtimes";
 import type { ClientStorage } from "$model/client/storage";
-import type { ViewStateModel } from "$model/client/view-state";
+import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
 export type ClientModelInput = {
   readonly project: string;
@@ -22,7 +22,7 @@ export interface ClientModel {
   readonly slideDeckRuntimes: SlideDeckRuntimesModel;
   readonly spreadsheetRuntimes: SpreadsheetRuntimesModel;
 
-  readonly viewState: ViewStateModel;
+  readonly workspaceState: WorkspaceStateModel;
   readonly commands: CommandsModel;
   readonly copilot: CopilotModel;
 

@@ -4,7 +4,7 @@
   import LayoutTemplate from "@lucide/svelte/icons/layout-template";
   import X from "@lucide/svelte/icons/x";
 
-  import { viewState } from "$model/client/view-state";
+  import { workspaceState } from "$model/client/workspace-state";
   import { SCREEN_ENTRIES, isOpened, labelOf } from "$views/tab-bar/procedures/screen-entries";
 
   /**
@@ -21,7 +21,7 @@
    * and these contain a focusable close button. Each is an ordinary button
    * carrying `aria-current`.
    */
-  const view = viewState();
+  const view = workspaceState();
 
   const here = $derived(view.active.screen);
 

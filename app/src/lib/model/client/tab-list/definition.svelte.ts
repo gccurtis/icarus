@@ -1,4 +1,4 @@
-import type { TabId, TabRecord, Target } from "$representation/data/types/views/tab";
+import type { TabId, TabRecord, Target } from "$representation/data/types/workspace/tab";
 import { activate } from "$model/client/tab-list/methods/activate";
 import { add } from "$model/client/tab-list/methods/add";
 import { mint } from "$model/client/tab-list/methods/mint";

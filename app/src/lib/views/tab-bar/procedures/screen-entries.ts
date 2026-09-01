@@ -6,7 +6,7 @@ import Plus from "@lucide/svelte/icons/plus";
 import Presentation from "@lucide/svelte/icons/presentation";
 import Sheet from "@lucide/svelte/icons/sheet";
 
-import { isSingleton, type Screen, type Singleton, type Tab } from "$model/client/view-state";
+import { isSingleton, type Screen, type Singleton, type Tab } from "$model/client/workspace-state";
 import { nameOf } from "$views/tab-bar/procedures/resource-name";
 
 /**

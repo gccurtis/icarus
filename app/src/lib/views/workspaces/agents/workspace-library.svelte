@@ -27,9 +27,9 @@
     type PersonaScope,
     type TaskRow
   } from "$capabilities/agents";
-  import { viewState } from "$model/client/view-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
-  const view = viewState();
+  const view = workspaceState();
 
   /**
    * Agents — every persona in reach, and every task they are running.

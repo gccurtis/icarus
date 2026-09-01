@@ -1,6 +1,6 @@
 <script lang="ts">
   import { clientModel } from "$runtime/client/start";
-  import { provideViewState } from "$model/client/view-state";
+  import { provideWorkspaceState } from "$model/client/workspace-state";
   import CommandBar from "$views/command-bar/command-bar.svelte";
   import { dispatchCommands } from "$views/app/effects/dispatch-commands.svelte";
   import ContextPanel from "$views/context-panel/context-panel.svelte";
@@ -44,8 +44,8 @@
    * on its own. One provider, at the top, because a second one underneath would
    * silently shadow it for everything below.
    */
-  const { viewState, commands } = clientModel();
-  provideViewState(viewState);
+  const { workspaceState, commands } = clientModel();
+  provideWorkspaceState(workspaceState);
 
   /**
    * One keydown listener for the whole application, mounted with the frame and
@@ -66,11 +66,15 @@
    * state and the work surface never has to reflow between two and three.
    */
   const contextWidth = $derived(
-    viewState.frame.contextCollapsed ? RAIL_WIDTH : RAIL_WIDTH + viewState.frame.contextWidth
+    workspaceState.frame.contextCollapsed
+      ? RAIL_WIDTH
+      : RAIL_WIDTH + workspaceState.frame.contextWidth
   );
 
   const inspectorWidth = $derived(
-    viewState.frame.inspectorCollapsed ? COLLAPSED_WIDTH : viewState.frame.inspectorWidth
+    workspaceState.frame.inspectorCollapsed
+      ? COLLAPSED_WIDTH
+      : workspaceState.frame.inspectorWidth
   );
 </script>
 

@@ -16,7 +16,7 @@ window later — and it owns one client model for its whole life.
 | [`storage`](storage/storage.md) | This project's browser store, and the format of what survives a reload | no |
 | [`tab-list`](tab-list/tab-list.md) | What is open, in what order, and which one is active | yes |
 | [`tab-views`](tab-views/tab-views.md) | One view per open tab: its centre, rail, lens and geometry | yes |
-| [`view-state`](view-state/view-state.md) | The composition of those two, and every write to either | yes |
+| [`workspace-state`](workspace-state/workspace-state.md) | The composition of those two, and every write to either | yes |
 | [`commands`](commands/commands.md) | Every argument-free action, the chords bound to them, and whether the bar is showing | yes |
 | [`document-runtimes`](document-runtimes/document-runtimes.md) | One runtime per open document: the unsent buffer, the submit protocol, the undo stack | yes |
 | [`slide-deck-runtimes`](slide-deck-runtimes/slide-deck-runtimes.md) | The same, for one deck | yes |
@@ -24,12 +24,12 @@ window later — and it owns one client model for its whole life.
 | [`copilot`](copilot/copilot.md) | The message that has not been sent: its text, mode, addressee, scope and attachments | yes |
 
 In construction order, which is dependency order: configuration depends on
-nothing, the three registers read their flush thresholds off it, `view-state` is
-handed the two halves it coordinates, and commands closes over `view-state`. The
+nothing, the three registers read their flush thresholds off it, `workspace-state` is
+handed the two halves it coordinates, and commands closes over it. The
 copilot borrows nothing.
 
 **`tab-list` and `tab-views` are the two objects the graph does not return.**
-They are built here and handed to `createViewState`, and `ClientModel` names
+They are built here and handed to `createWorkspaceState`, and `ClientModel` names
 neither: a view that could reach one through the graph could move a tab without
 going through the coordinator, and the coordinator being the only writer is what
 makes an operation log over it complete.

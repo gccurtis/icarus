@@ -31,9 +31,9 @@
     type TaskRow,
     type TriggerOption
   } from "$capabilities/agents";
-  import { viewState } from "$model/client/view-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
-  const view = viewState();
+  const view = workspaceState();
 
   /**
    * One Automation: the trigger, what it does, and what it has produced.

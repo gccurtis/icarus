@@ -45,7 +45,7 @@
     configuration: data.configuration
   });
 
-  $effect(() => void model.viewState.restore());
+  $effect(() => void model.workspaceState.restore());
 
   /**
    * The instance ends with the layout that owns it.

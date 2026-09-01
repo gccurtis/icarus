@@ -54,7 +54,7 @@ panel's, so a user who learns one edge has learned the other.
 
 | Door | Usage |
 | --- | --- |
-| `$model/client/view-state` | `inspected`, `frame`; calls `resize` |
+| `$model/client/workspace-state` | `inspected`, `frame`; calls `resize` |
 
 ### Capabilities
 

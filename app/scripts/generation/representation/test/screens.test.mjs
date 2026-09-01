@@ -84,9 +84,9 @@ const refuses = (root, ...args) => {
  * table and the guard under `data/behavior/`.
  */
 const unionsPath = (root) =>
-  join(root, "src", "lib", "representation", "data", "types", "views", "screens.ts");
+  join(root, "src", "lib", "representation", "data", "types", "workspace", "screens.ts");
 const listsPath = (root) =>
-  join(root, "src", "lib", "representation", "data", "behavior", "views", "screens.ts");
+  join(root, "src", "lib", "representation", "data", "behavior", "workspace", "screens.ts");
 
 const unions = (root) => readFileSync(unionsPath(root), "utf8");
 const lists = (root) => readFileSync(listsPath(root), "utf8");
@@ -148,7 +148,10 @@ test("the lists satisfy the unions rather than declaring their own", () => {
   withPackage([], (root) => {
     run(root);
 
-    assert.match(lists(root), /import type \{ Screen, Subscreen \} from "\$representation\/data\/types\/views\/screens";/);
+    assert.match(
+      lists(root),
+      /import type \{ Screen, Subscreen \} from "\$representation\/data\/types\/workspace\/screens";/
+    );
     assert.match(lists(root), /\] as const satisfies readonly Screen\[\];/);
     assert.match(lists(root), /\} as const satisfies Record<Screen, readonly Subscreen\[\]>;/);
   });
@@ -286,8 +289,11 @@ test("--check fails when only one of the two was written", () => {
     rmSync(listsPath(root));
 
     const said = refuses(root, "--check");
-    assert.match(said, /behavior\/views\/screens\.ts has not been generated/);
-    assert.ok(!said.includes("types/views/screens.ts has"), "the one still in step is not reported");
+    assert.match(said, /behavior\/workspace\/screens\.ts has not been generated/);
+    assert.ok(
+      !said.includes("types/workspace/screens.ts has"),
+      "the one still in step is not reported"
+    );
   });
 });
 

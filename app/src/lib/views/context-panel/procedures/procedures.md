@@ -10,7 +10,7 @@ Lives at `procedures/procedures.md`.
 
 One thing: what a rail entry *looks like*. Which views exist, which subscreen
 offers which, in what order, and what to do with a stored id that has drifted out
-of range all belong to `$model/client/view-state` — it answers
+of range all belong to `$model/client/workspace-state` — it answers
 `railFor(screen, subscreen)`, and the drift fallback is its `context` getter.
 
 That split follows the shape of the two halves. The ids are generated from the

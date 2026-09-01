@@ -1,8 +1,8 @@
 import type { CommandsState } from "$model/client/commands/definition.svelte";
 import { setOpen } from "$model/client/commands/methods/shared/set-open";
 import type { Command, CommandId } from "$model/client/commands/types";
-import type { ViewStateModel } from "$model/client/view-state";
-import { isSingleton } from "$model/client/view-state";
+import type { WorkspaceStateModel } from "$model/client/workspace-state";
+import { isSingleton } from "$model/client/workspace-state";
 
 export const buildRegistry = (state: CommandsState): Record<CommandId, Command> => ({
   "command-bar.open": {
@@ -31,7 +31,7 @@ const step = (state: CommandsState, delta: number): void => {
   cycle(state.view, delta);
 };
 
-const cycle = (view: ViewStateModel, delta: number): void => {
+const cycle = (view: WorkspaceStateModel, delta: number): void => {
   const { tabs, activeId } = view;
   const index = tabs.findIndex((tab) => tab.id === activeId);
   const next = (index + delta + tabs.length) % tabs.length;

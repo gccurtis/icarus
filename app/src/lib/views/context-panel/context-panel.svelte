@@ -3,7 +3,7 @@
 
   import { PanelPlaceholder } from "$authored-components/panel";
   import { ResizeHandle } from "$authored-components/resize-handle";
-  import { railFor, viewState, type ContextId } from "$model/client/view-state";
+  import { railFor, workspaceState, type ContextId } from "$model/client/workspace-state";
   import { RAIL_ENTRIES } from "$views/context-panel/procedures/rail-entries";
   import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH, RAIL_WIDTH } from "$views/context-panel/types";
 
@@ -38,7 +38,7 @@
     () => Promise<{ default: Component }>
   >;
 
-  const view = viewState();
+  const view = workspaceState();
 
   const rail = $derived(railFor(view.active.screen, view.active.subscreen));
   const active = $derived(view.context);

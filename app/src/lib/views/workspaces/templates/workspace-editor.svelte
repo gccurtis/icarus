@@ -24,9 +24,9 @@
     type VariableType
   } from "$capabilities/library";
   import { project } from "$capabilities/project";
-  import { viewState } from "$model/client/view-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
-  const view = viewState();
+  const view = workspaceState();
 
   /**
    * Templates — one template, authored on the surface it will become.

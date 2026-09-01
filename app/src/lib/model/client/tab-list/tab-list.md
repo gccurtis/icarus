@@ -18,7 +18,7 @@ everything that moves while it is open lives in
 **It decides nothing.** There is no default here, no rail, no policy about which
 screens may be closed. It is a list with an identity function for ids and a
 cursor, and every question of the form "should this be allowed" belongs to
-[view-state](../view-state/view-state.md), which is the only object that holds
+[workspace-state](../workspace-state/workspace-state.md), which is the only object that holds
 one of these.
 
 ## Ownership Boundary
@@ -33,7 +33,7 @@ Consumers own:
 
 - **What a tab is showing.** That is `tab-views`, keyed by the ids minted here
 - **Whether a tab may be closed.** Permanence is a screen's property, and
-  `view-state` is where the refusal lives
+  `workspace-state` is where the refusal lives
 - **What happens next.** Removing the active tab leaves `activeId` naming
   nothing; choosing the neighbour is the caller's decision, and this object will
   not invent one
@@ -41,11 +41,11 @@ Consumers own:
 ## Lifetime
 
 - **Instance:** one per client instance
-- **Constructed by:** `buildClientModel`, immediately before `view-state`
+- **Constructed by:** `buildClientModel`, immediately before `workspace-state`
 - **Released by:** nothing — this object holds nothing releasable
 
 **It is not a field on `ClientModel`.** The runtime builds it, hands it to
-`createViewState`, and does not return it. A view that could reach it through the
+`createWorkspaceState`, and does not return it. A view that could reach it through the
 graph could move a tab without going through the coordinator, which is the one
 thing the coordinator exists to prevent.
 

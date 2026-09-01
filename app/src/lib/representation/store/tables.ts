@@ -66,8 +66,8 @@ import type {
   TemplateKind,
   TemplateVariable
 } from "$representation/data/types/templates/template";
-import type { ViewOp } from "$representation/data/types/views/op";
-import type { TabId, TabRecord, TabView } from "$representation/data/types/views/tab";
+import type { WorkspaceOp } from "$representation/data/types/workspace/op";
+import type { TabId, TabRecord, TabView } from "$representation/data/types/workspace/tab";
 
 export type UserFields = {
   authSubject: string;
@@ -526,7 +526,7 @@ export type ActivityFields = {
 };
 export type Activity = Row<"activity"> & ActivityFields;
 
-export type ViewSnapshotFields = {
+export type WorkspaceSnapshotFields = {
   projectId: Id<"projects">;
   userId: Id<"users">;
   revision: number;
@@ -535,17 +535,17 @@ export type ViewSnapshotFields = {
   views: Record<TabId, TabView>;
   at: number;
 };
-export type ViewSnapshot = Row<"viewSnapshots"> & ViewSnapshotFields;
+export type WorkspaceSnapshot = Row<"workspaceSnapshots"> & WorkspaceSnapshotFields;
 
-export type ViewRevisionFields = {
+export type WorkspaceRevisionFields = {
   projectId: Id<"projects">;
   userId: Id<"users">;
   revision: number;
   baseRevision: number;
-  ops: ViewOp[];
+  ops: WorkspaceOp[];
   at: number;
 };
-export type ViewRevision = Row<"viewRevisions"> & ViewRevisionFields;
+export type WorkspaceRevision = Row<"workspaceRevisions"> & WorkspaceRevisionFields;
 
 export const TABLE_NAMES = [
   "activity",
@@ -587,8 +587,8 @@ export const TABLE_NAMES = [
   "threads",
   "users",
   "variables",
-  "viewRevisions",
-  "viewSnapshots"
+  "workspaceRevisions",
+  "workspaceSnapshots"
 ] as const;
 
 export type TableName = (typeof TABLE_NAMES)[number];
@@ -633,8 +633,8 @@ export type TableFields = {
   threads: ThreadFields;
   users: UserFields;
   variables: VariableFields;
-  viewRevisions: ViewRevisionFields;
-  viewSnapshots: ViewSnapshotFields;
+  workspaceRevisions: WorkspaceRevisionFields;
+  workspaceSnapshots: WorkspaceSnapshotFields;
 };
 
 export type TableRow<T extends TableName> = Row<T> & TableFields[T];

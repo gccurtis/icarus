@@ -58,7 +58,7 @@ alike.
 
 | Door | Usage |
 | --- | --- |
-| `$model/client/view-state` | `active`, `context`, `frame`, `railFor`; calls `selectContext` and `resize` |
+| `$model/client/workspace-state` | `active`, `context`, `frame`, `railFor`; calls `selectContext` and `resize` |
 
 ### Capabilities
 
@@ -109,7 +109,7 @@ drifted out of range, so there is no branch here for an id that does not resolve
 by screen and subscreen. Project Overview offers four entries; a research thread
 offers eight; a template being authored offers a set disjoint from the library it
 was chosen from. That is the most visible proof that this panel is a projection
-over view state rather than a surface holding its own.
+over workspace state rather than a surface holding its own.
 
 ## Accessibility
 

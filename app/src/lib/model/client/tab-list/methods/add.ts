@@ -1,4 +1,4 @@
-import type { TabRecord } from "$representation/data/types/views/tab";
+import type { TabRecord } from "$representation/data/types/workspace/tab";
 import type { TabListData } from "$model/client/tab-list/definition.svelte";
 
 const MINTED = /^t(\d+)$/;

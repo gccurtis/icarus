@@ -1,4 +1,4 @@
-import type { TabId, TabRecord, Target } from "$representation/data/types/views/tab";
+import type { TabId, TabRecord, Target } from "$representation/data/types/workspace/tab";
 
 export interface TabListModel {
   readonly tabs: readonly TabRecord[];

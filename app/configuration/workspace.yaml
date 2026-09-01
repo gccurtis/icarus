@@ -1,0 +1,18 @@
+# Workspace state: when what a person has open is written down.
+#
+# It is stored the way a resource is — a materialized row per person per
+# project, and an append-only history of change sets behind it — with one writer
+# per row, so there is no rebase window and no conflict to configure. What is
+# left is the same pair of thresholds every editor has: how long a gesture waits
+# before it is saved, and how many gestures are allowed to pile up first.
+#
+# Both are smaller than the resource ones. A tab opening is one operation and
+# fifty of them is a session, not a sentence — and the cost of being wrong here
+# is a reload that lands somewhere the person did not leave.
+
+workspace:
+  changeSets:
+    # Submit once this many operations have accumulated.
+    flushAfterOps: 8
+    # Submit this long after the first unsubmitted operation, whatever the count.
+    flushAfterMs: 750

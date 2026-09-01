@@ -7,7 +7,7 @@ their question.
 ## Description
 
 Document runtimes keep documents in sync while somebody edits them. Companion to
-[view-state](../view-state/view-state.md), which owns what is *open* while this
+[workspace-state](../workspace-state/workspace-state.md), which owns what is *open* while this
 owns what is being *changed*.
 
 Two members carry the whole design:
@@ -137,7 +137,7 @@ entry out first, so a second release finds nothing.
 - **A runtime exists only while a tab references it.**
 - **`body` is the single source of truth for what is rendered.** No method
   returns a body.
-- **Unacknowledged writes never leave this object.** Not into view state, not
+- **Unacknowledged writes never leave this object.** Not into workspace state, not
   into storage, not into a component.
 - **Release submits.**
 - **The runtime never parses an op path.** It compares paths as strings when

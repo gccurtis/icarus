@@ -17,9 +17,9 @@
     textBlock,
     type PageSetup
   } from "$capabilities/resource";
-  import { viewState, type InspectionKey } from "$model/client/view-state";
+  import { workspaceState, type InspectionKey } from "$model/client/workspace-state";
 
-  const view = viewState();
+  const view = workspaceState();
 
   /**
    * Document editor — the only state this screen has.

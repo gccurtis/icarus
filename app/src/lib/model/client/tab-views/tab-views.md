@@ -18,7 +18,7 @@ are two spellings of one state.
 **It decides nothing.** It does not know which rail a screen offers, what a
 landing has to clear, or what a new tab starts as. Every write is a field it was
 told to write, and the policy behind them lives in
-[view-state](../view-state/view-state.md), which is the only object that holds
+[workspace-state](../workspace-state/workspace-state.md), which is the only object that holds
 one of these.
 
 ## Ownership Boundary
@@ -36,7 +36,7 @@ Consumers own:
 - **Whether a write is allowed.** A rail this subscreen does not offer, a lens
   that names no file — both are refused one call earlier
 - **What a landing means.** `land` writes five fields at once; deciding what
-  those five are is `view-state`'s
+  those five are is `workspace-state`'s
 
 ## Why copy on write
 
@@ -51,7 +51,7 @@ operation log needs for the `was` half of every op it records.
 ## Lifetime
 
 - **Instance:** one per client instance
-- **Constructed by:** `buildClientModel`, immediately before `view-state`
+- **Constructed by:** `buildClientModel`, immediately before `workspace-state`
 - **Released by:** nothing — this object holds nothing releasable
 
 **It is not a field on `ClientModel`**, for the same reason `tab-list` is not:
@@ -83,7 +83,7 @@ read as one line each on the definition rather than as nine files.
 | `ids` | `readonly TabId[]` | Every id with a view, in insertion order |
 
 `ids` exists for a caller reconciling the two halves — nothing renders from it.
-What a surface reads is a composed `Tab`, and composition is `view-state`'s.
+What a surface reads is a composed `Tab`, and composition is `workspace-state`'s.
 
 ## Construction
 

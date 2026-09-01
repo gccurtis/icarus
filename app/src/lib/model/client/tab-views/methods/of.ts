@@ -1,4 +1,4 @@
-import type { TabId, TabView } from "$representation/data/types/views/tab";
+import type { TabId, TabView } from "$representation/data/types/workspace/tab";
 import type { TabViewsData } from "$model/client/tab-views/definition";
 
 export const of = (state: TabViewsData, id: TabId): TabView => {

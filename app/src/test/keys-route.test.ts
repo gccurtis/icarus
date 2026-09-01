@@ -11,9 +11,9 @@ import {
   INSPECTION_KEYS,
   SCREENS,
   SUBSCREENS,
-  createViewState,
+  createWorkspaceState,
   railFor
-} from "$model/client/view-state";
+} from "$model/client/workspace-state";
 
 /**
  * Every key routes.
@@ -29,10 +29,10 @@ import {
  * come back the placeholder is what disappears; the key stays, because a rail
  * entry marks itself current and a lens names what it is about.
  */
-const KEY = Symbol.for("icarus.view-state");
+const KEY = Symbol.for("icarus.workspace-state");
 const withModel = (model: unknown) => ({ context: new Map([[KEY, model]]) });
 
-const UNPERSISTED = { views: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } } };
+const UNPERSISTED = { workspace: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } } };
 
 describe("every key the vocabulary declares reaches something", () => {
   it("renders a context for every entry of every rail", () => {
@@ -41,7 +41,7 @@ describe("every key the vocabulary declares reaches something", () => {
     for (const screen of SCREENS) {
       for (const subscreen of SUBSCREENS[screen]) {
         for (const id of railFor(screen, subscreen)) {
-          const model = createViewState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
+          const model = createWorkspaceState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
           model.open({ screen, subscreen });
           model.selectContext(id);
 
@@ -62,7 +62,7 @@ describe("every key the vocabulary declares reaches something", () => {
 
   it("renders a lens for every inspection key, about what was selected", () => {
     for (const key of INSPECTION_KEYS) {
-      const model = createViewState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
+      const model = createWorkspaceState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
       model.inspect(key, { kind: "person", id: "mira", at: "C2" });
 
       const { body } = render(Inspector, withModel(model));

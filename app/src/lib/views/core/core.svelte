@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Component } from "svelte";
 
-  import { viewState } from "$model/client/view-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
   /**
    * The work surface — the generous plane, and what the active tab holds.
@@ -28,7 +28,7 @@
     () => Promise<{ default: Component }>
   >;
 
-  const view = viewState();
+  const view = workspaceState();
 
   /** A screen with one centre calls it `workspace`; the rest qualify it. */
   const path = $derived(

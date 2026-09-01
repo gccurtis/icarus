@@ -1,4 +1,4 @@
-import type { ContextId } from "$representation/data/types/views/panels";
+import type { ContextId } from "$representation/data/types/workspace/panels";
 import type {
   Frame,
   Inspected,
@@ -6,7 +6,7 @@ import type {
   Selection,
   TabId,
   TabView
-} from "$representation/data/types/views/tab";
+} from "$representation/data/types/workspace/tab";
 
 export interface TabViewsModel {
   readonly ids: readonly TabId[];
