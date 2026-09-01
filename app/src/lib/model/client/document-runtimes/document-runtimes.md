@@ -7,7 +7,7 @@ their question.
 ## Description
 
 Document runtimes keep documents in sync while somebody edits them. Companion to
-the [workbench](../workbench/workbench.md), which owns what is *open* while this
+[view-state](../view-state/view-state.md), which owns what is *open* while this
 owns what is being *changed*.
 
 Two members carry the whole design:

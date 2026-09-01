@@ -1,5 +1,4 @@
 import type { ResourceSetExpression, Selector } from "$shared/types/resource-set-expression";
-import type { WorkbenchModel } from "$model/client/workbench";
 import { address } from "$model/client/copilot/methods/address";
 import { attach } from "$model/client/copilot/methods/attach";
 import { blocked } from "$model/client/copilot/methods/blocked";
@@ -54,7 +53,6 @@ export class CopilotState {
 
   focusRequests = $state(0);
 
-  constructor(readonly workbench: WorkbenchModel) {}
 }
 
 /**
@@ -69,8 +67,8 @@ export class CopilotState {
 export class Copilot implements CopilotModel {
   readonly #state: CopilotState;
 
-  constructor(workbench: WorkbenchModel) {
-    this.#state = new CopilotState(workbench);
+  constructor() {
+    this.#state = new CopilotState();
   }
 
   get mode(): Mode {

@@ -6,7 +6,6 @@ import type { SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
 import type { SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtimes";
 import type { ClientStorage } from "$model/client/storage";
 import type { ViewStateModel } from "$model/client/view-state";
-import type { WorkbenchModel } from "$model/client/workbench";
 
 /**
  * What a client instance is built from.
@@ -57,8 +56,6 @@ export interface ClientModel {
   readonly documentRuntimes: DocumentRuntimesModel;
   readonly slideDeckRuntimes: SlideDeckRuntimesModel;
   readonly spreadsheetRuntimes: SpreadsheetRuntimesModel;
-
-  readonly workbench: WorkbenchModel;
 
   /**
    * What is open, and what is being looked at inside it — for the four panel

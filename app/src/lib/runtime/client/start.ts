@@ -7,7 +7,6 @@ import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
 import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
 import { createBrowserStorage } from "$model/client/storage";
 import { createViewState } from "$model/client/view-state";
-import { createWorkbench } from "$model/client/workbench";
 import type { ClientModel, ClientModelInput } from "$runtime/client/types";
 
 export type { ClientModel, ClientModelInput } from "$runtime/client/types";
@@ -29,27 +28,6 @@ export type {
   PersistedTabOptions,
   PersistedWorkbench
 } from "$model/client/storage";
-export type {
-  Frame,
-  InspectionKey,
-  ScreenKind,
-  Selection,
-  SingletonScreen,
-  Tab,
-  TabId,
-  TabTarget,
-  ViewStateFor,
-  ViewStatePatch,
-  WorkbenchModel,
-  WorkbenchViewState
-} from "$model/client/workbench";
-export {
-  DEFAULT_FRAME,
-  SINGLETON_SCREENS,
-  SINGLETON_TARGETS,
-  isPermanent,
-  screenKindOf
-} from "$model/client/workbench";
 
 /**
  * How a client instance comes up: composed, held, handed out — in that order,
@@ -84,21 +62,12 @@ const buildClientModel = ({
   // their tuned values during their own construction.
   const settings = createConfiguration(configuration);
 
-  // Storage is built and, for now, read by nothing. The workbench does not
-  // persist while its stored shape is unsettled, and storage holds exactly that
-  // one section — so it stands intact and unused rather than being torn out and
-  // rebuilt when persistence returns. See workbench/workbench.md.
   const store = storage ?? createBrowserStorage(project);
 
   const documentRuntimes = createDocumentRuntimes(settings);
   const slideDeckRuntimes = createSlideDeckRuntimes(settings);
   const spreadsheetRuntimes = createSpreadsheetRuntimes(settings);
 
-  const workbench = createWorkbench();
-
-  // Borrows nothing: what is open is decided by the person, not by anything else
-  // in the graph, so its position here is a reading order rather than a
-  // dependency — it would be just as correct first.
   const viewState = createViewState(project);
 
   return {
@@ -109,21 +78,10 @@ const buildClientModel = ({
     documentRuntimes,
     slideDeckRuntimes,
     spreadsheetRuntimes,
-    workbench,
-    commands: createCommands(workbench),
-    copilot: createCopilot(workbench),
+    commands: createCommands(viewState),
+    copilot: createCopilot(),
 
-    /**
-     * Releases in reverse construction order, so an object is never torn down
-     * while something built after it still holds a reference.
-     *
-     * `releaseAll` submits every buffer on the way out — disposal is never a
-     * silent discard. It is synchronous by design: a browser gives a closing tab
-     * very little time, and awaiting three submits in sequence is how the third
-     * one does not happen.
-     */
     close: () => {
-      workbench.closeAll();
       documentRuntimes.releaseAll();
       slideDeckRuntimes.releaseAll();
       spreadsheetRuntimes.releaseAll();

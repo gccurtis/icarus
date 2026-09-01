@@ -14,8 +14,7 @@ window later — and it owns one client model for its whole life.
 | --- | --- | --- |
 | [`configuration`](configuration/configuration.md) | The settings the server published to this tab | no |
 | [`storage`](storage/storage.md) | This project's browser store, and the format of what survives a reload | no |
-| [`workbench`](workbench/workbench.md) | What is open, which tab is active, and everything a tab holds, over the shell's own vocabulary | yes |
-| [`view-state`](view-state/view-state.md) | The same three questions over the four panel trees: what is open, which tab is active, and what is being looked at inside it | yes |
+| [`view-state`](view-state/view-state.md) | What is open, which tab is active, and what is being looked at inside it | yes |
 | [`commands`](commands/commands.md) | Every argument-free action, the chords bound to them, and whether the bar is showing | yes |
 | [`document-runtimes`](document-runtimes/document-runtimes.md) | One runtime per open document: the unsent buffer, the submit protocol, the undo stack | yes |
 | [`slide-deck-runtimes`](slide-deck-runtimes/slide-deck-runtimes.md) | The same, for one deck | yes |
@@ -23,14 +22,12 @@ window later — and it owns one client model for its whole life.
 | [`copilot`](copilot/copilot.md) | The message that has not been sent: its text, mode, addressee, scope and attachments | yes |
 
 In construction order, which is dependency order: configuration depends on
-nothing, the three registers read their flush thresholds off it, and commands and
-the copilot both close over the workbench. `view-state` borrows nothing at all,
-so its position in that sequence is a reading order rather than a constraint.
+nothing, the three registers read their flush thresholds off it, and commands
+closes over `view-state`. The copilot borrows nothing.
 
-**Storage is built and read by nothing.** The workbench does not persist while
-its stored shape is unsettled — see
-[workbench.md](workbench/workbench.md) — and storage holds exactly that one
-section. It stands intact and unused rather than being torn out and rebuilt.
+**Storage is built and read by nothing.** Nothing persists while the stored shape
+is unsettled, and storage holds exactly that one section. It stands intact and
+unused rather than being torn out and rebuilt.
 
 ## Initialization, not a lazy singleton
 

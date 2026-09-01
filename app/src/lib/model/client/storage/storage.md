@@ -5,7 +5,7 @@
 > Everything it persists is workbench state, and the workbench does not persist
 > while its stored shape is unsettled — a target instead of a `ResourceRef`, an
 > eleven-arm view state instead of an options blob. See
-> [workbench.md](../workbench/workbench.md#persistence-is-paused).
+> [view-state.md](../view-state/view-state.md).
 >
 > It is left **intact and unused** rather than torn out: the serialisation, the
 > version policy and the per-project key are all still right, and the section
