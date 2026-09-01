@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Generates the category vocabulary from the workspace tree itself.
+ * Generates the category vocabulary from the category tree itself.
  *
  *     pnpm category-keys
  *     pnpm category-keys -- --check
  *
- * A category is a directory and a subscreen is a file:
- * `workspaces/agents/workspace-persona.svelte` is the `agents` category's
+ * A category is a directory and a subscreen is a content file:
+ * `categories/agents/content/persona.svelte` is the `agents` category's
  * `"persona"`. Nothing outside the tree gets a vote, so `--check`, which exits
  * non-zero when a written file and the tree disagree, is the part of this
  * script worth putting in CI.
@@ -55,7 +55,7 @@ const stopIfFailed = () => {
   if (problems.length === 0) return;
   console.error(`category-keys: ${problems.length} problem${problems.length === 1 ? "" : "s"}\n`);
   for (const problem of problems) console.error(`  ${problem}`);
-  console.error("\nRun `pnpm lint panels` for what the tree is expected to look like.");
+  console.error("\nRun `pnpm lint views` for what the tree is expected to look like.");
   process.exit(1);
 };
 
@@ -71,7 +71,7 @@ const sorted = (values) => [...values].sort();
 
 const directories = (root) => sorted(listing(root).filter((entry) => entry.isDirectory()).map((entry) => entry.name));
 
-const panels = (root) =>
+const views = (root) =>
   sorted(
     listing(root)
       .filter((entry) => entry.isFile() && entry.name.endsWith(".svelte"))
@@ -84,38 +84,22 @@ const requireTree = (root) => {
   return root;
 };
 
-/** `workspace.svelte` and `workspace-<name>.svelte`, and nothing else. */
-const WORKSPACE = /^workspace(?:-([a-z0-9]+(?:-[a-z0-9]+)*))?$/;
-
 /**
- * Each category and the subscreens it can show, keyed by directory name.
+ * Each category and the content views it can show, keyed by directory name.
  *
- * A category with no workspace file has nothing to render, which is worth a
- * refusal here: it would otherwise generate an empty member of `SUBSCREENS` that
- * type checks and then fails at paint.
+ * A category with an empty `content/` is a category being scaffolded, not a
+ * mistake: it names its rail and its lenses in the vocabulary and renders the
+ * placeholder until a file arrives, exactly as an unbuilt view does.
  */
-const categorySubscreens = (root) => {
+const categoryContent = (root) => {
   const categories = new Map();
 
-  for (const name of panels(root)) {
+  for (const name of views(root)) {
     fail(at(join(root, `${name}.svelte`)), "sits at the tree root, so it belongs to no category");
   }
 
   for (const category of directories(root)) {
-    const categoryRoot = join(root, category);
-    const subscreens = [];
-
-    for (const name of panels(categoryRoot)) {
-      const match = WORKSPACE.exec(name);
-      if (match === null) {
-        fail(at(join(categoryRoot, `${name}.svelte`)), "is not 'workspace' or 'workspace-<name>', so it names no subscreen");
-        continue;
-      }
-      subscreens.push(match[1] ?? "workspace");
-    }
-
-    if (subscreens.length === 0) fail(at(categoryRoot), "has no workspace file, so the category has nothing to render");
-    categories.set(category, sorted(subscreens));
+    categories.set(category, sorted(views(join(root, category, "content"))));
   }
 
   return categories;
@@ -123,7 +107,7 @@ const categorySubscreens = (root) => {
 
 // --------------------------------------------------------------- rendering ----
 
-const banner = () => `// Every category the workspace tree defines. Generated — do not edit.
+const banner = () => `// Every category the tree defines. Generated — do not edit.
 //
 //     ${COMMAND}
 //
@@ -193,7 +177,7 @@ if ((flag !== undefined && flag !== "--check") || rest.length > 0) {
   stopIfFailed();
 }
 
-const categories = categorySubscreens(requireTree(join(libRoot, "app-views", "workspaces")));
+const categories = categoryContent(requireTree(join(libRoot, "app-views", "categories")));
 stopIfFailed();
 
 const wanted = [
@@ -204,7 +188,7 @@ const wanted = [
 const subscreens = [...categories.values()];
 const counts = [
   `${categories.size}  categories`,
-  `${new Set(subscreens.flat()).size}  subscreens, over ${subscreens.flat().length} workspace files`
+  `${new Set(subscreens.flat()).size}  subscreens, over ${subscreens.flat().length} content files`
 ];
 
 if (flag === "--check") {
@@ -213,7 +197,7 @@ if (flag === "--check") {
   );
 
   if (stale.length === 0) {
-    console.log(`category-keys: ${wanted.map(({ target }) => at(target)).join(", ")} in step with the workspace tree\n`);
+    console.log(`category-keys: ${wanted.map(({ target }) => at(target)).join(", ")} in step with the category tree\n`);
     for (const count of counts) console.log(`  ${count}`);
     process.exit(0);
   }
@@ -221,7 +205,7 @@ if (flag === "--check") {
   console.error("category-keys:\n");
   for (const { target, contents } of stale) {
     const current = existsSync(target) ? readFileSync(target, "utf8") : null;
-    console.error(`  ${at(target)} ${current === null ? "has not been generated" : "has drifted from the workspace tree"}`);
+    console.error(`  ${at(target)} ${current === null ? "has not been generated" : "has drifted from the category tree"}`);
     if (current !== null) for (const line of drift(contents, current)) console.error(`    ${line}`);
   }
   console.error(`\nRun '${COMMAND}' to rewrite it.`);

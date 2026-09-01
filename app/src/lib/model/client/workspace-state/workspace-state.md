@@ -121,8 +121,8 @@ Consumers own:
 
 ## A key is a path
 
-`"project.variables"` is the `project/variables` leaf of `context/`, and
-`"collaboration.person"` is `collaboration/person` under `inspector/`. The
+`"analysis.fields"` is the `fields` leaf of `analysis`'s `context/`, and
+`"general.person"` is the `person` view under `general/`. The
 `agents` category's `"persona"` is
 [`app-views/workspaces/agents/workspace-persona.svelte`](../../../app-views/workspaces/agents/workspace-persona.svelte).
 

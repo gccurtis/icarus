@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import { invert, invertAll } from "$representation/data/behavior/workspace/invert";
-import { CONTEXT_IDS, INSPECTION_KEYS } from "$representation/data/behavior/workspace/panels";
+import { CONTEXT_VIEWS, INSPECTOR_VIEWS } from "$representation/data/behavior/workspace/views";
 import type { WorkspaceOp } from "$representation/data/types/workspace/op";
 import type { Frame, Landing, TabView } from "$representation/data/types/workspace/tab";
 
@@ -17,15 +17,15 @@ const dragged: Frame = { ...frame, contextWidth: 400, inspectorCollapsed: true }
 const library: Landing = {
   subscreen: "library",
   focus: null,
-  contextId: CONTEXT_IDS[0],
+  contextId: CONTEXT_VIEWS[0],
   inspected: "empty",
   selection: null
 };
 const persona: Landing = {
   subscreen: "persona",
   focus: "p-1",
-  contextId: CONTEXT_IDS[1],
-  inspected: INSPECTION_KEYS[0],
+  contextId: CONTEXT_VIEWS[1],
+  inspected: INSPECTOR_VIEWS[0],
   selection: { kind: "persona", id: "p-1" }
 };
 
@@ -37,12 +37,12 @@ const OPS: readonly WorkspaceOp[] = [
   { op: "close", tab: "t9", at: 3, target, view },
   { op: "activate", was: "t1", now: "t2" },
   { op: "land", tab: "t9", was: library, now: persona },
-  { op: "context", tab: "t9", was: CONTEXT_IDS[0], now: CONTEXT_IDS[1] },
+  { op: "context", tab: "t9", was: CONTEXT_VIEWS[0], now: CONTEXT_VIEWS[1] },
   {
     op: "inspect",
     tab: "t9",
     was: "empty",
-    now: INSPECTION_KEYS[0],
+    now: INSPECTOR_VIEWS[0],
     wasSelection: null,
     selection: { kind: "cell", id: "C2" }
   },

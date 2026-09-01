@@ -7,8 +7,8 @@ import { createConfiguration } from "$model/client/configuration";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
 import {
-  CONTEXT_IDS,
-  INSPECTION_KEYS,
+  CONTEXT_VIEWS,
+  INSPECTOR_VIEWS,
   CATEGORIES,
   SUBSCREENS,
   createWorkspaceState,
@@ -18,14 +18,14 @@ import {
 /**
  * Every key routes.
  *
- * A panel is reached by a key rather than by an import, so nothing in the type
+ * A view is reached by a key rather than by an import, so nothing in the type
  * system says a key leads anywhere: `key-vocabulary-matches-the-tree` proves a
- * panel is named, and nothing proves a name is reachable. This renders the two
+ * view is named, and nothing proves a name is reachable. This renders the two
  * containers over the whole vocabulary and asserts each one answers — with the
- * panel where there is one, and with the placeholder naming the key where there
+ * view where there is one, and with the placeholder naming the key where there
  * is not.
  *
- * **It asserts the key is on the page, not that the placeholder is.** As panels
+ * **It asserts the key is on the page, not that the placeholder is.** As views
  * come back the placeholder is what disappears; the key stays, because a rail
  * entry marks itself current and a lens names what it is about.
  */
@@ -57,11 +57,11 @@ describe("every key the vocabulary declares reaches something", () => {
     // test's, and is why this asserts what the rails offer rather than the whole
     // vocabulary.
     expect(reached.size).toBeGreaterThan(0);
-    expect([...reached].every((id) => (CONTEXT_IDS as readonly string[]).includes(id))).toBe(true);
+    expect([...reached].every((id) => (CONTEXT_VIEWS as readonly string[]).includes(id))).toBe(true);
   });
 
   it("renders a lens for every inspection key, about what was selected", () => {
-    for (const key of INSPECTION_KEYS) {
+    for (const key of INSPECTOR_VIEWS) {
       const model = createWorkspaceState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
       model.inspect(key, { kind: "person", id: "mira", at: "C2" });
 

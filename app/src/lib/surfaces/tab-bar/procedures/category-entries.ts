@@ -5,6 +5,7 @@ import FlaskConical from "@lucide/svelte/icons/flask-conical";
 import Plus from "@lucide/svelte/icons/plus";
 import Presentation from "@lucide/svelte/icons/presentation";
 import Sheet from "@lucide/svelte/icons/sheet";
+import Target from "@lucide/svelte/icons/target";
 
 import { isSingleton, type Category, type Singleton, type Tab } from "$model/client/workspace-state";
 import { nameOf } from "$surfaces/tab-bar/procedures/resource-name";
@@ -42,6 +43,7 @@ export const CATEGORY_ENTRIES: Record<OpenedCategory, CategoryEntry> = {
   "document-editor": { label: subject, icon: FileText },
   "slide-deck-editor": { label: subject, icon: Presentation },
   "spreadsheet-editor": { label: subject, icon: Sheet },
+  "context-editor": { label: subject, icon: Target },
 
   "new-tab": { label: () => "New tab", icon: Plus }
 };

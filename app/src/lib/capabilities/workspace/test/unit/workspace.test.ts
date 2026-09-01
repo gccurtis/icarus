@@ -39,7 +39,7 @@ const { submitWorkspaceChanges } = await import(
 );
 
 const view = {
-  subscreen: "workspace",
+  subscreen: "overview",
   focus: null,
   contextId: null,
   inspected: "empty",

@@ -1,4 +1,4 @@
-import type { ContextId } from "$representation/data/types/workspace/panels";
+import type { ContextView } from "$representation/data/types/workspace/views";
 import type {
   Frame,
   Inspected,
@@ -14,7 +14,7 @@ export type WorkspaceOp =
   | { op: "close"; tab: TabId; at: number; target: Target; view: TabView }
   | { op: "activate"; was: TabId; now: TabId }
   | { op: "land"; tab: TabId; was: Landing; now: Landing }
-  | { op: "context"; tab: TabId; was: ContextId | null; now: ContextId | null }
+  | { op: "context"; tab: TabId; was: ContextView | null; now: ContextView | null }
   | {
       op: "inspect";
       tab: TabId;

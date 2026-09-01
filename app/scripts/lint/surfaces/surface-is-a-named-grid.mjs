@@ -1,7 +1,7 @@
 import { join } from "node:path";
 
 import { check } from "../shared/check.mjs";
-import { surfaces, workspaceFiles } from "../shared/trees.mjs";
+import { surfaces, viewLeaves } from "../shared/trees.mjs";
 
 /**
  * A named grid, not a stack of divs: `grid-template-areas` with regions named
@@ -25,9 +25,9 @@ export default check({
       found.push({ path: root, message: "does not name its regions with grid-template-areas" });
     }
 
-    // A workspace is the centre of a category, so it is a surface for this rule
-    // even though its directory holds one file per subscreen rather than a root.
-    for (const { path } of workspaceFiles(tree)) {
+    // A content view is the centre of a category, so it is a surface for this
+    // rule even though a category holds one file per view rather than a root.
+    for (const { path } of viewLeaves(tree).filter(({ surface }) => surface === "content")) {
       if (laysItselfOut(tree.read(path))) continue;
       found.push({ path, message: "does not name its regions with grid-template-areas" });
     }

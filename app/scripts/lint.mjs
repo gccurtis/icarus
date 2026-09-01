@@ -7,7 +7,7 @@
  * check cannot exist and be unrun.
  *
  *     pnpm lint                    everything
- *     pnpm lint surfaces panels    one tree, or several
+ *     pnpm lint surfaces views     one tree, or several
  *     pnpm lint surface-imports    one check, wherever it lives
  *     pnpm lint --all              name the clean checks too
  *
@@ -31,8 +31,7 @@ const TREES = [
   "runtime",
   "styles",
   "surfaces",
-  "panels",
-  "workspaces",
+  "views",
   "across"
 ];
 

@@ -3,7 +3,7 @@
 
   import { PanelPlaceholder } from "$authored-components/panel";
   import { ResizeHandle } from "$authored-components/resize-handle";
-  import { railFor, workspaceState, type ContextId } from "$model/client/workspace-state";
+  import { railFor, workspaceState, type ContextView } from "$model/client/workspace-state";
   import { RAIL_ENTRIES } from "$surfaces/context/procedures/rail-entries";
   import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH, RAIL_WIDTH } from "$surfaces/context/types";
 
@@ -21,7 +21,7 @@
    * there is always something left to click.
    *
    * **The registry is the filesystem.** A context id names a path —
-   * `"project.variables"` is `context/project/variables.svelte` — so there is no
+   * `"analysis.fields"` is `categories/analysis/context/fields.svelte` — so there is no
    * map from id to component here. What each entry is *called* and what it looks
    * like cannot be derived and lives in
    * [`rail-entries`](procedures/rail-entries.ts); which entries this category
@@ -33,7 +33,7 @@
    * category is a control that has to be kept in step with them, and it offers a
    * way to reach an editor without choosing what it edits.
    */
-  const VIEWS = import.meta.glob("$lib/app-views/panels/context/**/*.svelte") as Record<
+  const VIEWS = import.meta.glob("$lib/app-views/categories/*/context/*.svelte") as Record<
     string,
     () => Promise<{ default: Component }>
   >;
@@ -47,7 +47,7 @@
   const load = $derived(
     active === undefined
       ? undefined
-      : VIEWS[`/src/lib/app-views/panels/context/${active.replace(".", "/")}.svelte`]
+      : VIEWS[`/src/lib/app-views/categories/${active.replace(".", "/context/")}.svelte`]
   );
 
   let Content = $state<Component | undefined>(undefined);
@@ -76,7 +76,7 @@
    * closing a panel by clicking into it is a surprise, and the edge already
    * closes it.
    */
-  const select = (id: ContextId) => {
+  const select = (id: ContextView) => {
     view.selectContext(id);
     if (collapsed) view.resize({ contextCollapsed: false });
   };

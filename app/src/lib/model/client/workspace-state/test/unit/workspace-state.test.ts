@@ -14,16 +14,16 @@ import type {
   WorkspaceStateModel
 } from "$model/client/workspace-state";
 import {
-  CONTEXT_IDS,
+  CONTEXT_VIEWS,
   DEFAULT_FRAME,
-  INSPECTION_KEYS,
+  INSPECTOR_VIEWS,
   RAILS,
   CATEGORIES,
   SINGLETONS,
   SUBSCREENS,
   defaultSubscreen,
   defaultContext,
-  isInspectionKey,
+  isInspectorView,
   isSingleton,
   railFor
 } from "$model/client/workspace-state";
@@ -62,14 +62,14 @@ const tabOf = (model: WorkspaceStateModel, id: TabId): Tab => {
   return tab;
 };
 
-const lens = INSPECTION_KEYS[0];
-const otherLens = INSPECTION_KEYS[1];
+const lens = INSPECTOR_VIEWS[0];
+const otherLens = INSPECTOR_VIEWS[1];
 
 // The two vocabularies overlap in spelling — "analysis.chart" is a rail view and
 // a lens — so the key that proves a non-lens is refused has to be picked from the
 // context ids that are not also lenses. The cast is the point: the type already
 // refuses this, and the guard is for the callers that have no type.
-const notALens = CONTEXT_IDS.find((id) => !isInspectionKey(id)) as unknown as Inspected;
+const notALens = CONTEXT_VIEWS.find((id) => !isInspectorView(id)) as unknown as Inspected;
 
 const selection: Selection = { kind: "resource", id: "k57", at: "C2" };
 
@@ -136,13 +136,20 @@ test("permanence is derived, so a tab cannot disagree with its category", () => 
 
 test("every category opens on a centre it actually has", () => {
   // `DEFAULT_SUBSCREEN` is total over categories but its values are the union of
-  // every category's centres, so `agents: "workspace"` would compile and then
+  // every category's centres, so `agents: "chart"` would compile and then
   // throw on the first `showSubscreen`. Nothing but this checks the two tables
   // agree.
   for (const category of CATEGORIES) {
     const offered: readonly string[] = SUBSCREENS[category];
+    const opens = defaultSubscreen(category);
+    // A category with no content view has nothing to default to, and `mintView`
+    // refuses it rather than minting a tab that cannot paint.
+    if (offered.length === 0) {
+      assert.equal(opens, undefined, `'${category}' has no centre but names a default`);
+      continue;
+    }
     assert.ok(
-      offered.includes(defaultSubscreen(category)),
+      opens !== undefined && offered.includes(opens),
       `'${category}' opens on a centre it has not got`
     );
   }
@@ -226,7 +233,7 @@ test("two research threads are two tabs", () => {
 test("one research thread reached twice is one tab, in the state it was left", () => {
   const model = workspaceState();
   const first = model.open(thread("th-1"));
-  const where = railFor("research", "workspace")[3];
+  const where = railFor("research", "thread")[3];
   model.selectContext(where);
   model.inspect(lens, selection);
   model.open(document("k57"));
@@ -282,7 +289,7 @@ test("a target with a focus and no centre says what the tab is about without mov
   // invalidated.
   const model = workspaceState();
   const first = model.open(thread("th-1"));
-  const where = railFor("research", "workspace")[2];
+  const where = railFor("research", "thread")[2];
   model.selectContext(where);
   model.open(document("k57"));
 
@@ -398,8 +405,8 @@ test("activeId names a real tab after every method, including after closing the 
     ["open a thread", () => void (enquiry = model.open(thread("th-1")).id)],
     ["open a document", () => void (doc = model.open(document("k57")).id)],
     ["activate a permanent tab", () => model.activate(permanent)],
-    ["land on a centre", () => model.showSubscreen("workspace")],
-    ["move the rail", () => model.selectContext(railFor("project-overview", "workspace")[1])],
+    ["land on a centre", () => model.showSubscreen("overview")],
+    ["move the rail", () => model.selectContext(railFor("project-overview", "overview")[1])],
     ["inspect", () => model.inspect(lens, selection)],
     ["clear", () => model.clear()],
     ["resize", () => model.resize({ contextWidth: 400 })],
@@ -452,7 +459,7 @@ test("a closed tab comes back whole, not as an identity", () => {
 test("reopening restores the rail, the inspection and the widths — not just the category", () => {
   const model = workspaceState();
   const tab = model.open(document("k57"));
-  const where = railFor("document-editor", "workspace")[3];
+  const where = railFor("document-editor", "document")[3];
   model.selectContext(where);
   model.inspect(lens, selection);
   model.resize({ contextWidth: 400, inspectorCollapsed: true });
@@ -477,7 +484,7 @@ test("a closed thread comes back as the same thread, with the subject it was on"
   // rather than as a second tab about the same thread.
   const model = workspaceState();
   const tab = model.open({ category: "research", resourceId: "th-1", focus: "q-4" });
-  const where = railFor("research", "workspace")[4];
+  const where = railFor("research", "thread")[4];
   model.selectContext(where);
 
   model.close(tab.id);
@@ -645,7 +652,7 @@ test("selecting a view the rail does not offer throws", () => {
 
 test("selecting a view the rail offers moves the rail", () => {
   const model = workspaceState();
-  const where = railFor("project-overview", "workspace")[3];
+  const where = railFor("project-overview", "overview")[3];
 
   model.selectContext(where);
 
@@ -656,13 +663,13 @@ test("each tab keeps its own rail position", () => {
   const model = workspaceState();
   const a = model.open(document("a"));
   const b = model.open(document("b"));
-  const where = railFor("document-editor", "workspace")[2];
+  const where = railFor("document-editor", "document")[2];
 
   model.activate(a.id);
   model.selectContext(where);
   model.activate(b.id);
 
-  assert.equal(model.context, defaultContext("document-editor", "workspace"));
+  assert.equal(model.context, defaultContext("document-editor", "document"));
   assert.equal(tabOf(model, a.id).contextId, where);
 });
 
@@ -770,7 +777,7 @@ test("resize changes only what it was given", () => {
 test("resize cannot reach the rail", () => {
   // Structural rather than conventional: a drag can never move the rail.
   const model = workspaceState();
-  const where = railFor("project-overview", "workspace")[2];
+  const where = railFor("project-overview", "overview")[2];
   model.selectContext(where);
 
   model.resize({ contextWidth: 500 });
@@ -857,7 +864,7 @@ test("open, then close, then undo back to the starting state", () => {
 
 test("redo walks the log forward again", () => {
   const model = workspaceState();
-  const where = railFor("document-editor", "workspace")[3];
+  const where = railFor("document-editor", "document")[3];
   const tab = model.open(document("k57"));
   model.selectContext(where);
 

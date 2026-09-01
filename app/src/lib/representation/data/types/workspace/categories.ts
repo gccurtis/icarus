@@ -1,4 +1,4 @@
-// Every category the workspace tree defines. Generated — do not edit.
+// Every category the tree defines. Generated — do not edit.
 //
 //     pnpm category-keys
 //
@@ -8,6 +8,7 @@
 export type Category =
   | "agents"
   | "analysis"
+  | "context-editor"
   | "document-editor"
   | "new-tab"
   | "project-overview"
@@ -18,8 +19,14 @@ export type Category =
 
 export type Subscreen =
   | "automation"
+  | "chart"
+  | "deck"
+  | "document"
   | "editor"
+  | "launcher"
   | "library"
+  | "overview"
   | "persona"
+  | "sheet"
   | "task"
-  | "workspace";
+  | "thread";

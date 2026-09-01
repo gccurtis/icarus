@@ -126,10 +126,11 @@ disagree, and naming the key is the only useful thing to show.
 
 ## View Invariants
 
-- **The registry is the filesystem.** A key is a path —
-  `"collaboration.person"` is `inspector/collaboration/person.svelte` — so there
-  is no map here to keep in step with the tree. A map would be a second list of
-  what exists, and the first one is the directory.
+- **The registry is the filesystem.** A key is a path — `"general.person"` is
+  the `person.svelte` inside `general/person/`, `"agents.persona"` the
+  `persona.svelte` inside the agents category's `inspector/` — so there is no map
+  here to keep in step with the tree. A map would be a second list of what
+  exists, and the first one is the directory.
 - **A key is never a payload.** The key is a namespaced label and nothing more;
   what the lens is *about* is the selection the model carries beside it. A key
   holding `{ blockId, from, to }` would be a second record of what the user has

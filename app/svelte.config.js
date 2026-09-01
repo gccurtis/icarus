@@ -44,10 +44,6 @@ export default {
       "$authored-components": "src/lib/components/authored",
       "$development-components": "src/lib/components/development",
       "$vendored-components": "src/lib/components/vendored",
-
-      "$panels": "src/lib/app-views/panels",
-      "$workspaces": "src/lib/app-views/workspaces",
-      "$modals": "src/lib/app-views/modals",
     },
   },
 };

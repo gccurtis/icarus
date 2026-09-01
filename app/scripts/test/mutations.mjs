@@ -436,10 +436,10 @@ export const MUTATIONS = [
   {
     check: "view-takes-ids-and-callbacks",
     says: "a surface takes its content as a prop",
-    names: "project/takes-content.svelte",
+    names: "project-overview/context/takes-content.svelte",
     changes: [
       {
-        path: "src/lib/app-views/panels/context/project/takes-content.svelte",
+        path: "src/lib/app-views/categories/project-overview/context/takes-content.svelte",
         write: `<script lang="ts">\n  let { rows }: { rows: { id: string }[] } = $props();\n</script>\n\n<div>{rows.length}</div>\n`
       }
     ]
@@ -497,63 +497,59 @@ export const MUTATIONS = [
     changes: [{ path: "src/lib/surfaces/top-bar/probe.md", write: `# probe\n\nSee \`effects/nowhere.svelte.ts\`.\n` }]
   },
 
-  // ------------------------------------------------------------------ panels ----
+  // ------------------------------------------------------------- app views ----
   {
-    check: "panel-renders-alone",
-    says: "a leaf needs something that is not there",
-    names: "project/cannot-render.svelte",
+    check: "view-renders-alone",
+    says: "a view needs something that is not there",
+    names: "project-overview/context/cannot-render.svelte",
     changes: [
       {
-        path: "src/lib/app-views/panels/context/project/cannot-render.svelte",
-        write: `<script lang="ts">\n  throw new Error("this leaf does not render alone");\n</script>\n\n<div></div>\n`
+        path: "src/lib/app-views/categories/project-overview/context/cannot-render.svelte",
+        write: `<script lang="ts">\n  throw new Error("this view does not render alone");\n</script>\n\n<div></div>\n`
       }
     ]
   },
   {
-    check: "panel-imports-no-other-view",
-    subject: "no-other-panel",
-    says: "a leaf imports another panel",
-    names: "project/reaches-far.svelte",
+    check: "view-imports-no-surface",
+    subject: "no-surface",
+    says: "a view reaches back out to the surface it is rendered in",
+    names: "project-overview/context/reaches-out.svelte",
     changes: [
       {
-        path: "src/lib/app-views/panels/context/project/reaches-far.svelte",
-        write: `<script lang="ts">\n  import Health from "$panels/context/project/health.svelte";\n</script>\n\n<Health />\n`
+        path: "src/lib/app-views/categories/project-overview/context/reaches-out.svelte",
+        write: `<script lang="ts">\n  import { RAIL_ENTRIES } from "$surfaces/context/procedures/rail-entries";\n</script>\n\n<div>{Object.keys(RAIL_ENTRIES).length}</div>\n`
+      }
+    ]
+  },
+  {
+    check: "view-imports-no-other-category",
+    says: "a view reaches into another category instead of holding a copy",
+    names: "project-overview/context/reaches-far.svelte",
+    changes: [
+      {
+        path: "src/lib/app-views/categories/project-overview/context/reaches-far.svelte",
+        write: `<script lang="ts">\n  import Persona from "$app-views/categories/agents/content/persona.svelte";\n</script>\n\n<Persona />\n`
       }
     ]
   },
   {
     check: "key-vocabulary-matches-the-tree",
-    says: "a leaf the vocabulary does not name",
-    names: "project/unnamed.svelte",
-    changes: [{ path: "src/lib/app-views/panels/context/project/unnamed.svelte", write: `<div></div>\n` }]
-  },
-
-  // -------------------------------------------------------------- workspaces ----
-  {
-    check: "workspace-exists-for-every-screen",
-    subject: "file-is-declared",
-    says: "a workspace file the vocabulary does not declare",
-    names: "agents/workspace-undeclared.svelte",
-    changes: [{ path: "src/lib/app-views/workspaces/agents/workspace-undeclared.svelte", write: `<div></div>\n` }]
-  },
-  {
-    check: "workspace-renders-alone",
-    says: "a workspace needs something that is not there",
-    names: "agents/workspace-broken.svelte",
+    says: "a view the vocabulary does not name",
+    names: "project-overview/context/unnamed.svelte",
     changes: [
       {
-        path: "src/lib/app-views/workspaces/agents/workspace-broken.svelte",
-        write: `<script lang="ts">\n  throw new Error("this workspace does not render alone");\n</script>\n\n<div></div>\n`
+        path: "src/lib/app-views/categories/project-overview/context/unnamed.svelte",
+        write: `<div></div>\n`
       }
     ]
   },
   {
     check: "runtime-through-workspace-state",
-    says: "a workspace attaches a runtime itself",
-    names: "agents/workspace-attaches.svelte",
+    says: "a view attaches a resource runtime itself",
+    names: "project-overview/context/attaches.svelte",
     changes: [
       {
-        path: "src/lib/app-views/workspaces/agents/workspace-attaches.svelte",
+        path: "src/lib/app-views/categories/project-overview/context/attaches.svelte",
         write: `<script lang="ts">\n  import type { ResourceRuntimesModel } from "$model/client/resource-runtimes";\n  let runtimes: ResourceRuntimesModel | undefined = undefined;\n</script>\n\n<div>{runtimes}</div>\n`
       }
     ]

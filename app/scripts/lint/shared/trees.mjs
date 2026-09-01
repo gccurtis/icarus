@@ -10,7 +10,7 @@ import { join } from "node:path";
 export const TEST_KINDS = ["unit", "regression", "non-functional"];
 export const CONCERNS = ["components", "effects", "interactions", "procedures", "shared"];
 export const ENVIRONMENTS = ["client", "server"];
-export const PANEL_TREES = ["context", "inspector"];
+export const VIEW_SURFACES = ["content", "context", "inspector"];
 
 /** Directories an environment root owns itself; neither one is an object. */
 const NOT_AN_OBJECT = new Set(["test", "docs"]);
@@ -53,34 +53,31 @@ export const surfaces = (tree) => [
   ...named(tree, tree.path("development-views")).map((surface) => ({ ...surface, development: true }))
 ];
 
-/** `app-views/panels/{context,inspector}/<subject>/<key>.svelte`. */
-export const panelLeaves = (tree) => {
+/** `app-views/categories/<category>/`. */
+export const categories = (tree) => named(tree, tree.path("app-views", "categories"));
+
+/** `app-views/general/<view>/`. */
+export const generalViews = (tree) => named(tree, tree.path("app-views", "general"));
+
+/**
+ * Every view leaf, wherever it sits: `categories/<category>/<surface>/<name>.svelte`
+ * and `general/<name>/<name>.svelte`, which is a lens belonging to no category.
+ */
+export const viewLeaves = (tree) => {
   const found = [];
-  for (const stack of PANEL_TREES) {
-    const root = tree.path("app-views", "panels", stack);
-    for (const { name: subject, path } of named(tree, root)) {
-      for (const file of tree.filesIn(path)) {
-        found.push({ stack, subject, file, path: join(path, file) });
+  for (const { name: category, path } of categories(tree)) {
+    for (const surface of VIEW_SURFACES) {
+      const root = join(path, surface);
+      for (const file of tree.filesIn(root)) {
+        if (!file.endsWith(".svelte")) continue;
+        found.push({ category, surface, file, name: file.slice(0, -".svelte".length), path: join(root, file) });
       }
     }
   }
-  return found;
-};
-
-/** `app-views/workspaces/<category>/workspace[-<subscreen>].svelte`. */
-export const workspaceFiles = (tree) => {
-  const found = [];
-  for (const { name: category, path } of named(tree, tree.path("app-views", "workspaces"))) {
-    for (const file of tree.filesIn(path)) {
-      if (!file.endsWith(".svelte")) continue;
-      const match = file.match(/^workspace(?:-(.+))?\.svelte$/);
-      found.push({
-        category,
-        file,
-        path: join(path, file),
-        subscreen: match ? (match[1] ?? null) : undefined
-      });
-    }
+  for (const { name, path } of generalViews(tree)) {
+    const file = `${name}.svelte`;
+    if (!tree.isFile(join(path, file))) continue;
+    found.push({ category: "general", surface: "inspector", file, name, path: join(path, file) });
   }
   return found;
 };

@@ -11,8 +11,8 @@ const BEHAVIOR = ["representation", "data", "behavior", "workspace"];
 
 /** Generated from the workspace tree. */
 export const KEYS_FILE = [...BEHAVIOR, "categories.ts"];
-/** Hand-written: the panels this application intends to have. */
-export const PANEL_KEYS_FILE = [...BEHAVIOR, "panels.ts"];
+/** Hand-written: the views this application intends to have. */
+export const PANEL_KEYS_FILE = [...BEHAVIOR, "views.ts"];
 
 const arrayNamed = (tree, path, wanted) => {
   for (const statement of tree.source(path).statements) {
@@ -72,8 +72,8 @@ export const vocabulary = (tree) => {
   return {
     path,
     panelPath,
-    contexts: inPanelKeys("CONTEXT_IDS"),
-    inspections: inPanelKeys("INSPECTION_KEYS"),
+    contexts: inPanelKeys("CONTEXT_VIEWS"),
+    inspections: inPanelKeys("INSPECTOR_VIEWS"),
     categories: inKeys("CATEGORIES"),
     subscreens: tree.isFile(path) ? objectNamed(tree, path, "SUBSCREENS") : null
   };

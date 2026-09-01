@@ -123,17 +123,17 @@ const GENERATORS = [
     trees: ["surfaces"]
   },
   {
-    name: "new-panel",
-    script: "panels/new-panel.mjs",
-    args: ["context", "project", "probe"],
-    trees: ["panels"]
+    name: "new-view",
+    script: "views/new-view.mjs",
+    args: ["analysis", "context", "probe"],
+    trees: ["views"]
   },
   {
-    name: "new-workspace",
-    script: "workspaces/new-workspace.mjs",
-    args: ["agents", "probe"],
+    name: "new-view (content)",
+    script: "views/new-view.mjs",
+    args: ["agents", "content", "probe"],
     then: ["representation/categories.mjs", []],
-    trees: ["workspaces"]
+    trees: ["views"]
   }
 ];
 

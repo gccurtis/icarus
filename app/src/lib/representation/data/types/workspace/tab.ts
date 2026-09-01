@@ -1,9 +1,9 @@
-import type { ContextId, InspectionKey } from "$representation/data/types/workspace/panels";
+import type { ContextView, InspectorView } from "$representation/data/types/workspace/views";
 import type { Category, Subscreen } from "$representation/data/types/workspace/categories";
 
 export type TabId = string;
 
-export type Inspected = InspectionKey | "empty";
+export type Inspected = InspectorView | "empty";
 
 export type Selection = {
   readonly kind: string;
@@ -27,7 +27,7 @@ export type TabRecord = {
 export type TabView = {
   subscreen: Subscreen;
   focus: string | null;
-  contextId: ContextId | null;
+  contextId: ContextView | null;
   inspected: Inspected;
   selection: Selection | null;
   frame: Frame;

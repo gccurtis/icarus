@@ -1,4 +1,4 @@
-// Every category the workspace tree defines. Generated — do not edit.
+// Every category the tree defines. Generated — do not edit.
 //
 //     pnpm category-keys
 //
@@ -9,6 +9,7 @@ import type { Category, Subscreen } from "$representation/data/types/workspace/c
 export const CATEGORIES = [
   "agents",
   "analysis",
+  "context-editor",
   "document-editor",
   "new-tab",
   "project-overview",
@@ -20,13 +21,14 @@ export const CATEGORIES = [
 
 export const SUBSCREENS = {
   "agents": ["automation", "library", "persona", "task"],
-  "analysis": ["workspace"],
-  "document-editor": ["workspace"],
-  "new-tab": ["workspace"],
-  "project-overview": ["workspace"],
-  "research": ["workspace"],
-  "slide-deck-editor": ["workspace"],
-  "spreadsheet-editor": ["workspace"],
+  "analysis": ["chart"],
+  "context-editor": [],
+  "document-editor": ["document"],
+  "new-tab": ["launcher"],
+  "project-overview": ["overview"],
+  "research": ["thread"],
+  "slide-deck-editor": ["deck"],
+  "spreadsheet-editor": ["sheet"],
   "templates": ["editor", "library"]
 } as const satisfies Record<Category, readonly Subscreen[]>;
 

@@ -1,6 +1,6 @@
 import { SvelteMap } from "svelte/reactivity";
 
-import type { ContextId } from "$representation/data/types/workspace/panels";
+import type { ContextView } from "$representation/data/types/workspace/views";
 import type {
   Frame,
   Inspected,
@@ -44,7 +44,7 @@ export class TabViews implements TabViewsModel {
     patch(this.#state, id, { focus });
   }
 
-  selectContext(id: TabId, contextId: ContextId | null): void {
+  selectContext(id: TabId, contextId: ContextView | null): void {
     patch(this.#state, id, { contextId });
   }
 

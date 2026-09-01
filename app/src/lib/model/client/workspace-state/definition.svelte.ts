@@ -1,5 +1,5 @@
 import type { WorkspaceOp } from "$representation/data/types/workspace/op";
-import type { ContextId } from "$representation/data/types/workspace/panels";
+import type { ContextView } from "$representation/data/types/workspace/views";
 import type { Category, Subscreen } from "$representation/data/types/workspace/categories";
 import type {
   Frame,
@@ -120,7 +120,7 @@ export class WorkspaceState implements WorkspaceStateModel {
     return this.#state.views.of(this.#state.tabs.activeId).frame;
   }
 
-  get context(): ContextId | undefined {
+  get context(): ContextView | undefined {
     const record = this.#state.tabs.active;
     const { subscreen, contextId } = this.#state.views.of(record.id);
     return contextId !== null && offersContext(record.category, subscreen, contextId)
@@ -176,7 +176,7 @@ export class WorkspaceState implements WorkspaceStateModel {
     showSubscreen(this.#state, subscreen, focus);
   }
 
-  selectContext(id: ContextId): void {
+  selectContext(id: ContextView): void {
     selectContext(this.#state, id);
   }
 

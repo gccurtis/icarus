@@ -23,18 +23,15 @@
    * itself threw — and the difference between "still loading" and "this category
    * is broken" is the whole diagnosis.
    */
-  const CENTRES = import.meta.glob("$lib/app-views/workspaces/**/*.svelte") as Record<
+  const CENTRES = import.meta.glob("$lib/app-views/categories/*/content/*.svelte") as Record<
     string,
     () => Promise<{ default: Component }>
   >;
 
   const view = workspaceState();
 
-  /** A category with one centre calls it `workspace`; the rest qualify it. */
   const path = $derived(
-    `/src/lib/app-views/workspaces/${view.active.category}/${
-      view.active.subscreen === "workspace" ? "workspace" : `workspace-${view.active.subscreen}`
-    }.svelte`
+    `/src/lib/app-views/categories/${view.active.category}/content/${view.active.subscreen}.svelte`
   );
 
   const load = $derived(CENTRES[path]);

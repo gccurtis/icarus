@@ -44,7 +44,7 @@ import Workflow from "@lucide/svelte/icons/workflow";
 import Wrench from "@lucide/svelte/icons/wrench";
 import Zap from "@lucide/svelte/icons/zap";
 
-import type { ContextId } from "$model/client/workspace-state";
+import type { ContextView } from "$model/client/workspace-state";
 
 /**
  * What each context view looks like in the rail: a name and an icon.
@@ -54,7 +54,7 @@ import type { ContextId } from "$model/client/workspace-state";
  * affordance, and an entry that does not say what it opens is a dead end. Which
  * views a category offers, and in what order, is not here: that is `RAILS`.
  *
- * **`Record<ContextId, …>` rather than a partial map**, so a context view with
+ * **`Record<ContextView, …>` rather than a partial map**, so a context view with
  * no rail entry fails to compile rather than failing to draw. Every key in the
  * vocabulary has an entry here whether or not its panel is built yet — the rail
  * is how an unbuilt view is reached, and a key with no way to reach it cannot be
@@ -73,7 +73,7 @@ import type { ContextId } from "$model/client/workspace-state";
  */
 export type RailEntry = { readonly label: string; readonly icon: Component };
 
-export const RAIL_ENTRIES: Record<ContextId, RailEntry> = {
+export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   /**
    * Agents: how a persona is defined and what an automation does. `Health` takes
    * the heartbeat rather than a warning triangle — the view is the state of every
@@ -94,31 +94,31 @@ export const RAIL_ENTRIES: Record<ContextId, RailEntry> = {
   "analysis.chart": { label: "Chart", icon: ChartColumn },
   "analysis.fields": { label: "Fields", icon: Axis3d },
   "analysis.formula": { label: "Formula", icon: SquareFunction },
-  "analysis.variables": { label: "Variables", icon: Hash },
+  "analysis.chartable-variables": { label: "Variables", icon: Hash },
 
   /**
    * Library: browsing what a project already has, and starting something new.
    * The template-authoring entries are the ordinary editor's views under the
    * names a template gives them, so they carry the editor's icons.
    */
-  "library.analyses": { label: "Analyses", icon: ChartColumn },
-  "library.authoring-body": { label: "Body", icon: FileText },
-  "library.authoring-design": { label: "Design", icon: Palette },
-  "library.authoring-insert": { label: "Insert", icon: SquarePlus },
-  "library.authoring-variables": { label: "Variables in this template", icon: Hash },
-  "library.bring-in": { label: "Bring in", icon: Upload },
-  "library.contexts": { label: "Contexts", icon: Target },
-  "library.create": { label: "Create", icon: Plus },
-  "library.findings": { label: "Findings", icon: Lightbulb },
-  "library.inquiry": { label: "Inquiry", icon: CircleQuestionMark },
-  "library.recent-newtab": { label: "Recent", icon: Clock },
-  "library.recent-templates": { label: "Recent", icon: Clock },
-  "library.resources": { label: "Resources", icon: Layers },
-  "library.template": { label: "Template", icon: LayoutTemplate },
-  "library.template-kinds": { label: "Kinds", icon: Shapes },
-  "library.templates": { label: "Library", icon: LayoutTemplate },
-  "library.templates-newtab": { label: "Templates", icon: LayoutTemplate },
-  "library.threads": { label: "Threads", icon: MessagesSquare },
+  "analysis.analyses": { label: "Analyses", icon: ChartColumn },
+  "templates.authoring-body": { label: "Body", icon: FileText },
+  "templates.authoring-design": { label: "Design", icon: Palette },
+  "templates.authoring-insert": { label: "Insert", icon: SquarePlus },
+  "templates.authoring-variables": { label: "Variables in this template", icon: Hash },
+  "new-tab.bring-in": { label: "Bring in", icon: Upload },
+  "project-overview.contexts-library": { label: "Contexts", icon: Target },
+  "new-tab.create": { label: "Create", icon: Plus },
+  "research.findings-library": { label: "Findings", icon: Lightbulb },
+  "research.inquiry-library": { label: "Inquiry", icon: CircleQuestionMark },
+  "new-tab.recent": { label: "Recent", icon: Clock },
+  "templates.recent": { label: "Recent", icon: Clock },
+  "templates.resources": { label: "Resources", icon: Layers },
+  "templates.template": { label: "Template", icon: LayoutTemplate },
+  "templates.template-kinds": { label: "Kinds", icon: Shapes },
+  "templates.templates": { label: "Library", icon: LayoutTemplate },
+  "new-tab.templates": { label: "Templates", icon: LayoutTemplate },
+  "research.threads": { label: "Threads", icon: MessagesSquare },
 
   /**
    * Overview: eleven different views doing one job — what is this and where am I.
@@ -126,16 +126,16 @@ export const RAIL_ENTRIES: Record<ContextId, RailEntry> = {
    * because the rails that lead with an Overview also carry Templates and
    * Layouts, and those three panel glyphs are not tellable apart at rail size.
    */
-  "overview.agents": { label: "Overview", icon: Info },
-  "overview.analysis": { label: "Overview", icon: Info },
-  "overview.context": { label: "Overview", icon: Info },
-  "overview.deck": { label: "Overview", icon: Info },
-  "overview.document": { label: "Overview", icon: Info },
-  "overview.project": { label: "Overview", icon: Info },
-  "overview.research": { label: "Overview", icon: Info },
-  "overview.spreadsheet": { label: "Overview", icon: Info },
-  "overview.templates-authoring": { label: "Overview", icon: Info },
-  "overview.templates-library": { label: "Overview", icon: Info },
+  "agents.overview": { label: "Overview", icon: Info },
+  "analysis.overview": { label: "Overview", icon: Info },
+  "context-editor.overview": { label: "Overview", icon: Info },
+  "slide-deck-editor.overview": { label: "Overview", icon: Info },
+  "document-editor.overview": { label: "Overview", icon: Info },
+  "project-overview.overview": { label: "Overview", icon: Info },
+  "research.overview": { label: "Overview", icon: Info },
+  "spreadsheet-editor.overview": { label: "Overview", icon: Info },
+  "templates.overview-authoring": { label: "Overview", icon: Info },
+  "templates.overview-library": { label: "Overview", icon: Info },
 
   /**
    * Project: the whole project rather than one resource. `Mentions` is a person
@@ -143,16 +143,20 @@ export const RAIL_ENTRIES: Record<ContextId, RailEntry> = {
    * mark. `variables-create` is the Variables panel becoming a form and is on no
    * rail; it is named here because the table is total.
    */
-  "project.activity": { label: "Activity", icon: Activity },
-  "project.contexts": { label: "Context", icon: Target },
-  "project.history": { label: "History", icon: Clock },
-  "project.mentions": { label: "Mentions", icon: AtSign },
-  "project.people": { label: "People", icon: Users },
-  "project.resources": { label: "Resources", icon: Layers },
-  "project.tasks": { label: "Tasks", icon: Sparkles },
-  "project.templates": { label: "Templates", icon: LayoutTemplate },
-  "project.variables": { label: "Variables", icon: Hash },
-  "project.variables-create": { label: "Create variable", icon: Plus },
+  "project-overview.activity": { label: "Activity", icon: Activity },
+  "project-overview.contexts": { label: "Context", icon: Target },
+  "project-overview.history": { label: "History", icon: Clock },
+  "project-overview.mentions": { label: "Mentions", icon: AtSign },
+  "project-overview.people": { label: "People", icon: Users },
+  "project-overview.resources": { label: "Resources", icon: Layers },
+  "project-overview.tasks": { label: "Tasks", icon: Sparkles },
+  "project-overview.templates": { label: "Templates", icon: LayoutTemplate },
+  "project-overview.variables": { label: "Variables", icon: Hash },
+  "analysis.variables": { label: "Variables", icon: Hash },
+  "document-editor.variables": { label: "Variables", icon: Hash },
+  "slide-deck-editor.variables": { label: "Variables", icon: Hash },
+  "spreadsheet-editor.variables": { label: "Variables", icon: Hash },
+  "project-overview.variables-create": { label: "Create variable", icon: Plus },
 
   /**
    * Research: one line of enquiry. `Trace` is footprints — the steps the agent
@@ -171,43 +175,43 @@ export const RAIL_ENTRIES: Record<ContextId, RailEntry> = {
    * editors is one icon — Find, Insert, Comments, Context and Styles are each a
    * single mark wherever they appear.
    */
-  "resource.comments-deck": { label: "Comments", icon: MessageSquare },
-  "resource.comments-document": { label: "Comments", icon: MessageSquare },
-  "resource.comments-sheet": { label: "Comments", icon: MessageSquare },
-  "resource.context-deck": { label: "Context", icon: Target },
-  "resource.context-document": { label: "Context", icon: Target },
-  "resource.context-sheet": { label: "Context", icon: Target },
-  "resource.dependencies": { label: "Dependencies", icon: Network },
-  "resource.find-deck": { label: "Find", icon: Search },
-  "resource.find-document": { label: "Find", icon: Search },
-  "resource.find-sheet": { label: "Find", icon: Search },
-  "resource.insert-deck": { label: "Insert", icon: SquarePlus },
-  "resource.insert-document": { label: "Insert", icon: SquarePlus },
-  "resource.insert-sheet": { label: "Insert", icon: SquarePlus },
-  "resource.layers": { label: "Layers", icon: Layers },
-  "resource.layout-layouts": { label: "Layouts", icon: LayoutTemplate },
-  "resource.layout-objects": { label: "Objects", icon: Group },
-  "resource.layout-theme": { label: "Theme", icon: Palette },
-  "resource.layouts": { label: "Layouts", icon: LayoutTemplate },
-  "resource.named-ranges": { label: "Named ranges", icon: Tag },
-  "resource.navigator": { label: "Navigator", icon: FileText },
-  "resource.notes": { label: "Notes", icon: StickyNote },
-  "resource.objects": { label: "Objects", icon: Group },
-  "resource.page": { label: "Page", icon: LayoutPanelTop },
-  "resource.print": { label: "Print", icon: Printer },
-  "resource.slides": { label: "Slides", icon: Presentation },
-  "resource.styles-document": { label: "Styles", icon: Type },
-  "resource.styles-sheet": { label: "Styles", icon: Type },
-  "resource.theme": { label: "Theme", icon: Palette },
+  "slide-deck-editor.comments": { label: "Comments", icon: MessageSquare },
+  "document-editor.comments": { label: "Comments", icon: MessageSquare },
+  "spreadsheet-editor.comments": { label: "Comments", icon: MessageSquare },
+  "slide-deck-editor.context": { label: "Context", icon: Target },
+  "document-editor.context": { label: "Context", icon: Target },
+  "spreadsheet-editor.context": { label: "Context", icon: Target },
+  "spreadsheet-editor.dependencies": { label: "Dependencies", icon: Network },
+  "slide-deck-editor.find": { label: "Find", icon: Search },
+  "document-editor.find": { label: "Find", icon: Search },
+  "spreadsheet-editor.find": { label: "Find", icon: Search },
+  "slide-deck-editor.insert": { label: "Insert", icon: SquarePlus },
+  "document-editor.insert": { label: "Insert", icon: SquarePlus },
+  "spreadsheet-editor.insert": { label: "Insert", icon: SquarePlus },
+  "slide-deck-editor.layers": { label: "Layers", icon: Layers },
+  "slide-deck-editor.layout-layouts": { label: "Layouts", icon: LayoutTemplate },
+  "slide-deck-editor.layout-objects": { label: "Objects", icon: Group },
+  "slide-deck-editor.layout-theme": { label: "Theme", icon: Palette },
+  "slide-deck-editor.layouts": { label: "Layouts", icon: LayoutTemplate },
+  "spreadsheet-editor.named-ranges": { label: "Named ranges", icon: Tag },
+  "document-editor.navigator": { label: "Navigator", icon: FileText },
+  "slide-deck-editor.notes": { label: "Notes", icon: StickyNote },
+  "spreadsheet-editor.objects": { label: "Objects", icon: Group },
+  "document-editor.page": { label: "Page", icon: LayoutPanelTop },
+  "spreadsheet-editor.print": { label: "Print", icon: Printer },
+  "slide-deck-editor.slides": { label: "Slides", icon: Presentation },
+  "document-editor.styles": { label: "Styles", icon: Type },
+  "spreadsheet-editor.styles": { label: "Styles", icon: Type },
+  "slide-deck-editor.theme": { label: "Theme", icon: Palette },
 
   /**
    * Scope: one Context — what it names, what that resolves to, and what leans on
    * it. `Used by` takes the same graph mark as a spreadsheet's Dependencies,
    * because both answer what would break.
    */
-  "scope.add": { label: "Add to this Context", icon: Plus },
-  "scope.contents": { label: "Contents", icon: List },
-  "scope.contexts": { label: "Contexts", icon: Target },
-  "scope.knowledge": { label: "Knowledge", icon: Brain },
-  "scope.used-by": { label: "Used by", icon: Network }
+  "context-editor.add": { label: "Add to this Context", icon: Plus },
+  "context-editor.contents": { label: "Contents", icon: List },
+  "context-editor.contexts": { label: "Contexts", icon: Target },
+  "context-editor.knowledge": { label: "Knowledge", icon: Brain },
+  "context-editor.used-by": { label: "Used by", icon: Network }
 };

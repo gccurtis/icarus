@@ -1,4 +1,4 @@
-import type { ContextId } from "$representation/data/types/workspace/panels";
+import type { ContextView } from "$representation/data/types/workspace/views";
 import type { Category, Subscreen } from "$representation/data/types/workspace/categories";
 import type {
   Frame,
@@ -13,7 +13,7 @@ export type Tab = {
   readonly category: Category;
   subscreen: Subscreen;
   readonly resourceId?: string;
-  contextId: ContextId | undefined;
+  contextId: ContextView | undefined;
   focus?: string;
   inspected: Inspected;
   selection?: Selection;
@@ -30,7 +30,7 @@ export interface WorkspaceStateModel {
 
   readonly active: Tab;
   readonly frame: Frame;
-  readonly context: ContextId | undefined;
+  readonly context: ContextView | undefined;
   readonly inspected: Inspected;
   readonly selection: Selection | undefined;
 
@@ -40,7 +40,7 @@ export interface WorkspaceStateModel {
   reopenClosed(): Tab | undefined;
 
   showSubscreen(subscreen: Subscreen, focus?: string): void;
-  selectContext(id: ContextId): void;
+  selectContext(id: ContextView): void;
 
   inspect(key: Inspected, selection?: Selection): void;
   clear(): void;

@@ -97,7 +97,7 @@
    * `inspect()` a layout change.
    */
   const activate = () => {
-    view.inspect("copilot.home");
+    view.inspect("general.copilot-home");
     if (view.frame.inspectorCollapsed) view.resize({ inspectorCollapsed: false });
   };
 

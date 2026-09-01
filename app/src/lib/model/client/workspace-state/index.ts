@@ -11,13 +11,13 @@ export { createWorkspaceState } from "$model/client/workspace-state/constructor"
 export type { Category, Subscreen } from "$representation/data/types/workspace/categories";
 export { CATEGORIES, SUBSCREENS, isCategory } from "$representation/data/behavior/workspace/categories";
 
-export type { ContextId, InspectionKey } from "$representation/data/types/workspace/panels";
+export type { ContextView, InspectorView } from "$representation/data/types/workspace/views";
 export {
-  CONTEXT_IDS,
-  INSPECTION_KEYS,
-  isContextId,
-  isInspectionKey
-} from "$representation/data/behavior/workspace/panels";
+  CONTEXT_VIEWS,
+  INSPECTOR_VIEWS,
+  isContextView,
+  isInspectorView
+} from "$representation/data/behavior/workspace/views";
 
 export type {
   Frame,

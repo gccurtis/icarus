@@ -1,5 +1,5 @@
 /**
- * The generator's central claim is that the category vocabulary is the workspace
+ * The generator's central claim is that the category vocabulary is the category
  * tree and nothing else. These tests check the two halves of it: that a path
  * becomes exactly one category and one subscreen, and that `--check` refuses a
  * file the tree no longer agrees with.
@@ -9,13 +9,14 @@
  * check is what turns "somebody remembers" into a failing build — so a test that
  * only asserted the happy path would be testing the less important claim.
  *
- * Panels are not here. Their vocabulary is hand-written in the same domain,
- * because a panel that has not been built yet still has to be nameable, and
- * `key-vocabulary-matches-the-tree` is what holds those files to the tree.
+ * Context and inspector views are not here. Their vocabulary is hand-written in
+ * the same domain, because a view that has not been built yet still has to be
+ * nameable, and `key-vocabulary-matches-the-tree` is what holds those files to
+ * the tree.
  *
  * The last test runs the check against the real package rather than a fixture,
  * which is deliberately a test of the repository and not of this script: adding
- * a workspace without regenerating should turn something red here.
+ * a content view without regenerating should turn something red here.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -31,14 +32,14 @@ const generator = join(generators, "categories.mjs");
 const realPackageRoot = dirname(dirname(dirname(generators)));
 
 /** One valid category, so a fixture only has to say what it is about. */
-const BASE = ["workspaces/project-overview/workspace.svelte"];
+const BASE = ["categories/project-overview/content/overview.svelte"];
 
 /** Where a short path sits in the tree. */
 const treePath = (root, path) => join(root, "src", "lib", "app-views", ...path.split("/"));
 
 /**
- * A package holding nothing but workspaces. Their contents never matter — the
- * whole vocabulary is in the paths.
+ * A package holding nothing but content views. Their contents never matter —
+ * the whole vocabulary is in the paths.
  */
 const makePackage = (paths) => {
   const root = mkdtempSync(join(tmpdir(), "category-keys-"));
@@ -102,11 +103,11 @@ const members = (source, constant) => {
 
 // --------------------------------------------------------- a path is a key ----
 
-test("a workspace path becomes exactly one category and one subscreen", () => {
+test("a content path becomes exactly one category and one subscreen", () => {
   withPackage(
     [
-      "workspaces/research/workspace-one-question.svelte",
-      "workspaces/research/workspace-all-threads.svelte"
+      "categories/research/content/one-question.svelte",
+      "categories/research/content/all-threads.svelte"
     ],
     (root) => {
       run(root);
@@ -117,29 +118,55 @@ test("a workspace path becomes exactly one category and one subscreen", () => {
   );
 });
 
-test("a subscreen is its file name with the workspace prefix stripped", () => {
+test("a subscreen is the file name, and nothing is stripped from it", () => {
   withPackage(
     [
-      "workspaces/templates/workspace-editor.svelte",
-      "workspaces/templates/workspace-library.svelte",
-      "workspaces/new-tab/workspace.svelte"
+      "categories/templates/content/editor.svelte",
+      "categories/templates/content/library.svelte",
+      "categories/new-tab/content/launcher.svelte"
     ],
     (root) => {
       run(root);
 
       assert.match(lists(root), /"templates": \["editor", "library"\]/);
-      assert.match(lists(root), /"new-tab": \["workspace"\]/, "a bare workspace.svelte keeps the name 'workspace'");
-      assert.ok(!both(root).includes("workspace-editor"), "the prefix is stripped rather than kept");
+      assert.match(lists(root), /"new-tab": \["launcher"\]/);
     }
   );
 });
 
+test("only content/ names a subscreen", () => {
+  withPackage(
+    [
+      "categories/research/content/thread.svelte",
+      "categories/research/context/history.svelte",
+      "categories/research/inspector/source.svelte"
+    ],
+    (root) => {
+      run(root);
+
+      assert.match(lists(root), /"research": \["thread"\]/);
+      assert.ok(!both(root).includes("history"), "a context view is not a subscreen");
+      assert.ok(!both(root).includes("source"), "an inspector view is not a subscreen");
+    }
+  );
+});
+
+test("a category with nothing built yet is named with an empty list", () => {
+  withPackage([], (root) => {
+    mkdirSync(treePath(root, "categories/context-editor/context"), { recursive: true });
+    run(root);
+
+    assert.ok(members(lists(root), "CATEGORIES").includes("context-editor"));
+    assert.match(lists(root), /"context-editor": \[\]/);
+  });
+});
+
 test("the unions are declared where a file compiles to nothing", () => {
-  withPackage(["workspaces/research/workspace-one-question.svelte"], (root) => {
+  withPackage(["categories/research/content/one-question.svelte"], (root) => {
     run(root);
 
     assert.match(unions(root), /export type Category =\n {2}\| "project-overview"\n {2}\| "research";/);
-    assert.match(unions(root), /export type Subscreen =\n {2}\| "one-question"\n {2}\| "workspace";/);
+    assert.match(unions(root), /export type Subscreen =\n {2}\| "one-question"\n {2}\| "overview";/);
     assert.ok(!unions(root).includes("export const"), "types/ emits nothing");
   });
 });
@@ -157,12 +184,12 @@ test("the lists satisfy the unions rather than declaring their own", () => {
   });
 });
 
-test("the panel vocabulary is not written here", () => {
+test("the hand-written vocabulary is not written here", () => {
   withPackage([], (root) => {
     run(root);
     const source = both(root);
-    assert.ok(!source.includes("CONTEXT_IDS"), "contexts are hand-written beside these");
-    assert.ok(!source.includes("INSPECTION_KEYS"), "lenses are hand-written beside these");
+    assert.ok(!source.includes("CONTEXT_VIEWS"), "contexts are hand-written beside these");
+    assert.ok(!source.includes("INSPECTOR_VIEWS"), "lenses are hand-written beside these");
   });
 });
 
@@ -191,9 +218,9 @@ test("the guard narrows to the generated union", () => {
 test("every generated list is sorted", () => {
   withPackage(
     [
-      "workspaces/templates/workspace-library.svelte",
-      "workspaces/analysis/workspace-one-analysis.svelte",
-      "workspaces/analysis/workspace-all-analyses.svelte"
+      "categories/templates/content/library.svelte",
+      "categories/analysis/content/one-analysis.svelte",
+      "categories/analysis/content/all-analyses.svelte"
     ],
     (root) => {
       run(root);
@@ -206,13 +233,13 @@ test("every generated list is sorted", () => {
 });
 
 test("the order files were created in does not change the bytes", () => {
-  const workspaces = [
-    "workspaces/templates/workspace-library.svelte",
-    "workspaces/analysis/workspace-one-analysis.svelte",
-    "workspaces/analysis/workspace-all-analyses.svelte"
+  const content = [
+    "categories/templates/content/library.svelte",
+    "categories/analysis/content/one-analysis.svelte",
+    "categories/analysis/content/all-analyses.svelte"
   ];
 
-  const [first, second] = [workspaces, [...workspaces].reverse()].map((order) =>
+  const [first, second] = [content, [...content].reverse()].map((order) =>
     withPackage(order, (root) => {
       run(root);
       return both(root);
@@ -223,7 +250,7 @@ test("the order files were created in does not change the bytes", () => {
 });
 
 test("a second run over an unchanged tree writes the same bytes", () => {
-  withPackage(["workspaces/research/workspace.svelte"], (root) => {
+  withPackage(["categories/research/content/thread.svelte"], (root) => {
     run(root);
     const first = both(root);
     assert.match(run(root), /unchanged/);
@@ -234,9 +261,9 @@ test("a second run over an unchanged tree writes the same bytes", () => {
 // -------------------------------------------------------------------- drift ----
 
 test("--check passes on the files the generator just wrote", () => {
-  withPackage(["workspaces/research/workspace.svelte"], (root) => {
+  withPackage(["categories/research/content/thread.svelte"], (root) => {
     run(root);
-    assert.match(run(root, "--check"), /in step with the workspace tree/);
+    assert.match(run(root, "--check"), /in step with the category tree/);
   });
 });
 
@@ -244,21 +271,21 @@ test("--check fails on a category added since, and names what it would gain", ()
   withPackage([], (root) => {
     run(root);
 
-    const added = treePath(root, "workspaces/research/workspace.svelte");
+    const added = treePath(root, "categories/research/content/thread.svelte");
     mkdirSync(dirname(added), { recursive: true });
     writeFileSync(added, "<script lang=\"ts\"></script>\n");
 
     const said = refuses(root, "--check");
-    assert.match(said, /has drifted from the workspace tree/);
+    assert.match(said, /has drifted from the category tree/);
     assert.match(said, /\+ "research",?/);
     assert.match(said, /pnpm category-keys/, "it says how to fix it");
   });
 });
 
 test("--check fails on a category removed since, and names what it would lose", () => {
-  withPackage(["workspaces/research/workspace.svelte"], (root) => {
+  withPackage(["categories/research/content/thread.svelte"], (root) => {
     run(root);
-    rmSync(treePath(root, "workspaces/research"), { recursive: true, force: true });
+    rmSync(treePath(root, "categories/research"), { recursive: true, force: true });
 
     assert.match(refuses(root, "--check"), /- "research",?/);
   });
@@ -267,7 +294,7 @@ test("--check fails on a category removed since, and names what it would lose", 
 // `analysis` rather than `research`, because it sorts before the base category
 // and so carries the trailing comma the drift lines are compared with.
 test("--check fails on a hand-edited file even when no category moved", () => {
-  withPackage(["workspaces/analysis/workspace.svelte"], (root) => {
+  withPackage(["categories/analysis/content/chart.svelte"], (root) => {
     run(root);
     writeFileSync(listsPath(root), lists(root).replace('"analysis"', '"invented"'));
 
@@ -302,7 +329,7 @@ test("--check writes nothing, so it is safe in CI", () => {
     run(root);
     const before = both(root);
 
-    const added = treePath(root, "workspaces/research/workspace.svelte");
+    const added = treePath(root, "categories/research/content/thread.svelte");
     mkdirSync(dirname(added), { recursive: true });
     writeFileSync(added, "");
 
@@ -313,29 +340,16 @@ test("--check writes nothing, so it is safe in CI", () => {
 
 // ----------------------------------------------------------------- refusals ----
 
-test("a workspace at the tree root is reported rather than dropped", () => {
+test("a view at the tree root is reported rather than dropped", () => {
   withPackage([], (root) => {
-    writeFileSync(treePath(root, "workspaces/orphan.svelte"), "");
+    writeFileSync(treePath(root, "categories/orphan.svelte"), "");
     assert.match(refuses(root), /orphan\.svelte {2}sits at the tree root/);
   });
 });
 
-test("a workspace file the naming rule cannot read names no subscreen", () => {
-  withPackage(["workspaces/research/panel-one-question.svelte"], (root) => {
-    assert.match(refuses(root), /is not 'workspace' or 'workspace-<name>'/);
-  });
-});
-
-test("a category directory with nothing to render is reported", () => {
+test("a missing category tree is reported rather than generating an empty union", () => {
   withPackage([], (root) => {
-    mkdirSync(treePath(root, "workspaces/hollow"), { recursive: true });
-    assert.match(refuses(root), /has no workspace file/);
-  });
-});
-
-test("a missing workspace tree is reported rather than generating an empty union", () => {
-  withPackage([], (root) => {
-    rmSync(treePath(root, "workspaces"), { recursive: true, force: true });
+    rmSync(treePath(root, "categories"), { recursive: true, force: true });
     assert.match(refuses(root), /no such tree/);
   });
 });
@@ -355,12 +369,12 @@ test("an option that is not --check is refused", () => {
 test("the leading -- pnpm forwards is not read as an argument", () => {
   withPackage([], (root) => {
     run(root, "--");
-    assert.match(run(root, "--", "--check"), /in step with the workspace tree/);
+    assert.match(run(root, "--", "--check"), /in step with the category tree/);
   });
 });
 
 test("the generator runs identically from any working directory", () => {
-  withPackage(["workspaces/research/workspace.svelte"], (root) => {
+  withPackage(["categories/research/content/thread.svelte"], (root) => {
     execFileSync(process.execPath, [generator], {
       cwd: tmpdir(),
       env: { ...process.env, ICARUS_PACKAGE_ROOT: root },
@@ -373,7 +387,7 @@ test("the generator runs identically from any working directory", () => {
 
 // ------------------------------------------------------------ the real tree ----
 
-test("the committed category vocabulary is in step with the workspace tree", () => {
+test("the committed category vocabulary is in step with the category tree", () => {
   execFileSync(process.execPath, [generator, "--check"], {
     env: { ...process.env, ICARUS_PACKAGE_ROOT: realPackageRoot },
     encoding: "utf8",

@@ -3,21 +3,19 @@ import { render } from "svelte/server";
 import type { Component } from "svelte";
 
 /**
- * Every panel renders on its own.
+ * Every view renders on its own.
  *
- * The claim the four trees are built on is that a panel knows only its capabilities —
+ * The claim the trees are built on is that a view knows only its capabilities —
  * no client instance, no route, no parent threading content down. This is what
  * checks it: each one is rendered in isolation, with nothing but a permissive
- * prop bag, and a panel that reached for something it should not have throws.
+ * prop bag, and a view that reached for something it should not have throws.
  *
  * **Server rendering rather than a DOM.** `svelte/server` runs in Node, so this
  * needs no jsdom and no browser, and it exercises the part that matters — props,
  * derivations, reads and markup. Effects do not run on the server, so an effect
  * that reached for `window` is not covered here.
  */
-const MODULES = import.meta.glob<{ default: Component }>(
-  "/src/lib/app-views/{panels/context,panels/inspector,workspaces,modals}/**/*.svelte"
-);
+const MODULES = import.meta.glob<{ default: Component }>("/src/lib/app-views/**/*.svelte");
 
 /**
  * Generous, because the cost is compilation rather than rendering: whichever
@@ -26,14 +24,14 @@ const MODULES = import.meta.glob<{ default: Component }>(
  */
 const TIMEOUT = 30_000;
 
-describe("every panel renders on its own", () => {
+describe("every view renders on its own", () => {
   for (const [path, load] of Object.entries(MODULES)) {
     it(
       path.replace("/src/lib/", ""),
       async () => {
-        const { default: Panel } = await load();
+        const { default: View } = await load();
         // Reading `body` is what runs it — `render` returns lazy getters.
-        const { body } = render(Panel, {
+        const { body } = render(View, {
           props: { open: true, onback: () => {}, onclose: () => {} }
         });
         expect(body.length).toBeGreaterThan(0);

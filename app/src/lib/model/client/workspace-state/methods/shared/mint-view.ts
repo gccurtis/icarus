@@ -4,6 +4,9 @@ import { defaultContext, defaultSubscreen } from "$model/client/workspace-state/
 
 export const mintView = (target: Target): TabView => {
   const subscreen = target.subscreen ?? defaultSubscreen(target.category);
+  if (subscreen === undefined) {
+    throw new Error(`'${target.category}' has no content view to open on`);
+  }
   return {
     subscreen,
     focus: target.focus ?? null,

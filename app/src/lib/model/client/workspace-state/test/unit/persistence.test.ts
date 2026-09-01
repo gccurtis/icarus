@@ -31,7 +31,7 @@ const workspaceState = (afterOps = 3, afterMs = 60_000) =>
 const document = (id: string) => ({ category: "document-editor", resourceId: id }) as const;
 
 const view = {
-  subscreen: "workspace",
+  subscreen: "document",
   focus: null,
   contextId: null,
   inspected: "empty",

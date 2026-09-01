@@ -1,4 +1,4 @@
-import type { ContextId } from "$representation/data/types/workspace/panels";
+import type { ContextView } from "$representation/data/types/workspace/views";
 import type {
   Frame,
   Inspected,
@@ -17,7 +17,7 @@ export interface TabViewsModel {
 
   land(id: TabId, landing: Landing): void;
   focusOn(id: TabId, focus: string | null): void;
-  selectContext(id: TabId, contextId: ContextId | null): void;
+  selectContext(id: TabId, contextId: ContextView | null): void;
   inspect(id: TabId, inspected: Inspected, selection: Selection | null): void;
   clear(id: TabId): void;
   resize(id: TabId, patch: Partial<Frame>): void;
