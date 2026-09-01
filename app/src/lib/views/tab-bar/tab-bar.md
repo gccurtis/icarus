@@ -18,8 +18,8 @@ This view owns:
 
 - how a tab looks, including which cues say "active";
 - the division between the permanent tabs and the tabs a person opened;
-- display copy — the label and icon — for every screen a tab can hold. A label is
-  a function of the whole tab rather than of its screen alone, or every document
+- display copy — the label and icon — for every category a tab can hold. A label
+  is a function of the whole tab rather than of its category alone, or every document
   tab would read "Document", which is the one thing a tab strip exists to
   prevent;
 - the rule that a permanent tab shows no close affordance.
@@ -28,7 +28,7 @@ It does not own:
 
 - the tab list, its order, or which tab is active. All three are model state.
 - what happens after a close. The model chooses the next active tab.
-- what a screen *renders as*. A screen names the path of its own centre, and the
+- what a category *renders as*. A category names the path of its own centre, and the
   workspace loads it.
 
 ## Public Contract
@@ -64,7 +64,7 @@ It does not own:
 
 | Dependency | Usage |
 | --- | --- |
-| `@lucide/svelte` | One icon per screen, plus the close glyph |
+| `@lucide/svelte` | One icon per category, plus the close glyph |
 | Token domains: color, spacing, typography, shape | Every value |
 
 ## Directory Documents
@@ -130,8 +130,8 @@ describes what is actually implemented.
   nicety.
 - **Which tab is active never rides on colour alone.** The tint is paired with
   an underline on the shared edge and with `aria-current`.
-- **The screen map is total.** `Record<Screen, ScreenEntry>` means a new screen
-  fails to compile until it has a label and an icon.
+- **The category map is total.** `Record<Category, CategoryEntry>` means a new
+  category fails to compile until it has a label and an icon.
 
 ## Supporting Documents
 

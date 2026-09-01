@@ -9,7 +9,7 @@ The bar across the foot of the application. Three parts: what is on the work
 surface, the Copilot, and what is waiting for you.
 
 It reads the client model, coordinates two panels, and owns the one input that is
-available from every screen — which is what makes it a view rather than a strip
+available from every category — which is what makes it a view rather than a strip
 of text.
 
 ## Why the Copilot is here and not floating
@@ -50,7 +50,7 @@ It does not own:
 - the inspector's width. It opens a collapsed panel and leaves an open one at
   whatever width its user chose.
 - anything the prompt does. No agent capability exists.
-- the screen's name. That is on the tab, two rows up.
+- the category's name. That is on the tab, two rows up.
 
 ## Public Contract
 

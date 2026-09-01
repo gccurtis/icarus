@@ -3,9 +3,9 @@
 ## What the subject is
 
 These are the context panels for a project: the standing lists a person reads
-down the side of a project screen. Together they answer *what is in this project
+down the side of a project category. Together they answer *what is in this project
 and what has been happening in it* — and they answer it without ever leaving the
-screen, because every row opens its subject in the inspector rather than
+category, because every row opens its subject in the inspector rather than
 navigating somewhere. That is the property the whole subject is built on: you can
 look through eight resources, three people and a task without losing the place
 you were working.
@@ -24,10 +24,10 @@ running.
 **What has happened** — Activity, Mentions and History. These three overlap on
 purpose. Activity is the record with no judgment in it. Mentions is only what a
 person addressed to you. History is the two of them in one panel, with what was
-addressed to you above the record. Both arrangements exist and a screen carries
+addressed to you above the record. Both arrangements exist and a category carries
 one or the other — the merge, or the pair — never all three.
 
-Four panels offer a way out to a full screen, always as a control in the panel's
+Four panels offer a way out to a full category, always as a control in the panel's
 own header rather than a footer: a control under a list of unbounded length is a
 control nobody reaches. Each stays disabled until whatever holds the panel hands
 it somewhere to go — routing out is not something a panel decides for itself.
@@ -75,7 +75,7 @@ distinction the data cannot yet make — there is no way to record that an autho
 same and both get the warning.
 
 What it deliberately does not do: it does not edit a rule. That happens on the
-Context screen, and the header control is the way there.
+Context category, and the header control is the way there.
 
 Routes to `scope.context`.
 
@@ -95,7 +95,7 @@ in it, which is worse than no Use.
 A note at the foot counts the templates that make a single slide, which has no
 group here yet.
 
-Routes to `library.template`. The header control opens the Templates screen.
+Routes to `library.template`. The header control opens the Templates category.
 
 ## Variables (and Create)
 
@@ -191,7 +191,7 @@ What it deliberately does not do: a waiting row carries no Reply and no Resume.
 Nothing records *why* a task is blocked or *who* can unblock it, and a control
 that cannot say which of those two things it does is a control that guesses.
 
-Routes to `copilot.task`. The header control opens the Agents screen, where the
+Routes to `copilot.task`. The header control opens the Agents category, where the
 Personas doing this work are managed.
 
 ## Activity
@@ -234,7 +234,7 @@ since the record stores an actor as a display name —
 What a person addressed to you, and nothing else. Two bands: Unread, then Read,
 which arrives shut.
 
-A mention is the one thing worth interrupting for. That is why it leads a screen
+A mention is the one thing worth interrupting for. That is why it leads a category
 and why machine noise is kept out of it: a resource changing did not address you,
 and belongs in Activity. Each row names the author and where the comment sits —
 the resource, and the place inside it when there is one — and puts the excerpt on
@@ -294,7 +294,7 @@ that make a single slide, and Contexts that resolve to nothing. In all three the
 panel states the count and the consequence instead of quietly dropping the rows
 or inventing a band for them.
 
-**No panel edits its subject.** Contexts are edited on the Context screen,
-Personas on the Agents screen, templates on the Templates screen. A panel that
-began editing in place would be a second, smaller version of a screen that
+**No panel edits its subject.** Contexts are edited in the Context category,
+Personas in the Agents category, templates in the Templates category. A panel that
+began editing in place would be a second, smaller version of a category that
 already exists.

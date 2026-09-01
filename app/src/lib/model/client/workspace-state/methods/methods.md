@@ -33,13 +33,13 @@ The shell has no subscreen switcher: a centre is changed by choosing something i
 it. Two methods therefore land a tab on a centre, and both go through
 [`landOn`](shared/land-on.ts) rather than assigning.
 
-`showSubscreen` is a person moving inside a screen they are already on — the
+`showSubscreen` is a person moving inside a category they are already on — the
 double click that chooses a persona is the same call that switches to the persona
 centre, and passing no subject is how a library is returned to.
 
 `open` sits above it and takes a whole `Target`. A target that names a centre
 gets it whether or not the tab is already open, so a tab reached from another
-screen ends up in exactly the state it would have reached on its own: same rail
+category ends up in exactly the state it would have reached on its own: same rail
 reset, same cleared inspection. **The shared module is the point**, not a
 convenience — the alternative is two paths to one state, and two paths to one
 state drift.
@@ -96,7 +96,7 @@ Nine, and two of them are data rather than methods — see
 
 | File | Callers | Invariant |
 | --- | --- | --- |
-| `defaults.ts` | `close`, `target-key`, the constructor, `mint-view`, the index | A screen is permanent or it is not, and every tab starts the same width |
+| `defaults.ts` | `close`, `target-key`, the constructor, `mint-view`, the index | A category is permanent or it is not, and every tab starts the same width |
 | `apply.ts` | `perform`, `undo`, `redo` | One op, one effect — the only place an op becomes a change |
 | `perform.ts` | every mutator, `land-on` | Nothing changes without leaving a record |
 | `landing.ts` | `land-on`, `open` | The `was` half of a landing is read once, the same way every time |
@@ -111,7 +111,7 @@ Nine, and two of them are data rather than methods — see
 **`selectContext` throws; the `context` getter falls back silently.** The two
 cases are different. A remembered context can *drift* out of range when a
 subscreen changes — a templates tab switching mode swaps to a disjoint rail — and
-a reset rail is harmless where a crash is not. A caller naming a view no screen
+a reset rail is harmless where a crash is not. A caller naming a view no category
 offers has made a mistake, and swallowing it would leave the panel blank with
 nothing to explain why.
 
@@ -126,8 +126,8 @@ Four methods throw, and each rejects something a caller could not have meant:
 
 | Method | Refuses |
 | --- | --- |
-| `close` | A permanent screen — not being on one *is* closing it |
-| `showSubscreen` | A subscreen this screen does not have |
+| `close` | A permanent category — not being on one *is* closing it |
+| `showSubscreen` | A subscreen this category does not have |
 | `selectContext` | A view this subscreen's rail does not offer |
 | `inspect` | A key that is neither `"empty"` nor a lens |
 

@@ -31,7 +31,7 @@ Consumers own:
   capability decides what each arm does when it executes
 - **Which conversation is showing.** That is navigation, and navigation is an
   inspection — a `copilot.*` key on the active tab
-- **Every scope path.** The screen that owns the selection produces it; the
+- **Every scope path.** The category that owns the selection produces it; the
   resolver reads it
 
 ## Lifetime
@@ -82,7 +82,7 @@ export const createCopilot = (workbench: WorkbenchModel): CopilotModel => ...;
 | ---------- | --------- | ----- |
 | `workbench` | BORROWED | Resolving the active tab into selectors, for the scope editor |
 
-Built after the workbench. Nothing reads it yet — the screen describes its own
+Built after the workbench. Nothing reads it yet — the category describes its own
 selection as a `part` selector and the inspector passes it in — but the
 dependency is declared because it is what the scope editor will resolve through.
 

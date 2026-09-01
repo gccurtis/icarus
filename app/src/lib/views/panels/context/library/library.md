@@ -2,7 +2,7 @@
 
 ## What the subject is
 
-These are the panels that stand at the left of a screen and answer one question:
+These are the panels that stand at the left of a category and answer one question:
 what does this project already hold, and how do I add to it. They are lists
 first — a list is what a person scans when they are looking for something they
 know exists — and every one of them hands off to the inspector rather than
@@ -28,7 +28,7 @@ They fall into four groups, and the groups matter more than the alphabet:
   accumulates.
 
 Two panels here are called *Recent* and they are not duplicates.
-`recent-templates` is the templates screen's, split into what changed and what
+`recent-templates` is the templates category's, split into what changed and what
 was used; `recent-newtab` is the launcher's, over everything, grouped by day. A
 row in the first opens the template lens; a row in the second opens
 `library.recent-item`, which is the only lens in the launcher whose subject
@@ -78,7 +78,7 @@ Routes to `library.template`.
 
 ## template
 
-Headed *Template*. The template the authoring screen is focused on, seen as a
+Headed *Template*. The template the authoring category is focused on, seen as a
 thing in a library rather than as a body — the part you set once and then stop
 thinking about. Distinct on purpose from the authoring panels beside it, which
 are all about the body.
@@ -148,7 +148,7 @@ becomes a prompt block in the result.
 What it deliberately does not do: the variable rows do not press. No body entity
 can carry a variable key, so an inserted variable would have nowhere to record
 which variable it is. They are listed anyway, with the reason stated underneath,
-because removing the band would hide the gap this screen is waiting on.
+because removing the band would hide the gap this category is waiting on.
 
 Routes to `library.body-entity` from a basics row — inserting selects what was
 inserted, and selecting is what puts it in the inspector.
@@ -206,7 +206,7 @@ question this tab asks.
 
 **Open Templates** is in the action row rather than at the foot of the list. A
 panel has no footer — a control pinned below a list of unbounded length is a
-control nobody scrolls to — and reaching another screen is the parent's to
+control nobody scrolls to — and reaching another category is the parent's to
 perform, not this panel's, so the button is dead when the parent offers nothing
 to perform it with.
 
@@ -328,15 +328,15 @@ anyone sets, so the two bands are a split of one list rather than two lists: a
 thread moves between them without being edited.
 
 Choosing a thread opens its tab and inspects it, two acts in one press and
-deliberately. This panel is the map onto a screen that has no list of its own,
+deliberately. This panel is the map onto a category that has no list of its own,
 so a press that only inspected would leave the map with no way onto the
 territory. Opening is idempotent, so a thread reached from here, from a finding
 and from the work table is one tab.
 
-Nothing starts a thread, so **New thread** opens the first one the screen is not
+Nothing starts a thread, so **New thread** opens the first one the category is not
 already holding rather than pretending to create.
 
-Routes to `research.thread`, opening the research screen on the same press.
+Routes to `research.thread`, opening the research category on the same press.
 
 ## analyses
 
@@ -357,7 +357,7 @@ a blank id rather than inventing a row this panel would then fail to list.
 Choosing a row opens its tab and inspects it, for the same reason `threads`
 does.
 
-Routes to `analysis.analysis`, opening the analysis screen on the same press.
+Routes to `analysis.analysis`, opening the analysis category on the same press.
 
 ## What is not here
 

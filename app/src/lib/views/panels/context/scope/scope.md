@@ -2,7 +2,7 @@
 
 ## What the subject is
 
-These are the narrow-column panels of the Context screen, and they carry one
+These are the narrow-column panels of the Context category, and they carry one
 idea between them: **a Context is a rule, not a list**. Nothing in it is a stored
 membership. What a Context contains is worked out at the moment it is read, so
 every count in this stack is a resolve as of that second rather than a number

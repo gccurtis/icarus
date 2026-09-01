@@ -8,7 +8,7 @@ question.
 
 Workspace state holds **what a person has open, and what they are looking at inside
 it**, for the four panel trees: `context/` (92 views), `inspector/` (107 lenses,
-and the tree is still being filled in), `workspaces/` (13 centres over 9 screens)
+and the tree is still being filled in), `workspaces/` (13 centres over 9 categories)
 and `modals/`.
 
 One surface, and the five shell surfaces are functions of it — the tab strip, the
@@ -30,7 +30,7 @@ the order          the composition           is looking at
 which is active    the only writer
 ```
 
-[`tab-list`](../tab-list/tab-list.md) holds `TabRecord`s — an id, a screen and
+[`tab-list`](../tab-list/tab-list.md) holds `TabRecord`s — an id, a category and
 the resource a tab is *for*. [`tab-views`](../tab-views/tab-views.md) holds one
 `TabView` per id, keyed by nothing else. Neither knows the other exists, and
 neither decides anything: `tab-views` writes the fields it is told to write, and
@@ -53,7 +53,7 @@ The permanent tabs are Overview, Agents and Templates. Each is somewhere
 the project's work of one kind is gathered, and somewhere you *return* to rather
 than arrive at. Not being on one *is* closing it, so `close` refuses them.
 
-A screen that holds one identified thing at a time is not a place. It is a tab
+A category that holds one identified thing at a time is not a place. It is a tab
 keyed by that thing, and Research is the case that draws the line: a line of
 enquiry is opened, worked in and closed, so each thread is its own tab keyed by
 its `resourceId`, exactly as a document is keyed by the document. Two threads are
@@ -63,9 +63,9 @@ one tab, in the state the person left it. The `library.threads` context view is
 the map onto them, which is why it sits on the thread's own rail: you get to
 another thread from the one you are in.
 
-The rejected alternative is a permanent Research screen with the threads inside
+The rejected alternative is a permanent Research category with the threads inside
 it. It fails on what a tab strip is *for*: closing the last thread would have to
-either close a permanent screen or leave an editor open on nothing, and the strip
+either close a permanent category or leave an editor open on nothing, and the strip
 would stop being the answer to "what am I working on".
 
 ## Navigation is selection-driven
@@ -99,7 +99,7 @@ Workspace state owns:
   returns, and undo is that log read backwards
 - **The rail map** — which context views each subscreen offers, and which one it
   opens on
-- **What a new tab starts as** — which screens are permanent, and the frame every
+- **What a new tab starts as** — which categories are permanent, and the frame every
   tab is minted with
 
 `tab-list` owns what exists, in what order, and which one is active. `tab-views`
@@ -123,13 +123,13 @@ Consumers own:
 
 `"project.variables"` is the `project/variables` leaf of `context/`, and
 `"collaboration.person"` is `collaboration/person` under `inspector/`. The
-`agents` screen's `"persona"` is
+`agents` category's `"persona"` is
 [`views/workspaces/agents/workspace-persona.svelte`](../../../views/workspaces/agents/workspace-persona.svelte).
 
-The vocabulary is the `views` domain's, under `representation/`: the unions in
-`data/types/workspace/`, their lists and guards in `data/behavior/workspace/`. Screens
-are **generated** from the workspace tree by `pnpm screen-keys`, and
-`pnpm screen-keys -- --check` exits non-zero when the files and the tree
+The vocabulary is the `workspace` domain's, under `representation/`: the unions in
+`data/types/workspace/`, their lists and guards in `data/behavior/workspace/`. Categories
+are **generated** from the workspace tree by `pnpm category-keys`, and
+`pnpm category-keys -- --check` exits non-zero when the files and the tree
 disagree. A key that names nothing does not compile, and it cannot drift.
 
 `"empty"` is the one member that is not generated: nothing selected is a state
@@ -192,9 +192,9 @@ supporting flow. Every one is still a file.
 | ------ | ----- | ------ | ----------- |
 | `open` | file | mutator | Open a target, or move the tab already on it to what the target asked for |
 | `activate` | file | mutator | Move to a tab |
-| `close` | file | mutator | Close a tab and remember it; throws for a permanent screen |
+| `close` | file | mutator | Close a tab and remember it; throws for a permanent category |
 | `reopenClosed` | file | mutator | Put back the most recently closed tab, with the state it had |
-| `showSubscreen` | file | mutator | Switch which centre this screen is showing, and say what it is about |
+| `showSubscreen` | file | mutator | Switch which centre this category is showing, and say what it is about |
 | `selectContext` | file | mutator | Move the rail |
 | `inspect` | file | mutator | Open a lens, and record what it is about |
 | `clear` | file | mutator | Nothing selected |
@@ -230,7 +230,7 @@ and no surface has to be told.
 
 **`focus` is deliberately not promoted to the top level** the way `context` and
 `inspected` are. Those are read by surfaces that are about the shell — the rail,
-the inspector, the resizers — and every screen reads them. What a centre is about
+the inspector, the resizers — and every category reads them. What a centre is about
 is read by that one centre, which already has `active` in hand, and a shortcut on
 the model would suggest the shell knows what it means.
 
@@ -300,7 +300,7 @@ different object with a different lifetime.
   `--check` fails when the two disagree.
 - **An inspection key never carries a payload.** The selection lives once, beside
   it.
-- **Permanence is derived, not stored:** `SINGLETONS.includes(tab.screen)`.
+- **Permanence is derived, not stored:** `SINGLETONS.includes(tab.category)`.
 - **`resourceId` is fixed at mint and `focus` is writable.** What a tab is *for*
   cannot change; what its centre is *about* changes all day.
 - **The rail position is one this subscreen offers**, or that subscreen's
@@ -310,7 +310,7 @@ different object with a different lifetime.
   Agents on the library it was chosen from are one tab in two states.
 - **A centre change takes its rail and its inspection with it.**
   [`landOn`](methods/shared/land-on.ts) is the single path, so a tab reached from
-  another screen lands in exactly the state it would have reached by hand.
+  another category lands in exactly the state it would have reached by hand.
 - **`resize` cannot reach `contextId`.** A drag can never move the rail and a
   rail click can never resize a panel, structurally rather than by convention.
 - **The model holds values; views hold bounds.**

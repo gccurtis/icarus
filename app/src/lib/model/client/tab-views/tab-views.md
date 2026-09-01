@@ -15,7 +15,7 @@ exactly the stored shape from the `views` domain, spelled with `null` rather tha
 `undefined`, because these round-trip through JSON and an absent key and a null
 are two spellings of one state.
 
-**It decides nothing.** It does not know which rail a screen offers, what a
+**It decides nothing.** It does not know which rail a category offers, what a
 landing has to clear, or what a new tab starts as. Every write is a field it was
 told to write, and the policy behind them lives in
 [workspace-state](../workspace-state/workspace-state.md), which is the only object that holds

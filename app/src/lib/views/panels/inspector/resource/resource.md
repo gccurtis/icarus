@@ -34,7 +34,7 @@ member:
   what is actually under the pointer: a literal value, an expression, an
   expression that will not resolve, a coordinate filled from somewhere else, or a
   block of several. A cell's identity is its A1 address, which is why there is no
-  row lens and no column lens anywhere on the screen — rows and columns are not
+  row lens and no column lens anywhere in the category — rows and columns are not
   identified things.
 
 **Where each edit lives.** The rule the subject keeps is that one piece of text

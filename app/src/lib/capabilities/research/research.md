@@ -2,7 +2,7 @@
 
 A line of enquiry: one thread, anchored to one turn.
 
-The screen sits on a single turn rather than a scrollback, so the procedures are split
+The category sits on a single turn rather than a scrollback, so the procedures are split
 by *which* turn they answer for. A panel wanting the thread's total asks for the
 thread, never for the sum of the turns it can see.
 

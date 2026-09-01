@@ -107,10 +107,10 @@ Everything this request will be able to look up, and where each part came from.
 
 Three sources, kept in three lists rather than merged into one, because they are
 revoked in three different ways and an id from one is not interchangeable with an
-id from another: what the screen offers, what you pick, and what the persona
+id from another: what the category offers, what you pick, and what the persona
 always has.
 
-Suggested comes from whichever screen is asking — that screen supplies its own
+Suggested comes from whichever category is asking — that category supplies its own
 suggestions and the Copilot does not guess. Suggested is not attached: nothing is
 in scope until it is added, so every offered row says which it is in words rather
 than leaving the reader to interpret a tick. Between Suggested and Saved

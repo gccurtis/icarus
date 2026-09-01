@@ -2,7 +2,7 @@
 
 ## What the subject is
 
-These are the narrow-column panels of the Agents screen: the lists and the
+These are the narrow-column panels of the Agents category: the lists and the
 bands you move through, rather than the reading of any one thing. Together they
 answer *what agents exist here, what has each been told, what work is in flight,
 and what runs without anybody asking*. They split into three groups, and the
@@ -77,7 +77,7 @@ Below it, a bounded sample of the contents, counted as so many of the total. The
 count is resolved now rather than stored: a Context is a rule, so what the agent
 will find today is not what it found when the persona was saved, and the sample
 is here so a scope that has drifted is visible from the profile rather than only
-from the Context screen. Open Context screen sits in the actions row rather than
+from the Context category. Open Context category sits in the actions row rather than
 under the list, because the way out of a panel should not sit at the bottom of
 something of unbounded length.
 
@@ -136,7 +136,7 @@ work; rolling failures in with finished work is how a run that produced nothing
 gets counted as one that did. A search and a persona filter narrow the list, and
 the row's icon says whether an Automation fired it.
 
-This is the map for the screen: what the workspace's table holds, in the narrow
+This is the map for the category: what the workspace's table holds, in the narrow
 column, so you can move between tasks without going back to the library. Alone
 among the panels here it navigates rather than inspects — choosing a task opens
 it in the centre, because a task is a place you work rather than a thing you

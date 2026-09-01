@@ -213,7 +213,7 @@ The saved Contexts — the named scopes a prompt block looks things up in — se
 without leaving the resource. It is deliberately the same view in all three
 editors, because a Context means the same thing in all three.
 
-Each carries a way out to the Context screen, sitting in the actions row at the
+Each carries a way out to the Context category, sitting in the actions row at the
 top for the same reason Replace does: a control below a list of unbounded length
 is a control nobody finds. **Editing happens there and not here.** Nothing in
 these panels changes a scope's membership, because a scope edited from inside one
@@ -250,7 +250,7 @@ prompt blocks, so "used by 2 blocks" would be a number that cannot be true here.
 What a Context resolves to is true regardless of who is reading it.
 
 Nothing in this spreadsheet reads any of these yet, for exactly that reason.
-Either prompt blocks land in the grid, or this view is premature on this screen.
+Either prompt blocks land in the grid, or this view is premature in this category.
 
 ---
 
@@ -343,7 +343,7 @@ Four bands, in the order a page is decided:
 - **Paper** — size and orientation, both as chips rather than selects, because
   each has exactly two values and a chip shows both of them.
 - **Gutters** — top, bottom, inside and outside, each typed. They are named for a
-  bound document rather than for a screen: inside is the bound edge and outside
+  bound document rather than for a category: inside is the bound edge and outside
   the open one, so a two-sided document keeps its wide margin at the spine when
   the page turns. Left and right would be wrong on every second page.
 - **Header and footer**, shut on arrival — the depth of the two reserved bands,
@@ -708,7 +708,7 @@ one at all.
 
 **Editing is elsewhere, on purpose, everywhere.** A named style, a named range, a
 comment thread, a chart, a Context, a layout's own properties: named in a panel,
-configured in a lens or on a screen. A panel that grew a second editor for one of
+configured in a lens or in a category. A panel that grew a second editor for one of
 them would be the same form drawn twice, and it would be the copy without room
 for it.
 

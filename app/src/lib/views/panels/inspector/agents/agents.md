@@ -2,7 +2,7 @@
 
 ## What the subject is
 
-These are the lenses behind the Agents screen: one thing at a time, read closely,
+These are the lenses behind the Agents category: one thing at a time, read closely,
 reached by choosing a row somewhere else. Together they answer *what exactly is
 this — and what would changing it mean*. They fall into three families, each of
 them a head and its parts, and the family is what tells you which lens you are
@@ -42,7 +42,7 @@ runs it; then, after a rule, Removal.
 Deliberately not doing: an avatar has nowhere to be stored, and whether a persona
 can have a generated one with it is unsettled, so initials stand in. Nothing in
 the model aggregates per persona, so the two record numbers are counted for this
-panel and no other screen can be made to agree with them yet. And there is no
+panel and no other category can be made to agree with them yet. And there is no
 Delete and no disabled one either — every task and every conversation this
 persona ran is labelled with its name, hard deletion would break those labels,
 and a disabled button would imply a tombstone policy exists and is merely unmet.
@@ -125,7 +125,7 @@ guessing it here would put a claim on the screen nothing supports.
 
 The second band holds the boundary as a sentence: providers, credentials,
 endpoints and deployment setup belong outside the project workbench, and this is
-exactly the place a settings screen would grow if nobody said so.
+exactly the place a settings category would grow if nobody said so.
 
 Deliberately not doing: where the list of bindings comes from is unsettled.
 Bindings are deployment configuration rather than project data, so nothing in the

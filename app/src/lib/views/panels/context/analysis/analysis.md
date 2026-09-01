@@ -1,6 +1,6 @@
 # Analysis
 
-The context stack for the Analysis screen: the four panels a person works down
+The context stack for the Analysis category: the four panels a person works down
 while building a chart. Between them they answer what can be charted, where each
 field has been put, what kind of picture is being drawn, and what all of that
 compiled to. The order is the order of the work rather than an alphabet —
@@ -38,7 +38,7 @@ reference line or something to filter against, never an axis — what dropping o
 on a zone should do is undefined, so until that has an answer these should not be
 draggable at all.
 
-One sentence covers the whole screen and is said once, here: nothing is
+One sentence covers the whole category and is said once, here: nothing is
 drag-only. Every drop zone also has an Add menu and a keyboard path.
 
 Table and value rows open `analysis.variable`.
@@ -87,7 +87,7 @@ needs; a collapsible section holding the entirety of a panel is a disclosure ove
 nothing.
 
 Picking a kind that needs a field the analysis has not got opens an empty zone for
-it in Fields rather than refusing. The screen asks for what is missing instead of
+it in Fields rather than refusing. The category asks for what is missing instead of
 blocking.
 
 The minimum-field rule per kind is undefined, and until it exists an empty zone

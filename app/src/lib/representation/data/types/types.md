@@ -10,9 +10,9 @@ underneath the rest, `content` for what is authored, `investigation` and
 resource's body, its ops and its snapshot vocabulary. Nothing is shared between
 the three.
 
-`views` is the same shape for what a person has open: the screen and panel
+`workspace` is the same shape for what a person has open: the category and panel
 vocabularies, what one tab holds, and the ops that change it. What a tab starts
-as — which screens are permanent, how wide a panel opens — is not here, because
+as — which categories are permanent, how wide a panel opens — is not here, because
 no reader of a stored row consults it.
 
 A constant, a lookup table, a guard — anything still there at runtime — belongs

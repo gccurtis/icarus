@@ -17,15 +17,15 @@ follow a tab.
 
 This view owns:
 
-- turning a screen and a subscreen into the path of a centre, and loading it;
+- turning a category and a subscreen into the path of a centre, and loading it;
 - the three states a load can reach: waiting, no such file, and a module that
   threw;
-- the rule that two tabs are two mounts, even when they hold the same screen.
+- the rule that two tabs are two mounts, even when they hold the same category.
 
 It does not own:
 
 - which tab is active, or what it holds. Both are model state.
-- display copy for a screen. The tab bar owns the label and icon, because that is
+- display copy for a category. The tab bar owns the label and icon, because that is
   the surface that displays them.
 - the scroll. The frame's centre owns it, so a resource cannot take the page
   with it.
@@ -60,7 +60,7 @@ It does not own:
 | `None` | — | — |
 
 The thirteen centres under `$lib/views/workspaces/` are reached through a glob rather
-than by import, so none of them is named here. A centre that grows past a screen
+than by import, so none of them is named here. A centre that grows past a category
 becomes a sibling view and is imported through its root. None has yet.
 
 ### Presentation
@@ -92,7 +92,7 @@ cannot be closed.
 
 Missing and Failure are separate because they are different diagnoses. The glob
 cannot name a file that is not there, so a rejected import means the module
-itself threw — and telling "this screen has not been built" from "this screen is
+itself threw — and telling "this category has not been built" from "this category is
 broken" is the whole value of the two branches.
 
 ## Accessibility
@@ -117,17 +117,17 @@ broken" is the whole value of the two branches.
 
 ## View Invariants
 
-- **The registry is the filesystem.** There is no map from screen to component
+- **The registry is the filesystem.** There is no map from category to component
   here, because a map is a second list of what exists and the first one is
-  `src/lib/views/workspaces/`. A screen and a subscreen name a path, and the same fact
+  `src/lib/views/workspaces/`. A category and a subscreen name a path, and the same fact
   generates the vocabulary the model publishes, so the two cannot disagree.
 - **A model key is never a component.** Workspace state exposes stable keys precisely
   so it stays testable without a DOM; resolving them is this layer's job.
 - **A chunk that fails to arrive is a state, not a blank plane.** Rendering
   nothing for a broken module leaves a reader looking at an empty centre with no
-  way to tell it from a screen that is meant to be empty.
+  way to tell it from a category that is meant to be empty.
 - **Two tabs are two mounts.** The subtree is keyed on the tab and its subscreen,
-  so switching between two tabs of the same screen remounts rather than handing
+  so switching between two tabs of the same category remounts rather than handing
   one component's state to both. Two open documents are not one document.
 
 ## Supporting Documents

@@ -23,7 +23,7 @@ them.
 thing you can open but a statement about something that was.
 
 One boundary runs through the entire subject and is worth stating on its own:
-**kind-specific detail belongs to the screen that owns the kind.** The inspector
+**kind-specific detail belongs to the category that owns the kind.** The inspector
 says what a resource is, who has it open, who last touched it and what it links
 to. It does not become a document reader, a slide sorter or a spreadsheet viewer,
 and a rebuild that starts adding per-kind bands here is rebuilding the wrong
@@ -80,7 +80,7 @@ destructive one.
 
 Open means the thing itself. Where a thing opens and which lens reads it are two
 separate questions asked by several surfaces, so both are answered away from this
-panel. When no screen holds a kind — a file, a finding, a connector, a Context —
+panel. When no category holds a kind — a file, a finding, a connector, a Context —
 that is not a failure: those are things you look at rather than places you go, so
 Open gives them their lens.
 
@@ -108,7 +108,7 @@ instead of offering an unsafe deletion.
 Routes to `collaboration.person` from a face or from Updated by, `project.project`
 from the breadcrumb, and — from a relationship row —
 `research.research-thread`, `research.hypothesis`, `research.question` or
-`research.accepted-finding`. Open resolves to whichever screen or lens holds the
+`research.accepted-finding`. Open resolves to whichever category or lens holds the
 resource's kind.
 
 ## File
@@ -160,7 +160,7 @@ token fails a minute later with an error that reads like a brand new problem, so
 the control that explains itself up front is the better one. **Reconnect goes to
 the connect panel** rather than re-authenticating here, because re-authenticating
 is the same flow as authenticating, and a second one living in this lens would be
-the same screen written twice.
+the same category written twice.
 
 While a sync runs, the progress bar says running rather than sitting at zero: no
 extent is reported, and a bar at nothing reads as a stall.

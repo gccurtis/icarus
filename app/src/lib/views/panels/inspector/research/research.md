@@ -2,7 +2,7 @@
 
 ## What the subject is
 
-These are the lenses of the Research screen: what opens in the inspector when a
+These are the lenses of the Research category: what opens in the inspector when a
 row in the research rail, or anything in the project that cites an enquiry, is
 followed. Together they answer *what exactly is this, and what does it rest on* —
 one object at a time, in full, with its evidence and its provenance attached. Each
@@ -62,11 +62,11 @@ unsettled — a Discover thread that becomes a Question thread has to acquire an
 anchor from somewhere, and nothing says where. Where the scope resolves to
 nothing, the panel says the thread is searching everything, because an unbounded
 scope is the one that never announces itself. And the closing note records why
-there is no assistant dock here: the whole Research screen is the conversation, so
+there is no assistant dock here: the whole Research category is the conversation, so
 a second composer floating over it would be two ways to say the same thing.
 
 Routes to `agents.persona` for the agent; the crumb goes to `project.project`; the
-action opens the Research screen keyed by this thread.
+action opens the Research category keyed by this thread.
 
 ## Research thread
 
@@ -129,7 +129,7 @@ Hypothesis, Evidence, and a closing note that arrives shut.
 
 **Assessment is a human judgment.** It is never calculated from the count of
 supporting and contradicting findings, and the panel says so directly under the
-field, because a screen showing both a tally and an assessment invites exactly
+field, because a category showing both a tally and an assessment invites exactly
 that inference.
 
 Evidence is one list holding both directions rather than two lists. Splitting them
@@ -235,7 +235,7 @@ to `research.thread`.
 ## Tool call
 
 One step the agent took: what it asked for, and what came back. It is the lowest
-level the Research screen goes to, and it exists so a weak answer can be diagnosed
+level the Research category goes to, and it exists so a weak answer can be diagnosed
 rather than argued with. Bands: Call, Input, then Output, which arrives shut.
 
 **A call that found nothing is an outcome, not an error.** It is toned as
@@ -258,7 +258,7 @@ Routes nowhere but its crumb, `research.thread`.
 
 ## What is not here
 
-**No lens for a turn.** A turn is the unit the whole screen is anchored to and the
+**No lens for a turn.** A turn is the unit the whole category is anchored to and the
 only thing in Research with nothing to inspect, which is why the rail's History
 panel has to hold the anchor itself.
 

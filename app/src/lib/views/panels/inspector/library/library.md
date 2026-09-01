@@ -38,7 +38,7 @@ footer for the usual reason, that controls get buried under content of unbounded
 length, but this is a bounded form and the last thing in a three-field form is
 its commit.
 
-Pressing Create opens the editor screen keyed by the title, so a second press
+Pressing Create opens the editor category keyed by the title, so a second press
 lands on the same tab instead of stacking two blank documents, and each panel
 says under the button that this tab becomes the thing rather than opening a
 second one. What Create cannot do is mint the resource and rebind the tab to
@@ -85,7 +85,7 @@ for is a question this model does not have.
 
 A template seen from a launcher tab: what it makes, whose it is, what its first
 page looks like, and what it will ask you for. Enough to decide whether this is
-the template you want without going to the Templates screen.
+the template you want without going to the Templates category.
 
 Bands in order: identity, preview, the variables it asks for, create.
 
@@ -124,7 +124,7 @@ the name up, and the row routes accordingly — `collaboration.person`,
 
 Open means the thing itself; where each kind goes is a question answered
 centrally rather than by this lens, and there is no kind reaching this list that
-no screen holds.
+no category holds.
 
 What it deliberately does not do: the full behaviour of Open — deduping against
 already-open tabs, transferring the draft, and closing the launcher — is one
@@ -280,7 +280,7 @@ Every lens states it in its own words rather than quietly dropping the control.
 locally, and Duplicate is disabled because a copy would not outlive the next
 read.
 
-**Create mints nothing.** In all three launchers, Create opens an editor screen
+**Create mints nothing.** In all three launchers, Create opens an editor category
 keyed by the title — it does not bring a resource into existence and rebind the
 tab to it, which is one step none of them has.
 

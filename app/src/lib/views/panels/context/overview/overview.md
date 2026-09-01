@@ -2,13 +2,13 @@
 
 ## What the subject is
 
-Ten panels, one per screen, each the entry its rail opens on. They are not a
+Ten panels, one per category, each the entry its rail opens on. They are not a
 family of similar things: what they have in common is a position. Every other
 panel in the tree lists something or reads one thing closely; these say *what
-this screen is about, what state it is in, and what is outstanding* — and then
+this category is about, what state it is in, and what is outstanding* — and then
 hand off to the panels and lenses that do the work. Nine of them are headed
-**Overview** and are read as the screen's own summary; the Agents one is headed
-with its screen's name, because on that screen the summary is of a population
+**Overview** and are read as the category's own summary; the Agents one is headed
+with its category's name, because in that category the summary is of a population
 rather than of a subject.
 
 They fall into four groups, and the group is what tells you what to expect.
@@ -20,10 +20,10 @@ Seven of the ten are this shape, and the three resource editors are near-sibling
 of each other — same bands, in the same order, differing only in the counts a
 document, a deck and a grid can honestly report.
 
-**A whole screen's state** — Project and Agents. These describe no one record.
+**A whole category's state** — Project and Agents. These describe no one record.
 Project answers *where am I and what is outstanding*; Agents answers *what is
-running right now*, on a screen whose subject changes under you while you read
-it. Both are the only place their screen states the whole of its situation.
+running right now*, in a category whose subject changes under you while you read
+it. Both are the only place their category states the whole of its situation.
 
 **A map** — the library half of Templates: what a template is, how many this
 project has by kind, and what is selected.
@@ -61,7 +61,7 @@ it. The mentions row is a count and selects the Mentions panel. Each broken thin
 opens as what it actually is — a connector as a connector, a file whose
 extraction failed as a file, a rule as an Automation — rather than as a generic
 health row that would then need a second click to become useful. It is the same
-set of broken rules the Agents screen's Health view reads as one list, seen here
+set of broken rules the Agents category's Health view reads as one list, seen here
 as the two or three that need somebody today.
 
 What it deliberately does not do: nothing records which mentions you have read,
@@ -85,8 +85,8 @@ broken row, and selects `project.mentions`.
 ## Agents
 
 What is running right now and what is standing by. The orientation panel for a
-screen whose subject changes under you — a task finishes while you are reading a
-persona — so the figures are the state of the whole screen rather than of
+category whose subject changes under you — a task finishes while you are reading a
+persona — so the figures are the state of the whole category rather than of
 whatever the centre happens to be showing, and they stay put while you move
 between Personas, Tasks, Automations and Health.
 
@@ -103,7 +103,7 @@ empty group stays on screen to say that nothing is in that state. Automations on
 arrives shut and is summarised by each rule's trigger, because that is what tells
 two rules apart that both ask an agent for something.
 
-Like the Agents screen's Tasks panel, this one navigates rather than inspects:
+Like the Agents category's Tasks panel, this one navigates rather than inspects:
 choosing a running or failed task lands the centre on it, choosing a rule lands
 the centre on the rule, and the two actions land the centre on a new persona or a
 new Automation. Nothing here opens a lens.
@@ -239,7 +239,7 @@ reference *is* its identifier, so the mode decides which lens it opens.
 
 Asking names the agent as an actor row into its profile, and states the rule: the
 agent is set once for the whole thread and there is no per-turn switch. **It is
-also the one place the product says why this screen has no Copilot** — the thread
+also the one place the product says why this category has no Copilot** — the thread
 already is a conversation with an agent, so a second composer floating over it
 would be two ways to say the same thing.
 
@@ -259,7 +259,7 @@ when it last moved.
 
 New thread sits in the actions row. A new enquiry is a new tab rather than a
 state of this one, so it opens rather than selecting a context — and since
-nothing creates a thread, it opens a real thread the screen is not already
+nothing creates a thread, it opens a real thread the category is not already
 holding rather than minting an id that would put a tab in the strip nothing can
 answer for.
 
@@ -300,7 +300,7 @@ Routes to `collaboration.person`.
 ## Templates library
 
 What a template is, what this project has, and what is selected. The panel opens
-on the sentence that explains the whole authoring screen: **a template is an
+on the sentence that explains the whole authoring category: **a template is an
 ordinary body with some of it left open**, so authoring one is authoring a
 document, a deck, a slide or a spreadsheet, and there is no separate template
 editor. Everything on the authoring subscreen follows from that.

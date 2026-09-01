@@ -2,9 +2,9 @@
 
 ## What the subject is
 
-These are the context panels of the Research screen: the rail beside one line of
+These are the context panels of the Research category: the rail beside one line of
 enquiry. Together they answer *what is this enquiry standing on, and what has it
-produced* — and they answer it about a screen that is anchored to a single turn
+produced* — and they answer it about a category that is anchored to a single turn
 rather than scrolled through all of them. That anchoring is the fact the whole
 subject is built on. The centre shows one turn; the rail says where that turn sits
 in the thread, what the thread was allowed to look at, what it read, what steps it
@@ -204,5 +204,5 @@ dropped instead.
 
 **Nothing is derived that a person should set.** A question's status, a
 hypothesis's assessment, whether a finding is relevant — the rail shows counts
-beside all three and computes none of them, because a screen that showed a tally
+beside all three and computes none of them, because a category that showed a tally
 next to a judgment would invite the judgment to be read as the tally.

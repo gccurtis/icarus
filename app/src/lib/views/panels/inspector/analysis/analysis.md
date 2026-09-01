@@ -1,6 +1,6 @@
 # Analysis
 
-The inspector stack for the Analysis screen. Whatever is selected — in the
+The inspector stack for the Analysis category. Whatever is selected — in the
 builder, in the strip under the chart, or on the picture itself — gets a lens
 here, and together they answer one question in twenty-three shapes: what is this
 thing, what decides it, and where do I go to change it. The subject falls into
@@ -42,7 +42,7 @@ no heading either, because the title already names the analysis. The state and
 the revision are shown together: either alone says nothing about staleness.
 
 Nothing selected is a band, not a blank panel. An empty builder is the emptiest
-screen in the application, and without the sentence it offers no instruction at
+category in the application, and without the sentence it offers no instruction at
 all — so it says to drag a field from Variables onto X or Y, and to click a bar to
 see what is underneath it.
 
@@ -175,7 +175,7 @@ they are on Y.
 **Create join** appears because of what is on the other axis. Two variables in
 play is what makes a join necessary, so switching the source above opens or closes
 the band rather than leaving it standing there permanently as a modelling stage to
-get through — which is exactly the interface this screen exists to avoid. When
+get through — which is exactly the interface this category exists to avoid. When
 both axes read the same variable it says there is nothing to join and what would
 make a pairing appear. When they differ it names both variables, offers the
 pairing to match on and what to do with rows that do not match, reports how many
@@ -302,9 +302,9 @@ Removing leaves nothing to inspect, so the panel falls back to
 
 ## Variable
 
-A variable as the Analysis screen sees it: what is in it, how it lines up with the
+A variable as the Analysis category sees it: what is in it, how it lines up with the
 others, and where to put it. It drops the authoring detail a variable carries
-elsewhere — lookup key, order — and adds the one thing only this screen cares
+elsewhere — lookup key, order — and adds the one thing only this category cares
 about. Head: name, type, and a row count. Bands: the value itself, Relates to,
 Use.
 

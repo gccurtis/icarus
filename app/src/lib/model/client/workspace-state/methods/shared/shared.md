@@ -10,7 +10,7 @@ them and they preserve an invariant spanning both. Two are not methods at all.
 | [`apply.ts`](apply.ts) | One op, one effect — the only place an op becomes a change | `perform`, `undo`, `redo` |
 | [`perform.ts`](perform.ts) | Nothing changes without leaving a record | every mutator, `land-on` |
 | [`landing.ts`](landing.ts) | The `was` half of a landing is read the same way every time | `land-on`, `open` |
-| [`defaults.ts`](defaults.ts) | A screen is permanent or it is not, and every tab starts the same width | `close`, `target-key`, `mint-view`, `index.ts`, the definition's constructor |
+| [`defaults.ts`](defaults.ts) | A category is permanent or it is not, and every tab starts the same width | `close`, `target-key`, `mint-view`, `index.ts`, the definition's constructor |
 | [`rails.ts`](rails.ts) | The rail position is one this subscreen offers | `select-context`, `land-on`, `mint-view`, the definition's `context` getter, `index.ts` |
 | [`compose.ts`](compose.ts) | A record and a view are read as one tab, in one place | `open`, `reopen-closed`, the definition's four read getters |
 | [`land-on.ts`](land-on.ts) | A centre change takes its rail and its inspection with it | `show-subscreen`, `open` |
@@ -40,11 +40,11 @@ consumer.
 
 ## `defaults.ts` — what a tab starts as
 
-`SINGLETONS` names the screens that are one per project and always open, in the
+`SINGLETONS` names the categories that are one per project and always open, in the
 strip's order, which runs from the project outward: where you are, then what is
 working, then what it works from. Permanence is derived from that list rather
-than stored on a tab — `isSingleton(tab.screen)` — which removes the one place a
-boolean and a screen could disagree.
+than stored on a tab — `isSingleton(tab.category)` — which removes the one place a
+boolean and a category could disagree.
 
 `DEFAULT_FRAME` is where a tab's four panel numbers start, frozen so that a tab
 holding a reference rather than a copy fails loudly on the first drag.
@@ -52,7 +52,7 @@ holding a reference rather than a copy fails loudly on the first drag.
 Neither is representation. A row says what a tab *is*; these two say what a tab
 that does not exist yet *will be*, and no reader of a stored row consults either.
 
-**Preserves:** a permanent screen cannot be closed, and every tab is minted with
+**Preserves:** a permanent category cannot be closed, and every tab is minted with
 a complete frame.
 
 **Fails when:** nothing here throws. `close` is what refuses a singleton, using
@@ -62,10 +62,10 @@ the guard.
 
 ## `rails.ts` — the transcribed map
 
-`RAILS` says which context views a screen's rail offers, in order, and therefore
+`RAILS` says which context views a category's rail offers, in order, and therefore
 which one it opens on. **It is transcribed from
-`docs/screen-panel-views/screens/<screen>/overview.md`, not derived.** Each
-screen's "## Context panel" table is one row, in the table's order, and the first
+`docs/screen-panel-views/screens/<category>/overview.md`, not derived.** Each
+category's "## Context panel" table is one row, in the table's order, and the first
 entry is that subscreen's default. Nothing is inferred from the file tree,
 because a view can exist without a rail offering it — so a rail that disagrees
 with the specification is changed in the specification first and copied down here
@@ -82,7 +82,7 @@ its first entry, `undefined` only where the rail is empty. `offersContext` is th
 test a caller selecting a context owes.
 
 An overview leads every rail but two, and each of the two says something about its
-screen. A deck opens on its list of slides, because the slide you are on is the
+category. A deck opens on its list of slides, because the slide you are on is the
 orientation a deck has instead of a summary. The launcher has no overview view at
 all, since a blank tab has nothing to be an overview of.
 
@@ -112,15 +112,15 @@ would turn a question for the specification into a wrong answer nobody could see
 
 They fall into four groups, and only the last two are unresolved:
 
-**Views of a screen the shell has not got.** `overview.context` and the five
-`scope.*` views are a Context screen's rail, and there is no Context screen. They
-are files awaiting deletion, not rows awaiting a rail.
+**Views of a category the shell has not got.** `overview.context` and the five
+`scope.*` views are a Context category's rail, and there is no Context category.
+They are files awaiting deletion, not rows awaiting a rail.
 
-**Views their screen's rail does not offer.** The Overview rail carries four
+**Views their category's rail does not offer.** The Overview rail carries four
 entries, because resources, people, tasks and health each repeat a band already on
 the plane and a map that repeats the territory is not a map — so seven `project.*`
 views sit outside it. Four `analysis.*` and six `library.*` are outside their
-screens' rails for the same kind of reason. They are in the trees because nothing
+categories' rails for the same kind of reason. They are in the trees because nothing
 has deleted them. **The four `analysis.*` are the group worth a second look**: a
 chart being authored plausibly needs its fields and its formula in the rail, and
 the specification is where that is decided.
@@ -149,7 +149,7 @@ row to sit in.
 Two ways out, and neither is chosen here: the deck gains a second workspace file,
 which makes the layout a subscreen and its rail an ordinary row; or the rail is
 keyed on something other than a subscreen, which changes the shape of `RAILS` for
-every screen. The fourth member of the specification's layout rail,
+every category. The fourth member of the specification's layout rail,
 `project.variables`, is already reachable from the deck's main rail and is not
 affected either way.
 
@@ -256,13 +256,13 @@ export const landOn = (
 
 Putting a tab on a centre, with the three things that have to follow. Two public
 methods need it and neither may borrow the other: `showSubscreen` is a person
-moving inside a screen they are already on, and `open` is a target naming a
+moving inside a category they are already on, and `open` is a target naming a
 centre arriving at a tab that is already open. Same consequences, different
 question — and a second copy of them would be a second answer to "what happens to
 the rail when the centre changes", which is the kind of pair that drifts silently
 because both halves keep working.
 
-The three: **the rail follows**, because two centres of one screen frequently
+The three: **the rail follows**, because two centres of one category frequently
 offer disjoint rails and a remembered context that survives the move points the
 panel at a view the new rail does not offer. **The inspection clears**, because
 what was selected belongs to the centre the tab is leaving. **`focus` is
@@ -276,8 +276,8 @@ than in `showSubscreen` is why `open` inherits it for free.
 **Preserves:** a tab's `contextId` is one its current subscreen offers, and no
 inspection outlives the centre it was about.
 
-**Fails when:** the subscreen is not one of `SUBSCREENS[tab.screen]`. That is a
-caller naming a centre a screen has not got, which is a mistake rather than
+**Fails when:** the subscreen is not one of `SUBSCREENS[tab.category]`. That is a
+caller naming a centre a category has not got, which is a mistake rather than
 drift, so it throws where the two rail asymmetries fall back.
 
 **Touches state:** one view, through `tab-views` — the active tab's when
@@ -299,7 +299,7 @@ chosen here rather than left empty, because a tab with no context id would make
 every reader handle a state that exists for one tick.
 
 **A record is not minted here.** `tab-list.mint` does that, and it needs none of
-this: an id, a screen and a resource id are what a tab *is*, and everything
+this: an id, a category and a resource id are what a tab *is*, and everything
 chosen from a default is what it is *showing*.
 
 **The frame is copied, not shared.** `DEFAULT_FRAME` is frozen, and a tab holding
@@ -314,8 +314,8 @@ no optionality, so no read path reports a default it never stored — the rail
 position is one the subscreen offers, and no two tabs share a mutable value.
 
 **Fails when:** it does not — and `Subscreen` is not narrow enough to make that
-safe. It is the union of *every* screen's centres, so a target naming a centre
-its own screen has not got type-checks, and minting gives the tab that subscreen
+safe. It is the union of *every* category's centres, so a target naming a centre
+its own category has not got type-checks, and minting gives the tab that subscreen
 with no rail behind it. `landOn` refuses exactly this, which means `open` refuses
 it for a tab already open and accepts it for one it is about to mint. **The two
 branches of one method disagree**, and the check belongs here as well.
@@ -332,11 +332,11 @@ export const targetKey = (target: Target | Tab): string | undefined => ...;
 The whole definition of "already open". `open` calls it twice — once for the
 target and once per tab it compares against — and nothing else calls it, so there
 is one answer to a question three surfaces ask. A second definition anywhere would
-be a second answer, and the two would disagree the first time a screen gained an
+be a second answer, and the two would disagree the first time a category gained an
 identity.
 
-Three cases, and the third is the interesting one. A permanent screen is one per
-project, so its screen is the whole key. A tab that is *for* something is keyed by
+Three cases, and the third is the interesting one. A permanent category is one per
+project, so its category is the whole key. A tab that is *for* something is keyed by
 what it is for, so two documents are two tabs, two research threads are two tabs,
 and one of either reached from a mention, from the work table and from a search is
 one tab, in the state the person left it. A launcher — `new-tab`, which is neither
@@ -347,9 +347,9 @@ so it never dedupes: open five and get five, which is what a launcher is for.
 that have none.
 
 **Fails when:** it does not. `undefined` is an answer, not an error. A target on
-an identity-bearing screen that carries no `resourceId` therefore reads as a
+an identity-bearing category that carries no `resourceId` therefore reads as a
 launcher and mints every time, which is the one way a caller can turn a keyed
-screen into an unkeyed one.
+category into an unkeyed one.
 
 **Touches state:** none.
 
