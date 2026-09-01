@@ -1,0 +1,754 @@
+<title>View State Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+  :root {
+    --ground: #fbfcfd;
+    --raised: #f2f6f8;
+    --ink: #0e1720;
+    --ink-2: #35485a;
+    --muted: #5a6a78;
+    --rule: #dde4ea;
+    --rule-2: #c8d4dc;
+    --accent: #0a7b96;
+    --accent-ink: #02597a;
+    --accent-wash: #e6f2f6;
+    --new: #05702f;
+    --new-wash: #e4f3ea;
+    --gone: #8a3520;
+    --gone-wash: #f8eae6;
+
+    --measure: 68ch;
+    --band: 1080px;
+
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0b0f14;
+      --raised: #111820;
+      --ink: #dfe7ed;
+      --ink-2: #a8b8c4;
+      --muted: #7d8f9d;
+      --rule: #1c2731;
+      --rule-2: #2a3846;
+      --accent: #34a8cc;
+      --accent-ink: #6fc7e2;
+      --accent-wash: #0d2a35;
+      --new: #4fbe7e;
+      --new-wash: #0e2618;
+      --gone: #d98872;
+      --gone-wash: #2a1611;
+
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0b0f14;
+    --raised: #111820;
+    --ink: #dfe7ed;
+    --ink-2: #a8b8c4;
+    --muted: #7d8f9d;
+    --rule: #1c2731;
+    --rule-2: #2a3846;
+    --accent: #34a8cc;
+    --accent-ink: #6fc7e2;
+    --accent-wash: #0d2a35;
+    --new: #4fbe7e;
+    --new-wash: #0e2618;
+    --gone: #d98872;
+    --gone-wash: #2a1611;
+
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: var(--band);
+    margin: 0 auto;
+    padding: 4rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+  }
+
+  /* ---------------------------------------------------------------- masthead */
+
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding-bottom: 2.25rem;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .kicker {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 {
+    font-family: Archivo, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    line-height: 1.02;
+    letter-spacing: -0.028em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    max-width: var(--measure);
+    font-size: 1.14rem;
+    color: var(--ink-2);
+    margin: 0;
+  }
+
+  /* ---------------------------------------------------------------- sections */
+
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .layer {
+    display: flex;
+    align-items: baseline;
+    gap: 0.85rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--rule-2);
+  }
+
+  .layer-tag {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ground);
+    background: var(--accent);
+    padding: 0.24em 0.6em;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  h2 {
+    font-family: Archivo, system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 1.62rem;
+    letter-spacing: -0.018em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: Archivo, system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 1.03rem;
+    letter-spacing: -0.006em;
+    margin: 0;
+  }
+
+  p {
+    max-width: var(--measure);
+    margin: 0;
+  }
+
+  .note {
+    font-size: 0.95rem;
+    color: var(--muted);
+    max-width: var(--measure);
+    margin: 0;
+  }
+
+  strong { font-weight: 600; }
+
+  /* -------------------------------------------------------------------- code */
+
+  pre {
+    margin: 0;
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 3px;
+    padding: 1.05rem 1.25rem;
+    overflow-x: auto;
+  }
+
+  code {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.83rem;
+    line-height: 1.72;
+    font-variant-ligatures: none;
+  }
+
+  p code, li code, td code, th code {
+    font-size: 0.86em;
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.08em 0.34em;
+  }
+
+  .k { color: var(--muted); }
+  .t { color: var(--accent-ink); font-weight: 500; }
+  .s { color: var(--new); }
+  .c { color: var(--muted); font-style: italic; }
+  .hl {
+    background: var(--accent-wash);
+    border-radius: 2px;
+    padding: 0.05em 0.2em;
+    margin: 0 -0.2em;
+  }
+
+  /* ------------------------------------------------------------------ tables */
+
+  .scroll { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Archivo, system-ui, sans-serif;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule-2);
+    padding: 0 1rem 0.55rem 0;
+    white-space: nowrap;
+  }
+
+  td {
+    border-bottom: 1px solid var(--rule);
+    padding: 0.6rem 1rem 0.6rem 0;
+    vertical-align: top;
+    color: var(--ink-2);
+  }
+
+  td:first-child { color: var(--ink); }
+  tr:last-child td { border-bottom: none; }
+
+  td code, th code { white-space: nowrap; }
+
+  /* ------------------------------------------------------------------- cards */
+
+  .pair {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 1.35rem;
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+  }
+
+  .card > pre {
+    background: var(--ground);
+    border-left-width: 1px;
+    border-left-color: var(--rule);
+  }
+
+  .card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    padding: 0.24em 0.55em;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  .chip.one { color: var(--accent-ink); background: var(--accent-wash); }
+  .chip.many { color: var(--new); background: var(--new-wash); }
+
+  .card p { font-size: 0.95rem; }
+
+  /* -------------------------------------------------------------------- graph */
+
+  .graph {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1rem;
+  }
+
+  .node {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.05rem;
+    border: 1px solid var(--rule-2);
+    border-radius: 4px;
+    background: var(--ground);
+  }
+
+  .node.hub {
+    border-color: var(--accent);
+    border-width: 2px;
+    background: var(--accent-wash);
+  }
+
+  .node-name {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .node-role {
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+
+  .node ul {
+    margin: 0;
+    padding-left: 1.05rem;
+    font-family: Archivo, system-ui, sans-serif;
+    font-size: 0.82rem;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+
+  /* ------------------------------------------------------------------ inverse */
+
+  .inverse td:nth-child(2),
+  .inverse td:nth-child(3) { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.78rem; }
+
+  .arrow { color: var(--accent); font-weight: 700; padding: 0 0.35rem; }
+
+  /* -------------------------------------------------------------------- flow */
+
+  ol.flow {
+    counter-reset: step;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    max-width: var(--measure);
+  }
+
+  ol.flow li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 1.9rem 1fr;
+    gap: 0.85rem;
+    align-items: start;
+  }
+
+  ol.flow li::before {
+    content: counter(step);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+    border: 1px solid var(--rule-2);
+    border-radius: 50%;
+    width: 1.6rem;
+    height: 1.6rem;
+    display: grid;
+    place-items: center;
+    margin-top: 0.18rem;
+  }
+
+  .closing {
+    border-top: 2px solid var(--ink);
+    padding-top: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  a { color: var(--accent-ink); }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 640px) {
+    .page { padding: 2.5rem 1.1rem 4rem; gap: 3rem; }
+    body { font-size: 16px; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="kicker">Icarus · representation + model/client</div>
+    <h1>View State Ledger</h1>
+    <p class="standfirst">
+      What is open, which tab is active, and what each one is showing — stored the
+      way a document is stored. One materialized row per person per project, and an
+      append-only history of change sets behind it. This is the finished shape.
+    </p>
+  </header>
+
+  <section>
+    <div class="layer">
+      <span class="layer-tag">At rest</span>
+      <h2>Two tables</h2>
+    </div>
+
+    <p>
+      Both are keyed by <strong>the person and the project</strong>. View state is
+      already per-project — a user with two projects open has two independent sets
+      of tabs — so <code>userId</code> and <code>projectId</code> together identify
+      a row, and every row in either table carries both.
+    </p>
+
+    <div class="pair">
+      <div class="card">
+        <div class="card-head">
+          <h3><code>viewSnapshots</code></h3>
+          <span class="chip one">One row per key</span>
+        </div>
+        <p>The materialized state. Replaced in place on every accepted change set.</p>
+<pre><code><span class="k">type</span> <span class="t">ViewSnapshotFields</span> = {
+  <span class="hl">projectId: <span class="t">Id</span>&lt;<span class="s">"projects"</span>&gt;;</span>
+  <span class="hl">userId:    <span class="t">Id</span>&lt;<span class="s">"users"</span>&gt;;</span>
+  revision:  <span class="t">number</span>;
+  tabs:      <span class="t">TabRecord</span>[];
+  activeId:  <span class="t">TabId</span>;
+  views:     <span class="t">Record</span>&lt;<span class="t">TabId</span>, <span class="t">TabView</span>&gt;;
+  at:        <span class="t">number</span>;
+};</code></pre>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3><code>viewRevisions</code></h3>
+          <span class="chip many">Append only</span>
+        </div>
+        <p>The history. One row per accepted change set, never rewritten.</p>
+<pre><code><span class="k">type</span> <span class="t">ViewRevisionFields</span> = {
+  <span class="hl">projectId:    <span class="t">Id</span>&lt;<span class="s">"projects"</span>&gt;;</span>
+  <span class="hl">userId:       <span class="t">Id</span>&lt;<span class="s">"users"</span>&gt;;</span>
+  revision:     <span class="t">number</span>;
+  baseRevision: <span class="t">number</span>;
+  ops:          <span class="t">ViewOp</span>[];
+  at:           <span class="t">number</span>;
+};</code></pre>
+      </div>
+    </div>
+
+    <p class="note">
+      No <code>actor</code> — the row belongs to one person by construction. No
+      <code>touched</code> and no rebase: one writer per key means there is no
+      collision to detect. No <code>part</code> and no snapshot role: a view state
+      is small and whole, so it is never split across rows.
+    </p>
+
+    <h3>What sits inside a row</h3>
+<pre><code><span class="k">type</span> <span class="t">TabRecord</span> = { <span class="k">readonly</span> id: <span class="t">TabId</span>; <span class="k">readonly</span> screen: <span class="t">Screen</span>; <span class="k">readonly</span> resourceId?: <span class="t">string</span> };
+
+<span class="k">type</span> <span class="t">TabView</span> = {
+  subscreen:  <span class="t">Subscreen</span>;
+  focus:      <span class="t">string</span> | <span class="k">null</span>;
+  contextId:  <span class="t">ContextId</span> | <span class="k">null</span>;
+  inspected:  <span class="t">Inspected</span>;
+  selection:  <span class="t">Selection</span> | <span class="k">null</span>;
+  frame:      <span class="t">Frame</span>;
+};</code></pre>
+
+    <p class="note">
+      <code>null</code> rather than <code>undefined</code> everywhere in a stored
+      shape: these round-trip through JSON, and an absent key and a null are two
+      spellings of one state.
+    </p>
+  </section>
+
+  <section>
+    <div class="layer">
+      <span class="layer-tag">In flight</span>
+      <h2>Seven operations, each its own inverse</h2>
+    </div>
+
+    <p>
+      A revision is a numbered step; a change set is the ops that produced it. If
+      you open a tab and close it, the net effect is nothing — so the set, not the
+      op, is the unit that gets a revision number.
+    </p>
+
+<pre><code><span class="k">export type</span> <span class="t">ViewOp</span> =
+  | { op: <span class="s">"open"</span>;     tab: <span class="t">TabId</span>; at: <span class="t">number</span>; target: <span class="t">Target</span>; view: <span class="t">TabView</span> }
+  | { op: <span class="s">"close"</span>;    tab: <span class="t">TabId</span>; at: <span class="t">number</span>; target: <span class="t">Target</span>; view: <span class="t">TabView</span> }
+  | { op: <span class="s">"activate"</span>; was: <span class="t">TabId</span>; now: <span class="t">TabId</span> }
+  | { op: <span class="s">"land"</span>;     tab: <span class="t">TabId</span>; was: <span class="t">Landing</span>; now: <span class="t">Landing</span> }
+  | { op: <span class="s">"context"</span>;  tab: <span class="t">TabId</span>; was: <span class="t">ContextId</span> | <span class="k">null</span>; now: <span class="t">ContextId</span> | <span class="k">null</span> }
+  | { op: <span class="s">"inspect"</span>;  tab: <span class="t">TabId</span>; was: <span class="t">Inspected</span>; now: <span class="t">Inspected</span>;
+                       wasSelection: <span class="t">Selection</span> | <span class="k">null</span>; selection: <span class="t">Selection</span> | <span class="k">null</span> }
+  | { op: <span class="s">"resize"</span>;   tab: <span class="t">TabId</span>; was: <span class="t">Frame</span>; now: <span class="t">Frame</span> };</code></pre>
+
+    <div class="scroll">
+      <table class="inverse">
+        <thead>
+          <tr><th>Operation</th><th>What it does</th><th>Inverted by</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>open</code></td><td>mints a tab and its view</td><td><code>close</code>, same payload</td></tr>
+          <tr><td><code>close</code></td><td>removes both halves</td><td><code>open</code>, same payload</td></tr>
+          <tr><td><code>activate</code></td><td>moves the active tab</td><td>swap <code>was</code> <span class="arrow">⇄</span> <code>now</code></td></tr>
+          <tr><td><code>land</code></td><td>switches the centre, defaults the rail, clears the lens</td><td>swap the whole <code>Landing</code></td></tr>
+          <tr><td><code>context</code></td><td>moves the rail</td><td>swap <code>was</code> <span class="arrow">⇄</span> <code>now</code></td></tr>
+          <tr><td><code>inspect</code></td><td>points the inspector at something</td><td>swap both pairs</td></tr>
+          <tr><td><code>resize</code></td><td>drags a flank</td><td>swap <code>was</code> <span class="arrow">⇄</span> <code>now</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      <code>open</code> and <code>close</code> carry identical payloads on purpose,
+      which makes them exact mirrors — the same reason a resource <code>insert</code>
+      carries <code>ids</code> it does not need in order to apply. Everything else
+      carries <code>was</code> beside <code>now</code>. So inversion reads no state:
+    </p>
+
+<pre><code><span class="k">export const</span> invert = (op: <span class="t">ViewOp</span>): <span class="t">ViewOp</span> => {
+  <span class="k">switch</span> (op.op) {
+    <span class="k">case</span> <span class="s">"open"</span>:    <span class="k">return</span> { ...op, op: <span class="s">"close"</span> };
+    <span class="k">case</span> <span class="s">"close"</span>:   <span class="k">return</span> { ...op, op: <span class="s">"open"</span> };
+    <span class="k">case</span> <span class="s">"inspect"</span>: <span class="k">return</span> { ...op, was: op.now, now: op.was,
+                              wasSelection: op.selection, selection: op.wasSelection };
+    <span class="k">default</span>:        <span class="k">return</span> { ...op, was: op.now, now: op.was };
+  }
+};</code></pre>
+
+    <p class="note">
+      <code>land</code> carries a whole <code>Landing</code> on both sides because
+      landing on a subscreen writes five fields together — it defaults the rail when
+      the new subscreen does not offer the old one, and clears the inspector
+      unconditionally. Undoing it has to restore all five.
+    </p>
+  </section>
+
+  <section>
+    <div class="layer">
+      <span class="layer-tag">In memory</span>
+      <h2>Three objects where there is one</h2>
+    </div>
+
+    <p>
+      The seam is already written out six times in the current object — every method
+      that touches what a tab is showing opens with <code>const tab = state.active</code>,
+      and no list method touches anything but <code>activeId</code>.
+    </p>
+
+    <div class="graph">
+      <div class="node">
+        <div class="node-name">tab-list</div>
+        <div class="node-role">What exists, and in what order.</div>
+        <ul>
+          <li><code>TabRecord[]</code></li>
+          <li><code>activeId</code></li>
+          <li>add · remove · activate</li>
+        </ul>
+      </div>
+      <div class="node hub">
+        <div class="node-name">view-state</div>
+        <div class="node-role">Coordinator, log, undo. The only writer.</div>
+        <ul>
+          <li>composes <code>Tab</code></li>
+          <li>orders the calls</li>
+          <li>records every op</li>
+        </ul>
+      </div>
+      <div class="node">
+        <div class="node-name">tab-views</div>
+        <div class="node-role">What each tab is looking at.</div>
+        <ul>
+          <li><code>Map&lt;TabId, TabView&gt;</code></li>
+          <li>land · context · inspect</li>
+          <li>resize · forget</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>
+      A <code>Tab</code> is a composition rather than a record, which is what lets
+      the two halves be owned separately:
+    </p>
+
+<pre><code><span class="k">get</span> active(): <span class="t">Tab</span> {
+  <span class="k">const</span> record = <span class="k">this</span>.#tabs.active;
+  <span class="k">return</span> { ...record, ...<span class="k">this</span>.#views.of(record.id) };
+}</code></pre>
+
+    <p>
+      <strong>The public surface does not change.</strong> <code>ViewStateModel</code>
+      keeps every member it has today, the split sits entirely behind it, and
+      <code>provideViewState</code> still hands one object down the tree. No file
+      under <code>views/</code> is edited.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Object</th><th>Owns</th><th>Borrows</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>tab-list</code></td><td>the list, the order, which is active</td><td>nothing</td></tr>
+          <tr><td><code>tab-views</code></td><td>one <code>TabView</code> per tab id</td><td>nothing</td></tr>
+          <tr><td><code>view-state</code></td><td>the log, undo, the composition</td><td>both, plus configuration</td></tr>
+          <tr><td><code>commands</code></td><td>chords and enablement</td><td><code>view-state</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      Build order: configuration → tab-list → tab-views → view-state → commands.
+      Later, <code>tab-views</code> can split again into workspace, context and
+      inspection — each already owns a distinct key vocabulary. That split does not
+      change <code>view-state</code>, because the coordination it performs is
+      identical either way.
+    </p>
+  </section>
+
+  <section>
+    <div class="layer">
+      <span class="layer-tag">New behaviour</span>
+      <h2>The log, and what it replaces</h2>
+    </div>
+
+<pre><code><span class="k">interface</span> <span class="t">ViewStateModel</span> {
+  <span class="c">// … every existing member, unchanged …</span>
+
+  undo(): <span class="k">void</span>;
+  redo(): <span class="k">void</span>;
+  <span class="k">readonly</span> canUndo: <span class="t">boolean</span>;
+  <span class="k">readonly</span> canRedo: <span class="t">boolean</span>;
+}</code></pre>
+
+    <p>
+      Every mutator records the op it performed before returning. <code>undo</code>
+      pops the log, applies <code>invert(op)</code>, and pushes to <code>undone</code>;
+      <code>redo</code> walks it back the other way.
+    </p>
+
+    <p>
+      <strong>The closed queue disappears into the log.</strong> Today
+      <code>close</code> pushes a whole <code>Tab</code> into a ten-deep
+      <code>closed</code> array that exists only so a tab can be reopened — undo for
+      exactly one operation, special-cased. It becomes two readers of one structure:
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Call</th><th>Becomes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>reopenClosed()</code></td><td>invert the most recent <code>close</code> op</td></tr>
+          <tr><td><code>undo()</code></td><td>invert the most recent op of any kind</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      <code>state.closed</code>, the <code>QUEUE</code> constant and the
+      <code>closed</code> getter are all deleted.
+    </p>
+
+    <h3>Why one writer matters</h3>
+    <p>
+      The log is only complete if nothing else mutates. So writes go through
+      <code>view-state</code>; reads may go anywhere. That is why <code>commands</code>
+      takes <code>view-state</code> rather than reaching for <code>tab-list</code>
+      directly — a command that closes a tab has to leave a trace, and the day a
+      command inspects something it needs the same object anyway.
+    </p>
+  </section>
+
+  <section>
+    <div class="layer">
+      <span class="layer-tag">Across the wire</span>
+      <h2>Persistence, the same as everything else</h2>
+    </div>
+
+    <p>
+      A <code>view</code> capability with two procedures, each opening with
+      <code>requireScope()</code> — which already yields
+      <code>{ projectId, userId, username }</code>, so neither takes a key as an
+      argument and neither can be asked for somebody else's row.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Procedure</th><th>Does</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>readViewState</code></td><td>the <code>viewSnapshots</code> row for this scope, or nothing</td></tr>
+          <tr><td><code>submitViewChanges</code></td><td>append a <code>viewRevisions</code> row, replace the <code>viewSnapshots</code> row</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ol class="flow">
+      <li>The layout builds the client model. <code>view-state</code> reads its row and restores tabs, rails, lenses and widths.</li>
+      <li>No row means a first visit: it lands on the singletons, exactly as it does today.</li>
+      <li>Every gesture applies immediately and buffers its op. Nothing waits on the network.</li>
+      <li>Either threshold fires — op count or debounce, both read from configuration at construction — and the buffer folds into one change set.</li>
+      <li>The change set goes up, the revision advances, and the snapshot row is replaced.</li>
+      <li>A failed submit keeps the buffer and reports it. Unsent work is never dropped.</li>
+    </ol>
+
+    <p class="note">
+      Identical in shape to the three resource runtimes, minus what a single writer
+      makes unnecessary: no rebase ladder, no conflict, no <code>needs-review</code>.
+      Two people cannot both be editing one person's tab strip.
+    </p>
+  </section>
+
+  <section class="closing">
+    <h2>The check that means something</h2>
+    <p>
+      After the model split, <code>pnpm test</code> is unchanged and no file under
+      <code>views/</code> has been edited. The surface was supposed to stay fixed; if
+      a view had to change, it leaked.
+    </p>
+    <p class="note">
+      Then: open some tabs, drag a flank, point the inspector at something, reload —
+      and find it all where you left it.
+    </p>
+  </section>
+
+</div>
