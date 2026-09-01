@@ -26,3 +26,4 @@ representation:
     slide-decks: [content, core]
     spreadsheets: [content]
     templates: [content, core, documents, slide-decks, spreadsheets]
+    views: []
