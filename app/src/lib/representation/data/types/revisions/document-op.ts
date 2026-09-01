@@ -3,6 +3,8 @@ import type { After } from "$representation/data/types/revisions/op";
 /**
  * What a document is made of: rows, the blocks in them, and the atoms and marks
  * in those.
+ *
+ * An `insert` names its `ids` so its inverse can remove exactly those.
  */
 export type DocumentOp =
   | { op: "set"; target: "row" | "block" | "atom" | "mark"; path: string; value: unknown; was: unknown }
