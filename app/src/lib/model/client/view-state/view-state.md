@@ -109,8 +109,10 @@ Consumers own:
   minimum, a maximum and a collapse threshold
 - **Everything stored.** A tab is client state; a document, a person, a finding
   are rows, read with `useQuery`
-- **Runtime lifetime.** A live resource runtime belongs to
-  [the register](../resource-runtimes/resource-runtimes.md). Nothing here
+- **Runtime lifetime.** A live resource runtime belongs to the register for its
+  kind — [documents](../document-runtimes/document-runtimes.md),
+  [slide decks](../slide-deck-runtimes/slide-deck-runtimes.md) or
+  [spreadsheets](../spreadsheet-runtimes/spreadsheet-runtimes.md). Nothing here
   attaches or releases one
 
 ## A key is a path

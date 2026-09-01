@@ -2,7 +2,9 @@ import { browser } from "$app/environment";
 import { createCommands } from "$model/client/commands";
 import { createConfiguration } from "$model/client/configuration";
 import { createCopilot } from "$model/client/copilot";
-import { createResourceRuntimes } from "$model/client/resource-runtimes";
+import { createDocumentRuntimes } from "$model/client/document-runtimes";
+import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
+import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
 import { createBrowserStorage } from "$model/client/storage";
 import { createViewState } from "$model/client/view-state";
 import { createWorkbench } from "$model/client/workbench";
@@ -88,11 +90,14 @@ const buildClientModel = ({
   // rebuilt when persistence returns. See workbench/workbench.md.
   const store = storage ?? createBrowserStorage(project);
 
-  // Before the workbench, which borrows it: the workbench attaches a runtime
-  // when a resource tab opens and releases it when the last one closes.
-  const resourceRuntimes = createResourceRuntimes(settings);
+  // One register per editable resource. Each reads the same two flush
+  // thresholds off the published slice at construction, so a deployment that
+  // tunes one tunes all three.
+  const documentRuntimes = createDocumentRuntimes(settings);
+  const slideDeckRuntimes = createSlideDeckRuntimes(settings);
+  const spreadsheetRuntimes = createSpreadsheetRuntimes(settings);
 
-  const workbench = createWorkbench(resourceRuntimes);
+  const workbench = createWorkbench();
 
   // Borrows nothing: what is open is decided by the person, not by anything else
   // in the graph, so its position here is a reading order rather than a
@@ -104,7 +109,9 @@ const buildClientModel = ({
     viewState,
     configuration: settings,
     storage: store,
-    resourceRuntimes,
+    documentRuntimes,
+    slideDeckRuntimes,
+    spreadsheetRuntimes,
     workbench,
     commands: createCommands(workbench),
     copilot: createCopilot(workbench),
@@ -119,12 +126,13 @@ const buildClientModel = ({
      * one does not happen.
      */
     close: () => {
-      // The workbench first, so its tabs hand their runtimes back before the
-      // register disposes what is left. `closeAll` calls `releaseAll` itself;
-      // the second call is what covers a runtime attached without a tab, and it
-      // is a no-op when there is none.
+      // The workbench first, so its tabs hand their runtimes back before each
+      // register disposes what is left. The three calls after it cover a runtime
+      // attached without a tab, and are no-ops when there is none.
       workbench.closeAll();
-      resourceRuntimes.releaseAll();
+      documentRuntimes.releaseAll();
+      slideDeckRuntimes.releaseAll();
+      spreadsheetRuntimes.releaseAll();
     }
   };
 };

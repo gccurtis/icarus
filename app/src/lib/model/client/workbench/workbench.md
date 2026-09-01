@@ -20,7 +20,10 @@ inspector, and panel geometry. All three read and wrote the active tab, and bein
 handed a workbench at construction was the tell.
 
 **One thing folds back out.** A live resource runtime was a field on `Tab`, and
-it is [the register's](../resource-runtimes/resource-runtimes.md) now.
+it belongs to one of three registers now —
+[documents](../document-runtimes/document-runtimes.md),
+[slide decks](../slide-deck-runtimes/slide-deck-runtimes.md) and
+[spreadsheets](../spreadsheet-runtimes/spreadsheet-runtimes.md).
 
 ## Ownership Boundary
 
@@ -250,8 +253,8 @@ The visible consequence: a reload opens on the singletons.
 
 - Restorable typed state goes in `viewState`, written with
   `update(tab.id, kind, patch)`.
-- Editing a general resource means `workbench.runtimeFor(tab.id)`. A view never
-  touches [the register](../resource-runtimes/resource-runtimes.md) directly.
+- Editing a resource means `workbench.runtimeFor(tab.id)`. A view never touches
+  [a register](../document-runtimes/document-runtimes.md) directly.
 - Everything else reads a capability with `useQuery`. It is already a live
   subscription; do not wrap it.
 - Internal selection is view state, not a tab. An investigation, an analysis, a

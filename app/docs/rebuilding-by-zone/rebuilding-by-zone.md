@@ -40,7 +40,7 @@ and review pages. Those never called a mock capability and still compile.
 | --- | --- | --- | --- |
 | 1 | ~~tab-bar and status-bar~~ | `store` | Done. Both ask what the thing behind an id is called, and each reads it from the store itself. |
 | 2 | ~~the function builder~~ | none | Done. The builtins are a constant and the variables are a store read. Nothing imports `$modals`, so it renders nowhere yet. |
-| 3 | **the client models** | nothing | `$shared` and `$revisions` are not aliases. Not a capability question at all. |
+| 3 | **the client models** | nothing | `$shared` and `$revisions` are not aliases. Not a capability question at all. The resource runtimes are done; the workbench and the copilot are what is left. |
 | 4 | **the workspaces** | `project`, `library`, `resource`, `analysis`, `agents`, `research` | The work surface, and the point of the application. Nine of them, and three quarters of the remaining errors. |
 
 Steps 1 and 3 are what the application boots on. The status bar and the client
@@ -53,23 +53,31 @@ the top bar already compiles.
 
 ### Inside step 3
 
-Four specifiers, and only one of them is a missing module.
+Four specifiers when the step opened. One is gone, two are down to a single
+import each, and one is still a missing module.
 
 | specifier | imports | where it lives now |
 | --- | --- | --- |
-| `$revisions/types/op` | 11 | `$representation/data/types/revisions/change` |
-| `$revisions/types/resource` | 6 | the same file |
+| ~~`$revisions/types/op`~~ | 0 | three unions under `$representation/data/types/revisions/` |
+| `$revisions/types/resource` | 1 | `$representation/data/types/revisions/resource` |
 | `$shared/types/resource` | 1 | `$representation/data/types/core/resource` |
-| `$shared/types/resource-set-expression` | 11 | **nowhere** |
+| `$shared/types/resource-set-expression` | 10 | **nowhere** |
 
-The first three are import rewrites: the types survived the rebuild into
-`representation/` and the specifiers did not follow. The fourth gives the copilot
-`Selector`, `ResourceSetExpression` and `normalize`, and is recoverable from the
-commit before the six trees — written against Convex, so it is a port rather than
-a restore.
+`$revisions/types/op` went with `resource-runtimes`, which was rebuilt as three
+objects — one per editable resource, each naming its own op union directly. That
+is eleven files the compiler had never read, because the alias broke before they
+were written; they are typechecked and tested now.
 
-Two `.md` files still name the trees those aliases pointed at, which is what
-`method-tree-paths-resolve` has been reporting all along.
+**Two objects are left, and each is one problem.**
+
+The **workbench** brokers every runtime and still speaks the retired vocabulary:
+`attach(type, id)`, `ResourceRuntimesModel`, and the last import of
+`GeneralResourceType`. It is a rewrite of what a tab holds, not an import
+rewrite, which is why the split deliberately broke it rather than propping it up.
+
+The **copilot** needs `Selector`, `ResourceSetExpression` and `normalize`,
+recoverable from the commit before the six trees — written against Convex, so a
+port rather than a restore.
 
 ### Inside step 4
 

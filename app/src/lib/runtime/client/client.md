@@ -17,14 +17,20 @@ window later — and it owns one client model for its whole life.
 | [`workbench`](workbench/workbench.md) | What is open, which tab is active, and everything a tab holds, over the shell's own vocabulary | yes |
 | [`view-state`](view-state/view-state.md) | The same three questions over the four panel trees: what is open, which tab is active, and what is being looked at inside it | yes |
 | [`commands`](commands/commands.md) | Every argument-free action, the chords bound to them, and whether the bar is showing | yes |
-| [`resource-runtimes`](resource-runtimes/resource-runtimes.md) | One runtime per open resource: the unsent buffer, the submit protocol, the undo stack | yes |
+| [`document-runtimes`](document-runtimes/document-runtimes.md) | One runtime per open document: the unsent buffer, the submit protocol, the undo stack | yes |
+| [`slide-deck-runtimes`](slide-deck-runtimes/slide-deck-runtimes.md) | The same, for one deck | yes |
+| [`spreadsheet-runtimes`](spreadsheet-runtimes/spreadsheet-runtimes.md) | The same, for one sheet | yes |
 | [`copilot`](copilot/copilot.md) | The message that has not been sent: its text, mode, addressee, scope and attachments | yes |
 
 In construction order, which is dependency order: configuration depends on
-nothing, the register is built before the workbench that borrows it, and commands
-and the copilot both close over the workbench. `view-state` borrows nothing at
-all, so its position in that sequence is a reading order rather than a
-constraint.
+nothing, the three registers read their flush thresholds off it, and commands and
+the copilot both close over the workbench. `view-state` borrows nothing at all,
+so its position in that sequence is a reading order rather than a constraint.
+
+**Three registers rather than one.** A generic one had to be written against a
+closed union of three resources, and the set of resources is neither three nor
+closed. Each of these is shaped to its own sync problem — see
+[document-runtimes.md](document-runtimes/document-runtimes.md).
 
 **Storage is built and read by nothing.** The workbench does not persist while
 its stored shape is unsettled — see
@@ -141,16 +147,16 @@ The composition root is a Svelte layout component, so release is `$effect`
 cleanup in that layout: an object exposing a terminal operation is closed there,
 in reverse dependency order, when the layout is destroyed.
 
-`ClientModel.close()` is that hook, and `resource-runtimes` is what brought it —
+`ClientModel.close()` is that hook, and the three registers are what brought it —
 a runtime holds a subscription and an unsent buffer, and both have to go
 somewhere deliberate when the tab does. It releases in reverse construction
 order.
 
 It is **synchronous**. A closing tab has almost no budget, and `releaseAll`
-submits every buffer without awaiting rather than serialising three round trips
-into a window that will not fit them. A submit that does not make it leaves its
-buffer intact and its runtime reporting the failure — see
-[resource-runtimes.md](resource-runtimes/resource-runtimes.md).
+submits every buffer without awaiting rather than serialising round trips into a
+window that will not fit them. A submit that does not make it leaves its buffer
+intact and its runtime reporting the failure — see
+[document-runtimes.md](document-runtimes/document-runtimes.md).
 
 ## What must never be written here
 

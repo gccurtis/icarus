@@ -1,7 +1,9 @@
 import type { CommandsModel } from "$model/client/commands";
 import type { ConfigurationModel, ConfigurationSnapshot } from "$model/client/configuration";
 import type { CopilotModel } from "$model/client/copilot";
-import type { ResourceRuntimesModel } from "$model/client/resource-runtimes";
+import type { DocumentRuntimesModel } from "$model/client/document-runtimes";
+import type { SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
+import type { SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtimes";
 import type { ClientStorage } from "$model/client/storage";
 import type { ViewStateModel } from "$model/client/view-state";
 import type { WorkbenchModel } from "$model/client/workbench";
@@ -51,7 +53,20 @@ export interface ClientModel {
   readonly project: string;
   readonly configuration: ConfigurationModel;
   readonly storage: ClientStorage;
-  readonly resourceRuntimes: ResourceRuntimesModel;
+
+  /**
+   * One register per editable resource, rather than one over all of them.
+   *
+   * A generic register had to be written against a closed union of three, and
+   * the set of resources is neither three nor closed — a chat is append-only and
+   * an analysis is computed, and neither is shaped around ops, snapshots and
+   * undo. Three objects can each answer their own sync problem; a fourth that
+   * needs a different answer gets to give one.
+   */
+  readonly documentRuntimes: DocumentRuntimesModel;
+  readonly slideDeckRuntimes: SlideDeckRuntimesModel;
+  readonly spreadsheetRuntimes: SpreadsheetRuntimesModel;
+
   readonly workbench: WorkbenchModel;
 
   /**
