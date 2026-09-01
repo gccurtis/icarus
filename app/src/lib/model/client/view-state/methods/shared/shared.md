@@ -2,79 +2,61 @@
 
 Lives at `methods/shared/shared.md`.
 
-Five modules. Three are methods promoted because a second public method needed
+Nine modules. Seven are methods promoted because a second public method needed
 them and they preserve an invariant spanning both. Two are not methods at all.
 
 | File | Invariant it preserves | Used by |
 | --- | --- | --- |
-| [`keys.ts`](keys.ts) | Every key names a file in the panel trees | `inspect`, `select-context`, `show-subscreen`, `showing`, `land-on`, `rails`, `types.ts`, `index.ts` |
-| [`rails.ts`](rails.ts) | The rail position is one this subscreen offers | `select-context`, `land-on`, `mint-tab`, the definition's `context` getter, `index.ts` |
+| [`apply.ts`](apply.ts) | One op, one effect — the only place an op becomes a change | `perform`, `undo`, `redo` |
+| [`perform.ts`](perform.ts) | Nothing changes without leaving a record | every mutator, `land-on` |
+| [`landing.ts`](landing.ts) | The `was` half of a landing is read the same way every time | `land-on`, `open` |
+| [`defaults.ts`](defaults.ts) | A screen is permanent or it is not, and every tab starts the same width | `close`, `target-key`, `mint-view`, `index.ts`, the definition's constructor |
+| [`rails.ts`](rails.ts) | The rail position is one this subscreen offers | `select-context`, `land-on`, `mint-view`, the definition's `context` getter, `index.ts` |
+| [`compose.ts`](compose.ts) | A record and a view are read as one tab, in one place | `open`, `reopen-closed`, the definition's four read getters |
 | [`land-on.ts`](land-on.ts) | A centre change takes its rail and its inspection with it | `show-subscreen`, `open` |
-| [`mint-tab.ts`](mint-tab.ts) | Every tab starts the same way | the definition's constructor, `open` |
+| [`mint-view.ts`](mint-view.ts) | Every tab starts the same way | the definition's constructor, `open` |
 | [`target-key.ts`](target-key.ts) | One definition of "already open" | `open` |
 
-## Why a vocabulary and a map live in `shared/`
+## Why a map and a set of defaults live in `shared/`
 
-`keys.ts` is **generated** and `rails.ts` is **transcribed**. Neither is a method,
-and both would read more naturally at the object root — which is exactly where
-neither can go: the standard admits only a document, an index, types, a definition
-and a constructor there, and `lint:model` enforces it.
+`rails.ts` is **transcribed** and `defaults.ts` is **decided**. Neither is a
+method, and both would read more naturally at the object root — which is exactly
+where neither can go: the standard admits only a document, an index, types, a
+definition and a constructor there, and `lint:model` enforces it.
 
 The model directory already covers this case. A module that is not a public
 method is still the execution behind the surface — "a codec, a wire format, a
 parser" — and the document beside it is where it names the caller it serves. That
-is what the table above is. The generator says the same in its own comment, at the
-line that decides where it writes.
+is what the table above is.
 
 Both are read by three or more methods and by the definition, so `shared/` is
 where they would land on the promotion rule anyway.
 
-## `keys.ts` — the generated vocabulary
+**The vocabulary is not here.** `Screen`, `Subscreen`, `ContextId` and
+`InspectionKey` are what a stored tab names, so they belong to the `views` domain
+under `representation/` — the unions in `data/types/views/`, their lists and
+guards in `data/behavior/views/`. This object imports them like any other
+consumer.
 
-```text
-pnpm view-state-keys
-pnpm view-state-keys -- --check
-```
+## `defaults.ts` — what a tab starts as
 
-A key is a path. `context/project/variables.svelte` is `"project.variables"`;
-`workspaces/agents/workspace-persona.svelte` is the `agents` screen's
-`"persona"`. Nothing outside the four trees gets a vote, which is what makes a
-key naming no file a compile error rather than a blank panel. `--check` exits
-non-zero when the written file and the trees disagree, and that is the part worth
-running in CI.
+`SINGLETONS` names the screens that are one per project and always open, in the
+strip's order, which runs from the project outward: where you are, then what is
+working, then what it works from. Permanence is derived from that list rather
+than stored on a tab — `isSingleton(tab.screen)` — which removes the one place a
+boolean and a screen could disagree.
 
-It exports 92 `CONTEXT_IDS`, one `INSPECTION_KEY` for every file under
-`inspector/`, 9 `SCREENS`, and `SUBSCREENS` — 13 centres across those screens,
-with the `workspace-` prefix stripped, so a screen with one centre has the single
-subscreen `workspace`.
+`DEFAULT_FRAME` is where a tab's four panel numbers start, frozen so that a tab
+holding a reference rather than a copy fails loudly on the first drag.
 
-**The lens count is deliberately not written here.** `inspector/` is the tree
-still being filled in, so a number in this document would be wrong more often
-than right; `--check` is the thing that knows it.
+Neither is representation. A row says what a tab *is*; these two say what a tab
+that does not exist yet *will be*, and no reader of a stored row consults either.
 
-**Two screens have more than one centre**, and they are the two where the list and
-the thing are different places: Agents, whose library, persona, task and
-automation views are four unrelated layouts, and Templates, whose library is a
-folder structure holding templates from outside the project. Everywhere else the
-list is a rail entry, because choosing which thread to read or which analysis to
-open is navigation and navigation belongs in the map.
+**Preserves:** a permanent screen cannot be closed, and every tab is minted with
+a complete frame.
 
-**`"empty"` is deliberately absent.** Nothing being inspected is a state of the
-model rather than a file in the tree, so it belongs to the hand-written
-`Inspected` in [`../../types.ts`](../../types.ts) that unions the two.
-
-`SUBSCREENS` is `as const satisfies Record<Screen, readonly string[]>` rather than
-a plain annotation: the members stay literal, because `Subscreen` is read back off
-the table, while a screen missing from it still fails to compile. That literalness
-is why `land-on` widens its lookup to `readonly string[]` before calling
-`includes` — narrowed, `includes` would refuse the screen-spanning union the
-method takes, which is the question being asked rather than an error.
-
-**Preserves:** every key any method accepts names a file that exists.
-
-**Fails when:** nothing here throws — it is data plus three narrowings.
-`isContextId`, `isInspectionKey` and `isScreen` are what a method calls to refuse
-a string, and the build-time failure is `--check`.
+**Fails when:** nothing here throws. `close` is what refuses a singleton, using
+the guard.
 
 **Touches state:** none.
 
@@ -111,7 +93,7 @@ list of every other one would be the map arriving before the territory.
 which is a thing you do after this one.
 
 **Preserves:** a tab's `contextId` is one its current subscreen offers, or that
-subscreen's default. `mint-tab` establishes it, `land-on` restores it after a
+subscreen's default. `mint-view` establishes it, `land-on` restores it after a
 centre change, `select-context` refuses to break it, and the `context` getter falls
 back if it has drifted anyway.
 
@@ -152,7 +134,7 @@ nothing to hang them on. `workspaces/slide-deck-editor/` holds one
 `workspace.svelte`, so `SUBSCREENS["slide-deck-editor"]` is `["workspace"]`, and
 editing a layout is a prop on that one centre rather than a state the rail can be
 keyed on. The specification carries the rail; this map has no row for it, and
-`rails.ts` says so in a comment where the row would be.
+this document is where that is written down.
 
 **The specification is where this is unresolved, and it disagrees with itself.**
 `screens/slide-deck-editor/overview.md` opens by naming two subscreens — editing
@@ -171,10 +153,105 @@ every screen. The fourth member of the specification's layout rail,
 `project.variables`, is already reachable from the deck's main rail and is not
 affected either way.
 
+## `apply.ts` — one op, one effect
+
+```ts
+export const apply = (state: ViewStateData, op: ViewOp): void => ...;
+```
+
+The only place a `ViewOp` becomes a change to `tab-list` or `tab-views`. Seven
+arms, one per member of the union, and each is the smallest write that member
+describes: `open` stores a view and inserts a record, `close` takes both out,
+and the other five write fields on one view.
+
+**It does not choose anything.** `open` does not activate the tab it adds and
+`close` does not pick a neighbour, because both of those are moves and a move is
+an `activate` op of its own. That is what makes `open` and `close` exact mirrors:
+an arm that reached for a neighbour would be an effect with nothing in the op to
+undo it from.
+
+**It does not record.** Applying and recording are separate because `undo` and
+`redo` need the first without the second — replaying history is not making
+history.
+
+**Preserves:** every op means one thing, wherever it came from — a gesture, an
+inversion, or a change set read back off the wire.
+
+**Fails when:** it does not, on its own. A `land` naming a tab with no view is
+`tab-views` refusing one call down.
+
+**Touches state:** both collaborators, and nothing else.
+
+## `perform.ts` — apply, and remember
+
+```ts
+export const perform = (state: ViewStateData, op: ViewOp): void => ...;
+```
+
+Apply the op, push it onto the log, and drop whatever was waiting to be redone.
+Every public mutator ends in exactly one or two of these, which is what makes the
+log complete: there is no other way to change a tab.
+
+**A new gesture drops the redo stack**, because the alternative is a redo that
+replays an op against a state it was never authored over.
+
+**Preserves:** the log is every change, in order.
+
+**Fails when:** it does not.
+
+**Touches state:** the log and the undone stack, plus whatever `apply` touches.
+
+## `landing.ts`
+
+```ts
+export const landing = (view: TabView): Landing => ...;
+```
+
+The five fields a landing writes, picked off a stored view. It exists because
+both halves of a `land` op are a whole `Landing` and the `was` half has to be a
+copy: `tab-views` replaces its entries rather than editing them, so a reference
+held across the write would still be the old value — but a `Pick` of the live
+object would be a shape nobody had decided on. This decides it, once.
+
+**Preserves:** `was` and `now` are the same shape, so inversion is a swap.
+
+**Fails when:** it does not.
+
+**Touches state:** none.
+
+## `compose.ts`
+
+```ts
+export const compose = (record: TabRecord, view: TabView): Tab => ...;
+```
+
+A `Tab` is not stored anywhere. It is a `TabRecord` from `tab-list` and a
+`TabView` from `tab-views` read together, and this is the one place they meet —
+four getters on the definition and two methods that return a tab all go through
+it, so there is a single answer to what a tab looks like from outside.
+
+**It is also where `null` becomes `undefined`.** A stored view spells "nothing"
+as `null`, because an absent JSON key and a null are two spellings of one state
+and a stored shape may have only one. The read surface spells it `undefined`,
+because that is what every consumer already narrows against. Translating in one
+function is what keeps the two conventions from meeting anywhere else.
+
+**Preserves:** one shape for a tab, wherever it is read from.
+
+**Fails when:** it does not. A missing view is `tab-views`' refusal, one call
+earlier.
+
+**Touches state:** none.
+
 ## `land-on.ts`
 
 ```ts
-export const landOn = (tab: Tab, subscreen: Subscreen, focus?: string): void => ...;
+export const landOn = (
+  state: ViewStateData,
+  record: TabRecord,
+  subscreen: Subscreen,
+  focus?: string
+): void => ...;
 ```
 
 Putting a tab on a centre, with the three things that have to follow. Two public
@@ -203,22 +280,27 @@ inspection outlives the centre it was about.
 caller naming a centre a screen has not got, which is a mistake rather than
 drift, so it throws where the two rail asymmetries fall back.
 
-**Touches state:** one tab, in place — the one it is handed, which is always the
-active one when `showSubscreen` calls it and the target's own tab when `open`
-does.
+**Touches state:** one view, through `tab-views` — the active tab's when
+`showSubscreen` calls it and the target's own when `open` does. It reads the
+held rail position first, which is why it takes the coordinator's state rather
+than a bare view.
 
-## `mint-tab.ts`
+## `mint-view.ts`
 
 ```ts
-export const mintTab = (id: TabId, target: Target): Tab => ...;
+export const mintView = (target: Target): TabView => ...;
 ```
 
-The only place a tab is minted: the definition's constructor calls it for the four
-permanent tabs and `open` calls it for everything else, so every tab in the
+The only place a view is minted: the definition's constructor calls it for the
+three permanent tabs and `open` calls it for everything else, so every tab in the
 application starts the same way. The subscreen defaults to the screen's own —
 `DEFAULT_SUBSCREEN`, which names it rather than deriving it — and the rail is
 chosen here rather than left empty, because a tab with no context id would make
 every reader handle a state that exists for one tick.
+
+**A record is not minted here.** `tab-list.mint` does that, and it needs none of
+this: an id, a screen and a resource id are what a tab *is*, and everything
+chosen from a default is what it is *showing*.
 
 **The frame is copied, not shared.** `DEFAULT_FRAME` is frozen, and a tab holding
 a reference to it would throw the first time anyone dragged an edge.
@@ -238,8 +320,8 @@ with no rail behind it. `landOn` refuses exactly this, which means `open` refuse
 it for a tab already open and accepts it for one it is about to mint. **The two
 branches of one method disagree**, and the check belongs here as well.
 
-**Touches state:** none — it computes a whole tab from its arguments, and the
-caller decides where it goes.
+**Touches state:** none — it computes a whole view from its arguments, and the
+caller decides which id it is stored under.
 
 ## `target-key.ts`
 
@@ -273,7 +355,8 @@ screen into an unkeyed one.
 
 ## Demotion
 
-`land-on`, `mint-tab` and `target-key` follow the ordinary rule: one that lost its
+`apply`, `perform`, `landing`, `compose`, `land-on`, `mint-view` and `target-key`
+follow the ordinary rule: one that lost its
 second caller would move back into the directory of the method that still uses
 it, or a later reader would take it for a rule when it is only history.
 `target-key` is already close to that line — `open` is its only caller — and it
@@ -285,6 +368,6 @@ it, so demoting it would mean inlining it into that method and leaving `open` to
 call across into `show-subscreen.ts` — a sibling method directory importing
 another, which is the one path this directory exists to prevent.
 
-`keys.ts` and `rails.ts` cannot be demoted. Neither is a method, and neither
-belongs under any one method's directory: a vocabulary with a single caller would
-still be the vocabulary, and the object root is closed to it.
+`defaults.ts` and `rails.ts` cannot be demoted. Neither is a method, and neither
+belongs under any one method's directory: a map with a single caller would still
+be the map, and the object root is closed to it.

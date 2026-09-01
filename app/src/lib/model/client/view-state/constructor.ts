@@ -1,16 +1,20 @@
+import type { ConfigurationModel } from "$model/client/configuration";
+import { requiredNumber } from "$model/client/configuration";
+import type { TabListModel } from "$model/client/tab-list";
+import type { TabViewsModel } from "$model/client/tab-views";
 import { ViewState } from "$model/client/view-state/definition.svelte";
 import type { ViewStateModel } from "$model/client/view-state/types";
 
-/**
- * Returns a fresh view state, with its seven permanent tabs already open.
- *
- * **It borrows nothing.** What is open and what is being looked at is decided by
- * the person, not by anything else in the graph — which is why this takes only
- * the project and why it can be built first. The copilot borrows *this*, not the
- * other way round.
- *
- * **It holds nothing releasable**, so a teardown passes it by. What is open is
- * not a resource; the resource runtimes behind a tab are, and they are a
- * different object with a different lifetime.
- */
-export const createViewState = (project: string): ViewStateModel => new ViewState(project);
+const FLUSH_AFTER_OPS = "views.changeSets.flushAfterOps";
+const FLUSH_AFTER_MS = "views.changeSets.flushAfterMs";
+
+export const createViewState = (
+  project: string,
+  tabs: TabListModel,
+  views: TabViewsModel,
+  configuration: ConfigurationModel
+): ViewStateModel =>
+  new ViewState(project, tabs, views, {
+    afterOps: requiredNumber(configuration, FLUSH_AFTER_OPS),
+    afterMs: requiredNumber(configuration, FLUSH_AFTER_MS)
+  });

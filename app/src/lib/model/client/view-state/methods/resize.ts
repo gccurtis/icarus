@@ -1,17 +1,10 @@
+import type { Frame } from "$representation/data/types/views/tab";
 import type { ViewStateData } from "$model/client/view-state/definition.svelte";
-import type { Frame } from "$model/client/view-state/types";
+import { perform } from "$model/client/view-state/methods/shared/perform";
 
-/**
- * Record a drag.
- *
- * **It cannot reach `contextId`**, and that is the point of it being its own
- * method over its own type: a drag can never move the rail and a rail click can
- * never resize a panel, structurally rather than by convention.
- *
- * The frame is replaced rather than mutated, so a reader holding the old one
- * sees a consistent set of four numbers rather than a half-applied drag.
- */
 export const resize = (state: ViewStateData, patch: Partial<Frame>): void => {
-  const tab = state.active;
-  tab.frame = { ...tab.frame, ...patch };
+  const id = state.tabs.activeId;
+  const was = state.views.of(id).frame;
+
+  perform(state, { op: "resize", tab: id, was, now: { ...was, ...patch } });
 };

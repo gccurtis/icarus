@@ -2,7 +2,7 @@
 
 Lives at `methods/methods.md`.
 
-`methods/` holds the execution behind the public surface. Ten methods and five
+`methods/` holds the execution behind the public surface. Twelve methods and nine
 shared modules, and every method is a free function taking `ViewStateData` first.
 
 ## Methods
@@ -11,14 +11,16 @@ shared modules, and every method is a free function taking `ViewStateData` first
 | ------ | ----- | -------- | ------ | ----------- |
 | `open` | file | [`open.ts`](open.ts) | mutator | Open a target, or move the tab already on it to what the target asked for |
 | `activate` | file | [`activate.ts`](activate.ts) | mutator | Move to a tab; an id naming none is ignored |
-| `close` | file | [`close.ts`](close.ts) | mutator | Remove a tab, push the whole thing on the reopen queue, activate its left neighbour |
-| `reopenClosed` | file | [`reopen-closed.ts`](reopen-closed.ts) | mutator | Put the most recently closed tab back, with the id and state it had |
+| `close` | file | [`close.ts`](close.ts) | mutator | Move to the left neighbour, then remove the tab and its view |
+| `reopenClosed` | file | [`reopen-closed.ts`](reopen-closed.ts) | mutator | Invert the most recent `close` that has not come back, and move to it |
 | `showSubscreen` | file | [`show-subscreen.ts`](show-subscreen.ts) | mutator | Switch the centre and say what it is about; the rail follows and the inspection clears |
 | `selectContext` | file | [`select-context.ts`](select-context.ts) | mutator | Move the rail to a view this subscreen offers |
 | `inspect` | file | [`inspect.ts`](inspect.ts) | mutator | Open a lens, and record what it is about |
 | `clear` | file | [`clear.ts`](clear.ts) | mutator | Nothing selected — the lens and the selection together |
 | `resize` | file | [`resize.ts`](resize.ts) | mutator | Replace the active tab's frame with a patched copy |
 | `showing` | file | [`showing.ts`](showing.ts) | accessor | Whether the active tab is on a given centre right now |
+| `undo` | file | [`undo.ts`](undo.ts) | mutator | Apply the inverse of the last op, and remember it for `redo` |
+| `redo` | file | [`redo.ts`](redo.ts) | mutator | Apply the last undone op again |
 
 `showing` is the only accessor in the set — it compares two fields and writes
 nothing. It has a file anyway, because the definition being one call per method
@@ -50,8 +52,8 @@ made wrong.
 
 ## Three fields name a subject, and no method blurs them
 
-`resourceId` is what a tab is *for*. Nothing writes it: `mintTab` sets it and it
-is `readonly` after, which is what makes two documents two tabs and one document
+`resourceId` is what a tab is *for*. Nothing writes it: `tab-list.mint` sets it
+and it is `readonly` after, which is what makes two documents two tabs and one document
 reached three ways one tab. Research is keyed the same way, so a thread is a tab.
 
 `focus` is what the centre is currently *about*, and `landOn` and `open` are the
@@ -63,8 +65,8 @@ are its writers. A persona is in focus while a tool in its list is selected.
 
 ## Shape
 
-Every one is a file. None owns supporting flow: the five things more than one of
-them needs are in [`shared/`](shared/shared.md), and nothing else in the object is
+Every one is a file. None owns supporting flow: the things more than one of them
+needs are in [`shared/`](shared/shared.md), and nothing else in the object is
 long enough to split.
 
 ## State Access
@@ -74,27 +76,34 @@ long enough to split.
 definition's import of these files from being a runtime cycle. Nothing here reads
 module scope, so two instances cannot interfere.
 
-Four methods write the instance's own fields — `tabs`, `activeId`, `closed` — and
-they are the four that change which tabs exist or which one is in front:
-`open`, `activate`, `close`, `reopenClosed`. Five write one tab, always
-`state.active`, and never reach for a tab by id. `showing` writes nothing at all.
-`nextId()` is the definition's and is called only through `open`.
+**No method here writes state directly.** Each one computes a `ViewOp` and hands
+it to [`perform`](shared/perform.ts), which applies it and appends it to the log.
+That is what makes the log complete: a method that wrote through to `tab-list` or
+`tab-views` would be a gesture with no record, and undo would step over it.
 
-That split is what makes "no method edits a tab the person is not looking at" a
-property of the directory rather than a convention: the second group has no way
-to name a tab that is not in front of them.
+`undo` and `redo` are the two exceptions, and deliberately so — they call
+[`apply`](shared/apply.ts) rather than `perform`, because replaying history is
+not making history.
+
+Six methods write one tab and reach for it as `state.tabs.activeId`, never by an
+id they were given, which is what makes "no method edits a tab the person is not
+looking at" a property of the directory rather than a convention.
 
 ## Shared Methods
 
-Five, and two of them are data rather than methods — see
+Nine, and two of them are data rather than methods — see
 [`shared/shared.md`](shared/shared.md).
 
 | File | Callers | Invariant |
 | --- | --- | --- |
-| `keys.ts` | `inspect`, `select-context`, `show-subscreen`, `showing`, `land-on`, `rails`, the types and the index | Every key names a file in the panel trees |
-| `rails.ts` | `select-context`, `land-on`, `mint-tab`, the definition's `context` getter | The rail position is one this subscreen offers |
+| `defaults.ts` | `close`, `target-key`, the constructor, `mint-view`, the index | A screen is permanent or it is not, and every tab starts the same width |
+| `apply.ts` | `perform`, `undo`, `redo` | One op, one effect — the only place an op becomes a change |
+| `perform.ts` | every mutator, `land-on` | Nothing changes without leaving a record |
+| `landing.ts` | `land-on`, `open` | The `was` half of a landing is read once, the same way every time |
+| `rails.ts` | `select-context`, `land-on`, `mint-view`, the definition's `context` getter | The rail position is one this subscreen offers |
+| `compose.ts` | `open`, `reopen-closed`, the definition's read getters | A record and a view are read as one tab, in one place |
 | `land-on.ts` | `show-subscreen`, `open` | A centre change takes its rail and its inspection with it |
-| `mint-tab.ts` | the constructor, `open` | Every tab starts the same way |
+| `mint-view.ts` | the constructor, `open` | Every tab starts the same way |
 | `target-key.ts` | `open` | One definition of "already open" |
 
 ## Two asymmetries that are deliberate
@@ -125,9 +134,9 @@ Four methods throw, and each rejects something a caller could not have meant:
 `showSubscreen` refuses inside `landOn` rather than in its own body, so `open`
 refuses the same thing for a target that names a centre on a tab that is already
 open. One rule, both ways in — which is the reason the module exists at all.
-`mintTab` is the gap in that: it is the branch of `open` that does not go through
-`landOn`, and [`shared/shared.md`](shared/shared.md) says so where the check
-belongs.
+`mintView` is the gap in that: it is the branch of `open` that does not go
+through `landOn`, and [`shared/shared.md`](shared/shared.md) says so where the
+check belongs.
 
 Two do not refuse, and for one reason between them: the argument is a tab id
 rather than a member of a vocabulary this object owns, so an unrecognised one is
@@ -143,12 +152,13 @@ the ordinary case.
 ```text
 1. Find the tab this is about — the active one, or the one the caller named
 2. Refuse what the vocabulary does not admit
-3. Assign; a whole value where the field is a record, so no reader sees half of one
+3. Read the `was` half off the tab, and hand `perform` a whole op
 ```
 
-Step three is why `resize` replaces the frame rather than mutating it, and why
-`close` reassigns `closed` rather than splicing it: a reader holding the old value
-sees a consistent set rather than a half-applied change.
+Step three is why `resize` carries a whole frame on both sides rather than the
+one edge that moved, and why `land` carries all five fields it writes: an op that
+recorded only the difference could not be inverted without reading the state it
+was inverting.
 
 Two paths do more than assign, and both for the same reason — state belonging to
 what the tab is leaving has to go with it. `landOn` resets the rail when the new

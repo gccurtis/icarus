@@ -326,8 +326,9 @@ export const MUTATIONS = [
         path: "src/lib/runtime/client/start.ts",
         edit: (text) =>
           text.replace(
-            "  const viewState = createViewState(project);",
-            "  const viewState = createViewState(project);\n  const probe = createViewState(project);\n  void probe;"
+            "  const viewState = createViewState(project, tabList, tabViews, settings);",
+            "  const viewState = createViewState(project, tabList, tabViews, settings);\n" +
+              "  const probe = createViewState(project, tabList, tabViews, settings);\n  void probe;"
           )
       }
     ]

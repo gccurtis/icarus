@@ -45,6 +45,8 @@
     configuration: data.configuration
   });
 
+  $effect(() => void model.viewState.restore());
+
   /**
    * The instance ends with the layout that owns it.
    *

@@ -11,47 +11,45 @@ it**, for the four panel trees: `context/` (92 views), `inspector/` (107 lenses,
 and the tree is still being filled in), `workspaces/` (13 centres over 9 screens)
 and `modals/`.
 
-One object, and the five shell surfaces are functions of it — the tab strip, the
+One surface, and the five shell surfaces are functions of it — the tab strip, the
 context panel, the centre, the inspector and the status bar own almost nothing
 between them and write back only through these methods. There is no event bus, no
 store subscription and no surface-to-surface communication: the state is `$state`
-and Svelte's reactivity is the whole delivery mechanism, and the case for that is
-set out in
-[the workbench design record](../../../../../../docs/client-model/workbench.md).
+and Svelte's reactivity is the whole delivery mechanism.
 
-## Why this is its own object and not a wider workbench
+## Three objects behind one surface
 
-The two answer the same three questions, and they cannot be one object because
-they disagree about what a key *is*. The workbench types a context id and an
-inspection key as a bare `string` — an opaque label it remembers per tab and
-never interprets, so the view that renders the rail decides what it means. This
-object types both as unions generated from the trees, which is what makes a key
-naming no file a compile error.
+The state itself is two halves that were written apart six times over before they
+were separated: every method that touched what a tab is *showing* opened with
+`const tab = state.active`, and no list method touched anything but `activeId`.
 
-One vocabulary cannot be both. Widening these back to `string` gives that up for
-every panel in the four trees; narrowing the workbench's is a rewrite of
-everything that reads it rather than an edit. So the workbench keeps what still
-speaks its own vocabulary — `commands`, `copilot`, and the stored shape in
-`storage` — and this holds the trees. [`ClientModel`](../types.ts) records the
-same division at the field.
+```text
+tab-list  ──────►  view-state  ◄──────  tab-views
+what exists        coordinator          what each tab
+the order          the composition      is looking at
+which is active    the only writer
+```
 
-**What the two share, deliberately:** permanent tabs that are one per project and
-always open; permanence derived rather than stored; one identity function
-deciding "already open"; the reopen queue holding whole tabs; the two asymmetries
-around the rail; the model holding values while views hold bounds; and no
-component type entering the model. These are the parts of the design that are
-about tabs rather than about vocabularies, and neither object has a reason to
-answer them differently.
+[`tab-list`](../tab-list/tab-list.md) holds `TabRecord`s — an id, a screen and
+the resource a tab is *for*. [`tab-views`](../tab-views/tab-views.md) holds one
+`TabView` per id, keyed by nothing else. Neither knows the other exists, and
+neither decides anything: `tab-views` writes the fields it is told to write, and
+the policy behind them — which rail a centre offers, what a landing clears, what
+a new tab starts as — is this object's.
 
-**What is particular to this one:** the subscreen, as a first-class part of what
-a tab is; a key vocabulary generated from the trees rather than hand-written in
-`views/`; the selection kept once, beside the inspection key rather than inside
-it; a tab that knows what its centre is *about*; and no persistence at all — this
-object takes no storage, so it has no `PERSISTED_FIELDS`.
+**A `Tab` is a composition rather than a record**, which is what lets the two
+halves be owned separately and what keeps this object's surface unchanged from
+when it was one class. `compose` is where the stored `null`s become the
+`undefined`s the view tree reads.
 
-## Four tabs are places, and everything else is a thing
+**The two collaborators are not fields on `ClientModel`.** Every other model
+object is; these two are handed to the constructor and never returned, because a
+view reaching `tabList.add(...)` through the graph would move a tab without going
+through here — and going through here is the whole point.
 
-The permanent tabs are Overview, Analysis, Templates and Agents. Each is somewhere
+## Three tabs are places, and everything else is a thing
+
+The permanent tabs are Overview, Agents and Templates. Each is somewhere
 the project's work of one kind is gathered, and somewhere you *return* to rather
 than arrive at. Not being on one *is* closing it, so `close` refuses them.
 
@@ -93,13 +91,19 @@ two questions, and each field answers one.
 
 View state owns:
 
-- What is open, in what order, and which one is active
-- Everything a tab carries: its screen and subscreen, the resource it is for, its
-  rail position, what its centre is about, its inspection, its selection and its
-  frame
-- The reopen queue
+- **The composition.** A `Tab` is a record and a view read together, and this is
+  the only place they meet
+- **Every write.** Both collaborators are private to it, so a tab changes here or
+  it does not change
+- **The log.** Every gesture is one or two `ViewOp`s, recorded before the method
+  returns, and undo is that log read backwards
 - **The rail map** — which context views each subscreen offers, and which one it
   opens on
+- **What a new tab starts as** — which screens are permanent, and the frame every
+  tab is minted with
+
+`tab-list` owns what exists, in what order, and which one is active. `tab-views`
+owns what each tab is looking at. Neither owns a decision.
 
 Consumers own:
 
@@ -117,13 +121,15 @@ Consumers own:
 
 ## A key is a path
 
-`"project.variables"` is `context/project/variables.svelte`.
-`"collaboration.person"` is `inspector/collaboration/person.svelte`. The `agents`
-screen's `"persona"` is `workspaces/agents/workspace-persona.svelte`.
+`"project.variables"` is the `project/variables` leaf of `context/`, and
+`"collaboration.person"` is `collaboration/person` under `inspector/`. The
+`agents` screen's `"persona"` is
+[`views/workspaces/agents/workspace-persona.svelte`](../../../views/workspaces/agents/workspace-persona.svelte).
 
-The vocabulary in [`methods/shared/keys.ts`](methods/shared/keys.ts) is
-**generated** from the trees by `pnpm view-state-keys`, and
-`pnpm view-state-keys -- --check` exits non-zero when the file and the trees
+The vocabulary is the `views` domain's, under `representation/`: the unions in
+`data/types/views/`, their lists and guards in `data/behavior/views/`. Screens
+are **generated** from the workspace tree by `pnpm screen-keys`, and
+`pnpm screen-keys -- --check` exits non-zero when the files and the tree
 disagree. A key that names nothing does not compile, and it cannot drift.
 
 `"empty"` is the one member that is not generated: nothing selected is a state
@@ -135,16 +141,46 @@ nothing more; what it is about lives in `selection`, once. A key that carried
 `{ blockId, from, to }` would be a second record of what the user has selected,
 beside the one already in view state, and two records of one thing disagree.
 
+## Every gesture is an operation
+
+A method here does not write state. It reads the `was` half off the tab, builds a
+`ViewOp`, and hands it to `perform`, which applies it and appends it to the log.
+Seven members cover everything a person can do to what is open, and every one
+carries both sides of what it changed — so `invert` is a payload swap that reads
+no state, and undo is an ordinary change rather than a rewind.
+
+**`open` and `close` are exact mirrors, and neither moves the cursor.** Opening a
+tab is `open` followed by `activate`; closing the active one is `activate`
+followed by `close`. Splitting the move out is what makes the pair invertible: a
+`close` that chose its own neighbour would be an effect with nothing in the op to
+undo it from, and the tab you were on before would be unrecoverable.
+
+**The reopen queue is gone.** `close` used to push a whole `Tab` onto a ten-deep
+array that existed so one operation could be undone, special-cased. Now
+`reopenClosed` and `undo` are two readers of one structure:
+
+| Call | Is |
+| --- | --- |
+| `reopenClosed()` | the most recent `close` with no later `open` for that tab, inverted |
+| `undo()` | the most recent op of any kind, inverted |
+
+Reopening is itself recorded, which is what makes "each close comes back once"
+true without a second list to cross off.
+
+**A new gesture drops the redo stack.** Replaying an op against a state it was
+never authored over is the one way this produces a tab nobody put there.
+
 ## Lifetime
 
 - **Instance:** one per client instance
 - **Constructed by:** `buildClientModel`
 - **Released by:** nothing — it holds nothing releasable
 
-**Nothing here is persisted.** The constructor takes only the project, so there
-is no restore path, no stored shape and no read that reports a default it never
-stored. The permanent tabs are built rather than restored, which is what
-makes "`activeId` names a real tab, always" an invariant rather than a hope.
+**Nothing here is persisted yet.** There is no restore path and no read that
+reports a default it never stored. The permanent tabs are built rather than
+restored, which is what makes "`activeId` names a real tab, always" an invariant
+rather than a hope. The stored shape now exists — the `views` domain's
+`viewSnapshots` and `viewRevisions` — and nothing writes to it.
 
 ## Public Methods
 
@@ -164,12 +200,14 @@ supporting flow. Every one is still a file.
 | `clear` | file | mutator | Nothing selected |
 | `resize` | file | mutator | Record a drag |
 | `showing` | file | accessor | Whether the active tab is on a given centre right now |
+| `undo` | file | mutator | Apply the inverse of the last op, and keep it for `redo` |
+| `redo` | file | mutator | Apply the last undone op again |
 
 A simple method has no document of its own.
 [`methods/methods.md`](methods/methods.md) lists them.
 
-`showing` is the only accessor among the ten, and it has a file like the rest of
-them: the definition being one call per method is what keeps that class readable,
+`showing` is the only accessor among the twelve, and it has a file like the rest
+of them: the definition being one call per method is what keeps that class readable,
 so a body doing its own work there would be the one place a reader has to stop.
 
 ## Exposed State
@@ -179,14 +217,15 @@ so a body doing its own work there would be the one place a reader has to stop.
 | `project` | `readonly string` | The project this instance acts on. Read from the route once |
 | `tabs` | `readonly Tab[]` | The permanent tabs first, then what the person opened, in their order |
 | `activeId` | `readonly TabId` | Which tab everything else is about |
-| `closed` | `readonly Tab[]` | The reopen queue, newest first, capped at ten. Whole tabs, not identities |
 | `active` | `readonly Tab` | Never undefined: a permanent tab cannot be closed, so one always remains |
 | `frame` | `readonly Frame` | The active tab's panel geometry — two widths, two collapse flags |
 | `context` | `readonly ContextId \| undefined` | The rail position, or this subscreen's default if it has drifted |
 | `inspected` | `readonly Inspected` | Which lens, or `"empty"` |
 | `selection` | `readonly Selection \| undefined` | What the lens is about |
+| `canUndo` | `readonly boolean` | Whether the log has anything in it |
+| `canRedo` | `readonly boolean` | Whether anything has been undone and not replaced |
 
-The last five read the active tab, so a tab switch changes all of them at once
+Five of these read the active tab, so a tab switch changes all of them at once
 and no surface has to be told.
 
 **`focus` is deliberately not promoted to the top level** the way `context` and
@@ -205,23 +244,30 @@ a DOM.
 ## Construction
 
 ```ts
-export const createViewState = (project: string): ViewStateModel => ...;
+export const createViewState = (
+  project: string,
+  tabs: TabListModel,
+  views: TabViewsModel
+): ViewStateModel => ...;
 ```
 
 Every call returns a fresh object, with its three permanent tabs already open —
-Overview, Templates and Agents. Ids are per instance and never
-persisted, so a counter on the instance is enough; nothing lives at module scope.
+Overview, Agents and Templates. Ids are per instance and never persisted, so a
+counter on `tab-list` is enough; nothing lives at module scope.
 
 | Dependency | Ownership | Usage |
 | ---------- | --------- | ----- |
-| — | — | None. It borrows no object |
+| `tabs` | BORROWED | What exists, in what order, and which one is active |
+| `views` | BORROWED | One `TabView` per tab id |
 
-**It borrows nothing**, and that is a statement about the graph rather than an
-omission: what is open and what is being looked at is decided by the person, not
-by anything else in the model, which is why this takes only the project. Its
-position in [`buildClientModel`](../constructor.ts) is therefore a reading order
-and not a constraint — it would be just as correct first. Every dependency runs
-the other way, from the objects that read a tab towards this one.
+Both are constructed by [`buildClientModel`](../../../runtime/client/start.ts)
+immediately above this one and handed in, because the model standard is that the
+runtime holds every instance. Neither is returned in the graph it builds: this
+object is the only reader either has.
+
+Nothing else in the model is borrowed. What is open and what is being looked at
+is decided by the person, so every other dependency runs the other way, from the
+objects that read a tab towards this one.
 
 ## Terminal Behaviour
 
@@ -244,7 +290,12 @@ different object with a different lifetime.
 - **`activeId` names a real tab, always.** The permanent tabs are built in the
   constructor and cannot be closed, so there is always something to fall back to.
 - **One identity function.** `targetKey` is the whole definition of "already
-  open", and `mintTab` is the only place a tab is minted.
+  open"; `tab-list.mint` is the only place a record is minted and `mintView` the
+  only place a view is.
+- **One writer.** Both collaborators are private, so nothing changes a tab
+  without passing through a method here — which is what makes the log complete.
+- **Every op is closed under inversion.** `invert` is a payload swap that reads
+  no state, so undo is an ordinary change rather than a rewind.
 - **Every key names a file.** The vocabulary is generated from the trees and
   `--check` fails when the two disagree.
 - **An inspection key never carries a payload.** The selection lives once, beside
@@ -279,7 +330,7 @@ one of its own; a panel with no provider gets one to itself.
 
 **That last clause is the whole reason it is context rather than
 `clientModel()`.** Every panel in the four trees renders on its own, and
-[`src/lib/independence.test.ts`](../../../independence.test.ts) proves it by
+[`src/test/independence.test.ts`](../../../../test/independence.test.ts) proves it by
 server-rendering each with nothing but a permissive prop bag. `clientModel()`
 refuses outside a browser and before the layout has run, so routing panels
 through it would end that for every one of them.
@@ -307,16 +358,20 @@ view-state/
 │   ├── open.ts · activate.ts · close.ts · reopen-closed.ts
 │   ├── show-subscreen.ts · select-context.ts · showing.ts
 │   ├── inspect.ts · clear.ts · resize.ts
+│   ├── undo.ts · redo.ts
 │   └── shared/
 │       ├── shared.md
-│       ├── keys.ts · rails.ts
-│       └── land-on.ts · mint-tab.ts · target-key.ts
-└── test/unit/view-state.test.ts
+│       ├── defaults.ts · rails.ts
+│       ├── apply.ts · perform.ts · landing.ts
+│       └── compose.ts · land-on.ts · mint-view.ts · target-key.ts
+└── test/unit/
+    ├── view-state.test.ts
+    └── invert.test.ts
 ```
 
-Two modules under `methods/shared/` are not methods: `keys.ts` is a generated
-vocabulary and `rails.ts` is a map transcribed from the specifications. Both sit
-there rather than at the object root because the root holds what this object
+Two modules under `methods/shared/` are not methods: `defaults.ts` says what a
+tab starts as and `rails.ts` is a map transcribed from the specifications. Both
+sit there rather than at the object root because the root holds what this object
 **is** — its document, its index, its types, its state and its constructor — and
 `lint:model` admits nothing else.
 [`methods/shared/shared.md`](methods/shared/shared.md) names the callers each

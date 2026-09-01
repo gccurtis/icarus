@@ -3,6 +3,9 @@ import { render } from "svelte/server";
 
 import ContextPanel from "$views/context-panel/context-panel.svelte";
 import Inspector from "$views/inspector/inspector.svelte";
+import { createConfiguration } from "$model/client/configuration";
+import { createTabList } from "$model/client/tab-list";
+import { createTabViews } from "$model/client/tab-views";
 import {
   CONTEXT_IDS,
   INSPECTION_KEYS,
@@ -29,6 +32,8 @@ import {
 const KEY = Symbol.for("icarus.view-state");
 const withModel = (model: unknown) => ({ context: new Map([[KEY, model]]) });
 
+const UNPERSISTED = { views: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } } };
+
 describe("every key the vocabulary declares reaches something", () => {
   it("renders a context for every entry of every rail", () => {
     const reached = new Set<string>();
@@ -36,7 +41,7 @@ describe("every key the vocabulary declares reaches something", () => {
     for (const screen of SCREENS) {
       for (const subscreen of SUBSCREENS[screen]) {
         for (const id of railFor(screen, subscreen)) {
-          const model = createViewState("probe");
+          const model = createViewState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
           model.open({ screen, subscreen });
           model.selectContext(id);
 
@@ -57,7 +62,7 @@ describe("every key the vocabulary declares reaches something", () => {
 
   it("renders a lens for every inspection key, about what was selected", () => {
     for (const key of INSPECTION_KEYS) {
-      const model = createViewState("probe");
+      const model = createViewState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
       model.inspect(key, { kind: "person", id: "mira", at: "C2" });
 
       const { body } = render(Inspector, withModel(model));

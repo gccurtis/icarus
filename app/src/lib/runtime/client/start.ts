@@ -6,6 +6,8 @@ import { createDocumentRuntimes } from "$model/client/document-runtimes";
 import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
 import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
 import { createBrowserStorage } from "$model/client/storage";
+import { createTabList } from "$model/client/tab-list";
+import { createTabViews } from "$model/client/tab-views";
 import { createViewState } from "$model/client/view-state";
 import type { ClientModel, ClientModelInput } from "$runtime/client/types";
 
@@ -29,37 +31,11 @@ export type {
   PersistedWorkbench
 } from "$model/client/storage";
 
-/**
- * How a client instance comes up: composed, held, handed out — in that order,
- * which is the order this file reads in.
- *
- * A client instance is one browser tab holding the application. The `/app` layout
- * persists, tabs are view state rather than route state, and views do not remount
- * on navigation. One instance, one graph, for that tab's whole life.
- *
- * See [`client.md`](client.md).
- */
-
-/**
- * Composes the graph, in dependency order. Holds nothing.
- *
- * Not exported: `initClientModel` is the only way to build one, and it returns
- * what it built, so a test that wants two graphs calls it twice and asserts on
- * the two values rather than on the instance. A second exported way to stand up
- * a graph is the one failure this file's shape exists to prevent, and exporting
- * it for tests would have been exactly that.
- *
- * Each object is reached through its own index rather than its constructor
- * module, so the set of objects the runtime knows about is the set of indexes it
- * imports.
- */
 const buildClientModel = ({
   project,
   configuration,
   storage
 }: ClientModelInput): ClientModel => {
-  // Configuration first: it depends on nothing, and objects built below it read
-  // their tuned values during their own construction.
   const settings = createConfiguration(configuration);
 
   const store = storage ?? createBrowserStorage(project);
@@ -68,7 +44,9 @@ const buildClientModel = ({
   const slideDeckRuntimes = createSlideDeckRuntimes(settings);
   const spreadsheetRuntimes = createSpreadsheetRuntimes(settings);
 
-  const viewState = createViewState(project);
+  const tabList = createTabList();
+  const tabViews = createTabViews();
+  const viewState = createViewState(project, tabList, tabViews, settings);
 
   return {
     project,
@@ -82,6 +60,7 @@ const buildClientModel = ({
     copilot: createCopilot(),
 
     close: () => {
+      void viewState.flush().catch(() => undefined);
       documentRuntimes.releaseAll();
       slideDeckRuntimes.releaseAll();
       spreadsheetRuntimes.releaseAll();
@@ -89,32 +68,11 @@ const buildClientModel = ({
   };
 };
 
-/**
- * The one graph, for this tab.
- *
- * Module state is safe here *because none of it is shared*. There is no second
- * person inside a tab to leak to, which is the whole reason a shape that would be
- * a defect on the server is correct in this file — and why no other module may
- * hold one.
- */
 let instance: ClientModel | undefined;
 
-/** Called once by the `/app` layout that owns this client instance. */
 export const initClientModel = (input: ClientModelInput): ClientModel =>
   (instance = buildClientModel(input));
 
-/**
- * The graph the layout built.
- *
- * Two refusals, because they are two different mistakes. Reaching this from a
- * server path is a category error — the graph belongs to a tab, and no amount of
- * waiting produces one. Reaching it in the browser before the layout ran is a
- * question of order.
- *
- * The `browser` guard is what makes this module safe to import from anywhere:
- * the client tree being browser-only becomes a fact about the code rather than a
- * consequence of `ssr = false` on a route, which someone could flip.
- */
 export const clientModel = (): ClientModel => {
   if (!browser) {
     throw new Error(

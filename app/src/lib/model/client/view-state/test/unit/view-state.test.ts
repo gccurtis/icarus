@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
+import { createConfiguration } from "$model/client/configuration";
+import { createTabList } from "$model/client/tab-list";
+import { createTabViews } from "$model/client/tab-views";
 import { createViewState } from "$model/client/view-state";
 import type {
   Inspected,
@@ -36,14 +39,17 @@ import {
  *
  * **Keys are read out of the generated vocabulary rather than typed out.** A
  * hard-coded key that later stops existing is a test that fails for the wrong
- * reason; the thing that should fail is `pnpm view-state-keys -- --check`.
+ * reason; the thing that should fail is `pnpm screen-keys -- --check`.
  *
  * **Agents is the screen with four centres and Templates the screen with two**,
  * so everything about moving between centres is written against one of those.
  * Every other screen has the single centre `workspace`, and a subject inside one
  * of those screens is a `focus` rather than a centre.
  */
-const viewState = (): ViewStateModel => createViewState("p1");
+const UNPERSISTED = { views: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } } };
+
+const viewState = (): ViewStateModel =>
+  createViewState("p1", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
 
 const document = (id: string): Target => ({ screen: "document-editor", resourceId: id });
 const thread = (id: string): Target => ({ screen: "research", resourceId: id });
@@ -374,7 +380,7 @@ test("closing a tab that is not there is a no-op", () => {
   assert.doesNotThrow(() => model.close("t999"));
 
   assert.equal(model.tabs.length, SINGLETONS.length);
-  assert.equal(model.closed.length, 0);
+  assert.equal(model.canUndo, false);
 });
 
 test("activeId names a real tab after every method, including after closing the active one", () => {
@@ -430,15 +436,16 @@ test("every permanent tab refuses to close", () => {
 
 // -------------------------------------------------------------------- reopen
 
-test("a closed tab goes onto the queue whole, not as an identity", () => {
+test("a closed tab comes back whole, not as an identity", () => {
   const model = viewState();
   const tab = model.open(document("k57"));
 
   model.close(tab.id);
+  const reopened = model.reopenClosed();
 
-  assert.equal(model.closed.length, 1);
-  assert.equal(model.closed[0].id, tab.id);
-  assert.equal(model.closed[0].resourceId, "k57");
+  assert.ok(reopened);
+  assert.equal(reopened.id, tab.id);
+  assert.equal(reopened.resourceId, "k57");
 });
 
 test("reopening restores the rail, the inspection and the widths — not just the screen", () => {
@@ -460,7 +467,7 @@ test("reopening restores the rail, the inspection and the widths — not just th
   assert.deepEqual(model.selection, selection);
   assert.equal(model.frame.contextWidth, 400);
   assert.equal(model.frame.inspectorCollapsed, true);
-  assert.equal(model.closed.length, 0);
+  assert.equal(model.reopenClosed(), undefined, "nothing else is waiting to come back");
 });
 
 test("a closed thread comes back as the same thread, with the subject it was on", () => {
@@ -486,7 +493,7 @@ test("a closed thread comes back as the same thread, with the subject it was on"
   assert.equal(model.tabs.filter((candidate) => candidate.screen === "research").length, 1);
 });
 
-test("the queue caps at ten and drops the oldest", () => {
+test("reopening walks back through every close, newest first", () => {
   const model = viewState();
 
   for (let i = 0; i < 12; i += 1) {
@@ -494,10 +501,11 @@ test("the queue caps at ten and drops the oldest", () => {
     model.close(tab.id);
   }
 
-  assert.equal(model.closed.length, 10);
-  assert.equal(model.closed[0].resourceId, "doc-11");
-  assert.equal(model.closed.at(-1)?.resourceId, "doc-2");
-  assert.equal(model.closed.some((tab) => tab.resourceId === "doc-0"), false);
+  const back = Array.from({ length: 12 }, () => model.reopenClosed()?.resourceId);
+
+  assert.equal(back[0], "doc-11");
+  assert.equal(back.at(-1), "doc-0");
+  assert.equal(model.reopenClosed(), undefined);
 });
 
 test("reopening with an empty queue is undefined, not a throw", () => {
@@ -811,4 +819,115 @@ test("two view states share nothing", () => {
   // has to hold is that the tabs are not the same objects.
   assert.equal(a.tabs[0].id, b.tabs[0].id);
   assert.notEqual(a.tabs[0], b.tabs[0]);
+});
+
+// ---------------------------------------------------------------- undo, redo
+
+test("nothing to undo, and nothing to redo, on a fresh model", () => {
+  const model = viewState();
+
+  assert.equal(model.canUndo, false);
+  assert.equal(model.canRedo, false);
+  assert.doesNotThrow(() => model.undo());
+  assert.doesNotThrow(() => model.redo());
+  assert.equal(model.tabs.length, SINGLETONS.length);
+});
+
+test("open, then close, then undo back to the starting state", () => {
+  const model = viewState();
+  const started = model.activeId;
+  const tab = model.open(document("k57"));
+
+  model.close(tab.id);
+  assert.equal(model.tabs.length, SINGLETONS.length);
+
+  model.undo();
+  assert.equal(model.tabs.length, SINGLETONS.length + 1, "the tab is back");
+
+  model.undo();
+  assert.equal(model.activeId, tab.id, "and so is the tab it was on");
+
+  model.undo();
+  model.undo();
+  assert.equal(model.tabs.length, SINGLETONS.length);
+  assert.equal(model.activeId, started);
+  assert.equal(model.canUndo, false);
+});
+
+test("redo walks the log forward again", () => {
+  const model = viewState();
+  const where = railFor("document-editor", "workspace")[3];
+  const tab = model.open(document("k57"));
+  model.selectContext(where);
+
+  model.undo();
+  assert.notEqual(model.context, where);
+  assert.equal(model.canRedo, true);
+
+  model.redo();
+  assert.equal(model.context, where);
+  assert.equal(model.canRedo, false);
+  assert.equal(model.activeId, tab.id);
+});
+
+test("a new gesture drops what was undone", () => {
+  const model = viewState();
+  model.open(document("k57"));
+  model.resize({ contextWidth: 400 });
+
+  model.undo();
+  assert.equal(model.canRedo, true);
+
+  model.resize({ contextWidth: 320 });
+
+  assert.equal(model.canRedo, false);
+  assert.equal(model.frame.contextWidth, 320);
+});
+
+test("undoing a landing restores all five fields it wrote", () => {
+  const model = viewState();
+  model.open({ screen: "agents" });
+  const where = railFor("agents", "library")[2];
+  model.selectContext(where);
+  model.inspect(lens, selection);
+
+  model.showSubscreen("persona", "pa-3");
+  assert.equal(model.active.subscreen, "persona");
+  assert.equal(model.inspected, "empty");
+
+  model.undo();
+
+  const back = model.active;
+  assert.equal(back.subscreen, "library");
+  assert.equal(back.focus, undefined);
+  assert.equal(model.context, where);
+  assert.equal(model.inspected, lens);
+  assert.deepEqual(model.selection, selection);
+});
+
+test("undoing a drag restores the whole frame, not the one edge that moved", () => {
+  const model = viewState();
+  model.open(document("k57"));
+  model.resize({ contextWidth: 400, inspectorCollapsed: true });
+
+  model.undo();
+
+  assert.deepEqual({ ...model.frame }, { ...DEFAULT_FRAME });
+});
+
+test("reopening is the most recent close inverted, and is itself undoable", () => {
+  const model = viewState();
+  const first = model.open(document("k57"));
+  const second = model.open(thread("th-1"));
+
+  model.close(first.id);
+  model.close(second.id);
+
+  assert.equal(model.reopenClosed()?.id, second.id, "newest first");
+  assert.equal(model.reopenClosed()?.id, first.id);
+  assert.equal(model.reopenClosed(), undefined, "each close comes back once");
+
+  model.undo();
+  model.undo();
+  assert.equal(model.tabs.some((tab) => tab.id === first.id), false);
 });

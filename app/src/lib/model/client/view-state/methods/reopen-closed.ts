@@ -1,19 +1,28 @@
+import { invert } from "$representation/data/behavior/views/invert";
+import type { ViewOp } from "$representation/data/types/views/op";
 import type { ViewStateData } from "$model/client/view-state/definition.svelte";
+import { perform } from "$model/client/view-state/methods/shared/perform";
 import type { Tab } from "$model/client/view-state/types";
 
-/**
- * Put back the most recently closed tab, with the state it had.
- *
- * The queue holds whole tabs, so this restores the rail position, the inspection
- * and the panel widths — not just the screen. The id comes back too, which is
- * why a reopen is a restoration rather than a new tab that happens to look alike.
- */
-export const reopenClosed = (state: ViewStateData): Tab | undefined => {
-  const [tab, ...rest] = state.closed;
-  if (!tab) return undefined;
+type Close = Extract<ViewOp, { op: "close" }>;
 
-  state.closed = rest;
-  state.tabs.push(tab);
-  state.activeId = tab.id;
-  return tab;
+const reopenable = (log: readonly ViewOp[]): Close | undefined => {
+  for (let at = log.length - 1; at >= 0; at -= 1) {
+    const op = log[at];
+    if (op.op !== "close") continue;
+    const back = log.slice(at + 1).some((later) => later.op === "open" && later.tab === op.tab);
+    if (!back) return op;
+  }
+  return undefined;
+};
+
+export const reopenClosed = (state: ViewStateData): Tab | undefined => {
+  const closed = reopenable(state.log);
+  if (closed === undefined) return undefined;
+
+  const was = state.tabs.activeId;
+  perform(state, invert(closed));
+  perform(state, { op: "activate", was, now: closed.tab });
+
+  return state.compose(closed.tab);
 };
