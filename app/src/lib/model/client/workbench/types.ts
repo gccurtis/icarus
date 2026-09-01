@@ -221,10 +221,6 @@ export const screenKindOf = (target: TabTarget): ScreenKind => {
  * Three surfaces that were separate objects fold in here: the context rail, the
  * inspector, and panel geometry. All three read and wrote the active tab, and
  * being handed a workbench at construction was the tell.
- *
- * One thing folds back out: a live resource runtime was a field on `Tab`, and it
- * belongs to [a register](../document-runtimes/document-runtimes.md) per
- * resource now.
  */
 export type WorkbenchModel = {
   /** Singletons first, then closable tabs in user order. */

@@ -27,23 +27,6 @@ refusal are this object's, and none of them is the editor's problem.
 `sync` is neither. It is a status for the strip at the bottom of the frame, kept
 separate from `body` so a save completing does not re-render a document.
 
-## Why one object per resource
-
-There are three of these — this, [slide decks](../slide-deck-runtimes/slide-deck-runtimes.md)
-and [spreadsheets](../spreadsheet-runtimes/spreadsheet-runtimes.md) — and they
-share no code. That is deliberate.
-
-One generic register over a closed union of three resources could tailor nothing
-to any of them, and the set of resources is neither three nor closed: a chat is
-append-only and an analysis is computed, and neither is shaped around ops,
-snapshots and undo. Three objects can each answer their own sync problem, and a
-fourth resource that needs a different answer gets to give one.
-
-The duplication is the price, and it is visible: `coalesce`, `invert` and the
-register are near-identical across the three today. They are already diverging —
-a spreadsheet has no `text` op, so its `invert` has four cases and its `coalesce`
-has nothing to say about atoms.
-
 ## Ownership Boundary
 
 Document runtimes own:

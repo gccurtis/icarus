@@ -3,15 +3,6 @@ import { test } from "vitest";
 import type { SpreadsheetOp } from "$representation/data/types/revisions/spreadsheet-op";
 import { invert, invertAll } from "$model/client/spreadsheet-runtimes/methods/history/invert";
 
-/**
- * Inversion is a swap of payload fields and nothing else — no path resolved, no
- * body read, no round trip. That property is what makes a client-side undo
- * possible at all, so these assertions are the ones that matter most in the
- * object.
- *
- * Four cases, where a document has five: a sheet has no `text` op.
- */
-
 test("a set exchanges value and was", () => {
   const op: SpreadsheetOp = { op: "set", target: "cell", path: "cells/#A1", value: 3, was: 1 };
 
@@ -19,16 +10,12 @@ test("a set exchanges value and was", () => {
 });
 
 test("clearing a cell is a set, and inverts like one", () => {
-  // A cell takes no insert and no remove: where it sits is which row and column
-  // it names, so clearing one writes an empty value rather than removing a slot.
   const op: SpreadsheetOp = { op: "set", target: "cell", path: "cells/#A1", value: null, was: 42 };
 
   assert.deepEqual(invert(op), { op: "set", target: "cell", path: "cells/#A1", value: 42, was: null });
 });
 
 test("an insert inverts to a remove naming the same ids", () => {
-  // Applying an insert does not need its ids; inverting one does. Without them
-  // an insert would be the one op with no inverse.
   const op: SpreadsheetOp = {
     op: "insert",
     target: "gridRow",
@@ -86,7 +73,6 @@ test("inverting twice returns the original", () => {
 });
 
 test("inverting never reads a value or resolves a path", () => {
-  // A payload the client could not possibly interpret still inverts.
   const op: SpreadsheetOp = {
     op: "set",
     target: "mark",
@@ -103,8 +89,6 @@ test("inverting never reads a value or resolves a path", () => {
 });
 
 test("a gesture is inverted in reverse order", () => {
-  // The ops applied in order, so undoing walks them backwards. Inverting each in
-  // place undoes a two-op gesture in the wrong order and lands somewhere else.
   const gesture: SpreadsheetOp[] = [
     { op: "set", target: "cell", path: "cells/#A1", value: 2, was: 1 },
     { op: "set", target: "cell", path: "cells/#A2", value: 20, was: 10 }

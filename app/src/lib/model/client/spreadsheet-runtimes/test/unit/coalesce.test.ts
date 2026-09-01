@@ -54,9 +54,6 @@ test("folds a run of sets on one path", () => {
 });
 
 test("keeps the last value and the FIRST was", () => {
-  // The asymmetry is the rule. `value` is where the run ended, `was` is where it
-  // started — keeping the later `was` would produce an op that inverts to an
-  // intermediate state the server never held.
   const folded = coalesce([cell("cells/#A1", 2, 1), cell("cells/#A1", 9, 2)]);
 
   assert.equal((folded[0] as Extract<SpreadsheetOp, { op: "set" }>).value, 9);
@@ -78,8 +75,6 @@ test("folds across an unrelated op between them", () => {
 });
 
 test("refuses to fold across an op on the same path", () => {
-  // Merging moves the later set earlier, which is only sound if nothing in
-  // between could have changed what it applies to.
   const ops = [rule("formatRules/#f1", 2, 1), insert("formatRules/#f1", "f2"), rule("formatRules/#f1", 3, 2)];
 
   assert.deepEqual(coalesce(ops), ops);
@@ -106,8 +101,6 @@ test("refuses to fold across an op on ground above it", () => {
 });
 
 test("compares path segments, not string prefixes", () => {
-  // `formatRules/#f1` must not be read as containing `formatRules/#f10`, which a
-  // bare startsWith would say it does.
   const ops = [
     rule("formatRules/#f1", 2, 1),
     insert("formatRules/#f10", "f11"),
@@ -120,9 +113,6 @@ test("compares path segments, not string prefixes", () => {
 });
 
 test("never folds moves, even two on one path", () => {
-  // Where a `text` op would sit in a document. Each move states its `after`
-  // against the order the one before it produced, so merging them means
-  // recomputing positions — the transform this design avoids.
   const ops: SpreadsheetOp[] = [moveRow("g3", "g1"), moveRow("g3", "g5")];
 
   assert.deepEqual(coalesce(ops), ops);

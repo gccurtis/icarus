@@ -27,24 +27,6 @@ refusal are this object's, and none of them is the editor's problem.
 `sync` is neither. It is a status for the strip at the bottom of the frame, kept
 separate from `body` so a save completing does not re-render a sheet.
 
-## Why one object per resource
-
-There are three of these — this, [documents](../document-runtimes/document-runtimes.md)
-and [slide decks](../slide-deck-runtimes/slide-deck-runtimes.md) — and they share
-no code. See [`document-runtimes.md`](../document-runtimes/document-runtimes.md)
-for why.
-
-**This object is where that pays already.** `SpreadsheetOp` has four members
-where the other two have five: a cell holds a value and an expression rather than
-atoms, so there is no `text` op. `invert` therefore has four cases, and
-`coalesce` has nothing to say about splicing offsets. A cell also takes only
-`set` — no insert, no remove, no move — because where a cell sits is which row
-and column it names, and clearing one writes an empty value rather than removing
-a slot.
-
-None of those is a shortcut. Each is a statement about spreadsheets that one
-shared union could not make.
-
 ## Ownership Boundary
 
 Spreadsheet runtimes own:

@@ -5,13 +5,6 @@ import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
 import type { DocumentRuntime } from "$model/client/document-runtimes";
 
-/**
- * One runtime: buffering, the flush schedule, and the history stacks.
- *
- * Thresholds are small here so the op-count path is reachable without writing
- * fifty ops into every test. `flushAfterMs` is exercised with fake timers,
- * because the debounce is the half of the schedule a count never reaches.
- */
 const runtimeFor = (afterOps = 3, afterMs = 2000): DocumentRuntime =>
   createDocumentRuntimes(
     createConfiguration({ revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs } } })
@@ -46,7 +39,6 @@ test("applying nothing does nothing", () => {
 });
 
 test("one apply is one undoable gesture, however many ops it carries", () => {
-  // What makes an undo undo a gesture rather than a keystroke.
   const runtime = runtimeFor();
 
   runtime.apply([set("r1", 1), set("r2", 2), set("r3", 3)]);
@@ -80,8 +72,6 @@ test("stopping submits on the clock", async () => {
 });
 
 test("the debounce measures from the last op, not the first", () => {
-  // Refreshed rather than left running, which is what makes the two thresholds
-  // mean different things instead of the clock always winning.
   const runtime = runtimeFor(50, 2000);
 
   runtime.apply([set("r1", 1)]);
@@ -113,8 +103,6 @@ test("flushing an empty buffer does nothing", async () => {
 });
 
 test("two flushes join rather than submitting twice", async () => {
-  // Two submits carrying half a buffer each against one base revision would have
-  // the second refused for a conflict it created itself.
   const runtime = runtimeFor();
   runtime.apply([set("r1", 1)]);
 
@@ -135,8 +123,6 @@ test("ops applied during a flush survive for the next one", async () => {
 });
 
 test("undo buffers the inverse without recording a new gesture", async () => {
-  // Recording it would make an undo undoable, and two undos in a row would flip
-  // between the same two states forever.
   const runtime = runtimeFor(50, 2000);
   runtime.apply([set("r1", 5)]);
   await runtime.flush();
@@ -166,8 +152,6 @@ test("undo then redo walks back and forward through the stacks", () => {
 });
 
 test("undo with nothing to undo is a no-op, not a throw", () => {
-  // canUndo is the question, and a UI that asked it first should not be the only
-  // thing standing between a keystroke and a throw.
   const runtime = runtimeFor();
 
   assert.doesNotThrow(() => runtime.undo());
@@ -176,7 +160,6 @@ test("undo with nothing to undo is a no-op, not a throw", () => {
 });
 
 test("a new edit clears the redo stack", () => {
-  // The branch a redo led to is unreachable once something else is applied.
   const runtime = runtimeFor(50, 2000);
   runtime.apply([set("r1", 1)]);
   runtime.undo();
@@ -197,8 +180,6 @@ test("undo survives a flush, because history is not the buffer", async () => {
 });
 
 test("sync says loading until something lands, and body stays undefined", () => {
-  // What a subscription that has not delivered yet looks like. The read is
-  // forward-declared, so this is the state a runtime opens in today.
   const runtime = runtimeFor();
 
   assert.equal(runtime.sync, "loading");

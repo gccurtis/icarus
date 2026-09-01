@@ -27,18 +27,6 @@ refusal are this object's, and none of them is the editor's problem.
 `sync` is neither. It is a status for the strip at the bottom of the frame, kept
 separate from `body` so a save completing does not re-render a deck.
 
-## Why one object per resource
-
-There are three of these — this, [documents](../document-runtimes/document-runtimes.md)
-and [spreadsheets](../spreadsheet-runtimes/spreadsheet-runtimes.md) — and they
-share no code. See [`document-runtimes.md`](../document-runtimes/document-runtimes.md)
-for why.
-
-What a deck asks for that a document does not is already visible in its
-vocabulary: `SlideDeckOp` names slides, elements and sections alongside the
-blocks, atoms and marks a document has, because an element holds content and a
-section names a run of slides.
-
 ## Ownership Boundary
 
 Slide deck runtimes own:

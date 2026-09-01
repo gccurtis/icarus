@@ -3,13 +3,6 @@ import { test } from "vitest";
 import type { DocumentOp } from "$representation/data/types/revisions/document-op";
 import { invert, invertAll } from "$model/client/document-runtimes/methods/history/invert";
 
-/**
- * Inversion is a swap of payload fields and nothing else — no path resolved, no
- * body read, no round trip. That property is what makes a client-side undo
- * possible at all, so these assertions are the ones that matter most in the
- * object.
- */
-
 test("a set exchanges value and was", () => {
   const op: DocumentOp = { op: "set", target: "row", path: "rows/#r1", value: 3, was: 1 };
 
@@ -17,8 +10,6 @@ test("a set exchanges value and was", () => {
 });
 
 test("an insert inverts to a remove naming the same ids", () => {
-  // Applying an insert does not need its ids; inverting one does. Without them
-  // an insert would be the one op with no inverse.
   const op: DocumentOp = {
     op: "insert",
     target: "row",
@@ -58,8 +49,6 @@ test("a move exchanges after and wasAfter", () => {
 });
 
 test("a text op exchanges its two strings at the same offset", () => {
-  // After an edit at `at`, the text sitting there is `insert` — so undoing it
-  // removes `insert` and puts `remove` back. The offset does not move.
   const op: DocumentOp = {
     op: "text",
     target: "atom",
@@ -85,7 +74,6 @@ test("inverting twice returns the original", () => {
 });
 
 test("inverting never reads a value or resolves a path", () => {
-  // A payload the client could not possibly interpret still inverts.
   const op: DocumentOp = {
     op: "set",
     target: "mark",
@@ -102,8 +90,6 @@ test("inverting never reads a value or resolves a path", () => {
 });
 
 test("a gesture is inverted in reverse order", () => {
-  // The ops applied in order, so undoing walks them backwards. Inverting each in
-  // place undoes a two-op gesture in the wrong order and lands somewhere else.
   const gesture: DocumentOp[] = [
     { op: "set", target: "row", path: "rows/#first", value: 2, was: 1 },
     { op: "set", target: "row", path: "rows/#second", value: 20, was: 10 }

@@ -90,9 +90,6 @@ const buildClientModel = ({
   // rebuilt when persistence returns. See workbench/workbench.md.
   const store = storage ?? createBrowserStorage(project);
 
-  // One register per editable resource. Each reads the same two flush
-  // thresholds off the published slice at construction, so a deployment that
-  // tunes one tunes all three.
   const documentRuntimes = createDocumentRuntimes(settings);
   const slideDeckRuntimes = createSlideDeckRuntimes(settings);
   const spreadsheetRuntimes = createSpreadsheetRuntimes(settings);
@@ -126,9 +123,6 @@ const buildClientModel = ({
      * one does not happen.
      */
     close: () => {
-      // The workbench first, so its tabs hand their runtimes back before each
-      // register disposes what is left. The three calls after it cover a runtime
-      // attached without a tab, and are no-ops when there is none.
       workbench.closeAll();
       documentRuntimes.releaseAll();
       slideDeckRuntimes.releaseAll();

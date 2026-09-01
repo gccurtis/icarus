@@ -6,16 +6,6 @@ import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
 import { Runtime } from "$model/client/slide-deck-runtimes/definition.svelte";
 import { rebase } from "$model/client/slide-deck-runtimes/methods/flush/rebase";
 
-/**
- * Terminal behaviour, and the refusal path.
- *
- * These are the promises the object's document makes that a unit test of one
- * method cannot show: that disposal submits rather than discarding, that a
- * failed submit keeps the work, and that nothing leaks a timer.
- *
- * `rebase` is exercised directly. Nothing can produce a refusal until something
- * writes `slideDeckChangeSets`.
- */
 const register = (afterOps = 50, afterMs = 2000) =>
   createSlideDeckRuntimes(
     createConfiguration({ revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs } } })
@@ -33,7 +23,6 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 test("release submits what was buffered", async () => {
-  // Disposal is never a silent discard.
   const runtimes = register();
   const runtime = runtimes.attach("s1");
   runtime.apply([set("a", 1)]);
@@ -73,8 +62,6 @@ test("a released runtime leaves the register once its submit settles", async () 
 });
 
 test("release cancels the pending debounce rather than leaving a timer behind", async () => {
-  // A timer firing after release would flush a runtime the register has already
-  // let go of.
   const runtimes = register(50, 2000);
   const runtime = runtimes.attach("s1");
   runtime.apply([set("a", 1)]);
@@ -101,8 +88,6 @@ test("closing the client instance releases every runtime", async () => {
 });
 
 test("a refused change set goes back to the front of the buffer", () => {
-  // The refused ops happened first. A buffer that reordered them would submit a
-  // later edit as though it came earlier.
   const runtime = new Runtime("s1", { afterOps: 50, afterMs: 2000 });
   runtime.buffer = [set("typed-during-flight", 9)];
 
@@ -132,8 +117,6 @@ test("a refusal the ladder cannot resolve needs review, and keeps the work", () 
 });
 
 test("a runtime that cannot submit keeps reporting rather than disappearing", () => {
-  // Work disappearing is the one outcome with no recovery, so a failed submit
-  // holds its buffer and its id stays visible.
   const runtimes = register();
   const runtime = runtimes.attach("s1") as unknown as Runtime;
   runtime.apply([set("a", 1)]);

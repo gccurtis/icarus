@@ -54,15 +54,6 @@ export interface ClientModel {
   readonly configuration: ConfigurationModel;
   readonly storage: ClientStorage;
 
-  /**
-   * One register per editable resource, rather than one over all of them.
-   *
-   * A generic register had to be written against a closed union of three, and
-   * the set of resources is neither three nor closed — a chat is append-only and
-   * an analysis is computed, and neither is shaped around ops, snapshots and
-   * undo. Three objects can each answer their own sync problem; a fourth that
-   * needs a different answer gets to give one.
-   */
   readonly documentRuntimes: DocumentRuntimesModel;
   readonly slideDeckRuntimes: SlideDeckRuntimesModel;
   readonly spreadsheetRuntimes: SpreadsheetRuntimesModel;

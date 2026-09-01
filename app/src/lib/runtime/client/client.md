@@ -27,11 +27,6 @@ nothing, the three registers read their flush thresholds off it, and commands an
 the copilot both close over the workbench. `view-state` borrows nothing at all,
 so its position in that sequence is a reading order rather than a constraint.
 
-**Three registers rather than one.** A generic one had to be written against a
-closed union of three resources, and the set of resources is neither three nor
-closed. Each of these is shaped to its own sync problem — see
-[document-runtimes.md](document-runtimes/document-runtimes.md).
-
 **Storage is built and read by nothing.** The workbench does not persist while
 its stored shape is unsettled — see
 [workbench.md](workbench/workbench.md) — and storage holds exactly that one
@@ -152,11 +147,7 @@ a runtime holds a subscription and an unsent buffer, and both have to go
 somewhere deliberate when the tab does. It releases in reverse construction
 order.
 
-It is **synchronous**. A closing tab has almost no budget, and `releaseAll`
-submits every buffer without awaiting rather than serialising round trips into a
-window that will not fit them. A submit that does not make it leaves its buffer
-intact and its runtime reporting the failure — see
-[document-runtimes.md](document-runtimes/document-runtimes.md).
+It is **synchronous**.
 
 ## What must never be written here
 

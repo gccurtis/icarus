@@ -3,8 +3,6 @@ import type { After } from "$representation/data/types/revisions/op";
 /**
  * A deck is slides, the elements on them, and the sections that name runs of
  * slides. An element holds blocks, so it takes the content targets too.
- *
- * An `insert` names its `ids` so its inverse can remove exactly those.
  */
 type DeckTarget = "slide" | "element" | "section" | "block" | "atom" | "mark";
 

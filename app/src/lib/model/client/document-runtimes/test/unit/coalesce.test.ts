@@ -28,9 +28,6 @@ test("folds a run of sets on one path", () => {
 });
 
 test("keeps the last value and the FIRST was", () => {
-  // The asymmetry is the rule. `value` is where the run ended, `was` is where it
-  // started — keeping the later `was` would produce an op that inverts to an
-  // intermediate state the server never held.
   const folded = coalesce([set("rows/#r1", 2, 1), set("rows/#r1", 9, 2)]);
 
   assert.equal((folded[0] as Extract<DocumentOp, { op: "set" }>).value, 9);
@@ -52,8 +49,6 @@ test("folds across an unrelated op between them", () => {
 });
 
 test("refuses to fold across an op on the same path", () => {
-  // Merging moves the later set earlier, which is only sound if nothing in
-  // between could have changed what it applies to.
   const ops = [set("rows/#r1", 2, 1), insert("rows/#r1", "b2"), set("rows/#r1", 3, 2)];
 
   assert.deepEqual(coalesce(ops), ops);
@@ -76,8 +71,6 @@ test("refuses to fold across an op on ground above it", () => {
 });
 
 test("compares path segments, not string prefixes", () => {
-  // `rows/#r1` must not be read as containing `rows/#r10`, which a bare
-  // startsWith would say it does.
   const ops = [set("rows/#r1", 2, 1), insert("rows/#r10", "b2"), set("rows/#r1", 3, 2)];
   const folded = coalesce(ops);
 
@@ -86,8 +79,6 @@ test("compares path segments, not string prefixes", () => {
 });
 
 test("never folds text ops", () => {
-  // Their offsets are stated against the string each one produced, so merging
-  // them means recomputing offsets — the transform this design avoids.
   const ops: DocumentOp[] = [
     { op: "text", target: "atom", path: "rows/#r1/atoms/#a1", at: 0, insert: "a", remove: "" },
     { op: "text", target: "atom", path: "rows/#r1/atoms/#a1", at: 1, insert: "b", remove: "" }

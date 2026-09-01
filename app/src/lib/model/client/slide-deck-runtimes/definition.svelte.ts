@@ -15,49 +15,19 @@ import type {
   SyncState
 } from "$model/client/slide-deck-runtimes/types";
 
-/**
- * One open deck: the record, and the thin surface a view holds.
- *
- * **The fields are the state and the methods are one line each.** Every verb —
- * buffering, coalescing, submitting, inverting — is a free function in
- * `methods/` taking this instance. What is here is what cannot be a free
- * function: the `$state` declarations, which compile only in a `.svelte.ts`, and
- * the composition of two methods.
- *
- * A view never constructs one. `attach` returns it and the workbench is what
- * calls `attach`.
- */
 export class Runtime implements SlideDeckRuntime {
   readonly id: string;
 
-  /** Undefined only before the first read lands. */
   body = $state<SlideDeckBody | undefined>(undefined);
-  /** The revision every buffered op is authored against. */
   revision = $state(0);
   sync = $state<SyncState>("loading");
 
-  /**
-   * Unsent ops, in the order they were applied.
-   *
-   * `$state.raw` because it is replaced wholesale rather than mutated in place,
-   * and a deep proxy over every op in a fast-typing buffer costs more than the
-   * granularity would ever buy — nothing reads *into* an op here.
-   */
   buffer = $state.raw<readonly SlideDeckOp[]>([]);
-
-  /** One entry per gesture, which is what makes an undo undo a gesture. */
   undoStack = $state.raw<readonly HistoryEntry[]>([]);
   redoStack = $state.raw<readonly HistoryEntry[]>([]);
 
-  /** Whether a submit is outstanding. Reactive, because `flushing` projects it. */
   inFlight = $state(false);
 
-  /**
-   * The debounce, the subscription, and the submit in flight. None is read by
-   * anything reactive — `inFlight` above is what the projection watches, and
-   * this is the promise a second caller joins rather than starting a second
-   * submit.
-   */
   timer: ReturnType<typeof setTimeout> | undefined;
   unsubscribe: (() => void) | undefined;
   pendingFlush: Promise<void> | undefined;
@@ -81,11 +51,6 @@ export class Runtime implements SlideDeckRuntime {
     return this.redoStack.length > 0;
   }
 
-  /**
-   * Two calls, because scheduling is composition rather than a step of
-   * buffering: `apply` records the gesture and buffers it, and this decides
-   * whether that made a submit due.
-   */
   apply(ops: readonly SlideDeckOp[]): void {
     if (ops.length === 0) return;
 
@@ -97,12 +62,6 @@ export class Runtime implements SlideDeckRuntime {
     await flush(this);
   }
 
-  /**
-   * The inverted ops are buffered *without* being recorded, which is the whole
-   * difference between this and `apply`. Recording them would make an undo
-   * undoable, and two undos in a row would flip between the same two states
-   * forever instead of walking back through the history.
-   */
   undo(): void {
     const ops = undo(this);
     if (ops.length === 0) return;
@@ -119,13 +78,6 @@ export class Runtime implements SlideDeckRuntime {
     this.schedule();
   }
 
-  /**
-   * Submit once either threshold is reached, whichever comes first.
-   *
-   * The timer is refreshed rather than left running, so the wait is measured
-   * from the last op rather than the first. Typing continuously therefore
-   * submits on the op count, and stopping submits on the clock.
-   */
   schedule(): void {
     if (this.buffer.length >= this.thresholds.afterOps) {
       this.flushInBackground();
@@ -139,13 +91,6 @@ export class Runtime implements SlideDeckRuntime {
     }, this.thresholds.afterMs);
   }
 
-  /**
-   * A flush nobody is waiting on.
-   *
-   * The rejection is swallowed deliberately, and it is not swallowed silently:
-   * `flush` has already recorded the failure in `sync` and kept the buffer, so
-   * the strip reports it and the next flush retries it.
-   */
   flushInBackground(): void {
     void this.flush().catch(() => {});
   }
@@ -158,22 +103,6 @@ export class Runtime implements SlideDeckRuntime {
   }
 }
 
-/**
- * The register's state, and the only thing a register method is handed.
- *
- * **Two maps rather than one.** `release` submits what is buffered and detaches
- * immediately, but the id has to keep reporting until that submit settles — a
- * runtime that could not send the user's last edits is work disappearing. So a
- * released runtime moves to `settling` and is deleted when its submit finishes.
- *
- * Exactly-once falls out of the data rather than from a released-set: `release`
- * looks in `open`, and a second call finds nothing there.
- *
- * `SvelteMap` rather than `Map`, because `open` and `flushing` project the keys.
- * A plain map of reactive records tracks a field changing and *not* an entry
- * being added or deleted, so both projections would go stale exactly when a tab
- * opened or closed.
- */
 export class SlideDeckRuntimesState {
   readonly open = new SvelteMap<string, Runtime>();
   readonly settling = new SvelteMap<string, Runtime>();
@@ -184,25 +113,11 @@ export class SlideDeckRuntimesState {
     this.thresholds = thresholds;
   }
 
-  /**
-   * Mints a runtime.
-   *
-   * A factory here rather than in `attach` for one reason: `$state` compiles
-   * only in this file, so creating a reactive record is the one step that cannot
-   * be a plain function.
-   */
   createRuntime(id: string): Runtime {
     return new Runtime(id, this.thresholds);
   }
 }
 
-/**
- * `.svelte.ts` because the state above declares `$state`, and runes do not
- * compile in a plain `.ts`.
- *
- * Every body is one call except where two methods have to be composed, and
- * composing them is what a definition is for.
- */
 export class SlideDeckRuntimes implements SlideDeckRuntimesModel {
   readonly #state: SlideDeckRuntimesState;
 
@@ -233,18 +148,11 @@ export class SlideDeckRuntimes implements SlideDeckRuntimesModel {
     for (const detached of releaseAll(this.#state)) void this.#settle(detached);
   }
 
-  /**
-   * A detached runtime submits, and only then leaves the register.
-   *
-   * A submit that rejects or never settles leaves the id in `flushing`
-   * reporting its own failure, deliberately — see `SlideDeckRuntimesState`.
-   */
   async #settle(detached: Runtime): Promise<void> {
     try {
       await detached.flush();
     } catch {
-      // Recorded in `sync` and the buffer is intact. Rethrowing here would be an
-      // unhandled rejection from a tab close, which reaches nobody.
+      /* empty */
     }
 
     if (detached.sync !== "error" && detached.sync !== "needs-review") {
