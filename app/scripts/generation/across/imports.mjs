@@ -6,8 +6,8 @@
  *     pnpm imports -- --check
  *
  * The canonical spelling is the most specific alias whose target contains the
- * file: `src/lib/views/panels/x.svelte` is `$panels/x.svelte`, not
- * `$views/panels/x.svelte`.
+ * file: `src/lib/app-views/panels/x.svelte` is `$panels/x.svelte`, not
+ * `$app-views/panels/x.svelte`.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { relative, resolve, sep } from "node:path";

@@ -26,7 +26,9 @@ const CLIENT_FILENAMES = [/\.svelte$/, /\.svelte\.(ts|js)$/, /^hooks\.client\.ts
 /** Where a tree sits, for anything the filename did not already decide. */
 const BY_TREE = [
   [["components"], CLIENT],
-  [["views"], CLIENT],
+  [["surfaces"], CLIENT],
+  [["app-views"], CLIENT],
+  [["development-views"], CLIENT],
   [["model", "client"], CLIENT],
   [["model", "server"], SERVER],
   [["runtime", "client"], CLIENT],

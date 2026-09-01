@@ -193,7 +193,7 @@ if ((flag !== undefined && flag !== "--check") || rest.length > 0) {
   stopIfFailed();
 }
 
-const categories = categorySubscreens(requireTree(join(libRoot, "views", "workspaces")));
+const categories = categorySubscreens(requireTree(join(libRoot, "app-views", "workspaces")));
 stopIfFailed();
 
 const wanted = [

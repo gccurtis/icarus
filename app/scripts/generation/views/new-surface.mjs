@@ -22,8 +22,8 @@ requireKebab(name, "surface name", LINE);
 
 const lib = libRoot(import.meta.url);
 const root = flags.has("development")
-  ? join(lib, "views", "development", name)
-  : join(lib, "views", name);
+  ? join(lib, "development-views", name)
+  : join(lib, "surfaces", name);
 
 const plan = new Plan(join(lib, "..", ".."));
 

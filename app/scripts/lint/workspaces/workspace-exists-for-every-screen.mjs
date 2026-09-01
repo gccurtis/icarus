@@ -21,7 +21,7 @@ export default check({
     }
 
     const found = [];
-    const root = tree.path("views", "workspaces");
+    const root = tree.path("app-views", "workspaces");
 
     for (const category of categories) {
       for (const subscreen of subscreens.get(category) ?? []) {

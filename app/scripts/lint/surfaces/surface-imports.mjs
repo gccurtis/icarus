@@ -1,7 +1,7 @@
 import { join } from "node:path";
 
 import { check } from "../shared/check.mjs";
-import { surfaces, unitOf } from "../shared/trees.mjs";
+import { VIEW_TREES, surfaces, unitOf } from "../shared/trees.mjs";
 
 /** A surface is entered at its root component or its types, and nowhere else. */
 const isEntry = (tree, unit, target) =>
@@ -19,7 +19,7 @@ export default check({
     const units = surfaces(tree);
     const found = [];
 
-    for (const path of tree.under(tree.path("views"))) {
+    for (const path of VIEW_TREES.flatMap((name) => tree.under(tree.path(name)))) {
       if (!/\.(ts|js|svelte)$/.test(path)) continue;
       const self = unitOf(tree, units, path);
 

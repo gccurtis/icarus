@@ -17,7 +17,7 @@
     "lint:representation": "node scripts/lint.mjs representation",
     "lint:runtime": "node scripts/lint.mjs runtime",
     "lint:styles": "node scripts/lint.mjs styles",
-    "lint:views": "node scripts/lint.mjs views panels workspaces",
+    "lint:views": "node scripts/lint.mjs surfaces panels workspaces",
     "lint:across": "node scripts/lint.mjs across",
     "new-capability": "node scripts/generation/capabilities/new-capability.mjs",
     "new-procedure": "node scripts/generation/capabilities/new-procedure.mjs",

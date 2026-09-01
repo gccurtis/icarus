@@ -2,6 +2,7 @@ import ts from "typescript";
 import { parse as parseSvelte } from "svelte/compiler";
 
 import { check } from "../shared/check.mjs";
+import { VIEW_TREES } from "../shared/trees.mjs";
 
 /**
  * The script block, as TypeScript.
@@ -115,9 +116,9 @@ export default check({
   says: "A prop is a callback or an id, never the thing being displayed. Content arriving as a prop is content two surfaces can disagree about.",
   run(tree) {
     const found = [];
-    for (const path of tree.under(tree.path("views"))) {
+    for (const path of VIEW_TREES.flatMap((name) => tree.under(tree.path(name)))) {
       if (!path.endsWith(".svelte")) continue;
-      if (tree.within(tree.path("views", "development"), path)) continue;
+      if (tree.within(tree.path("development-views"), path)) continue;
 
       const script = scriptOf(tree, path);
       if (!script) continue;

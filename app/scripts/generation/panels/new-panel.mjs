@@ -28,7 +28,7 @@ const lib = libRoot(import.meta.url);
 const plan = new Plan(join(lib, "..", ".."));
 
 plan.create(
-  join(lib, "views", "panels", stack, subject, `${name}.svelte`),
+  join(lib, "app-views", "panels", stack, subject, `${name}.svelte`),
   `<script lang="ts">
   /**
    * ${subject}.${name}

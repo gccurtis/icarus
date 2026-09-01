@@ -20,7 +20,7 @@ import { MUTATIONS } from "./mutations.mjs";
 
 const TREES = [
   "capabilities", "components", "model", "representation", "runtime",
-  "styles", "views", "panels", "workspaces", "across"
+  "styles", "surfaces", "panels", "workspaces", "across"
 ];
 
 const lintRoot = new URL("../lint/", import.meta.url).pathname;

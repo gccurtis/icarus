@@ -6,7 +6,7 @@ import { PRIVATE, stylesRoot, tailwindCss } from "../shared/styles.mjs";
  * The palette page exists to show the palette, so it is the one surface that
  * reaches behind the boundary on purpose.
  */
-const DIAGNOSTIC = ["views", "development", "demo", "components", "palette.svelte"];
+const DIAGNOSTIC = ["development-views", "demo", "components", "palette.svelte"];
 
 const lineAt = (text, index) => text.slice(0, index).split("\n").length;
 

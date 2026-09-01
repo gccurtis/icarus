@@ -9,7 +9,7 @@ const REACHABLE = new Set([
   "development-components",
   "modals"
 ]);
-const AROUND_IT = new Set(["views", "workspaces"]);
+const AROUND_IT = new Set(["surfaces", "workspaces"]);
 const WORKSPACE_STATE = ["client", "workspace-state"];
 
 const isWorkspaceState = (segments) =>

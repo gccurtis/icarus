@@ -10,7 +10,9 @@ const isCapabilityIndex = (rest) =>
   rest.length === 0 || (rest.length === 1 && /^index(\.remote)?$/.test(rest[0]));
 
 const CLIENT_TREES = new Set([
-  "views",
+  "surfaces",
+  "app-views",
+  "development-views",
   "panels",
   "workspaces",
   "modals",

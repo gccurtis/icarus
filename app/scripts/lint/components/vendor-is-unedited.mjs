@@ -6,8 +6,8 @@ import { check } from "../shared/check.mjs";
  * other reach is something a person added, and the next regeneration eats it.
  */
 const FIRST_PARTY = new Set([
-  "capabilities", "model", "runtime", "representation", "views", "panels", "workspaces", "modals",
-  "development-components"
+  "capabilities", "model", "runtime", "representation", "surfaces", "app-views",
+  "development-views", "panels", "workspaces", "modals", "development-components"
 ]);
 
 export default check({

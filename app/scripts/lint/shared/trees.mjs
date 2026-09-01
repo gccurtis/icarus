@@ -14,8 +14,9 @@ export const PANEL_TREES = ["context", "inspector"];
 
 /** Directories an environment root owns itself; neither one is an object. */
 const NOT_AN_OBJECT = new Set(["test", "docs"]);
-/** Directories under `views/` that keep their own contract rather than the surface one. */
-const NOT_A_SURFACE = new Set(["panels", "workspaces", "modals", "development", "test", "docs"]);
+
+/** The three trees that hold a rendered view, wherever a rule is about all of them. */
+export const VIEW_TREES = ["surfaces", "app-views", "development-views"];
 
 const named = (tree, dir) => tree.dirsIn(dir).map((name) => ({ name, path: join(dir, name) }));
 
@@ -46,20 +47,17 @@ export const domains = (tree) => ({
   behavior: named(tree, tree.path("representation", "data", "behavior"))
 });
 
-/** `views/<surface>/` — the shell surfaces, which is everything with no contract of its own. */
-export const surfaces = (tree) => {
-  const found = named(tree, tree.path("views")).filter(({ name }) => !NOT_A_SURFACE.has(name));
-  for (const { name, path } of named(tree, tree.path("views", "development"))) {
-    found.push({ name, path, development: true });
-  }
-  return found.map((surface) => ({ development: false, ...surface }));
-};
+/** `surfaces/<surface>/` and `development-views/<surface>/`. */
+export const surfaces = (tree) => [
+  ...named(tree, tree.path("surfaces")).map((surface) => ({ ...surface, development: false })),
+  ...named(tree, tree.path("development-views")).map((surface) => ({ ...surface, development: true }))
+];
 
-/** `views/panels/{context,inspector}/<subject>/<key>.svelte`. */
+/** `app-views/panels/{context,inspector}/<subject>/<key>.svelte`. */
 export const panelLeaves = (tree) => {
   const found = [];
   for (const stack of PANEL_TREES) {
-    const root = tree.path("views", "panels", stack);
+    const root = tree.path("app-views", "panels", stack);
     for (const { name: subject, path } of named(tree, root)) {
       for (const file of tree.filesIn(path)) {
         found.push({ stack, subject, file, path: join(path, file) });
@@ -69,10 +67,10 @@ export const panelLeaves = (tree) => {
   return found;
 };
 
-/** `views/workspaces/<category>/workspace[-<subscreen>].svelte`. */
+/** `app-views/workspaces/<category>/workspace[-<subscreen>].svelte`. */
 export const workspaceFiles = (tree) => {
   const found = [];
-  for (const { name: category, path } of named(tree, tree.path("views", "workspaces"))) {
+  for (const { name: category, path } of named(tree, tree.path("app-views", "workspaces"))) {
     for (const file of tree.filesIn(path)) {
       if (!file.endsWith(".svelte")) continue;
       const match = file.match(/^workspace(?:-(.+))?\.svelte$/);

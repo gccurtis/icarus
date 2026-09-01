@@ -34,7 +34,7 @@ const realPackageRoot = dirname(dirname(dirname(generators)));
 const BASE = ["workspaces/project-overview/workspace.svelte"];
 
 /** Where a short path sits in the tree. */
-const treePath = (root, path) => join(root, "src", "lib", "views", ...path.split("/"));
+const treePath = (root, path) => join(root, "src", "lib", "app-views", ...path.split("/"));
 
 /**
  * A package holding nothing but workspaces. Their contents never matter — the

@@ -49,7 +49,7 @@ export const unresolvedPathsIn = (tree, document, directory, root = tree.lib) =>
   const bases = [];
   for (let at = directory; tree.within(root, at); at = dirname(at)) bases.push(at);
   // The tree root, and the package root beneath it: a document that names itself
-  // as `src/lib/views/app/app.md` is naming a real path, from the one place that
+  // as `src/lib/surfaces/app/app.md` is naming a real path, from the one place that
   // spelling resolves.
   bases.push(root, tree.base);
 

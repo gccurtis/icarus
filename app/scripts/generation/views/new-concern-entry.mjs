@@ -26,7 +26,7 @@ if (!CONCERNS.includes(concern)) usage(LINE, `The concern is one of ${CONCERNS.j
 requireKebab(name, "entry name", LINE);
 
 const lib = libRoot(import.meta.url);
-const roots = [join(lib, "views", surface), join(lib, "views", "development", surface)];
+const roots = [join(lib, "surfaces", surface), join(lib, "development-views", surface)];
 const root = roots.find((candidate) => existsSync(candidate));
 
 const plan = new Plan(join(lib, "..", ".."));

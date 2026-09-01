@@ -4,7 +4,7 @@ export default check({
   name: "nothing-imports-development",
   says: "Nothing outside development/ imports a development surface. It may import anything; the trade only holds in one direction.",
   run(tree) {
-    const development = tree.path("views", "development");
+    const development = tree.path("development-views");
     const found = [];
 
     for (const path of tree.files) {

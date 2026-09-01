@@ -28,7 +28,7 @@ const region = subscreen ?? "workspace";
 const plan = new Plan(join(lib, "..", ".."));
 
 plan.create(
-  join(lib, "views", "workspaces", category, file),
+  join(lib, "app-views", "workspaces", category, file),
   `<script lang="ts">
   /**
    * ${category}${subscreen ? ` · ${subscreen}` : ""}.

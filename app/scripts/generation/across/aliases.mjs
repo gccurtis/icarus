@@ -20,8 +20,8 @@ const config = join(base, "svelte.config.js");
 /** Trees whose subdirectories hold the variety; the alias names the subdirectory. */
 const SPLIT = { components: (name) => `$${name}-components` };
 
-/** Trees inside views/ reached by name rather than through `$views`. */
-const NAMED_INSIDE_VIEWS = ["panels", "workspaces", "modals"];
+/** Trees inside app-views/ reached by name rather than through `$app-views`. */
+const NAMED_INSIDE_APP_VIEWS = ["panels", "workspaces", "modals"];
 
 const subdirectories = (dir) =>
   readdirSync(dir, { withFileTypes: true })
@@ -46,19 +46,19 @@ for (const tree of subdirectories(lib)) {
   groups.push(group);
 }
 
-const inViews = NAMED_INSIDE_VIEWS.filter((name) => existsSync(join(lib, "views", name)));
-for (const name of inViews) wanted.set(`$${name}`, `src/lib/views/${name}`);
+const inAppViews = NAMED_INSIDE_APP_VIEWS.filter((name) => existsSync(join(lib, "app-views", name)));
+for (const name of inAppViews) wanted.set(`$${name}`, `src/lib/app-views/${name}`);
 
 const line = (alias) => `      "${alias}": "${wanted.get(alias)}",`;
 const plain = [...wanted.keys()].filter(
-  (alias) => !groups.flat().includes(alias) && !inViews.includes(alias.slice(1))
+  (alias) => !groups.flat().includes(alias) && !inAppViews.includes(alias.slice(1))
 );
 
 const block = [
   ...plain.sort().map(line),
   ...groups.flatMap((group) => ["", ...group.map(line)]),
   "",
-  ...inViews.map((name) => line(`$${name}`))
+  ...inAppViews.map((name) => line(`$${name}`))
 ].join("\n");
 
 const text = readFileSync(config, "utf8");

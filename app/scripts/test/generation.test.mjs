@@ -115,12 +115,12 @@ const GENERATORS = [
   { name: "new-table", script: "representation/new-table.mjs", args: ["probeThings"], trees: ["representation"] },
   { name: "new-theme", script: "styles/new-theme.mjs", args: ["probe", "--dark"], trees: [] },
   { name: "new-token", script: "styles/new-token.mjs", args: ["spacing", "probe-gap", "4px"], trees: ["styles"] },
-  { name: "new-surface", script: "views/new-surface.mjs", args: ["probe-bar"], trees: ["views", "across"] },
+  { name: "new-surface", script: "views/new-surface.mjs", args: ["probe-bar"], trees: ["surfaces", "across"] },
   {
     name: "new-concern-entry",
     script: "views/new-concern-entry.mjs",
     args: ["top-bar", "effects", "probe"],
-    trees: ["views"]
+    trees: ["surfaces"]
   },
   {
     name: "new-panel",

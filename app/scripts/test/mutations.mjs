@@ -6,7 +6,7 @@
  * mutation, the check, and the path it must name are the whole test.
  */
 
-const view = (name, body) => ({ path: `src/lib/views/top-bar/procedures/${name}.ts`, write: body });
+const view = (name, body) => ({ path: `src/lib/surfaces/top-bar/procedures/${name}.ts`, write: body });
 const appended = (text) => ({ edit: (before) => `${before}\n${text}\n` });
 
 export const MUTATIONS = [
@@ -429,8 +429,8 @@ export const MUTATIONS = [
     says: "a surface does not name its regions",
     names: "probe-bar/probe-bar.svelte",
     changes: [
-      { path: "src/lib/views/probe-bar/probe-bar.md", write: `# probe-bar\n` },
-      { path: "src/lib/views/probe-bar/probe-bar.svelte", write: `<div class="probe"></div>\n\n<style>\n  .probe {\n    display: flex;\n  }\n</style>\n` }
+      { path: "src/lib/surfaces/probe-bar/probe-bar.md", write: `# probe-bar\n` },
+      { path: "src/lib/surfaces/probe-bar/probe-bar.svelte", write: `<div class="probe"></div>\n\n<style>\n  .probe {\n    display: flex;\n  }\n</style>\n` }
     ]
   },
   {
@@ -439,7 +439,7 @@ export const MUTATIONS = [
     names: "project/takes-content.svelte",
     changes: [
       {
-        path: "src/lib/views/panels/context/project/takes-content.svelte",
+        path: "src/lib/app-views/panels/context/project/takes-content.svelte",
         write: `<script lang="ts">\n  let { rows }: { rows: { id: string }[] } = $props();\n</script>\n\n<div>{rows.length}</div>\n`
       }
     ]
@@ -449,20 +449,20 @@ export const MUTATIONS = [
     subject: "banned-names",
     says: "a surface grows a drawer",
     names: "top-bar/utils",
-    changes: [{ path: "src/lib/views/top-bar/utils/thing.ts", write: `export const thing = 1;\n` }]
+    changes: [{ path: "src/lib/surfaces/top-bar/utils/thing.ts", write: `export const thing = 1;\n` }]
   },
   {
     check: "effects-declare-runes",
     subject: "effects-are-svelte-ts",
     says: "an effect is written in a file that is never compiled",
     names: "effects/uncompiled.ts",
-    changes: [{ path: "src/lib/views/top-bar/effects/uncompiled.ts", write: `export const run = (): void => {};\n` }]
+    changes: [{ path: "src/lib/surfaces/top-bar/effects/uncompiled.ts", write: `export const run = (): void => {};\n` }]
   },
   {
     check: "shared-hands-out-no-instance",
     says: "shared/ hands out something already made",
     names: "shared/already-made.ts",
-    changes: [{ path: "src/lib/views/top-bar/shared/already-made.ts", write: `export const registry = { open: false };\n` }]
+    changes: [{ path: "src/lib/surfaces/top-bar/shared/already-made.ts", write: `export const registry = { open: false };\n` }]
   },
   {
     check: "surface-imports",
@@ -471,8 +471,8 @@ export const MUTATIONS = [
     names: "tab-bar/reaches-inside.ts",
     changes: [
       {
-        path: "src/lib/views/tab-bar/reaches-inside.ts",
-        write: `import { applyTheme } from "$views/top-bar/effects/apply-theme.svelte";\nexport const run = applyTheme;\n`
+        path: "src/lib/surfaces/tab-bar/reaches-inside.ts",
+        write: `import { applyTheme } from "$surfaces/top-bar/effects/apply-theme.svelte";\nexport const run = applyTheme;\n`
       }
     ]
   },
@@ -480,21 +480,21 @@ export const MUTATIONS = [
     check: "surface-shape",
     says: "a surface has no entry named for it",
     names: "probe-bar/probe-bar.svelte",
-    changes: [{ path: "src/lib/views/probe-bar/probe-bar.md", write: `# probe-bar\n` }]
+    changes: [{ path: "src/lib/surfaces/probe-bar/probe-bar.md", write: `# probe-bar\n` }]
   },
   {
     check: "nothing-imports-development",
     says: "something shipped imports a development surface",
     names: "imports-development.ts",
     changes: [
-      view("imports-development", `import Demo from "$views/development/demo/demo.svelte";\nexport const surface = Demo;\n`)
+      view("imports-development", `import Demo from "$development-views/demo/demo.svelte";\nexport const surface = Demo;\n`)
     ]
   },
   {
     check: "documented-paths-resolve",
     says: "a concern document names a file that is gone",
     names: "top-bar/probe.md",
-    changes: [{ path: "src/lib/views/top-bar/probe.md", write: `# probe\n\nSee \`effects/nowhere.svelte.ts\`.\n` }]
+    changes: [{ path: "src/lib/surfaces/top-bar/probe.md", write: `# probe\n\nSee \`effects/nowhere.svelte.ts\`.\n` }]
   },
 
   // ------------------------------------------------------------------ panels ----
@@ -504,7 +504,7 @@ export const MUTATIONS = [
     names: "project/cannot-render.svelte",
     changes: [
       {
-        path: "src/lib/views/panels/context/project/cannot-render.svelte",
+        path: "src/lib/app-views/panels/context/project/cannot-render.svelte",
         write: `<script lang="ts">\n  throw new Error("this leaf does not render alone");\n</script>\n\n<div></div>\n`
       }
     ]
@@ -516,7 +516,7 @@ export const MUTATIONS = [
     names: "project/reaches-far.svelte",
     changes: [
       {
-        path: "src/lib/views/panels/context/project/reaches-far.svelte",
+        path: "src/lib/app-views/panels/context/project/reaches-far.svelte",
         write: `<script lang="ts">\n  import Health from "$panels/context/project/health.svelte";\n</script>\n\n<Health />\n`
       }
     ]
@@ -525,7 +525,7 @@ export const MUTATIONS = [
     check: "key-vocabulary-matches-the-tree",
     says: "a leaf the vocabulary does not name",
     names: "project/unnamed.svelte",
-    changes: [{ path: "src/lib/views/panels/context/project/unnamed.svelte", write: `<div></div>\n` }]
+    changes: [{ path: "src/lib/app-views/panels/context/project/unnamed.svelte", write: `<div></div>\n` }]
   },
 
   // -------------------------------------------------------------- workspaces ----
@@ -534,7 +534,7 @@ export const MUTATIONS = [
     subject: "file-is-declared",
     says: "a workspace file the vocabulary does not declare",
     names: "agents/workspace-undeclared.svelte",
-    changes: [{ path: "src/lib/views/workspaces/agents/workspace-undeclared.svelte", write: `<div></div>\n` }]
+    changes: [{ path: "src/lib/app-views/workspaces/agents/workspace-undeclared.svelte", write: `<div></div>\n` }]
   },
   {
     check: "workspace-renders-alone",
@@ -542,7 +542,7 @@ export const MUTATIONS = [
     names: "agents/workspace-broken.svelte",
     changes: [
       {
-        path: "src/lib/views/workspaces/agents/workspace-broken.svelte",
+        path: "src/lib/app-views/workspaces/agents/workspace-broken.svelte",
         write: `<script lang="ts">\n  throw new Error("this workspace does not render alone");\n</script>\n\n<div></div>\n`
       }
     ]
@@ -553,7 +553,7 @@ export const MUTATIONS = [
     names: "agents/workspace-attaches.svelte",
     changes: [
       {
-        path: "src/lib/views/workspaces/agents/workspace-attaches.svelte",
+        path: "src/lib/app-views/workspaces/agents/workspace-attaches.svelte",
         write: `<script lang="ts">\n  import type { ResourceRuntimesModel } from "$model/client/resource-runtimes";\n  let runtimes: ResourceRuntimesModel | undefined = undefined;\n</script>\n\n<div>{runtimes}</div>\n`
       }
     ]
@@ -600,6 +600,6 @@ export const MUTATIONS = [
     check: "names-are-kebab-case",
     says: "a name is not kebab-case",
     names: "procedures/notKebab.ts",
-    changes: [{ path: "src/lib/views/top-bar/procedures/notKebab.ts", write: `export const value = 1;\n` }]
+    changes: [{ path: "src/lib/surfaces/top-bar/procedures/notKebab.ts", write: `export const value = 1;\n` }]
   }
 ];
