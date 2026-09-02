@@ -11,8 +11,8 @@ Lives at `procedures/procedures.md`.
 The model publishes a `Category` and never interprets it, exactly as it publishes
 a context id and an inspection key. Each surface makes its own decision from that
 one vocabulary: this one turns a category into a label and an icon, the context
-panel turns an id into a rail entry, and the workspace turns a category and a
-subscreen into a path. A name and a path are different decisions, and keeping
+panel turns an id into a rail entry, and the content surface turns a content
+view's key into a path. A name and a path are different decisions, and keeping
 them out of the model is what stops its surface changing every time a category
 arrives.
 

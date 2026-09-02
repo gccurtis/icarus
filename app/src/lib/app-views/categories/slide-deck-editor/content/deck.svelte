@@ -64,7 +64,7 @@
   }: {
     deckId?: string;
     slideId?: string;
-    /** Set by the Layouts panel. Its presence *is* the layout subscreen. */
+    /** Set by the Layouts panel. Its presence *is* a layout being edited. */
     layoutId?: string;
     /** Raised from the top of the Slides panel; an overlay, never a state of its own. */
     choosing?: boolean;

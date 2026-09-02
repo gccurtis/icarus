@@ -26,7 +26,7 @@ This view owns:
 It does not own:
 
 - which contexts exist, which are offered, or which is selected. The model
-  decides all three from the active tab's screen and subscreen.
+  decides all three from the active tab's category.
 - the panel's total width. That is a column in the frame, sized from the model.
 - the bounds of a resize. Values are the model's, bounds belong to the drag that
   does not exist yet.
@@ -102,14 +102,16 @@ here for a component to hold that the panel does not already say in one place.
 | Denied | `None` | — | — |
 
 No unknown-context state. The model's `context` getter answers with a view the
-active subscreen offers, or that subscreen's default when a remembered id has
+active category offers, or that category's default when a remembered id has
 drifted out of range, so there is no branch here for an id that does not resolve.
 
 **What the rail offers changes with the active tab**, because `railFor` is keyed
-by screen and subscreen. Project Overview offers four entries; a research thread
-offers eight; a template being authored offers a set disjoint from the library it
-was chosen from. That is the most visible proof that this panel is a projection
-over workspace state rather than a surface holding its own.
+by category. Project Overview offers four entries; a research thread offers
+eight; Agents offers eleven. It does not change when the centre does — moving
+from a library to the thing chosen in it is the same subject at closer range, and
+a rail that emptied itself there would be answering a question nobody asked. That
+is the most visible proof that this panel is a projection over workspace state
+rather than a surface holding its own.
 
 ## Accessibility
 

@@ -8,8 +8,13 @@ import type { WorkspaceStateModel } from "$model/client/workspace-state/types";
 
 export { createWorkspaceState } from "$model/client/workspace-state/constructor";
 
-export type { Category, Subscreen } from "$representation/data/types/workspace/categories";
-export { CATEGORIES, SUBSCREENS, isCategory } from "$representation/data/behavior/workspace/categories";
+export type { Category, ContentView } from "$representation/data/types/workspace/categories";
+export {
+  CATEGORIES,
+  CONTENT_VIEWS,
+  isCategory,
+  isContentView
+} from "$representation/data/behavior/workspace/categories";
 
 export type { ContextView, InspectorView } from "$representation/data/types/workspace/views";
 export {
@@ -37,10 +42,10 @@ export {
 } from "$model/client/workspace-state/methods/shared/defaults";
 
 export {
-  DEFAULT_SUBSCREEN,
+  DEFAULT_CONTENT,
   RAILS,
+  defaultContent,
   defaultContext,
-  defaultSubscreen,
   offersContext,
   railFor
 } from "$model/client/workspace-state/methods/shared/rails";

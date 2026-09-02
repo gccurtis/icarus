@@ -17,8 +17,8 @@ export const open = (state: WorkspaceStateData, target: Target): Tab => {
       perform(state, { op: "activate", was: state.tabs.activeId, now: existing.id });
     }
 
-    if (target.subscreen !== undefined) {
-      landOn(state, existing, target.subscreen, target.focus);
+    if (target.content !== undefined) {
+      landOn(state, existing, target.content, target.focus);
     } else if (target.focus !== undefined) {
       const was = landing(state.views.of(existing.id));
       perform(state, { op: "land", tab: existing.id, was, now: { ...was, focus: target.focus } });

@@ -106,7 +106,7 @@ heading. A row is a name, a line describing the rule, and a count of what it
 resolves to. New Context and Duplicate sit in the actions row; Duplicate waits
 for a chosen row and says so.
 
-This is the same list the library subscreen leads with, kept here so moving
+This is the same list the library centre leads with, kept here so moving
 between Contexts is not a mode change.
 
 The line under each name is generated from the rule and never typed. That is

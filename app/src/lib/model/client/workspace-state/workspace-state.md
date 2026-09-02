@@ -70,10 +70,10 @@ would stop being the answer to "what am I working on".
 
 ## Navigation is selection-driven
 
-**There is no subscreen switcher.** You get to a persona by choosing a persona;
+**There is no centre switcher.** You get to a persona by choosing a persona;
 the double click that chooses it is the same call that switches the centre, and
 you come back with the back button the centre's own bar draws. That is why
-`showSubscreen` takes what the centre is about as its second argument, and why
+`showContent` takes what the centre is about as its second argument, and why
 passing nothing is how a library is returned to.
 
 The alternative — picking a centre from the panel and then picking a thing inside
@@ -97,8 +97,8 @@ Workspace state owns:
   it does not change
 - **The log.** Every gesture is one or two `WorkspaceOp`s, recorded before the method
   returns, and undo is that log read backwards
-- **The rail map** — which context views each subscreen offers, and which one it
-  opens on
+- **The rail map** — which context views each category offers, and which centre
+  it opens on
 - **What a new tab starts as** — which categories are permanent, and the frame every
   tab is minted with
 
@@ -122,9 +122,9 @@ Consumers own:
 ## A key is a path
 
 `"analysis.fields"` is the `fields` leaf of `analysis`'s `context/`, and
-`"general.person"` is the `person` view under `general/`. The
-`agents` category's `"persona"` is
-[`app-views/workspaces/agents/workspace-persona.svelte`](../../../app-views/workspaces/agents/workspace-persona.svelte).
+`"general.person"` is the `person` view under `general/`. A centre is keyed the
+same way: `"agents.persona"` is
+[`app-views/categories/agents/content/persona.svelte`](../../../app-views/categories/agents/content/persona.svelte).
 
 The vocabulary is the `workspace` domain's, under `representation/`: the unions in
 `data/types/workspace/`, their lists and guards in `data/behavior/workspace/`. Categories
@@ -194,7 +194,7 @@ supporting flow. Every one is still a file.
 | `activate` | file | mutator | Move to a tab |
 | `close` | file | mutator | Close a tab and remember it; throws for a permanent category |
 | `reopenClosed` | file | mutator | Put back the most recently closed tab, with the state it had |
-| `showSubscreen` | file | mutator | Switch which centre this category is showing, and say what it is about |
+| `showContent` | file | mutator | Switch which centre this category is showing, and say what it is about |
 | `selectContext` | file | mutator | Move the rail |
 | `inspect` | file | mutator | Open a lens, and record what it is about |
 | `clear` | file | mutator | Nothing selected |
@@ -219,7 +219,7 @@ so a body doing its own work there would be the one place a reader has to stop.
 | `activeId` | `readonly TabId` | Which tab everything else is about |
 | `active` | `readonly Tab` | Never undefined: a permanent tab cannot be closed, so one always remains |
 | `frame` | `readonly Frame` | The active tab's panel geometry — two widths, two collapse flags |
-| `context` | `readonly ContextId \| undefined` | The rail position, or this subscreen's default if it has drifted |
+| `context` | `readonly ContextId \| undefined` | The rail position, or this category's default if it has drifted |
 | `inspected` | `readonly Inspected` | Which lens, or `"empty"` |
 | `selection` | `readonly Selection \| undefined` | What the lens is about |
 | `canUndo` | `readonly boolean` | Whether the log has anything in it |
@@ -234,8 +234,8 @@ the inspector, the resizers — and every category reads them. What a centre is 
 is read by that one centre, which already has `active` in hand, and a shortcut on
 the model would suggest the shell knows what it means.
 
-**`context` is derived rather than stored.** A subscreen change cannot leave the
-panel pointing at a view the new rail does not offer, even if nothing reset it.
+**`context` is derived rather than stored.** A position written in from outside
+cannot leave the panel pointing at a view the rail does not offer.
 
 No field is a Svelte `Component` or a registry of them. This object exposes
 stable keys and the view layer resolves them, so the model stays testable without
@@ -303,12 +303,12 @@ different object with a different lifetime.
 - **Permanence is derived, not stored:** `SINGLETONS.includes(tab.category)`.
 - **`resourceId` is fixed at mint and `focus` is writable.** What a tab is *for*
   cannot change; what its centre is *about* changes all day.
-- **The rail position is one this subscreen offers**, or that subscreen's
-  default. `undefined` only where the subscreen has no rail at all, which is a
+- **The rail position is one this category offers**, or that category's
+  default. `undefined` only where the category has no rail at all, which is a
   real state rather than a gap.
-- **A subscreen is workspace state, never a second tab.** Agents on a persona and
+- **A centre is workspace state, never a second tab.** Agents on a persona and
   Agents on the library it was chosen from are one tab in two states.
-- **A centre change takes its rail and its inspection with it.**
+- **A centre change takes its inspection with it and leaves the rail alone.**
   [`landOn`](methods/shared/land-on.ts) is the single path, so a tab reached from
   another category lands in exactly the state it would have reached by hand.
 - **`resize` cannot reach `contextId`.** A drag can never move the rail and a
@@ -356,7 +356,7 @@ workspace-state/
 ├── methods/
 │   ├── methods.md
 │   ├── open.ts · activate.ts · close.ts · reopen-closed.ts
-│   ├── show-subscreen.ts · select-context.ts · showing.ts
+│   ├── show-content.ts · select-context.ts · showing.ts
 │   ├── inspect.ts · clear.ts · resize.ts
 │   ├── undo.ts · redo.ts
 │   └── shared/

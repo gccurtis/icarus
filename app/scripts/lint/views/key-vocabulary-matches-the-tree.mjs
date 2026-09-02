@@ -25,7 +25,7 @@ export default check({
     for (const [surface, field] of Object.entries(STACKS)) {
       const declared = generated[field];
       if (!declared) {
-        found.push({ path: generated.panelPath, message: `declares no vocabulary for ${surface}/` });
+        found.push({ path: generated.viewPath, message: `declares no vocabulary for ${surface}/` });
         continue;
       }
 

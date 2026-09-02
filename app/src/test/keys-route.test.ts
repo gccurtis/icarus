@@ -10,7 +10,6 @@ import {
   CONTEXT_VIEWS,
   INSPECTOR_VIEWS,
   CATEGORIES,
-  SUBSCREENS,
   createWorkspaceState,
   railFor
 } from "$model/client/workspace-state";
@@ -39,16 +38,14 @@ describe("every key the vocabulary declares reaches something", () => {
     const reached = new Set<string>();
 
     for (const category of CATEGORIES) {
-      for (const subscreen of SUBSCREENS[category]) {
-        for (const id of railFor(category, subscreen)) {
-          const model = createWorkspaceState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
-          model.open({ category, subscreen });
-          model.selectContext(id);
+      for (const id of railFor(category)) {
+        const model = createWorkspaceState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
+        model.open({ category });
+        model.selectContext(id);
 
-          const { body } = render(ContextPanel, withModel(model));
-          expect(body, `${category}/${subscreen} → ${id}`).toContain(id);
-          reached.add(id);
-        }
+        const { body } = render(ContextPanel, withModel(model));
+        expect(body, `${category} → ${id}`).toContain(id);
+        reached.add(id);
       }
     }
 

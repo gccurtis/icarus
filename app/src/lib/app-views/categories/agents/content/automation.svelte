@@ -94,7 +94,7 @@
       <ScreenBar
         title={it.name}
         backLabel="All agents"
-        onback={() => view.showSubscreen("library")}
+        onback={() => view.showContent("agents.library")}
       >
         {#snippet meta()}
           <PanelChip tone={on ? "active" : "neutral"}>{on ? "On" : "Off"}</PanelChip>
@@ -105,7 +105,7 @@
             <Switch checked={on} onCheckedChange={(next) => (enabled = next)} />
             Enabled
           </label>
-          <Button variant="outline" size="sm" onclick={() => view.showSubscreen("library")}>
+          <Button variant="outline" size="sm" onclick={() => view.showContent("agents.library")}>
             <Play size={14} aria-hidden="true" />
             Run now
           </Button>
@@ -131,7 +131,7 @@
           <button
             type="button"
             class="hover:bg-surface-panel-hover rounded-control -m-1 flex items-center gap-2 p-1"
-            onclick={() => view.showSubscreen("persona", persona.id)}
+            onclick={() => view.showContent("agents.persona", persona.id)}
           >
             <PanelActor name={persona.name} kind="agent" size="row" />
             <span class="text-caption text-ink-secondary">{persona.name}</span>
@@ -208,7 +208,7 @@
               <ScreenRow>
                 <ScreenCell
                   name={row.title}
-                  onselect={() => view.showSubscreen("task", row.id)}
+                  onselect={() => view.showContent("agents.task", row.id)}
                 />
                 <ScreenCell>
                   {personas.find((p: PersonaRow) => p.id === row.persona)?.name ?? row.persona}

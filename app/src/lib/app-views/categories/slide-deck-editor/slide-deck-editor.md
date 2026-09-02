@@ -155,9 +155,9 @@ what is on the thing being edited, and the theme question narrowed to one layout
 
 #### Layouts
 
-Every layout in the deck, and which one is being edited. It is the first rail
-entry of the subscreen and it replaces the slide list, because in this state
-layouts are what you move between. Each row is the layout's name, what it is made
+Every layout in the deck, and which one is being edited. It leads the layout
+rail and stands in for the slide list, because in this state layouts are what you
+move between. Each row is the layout's name, what it is made
 of — placeholders, and locked objects when it has any — and how many slides use
 it.
 
@@ -220,7 +220,7 @@ This panel opens no lens.
 ### layouts
 
 *Deck.* Which layout this slide uses, and what else it could use. This is
-*applying* a layout, from the slide's side; editing one is the layout subscreen
+*applying* a layout, from the slide's side; editing one is the layout rail
 below.
 
 Two bands. Current is a short block of facts about the layout in force: its name,
@@ -238,9 +238,11 @@ Reset to layout is disabled and says why on hover: reset needs a slide element's
 placeholder to resolve to exactly one role, and a placeholder has no stable key,
 so two placeholders sharing a role cannot be told apart and there is no defined
 element to reset a slide's copy back to. Edit layout is disabled for a different
-reason: entering the subscreen is a move of the whole rail rather than a modal —
-the layout views replace the slide views for as long as a layout is being edited
-— and the deck's rail does not yet make that move.
+reason: entering it is a move of the whole rail rather than a modal — the layout
+views replace the slide views for as long as a layout is being edited — and the
+deck's rail cannot make that move. `RAILS` is keyed on the category alone, so the
+deck has one rail and these three views are named with nothing to reach them
+from.
 
 This panel opens no lens. Selecting a card selects it here.
 
@@ -470,7 +472,8 @@ Crumb to `slide-deck-editor.deck`; Done routes there too.
 Content the layout owns and a slide cannot touch — a footer wordmark, a slide
 number. The content, the frame with its owner, and one sentence about editing.
 
-The content is editable *because this lens exists only in the layout subscreen*.
+The content is editable *because this lens exists only while a layout is being
+edited*.
 On a slide the same object is visible and inert, and there it is not selectable
 at all. The crumb names the layout rather than a slide, so where you are is
 answered before you try to type.

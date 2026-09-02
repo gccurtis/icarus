@@ -83,7 +83,7 @@
       <ScreenBar
         title={profile.name}
         backLabel="All agents"
-        onback={() => view.showSubscreen("library")}
+        onback={() => view.showContent("agents.library")}
       >
         {#snippet meta()}
           <PanelChip tone="neutral">{profile.scope}</PanelChip>
@@ -185,7 +185,7 @@
               <ScreenRow>
                 <ScreenCell
                   name={row.title}
-                  onselect={() => view.showSubscreen("task", row.id)}
+                  onselect={() => view.showContent("agents.task", row.id)}
                 />
                 <ScreenCell>{row.firedBy ? `${row.startedBy} · Automation` : row.startedBy}</ScreenCell>
                 <ScreenCell num>{elapsed(row.age)}</ScreenCell>

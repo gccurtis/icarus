@@ -1,7 +1,7 @@
 import type { Landing, TabView } from "$representation/data/types/workspace/tab";
 
 export const landing = (view: TabView): Landing => ({
-  subscreen: view.subscreen,
+  content: view.content,
   focus: view.focus,
   contextId: view.contextId,
   inspected: view.inspected,

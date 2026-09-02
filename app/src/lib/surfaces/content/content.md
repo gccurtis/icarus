@@ -17,7 +17,7 @@ follow a tab.
 
 This view owns:
 
-- turning a category and a subscreen into the path of a centre, and loading it;
+- turning a content view's key into the path of a centre, and loading it;
 - the three states a load can reach: waiting, no such file, and a module that
   threw;
 - the rule that two tabs are two mounts, even when they hold the same category.
@@ -45,7 +45,7 @@ It does not own:
 
 | Door | Usage |
 | --- | --- |
-| `$model/client/workspace-state` | `active.screen`, `active.subscreen`, `activeId` |
+| `$model/client/workspace-state` | `active.content`, `activeId` |
 
 ### Capabilities
 
@@ -118,15 +118,15 @@ broken" is the whole value of the two branches.
 ## View Invariants
 
 - **The registry is the filesystem.** There is no map from category to component
-  here, because a map is a second list of what exists and the first one is
-  `src/lib/app-views/workspaces/`. A category and a subscreen name a path, and the same fact
-  generates the vocabulary the model publishes, so the two cannot disagree.
+  here, because a map is a second list of what exists and the first one is the
+  tree. A content view's key is its path, and the same fact generates the
+  vocabulary the model publishes, so the two cannot disagree.
 - **A model key is never a component.** Workspace state exposes stable keys precisely
   so it stays testable without a DOM; resolving them is this layer's job.
 - **A chunk that fails to arrive is a state, not a blank plane.** Rendering
   nothing for a broken module leaves a reader looking at an empty centre with no
   way to tell it from a category that is meant to be empty.
-- **Two tabs are two mounts.** The subtree is keyed on the tab and its subscreen,
+- **Two tabs are two mounts.** The subtree is keyed on the tab and its centre,
   so switching between two tabs of the same category remounts rather than handing
   one component's state to both. Two open documents are not one document.
 

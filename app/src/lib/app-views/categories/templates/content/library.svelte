@@ -280,7 +280,7 @@
                 Two acts, and conflating them would mean you could not look at a
                 template without leaving the grid you were comparing it against.
               -->
-              <div ondblclick={() => view.showSubscreen("editor", row.id)} role="presentation">
+              <div ondblclick={() => view.showContent("templates.editor", row.id)} role="presentation">
                 <ScreenCard
                   title={row.name}
                   selected={isSelected(row.id)}

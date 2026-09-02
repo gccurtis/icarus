@@ -180,7 +180,7 @@ An idea carries its assessment as its tone: ruled out and supported are settled,
 testing is live, untested is neither.
 
 The second band is called *Ideas being tested* rather than *Hypotheses*, which
-is the wording the single-question subscreen uses. The two disagree and one of
+is the wording the single-question centre uses. The two disagree and one of
 them will eventually lose.
 
 Routes to `research.question` and `research.hypothesis`.

@@ -62,7 +62,7 @@ inserted, and selecting is what puts it in the inspector.
 ### authoring-variables
 
 Headed *Variables in this template*. The one panel of the four that is
-particular to a template; everything else in the subscreen is the ordinary
+particular to a template; everything else in the centre is the ordinary
 editor.
 
 Split into required and optional, because requiredness is what decides whether
@@ -109,7 +109,7 @@ What a template is, what this project has, and what is selected. The panel opens
 on the sentence that explains the whole authoring category: **a template is an
 ordinary body with some of it left open**, so authoring one is authoring a
 document, a deck, a slide or a spreadsheet, and there is no separate template
-editor. Everything on the authoring subscreen follows from that.
+editor. Everything on the authoring centre follows from that.
 
 In this project is a total and then one count per kind — Documents, Slide decks,
 Single slides, Spreadsheets. **The counts are by kind rather than one total**,
@@ -277,7 +277,7 @@ regions for the same reason. **Duplicate** is disabled for a duller reason:
 nothing writes a template, so a copy would not survive the next read.
 
 Routes to `templates.template-variable` from a variable row and
-`general.person` from the creator. **Edit** opens the authoring subscreen
+`general.person` from the creator. **Edit** opens the authoring centre
 on this template.
 
 ### template-variable

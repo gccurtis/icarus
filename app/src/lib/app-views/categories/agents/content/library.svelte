@@ -84,7 +84,7 @@
   const record = (row: PersonaRow): string =>
     row.running === 0 ? `${row.tasks} tasks` : `${row.tasks} tasks · ${row.running} running`;
 
-  const openPersona = (id: string) => view.showSubscreen("persona", id);
+  const openPersona = (id: string) => view.showContent("agents.persona", id);
 
   // ---------------------------------------------------------------- tasks ----
 
@@ -158,7 +158,7 @@
     [...matchingTasks].sort((a, b) => (ascending ? compare(a, b) : -compare(a, b)))
   );
 
-  const openTask = (id: string) => view.showSubscreen("task", id);
+  const openTask = (id: string) => view.showContent("agents.task", id);
 </script>
 
 <ScreenSurface wide>
@@ -172,12 +172,12 @@
           <ScreenAction
             label="New persona"
             icon={Plus}
-            onclick={() => view.showSubscreen("persona", "new")}
+            onclick={() => view.showContent("agents.persona", "new")}
           />
           <ScreenAction
             label="New automation"
             icon={Zap}
-            onclick={() => view.showSubscreen("automation", "new")}
+            onclick={() => view.showContent("agents.automation", "new")}
           />
         {/snippet}
       </ScreenHeader>

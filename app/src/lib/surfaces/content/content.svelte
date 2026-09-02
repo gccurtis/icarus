@@ -11,12 +11,11 @@
    * what is open is expressible as a URL segment, and a work surface that took
    * route content could not follow a tab.
    *
-   * **The registry is the filesystem.** There is no map from category to component
-   * here, because a map is a second list of what exists and the first one is
-   * `src/lib/app-views/workspaces/`. A category and a subscreen name a path — `research` and
-   * `one-question` are `workspaces/research/workspace-one-question.svelte` — and
-   * the same fact generates the vocabulary the model publishes, so the two
-   * cannot disagree.
+   * **The registry is the filesystem.** There is no map from category to
+   * component here, because a map is a second list of what exists and the first
+   * one is the tree. A content view's key is its path — `research.thread` is the
+   * `thread.svelte` in the research category's `content/` — and the same fact
+   * generates the vocabulary the model publishes, so the two cannot disagree.
    *
    * **A chunk that fails to arrive is a state, not a blank plane.** The glob
    * cannot name a file that is not there, so a rejected import means the module
@@ -31,7 +30,7 @@
   const view = workspaceState();
 
   const path = $derived(
-    `/src/lib/app-views/categories/${view.active.category}/content/${view.active.subscreen}.svelte`
+    `/src/lib/app-views/categories/${view.active.content.replace(".", "/content/")}.svelte`
   );
 
   const load = $derived(CENTRES[path]);
@@ -72,7 +71,7 @@
 {:else if broke}
   <p class="text-body-sm text-danger-text p-4 font-mono">{path}<br />{broke}</p>
 {:else if Centre}
-  {#key view.activeId + view.active.subscreen}
+  {#key view.activeId + view.active.content}
     <Centre />
   {/key}
 {/if}

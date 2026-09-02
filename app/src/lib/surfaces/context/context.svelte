@@ -27,7 +27,7 @@
    * [`rail-entries`](procedures/rail-entries.ts); which entries this category
    * offers, and in what order, belongs to the model.
    *
-   * **There is no subscreen switch here.** A category with several centres is
+   * **There is no content switch here.** A category with several centres is
    * moved between by choosing something — a persona, a template, a task — not by
    * a pair of buttons above the rail. A control that names the states of a
    * category is a control that has to be kept in step with them, and it offers a
@@ -40,7 +40,7 @@
 
   const view = workspaceState();
 
-  const rail = $derived(railFor(view.active.category, view.active.subscreen));
+  const rail = $derived(railFor(view.active.category));
   const active = $derived(view.context);
   const collapsed = $derived(view.frame.contextCollapsed);
 
@@ -118,7 +118,7 @@
           <PanelPlaceholder
             panel={active}
             category={view.active.category}
-            subscreen={view.active.subscreen}
+            content={view.active.content}
           />
         {/if}
       </div>

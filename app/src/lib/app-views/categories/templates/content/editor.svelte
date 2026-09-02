@@ -32,7 +32,7 @@
    * Templates — one template, authored on the surface it will become.
    *
    * **Which template is view state, not a prop.** The library gets here by
-   * choosing one — `showSubscreen("editor", id)` — and `focus` is where that
+   * choosing one — `showContent("templates.editor", id)` — and `focus` is where that
    * choice lands, so this file reads it rather than taking a default that would
    * quietly show the wrong template the moment anything else changed.
    *
@@ -297,7 +297,7 @@
   <ScreenBar
     title={name}
     backLabel="All templates"
-    onback={() => view.showSubscreen("library")}
+    onback={() => view.showContent("templates.library")}
   >
     {#snippet meta()}
       <PanelChip>{makes}</PanelChip>

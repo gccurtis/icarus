@@ -8,10 +8,10 @@ Lives at `procedures/procedures.md`.
 
 ## What is here, and what belongs to the model
 
-One thing: what a rail entry *looks like*. Which views exist, which subscreen
+One thing: what a rail entry *looks like*. Which views exist, which category
 offers which, in what order, and what to do with a stored id that has drifted out
 of range all belong to `$model/client/workspace-state` — it answers
-`railFor(screen, subscreen)`, and the drift fallback is its `context` getter.
+`railFor(category)`, and the drift fallback is its `context` getter.
 
 That split follows the shape of the two halves. The ids are generated from the
 `context/` tree and the rails are transcribed from the specifications, so both

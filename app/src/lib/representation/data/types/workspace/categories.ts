@@ -17,16 +17,17 @@ export type Category =
   | "spreadsheet-editor"
   | "templates";
 
-export type Subscreen =
-  | "automation"
-  | "chart"
-  | "deck"
-  | "document"
-  | "editor"
-  | "launcher"
-  | "library"
-  | "overview"
-  | "persona"
-  | "sheet"
-  | "task"
-  | "thread";
+export type ContentView =
+  | "agents.automation"
+  | "agents.library"
+  | "agents.persona"
+  | "agents.task"
+  | "analysis.chart"
+  | "document-editor.document"
+  | "new-tab.launcher"
+  | "project-overview.overview"
+  | "research.thread"
+  | "slide-deck-editor.deck"
+  | "spreadsheet-editor.sheet"
+  | "templates.editor"
+  | "templates.library";

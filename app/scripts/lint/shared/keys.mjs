@@ -9,10 +9,10 @@ import ts from "typescript";
 
 const BEHAVIOR = ["representation", "data", "behavior", "workspace"];
 
-/** Generated from the workspace tree. */
+/** Generated from the category tree. */
 export const KEYS_FILE = [...BEHAVIOR, "categories.ts"];
 /** Hand-written: the views this application intends to have. */
-export const PANEL_KEYS_FILE = [...BEHAVIOR, "views.ts"];
+export const VIEW_KEYS_FILE = [...BEHAVIOR, "views.ts"];
 
 const arrayNamed = (tree, path, wanted) => {
   for (const statement of tree.source(path).statements) {
@@ -36,45 +36,19 @@ const arrayNamed = (tree, path, wanted) => {
   return null;
 };
 
-const objectNamed = (tree, path, wanted) => {
-  for (const statement of tree.source(path).statements) {
-    if (!ts.isVariableStatement(statement)) continue;
-    for (const declaration of statement.declarationList.declarations) {
-      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== wanted) continue;
-      let initializer = declaration.initializer;
-      while (initializer && (ts.isAsExpression(initializer) || ts.isSatisfiesExpression?.(initializer))) {
-        initializer = initializer.expression;
-      }
-      if (!initializer || !ts.isObjectLiteralExpression(initializer)) return null;
-      const found = new Map();
-      for (const property of initializer.properties) {
-        if (!ts.isPropertyAssignment(property)) continue;
-        const key = ts.isStringLiteral(property.name) || ts.isIdentifier(property.name) ? property.name.text : null;
-        if (!key || !ts.isArrayLiteralExpression(property.initializer)) continue;
-        found.set(
-          key,
-          property.initializer.elements.filter((node) => ts.isStringLiteral(node)).map((node) => node.text)
-        );
-      }
-      return found;
-    }
-  }
-  return null;
-};
-
-/** @returns {{ path: string, panelPath: string, contexts: string[]|null, inspections: string[]|null, categories: string[]|null, subscreens: Map<string,string[]>|null }} */
+/** @returns {{ path: string, viewPath: string, contexts: string[]|null, inspections: string[]|null, categories: string[]|null, contentViews: string[]|null }} */
 export const vocabulary = (tree) => {
   const path = tree.path(...KEYS_FILE);
-  const panelPath = tree.path(...PANEL_KEYS_FILE);
+  const viewPath = tree.path(...VIEW_KEYS_FILE);
   const inKeys = (name) => (tree.isFile(path) ? arrayNamed(tree, path, name) : null);
-  const inPanelKeys = (name) => (tree.isFile(panelPath) ? arrayNamed(tree, panelPath, name) : null);
+  const inViewKeys = (name) => (tree.isFile(viewPath) ? arrayNamed(tree, viewPath, name) : null);
 
   return {
     path,
-    panelPath,
-    contexts: inPanelKeys("CONTEXT_VIEWS"),
-    inspections: inPanelKeys("INSPECTOR_VIEWS"),
+    viewPath,
+    contexts: inViewKeys("CONTEXT_VIEWS"),
+    inspections: inViewKeys("INSPECTOR_VIEWS"),
     categories: inKeys("CATEGORIES"),
-    subscreens: tree.isFile(path) ? objectNamed(tree, path, "SUBSCREENS") : null
+    contentViews: inKeys("CONTENT_VIEWS")
   };
 };

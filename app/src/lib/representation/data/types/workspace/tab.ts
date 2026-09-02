@@ -1,5 +1,5 @@
 import type { ContextView, InspectorView } from "$representation/data/types/workspace/views";
-import type { Category, Subscreen } from "$representation/data/types/workspace/categories";
+import type { Category, ContentView } from "$representation/data/types/workspace/categories";
 
 export type TabId = string;
 
@@ -25,7 +25,7 @@ export type TabRecord = {
 };
 
 export type TabView = {
-  subscreen: Subscreen;
+  content: ContentView;
   focus: string | null;
   contextId: ContextView | null;
   inspected: Inspected;
@@ -35,12 +35,12 @@ export type TabView = {
 
 export type Landing = Pick<
   TabView,
-  "subscreen" | "focus" | "contextId" | "inspected" | "selection"
+  "content" | "focus" | "contextId" | "inspected" | "selection"
 >;
 
 export type Target = {
   readonly category: Category;
-  readonly subscreen?: Subscreen;
+  readonly content?: ContentView;
   readonly resourceId?: string;
   readonly focus?: string;
 };

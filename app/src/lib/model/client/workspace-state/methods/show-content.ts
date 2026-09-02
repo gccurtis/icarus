@@ -1,11 +1,11 @@
-import type { Subscreen } from "$representation/data/types/workspace/categories";
+import type { ContentView } from "$representation/data/types/workspace/categories";
 import type { WorkspaceStateData } from "$model/client/workspace-state/definition.svelte";
 import { landOn } from "$model/client/workspace-state/methods/shared/land-on";
 
-export const showSubscreen = (
+export const showContent = (
   state: WorkspaceStateData,
-  subscreen: Subscreen,
+  content: ContentView,
   focus?: string
 ): void => {
-  landOn(state, state.tabs.active, subscreen, focus);
+  landOn(state, state.tabs.active, content, focus);
 };

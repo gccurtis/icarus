@@ -11,9 +11,9 @@ them and they preserve an invariant spanning both. Two are not methods at all.
 | [`perform.ts`](perform.ts) | Nothing changes without leaving a record | every mutator, `land-on` |
 | [`landing.ts`](landing.ts) | The `was` half of a landing is read the same way every time | `land-on`, `open` |
 | [`defaults.ts`](defaults.ts) | A category is permanent or it is not, and every tab starts the same width | `close`, `target-key`, `mint-view`, `index.ts`, the definition's constructor |
-| [`rails.ts`](rails.ts) | The rail position is one this subscreen offers | `select-context`, `land-on`, `mint-view`, the definition's `context` getter, `index.ts` |
+| [`rails.ts`](rails.ts) | The rail position is one this category offers | `select-context`, `land-on`, `mint-view`, the definition's `context` getter, `index.ts` |
 | [`compose.ts`](compose.ts) | A record and a view are read as one tab, in one place | `open`, `reopen-closed`, the definition's four read getters |
-| [`land-on.ts`](land-on.ts) | A centre change takes its rail and its inspection with it | `show-subscreen`, `open` |
+| [`land-on.ts`](land-on.ts) | A centre change takes its inspection with it and leaves the rail | `show-content`, `open` |
 | [`mint-view.ts`](mint-view.ts) | Every tab starts the same way | the definition's constructor, `open` |
 | [`target-key.ts`](target-key.ts) | One definition of "already open" | `open` |
 
@@ -32,8 +32,8 @@ is what the table above is.
 Both are read by three or more methods and by the definition, so `shared/` is
 where they would land on the promotion rule anyway.
 
-**The vocabulary is not here.** `Screen`, `Subscreen`, `ContextId` and
-`InspectionKey` are what a stored tab names, so they belong to the `views` domain
+**The vocabulary is not here.** `Category`, `ContentView`, `ContextView` and
+`InspectorView` are what a stored tab names, so they belong to the `workspace` domain
 under `representation/` — the unions in `data/types/workspace/`, their lists and
 guards in `data/behavior/workspace/`. This object imports them like any other
 consumer.
@@ -63,23 +63,28 @@ the guard.
 ## `rails.ts` — the transcribed map
 
 `RAILS` says which context views a category's rail offers, in order, and therefore
-which one it opens on. **It is transcribed from
-`docs/screen-panel-views/screens/<category>/overview.md`, not derived.** Each
-category's "## Context panel" table is one row, in the table's order, and the first
-entry is that subscreen's default. Nothing is inferred from the file tree,
+which one it opens on. **It is transcribed from the category's own document under
+`app-views/categories/`, not derived.** Nothing is inferred from the file tree,
 because a view can exist without a rail offering it — so a rail that disagrees
-with the specification is changed in the specification first and copied down here
-after.
+with the document is changed in the document first and copied down here after.
 
-`Record<Screen, Partial<Record<Subscreen, …>>>`: total over screens, so a new
-screen fails to compile until it has been given a rail; partial over subscreens,
-because `Subscreen` is the union of every screen's members and no screen has all
-of them.
+`Record<Category, readonly ContextView[]>`: total over categories, so a new
+category fails to compile until it has been given a rail, and one level deep,
+because the rail belongs to the category rather than to one of its centres. All
+three surfaces are showing one subject from different angles, so moving between a
+category's centres is a change of range rather than of subject, and a rail that
+emptied itself there would be answering a question nobody asked.
 
 Three functions read it. `railFor` returns what the rail offers, in order, and an
-empty frozen array for a subscreen with no rail of its own. `defaultContext` is
-its first entry, `undefined` only where the rail is empty. `offersContext` is the
-test a caller selecting a context owes.
+empty array for a category with no rail. `defaultContext` is its first entry,
+`undefined` only where the rail is empty. `offersContext` is the test a caller
+selecting a context owes.
+
+`DEFAULT_CONTENT` is beside it and answers the other half: which of a category's
+centres a fresh tab opens on. It is named rather than derived, because the tree
+sorts `automation` before `library` and reading a default off that order would be
+an accident. A category with no content view names none, and `mintView` refuses
+to mint a tab that has nothing to paint.
 
 An overview leads every rail but two, and each of the two says something about its
 category. A deck opens on its list of slides, because the slide you are on is the
@@ -92,14 +97,14 @@ list of every other one would be the map arriving before the territory.
 `library.threads` sits last on that rail and is how a different thread is reached,
 which is a thing you do after this one.
 
-**Preserves:** a tab's `contextId` is one its current subscreen offers, or that
-subscreen's default. `mint-view` establishes it, `land-on` restores it after a
-centre change, `select-context` refuses to break it, and the `context` getter falls
-back if it has drifted anyway.
+**Preserves:** a tab's `contextId` is one its category offers, or that category's
+default. `mint-view` establishes it, `land-on` carries it across a centre change,
+`select-context` refuses to break it, and the `context` getter falls back if it
+has drifted anyway.
 
 **Fails when:** nothing here throws. `undefined` from `defaultContext` is a real
-state — a subscreen the specification gave no context panel — and `Tab.contextId`
-is optional for exactly that reason.
+state — a category the documents gave no context panel — and `Tab.contextId` is
+optional for exactly that reason.
 
 **Touches state:** none.
 
@@ -128,30 +133,17 @@ the specification is where that is decided.
 **`project.variables-create`**, a push-in reached from inside the Variables panel
 rather than from the rail. That is probably correct as it stands.
 
-**`resource.layout-layouts`, `resource.layout-objects` and
-`resource.layout-theme`** are the slide deck's **layout rail**, and there is
-nothing to hang them on. `workspaces/slide-deck-editor/` holds one
-`workspace.svelte`, so `SUBSCREENS["slide-deck-editor"]` is `["workspace"]`, and
-editing a layout is a prop on that one centre rather than a state the rail can be
-keyed on. The specification carries the rail; this map has no row for it, and
-this document is where that is written down.
+**`slide-deck-editor.layout-layouts`, `slide-deck-editor.layout-objects` and
+`slide-deck-editor.layout-theme`** are the deck's **layout rail**, and they are
+in the vocabulary with no row of their own. The deck has one centre and editing a
+layout is a state of it rather than a second centre, so there was never a key to
+hang a second rail on.
 
-**The specification is where this is unresolved, and it disagrees with itself.**
-`screens/slide-deck-editor/overview.md` opens by naming two subscreens — editing
-a slide and editing a layout, "the same tab in two states", with a rail that
-"changes completely between them" — and gives each its own context-panel table.
-`screens/slide-deck-editor/workspace.md` says the opposite: one region, and
-editing a slide, editing a layout and choosing a new one are "all states of this
-one editor". Subscreens are generated from workspace files, so the second
-document is the one that decides it, and the first document's second rail has no
-row to sit in.
-
-Two ways out, and neither is chosen here: the deck gains a second workspace file,
-which makes the layout a subscreen and its rail an ordinary row; or the rail is
-keyed on something other than a subscreen, which changes the shape of `RAILS` for
-every category. The fourth member of the specification's layout rail,
-`project.variables`, is already reachable from the deck's main rail and is not
-affected either way.
+The shape of `RAILS` is what settled this. It is keyed on the category alone, so
+there is one rail for the deck and these three are not on it. Reaching them is
+`selectContext`'s to answer, which it cannot do while the rail is also what
+`offersContext` tests against — so today they are named and unreachable, and this
+is where that is written down rather than discovered from a blank panel.
 
 ## `apply.ts` — one op, one effect
 
@@ -249,39 +241,40 @@ earlier.
 export const landOn = (
   state: WorkspaceStateData,
   record: TabRecord,
-  subscreen: Subscreen,
+  content: ContentView,
   focus?: string
 ): void => ...;
 ```
 
 Putting a tab on a centre, with the three things that have to follow. Two public
-methods need it and neither may borrow the other: `showSubscreen` is a person
+methods need it and neither may borrow the other: `showContent` is a person
 moving inside a category they are already on, and `open` is a target naming a
 centre arriving at a tab that is already open. Same consequences, different
-question — and a second copy of them would be a second answer to "what happens to
-the rail when the centre changes", which is the kind of pair that drifts silently
-because both halves keep working.
+question — and a second copy of them would be a second answer to "what happens
+when the centre changes", which is the kind of pair that drifts silently because
+both halves keep working.
 
-The three: **the rail follows**, because two centres of one category frequently
-offer disjoint rails and a remembered context that survives the move points the
-panel at a view the new rail does not offer. **The inspection clears**, because
-what was selected belongs to the centre the tab is leaving. **`focus` is
-assigned from the argument**, including when the argument is nothing — there is
-no switcher in the shell, so choosing a persona and switching to the persona
-centre are one act, and passing nothing is how a library is returned to.
+The three: **the rail is carried across**, because it belongs to the category and
+a change of centre leaves the category alone; it is re-derived rather than
+assumed, so a position written in from outside is still corrected here. **The
+inspection clears**, because what was selected belongs to the centre the tab is
+leaving. **`focus` is assigned from the argument**, including when the argument
+is nothing — there is no switcher in the shell, so choosing a persona and
+switching to the persona centre are one act, and passing nothing is how a library
+is returned to.
 
-It refuses a subscreen the screen does not have. That refusal living here rather
-than in `showSubscreen` is why `open` inherits it for free.
+It refuses a content view another category owns. That refusal living here rather
+than in `showContent` is why `open` inherits it for free.
 
-**Preserves:** a tab's `contextId` is one its current subscreen offers, and no
-inspection outlives the centre it was about.
+**Preserves:** a tab's `contextId` is one its category offers, and no inspection
+outlives the centre it was about.
 
-**Fails when:** the subscreen is not one of `SUBSCREENS[tab.category]`. That is a
-caller naming a centre a category has not got, which is a mistake rather than
-drift, so it throws where the two rail asymmetries fall back.
+**Fails when:** the content view is not one of this category's. That is a caller
+naming a centre a category has not got, which is a mistake rather than drift, so
+it throws where the two rail asymmetries fall back.
 
 **Touches state:** one view, through `tab-views` — the active tab's when
-`showSubscreen` calls it and the target's own when `open` does. It reads the
+`showContent` calls it and the target's own when `open` does. It reads the
 held rail position first, which is why it takes the coordinator's state rather
 than a bare view.
 
@@ -293,8 +286,8 @@ export const mintView = (target: Target): TabView => ...;
 
 The only place a view is minted: the definition's constructor calls it for the
 three permanent tabs and `open` calls it for everything else, so every tab in the
-application starts the same way. The subscreen defaults to the screen's own —
-`DEFAULT_SUBSCREEN`, which names it rather than deriving it — and the rail is
+application starts the same way. The centre defaults to the category's own —
+`DEFAULT_CONTENT`, which names it rather than deriving it — and the rail is
 chosen here rather than left empty, because a tab with no context id would make
 every reader handle a state that exists for one tick.
 
@@ -311,14 +304,14 @@ second call to say so.
 
 **Preserves:** every member of `frame` is present from the moment a tab exists —
 no optionality, so no read path reports a default it never stored — the rail
-position is one the subscreen offers, and no two tabs share a mutable value.
+position is one the category offers, and no two tabs share a mutable value.
 
-**Fails when:** it does not — and `Subscreen` is not narrow enough to make that
-safe. It is the union of *every* category's centres, so a target naming a centre
-its own category has not got type-checks, and minting gives the tab that subscreen
-with no rail behind it. `landOn` refuses exactly this, which means `open` refuses
-it for a tab already open and accepts it for one it is about to mint. **The two
-branches of one method disagree**, and the check belongs here as well.
+**Fails when:** the category names no centre at all. `ContentView` is the union
+of *every* category's centres, so a target naming another category's centre still
+type-checks and is minted unchecked; `landOn` refuses exactly that, which means
+`open` refuses it for a tab already open and accepts it for one it is about to
+mint. **The two branches of one method disagree**, and the check belongs here as
+well.
 
 **Touches state:** none — it computes a whole view from its arguments, and the
 caller decides which id it is stored under.
@@ -363,9 +356,9 @@ it, or a later reader would take it for a rule when it is only history.
 stays because the invariant is the object's rather than `open`'s: it is what makes
 two tabs on one document impossible, wherever a tab comes from.
 
-`land-on` is the furthest from it. `showSubscreen` is a one-line wrapper around
+`land-on` is the furthest from it. `showContent` is a one-line wrapper around
 it, so demoting it would mean inlining it into that method and leaving `open` to
-call across into `show-subscreen.ts` — a sibling method directory importing
+call across into `show-content.ts` — a sibling method directory importing
 another, which is the one path this directory exists to prevent.
 
 `defaults.ts` and `rails.ts` cannot be demoted. Neither is a method, and neither

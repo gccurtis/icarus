@@ -33,7 +33,7 @@ Consumers own:
 
 - **Which ids exist.** That is [tab-list](../tab-list/tab-list.md); this object
   stores under whatever ids it is handed and forgets on request
-- **Whether a write is allowed.** A rail this subscreen does not offer, a lens
+- **Whether a write is allowed.** A rail this category does not offer, a lens
   that names no file — both are refused one call earlier
 - **What a landing means.** `land` writes five fields at once; deciding what
   those five are is `workspace-state`'s

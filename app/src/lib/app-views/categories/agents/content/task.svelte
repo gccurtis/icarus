@@ -88,7 +88,7 @@
       <ScreenBar
         title={it.title}
         backLabel="All agents"
-        onback={() => view.showSubscreen("library")}
+        onback={() => view.showContent("agents.library")}
       >
         {#snippet meta()}
           <PanelChip tone={STATE_TONE[it.state]}>{it.state}</PanelChip>
@@ -114,7 +114,7 @@
         <button
           type="button"
           class="hover:bg-surface-panel-hover rounded-control -m-1 flex items-center gap-2 p-1"
-          onclick={() => persona && view.showSubscreen("persona", persona.id)}
+          onclick={() => persona && view.showContent("agents.persona", persona.id)}
         >
           <PanelActor name={persona?.name ?? "Agent"} kind="agent" size="row" />
           <span class="text-caption text-ink-secondary">{persona?.name ?? "Agent"}</span>
@@ -127,7 +127,7 @@
           <button
             type="button"
             class="text-caption text-ink-secondary hover:text-ink-primary flex items-center gap-1.5"
-            onclick={() => view.showSubscreen("automation", it.firedBy)}
+            onclick={() => view.showContent("agents.automation", it.firedBy)}
           >
             <Bot size={14} aria-hidden="true" />
             Fired by an Automation

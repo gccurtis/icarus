@@ -1,7 +1,7 @@
 /**
  * The generator's central claim is that the category vocabulary is the category
  * tree and nothing else. These tests check the two halves of it: that a path
- * becomes exactly one category and one subscreen, and that `--check` refuses a
+ * becomes exactly one category and one content view, and that `--check` refuses a
  * file the tree no longer agrees with.
  *
  * The second half is the one that earns its keep. A generator that writes the
@@ -103,7 +103,7 @@ const members = (source, constant) => {
 
 // --------------------------------------------------------- a path is a key ----
 
-test("a content path becomes exactly one category and one subscreen", () => {
+test("a content path becomes exactly one category and one content view", () => {
   withPackage(
     [
       "categories/research/content/one-question.svelte",
@@ -113,12 +113,16 @@ test("a content path becomes exactly one category and one subscreen", () => {
       run(root);
 
       assert.deepEqual(members(lists(root), "CATEGORIES"), ["project-overview", "research"]);
-      assert.match(lists(root), /"research": \["all-threads", "one-question"\]/);
+      assert.deepEqual(members(lists(root), "CONTENT_VIEWS"), [
+        "project-overview.overview",
+        "research.all-threads",
+        "research.one-question"
+      ]);
     }
   );
 });
 
-test("a subscreen is the file name, and nothing is stripped from it", () => {
+test("a content view is its category and its file name, with nothing stripped", () => {
   withPackage(
     [
       "categories/templates/content/editor.svelte",
@@ -128,13 +132,15 @@ test("a subscreen is the file name, and nothing is stripped from it", () => {
     (root) => {
       run(root);
 
-      assert.match(lists(root), /"templates": \["editor", "library"\]/);
-      assert.match(lists(root), /"new-tab": \["launcher"\]/);
+      const found = members(lists(root), "CONTENT_VIEWS");
+      assert.ok(found.includes("templates.editor"));
+      assert.ok(found.includes("templates.library"));
+      assert.ok(found.includes("new-tab.launcher"));
     }
   );
 });
 
-test("only content/ names a subscreen", () => {
+test("only content/ names a content view", () => {
   withPackage(
     [
       "categories/research/content/thread.svelte",
@@ -144,20 +150,20 @@ test("only content/ names a subscreen", () => {
     (root) => {
       run(root);
 
-      assert.match(lists(root), /"research": \["thread"\]/);
-      assert.ok(!both(root).includes("history"), "a context view is not a subscreen");
-      assert.ok(!both(root).includes("source"), "an inspector view is not a subscreen");
+      assert.ok(members(lists(root), "CONTENT_VIEWS").includes("research.thread"));
+      assert.ok(!both(root).includes("history"), "a context view is not a content view");
+      assert.ok(!both(root).includes("source"), "an inspector view is not a content view");
     }
   );
 });
 
-test("a category with nothing built yet is named with an empty list", () => {
+test("a category with nothing built yet is named and contributes no content view", () => {
   withPackage([], (root) => {
     mkdirSync(treePath(root, "categories/context-editor/context"), { recursive: true });
     run(root);
 
     assert.ok(members(lists(root), "CATEGORIES").includes("context-editor"));
-    assert.match(lists(root), /"context-editor": \[\]/);
+    assert.ok(!both(root).includes("context-editor."), "it names no centre");
   });
 });
 
@@ -166,7 +172,10 @@ test("the unions are declared where a file compiles to nothing", () => {
     run(root);
 
     assert.match(unions(root), /export type Category =\n {2}\| "project-overview"\n {2}\| "research";/);
-    assert.match(unions(root), /export type Subscreen =\n {2}\| "one-question"\n {2}\| "overview";/);
+    assert.match(
+      unions(root),
+      /export type ContentView =\n {2}\| "project-overview.overview"\n {2}\| "research.one-question";/
+    );
     assert.ok(!unions(root).includes("export const"), "types/ emits nothing");
   });
 });
@@ -177,10 +186,20 @@ test("the lists satisfy the unions rather than declaring their own", () => {
 
     assert.match(
       lists(root),
-      /import type \{ Category, Subscreen \} from "\$representation\/data\/types\/workspace\/categories";/
+      /import type \{ Category, ContentView \} from "\$representation\/data\/types\/workspace\/categories";/
     );
     assert.match(lists(root), /\] as const satisfies readonly Category\[\];/);
-    assert.match(lists(root), /\} as const satisfies Record<Category, readonly Subscreen\[\]>;/);
+    assert.match(lists(root), /\] as const satisfies readonly ContentView\[\];/);
+  });
+});
+
+test("both guards narrow to their own generated union", () => {
+  withPackage([], (root) => {
+    run(root);
+    assert.ok(
+      lists(root).includes("export const isContentView = (value: string): value is ContentView =>"),
+      "isContentView"
+    );
   });
 });
 
@@ -225,9 +244,14 @@ test("every generated list is sorted", () => {
     (root) => {
       run(root);
 
-      const found = members(lists(root), "CATEGORIES");
-      assert.deepEqual(found, [...found].sort(), "CATEGORIES is not sorted");
-      assert.match(lists(root), /"analysis": \["all-analyses", "one-analysis"\]/);
+      for (const constant of ["CATEGORIES", "CONTENT_VIEWS"]) {
+        const found = members(lists(root), constant);
+        assert.deepEqual(found, [...found].sort(), `${constant} is not sorted`);
+      }
+      assert.ok(
+        members(lists(root), "CONTENT_VIEWS").includes("analysis.all-analyses"),
+        "analysis.all-analyses"
+      );
     }
   );
 });

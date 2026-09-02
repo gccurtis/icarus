@@ -5,7 +5,7 @@ export const compose = (record: TabRecord, view: TabView): Tab => ({
   id: record.id,
   category: record.category,
   resourceId: record.resourceId,
-  subscreen: view.subscreen,
+  content: view.content,
   contextId: view.contextId ?? undefined,
   focus: view.focus ?? undefined,
   inspected: view.inspected,

@@ -15,14 +15,14 @@ const frame: Frame = {
 const dragged: Frame = { ...frame, contextWidth: 400, inspectorCollapsed: true };
 
 const library: Landing = {
-  subscreen: "library",
+  content: "agents.library",
   focus: null,
   contextId: CONTEXT_VIEWS[0],
   inspected: "empty",
   selection: null
 };
 const persona: Landing = {
-  subscreen: "persona",
+  content: "agents.persona",
   focus: "p-1",
   contextId: CONTEXT_VIEWS[1],
   inspected: INSPECTOR_VIEWS[0],

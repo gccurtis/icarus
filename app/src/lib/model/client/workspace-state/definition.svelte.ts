@@ -1,6 +1,6 @@
 import type { WorkspaceOp } from "$representation/data/types/workspace/op";
 import type { ContextView } from "$representation/data/types/workspace/views";
-import type { Category, Subscreen } from "$representation/data/types/workspace/categories";
+import type { Category, ContentView } from "$representation/data/types/workspace/categories";
 import type {
   Frame,
   Inspected,
@@ -25,7 +25,7 @@ import { compose } from "$model/client/workspace-state/methods/shared/compose";
 import { SINGLETONS } from "$model/client/workspace-state/methods/shared/defaults";
 import { mintView } from "$model/client/workspace-state/methods/shared/mint-view";
 import { defaultContext, offersContext } from "$model/client/workspace-state/methods/shared/rails";
-import { showSubscreen } from "$model/client/workspace-state/methods/show-subscreen";
+import { showContent } from "$model/client/workspace-state/methods/show-content";
 import { showing } from "$model/client/workspace-state/methods/showing";
 import { undo } from "$model/client/workspace-state/methods/undo";
 import type { Tab, WorkspaceStateModel, WorkspaceSync } from "$model/client/workspace-state/types";
@@ -122,10 +122,10 @@ export class WorkspaceState implements WorkspaceStateModel {
 
   get context(): ContextView | undefined {
     const record = this.#state.tabs.active;
-    const { subscreen, contextId } = this.#state.views.of(record.id);
-    return contextId !== null && offersContext(record.category, subscreen, contextId)
+    const { contextId } = this.#state.views.of(record.id);
+    return contextId !== null && offersContext(record.category, contextId)
       ? contextId
-      : defaultContext(record.category, subscreen);
+      : defaultContext(record.category);
   }
 
   get inspected(): Inspected {
@@ -172,8 +172,8 @@ export class WorkspaceState implements WorkspaceStateModel {
     return reopenClosed(this.#state);
   }
 
-  showSubscreen(subscreen: Subscreen, focus?: string): void {
-    showSubscreen(this.#state, subscreen, focus);
+  showContent(content: ContentView, focus?: string): void {
+    showContent(this.#state, content, focus);
   }
 
   selectContext(id: ContextView): void {
@@ -192,8 +192,8 @@ export class WorkspaceState implements WorkspaceStateModel {
     resize(this.#state, patch);
   }
 
-  showing(category: Category, subscreen?: Subscreen): boolean {
-    return showing(this.#state, category, subscreen);
+  showing(category: Category, content?: ContentView): boolean {
+    return showing(this.#state, category, content);
   }
 
   undo(): void {

@@ -13,8 +13,8 @@ shared modules, and every method is a free function taking `WorkspaceStateData` 
 | `activate` | file | [`activate.ts`](activate.ts) | mutator | Move to a tab; an id naming none is ignored |
 | `close` | file | [`close.ts`](close.ts) | mutator | Move to the left neighbour, then remove the tab and its view |
 | `reopenClosed` | file | [`reopen-closed.ts`](reopen-closed.ts) | mutator | Invert the most recent `close` that has not come back, and move to it |
-| `showSubscreen` | file | [`show-subscreen.ts`](show-subscreen.ts) | mutator | Switch the centre and say what it is about; the rail follows and the inspection clears |
-| `selectContext` | file | [`select-context.ts`](select-context.ts) | mutator | Move the rail to a view this subscreen offers |
+| `showContent` | file | [`show-content.ts`](show-content.ts) | mutator | Switch the centre and say what it is about; the inspection clears and the rail stays |
+| `selectContext` | file | [`select-context.ts`](select-context.ts) | mutator | Move the rail to a view this category offers |
 | `inspect` | file | [`inspect.ts`](inspect.ts) | mutator | Open a lens, and record what it is about |
 | `clear` | file | [`clear.ts`](clear.ts) | mutator | Nothing selected — the lens and the selection together |
 | `resize` | file | [`resize.ts`](resize.ts) | mutator | Replace the active tab's frame with a patched copy |
@@ -29,11 +29,11 @@ the one place a reader has to stop and check.
 
 ## Two ways in to a centre, and one rule behind them
 
-The shell has no subscreen switcher: a centre is changed by choosing something in
+The shell has no centre switcher: a centre is changed by choosing something in
 it. Two methods therefore land a tab on a centre, and both go through
 [`landOn`](shared/land-on.ts) rather than assigning.
 
-`showSubscreen` is a person moving inside a category they are already on — the
+`showContent` is a person moving inside a category they are already on — the
 double click that chooses a persona is the same call that switches to the persona
 centre, and passing no subject is how a library is returned to.
 
@@ -100,20 +100,20 @@ Nine, and two of them are data rather than methods — see
 | `apply.ts` | `perform`, `undo`, `redo` | One op, one effect — the only place an op becomes a change |
 | `perform.ts` | every mutator, `land-on` | Nothing changes without leaving a record |
 | `landing.ts` | `land-on`, `open` | The `was` half of a landing is read once, the same way every time |
-| `rails.ts` | `select-context`, `land-on`, `mint-view`, the definition's `context` getter | The rail position is one this subscreen offers |
+| `rails.ts` | `select-context`, `land-on`, `mint-view`, the definition's `context` getter | The rail position is one this category offers |
 | `compose.ts` | `open`, `reopen-closed`, the definition's read getters | A record and a view are read as one tab, in one place |
-| `land-on.ts` | `show-subscreen`, `open` | A centre change takes its rail and its inspection with it |
+| `land-on.ts` | `show-content`, `open` | A centre change takes its inspection with it and leaves the rail |
 | `mint-view.ts` | the constructor, `open` | Every tab starts the same way |
 | `target-key.ts` | `open` | One definition of "already open" |
 
 ## Two asymmetries that are deliberate
 
 **`selectContext` throws; the `context` getter falls back silently.** The two
-cases are different. A remembered context can *drift* out of range when a
-subscreen changes — a templates tab switching mode swaps to a disjoint rail — and
-a reset rail is harmless where a crash is not. A caller naming a view no category
-offers has made a mistake, and swallowing it would leave the panel blank with
-nothing to explain why.
+cases are different. A remembered context can *drift* out of range when it is
+written in from outside — a stored position for a view that has since left the
+rail — and a fallback is harmless where a crash is not. A caller naming a view no
+category offers has made a mistake, and swallowing it would leave the panel blank
+with nothing to explain why.
 
 **`resize` takes `Partial<Frame>` and cannot reach `contextId`.** That is the
 point of it being its own method over its own type: a drag can never move the
@@ -127,11 +127,11 @@ Four methods throw, and each rejects something a caller could not have meant:
 | Method | Refuses |
 | --- | --- |
 | `close` | A permanent category — not being on one *is* closing it |
-| `showSubscreen` | A subscreen this category does not have |
-| `selectContext` | A view this subscreen's rail does not offer |
+| `showContent` | A content view this category does not have |
+| `selectContext` | A view this category's rail does not offer |
 | `inspect` | A key that is neither `"empty"` nor a lens |
 
-`showSubscreen` refuses inside `landOn` rather than in its own body, so `open`
+`showContent` refuses inside `landOn` rather than in its own body, so `open`
 refuses the same thing for a target that names a centre on a tab that is already
 open. One rule, both ways in — which is the reason the module exists at all.
 `mintView` is the gap in that: it is the branch of `open` that does not go
@@ -161,10 +161,10 @@ recorded only the difference could not be inverted without reading the state it
 was inverting.
 
 Two paths do more than assign, and both for the same reason — state belonging to
-what the tab is leaving has to go with it. `landOn` resets the rail when the new
-subscreen does not offer the remembered view, and clears the inspection and the
+what the tab is leaving has to go with it. `landOn` clears the inspection and the
 selection outright, because a lens about something off the screen is a panel that
-cannot explain itself. `clear` clears the selection with the lens,
+cannot explain itself. The rail is the category's and survives, which is the one
+piece of a landing that a change of centre does not invalidate. `clear` clears the selection with the lens,
 because a lens showing nothing beside a selection that still names something is
 two answers to what the person is looking at.
 

@@ -5,11 +5,11 @@
  *     pnpm category-keys
  *     pnpm category-keys -- --check
  *
- * A category is a directory and a subscreen is a content file:
- * `categories/agents/content/persona.svelte` is the `agents` category's
- * `"persona"`. Nothing outside the tree gets a vote, so `--check`, which exits
- * non-zero when a written file and the tree disagree, is the part of this
- * script worth putting in CI.
+ * A category is a directory and a content view is a file inside it:
+ * `categories/agents/content/persona.svelte` is `"agents.persona"`, keyed the
+ * same way a context view and a lens are. Nothing outside the tree gets a vote,
+ * so `--check`, which exits non-zero when a written file and the tree disagree,
+ * is the part of this script worth putting in CI.
  *
  * Two files, because `representation/` splits on what a file emits: the unions
  * belong under `data/types/`, which compiles to nothing, and the lists, the
@@ -115,37 +115,33 @@ const banner = () => `// Every category the tree defines. Generated — do not e
 // which is what stops a category naming something that is not there.
 `;
 
-const union = (name, values) => `export type ${name} =
-${values.map((value) => `  | "${value}"`).join("\n")};
-`;
+const union = (name, values) =>
+  values.length === 0
+    ? `export type ${name} = never;\n`
+    : `export type ${name} =\n${values.map((value) => `  | "${value}"`).join("\n")};\n`;
 
-const typesFile = (categories) => {
-  const subscreens = sorted(new Set([...categories.values()].flat()));
-  return `${banner()}
+const list = (name, values, of) =>
+  `export const ${name} = [${values.length === 0 ? "" : `\n${values.map((value) => `  "${value}"`).join(",\n")}\n`}] as const satisfies readonly ${of}[];\n`;
+
+/** `categories/agents/content/persona.svelte` is `"agents.persona"`. */
+const contentViews = (categories) =>
+  sorted([...categories].flatMap(([category, names]) => names.map((name) => `${category}.${name}`)));
+
+const typesFile = (categories) => `${banner()}
 ${union("Category", [...categories.keys()])}
-${union("Subscreen", subscreens)}`;
-};
+${union("ContentView", contentViews(categories))}`;
 
-const behaviorFile = (categories) => {
-  const members = [...categories.keys()].map((category) => `  "${category}"`).join(",\n");
-  const table = [...categories]
-    .map(([category, subscreens]) => `  "${category}": [${subscreens.map((name) => `"${name}"`).join(", ")}]`)
-    .join(",\n");
+const behaviorFile = (categories) =>
+  `${banner()}import type { Category, ContentView } from "$representation/data/types/workspace/categories";
 
-  return `${banner()}import type { Category, Subscreen } from "$representation/data/types/workspace/categories";
-
-export const CATEGORIES = [
-${members}
-] as const satisfies readonly Category[];
-
-export const SUBSCREENS = {
-${table}
-} as const satisfies Record<Category, readonly Subscreen[]>;
-
+${list("CATEGORIES", [...categories.keys()], "Category")}
+${list("CONTENT_VIEWS", contentViews(categories), "ContentView")}
 export const isCategory = (value: string): value is Category =>
   (CATEGORIES as readonly string[]).includes(value);
+
+export const isContentView = (value: string): value is ContentView =>
+  (CONTENT_VIEWS as readonly string[]).includes(value);
 `;
-};
 
 // ------------------------------------------------------------------- drift ----
 
@@ -185,10 +181,9 @@ const wanted = [
   { target: targets.behavior, contents: behaviorFile(categories) }
 ];
 
-const subscreens = [...categories.values()];
 const counts = [
   `${categories.size}  categories`,
-  `${new Set(subscreens.flat()).size}  subscreens, over ${subscreens.flat().length} content files`
+  `${contentViews(categories).length}  content views`
 ];
 
 if (flag === "--check") {

@@ -22,7 +22,7 @@
   let {
     panel,
     category,
-    subscreen,
+    content,
     kind,
     id,
     at
@@ -31,23 +31,23 @@
     panel: string;
     /** Context only: the tab that scopes it. */
     category?: string;
-    subscreen?: string;
+    content?: string;
     /** Inspector only: what the lens is about. */
     kind?: string;
     id?: string;
     at?: string;
   } = $props();
 
-  const trace = traceNode("PanelPlaceholder", () => ({ panel, category, subscreen, kind, id, at }));
+  const trace = traceNode("PanelPlaceholder", () => ({ panel, category, content, kind, id, at }));
 
   /** Absent and empty read the same to a person: neither is an answer. */
   const shown = (value: string | undefined) => (value === undefined || value === "" ? "—" : value);
 
   const address = $derived(
-    category !== undefined || subscreen !== undefined
+    category !== undefined || content !== undefined
       ? [
           ["category", shown(category)],
-          ["subscreen", shown(subscreen)]
+          ["content", shown(content)]
         ]
       : [
           ["kind", shown(kind)],

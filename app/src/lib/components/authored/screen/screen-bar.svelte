@@ -8,10 +8,10 @@
   /**
    * The strip that says which one of many you are editing, and how to get back.
    *
-   * Six screens have a library and an editor in one tab — Templates, Personas,
-   * Automations, Context, Analysis and Research. Entering the editor replaces
-   * the library, and without this the tab looks like a different screen with no
-   * way back. It is the whole of what "subscreen" costs the user.
+   * Some categories have a library and an editor in one tab — Templates and
+   * Agents today. Entering the editor replaces the library, and without this the
+   * tab looks like a different category with no way back. It is the whole of
+   * what a second centre costs the user.
    *
    * The way back is `simple-components/button`, because it is the one control on
    * the screen a person reaches for when they feel lost, and a control reached
