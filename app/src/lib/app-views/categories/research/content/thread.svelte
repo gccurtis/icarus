@@ -65,10 +65,6 @@
    * matters. Proportion is kept where it is load-bearing: whatever height the
    * ask does not want, the answer takes.
    *
-   * **The Copilot's composer is disabled on this category.** This is already a
-   * conversation with an agent, and the composer at the foot is the one place to
-   * say the next thing.
-   *
    * A proposed finding has no state in the real model yet — proposed, accepted
    * and dismissed live only in the mock door — so the decision made here is held
    * in view state and says so as a verdict on the card rather than by claiming a

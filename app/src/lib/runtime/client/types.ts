@@ -1,6 +1,5 @@
 import type { CommandsModel } from "$model/client/commands";
 import type { ConfigurationModel, ConfigurationSnapshot } from "$model/client/configuration";
-import type { CopilotModel } from "$model/client/copilot";
 import type { DocumentRuntimesModel } from "$model/client/document-runtimes";
 import type { SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
 import type { SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtimes";
@@ -24,7 +23,6 @@ export interface ClientModel {
 
   readonly workspaceState: WorkspaceStateModel;
   readonly commands: CommandsModel;
-  readonly copilot: CopilotModel;
 
   close(): void;
 }

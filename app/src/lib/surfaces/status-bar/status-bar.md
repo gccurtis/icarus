@@ -5,51 +5,33 @@ documents linked below.
 
 ## Purpose
 
-The bar across the foot of the application. Three parts: what is on the work
-surface, the Copilot, and what is waiting for you.
+The bar across the foot of the application. Two parts, at opposite ends: what is
+on the work surface, and what is waiting for you.
 
-It reads the client model, coordinates two panels, and owns the one input that is
-available from every category — which is what makes it a view rather than a strip
-of text.
-
-## Why the Copilot is here and not floating
-
-A dock hovering over the foot of the work surface covers the bottom of every
-screen. It has to be translucent to be bearable, which makes the one
-always-available input in the application also the hardest to read, and the
-gutter around it has to be made non-hit-testable so it does not swallow clicks
-meant for the work underneath.
-
-A row of its own costs eight pixels more than the status bar already takes, and
-covers nothing.
+It reads workspace state and reports. It takes no input and performs nothing,
+which is what keeps it a line of status rather than a toolbar.
 
 ## Why the columns are the frame's columns
 
-Left sits under the context panel, the composer under the work surface, right
-under the inspector. The widths are read from `--app-context` and
-`--app-inspector`, which the frame sets from the active tab — so the three parts
-track the flanks as they are dragged, and the composer stays exactly as wide as
-the thing it is talking about.
+Left sits under the context panel and right under the inspector, with the work
+surface's width between them. The widths are read from `--app-context` and
+`--app-inspector`, which the frame sets from the active tab — so each end tracks
+the flank it is under as that flank is dragged.
 
-Thirds would be simpler and wrong: a composer centred over a layout it has
-nothing to do with reads as a floating bar that happens to be at the bottom.
+Halves would be simpler and wrong: the two ends would drift out from under the
+panels they belong to the moment either was resized.
 
 ## Boundary
 
 This view owns:
 
-- the three-part division and its widths;
-- the composer, its growth, and the two menus that open upward out of it;
-- the decision to open the inspector when the composer is engaged;
+- the two-part division and its widths;
 - what counts as something waiting for you.
 
 It does not own:
 
-- what is inspected. It records `copilot.home`; the inspector decides what that
-  looks like.
-- the inspector's width. It opens a collapsed panel and leaves an open one at
-  whatever width its user chose.
-- anything the prompt does. No agent capability exists.
+- what is inspected. Nothing here sets an inspection.
+- the panels' widths. It reads them and places itself against them.
 - the category's name. That is on the tab, two rows up.
 
 ## Public Contract
@@ -67,8 +49,7 @@ It does not own:
 
 | Model | Usage |
 | --- | --- |
-| `$runtime/client` | `copilot`: mode, persona, draft, `focusRequests`, `blocked`; calls `setMode`, `selectPersona`, `write`, `sent` |
-| `$model/client/workspace-state` | `active`, `frame`; calls `resize` |
+| `$model/client/workspace-state` | `active` — the tab's `resourceId` and `focus` |
 
 ### Capabilities
 
@@ -87,8 +68,6 @@ It does not own:
 
 | Dependency | Usage |
 | --- | --- |
-| `$lib/components/vendor/select` | Mode and persona |
-| `@lucide/svelte` | The submit glyph |
 | Token domains: color, spacing, shape, typography | Every value |
 
 ## Directory Documents
@@ -108,54 +87,38 @@ there is no path from here to `tab-bar/procedures/`.
 | On a thing | Either is set | Left reads its name and kind, or its id where the project does not know it | — |
 | Nothing waiting | No unresolved mention | The count reads 0 in the muted ink | — |
 | Waiting | An unresolved mention | The count takes the attention role — the one raised voice in the bar | Opens the mention lens |
-| Grown | Prompt past one line | Up to three lines, then it scrolls inside itself | — |
 | Loading | `None` | — | — |
 | Failure | `None` | — | — |
 
-Submitting clears the prompt and opens the Copilot's lens. Nothing is dispatched
-— there is no agent capability — so a turn produces no reply, and the panel it
-opens says so rather than pretending to wait.
-
 ## Accessibility
 
-- **Landmark and accessible name:** a `contentinfo` landmark holding a form
-  labelled "Copilot".
-- **Initial focus:** none taken. A composer that grabbed focus on load would
-  steal the first keystroke of every session.
-- **Keyboard model:** tab order. Enter submits, Shift+Enter adds a line. Mode and
-  persona carry the registry's own keyboard behaviour.
-- **Announcements:** `None` yet. A reply arriving in the inspector needs one, and
-  that belongs to the surface that renders replies.
-- **Focus restoration:** engaging the composer must not destroy the selection
-  that preceded it — an inspection is set only by an explicit call, never derived
-  from focus, so the prior selection survives in the tab that owns it.
+- **Landmark and accessible name:** a `contentinfo` landmark.
+- **Initial focus:** none taken, and nothing here is focusable.
+- **Keyboard model:** `None`. The bar holds no control.
+- **Announcements:** `None` yet. Something arriving for you needs one, and that
+  belongs with the surface that renders it.
+- **Focus restoration:** `None`. Nothing here takes focus to restore.
 
 ## Layout and Overflow
 
-- **Parent constraints:** the frame's last grid row, 32px.
-- **Responsive behavior:** below 60rem the two outer parts are dropped and the
-  composer takes the whole row. What is on the surface and what is waiting are
-  both reachable from the frame's own bars; the composer is not reachable
-  anywhere else.
-- **Scroll owner:** the composer, past three lines.
-- **Minimum and maximum geometry:** the row is fixed at 32px and the composer
-  stops growing at 66px, overflowing upward rather than resizing the row — a band
-  that grew as someone typed would reflow the whole work surface mid-sentence.
+- **Parent constraints:** the frame's last grid row, 32px — a height sized for
+  the composer this bar used to hold, and left alone when it went.
+- **Responsive behavior:** none. Both parts are a line of text and both stay.
+- **Scroll owner:** neither part. The subject truncates with an ellipsis.
+- **Minimum and maximum geometry:** the row is fixed at 32px and nothing in it
+  can grow.
 
 ## View Invariants
 
-- **Opening and inspecting are two calls, not one.** `inspect()` records what the
-  user is looking at and nothing else; a model method that also moved panels
-  would make every future caller of `inspect()` a layout change.
-- **It opens a collapsed panel and never resizes an open one.** A composer that
-  resized the inspector each time it took focus would be fighting its user.
+- **It reports and never acts.** Nothing in the bar performs a command, opens a
+  panel or records an inspection. A status bar with a control in it is a toolbar
+  wearing the wrong name, and the one that used to be here — a composer that
+  opened the inspector on focus — is what made the distinction worth writing down.
 - **Left is about the work and right is about you.** A resource's state and a
   person's attention are different kinds of fact; a single run of chips across
   the bar would make them look like one kind.
 - **One raised voice.** Only the unresolved-mention count takes a role colour.
   A status bar where three things are coloured has no status.
-- **Mode and persona are the copilot model's, not this view's.** Neither survives
-  a reload, and neither should until something can act on them.
 
 ## Supporting Documents
 

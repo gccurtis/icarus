@@ -116,8 +116,8 @@
   .app {
     --app-top-bar: calc(var(--token-spacing-unit) * 11); /* 44px */
     --app-tab-bar: calc(var(--token-spacing-unit) * 9); /* 36px */
-    /* 32px, because the bar holds the Copilot's composer. A 24px row fits a
-     * sentence; it does not fit an input. */
+    /* 32px. Sized for the composer the bar used to hold, and left alone when it
+     * went: the row now carries a line of text and could be shorter. */
     --app-status: calc(var(--token-spacing-unit) * 8);
     /* Seeds only. Both flanks are overridden inline from view state above;
      * these are what paints if that ever fails, and they are why the grid never

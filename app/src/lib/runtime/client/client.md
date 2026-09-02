@@ -21,12 +21,10 @@ window later — and it owns one client model for its whole life.
 | [`document-runtimes`](document-runtimes/document-runtimes.md) | One runtime per open document: the unsent buffer, the submit protocol, the undo stack | yes |
 | [`slide-deck-runtimes`](slide-deck-runtimes/slide-deck-runtimes.md) | The same, for one deck | yes |
 | [`spreadsheet-runtimes`](spreadsheet-runtimes/spreadsheet-runtimes.md) | The same, for one sheet | yes |
-| [`copilot`](copilot/copilot.md) | The message that has not been sent: its text, mode, addressee, scope and attachments | yes |
 
 In construction order, which is dependency order: configuration depends on
 nothing, the three registers read their flush thresholds off it, `workspace-state` is
-handed the two halves it coordinates, and commands closes over it. The
-copilot borrows nothing.
+handed the two halves it coordinates, and commands closes over it.
 
 **`tab-list` and `tab-views` are the two objects the graph does not return.**
 They are built here and handed to `createWorkspaceState`, and `ClientModel` names

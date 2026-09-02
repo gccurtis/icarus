@@ -103,10 +103,9 @@ export { default as ScreenSlide } from "$authored-components/screen/screen-slide
  * readable without one, and it has to stay between them when they collapse to one
  * column.
  *
- * `ScreenComposer` is not the Copilot's bar, which lives in the status bar and is
- * disabled on Research precisely because that screen already has one of these. It
- * carries what the message will be able to see, because a request states its
- * scope where the request is written.
+ * `ScreenComposer` belongs to the screen it sits at the foot of, and carries what
+ * the message will be able to see, because a request states its scope where the
+ * request is written.
  */
 export { default as ScreenGrid } from "$authored-components/screen/screen-grid.svelte";
 export { default as ScreenGridCell } from "$authored-components/screen/screen-grid-cell.svelte";

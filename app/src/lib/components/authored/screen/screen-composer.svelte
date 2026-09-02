@@ -11,13 +11,9 @@
   /**
    * Where a person writes the thing that gets sent.
    *
-   * **Not the Copilot's bar.** That one belongs to no tab: it lives in the middle
-   * of the status bar, rises out of the status row when it opens, and is
-   * deliberately disabled on Research — because that screen is already a
-   * conversation with an agent, and a second composer floating over it would be
-   * two ways to say the same thing. This is the composer a screen owns, at the
-   * foot of the screen, and it is the reason the floating one can be switched
-   * off.
+   * **A screen owns this one**, at the foot of the screen and inside the tab, so
+   * what it sends is addressed by where it sits. There is no application-wide
+   * composer for it to be confused with.
    *
    * **Not `PanelEditableText`.** That hands back a value that is already on the
    * screen beside it — a name, a description, a formula — so it is a panel row

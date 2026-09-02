@@ -12,8 +12,9 @@ closed, exactly as a document is — which is why it is a tab and not a place.
 Anchored to a single turn rather than scrolled through all of them; earlier
 turns are a context view, not scrollback.
 
-The Copilot's composer is disabled here. This is already a conversation with an
-agent, and the composer at the foot is the one place to say the next thing.
+The composer at the foot of the screen is the one place to say the next thing.
+This is already a conversation with an agent, so the category owns its input
+rather than borrowing one from the shell.
 
 ## Context
 
@@ -200,9 +201,9 @@ reference *is* its identifier, so the mode decides which lens it opens.
 
 Asking names the agent as an actor row into its profile, and states the rule: the
 agent is set once for the whole thread and there is no per-turn switch. **It is
-also the one place the product says why this category has no Copilot** — the thread
-already is a conversation with an agent, so a second composer floating over it
-would be two ways to say the same thing.
+also the one place the product says why the composer belongs to this category** —
+the thread already is a conversation with an agent, so the input sits inside the
+tab that holds the conversation rather than anywhere else.
 
 Looking in is the scope as a row reading so many of so many retrievable, opening
 the thread's Context panel; and the web as its own row when it is on, saying it

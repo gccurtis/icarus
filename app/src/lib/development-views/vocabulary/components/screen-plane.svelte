@@ -665,7 +665,7 @@
   <Entry
     name="ScreenComposer"
     use="Where a person writes the thing that gets sent, at the foot of a screen that owns one. The scope is required and sits beside the send control, because a request states what it will be able to see where the request is written; the keystroke is drawn on keycaps, because the one that is not bound has to stay a newline and nobody can guess which."
-    instead="PanelEditableText, which hands back a value already on the screen beside it, commits on blur and puts the old text back on Escape — none of which means anything for something that does not exist yet. Not the Copilot's bar either: that one belongs to no tab, lives in the status bar, and is disabled on Research precisely because that screen already has one of these."
+    instead="PanelEditableText, which hands back a value already on the screen beside it, commits on blur and puts the old text back on Escape — none of which means anything for something that does not exist yet."
     code={CODE.composer}
     width="screen"
   >

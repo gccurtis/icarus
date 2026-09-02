@@ -1,7 +1,6 @@
 import { browser } from "$app/environment";
 import { createCommands } from "$model/client/commands";
 import { createConfiguration } from "$model/client/configuration";
-import { createCopilot } from "$model/client/copilot";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
 import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
 import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
@@ -57,7 +56,6 @@ const buildClientModel = ({
     slideDeckRuntimes,
     spreadsheetRuntimes,
     commands: createCommands(workspaceState),
-    copilot: createCopilot(),
 
     close: () => {
       void workspaceState.flush().catch(() => undefined);

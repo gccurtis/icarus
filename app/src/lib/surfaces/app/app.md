@@ -64,7 +64,7 @@ Views reached through their root component only.
 | `context` | `context.svelte`, `types.ts` | The left flank; `types.ts` for the rail width the column math needs |
 | `inspector` | `inspector.svelte`, `types.ts` | The right flank; `types.ts` for the width it collapses to |
 | `content` | `content.svelte` | The centre |
-| `status-bar` | `status-bar.svelte` | The foot: what is on the surface, the Copilot, and what is waiting for you |
+| `status-bar` | `status-bar.svelte` | The foot: what is on the surface, and what is waiting for you |
 | `command-bar` | `command-bar.svelte` | The command overlay. Rendered outside the grid, because it belongs to no zone |
 
 ### Presentation
