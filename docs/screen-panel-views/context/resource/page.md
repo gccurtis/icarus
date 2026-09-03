@@ -20,7 +20,7 @@ measured on a ruler above it — which is why there is no ruler.
 
 ## Paper
 
-**Shows** — `Size · Letter | A4`, `Orientation · Portrait | Landscape`
+**Shows** — `Size · Letter`, `Orientation · Portrait`
 
 **Needs** — `PageSetup` paper and orientation.
 
@@ -29,9 +29,20 @@ measured on a ruler above it — which is why there is no ruler.
 All four, named as inside and outside rather than left and right, because a bound
 document has a wider inside margin and the setting has to survive a page turn.
 
-**Shows** — `Top · 1.00 in`, `Bottom · 1.00 in`, `Inside · 1.25 in`, `Outside · 1.00 in`
+**Shows** — `Top · 0.75 in`, `Right · 0.75 in`, `Bottom · 0.75 in`, `Left · 0.75 in`
 
 **Needs** — four margin values on `PageSetup`, and a renderer that draws them.
+
+## Typesetting
+
+The page layout derives the estimate the initial editor uses to move plain text
+to the next page.
+
+**Shows** — `Font size · 16px`, `Line height · 26px`, `Characters · 82 per line`, `Lines · 35 per page`
+
+**Needs** — the paper dimensions, margins, and documented average glyph width
+assumption. This is a layout estimate until the editor paginates from measured
+line boxes.
 
 **Open** — inside/outside only means something for a two-sided document. Whether
 one-sided documents show left/right instead needs deciding.
