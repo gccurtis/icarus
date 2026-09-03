@@ -35,5 +35,9 @@ export const apply = (state: WorkspaceStateData, op: WorkspaceOp): void => {
     case "resize":
       state.views.resize(op.tab, op.now);
       return;
+
+    case "zoom":
+      state.views.zoom(op.tab, op.now);
+      return;
   }
 };

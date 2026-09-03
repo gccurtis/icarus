@@ -59,4 +59,8 @@ export class TabViews implements TabViewsModel {
   resize(id: TabId, change: Partial<Frame>): void {
     patch(this.#state, id, { frame: { ...of(this.#state, id).frame, ...change } });
   }
+
+  zoom(id: TabId, zoom: number | null): void {
+    patch(this.#state, id, { zoom });
+  }
 }

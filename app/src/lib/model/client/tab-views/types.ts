@@ -21,4 +21,5 @@ export interface TabViewsModel {
   inspect(id: TabId, inspected: Inspected, selection: Selection | null): void;
   clear(id: TabId): void;
   resize(id: TabId, patch: Partial<Frame>): void;
+  zoom(id: TabId, zoom: number | null): void;
 }

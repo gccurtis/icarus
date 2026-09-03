@@ -45,7 +45,14 @@ const buildClientModel = ({
 
   const tabList = createTabList();
   const tabViews = createTabViews();
-  const workspaceState = createWorkspaceState(project, tabList, tabViews, settings);
+  const workspaceState = createWorkspaceState(
+    project,
+    tabList,
+    tabViews,
+    settings,
+    documentRuntimes,
+    slideDeckRuntimes
+  );
 
   return {
     project,

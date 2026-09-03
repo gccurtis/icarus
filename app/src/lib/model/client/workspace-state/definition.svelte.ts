@@ -8,11 +8,15 @@ import type {
   TabId,
   Target
 } from "$representation/data/types/workspace/tab";
+import type { DocumentRuntime, DocumentRuntimesModel } from "$model/client/document-runtimes";
+import type { SlideDeckRuntime, SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
 import type { TabListModel } from "$model/client/tab-list";
 import type { TabViewsModel } from "$model/client/tab-views";
 import { activate } from "$model/client/workspace-state/methods/activate";
 import { clear } from "$model/client/workspace-state/methods/clear";
 import { close } from "$model/client/workspace-state/methods/close";
+import { documentRuntime } from "$model/client/workspace-state/methods/document-runtime";
+import { slideDeckRuntime } from "$model/client/workspace-state/methods/slide-deck-runtime";
 import { flush } from "$model/client/workspace-state/methods/flush";
 import { inspect } from "$model/client/workspace-state/methods/inspect";
 import { open } from "$model/client/workspace-state/methods/open";
@@ -22,12 +26,12 @@ import { resize } from "$model/client/workspace-state/methods/resize";
 import { restore } from "$model/client/workspace-state/methods/restore";
 import { selectContext } from "$model/client/workspace-state/methods/select-context";
 import { compose } from "$model/client/workspace-state/methods/shared/compose";
-import { SINGLETONS } from "$model/client/workspace-state/methods/shared/defaults";
-import { mintView } from "$model/client/workspace-state/methods/shared/mint-view";
+import { startingWorkspace } from "$model/client/workspace-state/methods/shared/defaults";
 import { defaultContext, offersContext } from "$model/client/workspace-state/methods/shared/rails";
 import { showContent } from "$model/client/workspace-state/methods/show-content";
 import { showing } from "$model/client/workspace-state/methods/showing";
 import { undo } from "$model/client/workspace-state/methods/undo";
+import { zoom } from "$model/client/workspace-state/methods/zoom";
 import type { Tab, WorkspaceStateModel, WorkspaceSync } from "$model/client/workspace-state/types";
 
 export type Thresholds = { readonly afterOps: number; readonly afterMs: number };
@@ -48,14 +52,16 @@ export class WorkspaceStateData {
     readonly project: string,
     readonly tabs: TabListModel,
     readonly views: TabViewsModel,
-    readonly thresholds: Thresholds
+    readonly thresholds: Thresholds,
+    readonly documents: DocumentRuntimesModel | undefined,
+    readonly decks: SlideDeckRuntimesModel | undefined
   ) {
-    for (const category of SINGLETONS) {
-      const record = this.tabs.mint({ category });
-      this.views.set(record.id, mintView({ category }));
+    const starting = startingWorkspace();
+    for (const record of starting.tabs) {
+      this.views.set(record.id, starting.views[record.id]);
       this.tabs.add(record);
     }
-    this.tabs.activate(this.tabs.tabs[0].id);
+    this.tabs.activate(starting.activeId);
   }
 
   get afterOps(): number {
@@ -93,9 +99,11 @@ export class WorkspaceState implements WorkspaceStateModel {
     project: string,
     tabs: TabListModel,
     views: TabViewsModel,
-    thresholds: Thresholds
+    thresholds: Thresholds,
+    documents?: DocumentRuntimesModel,
+    decks?: SlideDeckRuntimesModel
   ) {
-    this.#state = new WorkspaceStateData(project, tabs, views, thresholds);
+    this.#state = new WorkspaceStateData(project, tabs, views, thresholds, documents, decks);
   }
 
   get project(): string {
@@ -123,9 +131,11 @@ export class WorkspaceState implements WorkspaceStateModel {
   get context(): ContextView | undefined {
     const record = this.#state.tabs.active;
     const { contextId } = this.#state.views.of(record.id);
-    return contextId !== null && offersContext(record.category, contextId)
-      ? contextId
-      : defaultContext(record.category);
+    return (
+      (contextId !== null && offersContext(record.category, contextId)
+        ? contextId
+        : defaultContext(record.category)) ?? undefined
+    );
   }
 
   get inspected(): Inspected {
@@ -192,8 +202,24 @@ export class WorkspaceState implements WorkspaceStateModel {
     resize(this.#state, patch);
   }
 
+  get zoom(): number | null {
+    return this.#state.views.of(this.#state.tabs.activeId).zoom;
+  }
+
+  setZoom(value: number): void {
+    zoom(this.#state, value);
+  }
+
   showing(category: Category, content?: ContentView): boolean {
     return showing(this.#state, category, content);
+  }
+
+  documentRuntime(resourceId: string): DocumentRuntime {
+    return documentRuntime(this.#state, resourceId);
+  }
+
+  slideDeckRuntime(resourceId: string): SlideDeckRuntime {
+    return slideDeckRuntime(this.#state, resourceId);
   }
 
   undo(): void {

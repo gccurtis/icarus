@@ -19,6 +19,7 @@ shared modules, and every method is a free function taking `WorkspaceStateData` 
 | `clear` | file | [`clear.ts`](clear.ts) | mutator | Nothing selected — the lens and the selection together |
 | `resize` | file | [`resize.ts`](resize.ts) | mutator | Replace the active tab's frame with a patched copy |
 | `showing` | file | [`showing.ts`](showing.ts) | accessor | Whether the active tab is on a given centre right now |
+| `slideDeckRuntime` | file | [`slide-deck-runtime.ts`](slide-deck-runtime.ts) | accessor | The runtime a deck already has, from the register this object borrows |
 | `undo` | file | [`undo.ts`](undo.ts) | mutator | Apply the inverse of the last op, and remember it for `redo` |
 | `redo` | file | [`redo.ts`](redo.ts) | mutator | Apply the last undone op again |
 

@@ -24,8 +24,11 @@ import {
   defaultContext,
   isInspectorView,
   isSingleton,
+  offersContext,
   railFor
 } from "$model/client/workspace-state";
+import { openingView } from "$representation/data/behavior/workspace/opening";
+import { startingWorkspace } from "$representation/data/behavior/workspace/starting";
 
 /**
  * What workspace state guarantees.
@@ -347,7 +350,19 @@ test("a minted tab arrives on the subject it was opened onto, and on none when i
 
 // ----------------------------------------------------------------- active id
 
-test("closing the active tab activates its left neighbour", () => {
+test("closing the active tab activates the one after it", () => {
+  const model = workspaceState();
+  model.open(document("a"));
+  const second = model.open(document("b"));
+  const third = model.open(document("c"));
+
+  model.activate(second.id);
+  model.close(second.id);
+
+  assert.equal(model.activeId, third.id);
+});
+
+test("closing the last tab in the strip falls back to the one before it", () => {
   const model = workspaceState();
   const first = model.open(document("a"));
   const second = model.open(document("b"));
@@ -793,7 +808,7 @@ test("no tab shares another's frame", () => {
 
   assert.equal(tabOf(model, a.id).frame.contextWidth, 400);
   assert.equal(tabOf(model, b.id).frame.contextWidth, DEFAULT_FRAME.contextWidth);
-  assert.equal(DEFAULT_FRAME.contextWidth, 276);
+  assert.equal(DEFAULT_FRAME.contextWidth, 180);
 });
 
 // ----------------------------------------------------------------- isolation
@@ -932,4 +947,97 @@ test("reopening is the most recent close inverted, and is itself undoable", () =
   model.undo();
   model.undo();
   assert.equal(model.tabs.some((tab) => tab.id === first.id), false);
+});
+
+test("a tab opens with its zoom undecided", () => {
+  const model = workspaceState();
+  model.open(document("k57"));
+
+  assert.equal(model.zoom, null);
+});
+
+test("zoom belongs to the tab, not to the window", () => {
+  const model = workspaceState();
+  const first = model.open(document("k57"));
+  const second = model.open(document("k58"));
+
+  model.setZoom(150);
+  assert.equal(model.zoom, 150);
+
+  model.activate(first.id);
+  assert.equal(model.zoom, null);
+
+  model.activate(second.id);
+  assert.equal(model.zoom, 150);
+});
+
+test("zooming does not touch the panels", () => {
+  const model = workspaceState();
+  model.open(document("k57"));
+  const before = { ...model.frame };
+
+  model.setZoom(200);
+
+  assert.deepEqual({ ...model.frame }, before);
+});
+
+test("zooming to where it already is records nothing", () => {
+  const model = workspaceState();
+  model.open(document("k57"));
+
+  model.setZoom(150);
+  model.setZoom(150);
+  model.undo();
+
+  assert.equal(model.zoom, null);
+});
+
+test("undo puts the zoom back", () => {
+  const model = workspaceState();
+  model.open(document("k57"));
+
+  model.setZoom(75);
+  assert.equal(model.zoom, 75);
+
+  model.undo();
+  assert.equal(model.zoom, null, "undoing the first zoom leaves it undecided again");
+
+  model.redo();
+  assert.equal(model.zoom, 75);
+});
+
+test("every category lands on a context view its own rail offers", () => {
+  for (const category of CATEGORIES) {
+    const lands = defaultContext(category);
+    if (lands === null) {
+      assert.equal(railFor(category).length, 0, `'${category}' has a rail but lands nowhere`);
+      continue;
+    }
+    assert.equal(
+      offersContext(category, lands),
+      true,
+      `'${category}' lands on '${lands}', which is not on its rail`
+    );
+  }
+});
+
+test("a singleton's starting view is the one its category opens on", () => {
+  const starting = startingWorkspace();
+
+  for (const category of SINGLETONS) {
+    assert.deepEqual(starting.views[category], openingView(category));
+  }
+});
+
+test("a singleton's id is its category, so two clients name the same tab", () => {
+  const starting = startingWorkspace();
+
+  assert.deepEqual(
+    starting.tabs.map((tab) => tab.id),
+    [...SINGLETONS]
+  );
+  assert.deepEqual(
+    starting.tabs.map((tab) => tab.category),
+    [...SINGLETONS]
+  );
 });

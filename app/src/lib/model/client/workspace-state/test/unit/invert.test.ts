@@ -29,7 +29,7 @@ const persona: Landing = {
   selection: { kind: "persona", id: "p-1" }
 };
 
-const view: TabView = { ...library, frame };
+const view: TabView = { ...library, frame, zoom: 100 };
 const target = { category: "document-editor", resourceId: "k57" } as const;
 
 const OPS: readonly WorkspaceOp[] = [
@@ -46,12 +46,13 @@ const OPS: readonly WorkspaceOp[] = [
     wasSelection: null,
     selection: { kind: "cell", id: "C2" }
   },
-  { op: "resize", tab: "t9", was: frame, now: dragged }
+  { op: "resize", tab: "t9", was: frame, now: dragged },
+  { op: "zoom", tab: "t9", was: 100, now: 150 }
 ];
 
 test("every member of the union is covered here", () => {
   assert.equal(new Set(OPS.map((op) => op.op)).size, OPS.length);
-  assert.equal(OPS.length, 7);
+  assert.equal(OPS.length, 8);
 });
 
 test("inverting twice is the original, for every member", () => {

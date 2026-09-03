@@ -97,13 +97,21 @@ Workspace state owns:
   it does not change
 - **The log.** Every gesture is one or two `WorkspaceOp`s, recorded before the method
   returns, and undo is that log read backwards
-- **The rail map** — which context views each category offers, and which centre
-  it opens on
-- **What a new tab starts as** — which categories are permanent, and the frame every
-  tab is minted with
+- **When a tab is minted, activated, landed or closed** — the gestures, not what
+  they produce
 
 `tab-list` owns what exists, in what order, and which one is active. `tab-views`
 owns what each tab is looking at. Neither owns a decision.
+
+**What a tab of a category *is* is not here.** The centre it opens on, the
+context it lands on, the rail it offers, and the frame and zoom it starts with
+are [`OPENING`](../../../representation/data/behavior/workspace/opening.ts), and
+which categories a workspace always holds one of is
+[`STARTING`](../../../representation/data/behavior/workspace/starting.ts). Both
+are vocabulary rather than this object's policy, because the server reads them
+too: a change set carries ops and nothing else, so the state those ops are
+stated against has to be constructible from the vocabulary alone. This object
+imports `openingView` and does not decide what it returns.
 
 Consumers own:
 
@@ -116,8 +124,8 @@ Consumers own:
 - **Runtime lifetime.** A live resource runtime belongs to the register for its
   kind — [documents](../document-runtimes/document-runtimes.md),
   [slide decks](../slide-deck-runtimes/slide-deck-runtimes.md) or
-  [spreadsheets](../spreadsheet-runtimes/spreadsheet-runtimes.md). Nothing here
-  attaches or releases one
+  [spreadsheets](../spreadsheet-runtimes/spreadsheet-runtimes.md). This object
+  routes to a register and never owns one; releasing is still the register's
 
 ## A key is a path
 
@@ -199,7 +207,10 @@ supporting flow. Every one is still a file.
 | `inspect` | file | mutator | Open a lens, and record what it is about |
 | `clear` | file | mutator | Nothing selected |
 | `resize` | file | mutator | Record a drag |
+| `setZoom` | file | mutator | What the active tab's centre is drawn at. Beside the frame rather than in it, because the frame is the panels' geometry and this is the centre's |
 | `showing` | file | accessor | Whether the active tab is on a given centre right now |
+| `documentRuntime` | file | accessor | The runtime a document already has. Attaching is the register's, so two tabs on one document share a buffer |
+| `slideDeckRuntime` | file | accessor | The same for a deck |
 | `undo` | file | mutator | Apply the inverse of the last op, and keep it for `redo` |
 | `redo` | file | mutator | Apply the last undone op again |
 
@@ -247,7 +258,9 @@ a DOM.
 export const createWorkspaceState = (
   project: string,
   tabs: TabListModel,
-  views: TabViewsModel
+  views: TabViewsModel,
+  configuration: ConfigurationModel,
+  documents?: DocumentRuntimesModel
 ): WorkspaceStateModel => ...;
 ```
 
@@ -259,11 +272,21 @@ counter on `tab-list` is enough; nothing lives at module scope.
 | ---------- | --------- | ----- |
 | `tabs` | BORROWED | What exists, in what order, and which one is active |
 | `views` | BORROWED | One `TabView` per tab id |
+| `configuration` | BORROWED | Two thresholds read at construction; not held afterwards |
+| `documents` | BORROWED | Which runtime a document already has, for `documentRuntime` |
+| `decks` | BORROWED | The same for a deck, for `slideDeckRuntime` |
 
-Both are constructed by [`buildClientModel`](../../../runtime/client/start.ts)
+All are constructed by [`buildClientModel`](../../../runtime/client/start.ts)
 immediately above this one and handed in, because the model standard is that the
-runtime holds every instance. Neither is returned in the graph it builds: this
-object is the only reader either has.
+runtime holds every instance. None is returned in the graph it builds: this
+object is the only reader `tabs` and `views` have.
+
+**Both registers are optional, and their accessors throw without them.** A view may
+reach the model only through this object, so the register has to be reachable
+here — but a test that never opens a document should not have to build one, and a
+workspace state with no register genuinely cannot hand one out. The alternative,
+building a register when none is passed, would put a second edit buffer behind
+every such call.
 
 Nothing else in the model is borrowed. What is open and what is being looked at
 is decided by the person, so every other dependency runs the other way, from the
@@ -313,6 +336,12 @@ different object with a different lifetime.
   another category lands in exactly the state it would have reached by hand.
 - **`resize` cannot reach `contextId`.** A drag can never move the rail and a
   rail click can never resize a panel, structurally rather than by convention.
+- **Zoom is the tab's, and it is not in the frame.** Two tabs on two documents
+  hold two zooms, and changing one leaves the panels exactly where they were. It
+  sits beside `frame` rather than inside it because the frame is what the panels
+  agree about and zoom is what the centre alone decides. `null` is a tab nobody
+  has zoomed, which the centre answers for itself — a document fills the width it
+  is given, and goes on filling it, until a number takes over for good.
 - **The model holds values; views hold bounds.**
 - **No component type enters the model.** The `view-keys` rule enforces it.
 - **Nothing here is persisted.**
@@ -356,7 +385,7 @@ workspace-state/
 │   ├── methods.md
 │   ├── open.ts · activate.ts · close.ts · reopen-closed.ts
 │   ├── show-content.ts · select-context.ts · showing.ts
-│   ├── inspect.ts · clear.ts · resize.ts
+│   ├── inspect.ts · clear.ts · resize.ts · zoom.ts
 │   ├── undo.ts · redo.ts
 │   └── shared/
 │       ├── shared.md
