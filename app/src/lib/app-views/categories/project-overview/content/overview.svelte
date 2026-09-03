@@ -23,6 +23,7 @@
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
+  import { create } from "$capabilities/store/index.remote";
   import { actorName } from "$app-views/categories/project-overview/procedures/actor-name";
   import { activity } from "$app-views/categories/project-overview/procedures/activity";
   import { inspectionFor } from "$app-views/categories/project-overview/procedures/inspecting";
@@ -195,27 +196,27 @@
     }
   ] as const;
 
-  /** Which editor a blank thing opens in, and what the strip calls it there. */
+  /** Which editor an unavailable action would open, and what the alert calls it. */
   const BLANK = {
-    document: { category: "document-editor", noun: "document" },
     slides: { category: "slide-deck-editor", noun: "deck" },
     spreadsheet: { category: "spreadsheet-editor", noun: "spreadsheet" }
   } as const satisfies Record<string, { category: Category; noun: string }>;
 
   /**
-   * The tab strip labels an editor tab by its `resourceId`, so a minted id has to
-   * read as a name rather than as a key. The number steps past whatever that
-   * category already holds, because `open` is keyed by the id: two blank documents
-   * are two things, and two that share a name are one tab.
+   * A title belongs to the document record, not to the tab. It steps past every
+   * document already in this project, so a closed document still keeps its name
+   * and a new document cannot accidentally reuse it.
    */
-  const untitled = (category: Category, noun: string): string => {
+  const untitled = (): string => {
     const taken = new Set(
-      view.tabs.filter((tab) => tab.category === category).map((tab) => tab.resourceId)
+      work.filter((row) => row.kind === "document").map((row) => row.name)
     );
     let count = 1;
-    while (taken.has(`Untitled ${noun} ${count}`)) count += 1;
-    return `Untitled ${noun} ${count}`;
+    while (taken.has(`untitled-${count}`)) count += 1;
+    return `untitled-${count}`;
   };
+
+  let creatingDocument = $state(false);
 
   /**
    * A thread and a chart are each a tab keyed by the thing, and nothing here
@@ -233,11 +234,34 @@
     if (landing) view.open({ category, resourceId: landing.id });
   };
 
-  const make = (key: (typeof CREATE)[number]["key"]) => {
-    if (key === "document" || key === "slides" || key === "spreadsheet") {
+  const make = async (key: (typeof CREATE)[number]["key"]) => {
+    if (key === "document") {
+      if (creatingDocument) return;
+
+      creatingDocument = true;
+      try {
+        const title = untitled();
+        const { id: resourceId } = await create({
+          table: "documents",
+          fields: {
+            projectId: id,
+            title,
+            createdBy: { kind: "user", userId: viewer },
+            updatedBy: { kind: "user", userId: viewer },
+            updatedAt: Date.now()
+          }
+        });
+        view.open({ category: "document-editor", resourceId });
+      } finally {
+        creatingDocument = false;
+      }
+      return;
+    }
+
+    if (key === "slides" || key === "spreadsheet") {
       // ── FORWARD DECLARATION ──────────────────────────────────────────────
       // Replace with `create` from $capabilities/store, then open on the id it
-      // returns. Minting the row has to come first: a tab keyed by a name the
+      // returns. Minting the row has to come first: a tab keyed by an id the
       // store has never heard of is a tab no door can answer for, which is the
       // bug this alert is standing in front of rather than hiding.
       const { noun } = BLANK[key];
@@ -265,6 +289,11 @@
    */
   const launch = (row: Resource) => {
     const target = openingFor(row);
+    if (row.kind === "document" && target) {
+      view.open(target);
+      return;
+    }
+
     if (target) {
       alert(`Opening "${row.name}" is not wired up yet.`);
       return;
@@ -420,6 +449,7 @@
             {@const Icon = pill.icon}
             <button
               type="button"
+              disabled={pill.key === "document" && creatingDocument}
               onclick={() => make(pill.key)}
               class="rounded-control text-body-sm flex w-full cursor-pointer items-center gap-2 border px-3 text-start {pill.tint}"
             >
@@ -606,8 +636,8 @@
                 Two acts, and conflating them would mean you could not look at
                 anything without leaving the board you came to.
 
-                Both are on the row rather than on the name, because the name is
-                a quarter of what a person aims at when they mean "this one".
+                The row opens from any non-control cell. The name is a control
+                for keyboard selection, so it also handles its own double click.
               -->
               <ScreenRow
                 selected={view.selection?.id === entry.selection.id}
@@ -619,6 +649,7 @@
                     type="button"
                     class="text-body-sm text-ink-primary min-h-9 text-start hover:underline"
                     onclick={() => view.inspect(entry.key, entry.selection)}
+                    ondblclick={() => launch(entry.row)}
                   >
                     {entry.row.name}
                   </button>
