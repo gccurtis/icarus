@@ -1,0 +1,172 @@
+[
+  {
+    "_id": "documentSnapshots:1",
+    "_creationTime": 1785312000000,
+    "projectId": "default",
+    "resourceId": "documents:1",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788299760000,
+    "body": {
+      "rows": [
+        {
+          "id": "#rtitle",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#btitle",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [{ "id": "#atitle", "kind": "literal", "text": "Winter readiness brief" }],
+              "display": "Winter readiness brief",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rdate",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bdate",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [{ "id": "#adate", "kind": "literal", "text": "Revised 4 February" }],
+              "display": "Revised 4 February",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rlead",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#blead",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "#alead",
+                  "kind": "literal",
+                  "text": "Peak demand on the western interconnect is forecast to exceed last winter's record by four percent, and two of the three substations that carried that peak have since been derated. This brief sets out where the exposure sits, what it would cost to close, and which of those costs are already committed."
+                }
+              ],
+              "display": "Peak demand on the western interconnect is forecast to exceed last winter's record by four percent, and two of the three substations that carried that peak have since been derated. This brief sets out where the exposure sits, what it would cost to close, and which of those costs are already committed.",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rexposure",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bexposure",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [{ "id": "#aexposure", "kind": "literal", "text": "Where the exposure sits" }],
+              "display": "Where the exposure sits",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rbody1",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bbody1",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "#abody1",
+                  "kind": "literal",
+                  "text": "Substation 14 is the binding constraint. Its transformer bank was derated in September after the oil analysis came back, and the two feeders that would otherwise pick up its load both run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only. The corridor itself is scheduled for reconductoring but not until the following summer, which puts the whole of this winter inside the window."
+                }
+              ],
+              "display": "Substation 14 is the binding constraint. Its transformer bank was derated in September after the oil analysis came back, and the two feeders that would otherwise pick up its load both run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only. The corridor itself is scheduled for reconductoring but not until the following summer, which puts the whole of this winter inside the window.",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rbody2",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bbody2",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "#abody2",
+                  "kind": "literal",
+                  "text": "The second concentration is behind the coastal tie. Nothing there has been derated, but the tie has carried an unplanned outage in each of the last three winters and the spares position for its breakers is one deep. That is a different kind of risk from the first and does not respond to the same money."
+                }
+              ],
+              "display": "The second concentration is behind the coastal tie. Nothing there has been derated, but the tie has carried an unplanned outage in each of the last three winters and the spares position for its breakers is one deep. That is a different kind of risk from the first and does not respond to the same money.",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rcost",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bcost",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [{ "id": "#acost", "kind": "literal", "text": "What it would cost" }],
+              "display": "What it would cost",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rbody3",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bbody3",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "#abody3",
+                  "kind": "literal",
+                  "text": "Bringing the reconductoring forward by a season is the single largest line and the only one that closes the first exposure outright. Everything else on the list buys time rather than headroom."
+                }
+              ],
+              "display": "Bringing the reconductoring forward by a season is the single largest line and the only one that closes the first exposure outright. Everything else on the list buys time rather than headroom.",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rquote",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bquote",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "#aquote",
+                  "kind": "literal",
+                  "text": "We are not short of capacity. We are short of the ability to move it when one thing fails."
+                }
+              ],
+              "display": "We are not short of capacity. We are short of the ability to move it when one thing fails.",
+              "marks": []
+            }
+          ]
+        }
+      ]
+    }
+  }
+]
