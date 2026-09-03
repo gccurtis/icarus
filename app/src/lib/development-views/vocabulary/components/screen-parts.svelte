@@ -310,7 +310,7 @@
 
   <Entry
     name="ScreenTable · ScreenRow · ScreenCell · ScreenHeadCell"
-    use="Rows of things. The click target is the name cell rather than the row, so other cells can hold their own links. Pass columns for one row of words; pass a head snippet of ScreenHeadCells when the header is its own shape — a group over two columns, a sort control, a unit under a name."
+    use="Rows of things. Give ScreenRow onselect and the whole row answers a click, while a press that started on a control inside it stays that control's — so other cells keep their own links. The name cell is still a button, because a long table wants one tab stop per row rather than two. Pass columns for one row of words; pass a head snippet of ScreenHeadCells when the header is its own shape — a group over two columns, a sort control, a unit under a name."
     instead="a status column. A row is a thing, not a health report — unless the table is about dispatch, where the result is the subject."
     code={CODE.head}
     width="screen"

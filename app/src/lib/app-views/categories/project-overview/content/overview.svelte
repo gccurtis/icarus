@@ -602,26 +602,27 @@
         {:else}
           <ScreenTable scroll columns={["Name", "Kind", "Updated", "Updated by"]}>
             {#each listed as entry (entry.row.id)}
-              <ScreenRow selected={view.selection?.id === entry.selection.id}>
+              <!--
+                Double-click opens the row; a single click selects and inspects.
+                Two acts, and conflating them would mean you could not look at
+                anything without leaving the board you came to.
+
+                Both are on the row rather than on the name, because the name is
+                a quarter of what a person aims at when they mean "this one".
+              -->
+              <ScreenRow
+                selected={view.selection?.id === entry.selection.id}
+                onselect={() => view.inspect(entry.key, entry.selection)}
+                onopen={() => launch(entry.row)}
+              >
                 <ScreenCell>
-                  <!--
-                    Double-click opens the row; a single click selects and
-                    inspects. Two acts, and conflating them would mean you could
-                    not look at anything without leaving the board you came to.
-                  -->
-                  <span
-                    role="presentation"
-                    ondblclick={() => launch(entry.row)}
-                    class="flex items-center"
+                  <button
+                    type="button"
+                    class="text-body-sm text-ink-primary min-h-9 text-start hover:underline"
+                    onclick={() => view.inspect(entry.key, entry.selection)}
                   >
-                    <button
-                      type="button"
-                      class="text-body-sm text-ink-primary min-h-9 text-start hover:underline"
-                      onclick={() => view.inspect(entry.key, entry.selection)}
-                    >
-                      {entry.row.name}
-                    </button>
-                  </span>
+                    {entry.row.name}
+                  </button>
                 </ScreenCell>
                 <ScreenCell>{KIND_LABEL[entry.row.kind]}</ScreenCell>
                 <ScreenCell num>{entry.row.updated}</ScreenCell>
