@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
-import { test } from "vitest";
+import { test, vi } from "vitest";
 import { createConfiguration } from "$model/client/configuration";
 import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
+
+vi.mock("$capabilities/slide-deck/index.remote", () => ({
+  readSlideDeckBody: () => new Promise(() => {})
+}));
 
 const register = (afterOps = 50, afterMs = 2000) =>
   createSlideDeckRuntimes(

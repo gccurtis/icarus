@@ -128,14 +128,23 @@ can name an id that `open` no longer does.
 
 ## What is forward-declared
 
-Nothing serves a materialized deck body yet, and nothing writes
-`slideDeckChangeSets`. Two calls are therefore written as comments, with the code
-we expect to run:
+Reading is built. `attach` loads one deck's body through
+`$capabilities/slide-deck`, and a deck the store has never held opens on
+`methods/shared/empty-body.ts` rather than on nothing — a deck that draws nothing
+cannot be told apart from one that is broken.
+
+Writing is not. Nothing writes `slideDeckChangeSets`, so one call is still a
+comment with the code we expect to run:
 
 | Where | Call | What happens meanwhile |
 | --- | --- | --- |
-| `methods/attach.ts` | read one deck's body and revision | A runtime opens in `loading` with no body |
 | `methods/flush/flush.ts` | append to `slideDeckChangeSets` | The accepted branch is taken locally |
+
+**The buffer is not filled yet either.** The editor holds its own working body
+and applies nothing, so `flush` has nothing to submit and the stub is never
+reached in practice. Three decisions are already settled for when it is: a client
+sends change sets rather than raw ops, a refusal drops the change set instead of
+replaying it, and the editor applies optimistically and rolls back on refusal.
 
 **The client never holds a snapshot.** It holds one body at one revision.
 `slideDeckSnapshots` is the server's replay anchor and appears nowhere here.

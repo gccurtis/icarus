@@ -5,6 +5,10 @@ import { createConfiguration } from "$model/client/configuration";
 import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
 import type { SlideDeckRuntime } from "$model/client/slide-deck-runtimes";
 
+vi.mock("$capabilities/slide-deck/index.remote", () => ({
+  readSlideDeckBody: () => new Promise(() => {})
+}));
+
 const runtimeFor = (afterOps = 3, afterMs = 2000): SlideDeckRuntime =>
   createSlideDeckRuntimes(
     createConfiguration({ revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs } } })

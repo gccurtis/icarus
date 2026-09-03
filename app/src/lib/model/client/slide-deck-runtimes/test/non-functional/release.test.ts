@@ -6,6 +6,10 @@ import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
 import { Runtime } from "$model/client/slide-deck-runtimes/definition.svelte";
 import { rebase } from "$model/client/slide-deck-runtimes/methods/flush/rebase";
 
+vi.mock("$capabilities/slide-deck/index.remote", () => ({
+  readSlideDeckBody: () => new Promise(() => {})
+}));
+
 const register = (afterOps = 50, afterMs = 2000) =>
   createSlideDeckRuntimes(
     createConfiguration({ revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs } } })

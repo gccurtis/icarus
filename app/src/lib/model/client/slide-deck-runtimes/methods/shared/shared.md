@@ -2,11 +2,21 @@
 
 Lives at `methods/shared/shared.md`.
 
-One step, preserving an invariant that spans the methods using it.
+Two steps, each preserving something that spans the methods using it.
 
 | File | Callers | Invariant it preserves |
 | --- | --- | --- |
 | [`detach.ts`](detach.ts) | `release`, `release-all` | A runtime leaves `open` before anything else happens to it |
+| [`empty-body.ts`](empty-body.ts) | `attach` | A deck the store has never held still opens on something |
+
+## `emptyBody`
+
+One blank slide, not zero. A deck with no slides has nothing to draw and nothing
+to select, so it is indistinguishable on screen from a deck that failed to load —
+and the two want opposite responses from whoever is looking at it.
+
+Ids are minted here rather than taken from the store, because a body that has
+never been written has no ids to take.
 
 ## `detach`
 
