@@ -122,8 +122,8 @@
     /* Seeds only. Both flanks are overridden inline from view state above;
      * these are what paints if that ever fails, and they are why the grid never
      * collapses to zero on a first frame. */
-    --app-context: calc(var(--token-spacing-unit) * 80); /* 44 rail + 276 content */
-    --app-inspector: calc(var(--token-spacing-unit) * 80); /* 320px */
+    --app-context: calc(var(--token-spacing-unit) * 56); /* 44 rail + 180 content */
+    --app-inspector: calc(var(--token-spacing-unit) * 56); /* 224px */
 
     display: grid;
     grid-template-rows:

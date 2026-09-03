@@ -13,7 +13,7 @@
    * **Not `PanelRow` with `depth`.** Indentation says where a line sits and
    * nothing else, so a forty-node lattice drawn as indented rows is forty rows
    * however narrow the thing being looked for; and `depth` stops at three,
-   * because a fourth step leaves a title in a 300px column nowhere to be.
+   * because a fourth step leaves a title in a flank nowhere to be.
    * Disclosure is the difference. A shut branch is one line whatever is under
    * it, and depth costs nothing until it is opened.
    *

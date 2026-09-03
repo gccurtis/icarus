@@ -130,7 +130,7 @@
   };
 
   /**
-   * The value first, then the gesture. A value in a 300px panel truncates, and a
+   * The value first, then the gesture. A value in a panel truncates, and a
    * truncated value with no way to recover it is worse than an undiscoverable
    * gesture — so hover text carries both, in that order.
    */

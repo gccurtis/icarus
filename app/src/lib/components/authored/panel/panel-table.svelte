@@ -3,7 +3,7 @@
   import { traceNode } from "$development-components/trace.svelte";
 
   /**
-   * A bounded prefix of a tabular value, in a 300px column.
+   * A bounded prefix of a tabular value, in a flank.
    *
    * A panel is the wrong place for a table — and a variable holding 4,182 rows
    * still has to show what it holds, or the reader cannot tell whether it is the
@@ -20,7 +20,7 @@
    * are already bounded and has no way to ask for more.
    *
    * **Every column is mono and truncates.** These are values you would retype,
-   * and a wrapped cell in a three-column 276px body is unreadable. What does not
+   * and a wrapped cell in a three-column panel body is unreadable. What does not
    * fit is on the cell's title.
    */
   let {

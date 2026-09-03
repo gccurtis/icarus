@@ -13,7 +13,7 @@
    * `simple-components/select` unmodified underneath, so the listbox semantics,
    * the typeahead and the keyboard are bits-ui's. What this adds is the panel's
    * width and a flat `options` list, because a panel select is never a grouped
-   * one — at 300px a grouped listbox is a menu.
+   * one — in a flank a grouped listbox is a menu.
    */
   let {
     value,

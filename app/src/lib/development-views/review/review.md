@@ -134,8 +134,8 @@ as text.
   second answer to what the panel is a function of.
 - **An override never writes to what was returned.** Two panels reading the same
   thing always agree, and *reset* is always available.
-- **The stage is a real flank.** A context view and a lens render at 300px, which
-  is the width they will have.
+- **The stage is a real flank.** A context view and a lens render at a flank's
+  width, which is the width they will have.
 - **The trace is off unless this page is open.** `traceNode` finds no run in
   context anywhere else and returns immediately.
 

@@ -2,7 +2,7 @@
  * The workspace vocabulary: the shapes the centre of a screen is built from.
  *
  * A companion to `unique-components/panel`, and a separate family because a
- * workspace is not a panel. A panel is 300px and vertical; a workspace is the
+ * workspace is not a panel. A panel is a narrow vertical flank; a workspace is the
  * generous plane, and its recurring shapes are a header, a filter row, a table
  * or a grid of cards. Most of the nine screens are exactly that sequence.
  *
@@ -53,7 +53,7 @@ export { default as ScreenDecision } from "$authored-components/screen/screen-de
  * feed entry is a paragraph — an actor, what they did, where, and enough of what
  * they said to decide — and it does not align with the one above it. Not
  * `ScreenCard`, which is a tile sized by its picture. Not `PanelRow`, which is
- * 300px and truncates both its lines; on the plane an excerpt has room to be two
+ * in a flank and truncates both its lines; on the plane an excerpt has room to be two
  * lines and should be.
  */
 export { default as ScreenList } from "$authored-components/screen/screen-list.svelte";

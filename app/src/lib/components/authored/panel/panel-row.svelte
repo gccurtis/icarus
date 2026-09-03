@@ -59,7 +59,7 @@
      *
      * `indent` is a boolean, so an H3 would sit exactly where an H2 does and the
      * outline would read as two levels however deep it ran. Capped at three: a
-     * fourth step in a 300px column leaves the title nowhere to be, and a tree
+     * fourth step leaves the title nowhere to be, and a tree
      * that deep wants the centre rather than a flank.
      */
     depth?: 0 | 1 | 2 | 3;
@@ -166,7 +166,7 @@
         {title}
       </button>
     {:else}
-      <!-- Both lines truncate in a 300px panel, so both carry their own text. -->
+      <!-- Both lines truncate in a panel, so both carry their own text. -->
       <span
         {title}
         class={cn(

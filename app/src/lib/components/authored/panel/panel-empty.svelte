@@ -26,7 +26,7 @@
    * that list is not missing, it is hidden, and outlining a region that is
    * actually full is a lie about the state of the panel.
    *
-   * **Sized for 300px, which is where it stops being `ScreenEmpty`.** No
+   * **Sized for a flank, which is where it stops being `ScreenEmpty`.** No
    * illustration, one line, one action, and left-aligned — every other word in
    * this vocabulary sets its text from the panel's left edge, so a centred block
    * in the middle of the stack reads as a foreign object rather than as part of

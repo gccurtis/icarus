@@ -18,7 +18,7 @@
    * from its surroundings rather than carrying its own — a control that reset
    * the type in the middle of a sentence would be visible as a seam.
    *
-   * **`title` is what the label could not say.** A link inside a 300px panel is
+   * **`title` is what the label could not say.** A link inside a panel is
    * frequently a truncated name, or a name whose kind is not obvious from the
    * word — three people and a connector all read as capitalised nouns. Hover
    * text is where the rest of it goes.

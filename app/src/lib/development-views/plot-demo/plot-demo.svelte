@@ -205,7 +205,7 @@
     </ScreenNote>
   </ScreenSurface>
 
-  <div class="border-border-subtle bg-surface-panel w-75 shrink-0 border-s">
+  <div class="border-border-subtle bg-surface-panel w-45 shrink-0 border-s">
     <SelectionPanel {selection} data={DATA} series={SERIES} {format} />
   </div>
 </div>

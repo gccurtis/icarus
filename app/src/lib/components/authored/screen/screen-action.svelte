@@ -12,7 +12,7 @@
    * more. Every one of them declined `PanelButton` and hand-wrote 32px, which is
    * the whole argument for this being a separate word: `PanelButton` is pinned
    * at 24px because that is "the only size that leaves room for three controls
-   * across a 300px panel", and a plane has no such constraint.
+   * across a panel", and a plane has no such constraint.
    *
    * **32px rather than the panel's 24**, so a screen's action never reads as a
    * panel control that wandered out onto the plane.

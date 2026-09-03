@@ -24,7 +24,7 @@
    * **The width is the strip's decision, not the figure's**, as with
    * `ScreenStrip`. `min` is the narrowest a cell may be before the row drops
    * one, which is what lets the same markup run as a single line across the
-   * plane and break to two-up in a 300px panel without the caller choosing.
+   * plane and break to two-up in a panel without the caller choosing.
    */
   let {
     minWidth = "7.5rem",

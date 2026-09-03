@@ -22,10 +22,10 @@
    * second place to change it would be a second answer to what the panel is a
    * function of. Change a read, watch the tree and the stage both move.
    *
-   * **The stage is a real flank.** A context view and a lens render at 300px
-   * against canvas, because that is the width they will have, and a shape that
-   * reads at 800 and breaks at 300 is exactly what a review is for. A workspace
-   * gets the whole plane.
+   * **The stage is a real flank.** A context view and a lens render at a flank's
+   * width against canvas, because that is the width they will have, and a shape
+   * that reads across a plane and breaks in a flank is exactly what a review is
+   * for. A workspace gets the whole plane.
    */
   let {
     kind,
@@ -180,9 +180,9 @@
    * are different sizes.
    *
    * A workspace takes the whole plane, so it gets seventy per cent and the
-   * composition column gets what is left. A context view or a lens is 300px
-   * whatever the window is, so a stage at seventy per cent would be a 300px panel
-   * with eight hundred pixels of empty canvas beside it — the reading is
+   * composition column gets what is left. A context view or a lens is a flank
+   * whatever the window is, so a stage at seventy per cent would be one narrow
+   * panel with a plane of empty canvas beside it — the reading is
    * happening on the right, so the right gets the room.
    */
   .review {
@@ -244,9 +244,9 @@
     min-height: 100%;
   }
 
-  /* A flank is 300px and vertical. Anything else is a lie about the geometry. */
+  /* A flank is narrow and vertical. Anything else is a lie about the geometry. */
   .mount.flank {
-    width: calc(var(--token-spacing-unit) * 75);
+    width: calc(var(--token-spacing-unit) * 45);
     border-inline-end: 1px solid var(--token-border-subtle);
     background-color: var(--token-surface-panel);
   }

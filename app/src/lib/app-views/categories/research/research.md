@@ -175,7 +175,7 @@ current thread to anchor against. Two bands: the questions, then the ideas being
 tested.
 
 Questions nest exactly one level. A child hangs off its parent, and a child of a
-child would be a tree this panel is 300px too narrow to draw.
+child would be a tree this panel is too narrow to draw.
 
 An idea carries its assessment as its tone: ruled out and supported are settled,
 testing is live, untested is neither.

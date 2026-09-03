@@ -8,7 +8,7 @@
    * One entry in a `ScreenList`: who, what they did, and enough of what they
    * said to decide.
    *
-   * **Not `PanelRow`.** That row lives in a 300px column, so both of its lines
+   * **Not `PanelRow`.** That row lives in a flank, so both of its lines
    * truncate and its subtitle is a qualifier — a state, a location, a count —
    * rather than a quotation. On the plane there is room for two lines of what
    * somebody actually wrote, and a mention you cannot read is a mention you have

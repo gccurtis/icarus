@@ -54,7 +54,7 @@
 
 <!--
   `xs` is the 24px step: the pointer-target floor, and the only size that leaves
-  room for three controls across a 300px panel.
+  room for three controls across a panel.
 -->
 <Button {...trace} variant={VARIANT[tone]} size="xs" {disabled} {title} {onclick}>
   {#if Icon}

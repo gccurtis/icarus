@@ -22,7 +22,7 @@
    * Writing an expression against everything the project can refer to.
    *
    * A modal rather than a panel: an expression has parts that must agree, and a
-   * 300px column is not where that happens.
+   * flank is not where that happens.
    */
   let { open = $bindable(false) }: { open?: boolean } = $props();
 

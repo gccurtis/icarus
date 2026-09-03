@@ -16,8 +16,8 @@
    * timestamp, a number — anything where the difference between two characters
    * matters and proportional type hides it. Not for emphasis.
    *
-   * **`stacked` is for values that are longer than the column.** A panel is
-   * ~300px and its label column takes a third of that, so a title or a
+   * **`stacked` is for values that are longer than the column.** A flank is
+   * narrow and its label column takes a third of it, so a title or a
    * description set beside its label wraps to three lines and reads as a
    * paragraph with a word stuck to its left. Stacking puts the label above and
    * gives the value the full width, which is what every editable field in the

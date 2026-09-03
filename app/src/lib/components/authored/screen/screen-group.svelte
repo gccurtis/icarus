@@ -13,7 +13,7 @@
    * reaching into a panel component's internal class string is the loudest
    * possible evidence that the screen family needs the word.
    *
-   * **It never collapses, and that is the decision.** Disclosure is a 300px
+   * **It never collapses, and that is the decision.** Disclosure is a flank
    * problem: a panel hides sections because it has no room, and a plane has
    * room. A collapsible band on the workspace would let a screen hide half of
    * itself with no way to know it had.

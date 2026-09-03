@@ -39,7 +39,7 @@ export { default as PanelCode } from "$authored-components/panel/panel-code.svel
  * An actor is identified by a face, and a slide by its picture — neither has a
  * title to put in a row. Without a word for either, a persona screen hand-rolls
  * an initials circle and a deck inspector pulls the *workspace* thumbnail into a
- * 300px column, re-declaring the panel's width in a view file.
+ * flank, re-declaring the panel's width in a view file.
  */
 export { default as PanelActor } from "$authored-components/panel/panel-actor.svelte";
 export { default as PanelThumbs } from "$authored-components/panel/panel-thumbs.svelte";
@@ -103,11 +103,11 @@ export { default as PanelFaces } from "$authored-components/panel/panel-faces.sv
  *
  * `PanelTable` is a bounded prefix of a tabular value with its total under it —
  * a variable holding 4,182 rows still has to show what it holds, and three rows
- * and a count answers that where a scrollable grid in a 300px column does not.
+ * and a count answers that where a scrollable grid in a flank does not.
  *
  * `PanelCards` is `PanelChoice` for a set chosen by its picture rather than its
  * name: a chart kind, a slide layout, a page orientation. Two or three across and
- * never more, because a 276px body divided four ways is not a picture of
+ * never more, because a panel body divided four ways is not a picture of
  * anything.
  *
  * `PanelSentence` is one rule read as prose, with its clauses still selectable.
@@ -188,7 +188,7 @@ export { default as PanelDiff } from "$authored-components/panel/panel-diff.svel
  *
  * Both have a screen-scale counterpart and neither is it. `ScreenEmpty` is
  * centred, `flex-1` and `max-w-sm`; every one of those would have to be
- * overridden into its opposite at 276px. What survives the resizing is its one
+ * overridden into its opposite in a flank. What survives the resizing is its one
  * good distinction — a list never used and a filter that hid everything need
  * different sentences and different ways out — and here they differ visually too:
  * `nothing-yet` outlines the shape of the missing thing, `no-matches` does not,

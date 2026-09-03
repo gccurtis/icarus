@@ -29,7 +29,7 @@
     {
       have: "Show a fact whose value is long — a title, a description",
       use: "PanelField stacked",
-      why: "At 300px the label column is 80px. Set beside it, a title wraps three times and reads as a paragraph with a word stuck to its left."
+      why: "The label column takes a third of a flank. Set beside it, a title wraps three times and reads as a paragraph with a word stuck to its left."
     },
     {
       have: "Show a state, a category, a count",
@@ -109,7 +109,7 @@
     {
       have: "Name a band of the plane",
       use: "ScreenGroup",
-      why: "A caption in caps over whatever the band holds. It never collapses — disclosure is a 300px problem, and a plane that can hide half of itself gives no way to know it had."
+      why: "A caption in caps over whatever the band holds. It never collapses — disclosure is a flank problem, and a plane that can hide half of itself gives no way to know it had."
     },
     {
       have: "Offer the one thing this screen makes",

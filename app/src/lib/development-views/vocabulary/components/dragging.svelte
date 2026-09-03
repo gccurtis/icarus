@@ -12,7 +12,7 @@
    * Moving something from one place to another.
    *
    * Its own family because a drag crosses the other two: the thing picked up is
-   * a row in a 300px flank and the place it lands is a zone in the middle of the
+   * a row in a flank and the place it lands is a zone in the middle of the
    * plane, and neither vocabulary can own a shape that only exists between them.
    *
    * **Both examples work, and they are separate.** A drag is the one gesture on
@@ -99,7 +99,7 @@
 <section class="flex flex-col gap-8">
   <SectionTitle title="Moving things" source="src/lib/components/authored/drag/">
     A third family, because a drag crosses the other two: what is picked up is
-    usually a row in the 300px flank and where it lands is a zone in the middle
+    usually a row in the flank and where it lands is a zone in the middle
     of the plane. The rule underneath both words comes from the specifications
     verbatim — <em>nothing is drag-only</em>.
   </SectionTitle>

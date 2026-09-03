@@ -2,7 +2,7 @@
  * Charts.
  *
  * A family of its own because a chart belongs to neither of the other two: it is
- * drawn in a 300px inspector preview and across the whole plane of an Analysis
+ * drawn in an inspector preview and across the whole plane of an Analysis
  * screen, at the same fidelity, from the same declaration.
  *
  * **`layerchart` underneath — MIT, Svelte 5 native, SVG.** The licence is a

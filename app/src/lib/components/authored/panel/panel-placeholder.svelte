@@ -15,6 +15,11 @@
    * person it is about". The fields differ by stack because what addresses a
    * panel differs: a context view is scoped by the tab, a lens by the selection.
    *
+   * **The address stacks.** These are identifiers, so they are set in mono and
+   * may not be broken to fit; a flank has no room to put one beside its label,
+   * and a value that wraps five characters at a time is not readable as an
+   * identifier at all.
+   *
    * **Strings rather than a `Selection`.** A component knows only its props, so
    * the shape of the model is the caller's business — which is what lets this
    * render in a test with no view state at all.
@@ -61,10 +66,12 @@
   <p class="text-caption text-ink-muted m-0">Not built yet</p>
   <p class="text-body-sm text-ink-primary m-0 font-mono break-all">{panel}</p>
 
-  <dl class="m-0 grid grid-cols-[minmax(0,5rem)_1fr] gap-x-2 gap-y-0.5">
+  <dl class="m-0 flex flex-col gap-1.5">
     {#each address as [label, value] (label)}
-      <dt class="text-caption text-ink-muted m-0">{label}</dt>
-      <dd class="text-caption text-ink-secondary m-0 font-mono break-all">{value}</dd>
+      <div>
+        <dt class="text-caption text-ink-muted m-0">{label}</dt>
+        <dd class="text-caption text-ink-secondary m-0 font-mono break-all">{value}</dd>
+      </div>
     {/each}
   </dl>
 </div>

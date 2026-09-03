@@ -163,7 +163,7 @@ One search field over all three kinds rather than one per band: you are looking
 for a named thing far more often than you are browsing a category.
 
 A connector stands for the files it synced rather than expanding into them — 312
-rows in a 300px panel is not a list anyone reads. What is actually in scope is
+rows in a panel is not a list anyone reads. What is actually in scope is
 therefore one level away, which the file count on the row admits.
 
 Routes to `context-editor.resolved-resource` from a document or a finding, and to

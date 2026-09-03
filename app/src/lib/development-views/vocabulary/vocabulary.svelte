@@ -83,10 +83,10 @@
         it, and why that one rather than its neighbour.
       </p>
       <p class="text-body-sm text-ink-muted max-w-[70ch]">
-        Two families, because a panel is not a workspace. A flank is 300px and
+        Two families, because a panel is not a workspace. A flank is narrow and
         vertical; a workspace is the generous plane. Panel examples below are shown
-        at 300px — a shape that reads well at 800 and breaks at 300 is exactly what
-        this page exists to catch.
+        at a flank's real width — a shape that reads well across a plane and breaks
+        in a flank is exactly what this page exists to catch.
       </p>
     </header>
   </Commented>

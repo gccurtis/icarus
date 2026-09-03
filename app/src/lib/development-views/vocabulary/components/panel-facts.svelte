@@ -164,8 +164,8 @@
 
   <Entry
     name="PanelStats"
-    use="The record band in a flank: the figures a panel reports about its subject, on an even grid so the second figure of one panel sits under the second figure of the panel above it. Two or three across, never four — a 276px body divided four ways leaves 60px, which will not hold “128” over “findings”."
-    instead="a sentence in a PanelField. A field is a labelled value and reads one per line; a record reads across, and “41 tasks · 2 running · 128 findings” written as prose becomes two more lines of small grey text nobody scans. Nor ScreenStats — that band is a bordered frame with the rules drawn in the gaps, sized so a cell is a card on the open plane, and at 300px it is a box inside the panel's own box."
+    use="The record band in a flank: the figures a panel reports about its subject, on an even grid so the second figure of one panel sits under the second figure of the panel above it. Two or three across, never four — a panel body divided four ways leaves a cell that will not hold “128” over “findings”."
+    instead="a sentence in a PanelField. A field is a labelled value and reads one per line; a record reads across, and “41 tasks · 2 running · 128 findings” written as prose becomes two more lines of small grey text nobody scans. Nor ScreenStats — that band is a bordered frame with the rules drawn in the gaps, sized so a cell is a card on the open plane, and in a flank it is a box inside the panel's own box."
     code={CODE.stats}
   >
     <div class="flex flex-col gap-4 py-3">
@@ -183,7 +183,7 @@
 
   <Entry
     name="PanelStat"
-    use="One figure and the word for what it counts, the figure above its label always. ScreenStat sets the two side by side and only stacks them where the cell is too narrow; at 300px three across a cell is 84px, so the side-by-side form is never reachable and this does not try for it — a band that reflowed between the two as its numbers grew a digit would move every time it updated. Tabular figures, because these are read down a column of panels and across a band that re-renders as counts move."
+    use="One figure and the word for what it counts, the figure above its label always. ScreenStat sets the two side by side and only stacks them where the cell is too narrow; three across in a flank a cell is too narrow for the side-by-side form to be reachable and this does not try for it — a band that reflowed between the two as its numbers grew a digit would move every time it updated. Tabular figures, because these are read down a column of panels and across a band that re-renders as counts move."
     instead="tone carrying information. It restates what the label already says — the cell that goes red is the one whose word is “failed” — so nothing is lost by a reader who cannot see the colour, and a toned figure takes a mark beside it as well, because ink is the only surface a cell this size has."
     code={CODE.stat}
   >
@@ -286,7 +286,7 @@
 
   <Entry
     name="PanelTable"
-    use="A bounded prefix of a tabular value, in a 300px column. A variable holding 4,182 rows still has to show what it holds or a reader cannot tell whether it is the one they meant, and three rows with a count answers that where a scrollable grid in a flank does not. Every column is mono and truncates; what does not fit is on the cell's title."
+    use="A bounded prefix of a tabular value, in a flank. A variable holding 4,182 rows still has to show what it holds or a reader cannot tell whether it is the one they meant, and three rows with a count answers that where a scrollable grid in a flank does not. Every column is mono and truncates; what does not fit is on the cell's title."
     instead="a bare row count. total is required and renders as “3 of 4,182 rows”, because a sample that reports its own length claims to be the whole — the same fault matched-of-total guards against in PanelSearch and PanelSection. The prefix is read server-side: this takes rows that are already bounded and has no way to ask for more."
     code={CODE.table}
   >

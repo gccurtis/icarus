@@ -25,7 +25,7 @@
   };
 
   /**
-   * A statement that something is wrong, made inside a 300px column, with a way
+   * A statement that something is wrong, made inside a flank, with a way
    * to act on it.
    *
    * **Not `PanelNote tone="gap"`.** A gap note says the model cannot store this
@@ -36,8 +36,8 @@
    *
    * **Not `ScreenBanner`.** Same argument as `PanelEmpty`: the tones are that
    * component's and are kept, but the decision is resized. No count beside the
-   * title — "affects 34 slides" set against a title in 276px leaves neither
-   * enough room — and the controls sit under the text rather than beside it.
+   * title — "affects 34 slides" set against a title leaves neither enough room
+   * — and the controls sit under the text rather than beside it.
    *
    * **It always carries an action or a reason, and the type says so.** The props
    * are a union of "has an explanation" and "has controls", so a banner that
@@ -89,7 +89,7 @@
     </Alert.Description>
   {/if}
   {#if actions}
-    <!-- Under the text, in the second column: a 276px panel has no room for a
+    <!-- Under the text, in the second column: a panel has no room for a
          control beside a sentence, and wrapping is what `PanelActions` already
          decided a row of panel controls does. -->
     <div class="col-start-2 flex flex-wrap gap-1 pt-1.5">{@render actions()}</div>

@@ -16,8 +16,8 @@
    *
    * **The figure sits above its label, always.** `ScreenStat` puts the two on
    * one line and falls to two only where the cell is too narrow, which on the
-   * plane is rarely. At 300px, three across, a cell is 84px and the one-line
-   * form is never reachable — so this does not try for it. A band that reflowed
+   * plane is rarely. Three across in a flank, a cell is too narrow for the
+   * one-line form to be reachable — so this does not try for it. A band that reflowed
    * between the two forms as its numbers grew a digit would be a band that moves
    * every time it updates.
    *

@@ -6,7 +6,7 @@
    * What a panel shows while it is finding out.
    *
    * **It is shaped like the thing it stands for**, which is the whole decision.
-   * A spinner in the middle of a 300px column says only "wait"; a stack the
+   * A spinner in the middle of a flank says only "wait"; a stack the
    * height and rhythm of the rows that are coming says "a list, about this long"
    * — and when the rows land, nothing moves. The layout shift a generic loader
    * causes is the actual cost of a generic loader.

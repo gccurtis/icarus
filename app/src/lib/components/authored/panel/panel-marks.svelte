@@ -10,7 +10,7 @@
    * mark: bold and italic are not alternatives, and a control that made them
    * mutually exclusive would be lying about the text it describes. `PanelToggle`
    * is one switch with a name beside it, which is right for one option and
-   * absurd for six stacked down a 300px column.
+   * absurd for six stacked down a flank.
    *
    * A mark is the case in between — a set whose members are independent, short
    * enough to name in a word, and read as a group. Bold, italic, underline,

@@ -230,7 +230,7 @@ file is caught before it lands; ingestion is how far the batch has got and what
 happens after the bytes arrive.
 
 Per-file progress is a figure rather than a second bar. A bar for each file
-under a bar for the batch says the same thing twice in a 300px column, so a file
+under a bar for the batch says the same thing twice in a flank, so a file
 in flight carries its percentage where its state would otherwise sit, and the
 percentage appears only while bytes are moving — extraction is not a percentage
 of anything.

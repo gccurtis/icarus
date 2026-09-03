@@ -514,7 +514,7 @@
           <p class="m-0">
             Three differences survive inspection and only one of them is structural.
             <strong class="text-ink-primary font-medium">Density is not.</strong> A feed
-            row is one line because a feed's job is triage in a 300px column; a thread
+            row is one line because a feed's job is triage in a flank; a thread
             message is the thing itself at a reading measure. Same record, two renderings
             — and one component with a <code class="text-mono font-mono">dense</code> prop
             would be two disjoint halves sharing a name.
@@ -574,7 +574,7 @@
     />
   </div>
 
-  <div class="border-border-subtle bg-surface-panel w-75 shrink-0 border-s">
+  <div class="border-border-subtle bg-surface-panel w-45 shrink-0 border-s">
     <ThreadAbout
       {title}
       turns={messages.length}

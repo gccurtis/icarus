@@ -395,7 +395,7 @@
 
   <Entry
     name="PanelBanner"
-    use="A statement that something is wrong, made inside a 300px column, with a way to act on it. It always carries an action or a reason and the type says so — the props are a union, so a banner that only worries will not compile. The one place a panel may reach for the danger role, which is what makes it worth anything."
+    use="A statement that something is wrong, made inside a flank, with a way to act on it. It always carries an action or a reason and the type says so — the props are a union, so a banner that only worries will not compile. The one place a panel may reach for the danger role, which is what makes it worth anything."
     instead={`PanelNote tone="gap". A gap note says the model cannot store this — a permanent limitation of the surface, true before the reader arrived and true after they leave. A banner says something is wrong right now, in this project, about this thing. Drawing the two the same way teaches a reader to read past both.`}
     code={CODE.banner}
   >
@@ -459,7 +459,7 @@
   <Entry
     name="PanelRow depth"
     use="How many levels in the row sits, for a list nested more than once — a document outline by heading level, a question and its children. indent is depth 1 by another name, and where both are given the deeper of the two wins."
-    instead="a nesting the data decides. Depth is capped at three, because a fourth step in a 300px column leaves the title nowhere to be — a shape that is as deep as the data says, and that has to collapse, is PanelTree."
+    instead="a nesting the data decides. Depth is capped at three, because a fourth step leaves the title nowhere to be — a shape that is as deep as the data says, and that has to collapse, is PanelTree."
     code={CODE.depth}
   >
     <div class="py-3">

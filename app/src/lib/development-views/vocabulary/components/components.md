@@ -55,15 +55,14 @@ under each panel.
 
 - **Root:** [`stage.svelte`](stage.svelte)
 - **Purpose:** the frame an example renders inside.
-- **Inputs:** a width — `panel` pins to 300px, `screen` fills.
+- **Inputs:** a width — `panel` pins to a flank's body width, `screen` fills.
 - **Outputs:** `None`
 - **Owned children:** `None`
 - **Layout and overflow:** clips its content; owns no scroll.
 
-**Why the width matters.** Panel examples are shown at 300px because that is the
-real width of a flank. A primitive that reads well at 800px and breaks at 300 is
-the exact failure this page exists to catch, so showing one wide would defeat the
-page.
+**Why the width matters.** Panel examples are shown at a flank's real width. A
+primitive that reads well across a plane and breaks in a flank is the exact
+failure this page exists to catch, so showing one wide would defeat the page.
 
 ### `entry`
 

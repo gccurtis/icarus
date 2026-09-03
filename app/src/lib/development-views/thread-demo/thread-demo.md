@@ -68,7 +68,7 @@ missing piece. A feed is a query plus a row, and the row exists.
 Three differences survive inspection.
 
 - **Density, which is not structural.** A feed row is one line because a feed's
-  job is triage in a 300px column and a row exists to be decided about; a thread
+  job is triage in a flank and a row exists to be decided about; a thread
   message is the thing itself at a reading measure, with its sources, its calls
   and its controls. One record, two renderings — and a single component with a
   `dense` prop would be two disjoint halves sharing a name.
@@ -134,7 +134,7 @@ wrong thing.
 
 Worth recording because it will come up again. `PanelQuote`, `PanelProgress`,
 `PanelNote` and `PanelActions` each carry the panel's 12px gutter, which they were
-given for a 300px column. Used in the middle of a workspace they inherit it, and
+given for a flank. Used in the middle of a workspace they inherit it, and
 it happens to read correctly — a quotation indents, a note indents — so nothing
 was fought here. The one thing to avoid is nesting them inside another component
 that also insets, which doubles the gutter to 24px and turns a note into a

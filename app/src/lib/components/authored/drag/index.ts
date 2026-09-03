@@ -2,7 +2,7 @@
  * Moving something from one place to another.
  *
  * Its own family because a drag crosses the other two: the thing picked up is
- * frequently a row in a 300px flank and the place it lands is a zone in the
+ * frequently a row in a flank and the place it lands is a zone in the
  * middle of the plane. Neither vocabulary can own a shape that only exists in
  * the space between them.
  *

@@ -14,7 +14,7 @@
    *
    * **Not `ScreenStats`.** That band is one bordered frame with the rules drawn
    * in the gaps between cells, sized so a cell is a card in a grid on the open
-   * plane. In a 300px column that frame is a box inside the panel's own box, and
+   * plane. In a flank that frame is a box inside the panel's own box, and
    * it costs a gutter the column does not have. Here the alignment does the
    * separating: an even grid on the panel's own gutter, no frame, no fill.
    *
@@ -23,8 +23,8 @@
    * reads across, and put into a field list it becomes two more lines of small
    * grey text that nobody scans.
    *
-   * **Two or three across, never four.** A 276px body divided four ways leaves
-   * 60px, which will not hold "128" over "findings" without breaking the word.
+   * **Two or three across, never four.** A panel body divided four ways leaves
+   * a cell that will not hold "128" over "findings" without breaking the word.
    * A record with more figures than three columns can carry wants a fourth
    * figure fewer, or the plane.
    */

@@ -41,6 +41,6 @@ five times out of six.
 - **Outputs:** writes through the bindings; the chart is downstream of them.
 
 **It is `ScreenTable` holding `PanelEditableText`**, and that composition is the
-claim worth making: the editing vocabulary was built for a 300px panel and drops
+claim worth making: the editing vocabulary was built for a flank and drops
 into a table cell with nothing added. Reaching for a grid-editing component here
 would have been the obvious move and would have produced a second way to edit.

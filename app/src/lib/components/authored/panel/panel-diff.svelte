@@ -48,8 +48,8 @@
     /** Name the newer side: "The resource has", "It now reads". */
     afterLabel?: string;
     /**
-     * Stacked by default. A 300px column split in two is 130px a side, which is
-     * not a width a sentence can be read at; `side` is for values short enough
+     * Stacked by default. A flank split in two is not a width a sentence can be
+     * read at; `side` is for values short enough
      * to take it — a number, a date, a name.
      */
     layout?: "stacked" | "side";
@@ -84,7 +84,7 @@
   /**
    * The comparison is quadratic in the two word counts. Past this it stops and
    * marks both sides whole — which is true, if coarse — rather than spending a
-   * frame on a passage nobody is reading in a 300px column anyway.
+   * frame on a passage nobody is reading in a flank anyway.
    */
   const LIMIT = 20_000;
 

@@ -27,7 +27,7 @@
    * send would fire a half-written message on nearly every line.
    *
    * **The send control is `ScreenAction`, at 32px.** A composer sits on the
-   * plane rather than in a 300px panel, so `PanelButton`'s 24px would read as a
+   * plane rather than in a panel, so `PanelButton`'s 24px would read as a
    * panel control that had wandered out. `ScreenAction`'s rule is that a screen
    * has one of these, for the one thing it makes — here that is a message, so
    * the header has none.

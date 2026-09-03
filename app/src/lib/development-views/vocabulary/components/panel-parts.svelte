@@ -205,9 +205,9 @@
 
 <section class="flex flex-col gap-8">
   <SectionTitle title="Panel vocabulary" source="src/lib/components/authored/panel/">
-    A flank is 300px and vertical. Every example below is shown at that width,
-    because a shape that reads well at 800px and breaks at 300 is exactly what
-    this page exists to catch.
+    A flank is narrow and vertical. Every example below is shown at a flank's
+    real width, because a shape that reads well across a plane and breaks in a
+    flank is exactly what this page exists to catch.
   </SectionTitle>
 
   <Entry

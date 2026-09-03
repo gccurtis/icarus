@@ -3,7 +3,7 @@
  *
  * A third family alongside `drag/`, and for the same kind of reason: an overlay
  * belongs to neither of the other two vocabularies. The formula modal is opened
- * from a 300px inspector *and* from a cell out on the plane, and it is the same
+ * from the inspector *and* from a cell out on the plane, and it is the same
  * modal both times — so it cannot be a panel shape and it cannot be a screen
  * shape. What defines it is that it is on top and the thing underneath waits.
  *

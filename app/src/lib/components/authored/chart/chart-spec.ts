@@ -3,7 +3,7 @@
  *
  * Every chart on every screen is one of these objects. The renderer is a
  * function of it, which is what makes a chart something you can save, template,
- * diff, and hand to another surface — an Analysis screen and a 300px inspector
+ * diff, and hand to another surface — an Analysis screen and an inspector
  * preview render the same spec at different sizes, and neither owns it.
  *
  * **The type is part of the spec, not a choice of component.** Which settings

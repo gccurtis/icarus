@@ -345,7 +345,7 @@
   <Entry
     name="PanelMarks"
     use="Several independent on-or-off options as one row: bold and italic on a selection, locked and hidden on a layer, header row and banded rows on a table. Mixed is a third state and is drawn as one — struck with a dashed edge, because a mark shown on would claim every character carries it."
-    instead="a set with exactly one on. PanelChoice would make bold and italic alternatives, which is a lie about the text it describes; and PanelToggle is one switch with a name beside it, which is right for one option and absurd for six stacked down a 300px column."
+    instead="a set with exactly one on. PanelChoice would make bold and italic alternatives, which is a lie about the text it describes; and PanelToggle is one switch with a name beside it, which is right for one option and absurd for six stacked down a flank."
     code={CODE.marks}
   >
     <div class="flex flex-col gap-2 py-3">
@@ -435,7 +435,7 @@
   <Entry
     name="PanelCards"
     use="A small set chosen by its picture rather than its name: a chart kind, a slide layout, a page orientation. It holds PanelThumbs, and the chosen one is the caller's to mark — PanelThumb already carries selected, and a second selected state here would be two claims about one card."
-    instead="the same decision in words, which is PanelChoice: right for a scope or a mode, wrong for a chart kind, where Bar, Line, Pie and Area are shapes and the person picking one is matching a shape to their data. Two or three across and never more — a 276px body divided four ways leaves 60px a side, and what needs more columns belongs in a modal, where the plane is wide."
+    instead="the same decision in words, which is PanelChoice: right for a scope or a mode, wrong for a chart kind, where Bar, Line, Pie and Area are shapes and the person picking one is matching a shape to their data. Two or three across and never more — a panel body divided four ways leaves a column too narrow to be a picture, and what needs more columns belongs in a modal, where the plane is wide."
     code={CODE.cards}
   >
     <div class="py-3">

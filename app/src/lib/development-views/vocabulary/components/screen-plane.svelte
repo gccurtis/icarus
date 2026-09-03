@@ -412,7 +412,7 @@
   <Entry
     name="ScreenItem"
     use="One entry: who, what they did, where, and enough of what they said to decide. The title line is a snippet as well as a prop, because a feed sentence names two things inside it and the emphasis is what makes it scannable; the lead is a snippet too, so a face and a glyph are both allowed."
-    instead="PanelRow. That row lives in a 300px column, so both of its lines truncate and its subtitle is a qualifier — a state, a count, a location — rather than a quotation. On the plane there is room for two lines of what somebody actually wrote, and a mention you cannot read is a mention you have to open to triage."
+    instead="PanelRow. That row lives in a flank, so both of its lines truncate and its subtitle is a qualifier — a state, a count, a location — rather than a quotation. On the plane there is room for two lines of what somebody actually wrote, and a mention you cannot read is a mention you have to open to triage."
     code={CODE.item}
     width="screen"
   >

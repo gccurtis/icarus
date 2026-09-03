@@ -28,7 +28,7 @@
    * the reader the category they already knew instead of the answer they need.
    *
    * **It wraps rather than scrolls**, the decision `PanelActions` already had to
-   * make: a horizontal scroll in a 300px column hides options behind a gesture
+   * make: a horizontal scroll in a flank hides options behind a gesture
    * nobody makes.
    */
   let {

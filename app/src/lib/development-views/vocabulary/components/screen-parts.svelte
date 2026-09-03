@@ -484,7 +484,7 @@
   <Entry
     name="ScreenGroup"
     use="A named band of the plane: a caption in caps, an optional count, and what it holds. Twelve of these were hand-set across six workspaces, each copying PanelSection's trigger typography onto the plane."
-    instead="a disclosure. It never collapses — hiding things is a 300px problem, and a plane that could hide half of itself gives no way to know it had."
+    instead="a disclosure. It never collapses — hiding things is a flank problem, and a plane that could hide half of itself gives no way to know it had."
     code={CODE.group}
     width="screen"
   >

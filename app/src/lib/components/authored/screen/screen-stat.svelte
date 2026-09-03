@@ -18,7 +18,7 @@
    *
    * **The figure and its label are one phrase**, on one line, read as "41 tasks
    * run". They fall onto two lines only where the cell is too narrow to hold
-   * both — which a 300px panel is and the plane is not — so the dense form is
+   * both — which a panel is and the plane is not — so the dense form is
    * the one almost everywhere and nothing is ever truncated to reach it. The
    * figure keeps `tabular-nums`: these get compared across the row and down a
    * column of personas, and proportional digits make equal counts look unequal.

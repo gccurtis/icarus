@@ -114,8 +114,8 @@
         </div>
       </Stage>
       <pre
-        class="text-mono border-border-subtle bg-surface-canvas rounded-control text-ink-secondary m-0 w-75 overflow-x-auto border p-3 font-mono">{HEALTH}</pre>
-      <div class="w-75">
+        class="text-mono border-border-subtle bg-surface-canvas rounded-control text-ink-secondary m-0 w-45 overflow-x-auto border p-3 font-mono">{HEALTH}</pre>
+      <div class="w-45">
         <CommentBox scope="composition" label="A context view" />
       </div>
     </div>
@@ -164,8 +164,8 @@
         </div>
       </Stage>
       <pre
-        class="text-mono border-border-subtle bg-surface-canvas rounded-control text-ink-secondary m-0 w-75 overflow-x-auto border p-3 font-mono">{CONNECTOR}</pre>
-      <div class="w-75">
+        class="text-mono border-border-subtle bg-surface-canvas rounded-control text-ink-secondary m-0 w-45 overflow-x-auto border p-3 font-mono">{CONNECTOR}</pre>
+      <div class="w-45">
         <CommentBox scope="composition" label="An inspector lens" />
       </div>
     </div>

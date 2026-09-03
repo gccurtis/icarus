@@ -12,8 +12,8 @@
    * are shapes, and a person picking one is matching a shape to their data, not
    * reading a list. The same is true of a slide layout and a page orientation.
    *
-   * **Two or three across, and never more.** A 276px body divided four ways
-   * leaves 60px a side, which is not a picture of anything. What does not fit in
+   * **Two or three across, and never more.** A panel body divided four ways
+   * leaves a column too narrow to be a picture of anything. What does not fit in
    * three columns belongs in a modal, where the plane is wide.
    *
    * It holds `PanelThumb`s, or any small square the caller draws. The chosen one
@@ -27,7 +27,7 @@
   }: {
     /** What is being chosen. The group's accessible name. */
     label: string;
-    /** Two or three. Anything wider is not a picture at 300px. */
+    /** Two or three. Anything wider is not a picture in a flank. */
     columns?: 2 | 3;
     children: Snippet;
   } = $props();
