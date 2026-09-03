@@ -7,7 +7,9 @@ import { Runtime } from "$model/client/slide-deck-runtimes/definition.svelte";
 import { rebase } from "$model/client/slide-deck-runtimes/methods/flush/rebase";
 
 vi.mock("$capabilities/slide-deck/index.remote", () => ({
-  readSlideDeckBody: () => new Promise(() => {})
+  readSlideDeckBody: () => new Promise(() => {}),
+  submitSlideDeckChanges: ({ changeSet }: { changeSet: { baseRevision: number } }) =>
+    Promise.resolve({ accepted: true, revision: changeSet.baseRevision + 1 })
 }));
 
 const register = (afterOps = 50, afterMs = 2000) =>

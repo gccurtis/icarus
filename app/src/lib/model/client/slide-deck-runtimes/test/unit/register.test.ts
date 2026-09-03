@@ -4,7 +4,9 @@ import { createConfiguration } from "$model/client/configuration";
 import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
 
 vi.mock("$capabilities/slide-deck/index.remote", () => ({
-  readSlideDeckBody: () => new Promise(() => {})
+  readSlideDeckBody: () => new Promise(() => {}),
+  submitSlideDeckChanges: ({ changeSet }: { changeSet: { baseRevision: number } }) =>
+    Promise.resolve({ accepted: true, revision: changeSet.baseRevision + 1 })
 }));
 
 const register = (afterOps = 50, afterMs = 2000) =>
