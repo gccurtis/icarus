@@ -1,0 +1,278 @@
+[
+  {
+    "_id": "slideDeckSnapshots:1",
+    "_creationTime": 1786435200000,
+    "projectId": "default",
+    "resourceId": "slideDecks:1",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788296400000,
+    "body": {
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": { "kind": "color", "color": "--token-surface-elevated" },
+        "colors": {
+          "text": "--token-ink-primary",
+          "accent": "--token-color-accent-1-fill",
+          "muted": "--token-ink-muted"
+        },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontSize": 44, "bold": true, "color": "--token-ink-primary" },
+          "body": { "name": "Body", "fontSize": 20, "color": "--token-ink-secondary" },
+          "caption": { "name": "Caption", "fontSize": 14, "italic": true, "color": "--token-ink-muted" }
+        }
+      },
+      "layouts": [
+        {
+          "key": "title-and-body",
+          "name": "Title and body",
+          "locked": [],
+          "placeholders": [
+            { "role": "title", "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.18 }, "styleKey": "title" },
+            { "role": "body", "frame": { "x": 0.08, "y": 0.34, "width": 0.84, "height": 0.5 }, "styleKey": "body" }
+          ]
+        }
+      ],
+      "sections": [{ "id": "sec-1", "name": "Exposure", "firstSlideId": "slide-1" }],
+      "slides": [
+        {
+          "id": "slide-1",
+          "layoutKey": "title-and-body",
+          "notes": [],
+          "elements": [
+            {
+              "id": "el-1",
+              "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.18 },
+              "overflow": "shrink",
+              "blocks": [
+                {
+                  "id": "el-1-b",
+                  "type": "text",
+                  "variant": "heading",
+                  "style": "title",
+                  "atoms": [{ "id": "el-1-a", "kind": "literal", "text": "Q1 exposure" }],
+                  "display": "Q1 exposure",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "el-2",
+              "frame": { "x": 0.08, "y": 0.34, "width": 0.5, "height": 0.4 },
+              "overflow": "shrink",
+              "blocks": [
+                {
+                  "id": "el-2-b",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "atoms": [
+                    {
+                      "id": "el-2-a",
+                      "kind": "literal",
+                      "text": "Three substations carry the winter peak. Two of them have no second feed."
+                    }
+                  ],
+                  "display": "Three substations carry the winter peak. Two of them have no second feed.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "el-3",
+              "frame": { "x": 0.64, "y": 0.34, "width": 0.28, "height": 0.4 },
+              "overflow": "clip",
+              "blocks": [],
+              "format": {
+                "background": "--token-color-accent-1-surface",
+                "border": { "color": "--token-color-accent-1-border", "width": 2, "style": "solid" }
+              }
+            }
+          ]
+        },
+        {
+          "id": "slide-2",
+          "layoutKey": "title-and-body",
+          "notes": [],
+          "elements": [
+            {
+              "id": "el-4",
+              "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.18 },
+              "overflow": "shrink",
+              "blocks": [
+                {
+                  "id": "el-4-b",
+                  "type": "text",
+                  "variant": "heading",
+                  "style": "title",
+                  "atoms": [{ "id": "el-4-a", "kind": "literal", "text": "Where the load sits" }],
+                  "display": "Where the load sits",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "el-5",
+              "frame": { "x": 0.08, "y": 0.38, "width": 0.24, "height": 0.44 },
+              "overflow": "clip",
+              "blocks": [],
+              "format": { "background": "--token-color-accent-1-fill" }
+            },
+            {
+              "id": "el-6",
+              "frame": { "x": 0.38, "y": 0.5, "width": 0.24, "height": 0.32 },
+              "overflow": "clip",
+              "blocks": [],
+              "format": { "background": "--token-color-accent-2-fill" }
+            },
+            {
+              "id": "el-7",
+              "frame": { "x": 0.68, "y": 0.58, "width": 0.24, "height": 0.24 },
+              "overflow": "clip",
+              "blocks": [],
+              "format": { "background": "--token-color-inactive-fill" }
+            },
+            {
+              "id": "el-8",
+              "frame": { "x": 0.08, "y": 0.86, "width": 0.84, "height": 0.08 },
+              "overflow": "shrink",
+              "blocks": [
+                {
+                  "id": "el-8-b",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "caption",
+                  "atoms": [{ "id": "el-8-a", "kind": "literal", "text": "Feeders A, B and C" }],
+                  "display": "Feeders A, B and C",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "slide-3",
+          "layoutKey": "title-and-body",
+          "notes": [],
+          "elements": [
+            {
+              "id": "el-9",
+              "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.18 },
+              "overflow": "shrink",
+              "blocks": [
+                {
+                  "id": "el-9-b",
+                  "type": "text",
+                  "variant": "heading",
+                  "style": "title",
+                  "atoms": [{ "id": "el-9-a", "kind": "literal", "text": "What we are asking for" }],
+                  "display": "What we are asking for",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "el-10",
+              "frame": { "x": 0.08, "y": 0.36, "width": 0.84, "height": 0.3 },
+              "overflow": "shrink",
+              "blocks": [
+                {
+                  "id": "el-10-b",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "atoms": [
+                    {
+                      "id": "el-10-a",
+                      "kind": "literal",
+                      "text": "A second feed at Substation 14 before November, and a standing crew through the peak."
+                    }
+                  ],
+                  "display": "A second feed at Substation 14 before November, and a standing crew through the peak.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "_id": "slideDeckSnapshots:2",
+    "_creationTime": 1782892800000,
+    "projectId": "default",
+    "resourceId": "slideDecks:2",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1787436000000,
+    "body": {
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": { "kind": "color", "color": "--token-surface-elevated" },
+        "colors": {
+          "text": "--token-ink-primary",
+          "accent": "--token-color-accent-2-fill",
+          "muted": "--token-ink-muted"
+        },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontSize": 40, "bold": true, "color": "--token-ink-primary" },
+          "body": { "name": "Body", "fontSize": 20, "color": "--token-ink-secondary" }
+        }
+      },
+      "layouts": [
+        {
+          "key": "title-only",
+          "name": "Title only",
+          "locked": [],
+          "placeholders": [
+            { "role": "title", "frame": { "x": 0.08, "y": 0.12, "width": 0.84, "height": 0.2 }, "styleKey": "title" }
+          ]
+        }
+      ],
+      "sections": [],
+      "slides": [
+        {
+          "id": "slide-1",
+          "layoutKey": "title-only",
+          "notes": [],
+          "elements": [
+            {
+              "id": "el-1",
+              "frame": { "x": 0.08, "y": 0.12, "width": 0.84, "height": 0.2 },
+              "overflow": "shrink",
+              "blocks": [
+                {
+                  "id": "el-1-b",
+                  "type": "text",
+                  "variant": "heading",
+                  "style": "title",
+                  "atoms": [{ "id": "el-1-a", "kind": "literal", "text": "Field team briefing" }],
+                  "display": "Field team briefing",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "el-2",
+              "frame": { "x": 0.08, "y": 0.42, "width": 0.4, "height": 0.36 },
+              "overflow": "clip",
+              "blocks": [],
+              "format": { "background": "--token-color-accent-2-surface" }
+            }
+          ]
+        }
+      ]
+    }
+  }
+]
