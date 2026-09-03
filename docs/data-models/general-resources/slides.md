@@ -22,7 +22,6 @@ interface SlideDeckBody {
   layouts: SlideLayout[];
   slides: Slide[];
   sections: DeckSection[];
-  handout?: PageSetup;
 }
 
 interface DeckSection {
@@ -154,18 +153,22 @@ When content exceeds its frame the deck must do something, and the three options
 are different intentions: `clip` for a fixed design, `shrink` for a title that
 must fit, `grow` for notes-style content where the frame was a starting point.
 
-## Notes and handouts
+## Notes
 
 `notes` are content blocks, so a speaker note can hold a list, a link, or an
 image. They sit on the slide rather than being an element because they have no
 position on it.
 
-`handout` is optional [page setup](page-setup.md) for printing — paper,
-orientation, margins. Absent means the deck has not been set up for print, not
-that it cannot be printed; a sensible default applies. It is separate from
-`aspectRatio` because the shape of a slide and the shape of the paper it prints
-on are unrelated, and forcing one to imply the other is how decks end up with
-margins on three sides.
+## Nothing here describes print
+
+A deck carries no paper, no margins and no page setup. Printing is a separate
+arrangement — some number of slides placed on a sheet and scaled to it — and
+that is a shape this body cannot hold, because the count and the placement have
+nowhere to live in a page setup.
+
+Keeping it out is what leaves a slide free of print constraints. A slide is a
+ratio; the shape of the paper it might be printed on is unrelated, and letting
+one imply the other is how decks end up with margins on three sides.
 
 ## Styles
 
@@ -187,7 +190,7 @@ changes it.
 
 ## Related
 
-[content block](../content/content-block.md) · [page setup](page-setup.md) ·
+[content block](../content/content-block.md) ·
 [style set](style-set.md) ·
 [resource snapshot](../revisions/resource-snapshot.md) ·
 [change set](../revisions/change-set.md) ·

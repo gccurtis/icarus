@@ -234,17 +234,18 @@ const deckThemeValidator = v.object({
 });
 
 /**
- * **`handout` is the deck's printed form**, and it is separate from the deck's
- * own geometry: a slide is not a page, so the deck is sized by `aspectRatio` on
- * its row and printing it is a different question.
+ * **Nothing here describes print.** A slide is a ratio and the body holds no
+ * paper, no margins and no page setup: printing a deck is placing some number of
+ * slides on a sheet and scaling them to it, which is a shape a page setup cannot
+ * hold — it has nowhere to put the count or the arrangement. Until that is
+ * modelled, a deck carries no print geometry at all.
  */
 export const slideDeckBodyValidator = v.object({
   theme: deckThemeValidator,
   styles: styleSetValidator,
   layouts: v.array(slideLayoutValidator),
   slides: v.array(slideValidator),
-  sections: v.array(deckSectionValidator),
-  handout: v.optional(pageSetupValidator)
+  sections: v.array(deckSectionValidator)
 });
 ```
 
@@ -255,11 +256,13 @@ export const slideDeckBodyValidator = v.object({
 | | Screen geometry | Print geometry | Furniture |
 | --- | --- | --- | --- |
 | document | it *is* pages | `pageSetup` | `header` + `footer` |
-| slides | `aspectRatio` on the row | `handout` | — |
+| slides | `aspectRatio` | not modelled | — |
 | [spreadsheet](spreadsheets.md) | the body's row and column arrays | `print.page` | — |
 
 Three homes for page geometry because they are three different things: a slide is
-not a page, and a grid is not paginated until it is printed.
+not a page, and a grid is not paginated until it is printed. A deck has no print
+geometry yet — it is the one of the three whose printed form is an arrangement of
+its screen form rather than a shape of its own.
 
 ---
 

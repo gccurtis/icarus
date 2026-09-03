@@ -1,7 +1,6 @@
 import type { BlockFormat } from "$representation/data/types/content/block-format";
 import type { ContentBlock } from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
-import type { PageSetup } from "$representation/data/types/slide-decks/page-setup";
 import type { StyleSet } from "$representation/data/types/slide-decks/style-set";
 
 export type AspectRatio = "16:9" | "4:3";
@@ -61,5 +60,4 @@ export type SlideDeckBody = {
   layouts: SlideLayout[];
   slides: Slide[];
   sections: DeckSection[];
-  handout?: PageSetup;
 };
