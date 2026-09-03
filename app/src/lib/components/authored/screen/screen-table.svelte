@@ -29,9 +29,13 @@
    * table that simply runs down the page must not take it: two scrolls inside
    * one `ScreenSurface` is how a reader loses the bottom of the page.
    *
-   * **It scrolls without a scrollbar**, on the same rule as every other surface
-   * here: a row cut off at the frame already says there is more, and a gutter
-   * would take width from the last column to repeat it.
+   * **A scrolling table keeps a thin scrollbar.** Every other surface here hides
+   * its own, on the rule that a row cut off at the frame already says there is
+   * more — but that rule was written for a surface that is the only thing
+   * scrolling where it is. This one is a scroll region inside a scrolling plane,
+   * and on a touch screen a nested region that gives no sign of being one is
+   * where a swipe gets caught. Thin and untinted: enough to say where in the
+   * rows you are, not enough to read as chrome.
    */
   let {
     columns = [],
@@ -78,7 +82,7 @@
   class={cn(
     "border-border-subtle rounded-panel overflow-hidden border",
     scroll &&
-      "flex min-h-0 flex-1 flex-col [&>[data-slot=table-container]]:min-h-0 [&>[data-slot=table-container]]:flex-1 [&>[data-slot=table-container]]:[scrollbar-width:none] [&>[data-slot=table-container]::-webkit-scrollbar]:hidden [&_thead_th]:bg-surface-elevated [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:shadow-[inset_0_-1px_0_var(--token-border-subtle)]"
+      "flex min-h-0 flex-1 flex-col [&>[data-slot=table-container]]:min-h-0 [&>[data-slot=table-container]]:flex-1 [&>[data-slot=table-container]]:[scrollbar-width:thin] [&>[data-slot=table-container]]:[scrollbar-color:var(--token-border-strong)_transparent] [&>[data-slot=table-container]::-webkit-scrollbar]:w-1.5 [&>[data-slot=table-container]::-webkit-scrollbar-track]:bg-transparent [&>[data-slot=table-container]::-webkit-scrollbar-thumb]:rounded-full [&>[data-slot=table-container]::-webkit-scrollbar-thumb]:bg-border-strong [&_thead_th]:bg-surface-elevated [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:shadow-[inset_0_-1px_0_var(--token-border-subtle)]"
   )}
 >
   <Table.Root class="border-collapse">
