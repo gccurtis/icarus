@@ -20,11 +20,15 @@ export const close = (state: WorkspaceStateData, id: TabId): void => {
       throw new Error("Project Overview must be open.");
     }
 
-    const transientCount = state.tabs.tabs.filter((candidate) => !isSingleton(candidate.category)).length;
+    const remains = state.tabs.tabs.some(
+      (candidate) => candidate.id !== id && !isSingleton(candidate.category)
+    );
+    const neighbour = state.tabs.tabs[at + 1] ?? state.tabs.tabs[at - 1];
+
     perform(state, {
       op: "activate",
       was: id,
-      now: transientCount === 1 ? projectOverview.id : state.tabs.tabs[Math.max(0, at - 1)].id
+      now: remains && neighbour !== undefined ? neighbour.id : projectOverview.id
     });
   }
 
