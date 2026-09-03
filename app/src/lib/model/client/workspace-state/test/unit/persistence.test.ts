@@ -3,17 +3,32 @@ import { beforeEach, test, vi } from "vitest";
 
 const wire = vi.hoisted(() => ({
   row: null as unknown,
-  sent: [] as { baseRevision: number; ops: unknown[]; activeId: string }[],
-  refuse: false
+  sent: [] as { baseRevision: number; ops: unknown[] }[],
+  fault: false,
+  refusals: 0
 }));
 
 vi.mock("$capabilities/workspace/index.remote", () => ({
   readWorkspaceState: () => Promise.resolve(wire.row),
-  submitWorkspaceChanges: (input: { baseRevision: number; ops: unknown[]; activeId: string }) => {
-    wire.sent.push(input);
-    return wire.refuse
-      ? Promise.reject(new Error("refused"))
-      : Promise.resolve({ revision: wire.sent.length });
+  submitWorkspaceChanges: ({
+    changeSet
+  }: {
+    changeSet: { baseRevision: number; ops: unknown[] };
+  }) => {
+    wire.sent.push(changeSet);
+    if (wire.fault) return Promise.reject(new Error("offline"));
+
+    if (wire.refusals > 0) {
+      wire.refusals -= 1;
+      return Promise.resolve({
+        accepted: false,
+        reason: "conflict",
+        revision: 40,
+        detail: "tab:t1 moved"
+      });
+    }
+
+    return Promise.resolve({ accepted: true, revision: wire.sent.length, merged: false });
   }
 }));
 
@@ -47,7 +62,8 @@ const view = {
 beforeEach(() => {
   wire.row = null;
   wire.sent.length = 0;
-  wire.refuse = false;
+  wire.fault = false;
+  wire.refusals = 0;
 });
 
 test("nothing leaves while both thresholds are unmet", async () => {
@@ -103,9 +119,9 @@ test("flush with nothing buffered writes nothing", async () => {
   assert.deepEqual(wire.sent, []);
 });
 
-test("a refused submit keeps its ops and says so", async () => {
+test("a fault keeps its ops and says so", async () => {
   const model = workspaceState(1000, 60_000);
-  wire.refuse = true;
+  wire.fault = true;
 
   model.activate(model.tabs[1].id);
   await assert.rejects(() => model.flush());
@@ -113,11 +129,53 @@ test("a refused submit keeps its ops and says so", async () => {
   assert.equal(model.sync, "error");
   assert.equal(model.pending, 1, "unsent work is never dropped");
 
-  wire.refuse = false;
+  wire.fault = false;
   await model.flush();
 
   assert.equal(model.sync, "saved");
   assert.equal(model.pending, 0);
+});
+
+test("a refusal is re-stated against what the server holds and resubmitted", async () => {
+  wire.row = {
+    revision: 40,
+    tabs: [{ id: "t1", category: "project-overview" }],
+    activeId: "t1",
+    views: { t1: view }
+  };
+  wire.refusals = 1;
+
+  const model = workspaceState(1000, 60_000);
+  model.activate(model.tabs[1].id);
+
+  await model.flush();
+
+  assert.equal(wire.sent.length, 2, "refused once, resubmitted once");
+  assert.equal(wire.sent[0].baseRevision, 0);
+  assert.equal(wire.sent[1].baseRevision, 40, "the retry is stated against the adopted revision");
+  assert.equal(model.sync, "saved");
+});
+
+test("a refusal the rebase cannot resolve adopts the server's workspace and says so", async () => {
+  wire.row = {
+    revision: 40,
+    tabs: [{ id: "t1", category: "project-overview" }],
+    activeId: "t1",
+    views: { t1: view }
+  };
+  wire.refusals = 2;
+
+  const model = workspaceState(1000, 60_000);
+  model.activate(model.tabs[1].id);
+
+  await model.flush();
+
+  assert.equal(model.sync, "needs-review");
+  assert.deepEqual(
+    model.tabs.map((tab) => tab.id),
+    ["t1"]
+  );
+  assert.equal(model.revision, 40);
 });
 
 test("the base revision follows what the server last accepted", async () => {

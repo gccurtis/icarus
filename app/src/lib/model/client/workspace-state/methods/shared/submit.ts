@@ -1,5 +1,7 @@
 import { submitWorkspaceChanges } from "$capabilities/workspace/index.remote";
+import type { WorkspaceOp } from "$representation/data/types/workspace/op";
 import type { WorkspaceStateData } from "$model/client/workspace-state/definition.svelte";
+import { adopt } from "$model/client/workspace-state/methods/shared/adopt";
 
 export const submit = (state: WorkspaceStateData): Promise<void> => {
   state.pendingFlush ??= send(state).finally(() => {
@@ -8,6 +10,10 @@ export const submit = (state: WorkspaceStateData): Promise<void> => {
 
   return state.pendingFlush;
 };
+
+const sent = (state: WorkspaceStateData, ops: readonly WorkspaceOp[]) => ({
+  changeSet: { baseRevision: state.revision, ops }
+});
 
 const send = async (state: WorkspaceStateData): Promise<void> => {
   state.clearTimer();
@@ -18,22 +24,28 @@ const send = async (state: WorkspaceStateData): Promise<void> => {
   state.sync = "saving";
 
   try {
-    const accepted = await submitWorkspaceChanges({
-      baseRevision: state.revision,
-      ops,
-      tabs: state.tabs.tabs.map((record) => ({
-        id: record.id,
-        category: record.category,
-        resourceId: record.resourceId
-      })),
-      activeId: state.tabs.activeId,
-      views: Object.fromEntries(
-        state.tabs.tabs.map((record) => [record.id, { ...state.views.of(record.id) }])
-      )
-    });
+    const answer = await submitWorkspaceChanges(sent(state, ops));
 
-    state.revision = accepted.revision;
-    state.sync = state.buffer.length === 0 ? "saved" : "saving";
+    if (answer.accepted) {
+      state.revision = answer.revision;
+      state.sync = state.buffer.length === 0 ? "saved" : "saving";
+      return;
+    }
+
+    state.revision = answer.revision;
+    state.sync = "rebasing";
+
+    await adopt(state);
+
+    const retried = await submitWorkspaceChanges(sent(state, ops));
+    if (retried.accepted) {
+      state.revision = retried.revision;
+      state.sync = state.buffer.length === 0 ? "saved" : "saving";
+      return;
+    }
+
+    await adopt(state);
+    state.sync = "needs-review";
   } catch (error) {
     state.buffer = [...ops, ...state.buffer];
     state.sync = "error";
