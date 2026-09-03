@@ -77,7 +77,7 @@ and leaving the shell alone.
 | Page numbering | Start, position, and visibility on the first page |
 | Named styles | Family, size, line height, weight, spacing, per style |
 
-All of it is in [the Page view](../../context/resource/page.md) and
+All of it is in [the Layout view](../../context/resource/layout.md) and
 [the Styles view](../../context/resource/styles-document.md).
 
 ### What is unresolved

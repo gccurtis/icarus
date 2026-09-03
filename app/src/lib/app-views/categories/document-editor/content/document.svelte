@@ -1,48 +1,49 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { baseKeymap } from "prosemirror-commands";
   import { history, redo, undo } from "prosemirror-history";
   import { keymap } from "prosemirror-keymap";
-  import { Schema, type Node as ProseMirrorNode } from "prosemirror-model";
-  import { EditorState, TextSelection } from "prosemirror-state";
+  import { EditorState, TextSelection, type Transaction } from "prosemirror-state";
   import { EditorView } from "prosemirror-view";
 
   import { read } from "$capabilities/store/index.remote";
+  import { mergeRow, splitRow } from "$app-views/categories/document-editor/procedures/editing";
   import {
     DEFAULT_PAGE_SETUP,
+    clampZoom,
+    fitZoom,
+    gutterOf,
     layoutMetrics
   } from "$app-views/categories/document-editor/procedures/page-setup";
+  import {
+    anchorAt,
+    bodyOf,
+    docOf,
+    positionOf,
+    repaginate,
+    stampIds,
+    type DocumentBody,
+    type Metrics
+  } from "$app-views/categories/document-editor/procedures/projection";
+  import { translate } from "$app-views/categories/document-editor/procedures/translate";
   import { workspaceState } from "$model/client/workspace-state";
+  import type { DocumentRuntime, SyncState } from "$model/client/workspace-state";
+
+  const LAYOUT = "document-editor.layout";
+
+  const SYNC_LABEL: Record<SyncState, string> = {
+    loading: "Loading",
+    saved: "Saved",
+    saving: "Saving",
+    rebasing: "Rebasing",
+    "needs-review": "Needs review",
+    offline: "Offline",
+    error: "Not saved"
+  };
 
   const view = workspaceState();
-  const pageSetup = DEFAULT_PAGE_SETUP;
-  const layout = layoutMetrics(pageSetup);
-  const PAGE_TEXT_CAPACITY = layout.pageTextCapacity;
-
-  const schema = new Schema({
-    nodes: {
-      doc: { content: "page+" },
-      page: {
-        attrs: { number: { default: 1 } },
-        content: "paragraph+",
-        toDOM: (node) => [
-          "article",
-          { class: "document-page", "data-page": node.attrs.number },
-          0
-        ]
-      },
-      paragraph: {
-        content: "inline*",
-        group: "block",
-        parseDOM: [{ tag: "p" }],
-        toDOM: () => ["p", 0]
-      },
-      text: { group: "inline" }
-    },
-    marks: {}
-  });
 
   const documentId = $derived(view.active.resourceId);
+
   const documentTitle = $derived.by(() => {
     if (documentId === undefined) return undefined;
 
@@ -53,130 +54,161 @@
     return found?.kind === "field" && typeof found.value === "string" ? found.value : undefined;
   });
 
+  let runtime = $state<DocumentRuntime | undefined>(undefined);
   let host = $state<HTMLDivElement>();
-  let editor = $state<EditorView>();
+  let surface = $state<HTMLDivElement>();
+  let available = $state(0);
 
-  const pageText = (text: string): readonly string[] => {
-    if (text.length === 0) return [""];
+  let editor: EditorView | undefined;
+  let sent: DocumentBody | undefined;
+  let painted: DocumentBody | undefined;
+  let metrics: Metrics = layoutMetrics(DEFAULT_PAGE_SETUP);
 
-    const pages: string[] = [];
-    let remaining = text;
+  const plugins = [
+    keymap({ Enter: splitRow, Backspace: mergeRow }),
+    history(),
+    keymap({ "Mod-z": undo, "Shift-Mod-z": redo, "Mod-y": redo }),
+    keymap(baseKeymap)
+  ];
 
-    while (remaining.length > PAGE_TEXT_CAPACITY) {
-      const boundary = remaining.lastIndexOf(" ", PAGE_TEXT_CAPACITY);
-      const end = boundary > 0 ? boundary : PAGE_TEXT_CAPACITY;
-      pages.push(remaining.slice(0, end));
-      remaining = remaining.slice(end).trimStart();
-    }
+  const lay = (state: EditorState): EditorState => {
+    const next = repaginate(stampIds(state.doc), metrics);
+    if (next.eq(state.doc)) return state;
 
-    pages.push(remaining);
-    return pages;
+    const anchor = anchorAt(state.selection.$from);
+    const transform = state.tr
+      .setMeta("addToHistory", false)
+      .setMeta(LAYOUT, true)
+      .replaceWith(0, state.doc.content.size, next.content);
+
+    const at = anchor === undefined ? undefined : positionOf(transform.doc, anchor);
+    if (at !== undefined) transform.setSelection(TextSelection.create(transform.doc, at));
+
+    return state.apply(transform);
   };
 
-  const paginatedDocument = (text: string) => {
-    const pages = pageText(text);
-    return schema.node(
-      "doc",
-      null,
-      pages.map((page, index) =>
-        schema.node(
-          "page",
-          { number: index + 1 },
-          schema.node("paragraph", null, page === "" ? undefined : schema.text(page))
-        )
-      )
-    );
+  const emit = (state: EditorState): void => {
+    if (sent === undefined || runtime === undefined) return;
+
+    const body = bodyOf(state.doc, sent);
+    const ops = translate(sent, body);
+    sent = body;
+
+    if (ops.length > 0) runtime.apply(ops);
   };
 
-  const textOffsetAt = (document: ProseMirrorNode, position: number): number =>
-    document.textBetween(0, position, "").length;
+  const dispatch = (transaction: Transaction): void => {
+    if (editor === undefined) return;
 
-  const positionAt = (document: ProseMirrorNode, offset: number): number => {
-    let pageStart = 0;
-    let consumed = 0;
+    const next = lay(editor.state.apply(transaction));
+    editor.updateState(next);
 
-    for (let index = 0; index < document.childCount; index += 1) {
-      const page = document.child(index);
-      const text = page.textContent;
-      if (offset <= consumed + text.length) {
-        return pageStart + 2 + offset - consumed;
-      }
-      consumed += text.length;
-      pageStart += page.nodeSize;
-    }
+    if (!transaction.docChanged) return;
+    if (transaction.getMeta(LAYOUT) === true) return;
 
-    const last = document.lastChild;
-    return last === null ? 1 : pageStart - last.nodeSize + last.content.size;
+    emit(next);
   };
 
-  onMount(() => {
-    if (host === undefined) {
-      throw new Error("The document editor did not mount its ProseMirror host.");
+  const paint = (body: DocumentBody): void => {
+    if (host === undefined) return;
+
+    metrics = layoutMetrics(body.pageSetup ?? DEFAULT_PAGE_SETUP);
+
+    const state = EditorState.create({ doc: docOf(body, metrics), plugins });
+    sent = bodyOf(state.doc, body);
+
+    if (editor === undefined) {
+      editor = new EditorView(host, { state, dispatchTransaction: dispatch });
+      return;
     }
 
-    const state = EditorState.create({
-      doc: paginatedDocument("Start writing. This document is rendered and edited by ProseMirror."),
-      plugins: [
-        history(),
-        keymap({
-          "Mod-z": undo,
-          "Shift-Mod-z": redo,
-          "Mod-y": redo,
-          ...baseKeymap
-        })
-      ]
-    });
+    editor.updateState(state);
+  };
 
-    let mounted: EditorView;
-    mounted = new EditorView(host, {
-      state,
-      dispatchTransaction(transaction) {
-        let next = mounted.state.apply(transaction);
-        const document = paginatedDocument(next.doc.textContent);
-        if (!document.eq(next.doc)) {
-          const from = textOffsetAt(next.doc, next.selection.from);
-          const to = textOffsetAt(next.doc, next.selection.to);
-          const transform = next.tr
-            .replaceWith(0, next.doc.content.size, document.content)
-            .setMeta("addToHistory", false);
-          next = next.apply(
-            transform.setSelection(
-              TextSelection.create(
-                transform.doc,
-                positionAt(transform.doc, from),
-                positionAt(transform.doc, to)
-              )
-            )
-          );
-        }
-        mounted.updateState(next);
-      }
-    });
-    editor = mounted;
-
-    return () => mounted.destroy();
+  $effect(() => {
+    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
   });
 
-  const pageStyle = $derived.by(
-    () =>
-      `--page-width: ${layout.pageWidth}rem; ` +
-      `--page-aspect: ${layout.paper.width} / ${layout.paper.height}; ` +
+  $effect(() => {
+    const body = runtime?.body;
+    if (host === undefined || body === undefined || body === painted) return;
+
+    painted = body;
+
+    if (sent !== undefined && translate(sent, body).length === 0) {
+      sent = body;
+      return;
+    }
+
+    paint(body);
+  });
+
+  $effect(() => () => {
+    editor?.destroy();
+    editor = undefined;
+  });
+
+  $effect(() => {
+    const element = surface;
+    if (element === undefined) return;
+
+    const measure = () => {
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      available = element.clientWidth / (rem > 0 ? rem : 16);
+    };
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    measure();
+
+    return () => observer.disconnect();
+  });
+
+  const WHEEL_NOTCH = 120;
+  const PERCENT_PER_NOTCH = 2;
+
+  const setup = $derived(runtime?.body?.pageSetup ?? DEFAULT_PAGE_SETUP);
+
+  const fit = $derived(
+    available === 0 ? undefined : fitZoom(available, layoutMetrics(setup).pageWidth)
+  );
+
+  const layout = $derived(layoutMetrics(setup, view.zoom ?? fit));
+  const gutter = $derived(gutterOf(available, layout.drawn.width));
+
+  const pinch = (event: WheelEvent) => {
+    if (!event.ctrlKey && !event.metaKey) return;
+    event.preventDefault();
+
+    const by = (event.deltaY / WHEEL_NOTCH) * PERCENT_PER_NOTCH;
+    view.setZoom(clampZoom(layout.zoom - by));
+  };
+
+  const pageStyle = $derived(
+    `zoom: ${layout.zoom / 100}; ` +
+      `--page-width: ${layout.pageWidth}rem; --page-height: ${layout.pageHeight}rem; ` +
       `--margin-top: ${layout.marginPercent.top}%; --margin-right: ${layout.marginPercent.right}%; ` +
       `--margin-bottom: ${layout.marginPercent.bottom}%; --margin-left: ${layout.marginPercent.left}%`
   );
 </script>
 
 <div class="document-editor">
-  <header class="title-bar bg-surface-panel border-border-subtle border-b">
-    <h1 class="text-body-sm text-ink-primary m-0 truncate font-medium">
+  <header class="title-bar bg-surface-panel border-border-subtle flex items-center gap-3 border-b">
+    <h1 class="text-body-sm text-ink-primary m-0 min-w-0 flex-1 truncate font-medium">
       {documentTitle ?? "Loading document..."}
     </h1>
+    {#if runtime}
+      <span class="text-caption text-ink-muted shrink-0">{SYNC_LABEL[runtime.sync]}</span>
+    {/if}
   </header>
 
-  <div class="canvas bg-surface-panel">
-    <div class="pasteboard">
-      <div bind:this={host} class="editor" aria-label="Document editor" style={pageStyle}></div>
+  <div class="well">
+    <div bind:this={surface} class="canvas bg-surface-pasteboard" onwheel={pinch}>
+      <div class="pasteboard" style="--gutter: {gutter}rem">
+        <div bind:this={host} class="editor" aria-label="Document editor" style={pageStyle}></div>
+      </div>
     </div>
+    <div class="recess" aria-hidden="true"></div>
   </div>
 </div>
 
@@ -193,12 +225,34 @@
     padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 4);
   }
 
+  .well {
+    position: relative;
+    display: flex;
+    min-height: 0;
+    flex: 1;
+  }
+
+  .recess {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    box-shadow:
+      inset 0 9px 10px -9px var(--token-shadow-occlusion),
+      inset 10px 0 10px -10px var(--token-shadow-occlusion),
+      inset -10px 0 10px -10px var(--token-shadow-occlusion);
+    pointer-events: none;
+  }
+
   .canvas {
     min-height: 0;
     flex: 1;
     overflow: auto;
-    scrollbar-color: color-mix(in srgb, var(--token-border-strong) 55%, transparent) transparent;
+    scrollbar-color: transparent transparent;
     scrollbar-width: thin;
+  }
+
+  .canvas:hover {
+    scrollbar-color: color-mix(in srgb, var(--token-border-strong) 55%, transparent) transparent;
   }
 
   .canvas::-webkit-scrollbar {
@@ -208,6 +262,11 @@
 
   .canvas::-webkit-scrollbar-thumb {
     border-radius: var(--token-radius-control);
+    background-color: transparent;
+    transition: background-color var(--token-motion-small) var(--token-ease-standard);
+  }
+
+  .canvas:hover::-webkit-scrollbar-thumb {
     background-color: color-mix(in srgb, var(--token-border-strong) 55%, transparent);
   }
 
@@ -217,17 +276,17 @@
 
   .pasteboard {
     display: flex;
-    width: 100%;
+    width: max-content;
     min-width: 100%;
     min-height: 100%;
     box-sizing: border-box;
     flex-direction: column;
     align-items: center;
-    padding: calc(var(--token-spacing-unit) * 10);
+    padding: calc(var(--token-spacing-unit) * 10) var(--gutter);
   }
 
   .editor {
-    width: min(var(--page-width), 100%);
+    width: var(--page-width);
   }
 
   .editor :global(.ProseMirror) {
@@ -235,14 +294,13 @@
     flex-direction: column;
     gap: calc(var(--token-spacing-unit) * 8);
     outline: none;
-    white-space: pre-wrap;
   }
 
   .editor :global(.document-page) {
     position: relative;
     box-sizing: border-box;
     width: 100%;
-    aspect-ratio: var(--page-aspect);
+    height: var(--page-height);
     margin: 0;
     padding: var(--margin-top) var(--margin-right) var(--margin-bottom) var(--margin-left);
     border: 1px solid var(--token-border-subtle);
@@ -250,19 +308,26 @@
     box-shadow: 0 1px 3px color-mix(in srgb, var(--token-ink-primary) 12%, transparent);
   }
 
-  .editor :global(.document-page::after) {
-    position: absolute;
-    right: var(--margin-right);
-    bottom: calc(var(--token-spacing-unit) * 3);
-    color: var(--token-ink-muted);
-    content: attr(data-page);
-    font-size: var(--token-text-caption);
+  .editor :global(.document-row) {
+    display: flex;
+    align-items: flex-start;
+    gap: calc(var(--token-spacing-unit) * 4);
   }
 
-  .editor :global(.ProseMirror p) {
+  .editor :global(.document-block) {
+    min-width: 0;
+    flex-grow: 0;
+    flex-shrink: 1;
     margin: 0 0 calc(var(--token-spacing-unit) * 4);
+    overflow-wrap: break-word;
     color: var(--token-ink-secondary);
     font-size: var(--token-text-body);
     line-height: var(--token-text-body-leading);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .editor :global(.ProseMirror-selectednode) {
+    outline: 2px solid var(--token-color-active-border);
   }
 </style>

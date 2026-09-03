@@ -29,7 +29,7 @@ this is a section here rather than something you edit above.
 
 **Shows** — `Position · Outside`, `Start at · 1`, `Show on first · off`
 
-**Needs** — the same numbering settings the [Page view](../../context/resource/page.md) owns.
+**Needs** — the same numbering settings the [Layout view](../../context/resource/layout.md) owns.
 
 **Open** — the setting appears in two places. One has to be authoritative and the
 other a mirror, or they will disagree.

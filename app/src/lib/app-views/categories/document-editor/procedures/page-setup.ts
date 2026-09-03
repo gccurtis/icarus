@@ -38,28 +38,74 @@ export const orientationLabel = (orientation: PageSetup["orientation"]): string 
 
 export const inches = (value: number): string => `${value.toFixed(2)} in`;
 
+export type Size = { readonly width: number; readonly height: number };
+
+export const figures = (held: Size): string =>
+  `${held.width.toFixed(2)} × ${held.height.toFixed(2)}`;
+
+export const size = (held: Size, unit: string): string => `${figures(held)} ${unit}`;
+
 const PAGE_WIDTH_REM = 52;
 const BODY_FONT_SIZE_REM = 1;
 const BODY_LINE_HEIGHT_REM = 1.625;
 const AVERAGE_GLYPH_WIDTH_EM = 0.52;
 
-export const layoutMetrics = (setup: PageSetup) => {
+/**
+ * What the page can be drawn at, as a percentage of its true size. 100 is the
+ * page at the dimensions it would print at; nothing below 50 leaves a readable
+ * measure, and nothing above 200 fits a page on a screen.
+ */
+export const MINIMUM_ZOOM = 50;
+export const MAXIMUM_ZOOM = 200;
+
+/** What one press of the picker moves, and the precision a zoom is held to. */
+export const ZOOM_STEP = 5;
+
+export const clampZoom = (zoom: number): number =>
+  Math.min(Math.max(Math.round(zoom), MINIMUM_ZOOM), MAXIMUM_ZOOM);
+
+/**
+ * What is left either side of the page, in rem. The gutter is scenery, so it
+ * gives way before the page does: it collapses from the maximum to the minimum
+ * as the surface narrows, and only once the page will not fit inside the
+ * minimum does the surface scroll sideways.
+ */
+export const MAXIMUM_GUTTER = 2.5;
+export const MINIMUM_GUTTER = 0.75;
+
+/** The largest a page can be drawn on a surface this wide without it scrolling sideways. */
+export const fitZoom = (available: number, pageWidth: number): number =>
+  clampZoom(Math.floor(((available - MINIMUM_GUTTER * 2) / pageWidth) * 100));
+
+export const gutterOf = (available: number, drawnWidth: number): number =>
+  Math.min(MAXIMUM_GUTTER, Math.max(MINIMUM_GUTTER, (available - drawnWidth) / 2));
+
+export const layoutMetrics = (setup: PageSetup, zoom = 100) => {
   const dimensions = paperDimensions(setup.paper);
   const paper =
     setup.orientation === "portrait"
       ? dimensions
       : { width: dimensions.height, height: dimensions.width };
   const scale = PAGE_WIDTH_REM / paper.width;
-  const contentWidth = (paper.width - setup.margins.left - setup.margins.right) * scale;
-  const contentHeight = (paper.height - setup.margins.top - setup.margins.bottom) * scale;
+  const content = {
+    width: paper.width - setup.margins.left - setup.margins.right,
+    height: paper.height - setup.margins.top - setup.margins.bottom
+  };
+  const page = { width: PAGE_WIDTH_REM, height: paper.height * scale };
+  const at = clampZoom(zoom) / 100;
+
   const charactersPerLine = Math.floor(
-    contentWidth / (BODY_FONT_SIZE_REM * AVERAGE_GLYPH_WIDTH_EM)
+    (content.width * scale) / (BODY_FONT_SIZE_REM * AVERAGE_GLYPH_WIDTH_EM)
   );
-  const linesPerPage = Math.floor(contentHeight / BODY_LINE_HEIGHT_REM);
+  const linesPerPage = Math.floor((content.height * scale) / BODY_LINE_HEIGHT_REM);
 
   return {
-    pageWidth: PAGE_WIDTH_REM,
+    pageWidth: page.width,
+    pageHeight: page.height,
+    zoom: clampZoom(zoom),
     paper,
+    content,
+    drawn: { width: page.width * at, height: page.height * at },
     marginPercent: {
       top: (setup.margins.top / paper.width) * 100,
       right: (setup.margins.right / paper.width) * 100,

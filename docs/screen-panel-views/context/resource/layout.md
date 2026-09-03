@@ -1,18 +1,19 @@
-# Page
+# Layout
 
 | View | What it is for | Sections |
 | --- | --- | --- |
-| Page | Paper, gutters, furniture and numbering | Paper · Gutters · Header and footer · Page numbering |
+| Layout | Paper, dimensions, gutters, furniture and numbering | Paper · Dimensions · Gutters · Header and footer · Page numbering |
 
 Everything that applies to every page. What is set here is drawn on the page
 itself as a dashed guide, so the margin is visible where you write rather than
 measured on a ruler above it — which is why there is no ruler.
 
-## Layout
+## Arrangement
 
 | 300px |
 | --- |
 | paper |
+| dimensions |
 | gutters |
 | gutters |
 | header and footer |
@@ -23,6 +24,19 @@ measured on a ruler above it — which is why there is no ruler.
 **Shows** — `Size · Letter`, `Orientation · Portrait`
 
 **Needs** — `PageSetup` paper and orientation.
+
+## Dimensions
+
+The three sizes a page has at once, in the order they derive from each other: the
+sheet, the text area the gutters leave inside it, and what it is actually drawn
+at. Read together they say where the character and line budgets below came from —
+a wrong margin or a wrong measure shows up here rather than as a page that
+mysteriously holds too little.
+
+**Shows** — `Page · 8.50 × 11.00 in`, `Text area · 7.00 × 9.50 in`, `Drawn at · 52.00 × 67.29 rem`
+
+**Needs** — paper and orientation for the first, the margins for the second, and
+the rendered page width for the third. All three are derived; none is stored.
 
 ## Gutters
 

@@ -36,7 +36,7 @@ presents no visible way to do anything.
 
 ## Page setup
 
-A summary, with editing in the [Page view](../../context/resource/page.md). Starts collapsed.
+A summary, with editing in the [Layout view](../../context/resource/layout.md). Starts collapsed.
 
 **Shows** — `Paper · Letter`, `Gutters · 1.00 / 1.00 / 1.25 / 1.00 in`
 

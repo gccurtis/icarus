@@ -15,7 +15,7 @@ One subscreen.
 | [Find](../../context/resource/find-document.md) | Search and replace, as a panel rather than a dialog | Results |
 | [Insert](../../context/resource/insert-document.md) | Putting something new in | Basics · Content · Data and AI · Structure |
 | [Styles](../../context/resource/styles-document.md) | The named styles this document uses | Named styles |
-| [Page](../../context/resource/page.md) | Paper, gutters, furniture, numbering | Paper · Gutters · Header and footer · Page numbering |
+| [Layout](../../context/resource/layout.md) | Paper, dimensions, gutters, furniture, numbering | Paper · Dimensions · Gutters · Header and footer · Page numbering |
 | [Variables](../../context/project/variables.md) | The project's named values | Actions · Search · Filters · Variables |
 | [Comments](../../context/resource/comments-document.md) | Conversation on the document | Scope chips · Open · Resolved |
 | [Context](../../context/resource/context-document.md) | What prompt blocks in this document can look up | Available to prompt blocks · Resolved preview |
