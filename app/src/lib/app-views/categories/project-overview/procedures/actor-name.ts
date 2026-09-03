@@ -22,8 +22,7 @@ export const actorName = (actor: Actor): string => {
   }
 
   const task = rowsIn("agentTasks").find((candidate) => candidate._id === actor.taskId);
-  if (task === undefined) return "An agent";
-
-  const persona = rowsIn("personas").find((candidate) => candidate._id === task.personaId);
-  return persona?.name ?? "An agent";
+  const persona = rowsIn("personas").find((candidate) => candidate._id === task?.personaId);
+  const reference = actor.taskId.slice(actor.taskId.indexOf(":") + 1);
+  return `${persona?.name ?? "Generalist"} (${reference})`;
 };

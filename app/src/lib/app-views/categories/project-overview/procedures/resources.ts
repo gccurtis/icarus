@@ -18,10 +18,7 @@ export const RESOURCE_KINDS = [
   "research",
   "analysis",
   "file",
-  "finding",
-  "connector",
-  "context",
-  "template"
+  "finding"
 ] as const;
 
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
@@ -46,18 +43,6 @@ export type Resource = {
 const by = (actor: Actor | undefined): string =>
   actor === undefined ? "—" : actorName(actor);
 
-/**
- * Nine tables, one table.
- *
- * Every kind a project accumulates has an index here and nowhere else, so this
- * is the widest read on the board and the only one that has to agree with nine
- * separate row shapes. What they share is an id, a name and a moment; everything
- * else is the owning category's business.
- *
- * `analysis` is absent. An analysis compiles to relational builtins the formula
- * engine does not have yet, so `analyses` is a table this store has never held —
- * the kind stays in the vocabulary because the board can draw it the day it does.
- */
 export const resources = (projectId: string, now: number): readonly Resource[] => {
   const mine = <T extends { projectId: string }>(rows: readonly T[]): readonly T[] =>
     rows.filter((row) => row.projectId === projectId);
@@ -88,17 +73,6 @@ export const resources = (projectId: string, now: number): readonly Resource[] =
     ),
     ...mine(rowsIn("findings")).map((row) =>
       made(row._id, "finding", row.title, row.updatedAt, row.updatedBy)
-    ),
-    ...mine(rowsIn("connections")).map((row) =>
-      made(row._id, "connector", row.name, row.updatedAt, undefined)
-    ),
-    ...mine(rowsIn("resourceSets")).map((row) =>
-      made(row._id, "context", row.name, row.updatedAt, row.createdBy)
-    ),
-    // A template belongs to a person rather than to a project, so this one is not
-    // scoped: the library follows you between projects.
-    ...rowsIn("templates").map((row) =>
-      made(row._id, "template", row.name, row.updatedAt, row.createdBy)
     )
   ];
 };

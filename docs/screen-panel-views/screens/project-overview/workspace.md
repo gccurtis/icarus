@@ -234,7 +234,7 @@ Everything the project contains, as one table, under the controls that narrow it
 | --- | --- | --- | --- |
 | Q3 Resilience Memo | Document | 4 minutes ago | Ana Reyes |
 | Why did Feeder 12 fail twice? | Research | Yesterday | Ana Reyes |
-| NERC-2025-winter-review.pdf | External file | 4 days ago | SharePoint — Ops Reports |
+| NERC-2025-winter-review.pdf | External | 4 days ago | SharePoint — Ops Reports |
 
 ### Structure
 
@@ -246,8 +246,8 @@ Everything the project contains, as one table, under the controls that narrow it
 
 ### Props
 
-Every kind is here — documents, decks, spreadsheets, Research threads, analyses,
-external files, findings, connectors — because "what is in this project" is one
+Every kind is here — documents, decks, spreadsheets, Research threads,
+analyses, external files and findings — because "what is in this project" is one
 question.
 
 **The order wears no glyph and the direction shares its frame.** A control
@@ -258,11 +258,10 @@ inside one border with a seam between them rather than as two controls that
 happen to be adjacent.
 
 **Both filters offer what the work contains, not what the vocabulary allows.**
-An agent and a connector both update resources and neither is a member, so a
-roster would leave five of the twelve rows unreachable. A written-out list of
-kinds fails the other way round: it is a second record of what a project can
-hold, and the first row it falls behind on is a row you can see in the table and
-cannot select in the control offered for selecting it.
+The actor and kind filters are drawn from the rows already in the table so they
+stay in sync with the project itself. The visible task label uses the driving
+persona name and task id, such as *Generalist (e344csd)*, rather than a generic
+agent label.
 
 ### Behavior
 
@@ -295,10 +294,10 @@ look at anything without leaving the board you came to.
 | --- | --- | --- |
 | Document, deck, spreadsheet | [the resource](../../inspector/project/resource.md) | its editor, in a tab of its own |
 | Research | [the thread](../../inspector/research/research-thread.md) | the thread's Research tab |
-| Analysis, template | [the resource](../../inspector/project/resource.md) | the permanent tab, moved onto it |
-| External file | [the file](../../inspector/project/file.md) | the same lens — no screen holds a file |
+| Analysis | [the resource](../../inspector/project/resource.md) | the permanent tab, moved onto it |
+| External | [the file](../../inspector/project/file.md) | the same lens — no screen holds a file |
 | Finding | [the finding](../../inspector/research/accepted-finding.md) | the same lens |
 
-**A kind with no screen opens its lens rather than nothing.** A file, a finding,
-a connector and a Context are things you look at rather than places you go, and
-the honest answer to *open this* is the panel that can read it.
+**A kind with no screen opens its lens rather than nothing.** A file and a
+finding are things you look at rather than places you go, and the honest answer
+to *open this* is the panel that can read it.

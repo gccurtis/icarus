@@ -118,11 +118,8 @@
     spreadsheet: "Spreadsheet",
     research: "Research",
     analysis: "Analysis",
-    file: "External file",
-    finding: "Finding",
-    connector: "Connector",
-    context: "Context",
-    template: "Template"
+    file: "External",
+    finding: "Finding"
   };
 
   const KIND_PLURAL: Record<ResourceKind, string> = {
@@ -131,11 +128,8 @@
     spreadsheet: "Spreadsheets",
     research: "Research",
     analysis: "Analyses",
-    file: "External files",
-    finding: "Findings",
-    connector: "Connectors",
-    context: "Contexts",
-    template: "Templates"
+    file: "External",
+    finding: "Findings"
   };
 
   const WITHOUT_FILES = "all-but-file";
@@ -263,11 +257,11 @@
    * What a row opens, by what it is.
    *
    * A body and a thread each earn a tab of their own, keyed by the thing rather
-   * than by the category. An analysis and a template are places you return to, so
-   * those move the permanent tab onto the row instead of minting one. A file, a
-   * finding and a connector have no category at all — they are things you look at
-   * rather than places you go — so opening one means opening its lens, which is
-   * the same thing a single click already did.
+   * than by the category. An analysis is a place you return to, so
+   * that moves the permanent tab onto the row instead of minting one. A file and a
+   * finding have no category at all — they are things you look at rather than
+   * places you go — so opening one means opening its lens, which is the same
+   * thing a single click already did.
    */
   const launch = (row: Resource) => {
     const target = openingFor(row);
@@ -333,13 +327,11 @@
 
   /**
    * Both filters offer what the work contains rather than what the vocabulary
-   * allows, for the same reason.
-   *
-   * An agent and a connector both update resources and neither is a member, so a
-   * roster would leave five of the twelve rows unreachable. A hand-written list
-   * of kinds fails the other way round: it is a second record of what a project
-   * can hold, and the first row it falls behind on is a row you can see in the
-   * table and cannot select in the control offered for selecting it.
+   * allows, for the same reason. The kind list and the actor list are derived from
+   * the rows already in the project, so they stay in step with what is on the
+   * board and never widen past the table they are narrowing. The visible task label
+   * uses the driving persona name and task id (for example, Generalist (e344csd))
+   * rather than a generic agent label.
    */
   const kinds = $derived(
     [...new Set(work.map((row) => row.kind))].sort((a, b) =>
@@ -568,9 +560,7 @@
           >
             <option value="all">All kinds</option>
             {#if kinds.includes("file")}
-              <option value={WITHOUT_FILES}>
-                All but {KIND_PLURAL.file.toLowerCase()}
-              </option>
+              <option value={WITHOUT_FILES}>Less external</option>
             {/if}
             {#each kinds as option (option)}
               <option value={option}>{KIND_PLURAL[option]}</option>
@@ -606,8 +596,7 @@
 
         {#if listed.length === 0}
           <ScreenEmpty kind="no-matches" title="Nothing in this project matches" onclear={clear}>
-            The search reaches every kind — documents, decks, grids, threads, findings and connector
-            files alike.
+            The search reaches every kind — documents, decks, grids, threads and external files alike.
           </ScreenEmpty>
         {:else}
           <ScreenTable scroll columns={["Name", "Kind", "Updated", "Updated by"]}>

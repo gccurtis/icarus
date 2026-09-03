@@ -13,8 +13,7 @@ import type { Resource, ResourceKind } from "$app-views/categories/project-overv
  * question whatever it holds.
  */
 const LENS: Partial<Record<ResourceKind, Inspected>> = {
-  file: "project-overview.file",
-  connector: "project-overview.connector"
+  file: "project-overview.file"
 };
 
 export const inspectionFor = ({

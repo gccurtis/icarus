@@ -116,8 +116,8 @@
           class="hover:bg-surface-panel-hover rounded-control -m-1 flex items-center gap-2 p-1"
           onclick={() => persona && view.showContent("agents.persona", persona.id)}
         >
-          <PanelActor name={persona?.name ?? "Agent"} kind="agent" size="row" />
-          <span class="text-caption text-ink-secondary">{persona?.name ?? "Agent"}</span>
+          <PanelActor name={persona?.name ?? "Generalist"} kind="agent" size="row" />
+          <span class="text-caption text-ink-secondary">{persona?.name ?? "Generalist"}</span>
         </button>
         <span class="text-caption text-ink-muted flex items-center gap-1.5">
           <User size={14} aria-hidden="true" />
@@ -203,7 +203,7 @@
           {:else}
             <ScreenList label="Conversation">
               {#each turns as turn (turn.id)}
-                <ScreenItem title={turn.from === "you" ? "You" : (persona?.name ?? "Agent")} excerpt={turn.text} meta={turn.at}>
+                <ScreenItem title={turn.from === "you" ? "You" : (persona?.name ?? "Generalist")} excerpt={turn.text} meta={turn.at}>
                   {#snippet lead()}
                     {#if turn.from === "you"}
                       <User size={16} aria-hidden="true" />
