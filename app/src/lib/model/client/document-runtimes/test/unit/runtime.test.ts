@@ -5,9 +5,49 @@ import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
 import type { DocumentRuntime } from "$model/client/document-runtimes";
 
+const wire = vi.hoisted(() => ({
+  refusals: 0,
+  fault: false,
+  readLands: false,
+  sent: [] as { baseRevision: number; ops: unknown[]; touched: string[] }[]
+}));
+
+vi.mock("$capabilities/document/index.remote", () => ({
+  readDocumentBody: () =>
+    Object.assign(wire.readLands ? Promise.resolve(null) : new Promise(() => {}), {
+      refresh: () => Promise.resolve(),
+      ready: false
+    }),
+  submitDocumentChanges: ({
+    changeSet
+  }: {
+    changeSet: { baseRevision: number; ops: unknown[]; touched: string[] };
+  }) => {
+    if (wire.fault) return Promise.reject(new Error("offline"));
+
+    wire.sent.push(changeSet);
+    if (wire.refusals === 0) {
+      return Promise.resolve({ accepted: true, revision: changeSet.baseRevision + 1 });
+    }
+
+    wire.refusals -= 1;
+    return Promise.resolve({
+      accepted: false,
+      reason: "stale",
+      revision: changeSet.baseRevision + 4,
+      detail: "moved on"
+    });
+  }
+}));
+
 const runtimeFor = (afterOps = 3, afterMs = 2000): DocumentRuntime =>
   createDocumentRuntimes(
-    createConfiguration({ revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs } } })
+    createConfiguration({
+      revisions: {
+        changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs },
+        sync: { everyMs: 0 }
+      }
+    })
   ).attach("k57");
 
 const set = (row: string, value: number): DocumentOp => ({
@@ -18,7 +58,13 @@ const set = (row: string, value: number): DocumentOp => ({
   was: value - 1
 });
 
-beforeEach(() => vi.useFakeTimers());
+beforeEach(() => {
+  wire.refusals = 0;
+  wire.fault = false;
+  wire.readLands = false;
+  wire.sent.length = 0;
+  vi.useFakeTimers();
+});
 afterEach(() => vi.useRealTimers());
 
 test("apply buffers without awaiting anything", () => {
@@ -184,4 +230,62 @@ test("sync says loading until something lands, and body stays undefined", () => 
 
   assert.equal(runtime.sync, "loading");
   assert.equal(runtime.body, undefined);
+});
+
+test("what goes over the wire is a change set, not a bag of ops", async () => {
+  const runtime = runtimeFor();
+  runtime.apply([set("r1", 1), set("r2", 2)]);
+
+  await runtime.flush();
+
+  assert.equal(wire.sent.length, 1);
+  assert.equal(wire.sent[0].baseRevision, 0);
+  assert.deepEqual(wire.sent[0].touched, ["rows/#r1", "rows/#r2"]);
+});
+
+test("a stale refusal is rebased once and resubmitted", async () => {
+  wire.refusals = 1;
+  const runtime = runtimeFor();
+  runtime.apply([set("r1", 1)]);
+
+  await runtime.flush();
+
+  assert.equal(wire.sent.length, 2);
+  assert.equal(wire.sent[0].baseRevision, 0);
+  assert.equal(wire.sent[1].baseRevision, 4);
+  assert.equal(runtime.sync, "saved");
+  assert.equal(runtime.pending, 0);
+});
+
+test("a refusal the rebase cannot resolve drops the ops and reads the body back", async () => {
+  wire.refusals = 2;
+  wire.readLands = true;
+  const runtime = runtimeFor();
+  runtime.apply([set("r1", 1)]);
+
+  await runtime.flush();
+
+  assert.equal(runtime.sync, "needs-review");
+  assert.equal(runtime.pending, 0);
+  assert.notEqual(runtime.body, undefined);
+});
+
+test("a refusal that arrives is not a fault that throws", async () => {
+  wire.refusals = 2;
+  wire.readLands = true;
+  const runtime = runtimeFor();
+  runtime.apply([set("r1", 1)]);
+
+  await assert.doesNotReject(() => runtime.flush());
+});
+
+test("a fault puts the ops back and reports an error", async () => {
+  wire.fault = true;
+  const runtime = runtimeFor();
+  runtime.apply([set("r1", 1)]);
+
+  await assert.rejects(() => runtime.flush());
+
+  assert.equal(runtime.sync, "error");
+  assert.equal(runtime.pending, 1);
 });

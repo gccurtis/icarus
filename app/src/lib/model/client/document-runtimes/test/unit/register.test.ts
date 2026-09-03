@@ -1,11 +1,23 @@
 import assert from "node:assert/strict";
-import { test } from "vitest";
+import { test, vi } from "vitest";
 import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
 
+vi.mock("$capabilities/document/index.remote", () => ({
+  readDocumentBody: () =>
+    Object.assign(new Promise(() => {}), { refresh: () => Promise.resolve(), ready: false }),
+  submitDocumentChanges: ({ changeSet }: { changeSet: { baseRevision: number } }) =>
+    Promise.resolve({ accepted: true, revision: changeSet.baseRevision + 1 })
+}));
+
 const register = (afterOps = 50, afterMs = 2000) =>
   createDocumentRuntimes(
-    createConfiguration({ revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs } } })
+    createConfiguration({
+      revisions: {
+        changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs },
+        sync: { everyMs: 0 }
+      }
+    })
   );
 
 test("attach opens a document", () => {

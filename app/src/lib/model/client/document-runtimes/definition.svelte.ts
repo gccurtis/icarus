@@ -10,7 +10,7 @@ import { releaseAll } from "$model/client/document-runtimes/methods/release-all"
 import type {
   DocumentRuntime,
   DocumentRuntimesModel,
-  FlushThresholds,
+  Thresholds,
   HistoryEntry,
   SyncState
 } from "$model/client/document-runtimes/types";
@@ -32,9 +32,9 @@ export class Runtime implements DocumentRuntime {
   unsubscribe: (() => void) | undefined;
   pendingFlush: Promise<void> | undefined;
 
-  readonly thresholds: FlushThresholds;
+  readonly thresholds: Thresholds;
 
-  constructor(id: string, thresholds: FlushThresholds) {
+  constructor(id: string, thresholds: Thresholds) {
     this.id = id;
     this.thresholds = thresholds;
   }
@@ -107,9 +107,9 @@ export class DocumentRuntimesState {
   readonly open = new SvelteMap<string, Runtime>();
   readonly settling = new SvelteMap<string, Runtime>();
 
-  readonly thresholds: FlushThresholds;
+  readonly thresholds: Thresholds;
 
-  constructor(thresholds: FlushThresholds) {
+  constructor(thresholds: Thresholds) {
     this.thresholds = thresholds;
   }
 
@@ -121,7 +121,7 @@ export class DocumentRuntimesState {
 export class DocumentRuntimes implements DocumentRuntimesModel {
   readonly #state: DocumentRuntimesState;
 
-  constructor(thresholds: FlushThresholds) {
+  constructor(thresholds: Thresholds) {
     this.#state = new DocumentRuntimesState(thresholds);
   }
 

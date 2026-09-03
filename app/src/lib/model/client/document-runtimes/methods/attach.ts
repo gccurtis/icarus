@@ -1,8 +1,12 @@
 import type { DocumentRuntimesState, Runtime } from "$model/client/document-runtimes/definition.svelte";
+import { sync } from "$model/client/document-runtimes/methods/sync";
 
 export const attach = (state: DocumentRuntimesState, id: string): Runtime => {
   const open = state.open.get(id);
-  if (open) return open;
+  if (open) {
+    void sync(open);
+    return open;
+  }
 
   const settling = state.settling.get(id);
   if (settling) {
@@ -20,6 +24,11 @@ export const attach = (state: DocumentRuntimesState, id: string): Runtime => {
 };
 
 const subscribe = (runtime: Runtime): void => {
-  // Not built: nothing serves a document body yet.
-  void runtime;
+  void sync(runtime);
+
+  const every = runtime.thresholds.syncEveryMs;
+  if (every <= 0) return;
+
+  const timer = setInterval(() => void sync(runtime), every);
+  runtime.unsubscribe = () => clearInterval(timer);
 };

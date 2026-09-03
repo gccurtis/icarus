@@ -78,13 +78,15 @@ test("compares path segments, not string prefixes", () => {
   assert.deepEqual(folded[0], set("rows/#r1", 3, 1));
 });
 
-test("never folds text ops", () => {
+test("folds text ops whose regions touch", () => {
   const ops: DocumentOp[] = [
     { op: "text", target: "atom", path: "rows/#r1/atoms/#a1", at: 0, insert: "a", remove: "" },
     { op: "text", target: "atom", path: "rows/#r1/atoms/#a1", at: 1, insert: "b", remove: "" }
   ];
 
-  assert.deepEqual(coalesce(ops), ops);
+  assert.deepEqual(coalesce(ops), [
+    { op: "text", target: "atom", path: "rows/#r1/atoms/#a1", at: 0, insert: "ab", remove: "" }
+  ]);
 });
 
 test("never folds inserts, removes or moves", () => {
@@ -101,4 +103,95 @@ test("preserves order of what it does not fold", () => {
 
 test("an empty buffer folds to nothing", () => {
   assert.deepEqual(coalesce([]), []);
+});
+
+const splice = (path: string, at: number, insert: string, remove: string): DocumentOp => ({
+  op: "text",
+  target: "atom",
+  path,
+  at,
+  insert,
+  remove
+});
+
+test("typing a word folds into one splice", () => {
+  const folded = coalesce([
+    splice("#b1/atoms/#a1", 0, "h", ""),
+    splice("#b1/atoms/#a1", 1, "e", ""),
+    splice("#b1/atoms/#a1", 2, "l", ""),
+    splice("#b1/atoms/#a1", 3, "l", ""),
+    splice("#b1/atoms/#a1", 4, "o", "")
+  ]);
+
+  assert.deepEqual(folded, [splice("#b1/atoms/#a1", 0, "hello", "")]);
+});
+
+test("backspacing over what was just typed cancels it out", () => {
+  const folded = coalesce([
+    splice("#b1/atoms/#a1", 3, "d", ""),
+    splice("#b1/atoms/#a1", 3, "", "d")
+  ]);
+
+  assert.deepEqual(folded, []);
+});
+
+test("backspacing past what was typed reaches the original text", () => {
+  const folded = coalesce([
+    splice("#b1/atoms/#a1", 3, "d", ""),
+    splice("#b1/atoms/#a1", 3, "", "d"),
+    splice("#b1/atoms/#a1", 2, "", "c")
+  ]);
+
+  assert.deepEqual(folded, [splice("#b1/atoms/#a1", 2, "", "c")]);
+});
+
+test("typing then deleting half of it is one small splice", () => {
+  const folded = coalesce([
+    splice("#b1/atoms/#a1", 0, "hello", ""),
+    splice("#b1/atoms/#a1", 3, "", "lo")
+  ]);
+
+  assert.deepEqual(folded, [splice("#b1/atoms/#a1", 0, "hel", "")]);
+});
+
+test("a caret that jumps within one atom starts a new splice", () => {
+  const ops = [splice("#b1/atoms/#a1", 0, "a", ""), splice("#b1/atoms/#a1", 40, "b", "")];
+
+  assert.deepEqual(coalesce(ops), ops);
+});
+
+test("two atoms are two splices", () => {
+  const ops = [splice("#b1/atoms/#a1", 0, "a", ""), splice("#b1/atoms/#a2", 0, "b", "")];
+
+  assert.deepEqual(coalesce(ops), ops);
+});
+
+test("a splice does not fold across an op on related ground", () => {
+  const ops = [
+    splice("#b1/atoms/#a1", 0, "a", ""),
+    insert("#b1/atoms", "#a2"),
+    splice("#b1/atoms/#a1", 1, "b", "")
+  ];
+
+  assert.deepEqual(coalesce(ops), ops);
+});
+
+test("a splice folds across an op on unrelated ground", () => {
+  const folded = coalesce([
+    splice("#b1/atoms/#a1", 0, "a", ""),
+    insert("#b9/atoms", "#a9"),
+    splice("#b1/atoms/#a1", 1, "b", "")
+  ]);
+
+  assert.equal(folded.length, 2);
+  assert.deepEqual(folded[0], splice("#b1/atoms/#a1", 0, "ab", ""));
+});
+
+test("a fold inverts to where the run started, not to the middle of it", () => {
+  const folded = coalesce([
+    splice("#b1/atoms/#a1", 2, "X", "c"),
+    splice("#b1/atoms/#a1", 3, "Y", "")
+  ]);
+
+  assert.deepEqual(folded, [splice("#b1/atoms/#a1", 2, "XY", "c")]);
 });

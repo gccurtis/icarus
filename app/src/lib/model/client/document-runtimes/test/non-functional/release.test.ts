@@ -6,9 +6,23 @@ import { createDocumentRuntimes } from "$model/client/document-runtimes";
 import { Runtime } from "$model/client/document-runtimes/definition.svelte";
 import { rebase } from "$model/client/document-runtimes/methods/flush/rebase";
 
+vi.mock("$capabilities/document/index.remote", () => ({
+  readDocumentBody: () =>
+    Object.assign(new Promise(() => {}), { refresh: () => Promise.resolve(), ready: false }),
+  submitDocumentChanges: ({ changeSet }: { changeSet: { baseRevision: number } }) =>
+    Promise.resolve({ accepted: true, revision: changeSet.baseRevision + 1 })
+}));
+
+const thresholds = { afterOps: 50, afterMs: 2000, syncEveryMs: 0 };
+
 const register = (afterOps = 50, afterMs = 2000) =>
   createDocumentRuntimes(
-    createConfiguration({ revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs } } })
+    createConfiguration({
+      revisions: {
+        changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs },
+        sync: { everyMs: 0 }
+      }
+    })
   );
 
 const set = (row: string, value: number): DocumentOp => ({
@@ -88,7 +102,7 @@ test("closing the client instance releases every runtime", async () => {
 });
 
 test("a refused change set goes back to the front of the buffer", () => {
-  const runtime = new Runtime("k57", { afterOps: 50, afterMs: 2000 });
+  const runtime = new Runtime("k57", thresholds);
   runtime.buffer = [set("typed-during-flight", 9)];
 
   rebase(runtime, [set("refused", 1)], { revision: 7, retryable: true });
@@ -99,7 +113,7 @@ test("a refused change set goes back to the front of the buffer", () => {
 });
 
 test("a rebase adopts the server's revision", () => {
-  const runtime = new Runtime("k57", { afterOps: 50, afterMs: 2000 });
+  const runtime = new Runtime("k57", thresholds);
 
   rebase(runtime, [set("r1", 1)], { revision: 42, retryable: true });
 
@@ -108,7 +122,7 @@ test("a rebase adopts the server's revision", () => {
 });
 
 test("a refusal the ladder cannot resolve needs review, and keeps the work", () => {
-  const runtime = new Runtime("k57", { afterOps: 50, afterMs: 2000 });
+  const runtime = new Runtime("k57", thresholds);
 
   rebase(runtime, [set("r1", 1)], { revision: 42, retryable: false });
 

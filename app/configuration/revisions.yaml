@@ -23,6 +23,16 @@ revisions:
     # Submit this long after the first unsubmitted operation, whatever the count.
     flushAfterMs: 2000
 
+  # How often an open editor re-reads the leader body it is holding.
+  #
+  # An editor with nothing outstanding of its own is a reader, and a reader that
+  # never reads again is showing the document as it was when the tab was opened.
+  # A read is skipped whenever the editor has unsubmitted operations, so this
+  # never overwrites work in progress; shortening it costs reads and lengthens
+  # nothing, widening it is how long another writer's change stays invisible.
+  sync:
+    everyMs: 5000
+
   resources:
     # How many change sets stay in the `recent` tier behind the leader snapshot.
     #

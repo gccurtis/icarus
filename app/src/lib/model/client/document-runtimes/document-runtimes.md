@@ -88,7 +88,7 @@ export const createDocumentRuntimes = (configuration: ConfigurationModel): Docum
 
 | Dependency | Ownership | Usage |
 | ---------- | --------- | ----- |
-| `configuration` | BORROWED | Two thresholds read at construction; not held afterwards |
+| `configuration` | BORROWED | Three thresholds read at construction; not held afterwards |
 
 The thresholds are read **here rather than at flush time**, so a key missing from
 the published list fails while the graph is being built — naming the key and the
@@ -98,6 +98,10 @@ Nothing else is depended on. It does not know about tabs, and it does not need
 storage: nothing it holds survives a reload, by design, because an unflushed
 buffer that outlived the browser would be an edit the user can neither see nor
 cancel.
+
+A view reaches this register through
+[`workspaceState.documentRuntime`](../workspace-state/workspace-state.md) rather
+than importing it, so two tabs on one document cannot end up with two buffers.
 
 ## Terminal Behaviour
 
@@ -145,23 +149,34 @@ entry out first, so a second release finds nothing.
 - **Coalescing never touches history.** The buffer is the wire's view; the undo
   stack keeps one entry per gesture.
 
-## What is forward-declared
+## What crosses to the server
 
-Nothing serves a materialized document body yet, and nothing writes
-`documentChangeSets`. Two calls are therefore written as comments, with the code
-we expect to run:
+Two calls, both through [`$capabilities/document`](../../../capabilities/document/document.md):
 
-| Where | Call | What happens meanwhile |
+| Where | Call | On failure |
 | --- | --- | --- |
-| `methods/attach.ts` | read one document's body and revision | A runtime opens in `loading` with no body, which is what an undelivered subscription looks like |
-| `methods/flush/flush.ts` | append to `documentChangeSets` | The accepted branch is taken locally, so every state transition around it is the real one |
+| `methods/sync.ts` | `readDocumentBody` — one document's body and revision | Silence, unless nothing has ever been read: a failed re-read leaves the body that is showing alone rather than emptying the editor. A document with no stored body is not a failure either — it opens on an empty one, so there is always somewhere to put the caret |
+| `methods/flush/flush.ts` | `submitDocumentChanges` — one coalesced change set | A refusal keeps the buffer and reports `needs-review`; a fault keeps it and reports `error` |
+
+**A refusal is not a throw.** The capability answers `accepted: false` with the
+revision the leader is actually at, and only a genuine fault rejects. The two
+need opposite handling — one is retryable after a rebase, the other after the
+network comes back — so they cannot arrive the same way.
 
 **The client never holds a snapshot.** It holds one body at one revision.
 `documentSnapshots` is the server's replay anchor and appears nowhere here.
 
-Everything else is live and tested: buffering, coalescing, the flush schedule,
-inversion, the undo and redo stacks, the register's idempotence, revival from
-`settling`, release-as-flush, and both projections.
+**No live subscription yet, but the body does not stand still.** Four things read
+the leader again: opening a tab on the document, a change set the server accepts,
+a refusal that reverts, and an interval while the runtime is settled. There is
+still no push, so another client's change waits for the next of those — but a
+body no longer stays at what the page was loaded with, which is what it used to
+do for as long as the tab stayed open.
+
+**A read never overwrites work in progress.** `sync` refuses to run while
+anything is buffered or in flight, and checks again after the answer arrives,
+because a keystroke during the round trip makes that answer stale before it
+lands. Between flushes the editor is still the local truth.
 
 ## File Tree
 
@@ -183,13 +198,15 @@ document-runtimes/
 │   │   ├── flush.ts
 │   │   ├── coalesce.ts
 │   │   └── rebase.ts
+│   ├── sync.ts
 │   ├── history/
 │   │   ├── history.md
 │   │   ├── history.ts
 │   │   └── invert.ts
 │   └── shared/
 │       ├── shared.md
-│       └── detach.ts
+│       ├── detach.ts
+│       └── empty-body.ts
 └── test/
     ├── unit/
     └── non-functional/

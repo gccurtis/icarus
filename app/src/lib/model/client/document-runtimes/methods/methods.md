@@ -14,6 +14,7 @@ function taking one of them.
 | `release` | file | [`release.ts`](release.ts) | mutator | Detach one document and return it to be submitted |
 | `releaseAll` | file | [`release-all.ts`](release-all.ts) | mutator | Detach every open document |
 | `apply` | file | [`apply.ts`](apply.ts) | mutator | Buffer a gesture and record it; `buffer` does the first without the second |
+| `sync` | file | [`sync.ts`](sync.ts) | mutator | Re-read the leader body, and only while nothing of this runtime's own is outstanding |
 | `flush` | directory | [`flush/`](flush/flush.md) | mutator | Submit the buffer as one change set |
 | `history` | directory | [`history/`](history/history.md) | mutator | The undo and redo stacks |
 
@@ -59,9 +60,11 @@ One, preserving an invariant that spans its callers — see
 
 ## Common Shape
 
-Every method here is synchronous except `flush`, and the rule underneath is one
-sentence: **nothing a user gesture triggers is awaited, and nothing awaited is
-triggered by a user gesture.**
+Every method here is synchronous except `flush` and `sync`, and the rule
+underneath is one sentence: **nothing a user gesture triggers is awaited, and
+nothing awaited is triggered by a user gesture.** `attach` fires a read and hands
+back the runtime without waiting for it, which is what keeps opening a tab
+synchronous while the body it shows still catches up.
 
 ```text
 1. Read what is there — a map entry, or a stack's last entry

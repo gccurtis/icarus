@@ -34,9 +34,11 @@ export interface DocumentRuntimesModel {
   releaseAll(): void;
 }
 
-export type FlushThresholds = {
+export type Thresholds = {
   readonly afterOps: number;
   readonly afterMs: number;
+  /** How often a settled runtime re-reads the leader. Zero switches it off. */
+  readonly syncEveryMs: number;
 };
 
 export type HistoryEntry = readonly DocumentOp[];

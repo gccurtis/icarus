@@ -5,9 +5,11 @@ import type { DocumentRuntimesModel } from "$model/client/document-runtimes/type
 
 const FLUSH_AFTER_OPS = "revisions.changeSets.flushAfterOps";
 const FLUSH_AFTER_MS = "revisions.changeSets.flushAfterMs";
+const SYNC_EVERY_MS = "revisions.sync.everyMs";
 
 export const createDocumentRuntimes = (configuration: ConfigurationModel): DocumentRuntimesModel =>
   new DocumentRuntimes({
     afterOps: requiredNumber(configuration, FLUSH_AFTER_OPS),
-    afterMs: requiredNumber(configuration, FLUSH_AFTER_MS)
+    afterMs: requiredNumber(configuration, FLUSH_AFTER_MS),
+    syncEveryMs: requiredNumber(configuration, SYNC_EVERY_MS)
   });

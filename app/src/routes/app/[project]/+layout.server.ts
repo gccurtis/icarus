@@ -16,6 +16,7 @@ import type { LayoutServerLoad } from "./$types";
 const PUBLISHED_KEYS = [
   "revisions.changeSets.flushAfterOps",
   "revisions.changeSets.flushAfterMs",
+  "revisions.sync.everyMs",
   "workspace.changeSets.flushAfterOps",
   "workspace.changeSets.flushAfterMs"
 ] as const;
