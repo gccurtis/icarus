@@ -25,7 +25,7 @@
   class={cn(
     "border-border-subtle rounded-panel overflow-hidden border",
     scroll &&
-      "flex min-h-0 flex-1 flex-col [&>[data-slot=table-container]]:min-h-0 [&>[data-slot=table-container]]:flex-1 [&>[data-slot=table-container]]:[scrollbar-width:thin] [&>[data-slot=table-container]]:[scrollbar-color:transparent_transparent] [&:hover>[data-slot=table-container]]:[scrollbar-color:var(--token-border-strong)_transparent] [&>[data-slot=table-container]::-webkit-scrollbar]:w-1.5 [&>[data-slot=table-container]::-webkit-scrollbar-track]:bg-transparent [&>[data-slot=table-container]::-webkit-scrollbar-thumb]:rounded-full [&>[data-slot=table-container]::-webkit-scrollbar-thumb]:bg-transparent [&>[data-slot=table-container]::-webkit-scrollbar-thumb]:transition-colors [&:hover>[data-slot=table-container]::-webkit-scrollbar-thumb]:bg-border-strong [&_thead_th]:bg-surface-panel-hover [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:shadow-[inset_0_-1px_0_var(--token-border-subtle)]"
+      "flex min-h-0 flex-1 flex-col [&>[data-slot=table-container]]:min-h-0 [&>[data-slot=table-container]]:flex-1 [&>[data-slot=table-container]]:[scrollbar-width:none] [&>[data-slot=table-container]::-webkit-scrollbar]:hidden [&_thead_th]:bg-surface-panel-hover [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:shadow-[inset_0_-1px_0_var(--token-border-subtle)]"
   )}
 >
   <Table.Root class="border-collapse">

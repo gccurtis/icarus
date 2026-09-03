@@ -44,6 +44,7 @@
     "@fontsource/ibm-plex-sans": "latest",
     "bits-ui": "^2.19.0",
     "clsx": "latest",
+    "konva": "^10.3.2",
     "layerchart": "^2.2.0",
     "pino": "latest",
     "prosemirror-commands": "^1.7.2",
