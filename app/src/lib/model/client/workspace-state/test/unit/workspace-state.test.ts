@@ -357,15 +357,14 @@ test("closing the active tab activates its left neighbour", () => {
   assert.equal(model.activeId, first.id);
 });
 
-test("closing the last tab a person opened falls back onto a permanent one", () => {
+test("closing the last transient tab returns to Project Overview", () => {
   const model = workspaceState();
   const tab = model.open(document("k57"));
 
   model.close(tab.id);
 
   assert.equal(model.tabs.length, SINGLETONS.length);
-  assert.equal(model.tabs.some((candidate) => candidate.id === model.activeId), true);
-  assert.equal(isSingleton(model.active.category), true);
+  assert.equal(model.active.category, "project-overview");
 });
 
 test("closing a tab that is not active leaves the active one alone", () => {

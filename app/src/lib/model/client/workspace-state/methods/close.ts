@@ -13,10 +13,18 @@ export const close = (state: WorkspaceStateData, id: TabId): void => {
   }
 
   if (state.tabs.activeId === id) {
+    const projectOverview = state.tabs.tabs.find(
+      (candidate) => candidate.category === "project-overview"
+    );
+    if (projectOverview === undefined) {
+      throw new Error("Project Overview must be open.");
+    }
+
+    const transientCount = state.tabs.tabs.filter((candidate) => !isSingleton(candidate.category)).length;
     perform(state, {
       op: "activate",
       was: id,
-      now: state.tabs.tabs[Math.max(0, at - 1)].id
+      now: transientCount === 1 ? projectOverview.id : state.tabs.tabs[Math.max(0, at - 1)].id
     });
   }
 
