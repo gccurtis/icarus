@@ -27,6 +27,7 @@ import Palette from "@lucide/svelte/icons/palette";
 import Play from "@lucide/svelte/icons/play";
 import Plus from "@lucide/svelte/icons/plus";
 import Presentation from "@lucide/svelte/icons/presentation";
+import Proportions from "@lucide/svelte/icons/proportions";
 import Printer from "@lucide/svelte/icons/printer";
 import ScrollText from "@lucide/svelte/icons/scroll-text";
 import Search from "@lucide/svelte/icons/search";
@@ -197,9 +198,10 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "document-editor.navigator": { label: "Sections", icon: LayoutPanelTop },
   "slide-deck-editor.notes": { label: "Notes", icon: StickyNote },
   "spreadsheet-editor.objects": { label: "Objects", icon: Group },
-  "document-editor.page": { label: "Page", icon: FileText },
+  "document-editor.layout": { label: "Layout", icon: FileText },
   "spreadsheet-editor.print": { label: "Print", icon: Printer },
   "slide-deck-editor.slides": { label: "Slides", icon: Presentation },
+  "slide-deck-editor.stage": { label: "Stage", icon: Proportions },
   "document-editor.styles": { label: "Styles", icon: Type },
   "spreadsheet-editor.styles": { label: "Styles", icon: Type },
   "slide-deck-editor.theme": { label: "Theme", icon: Palette },

@@ -28,6 +28,9 @@ export const invert = (op: WorkspaceOp): WorkspaceOp => {
 
     case "resize":
       return { ...op, was: op.now, now: op.was };
+
+    case "zoom":
+      return { ...op, was: op.now, now: op.was };
   }
 };
 

@@ -23,4 +23,5 @@ export type WorkspaceOp =
       wasSelection: Selection | null;
       selection: Selection | null;
     }
-  | { op: "resize"; tab: TabId; was: Frame; now: Frame };
+  | { op: "resize"; tab: TabId; was: Frame; now: Frame }
+  | { op: "zoom"; tab: TabId; was: number | null; now: number | null };

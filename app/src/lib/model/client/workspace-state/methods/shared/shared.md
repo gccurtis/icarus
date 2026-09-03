@@ -60,24 +60,29 @@ the guard.
 
 **Touches state:** none.
 
-## `rails.ts` — the transcribed map
+## `rails.ts` — a pass-through
 
-`RAILS` says which context views a category's rail offers, in order, and therefore
-which one it opens on. **It is transcribed from the category's own document under
+The map itself is
+[`OPENING`](../../../../representation/data/behavior/workspace/opening.ts), in
+representation. It moved there when the server started applying change sets: a
+change set carries ops and nothing else, so the state those ops are stated
+against has to be constructible from the vocabulary, and a capability cannot
+import `model/client`. This file re-exports it under the names its callers here
+already use.
+
+**It is still transcribed from the category's own document under
 `app-views/categories/`, not derived.** Nothing is inferred from the file tree,
-because a view can exist without a rail offering it — so a rail that disagrees
-with the document is changed in the document first and copied down here after.
+because a view can exist without a rail offering it.
 
-`Record<Category, readonly ContextView[]>`: total over categories, so a new
-category fails to compile until it has been given a rail, and one level deep,
-because the rail belongs to the category rather than to one of its centres. All
-three surfaces are showing one subject from different angles, so moving between a
-category's centres is a change of range rather than of subject, and a rail that
-emptied itself there would be answering a question nobody asked.
+What changed in the move is that **the landing context is stated rather than
+taken from the rail's head**. A rail is an ordered menu and where a tab opens is
+a separate decision; they coincide for every category today, and coinciding is
+not being the same fact. Reordering a rail can no longer move a landing, and a
+test asserts every category lands on something its own rail offers.
 
 Three functions read it. `railFor` returns what the rail offers, in order, and an
-empty array for a category with no rail. `defaultContext` is its first entry,
-`undefined` only where the rail is empty. `offersContext` is the test a caller
+empty array for a category with no rail. `defaultContext` is the stated landing,
+`null` only where the rail is empty. `offersContext` is the test a caller
 selecting a context owes.
 
 `DEFAULT_CONTENT` is beside it and answers the other half: which of a category's
@@ -284,19 +289,24 @@ than a bare view.
 export const mintView = (target: Target): TabView => ...;
 ```
 
-The only place a view is minted: the definition's constructor calls it for the
-three permanent tabs and `open` calls it for everything else, so every tab in the
-application starts the same way. The centre defaults to the category's own —
-`DEFAULT_CONTENT`, which names it rather than deriving it — and the rail is
-chosen here rather than left empty, because a tab with no context id would make
-every reader handle a state that exists for one tick.
+`open`'s call into `openingView`, with the target's overrides. Everything the
+view starts as is the category's, so the body is one expression and the decisions
+are all in `OPENING`.
+
+**The constructor no longer calls it.** The three permanent tabs come from
+`startingWorkspace()`, which is `openingView` over the singleton categories — the
+same construction, reached the same way, so a singleton cannot start as something
+other than what its category opens on. The server builds the identical workspace
+from the same function.
 
 **A record is not minted here.** `tab-list.mint` does that, and it needs none of
 this: an id, a category and a resource id are what a tab *is*, and everything
-chosen from a default is what it is *showing*.
+chosen from a default is what it is *showing*. A singleton is the exception that
+proves it — its id *is* its category, so that two clients and the store name the
+same tab.
 
-**The frame is copied, not shared.** `DEFAULT_FRAME` is frozen, and a tab holding
-a reference to it would throw the first time anyone dragged an edge.
+**The frame is copied, not shared.** `STARTING_FRAME` is frozen, and a tab
+holding a reference to it would throw the first time anyone dragged an edge.
 
 `focus` comes straight off the target, so a tab opened onto a subject arrives on
 it: a thread opened at a question shows that question, and nothing has to make a
