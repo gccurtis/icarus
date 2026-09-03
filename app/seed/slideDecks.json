@@ -2,7 +2,7 @@
   {
     "_id": "slideDecks:1",
     "_creationTime": 1786435200000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "title": "Board review — Q1 exposure",
     "createdBy": { "kind": "user", "userId": "users:1" },
     "updatedBy": { "kind": "user", "userId": "users:2" },
@@ -11,7 +11,7 @@
   {
     "_id": "slideDecks:2",
     "_creationTime": 1782892800000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "title": "Field team briefing",
     "createdBy": { "kind": "user", "userId": "users:4" },
     "updatedBy": { "kind": "user", "userId": "users:4" },

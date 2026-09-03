@@ -2,7 +2,7 @@
   {
     "_id": "researchThreads:1",
     "_creationTime": 1786176000000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "threadId": "threads:1",
     "title": "What drives customer-minutes lost?",
     "mode": { "kind": "discover" },
@@ -13,7 +13,7 @@
   {
     "_id": "researchThreads:2",
     "_creationTime": 1785484800000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "threadId": "threads:2",
     "title": "Vegetation management effectiveness",
     "mode": { "kind": "discover" },
@@ -24,7 +24,7 @@
   {
     "_id": "researchThreads:3",
     "_creationTime": 1783929600000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "threadId": "threads:3",
     "title": "Are reclosers worth it below 12kV?",
     "mode": { "kind": "discover" },

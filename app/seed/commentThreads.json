@@ -2,7 +2,7 @@
   {
     "_id": "commentThreads:1",
     "_creationTime": 1788213600000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "target": { "kind": "document", "id": "documents:2" },
     "quote": "restored in 41 minutes",
     "createdBy": { "kind": "user", "userId": "users:3" },
@@ -11,7 +11,7 @@
   {
     "_id": "commentThreads:2",
     "_creationTime": 1788126000000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "target": { "kind": "spreadsheet", "id": "spreadsheets:1" },
     "quote": "F-118",
     "createdBy": { "kind": "user", "userId": "users:2" },
@@ -20,7 +20,7 @@
   {
     "_id": "commentThreads:3",
     "_creationTime": 1787954400000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "target": { "kind": "slides", "id": "slideDecks:1" },
     "createdBy": { "kind": "user", "userId": "users:4" },
     "updatedAt": 1787954400000

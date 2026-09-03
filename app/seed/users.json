@@ -1,5 +1,14 @@
 [
   {
+    "_id": "default-user",
+    "_creationTime": 1780012800000,
+    "authSubject": "dev|default",
+    "displayName": "Ana Duarte",
+    "email": "ana@example.org",
+    "settings": "{}",
+    "updatedAt": 1788300000000
+  },
+  {
     "_id": "users:1",
     "_creationTime": 1780012800000,
     "authSubject": "dev|mira",

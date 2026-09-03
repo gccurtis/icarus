@@ -329,11 +329,10 @@ The shell provides the instance the client graph built; a review page provides
 one of its own; a panel with no provider gets one to itself.
 
 **That last clause is the whole reason it is context rather than
-`clientModel()`.** Every panel in the four trees renders on its own, and
-[`src/test/independence.test.ts`](../../../../test/independence.test.ts) proves it by
-server-rendering each with nothing but a permissive prop bag. `clientModel()`
-refuses outside a browser and before the layout has run, so routing panels
-through it would end that for every one of them.
+`clientModel()`.** `clientModel()` refuses outside a browser and before the
+layout has run, so a view reaching through it could only ever be drawn by the
+running application — no review page, no test, and nothing that renders one on
+its own. Context has a fallback; the graph does not.
 
 The fallback is per reader rather than a module singleton: two panels rendered
 with no provider between them are two unrelated things, and one shared object

@@ -2,7 +2,7 @@
   {
     "_id": "externalFiles:1",
     "_creationTime": 1786089600000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "storageId": "_storage:1",
     "name": "NERC-winter-advisory-2027.pdf",
     "size": 2841244,
@@ -16,7 +16,7 @@
   {
     "_id": "externalFiles:2",
     "_creationTime": 1784448000000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "storageId": "_storage:2",
     "name": "feeder-map-west.png",
     "size": 918273,

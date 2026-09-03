@@ -2,7 +2,7 @@
   {
     "_id": "spreadsheets:1",
     "_creationTime": 1785916800000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "title": "Outage minutes by substation",
     "createdBy": { "kind": "user", "userId": "users:2" },
     "updatedBy": { "kind": "user", "userId": "users:2" },
@@ -11,7 +11,7 @@
   {
     "_id": "spreadsheets:2",
     "_creationTime": 1784102400000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "title": "Hardening cost model",
     "createdBy": { "kind": "user", "userId": "users:1" },
     "updatedBy": { "kind": "agent", "taskId": "agentTasks:1" },

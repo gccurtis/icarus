@@ -1,6 +1,6 @@
 [
   {
-    "_id": "projects:1",
+    "_id": "default",
     "_creationTime": 1780012800000,
     "name": "Grid Resilience 2027",
     "description": "Outage exposure across the western interconnect, and what it would cost to close it.",

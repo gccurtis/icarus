@@ -30,6 +30,7 @@
   import { openingFor } from "$app-views/categories/project-overview/procedures/opening";
   import { people } from "$app-views/categories/project-overview/procedures/people";
   import { project } from "$app-views/categories/project-overview/procedures/project";
+  import { projectId, viewerId } from "$app-views/categories/project-overview/procedures/scope";
   import {
     analyses,
     resources,
@@ -65,18 +66,21 @@
    * rather than of this category, so it lives in the top bar.
    */
   /**
-   * One project, and one clock.
+   * One project, one viewer, one clock.
    *
    * `now` is read once per render rather than per row: a table that asked the
    * clock ten times would draw ten rows against ten different moments, and the
    * two that straddled a minute boundary would disagree about how long ago the
    * same edit was.
+   *
+   * The project is not `view.project` — that is the token from the route, and
+   * what scopes a row is the id it resolves to. Both come from `scope`, which
+   * says there why it has to work them out.
    */
-  const id = view.project;
   const now = Date.now();
 
-  // Until authentication exists there is one viewer, and the store says who.
-  const viewer = "users:1";
+  const id = $derived(projectId());
+  const viewer = $derived(viewerId());
 
   const it = $derived(project(id));
   const everyone = $derived(people(id));

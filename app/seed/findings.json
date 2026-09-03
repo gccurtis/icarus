@@ -2,7 +2,7 @@
   {
     "_id": "findings:1",
     "_creationTime": 1786694400000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "title": "Three feeders carry 41% of customer-minutes",
     "body": [],
     "sources": [
@@ -19,7 +19,7 @@
   {
     "_id": "findings:2",
     "_creationTime": 1785225600000,
-    "projectId": "projects:1",
+    "projectId": "default",
     "title": "Trimming cycles under 4 years show no measurable gain",
     "body": [],
     "sources": [

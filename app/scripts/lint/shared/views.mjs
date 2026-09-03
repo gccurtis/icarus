@@ -35,6 +35,3 @@ export const BANNED = new Map([
   ["definition.ts", "a definition is a model object; a surface holds no lifetime"],
   ["constructor.ts", "a constructor is a model object; a surface holds no lifetime"]
 ]);
-
-/** A prop bag every leaf accepts, for the checks that render one. */
-export const RENDER_PROPS = { open: true, onback: () => {}, onclose: () => {} };

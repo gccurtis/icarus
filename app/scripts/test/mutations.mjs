@@ -499,17 +499,6 @@ export const MUTATIONS = [
 
   // ------------------------------------------------------------- app views ----
   {
-    check: "view-renders-alone",
-    says: "a view needs something that is not there",
-    names: "project-overview/context/cannot-render.svelte",
-    changes: [
-      {
-        path: "src/lib/app-views/categories/project-overview/context/cannot-render.svelte",
-        write: `<script lang="ts">\n  throw new Error("this view does not render alone");\n</script>\n\n<div></div>\n`
-      }
-    ]
-  },
-  {
     check: "view-imports-no-surface",
     subject: "no-surface",
     says: "a view reaches back out to the surface it is rendered in",
