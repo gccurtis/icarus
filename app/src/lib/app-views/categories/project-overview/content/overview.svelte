@@ -138,6 +138,8 @@
     template: "Templates"
   };
 
+  const WITHOUT_FILES = "all-but-file";
+
   /**
    * What you can make, one hue each.
    *
@@ -262,15 +264,15 @@
    *
    * A body and a thread each earn a tab of their own, keyed by the thing rather
    * than by the category. An analysis and a template are places you return to, so
-   * those move the permanent tab onto the row instead of minting one. The
-   * remaining kinds have no category at all — a file, a finding, a connector and a
-   * Context are things you look at rather than places you go — so opening one
-   * means opening its lens, which is the same thing the resource lens does.
+   * those move the permanent tab onto the row instead of minting one. A file, a
+   * finding and a connector have no category at all — they are things you look at
+   * rather than places you go — so opening one means opening its lens, which is
+   * the same thing a single click already did.
    */
   const launch = (row: Resource) => {
     const target = openingFor(row);
     if (target) {
-      view.open(target);
+      alert(`Opening "${row.name}" is not wired up yet.`);
       return;
     }
     const { key, selection } = inspectionFor(row);
@@ -303,9 +305,12 @@
     kind: { asc: "A to Z", desc: "Z to A" }
   };
 
+  const ofKind = (of: ResourceKind): boolean =>
+    kind === "all" || (kind === WITHOUT_FILES ? of !== "file" : of === kind);
+
   const matched = $derived(
     work
-      .filter((row) => kind === "all" || row.kind === kind)
+      .filter((row) => ofKind(row.kind))
       .filter((row) => actor === "all" || row.updatedBy === actor)
       .filter((row) => row.name.toLowerCase().includes(search.trim().toLowerCase()))
   );
@@ -562,6 +567,11 @@
             aria-label="Kind"
           >
             <option value="all">All kinds</option>
+            {#if kinds.includes("file")}
+              <option value={WITHOUT_FILES}>
+                All but {KIND_PLURAL.file.toLowerCase()}
+              </option>
+            {/if}
             {#each kinds as option (option)}
               <option value={option}>{KIND_PLURAL[option]}</option>
             {/each}
