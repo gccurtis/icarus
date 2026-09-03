@@ -207,16 +207,15 @@
    * document already in this project, so a closed document still keeps its name
    * and a new document cannot accidentally reuse it.
    */
-  const untitled = (): string => {
-    const taken = new Set(
-      work.filter((row) => row.kind === "document").map((row) => row.name)
-    );
+  const untitled = (kind: ResourceKind): string => {
+    const taken = new Set(work.filter((row) => row.kind === kind).map((row) => row.name));
     let count = 1;
     while (taken.has(`untitled-${count}`)) count += 1;
     return `untitled-${count}`;
   };
 
   let creatingDocument = $state(false);
+  let creatingDeck = $state(false);
 
   /**
    * A thread and a chart are each a tab keyed by the thing, and nothing here
@@ -240,7 +239,7 @@
 
       creatingDocument = true;
       try {
-        const title = untitled();
+        const title = untitled("document");
         const { id: resourceId } = await create({
           table: "documents",
           fields: {
@@ -258,7 +257,30 @@
       return;
     }
 
-    if (key === "slides" || key === "spreadsheet") {
+    if (key === "slides") {
+      if (creatingDeck) return;
+
+      creatingDeck = true;
+      try {
+        const title = untitled("slides");
+        const { id: resourceId } = await create({
+          table: "slideDecks",
+          fields: {
+            projectId: id,
+            title,
+            createdBy: { kind: "user", userId: viewer },
+            updatedBy: { kind: "user", userId: viewer },
+            updatedAt: Date.now()
+          }
+        });
+        view.open({ category: "slide-deck-editor", resourceId });
+      } finally {
+        creatingDeck = false;
+      }
+      return;
+    }
+
+    if (key === "spreadsheet") {
       // ── FORWARD DECLARATION ──────────────────────────────────────────────
       // Replace with `create` from $capabilities/store, then open on the id it
       // returns. Minting the row has to come first: a tab keyed by an id the
@@ -289,7 +311,7 @@
    */
   const launch = (row: Resource) => {
     const target = openingFor(row);
-    if (row.kind === "document" && target) {
+    if ((row.kind === "document" || row.kind === "slides") && target) {
       view.open(target);
       return;
     }
