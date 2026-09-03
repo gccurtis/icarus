@@ -1,0 +1,38 @@
+[
+  {
+    "_id": "users:1",
+    "_creationTime": 1780012800000,
+    "authSubject": "dev|mira",
+    "displayName": "Mira Okonkwo",
+    "email": "mira@example.org",
+    "settings": "{}",
+    "updatedAt": 1788300000000
+  },
+  {
+    "_id": "users:2",
+    "_creationTime": 1780012800000,
+    "authSubject": "dev|tomas",
+    "displayName": "Tomás Lindqvist",
+    "email": "tomas@example.org",
+    "settings": "{}",
+    "updatedAt": 1788290000000
+  },
+  {
+    "_id": "users:3",
+    "_creationTime": 1780099200000,
+    "authSubject": "dev|priya",
+    "displayName": "Priya Raghunathan",
+    "email": "priya@example.org",
+    "settings": "{}",
+    "updatedAt": 1788280000000
+  },
+  {
+    "_id": "users:4",
+    "_creationTime": 1780185600000,
+    "authSubject": "dev|arne",
+    "displayName": "Arne Bakker",
+    "email": "arne@example.org",
+    "settings": "{}",
+    "updatedAt": 1788100000000
+  }
+]

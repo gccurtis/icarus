@@ -1,0 +1,11 @@
+[
+  {
+    "_id": "projects:1",
+    "_creationTime": 1780012800000,
+    "name": "Grid Resilience 2027",
+    "description": "Outage exposure across the western interconnect, and what it would cost to close it.",
+    "revision": 47,
+    "settings": "{}",
+    "updatedAt": 1788300000000
+  }
+]

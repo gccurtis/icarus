@@ -1,0 +1,35 @@
+[
+  {
+    "_id": "researchThreads:1",
+    "_creationTime": 1786176000000,
+    "projectId": "projects:1",
+    "threadId": "threads:1",
+    "title": "What drives customer-minutes lost?",
+    "mode": { "kind": "discover" },
+    "findingIds": ["findings:1"],
+    "createdBy": { "kind": "user", "userId": "users:1" },
+    "updatedAt": 1788297000000
+  },
+  {
+    "_id": "researchThreads:2",
+    "_creationTime": 1785484800000,
+    "projectId": "projects:1",
+    "threadId": "threads:2",
+    "title": "Vegetation management effectiveness",
+    "mode": { "kind": "discover" },
+    "findingIds": ["findings:2"],
+    "createdBy": { "kind": "user", "userId": "users:3" },
+    "updatedAt": 1788040800000
+  },
+  {
+    "_id": "researchThreads:3",
+    "_creationTime": 1783929600000,
+    "projectId": "projects:1",
+    "threadId": "threads:3",
+    "title": "Are reclosers worth it below 12kV?",
+    "mode": { "kind": "discover" },
+    "findingIds": [],
+    "createdBy": { "kind": "user", "userId": "users:2" },
+    "updatedAt": 1787522400000
+  }
+]

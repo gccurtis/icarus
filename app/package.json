@@ -34,6 +34,7 @@
     "new-concern-entry": "node scripts/generation/views/new-concern-entry.mjs",
     "new-view": "node scripts/generation/views/new-view.mjs",
     "category-keys": "node scripts/generation/representation/categories.mjs",
+    "seed": "node scripts/seed.mjs",
     "aliases": "node scripts/generation/across/aliases.mjs",
     "imports": "node scripts/generation/across/imports.mjs",
     "clean": "rm -rf build .svelte-kit"

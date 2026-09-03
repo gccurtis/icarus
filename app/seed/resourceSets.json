@@ -1,0 +1,29 @@
+[
+  {
+    "_id": "resourceSets:1",
+    "_creationTime": 1785052800000,
+    "projectId": "projects:1",
+    "name": "Winter filings",
+    "description": "Everything the regulator sees in the January packet.",
+    "set": {
+      "include": [{ "select": "kinds", "kinds": ["document"] }],
+      "exclude": []
+    },
+    "createdBy": { "kind": "user", "userId": "users:1" },
+    "revision": 2,
+    "updatedAt": 1788126000000
+  },
+  {
+    "_id": "resourceSets:2",
+    "_creationTime": 1782288000000,
+    "projectId": "projects:1",
+    "name": "Field evidence",
+    "set": {
+      "include": [{ "select": "resources", "refs": [{ "kind": "externalFile", "id": "externalFiles:2" }] }],
+      "exclude": []
+    },
+    "createdBy": { "kind": "user", "userId": "users:4" },
+    "revision": 1,
+    "updatedAt": 1787004000000
+  }
+]

@@ -1,0 +1,46 @@
+[
+  {
+    "_id": "comments:1",
+    "_creationTime": 1788213600000,
+    "projectId": "projects:1",
+    "threadId": "commentThreads:1",
+    "blocks": [
+      { "id": "b1", "type": "text", "variant": "paragraph", "atoms": [], "display": "Mira — is 41 minutes the restore or the dispatch? The log reads differently.", "marks": [] }
+    ],
+    "mentions": [{ "kind": "actor", "actor": { "kind": "user", "userId": "users:1" } }],
+    "author": { "kind": "user", "userId": "users:3" }
+  },
+  {
+    "_id": "comments:2",
+    "_creationTime": 1788126000000,
+    "projectId": "projects:1",
+    "threadId": "commentThreads:2",
+    "blocks": [
+      { "id": "b1", "type": "text", "variant": "paragraph", "atoms": [], "display": "This feeder is double-counted against the 2026 baseline.", "marks": [] }
+    ],
+    "mentions": [{ "kind": "actor", "actor": { "kind": "user", "userId": "users:1" } }],
+    "author": { "kind": "user", "userId": "users:2" }
+  },
+  {
+    "_id": "comments:3",
+    "_creationTime": 1787954400000,
+    "projectId": "projects:1",
+    "threadId": "commentThreads:3",
+    "blocks": [
+      { "id": "b1", "type": "text", "variant": "paragraph", "atoms": [], "display": "Slide 6 still says Q4. Worth a pass before Thursday.", "marks": [] }
+    ],
+    "mentions": [{ "kind": "actor", "actor": { "kind": "user", "userId": "users:1" } }],
+    "author": { "kind": "user", "userId": "users:4" }
+  },
+  {
+    "_id": "comments:4",
+    "_creationTime": 1787868000000,
+    "projectId": "projects:1",
+    "threadId": "commentThreads:1",
+    "blocks": [
+      { "id": "b1", "type": "text", "variant": "paragraph", "atoms": [], "display": "Dispatch. I will split the two columns.", "marks": [] }
+    ],
+    "mentions": [],
+    "author": { "kind": "user", "userId": "users:1" }
+  }
+]

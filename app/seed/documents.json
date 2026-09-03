@@ -1,0 +1,29 @@
+[
+  {
+    "_id": "documents:1",
+    "_creationTime": 1785312000000,
+    "projectId": "projects:1",
+    "title": "Winter readiness brief",
+    "createdBy": { "kind": "user", "userId": "users:1" },
+    "updatedBy": { "kind": "user", "userId": "users:1" },
+    "updatedAt": 1788299760000
+  },
+  {
+    "_id": "documents:2",
+    "_creationTime": 1784707200000,
+    "projectId": "projects:1",
+    "title": "Substation 14 incident write-up",
+    "createdBy": { "kind": "user", "userId": "users:2" },
+    "updatedBy": { "kind": "user", "userId": "users:3" },
+    "updatedAt": 1788213600000
+  },
+  {
+    "_id": "documents:3",
+    "_creationTime": 1783497600000,
+    "projectId": "projects:1",
+    "title": "Interconnect glossary",
+    "createdBy": { "kind": "user", "userId": "users:3" },
+    "updatedBy": { "kind": "user", "userId": "users:3" },
+    "updatedAt": 1787954400000
+  }
+]

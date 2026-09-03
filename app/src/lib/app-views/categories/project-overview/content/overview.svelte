@@ -23,15 +23,19 @@
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
-  import { actorName } from "$capabilities/cast";
-  import { mentionsForViewer } from "$capabilities/collaboration";
-  import { analyses, threads } from "$capabilities/library";
-  import { activity, people, project, resources } from "$capabilities/project";
+  import { actorName } from "$app-views/categories/project-overview/procedures/actor-name";
+  import { activity } from "$app-views/categories/project-overview/procedures/activity";
   import { inspectionFor } from "$app-views/categories/project-overview/procedures/inspecting";
+  import { mentions as mentionsForViewer } from "$app-views/categories/project-overview/procedures/mentions";
   import { openingFor } from "$app-views/categories/project-overview/procedures/opening";
-  import type {
-    Resource,
-    ResourceKind
+  import { people } from "$app-views/categories/project-overview/procedures/people";
+  import { project } from "$app-views/categories/project-overview/procedures/project";
+  import {
+    analyses,
+    resources,
+    threads,
+    type Resource,
+    type ResourceKind
   } from "$app-views/categories/project-overview/procedures/resources";
   import { workspaceState, type Category } from "$model/client/workspace-state";
 
@@ -60,13 +64,27 @@
    * **The header carries no Settings.** Settings is a property of the project
    * rather than of this category, so it lives in the top bar.
    */
-  const it = $derived(project().current);
-  const everyone = $derived(people().current);
-  const mentions = $derived(mentionsForViewer().current);
-  const events = $derived(activity().current);
-  const work = $derived(resources().current);
-  const everyThread = $derived(threads().current);
-  const everyAnalysis = $derived(analyses().current);
+  /**
+   * One project, and one clock.
+   *
+   * `now` is read once per render rather than per row: a table that asked the
+   * clock ten times would draw ten rows against ten different moments, and the
+   * two that straddled a minute boundary would disagree about how long ago the
+   * same edit was.
+   */
+  const id = view.project;
+  const now = Date.now();
+
+  // Until authentication exists there is one viewer, and the store says who.
+  const viewer = "users:1";
+
+  const it = $derived(project(id));
+  const everyone = $derived(people(id));
+  const mentions = $derived(mentionsForViewer(id, viewer, now));
+  const events = $derived(activity(id, now));
+  const work = $derived(resources(id, now));
+  const everyThread = $derived(threads(id, now));
+  const everyAnalysis = $derived(analyses(id, now));
 
   /** The feed holds either mentions or activity; the toggle switches between them. */
   let feed = $state<"mentions" | "activity">("mentions");
@@ -217,13 +235,22 @@
 
   const make = (key: (typeof CREATE)[number]["key"]) => {
     if (key === "document" || key === "slides" || key === "spreadsheet") {
-      const { category, noun } = BLANK[key];
-      view.open({ category, resourceId: untitled(category, noun) });
-    } else if (key === "research") {
-      landOnFree("research", everyThread);
-    } else {
-      landOnFree("analysis", everyAnalysis);
+      // ── FORWARD DECLARATION ──────────────────────────────────────────────
+      // Replace with `create` from $capabilities/store, then open on the id it
+      // returns. Minting the row has to come first: a tab keyed by a name the
+      // store has never heard of is a tab no door can answer for, which is the
+      // bug this alert is standing in front of rather than hiding.
+      const { noun } = BLANK[key];
+      alert(`Creating a ${noun} is not wired up yet.`);
+      return;
     }
+
+    if (key === "research") {
+      landOnFree("research", everyThread);
+      return;
+    }
+
+    landOnFree("analysis", everyAnalysis);
   };
 
   /**
@@ -247,39 +274,17 @@
   };
 
   /**
-   * `updated` is prose — "4 minutes ago", "Yesterday" — so ordering by it means
-   * reading it. Minutes-ago rather than a date because that is all the data
-   * carries; anything it cannot parse sorts to the far end rather than to the
-   * top, where an unreadable date would look like the freshest row.
+   * The cell reads the prose and the sort reads the number, and the procedure
+   * hands over both. Ordering by the prose meant parsing "4 minutes ago" back
+   * into a duration, which is what this board did before it had a store to ask.
    */
-  const AGO: Record<string, number> = {
-    minute: 1,
-    minutes: 1,
-    hour: 60,
-    hours: 60,
-    day: 1440,
-    days: 1440,
-    week: 10080,
-    weeks: 10080,
-    month: 43800,
-    months: 43800
-  };
-
-  const ago = (updated: string): number => {
-    if (updated === "Today") return 0;
-    if (updated === "Yesterday") return AGO.day;
-    const match = /^(\d+) (\w+) ago$/.exec(updated);
-    const unit = match ? AGO[match[2]] : undefined;
-    return match && unit !== undefined ? Number(match[1]) * unit : Number.MAX_SAFE_INTEGER;
-  };
-
   const compare = (a: Resource, b: Resource): number => {
     if (sortBy === "name") return a.name.localeCompare(b.name);
     if (sortBy === "kind")
       return (
         KIND_LABEL[a.kind].localeCompare(KIND_LABEL[b.kind]) || a.name.localeCompare(b.name)
       );
-    return ago(a.updated) - ago(b.updated);
+    return b.updatedAt - a.updatedAt;
   };
 
   /**

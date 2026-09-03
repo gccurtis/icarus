@@ -1,0 +1,6 @@
+[
+  { "_id": "memberships:1", "_creationTime": 1780012800000, "userId": "users:1", "projectId": "projects:1", "token": "mem-mira", "role": "owner" },
+  { "_id": "memberships:2", "_creationTime": 1780012800000, "userId": "users:2", "projectId": "projects:1", "token": "mem-tomas", "role": "editor" },
+  { "_id": "memberships:3", "_creationTime": 1780099200000, "userId": "users:3", "projectId": "projects:1", "token": "mem-priya", "role": "editor" },
+  { "_id": "memberships:4", "_creationTime": 1780185600000, "userId": "users:4", "projectId": "projects:1", "token": "mem-arne", "role": "viewer" }
+]
