@@ -1,4 +1,4 @@
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 
 import { check } from "../shared/check.mjs";
 import { viewLeaves } from "../shared/trees.mjs";
@@ -25,17 +25,21 @@ export default check({
   },
   run(tree) {
     const found = [];
-    for (const { path } of viewLeaves(tree)) {
+    const categories = tree.path("app-views", "categories");
+
+    for (const { category, path } of viewLeaves(tree)) {
+      // What a view may reach inside `app-views/`: its own category, whose three
+      // surfaces show one subject and whose procedures answer for all of them.
+      // A general view has no category, so its own directory is its whole reach —
+      // those are composites, a directory each rather than one file.
+      const mine = category === "general" ? dirname(path) : join(categories, category);
+
       for (const record of tree.imports(path)) {
         const target = tree.aliasTarget(record.specifier);
         if (!target) continue; // a package
 
-        // A view is allowed its own directory. The general views are composites —
-        // a directory each rather than one file — so a root reaching its own
-        // parts is the shape, and forbidding it would mean a view cannot be
-        // built out of more than one file.
         const resolved = tree.resolve(record.specifier, path);
-        if (resolved && tree.within(dirname(path), resolved)) continue;
+        if (resolved && tree.within(mine, resolved)) continue;
 
         if (REACHABLE.has(target.tree)) continue;
         if (target.tree === "model" && isWorkspaceState(target.segments)) continue;

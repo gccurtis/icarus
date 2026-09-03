@@ -23,12 +23,16 @@
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
-  import { actorName, type Resource, type ResourceKind } from "$capabilities/cast";
+  import { actorName } from "$capabilities/cast";
   import { mentionsForViewer } from "$capabilities/collaboration";
-  import { inspectionFor } from "$capabilities/inspecting";
   import { analyses, threads } from "$capabilities/library";
-  import { openingFor } from "$capabilities/opening";
   import { activity, people, project, resources } from "$capabilities/project";
+  import { inspectionFor } from "$app-views/categories/project-overview/procedures/inspecting";
+  import { openingFor } from "$app-views/categories/project-overview/procedures/opening";
+  import type {
+    Resource,
+    ResourceKind
+  } from "$app-views/categories/project-overview/procedures/resources";
   import { workspaceState, type Category } from "$model/client/workspace-state";
 
   const view = workspaceState();
@@ -233,12 +237,12 @@
    * means opening its lens, which is the same thing the resource lens does.
    */
   const launch = (row: Resource) => {
-    const target = openingFor(row.kind, row.id, row.name);
+    const target = openingFor(row);
     if (target) {
       view.open(target);
       return;
     }
-    const { key, selection } = inspectionFor(row.kind, row.id, row.name);
+    const { key, selection } = inspectionFor(row);
     view.inspect(key, selection);
   };
 
@@ -310,7 +314,7 @@
    * comparing the selection against the row's own id would light nothing up.
    */
   const listed = $derived(
-    ordered.map((row) => ({ row, ...inspectionFor(row.kind, row.id, row.name) }))
+    ordered.map((row) => ({ row, ...inspectionFor(row) }))
   );
 
   /**
