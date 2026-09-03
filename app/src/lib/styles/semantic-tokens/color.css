@@ -130,6 +130,7 @@
   --token-color-accent-2-fill-hover: var(--chromatic-teal-fill-hover);
   --token-color-accent-2-text: var(--chromatic-teal-text);
   --token-color-accent-2-on-fill: var(--chromatic-teal-on-fill);
+  --token-surface-pasteboard: var(--theme-surface-pasteboard);
 }
 
 /* Surfaces, ink, and borders carry no hue: they alias the theme's achromatic

@@ -161,6 +161,10 @@
    * matters, not the distinctness. */
   --theme-surface-panel-hover: var(--palette-black-emphasized);
 
+  /* The plane a document floats on, further from the paper than any panel. On a
+   * dark ground that is the deepest step rather than the lightest. */
+  --theme-surface-pasteboard: var(--palette-black-deep);
+
   --theme-border-subtle: var(--palette-black-light);
   --theme-border-strong: var(--palette-black-faded);
 

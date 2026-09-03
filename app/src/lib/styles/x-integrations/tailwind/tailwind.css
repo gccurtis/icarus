@@ -93,6 +93,7 @@
   --color-surface-elevated: var(--token-surface-elevated);
   --color-surface-panel-hover: var(--token-surface-panel-hover);
   --color-surface-panel: var(--token-surface-panel);
+  --color-surface-pasteboard: var(--token-surface-pasteboard);
   --color-surface-selection: var(--token-surface-selection);
   --color-surface-work: var(--token-surface-work);
   --ease-standard: var(--token-ease-standard);

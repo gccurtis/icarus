@@ -166,6 +166,10 @@
    * theme. Role fills use their own `fill-hover` slot instead. */
   --theme-surface-panel-hover: var(--palette-white-emphasized);
 
+  /* The plane a document floats on. Further from the paper than any panel is,
+   * because the pasteboard's whole job is to say where the page stops. */
+  --theme-surface-pasteboard: var(--palette-white-strong);
+
   --theme-border-subtle: var(--palette-white-strong);
   --theme-border-strong: var(--palette-white-deep);
 
