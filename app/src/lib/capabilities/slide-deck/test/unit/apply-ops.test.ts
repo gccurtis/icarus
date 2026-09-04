@@ -56,9 +56,31 @@ describe("applyOps", () => {
     expect(() => applyOps(body(), [op])).toThrow(/cannot apply set on element/);
   });
 
-  it("refuses an op kind it cannot apply", () => {
-    const op = { op: "move", target: "slide", path: "slides", id: "s1", after: null, wasAfter: null } as SlideDeckOp;
+  it("reorders slides, so a deck can be arranged", () => {
+    const op = {
+      op: "move",
+      target: "slide",
+      path: "slides",
+      id: "s1",
+      after: "s2",
+      wasAfter: null
+    } as SlideDeckOp;
 
-    expect(() => applyOps(body(), [op])).toThrow(/cannot apply move on slide/);
+    expect(applyOps(body(), [op]).slides.map((slide) => slide.id)).toEqual(["s2", "s1"]);
+  });
+
+  it("refuses a target it cannot apply, naming the capability", () => {
+    const op = {
+      op: "move",
+      target: "element",
+      path: "elements",
+      id: "e1",
+      after: null,
+      wasAfter: null
+    } as SlideDeckOp;
+
+    expect(() => applyOps(body(), [op])).toThrow(
+      /slide-deck\/submit-slide-deck-changes cannot apply move on element/
+    );
   });
 });
