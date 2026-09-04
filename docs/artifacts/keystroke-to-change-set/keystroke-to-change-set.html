@@ -1,0 +1,1079 @@
+<title>Keystroke to Change Set</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,500;0,600;1,300&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  :root {
+    --ground: #fffefa;
+    --recess: #f6f2e9;
+    --raise: #ffffff;
+    --rule: #ded8c9;
+    --rule-soft: #ebe6da;
+
+    --ink: #221e17;
+    --ink-2: #57503f;
+    --ink-3: #8b8371;
+
+    --editor: #6f49d8;
+    --editor-soft: #f3effc;
+    --wire: #3657c9;
+    --wire-soft: #eef1fb;
+    --store: #187d74;
+    --store-soft: #ecf8f7;
+    --warn: #a85309;
+    --warn-soft: #fef4ec;
+    --stop: #c0362c;
+    --stop-soft: #fdf1ef;
+
+    --display: "Spectral", "Iowan Old Style", Georgia, serif;
+    --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+    --measure: 68ch;
+    --step-0: 1rem;
+    --step-1: 1.1875rem;
+    --step-2: 1.5rem;
+    --step-3: 2.125rem;
+    --step-4: clamp(2.6rem, 6vw, 3.75rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #141027;
+      --recess: #0d0a1b;
+      --raise: #1b1734;
+      --rule: #3b3563;
+      --rule-soft: #272247;
+
+      --ink: #efeafc;
+      --ink-2: #b6accf;
+      --ink-3: #7d7499;
+
+      --editor: #a97bff;
+      --editor-soft: #26183f;
+      --wire: #6f9dff;
+      --wire-soft: #16224a;
+      --store: #0fd1b4;
+      --store-soft: #072f2a;
+      --warn: #f0a35c;
+      --warn-soft: #3a2410;
+      --stop: #ff8a7e;
+      --stop-soft: #3d1a17;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #141027;
+    --recess: #0d0a1b;
+    --raise: #1b1734;
+    --rule: #3b3563;
+    --rule-soft: #272247;
+
+    --ink: #efeafc;
+    --ink-2: #b6accf;
+    --ink-3: #7d7499;
+
+    --editor: #a97bff;
+    --editor-soft: #26183f;
+    --wire: #6f9dff;
+    --wire-soft: #16224a;
+    --store: #0fd1b4;
+    --store-soft: #072f2a;
+    --warn: #f0a35c;
+    --warn-soft: #3a2410;
+    --stop: #ff8a7e;
+    --stop-soft: #3d1a17;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: var(--step-0);
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns:
+      [full-start] minmax(1.25rem, 1fr)
+      [wide-start] minmax(0, 14rem)
+      [text-start] minmax(0, var(--measure)) [text-end]
+      minmax(0, 14rem) [wide-end]
+      minmax(1.25rem, 1fr) [full-end];
+    row-gap: 0;
+  }
+
+  .page > * { grid-column: text; }
+  .wide { grid-column: wide; }
+  .full { grid-column: full; }
+
+  /* ── Masthead ─────────────────────────────────────────── */
+
+  .masthead {
+    padding: clamp(3rem, 8vw, 5.5rem) 0 2.5rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    margin: 0 0 1.25rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: var(--step-4);
+    font-weight: 500;
+    line-height: 1.04;
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+  }
+
+  h1 em {
+    display: block;
+    color: var(--ink-3);
+    font-size: 0.46em;
+    font-style: italic;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    margin-top: 0.5rem;
+  }
+
+  .standfirst {
+    max-width: 56ch;
+    margin: 1.75rem 0 0;
+    color: var(--ink-2);
+    font-size: var(--step-1);
+    line-height: 1.55;
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 2.5rem;
+    margin: 2.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .facts div {
+    padding: 0.75rem 0 0;
+    border-top: 2px solid var(--ink);
+  }
+
+  .facts dt {
+    color: var(--ink-3);
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .facts dd {
+    margin: 0.2rem 0 0;
+    font-family: var(--mono);
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Sections ─────────────────────────────────────────── */
+
+  section {
+    padding: clamp(2.75rem, 6vw, 4.25rem) 0 0;
+  }
+
+  .marker {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin: 0 0 0.5rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .marker::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  h2 {
+    margin: 0 0 0.75rem;
+    font-family: var(--display);
+    font-size: var(--step-3);
+    font-weight: 500;
+    line-height: 1.12;
+    letter-spacing: -0.018em;
+    text-wrap: balance;
+  }
+
+  h3 {
+    margin: 2.5rem 0 0.6rem;
+    font-family: var(--body);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  p { margin: 0 0 1.15rem; }
+  p:last-child { margin-bottom: 0; }
+
+  .lede {
+    color: var(--ink-2);
+    font-size: var(--step-1);
+    line-height: 1.55;
+  }
+
+  a {
+    color: inherit;
+    text-decoration-color: var(--ink-3);
+    text-underline-offset: 0.18em;
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.875em;
+    color: var(--ink);
+    background: var(--recess);
+    padding: 0.1em 0.34em;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  strong { font-weight: 600; }
+
+  /* ── Code blocks ──────────────────────────────────────── */
+
+  .code {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    background: var(--recess);
+    border-left: 2px solid var(--rule);
+  }
+
+  .code pre {
+    margin: 0;
+    padding: 1.1rem 1.35rem;
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    line-height: 1.72;
+    white-space: pre;
+  }
+
+  .code cite {
+    display: block;
+    padding: 0.5rem 1.35rem;
+    border-bottom: 1px solid var(--rule-soft);
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-style: normal;
+    letter-spacing: 0.04em;
+    position: sticky;
+    left: 0;
+  }
+
+  .k { color: var(--editor); }
+  .s { color: var(--store); }
+  .c { color: var(--ink-3); font-style: italic; }
+
+  /* ── Tables ───────────────────────────────────────────── */
+
+  .table-scroll {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  th {
+    padding: 0 1rem 0.55rem 0;
+    border-bottom: 2px solid var(--ink);
+    color: var(--ink-3);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.7rem 1rem 0.7rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: baseline;
+  }
+
+  tr td:last-child, tr th:last-child { padding-right: 0; }
+
+  td.file {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  td.num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* ── Schema tree ──────────────────────────────────────── */
+
+  .schema {
+    margin: 1.75rem 0;
+    padding: 1.5rem 1.75rem;
+    background: var(--recess);
+    overflow-x: auto;
+  }
+
+  .schema pre {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    line-height: 2;
+    white-space: pre;
+  }
+
+  .schema .node { color: var(--editor); font-weight: 700; }
+  .schema .attr { color: var(--ink-2); }
+  .schema .note { color: var(--ink-3); }
+
+  /* ── Station diagram ──────────────────────────────────── */
+
+  .trip {
+    margin: 2rem 0 0;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+
+  .trip-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(15rem, 1fr));
+    gap: 0;
+    min-width: 48rem;
+    border: 1px solid var(--rule);
+  }
+
+  .station {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1.5rem 1.4rem;
+    border-right: 1px solid var(--rule);
+  }
+
+  .station:last-child { border-right: 0; }
+
+  .station-head {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    flex: none;
+    border-radius: 50%;
+  }
+
+  .station-head b {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .station-head span {
+    margin-left: auto;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+  }
+
+  .st-editor .dot { background: var(--editor); }
+  .st-editor .station-head b { color: var(--editor); }
+  .st-wire .dot { background: var(--wire); }
+  .st-wire .station-head b { color: var(--wire); }
+  .st-store .dot { background: var(--store); }
+  .st-store .station-head b { color: var(--store); }
+
+  .step {
+    display: grid;
+    grid-template-columns: 1.35rem 1fr;
+    gap: 0 0.6rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .step i {
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+    padding-top: 0.15rem;
+  }
+
+  .step b {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 500;
+    word-break: break-word;
+  }
+
+  .step small {
+    color: var(--ink-2);
+    font-size: 0.78rem;
+  }
+
+  .payload {
+    margin-top: auto;
+    padding: 0.75rem 0.8rem;
+    background: var(--recess);
+    border-left: 2px solid currentColor;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    line-height: 1.65;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .st-editor .payload { color: var(--editor); }
+  .st-wire .payload { color: var(--wire); }
+  .st-store .payload { color: var(--store); }
+  .payload span { color: var(--ink-2); }
+
+  .return {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    min-width: 48rem;
+    margin-top: -1px;
+    padding: 0.85rem 1.4rem;
+    border: 1px solid var(--rule);
+    background: var(--recess);
+    font-size: 0.82rem;
+    color: var(--ink-2);
+  }
+
+  .return b {
+    color: var(--store);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+
+  .return-arrow {
+    flex: none;
+    color: var(--store);
+    font-family: var(--mono);
+    letter-spacing: -0.1em;
+  }
+
+  /* ── Numbered trace ───────────────────────────────────── */
+
+  .trace {
+    counter-reset: trace;
+    margin: 1.75rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .trace > li {
+    counter-increment: trace;
+    display: grid;
+    grid-template-columns: 2.6rem 1fr;
+    gap: 0 1rem;
+    padding: 0 0 1.4rem;
+  }
+
+  .trace > li::before {
+    content: counter(trace, decimal-leading-zero);
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    padding-top: 0.28rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .trace-body { border-top: 1px solid var(--rule); padding-top: 0.28rem; }
+
+  .trace h4 {
+    margin: 0 0 0.2rem;
+    font-family: var(--mono);
+    font-size: 0.84rem;
+    font-weight: 500;
+  }
+
+  .trace p {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+  }
+
+  .trace .where {
+    display: inline-block;
+    margin-top: 0.35rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+  }
+
+  /* ── State machine ────────────────────────────────────── */
+
+  .states {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 1px;
+    margin: 1.75rem 0;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+
+  .state {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 1rem 1.1rem;
+    background: var(--ground);
+  }
+
+  .state b {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .state small {
+    color: var(--ink-2);
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+
+  .state.is-good b { color: var(--store); }
+  .state.is-warn b { color: var(--warn); }
+  .state.is-stop b { color: var(--stop); }
+
+  /* ── Refusal rows ─────────────────────────────────────── */
+
+  .refusals {
+    margin: 1.75rem 0 0;
+    display: grid;
+    gap: 1px;
+    background: var(--rule);
+    border-block: 1px solid var(--rule);
+  }
+
+  .refusal {
+    display: grid;
+    grid-template-columns: minmax(7rem, auto) 1fr;
+    gap: 0 1.25rem;
+    padding: 1.1rem 0;
+    background: var(--ground);
+  }
+
+  .refusal dt {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+
+  .refusal.r-stale dt { color: var(--warn); }
+  .refusal.r-unresolved dt { color: var(--stop); }
+  .refusal.r-ok dt { color: var(--store); }
+
+  .refusal dd { margin: 0; color: var(--ink-2); font-size: 0.9rem; }
+  .refusal dd b { color: var(--ink); font-weight: 600; }
+
+  /* ── Callout ──────────────────────────────────────────── */
+
+  .aside {
+    margin: 1.75rem 0;
+    padding: 1.15rem 1.35rem;
+    background: var(--wire-soft);
+    border-left: 2px solid var(--wire);
+    font-size: 0.9rem;
+    color: var(--ink-2);
+  }
+
+  .aside b { color: var(--ink); }
+  .aside p:last-child { margin-bottom: 0; }
+
+  /* ── Gaps list ────────────────────────────────────────── */
+
+  .gaps { margin: 1.5rem 0 0; padding: 0; list-style: none; }
+
+  .gaps li {
+    display: grid;
+    grid-template-columns: 0.9rem 1fr;
+    gap: 0 0.85rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    font-size: 0.9rem;
+    color: var(--ink-2);
+  }
+
+  .gaps li::before {
+    content: "—";
+    color: var(--ink-3);
+    font-family: var(--mono);
+  }
+
+  .gaps b { color: var(--ink); font-weight: 600; }
+
+  footer {
+    margin-top: clamp(3.5rem, 8vw, 5.5rem);
+    padding: 1.75rem 0 3.5rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--editor);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  @media (max-width: 52rem) {
+    .facts { gap: 0 1.5rem; }
+    .trace > li { grid-template-columns: 2rem 1fr; gap: 0 0.7rem; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Icarus · document-editor</p>
+    <h1>Keystroke to Change Set<em>How a letter typed in the document editor becomes a row the server approves — and finds its way back</em></h1>
+    <p class="standfirst">The editor holds no document. It holds a projection of one, and every gesture against that projection is translated into operations addressed by id, coalesced, and submitted for approval. Nothing is saved because it was typed; it is saved because the server could apply it.</p>
+    <dl class="facts">
+      <div><dt>Projection</dt><dd>4 node types</dd></div>
+      <div><dt>Op shapes</dt><dd>5</dd></div>
+      <div><dt>Flush after</dt><dd>2000 ms</dd></div>
+      <div><dt>Re-read every</dt><dd>5000 ms</dd></div>
+      <div><dt>Retries</dt><dd>1</dd></div>
+    </dl>
+  </header>
+
+  <section>
+    <p class="marker">The shape of it</p>
+    <h2>Three parties, and none of them trusts the next</h2>
+    <p class="lede">A document lives in four places at once, and the interesting design is in what each one is allowed to believe.</p>
+
+    <p>ProseMirror holds a <em>drawing</em> — pages, rows, text blocks — that exists only to be typed into. The runtime holds a <em>body</em> and a revision number, which is the last thing the server confirmed plus whatever has not been sent yet. The server holds the <em>leader</em>, which is the only version that is true. And the store holds a JSON file per table under <code>app/data/</code>, which is what survives a restart.</p>
+
+    <p>The editor may not write to the store. The runtime may not decide it is right. The server may not accept what it cannot apply. Every rule below falls out of those three.</p>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Layer</th><th>Holds</th><th>Is allowed to</th></tr></thead>
+        <tbody>
+          <tr><td class="file">document.svelte</td><td>an <code>EditorState</code> and <code>sent</code>, the body its last ops were measured from</td><td>emit ops, never send them</td></tr>
+          <tr><td class="file">document-runtimes/</td><td><code>body</code>, <code>revision</code>, a buffer, two history stacks</td><td>submit, retry once, give up loudly</td></tr>
+          <tr><td class="file">capabilities/document/</td><td>nothing — it reads the store per call</td><td>apply ops, or refuse them</td></tr>
+          <tr><td class="file">app/data/*.json</td><td>the leader snapshot and every change set behind it</td><td>be the truth</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <p class="marker">The projection</p>
+    <h2>A schema that can only draw text</h2>
+    <p>The ProseMirror schema is deliberately smaller than the document model. There is no node for a divider, a page break, an image, a table or a mark — and no marks at all. Anything a body holds that is not display text is carried straight through and put back, which is what makes ignoring something the same as preserving it.</p>
+
+    <div class="schema wide">
+<pre><span class="node">doc</span>            content: page+
+└─ <span class="node">page</span>        content: blocks_row+          <span class="note">— computed, never stored</span>
+   └─ <span class="node">blocks_row</span>  attrs: <span class="attr">rowId, proportions</span>
+      └─ <span class="node">text_block</span>  attrs: <span class="attr">blockId, atomId, share</span>
+         └─ <span class="node">text</span>
+
+marks: {}                                     <span class="note">— none, on purpose</span></pre>
+    </div>
+
+    <p>Every identified node carries its resource-local <code>#id</code> in attrs. That is the whole trick: it makes the diff identity-based rather than positional, and it keeps ids stable when repagination moves a row from one page to the next.</p>
+
+    <h3>What each procedure is for</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>File</th><th>Entry points</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td class="file">schema.ts</td><td class="file">schema</td><td>The four node types above.</td></tr>
+          <tr><td class="file">ids.ts</td><td class="file">mint(kind)</td><td><code>#r</code>, <code>#b</code>, <code>#a</code> plus six base-36 characters. Unique within the resource only.</td></tr>
+          <tr><td class="file">page-setup.ts</td><td class="file">layoutMetrics, fitZoom, gutterOf</td><td>Paper and margins into a character budget, a line budget, and what the page is drawn at.</td></tr>
+          <tr><td class="file">paginate.ts</td><td class="file">paginate, pack, linesOfRow</td><td>Greedy word wrap at each block's share of the measure; the tallest block sets the row's height.</td></tr>
+          <tr><td class="file">projection.ts</td><td class="file">docOf, bodyOf, repaginate</td><td>Body → doc, doc → body, and redistribution across pages without touching node identity.</td></tr>
+          <tr><td class="file">translate.ts</td><td class="file">translate(was, now)</td><td>Two bodies into ops, keyed on ids.</td></tr>
+          <tr><td class="file">editing.ts</td><td class="file">splitRow, mergeRow</td><td>Enter and Backspace, ahead of the base keymap.</td></tr>
+          <tr><td class="file">inspecting.ts</td><td class="file">signalOf, worthSending</td><td>The selection, as something the inspector can be addressed by.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Pagination is arithmetic, not measurement</h3>
+    <p>No line boxes are read back from the DOM. <code>layoutMetrics</code> turns the paper size and margins into a character-per-line and a lines-per-page figure using a fixed average glyph width, and rows are packed against that estimate.</p>
+
+    <div class="code">
+      <cite>procedures/page-setup.ts</cite>
+<pre>const PAGE_WIDTH_REM = 52;
+const BODY_LINE_HEIGHT_REM = 1.625;
+const AVERAGE_GLYPH_WIDTH_EM = 0.52;
+
+<span class="k">const</span> charactersPerLine = Math.floor(
+  (content.width * scale) / (BODY_FONT_SIZE_REM * AVERAGE_GLYPH_WIDTH_EM)
+);
+<span class="k">const</span> linesPerPage = Math.floor((content.height * scale) / BODY_LINE_HEIGHT_REM);</pre>
+    </div>
+
+    <p>A page is therefore a computed thing with no attrs of its own and no id — which is why a page break in the body is a row, and a page in the drawing is not addressable by anything.</p>
+
+    <h3>Carrying what it will not draw</h3>
+    <p><code>bodyOf</code> rebuilds only the rows it drew. Everything else — a divider, an explicit break, an image block, a text block whose atoms are not one literal — is remembered by the id of the last drawn thing before it, and spliced back into place afterwards.</p>
+
+    <div class="code">
+      <cite>procedures/projection.ts</cite>
+<pre><span class="c">// after = the id of the nearest drawn thing before it.
+// null belongs at the head; a vanished anchor goes to the end.</span>
+<span class="k">type</span> Held&lt;T&gt; = { <span class="k">readonly</span> item: T; <span class="k">readonly</span> after: string | null };
+
+<span class="k">export const</span> bodyOf = (doc, previous) =&gt; {
+  <span class="k">const</span> drawn = rowNodesOf(doc).map((row) =&gt; rowOf(row, rowsBefore, blocksBefore));
+  <span class="k">return</span> { ...previous, rows: putBack(drawn, heldAmong(previous.rows, drawableRow)) };
+};</pre>
+    </div>
+  </section>
+
+  <section>
+    <p class="marker">The diff</p>
+    <h2>Two bodies in, five op shapes out</h2>
+    <p><code>translate</code> never looks at a ProseMirror transaction. It compares the body before against the body after, matches by id, and emits ops in a fixed order: edits, then removals, then insertions, then moves — so an insertion never has to be renumbered around a removal that has not happened yet.</p>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Op</th><th>Path</th><th>Emitted when</th></tr></thead>
+        <tbody>
+          <tr><td class="file">text</td><td class="file">#b7x2/atoms/#a91</td><td>one literal atom's text changed — common prefix and suffix trimmed to a single splice</td></tr>
+          <tr><td class="file">set</td><td class="file">#r4m1/proportions</td><td>a row's column widths changed</td></tr>
+          <tr><td class="file">insert</td><td class="file">rows</td><td>a row id in the new body and not the old</td></tr>
+          <tr><td class="file">remove</td><td class="file">rows</td><td>a row id in the old body and not the new — carries <code>values</code> so it can be inverted</td></tr>
+          <tr><td class="file">move</td><td class="file">rows</td><td>a surviving row's anchor changed</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="aside">
+      <p><b>There are no indices anywhere.</b> Because ids are unique within the resource, an <code>#id</code> segment resolves on its own — <code>#b7x2/atoms/#a91</code> is complete whether that block sits in a document row, a table cell or a slide element. Inserting a row above <code>#b7x2</code> does not change the path to <code>#b7x2</code>, so the index transformation that positional paths would need does not exist rather than being rare.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="marker">The runtime</p>
+    <h2>A buffer, two stacks, and one number that means something</h2>
+    <p>The runtime is the only object that knows what has been agreed. <code>revision</code> is not a counter of edits — it is the revision the server last confirmed, and it is what every change set is authored against.</p>
+
+    <div class="code">
+      <cite>document-runtimes/definition.svelte.ts</cite>
+<pre><span class="k">export class</span> Runtime <span class="k">implements</span> DocumentRuntime {
+  body      = $state&lt;DocumentBody | undefined&gt;(undefined);
+  revision  = $state(0);
+  sync      = $state&lt;SyncState&gt;(<span class="s">"loading"</span>);
+
+  buffer    = $state.raw&lt;<span class="k">readonly</span> DocumentOp[]&gt;([]);   <span class="c">// not yet sent</span>
+  undoStack = $state.raw&lt;<span class="k">readonly</span> HistoryEntry[]&gt;([]);
+  redoStack = $state.raw&lt;<span class="k">readonly</span> HistoryEntry[]&gt;([]);
+
+  inFlight  = $state(false);
+}</pre>
+    </div>
+
+    <h3>When it decides to send</h3>
+    <p>Every <code>apply</code> schedules. Whichever threshold arrives first wins, and both come from <code>app/configuration/revisions.yaml</code> rather than from a constant in the model.</p>
+
+    <div class="code">
+      <cite>document-runtimes/definition.svelte.ts · schedule()</cite>
+<pre><span class="k">if</span> (this.buffer.length &gt;= this.thresholds.afterOps) {   <span class="c">// a burst</span>
+  this.flushInBackground();
+  <span class="k">return</span>;
+}
+this.clearTimer();
+this.timer = setTimeout(() =&gt; this.flushInBackground(), this.thresholds.afterMs);</pre>
+    </div>
+
+    <h3>Coalescing, which is where the keystrokes go</h3>
+    <p>Typing "hello" is five ops in the buffer and one on the wire. Two splices on the same atom compose into one, because the second is stated against the string the first produced and both are this author's in order — so composing them is arithmetic over a single string. A pair that cancels out is removed entirely rather than sent as a splice that changes nothing.</p>
+
+    <h3>Undo is not ProseMirror's undo</h3>
+    <p>The editor runs <code>prosemirror-history</code> for its own caret-level undo, and the runtime keeps a separate stack of op entries. Inverting an entry reverses the ops and flips each one — <code>set</code> swaps value and <code>was</code>, <code>insert</code> becomes <code>remove</code>, <code>move</code> swaps its anchors, <code>text</code> swaps insert and remove. The inverse is then buffered like any other edit, so undo travels to the server as an ordinary change set.</p>
+
+    <h3>The seven states it can be in</h3>
+    <div class="states wide">
+      <div class="state"><b>loading</b><small>Attached, nothing read back yet.</small></div>
+      <div class="state is-good"><b>saved</b><small>Buffer empty, leader confirmed.</small></div>
+      <div class="state"><b>saving</b><small>A change set is in flight.</small></div>
+      <div class="state is-warn"><b>rebasing</b><small>Refused as stale; ops re-stated, retrying once.</small></div>
+      <div class="state is-stop"><b>needs-review</b><small>Refused twice, or unapplicable. Buffer dropped, body re-read.</small></div>
+      <div class="state"><b>offline</b><small>Reserved; nothing sets it yet.</small></div>
+      <div class="state is-stop"><b>error</b><small>The call threw. Ops are put back at the head of the buffer.</small></div>
+    </div>
+
+    <h3>Reading again, without ever overwriting work</h3>
+    <p>A runtime with nothing outstanding is a reader, and a reader that never reads again shows the document as it was when the tab was opened. So a sync runs on attach, after every accepted flush, after a revert, and on an interval — and refuses to run at all unless the runtime is settled. The check is made twice, because a keystroke during the round trip makes the answer stale before it lands.</p>
+
+    <div class="code">
+      <cite>document-runtimes/methods/sync.ts</cite>
+<pre><span class="k">const</span> settled = (runtime) =&gt; runtime.buffer.length === 0 &amp;&amp; !runtime.inFlight;
+
+<span class="k">export const</span> sync = <span class="k">async</span> (runtime) =&gt; {
+  <span class="k">if</span> (!settled(runtime)) <span class="k">return</span>;
+
+  <span class="k">const</span> question = readDocumentBody({ resourceId: runtime.id });
+  <span class="k">await</span> question.refresh();          <span class="c">// or the client cache answers forever</span>
+  <span class="k">const</span> found = question.ready ? question.current : <span class="k">await</span> question;
+
+  <span class="k">if</span> (!settled(runtime)) <span class="k">return</span>;      <span class="c">// a keystroke landed mid-flight</span>
+
+  runtime.body = found === null ? emptyBody() : found.body;
+  runtime.revision = found === null ? 0 : found.revision;
+};</pre>
+    </div>
+
+    <h3>Closing a tab does not close the document</h3>
+    <p>A released runtime moves from <code>open</code> to <code>settling</code> — its timer cleared, its interval cancelled — and is flushed one last time. It is only forgotten if that flush left it clean; a runtime in <code>error</code> or <code>needs-review</code> stays in <code>settling</code>, and re-opening the tab picks up the same object with its buffer intact.</p>
+  </section>
+
+  <section>
+    <p class="marker">Integration</p>
+    <h2>How a view is allowed to reach any of this</h2>
+    <p>A view may not import a runtime register. It asks workspace state which runtime a resource already has, and is handed the one that is open rather than one of its own — the rule <code>view-imports-no-surface</code> holds the line, and <code>runtime-through-workspace-state</code> states the intent.</p>
+
+    <div class="code">
+      <cite>workspace-state/methods/document-runtime.ts</cite>
+<pre><span class="k">export const</span> documentRuntime = (state, resourceId) =&gt; {
+  <span class="k">if</span> (state.documents === undefined) {
+    <span class="k">throw new</span> Error(<span class="s">"This workspace state holds no document runtime register…"</span>);
+  }
+  <span class="k">return</span> state.documents.attach(resourceId);
+};</pre>
+    </div>
+
+    <p>The register is <em>borrowed</em>. Workspace state does not build it and does not release it — <code>runtime/client/start.ts</code> constructs both registers and passes them in, and workspace state only knows how to ask.</p>
+
+    <h3>Two things the tab owns on the document's behalf</h3>
+    <p><strong>Zoom</strong> lives on the tab view beside the frame, not in it: the frame is the shell's geometry, which the panels own between them, and zoom is the centre's alone. It is <code>null</code> until someone zooms, and a <code>null</code> zoom means the page fills whatever width it is given and goes on filling it as that width changes. It travels as a workspace op, so it is undoable and it persists.</p>
+
+    <p><strong>The inspector</strong> is addressed the same way. The editor turns its ProseMirror selection into a key and an address and calls <code>view.inspect</code>; because that is an op like any other, the panel's subject is part of the workspace a reload restores.</p>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>In the editor</th><th>Key</th><th>id</th><th>at</th></tr></thead>
+        <tbody>
+          <tr><td>a range inside one block</td><td class="file">text-selection</td><td class="file">#b1/atoms/#a1@6</td><td class="file">#b1/atoms/#a1@18</td></tr>
+          <tr><td>a range across two blocks</td><td class="file">text-selection</td><td class="file">#b1/atoms/#a1@6</td><td class="file">#b2/atoms/#a2@4</td></tr>
+          <tr><td>caret in a block with text</td><td class="file">next-letter</td><td class="file">#b1/atoms/#a1@6</td><td>—</td></tr>
+          <tr><td>caret in an empty block</td><td class="file">empty-block</td><td class="file">#b1/atoms/#a1@0</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Nothing is sent when the inspector already says it, and <code>next-letter</code> additionally never re-fires while the inspector is already on <code>next-letter</code> — so moving the caret inside a block is silent, and you leave that state only when a selection or an empty block fires.</p>
+  </section>
+
+  <section>
+    <p class="marker">Execution flow</p>
+    <h2>One letter, end to end</h2>
+    <p class="lede">This is a real sequence, so it is numbered. Everything below happens between pressing a key and the status reading <span style="font-family:var(--mono);font-size:0.9em">Saved</span>.</p>
+
+    <ol class="trace">
+      <li><div class="trace-body">
+        <h4>ProseMirror dispatches a transaction</h4>
+        <p>Not committed yet — <code>dispatchTransaction</code> is overridden, so the view holds still until the editor says otherwise.</p>
+        <span class="where">content/document.svelte · dispatch()</span>
+      </div></li>
+      <li><div class="trace-body">
+        <h4>lay() stamps ids and repaginates</h4>
+        <p>New nodes get minted ids; rows are re-packed against the current metrics. If the doc is unchanged the state passes through untouched. If it changed, the layout transaction is marked <code>addToHistory: false</code> and tagged, and the caret is restored by anchor rather than by position.</p>
+        <span class="where">projection.ts · stampIds → repaginate → anchorAt / positionOf</span>
+      </div></li>
+      <li><div class="trace-body">
+        <h4>The inspector signal fires</h4>
+        <p>Before the doc-changed guard, so a selection that moved without editing still reaches the panel.</p>
+        <span class="where">inspecting.ts · signalOf → worthSending → view.inspect</span>
+      </div></li>
+      <li><div class="trace-body">
+        <h4>Layout transactions stop here</h4>
+        <p>A repagination must not echo back as an edit, so the tagged transaction returns before <code>emit</code>. This is the one place a bug would produce an infinite loop.</p>
+        <span class="where">dispatch() · transaction.getMeta(LAYOUT)</span>
+      </div></li>
+      <li><div class="trace-body">
+        <h4>emit() measures against sent, not against the runtime</h4>
+        <p><code>sent</code> is the body the last ops were measured from. Diffing against it rather than against <code>runtime.body</code> is what keeps ops from being emitted twice while a flush is in flight.</p>
+        <span class="where">bodyOf(state.doc, sent) → translate(sent, body)</span>
+      </div></li>
+      <li><div class="trace-body">
+        <h4>runtime.apply pushes onto the undo stack and the buffer</h4>
+        <p>The redo stack is cleared, and <code>schedule()</code> arms the timer — or flushes immediately if the op count threshold has been reached.</p>
+        <span class="where">document-runtimes/methods/apply.ts</span>
+      </div></li>
+      <li><div class="trace-body">
+        <h4>flush() coalesces and submits</h4>
+        <p>The buffer is folded, emptied, and sent as a change set stating <code>baseRevision</code> — the revision these ops were authored against. <code>pendingFlush</code> makes concurrent flushes one flush.</p>
+        <span class="where">methods/flush/flush.ts · coalesce → submitDocumentChanges</span>
+      </div></li>
+      <li><div class="trace-body">
+        <h4>The server applies them, or does not</h4>
+        <p>Scope first, then validation, then the leader. Applying is the approval: <code>apply-ops</code> throws on anything it cannot resolve, and that throw is the refusal.</p>
+        <span class="where">capabilities/document/api/submit-document-changes/</span>
+      </div></li>
+      <li><div class="trace-body">
+        <h4>Two rows are written, atomically as far as the caller sees</h4>
+        <p>A <code>documentChangeSets</code> row at the new revision, then the <code>documentSnapshots</code> leader replaced, then <code>updatedAt</code> and <code>updatedBy</code> on the <code>documents</code> row.</p>
+        <span class="where">store.create → store.update</span>
+      </div></li>
+      <li><div class="trace-body">
+        <h4>The runtime takes the new revision and re-reads</h4>
+        <p><code>sync</code> is fired without awaiting it, so the status settles on <span style="font-family:var(--mono)">Saved</span> immediately and the body catches up with anyone else's accepted work a beat later.</p>
+        <span class="where">flush.ts · landed(runtime) → void sync(runtime)</span>
+      </div></li>
+      <li><div class="trace-body">
+        <h4>The paint guard decides whether to redraw</h4>
+        <p>A new body object arrives, but if <code>translate(sent, body)</code> is empty it says nothing the editor does not already show — so <code>sent</code> is advanced and the caret is left alone. Only a body that actually differs causes a repaint.</p>
+        <span class="where">content/document.svelte · $effect on runtime.body</span>
+      </div></li>
+    </ol>
+  </section>
+
+  <section class="full" style="padding-inline: 1.25rem;">
+    <div style="max-width: 76rem; margin: 0 auto;">
+      <p class="marker">The wire</p>
+      <h2 style="max-width: 26ch;">What actually travels</h2>
+      <p style="max-width: 62ch; color: var(--ink-2); font-size: var(--step-1); line-height: 1.55;">No body is ever sent to the server. Only ops travel, and acceptance <em>is</em> successful application — which is what makes the revision number a claim about a state rather than a count of submissions.</p>
+
+      <div class="trip">
+        <div class="trip-grid">
+
+          <div class="station st-editor">
+            <div class="station-head"><span class="dot"></span><b>Editor</b><span>client</span></div>
+            <div class="step"><i>01</i><div><b>bodyOf(doc, sent)</b><small>the drawing, read back as a body</small></div></div>
+            <div class="step"><i>02</i><div><b>translate(sent, body)</b><small>two bodies, matched by id</small></div></div>
+            <div class="step"><i>03</i><div><b>runtime.apply(ops)</b><small>buffered, undo stack pushed</small></div></div>
+            <div class="payload">{ op: <span>"text"</span>,
+  target: <span>"atom"</span>,
+  path: <span>"#bbody1/atoms/#abody1"</span>,
+  at: <span>147</span>,
+  insert: <span>"d"</span>,
+  remove: <span>""</span> }</div>
+          </div>
+
+          <div class="station st-wire">
+            <div class="station-head"><span class="dot"></span><b>Change set</b><span>POST</span></div>
+            <div class="step"><i>04</i><div><b>coalesce(buffer)</b><small>five keystrokes fold to one splice</small></div></div>
+            <div class="step"><i>05</i><div><b>submitDocumentChanges</b><small>a command, not a query</small></div></div>
+            <div class="step"><i>06</i><div><b>baseRevision: 6</b><small>the revision these ops assume</small></div></div>
+            <div class="payload">{ changeSet: {
+    resourceId: <span>"documents:1"</span>,
+    baseRevision: <span>6</span>,
+    ops: <span>[ … ]</span>,
+    touched: <span>["#bbody1/atoms/#abody1"]</span>
+} }</div>
+          </div>
+
+          <div class="station st-store">
+            <div class="station-head"><span class="dot"></span><b>Store</b><span>server</span></div>
+            <div class="step"><i>07</i><div><b>requireScope()</b><small>which project is never a parameter</small></div></div>
+            <div class="step"><i>08</i><div><b>leaderOf(store, …)</b><small>revision 6? then apply</small></div></div>
+            <div class="step"><i>09</i><div><b>applyOps(body, ops)</b><small>throws, and the throw is the refusal</small></div></div>
+            <div class="payload">documentChangeSets <span>+1 row</span>
+  revision: <span>7</span>  tier: <span>"recent"</span>
+
+documentSnapshots <span>leader ⟵</span>
+  revision: <span>7</span>  role: <span>"leader"</span></div>
+          </div>
+
+        </div>
+
+        <div class="return">
+          <span class="return-arrow">◀──</span>
+          <span><b>{ accepted: true, revision: 7 }</b> — the runtime takes the number, sets <span style="font-family:var(--mono)">saved</span>, and fires <b>sync</b>, which re-reads the leader and hands the body back to the editor. The paint guard drops it if it says nothing new.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="marker">Refusals</p>
+    <h2>Three answers, and only one of them is yes</h2>
+
+    <dl class="refusals">
+      <div class="refusal r-ok">
+        <dt>accepted</dt>
+        <dd>The leader was at <code>baseRevision</code> and every op applied. A change set row is written, the leader is replaced, and the client takes the new revision. <b>Nothing is retried.</b></dd>
+      </div>
+      <div class="refusal r-stale">
+        <dt>stale</dt>
+        <dd>The leader has moved on. The client adopts the new revision, puts the refused ops back at the head of its buffer, and submits once more. <b>Exactly one retry</b> — a second refusal is not a third attempt.</dd>
+      </div>
+      <div class="refusal r-unresolved">
+        <dt>unresolved</dt>
+        <dd>An op named something the body does not hold — an atom whose text has moved under a splice, a row id that is gone. Not retryable at any revision. The buffer is <b>dropped</b>, the body is re-read, and the state becomes <code>needs-review</code>.</dd>
+      </div>
+    </dl>
+
+    <p style="margin-top:1.5rem">Dropping the buffer is deliberate. An editor that kept ops the server has refused would be showing a document nobody else can see, and every subsequent change set would be authored against a body that does not exist.</p>
+
+    <div class="aside">
+      <p><b>A thrown call is different from a refusal.</b> If <code>submitDocumentChanges</code> rejects — the network, not the server's judgement — the ops go back to the head of the buffer, the state becomes <code>error</code>, and the error is re-thrown. Nothing is lost, because nothing was decided.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="marker">Standing gaps</p>
+    <h2>What is designed and not built</h2>
+    <ul class="gaps">
+      <li><b>Marks, images, tables and formulas are carried, not edited.</b> The schema has no node for any of them; the projection preserves them byte for byte through an editing session and <code>translate</code> emits nothing for them.</li>
+      <li><b>Header, footer and page numbering exist in the model and nowhere else.</b> <code>PageFurniture</code> and <code>PageNumbering</code> are in the body type; the editor neither draws nor damages them.</li>
+      <li><b>Page setup is not read from the body yet.</b> <code>DEFAULT_PAGE_SETUP</code> stands in until document bodies persist their own.</li>
+      <li><b>No lens is built for any document inspector key.</b> All four signals land on <code>PanelPlaceholder</code>, which names the key and the address — routing is provable before the panel exists.</li>
+      <li><b>Runtimes are not refcounted.</b> Two tabs on one document share a runtime, and the first release moves it to <code>settling</code> for both.</li>
+      <li><b>Conflict detection is revision equality, not path overlap.</b> The workspace capability compares touched paths; the document capability does not, so any concurrent write is stale even when the two edits could not collide.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Icarus · app/src/lib/app-views/categories/document-editor · app/src/lib/model/client/document-runtimes · app/src/lib/capabilities/document
+  </footer>
+
+</div>

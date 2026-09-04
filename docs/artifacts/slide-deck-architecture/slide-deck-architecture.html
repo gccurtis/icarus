@@ -1,0 +1,737 @@
+<title>Slide Deck Editor Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --ground: #f2efe9;
+    --panel: #fbf9f5;
+    --sunk: #e9e5dc;
+    --ink: #1d2329;
+    --ink-2: #3a424d;
+    --ink-3: #6b7580;
+    --rule: #d8d3c4;
+    --rule-soft: #e4dfd2;
+    --client: #bc386f;
+    --client-soft: #fdeff5;
+    --server: #187d74;
+    --server-soft: #e6f4f2;
+    --warn: #9a6a12;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    --measure: 70ch;
+    --gap: 1.15rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #14181c;
+      --panel: #1c2127;
+      --sunk: #101418;
+      --ink: #e7e3da;
+      --ink-2: #b6bcc6;
+      --ink-3: #8d97a3;
+      --rule: #2e353d;
+      --rule-soft: #262c33;
+      --client: #ee7fae;
+      --client-soft: #351924;
+      --server: #3fcfc0;
+      --server-soft: #102b28;
+      --warn: #d9a441;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #14181c;
+    --panel: #1c2127;
+    --sunk: #101418;
+    --ink: #e7e3da;
+    --ink-2: #b6bcc6;
+    --ink-3: #8d97a3;
+    --rule: #2e353d;
+    --rule-soft: #262c33;
+    --client: #ee7fae;
+    --client-soft: #351924;
+    --server: #3fcfc0;
+    --server-soft: #102b28;
+    --warn: #d9a441;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+  }
+
+  .col { max-width: var(--measure); }
+
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+
+  h1 {
+    font-size: clamp(2rem, 4.6vw, 2.9rem);
+    font-weight: 600;
+    letter-spacing: -0.028em;
+    line-height: 1.08;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: -0.018em;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  h3 {
+    font-size: 1.02rem;
+    font-weight: 600;
+    letter-spacing: -0.008em;
+  }
+
+  p { margin: 0; }
+  .col > p + p { margin-top: 0.85rem; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .lede { font-size: 1.08rem; color: var(--ink-2); }
+
+  code, .m { font-family: var(--mono); font-size: 0.86em; }
+
+  code {
+    background: var(--sunk);
+    border-radius: 3px;
+    padding: 0.1em 0.34em;
+  }
+
+  section { display: flex; flex-direction: column; gap: var(--gap); }
+
+  .stack { display: flex; flex-direction: column; gap: var(--gap); }
+
+  /* ---- tables ---- */
+  .sheet { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 0.6rem 0.9rem 0.6rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+
+  th {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+
+  td.p { font-family: var(--mono); font-size: 0.8rem; white-space: nowrap; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ---- tree ---- */
+  .tree {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.85;
+    background: var(--panel);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+    padding: 1.1rem 1.25rem;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .tree .note { color: var(--ink-3); }
+  .cli { color: var(--client); font-weight: 500; }
+  .srv { color: var(--server); font-weight: 500; }
+
+  /* ---- figures ---- */
+  figure { margin: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+
+  figure svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: var(--panel);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+  }
+
+  figcaption { font-size: 0.85rem; color: var(--ink-3); max-width: var(--measure); }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.1rem;
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    font-family: var(--mono);
+  }
+
+  .key { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .swatch { width: 0.75rem; height: 0.75rem; border-radius: 2px; }
+
+  /* ---- steps ---- */
+  ol.steps {
+    list-style: none;
+    counter-reset: s;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  ol.steps li {
+    counter-increment: s;
+    display: grid;
+    grid-template-columns: 1.9rem 1fr;
+    gap: 0.85rem;
+    align-items: start;
+  }
+
+  ol.steps li::before {
+    content: counter(s, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--client);
+    padding-top: 0.22rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  ol.steps li p { font-size: 0.94rem; }
+  ol.steps li strong { font-weight: 600; }
+
+  /* ---- callout ---- */
+  .note-block {
+    border-left: 3px solid var(--warn);
+    padding: 0.1rem 0 0.1rem 1rem;
+    font-size: 0.94rem;
+    color: var(--ink-2);
+    max-width: var(--measure);
+  }
+
+  .rule-block { border-left-color: var(--client); }
+
+  ul.plain {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.94rem;
+  }
+
+  .gone { color: var(--ink-3); }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 2rem;
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    color: var(--ink-3);
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule-soft);
+  }
+</style>
+
+<div class="page">
+
+  <header class="stack col">
+    <p class="eyebrow">Icarus &middot; app/src/lib</p>
+    <h1>The slide deck editor, end to end</h1>
+    <p class="lede">
+      A Konva canvas, a client runtime that buffers what you did, and a pair of
+      remote procedures that move a deck body between the browser and a
+      JSON-file store. This is what each part owns, where the boundaries are
+      enforced, and what a dragged shape actually travels through.
+    </p>
+  </header>
+
+  <section>
+    <div class="stack col">
+      <p class="eyebrow">Boundaries</p>
+      <h2>Five trees, and what may reach what</h2>
+      <p>
+        The deck is not one folder. It is spread across five trees on purpose,
+        and the separation is enforced by <code>pnpm lint</code> rather than by
+        convention &mdash; 65 structural checks, of which four shape this feature
+        directly.
+      </p>
+    </div>
+
+    <div class="tree"><span class="cli">app-views/</span>categories/slide-deck-editor/
+├── content/deck.svelte        <span class="note">the Konva canvas — no props, reads the active tab</span>
+├── context/stage.svelte       <span class="note">the Stage panel — ratio, dimensions, zoom</span>
+└── procedures/
+    ├── deck.ts                <span class="note">body shaping; the only file that names ops</span>
+    ├── stage.ts               <span class="note">geometry: units, zoom, fit, gutter, frames</span>
+    └── tokens.ts              <span class="note">resolves --token-* to something canvas can paint</span>
+
+<span class="cli">model/client/</span>slide-deck-runtimes/
+├── definition.svelte.ts       <span class="note">Runtime ($state), the register, tick()</span>
+├── methods/apply.ts           <span class="note">buffer + undo stack</span>
+├── methods/attach.ts          <span class="note">open a deck, start the heartbeat</span>
+├── methods/sync.ts            <span class="note">re-read the leader, cache defeated</span>
+├── methods/flush/             <span class="note">coalesce · flush · rebase</span>
+└── methods/history/           <span class="note">undo · redo · invert</span>
+
+<span class="srv">capabilities/</span>slide-deck/
+├── index.remote.ts            <span class="note">query + command — the only client/server crossing</span>
+├── api/read-slide-deck-body/  <span class="note">procedure + validator</span>
+├── api/submit-slide-deck-changes/
+│   ├── apply-ops.ts           <span class="note">the op interpreter</span>
+│   └── validate-…             <span class="note">refuses anything unactionable</span>
+└── api/shared/leader.ts       <span class="note">finds the leader snapshot</span>
+
+<span class="note">representation/</span>data/types/slide-decks/
+├── body.ts                    <span class="note">SlideDeckBody, Slide, SlideElement, Frame</span>
+└── op.ts                      <span class="note">SlideDeckOp — set · insert · remove · move · text</span></div>
+
+    <figure>
+      <svg viewBox="0 0 940 260" role="img" aria-label="Import boundaries: a view may reach only its own category's procedures, capabilities and workspace-state; it may not reach the runtime register or representation directly.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+          </marker>
+          <marker id="arNo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#b4453f"></path>
+          </marker>
+        </defs>
+
+        <rect x="24" y="94" width="176" height="66" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.5"></rect>
+        <text x="112" y="120" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="12.5" font-weight="600" fill="currentColor">deck.svelte</text>
+        <text x="112" y="140" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11" fill="var(--ink-3)">a view leaf</text>
+
+        <rect x="300" y="24" width="196" height="58" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+        <text x="398" y="49" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" fill="currentColor">procedures/ (own category)</text>
+        <text x="398" y="66" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">may import representation</text>
+
+        <rect x="300" y="98" width="196" height="58" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+        <text x="398" y="123" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" fill="currentColor">workspace-state</text>
+        <text x="398" y="140" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">the one model object</text>
+
+        <rect x="300" y="172" width="196" height="58" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+        <text x="398" y="197" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" fill="currentColor">$capabilities/*</text>
+        <text x="398" y="214" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">the server crossing</text>
+
+        <rect x="640" y="60" width="196" height="58" rx="4" fill="none" stroke="#b4453f" stroke-width="1.2" stroke-dasharray="5 4"></rect>
+        <text x="738" y="85" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" fill="#b4453f">slide-deck-runtimes</text>
+        <text x="738" y="102" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="#b4453f">the register itself</text>
+
+        <rect x="640" y="140" width="196" height="58" rx="4" fill="none" stroke="#b4453f" stroke-width="1.2" stroke-dasharray="5 4"></rect>
+        <text x="738" y="165" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" fill="#b4453f">$representation/*</text>
+        <text x="738" y="182" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="#b4453f">types and behaviour</text>
+
+        <line x1="200" y1="112" x2="298" y2="60" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+        <line x1="200" y1="127" x2="298" y2="127" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+        <line x1="200" y1="142" x2="298" y2="194" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+
+        <line x1="496" y1="120" x2="638" y2="94" stroke="#b4453f" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#arNo)"></line>
+        <line x1="496" y1="53" x2="638" y2="166" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+
+        <text x="568" y="82" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="#b4453f">refused</text>
+        <text x="592" y="118" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="currentColor">allowed</text>
+      </svg>
+      <figcaption>
+        A <code>.svelte</code> view leaf may import only its own category's
+        <code>procedures/</code>, the component aliases,
+        <code>$model/client/workspace-state</code>, and <code>$capabilities/*</code>.
+        It may not touch the runtime register or <code>$representation</code> &mdash;
+        which is why every deck type the view needs is re-exported through
+        <code>procedures/deck.ts</code>.
+      </figcaption>
+    </figure>
+
+    <div class="note-block rule-block">
+      <strong>The rule with teeth.</strong> <code>runtime-through-workspace-state</code>
+      matches <code>/\b(attach|acquire|createRuntime)\s*\(/</code> against the
+      <em>raw text</em> of every view leaf &mdash; markup and comments included. No
+      view file may contain the characters <code>attach(</code> anywhere, which is
+      why the accessor on workspace state is named <code>slideDeckRuntime</code>.
+    </div>
+  </section>
+
+  <section>
+    <div class="stack col">
+      <p class="eyebrow">The editor</p>
+      <h2>What the canvas owns</h2>
+      <p>
+        <code>deck.svelte</code> takes no props. It reads
+        <code>view.active.resourceId</code> for which deck, and holds a
+        <em>working copy</em> of the body that moves the instant you drag &mdash;
+        the runtime is told afterwards.
+      </p>
+    </div>
+
+    <div class="sheet col">
+      <table>
+        <thead>
+          <tr><th>Concern</th><th>Where it lives</th><th>Why there</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="p">Geometry</td>
+            <td class="p">procedures/stage.ts</td>
+            <td>A slide is a ratio, not a size. Its coordinate space is <code>1280&times;720</code> units for 16:9, <code>960&times;720</code> for 4:3 &mdash; the height is declared, the width follows the ratio.</td>
+          </tr>
+          <tr>
+            <td class="p">Element frames</td>
+            <td class="p">stage.ts &middot; toPixels / toFrame</td>
+            <td>Frames are fractions of the slide, 0&ndash;1, so a deck survives a change of aspect ratio. Conversion happens in exactly one place.</td>
+          </tr>
+          <tr>
+            <td class="p">Zoom</td>
+            <td class="p">TabView.zoom</td>
+            <td>Per-tab workspace state, not deck state. Two tabs on one deck keep their own, and a zoom is an undoable <code>WorkspaceOp</code>.</td>
+          </tr>
+          <tr>
+            <td class="p">Colour</td>
+            <td class="p">procedures/tokens.ts</td>
+            <td>Canvas cannot read CSS variables, and a theme value may be <code>light-dark(&hellip;)</code> &mdash; valid CSS, invalid <code>fillStyle</code>. A hidden probe element resolves each token through the browser.</td>
+          </tr>
+          <tr>
+            <td class="p">Ops</td>
+            <td class="p">procedures/deck.ts</td>
+            <td><code>withElementFrame</code> returns <code>{ body, ops }</code> together, so the next body and the op describing it cannot disagree.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note-block col">
+      <strong>Zoom is a stage transform, not a redraw.</strong> Nodes are placed
+      in slide units and never move when you zoom; <code>stage.scale()</code> and
+      <code>stage.size()</code> carry it. The slide box and the canvas take the
+      same rounded pixel number from one derivation, so they cannot drift apart by
+      a frame &mdash; measured at 0.00px divergence across 118 frames of a zoom
+      gesture, down from 19.08px when the canvas was sized by observing the box.
+    </div>
+  </section>
+
+  <section>
+    <div class="stack col">
+      <p class="eyebrow">The runtime</p>
+      <h2>One object per deck, never per tab</h2>
+      <p>
+        <code>SlideDeckRuntime</code> is a courier. It holds the last body the
+        server served, the ops you have made since, and the revision those ops
+        were authored against. It does not know what a slide is.
+      </p>
+    </div>
+
+    <div class="sheet col">
+      <table>
+        <thead>
+          <tr><th>Member</th><th>Type</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="p">body</td><td class="p">SlideDeckBody?</td><td>The last body the leader served. <code>undefined</code> until the first read lands.</td></tr>
+          <tr><td class="p">revision</td><td class="p">number</td><td>What the buffered ops are stated against.</td></tr>
+          <tr><td class="p">sync</td><td class="p">SyncState</td><td><code>loading</code> · <code>saving</code> · <code>saved</code> · <code>rebasing</code> · <code>error</code></td></tr>
+          <tr><td class="p">pending</td><td class="p">number</td><td>Ops in the buffer, unsent.</td></tr>
+          <tr><td class="p">apply(ops)</td><td class="p">void</td><td>Record one gesture: push to the undo stack, buffer, schedule.</td></tr>
+          <tr><td class="p">tick()</td><td class="p">Promise</td><td>Send what it holds, or read what it does not.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <figure>
+      <svg viewBox="0 0 940 200" role="img" aria-label="One tick decides between flush and sync: a non-empty buffer flushes, an empty one syncs, so the two can never race.">
+        <rect x="330" y="20" width="280" height="56" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.5"></rect>
+        <text x="470" y="44" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="13" font-weight="600" fill="currentColor">tick()</text>
+        <text x="470" y="63" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">debounce 2s · heartbeat 5s · 50 ops</text>
+
+        <line x1="410" y1="76" x2="230" y2="122" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+        <line x1="530" y1="76" x2="710" y2="122" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+
+        <text x="278" y="100" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11" fill="currentColor">buffer &gt; 0</text>
+        <text x="668" y="100" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11" fill="currentColor">buffer empty</text>
+
+        <rect x="90" y="126" width="280" height="56" rx="4" fill="none" stroke="currentColor" stroke-width="1.3"></rect>
+        <text x="230" y="150" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="12.5" font-weight="600" fill="currentColor">flush</text>
+        <text x="230" y="169" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">coalesce → change set → submit</text>
+
+        <rect x="570" y="126" width="280" height="56" rx="4" fill="none" stroke="currentColor" stroke-width="1.3"></rect>
+        <text x="710" y="150" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="12.5" font-weight="600" fill="currentColor">sync</text>
+        <text x="710" y="169" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">refresh() → adopt body + revision</text>
+      </svg>
+      <figcaption>
+        Both schedules &mdash; the edit debounce and the heartbeat &mdash; call the
+        same <code>tick()</code>. Because flush and sync are one branch rather
+        than two timers, a re-read can never land on top of an edit in flight.
+      </figcaption>
+    </figure>
+
+    <div class="note-block col">
+      <strong>Coalescing folds a drag into one op.</strong> Repeated
+      <code>set</code>s on one path fold into the earliest, keeping the
+      <em>last</em> value and the <em>first</em> <code>was</code>. Relatedness is
+      decided on the strings &mdash; equal, or one continuing the other at a
+      <code>/</code> boundary &mdash; because the runtime resolves no paths. That
+      is why the op path grammar is slash-separated: <code>el-4/frame</code>.
+    </div>
+  </section>
+
+  <section>
+    <div class="stack col">
+      <p class="eyebrow">Integration</p>
+      <h2>How a view reaches a runtime</h2>
+      <p>
+        A view cannot import the register, so workspace state routes to it. The
+        register is a borrowed dependency, handed in at construction and never
+        returned in the client graph.
+      </p>
+    </div>
+
+    <div class="tree">buildClientModel()                        <span class="note">runtime/client/start.ts</span>
+  ├── createSlideDeckRuntimes(settings)   <span class="note">line 43 — built first</span>
+  └── createWorkspaceState(…, decks)      <span class="note">line 48 — borrows it</span>
+
+view.slideDeckRuntime(deckId)             <span class="note">workspace-state/types.ts</span>
+  └── decks.attach(deckId)                <span class="note">methods/slide-deck-runtime.ts</span>
+        ├── already open → tick(), return it
+        ├── settling     → revive, resubscribe
+        └── new          → create, subscribe, heartbeat
+
+deck.svelte
+  $effect(() =&gt; { runtime = view.slideDeckRuntime(deckId) })
+  <span class="note">↑ an $effect, never a $derived — attach writes to a SvelteMap</span></div>
+
+    <div class="sheet col">
+      <table>
+        <thead><tr><th>Registration</th><th>File</th></tr></thead>
+        <tbody>
+          <tr><td>Content view key <code>slide-deck-editor.deck</code></td><td class="p">representation/…/workspace/categories.ts <span class="gone">(generated)</span></td></tr>
+          <tr><td>Context view key <code>slide-deck-editor.stage</code></td><td class="p">representation/…/workspace/views.ts</td></tr>
+          <tr><td>Rail order and landing</td><td class="p">representation/…/workspace/opening.ts</td></tr>
+          <tr><td>Rail label and icon</td><td class="p">surfaces/context/procedures/rail-entries.ts</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="col">
+      There is no map from key to component. <code>surfaces/content/content.svelte</code>
+      globs the tree and resolves <code>slide-deck-editor.deck</code> to
+      <code>categories/slide-deck-editor/content/deck.svelte</code>. The path
+      <em>is</em> the key.
+    </p>
+  </section>
+
+  <section>
+    <div class="stack col">
+      <p class="eyebrow">The round trip</p>
+      <h2>What a dragged shape travels through</h2>
+    </div>
+
+    <div class="legend">
+      <span class="key"><span class="swatch" style="background: var(--client)"></span> client</span>
+      <span class="key"><span class="swatch" style="background: var(--server)"></span> server</span>
+      <span class="key">&mdash; &mdash; network boundary</span>
+    </div>
+
+    <figure>
+      <svg viewBox="0 0 940 420" role="img" aria-label="Outbound: canvas to working body to buffer, across the network to validate and applyOps, then written as a leader snapshot and a change set row. Inbound: the leader snapshot read back through refresh, past the query cache, into runtime.body and onto the canvas.">
+        <line x1="500" y1="16" x2="500" y2="404" stroke="var(--ink-3)" stroke-width="1.2" stroke-dasharray="6 5"></line>
+
+        <text x="24" y="34" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" letter-spacing="0.1em" fill="var(--client)">OUTBOUND — WHAT YOU DID</text>
+        <text x="24" y="248" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" letter-spacing="0.1em" fill="var(--server)">INBOUND — WHAT THE STORE HOLDS</text>
+
+        <!-- outbound -->
+        <rect x="24" y="52" width="128" height="54" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.4"></rect>
+        <text x="88" y="74" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">Konva node</text>
+        <text x="88" y="92" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">dragend</text>
+
+        <rect x="188" y="52" width="140" height="54" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.4"></rect>
+        <text x="258" y="74" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">working body</text>
+        <text x="258" y="92" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">optimistic, at once</text>
+
+        <rect x="364" y="52" width="112" height="54" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.4"></rect>
+        <text x="420" y="74" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">buffer</text>
+        <text x="420" y="92" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">coalesced</text>
+
+        <rect x="536" y="52" width="164" height="54" rx="4" fill="var(--server-soft)" stroke="var(--server)" stroke-width="1.4"></rect>
+        <text x="618" y="74" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">validate → applyOps</text>
+        <text x="618" y="92" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">baseRevision checked</text>
+
+        <rect x="736" y="52" width="180" height="54" rx="4" fill="var(--server-soft)" stroke="var(--server)" stroke-width="1.4"></rect>
+        <text x="826" y="74" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">leader + change set</text>
+        <text x="826" y="92" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">two rows written</text>
+
+        <line x1="152" y1="79" x2="186" y2="79" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+        <line x1="328" y1="79" x2="362" y2="79" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+        <line x1="476" y1="79" x2="534" y2="79" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+        <line x1="700" y1="79" x2="734" y2="79" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+
+        <text x="169" y="126" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">set op</text>
+        <text x="345" y="126" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">apply()</text>
+        <text x="505" y="126" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">changeSet</text>
+        <text x="717" y="126" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">rev + 1</text>
+
+        <text x="470" y="176" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">{ resourceId, baseRevision, ops, touched }   ·   path  el-4/frame</text>
+
+        <!-- inbound -->
+        <rect x="736" y="266" width="180" height="54" rx="4" fill="var(--server-soft)" stroke="var(--server)" stroke-width="1.4"></rect>
+        <text x="826" y="288" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">leader snapshot</text>
+        <text x="826" y="306" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">slideDeckSnapshots</text>
+
+        <rect x="536" y="266" width="164" height="54" rx="4" fill="var(--server-soft)" stroke="var(--server)" stroke-width="1.4"></rect>
+        <text x="618" y="288" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">readSlideDeckBody</text>
+        <text x="618" y="306" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">scope-checked</text>
+
+        <rect x="364" y="266" width="112" height="54" rx="4" fill="none" stroke="var(--ink-3)" stroke-width="1.3" stroke-dasharray="5 4"></rect>
+        <text x="420" y="288" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="var(--ink-3)">query cache</text>
+        <text x="420" y="306" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">bypassed</text>
+
+        <rect x="188" y="266" width="140" height="54" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.4"></rect>
+        <text x="258" y="288" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">runtime.body</text>
+        <text x="258" y="306" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">$state</text>
+
+        <rect x="24" y="266" width="128" height="54" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.4"></rect>
+        <text x="88" y="288" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">canvas</text>
+        <text x="88" y="306" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">draw()</text>
+
+        <line x1="734" y1="293" x2="702" y2="293" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+        <line x1="534" y1="293" x2="478" y2="293" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+        <line x1="362" y1="293" x2="330" y2="293" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+        <line x1="186" y1="293" x2="154" y2="293" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)"></line>
+
+        <text x="718" y="338" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">body + revision</text>
+        <text x="506" y="338" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">.refresh()</text>
+        <text x="346" y="338" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">adopt</text>
+        <text x="170" y="338" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">redraw</text>
+
+        <text x="470" y="386" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">a plain re-read answers from cache — measured stale at revision 2 while the store held 3</text>
+      </svg>
+      <figcaption>
+        The outbound path never sends a body; the server rebuilds it from ops it
+        can verify. The inbound path must defeat SvelteKit's per-argument query
+        memoisation, or a deck would never advance past the answer the page loaded
+        with.
+      </figcaption>
+    </figure>
+
+    <ol class="steps col">
+      <li><p><strong>Drag ends.</strong> <code>toFrame</code> converts the node's position from slide units to a fraction. <code>withElementFrame</code> returns the next body and one <code>set</code> op.</p></li>
+      <li><p><strong>The working copy moves immediately.</strong> Nothing waits for the server &mdash; this is the optimistic apply. <code>runtime.apply([op])</code> buffers the op and arms the debounce.</p></li>
+      <li><p><strong>Two seconds later, or at fifty ops,</strong> <code>tick()</code> finds a non-empty buffer and flushes. <code>coalesce</code> folds a whole drag into one op.</p></li>
+      <li><p><strong>The change set crosses once.</strong> <code>submitSlideDeckChanges</code> is the only outbound call, carrying <code>baseRevision</code> so the server can tell whether it was stated against what it holds.</p></li>
+      <li><p><strong>The server rebuilds the body.</strong> <code>applyOps</code> finds the element by id across every slide &mdash; a deck has one flat id space &mdash; and replaces its frame. Nothing partial is written.</p></li>
+      <li><p><strong>Two rows land together:</strong> a <code>slideDeckChangeSets</code> row for the audit, and the <code>slideDeckSnapshots</code> leader advanced by one revision.</p></li>
+      <li><p><strong>The runtime adopts the new revision,</strong> then syncs. The next heartbeat that finds an empty buffer re-reads the leader and the canvas redraws.</p></li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="stack col">
+      <p class="eyebrow">Refusal</p>
+      <h2>What happens when the server says no</h2>
+      <p>
+        A refusal is an answer, not a throw &mdash; an exception would be
+        indistinguishable from a network failure, which needs the opposite
+        handling.
+      </p>
+    </div>
+
+    <div class="sheet col">
+      <table>
+        <thead><tr><th>Reason</th><th>Means</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="p">stale</td>
+            <td>Authored against a revision the leader has moved past.</td>
+            <td>Rebase onto the server's revision, re-state the ops, retry once. If that fails, revert.</td>
+          </tr>
+          <tr>
+            <td class="p">unresolved</td>
+            <td>An op names something the body does not hold &mdash; a deleted element, an unknown field.</td>
+            <td>Revert at once. Re-sending would be asking the same question twice.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="col">
+      Reverting drops the change set, re-reads the body, and leaves the runtime
+      at <code>saved</code>. It is a reader again afterwards, not a casualty:
+      there is nothing left for anyone to review.
+    </p>
+  </section>
+
+  <section>
+    <div class="stack col">
+      <p class="eyebrow">Thresholds</p>
+      <h2>Every number, and where it is set</h2>
+    </div>
+
+    <div class="sheet col">
+      <table>
+        <thead><tr><th>Value</th><th>Setting</th><th>Governs</th></tr></thead>
+        <tbody>
+          <tr><td class="n">50 ops</td><td class="p">revisions.changeSets.flushAfterOps</td><td>Submit without waiting once the change set is this large.</td></tr>
+          <tr><td class="n">2 000 ms</td><td class="p">revisions.changeSets.flushAfterMs</td><td>Debounce, measured from the last op rather than the first.</td></tr>
+          <tr><td class="n">5 000 ms</td><td class="p">revisions.sync.everyMs</td><td>Heartbeat. Zero switches it off, which is what the tests use.</td></tr>
+          <tr><td class="n">720 units</td><td class="p">stage.ts SLIDE_UNITS_HIGH</td><td>The slide's declared height; width follows the ratio.</td></tr>
+          <tr><td class="n">50–200%</td><td class="p">stage.ts clampZoom</td><td>Below 50 leaves no readable measure; above 200 no slide fits.</td></tr>
+          <tr><td class="n">0.75–2.5 rem</td><td class="p">stage.ts gutterOf</td><td>The pasteboard gives way before the slide does.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack col">
+      <p class="eyebrow">Not built</p>
+      <h2>What the shape anticipates and does not yet do</h2>
+      <ul class="plain">
+        <li><strong>Only one op is applicable.</strong> <code>applyOps</code> handles <code>set</code> on <code>element/frame</code> and refuses everything else <em>by name</em>, so an op the editor learns to emit before the server learns to apply it fails where it was sent.</li>
+        <li><strong>Undo and redo exist and are unbound.</strong> The stacks work and are tested; nothing in the UI calls them.</li>
+        <li><strong>No resize, rotate, text editing, or slide insertion.</strong> The <code>Transformer</code> runs with <code>resizeEnabled: false</code> and <code>rotateEnabled: false</code>.</li>
+        <li><strong>No print model.</strong> <code>handout</code> was removed from the body: printing is an arrangement of N slides on a sheet, which a page setup has nowhere to hold.</li>
+        <li><strong>A canvas is opaque to a screen reader.</strong> Elements are reachable by pointer only; a Layers panel is the intended answer.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="meta col">
+    <span>48 test files · 514 tests</span>
+    <span>konva 10.3.2</span>
+    <span>svelte 5 · sveltekit 2.70.3</span>
+  </div>
+
+</div>
