@@ -1,0 +1,38 @@
+# The slide editor's geometry, and what a person may do to it.
+#
+# A slide has no physical size — it is a ratio — so these are the numbers that
+# turn that ratio into something drawn: the coordinate space its contents are
+# placed in, the width it is drawn at, and the bounds a zoom is held between.
+# None of them affect what is stored; changing one changes what the editor looks
+# like and nothing about the deck.
+slideDeck:
+  stage:
+    # The slide's own coordinate space, in units. The height is declared and the
+    # width follows the aspect ratio, so 16:9 is 1280 x 720 and 4:3 is 960 x 720.
+    # Style sizes are in these units too, which is what keeps a deck free of any
+    # print constraint.
+    unitsHigh: 720
+
+    # What the slide is drawn at, in rem, before zoom. Shared with the document's
+    # page on purpose: two editors side by side should present the same measure.
+    widthRem: 52
+
+    # Assumed average glyph width, as a fraction of the font size. It is an
+    # estimate for the character budget a panel reports, never a measurement —
+    # the renderer lays out the real text.
+    averageGlyphWidthEm: 0.52
+
+  zoom:
+    # Below the minimum there is no readable measure left; above the maximum no
+    # slide fits on a screen.
+    minimum: 50
+    maximum: 200
+    # What one press of a picker moves, and the precision a zoom is held to.
+    step: 5
+
+  gutter:
+    # What is left either side of the slide, in rem. The gutter is scenery, so it
+    # gives way before the slide does: it collapses from the maximum to the
+    # minimum as the surface narrows, and only then does the surface scroll.
+    minimumRem: 0.75
+    maximumRem: 2.5

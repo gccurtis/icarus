@@ -1,8 +1,9 @@
-import { readSlideDeckBody, submitSlideDeckChanges } from "$capabilities/slide-deck/index.remote";
+import { submitSlideDeckChanges } from "$capabilities/slide-deck/index.remote";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import type { Runtime } from "$model/client/slide-deck-runtimes/definition.svelte";
 import { coalesce } from "$model/client/slide-deck-runtimes/methods/flush/coalesce";
-import { emptyBody } from "$model/client/slide-deck-runtimes/methods/shared/empty-body";
+import { rebase } from "$model/client/slide-deck-runtimes/methods/flush/rebase";
+import { sync } from "$model/client/slide-deck-runtimes/methods/sync";
 
 export const flush = (runtime: Runtime): Promise<void> => {
   runtime.pendingFlush ??= submit(runtime).finally(() => {
@@ -21,17 +22,15 @@ const changeSet = (runtime: Runtime, ops: readonly SlideDeckOp[]) => ({
 });
 
 /**
- * A refused change set is dropped rather than replayed, and the body is read
- * back so what is on screen is what the store holds. An editor that kept ops the
- * server has refused would show a deck nobody else can see.
+ * A refusal the rebase could not resolve drops the change set and reads the body
+ * back, so what is on screen is what the store holds. The runtime is a reader
+ * again afterwards, not a casualty: there is nothing left for anyone to review.
  */
 const revert = async (runtime: Runtime): Promise<void> => {
   runtime.buffer = [];
+  runtime.inFlight = false;
 
-  const found = await readSlideDeckBody({ resourceId: runtime.id });
-  runtime.body = found === null ? emptyBody() : found.body;
-  runtime.revision = found === null ? 0 : found.revision;
-  runtime.sync = "needs-review";
+  await sync(runtime);
 };
 
 const submit = async (runtime: Runtime): Promise<void> => {
@@ -52,13 +51,36 @@ const submit = async (runtime: Runtime): Promise<void> => {
   try {
     const answer = await submitSlideDeckChanges({ changeSet: changeSet(runtime, ops) });
 
-    if (!answer.accepted) {
+    if (answer.accepted) {
+      runtime.inFlight = false;
+      runtime.revision = answer.revision;
+      runtime.sync = runtime.buffer.length === 0 ? "saved" : "saving";
+      void sync(runtime);
+      return;
+    }
+
+    // Only a stale change set is worth restating; anything else the body cannot
+    // resolve, and re-sending it would be asking the same question twice.
+    if (answer.reason !== "stale") {
       await revert(runtime);
       return;
     }
 
-    runtime.revision = answer.revision;
+    rebase(runtime, ops, { revision: answer.revision, retryable: true });
+
+    const restated = runtime.buffer;
+    runtime.buffer = [];
+    const retried = await submitSlideDeckChanges({ changeSet: changeSet(runtime, restated) });
+
+    if (!retried.accepted) {
+      await revert(runtime);
+      return;
+    }
+
+    runtime.inFlight = false;
+    runtime.revision = retried.revision;
     runtime.sync = runtime.buffer.length === 0 ? "saved" : "saving";
+    void sync(runtime);
   } catch (error) {
     runtime.buffer = [...ops, ...runtime.buffer];
     runtime.sync = "error";

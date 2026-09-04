@@ -1,6 +1,8 @@
 import type { AspectRatio, Frame, SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { StageSettings } from "$model/client/slide-deck-runtimes";
 
 export type { Frame } from "$representation/data/types/slide-decks/body";
+export type { StageSettings } from "$model/client/slide-deck-runtimes";
 
 export type Size = { readonly width: number; readonly height: number };
 
@@ -14,54 +16,40 @@ export const figures = (held: Size): string =>
 export const pixels = (held: Size): string =>
   `${Math.round(held.width)} × ${Math.round(held.height)}`;
 
-/**
- * The slide's own coordinate space. A slide has no physical size — it is a
- * ratio and nothing else — so its height is a declared number of units and its
- * width follows from the ratio. Style sizes are in these units too, which is
- * what keeps a deck free of any print constraint.
- */
-export const SLIDE_UNITS_HIGH = 720;
-
 const RATIO: Record<AspectRatio, number> = { "16:9": 16 / 9, "4:3": 4 / 3 };
 
-const SLIDE_WIDTH_REM = 52;
-const AVERAGE_GLYPH_WIDTH_EM = 0.52;
-
-export const MINIMUM_ZOOM = 50;
-export const MAXIMUM_ZOOM = 200;
-
-export const ZOOM_STEP = 5;
-
-export const clampZoom = (zoom: number): number =>
-  Math.min(Math.max(Math.round(zoom), MINIMUM_ZOOM), MAXIMUM_ZOOM);
+export const clampZoom = (zoom: number, stage: StageSettings): number =>
+  Math.min(Math.max(Math.round(zoom), stage.minimumZoom), stage.maximumZoom);
 
 export const percent = (zoom: number): string => `${Math.round(zoom)}%`;
 
-/**
- * What is left either side of the slide, in rem. The gutter is scenery, so it
- * gives way before the slide does.
- */
-export const MAXIMUM_GUTTER = 2.5;
-export const MINIMUM_GUTTER = 0.75;
-
 /** The largest a slide can be drawn on a surface this wide without it scrolling sideways. */
-export const fitZoom = (available: number): number =>
-  clampZoom(Math.floor(((available - MINIMUM_GUTTER * 2) / SLIDE_WIDTH_REM) * 100));
+export const fitZoom = (available: number, stage: StageSettings): number =>
+  clampZoom(
+    Math.floor(((available - stage.minimumGutterRem * 2) / stage.widthRem) * 100),
+    stage
+  );
 
-export const gutterOf = (available: number, drawnWidth: number): number =>
-  Math.min(MAXIMUM_GUTTER, Math.max(MINIMUM_GUTTER, (available - drawnWidth) / 2));
+export const gutterOf = (available: number, drawnWidth: number, stage: StageSettings): number =>
+  Math.min(
+    stage.maximumGutterRem,
+    Math.max(stage.minimumGutterRem, (available - drawnWidth) / 2)
+  );
 
 export const cssRatio = (aspectRatio: AspectRatio): string => aspectRatio.replace(":", " / ");
 
 export const ratioOf = (aspectRatio: AspectRatio): number => RATIO[aspectRatio];
 
-export const slideUnits = (aspectRatio: AspectRatio): Size => ({
-  width: SLIDE_UNITS_HIGH * RATIO[aspectRatio],
-  height: SLIDE_UNITS_HIGH
+export const slideUnits = (aspectRatio: AspectRatio, stage: StageSettings): Size => ({
+  width: stage.unitsHigh * RATIO[aspectRatio],
+  height: stage.unitsHigh
 });
 
-export const charactersPerLine = (widthUnits: number, fontSize: number): number =>
-  Math.max(1, Math.floor(widthUnits / (fontSize * AVERAGE_GLYPH_WIDTH_EM)));
+export const charactersPerLine = (
+  widthUnits: number,
+  fontSize: number,
+  stage: StageSettings
+): number => Math.max(1, Math.floor(widthUnits / (fontSize * stage.averageGlyphWidthEm)));
 
 export const toPixels = (frame: Frame, stage: Size): Pixels => ({
   x: frame.x * stage.width,
@@ -77,13 +65,17 @@ export const toFrame = (held: Pixels, stage: Size): Frame => ({
   height: held.height / stage.height
 });
 
-export const stageMetrics = (body: SlideDeckBody | undefined, zoom: number | null = 100) => {
+export const stageMetrics = (
+  body: SlideDeckBody | undefined,
+  zoom: number | null,
+  stage: StageSettings
+) => {
   const ratio = body?.aspectRatio ?? DEFAULT_ASPECT_RATIO;
-  const units = slideUnits(ratio);
+  const units = slideUnits(ratio, stage);
 
-  const shown = clampZoom(zoom ?? 100);
+  const shown = clampZoom(zoom ?? 100, stage);
   const at = shown / 100;
-  const slideHeight = SLIDE_WIDTH_REM / RATIO[ratio];
+  const slideHeight = stage.widthRem / RATIO[ratio];
 
   const styles = body?.styles;
   const fontSize = styles?.styles[styles.defaultKey]?.fontSize ?? 20;
@@ -92,10 +84,10 @@ export const stageMetrics = (body: SlideDeckBody | undefined, zoom: number | nul
     ratio,
     units,
     zoom: shown,
-    slideWidth: SLIDE_WIDTH_REM,
+    slideWidth: stage.widthRem,
     slideHeight,
-    drawn: { width: SLIDE_WIDTH_REM * at, height: slideHeight * at },
+    drawn: { width: stage.widthRem * at, height: slideHeight * at },
     fontSize,
-    charactersPerLine: charactersPerLine(units.width, fontSize)
+    charactersPerLine: charactersPerLine(units.width, fontSize, stage)
   };
 };

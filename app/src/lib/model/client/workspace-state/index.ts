@@ -58,7 +58,12 @@ const KEY = Symbol.for("icarus.workspace-state");
 
 const UNPERSISTED = {
   workspace: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } },
-  revisions: { changeSets: { flushAfterOps: 50, flushAfterMs: 2000 } }
+  revisions: { changeSets: { flushAfterOps: 50, flushAfterMs: 2000 }, sync: { everyMs: 0 } },
+  slideDeck: {
+    stage: { unitsHigh: 720, widthRem: 52, averageGlyphWidthEm: 0.52 },
+    zoom: { minimum: 50, maximum: 200, step: 5 },
+    gutter: { minimumRem: 0.75, maximumRem: 2.5 }
+  }
 };
 
 export const provideWorkspaceState = (model: WorkspaceStateModel): WorkspaceStateModel => {

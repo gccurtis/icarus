@@ -1,10 +1,12 @@
-import { readSlideDeckBody } from "$capabilities/slide-deck/index.remote";
 import type { Runtime, SlideDeckRuntimesState } from "$model/client/slide-deck-runtimes/definition.svelte";
-import { emptyBody } from "$model/client/slide-deck-runtimes/methods/shared/empty-body";
+import { sync } from "$model/client/slide-deck-runtimes/methods/sync";
 
 export const attach = (state: SlideDeckRuntimesState, id: string): Runtime => {
   const open = state.open.get(id);
-  if (open) return open;
+  if (open) {
+    void sync(open);
+    return open;
+  }
 
   const settling = state.settling.get(id);
   if (settling) {
@@ -21,21 +23,17 @@ export const attach = (state: SlideDeckRuntimesState, id: string): Runtime => {
   return runtime;
 };
 
+/**
+ * The heartbeat starts with the runtime and stops with it — `detach` calls
+ * `unsubscribe`. It is the same beat the debounce uses: whatever wakes a
+ * runtime, it either sends what it holds or reads what it does not.
+ */
 const subscribe = (runtime: Runtime): void => {
-  if (runtime.body !== undefined) return;
+  void runtime.tick();
 
-  void load(runtime);
-};
+  const every = runtime.thresholds.syncEveryMs;
+  if (every <= 0) return;
 
-const load = async (runtime: Runtime): Promise<void> => {
-  try {
-    const found = await readSlideDeckBody({ resourceId: runtime.id });
-    if (runtime.body !== undefined) return;
-
-    runtime.body = found === null ? emptyBody() : found.body;
-    runtime.revision = found === null ? 0 : found.revision;
-    runtime.sync = "saved";
-  } catch {
-    runtime.sync = "error";
-  }
+  const timer = setInterval(() => void runtime.tick(), every);
+  runtime.unsubscribe = () => clearInterval(timer);
 };

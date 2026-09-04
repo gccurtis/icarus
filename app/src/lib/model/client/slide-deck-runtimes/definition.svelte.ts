@@ -4,11 +4,13 @@ import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import { apply, buffer } from "$model/client/slide-deck-runtimes/methods/apply";
 import { attach } from "$model/client/slide-deck-runtimes/methods/attach";
 import { flush } from "$model/client/slide-deck-runtimes/methods/flush/flush";
+import { sync } from "$model/client/slide-deck-runtimes/methods/sync";
 import { redo, undo } from "$model/client/slide-deck-runtimes/methods/history/history";
 import { release } from "$model/client/slide-deck-runtimes/methods/release";
 import { releaseAll } from "$model/client/slide-deck-runtimes/methods/release-all";
 import type {
   FlushThresholds,
+  StageSettings,
   HistoryEntry,
   SlideDeckRuntime,
   SlideDeckRuntimesModel,
@@ -33,10 +35,12 @@ export class Runtime implements SlideDeckRuntime {
   pendingFlush: Promise<void> | undefined;
 
   readonly thresholds: FlushThresholds;
+  readonly stage: StageSettings;
 
-  constructor(id: string, thresholds: FlushThresholds) {
+  constructor(id: string, thresholds: FlushThresholds, stage: StageSettings) {
     this.id = id;
     this.thresholds = thresholds;
+    this.stage = stage;
   }
 
   get pending(): number {
@@ -60,6 +64,19 @@ export class Runtime implements SlideDeckRuntime {
 
   async flush(): Promise<void> {
     await flush(this);
+  }
+
+  /**
+   * What waking up means, however a runtime was woken: send what it holds, or
+   * read what it does not. The two are one decision so they can never race.
+   */
+  async tick(): Promise<void> {
+    if (this.buffer.length > 0) {
+      await flush(this);
+      return;
+    }
+
+    await sync(this);
   }
 
   undo(): void {
@@ -92,7 +109,7 @@ export class Runtime implements SlideDeckRuntime {
   }
 
   flushInBackground(): void {
-    void this.flush().catch(() => {});
+    void this.tick().catch(() => {});
   }
 
   clearTimer(): void {
@@ -108,21 +125,23 @@ export class SlideDeckRuntimesState {
   readonly settling = new SvelteMap<string, Runtime>();
 
   readonly thresholds: FlushThresholds;
+  readonly stage: StageSettings;
 
-  constructor(thresholds: FlushThresholds) {
+  constructor(thresholds: FlushThresholds, stage: StageSettings) {
     this.thresholds = thresholds;
+    this.stage = stage;
   }
 
   createRuntime(id: string): Runtime {
-    return new Runtime(id, this.thresholds);
+    return new Runtime(id, this.thresholds, this.stage);
   }
 }
 
 export class SlideDeckRuntimes implements SlideDeckRuntimesModel {
   readonly #state: SlideDeckRuntimesState;
 
-  constructor(thresholds: FlushThresholds) {
-    this.#state = new SlideDeckRuntimesState(thresholds);
+  constructor(thresholds: FlushThresholds, stage: StageSettings) {
+    this.#state = new SlideDeckRuntimesState(thresholds, stage);
   }
 
   get open(): readonly string[] {

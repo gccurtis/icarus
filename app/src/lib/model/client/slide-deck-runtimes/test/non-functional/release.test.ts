@@ -7,14 +7,26 @@ import { Runtime } from "$model/client/slide-deck-runtimes/definition.svelte";
 import { rebase } from "$model/client/slide-deck-runtimes/methods/flush/rebase";
 
 vi.mock("$capabilities/slide-deck/index.remote", () => ({
-  readSlideDeckBody: () => new Promise(() => {}),
+  readSlideDeckBody: () => ({
+    refresh: () => new Promise(() => {}),
+    ready: false,
+    current: undefined,
+    then: () => {}
+  }),
   submitSlideDeckChanges: ({ changeSet }: { changeSet: { baseRevision: number } }) =>
     Promise.resolve({ accepted: true, revision: changeSet.baseRevision + 1 })
 }));
 
 const register = (afterOps = 50, afterMs = 2000) =>
   createSlideDeckRuntimes(
-    createConfiguration({ revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs } } })
+    createConfiguration({
+      revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs }, sync: { everyMs: 0 } },
+      slideDeck: {
+        stage: { unitsHigh: 720, widthRem: 52, averageGlyphWidthEm: 0.52 },
+        zoom: { minimum: 50, maximum: 200, step: 5 },
+        gutter: { minimumRem: 0.75, maximumRem: 2.5 }
+      }
+    })
   );
 
 const set = (slide: string, value: number): SlideDeckOp => ({
@@ -24,6 +36,17 @@ const set = (slide: string, value: number): SlideDeckOp => ({
   value,
   was: value - 1
 });
+
+const STAGE = {
+  unitsHigh: 720,
+  widthRem: 52,
+  averageGlyphWidthEm: 0.52,
+  minimumZoom: 50,
+  maximumZoom: 200,
+  zoomStep: 5,
+  minimumGutterRem: 0.75,
+  maximumGutterRem: 2.5
+};
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -94,7 +117,7 @@ test("closing the client instance releases every runtime", async () => {
 });
 
 test("a refused change set goes back to the front of the buffer", () => {
-  const runtime = new Runtime("s1", { afterOps: 50, afterMs: 2000 });
+  const runtime = new Runtime("s1", { afterOps: 50, afterMs: 2000, syncEveryMs: 0 }, STAGE);
   runtime.buffer = [set("typed-during-flight", 9)];
 
   rebase(runtime, [set("refused", 1)], { revision: 7, retryable: true });
@@ -105,7 +128,7 @@ test("a refused change set goes back to the front of the buffer", () => {
 });
 
 test("a rebase adopts the server's revision", () => {
-  const runtime = new Runtime("s1", { afterOps: 50, afterMs: 2000 });
+  const runtime = new Runtime("s1", { afterOps: 50, afterMs: 2000, syncEveryMs: 0 }, STAGE);
 
   rebase(runtime, [set("a", 1)], { revision: 42, retryable: true });
 
@@ -114,7 +137,7 @@ test("a rebase adopts the server's revision", () => {
 });
 
 test("a refusal the ladder cannot resolve needs review, and keeps the work", () => {
-  const runtime = new Runtime("s1", { afterOps: 50, afterMs: 2000 });
+  const runtime = new Runtime("s1", { afterOps: 50, afterMs: 2000, syncEveryMs: 0 }, STAGE);
 
   rebase(runtime, [set("a", 1)], { revision: 42, retryable: false });
 

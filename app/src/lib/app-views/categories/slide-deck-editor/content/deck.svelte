@@ -56,22 +56,31 @@
   let layer: Konva.Layer | undefined;
   let picker: Konva.Transformer | undefined;
 
-  const fit = $derived(available === 0 ? undefined : fitZoom(available));
-  const metrics = $derived(stageMetrics(body, view.zoom ?? fit));
-  const ratio = $derived(cssRatio(metrics.ratio));
-  const gutter = $derived(gutterOf(available, metrics.drawn.width));
+  const geometry = $derived(runtime?.stage);
+  const fit = $derived(
+    geometry === undefined || available === 0 ? undefined : fitZoom(available, geometry)
+  );
+  const metrics = $derived(
+    geometry === undefined ? undefined : stageMetrics(body, view.zoom ?? fit ?? null, geometry)
+  );
+  const ratio = $derived(cssRatio(metrics?.ratio ?? "16:9"));
+  const gutter = $derived(
+    geometry === undefined || metrics === undefined
+      ? 0
+      : gutterOf(available, metrics.drawn.width, geometry)
+  );
 
   /**
    * One number, in whole pixels, for the box and the canvas alike. Deriving the
    * canvas from a measurement of the box is what made them disagree by a frame.
    */
   const drawn = $derived({
-    width: Math.round(metrics.drawn.width * rem),
-    height: Math.round(metrics.drawn.height * rem)
+    width: metrics === undefined ? 0 : Math.round(metrics.drawn.width * rem),
+    height: metrics === undefined ? 0 : Math.round(metrics.drawn.height * rem)
   });
 
   /** Slide units per pixel. The stage carries the zoom, so nothing on it moves. */
-  const scale = $derived(drawn.width / metrics.units.width);
+  const scale = $derived(metrics === undefined ? 1 : drawn.width / metrics.units.width);
 
   const slideStyle = $derived(`width: ${drawn.width}px; height: ${drawn.height}px`);
 
@@ -79,8 +88,10 @@
     if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
 
+    if (geometry === undefined || metrics === undefined) return;
+
     const by = (event.deltaY / WHEEL_NOTCH) * PERCENT_PER_NOTCH;
-    view.setZoom(clampZoom(metrics.zoom - by));
+    view.setZoom(clampZoom(metrics.zoom - by, geometry));
   };
 
   const nodeFor = (
@@ -133,7 +144,10 @@
     const slide = deck.slides[index];
     if (slide === undefined) return;
 
-    const units = slideUnits(deck.aspectRatio);
+    const held = runtime?.stage;
+    if (held === undefined) return;
+
+    const units = slideUnits(deck.aspectRatio, held);
     const paint = palette();
 
     for (const node of [...layer.getChildren((child) => child !== picker)]) node.destroy();
@@ -227,14 +241,29 @@
     runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
   });
 
+  /**
+   * A body arriving is a load the first time and a refresh every time after.
+   * Where you are looking is yours, so a refresh keeps it: the slide, clamped to
+   * a deck that may have lost one, and the selection if that element is still
+   * there to select.
+   */
   $effect(() => {
     const served = runtime?.body;
     if (served === undefined || served === loaded) return;
 
+    const first = loaded === undefined;
     loaded = served;
     body = served;
-    index = 0;
-    selected = undefined;
+
+    if (first) {
+      index = 0;
+      selected = undefined;
+      return;
+    }
+
+    index = Math.min(index, Math.max(0, served.slides.length - 1));
+    const still = served.slides[index]?.elements.some((element) => element.id === selected);
+    if (!still) selected = undefined;
   });
 
   $effect(() => {

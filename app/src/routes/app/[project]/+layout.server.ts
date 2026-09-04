@@ -18,7 +18,15 @@ const PUBLISHED_KEYS = [
   "revisions.changeSets.flushAfterMs",
   "revisions.sync.everyMs",
   "workspace.changeSets.flushAfterOps",
-  "workspace.changeSets.flushAfterMs"
+  "workspace.changeSets.flushAfterMs",
+  "slideDeck.stage.unitsHigh",
+  "slideDeck.stage.widthRem",
+  "slideDeck.stage.averageGlyphWidthEm",
+  "slideDeck.zoom.minimum",
+  "slideDeck.zoom.maximum",
+  "slideDeck.zoom.step",
+  "slideDeck.gutter.minimumRem",
+  "slideDeck.gutter.maximumRem"
 ] as const;
 
 /**

@@ -6,14 +6,26 @@ import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
 import type { SlideDeckRuntime } from "$model/client/slide-deck-runtimes";
 
 vi.mock("$capabilities/slide-deck/index.remote", () => ({
-  readSlideDeckBody: () => new Promise(() => {}),
+  readSlideDeckBody: () => ({
+    refresh: () => new Promise(() => {}),
+    ready: false,
+    current: undefined,
+    then: () => {}
+  }),
   submitSlideDeckChanges: ({ changeSet }: { changeSet: { baseRevision: number } }) =>
     Promise.resolve({ accepted: true, revision: changeSet.baseRevision + 1 })
 }));
 
 const runtimeFor = (afterOps = 3, afterMs = 2000): SlideDeckRuntime =>
   createSlideDeckRuntimes(
-    createConfiguration({ revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs } } })
+    createConfiguration({
+      revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs }, sync: { everyMs: 0 } },
+      slideDeck: {
+        stage: { unitsHigh: 720, widthRem: 52, averageGlyphWidthEm: 0.52 },
+        zoom: { minimum: 50, maximum: 200, step: 5 },
+        gutter: { minimumRem: 0.75, maximumRem: 2.5 }
+      }
+    })
   ).attach("s1");
 
 const set = (slide: string, value: number): SlideDeckOp => ({

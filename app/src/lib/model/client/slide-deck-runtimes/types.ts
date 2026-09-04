@@ -15,9 +15,12 @@ export interface SlideDeckRuntime {
   readonly revision: number;
   readonly sync: SyncState;
   readonly pending: number;
+  readonly stage: StageSettings;
 
   apply(ops: readonly SlideDeckOp[]): void;
   flush(): Promise<void>;
+  /** Send what it holds, or read what it does not. */
+  tick(): Promise<void>;
 
   undo(): void;
   redo(): void;
@@ -34,9 +37,27 @@ export interface SlideDeckRuntimesModel {
   releaseAll(): void;
 }
 
+/**
+ * What turns a ratio into something drawn. Read from configuration at
+ * construction and carried here because a view may not reach configuration
+ * itself, and the runtime is the deck's model object.
+ */
+export type StageSettings = {
+  readonly unitsHigh: number;
+  readonly widthRem: number;
+  readonly averageGlyphWidthEm: number;
+  readonly minimumZoom: number;
+  readonly maximumZoom: number;
+  readonly zoomStep: number;
+  readonly minimumGutterRem: number;
+  readonly maximumGutterRem: number;
+};
+
 export type FlushThresholds = {
   readonly afterOps: number;
   readonly afterMs: number;
+  /** How often a runtime wakes to send what it holds, or read what it does not. */
+  readonly syncEveryMs: number;
 };
 
 export type HistoryEntry = readonly SlideDeckOp[];

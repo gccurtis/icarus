@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import {
-  MAXIMUM_GUTTER,
-  MINIMUM_GUTTER,
-  SLIDE_UNITS_HIGH,
   charactersPerLine,
   clampZoom,
   cssRatio,
@@ -15,6 +12,17 @@ import {
   toFrame,
   toPixels
 } from "$app-views/categories/slide-deck-editor/procedures/stage";
+
+const STAGE = {
+  unitsHigh: 720,
+  widthRem: 52,
+  averageGlyphWidthEm: 0.52,
+  minimumZoom: 50,
+  maximumZoom: 200,
+  zoomStep: 5,
+  minimumGutterRem: 0.75,
+  maximumGutterRem: 2.5
+};
 
 const deck = (over: Partial<SlideDeckBody> = {}): SlideDeckBody => ({
   aspectRatio: "16:9",
@@ -28,13 +36,13 @@ const deck = (over: Partial<SlideDeckBody> = {}): SlideDeckBody => ({
 
 describe("a slide is a ratio, not a size", () => {
   it("is the same height in its own units whichever shape it is", () => {
-    expect(slideUnits("16:9").height).toBe(SLIDE_UNITS_HIGH);
-    expect(slideUnits("4:3").height).toBe(SLIDE_UNITS_HIGH);
+    expect(slideUnits("16:9", STAGE).height).toBe(STAGE.unitsHigh);
+    expect(slideUnits("4:3", STAGE).height).toBe(STAGE.unitsHigh);
   });
 
   it("takes its width from the ratio alone", () => {
-    expect(slideUnits("16:9").width).toBe(SLIDE_UNITS_HIGH * (16 / 9));
-    expect(slideUnits("4:3").width).toBe(SLIDE_UNITS_HIGH * (4 / 3));
+    expect(slideUnits("16:9", STAGE).width).toBe(STAGE.unitsHigh * (16 / 9));
+    expect(slideUnits("4:3", STAGE).width).toBe(STAGE.unitsHigh * (4 / 3));
     expect(ratioOf("16:9")).toBeGreaterThan(ratioOf("4:3"));
   });
 
@@ -45,8 +53,8 @@ describe("a slide is a ratio, not a size", () => {
 
 describe("stageMetrics", () => {
   it("keeps one drawn width and takes height from the ratio", () => {
-    const wide = stageMetrics(deck());
-    const narrow = stageMetrics(deck({ aspectRatio: "4:3" }));
+    const wide = stageMetrics(deck(), 100, STAGE);
+    const narrow = stageMetrics(deck({ aspectRatio: "4:3" }), 100, STAGE);
 
     expect(wide.slideWidth).toBe(narrow.slideWidth);
     expect(narrow.slideHeight).toBeGreaterThan(wide.slideHeight);
@@ -54,67 +62,69 @@ describe("stageMetrics", () => {
   });
 
   it("says nothing about the slide in inches", () => {
-    expect(Object.keys(stageMetrics(deck()))).not.toContain("slide");
+    expect(Object.keys(stageMetrics(deck(), 100, STAGE))).not.toContain("slide");
   });
 
   it("draws at the zoom it is given", () => {
-    const at100 = stageMetrics(deck(), 100);
-    const at150 = stageMetrics(deck(), 150);
+    const at100 = stageMetrics(deck(), 100, STAGE);
+    const at150 = stageMetrics(deck(), 150, STAGE);
 
     expect(at150.drawn.width).toBeCloseTo(at100.drawn.width * 1.5, 5);
     expect(at150.drawn.height).toBeCloseTo(at100.drawn.height * 1.5, 5);
   });
 
   it("takes the character estimate from the default style", () => {
-    const small = stageMetrics(deck());
+    const small = stageMetrics(deck(), 100, STAGE);
     const large = stageMetrics(
-      deck({ styles: { defaultKey: "body", styles: { body: { name: "Body", fontSize: 40 } } } })
+      deck({ styles: { defaultKey: "body", styles: { body: { name: "Body", fontSize: 40 } } } }),
+      100,
+      STAGE
     );
 
     expect(large.charactersPerLine).toBeLessThan(small.charactersPerLine);
   });
 
   it("reads a deck it has not been given as the default shape", () => {
-    expect(stageMetrics(undefined).ratio).toBe("16:9");
+    expect(stageMetrics(undefined, 100, STAGE).ratio).toBe("16:9");
   });
 });
 
 describe("charactersPerLine", () => {
   it("narrows as the element does", () => {
-    expect(charactersPerLine(640, 20)).toBeLessThan(charactersPerLine(1280, 20));
+    expect(charactersPerLine(640, 20, STAGE)).toBeLessThan(charactersPerLine(1280, 20, STAGE));
   });
 
   it("never answers less than one character", () => {
-    expect(charactersPerLine(1, 200)).toBe(1);
+    expect(charactersPerLine(1, 200, STAGE)).toBe(1);
   });
 });
 
 describe("fitting the surface", () => {
   it("fills the surface it is given, less the gutters", () => {
-    const wide = fitZoom(60);
-    const narrow = fitZoom(40);
+    const wide = fitZoom(60, STAGE);
+    const narrow = fitZoom(40, STAGE);
 
     expect(wide).toBeGreaterThan(narrow);
-    expect(fitZoom(52 + MINIMUM_GUTTER * 2)).toBe(100);
+    expect(fitZoom(52 + STAGE.minimumGutterRem * 2, STAGE)).toBe(100);
   });
 
   it("never proposes a zoom outside the range", () => {
-    expect(fitZoom(4)).toBe(50);
-    expect(fitZoom(4000)).toBe(200);
+    expect(fitZoom(4, STAGE)).toBe(50);
+    expect(fitZoom(4000, STAGE)).toBe(200);
   });
 
   it("gives the gutter away before the slide", () => {
-    expect(gutterOf(55, 52)).toBe(1.5);
-    expect(gutterOf(53, 52)).toBe(MINIMUM_GUTTER);
-    expect(gutterOf(200, 52)).toBe(MAXIMUM_GUTTER);
+    expect(gutterOf(55, 52, STAGE)).toBe(1.5);
+    expect(gutterOf(53, 52, STAGE)).toBe(STAGE.minimumGutterRem);
+    expect(gutterOf(200, 52, STAGE)).toBe(STAGE.maximumGutterRem);
   });
 });
 
 describe("clampZoom", () => {
   it("holds the range and rounds", () => {
-    expect(clampZoom(10)).toBe(50);
-    expect(clampZoom(1000)).toBe(200);
-    expect(clampZoom(99.4)).toBe(99);
+    expect(clampZoom(10, STAGE)).toBe(50);
+    expect(clampZoom(1000, STAGE)).toBe(200);
+    expect(clampZoom(99.4, STAGE)).toBe(99);
   });
 });
 
