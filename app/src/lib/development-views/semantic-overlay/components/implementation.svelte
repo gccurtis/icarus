@@ -486,7 +486,7 @@
 
     <section class="handoff">
       <div><span class="kicker">CURRENT DECISION POINT</span><h2>The translation contract is executable.</h2><p>Review the manifest and callable spine; the next implementation move is the server-owned Jina provision plus recursive index/query.</p></div>
-      <a href="/demo/semantic-overlay"><ChevronLeft size={15} aria-hidden="true" /> Architecture overview</a>
+      <a href="/demo/semantic-overlay/index-query">Review pass two <ArrowRight size={15} aria-hidden="true" /></a>
     </section>
   </main>
 

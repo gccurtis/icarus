@@ -22,6 +22,15 @@ vi.mock("$model/server/configuration/index.server", () => ({
   createConfiguration: async () => ({ get: () => undefined })
 }));
 
+vi.mock("$model/server/embedding/index.server", () => ({
+  createEmbedding: () => ({
+    space: { provider: "jina", model: "test", dimensions: 2 },
+    tokenField: async () => ({ value: { labels: [], vectors: [] }, usage: {} }),
+    passages: async () => ({ value: [], usage: {} }),
+    query: async () => ({ value: [], usage: {} })
+  })
+}));
+
 vi.mock("$model/server/observability/index.server", () => ({
   createObservability: () => ({
     logger: {
@@ -54,6 +63,7 @@ beforeEach(() => {
 test("the graph names every object it built", async () => {
   const model = await initServerModel();
 
+  assert.ok(model.embedding);
   assert.ok(model.configuration);
   assert.ok(model.observability);
   assert.ok(model.store);

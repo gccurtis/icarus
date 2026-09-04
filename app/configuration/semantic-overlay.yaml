@@ -1,6 +1,13 @@
-# The deterministic translation policy. Jina provisioning is added beside this
-# in the index/query phase; credentials remain in git-ignored local.yaml.
+# Semantic Overlay behavior. Credentials remain in git-ignored local.yaml.
 semanticOverlay:
+  embedding:
+    api: jina
+    jina:
+      endpoint: https://api.jina.ai/v1/embeddings
+      model: jina-embeddings-v4
+      dimensions: 512
+      timeoutMs: 90000
+
   translation:
     maxTokens: 320
     minTokens: 6
@@ -9,3 +16,10 @@ semanticOverlay:
     basinMassFraction: 0.04
     attractionDecayTokens: 2
     attractionStationaryThreshold: 0.005
+
+  index:
+    branchFactor: 8
+    leafSize: 32
+    maxIterations: 24
+    convergenceTolerance: 0.0001
+    candidateMultiplier: 8

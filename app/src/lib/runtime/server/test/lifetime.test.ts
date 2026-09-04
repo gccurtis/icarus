@@ -28,6 +28,15 @@ vi.mock("$model/server/configuration/index.server", () => ({
   }
 }));
 
+vi.mock("$model/server/embedding/index.server", () => ({
+  createEmbedding: () => ({
+    space: { provider: "jina", model: "test", dimensions: 2 },
+    tokenField: async () => ({ value: { labels: [], vectors: [] }, usage: {} }),
+    passages: async () => ({ value: [], usage: {} }),
+    query: async () => ({ value: [], usage: {} })
+  })
+}));
+
 vi.mock("$model/server/observability/index.server", () => ({
   createObservability: () => ({
     logger: { info: () => {} },
