@@ -12,7 +12,6 @@
   } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import {
     clampZoom,
-    cssRatio,
     fitZoom,
     slideUnits,
     gutterOf,
@@ -41,11 +40,27 @@
   });
 
   let runtime = $state<SlideDeckRuntime | undefined>(undefined);
-  let body = $state<SlideDeckBody | undefined>(undefined);
-  let loaded = $state<SlideDeckBody | undefined>(undefined);
 
-  let index = $state(0);
   let selected = $state<string | undefined>(undefined);
+
+  /**
+   * The runtime holds one body and it is already optimistic, so there is no
+   * local copy to keep in step with the panel's.
+   */
+  const body = $derived(runtime?.body);
+
+  /**
+   * Which slide is a tab's question, not this component's — the panel asks it
+   * too, and two answers would be two selections. A focus naming a slide that
+   * has been deleted falls back to the first, the way `view.zoom` falls back.
+   */
+  const index = $derived.by(() => {
+    const slides = body?.slides;
+    if (slides === undefined || slides.length === 0) return 0;
+
+    const at = slides.findIndex((slide) => slide.id === view.active.focus);
+    return at === -1 ? 0 : at;
+  });
 
   let host = $state<HTMLDivElement>();
   let surface = $state<HTMLDivElement>();
@@ -63,23 +78,17 @@
   const metrics = $derived(
     geometry === undefined ? undefined : stageMetrics(body, view.zoom ?? fit ?? null, geometry)
   );
-  const ratio = $derived(cssRatio(metrics?.ratio ?? "16:9"));
   const gutter = $derived(
     geometry === undefined || metrics === undefined
       ? 0
       : gutterOf(available, metrics.drawn.width, geometry)
   );
 
-  /**
-   * One number, in whole pixels, for the box and the canvas alike. Deriving the
-   * canvas from a measurement of the box is what made them disagree by a frame.
-   */
   const drawn = $derived({
     width: metrics === undefined ? 0 : Math.round(metrics.drawn.width * rem),
     height: metrics === undefined ? 0 : Math.round(metrics.drawn.height * rem)
   });
 
-  /** Slide units per pixel. The stage carries the zoom, so nothing on it moves. */
   const scale = $derived(metrics === undefined ? 1 : drawn.width / metrics.units.width);
 
   const slideStyle = $derived(`width: ${drawn.width}px; height: ${drawn.height}px`);
@@ -173,7 +182,6 @@
         );
         if (moved.ops.length === 0) return;
 
-        body = moved.body;
         runtime?.apply(moved.ops);
       });
 
@@ -241,34 +249,17 @@
     runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
   });
 
-  /**
-   * A body arriving is a load the first time and a refresh every time after.
-   * Where you are looking is yours, so a refresh keeps it: the slide, clamped to
-   * a deck that may have lost one, and the selection if that element is still
-   * there to select.
-   */
+  /** A selection outlives the element it named only until the next body. */
   $effect(() => {
-    const served = runtime?.body;
-    if (served === undefined || served === loaded) return;
+    const slide = body?.slides[index];
+    if (slide === undefined) return;
 
-    const first = loaded === undefined;
-    loaded = served;
-    body = served;
-
-    if (first) {
-      index = 0;
-      selected = undefined;
-      return;
-    }
-
-    index = Math.min(index, Math.max(0, served.slides.length - 1));
-    const still = served.slides[index]?.elements.some((element) => element.id === selected);
-    if (!still) selected = undefined;
+    if (!slide.elements.some((element) => element.id === selected)) selected = undefined;
   });
 
   $effect(() => {
     void index;
-    void loaded;
+    void body;
     untrack(() => draw());
   });
 
@@ -304,14 +295,18 @@
       {#each body.slides as slide, position (slide.id)}
         <button
           type="button"
-          class="pip text-caption tabular-nums"
+          class="pip"
           class:is-current={position === index}
+          aria-label="Slide {position + 1}"
+          aria-current={position === index ? "true" : undefined}
           onclick={() => {
-            index = position;
             selected = undefined;
+            if (deckId !== undefined) {
+              view.open({ category: "slide-deck-editor", resourceId: deckId, focus: slide.id });
+            }
           }}
         >
-          {position + 1}
+          <span class="text-caption tabular-nums">{position + 1}</span>
         </button>
       {/each}
       <span class="text-caption text-ink-muted ms-auto tabular-nums">
@@ -378,12 +373,15 @@
   }
 
   .pip {
-    min-width: calc(var(--token-spacing-unit) * 7);
+    display: flex;
+    width: calc(var(--token-spacing-unit) * 6);
+    height: calc(var(--token-spacing-unit) * 6);
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
     border: 1px solid var(--token-border-subtle);
     border-radius: var(--token-radius-control);
-    background-color: var(--token-surface-elevated);
-    color: var(--token-ink-secondary);
-    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 2);
+    color: var(--token-ink-muted);
   }
 
   .pip:hover {
@@ -392,7 +390,6 @@
 
   .pip.is-current {
     border-color: var(--token-color-active-border);
-    background-color: var(--token-active-surface);
-    color: var(--token-active-text);
+    color: var(--token-color-active-text);
   }
 </style>
