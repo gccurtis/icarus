@@ -12,6 +12,7 @@ coverage/
 *.tsbuildinfo
 logs/*.log
 logs/*.jsonl
+logs/stack-builder/
 
 # Runtime artifacts — state a run produces, never state a checkout needs.
 app/logs/*.log

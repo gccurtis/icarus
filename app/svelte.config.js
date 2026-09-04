@@ -17,6 +17,8 @@ export default {
   kit: {
     adapter: adapter(),
 
+    env: { dir: ".." },
+
     // Remote functions are how a view reaches a capability. A `<function>.remote.ts`
     // exports `query`/`command`/`form`, kit generates the client stub and the
     // endpoint, and the view calls what looks like a plain async function. Without
