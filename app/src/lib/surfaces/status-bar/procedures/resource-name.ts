@@ -1,8 +1,11 @@
 import type { TableName } from "$representation/store/tables";
 import { read } from "$capabilities/store/index.remote";
 
-/** The field each table holds a name in. `null` where its rows have no name. */
-const NAMED_FIELD = {
+/**
+ * The field for each table this surface may be asked to name.
+ * Omitted tables are internal representation state, not status-bar resources.
+ */
+const NAMED_FIELD: Partial<Record<TableName, string | null>> = {
   activity: null,
   agentTasks: "title",
   comments: null,
@@ -18,10 +21,6 @@ const NAMED_FIELD = {
   findings: "title",
   formulas: null,
   hypotheses: "statement",
-  latticeChanges: null,
-  latticeEdges: null,
-  latticeNodes: null,
-  latticeSources: null,
   memberships: null,
   personas: "name",
   personaThreads: "title",
@@ -44,7 +43,7 @@ const NAMED_FIELD = {
   variables: "name",
   workspaceRevisions: null,
   workspaceSnapshots: null
-} as const satisfies Record<TableName, string | null>;
+};
 
 /**
  * What to call a table on the one always-visible line.
@@ -79,8 +78,8 @@ const tableOf = (id: string): TableName | undefined => {
 /** What a row is called. `…` while the read is out, `Disconnected` when it answers empty. */
 export const nameOf = (id: string): string => {
   const table = tableOf(id);
-  const field = table === undefined ? null : NAMED_FIELD[table];
-  if (table === undefined || field === null) return "Disconnected";
+  const field = table === undefined ? undefined : NAMED_FIELD[table];
+  if (table === undefined || field == null) return "Disconnected";
 
   const answer = read({ path: `${table}.${id}.${field}` });
   if (!answer.ready) return "…";

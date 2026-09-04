@@ -34,15 +34,17 @@ import type {
 } from "$representation/data/types/investigation/hypothesis";
 import type { QuestionStatus, RelatedItem } from "$representation/data/types/investigation/question";
 import type { ResearchMode } from "$representation/data/types/investigation/research-thread";
-import type { DerivedEvidence, DerivedState } from "$representation/data/types/knowledge/derived-output";
+import type { DerivedState, SemanticCitation } from "$representation/data/types/semantic/derived-output";
 import type {
-  LatticeBinding,
-  LatticeCause,
-  LatticeCluster,
-  LatticeClusterState,
-  LatticeRemoval,
-  LatticeWindow
-} from "$representation/data/types/knowledge/lattice";
+  RecursiveIndexConfiguration,
+  SemanticIndexChildren
+} from "$representation/data/types/semantic/index";
+import type {
+  EmbeddingSpace,
+  SemanticObjectSnapshot,
+  SemanticSpan
+} from "$representation/data/types/semantic/overlay";
+import type { SemanticEncoding } from "$representation/data/types/semantic/source";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type {
@@ -85,7 +87,6 @@ export type ProjectFields = {
   archivedAt?: number;
   revision: number;
   settings: string;
-  lattice?: LatticeBinding;
   updatedAt: number;
 };
 export type Project = Row<"projects"> & ProjectFields;
@@ -216,52 +217,67 @@ export type SheetCellFields = {
 };
 export type SheetCell = Row<"sheetCells"> & SheetCellFields;
 
-export type LatticeNodeFields = {
+export type SemanticOverlayFields = {
   projectId: Id<"projects">;
-  level: number;
-  clustered: boolean;
-  clusters: Id<"latticeNodes">[];
-  vector: number[];
-  window?: LatticeWindow;
-  cluster?: LatticeCluster;
+  generation: number;
+  embedding: EmbeddingSpace;
   updatedAt: number;
 };
-export type LatticeNode = Row<"latticeNodes"> & LatticeNodeFields;
+export type SemanticOverlay = Row<"semanticOverlays"> & SemanticOverlayFields;
 
-export type LatticeEdgeFields = {
+export type SemanticSourceFields = {
   projectId: Id<"projects">;
-  fromId: Id<"latticeNodes">;
-  toId: Id<"latticeNodes">;
-  weight: number;
+  ref: ResourceRef;
+  revision: number;
+  encoding: SemanticEncoding;
+  updatedAt: number;
 };
-export type LatticeEdge = Row<"latticeEdges"> & LatticeEdgeFields;
+export type SemanticSource = Row<"semanticSources"> & SemanticSourceFields;
 
-export type LatticeSourceFields = {
+export type SemanticObjectFields = {
   projectId: Id<"projects">;
-  sourceKind: string;
-  sourceId: string;
-  revision: string;
-  ingestedAt: number;
+  semanticSourceId: Id<"semanticSources">;
+  span: SemanticSpan;
+  vector: number[];
 };
-export type LatticeSource = Row<"latticeSources"> & LatticeSourceFields;
+export type SemanticObject = Row<"semanticObjects"> & SemanticObjectFields;
 
-export type LatticeChangeFields = {
+export type SemanticObjectHistoryFields = {
   projectId: Id<"projects">;
-  cause: LatticeCause;
-  added: Id<"latticeNodes">[];
-  changed: LatticeClusterState[];
-  removed: LatticeRemoval[];
+  retiredGeneration: number;
+  object: SemanticObjectSnapshot;
+  retiredAt: number;
 };
-export type LatticeChange = Row<"latticeChanges"> & LatticeChangeFields;
+export type SemanticObjectHistory = Row<"semanticObjectHistory"> & SemanticObjectHistoryFields;
+
+export type SemanticIndexFields = {
+  projectId: Id<"projects">;
+  semanticOverlayId: Id<"semanticOverlays">;
+  method: "recursiveClustering";
+  rootNodeIds: Id<"semanticIndexNodes">[];
+  configuration: RecursiveIndexConfiguration;
+  updatedAt: number;
+};
+export type SemanticIndex = Row<"semanticIndexes"> & SemanticIndexFields;
+
+export type SemanticIndexNodeFields = {
+  projectId: Id<"projects">;
+  indexId: Id<"semanticIndexes">;
+  parentNodeId?: Id<"semanticIndexNodes">;
+  centroidVector: number[];
+  children: SemanticIndexChildren;
+};
+export type SemanticIndexNode = Row<"semanticIndexNodes"> & SemanticIndexNodeFields;
 
 export type DerivedOutputFields = {
   projectId: Id<"projects">;
   prompt: string;
   scope?: ResourceSet;
   queries: string[];
-  retrieved: Id<"latticeNodes">[];
-  evidence: DerivedEvidence[];
-  response: ContentBlock;
+  evidence: SemanticCitation[];
+  lastResponse?: ContentBlock;
+  lastRevision?: number;
+  lastGeneration?: number;
   state: DerivedState;
   error?: string;
   refreshedAt?: number;
@@ -563,10 +579,6 @@ export const TABLE_NAMES = [
   "findings",
   "formulas",
   "hypotheses",
-  "latticeChanges",
-  "latticeEdges",
-  "latticeNodes",
-  "latticeSources",
   "memberships",
   "personas",
   "personaThreads",
@@ -574,6 +586,12 @@ export const TABLE_NAMES = [
   "questions",
   "researchThreads",
   "resourceSets",
+  "semanticIndexes",
+  "semanticIndexNodes",
+  "semanticObjectHistory",
+  "semanticObjects",
+  "semanticOverlays",
+  "semanticSources",
   "sheetCells",
   "slideDeckChangeSets",
   "slideDecks",
@@ -609,10 +627,6 @@ export type TableFields = {
   findings: FindingFields;
   formulas: FormulaFields;
   hypotheses: HypothesisFields;
-  latticeChanges: LatticeChangeFields;
-  latticeEdges: LatticeEdgeFields;
-  latticeNodes: LatticeNodeFields;
-  latticeSources: LatticeSourceFields;
   memberships: MembershipFields;
   personas: PersonaFields;
   personaThreads: PersonaThreadFields;
@@ -620,6 +634,12 @@ export type TableFields = {
   questions: QuestionFields;
   researchThreads: ResearchThreadFields;
   resourceSets: NamedResourceSetFields;
+  semanticIndexes: SemanticIndexFields;
+  semanticIndexNodes: SemanticIndexNodeFields;
+  semanticObjectHistory: SemanticObjectHistoryFields;
+  semanticObjects: SemanticObjectFields;
+  semanticOverlays: SemanticOverlayFields;
+  semanticSources: SemanticSourceFields;
   sheetCells: SheetCellFields;
   slideDeckChangeSets: SlideDeckChangeSetFields;
   slideDecks: SlideDeckFields;

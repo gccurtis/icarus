@@ -68,11 +68,3 @@ revisions:
     #
     # Set to 0 to write none. Each one costs a full body.
     checkpointEvery: 2000
-
-  lattice:
-    # Lattice change rows retained per project, oldest dropped first.
-    #
-    # These are explanations, not state. The lattice can be rebuilt from project
-    # content at any time, so dropping a row loses the record of why some nodes
-    # changed and never the ability to recover them.
-    changeHistory: 1000

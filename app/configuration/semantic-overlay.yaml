@@ -1,0 +1,11 @@
+# The deterministic translation policy. Jina provisioning is added beside this
+# in the index/query phase; credentials remain in git-ignored local.yaml.
+semanticOverlay:
+  translation:
+    maxTokens: 320
+    minTokens: 6
+    changeThreshold: 0.28
+    basinProminenceThreshold: 0.02
+    basinMassFraction: 0.04
+    attractionDecayTokens: 2
+    attractionStationaryThreshold: 0.005

@@ -26,6 +26,9 @@ app/data/
 # Agent scratch: subagent-driven-development ledgers, briefs, and review packages
 .superpowers/
 
+# Supplied reference implementation — local research material, not product source.
+/semantic-overlay/
+
 # Nothing is pinned: lockfiles are regenerable local caches, not committed state.
 flake.lock
 pnpm-lock.yaml
