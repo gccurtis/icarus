@@ -9,15 +9,6 @@ import type { PageSetup } from "$representation/data/types/spreadsheets/page-set
 import type { StyleSet } from "$representation/data/types/spreadsheets/style-set";
 
 /**
- * What the author made, which is not the same as which body it holds.
- *
- * `deck` and `slide` both carry a slides body — a single-slide template is a
- * deck body holding one slide, because that is what carries the theme and the
- * layouts it has to be previewed against.
- */
-export type TemplateKind = "document" | "deck" | "slide" | "spreadsheet";
-
-/**
  * One question a template asks when it is instantiated.
  *
  * `name` is what a `{ select: "variable" }` term names. Nothing lists which
@@ -89,15 +80,6 @@ export type SpreadsheetTemplate = {
   styles: StyleSet;
 };
 
-/**
- * A real resource body with a label on it. Spread rather than nested, because
- * the body *is* the thing it makes — a template is authored in the ordinary
- * editor.
- *
- * `resource` answers which of the three shapes is here; the row's `kind` answers
- * what the author made. `aspectRatio` rides on the slides member because a
- * deck's shape lives on its row rather than in its body.
- */
 export type TemplateBody =
   | ({ resource: "document" } & DocumentBody)
   | ({ resource: "slides" } & SlideDeckBody)

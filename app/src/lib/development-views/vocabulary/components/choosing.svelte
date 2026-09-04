@@ -139,7 +139,7 @@
     {
       have: "Let someone browse those things rather than search them",
       use: "ScreenShelf + ScreenShelfItem",
-      why: "The carousel shelf: a row you push, with the well and the overhang. Right for six recent things, wrong for sixty — what is off the edge cannot be scanned."
+      why: "A recessed shelf with a quiet horizontal scrollbar. Right for six recent things, wrong for sixty — what is off the edge cannot be scanned."
     },
     {
       have: "Let someone move something somewhere else",
@@ -149,7 +149,7 @@
     {
       have: "Let someone scroll a row of cards with two fingers",
       use: "ScreenStrip",
-      why: "A native scroll container, so the browser's gestures come free. The shelf's motion is embla's, which owns the pointer but not the wheel."
+      why: "A flat native scroll container. Use it when the row should read as a list rather than as objects resting in a recessed shelf."
     },
     {
       have: "Show a screen with nothing on it",

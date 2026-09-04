@@ -10,13 +10,17 @@ Templates is the project library for reusable document, slide-deck, and spreadsh
 
 The default center surface contains:
 
-- Search.
-- Global/Project scope filter.
-- Document/Slides/Spreadsheet target filter.
-- Template cards or rows with derived preview, name, description, target, scope, required-slot count, and updated time.
-- Create Template action.
+- A raised-card shelf of up to ten recently used templates, using native
+  horizontal scrolling and a discreet bottom scrollbar.
+- Search by template or tag.
+- Project/Shared/Personal scope filter.
+- Document/Slide deck/Spreadsheet target filter.
+- A bounded multi-select checkbox filter populated from the union of template
+  tags, with All toggling the complete set on or off.
+- A template table with name, target, scope, variable count, tags, and updated time.
+- Updated/name/target/variable sorting with an icon-only direction control.
 
-Previews are rendered from the real body. The current model has no thumbnail, tags, category, favorite, usage count, or archive fields, so the first library must not pretend those are durable metadata.
+The recent shelf uses abstract target-shaped placeholders rather than stored thumbnails. Tags are durable flat labels, not folders; selected tags use match-any filtering. Single click on a recent card or table row inspects; double click remains an explicit placeholder until editor entry is wired.
 
 ### Authoring mode
 
@@ -49,9 +53,7 @@ Creation is one durable action. On success, open the new resource in the current
 
 | Key | Label | Contents and organization |
 | --- | --- | --- |
-| `library` | Library | Default. Search plus Global/Project and target groups. Current filter counts shown. |
-| `targets` | Targets | Document, Slides, Spreadsheet categories with Create action and plain explanation of each body. |
-| `recent` | Recent | Recently updated from `updatedAt`; recently opened only from user-local tab history. Opening is not an Activity event. Neither is a favorite. |
+| `overview-library` | Overview | Session-local Document/Slide deck/Spreadsheet creation and one compact total/scope/kind inventory. Recent use and selection are not repeated here. The only library rail entry for now. |
 
 ### Authoring mode
 
@@ -67,7 +69,7 @@ Creation is one durable action. On success, open the new resource in the current
 | Selection | Expanded sections | Collapsed sections |
 | --- | --- | --- |
 | Template or nothing | Name/description; target; Global/Project scope | Creator/revision/timestamps; provenance notes |
-| Template card | Identity; body preview; slot summary | Attribution and revision |
+| Template card | Scope/kind/update/creator metadata; editable description; Duplicate/Delete; variable disclosures; tag add | None; the library inspector has no preview, revision or template-id section |
 | Slot | Key; label; kind; required | Default; derived prompt; blocked body attachment |
 | Body entity | Matching target-editor inspector | Template ownership; slot attachment only after model support |
 | Instantiation | Destination/title; required values | Optional values; creation provenance |

@@ -171,6 +171,7 @@ test("every rail offers its own category's views, and offers none of them twice"
   }
 
   assert.deepEqual(Object.keys(RAILS).sort(), [...CATEGORIES].sort());
+  assert.deepEqual(railFor("templates"), ["templates.overview-library"]);
 });
 
 // ---------------------------------------------------------------------- open
@@ -572,12 +573,11 @@ test("a content view is view state, never a second tab", () => {
 });
 
 test("the rail stays where it is across a change of centre", () => {
-  // The rail belongs to the category rather than to one of its centres, so there
-  // is nothing for a change of centre to invalidate. Templates is the case that
-  // used to lose the position, because its library and its editor were two rails.
+  // The rail belongs to the category rather than to one of its centres. The
+  // library's one Overview remains selected when the centre changes.
   const model = workspaceState();
   model.open({ category: "templates" });
-  const where = railFor("templates")[1];
+  const where = railFor("templates")[0];
   model.selectContext(where);
 
   model.showContent("templates.editor");

@@ -13,9 +13,8 @@
    * surface that carries hover and selection, and a shelf whose cards cannot
    * show which one is chosen is a shelf you cannot choose from.
    *
-   * The well, the frame, the overhang and the drag are all still the shelf's.
-   * Those are what a grid does not have, and they are the reason to be on a
-   * shelf at all.
+   * The well and horizontal scroll are still the shelf's. Those are what a grid
+   * does not have, and they are the reason to be on a shelf at all.
    */
   let {
     width = "13rem",
@@ -31,5 +30,7 @@
 </script>
 
 <CarouselShelfItem class="border-none bg-transparent shadow-none">
-  <div style="width: {width}">{@render children()}</div>
+  <!-- Buttons use intrinsic sizing in a flex row. Constraining the direct child
+       here keeps long titles and square previews inside the declared slot. -->
+  <div style="width: {width}" class="[&>*]:w-full [&>*]:max-w-full">{@render children()}</div>
 </CarouselShelfItem>

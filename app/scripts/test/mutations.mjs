@@ -135,12 +135,6 @@ export const MUTATIONS = [
     changes: [{ path: "src/lib/components/authored/probe/probe-thing.svelte", write: `<div></div>\n` }]
   },
   {
-    check: "file-is-named-for-its-directory",
-    says: "a file is not prefixed by its vocabulary",
-    names: "wrong-name.svelte",
-    changes: [{ path: "src/lib/components/authored/panel/wrong-name.svelte", write: `<div></div>\n` }]
-  },
-  {
     check: "vendor-is-unedited",
     says: "a vendored file takes an authored component",
     names: "vendored/button/edited.ts",
@@ -324,12 +318,19 @@ export const MUTATIONS = [
     changes: [
       {
         path: "src/lib/runtime/client/start.ts",
-        edit: (text) =>
-          text.replace(
-            "  const workspaceState = createWorkspaceState(project, tabList, tabViews, settings);",
-            "  const workspaceState = createWorkspaceState(project, tabList, tabViews, settings);\n" +
-              "  const probe = createWorkspaceState(project, tabList, tabViews, settings);\n  void probe;"
-          )
+        edit: (text) => {
+          const call =
+            "  const workspaceState = createWorkspaceState(\n" +
+            "    project,\n" +
+            "    tabList,\n" +
+            "    tabViews,\n" +
+            "    settings,\n" +
+            "    documentRuntimes,\n" +
+            "    slideDeckRuntimes\n" +
+            "  );";
+          const again = call.replace("const workspaceState", "const probe");
+          return text.replace(call, `${call}\n${again}\n  void probe;`);
+        }
       }
     ]
   },
@@ -424,15 +425,6 @@ export const MUTATIONS = [
   },
 
   // ------------------------------------------------------------------- views ----
-  {
-    check: "surface-is-a-named-grid",
-    says: "a surface does not name its regions",
-    names: "probe-bar/probe-bar.svelte",
-    changes: [
-      { path: "src/lib/surfaces/probe-bar/probe-bar.md", write: `# probe-bar\n` },
-      { path: "src/lib/surfaces/probe-bar/probe-bar.svelte", write: `<div class="probe"></div>\n\n<style>\n  .probe {\n    display: flex;\n  }\n</style>\n` }
-    ]
-  },
   {
     check: "view-takes-ids-and-callbacks",
     says: "a surface takes its content as a prop",

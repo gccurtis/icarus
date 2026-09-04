@@ -6,10 +6,9 @@
   /**
    * A row of cards you scroll, rather than one you step through.
    *
-   * The counterpart to `ScreenShelf`, and it exists because the shelf cannot be
-   * scrolled with two fingers. The shelf's motion is embla's, which owns the
-   * pointer and the two buttons but not the wheel — so on a trackpad, the most
-   * natural gesture for a horizontal row does nothing at all.
+   * The flat counterpart to `ScreenShelf`. Both use the browser's horizontal
+   * scroll behavior; this one has no recessed well, because its row is a list
+   * someone is moving through rather than a display of objects on a surface.
    *
    * This is a native scroll container, which means the browser's own gestures
    * come free: two fingers, shift-wheel, a dragged scrollbar, Home and End, and
@@ -23,8 +22,8 @@
    * **Snap `proximity`, not `mandatory`.** Mandatory snapping fights a long
    * flick and makes a row of twenty feel like it is resisting.
    *
-   * **Reach for the shelf when the row is a display**, with its well and its
-   * overhang; reach for this when the row is a list someone is getting through.
+   * **Reach for the shelf when the row is a display**, with its recessed well;
+   * reach for this when the row is a list someone is getting through.
    */
   let {
     width = "13rem",

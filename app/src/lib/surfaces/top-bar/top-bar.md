@@ -13,7 +13,7 @@ application rather than of whatever is open.
 ## Why light and dark are chromatic themes
 
 Celestial declares `color-scheme: light`; cyberpunk declares `color-scheme:
-dark`. Every slot in `chromatic-themes/slots.css` is a `light-dark()`, so those
+dark`. Every chromatic slot is a `light-dark()`, so those
 two declarations are the only place the polarity of the system is stated, and
 one attribute on `<html>` re-aims all seven slots of all eleven ramps at once.
 

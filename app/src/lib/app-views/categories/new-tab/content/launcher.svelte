@@ -23,7 +23,7 @@
   } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
   import * as InputGroup from "$vendored-components/input-group";
-  import type { ResourceKind } from "$capabilities/cast";
+  import type { ResourceKind } from "$app-views/categories/new-tab/procedures/cast";
   import {
     editorKinds,
     kindLabel,
@@ -32,9 +32,9 @@
     threads,
     type EditorKind,
     type LibraryTemplate
-  } from "$capabilities/library";
-  import { openingFor } from "$capabilities/opening";
-  import { project, resources } from "$capabilities/project";
+  } from "$app-views/categories/new-tab/procedures/library";
+  import { openingFor } from "$app-views/categories/new-tab/procedures/opening";
+  import { project, resources } from "$app-views/categories/new-tab/procedures/project";
   import { workspaceState, type Category } from "$model/client/workspace-state";
 
   const view = workspaceState();

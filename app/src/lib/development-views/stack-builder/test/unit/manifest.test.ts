@@ -9,7 +9,8 @@ import {
   isDescendant,
   moveInto,
   moveTo,
-  removeById
+  removeById,
+  substacksIn
 } from "$development-views/stack-builder/procedures/manifest";
 import type { StackNode, SubstackNode } from "$development-views/stack-builder/types";
 
@@ -143,6 +144,18 @@ test("descent is transitive, so a substack cannot be moved into its own grandchi
   assert.equal(isDescendant(nodes, "deep", "h"), true);
   assert.equal(isDescendant(nodes, "g", "h"), false);
   assert.deepEqual(moveInto(nodes, "g", "deep", 0), nodes);
+});
+
+test("every group is found, at any depth, so a node knows where it may go", () => {
+  const nodes = [component("a"), group("g", [component("b"), group("h", [])])];
+  assert.deepEqual(
+    substacksIn(nodes).map((held) => held.id),
+    ["g", "h"]
+  );
+});
+
+test("a stack with no groups offers no group to move into", () => {
+  assert.deepEqual(substacksIn([component("a"), component("b")]), []);
 });
 
 test("the component sources walk into substacks", () => {

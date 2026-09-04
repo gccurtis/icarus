@@ -5,9 +5,9 @@
  *
  *     pnpm new-surface -- <name> [--development]
  *
- * The grid is generated rather than left to be added, because
- * `surface-is-a-named-grid` reads exactly that and a template that trips its own
- * check on the first run is a template nobody trusts.
+ * The grid is generated rather than left to be added: a surface that names its
+ * regions is readable from its stylesheet alone, and a template that starts
+ * there is one nobody has to retrofit.
  */
 import { join } from "node:path";
 

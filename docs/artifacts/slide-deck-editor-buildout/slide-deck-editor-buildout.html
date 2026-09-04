@@ -1,0 +1,2310 @@
+<title>Slide Deck Editor Buildout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  /* ---------- tokens: light is the full set ---------- */
+  :root {
+    color-scheme: light dark;
+
+    --ground: #f7f4ec;
+    --panel: #eeeae0;
+    --panel-hover: #e4dfd2;
+    --raised: #ffffff;
+    --pasteboard: #d8d3c4;
+    --rule: #ddd7c8;
+    --rule-strong: #b9b3a1;
+
+    --ink: #1d2329;
+    --ink-2: #3a424d;
+    --ink-3: #6c716c;
+
+    --built: #016e96;
+    --built-soft: #eaf6fb;
+    --gap: #bc386f;
+    --gap-soft: #fdeff5;
+    --target: #187d74;
+    --target-soft: #ecf8f7;
+    --decide: #8a5a13;
+    --decide-soft: #fef6e8;
+
+    --shadow-raised: 0 4px 10px -3px color-mix(in srgb, #1d2329 18%, transparent);
+    --shadow-panel: 0 1px 0 color-mix(in srgb, #1d2329 6%, transparent);
+    --r-control: 0.375rem;
+    --r-panel: 0.625rem;
+    --u: 0.25rem;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #14181c;
+      --panel: #1b2026;
+      --panel-hover: #232a31;
+      --raised: #232a31;
+      --pasteboard: #0e1114;
+      --rule: #2f363d;
+      --rule-strong: #4a535c;
+
+      --ink: #ece7dc;
+      --ink-2: #c3bdb0;
+      --ink-3: #8b939b;
+
+      --built: #38bdf8;
+      --built-soft: #08303f;
+      --gap: #ee7fae;
+      --gap-soft: #45152a;
+      --target: #3fcfc0;
+      --target-soft: #0b332f;
+      --decide: #e0a93b;
+      --decide-soft: #3a2708;
+
+      --shadow-raised: 0 4px 14px -4px rgba(0, 0, 0, 0.6);
+      --shadow-panel: 0 1px 0 rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #14181c;
+    --panel: #1b2026;
+    --panel-hover: #232a31;
+    --raised: #232a31;
+    --pasteboard: #0e1114;
+    --rule: #2f363d;
+    --rule-strong: #4a535c;
+
+    --ink: #ece7dc;
+    --ink-2: #c3bdb0;
+    --ink-3: #8b939b;
+
+    --built: #38bdf8;
+    --built-soft: #08303f;
+    --gap: #ee7fae;
+    --gap-soft: #45152a;
+    --target: #3fcfc0;
+    --target-soft: #0b332f;
+    --decide: #e0a93b;
+    --decide-soft: #3a2708;
+
+    --shadow-raised: 0 4px 14px -4px rgba(0, 0, 0, 0.6);
+    --shadow-panel: 0 1px 0 rgba(0, 0, 0, 0.35);
+  }
+
+  /* ---------- ground ---------- */
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  * { box-sizing: border-box; }
+
+  ::selection { background: color-mix(in srgb, var(--built) 26%, transparent); }
+
+  a { color: var(--built); text-underline-offset: 3px; }
+
+  /* ---------- shell: a rail and a column, the way the editor is built ---------- */
+  .shell {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    align-items: start;
+    max-width: 84rem;
+    margin: 0 auto;
+  }
+
+  .rail {
+    position: sticky;
+    top: 2.6rem;
+    max-height: calc(100vh - 2.6rem);
+    overflow-y: auto;
+    padding: calc(var(--u) * 8) calc(var(--u) * 4) calc(var(--u) * 8) calc(var(--u) * 6);
+    border-right: 1px solid var(--rule);
+  }
+
+  .rail-mark {
+    font-family: var(--cond);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 calc(var(--u) * 5);
+  }
+
+  .rail nav { display: flex; flex-direction: column; gap: 1px; }
+
+  .rail a {
+    display: grid;
+    grid-template-columns: 1.35rem 1fr;
+    align-items: baseline;
+    gap: calc(var(--u) * 2);
+    padding: calc(var(--u) * 1.5) calc(var(--u) * 2);
+    border-radius: var(--r-control);
+    color: var(--ink-2);
+    font-size: 13.5px;
+    text-decoration: none;
+    line-height: 1.35;
+  }
+
+  .rail a:hover { background: var(--panel); color: var(--ink); }
+
+  .rail a b {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .col {
+    min-width: 0;
+    padding: calc(var(--u) * 8) calc(var(--u) * 8) calc(var(--u) * 24);
+  }
+
+  @media (max-width: 62rem) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .rail {
+      position: static;
+      max-height: none;
+      border-right: 0;
+      border-bottom: 1px solid var(--rule);
+      padding: calc(var(--u) * 5) calc(var(--u) * 5) calc(var(--u) * 4);
+    }
+    .rail nav { flex-flow: row wrap; gap: calc(var(--u) * 1); }
+    .rail a { grid-template-columns: auto auto; }
+    .col { padding: calc(var(--u) * 6) calc(var(--u) * 5) calc(var(--u) * 20); }
+  }
+
+  /* ---------- type ---------- */
+  h1 {
+    font-family: var(--cond);
+    font-size: clamp(2.4rem, 5.4vw, 3.7rem);
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.018em;
+    text-wrap: balance;
+    margin: 0 0 calc(var(--u) * 4);
+  }
+
+  h2 {
+    font-family: var(--cond);
+    font-size: clamp(1.5rem, 2.7vw, 2rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  h3 {
+    font-family: var(--cond);
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: -0.004em;
+    margin: 0 0 calc(var(--u) * 2);
+  }
+
+  h4 {
+    font-family: var(--cond);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0;
+  }
+
+  p { margin: 0 0 calc(var(--u) * 4); max-width: 66ch; }
+  p:last-child { margin-bottom: 0; }
+
+  .lede { font-size: 1.12rem; color: var(--ink-2); max-width: 62ch; }
+
+  code, .m { font-family: var(--mono); font-size: 0.855em; }
+
+  code {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.5px 4px;
+    white-space: nowrap;
+  }
+
+  section { margin-top: calc(var(--u) * 20); scroll-margin-top: 4rem; }
+
+  .head {
+    display: flex;
+    align-items: baseline;
+    gap: calc(var(--u) * 3);
+    padding-bottom: calc(var(--u) * 3);
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: calc(var(--u) * 6);
+  }
+
+  .head .n {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sub { margin-top: calc(var(--u) * 10); }
+  .sub h3 { margin-bottom: calc(var(--u) * 3); }
+
+  /* ---------- masthead ---------- */
+  .mast {
+    padding-bottom: calc(var(--u) * 8);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    font-family: var(--cond);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gap);
+    margin: 0 0 calc(var(--u) * 3);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--u) * 2) calc(var(--u) * 5);
+    margin-top: calc(var(--u) * 6);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+  }
+
+  .meta span b { color: var(--ink-2); font-weight: 500; }
+
+  /* ---------- counters ---------- */
+  .tally {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-panel);
+    overflow: hidden;
+    margin: calc(var(--u) * 6) 0;
+  }
+
+  .tally div { background: var(--ground); padding: calc(var(--u) * 4); }
+
+  .tally .fig {
+    font-family: var(--cond);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .tally .of { font-size: 1.05rem; color: var(--ink-3); font-weight: 500; }
+  .tally .cap { display: block; margin-top: calc(var(--u) * 2); font-size: 12.5px; color: var(--ink-3); line-height: 1.35; }
+  .tally .built .fig { color: var(--built); }
+  .tally .gap .fig { color: var(--gap); }
+
+  /* ---------- state pills ---------- */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--u) * 1.5);
+    padding: 1px 7px 2px;
+    border: 1px solid;
+    border-radius: 999px;
+    font-family: var(--cond);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .pill.is-built { color: var(--built); border-color: color-mix(in srgb, var(--built) 40%, transparent); background: var(--built-soft); }
+  .pill.is-gap { color: var(--gap); border-color: color-mix(in srgb, var(--gap) 40%, transparent); background: var(--gap-soft); }
+  .pill.is-part { color: var(--decide); border-color: color-mix(in srgb, var(--decide) 40%, transparent); background: var(--decide-soft); }
+  .pill.is-target { color: var(--target); border-color: color-mix(in srgb, var(--target) 40%, transparent); background: var(--target-soft); }
+
+  /* ---------- tables ---------- */
+  .scroll { overflow-x: auto; margin: calc(var(--u) * 5) 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+
+  thead th {
+    font-family: var(--cond);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-align: left;
+    padding: 0 calc(var(--u) * 3) calc(var(--u) * 2);
+    border-bottom: 1px solid var(--rule-strong);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: calc(var(--u) * 2.5) calc(var(--u) * 3);
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    line-height: 1.45;
+  }
+
+  tbody tr:hover td { background: color-mix(in srgb, var(--panel) 55%, transparent); }
+
+  td .m { color: var(--ink-2); white-space: nowrap; }
+  td.tight { white-space: nowrap; }
+  .note-cell { color: var(--ink-3); font-size: 12.5px; }
+
+  /* ---------- prose furniture ---------- */
+  .callout {
+    border-left: 3px solid var(--decide);
+    background: var(--decide-soft);
+    padding: calc(var(--u) * 3.5) calc(var(--u) * 4);
+    border-radius: 0 var(--r-control) var(--r-control) 0;
+    margin: calc(var(--u) * 5) 0;
+    font-size: 14px;
+  }
+
+  .callout h4 { color: var(--decide); margin-bottom: calc(var(--u) * 1.5); }
+  .callout p { max-width: 68ch; margin-bottom: 0; }
+
+  .finding {
+    border-left: 3px solid var(--gap);
+    background: var(--gap-soft);
+    padding: calc(var(--u) * 3.5) calc(var(--u) * 4);
+    border-radius: 0 var(--r-control) var(--r-control) 0;
+    margin: calc(var(--u) * 5) 0;
+    font-size: 14px;
+  }
+
+  .finding h4 { color: var(--gap); margin-bottom: calc(var(--u) * 1.5); }
+  .finding p { max-width: 68ch; margin-bottom: 0; }
+
+  ul.plain { margin: calc(var(--u) * 3) 0; padding-left: calc(var(--u) * 5); max-width: 66ch; }
+  ul.plain li { margin-bottom: calc(var(--u) * 2); }
+
+  .two {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    gap: calc(var(--u) * 5);
+    margin: calc(var(--u) * 5) 0;
+  }
+
+  /* ---------- tier diagram ---------- */
+  .tiers { margin: calc(var(--u) * 6) 0; }
+
+  .tier {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr) 15rem;
+    gap: calc(var(--u) * 4);
+    align-items: start;
+    padding: calc(var(--u) * 4);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-panel);
+    background: var(--panel);
+  }
+
+  .tier .who { border-right: 1px solid var(--rule); padding-right: calc(var(--u) * 4); }
+  .tier .who h4 { color: var(--ink); }
+  .tier .who .path { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); display: block; margin-top: calc(var(--u) * 1.5); line-height: 1.45; word-break: break-all; }
+  .tier .what { font-size: 13.5px; line-height: 1.55; }
+  .tier .what p { margin: 0 0 calc(var(--u) * 2); max-width: none; }
+  .tier .what p:last-child { margin-bottom: 0; }
+  .tier .holds { font-family: var(--mono); font-size: 11px; color: var(--ink-2); line-height: 1.7; }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--u) * 3);
+    padding: calc(var(--u) * 2) 0;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+  }
+
+  .flow .arrow { color: var(--rule-strong); font-size: 15px; }
+  .flow em { font-style: normal; color: var(--built); }
+
+  @media (max-width: 52rem) {
+    .tier { grid-template-columns: minmax(0, 1fr); }
+    .tier .who { border-right: 0; border-bottom: 1px solid var(--rule); padding-right: 0; padding-bottom: calc(var(--u) * 3); }
+  }
+
+  /* ---------- round trip ---------- */
+  .trip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--u) * 2);
+    margin: calc(var(--u) * 5) 0;
+  }
+
+  .trip .step {
+    flex: 1 1 8.5rem;
+    min-width: 8.5rem;
+    padding: calc(var(--u) * 3);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-control);
+    background: var(--panel);
+  }
+
+  .trip .step .k {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    display: block;
+    margin-bottom: calc(var(--u) * 1);
+  }
+
+  .trip .step .v { font-family: var(--cond); font-weight: 600; font-size: 14px; line-height: 1.25; display: block; }
+  .trip .step .d { font-size: 11.5px; color: var(--ink-3); display: block; margin-top: calc(var(--u) * 1.5); line-height: 1.4; }
+  .trip .step.wall { background: var(--built-soft); border-color: color-mix(in srgb, var(--built) 35%, transparent); }
+
+  /* ---------- code block ---------- */
+  pre {
+    margin: calc(var(--u) * 4) 0;
+    padding: calc(var(--u) * 4);
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-control);
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--ink-2);
+  }
+
+  pre b { color: var(--ink); font-weight: 600; }
+  pre i { font-style: normal; color: var(--gap); }
+  pre u { text-decoration: none; color: var(--target); }
+  pre s { text-decoration: none; color: var(--ink-3); }
+
+  /* ---------- panel mocks: drawn to look like the product's own panels ---------- */
+  .mockrow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: calc(var(--u) * 5);
+    align-items: start;
+    margin: calc(var(--u) * 5) 0;
+  }
+
+  .mock {
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-panel);
+    background: var(--panel);
+    overflow: hidden;
+    box-shadow: var(--shadow-panel);
+  }
+
+  .mock > .cap {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: calc(var(--u) * 2);
+    padding: calc(var(--u) * 2) calc(var(--u) * 3);
+    background: var(--ground);
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--cond);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .mock .body { padding: calc(var(--u) * 3); }
+
+  .mp-title {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    padding: 0 0 calc(var(--u) * 2.5);
+  }
+
+  .mp-crumbs { font-size: 11px; color: var(--ink-3); padding-bottom: calc(var(--u) * 2.5); }
+  .mp-crumbs u { text-decoration: none; color: var(--built); }
+
+  .mp-sec {
+    font-family: var(--cond);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    display: flex;
+    justify-content: space-between;
+    padding: calc(var(--u) * 3) 0 calc(var(--u) * 1.5);
+    border-top: 1px solid var(--rule);
+    margin-top: calc(var(--u) * 2);
+  }
+
+  .mp-sec:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+
+  .mp-field {
+    display: flex;
+    justify-content: space-between;
+    gap: calc(var(--u) * 2);
+    font-size: 12px;
+    padding: calc(var(--u) * 1) 0;
+  }
+
+  .mp-field span:first-child { color: var(--ink-3); }
+  .mp-field span:last-child { font-family: var(--mono); font-size: 11px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .mp-field .mixed { color: var(--decide); font-style: italic; font-family: var(--sans); font-size: 11.5px; }
+
+  .mp-controls { display: flex; gap: calc(var(--u) * 1); margin: calc(var(--u) * 1.5) 0; }
+
+  .mp-btn {
+    flex: 1;
+    min-width: 0;
+    padding: calc(var(--u) * 1) calc(var(--u) * 1.5);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-control);
+    background: var(--ground);
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--ink-2);
+    text-align: center;
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mp-btn.on { border-color: var(--built); background: var(--built-soft); color: var(--built); font-weight: 600; }
+  .mp-btn.dim { color: var(--ink-3); opacity: 0.55; }
+  .mp-btn.wide { flex: 2; }
+
+  .mp-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid var(--rule-strong);
+    vertical-align: -2px;
+    margin-right: 5px;
+  }
+
+  .mp-input {
+    padding: calc(var(--u) * 1) calc(var(--u) * 2);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-control);
+    background: var(--ground);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mp-note { font-size: 11px; color: var(--ink-3); line-height: 1.45; padding: calc(var(--u) * 2) 0 0; }
+
+  .mp-quote {
+    border-left: 2px solid var(--rule-strong);
+    padding: 0 0 0 calc(var(--u) * 2.5);
+    font-size: 12px;
+    color: var(--ink-2);
+    margin: calc(var(--u) * 1.5) 0;
+    line-height: 1.5;
+  }
+
+  .mp-quote cite { display: block; font-style: normal; font-size: 10.5px; color: var(--ink-3); margin-top: 3px; }
+
+  .mp-list { display: flex; flex-direction: column; gap: 1px; }
+
+  .mp-item {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--u) * 2);
+    padding: calc(var(--u) * 1.5) calc(var(--u) * 2);
+    border-radius: var(--r-control);
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+
+  .mp-item.on { background: var(--built-soft); color: var(--built); }
+  .mp-item .glyph { width: 13px; text-align: center; color: var(--ink-3); font-size: 11px; }
+  .mp-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ---------- strip mock (the bottom of the canvas) ---------- */
+  .strip {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--u) * 2);
+    padding: calc(var(--u) * 2) calc(var(--u) * 3);
+    background: var(--panel);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-control);
+    flex-wrap: wrap;
+  }
+
+  .strip .spacer { flex: 1; min-width: calc(var(--u) * 4); }
+
+  .strip .status { font-family: var(--mono); font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+  .pipset { display: flex; gap: calc(var(--u) * 1.5); }
+
+  .pip {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-control);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+  }
+
+  .pip.on { border-color: var(--built); color: var(--built); }
+
+  .struck { position: relative; }
+  .struck::after {
+    content: "";
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    top: 50%;
+    height: 2px;
+    background: var(--gap);
+    transform: rotate(-3deg);
+  }
+
+  /* ---------- reel mock (slides panel drag) ---------- */
+  .reel { display: flex; flex-direction: column; gap: calc(var(--u) * 2); }
+
+  .reel .slot { display: flex; align-items: center; gap: calc(var(--u) * 2); }
+  .reel .idx { font-family: var(--mono); font-size: 10px; color: var(--ink-3); width: 12px; }
+
+  .reel .thumb {
+    flex: 1;
+    aspect-ratio: 16 / 9;
+    background: var(--raised);
+    border: 1px solid var(--rule-strong);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .reel .thumb.on { border-color: var(--built); box-shadow: 0 0 0 2px var(--built-soft); }
+  .reel .thumb .bar { position: absolute; background: color-mix(in srgb, var(--ink) 22%, transparent); border-radius: 1px; }
+
+  .reel .marker-top { height: 2px; background: var(--gap); border-radius: 1px; margin-left: 20px; }
+  .reel .marker-line { height: 2px; background: var(--target); border-radius: 1px; margin-left: 20px; position: relative; }
+  .reel .marker-line::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: -2px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--target);
+  }
+
+  /* ---------- stage mock ---------- */
+  .stage-wrap {
+    background: var(--pasteboard);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-control);
+    padding: calc(var(--u) * 4);
+  }
+
+  .stage {
+    aspect-ratio: 16 / 9;
+    background: var(--raised);
+    border: 1px solid var(--rule-strong);
+    position: relative;
+    box-shadow: var(--shadow-raised);
+    overflow: hidden;
+  }
+
+  .obj { position: absolute; }
+
+  .obj.picked { outline: 2px solid var(--built); outline-offset: 0; }
+
+  .obj .handle {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    background: var(--raised);
+    border: 1.5px solid var(--built);
+    border-radius: 1px;
+  }
+
+  .guide { position: absolute; background: var(--gap); }
+
+  .stage .label {
+    position: absolute;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--built);
+    background: var(--raised);
+    padding: 0 3px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  /* ---------- shot ---------- */
+  figure { margin: calc(var(--u) * 6) 0; }
+
+  figure img {
+    display: block;
+    width: 100%;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-control);
+  }
+
+  figcaption {
+    margin-top: calc(var(--u) * 2.5);
+    font-size: 12.5px;
+    color: var(--ink-3);
+    line-height: 1.5;
+    max-width: 70ch;
+  }
+
+  /* ---------- review: the note gutter ---------- */
+  .review-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: calc(var(--u) * 3);
+    padding: calc(var(--u) * 2) calc(var(--u) * 4);
+    background: color-mix(in srgb, var(--ground) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--ink-3);
+    flex-wrap: wrap;
+  }
+
+  .review-bar .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); flex: none; }
+  .review-bar.live .dot { background: var(--target); }
+  .review-bar .count { margin-left: auto; font-family: var(--mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+  .decision {
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-panel);
+    background: var(--panel);
+    padding: calc(var(--u) * 4) calc(var(--u) * 5);
+    margin: calc(var(--u) * 5) 0;
+  }
+
+  .decision > h3 { display: flex; align-items: baseline; gap: calc(var(--u) * 2.5); margin-bottom: calc(var(--u) * 3); }
+  .decision > h3 .n { font-family: var(--mono); font-size: 11.5px; color: var(--gap); font-weight: 500; }
+  .decision p { font-size: 14px; max-width: 70ch; }
+
+  .options { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); margin: calc(var(--u) * 4) 0 calc(var(--u) * 2); }
+
+  .opt {
+    flex: 1 1 14rem;
+    text-align: left;
+    padding: calc(var(--u) * 2.5) calc(var(--u) * 3);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-control);
+    background: var(--ground);
+    color: var(--ink-2);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: border-color 120ms, background 120ms;
+  }
+
+  .opt:hover { border-color: var(--rule-strong); background: var(--panel-hover); }
+  .opt strong { display: block; font-family: var(--cond); font-size: 14.5px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+  .opt em { font-style: normal; display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 4px; }
+  .opt[aria-pressed="true"] { border-color: var(--target); background: var(--target-soft); box-shadow: inset 0 0 0 1px var(--target); }
+  .opt[aria-pressed="true"] strong { color: var(--target); }
+  .opt .rec { font-family: var(--cond); font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--built); }
+
+  .notefield {
+    display: flex;
+    align-items: flex-start;
+    gap: calc(var(--u) * 2);
+    margin-top: calc(var(--u) * 2);
+  }
+
+  .notefield label {
+    font-family: var(--cond);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding-top: 7px;
+    flex: none;
+  }
+
+  .notefield textarea {
+    flex: 1;
+    min-height: 2.1rem;
+    field-sizing: content;
+    resize: vertical;
+    padding: calc(var(--u) * 1.5) calc(var(--u) * 2.5);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-control);
+    background: var(--ground);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .notefield textarea::placeholder { color: var(--ink-3); }
+
+  td.verdict { white-space: nowrap; width: 1%; padding-right: 0; }
+
+  .scope { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: var(--r-control); overflow: hidden; }
+
+  .scope button {
+    padding: 1px 7px 2px;
+    border: 0;
+    border-right: 1px solid var(--rule-strong);
+    background: var(--ground);
+    color: var(--ink-3);
+    font-family: var(--cond);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    line-height: 1.7;
+  }
+
+  .scope button:last-child { border-right: 0; }
+  .scope button:hover { background: var(--panel-hover); color: var(--ink-2); }
+  .scope button[aria-pressed="true"][data-v="in"] { background: var(--target); color: var(--ground); }
+  .scope button[aria-pressed="true"][data-v="later"] { background: var(--decide); color: var(--ground); }
+  .scope button[aria-pressed="true"][data-v="out"] { background: var(--rule-strong); color: var(--ground); }
+
+  :focus-visible { outline: 2px solid var(--built); outline-offset: 2px; border-radius: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  /* ---------- sequence ---------- */
+  .stage-list { display: flex; flex-direction: column; gap: calc(var(--u) * 3); margin: calc(var(--u) * 5) 0; }
+
+  .stage-item {
+    display: grid;
+    grid-template-columns: 2.6rem minmax(0, 1fr);
+    gap: calc(var(--u) * 4);
+    align-items: start;
+    padding: calc(var(--u) * 4);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-panel);
+    background: var(--panel);
+  }
+
+  .stage-item .num {
+    font-family: var(--cond);
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--rule-strong);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stage-item h4 { color: var(--ink); font-size: 13px; letter-spacing: 0.06em; margin-bottom: calc(var(--u) * 1.5); }
+  .stage-item p { font-size: 13.5px; margin-bottom: calc(var(--u) * 2); }
+  .stage-item .files { font-family: var(--mono); font-size: 11px; color: var(--ink-3); line-height: 1.6; word-break: break-word; }
+
+  footer {
+    margin-top: calc(var(--u) * 20);
+    padding-top: calc(var(--u) * 5);
+    border-top: 1px solid var(--rule);
+    font-size: 12.5px;
+    color: var(--ink-3);
+  }
+</style>
+
+<div class="review-bar" id="review-bar">
+  <span class="dot" aria-hidden="true"></span>
+  <span id="review-state">Checking whether this page can keep your notes…</span>
+  <span class="count" id="review-count"></span>
+</div>
+
+<div class="shell">
+  <div class="rail">
+    <p class="rail-mark">Contents</p>
+    <nav>
+      <a href="#standing"><b>01</b><span>Where it stands</span></a>
+      <a href="#tiers"><b>02</b><span>The three tiers</span></a>
+      <a href="#body"><b>03</b><span>What a deck is</span></a>
+      <a href="#ops"><b>04</b><span>What the applier takes</span></a>
+      <a href="#today"><b>05</b><span>The editor today</span></a>
+      <a href="#frame"><b>06</b><span>The frame to build</span></a>
+      <a href="#text"><b>07</b><span>Text, shared with documents</span></a>
+      <a href="#objects"><b>08</b><span>Objects and arrangement</span></a>
+      <a href="#forks"><b>09</b><span>Nine decisions</span></a>
+      <a href="#order"><b>10</b><span>The order of work</span></a>
+    </nav>
+  </div>
+
+  <main class="col">
+    <div class="mast">
+      <p class="eyebrow">Icarus · slide-deck-editor · goal state</p>
+      <h1>Slide Deck Editor Buildout</h1>
+      <p class="lede">
+        Everything the deck editor is today, measured from the code rather than the docs, and
+        everything it has to become to read as professional — across the representation, the client
+        runtime and the editor. Nine decisions have to be settled first; each one below takes your
+        answer in place.
+      </p>
+      <div class="meta">
+        <span>Read from <b>work/semantic-overlay-cutover</b></span>
+        <span>Screenshot taken against <b>localhost:3000</b></span>
+        <span>Docs treated as <b>unreliable</b> — code is the source</span>
+      </div>
+    </div>
+
+    <!-- ============================================================ 01 -->
+    <section id="standing">
+      <div class="head"><span class="n">01</span><h2>Where it stands</h2></div>
+
+      <p>
+        The deck's plumbing is finished and its surface is barely started. The runtime is complete
+        and symmetric with the document runtime — buffer, coalesce, rebase, undo, redo, heartbeat,
+        all tested. The change-set path to the store works end to end. What is missing is almost
+        everything above it: the applier accepts six op shapes, one view of fifteen context panels
+        is real, and no inspector exists at all.
+      </p>
+
+      <div class="tally">
+        <div class="built">
+          <span class="fig">1</span><span class="of"> content view</span>
+          <span class="cap"><span class="m">content/deck.svelte</span> — a Konva stage</span>
+        </div>
+        <div class="gap">
+          <span class="fig">2</span><span class="of"> / 15 context</span>
+          <span class="cap">Only <span class="m">slides</span> and <span class="m">stage</span>. The other thirteen render the placeholder.</span>
+        </div>
+        <div class="gap">
+          <span class="fig">0</span><span class="of"> / 11 inspector</span>
+          <span class="cap">No <span class="m">inspector/</span> directory. Clicking a shape opens nothing.</span>
+        </div>
+        <div class="gap">
+          <span class="fig">6</span><span class="of"> op shapes</span>
+          <span class="cap">Everything else the applier refuses by name.</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <h4>The one-line summary</h4>
+        <p>
+          Every declared view key already exists in the vocabulary, and the surfaces resolve a key to
+          a file by path. So the whole panel tree is <em>routable and empty</em>: writing
+          <span class="m">inspector/shape.svelte</span> is the entire registration step. The
+          expensive work is not wiring — it is the op vocabulary underneath and the renderer above.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================ 02 -->
+    <section id="tiers">
+      <div class="head"><span class="n">02</span><h2>The three tiers</h2></div>
+
+      <p>
+        A deck exists three times, and the separation is enforced by <span class="m">pnpm lint</span>
+        rather than by convention. Each tier answers a different question, and the boundary between
+        them is what lets the same body be optimistic in the browser and authoritative on the server
+        without either one trusting the other.
+      </p>
+
+      <div class="tiers">
+        <div class="tier">
+          <div class="who">
+            <h4>Representation</h4>
+            <span class="path">representation/data/types/slide-decks/<br>representation/data/behavior/slide-decks/</span>
+          </div>
+          <div class="what">
+            <p><strong>What a deck <em>is</em>.</strong> Types plus one pure applier. No Svelte, no
+            network, no browser. Both parties read it: the browser applies an op optimistically and
+            the server applies the same op for real, through the same function.</p>
+            <p>Frames are fractions of the slide, so a deck survives a change of aspect ratio.
+            One flat id space per deck — an element is found by its own id across every slide.</p>
+          </div>
+          <div class="holds">
+            SlideDeckBody<br>
+            &nbsp;&nbsp;aspectRatio · theme · styles<br>
+            &nbsp;&nbsp;layouts · slides · sections<br>
+            SlideDeckOp<br>
+            &nbsp;&nbsp;set · insert · remove · move · text<br>
+            applyOps(body, ops) → body
+          </div>
+        </div>
+
+        <div class="flow"><span class="arrow">↓</span><span><em>ops</em> down · <em>body</em> up</span><span class="arrow">↑</span></div>
+
+        <div class="tier">
+          <div class="who">
+            <h4>Client runtime</h4>
+            <span class="path">model/client/slide-deck-runtimes/</span>
+          </div>
+          <div class="what">
+            <p><strong>What is <em>unsaved</em>.</strong> One object per deck, never per tab. A
+            courier: it holds a body, a revision, a buffer of ops and two history stacks, and it
+            does not know what a slide is.</p>
+            <p>One <span class="m">tick()</span> serves both the edit debounce and the heartbeat, so
+            a re-read can never land on top of an edit in flight. Coalescing folds a whole drag into
+            one op by comparing op path strings — which is why the path grammar is
+            slash-separated.</p>
+          </div>
+          <div class="holds">
+            body · revision · sync · pending<br>
+            apply(ops) · flush() · tick()<br>
+            undo() · redo() · canUndo · canRedo<br>
+            stage: unitsHigh, widthRem, zoom bounds<br>
+            <span style="color:var(--gap)">no selection lives here</span>
+          </div>
+        </div>
+
+        <div class="flow"><span class="arrow">↓</span><span><em>runtime.body</em> down · <em>runtime.apply(ops)</em> up</span><span class="arrow">↑</span></div>
+
+        <div class="tier">
+          <div class="who">
+            <h4>Editor</h4>
+            <span class="path">app-views/categories/slide-deck-editor/</span>
+          </div>
+          <div class="what">
+            <p><strong>What is <em>seen</em>.</strong> One content view, the context panels, the
+            inspector lenses, and <span class="m">procedures/</span> — the only place in the tree
+            that names an op.</p>
+            <p>A view leaf may import its own category's procedures, the component aliases,
+            <span class="m">$model/client/workspace-state</span> and
+            <span class="m">$capabilities/*</span>. It may not touch the runtime register or
+            <span class="m">$representation</span>, which is why every deck type a view needs is
+            re-exported through <span class="m">procedures/deck.ts</span>.</p>
+          </div>
+          <div class="holds">
+            content/deck.svelte<br>
+            context/slides.svelte · stage.svelte<br>
+            <span style="color:var(--gap)">inspector/ — does not exist</span><br>
+            procedures/ deck · stage · tokens · ids<br>
+            selection: a local <span class="m">$state</span> in deck.svelte
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <h4>The break that stops every inspector</h4>
+        <p>
+          Selection is a private <span class="m">let selected = $state&lt;string&nbsp;|&nbsp;undefined&gt;()</span>
+          inside <span class="m">deck.svelte</span>. The inspector surface is driven by
+          <span class="m">view.inspected</span> and <span class="m">view.selection</span> on workspace
+          state, and nothing in the deck editor ever calls <span class="m">view.inspect(…)</span>.
+          Clicking a shape draws a Konva transformer and tells no one. The document editor already
+          does this correctly — <span class="m">signalOf(state)</span> reads the ProseMirror selection
+          into a key plus a <span class="m">Selection</span>, and <span class="m">worthSending</span>
+          suppresses the noise. The deck needs the same shape.
+        </p>
+      </div>
+
+      <h3 style="margin-top:calc(var(--u)*10)">One gesture, all the way through</h3>
+      <div class="trip">
+        <div class="step"><span class="k">gesture</span><span class="v">dragend</span><span class="d">Konva node position in slide units</span></div>
+        <div class="step"><span class="k">procedures</span><span class="v">toFrame → withElementFrame</span><span class="d">Returns <span class="m">{ body, ops }</span> together, so the two cannot disagree</span></div>
+        <div class="step"><span class="k">runtime</span><span class="v">apply(ops)</span><span class="d">Optimistic at once; undo stack; debounce armed</span></div>
+        <div class="step"><span class="k">runtime</span><span class="v">tick → flush</span><span class="d">50 ops or 2000 ms; coalesce folds the drag to one op</span></div>
+        <div class="step wall"><span class="k">capability</span><span class="v">submitSlideDeckChanges</span><span class="d">baseRevision checked, then the same applyOps</span></div>
+        <div class="step"><span class="k">store</span><span class="v">change set + leader</span><span class="d">Two rows land together; revision advances</span></div>
+        <div class="step"><span class="k">runtime</span><span class="v">sync</span><span class="d">Heartbeat every 5000 ms, skipped while ops are held</span></div>
+      </div>
+      <p style="font-size:13px;color:var(--ink-3)">
+        A refusal is an answer, not a throw. <span class="m">stale</span> means rebase and retry once;
+        <span class="m">unresolved</span> means an op named something the body does not hold — revert
+        at once.
+      </p>
+    </section>
+
+    <!-- ============================================================ 03 -->
+    <section id="body">
+      <div class="head"><span class="n">03</span><h2>What a deck actually is</h2></div>
+
+      <p>
+        This is the whole stored shape, unabridged. Read it against the target state and the holes
+        are obvious: an element has a box and some blocks and nothing that says what kind of thing
+        it is.
+      </p>
+
+<pre><b>SlideDeckBody</b> = {
+  aspectRatio: <u>"16:9" | "4:3"</u>
+  theme:  { background?, colors: { text, accent, muted? }, fontFamily? }
+  styles: { styles: Record&lt;string, TextStyle&gt;, defaultKey: string }
+  layouts:  SlideLayout[]     <s>// key, name, locked[], placeholders[], background?</s>
+  slides:   Slide[]
+  sections: DeckSection[]     <s>// id, name, firstSlideId — anchored to a slide, not a range</s>
+}
+
+<b>Slide</b> = { id, layoutKey?, elements: SlideElement[], notes: ContentBlock[], background?, hidden? }
+
+<b>SlideElement</b> = {
+  id: string
+  frame: { x, y, width, height }   <s>// fractions 0–1 of the slide</s>
+  rotation?: number
+  blocks: ContentBlock[]           <i>← the kind of object is GUESSED from this</i>
+  overflow: "clip" | "shrink" | "grow"
+  fromPlaceholder?: string
+  format?: BlockFormat             <i>← shared with documents and spreadsheets</i>
+}
+
+<b>BlockFormat</b> = { horizontalAlignment?, verticalAlignment?, background?, border?, padding?, valueFormat? }
+                     <i>no opacity · no shadow · no cornerRadius · no dash · no cap/join</i>
+
+<b>ContentBlock</b> = TextBlock | FormulaBlock | ImageBlock | TableBlock | PromptBlock
+<b>TextBlock</b>  = { id, type, variant, level?, listStyle?, style?, atoms: Atom[], display, marks: Mark[], format? }
+<b>Mark</b>       = { id, from, to, style?: MarkStyle[], link?, color? }   <s>// offsets into display, not into atoms</s></pre>
+
+      <div class="two">
+        <div class="finding">
+          <h4>An element has no kind</h4>
+          <p>
+            <span class="m">textOf(element)</span> finds the first text block; if there is one the
+            renderer draws a <span class="m">Konva.Text</span>, otherwise a
+            <span class="m">Konva.Rect</span>. So an empty text box and a rectangle are the same
+            object, an image renders as a blank rectangle, and a table renders as a blank rectangle.
+            One inspector per kind cannot be written honestly on top of a guess.
+          </p>
+        </div>
+        <div class="finding">
+          <h4>There is nowhere to put slide paint</h4>
+          <p>
+            Opacity, shadow, corner radius, dash pattern, line cap — none of them exist. The only
+            paint an element carries is <span class="m">BlockFormat</span>, which documents and
+            spreadsheets share. Pushing slide-object vocabulary into the shared content primitive
+            gives the other two editors words they cannot honour.
+          </p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <h4>Already there, and worth knowing</h4>
+        <p>
+          <span class="m">slide-decks/style-set.ts</span> and
+          <span class="m">documents/style-set.ts</span> are the same file twice —
+          <span class="m">TextStyle</span> already carries <span class="m">lineHeight</span>,
+          <span class="m">spaceBefore</span>, <span class="m">spaceAfter</span>,
+          <span class="m">horizontalAlignment</span> and <span class="m">indent</span> in both. So
+          spacing and alignment are not a schema problem on either side. The gap is a renderer that
+          reads them, an inspector that writes them, and an op that carries the write. That is the
+          same three-part gap on both editors, which is exactly why they will stay matched.
+        </p>
+      </div>
+
+      <p>
+        <span class="m">notes: ContentBlock[]</span> already sits on every slide, unused. Speaker
+        notes need no schema work at all — only a lens and the text ops that any block edit needs.
+      </p>
+    </section>
+
+    <!-- ============================================================ 04 -->
+    <section id="ops">
+      <div class="head"><span class="n">04</span><h2>What the applier takes</h2></div>
+
+      <p>
+        Every gesture in the target state has to reduce to an op the applier accepts. This is the
+        whole ledger. Six rows are built; the rest is refused by name today —
+        <span class="m">cannot apply set on element at el-4/rotation</span>.
+      </p>
+
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Gesture</th><th>Op</th><th>Target</th><th>Path</th><th>State</th><th>Scope</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Move or resize an object</td><td class="tight m">set</td><td class="tight m">element</td><td class="m">&lt;el&gt;/frame</td><td><span class="pill is-built">Built</span></td><td class="verdict" data-scope="op-frame"></td></tr>
+            <tr><td>Re-anchor a section</td><td class="tight m">set</td><td class="tight m">section</td><td class="m">&lt;sec&gt;/firstSlideId</td><td><span class="pill is-built">Built</span></td><td class="verdict" data-scope="op-section-anchor"></td></tr>
+            <tr><td>New or duplicate a slide</td><td class="tight m">insert</td><td class="tight m">slide</td><td class="m">slides</td><td><span class="pill is-built">Built</span></td><td class="verdict" data-scope="op-slide-insert"></td></tr>
+            <tr><td>Delete a slide</td><td class="tight m">remove</td><td class="tight m">slide</td><td class="m">slides</td><td><span class="pill is-built">Built</span></td><td class="verdict" data-scope="op-slide-remove"></td></tr>
+            <tr><td>Reorder slides</td><td class="tight m">move</td><td class="tight m">slide</td><td class="m">slides</td><td><span class="pill is-built">Built</span></td><td class="verdict" data-scope="op-slide-move"></td></tr>
+            <tr><td>Add or drop a section</td><td class="tight m">insert / remove</td><td class="tight m">section</td><td class="m">sections</td><td><span class="pill is-built">Built</span></td><td class="verdict" data-scope="op-section"></td></tr>
+
+            <tr><td>Rotate an object</td><td class="tight m">set</td><td class="tight m">element</td><td class="m">&lt;el&gt;/rotation</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-rotate"></td></tr>
+            <tr><td>Fill, stroke, opacity, shadow, corner</td><td class="tight m">set</td><td class="tight m">element</td><td class="m">&lt;el&gt;/paint</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-paint"></td></tr>
+            <tr><td>Name an object <span class="note-cell">(Layers needs a label)</span></td><td class="tight m">set</td><td class="tight m">element</td><td class="m">&lt;el&gt;/name</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-name"></td></tr>
+            <tr><td>Change overflow</td><td class="tight m">set</td><td class="tight m">element</td><td class="m">&lt;el&gt;/overflow</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-overflow"></td></tr>
+            <tr><td>Insert a shape, text box, image, table</td><td class="tight m">insert</td><td class="tight m">element</td><td class="m">&lt;slide&gt;/elements</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-el-insert"></td></tr>
+            <tr><td>Delete an object</td><td class="tight m">remove</td><td class="tight m">element</td><td class="m">&lt;slide&gt;/elements</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-el-remove"></td></tr>
+            <tr><td>Restack — front, forward, back, behind</td><td class="tight m">move</td><td class="tight m">element</td><td class="m">&lt;slide&gt;/elements</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-el-move"></td></tr>
+
+            <tr><td>Type into a box or into notes</td><td class="tight m">text</td><td class="tight m">atom</td><td class="m">&lt;blk&gt;/atoms/&lt;atm&gt;</td><td><span class="pill is-part">Document has it</span></td><td class="verdict" data-scope="op-text"></td></tr>
+            <tr><td>Split or join a paragraph</td><td class="tight m">insert / remove</td><td class="tight m">block</td><td class="m">&lt;el&gt;/blocks</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-block"></td></tr>
+            <tr><td>Reorder paragraphs in a box</td><td class="tight m">move</td><td class="tight m">block</td><td class="m">&lt;el&gt;/blocks</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-block-move"></td></tr>
+            <tr><td>Apply a named style</td><td class="tight m">set</td><td class="tight m">block</td><td class="m">&lt;blk&gt;/style</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-block-style"></td></tr>
+            <tr><td>Alignment and spacing on a paragraph</td><td class="tight m">set</td><td class="tight m">block</td><td class="m">&lt;blk&gt;/format</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-block-format"></td></tr>
+            <tr><td>Bold, italic, link, colour a range</td><td class="tight m">insert / remove / set</td><td class="tight m">mark</td><td class="m">&lt;blk&gt;/marks</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-mark"></td></tr>
+
+            <tr><td>Hide a slide</td><td class="tight m">set</td><td class="tight m">slide</td><td class="m">&lt;slide&gt;/hidden</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-slide-hidden"></td></tr>
+            <tr><td>Slide background</td><td class="tight m">set</td><td class="tight m">slide</td><td class="m">&lt;slide&gt;/background</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-slide-bg"></td></tr>
+            <tr><td>Apply a layout to a slide</td><td class="tight m">set</td><td class="tight m">slide</td><td class="m">&lt;slide&gt;/layoutKey</td><td><span class="pill is-gap">Missing</span></td><td class="verdict" data-scope="op-slide-layout"></td></tr>
+
+            <tr><td>Aspect ratio, theme, named styles</td><td class="tight m">set</td><td class="tight m">deck</td><td class="m">aspectRatio · theme/… · styles/…</td><td><span class="pill is-gap">No such target</span></td><td class="verdict" data-scope="op-deck"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="finding">
+        <h4>Two structural blocks, not twenty-two separate ones</h4>
+        <p>
+          <strong>There is no <span class="m">deck</span> target.</strong>
+          <span class="m">DeckTarget</span> is <span class="m">slide | element | section | block |
+          atom | mark</span>, so nothing addresses the body's own fields.
+          <strong>And <span class="m">set</span> refuses any path deeper than two segments</strong> —
+          <span class="m">applySet</span> destructures <span class="m">[id, field, ...rest]</span> and
+          calls <span class="m">refuse</span> when <span class="m">rest</span> is non-empty. So
+          <span class="m">theme/colors/text</span> is unreachable by construction. Both are one-line
+          changes to the type plus a branch in the applier, and both have to land before any theme
+          panel can write.
+        </p>
+      </div>
+
+      <p>
+        The good news is that the document's applier is the template for most of this. Its
+        <span class="m">applyText</span>, <span class="m">mapBlock</span>,
+        <span class="m">insertAfter</span> and <span class="m">withoutIds</span> already do the work;
+        the deck's copy differs only in that a block is reached through
+        <span class="m">slide → element → blocks</span> rather than
+        <span class="m">row → blocks</span>.
+      </p>
+    </section>
+
+    <!-- ============================================================ 05 -->
+    <section id="today">
+      <div class="head"><span class="n">05</span><h2>The editor today</h2></div>
+
+      <figure>
+        <img src="data:image/jpeg;base64,/9j//gAPTGF2YzYzLjEuMTAxAP/bAEMACAwMDgwOEBAQEBAQExITFBQUExMTExQUFBUVFRkZGRUVFRQUFRUYGBkZGxwbGhoZGhwcHh4eJCQiIioqKzMzPv/EAMEAAQADAQEBAQEAAAAAAAAAAAACBQQGAwcBCAEBAQEBAQEBAQAAAAAAAAAAAAECAwQGBQcQAAIBAgMDBwgGCAUCBQMFAQABAgMREgQhUTETUpGhceEFsRQigUEyM2LRk1QGYdJTkrI0s0IjcxV0FtPwwTVyooLio8IHY0NVZLREJIQRAQABAgMCCggEBQQDAQEAAAABEQIDMRJhUyFR0ZKykZMTUgRBcjMUcbEy4nOCI4HB4QUVoaJi8NI0Q0LxIv/AABEIAsoEsAMBEgACEgADEgD/2gAMAwEAAhEDEQA/APtQOI0BQy7xlDynFR9zWp0IKNS7qzqYcO+KUF5yvvtqGqZCVXxSZjPVMrluLVoWqY8EaSqRam994ztuwpvVJ6bjLVKyqLs5nOd8QyvCcYwnGpQddOVVU24q3mwTjLFN30joZbi2qs1dMUlTvFQVd8N/ynllq7N+UYfu0cb6r1mGqfxaSq7Kann+Jm6mW4ajgcleVRKcrJPFGk1dwd9JJv70ZapwVVFyDIoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVU82oy2xTxSlDz1w7NJyatg8/r3MKItTypzxxT82+6SjLElL1q/wBxBR6gABHEtoAVb7uoy46k6suPONSV5+zONsMqbSTi42VupFpiW01VlKKrP7fQapqpjrYJTn/OlxMUpqzlJSunZezuS9RZ4ltLVEoqnfdeVcFTam4xpSox872YSmp6O2jjJLC/VYuMS2mqyylFVlTu+hVq8WTqX/l4oqbUKjpO8HUitJOLLPEtpaolFYfI6brqu5VZSi5SjGVSThCUlhbjF7rrTYvUbsS2lqiKkRxLaAEiOJbQAkRxLaAEiOJbQAkRxLaAEiOJbQAkRxLaAEiOJbQAkRxLaAEiOJbQAkRxLaAEiOJbQAkRxLaAEiOJbQAkRxLaAEiOJbQAkRxLaAEiOJbQAkRxLaAEiOJbQAkRxIAJEboAJEboAJEboAJEboAJEboAJEboAJEboAJEboAJEboAJEboAJEboAJEboAJEboAJEboAJEboAJEcSACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltACRHEtoASI4ltADBUyqqTUnqr6q7j5ltI2jZStPzvPvvZvxLaBFfkE4xSbxP1uyV3tstNT9xLaAEiOJbQAkAAjKSgnKTSSV23okinz9Th4JOzUY1ZJSTcXUilguvX67IKItadWFaOKEsS3evR7Gnqn1lJlq3FzCalGcv5sZyhFxUoxwYJSV2t7aTIqo6AEFAr85i4atitxIY8OLFgvrbB53Xb1BRG2E41FihJSW2LTXOjnqCUatJUsSu71F/wD6MNnCWJvieb7d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" alt="The Icarus slide deck editor: a Slides context panel on the left with six thumbnails and three action buttons, a white 16:9 slide on a pasteboard in the centre, an empty inspector on the right reading Nothing selected, and a row of numbered pips along the bottom left.">
+        <figcaption>
+          Board review — Q1 exposure, six slides, at 1680&nbsp;×&nbsp;1000. The Slides panel is real.
+          Everything to the right of the canvas is the empty-state placeholder, and the row of pips
+          bottom-left is the thing to remove.
+        </figcaption>
+      </figure>
+
+      <div class="scroll">
+        <table>
+          <thead><tr><th>What it does now</th><th>What is wrong with it</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Draws the slide with Konva</strong> — one stage, one layer, one transformer with <span class="m">resizeEnabled: false</span> and <span class="m">rotateEnabled: false</span>.</td>
+              <td>No resize, no rotate, no text editing. A text element is a single <span class="m">Konva.Text</span> of <span class="m">block.display</span> with no marks, no wrapping control and no alignment. Paint order is array order, so on slide&nbsp;2 the shapes cover the title.</td>
+            </tr>
+            <tr>
+              <td><strong>Renders the slide a second time</strong> in the Slides panel, as absolutely positioned <span class="m">div</span>s and <span class="m">span</span>s.</td>
+              <td>Two renderers of one data structure, already drifting: the thumbnail honours <span class="m">format.background</span> and <span class="m">format.border</span>, the canvas honours them only on the blockless branch.</td>
+            </tr>
+            <tr>
+              <td><strong>Selects on click</strong>, into a local <span class="m">$state</span>.</td>
+              <td>The inspector never hears about it. No shift-click, no marquee, no keyboard selection, no Escape.</td>
+            </tr>
+            <tr>
+              <td><strong>Numbered pips along the bottom</strong>, one per slide, plus <span class="m">Slide n of m · 16:9 · saved</span>.</td>
+              <td>A second slide selector competing with the Slides panel, and it does not scale past a dozen slides.</td>
+            </tr>
+            <tr>
+              <td><strong>Zoom on ctrl + wheel</strong>, clamped 50–200%.</td>
+              <td>No visible control, no Fit, no way to discover it.</td>
+            </tr>
+            <tr>
+              <td><strong>Slides panel</strong> — new, duplicate, delete, drag-reorder, alt+arrow to step.</td>
+              <td>Drag-reorder drops <em>onto</em> a target and marks it with a top border, so the last position is unreachable and the first is awkward. The three action buttons are full-strength blue, teal and red for what are ordinary verbs.</td>
+            </tr>
+            <tr>
+              <td><strong>Undo and redo exist</strong> on the runtime, with passing tests for invert and coalesce.</td>
+              <td>Nothing calls them. <span class="m">COMMAND_IDS</span> holds four ids — <span class="m">command-bar.open</span>, <span class="m">tab.close</span>, <span class="m">tab.next</span>, <span class="m">tab.previous</span> — and none is undo.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================ 06 -->
+    <section id="frame">
+      <div class="head"><span class="n">06</span><h2>The frame to build</h2></div>
+
+      <p>
+        The editor keeps its three zones and gains no toolbar. A gesture is entered from the panel
+        that already holds the thing it acts on; the canvas stays a canvas.
+      </p>
+
+      <div class="sub">
+        <h3>The strip under the canvas</h3>
+        <p>The pips go. What is left is movement, notes, and the two facts worth permanent width.</p>
+
+        <div class="mockrow">
+          <div class="mock">
+            <div class="cap"><span>Today</span><span class="pill is-gap">Replace</span></div>
+            <div class="body">
+              <div class="strip">
+                <div class="pipset struck">
+                  <span class="pip">1</span><span class="pip">2</span><span class="pip">3</span>
+                  <span class="pip">4</span><span class="pip">5</span><span class="pip on">6</span>
+                </div>
+                <span class="spacer"></span>
+                <span class="status">Slide 6 of 6 · 16:9 · saved</span>
+              </div>
+              <p class="mp-note">Six buttons that duplicate the Slides panel, and grow with the deck.</p>
+            </div>
+          </div>
+
+          <div class="mock">
+            <div class="cap"><span>Target</span><span class="pill is-target">Build</span></div>
+            <div class="body">
+              <div class="strip">
+                <span class="mp-btn" style="flex:0 0 auto">‹ Previous</span>
+                <span class="mp-btn" style="flex:0 0 auto">Next ›</span>
+                <span class="mp-btn" style="flex:0 0 auto">Notes</span>
+                <span class="spacer"></span>
+                <span class="mp-btn" style="flex:0 0 auto">−</span>
+                <span class="status">100%</span>
+                <span class="mp-btn" style="flex:0 0 auto">+</span>
+                <span class="mp-btn" style="flex:0 0 auto">Fit</span>
+                <span class="status">· 16:9 · Saved</span>
+              </div>
+              <p class="mp-note">
+                Previous and Next move the focus without leaving the canvas. Notes opens
+                <span class="m">slide-deck-editor.speaker-notes</span> in the inspector — it is a way
+                in, not a tray. Zoom becomes visible for the first time.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Drag-reorder in the Slides panel</h3>
+        <div class="mockrow">
+          <div class="mock">
+            <div class="cap"><span>Today — drop onto a slide</span><span class="pill is-gap">Fix</span></div>
+            <div class="body">
+              <div class="reel">
+                <div class="marker-top"></div>
+                <div class="slot"><span class="idx">1</span><div class="thumb"><span class="bar" style="left:8%;top:14%;width:60%;height:10%"></span><span class="bar" style="left:8%;top:40%;width:46%;height:6%"></span></div></div>
+                <div class="slot"><span class="idx">2</span><div class="thumb"><span class="bar" style="left:8%;top:14%;width:52%;height:10%"></span></div></div>
+                <div class="slot"><span class="idx">3</span><div class="thumb on"><span class="bar" style="left:8%;top:14%;width:66%;height:10%"></span><span class="bar" style="left:8%;top:44%;width:38%;height:26%"></span></div></div>
+              </div>
+              <p class="mp-note">
+                The marker is a top border on the row you are over, so a drop always means
+                <em>before this one</em>. There is no row after the last, so the tail is unreachable,
+                and the head needs you to aim at slide&nbsp;1 exactly.
+              </p>
+            </div>
+          </div>
+
+          <div class="mock">
+            <div class="cap"><span>Target — drop into a gap</span><span class="pill is-target">Build</span></div>
+            <div class="body">
+              <div class="reel">
+                <div class="slot"><span class="idx">1</span><div class="thumb"><span class="bar" style="left:8%;top:14%;width:60%;height:10%"></span><span class="bar" style="left:8%;top:40%;width:46%;height:6%"></span></div></div>
+                <div class="marker-line"></div>
+                <div class="slot"><span class="idx">2</span><div class="thumb"><span class="bar" style="left:8%;top:14%;width:52%;height:10%"></span></div></div>
+                <div class="slot"><span class="idx">3</span><div class="thumb on"><span class="bar" style="left:8%;top:14%;width:66%;height:10%"></span><span class="bar" style="left:8%;top:44%;width:38%;height:26%"></span></div></div>
+                <div style="height:6px"></div>
+              </div>
+              <p class="mp-note">
+                Drop zones are the gaps, including one above the first row and one below the last.
+                The insertion line is where the slide will land. The op is unchanged —
+                <span class="m">withMovedSlide(body, id, afterId)</span> already takes
+                <span class="m">null</span> for the head.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>The context rail</h3>
+        <p>
+          Fifteen keys are declared and twelve are in the rail. Your list is Slides, Templates,
+          Variables, Layers, Layout, Theme and Prompts. Below is every candidate with what it would
+          hold; mark each one in, later or out and the rail is settled.
+        </p>
+
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Entry</th><th>Key</th><th>Holds</th><th>State</th><th>Scope</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Slides</strong></td><td class="m">…slides</td><td>The reel, the four verbs, section bands. The only place a slide is chosen.</td><td><span class="pill is-built">Built</span></td><td class="verdict" data-scope="rail-slides"></td></tr>
+              <tr><td><strong>Layers</strong></td><td class="m">…layers</td><td>Everything on this slide in stacking order, front at the top. Restack verbs. The canvas's accessibility fallback.</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="rail-layers"></td></tr>
+              <tr><td><strong>Layout</strong></td><td class="m">…layouts</td><td>Which layout this slide uses and what else it could use, as cards. Applying, not editing.</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="rail-layout"></td></tr>
+              <tr><td><strong>Theme</strong></td><td class="m">…theme</td><td>Deck-wide colour, type and named styles. Needs the <span class="m">deck</span> op target first.</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="rail-theme"></td></tr>
+              <tr><td><strong>Variables</strong></td><td class="m">…variables</td><td>The project name manager. The same panel in all three editors.</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="rail-variables"></td></tr>
+              <tr><td><strong>Templates</strong></td><td class="m">— new key</td><td>Placeholder. No key declared yet; adding one is a line in <span class="m">workspace/views.ts</span>.</td><td><span class="pill is-gap">New</span></td><td class="verdict" data-scope="rail-templates"></td></tr>
+              <tr><td><strong>Prompts</strong></td><td class="m">— new key</td><td>Placeholder. Same.</td><td><span class="pill is-gap">New</span></td><td class="verdict" data-scope="rail-prompts"></td></tr>
+              <tr><td><strong>Insert</strong></td><td class="m">…insert</td><td>Shapes, lines, text boxes, images, tables. <em>With no toolbar this is the only way to add an object.</em></td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="rail-insert"></td></tr>
+              <tr><td>Find</td><td class="m">…find</td><td>Deck-wide search, reaching into speaker notes. Shared shape with the other editors.</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="rail-find"></td></tr>
+              <tr><td>Comments</td><td class="m">…comments</td><td>Threads, chipped Deck / Slide n / element. Anchor below slide level is unsettled.</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="rail-comments"></td></tr>
+              <tr><td>Context</td><td class="m">…context</td><td>Named scopes. Deliberately identical in all three editors.</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="rail-context"></td></tr>
+              <tr><td>Overview</td><td class="m">…overview</td><td>Title, slide count, aspect ratio. You did not name it — the deck lens could carry all of it.</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="rail-overview"></td></tr>
+              <tr><td>Stage</td><td class="m">…stage</td><td>Read-only geometry. Built, but it is a debug readout — the strip now shows zoom and ratio.</td><td><span class="pill is-built">Built</span></td><td class="verdict" data-scope="rail-stage"></td></tr>
+              <tr><td>Notes</td><td class="m">…notes</td><td>Per-slide notes plus a deck-wide gap list. Overlaps the Notes button and the notes lens.</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="rail-notes"></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>The inspector</h3>
+        <p>
+          Every lens is the deck's own. Nothing is shared with the document editor — copied where the
+          shape is the same, never imported, because the two will diverge and a shared panel is where
+          the divergence turns into a conditional.
+        </p>
+
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Lens</th><th>Key</th><th>Opens when</th><th>State</th><th>Scope</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Slide</strong></td><td class="m">…slide</td><td>A row picked in the Slides panel, or the canvas clicked with nothing on it</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="lens-slide"></td></tr>
+              <tr><td><strong>Shape</strong></td><td class="m">…shape · new</td><td>A rectangle, ellipse, triangle or arrow is picked</td><td><span class="pill is-gap">New</span></td><td class="verdict" data-scope="lens-shape"></td></tr>
+              <tr><td><strong>Line</strong></td><td class="m">…line · new</td><td>A line or connector is picked</td><td><span class="pill is-gap">New</span></td><td class="verdict" data-scope="lens-line"></td></tr>
+              <tr><td><strong>Text box</strong></td><td class="m">…text-box · new</td><td>A text element is picked, but not entered</td><td><span class="pill is-gap">New</span></td><td class="verdict" data-scope="lens-text-box"></td></tr>
+              <tr><td><strong>Image</strong></td><td class="m">…image · new</td><td>A picture is picked</td><td><span class="pill is-gap">New</span></td><td class="verdict" data-scope="lens-image"></td></tr>
+              <tr><td><strong>Table</strong></td><td class="m">…table · new</td><td>A table is picked, or a cell inside one</td><td><span class="pill is-gap">New</span></td><td class="verdict" data-scope="lens-table"></td></tr>
+              <tr><td>Chart</td><td class="m">…chart · new</td><td>A chart is picked. Nothing renders one yet.</td><td><span class="pill is-gap">New</span></td><td class="verdict" data-scope="lens-chart"></td></tr>
+              <tr><td><strong>Multiple objects</strong></td><td class="m">…multi-selection</td><td>Two or more picked. Align and distribute live only here.</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="lens-multi"></td></tr>
+              <tr><td><strong>Text selection</strong></td><td class="m">…text-selection · new</td><td>A non-empty selection inside a text box. Also serves a selection spanning blocks.</td><td><span class="pill is-gap">New</span></td><td class="verdict" data-scope="lens-text-selection"></td></tr>
+              <tr><td><strong>Next letter</strong></td><td class="m">…next-letter · new</td><td>A collapsed caret. What the next keystroke will be.</td><td><span class="pill is-gap">New</span></td><td class="verdict" data-scope="lens-next-letter"></td></tr>
+              <tr><td><strong>Speaker notes</strong></td><td class="m">…speaker-notes</td><td>The Notes button, or a Find hit in notes</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="lens-speaker-notes"></td></tr>
+              <tr><td>Deck</td><td class="m">…deck</td><td>Nothing selected. Title, slides, ratio, saved.</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="lens-deck"></td></tr>
+              <tr><td>Theme · Named style</td><td class="m">…theme · …named-style</td><td>Reached from the Theme panel</td><td><span class="pill is-gap">Empty</span></td><td class="verdict" data-scope="lens-theme"></td></tr>
+              <tr><td>Layout · Placeholder · Locked element</td><td class="m">…layout · …placeholder · …locked-element</td><td>Only while a layout is being edited — a rail move the model cannot express yet</td><td><span class="pill is-gap">Blocked</span></td><td class="verdict" data-scope="lens-layout"></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p style="margin-top:calc(var(--u)*6)">Three of them drawn, so the shape is arguable rather than abstract.</p>
+
+        <div class="mockrow">
+          <!-- shape lens -->
+          <div class="mock">
+            <div class="cap"><span>inspector / shape</span><span class="pill is-target">Mock</span></div>
+            <div class="body">
+              <div class="mp-crumbs"><u>Deck</u> › <u>Slide 2</u> › Rectangle</div>
+              <div class="mp-title">Rectangle</div>
+
+              <div class="mp-sec"><span>Position &amp; size</span><span>fractions</span></div>
+              <div class="mp-field"><span>X</span><span>0.380</span></div>
+              <div class="mp-field"><span>Y</span><span>0.500</span></div>
+              <div class="mp-field"><span>Width</span><span>0.240</span></div>
+              <div class="mp-field"><span>Height</span><span>0.320</span></div>
+              <div class="mp-field"><span>Rotation</span><span>0°</span></div>
+              <p class="mp-note">Under the pointer these are pixels. Stored as fractions, so a change of ratio does not move anything.</p>
+
+              <div class="mp-sec"><span>Arrange</span><span>2 of 4</span></div>
+              <div class="mp-controls">
+                <span class="mp-btn dim">Front</span><span class="mp-btn">Forward</span>
+                <span class="mp-btn">Back</span><span class="mp-btn dim">Behind</span>
+              </div>
+              <p class="mp-note">Shift-click a second object for align and distribute.</p>
+
+              <div class="mp-sec"><span>Fill &amp; stroke</span></div>
+              <div class="mp-field"><span>Fill</span><span><span class="mp-swatch" style="background:#187d74"></span>Accent 2</span></div>
+              <div class="mp-field"><span>Stroke</span><span><span class="mp-swatch" style="background:transparent"></span>None</span></div>
+              <div class="mp-field"><span>Width</span><span>0</span></div>
+              <div class="mp-field"><span>Dash</span><span>Solid</span></div>
+
+              <div class="mp-sec"><span>Effects</span></div>
+              <div class="mp-field"><span>Opacity</span><span>100%</span></div>
+              <div class="mp-field"><span>Corner</span><span>2</span></div>
+              <div class="mp-field"><span>Shadow</span><span>None</span></div>
+
+              <div class="mp-sec"><span>Content</span></div>
+              <div class="mp-controls"><span class="mp-btn wide">Add text to this shape</span></div>
+
+              <div class="mp-sec"><span>Placeholder origin</span></div>
+              <p class="mp-note">Drawn on the slide. Nothing to reset to.</p>
+            </div>
+          </div>
+
+          <!-- text selection lens -->
+          <div class="mock">
+            <div class="cap"><span>inspector / text-selection</span><span class="pill is-target">Mock</span></div>
+            <div class="body">
+              <div class="mp-crumbs"><u>Slide 2</u> › <u>Title</u> › Selection</div>
+              <div class="mp-title">Text selection</div>
+
+              <div class="mp-quote">Where the load sits<cite>19 characters · one block</cite></div>
+
+              <div class="mp-sec"><span>Style</span></div>
+              <div class="mp-controls"><span class="mp-btn wide">Title</span><span class="mp-btn">Edit</span></div>
+              <div class="mp-controls"><span class="mp-btn wide">IBM Plex Sans</span><span class="mp-input" style="flex:0 0 3rem;text-align:center">44</span></div>
+              <div class="mp-controls">
+                <span class="mp-btn on" style="font-weight:700">B</span>
+                <span class="mp-btn" style="font-style:italic">I</span>
+                <span class="mp-btn" style="text-decoration:underline">U</span>
+                <span class="mp-btn" style="text-decoration:line-through">S</span>
+              </div>
+              <div class="mp-controls">
+                <span class="mp-btn"><span class="mp-swatch" style="background:#1d2329"></span>Ink</span>
+                <span class="mp-btn"><span class="mp-swatch" style="background:transparent"></span>None</span>
+              </div>
+
+              <div class="mp-sec"><span>Alignment</span><span>new, matched with documents</span></div>
+              <div class="mp-controls">
+                <span class="mp-btn on">Start</span><span class="mp-btn">Center</span>
+                <span class="mp-btn">End</span><span class="mp-btn">Justify</span>
+              </div>
+              <div class="mp-controls">
+                <span class="mp-btn">Top</span><span class="mp-btn on">Middle</span><span class="mp-btn">Bottom</span>
+              </div>
+
+              <div class="mp-sec"><span>Spacing</span><span>new, matched with documents</span></div>
+              <div class="mp-field"><span>Line height</span><span>1.30</span></div>
+              <div class="mp-field"><span>Space before</span><span>0</span></div>
+              <div class="mp-field"><span>Space after</span><span>8</span></div>
+              <div class="mp-field"><span>Indent</span><span>0</span></div>
+              <p class="mp-note">Every field here already exists on <span class="m">TextStyle</span>, identically in both editors. Setting one on a selection rather than on the style writes <span class="m">block/format</span>.</p>
+
+              <div class="mp-sec"><span>Links · Comments</span></div>
+              <p class="mp-note">Two shut bands, as in the document.</p>
+            </div>
+          </div>
+
+          <!-- multi selection lens -->
+          <div class="mock">
+            <div class="cap"><span>inspector / multi-selection</span><span class="pill is-target">Mock</span></div>
+            <div class="body">
+              <div class="mp-crumbs"><u>Deck</u> › <u>Slide 2</u> › 3 objects</div>
+              <div class="mp-title">3 objects</div>
+
+              <div class="mp-sec"><span>Members</span><span>3</span></div>
+              <div class="mp-list">
+                <div class="mp-item"><span class="glyph">▭</span><span class="grow">Feeder A</span><span class="m" style="font-size:10px">el-5</span></div>
+                <div class="mp-item"><span class="glyph">▭</span><span class="grow">Feeder B</span><span class="m" style="font-size:10px">el-6</span></div>
+                <div class="mp-item"><span class="glyph">▭</span><span class="grow">Feeder C</span><span class="m" style="font-size:10px">el-7</span></div>
+              </div>
+
+              <div class="mp-sec"><span>Align</span></div>
+              <div class="mp-controls">
+                <span class="mp-btn">Left</span><span class="mp-btn">Centre</span><span class="mp-btn">Right</span>
+              </div>
+              <div class="mp-controls">
+                <span class="mp-btn">Top</span><span class="mp-btn">Middle</span><span class="mp-btn">Bottom</span>
+              </div>
+
+              <div class="mp-sec"><span>Distribute</span></div>
+              <div class="mp-controls">
+                <span class="mp-btn">Horizontally</span><span class="mp-btn">Vertically</span>
+              </div>
+              <p class="mp-note">Dark with two members — there is nothing between two things to distribute.</p>
+
+              <div class="mp-sec"><span>Arrange</span></div>
+              <div class="mp-controls">
+                <span class="mp-btn">Front</span><span class="mp-btn">Forward</span>
+                <span class="mp-btn">Back</span><span class="mp-btn">Behind</span>
+              </div>
+
+              <div class="mp-sec"><span>Shared geometry</span></div>
+              <div class="mp-field"><span>Y</span><span class="mixed">Mixed</span></div>
+              <div class="mp-field"><span>Width</span><span>0.240</span></div>
+              <div class="mp-field"><span>Height</span><span class="mixed">Mixed</span></div>
+
+              <div class="mp-sec"><span>Shared paint</span></div>
+              <div class="mp-field"><span>Fill</span><span class="mixed">Mixed</span></div>
+              <div class="mp-field"><span>Opacity</span><span>100%</span></div>
+              <p class="mp-note">Mixed is a value. Typing over it sets all three — the only honest way to edit three values through one field.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 07 -->
+    <section id="text">
+      <div class="head"><span class="n">07</span><h2>Text, shared with documents</h2></div>
+
+      <p>
+        Slides hold <span class="m">ContentBlock</span>s, which is what the document editor edits. So
+        the text work is one body of work with two housings, and the two have to stay matched. Here
+        is exactly what the document has, so nothing is copied on trust.
+      </p>
+
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Piece</th><th>Document editor today</th><th>What the deck needs</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Editor</strong></td>
+              <td>ProseMirror. Schema is <span class="m">doc › page › blocks_row › text_block › text</span>, and nothing else — <span class="m">marks: {}</span> is literally empty.</td>
+              <td>The same library, a different schema: a slide is not a flow, so there is no page and no row. One instance per text box.</td>
+            </tr>
+            <tr>
+              <td><strong>Body ⇄ editor</strong></td>
+              <td><span class="m">projection.ts</span>. Only a text block whose whole content is one literal atom is drawn; everything else is carried through <span class="m">putBack</span> untouched.</td>
+              <td>The same trick, one level shallower. Copy it.</td>
+            </tr>
+            <tr>
+              <td><strong>Editor ⇄ ops</strong></td>
+              <td><span class="m">translate.ts</span>. Diffs two bodies into ops; the text op is a common-prefix / common-suffix splice.</td>
+              <td>Copy it. The only change is the path: <span class="m">&lt;el&gt;/blocks</span> instead of <span class="m">&lt;row&gt;/blocks</span>.</td>
+            </tr>
+            <tr>
+              <td><strong>Selection signal</strong></td>
+              <td><span class="m">inspecting.ts</span> — <span class="m">signalOf</span> returns one of three: <span class="m">text-selection</span>, <span class="m">empty-block</span>, <span class="m">next-letter</span>. <span class="m">worthSending</span> suppresses caret noise.</td>
+              <td>Copy it, plus a fourth branch: no PM instance focused means an <em>object</em> selection, which is the deck's own concern.</td>
+            </tr>
+            <tr>
+              <td><strong>Held selection</strong></td>
+              <td><span class="m">highlight.ts</span> — a plugin that keeps the range lit on blur, so clicking into the inspector does not appear to deselect. Landed in <span class="m">7730b78</span>.</td>
+              <td>Copy it verbatim. It is the thing that makes an inspector-driven editor feel right.</td>
+            </tr>
+            <tr>
+              <td><strong>next-letter lens</strong></td>
+              <td><span class="pill is-gap">Not built</span> The signal fires and the key is declared; no <span class="m">inspector/next-letter.svelte</span> exists, so it renders the placeholder.</td>
+              <td>Build it once, in whichever editor comes first, then copy. It is the text-selection lens with the quote replaced by "what the next keystroke will be".</td>
+            </tr>
+            <tr>
+              <td><strong>text-selection lens</strong></td>
+              <td><span class="pill is-part">A mock</span> It reads the quoted text and the character count from the body. Every Style control holds local state and writes nothing; the comments and links are invented rows.</td>
+              <td>Copying it today copies a mock. Making it real needs marks in the schema and a <span class="m">mark</span> op — which is the same work on both sides.</td>
+            </tr>
+            <tr>
+              <td><strong>Alignment &amp; spacing</strong></td>
+              <td><span class="pill is-gap">Neither</span> Not in the schema, not in the lens, not rendered.</td>
+              <td>Both are already in <span class="m">TextStyle</span> in both editors, and alignment is already in <span class="m">BlockFormat</span>. Add block spacing to <span class="m">BlockFormat</span> once and both get it.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <h4>Multi-text selection is one lens, and you were right about that</h4>
+        <p>
+          In the document, a selection that crosses two blocks is the same lens with
+          <span class="m">selection.at</span> set on a different block, and the panel says so in a
+          note. In a deck, with one ProseMirror instance per text box, a selection cannot cross two
+          boxes at all — no editor lets you do that. So "multi-text selection" is either a selection
+          spanning paragraphs inside one box, which is identical, or it does not exist. One lens.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================ 08 -->
+    <section id="objects">
+      <div class="head"><span class="n">08</span><h2>Objects and arrangement</h2></div>
+
+      <p>
+        Arrangement is pure geometry over frames, which makes it the cheapest quality in the whole
+        build: a procedure file with no browser in it, and a test per verb.
+      </p>
+
+      <div class="two">
+        <div>
+          <h3>What a stage gesture looks like</h3>
+          <div class="stage-wrap">
+            <div class="stage">
+              <div class="obj" style="left:8%;top:12%;width:56%;height:14%">
+                <div style="font-family:var(--cond);font-weight:700;font-size:clamp(11px,2.1vw,19px);color:var(--ink);line-height:1.1">Where the load sits</div>
+              </div>
+              <div class="obj picked" style="left:8%;top:40%;width:26%;height:40%;background:color-mix(in srgb, #bc386f 82%, transparent)">
+                <span class="handle" style="left:-4px;top:-4px"></span>
+                <span class="handle" style="right:-4px;top:-4px"></span>
+                <span class="handle" style="left:-4px;bottom:-4px"></span>
+                <span class="handle" style="right:-4px;bottom:-4px"></span>
+                <span class="handle" style="left:calc(50% - 3.5px);top:-4px"></span>
+                <span class="handle" style="left:calc(50% - 3.5px);bottom:-4px"></span>
+                <span class="handle" style="left:-4px;top:calc(50% - 3.5px)"></span>
+                <span class="handle" style="right:-4px;top:calc(50% - 3.5px)"></span>
+              </div>
+              <div class="obj" style="left:40%;top:52%;width:26%;height:28%;background:#187d74"></div>
+              <div class="obj" style="left:72%;top:56%;width:20%;height:24%;background:#3a424d"></div>
+              <span class="guide" style="left:8%;top:0;width:1px;height:100%"></span>
+              <span class="guide" style="left:0;top:80%;width:100%;height:1px"></span>
+              <span class="label" style="left:9%;top:2%">left edge</span>
+              <span class="label" style="left:66%;top:82%">bottoms align</span>
+            </div>
+          </div>
+          <p class="mp-note" style="max-width:60ch">
+            Eight handles, transient snap guides drawn only during the drag, and a live label naming
+            what is being matched. Guides you place yourself are not proposed — these appear and go.
+          </p>
+        </div>
+
+        <div>
+          <h3>Every object property</h3>
+          <div class="scroll" style="margin-top:0">
+            <table>
+              <thead><tr><th>Property</th><th>Where it lands</th><th>Scope</th></tr></thead>
+              <tbody>
+                <tr><td>Align — 6 verbs</td><td class="note-cell">procedures/arrange.ts, pure</td><td class="verdict" data-scope="obj-align"></td></tr>
+                <tr><td>Distribute — 2 verbs</td><td class="note-cell">procedures/arrange.ts, pure</td><td class="verdict" data-scope="obj-distribute"></td></tr>
+                <tr><td>Stack order — 4 verbs</td><td class="note-cell"><span class="m">move · element</span></td><td class="verdict" data-scope="obj-order"></td></tr>
+                <tr><td>Snapping — edges, centres, siblings</td><td class="note-cell">Editor only, nothing stored. Alt suspends.</td><td class="verdict" data-scope="obj-snap"></td></tr>
+                <tr><td>Placed guides</td><td class="note-cell">Would need a home in the body. Recommended out.</td><td class="verdict" data-scope="obj-guides"></td></tr>
+                <tr><td>Opacity</td><td class="note-cell"><span class="m">element/paint</span></td><td class="verdict" data-scope="obj-opacity"></td></tr>
+                <tr><td>Shadow</td><td class="note-cell"><span class="m">element/paint</span></td><td class="verdict" data-scope="obj-shadow"></td></tr>
+                <tr><td>Corner radius</td><td class="note-cell"><span class="m">element/paint</span></td><td class="verdict" data-scope="obj-corner"></td></tr>
+                <tr><td>Lines and arrows</td><td class="note-cell">A new element kind — two points, not a box</td><td class="verdict" data-scope="obj-lines"></td></tr>
+                <tr><td>Group</td><td class="note-cell">Either it survives a reload or it is a selection convenience. Undecided.</td><td class="verdict" data-scope="obj-group"></td></tr>
+                <tr><td>Marquee select</td><td class="note-cell">Editor only</td><td class="verdict" data-scope="obj-marquee"></td></tr>
+                <tr><td>Copy, paste, duplicate an object</td><td class="note-cell">Needs id minting — <span class="m">freshBlock</span> already exists for slides</td><td class="verdict" data-scope="obj-duplicate"></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <h4>A line is not a box</h4>
+        <p>
+          Every other object is a <span class="m">Frame</span>. A line is two points and it has no
+          meaningful width or height — a diagonal in a bounding box loses which corner it starts at
+          the moment the box is normalised. So a line either carries its own
+          <span class="m">from</span> and <span class="m">to</span>, or it carries a frame plus a
+          diagonal flag, which is the same thing written worse. This is the clearest single argument
+          for giving <span class="m">SlideElement</span> a discriminated content union.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================ 09 -->
+    <section id="forks">
+      <div class="head"><span class="n">09</span><h2>Nine decisions</h2></div>
+
+      <p>
+        These change what gets built, not how. Each one carries a recommendation; pick an option and
+        the choice is recorded on this page.
+      </p>
+
+      <div class="decision" data-decision="d1-renderer">
+        <h3><span class="n">D1</span> What draws a slide?</h3>
+        <p>
+          Konva gives cheap hit-testing and a transformer, and it cannot edit text. Today the slide is
+          already drawn twice — Konva on the stage, DOM in the thumbnail — and the two have started
+          to disagree about which format fields they honour.
+        </p>
+        <div class="options">
+          <button class="opt" type="button" data-value="dom">
+            <span class="rec">Recommended</span>
+            <strong>One DOM + SVG renderer, both sizes</strong>
+            Retire Konva from the slide surface. Text elements are ProseMirror; shapes are SVG; z-order is DOM order; zoom is a CSS transform on the stage. The thumbnail becomes the same renderer at a smaller scale.
+            <em>Cost: write hit-testing, handles, marquee and snapping — all pure geometry, all testable.</em>
+          </button>
+          <button class="opt" type="button" data-value="hybrid">
+            <strong>Konva for objects, DOM overlay for text</strong>
+            Keep the stage, position a contenteditable over the text node while editing.
+            <em>Cost: two coordinate systems and two paint orders, permanently. Marks and inline formulas fight the overlay.</em>
+          </button>
+          <button class="opt" type="button" data-value="konva">
+            <strong>Stay on Konva, build a text engine</strong>
+            Draw wrapped, marked, aligned text into the canvas by hand.
+            <em>Cost: months, and it will never match a browser's typesetting.</em>
+          </button>
+        </div>
+        <div class="notefield"><label for="n-d1-renderer">Note</label><textarea id="n-d1-renderer" data-note="d1-renderer" placeholder="Anything the options miss"></textarea></div>
+      </div>
+
+      <div class="decision" data-decision="d2-element-kind">
+        <h3><span class="n">D2</span> Does an element say what it is?</h3>
+        <p>
+          Today the kind is inferred from <span class="m">blocks</span>. An empty text box and a
+          rectangle are indistinguishable, and a line cannot be expressed at all.
+        </p>
+        <div class="options">
+          <button class="opt" type="button" data-value="union">
+            <span class="rec">Recommended</span>
+            <strong>A discriminated <span class="m">content</span> union</strong>
+            <span class="m">{ kind: "text" | "shape" | "line" | "image" | "table" | "chart", … }</span> on <span class="m">SlideElement</span>, with a shape carrying optional blocks so text-in-a-shape stays possible.
+            <em>Cost: one migration of stored bodies; every reader touches it once.</em>
+          </button>
+          <button class="opt" type="button" data-value="additive">
+            <strong>Additive optional fields</strong>
+            Keep <span class="m">blocks</span>, add <span class="m">shape?</span> and <span class="m">line?</span>. No migration.
+            <em>Cost: "what is this object" stays a computed guess forever, and every lens re-derives it.</em>
+          </button>
+          <button class="opt" type="button" data-value="keep">
+            <strong>Keep guessing</strong>
+            One <span class="m">element</span> lens that branches internally.
+            <em>Cost: no honest per-kind inspector; images and tables keep rendering as blank rectangles.</em>
+          </button>
+        </div>
+        <div class="notefield"><label for="n-d2-element-kind">Note</label><textarea id="n-d2-element-kind" data-note="d2-element-kind" placeholder=""></textarea></div>
+      </div>
+
+      <div class="decision" data-decision="d3-paint-home">
+        <h3><span class="n">D3</span> Where does slide paint live?</h3>
+        <p>
+          Opacity, shadow, corner radius and a real stroke have no home.
+          <span class="m">BlockFormat</span> is shared with documents and spreadsheets.
+        </p>
+        <div class="options">
+          <button class="opt" type="button" data-value="element-paint">
+            <span class="rec">Recommended</span>
+            <strong>A deck-local <span class="m">ElementPaint</span></strong>
+            On <span class="m">SlideElement</span>, beside the frame. <span class="m">BlockFormat</span> is left alone.
+            <em>Two paint vocabularies, and the boundary between them is exactly the boundary between a box and its contents.</em>
+          </button>
+          <button class="opt" type="button" data-value="blockformat">
+            <strong>Widen <span class="m">BlockFormat</span></strong>
+            One paint vocabulary everywhere.
+            <em>Cost: the document and the spreadsheet inherit words they cannot honour, and their inspectors have to explain why.</em>
+          </button>
+        </div>
+        <div class="notefield"><label for="n-d3-paint-home">Note</label><textarea id="n-d3-paint-home" data-note="d3-paint-home" placeholder=""></textarea></div>
+      </div>
+
+      <div class="decision" data-decision="d4-multi-selection">
+        <h3><span class="n">D4</span> How does a multi-selection reach the inspector?</h3>
+        <p>
+          <span class="m">Selection</span> is <span class="m">{ kind, id, at? }</span>. It is persisted
+          on the tab and it travels as a <span class="m">WorkspaceOp</span>, so it is undoable. Three
+          objects do not fit.
+        </p>
+        <div class="options">
+          <button class="opt" type="button" data-value="ids">
+            <span class="rec">Recommended</span>
+            <strong>Add <span class="m">ids?: readonly string[]</span></strong>
+            One field on <span class="m">Selection</span>. <span class="m">id</span> stays the primary — the object the crumb names.
+            <em>Touches the workspace op invert and the persistence test. Small and honest.</em>
+          </button>
+          <button class="opt" type="button" data-value="packed">
+            <strong>Pack into <span class="m">id</span></strong>
+            <span class="m">"el-5+el-6+el-7"</span>, parsed by the lens.
+            <em>No representation change, and a string that has to be parsed is a type that lied.</em>
+          </button>
+          <button class="opt" type="button" data-value="runtime">
+            <strong>Hold the set on the runtime</strong>
+            The selection carries a marker; the members live beside the body.
+            <em>Selection stops being undoable and stops surviving a tab restore.</em>
+          </button>
+        </div>
+        <div class="notefield"><label for="n-d4-multi-selection">Note</label><textarea id="n-d4-multi-selection" data-note="d4-multi-selection" placeholder=""></textarea></div>
+      </div>
+
+      <div class="decision" data-decision="d5-text-host">
+        <h3><span class="n">D5</span> One ProseMirror per box, or one per slide?</h3>
+        <p>A slide is not a flow, but a single instance would make tabbing between boxes free.</p>
+        <div class="options">
+          <button class="opt" type="button" data-value="per-box">
+            <span class="rec">Recommended</span>
+            <strong>One instance per text box, mounted while editing</strong>
+            Entered by double-click or Enter on a selected box; unmounted on Escape or a click elsewhere.
+            <em>A box is an independent flow, which is what it actually is. Tab order is the editor's own concern.</em>
+          </button>
+          <button class="opt" type="button" data-value="per-slide">
+            <strong>One instance per slide</strong>
+            Every box is a node in one doc.
+            <em>Invents a document order across boxes that the model does not have, and repagination logic has nothing to do.</em>
+          </button>
+        </div>
+        <div class="notefield"><label for="n-d5-text-host">Note</label><textarea id="n-d5-text-host" data-note="d5-text-host" placeholder=""></textarea></div>
+      </div>
+
+      <div class="decision" data-decision="d6-snapping">
+        <h3><span class="n">D6</span> Snapping and guides</h3>
+        <p>You were unsure about both. They are different features and only one of them is cheap.</p>
+        <div class="options">
+          <button class="opt" type="button" data-value="snap-transient">
+            <span class="rec">Recommended</span>
+            <strong>Snapping on, transient guides, no placed guides</strong>
+            Snap to slide edges, slide centre lines and every sibling's edges and centres. Alt suspends it. A guide is drawn only while a drag is matching something, and named.
+            <em>Nothing is stored. Entirely a procedure plus a drawing.</em>
+          </button>
+          <button class="opt" type="button" data-value="snap-off">
+            <strong>Snapping off by default, toggled in the strip</strong>
+            <em>A toggle is a thing to find and remember; Alt is a thing to hold.</em>
+          </button>
+          <button class="opt" type="button" data-value="snap-guides">
+            <strong>Snapping plus guides you place</strong>
+            <em>Placed guides need somewhere in the body to live, and per-slide or per-deck is another decision.</em>
+          </button>
+        </div>
+        <div class="notefield"><label for="n-d6-snapping">Note</label><textarea id="n-d6-snapping" data-note="d6-snapping" placeholder=""></textarea></div>
+      </div>
+
+      <div class="decision" data-decision="d7-notes-home">
+        <h3><span class="n">D7</span> Where do speaker notes actually live?</h3>
+        <p>
+          There are three candidate homes and the docs describe all three:
+          <span class="m">context/notes</span>, <span class="m">inspector/speaker-notes</span>, and a
+          band on the slide lens. Two writable copies of one paragraph is how one of them quietly
+          wins.
+        </p>
+        <div class="options">
+          <button class="opt" type="button" data-value="lens-only">
+            <span class="rec">Recommended</span>
+            <strong>The lens is the editor; the slide lens reads and links</strong>
+            The Notes button in the strip opens <span class="m">…speaker-notes</span>. The slide lens shows the text read-only with an Edit notes button. No notes context panel.
+            <em>One writer. The deck-wide "which slides have no notes" view becomes a band in the Slides panel instead.</em>
+          </button>
+          <button class="opt" type="button" data-value="context-panel">
+            <strong>A context panel, with the deck-wide list</strong>
+            The Notes button selects the panel rather than a lens.
+            <em>Notes stop being a property of the selected slide and become a mode.</em>
+          </button>
+        </div>
+        <div class="notefield"><label for="n-d7-notes-home">Note</label><textarea id="n-d7-notes-home" data-note="d7-notes-home" placeholder=""></textarea></div>
+      </div>
+
+      <div class="decision" data-decision="d8-undo">
+        <h3><span class="n">D8</span> Undo and redo</h3>
+        <p>
+          The runtime's stacks work and are tested. Nothing calls them, and
+          <span class="m">COMMAND_IDS</span> has four members, none of them undo. Meanwhile
+          ProseMirror ships its own history, which the document editor binds to the same chord.
+        </p>
+        <div class="options">
+          <button class="opt" type="button" data-value="runtime-owns">
+            <span class="rec">Recommended</span>
+            <strong>The runtime owns undo; the text editor's history is disabled</strong>
+            Add <span class="m">edit.undo</span> and <span class="m">edit.redo</span> to <span class="m">COMMAND_IDS</span>, routed to whichever runtime the active tab holds. Typing produces ops like anything else, so one stack covers everything.
+            <em>One history for the whole deck. A keystroke and a drag undo the same way.</em>
+          </button>
+          <button class="opt" type="button" data-value="two-stacks">
+            <strong>ProseMirror undoes text, the runtime undoes the rest</strong>
+            <em>Two stacks, and the chord means different things depending on where focus is.</em>
+          </button>
+        </div>
+        <div class="notefield"><label for="n-d8-undo">Note</label><textarea id="n-d8-undo" data-note="d8-undo" placeholder=""></textarea></div>
+      </div>
+
+      <div class="decision" data-decision="d9-first-cut">
+        <h3><span class="n">D9</span> What is in the first cut?</h3>
+        <p>
+          The ledger in §04 is roughly twenty missing op shapes. They do not have to land together,
+          but the renderer decision does gate almost everything visible.
+        </p>
+        <div class="options">
+          <button class="opt" type="button" data-value="renderer-first">
+            <span class="rec">Recommended</span>
+            <strong>Renderer and selection first, ops behind them</strong>
+            One renderer, selection reaching the inspector, and the object lenses reading — before any new op. The lenses show real values and write nothing, exactly as the document's text-selection lens does today.
+            <em>Everything visible moves early, and each op is then added against a panel that already displays its value.</em>
+          </button>
+          <button class="opt" type="button" data-value="ops-first">
+            <strong>Op vocabulary first</strong>
+            Land the applier, the types and the tests, then build panels that write from day one.
+            <em>Nothing looks different for a while.</em>
+          </button>
+          <button class="opt" type="button" data-value="vertical">
+            <strong>One vertical slice at a time</strong>
+            Shapes end to end, then text end to end, then tables.
+            <em>The renderer gets rewritten inside the first slice anyway.</em>
+          </button>
+        </div>
+        <div class="notefield"><label for="n-d9-first-cut">Note</label><textarea id="n-d9-first-cut" data-note="d9-first-cut" placeholder=""></textarea></div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 10 -->
+    <section id="order">
+      <div class="head"><span class="n">10</span><h2>The order of work</h2></div>
+
+      <p>
+        Assuming the recommendations above. Each stage leaves the editor working — nothing here is a
+        branch that has to land whole.
+      </p>
+
+      <div class="stage-list">
+        <div class="stage-item">
+          <span class="num">1</span>
+          <div>
+            <h4>Selection leaves the component</h4>
+            <p>
+              A <span class="m">procedures/selecting.ts</span> in the deck's own tree, modelled on the
+              document's <span class="m">inspecting.ts</span>: turn a canvas gesture into a key plus a
+              <span class="m">Selection</span>, suppress the noise, call
+              <span class="m">view.inspect</span>. Add <span class="m">ids?</span> to
+              <span class="m">Selection</span>. Nothing renders differently; the inspector starts
+              hearing.
+            </p>
+            <p class="files">app-views/…/slide-deck-editor/procedures/selecting.ts · representation/data/types/workspace/tab.ts · behavior/workspace/invert.ts</p>
+          </div>
+        </div>
+
+        <div class="stage-item">
+          <span class="num">2</span>
+          <div>
+            <h4>One renderer</h4>
+            <p>
+              A <span class="m">components/slide-surface/</span> that draws a body at any scale: DOM
+              boxes, SVG shapes, CSS transform for zoom. The Slides panel's thumbnail and the stage
+              both mount it. Konva leaves <span class="m">deck.svelte</span>; the transform handles,
+              marquee and hit-testing come with the surface.
+            </p>
+            <p class="files">content/deck.svelte · context/slides.svelte · a new authored component · procedures/stage.ts stays as it is</p>
+          </div>
+        </div>
+
+        <div class="stage-item">
+          <span class="num">3</span>
+          <div>
+            <h4>The element gets a kind, and paint</h4>
+            <p>
+              The discriminated <span class="m">content</span> union and
+              <span class="m">ElementPaint</span>, plus the applier branches for
+              <span class="m">insert · remove · move</span> on <span class="m">element</span> and
+              <span class="m">set</span> on rotation, paint, name and overflow. One migration of the
+              two seeded bodies.
+            </p>
+            <p class="files">representation/data/types/slide-decks/body.ts · op.ts · behavior/slide-decks/apply-ops.ts · seed/slideDeckSnapshots.json</p>
+          </div>
+        </div>
+
+        <div class="stage-item">
+          <span class="num">4</span>
+          <div>
+            <h4>Object lenses, reading</h4>
+            <p>
+              <span class="m">slide · shape · line · text-box · image · table · multi-selection</span>.
+              Every value read from the body, every control writing through the ops from stage&nbsp;3.
+              Align and distribute land here as a pure <span class="m">procedures/arrange.ts</span>
+              with a test per verb.
+            </p>
+            <p class="files">app-views/…/slide-deck-editor/inspector/*.svelte · procedures/arrange.ts</p>
+          </div>
+        </div>
+
+        <div class="stage-item">
+          <span class="num">5</span>
+          <div>
+            <h4>The strip, the rail, and undo</h4>
+            <p>
+              Pips out; Previous, Next, Notes, zoom in. Layers, Insert and Layout panels.
+              <span class="m">edit.undo</span> and <span class="m">edit.redo</span> in
+              <span class="m">COMMAND_IDS</span>, routed to the active tab's runtime. Drag-reorder
+              moves to gap drop zones.
+            </p>
+            <p class="files">content/deck.svelte · context/layers · insert · layouts · model/client/commands/types.ts</p>
+          </div>
+        </div>
+
+        <div class="stage-item">
+          <span class="num">6</span>
+          <div>
+            <h4>Text, both editors together</h4>
+            <p>
+              Marks in the ProseMirror schema and a <span class="m">mark</span> op. Block spacing on
+              <span class="m">BlockFormat</span>. Then the deck's text projection and translate, the
+              held-selection plugin, and the three text lenses —
+              <span class="m">text-selection</span>, <span class="m">next-letter</span>,
+              <span class="m">speaker-notes</span> — built once and copied across.
+            </p>
+            <p class="files">document-editor/procedures/schema.ts · representation/data/types/content/* · both appliers · both inspector stacks</p>
+          </div>
+        </div>
+
+        <div class="stage-item">
+          <span class="num">7</span>
+          <div>
+            <h4>Theme, and the deck target</h4>
+            <p>
+              A <span class="m">deck</span> member on <span class="m">DeckTarget</span> and a
+              <span class="m">set</span> applier that accepts a deeper path. Then the Theme panel,
+              named styles, and the aspect-ratio change with its staged confirmation.
+            </p>
+            <p class="files">representation/data/types/slide-decks/op.ts · behavior/slide-decks/apply-ops.ts · context/theme.svelte · inspector/theme.svelte · named-style.svelte</p>
+          </div>
+        </div>
+      </div>
+
+      <p style="margin-top:calc(var(--u)*8)">
+        Charts, layout editing, Templates and Prompts sit behind all of it. Layout editing in
+        particular is blocked on something structural: <span class="m">RAILS</span> is keyed on the
+        category alone, so the deck has one rail and the three
+        <span class="m">layout-*</span> views have nothing to reach them from.
+      </p>
+    </section>
+
+    <footer>
+      <p>
+        Measured against <span class="m">work/semantic-overlay-cutover</span> on 2026-09-04. Every
+        count in §01 and every op row in §04 was read from the source, not from
+        <span class="m">.md</span> files — <span class="m">capabilities/slide-deck/slide-deck.md</span>
+        still says nothing writes, and it has written since.
+      </p>
+    </footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    "use strict";
+
+    const SCOPES = ["in", "later", "out"];
+    const SCOPE_LABEL = { in: "In", later: "Later", out: "Out" };
+
+    const local = new Map();
+    let store = null;
+    let saving = 0;
+
+    const bar = document.getElementById("review-bar");
+    const state = document.getElementById("review-state");
+    const count = document.getElementById("review-count");
+
+    /* ---- build the scope toggles into every marked cell ---- */
+    for (const cell of document.querySelectorAll("[data-scope]")) {
+      const id = cell.dataset.scope;
+      const group = document.createElement("div");
+      group.className = "scope";
+      group.setAttribute("role", "group");
+      group.setAttribute("aria-label", "Scope");
+
+      for (const value of SCOPES) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.v = value;
+        button.textContent = SCOPE_LABEL[value];
+        button.setAttribute("aria-pressed", "false");
+        button.addEventListener("click", () => {
+          const held = local.get(id);
+          const next = held && held.choice === value ? "" : value;
+          record(id, { choice: next });
+        });
+        group.appendChild(button);
+      }
+
+      cell.appendChild(group);
+    }
+
+    /* ---- decision option buttons ---- */
+    for (const block of document.querySelectorAll("[data-decision]")) {
+      const id = block.dataset.decision;
+      for (const option of block.querySelectorAll(".opt")) {
+        option.setAttribute("aria-pressed", "false");
+        option.addEventListener("click", () => {
+          const held = local.get(id);
+          const value = option.dataset.value;
+          record(id, { choice: held && held.choice === value ? "" : value });
+        });
+      }
+    }
+
+    /* ---- note fields ---- */
+    const timers = new Map();
+    for (const area of document.querySelectorAll("[data-note]")) {
+      const id = area.dataset.note;
+      area.addEventListener("input", () => {
+        clearTimeout(timers.get(id));
+        timers.set(id, setTimeout(() => record(id, { note: area.value }), 700));
+      });
+      area.addEventListener("blur", () => {
+        clearTimeout(timers.get(id));
+        record(id, { note: area.value });
+      });
+    }
+
+    /* ---- state in, state out ---- */
+    function record(id, patch) {
+      const held = local.get(id) || { choice: "", note: "" };
+      const next = Object.assign({}, held, patch);
+      if (next.choice === held.choice && next.note === held.note) return;
+
+      local.set(id, next);
+      paint(id);
+      tally();
+
+      if (!store) return;
+
+      saving += 1;
+      announce();
+      store
+        .doc("review/" + id)
+        .set({ choice: next.choice, note: next.note, at: Date.now() })
+        .catch(() => {})
+        .finally(() => {
+          saving -= 1;
+          announce();
+        });
+    }
+
+    function paint(id) {
+      const held = local.get(id) || { choice: "", note: "" };
+
+      const cell = document.querySelector('[data-scope="' + CSS.escape(id) + '"]');
+      if (cell) {
+        for (const button of cell.querySelectorAll("button")) {
+          button.setAttribute("aria-pressed", button.dataset.v === held.choice ? "true" : "false");
+        }
+      }
+
+      const block = document.querySelector('[data-decision="' + CSS.escape(id) + '"]');
+      if (block) {
+        for (const option of block.querySelectorAll(".opt")) {
+          option.setAttribute("aria-pressed", option.dataset.value === held.choice ? "true" : "false");
+        }
+      }
+
+      const area = document.querySelector('[data-note="' + CSS.escape(id) + '"]');
+      if (area && area !== document.activeElement && area.value !== held.note) area.value = held.note;
+    }
+
+    function tally() {
+      let decided = 0;
+      let noted = 0;
+      for (const held of local.values()) {
+        if (held.choice) decided += 1;
+        if (held.note && held.note.trim()) noted += 1;
+      }
+      const total = document.querySelectorAll("[data-scope], [data-decision]").length;
+      count.textContent = decided + " of " + total + " marked" + (noted ? " · " + noted + " noted" : "");
+    }
+
+    function announce() {
+      if (!store) return;
+      state.textContent = saving > 0 ? "Saving…" : "Your marks and notes are kept on this page.";
+    }
+
+    tally();
+
+    /* ---- the store, if this view can reach one ---- */
+    if (window.claude && typeof window.claude.use === "function") {
+      window.claude
+        .use("db")
+        .then((db) => {
+          if (!db) {
+            state.textContent = "Marks are session-only here — open the published page to keep them.";
+            return;
+          }
+
+          store = db;
+          bar.classList.add("live");
+          announce();
+
+          db.collection("review").onSnapshot(
+            (snap) => {
+              for (const doc of snap.docs) {
+                const body = doc.data() || {};
+                local.set(doc.id, {
+                  choice: typeof body.choice === "string" ? body.choice : "",
+                  note: typeof body.note === "string" ? body.note : ""
+                });
+                paint(doc.id);
+              }
+              tally();
+            },
+            () => {
+              state.textContent = "Notes stopped syncing. Reload to try again.";
+              bar.classList.remove("live");
+            }
+          );
+        })
+        .catch(() => {
+          state.textContent = "Marks are session-only here.";
+        });
+    } else {
+      state.textContent = "Marks are session-only here — open the published page to keep them.";
+    }
+  })();
+</script>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Draggable, DropZone } from "$authored-components/drag";
   import Self from "$development-views/stack-builder/components/stack-node.svelte";
+  import { isDescendant, substacksIn } from "$development-views/stack-builder/procedures/manifest";
   import { stackOf } from "$development-views/stack-builder/shared/stack.svelte";
   import type { StackNode } from "$development-views/stack-builder/types";
 
@@ -33,15 +34,27 @@
     else stack.addSubstack("A group", node.id);
   };
 
+  const groups = $derived(
+    substacksIn(stack.nodes).filter(
+      (group) =>
+        group.id !== node.id &&
+        group.id !== parentId &&
+        !isDescendant(stack.nodes, group.id, node.id)
+    )
+  );
+
   const destinations = $derived([
     ...(index > 0 ? [{ value: "up", label: "Move up" }] : []),
     ...(index < siblings - 1 ? [{ value: "down", label: "Move down" }] : []),
-    ...(parentId === null ? [] : [{ value: "out", label: "Move out of the group" }])
+    ...(parentId === null ? [] : [{ value: "out", label: "Move to the top level" }]),
+    ...groups.map((group) => ({ value: `into:${group.id}`, label: `Move into ${group.name}` }))
   ]);
 
   const placeSelf = (where: string) => {
     if (where === "out") stack.move(node.id, null, Number.MAX_SAFE_INTEGER);
-    else stack.move(node.id, parentId, where === "up" ? index - 1 : index + 1);
+    else if (where.startsWith("into:")) {
+      stack.move(node.id, where.slice("into:".length), Number.MAX_SAFE_INTEGER);
+    } else stack.move(node.id, parentId, where === "up" ? index - 1 : index + 1);
   };
 </script>
 

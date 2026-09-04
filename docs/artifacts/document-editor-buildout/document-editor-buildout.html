@@ -1,0 +1,2439 @@
+<title>Document Editor Buildout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,500;0,600;1,300&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  :root {
+    --ground: #fffefa;
+    --recess: #f6f2e9;
+    --raise: #ffffff;
+    --rule: #ded8c9;
+    --rule-soft: #ebe6da;
+
+    --ink: #221e17;
+    --ink-2: #57503f;
+    --ink-3: #8b8371;
+
+    /* Three axes this document keeps separate. */
+    --surface: #3a4fbd;      /* the content surface — ProseMirror */
+    --surface-soft: #eef0fb;
+    --panel: #10736a;        /* the flanks — context and inspector */
+    --panel-soft: #eaf6f4;
+    --spine: #7b3ea6;        /* the op spine — body, ops, store */
+    --spine-soft: #f4edf9;
+
+    --warn: #a2560a;
+    --warn-soft: #fdf3e9;
+    --stop: #bb3529;
+    --stop-soft: #fdf0ee;
+    --done: #2f7a3a;
+    --done-soft: #eef7ef;
+
+    /* The application's own chrome, for the specimens in section 02. */
+    --ui-panel: #f2efe6;
+    --ui-panel-hover: #e9e5d9;
+    --ui-paper: #ffffff;
+    --ui-board: #d9d3c6;
+    --ui-line: #ddd7c8;
+    --ui-line-soft: #e9e4d7;
+    --ui-ink: #2b2721;
+    --ui-ink-2: #5d564a;
+    --ui-ink-3: #928b7b;
+    --ui-active: #dcebf6;
+    --ui-active-ink: #1d5f8a;
+    --ui-select: #cfe4f2;
+    --ui-note: #fdf3e0;
+    --ui-note-ink: #8a6212;
+
+    --display: "Spectral", "Iowan Old Style", Georgia, serif;
+    --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+    --measure: 68ch;
+    --step--1: 0.8125rem;
+    --step-0: 1rem;
+    --step-1: 1.1875rem;
+    --step-2: 1.5rem;
+    --step-3: 2.125rem;
+    --step-4: clamp(2.4rem, 5.5vw, 3.5rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #16130f;
+      --recess: #100e0a;
+      --raise: #201c16;
+      --rule: #3d372c;
+      --rule-soft: #2b271f;
+
+      --ink: #f4efe4;
+      --ink-2: #c0b7a4;
+      --ink-3: #8a8272;
+
+      --surface: #8fa2ff;
+      --surface-soft: #1b2044;
+      --panel: #3fc9b8;
+      --panel-soft: #0c2f2b;
+      --spine: #c68cf0;
+      --spine-soft: #2b1c38;
+
+      --warn: #e8a45f;
+      --warn-soft: #35240f;
+      --stop: #f58a7c;
+      --stop-soft: #3a1a16;
+      --done: #74c980;
+      --done-soft: #142d18;
+
+      --ui-panel: #221e18;
+      --ui-panel-hover: #2c271f;
+      --ui-paper: #2a251d;
+      --ui-board: #17140f;
+      --ui-line: #423b2e;
+      --ui-line-soft: #322c23;
+      --ui-ink: #f0eadd;
+      --ui-ink-2: #bdb4a1;
+      --ui-ink-3: #8a8272;
+      --ui-active: #17324a;
+      --ui-active-ink: #86c3ec;
+      --ui-select: #1d3f5c;
+      --ui-note: #3a2c10;
+      --ui-note-ink: #e0b45e;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #16130f;
+    --recess: #100e0a;
+    --raise: #201c16;
+    --rule: #3d372c;
+    --rule-soft: #2b271f;
+
+    --ink: #f4efe4;
+    --ink-2: #c0b7a4;
+    --ink-3: #8a8272;
+
+    --surface: #8fa2ff;
+    --surface-soft: #1b2044;
+    --panel: #3fc9b8;
+    --panel-soft: #0c2f2b;
+    --spine: #c68cf0;
+    --spine-soft: #2b1c38;
+
+    --warn: #e8a45f;
+    --warn-soft: #35240f;
+    --stop: #f58a7c;
+    --stop-soft: #3a1a16;
+    --done: #74c980;
+    --done-soft: #142d18;
+
+    --ui-panel: #221e18;
+    --ui-panel-hover: #2c271f;
+    --ui-paper: #2a251d;
+    --ui-board: #17140f;
+    --ui-line: #423b2e;
+    --ui-line-soft: #322c23;
+    --ui-ink: #f0eadd;
+    --ui-ink-2: #bdb4a1;
+    --ui-ink-3: #8a8272;
+    --ui-active: #17324a;
+    --ui-active-ink: #86c3ec;
+    --ui-select: #1d3f5c;
+    --ui-note: #3a2c10;
+    --ui-note-ink: #e0b45e;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: var(--step-0);
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns:
+      [full-start] minmax(1.25rem, 1fr)
+      [wide-start] minmax(0, 13rem)
+      [text-start] minmax(0, var(--measure)) [text-end]
+      minmax(0, 13rem) [wide-end]
+      minmax(1.25rem, 1fr) [full-end];
+  }
+
+  .page > * { grid-column: text; }
+  .wide { grid-column: wide; }
+
+  /* ── Masthead ────────────────────────────────────────── */
+
+  .masthead {
+    padding: clamp(2.75rem, 7vw, 4.75rem) 0 2.25rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    margin: 0 0 1.1rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: var(--step-4);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    max-width: 54ch;
+    margin: 1.25rem 0 0;
+    color: var(--ink-2);
+    font-size: var(--step-1);
+    font-weight: 300;
+    font-family: var(--display);
+    line-height: 1.55;
+  }
+
+  .ledger {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2.25rem;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rule-soft);
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    color: var(--ink-3);
+  }
+
+  .ledger b {
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+
+  /* ── Sections ────────────────────────────────────────── */
+
+  section {
+    padding: 3rem 0 0;
+  }
+
+  h2 {
+    margin: 0 0 0.35rem;
+    font-family: var(--display);
+    font-size: var(--step-3);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  h2 .n {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+  }
+
+  h3 {
+    margin: 2.25rem 0 0.5rem;
+    font-family: var(--body);
+    font-size: var(--step-1);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  h4 {
+    margin: 1.75rem 0 0.4rem;
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  p { margin: 0.85rem 0; }
+  p + p { margin-top: 0.85rem; }
+
+  a {
+    color: var(--surface);
+    text-decoration-color: color-mix(in srgb, var(--surface) 40%, transparent);
+    text-underline-offset: 0.16em;
+  }
+
+  code, .m {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    color: var(--ink-2);
+    background: var(--recess);
+    padding: 0.08em 0.34em;
+    border-radius: 2px;
+  }
+
+  strong { font-weight: 600; }
+
+  ul, ol { margin: 0.85rem 0; padding-left: 1.3rem; }
+  li { margin: 0.35rem 0; }
+  li::marker { color: var(--ink-3); }
+
+  /* ── Tables ──────────────────────────────────────────── */
+
+  .scroll {
+    overflow-x: auto;
+    margin: 1.25rem 0;
+    border-block: 1px solid var(--rule);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+
+  th {
+    padding: 0.6rem 0.9rem 0.6rem 0;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.7rem 0.9rem 0.7rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  tr:last-child td { border-bottom: 0; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td .m { white-space: nowrap; }
+
+  /* ── State marks ─────────────────────────────────────── */
+
+  .tag {
+    display: inline-block;
+    padding: 0.1rem 0.44rem;
+    border-radius: 2px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .tag.real { color: var(--done); background: var(--done-soft); }
+  .tag.mock { color: var(--warn); background: var(--warn-soft); }
+  .tag.none { color: var(--stop); background: var(--stop-soft); }
+  .tag.part { color: var(--spine); background: var(--spine-soft); }
+
+  /* ── Blockers ────────────────────────────────────────── */
+
+  .blockers {
+    display: grid;
+    gap: 0;
+    margin: 1.5rem 0 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .blocker {
+    display: grid;
+    grid-template-columns: 2.25rem 1fr;
+    gap: 0 1rem;
+    padding: 1.15rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .blocker .k {
+    color: var(--stop);
+    font-family: var(--mono);
+    font-size: var(--step-1);
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .blocker h3 {
+    margin: 0 0 0.3rem;
+    font-size: var(--step-0);
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .blocker p { margin: 0.3rem 0 0; color: var(--ink-2); font-size: 0.9375rem; }
+  .blocker .where {
+    margin-top: 0.45rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    word-break: break-all;
+  }
+
+  /* ── Rule box ────────────────────────────────────────── */
+
+  .rulebox {
+    margin: 1.75rem 0;
+    padding: 1.4rem 1.5rem;
+    border-left: 3px solid var(--surface);
+    background: var(--surface-soft);
+  }
+
+  .rulebox p { margin: 0; }
+  .rulebox p + p { margin-top: 0.7rem; }
+  .rulebox .lede {
+    font-family: var(--display);
+    font-size: var(--step-1);
+    line-height: 1.45;
+  }
+
+  .aside {
+    margin: 1.5rem 0;
+    padding: 1.1rem 1.3rem;
+    border-left: 3px solid var(--rule);
+    background: var(--recess);
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+  }
+  .aside p { margin: 0; }
+  .aside p + p { margin-top: 0.6rem; }
+  .aside .h {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  /* ── Code ────────────────────────────────────────────── */
+
+  pre {
+    margin: 1.25rem 0;
+    padding: 1.1rem 1.25rem;
+    overflow-x: auto;
+    border: 1px solid var(--rule-soft);
+    background: var(--recess);
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--ink-2);
+    tab-size: 2;
+  }
+
+  pre code { padding: 0; background: none; font-size: inherit; }
+  pre .c { color: var(--ink-3); font-style: italic; }
+  pre .a { color: var(--spine); }
+  pre .b { color: var(--surface); }
+
+  /* ── Diagram ─────────────────────────────────────────── */
+
+  figure {
+    margin: 1.75rem 0;
+  }
+
+  figure svg { display: block; width: 100%; height: auto; }
+
+  figcaption {
+    margin-top: 0.7rem;
+    color: var(--ink-3);
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+
+  /* ── Phases ──────────────────────────────────────────── */
+
+  .phases { margin: 1.5rem 0 0; border-top: 1px solid var(--rule); }
+
+  .phase {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    gap: 0 1.25rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .phase .p {
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding-top: 0.2rem;
+  }
+
+  .phase h3 { margin: 0 0 0.25rem; font-size: var(--step-0); }
+  .phase p { margin: 0.25rem 0 0; color: var(--ink-2); font-size: 0.9375rem; }
+  .phase ul { margin: 0.5rem 0 0; }
+  .phase li { font-size: 0.9375rem; color: var(--ink-2); }
+
+  /* ── Decisions ───────────────────────────────────────── */
+
+  .decision {
+    margin: 1.5rem 0;
+    padding: 1.35rem 0 0;
+    border-top: 2px solid var(--warn);
+  }
+
+  .decision h3 {
+    margin: 0 0 0.5rem;
+    font-family: var(--display);
+    font-size: var(--step-2);
+    font-weight: 600;
+  }
+
+  .decision .rec {
+    margin-top: 0.9rem;
+    padding: 0.85rem 1.1rem;
+    background: var(--warn-soft);
+    border-radius: 2px;
+    font-size: 0.9375rem;
+  }
+
+  .decision .rec b {
+    color: var(--warn);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  /* ── Foot ────────────────────────────────────────────── */
+
+  footer {
+    margin-top: 4rem;
+    padding: 2rem 0 4rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    line-height: 1.7;
+  }
+
+  /* ── Specimens ───────────────────────────────────────── */
+
+  .spec { margin: 1.6rem 0; }
+
+  .spec-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.3rem 0.7rem;
+    margin-bottom: 0.5rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .spec-head .name { color: var(--ink-2); font-weight: 700; }
+  .spec-head .key { letter-spacing: 0; text-transform: none; }
+
+  .spec-note {
+    margin: 0.5rem 0 0;
+    color: var(--ink-3);
+    font-size: 0.84rem;
+    line-height: 1.5;
+  }
+
+  .specs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1.9rem 1.35rem;
+    margin: 1.5rem 0;
+    align-items: start;
+  }
+
+  .ui {
+    overflow: hidden;
+    border: 1px solid var(--ui-line);
+    border-radius: 3px;
+    background: var(--ui-panel);
+    color: var(--ui-ink);
+    font-family: var(--body);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .ui svg { display: block; }
+
+  .with-rail { display: flex; align-items: stretch; }
+  .with-rail > .flank { min-width: 0; flex: 1; }
+
+  .rail {
+    display: flex;
+    width: 34px;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 0;
+    border-right: 1px solid var(--ui-line);
+  }
+
+  .rail i {
+    display: flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: var(--ui-ink-3);
+  }
+
+  .rail i.on { background: var(--ui-active); color: var(--ui-active-ink); }
+
+  .p-title {
+    padding: 0.5rem 0.65rem;
+    border-bottom: 1px solid var(--ui-line);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .p-crumbs {
+    padding: 0.4rem 0.65rem 0;
+    color: var(--ui-ink-3);
+    font-size: 10px;
+  }
+
+  .p-sec-h {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.5rem 0.65rem 0.25rem;
+    color: var(--ui-ink-3);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .p-sec-h .cv { margin-left: auto; }
+  .p-sec-h.ruled { border-top: 1px solid var(--ui-line-soft); margin-top: 0.35rem; }
+
+  .p-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.15rem 0.65rem 0.6rem;
+  }
+
+  .c-row { display: flex; align-items: center; gap: 0.35rem; }
+
+  .c-select, .c-input {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.24rem 0.4rem;
+    border: 1px solid var(--ui-line);
+    border-radius: 3px;
+    background: var(--ui-paper);
+    font-size: 11px;
+  }
+
+  .c-select .v {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .c-select svg { flex: none; color: var(--ui-ink-3); }
+  .c-input.num { width: 3rem; flex: none; justify-content: center; font-variant-numeric: tabular-nums; }
+  .c-input.ph { color: var(--ui-ink-3); }
+  .mixed { color: var(--ui-ink-3); font-style: italic; }
+
+  .c-seg { display: flex; gap: 3px; }
+
+  .c-seg span {
+    min-width: 0;
+    flex: 1;
+    padding: 0.22rem 0;
+    border: 1px solid var(--ui-line);
+    border-radius: 3px;
+    background: var(--ui-paper);
+    color: var(--ui-ink-2);
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .c-seg .on { border-color: var(--ui-active-ink); background: var(--ui-active); color: var(--ui-active-ink); }
+  .c-seg .mix { border-style: dashed; color: var(--ui-ink-3); text-decoration: line-through; }
+
+  .sw {
+    width: 12px;
+    height: 12px;
+    flex: none;
+    border: 1px solid var(--ui-line);
+    border-radius: 50%;
+  }
+
+  .f { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+  .f .k { color: var(--ui-ink-3); font-size: 10px; }
+  .f .v { font-family: var(--mono); font-size: 10px; }
+
+  .q {
+    padding: 0.4rem 0.5rem;
+    border-radius: 3px;
+    background: var(--ui-panel-hover);
+  }
+
+  .q .t { font-size: 11px; }
+  .q .s { margin-top: 0.15rem; color: var(--ui-ink-3); font-size: 9.5px; }
+
+  .note {
+    padding: 0.38rem 0.5rem;
+    border-radius: 3px;
+    background: var(--ui-note);
+    color: var(--ui-note-ink);
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .r {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.28rem 0.65rem;
+  }
+
+  .r .lbl {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 11px;
+  }
+
+  .r .meta { flex: none; color: var(--ui-ink-3); font-family: var(--mono); font-size: 9.5px; }
+  .r.on { background: var(--ui-active); }
+  .r.on .lbl { color: var(--ui-active-ink); font-weight: 600; }
+  .r.l2 { padding-left: 1.5rem; }
+  .r.l3 { padding-left: 2.35rem; }
+  .r.two { align-items: center; }
+  .r.two .txt { min-width: 0; flex: 1; }
+  .r.two .txt .lbl { display: block; }
+  .r.two .sub { color: var(--ui-ink-3); font-size: 9.5px; }
+
+  .r .act {
+    flex: none;
+    padding: 0.1rem 0.36rem;
+    border: 1px solid var(--ui-line);
+    border-radius: 3px;
+    background: var(--ui-paper);
+    color: var(--ui-ink-2);
+    font-size: 9.5px;
+  }
+
+  .r.on .act { border-color: var(--ui-active-ink); color: var(--ui-active-ink); }
+
+  .trio { display: flex; gap: 0.3rem; }
+  .trio > div { min-width: 0; flex: 1; }
+  .trio .k {
+    display: block;
+    margin-bottom: 0.1rem;
+    color: var(--ui-ink-3);
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .trio .c-input { width: 100%; flex: none; justify-content: center; font-variant-numeric: tabular-nums; }
+
+  .c-seg.icons span { display: flex; align-items: center; justify-content: center; padding: 0.24rem 0; }
+
+  .chips { display: flex; gap: 3px; padding: 0.45rem 0.65rem; }
+  .chips span {
+    padding: 0.15rem 0.42rem;
+    border: 1px solid var(--ui-line);
+    border-radius: 999px;
+    font-size: 10px;
+    color: var(--ui-ink-2);
+  }
+  .chips .on { border-color: var(--ui-active-ink); background: var(--ui-active); color: var(--ui-active-ink); }
+
+  .p-foot {
+    display: flex;
+    gap: 0.35rem;
+    padding: 0.5rem 0.65rem;
+    border-top: 1px solid var(--ui-line-soft);
+  }
+
+  .btn {
+    padding: 0.24rem 0.55rem;
+    border: 1px solid var(--ui-line);
+    border-radius: 3px;
+    background: var(--ui-paper);
+    font-size: 11px;
+    color: var(--ui-ink-2);
+  }
+
+  .btn.primary { border-color: var(--ui-active-ink); background: var(--ui-active); color: var(--ui-active-ink); }
+
+  /* ── The content surface specimen ────────────────────── */
+
+  .surface { border: 1px solid var(--ui-line); border-radius: 3px; overflow: hidden; }
+
+  .surface .bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.8rem;
+    border-bottom: 1px solid var(--ui-line);
+    background: var(--ui-panel);
+    color: var(--ui-ink);
+    font-family: var(--body);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .surface .bar .st { margin-left: auto; color: var(--ui-ink-3); font-size: 10px; font-weight: 400; }
+
+  .board {
+    overflow-x: auto;
+    padding: 1.6rem 3.6rem 1.9rem 1.2rem;
+    background: var(--ui-board);
+  }
+
+  .sheet {
+    position: relative;
+    width: min(540px, 100%);
+    margin: 0 auto;
+    padding: 30px 38px 34px;
+    border: 1px solid var(--ui-line);
+    background: var(--ui-paper);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.14);
+    color: var(--ui-ink);
+    font-family: var(--body);
+  }
+
+  .pg { position: relative; margin: 0 0 9px; font-size: 11.5px; line-height: 1.6; color: var(--ui-ink-2); }
+  .pg.h1 { margin: 0 0 8px; font-size: 18px; line-height: 1.2; font-weight: 600; color: var(--ui-ink); letter-spacing: -0.01em; }
+  .pg.h2 { margin: 15px 0 6px; font-size: 14px; line-height: 1.25; font-weight: 600; color: var(--ui-ink); }
+  .pg.meta { color: var(--ui-ink-3); font-size: 10.5px; }
+  .pg.centre { text-align: center; }
+  .pg b { font-weight: 700; color: var(--ui-ink); }
+  .pg em { font-style: italic; }
+  .pg .lnk { color: var(--ui-active-ink); text-decoration: underline; text-underline-offset: 2px; }
+
+  .cm { background: color-mix(in srgb, var(--ui-note) 70%, transparent); box-shadow: 0 1px 0 var(--ui-note-ink); }
+  .cm.hot { background: var(--ui-note); }
+  .sel { background: var(--ui-select); }
+
+  .mk {
+    position: absolute;
+    top: 0;
+    right: -68px;
+    display: flex;
+    width: 21px;
+    height: 21px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    color: var(--ui-ink-3);
+  }
+
+  .mk.dim { opacity: 0.2; }
+  .mk.lit { background: var(--ui-panel-hover); color: var(--ui-ink-2); }
+  .mk.on { background: var(--ui-active-ink); color: var(--ui-panel); }
+  .mk.two { top: 24px; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.2rem;
+    margin-top: 0.7rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+  }
+
+  .legend span { display: flex; align-items: center; gap: 0.35rem; }
+
+  .legend .dot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+  :focus-visible {
+    outline: 2px solid var(--surface);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  @media (max-width: 46rem) {
+    .blocker { grid-template-columns: 1.75rem 1fr; }
+    .phase { grid-template-columns: 1fr; gap: 0.4rem; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Icarus · app-views/categories/document-editor</p>
+    <h1>Document Editor Buildout</h1>
+    <p class="standfirst">
+      The surface types and saves. Nothing it types has any formatting, because the
+      schema declares no marks, the translator emits no mark ops, and the applier
+      refuses everything but a row proportion. Section 02 draws the goal state —
+      the surface and eleven panels. The rest is the order in which we get there, and
+      the four decisions I need from you before we start.
+    </p>
+    <div class="ledger">
+      <span><b>Read against</b> work/semantic-overlay-cutover</span>
+      <span><b>Editor</b> ProseMirror 1.25, custom schema</span>
+      <span><b>Built today</b> 2 of 21 panels</span>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="n">01</span>Where it actually stands</h2>
+
+    <p>
+      I ran it. A document opens, paginates onto Letter at 82 characters and 35
+      lines a page, splits and merges rows on Enter and Backspace, emits granular
+      <span class="m">text</span> ops, and says <span class="m">Saved</span>. Selecting
+      text lights the inspector's <em>Text selection</em> lens with a real quote and a
+      real character count. Everything below that quote is a mock that writes nothing —
+      the lens says so itself, in a collapsed section called <em>Mock</em>.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Piece</th><th>State</th><th>What is true</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Page surface</td>
+            <td><span class="tag real">real</span></td>
+            <td>Pasteboard, paper, margins as percentages, zoom 50–200 with ⌘-wheel, gutter that collapses before the page does.</td>
+          </tr>
+          <tr>
+            <td>Text editing</td>
+            <td><span class="tag real">real</span></td>
+            <td>Typing, split, merge, history, id stamping, repagination, caret preserved across relayout.</td>
+          </tr>
+          <tr>
+            <td>Persistence</td>
+            <td><span class="tag real">real</span></td>
+            <td><span class="m">bodyOf</span> → <span class="m">translate</span> → change set → store, with coalescing, rebase and undrawn-row preservation.</td>
+          </tr>
+          <tr>
+            <td>Selection signalling</td>
+            <td><span class="tag real">real</span></td>
+            <td><span class="m">signalOf</span> routes to <span class="m">text-selection</span>, <span class="m">empty-block</span> or <span class="m">next-letter</span> and carries a <span class="m">blockId/atoms/atomId@offset</span> address.</td>
+          </tr>
+          <tr>
+            <td>Bold, italic, underline, strike</td>
+            <td><span class="tag mock">mock</span></td>
+            <td>Local <span class="m">$state</span> in the lens. The schema has <span class="m">marks: {}</span>, so there is nothing to write them to.</td>
+          </tr>
+          <tr>
+            <td>Style picker, font, size, colour</td>
+            <td><span class="tag mock">mock</span></td>
+            <td>Six invented style names, fifteen invented families. The body has a <span class="m">styles?: StyleSet</span> field nothing reads or writes.</td>
+          </tr>
+          <tr>
+            <td>Comments and links</td>
+            <td><span class="tag mock">mock</span></td>
+            <td>Three hard-coded comments, two hard-coded links, inside the lens file. Real threads exist in the store, unread.</td>
+          </tr>
+          <tr>
+            <td>Layout panel</td>
+            <td><span class="tag part">read-only</span></td>
+            <td>Reads <span class="m">DEFAULT_PAGE_SETUP</span>, not the document. Every value is display text; none is editable; the body's own <span class="m">pageSetup</span> is never consulted.</td>
+          </tr>
+          <tr>
+            <td>Sections, Find, Styles, Comments, Overview, Insert, Variables, Context</td>
+            <td><span class="tag none">absent</span></td>
+            <td>Eight rail icons, eight <em>Not built yet</em> placeholders. The keys route; the files do not exist.</td>
+          </tr>
+          <tr>
+            <td>Empty block, next letter, text block, named style, document, comment thread</td>
+            <td><span class="tag none">absent</span></td>
+            <td>Named in the inspector vocabulary, no lens file. The empty-block key is signalled on every empty paragraph today and lands on a placeholder.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="aside">
+      <span class="h">Reading the docs</span>
+      <p>
+        <span class="m">docs/screen-specs/document-editor.md</span> and the panel
+        specs under <span class="m">docs/screen-panel-views/</span> are good and mostly
+        still true, but they are a plan, not a record. Two places they have already
+        drifted: the spec calls the page context view <span class="m">page</span> where
+        the vocabulary calls it <span class="m">layout</span>, and it describes a local
+        toolbar above the page that does not exist and, on the panel specs' own
+        argument, should not — the inspector is the toolbar. I have taken the code as
+        the fact and the docs as the intent throughout.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>Where it is going</h2>
+
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+      <symbol id="i-chevd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></symbol>
+      <symbol id="i-chevr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></symbol>
+      <symbol id="i-msg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></symbol>
+      <symbol id="i-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"></path></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v6h6M16 13H8M16 17H8"></path></symbol>
+      <symbol id="i-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path></symbol>
+      <symbol id="i-tmpl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3H3v7h18V3zM21 14h-9v7h9v-7zM7 14H3v7h4v-7z"></path></symbol>
+      <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"></path><path d="M18 16.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></symbol>
+      <symbol id="i-al" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h11M3 18h15"></path></symbol>
+      <symbol id="i-ac" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M7 12h10M5 18h14"></path></symbol>
+      <symbol id="i-ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M10 12h11M6 18h15"></path></symbol>
+      <symbol id="i-aj" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"></path></symbol>
+      <symbol id="i-vt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18"></path><rect x="8" y="8" width="8" height="12" rx="1"></rect></symbol>
+      <symbol id="i-vm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"></path><rect x="8" y="6" width="8" height="12" rx="1"></rect></symbol>
+      <symbol id="i-vb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"></path><rect x="8" y="4" width="8" height="12" rx="1"></rect></symbol>
+    </svg>
+
+    <p>
+      These are drawings, not screenshots — nothing below runs. They are here so we
+      can argue about the goal state before any of section 03 gets built. Every
+      figure, name and sentence in them comes from the seeded <em>Winter readiness
+      brief</em>, the real vocabulary keys, and the panel components that already
+      exist.
+    </p>
+
+    <div class="spec wide">
+      <div class="spec-head">
+        <span class="name">Content surface</span>
+        <span class="key">categories/document-editor/content/document.svelte</span>
+      </div>
+
+      <div class="surface">
+        <div class="bar">
+          <span>Winter readiness brief</span>
+          <span class="st">Saved · Page 1 of 3 · 1,204 words</span>
+        </div>
+
+        <div class="board">
+          <div class="sheet">
+            <p class="pg h1">Winter readiness brief</p>
+            <p class="pg meta">Revised 4 February</p>
+
+            <p class="pg">
+              Peak demand on the western interconnect is forecast to exceed last
+              winter's record by <b>four percent</b>, and two of the three substations
+              that carried that peak have since been derated. This brief sets out where
+              the exposure sits, what it would cost to close, and which of those costs
+              are already committed.
+            </p>
+
+            <p class="pg h2">Where the exposure sits</p>
+
+            <p class="pg">
+              <span class="cm hot">Substation 14 is the binding constraint</span>. Its
+              transformer bank was derated in September after the
+              <span class="lnk">oil analysis</span> came back, and the two feeders that
+              would otherwise pick up its load both run through the same corridor, so a
+              fault on either leaves the northern ring supplied from one direction only.
+              <span class="mk lit"><svg width="12" height="12"><use href="#i-msg"></use></svg></span>
+              <span class="mk two dim"><svg width="12" height="12"><use href="#i-msg"></use></svg></span>
+            </p>
+
+            <p class="pg">
+              The second concentration is behind the coastal tie. Nothing there has been
+              derated, but <span class="sel">the tie has carried an unplanned outage in
+              each of the last three winters</span> and the spares position for its
+              breakers is one deep.
+              <span class="mk dim"><svg width="12" height="12"><use href="#i-msg"></use></svg></span>
+            </p>
+
+            <p class="pg h2">Recommendation</p>
+
+            <p class="pg">
+              Bring the corridor reconductoring forward by one season and hold the
+              derating until it lands. <em>Everything else in this brief is contingent on
+              that decision.</em>
+              <span class="mk on"><svg width="12" height="12"><use href="#i-msg"></use></svg></span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span><i class="dot" style="background: var(--ui-select)"></i> live selection</span>
+        <span><i class="dot" style="background: var(--ui-note)"></i> commented text, pointer over it</span>
+        <span><i class="dot" style="background: var(--ui-active-ink)"></i> thread open in the inspector</span>
+      </div>
+
+      <p class="spec-note">
+        Headings are headings and marks render. <strong>Nothing is drawn on the page
+        that is not in the document</strong> — no margin guide, no ruler. The comment
+        icons sit in the pasteboard gutter, outside the paper, because a margin can be
+        set to nothing and text can fill it, where nothing ever runs into the gutter.
+        Four icons, four states: two dim at rest, one lit because the pointer is inside
+        its anchor, one filled because its thread is open. Two threads on one paragraph
+        stack downward from the anchor.
+      </p>
+
+      <p class="spec-note">
+        <strong>One consequence.</strong> The gutter is currently scenery — it
+        collapses from 2.5rem to 0.75rem as the surface narrows, and 0.75rem does not
+        hold an icon. Putting the lane there makes the trailing gutter structural: it
+        reserves a fixed lane width and only the leading side keeps giving way. That is
+        a change to <span class="m">gutterOf</span>, which today returns one number for
+        both sides.
+      </p>
+    </div>
+
+    <h3>The context panel</h3>
+
+    <p>
+      Five built, two placeholders, and the rail loses four entries it currently
+      carries. Sections becomes the landing view, so this is what a document opens on.
+    </p>
+
+    <div class="specs wide">
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Sections</span> <span class="key">document-editor.navigator</span></div>
+        <div class="ui with-rail">
+          <div class="rail">
+            <i class="on"><svg width="14" height="14"><use href="#i-panel"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-search"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-type"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-file"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-msg"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-tmpl"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-spark"></use></svg></i>
+          </div>
+          <div class="flank">
+            <div class="p-title">Sections</div>
+            <div class="p-body"><div class="c-input ph">Filter headings…</div></div>
+            <div class="r"><span class="lbl">Winter readiness brief</span><span class="meta">l.1 · p.1</span></div>
+            <div class="r l2 on"><span class="lbl">Where the exposure sits</span><span class="meta">l.14 · p.1</span></div>
+            <div class="r l3"><span class="lbl">Substation 14</span><span class="meta">l.17 · p.1</span></div>
+            <div class="r l3"><span class="lbl">The coastal tie</span><span class="meta">l.6 · p.2</span></div>
+            <div class="r l2"><span class="lbl">What it would cost</span><span class="meta">l.21 · p.2</span></div>
+            <div class="r l2"><span class="lbl">Recommendation</span><span class="meta">l.3 · p.3</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Styles</span> <span class="key">document-editor.styles</span></div>
+        <div class="ui">
+          <div class="p-title">Styles</div>
+          <div class="p-foot" style="border-top: 0; border-bottom: 1px solid var(--ui-line-soft)"><span class="btn primary">New style</span><span class="btn">Duplicate</span><span class="btn">Rename</span></div>
+          <div class="p-body"><div class="c-input ph">Search styles…</div></div>
+          <div class="r two on"><div class="txt"><span class="lbl">Body</span><div class="sub">IBM Plex Sans 15/26 · 400</div></div><span class="act">Apply</span></div>
+          <div class="r two"><div class="txt"><span class="lbl">Heading 1</span><div class="sub">IBM Plex Sans 24/32 · 600</div></div><span class="act">Apply</span></div>
+          <div class="r two"><div class="txt"><span class="lbl">Heading 2</span><div class="sub">IBM Plex Sans 18/28 · 600</div></div><span class="act">Apply</span></div>
+          <div class="r two"><div class="txt"><span class="lbl">Heading 3</span><div class="sub">IBM Plex Sans 15/24 · 600</div></div><span class="act">Apply</span></div>
+          <div class="r two"><div class="txt"><span class="lbl">Quote</span><div class="sub">IBM Plex Sans 15/28 · italic</div></div><span class="act">Apply</span></div>
+          <div class="r two"><div class="txt"><span class="lbl">Filing caption</span><div class="sub">IBM Plex Mono 12/16 · 400</div></div><span class="act">Apply</span></div>
+        </div>
+        <p class="spec-note">
+          Two verbs on one row, so neither is guessed at. Selecting the row inspects the
+          style — every setting is in the <span class="m">named-style</span> lens beside
+          it. <strong>Apply</strong> puts it on the selection. Actions sit above the
+          search rather than under the list.
+        </p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Layout</span> <span class="key">document-editor.layout</span></div>
+        <div class="ui">
+          <div class="p-title">Layout</div>
+          <div class="p-sec-h">Paper</div>
+          <div class="p-body">
+            <div class="c-row"><div class="c-select"><span class="v">Custom</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div></div>
+            <div class="trio">
+              <div><span class="k">Width</span><div class="c-input">8.50</div></div>
+              <div><span class="k">Height</span><div class="c-input">11.00</div></div>
+            </div>
+            <div class="c-row"><div class="c-select"><span class="v">Portrait</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div></div>
+          </div>
+          <div class="p-sec-h ruled">Margins <span style="margin-left: auto; letter-spacing: 0; text-transform: none">inches</span></div>
+          <div class="p-body">
+            <div class="c-row"><span class="k" style="width: 3.2rem; color: var(--ui-ink-3); font-size: 10px">Top</span><div class="c-input num">0.75</div><span class="k" style="width: 3.2rem; color: var(--ui-ink-3); font-size: 10px; text-align: right">Bottom</span><div class="c-input num">0.75</div></div>
+            <div class="c-row"><span class="k" style="width: 3.2rem; color: var(--ui-ink-3); font-size: 10px">Left</span><div class="c-input num">0.75</div><span class="k" style="width: 3.2rem; color: var(--ui-ink-3); font-size: 10px; text-align: right">Right</span><div class="c-input num">0.75</div></div>
+          </div>
+          <div class="p-sec-h ruled">Dimensions · derived</div>
+          <div class="p-body">
+            <div class="f"><span class="k">Page</span><span class="v">8.50 × 11.00 in</span></div>
+            <div class="f"><span class="k">Text area</span><span class="v">7.00 × 9.50 in</span></div>
+            <div class="f"><span class="k">At 100%</span><span class="v">52.00 × 67.29 rem</span></div>
+          </div>
+        </div>
+        <p class="spec-note">
+          Paper takes a custom size, so <span class="m">PaperSize</span>'s
+          <span class="m">{ width, height }</span> variant stops being unreachable.
+          Typesetting comes out of the panel: a characters-per-line figure is only true
+          for one font size, and once a row can be larger than the body it is a number
+          that lies. It still gets computed — per block, from the resolved style — it
+          just is not a fact worth putting on screen.
+        </p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Find</span> <span class="key">document-editor.find</span></div>
+        <div class="ui">
+          <div class="p-title">Find</div>
+          <div class="p-body">
+            <div class="c-row">
+              <div class="c-select" style="flex: none; width: 5.2rem"><span class="v">Replace</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+              <div class="c-input">storm</div>
+            </div>
+            <div class="c-row">
+              <div class="c-input ph">Replace with…</div>
+              <span class="btn">Replace</span>
+              <span class="btn">All</span>
+            </div>
+          </div>
+          <div class="p-sec-h ruled">3 hits</div>
+          <div class="r two"><div class="txt"><span class="lbl">…lost across the three <b>storm</b> events…</span><div class="sub">l.9 · p.2 · Body</div></div></div>
+          <div class="r two on"><div class="txt"><span class="lbl">…overhead segments under <b>storm</b> icing…</span><div class="sub">l.22 · p.2 · Body</div></div></div>
+          <div class="r two"><div class="txt"><span class="lbl">…the 2024 <b>storm</b> precedent docket…</span><div class="sub">l.4 · p.5 · Body</div></div></div>
+        </div>
+        <p class="spec-note">
+          One control switches Find into Replace and the second field and its two
+          buttons appear with it, so the panel is never taller than the mode it is in.
+          Results carry the count and nothing else.
+        </p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Comments</span> <span class="key">document-editor.comments</span></div>
+        <div class="ui">
+          <div class="p-title">Comments · 3</div>
+          <div class="p-body" style="gap: 0.5rem; padding-top: 0.5rem">
+            <div class="q"><div class="s" style="margin: 0 0 0.2rem">Mira Jain · 2h</div><div class="t">Is 41 minutes the restore or the dispatch? The log reads differently.</div></div>
+            <div class="q"><div class="s" style="margin: 0 0 0.2rem">Ana Reyes · 1d</div><div class="t">This sentence is doing too much at once. Substation 14 being the binding constraint is the finding; the corridor scheduling is the consequence.</div></div>
+            <div class="q"><div class="s" style="margin: 0 0 0.2rem">Tom Okafor · Monday</div><div class="t">Checked against the September oil analysis; the derating date is right.</div></div>
+          </div>
+        </div>
+        <p class="spec-note">
+          Every open thread, as the same quote block the inspector uses, filling the
+          width it has. No scope chips: the gutter already answers “what is on this
+          page” and the selection already answers “what is on this”.
+        </p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Templates · Prompts</span> <span class="key">placeholder</span></div>
+        <div class="ui">
+          <div class="p-title">Templates</div>
+          <div class="p-body" style="padding-top: 0.6rem; padding-bottom: 0.9rem">
+            <div style="color: var(--ui-ink-3); font-size: 11px">Not built yet</div>
+            <div style="font-family: var(--mono); font-size: 10.5px; color: var(--ui-ink-2)">document-editor.templates</div>
+            <div class="f"><span class="k">category</span><span class="v">document-editor</span></div>
+            <div class="f"><span class="k">content</span><span class="v">document-editor.document</span></div>
+          </div>
+        </div>
+        <p class="spec-note">
+          Both are <span class="m">PanelPlaceholder</span>, which the shell already
+          draws for a key with no file. They need the key, a label and an icon — not a
+          component.
+        </p>
+      </div>
+
+    </div>
+
+    <h3>The inspector</h3>
+
+    <p>
+      The three selection lenses are deliberately near-identical: what changes is the
+      header, the quote, and which controls carry a mixed state. Somebody who learns
+      one has learned all three.
+    </p>
+
+    <div class="specs wide">
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Text selection</span> <span class="key">document-editor.text-selection</span></div>
+        <div class="ui">
+          <div class="p-crumbs">Document › Text block › Selection</div>
+          <div class="p-title" style="border-bottom: 0; padding-top: 0.2rem">Text selection</div>
+          <div class="p-body">
+            <div class="q"><div class="t">Substation 14 is the binding constraint</div><div class="s">39 characters · Body</div></div>
+          </div>
+          <div class="p-sec-h ruled">Style</div>
+          <div class="p-body">
+            <div class="c-select"><span class="v">Body</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+            <div class="c-row">
+              <div class="c-select"><span class="v">IBM Plex Sans</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+              <div class="c-input num">15</div>
+            </div>
+            <div class="c-seg"><span class="on">B</span><span>I</span><span>U</span><span>S</span><span>&lt;/&gt;</span></div>
+            <div class="c-seg icons">
+              <span class="on"><svg width="13" height="13"><use href="#i-al"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-ac"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-ar"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-aj"></use></svg></span>
+            </div>
+            <div class="c-seg icons">
+              <span class="on"><svg width="13" height="13"><use href="#i-vt"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-vm"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-vb"></use></svg></span>
+            </div>
+            <div class="c-row">
+              <div class="c-row" style="flex: 1"><span style="color: var(--ui-ink-3); font-size: 9.5px">FG</span><div class="c-select"><span class="sw" style="background: var(--ui-ink)"></span><svg width="10" height="10" style="margin-left: auto"><use href="#i-chevd"></use></svg></div></div>
+              <div class="c-row" style="flex: 1"><span style="color: var(--ui-ink-3); font-size: 9.5px">BG</span><div class="c-select"><span class="sw" style="background: transparent"></span><svg width="10" height="10" style="margin-left: auto"><use href="#i-chevd"></use></svg></div></div>
+            </div>
+          </div>
+          <div class="p-sec-h ruled">Spacing · pt</div>
+          <div class="p-body">
+            <div class="trio">
+              <div><span class="k">Before</span><div class="c-input">0</div></div>
+              <div><span class="k">After</span><div class="c-input">8</div></div>
+              <div><span class="k">Leading</span><div class="c-input">26</div></div>
+              <div><span class="k">Indent</span><div class="c-input">0</div></div>
+            </div>
+          </div>
+          <div class="p-sec-h ruled">Comments · 2 <svg class="cv" width="10" height="10"><use href="#i-chevr"></use></svg></div>
+          <div class="p-sec-h">Links · 1 <svg class="cv" width="10" height="10"><use href="#i-chevr"></use></svg></div>
+        </div>
+        <p class="spec-note">
+          Alignment joins Style as two icon rows — horizontal, then vertical — because
+          both are ways the text is set rather than a separate subject. Spacing is four
+          numbers across one row: before, after, leading, indent. <em>Leading</em> is
+          baseline to baseline inside a paragraph; there is no letter-spacing anywhere
+          in the model and none is proposed.
+        </p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Selection across blocks</span> <span class="key">same key, mixed state</span></div>
+        <div class="ui">
+          <div class="p-crumbs">Document › Selection</div>
+          <div class="p-title" style="border-bottom: 0; padding-top: 0.2rem">Text selection</div>
+          <div class="p-body">
+            <div class="q"><div class="t">…is the binding constraint. Its transformer bank was derated in September … The second concentration is behind the coastal tie…</div><div class="s">312 characters · 3 blocks</div></div>
+          </div>
+          <div class="p-sec-h ruled">Style</div>
+          <div class="p-body">
+            <div class="c-select"><span class="v mixed">Mixed — Body, Heading 2</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+            <div class="c-row">
+              <div class="c-select"><span class="v">IBM Plex Sans</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+              <div class="c-input num mixed">—</div>
+            </div>
+            <div class="c-seg"><span class="mix">B</span><span>I</span><span>U</span><span>S</span><span>&lt;/&gt;</span></div>
+            <div class="c-seg icons">
+              <span class="mix"><svg width="13" height="13"><use href="#i-al"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-ac"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-ar"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-aj"></use></svg></span>
+            </div>
+            <div class="c-seg icons">
+              <span class="on"><svg width="13" height="13"><use href="#i-vt"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-vm"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-vb"></use></svg></span>
+            </div>
+          </div>
+          <div class="p-sec-h ruled">Spacing · pt</div>
+          <div class="p-body">
+            <div class="trio">
+              <div><span class="k">Before</span><div class="c-input mixed">—</div></div>
+              <div><span class="k">After</span><div class="c-input mixed">—</div></div>
+              <div><span class="k">Leading</span><div class="c-input">26</div></div>
+              <div><span class="k">Indent</span><div class="c-input">0</div></div>
+            </div>
+          </div>
+          <div class="p-sec-h ruled">Comments · 5 <svg class="cv" width="10" height="10"><use href="#i-chevr"></use></svg></div>
+          <div class="p-sec-h">Links · 3 <svg class="cv" width="10" height="10"><use href="#i-chevr"></use></svg></div>
+        </div>
+        <p class="spec-note">
+          The same lens, same key, same sections. All that changes: the count in the
+          quote, the counts on Comments and Links, and every control that has more than
+          one answer drawing itself struck through with a dashed edge.
+          <span class="m">PanelMarks</span>, <span class="m">PanelSelect</span> and
+          <span class="m">PanelChoice</span> already take <span class="m">mixed</span>.
+        </p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Empty block</span> <span class="key">document-editor.empty-block</span></div>
+        <div class="ui">
+          <div class="p-crumbs">Document › Empty block</div>
+          <div class="p-title" style="border-bottom: 0; padding-top: 0.2rem">Empty block</div>
+          <div class="p-body">
+            <div class="note">Nothing here yet. What you set applies to whatever you type next.</div>
+          </div>
+          <div class="p-sec-h ruled">Block</div>
+          <div class="p-body">
+            <div class="c-select"><span class="v">Text</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+          </div>
+          <div class="p-sec-h ruled">Style</div>
+          <div class="p-body">
+            <div class="c-select"><span class="v">Body</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+            <div class="c-row">
+              <div class="c-select"><span class="v">IBM Plex Sans</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+              <div class="c-input num">15</div>
+            </div>
+            <div class="c-seg"><span>B</span><span>I</span><span>U</span><span>S</span><span>&lt;/&gt;</span></div>
+            <div class="c-seg icons">
+              <span class="on"><svg width="13" height="13"><use href="#i-al"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-ac"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-ar"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-aj"></use></svg></span>
+            </div>
+            <div class="c-seg icons">
+              <span class="on"><svg width="13" height="13"><use href="#i-vt"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-vm"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-vb"></use></svg></span>
+            </div>
+            <div class="c-row">
+              <div class="c-row" style="flex: 1"><span style="color: var(--ui-ink-3); font-size: 9.5px">FG</span><div class="c-select"><span class="sw" style="background: var(--ui-ink)"></span><svg width="10" height="10" style="margin-left: auto"><use href="#i-chevd"></use></svg></div></div>
+              <div class="c-row" style="flex: 1"><span style="color: var(--ui-ink-3); font-size: 9.5px">BG</span><div class="c-select"><span class="sw" style="background: transparent"></span><svg width="10" height="10" style="margin-left: auto"><use href="#i-chevd"></use></svg></div></div>
+            </div>
+          </div>
+          <div class="p-sec-h ruled">Placement</div>
+          <div class="p-body">
+            <div class="f"><span class="k">Row</span><span class="v">1 block of 1</span></div>
+            <div class="f"><span class="k">Page</span><span class="v">2 · computed</span></div>
+          </div>
+        </div>
+        <p class="spec-note">
+          Text selection minus Spacing, plus a Block section whose one option is
+          <em>Text</em>. The <span class="m">next-letter</span> lens is this panel with
+          the quote back and the marks reading ProseMirror's stored marks.
+        </p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Named style</span> <span class="key">document-editor.named-style</span></div>
+        <div class="ui">
+          <div class="p-crumbs">Document › Styles › Heading 2</div>
+          <div class="p-title" style="border-bottom: 0; padding-top: 0.2rem">Heading 2</div>
+          <div class="p-body">
+            <div class="note">Applied to 6 blocks. Editing changes all of them.</div>
+          </div>
+          <div class="p-sec-h ruled">Identity</div>
+          <div class="p-body">
+            <div class="c-input">Heading 2</div>
+            <div class="c-select"><span class="v">Based on · Body</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+          </div>
+          <div class="p-sec-h ruled">Typography</div>
+          <div class="p-body">
+            <div class="c-select"><span class="v">IBM Plex Sans</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+            <div class="c-row">
+              <span style="width: 3.4rem; color: var(--ui-ink-3); font-size: 10px">Size</span><div class="c-input num">18</div>
+              <span style="width: 3.4rem; color: var(--ui-ink-3); font-size: 10px; text-align: right">Weight</span><div class="c-input num">600</div>
+            </div>
+            <div class="c-row"><span style="width: 3.4rem; color: var(--ui-ink-3); font-size: 10px">Colour</span><div class="c-select"><span class="sw" style="background: var(--ui-ink)"></span><span class="v">Ink</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div></div>
+            <div class="c-seg icons">
+              <span class="on"><svg width="13" height="13"><use href="#i-al"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-ac"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-ar"></use></svg></span>
+              <span><svg width="13" height="13"><use href="#i-aj"></use></svg></span>
+            </div>
+          </div>
+          <div class="p-sec-h ruled">Spacing</div>
+          <div class="p-body">
+            <div class="c-row">
+              <span style="width: 3.4rem; color: var(--ui-ink-3); font-size: 10px">Before</span><div class="c-input num">18</div>
+              <span style="width: 3.4rem; color: var(--ui-ink-3); font-size: 10px; text-align: right">After</span><div class="c-input num">6</div>
+            </div>
+            <div class="c-row">
+              <span style="width: 3.4rem; color: var(--ui-ink-3); font-size: 10px">Line</span><div class="c-input num">28</div>
+              <span style="width: 3.4rem; color: var(--ui-ink-3); font-size: 10px; text-align: right">Indent</span><div class="c-input num">0</div>
+            </div>
+          </div>
+          <div class="p-sec-h ruled">Usage <svg class="cv" width="10" height="10"><use href="#i-chevr"></use></svg></div>
+        </div>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Comment thread</span> <span class="key">general.comment</span></div>
+        <div class="ui">
+          <div class="p-crumbs">Document › Selection › Thread</div>
+          <div class="p-title" style="border-bottom: 0; padding-top: 0.2rem">Comment</div>
+          <div class="p-body">
+            <div class="q"><div class="s" style="margin: 0 0 0.2rem">Ana Reyes · 2h · p.1</div><div class="t">Substation 14 is the binding constraint</div></div>
+          </div>
+          <div class="p-body" style="padding-top: 0.2rem">
+            <div class="c-input ph" style="min-height: 2.4rem; align-items: flex-start">Reply…</div>
+            <div class="c-row"><span class="btn primary">Reply</span><span class="btn">Resolve</span></div>
+          </div>
+          <div class="p-sec-h ruled">Thread · 3</div>
+          <div class="p-body">
+            <div class="q"><div class="s" style="margin: 0 0 0.2rem">Ana Reyes · 2h</div><div class="t">This sentence is doing too much at once. Substation 14 being the binding constraint is the finding; the corridor scheduling is the consequence.</div></div>
+            <div class="q"><div class="s" style="margin: 0 0 0.2rem">Priya Raman · yesterday</div><div class="t">Agreed on the split. I'd also drop “binding” — it reads as jargon outside the planning team.</div></div>
+            <div class="q"><div class="s" style="margin: 0 0 0.2rem">Tom Okafor · Monday</div><div class="t">Checked against the September oil analysis; the derating date is right.</div></div>
+          </div>
+        </div>
+        <p class="spec-note">
+          The anchored text at the top carries who raised it and when, so the header is
+          the thread rather than a floating quotation. Reply and Resolve sit above the
+          conversation: replying is what you came to do, and neither should be at the
+          bottom of a thread that grows.
+        </p>
+      </div>
+
+    </div>
+
+    <p>
+      <strong>Nothing selected draws nothing.</strong> There is no
+      <span class="m">document-editor.document</span> lens in this round — the
+      inspector's own empty state already says <em>Nothing selected · Pick something in
+      the centre, or a row on the left</em>, and a document lens on top of it would be
+      a second answer to a question already answered.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>Five things block everything else</h2>
+
+    <p>
+      Alignment, styles, spacing, multi-selection and comments all want the same
+      five pieces, and none of them exists. Building any one feature first means
+      building all five underneath it, so they are worth naming as their own phase.
+    </p>
+
+    <div class="blockers">
+      <div class="blocker">
+        <div class="k">1</div>
+        <div>
+          <h3>The schema declares no marks and the block carries no attributes</h3>
+          <p>
+            <span class="m">text_block</span> has <span class="m">blockId</span>,
+            <span class="m">atomId</span> and <span class="m">share</span>. There is no
+            variant, no style key, no format, and the mark set is literally empty.
+            Nothing can be bold inside the editor's own document, so nothing can be
+            round-tripped out of it.
+          </p>
+          <p class="where">procedures/schema.ts</p>
+        </div>
+      </div>
+
+      <div class="blocker">
+        <div class="k">2</div>
+        <div>
+          <h3>The translator has no vocabulary for anything but text and structure</h3>
+          <p>
+            <span class="m">translate</span> emits five shapes: a text splice, a block
+            insert, a block remove, a row insert/remove/move, and a set on
+            <span class="m">row/proportions</span>. A mark change produces no op at all.
+          </p>
+          <p class="where">procedures/translate.ts</p>
+        </div>
+      </div>
+
+      <div class="blocker">
+        <div class="k">3</div>
+        <div>
+          <h3>The applier refuses anything it does not already know</h3>
+          <p>
+            <span class="m">applySet</span> handles exactly one path —
+            <span class="m">&lt;rowId&gt;/proportions</span> — and calls
+            <span class="m">refuse()</span> for everything else. A perfectly formed mark
+            op would be rejected by the server it was sent to.
+          </p>
+          <p class="where">capabilities/document/api/submit-document-changes/apply-ops.ts</p>
+        </div>
+      </div>
+
+      <div class="blocker">
+        <div class="k">4</div>
+        <div>
+          <h3>The document runtime is not optimistic; the deck runtime is</h3>
+          <p>
+            <span class="m">buffer()</span> appends ops and leaves
+            <span class="m">runtime.body</span> alone — the body only moves when
+            <span class="m">sync</span> re-reads the leader. Today that is invisible,
+            because ProseMirror holds the optimistic text. The moment a panel edits
+            something ProseMirror does not hold, the change disappears for two seconds
+            and then comes back. The slide deck already solved this with a shared
+            applier both sides run.
+          </p>
+          <p class="where">model/client/document-runtimes/methods/apply.ts · model/client/slide-deck-runtimes/methods/apply.ts</p>
+        </div>
+      </div>
+
+      <div class="blocker">
+        <div class="k">5</div>
+        <div>
+          <h3>There is no op target for the document itself</h3>
+          <p>
+            <span class="m">DocumentOp</span> targets are
+            <span class="m">row · block · atom · mark</span>. Page setup and the style
+            set live on the body, above every row, and cannot be addressed. Both are
+            things you asked to be able to edit.
+          </p>
+          <p class="where">representation/data/types/documents/op.ts</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>One rule decides most of the rest</h2>
+
+    <div class="rulebox">
+      <p class="lede">
+        Anything inside a block is edited through ProseMirror. Anything outside a
+        block is edited through the runtime.
+      </p>
+      <p>
+        Marks, variant, style key, alignment: a panel asks the editor to run a
+        command, the transaction flows through the existing
+        <span class="m">dispatch → bodyOf → translate</span> pipeline, and the ops fall
+        out the end. Page setup and the style set: a panel calls
+        <span class="m">runtime.apply</span> directly and the surface re-projects.
+      </p>
+    </div>
+
+    <p>
+      The reason is undo. Text undo is ProseMirror's <span class="m">history()</span>
+      plugin, bound to <span class="m">Mod-z</span> in the content surface;
+      <span class="m">DocumentRuntime</span> carries a second, separate undo stack that
+      nothing currently calls. If pressing <strong>B</strong> in the inspector pushed
+      onto the runtime stack while typing pushed onto ProseMirror's, ⌘Z would walk two
+      histories in an order nobody can predict. Routing in-block edits through
+      ProseMirror keeps one stack and costs nothing — the pipeline already exists.
+    </p>
+
+    <p>
+      It also avoids a repaint. <span class="m">paint()</span> builds a fresh
+      <span class="m">EditorState</span> and would drop the caret every time you
+      pressed a formatting button. A ProseMirror command mutates in place and the
+      selection survives.
+    </p>
+
+    <h4>How a panel reaches the editor</h4>
+
+    <p>
+      A view may not touch the runtime register — <span class="m">runtime-through-workspace-state</span>
+      greps the raw text of every view leaf for <span class="m">attach(</span> — so the
+      channel has to be on the workspace state. I would add one method to
+      <span class="m">DocumentRuntime</span>: the content surface registers its
+      <span class="m">EditorView</span> on mount, panels call
+      <span class="m">runtime.command(...)</span>, and the surface runs it. One method,
+      one direction, and the panel never learns what ProseMirror is.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 900 260" role="img" aria-label="The round trip from document body to store, with the new pieces marked">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+          </marker>
+        </defs>
+
+        <g font-family="JetBrains Mono, monospace" font-size="11">
+          <!-- row 1: body to editor -->
+          <rect x="8" y="24" width="150" height="46" rx="2" fill="var(--spine-soft)" stroke="var(--spine)" stroke-width="1"></rect>
+          <text x="83" y="44" fill="var(--spine)" text-anchor="middle" font-weight="700">DocumentBody</text>
+          <text x="83" y="59" fill="var(--ink-3)" text-anchor="middle">runtime.body</text>
+
+          <g color="var(--ink-3)">
+            <line x1="162" y1="47" x2="228" y2="47" stroke="currentColor" stroke-width="1" marker-end="url(#ar)"></line>
+          </g>
+          <text x="195" y="38" fill="var(--ink-3)" text-anchor="middle">docOf</text>
+
+          <rect x="234" y="12" width="200" height="70" rx="2" fill="var(--surface-soft)" stroke="var(--surface)" stroke-width="1"></rect>
+          <text x="334" y="34" fill="var(--surface)" text-anchor="middle" font-weight="700">ProseMirror doc</text>
+          <text x="334" y="50" fill="var(--ink-3)" text-anchor="middle">page › row › text_block</text>
+          <text x="334" y="66" fill="var(--stop)" text-anchor="middle" font-weight="700">+ marks + attrs</text>
+
+          <g color="var(--ink-3)">
+            <line x1="438" y1="47" x2="504" y2="47" stroke="currentColor" stroke-width="1" marker-end="url(#ar)"></line>
+          </g>
+          <text x="471" y="38" fill="var(--ink-3)" text-anchor="middle">bodyOf</text>
+
+          <rect x="510" y="24" width="150" height="46" rx="2" fill="var(--spine-soft)" stroke="var(--spine)" stroke-width="1"></rect>
+          <text x="585" y="44" fill="var(--spine)" text-anchor="middle" font-weight="700">DocumentBody′</text>
+          <text x="585" y="59" fill="var(--ink-3)" text-anchor="middle">next</text>
+
+          <g color="var(--ink-3)">
+            <line x1="664" y1="47" x2="730" y2="47" stroke="currentColor" stroke-width="1" marker-end="url(#ar)"></line>
+          </g>
+          <text x="697" y="38" fill="var(--ink-3)" text-anchor="middle">translate</text>
+
+          <rect x="736" y="12" width="156" height="70" rx="2" fill="var(--spine-soft)" stroke="var(--spine)" stroke-width="1"></rect>
+          <text x="814" y="34" fill="var(--spine)" text-anchor="middle" font-weight="700">DocumentOp[]</text>
+          <text x="814" y="50" fill="var(--ink-3)" text-anchor="middle">text · insert · move</text>
+          <text x="814" y="66" fill="var(--stop)" text-anchor="middle" font-weight="700">+ mark · block · doc</text>
+
+          <!-- row 2: ops down to buffer and store -->
+          <g color="var(--ink-3)">
+            <path d="M 814 86 L 814 116" stroke="currentColor" stroke-width="1" fill="none" marker-end="url(#ar)"></path>
+          </g>
+
+          <rect x="700" y="122" width="192" height="46" rx="2" fill="var(--recess)" stroke="var(--rule)" stroke-width="1"></rect>
+          <text x="796" y="142" fill="var(--ink-2)" text-anchor="middle" font-weight="700">runtime buffer</text>
+          <text x="796" y="157" fill="var(--ink-3)" text-anchor="middle">coalesce · 50 ops / 2s</text>
+
+          <g color="var(--ink-3)">
+            <path d="M 700 145 L 620 145" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" fill="none" marker-end="url(#ar)"></path>
+          </g>
+          <rect x="404" y="122" width="212" height="46" rx="2" fill="var(--stop-soft)" stroke="var(--stop)" stroke-width="1" stroke-dasharray="4 3"></rect>
+          <text x="510" y="142" fill="var(--stop)" text-anchor="middle" font-weight="700">applyOps — optimistic</text>
+          <text x="510" y="157" fill="var(--ink-3)" text-anchor="middle">new · body moves first</text>
+
+          <g color="var(--ink-3)">
+            <path d="M 404 145 L 324 145" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" fill="none" marker-end="url(#ar)"></path>
+          </g>
+          <text x="240" y="149" fill="var(--ink-3)">back to runtime.body</text>
+
+          <g color="var(--ink-3)">
+            <path d="M 796 168 L 796 198" stroke="currentColor" stroke-width="1" fill="none" marker-end="url(#ar)"></path>
+          </g>
+
+          <rect x="640" y="204" width="252" height="46" rx="2" fill="var(--panel-soft)" stroke="var(--panel)" stroke-width="1"></rect>
+          <text x="766" y="224" fill="var(--panel)" text-anchor="middle" font-weight="700">submitDocumentChanges</text>
+          <text x="766" y="239" fill="var(--ink-3)" text-anchor="middle">same applyOps, server side</text>
+
+          <!-- panel arm -->
+          <rect x="8" y="122" width="212" height="46" rx="2" fill="var(--panel-soft)" stroke="var(--panel)" stroke-width="1"></rect>
+          <text x="114" y="142" fill="var(--panel)" text-anchor="middle" font-weight="700">inspector · context</text>
+          <text x="114" y="157" fill="var(--ink-3)" text-anchor="middle">panels</text>
+
+          <g color="var(--surface)">
+            <path d="M 114 122 L 114 96 L 334 96 L 334 86" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ar)"></path>
+          </g>
+          <text x="224" y="90" fill="var(--surface)" text-anchor="middle">in-block · runtime.command</text>
+
+          <g color="var(--spine)">
+            <path d="M 114 168 L 114 226 L 200 226" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ar)"></path>
+          </g>
+          <text x="330" y="230" fill="var(--spine)" text-anchor="middle">out-of-block · runtime.apply → pageSetup, styles</text>
+        </g>
+      </svg>
+      <figcaption>
+        The pipeline that exists today is the top row. Dashed is what is missing: the
+        applier the client runs before the server sees it. The two arms on the left are
+        the rule in section 04 — panels either ask the editor or move the body.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2><span class="n">05</span>The op vocabulary, extended</h2>
+
+    <p>
+      Every new op below has to be emitted by <span class="m">translate</span> and
+      accepted by <span class="m">applyOps</span> in the same change, or the client and
+      the store disagree about what a document is. The path grammar stays
+      <span class="m">&lt;id&gt;/&lt;field&gt;</span> except for the document target,
+      which has no id and uses a plain field path.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Target</th><th>Op and path</th><th>Carries</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="m">mark</span></td>
+            <td><span class="m">insert · remove</span><br><span class="m">&lt;blockId&gt;/marks</span></td>
+            <td>Whole <span class="m">Mark</span> values by id. A mark is created when you first bold a range and removed when the last style comes off it.</td>
+          </tr>
+          <tr>
+            <td><span class="m">mark</span></td>
+            <td><span class="m">set</span><br><span class="m">&lt;markId&gt;/style · /color · /link · /from · /to</span></td>
+            <td>Adding italic to a range that is already bold, recolouring, retargeting a link, or a range being extended by dragging.</td>
+          </tr>
+          <tr>
+            <td><span class="m">block</span></td>
+            <td><span class="m">set</span><br><span class="m">&lt;blockId&gt;/variant · /level · /style · /format</span></td>
+            <td>Heading versus body, heading depth, which named style the block uses, and the block's own box — which is where alignment lives.</td>
+          </tr>
+          <tr>
+            <td><span class="m">document</span> <span class="tag none">new</span></td>
+            <td><span class="m">set</span><br><span class="m">pageSetup · pageSetup/margins/top · styles/defaultKey</span></td>
+            <td>Paper, orientation, each margin, and which style a new block gets.</td>
+          </tr>
+          <tr>
+            <td><span class="m">document</span> <span class="tag none">new</span></td>
+            <td><span class="m">insert · remove</span><br><span class="m">styles</span></td>
+            <td>Creating and deleting a named style. <span class="m">StyleSet.styles</span> is a record, so the ids are its keys and <span class="m">after</span> is documented as ignored.</td>
+          </tr>
+          <tr>
+            <td><span class="m">document</span> <span class="tag none">new</span></td>
+            <td><span class="m">set</span><br><span class="m">styles/&lt;key&gt;/fontSize</span> etc.</td>
+            <td>Editing one field of one named style, so two people changing size and colour on the same style do not clobber each other.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Marks must not churn on every keystroke</h3>
+
+    <p>
+      A <span class="m">Mark</span> is <span class="m">{ id, from, to, style?, link?, color? }</span>
+      with <span class="m">from</span> and <span class="m">to</span> as UTF-16 offsets
+      into the block's <span class="m">display</span> string. Type one character at the
+      start of a paragraph and every mark after it moves. If
+      <span class="m">translate</span> diffed mark arrays it would emit a
+      <span class="m">set</span> on <span class="m">from</span> and
+      <span class="m">to</span> for every mark in the block, per keystroke.
+    </p>
+
+    <div class="rulebox">
+      <p>
+        <strong>The applier shifts offsets; the translator never mentions them.</strong>
+        <span class="m">applyText</span> already splices the atom — it also maps every
+        mark on that block through the same splice. Client and server run the same
+        function, so they cannot drift, and a text op stays one op.
+      </p>
+    </div>
+
+    <p>
+      That leaves <span class="m">set</span> on <span class="m">from</span>/<span class="m">to</span>
+      for the one case it is actually for: a person deliberately changing what a mark
+      covers.
+    </p>
+
+    <h3>One ProseMirror mark type per style, each carrying its id</h3>
+
+    <p>
+      The model's <span class="m">Mark</span> holds an <em>array</em> of styles, which
+      fights ProseMirror's <span class="m">toggleMark</span>. The mapping that works in
+      both directions: declare <span class="m">bold · italic · underline · strike · code · link · colour</span>
+      as separate ProseMirror marks, each with a <span class="m">markId</span> attribute.
+      <span class="m">bodyOf</span> groups runs sharing a <span class="m">markId</span>
+      back into one <span class="m">Mark</span>. Bolding a range that is already italic
+      makes a second <span class="m">Mark</span> with its own id over the same
+      characters, which the model allows and — per its own comment — is exactly what
+      makes two people formatting one paragraph merge instead of collide.
+    </p>
+
+    <pre><code><span class="c">// procedures/projection.ts — blockNode, today</span>
+schema.node("text_block", { blockId, atomId, share }, schema.text(atom.text))
+
+<span class="c">// what it becomes: one text node per run of identical marks</span>
+schema.node("text_block", { blockId, atomId, share,
+                            <span class="a">variant, level, styleKey, format</span> },
+  <span class="b">runsOf(atom.text, block.marks)</span>.map(({ text, marks }) =&gt;
+    schema.text(text, marks)))</code></pre>
+
+    <div class="aside">
+      <span class="h">A constraint worth keeping</span>
+      <p>
+        <span class="m">soleLiteral</span> and <span class="m">drawable</span> stay
+        exactly as they are. Marks are metadata on the block that index into
+        <span class="m">display</span>; they are not atoms. A block is still drawable if
+        and only if its whole content is one literal atom, so images, tables, formulas
+        and prompt blocks continue to travel through the projection untouched rather
+        than being rendered badly.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">06</span>The content surface</h2>
+
+    <h3>What it has to start drawing</h3>
+
+    <ul>
+      <li><strong>Marks.</strong> Bold, italic, underline, strike, code, link, and a colour pair. <span class="m">toDOM</span> on each mark, and CSS in the surface's existing <span class="m">:global(.document-block)</span> block.</li>
+      <li><strong>Variants.</strong> A heading has to look like a heading. <span class="m">text_block.toDOM</span> emits <span class="m">h1…h4 · p · blockquote · pre</span> from <span class="m">variant</span> and <span class="m">level</span>, with <span class="m">data-style</span> for the named style.</li>
+      <li><strong>Alignment and spacing.</strong> An inline <span class="m">text-align</span> from <span class="m">format.horizontalAlignment</span>, and margins from the resolved style's <span class="m">spaceBefore</span> / <span class="m">spaceAfter</span>.</li>
+      <li><strong>The style set as CSS.</strong> One <span class="m">&lt;style&gt;</span> block generated from the document's <span class="m">StyleSet</span>, keyed on <span class="m">data-style</span>, so changing a style repaints every block using it without touching a single node.</li>
+      <li><strong>Comment highlights and the gutter.</strong> Section 10.</li>
+    </ul>
+
+    <div class="rulebox">
+      <p>
+        <strong>Nothing is drawn on the page that is not in the document.</strong> No
+        margin guide, no ruler, no page-break hint. The panel spec argues for a dashed
+        margin guide precisely <em>because</em> it removes the ruler; we are removing
+        both. A margin is a number in the Layout panel and an area of blank paper, and
+        that is the whole of its presence.
+      </p>
+    </div>
+
+    <h3>Pagination stops being uniform</h3>
+
+    <p>
+      <span class="m">layoutMetrics</span> derives 82 characters and 35 lines from one
+      body size of 16px on 26px leading, and <span class="m">linesOfText</span> measures
+      every block against it. That is a number that is only true while every row is the
+      same size. Make one line larger and both figures are wrong for it — which is why
+      they come out of the Layout panel: a characters-per-line readout on a document
+      that has headings is a fact about nothing.
+    </p>
+
+    <p>
+      They stay computed, per block. <span class="m">linesOfBlock</span> takes the
+      block's resolved style, works out how many characters of <em>that</em> size fit
+      the measure it has, and converts its leading and its space before and after into
+      the same body-line unit the packer counts in. Change a font size and the block's
+      own budget changes with it. It remains an estimate until pagination measures real
+      line boxes — but an estimate that knows what it is measuring.
+    </p>
+
+    <h3>The trailing gutter becomes structural</h3>
+
+    <p>
+      <span class="m">gutterOf</span> returns one number used as symmetric padding, and
+      it collapses to <span class="m">MINIMUM_GUTTER</span> — 0.75rem — before the page
+      gives way. An icon lane does not fit in 0.75rem. Putting comments there means the
+      trailing side reserves a fixed lane and only the leading side goes on collapsing,
+      so the gutter is two numbers rather than one. Small change, worth naming, because
+      it is the difference between the lane being always available and being available
+      on wide screens.
+    </p>
+
+    <h3>Repaint has to preserve the selection, not just the caret</h3>
+
+    <p>
+      <span class="m">lay()</span> already re-anchors the caret through
+      <span class="m">anchorAt</span> and <span class="m">positionOf</span>.
+      <span class="m">paint()</span> does not — it builds a fresh state. Changing a
+      margin repaginates and therefore repaints, so <span class="m">paint</span> needs
+      the same treatment, extended from a point to a range so a selection survives a
+      page-setup change.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">07</span>The inspector</h2>
+
+    <p>
+      Four lenses, and the first three are close to one lens with different
+      headers — which is what you said, and the code agrees: <span class="m">signalOf</span>
+      already sorts a selection into the three keys and the vocabulary has no
+      <span class="m">multi-selection</span> key for documents, unlike the deck.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Lens</th><th>Sections</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="m">text-selection</span><br><span class="tag part">rebuild</span></td>
+            <td>Selected text · Style · Spacing · Comments · Links</td>
+            <td>Every control becomes real. Style holds the style key, family, size, marks, both alignments and the colour pair; Spacing is one row of four numbers.</td>
+          </tr>
+          <tr>
+            <td><span class="m">text-selection</span><br>spanning blocks</td>
+            <td>Same</td>
+            <td>Not a second lens and not a second key. The quote counts blocks, the counts on Comments and Links grow, and any control with more than one answer draws itself mixed. <span class="m">PanelMarks</span>, <span class="m">PanelSelect</span> and <span class="m">PanelChoice</span> all already take <span class="m">mixed</span>.</td>
+          </tr>
+          <tr>
+            <td><span class="m">next-letter</span><br><span class="tag none">new</span></td>
+            <td>Same, minus the quote</td>
+            <td>The caret in text with characters either side. What the controls show is the marks <em>stored</em> for the next keystroke — ProseMirror's <span class="m">storedMarks</span> — so pressing B then typing produces bold text.</td>
+          </tr>
+          <tr>
+            <td><span class="m">empty-block</span><br><span class="tag none">new</span></td>
+            <td>Block · Style · Placement</td>
+            <td>Text selection minus Spacing. Block is a select whose only option is <em>Text</em>. Everything else matches the selection lens so the two never read as different tools.</td>
+          </tr>
+          <tr>
+            <td><span class="m">named-style</span><br><span class="tag none">new</span></td>
+            <td>Identity · Typography · Spacing · Usage</td>
+            <td>Reached by selecting a row in the Styles panel. Usage counts the blocks that would change, <em>before</em> the edit.</td>
+          </tr>
+          <tr>
+            <td><span class="m">general.comment</span><br><span class="tag none">new</span></td>
+            <td>Anchor · Reply and resolve · Thread</td>
+            <td>The thread lens. <span class="m">text-selection.svelte</span> already calls <span class="m">view.inspect("general.comment", …)</span> and lands on a placeholder.</td>
+          </tr>
+          <tr>
+            <td><span class="m">document</span></td>
+            <td>—</td>
+            <td>Not built. Nothing selected stays the inspector's own empty state.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="aside">
+      <span class="h">Where alignment and spacing actually live</span>
+      <p>
+        Both controls sit in Style, because both are ways the text is set. Where the
+        value is written is the model's business: horizontal and vertical alignment go
+        to <span class="m">BlockFormat</span> on the block, and a named style may carry
+        a default horizontal alignment that the block overrides —
+        <span class="m">TextStyle.horizontalAlignment</span> already exists for exactly
+        that. Spacing is <span class="m">spaceBefore</span> /
+        <span class="m">spaceAfter</span> / <span class="m">lineHeight</span> /
+        <span class="m">indent</span>, which live only on the style; see decision 2.
+      </p>
+      <p>
+        <em>Leading</em> is baseline to baseline inside a paragraph. There is no
+        letter-spacing field anywhere in the model, and none is proposed — it is a
+        typesetting control almost nobody reaches for and it would need a new field on
+        <span class="m">TextStyle</span> to exist at all.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">08</span>Styles</h2>
+
+    <p>
+      <span class="m">StyleSet</span> is <span class="m">{ styles: Record&lt;string, TextStyle&gt;, defaultKey: string }</span>
+      on the body, and <span class="m">TextBlock.style</span> is a key into it — the type
+      comment is explicit that it is "a key into the containing resource's style set,
+      not a copy of its formatting". Today no document has one and nothing reads the
+      field.
+    </p>
+
+    <p>
+      A style is a set of formatting with a name. Family, size, weight, line height,
+      space before and after, alignment and indent all live on it. That means the font
+      and size controls in the selection lens are, strictly, controls on the block's
+      style — which is what the panel spec argues for and what the current mock
+      implies without saying.
+    </p>
+
+    <h4>Styles context panel</h4>
+    <ul>
+      <li>Actions across the top — <strong>New style</strong>, <strong>Duplicate</strong>, <strong>Rename</strong> — above the search rather than under the list. A panel this narrow puts what you can do where you look first.</li>
+      <li>Then search, then a row per style: name and its typography in shorthand — <em>Heading 1 — IBM Plex Sans 24/32 · 600</em>.</li>
+      <li><strong>Two verbs on the row, both explicit.</strong> Selecting it opens the <span class="m">named-style</span> lens beside the panel, which is where every setting is edited. <strong>Apply</strong> puts the style on the current selection. Selecting a style and applying a style are different intentions and a single click cannot mean both.</li>
+      <li>A document with no <span class="m">StyleSet</span> gets the default set written on first edit, not on open — opening a document should not dirty it.</li>
+    </ul>
+
+    <h4>The default set</h4>
+    <p>
+      Body, Heading 1, Heading 2, Heading 3, Quote, Caption, Code. Seven, matching the
+      six the mock already invented plus a third heading level, because the Sections
+      outline is worth building against more than two levels.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">09</span>Layout, made editable</h2>
+
+    <p>
+      The panel currently reads a module constant. Three changes make it real, and
+      they are small once the document op target exists.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Section</th><th>Becomes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Paper</td><td>Two selects — six named sizes plus <strong>Custom</strong>, and two orientations. Custom reveals width and height in inches, which makes <span class="m">PaperSize</span>'s <span class="m">{ width, height }</span> variant reachable for the first time. Writes <span class="m">pageSetup/paper</span> and <span class="m">pageSetup/orientation</span>.</td></tr>
+          <tr><td>Margins</td><td>Four numbers in inches, stepped, clamped so opposing margins cannot exceed the sheet. Writes <span class="m">pageSetup/margins/&lt;side&gt;</span>.</td></tr>
+          <tr><td>Dimensions</td><td>Unchanged. All three are derived and stay read-only — that is the section's job.</td></tr>
+          <tr><td>Typesetting</td><td><strong>Removed from the panel.</strong> Still computed, per block, from the resolved style. See section 06.</td></tr>
+          <tr><td>Zoom</td><td>Stays where it is. Zoom is tab view state, not document state, and the status bar is where the spec puts its readout.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Two departures from <span class="m">docs/screen-panel-views/context/resource/layout.md</span>
+      worth recording, because both are deliberate: there is no dashed margin guide on
+      the page, and there is no characters-per-line readout. Header, footer and page
+      numbering are in that spec and are not in this round — see section 14.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">10</span>Comments</h2>
+
+    <p>
+      The store already has what this needs and nothing reads it. Threads carry
+      <span class="m">target</span>, an optional <span class="m">within</span> anchor,
+      a <span class="m">quote</span> and an optional <span class="m">resolution</span>;
+      the anchor's text variant is exactly <span class="m">{ kind: "text", blockId, from, to }</span>.
+      Three threads and five comments are seeded. There is no
+      <span class="m">capabilities/comments/</span> directory — reads and writes go
+      through the generic store, which is what it is for.
+    </p>
+
+    <h3>The gutter, as you described it</h3>
+
+    <p>
+      A lane to the right of the page, outside the paper, one row per thread anchored
+      at the vertical position of its anchor's first character. Position comes from
+      <span class="m">EditorView.coordsAtPos</span> on the resolved anchor, recomputed on
+      relayout — the same trigger <span class="m">lay()</span> already fires on.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>State</th><th>The icon</th><th>The text</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>At rest</td><td>Transparent, still occupying its row</td><td>No highlight</td></tr>
+          <tr><td>Pointer over anchored text</td><td>Opaque, for every thread that text belongs to</td><td>Faint tint</td></tr>
+          <tr><td>Caret inside, or selection overlapping</td><td>Opaque, same set</td><td>Faint tint</td></tr>
+          <tr><td>Pointer over the icon</td><td>Opaque</td><td>Its own anchor tints</td></tr>
+          <tr><td>Thread selected</td><td>Filled</td><td>Strong tint, held while focus is in the panel</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Two threads on overlapping text give two icons in the lane; when they collide
+      vertically they stack downward from the anchor and the lane keeps its order.
+      Selecting an icon inspects <span class="m">general.comment</span>. The
+      highlighting is a ProseMirror decoration set built from the anchors, which means
+      it composes with the existing <span class="m">held-selection</span> decoration
+      rather than fighting it.
+    </p>
+
+    <h3>Comments context panel</h3>
+    <ul>
+      <li>Every open thread, newest first, drawn as the quote block the inspector uses — author, when, and the remark filling the width the panel has.</li>
+      <li><strong>No scope chips.</strong> The gutter already answers "what is on this page" by being beside it, and a selection already answers "what is on this" by being selected. A chip row would be a third way to ask a question the screen answers twice.</li>
+      <li>Selecting a thread scrolls to its anchor and opens the thread lens.</li>
+      <li>A thread whose anchor no longer resolves is shown as detached with its quote, not hidden.</li>
+      <li>Resolved threads are not in the panel this round. They are kept rather than deleted, so somewhere has to reach them eventually — noted rather than solved.</li>
+    </ul>
+
+    <h3>Writing one</h3>
+    <p>
+      Composing on a selection creates the thread and its first comment together, with
+      <span class="m">quote</span> frozen from the selected text and
+      <span class="m">within</span> from the anchor. Resolution sets
+      <span class="m">resolution</span> rather than deleting — the schema's comment says
+      why, and it is a good reason.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">11</span>Sections and Find</h2>
+
+    <h3>Sections</h3>
+    <p>
+      The rail already labels <span class="m">document-editor.navigator</span> as
+      <em>Sections</em>. Headings nested by level, current heading marked, and a filter
+      over the list. It needs exactly one thing that does not exist yet — blocks that
+      know they are headings — which is why it comes after variants.
+    </p>
+    <p>
+      <strong>Each row carries a line and a page, line first.</strong> The page is the
+      coarse answer and the line is the precise one, and a heading list is used to get
+      somewhere rather than to know what page something is on. Both are computed and
+      neither is an identifier: the panel spec is right that a page number changes when
+      paper or margins change, and a line number changes for the same reasons and more
+      often. One question this raises and I have not answered: <em>l.14</em> is the
+      fourteenth line of page 1 here, but a line count from the top of the document is
+      the other reasonable reading. Per-page matches how a filing is cited; whole-document
+      matches how a draft is discussed.
+    </p>
+    <p>
+      Pages as a second view of the same region are in the panel spec, and breaks and
+      furniture were a third — explicit <span class="m">pageBreak</span> rows plus a way
+      into the header and footer editors. Both are out: page breaks and furniture are
+      not in this round at all, so a section that lists them would list nothing.
+    </p>
+
+    <h3>Find</h3>
+    <p>
+      A context view rather than a dialog, so it never covers what it is searching. One
+      control at the top switches between <em>Find</em> and <em>Replace</em>; choosing
+      Replace brings a second field and its two buttons — <strong>Replace</strong> and
+      <strong>All</strong> — with it, so the panel is never taller than the mode it is
+      in. Below that, the hit count and the hits, each with its line, page and block.
+      Replace goes through ProseMirror so it lands in one undo step and one coalesced
+      change set.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">12</span>The rail</h2>
+
+    <p>
+      You want seven entries and the code offers nine, four of which you did not
+      ask for. Two of the seven do not exist in the vocabulary at all.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Today</th><th>Proposed</th><th>Change</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Overview</td><td>—</td><td>Dropped. The landing view moves to Sections.</td></tr>
+          <tr><td>Sections</td><td>Sections</td><td>Built. Becomes the landing view.</td></tr>
+          <tr><td>Find</td><td>Find</td><td>Built.</td></tr>
+          <tr><td>Insert</td><td>—</td><td>Dropped.</td></tr>
+          <tr><td>Styles</td><td>Styles</td><td>Built.</td></tr>
+          <tr><td>Layout</td><td>Layout</td><td>Made editable.</td></tr>
+          <tr><td>Variables</td><td>—</td><td>Dropped.</td></tr>
+          <tr><td>Comments</td><td>Comments</td><td>Built.</td></tr>
+          <tr><td>Context</td><td>—</td><td>Dropped.</td></tr>
+          <tr><td>—</td><td>Templates</td><td>New key <span class="m">document-editor.templates</span>. Placeholder.</td></tr>
+          <tr><td>—</td><td>Prompts</td><td>New key <span class="m">document-editor.prompts</span>. Placeholder.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Adding a key touches four files: the type union, the behaviour list, the rail
+      entry with its label and icon, and the opening rail. Dropping one only touches
+      the opening rail — the keys stay in the vocabulary, which is correct, because the
+      vocabulary is the plan and the rail is what this category offers today.
+    </p>
+
+    <div class="aside">
+      <span class="h">On the placeholders</span>
+      <p>
+        A rail entry with no file already renders <span class="m">PanelPlaceholder</span>,
+        which names the key and the category — that is the placeholder, and it is a
+        better one than anything I would write by hand. Templates and Prompts need the
+        keys, the labels and the icons; they do not need files.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">13</span>Four decisions</h2>
+
+    <p>
+      Each of these changes what gets built, and I would rather ask than assume. My
+      recommendation is on each.
+    </p>
+
+    <div class="decision">
+      <h3>1 · Is “Heading 1” a variant, a style, or both?</h3>
+      <p>
+        <span class="m">TextBlock</span> carries both <span class="m">variant</span>
+        (<span class="m">paragraph · heading · list · quote · code</span>, with a
+        <span class="m">level</span>) and <span class="m">style</span> (a key into the
+        style set). The mock's dropdown lists <em>Body · Heading 1 · Heading 2 · Quote ·
+        Caption · Code</em>, which mixes the two vocabularies — Caption is a style with
+        no variant, Heading 1 is a variant with a level.
+      </p>
+      <p>
+        This matters beyond naming: the Sections outline reads variants, and the Styles
+        panel reads styles. If a heading is only a style, the outline has to hunt for
+        styles named like headings, which is exactly the kind of coupling that rots.
+      </p>
+      <div class="rec">
+        <b>Recommended</b>
+        One dropdown, two fields written together. Picking <em>Heading 1</em> sets
+        <span class="m">variant: "heading"</span>, <span class="m">level: 1</span> and
+        <span class="m">style: "heading-1"</span>. Picking <em>Caption</em> sets
+        <span class="m">variant: "paragraph"</span> and <span class="m">style: "caption"</span>.
+        The variant is what the document <em>is</em>; the style is how it looks. The
+        outline reads variants; the styles panel reads styles; the user sees one list.
+      </div>
+    </div>
+
+    <div class="decision">
+      <h3>2 · Does the Spacing section edit the style, or the block?</h3>
+      <p>
+        Spacing has its own section now and sits under Style rather than beside the
+        marks — that part is settled. What is not: the four values it holds
+        (<span class="m">spaceBefore</span>, <span class="m">spaceAfter</span>,
+        <span class="m">lineHeight</span>, <span class="m">indent</span>) exist only on
+        <span class="m">TextStyle</span>. <span class="m">BlockFormat</span> has
+        <span class="m">padding</span>, which is a box property and not the same thing.
+        So typing 12 into <em>After</em> either edits the named style — changing every
+        block that uses it — or needs a new per-block field that does not exist yet.
+      </p>
+      <div class="rec">
+        <b>Recommended</b>
+        It edits the named style, and the section says how many blocks that affects
+        before you touch it. Per-block overrides mean four new fields on
+        <span class="m">BlockFormat</span> and a precedence rule to write down — worth
+        doing if you want it, but as a decision rather than a side effect of putting a
+        number field in a panel.
+      </div>
+    </div>
+
+    <div class="decision" style="border-top-color: var(--stop)">
+      <h3>3 · Multi-selection is non-contiguous <span class="tag none">corrected</span></h3>
+      <p>
+        An earlier version of this page recorded this as settled in favour of a
+        selection running across several blocks. That was my recommendation written
+        down as your answer; it was not asked and not agreed. <strong>Multi-selection
+        means several disjoint ranges at once.</strong>
+      </p>
+      <p>
+        Which is a larger piece of work than the contiguous reading, and it lands in
+        three places rather than one: ProseMirror needs a custom
+        <span class="m">Selection</span> class and a plugin to draw the ranges;
+        <span class="m">Selection</span> in <span class="m">workspace/tab.ts</span> is
+        <span class="m">{ kind, id, at? }</span> — one range — and has to carry a list;
+        and every command in the lens applies once per range instead of once.
+      </p>
+      <p>
+        A selection that merely spans several blocks stays what it always was: the
+        ordinary case, one range, same lens, mixed controls.
+      </p>
+    </div>
+
+    <div class="decision">
+      <h3>4 · How real are comments in this round?</h3>
+      <p>
+        Reading threads, rendering anchors, highlighting and the gutter are all
+        cheap once the anchors are read. Writing — creating a thread, replying,
+        resolving, mentioning — is a set of writes through the generic store with no
+        capability of its own, which means no validation and no activity rows.
+      </p>
+      <div class="rec">
+        <b>Recommended</b>
+        Read, anchor, highlight and select for real; create, reply and resolve for
+        real through the generic store; mentions and activity deferred. That gives you
+        the interaction you described end to end without a capability that would need
+        designing properly.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">14</span>Build order</h2>
+
+    <p>
+      Each phase leaves the editor working. Nothing below is parallel to phase A —
+      everything else depends on it.
+    </p>
+
+    <div class="phases">
+      <div class="phase">
+        <div class="p">A · spine</div>
+        <div>
+          <h3>The op spine</h3>
+          <ul>
+            <li>Move <span class="m">apply-ops</span> to <span class="m">representation/data/behavior/documents/</span>; the capability wraps it, exactly as the deck does.</li>
+            <li><span class="m">buffer()</span> applies to <span class="m">runtime.body</span> before appending, so the body moves first.</li>
+            <li>Add the <span class="m">document</span> op target and the field-path grammar for it.</li>
+            <li>Add the <span class="m">command</span> port to <span class="m">DocumentRuntime</span>; the surface registers its view.</li>
+            <li><span class="m">paint()</span> restores the selection range, not just the caret.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p">B · marks</div>
+        <div>
+          <h3>Formatting that persists</h3>
+          <ul>
+            <li>Seven mark types in the schema, each with a <span class="m">markId</span>.</li>
+            <li><span class="m">docOf</span> splits text into runs; <span class="m">bodyOf</span> groups runs back into <span class="m">Mark</span>s.</li>
+            <li><span class="m">applyText</span> shifts mark offsets through the splice.</li>
+            <li><span class="m">translate</span> emits mark insert/remove/set; <span class="m">applyOps</span> accepts them.</li>
+            <li>The selection lens's marks, colours and link become commands. The <em>Mock</em> section shrinks to comments and links only.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p">C · blocks</div>
+        <div>
+          <h3>Variant, style key, alignment</h3>
+          <ul>
+            <li>Four new attributes on <span class="m">text_block</span>; <span class="m">toDOM</span> renders them.</li>
+            <li><span class="m">set</span> ops on the four block fields, both directions.</li>
+            <li>Per-block metrics: <span class="m">linesOfBlock</span> takes the resolved style, so a bigger font gets a smaller character budget and headings paginate honestly. Typesetting leaves the Layout panel.</li>
+            <li>Alignment, both axes, as icon rows inside Style.</li>
+            <li>The <span class="m">empty-block</span> and <span class="m">next-letter</span> lenses.</li>
+            <li>Mixed states across a multi-block selection.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p">D · styles</div>
+        <div>
+          <h3>The style set</h3>
+          <ul>
+            <li><span class="m">StyleSet</span> written on first edit; document ops for create, delete and per-field edit.</li>
+            <li>The style set rendered as generated CSS keyed on <span class="m">data-style</span>.</li>
+            <li>Styles context panel — actions above the search, Apply on the row, selection opening the lens.</li>
+            <li>The <span class="m">named-style</span> lens, with a usage count read before the edit.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p">E · layout</div>
+        <div>
+          <h3>Page setup, editable</h3>
+          <ul>
+            <li>The panel reads the runtime instead of the default constant.</li>
+            <li>Paper, orientation and four margins write document ops; Custom reaches the <span class="m">{ width, height }</span> paper variant.</li>
+            <li>Dimensions recompute and stay read-only.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p">F · finding</div>
+        <div>
+          <h3>Sections and Find</h3>
+          <ul>
+            <li>Outline from heading variants with a computed line and page on each row; current heading marked.</li>
+            <li>Find with a mode control, per-hit line, page and block, and replace through ProseMirror.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p">G · comments</div>
+        <div>
+          <h3>Threads, anchors and the gutter</h3>
+          <ul>
+            <li>Read threads and comments through the store; resolve anchors to positions.</li>
+            <li><span class="m">gutterOf</span> returns a leading and a trailing number so the lane is always there.</li>
+            <li>Decoration set for highlights; the gutter lane and its five states.</li>
+            <li>Comments context panel as quote blocks; the <span class="m">general.comment</span> lens with reply and resolve above the thread.</li>
+            <li>Create, reply, resolve.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p">H · rail</div>
+        <div>
+          <h3>The rail settles</h3>
+          <ul>
+            <li>Two new keys, labels and icons; four entries dropped from the opening rail.</li>
+            <li>Landing view moves to Sections.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <h3>Not in this round</h3>
+    <p>
+      Header and footer furniture, page numbering, the Insert panel, the Variables
+      panel, the Context panel, the document lens, tables, images, formula atoms and
+      blocks, prompt blocks, lists and checklists, rulers, margin guides, block drag
+      handles, presence, resolved threads, and both the Pages and the Breaks halves of
+      the Sections panel. Several have vocabulary keys already and will render their
+      placeholder, which is the honest state for them.
+    </p>
+  </section>
+
+  <footer>
+    Icarus · document editor · plan, not a record<br>
+    Source of truth is <span class="m">app/src/lib/app-views/categories/document-editor/</span><br>
+    Mirrored at <span class="m">docs/artifacts/document-editor-buildout/</span>
+  </footer>
+
+</div>

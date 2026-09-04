@@ -30,7 +30,7 @@
     type PersonaRow,
     type TaskRow,
     type TriggerOption
-  } from "$capabilities/agents";
+  } from "$app-views/categories/agents/procedures/agents";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();

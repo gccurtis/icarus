@@ -16,9 +16,9 @@ export const actorName = (actor: Actor): string => {
     return row?.displayName ?? "Someone";
   }
 
-  if (actor.kind === "connection") {
-    const row = rowsIn("connections").find((candidate) => candidate._id === actor.connectionId);
-    return row?.name ?? "A connection";
+  if (actor.kind === "connector") {
+    const row = rowsIn("connectors").find((candidate) => candidate._id === actor.connectorId);
+    return row?.name ?? "A connector";
   }
 
   const task = rowsIn("agentTasks").find((candidate) => candidate._id === actor.taskId);

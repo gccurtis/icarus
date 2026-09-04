@@ -13,7 +13,7 @@
    * sideways, for when the reader is browsing rather than searching, and when
    * the row is one band of a screen that has other bands under it.
    *
-   * The motion, the well, the frame's overhang and the two buttons are
+   * The scrollport, well and discreet bottom scrollbar are
    * `unique-components/carousel-shelf`, unmodified. What this adds is the
    * screen's vocabulary — items sized for a card, holding `ScreenCard`s — so a
    * shelf of templates and a shelf of layouts are the same width everywhere.

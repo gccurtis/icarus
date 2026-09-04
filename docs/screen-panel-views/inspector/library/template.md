@@ -2,67 +2,36 @@
 
 | Selecting | What it is | Sections |
 | --- | --- | --- |
-| A template in the library | The template: what it makes, what it looks like, what it asks for | This template · Preview · It will ask for · Actions · Attribution |
+| A recent card or table row | The template's identity and organization | Identity · Variables · Tags |
 
-## Layout
+## Identity
 
-| 300px |
-| --- |
-| this template |
-| preview |
-| preview |
-| it will ask for |
-| it will ask for |
-| actions |
-| attribution |
+The title is followed by one compact metadata line: scope, kind and relative
+update time separated by centred dots. Creator follows on its own line. Revision,
+template id, abstract preview and a redundant variable-count field are absent.
 
-## This template
+The description has no About heading. Double-clicking it replaces the text with
+a `Textarea`; blur or Command/Ctrl+Enter applies the session-local change and
+Escape cancels it. Duplicate and Delete sit directly below the description.
+Duplicate makes and selects an independent session-local row. Delete confirms,
+removes the row from the session-local library and closes the inspector.
 
-Name, editable, and what it makes.
+## Variables
 
-**Shows** — `Name · Regulatory filing shell`, `Makes a · Document — fixed at
-creation`, `Available in · This project | Everywhere`
+Variables precede tags. The section title carries the count, so there is no
+second count field. Each variable is a compact disclosure: its closed state
+shows the human label, and its open state adds the description, stored key, type
+and Required/Optional state. Field keys and values use the same caption size;
+weight, colour and monospace for the stored key provide hierarchy without a
+mismatched scale. A template with no variables receives a compact explicit
+empty state.
 
-**Needs** — the `Template` record.
+## Tags
 
-## Preview
+Every flat tag is a `PanelChip`. A short input expands to the remaining panel
+width and an adjacent plus button adds a unique tag to the session-local
+template. The shared reactive mock updates the table and the tag filter's union
+immediately.
 
-Rendered from the real body. The model has no thumbnail, tag, category, favourite
-or usage count, and the library does not pretend those exist — so the preview is
-the only visual identity a template has.
-
-**Shows** — a page thumbnail with variable regions distinguished from ordinary
-content.
-
-**Needs** — a small renderer for the body.
-
-**Open** — distinguishing the variable regions requires knowing where they are,
-which is the gap that gates the screen.
-
-## It will ask for
-
-Its variables, with type and requiredness.
-
-**Shows**
-
-- `filingDocket` — Text · required
-- `filingParty` — Text · required
-- `outageTable` — Table · required
-- `execSummary` — Generated · optional
-
-**Needs** — the variable list.
-
-## Actions
-
-**Edit** enters the authoring subscreen. **Use** is disabled. **Duplicate** copies
-it.
-
-**Open** — Use is disabled while variables cannot be placed in the body.
-
-## Attribution
-
-Starts collapsed.
-
-**Shows** — `Created by · Mira Jain`, `Revision · 6`
-
-**Needs** — creator actor and revision.
+Dividers separate identity, Variables and Tags. An unknown selection id produces
+an explicit empty state.

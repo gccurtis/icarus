@@ -8,6 +8,7 @@ interface Template {
   projectId?: Id<"projects">;  // absent = available to every project
   name: string;
   description?: string;
+  tags: string[];               // flat labels; an empty list means untagged
   target: "document" | "slides" | "spreadsheet";
   body: TemplateBody;
   slots: TemplateSlot[];

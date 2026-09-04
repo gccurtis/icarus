@@ -376,7 +376,7 @@
 
   <Entry
     name="ScreenShelf · ScreenShelfItem"
-    use="The same cards on a shelf you push sideways — the well, the frame's overhang, the drag physics and the two buttons are unique-components/carousel-shelf, unmodified. For browsing rather than searching, and for a row that is one band of a screen with other bands under it."
+    use="The same cards on a recessed shelf you scroll sideways — the well and its discreet bottom scrollbar are unique-components/carousel-shelf, unmodified. For browsing rather than searching, and for a row that is one band of a screen with other bands under it."
     instead="a library. A shelf hides most of itself off the edge, which is right for six recent things and wrong for sixty templates — what is off-screen cannot be scanned."
     code={CODE.shelf}
     width="screen"
@@ -534,7 +534,7 @@
   <Entry
     name="ScreenStrip"
     use="A row of cards you scroll rather than step through. A native scroll container, so two fingers, shift-wheel, a dragged scrollbar, Home and End and the arrow keys all come free."
-    instead="a display. The shelf's well and overhang are what make a row feel like a surface; this is for a row someone is getting through, and it trades the chrome for the gestures."
+    instead="a display. The shelf's recessed well is what makes a row feel like a surface; this is for a flat row someone is getting through, and it drops that chrome."
     code={CODE.strip}
     width="screen"
   >

@@ -1,11 +1,12 @@
 <script lang="ts">
   import SelectionPanel from "$development-views/plot-demo/components/selection-panel.svelte";
   import {
+    PlotBars,
+    PlotPie,
     createChartSelection,
     settingsFor,
     type ChartType
   } from "$authored-components/chart";
-  import { PlotBars, PlotPie } from "$authored-components/chart/plot";
   import { PanelChoice, PanelNote } from "$authored-components/panel";
   import { ScreenGroup, ScreenNote, ScreenSurface } from "$authored-components/screen";
 

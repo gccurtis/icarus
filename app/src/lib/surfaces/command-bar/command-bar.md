@@ -127,8 +127,3 @@ merely looking grey. Colour is not the only thing saying so.
 - **An unbound command renders no chord**, rather than a placeholder. `tab.close`
   ships that way, so the empty case is the common one.
 
-## Supporting Documents
-
-| Document | Subject |
-| --- | --- |
-| [`docs/commands.md`](../../../../../docs/commands.md) | The command system's design, including the parts not built yet |

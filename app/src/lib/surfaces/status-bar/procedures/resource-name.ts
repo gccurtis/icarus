@@ -10,7 +10,6 @@ const NAMED_FIELD: Partial<Record<TableName, string | null>> = {
   agentTasks: "title",
   comments: null,
   commentThreads: null,
-  connections: "name",
   connectors: "name",
   dataBackReferences: null,
   derivedOutputs: null,

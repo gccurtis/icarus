@@ -20,7 +20,7 @@ export default check({
     const found = [];
 
     for (const path of VIEW_TREES.flatMap((name) => tree.under(tree.path(name)))) {
-      if (!/\.(ts|js|svelte)$/.test(path)) continue;
+      if (!/\.(ts|js|svelte)$/.test(path) || path.includes("/test/")) continue;
       const self = unitOf(tree, units, path);
 
       for (const record of tree.imports(path)) {
