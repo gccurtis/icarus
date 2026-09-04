@@ -37,12 +37,21 @@
     tone = "quoted",
     source,
     sourceLabel,
+    when,
     onopen,
     children
   }: {
     tone?: "quoted" | "intelligence";
     /** Where this came from, named as the reader would recognise it. */
     source?: string;
+    /**
+     * When it was said, beside who said it.
+     *
+     * Separate from `source` because only the source is a reference: a name
+     * leads somewhere and a timestamp does not, and joining them into one string
+     * makes the whole caption a link to a person who was not clicked on.
+     */
+    when?: string;
     /**
      * A word before the source — "Source", "From", "Anchored to". Worth setting
      * where the reference could be mistaken for part of the quotation, and worth
@@ -67,15 +76,20 @@
 >
   <blockquote class="m-0">{@render children()}</blockquote>
 
-  {#if source}
+  {#if source || when}
     <figcaption class="text-caption text-ink-muted flex flex-wrap items-baseline gap-1">
       {#if sourceLabel}
         <span>{sourceLabel}:</span>
       {/if}
-      {#if onopen}
-        <PanelLink label={source} title="Open the original" onselect={onopen} />
-      {:else}
-        <span>{source}</span>
+      {#if source}
+        {#if onopen}
+          <PanelLink label={source} title="Open the original" onselect={onopen} />
+        {:else}
+          <span>{source}</span>
+        {/if}
+      {/if}
+      {#if when}
+        <span>{when}</span>
       {/if}
     </figcaption>
   {/if}

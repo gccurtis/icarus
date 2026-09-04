@@ -27,6 +27,7 @@
     count,
     open = true,
     flush = false,
+    chevron = "start",
     children
   }: {
     title: string;
@@ -41,6 +42,15 @@
     count?: number | string;
     /** Whether it starts disclosed. */
     open?: boolean;
+    /**
+     * Which end of the heading the chevron sits at.
+     *
+     * `end` leaves every title on the panel's own left gutter, which is what a
+     * panel mixing disclosures with plain headings needs: a chevron at the start
+     * indents the sections that have one and leaves the sections that do not
+     * looking misaligned.
+     */
+    chevron?: "start" | "end";
     /** Let the body run edge to edge, for a section of rows. */
     flush?: boolean;
     children: Snippet;
@@ -58,18 +68,27 @@
   let expanded = $state(open);
 </script>
 
+{#snippet mark()}
+  <ChevronDown
+    size={13}
+    aria-hidden="true"
+    class={cn("transition-transform duration-150", !expanded && "-rotate-90")}
+  />
+{/snippet}
+
 <Collapsible.Root {...trace} bind:open={expanded} class="flex flex-col">
   <Collapsible.Trigger
     class="text-ink-secondary hover:text-ink-primary flex items-center gap-1.5 px-3 py-1.5 text-start"
   >
-    <ChevronDown
-      size={13}
-      aria-hidden="true"
-      class={cn("transition-transform duration-150", !expanded && "-rotate-90")}
-    />
+    {#if chevron === "start"}
+      {@render mark()}
+    {/if}
     <span class="text-caption font-semibold tracking-wide uppercase">{title}</span>
     {#if count !== undefined}
       <span class="text-caption text-ink-muted ms-auto tabular-nums">{count}</span>
+    {/if}
+    {#if chevron === "end"}
+      <span class={cn("flex items-center", count === undefined && "ms-auto")}>{@render mark()}</span>
     {/if}
   </Collapsible.Trigger>
 
