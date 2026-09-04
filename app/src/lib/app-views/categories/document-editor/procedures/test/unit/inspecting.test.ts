@@ -5,6 +5,8 @@ import { EditorState, TextSelection } from "prosemirror-state";
 import type { ContentBlock, TextBlock } from "$representation/data/types/content/content-block";
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 import {
+  addressOf,
+  selectedText,
   signalOf,
   worthSending
 } from "$app-views/categories/document-editor/procedures/inspecting";
@@ -140,4 +142,33 @@ test("a selection that says what the inspector already says is not sent again", 
     true,
     "a range that has moved is news"
   );
+});
+
+test("an address is the block it names and the offset after the at sign", () => {
+  assert.deepEqual(addressOf("#b1/atoms/#a1@12"), { blockId: "#b1", offset: 12 });
+  assert.equal(addressOf("#b1/atoms/#a1"), undefined, "an address with no offset is not one");
+  assert.equal(addressOf("#b1/atoms/#a1@half"), undefined);
+});
+
+test("the selected text is sliced out of the block it sits in", () => {
+  assert.equal(
+    selectedText(ONE, { kind: "text-selection", id: "#b1/atoms/#b1-atom@6", at: "#b1/atoms/#b1-atom@18" }),
+    "the exposure"
+  );
+});
+
+test("a selection across two blocks joins the tail of one to the head of the other", () => {
+  assert.equal(
+    selectedText(TWO, { kind: "text-selection", id: "#b1/atoms/#b1-atom@6", at: "#b2/atoms/#b2-atom@4" }),
+    "the exposure sits … What"
+  );
+});
+
+test("a caret selects nothing, and says so as an empty string", () => {
+  assert.equal(selectedText(ONE, { kind: "next-letter", id: "#b1/atoms/#b1-atom@6" }), "");
+});
+
+test("a block the body no longer holds resolves to nothing at all", () => {
+  assert.equal(selectedText(ONE, { kind: "text-selection", id: "#bgone/atoms/#a@0" }), undefined);
+  assert.equal(selectedText(undefined, { kind: "next-letter", id: "#b1/atoms/#b1-atom@0" }), undefined);
 });

@@ -7,6 +7,7 @@
 
   import { read } from "$capabilities/store/index.remote";
   import { mergeRow, splitRow } from "$app-views/categories/document-editor/procedures/editing";
+  import { heldSelection } from "$app-views/categories/document-editor/procedures/highlight";
   import {
     signalOf,
     worthSending
@@ -69,6 +70,7 @@
   let metrics: Metrics = layoutMetrics(DEFAULT_PAGE_SETUP);
 
   const plugins = [
+    heldSelection(),
     keymap({ Enter: splitRow, Backspace: mergeRow }),
     history(),
     keymap({ "Mod-z": undo, "Shift-Mod-z": redo, "Mod-y": redo }),
@@ -189,6 +191,21 @@
 
   const layout = $derived(layoutMetrics(setup, view.zoom ?? fit));
   const gutter = $derived(gutterOf(available, layout.drawn.width));
+
+  $effect(() => {
+    const element = surface;
+    if (element === undefined) return;
+
+    const beside = (event: MouseEvent) => {
+      const target = event.target;
+      if (host !== undefined && target instanceof Node && host.contains(target)) return;
+
+      view.clear();
+    };
+
+    element.addEventListener("mousedown", beside);
+    return () => element.removeEventListener("mousedown", beside);
+  });
 
   const pinch = (event: WheelEvent) => {
     if (!event.ctrlKey && !event.metaKey) return;
@@ -343,5 +360,9 @@
 
   .editor :global(.ProseMirror-selectednode) {
     outline: 2px solid var(--token-color-active-border);
+  }
+
+  .editor :global(.held-selection) {
+    background-color: var(--token-surface-selection);
   }
 </style>
