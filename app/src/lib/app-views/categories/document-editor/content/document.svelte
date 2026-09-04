@@ -8,6 +8,10 @@
   import { read } from "$capabilities/store/index.remote";
   import { mergeRow, splitRow } from "$app-views/categories/document-editor/procedures/editing";
   import {
+    signalOf,
+    worthSending
+  } from "$app-views/categories/document-editor/procedures/inspecting";
+  import {
     DEFAULT_PAGE_SETUP,
     clampZoom,
     fitZoom,
@@ -97,11 +101,21 @@
     if (ops.length > 0) runtime.apply(ops);
   };
 
+  const signal = (state: EditorState): void => {
+    const found = signalOf(state);
+    if (found === undefined) return;
+    if (!worthSending(found, view.inspected, view.selection)) return;
+
+    view.inspect(found.key, found.selection);
+  };
+
   const dispatch = (transaction: Transaction): void => {
     if (editor === undefined) return;
 
     const next = lay(editor.state.apply(transaction));
     editor.updateState(next);
+
+    signal(next);
 
     if (!transaction.docChanged) return;
     if (transaction.getMeta(LAYOUT) === true) return;
