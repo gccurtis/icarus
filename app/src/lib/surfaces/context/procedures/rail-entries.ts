@@ -31,7 +31,6 @@ import Proportions from "@lucide/svelte/icons/proportions";
 import Printer from "@lucide/svelte/icons/printer";
 import ScrollText from "@lucide/svelte/icons/scroll-text";
 import Search from "@lucide/svelte/icons/search";
-import Shapes from "@lucide/svelte/icons/shapes";
 import Sparkles from "@lucide/svelte/icons/sparkles";
 import SquareFunction from "@lucide/svelte/icons/square-function";
 import SquarePlus from "@lucide/svelte/icons/square-plus";
@@ -97,27 +96,14 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "analysis.formula": { label: "Formula", icon: SquareFunction },
   "analysis.chartable-variables": { label: "Variables", icon: Hash },
 
-  /**
-   * Library: browsing what a project already has, and starting something new.
-   * The template-authoring entries are the ordinary editor's views under the
-   * names a template gives them, so they carry the editor's icons.
-   */
+  /** Library: browsing what a project already has, and starting something new. */
   "analysis.analyses": { label: "Analyses", icon: ChartColumn },
-  "templates.authoring-body": { label: "Body", icon: FileText },
-  "templates.authoring-design": { label: "Design", icon: Palette },
-  "templates.authoring-insert": { label: "Insert", icon: SquarePlus },
-  "templates.authoring-variables": { label: "Variables in this template", icon: Hash },
   "new-tab.bring-in": { label: "Bring in", icon: Upload },
   "project-overview.contexts-library": { label: "Contexts", icon: Target },
   "new-tab.create": { label: "Create", icon: Plus },
   "research.findings-library": { label: "Findings", icon: Lightbulb },
   "research.inquiry-library": { label: "Inquiry", icon: CircleQuestionMark },
   "new-tab.recent": { label: "Recent", icon: Clock },
-  "templates.recent": { label: "Recent", icon: Clock },
-  "templates.resources": { label: "Resources", icon: Layers },
-  "templates.template": { label: "Template", icon: LayoutTemplate },
-  "templates.template-kinds": { label: "Kinds", icon: Shapes },
-  "templates.templates": { label: "Library", icon: LayoutTemplate },
   "new-tab.templates": { label: "Templates", icon: LayoutTemplate },
   "research.threads": { label: "Threads", icon: MessagesSquare },
 
@@ -135,7 +121,6 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "project-overview.overview": { label: "Overview", icon: Info },
   "research.overview": { label: "Overview", icon: Info },
   "spreadsheet-editor.overview": { label: "Overview", icon: Info },
-  "templates.overview-authoring": { label: "Overview", icon: Info },
   "templates.overview-library": { label: "Overview", icon: Info },
 
   /**

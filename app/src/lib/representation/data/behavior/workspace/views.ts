@@ -86,17 +86,7 @@ export const CONTEXT_VIEWS = [
   "spreadsheet-editor.print",
   "spreadsheet-editor.styles",
   "spreadsheet-editor.variables",
-  "templates.authoring-body",
-  "templates.authoring-design",
-  "templates.authoring-insert",
-  "templates.authoring-variables",
-  "templates.overview-authoring",
-  "templates.overview-library",
-  "templates.recent",
-  "templates.resources",
-  "templates.template",
-  "templates.template-kinds",
-  "templates.templates"
+  "templates.overview-library"
 ] as const satisfies readonly ContextView[];
 
 export const INSPECTOR_VIEWS = [

@@ -49,3 +49,4 @@ export { default as ChartColors } from "$authored-components/chart/chart-colors.
 export { default as ChartGrowth } from "$authored-components/chart/chart-growth.svelte";
 export { chartToPng, copyChart } from "$authored-components/chart/copy-chart";
 export { asPercent, cagr, elementOverElement } from "$authored-components/chart/growth";
+export { PlotBars, PlotPie } from "$authored-components/chart/plot";

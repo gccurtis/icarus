@@ -39,8 +39,8 @@ It does not own:
 - the panels. Each is loaded through the glob its route hands in and is otherwise
   opaque.
 - what a panel reads. That is `$capabilities`; this only records and intercepts.
-- what a panel is made of. Each primitive registers itself through
-  [`$components/development`](../../trace/trace.svelte.ts); this only reads the tree.
+- what a panel is made of. Each primitive registers itself through the
+  development components; this only reads the tree.
 
 ## Public Contract
 
@@ -143,5 +143,4 @@ as text.
 
 | Document | Subject |
 | --- | --- |
-| [`$components/development/trace.svelte.ts`](../../trace/trace.svelte.ts) | How a primitive registers itself, and why props are a thunk |
 | [`shared.md`](shared/shared.md) | Why the log is a snapshot, and why an override sits in front |

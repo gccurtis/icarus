@@ -14,12 +14,12 @@
   import TableIcon from "@lucide/svelte/icons/table";
 
   import {
+    PlotBars,
     createChartSelection,
     type ChartSelection,
     type ChartSpec,
     type Mark
   } from "$authored-components/chart";
-  import { PlotBars } from "$authored-components/chart/plot";
   import { PanelInput, PanelSelect, PanelToggle } from "$authored-components/panel";
   import {
     ScreenCell,
@@ -52,8 +52,11 @@
     type ResultRow,
     type TableField,
     type TableVariable
-  } from "$capabilities/analysis";
-  import { analyses, type AnalysisRow } from "$capabilities/library";
+  } from "$app-views/categories/analysis/procedures/analysis";
+  import {
+    analyses,
+    type AnalysisRow
+  } from "$app-views/categories/analysis/procedures/analysis";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();

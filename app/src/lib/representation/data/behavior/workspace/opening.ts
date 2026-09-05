@@ -60,16 +60,7 @@ export const OPENING: Record<Category, Opening> = {
   templates: {
     content: "templates.library",
     context: "templates.overview-library",
-    rail: [
-      "templates.overview-library",
-      "templates.recent",
-      "templates.resources",
-      "templates.overview-authoring",
-      "templates.template",
-      "templates.authoring-variables",
-      "templates.authoring-insert",
-      "templates.authoring-design"
-    ]
+    rail: ["templates.overview-library"]
   },
 
   agents: {

@@ -9,5 +9,5 @@ import type { Id } from "$representation/data/types/core/id";
 export type Actor =
   | { kind: "user"; userId: Id<"users"> }
   | { kind: "agent"; taskId: Id<"agentTasks"> }
-  | { kind: "connection"; connectionId: Id<"connections"> }
+  | { kind: "connector"; connectorId: Id<"connectors"> }
   | { kind: "system" };

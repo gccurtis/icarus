@@ -147,8 +147,18 @@ plan.edit(runtime.start, (text) => {
     const at = builder.index + builder[0].length;
     next = next.slice(0, at) + construction + next.slice(at);
   } else {
-    const endOfLine = next.indexOf("\n", anchor) + 1;
-    next = next.slice(0, endOfLine) + construction + next.slice(endOfLine);
+    const endOfStatement = () => {
+      let depth = 0;
+      for (let at = anchor; at < next.length; at += 1) {
+        const character = next[at];
+        if ("([{".includes(character)) depth += 1;
+        else if (")]}".includes(character)) depth -= 1;
+        else if (character === ";" && depth === 0) return next.indexOf("\n", at) + 1;
+      }
+      throw new Error(`no end to the construction ${field} is placed after`);
+    };
+    const after = endOfStatement();
+    next = next.slice(0, after) + construction + next.slice(after);
   }
 
   const returned = next.match(/\n(\s*)return \{\n/);

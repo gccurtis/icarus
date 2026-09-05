@@ -19,8 +19,8 @@ Storage holds this project's browser store and the format of what survives a
 reload, so that a workbench can be rebuilt from where the user left it.
 
 `localStorage`, not a cookie. A cookie would only have been needed to be readable
-during server rendering, and `/app` is client-rendered — see
-[`client.md`](../client.md). `localStorage` has no 4KB limit, needs no server
+during server rendering, and `/app` is client-rendered.
+`localStorage` has no 4KB limit, needs no server
 load, and is read synchronously at construction, so the panels are their stored
 width in the first paint rather than snapping to it afterwards.
 

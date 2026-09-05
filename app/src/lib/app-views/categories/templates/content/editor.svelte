@@ -11,22 +11,299 @@
     ScreenSurface
   } from "$authored-components/screen";
   import { Input } from "$vendored-components/input";
-  import {
-    outlineIn,
-    pageSetupFor,
-    previewOf,
-    template,
-    variablesIn,
-    type PageSetup,
-    type PreviewLine,
-    type TemplateTarget,
-    type TemplateVariable,
-    type VariableType
-  } from "$capabilities/library";
-  import { project } from "$capabilities/project";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+
+  type TemplateTarget = "Document" | "Slide deck" | "Slide" | "Spreadsheet";
+
+  type TemplateScope = "Project" | "Personal" | "Shared";
+
+  type VariableType = "Text" | "Image" | "Table" | "Generated";
+
+  type LibraryTemplate = {
+    readonly id: string;
+    readonly name: string;
+    readonly makes: TemplateTarget;
+    readonly scope: TemplateScope;
+    readonly variables: number;
+    readonly updated: string;
+    readonly lastUsed?: string;
+    readonly createdBy: string;
+    readonly revision: number;
+  };
+
+  type TemplateVariable = {
+    readonly id: string;
+    readonly templateId: string;
+    readonly key: string;
+    readonly label: string;
+    readonly type: VariableType;
+    readonly required: boolean;
+    readonly becomes?: string;
+    readonly defaultValue?: string;
+  };
+
+  type PreviewLine = {
+    readonly id: string;
+    readonly text: string;
+    readonly style: "heading" | "body";
+    readonly variable: boolean;
+  };
+
+  type OutlineHeading = {
+    readonly id: string;
+    readonly text: string;
+    readonly level: 1 | 2;
+    readonly page: number;
+  };
+
+  type PageSetup = {
+    readonly paper: "Letter" | "A4";
+    readonly orientation: "Portrait" | "Landscape";
+    readonly gutters: string;
+  };
+
+  type Read<T> = {
+    readonly current: T;
+    readonly error: undefined;
+    readonly loading: false;
+    refresh: () => Promise<void>;
+  };
+
+  const read = <T,>(current: T): Read<T> => ({
+    current,
+    error: undefined,
+    loading: false,
+    refresh: async () => {}
+  });
+
+  const TEMPLATES: readonly LibraryTemplate[] = [
+    {
+      id: "tp-filing",
+      name: "Regulatory filing shell",
+      makes: "Document",
+      scope: "Project",
+      variables: 4,
+      updated: "2 weeks ago",
+      lastUsed: "3 days ago",
+      createdBy: "Mira Jain",
+      revision: 6
+    },
+    {
+      id: "tp-storm",
+      name: "Storm brief",
+      makes: "Document",
+      scope: "Project",
+      variables: 3,
+      updated: "5 weeks ago",
+      createdBy: "Ana Reyes",
+      revision: 2
+    },
+    {
+      id: "tp-board",
+      name: "Board update",
+      makes: "Slide deck",
+      scope: "Project",
+      variables: 2,
+      updated: "3 weeks ago",
+      lastUsed: "1 week ago",
+      createdBy: "Tomas Kaur",
+      revision: 4
+    },
+    {
+      id: "tp-ops",
+      name: "Weekly ops deck",
+      makes: "Slide deck",
+      scope: "Project",
+      variables: 0,
+      updated: "8 weeks ago",
+      lastUsed: "Yesterday",
+      createdBy: "Tomas Kaur",
+      revision: 11
+    },
+    {
+      id: "tp-title",
+      name: "Title slide",
+      makes: "Slide",
+      scope: "Project",
+      variables: 1,
+      updated: "6 weeks ago",
+      createdBy: "Tomas Kaur",
+      revision: 1
+    },
+    {
+      id: "tp-cost",
+      name: "Cost model skeleton",
+      makes: "Spreadsheet",
+      scope: "Project",
+      variables: 0,
+      updated: "9 weeks ago",
+      lastUsed: "Today",
+      createdBy: "Mira Jain",
+      revision: 3
+    },
+    {
+      id: "tp-incident",
+      name: "Incident review",
+      makes: "Document",
+      scope: "Shared",
+      variables: 0,
+      updated: "6 months ago",
+      createdBy: "Devi Okonkwo",
+      revision: 8
+    },
+    {
+      id: "tp-divider",
+      name: "Section divider",
+      makes: "Slide",
+      scope: "Personal",
+      variables: 1,
+      updated: "7 months ago",
+      createdBy: "Devi Okonkwo",
+      revision: 2
+    }
+  ];
+
+  const TEMPLATE_VARIABLES: readonly TemplateVariable[] = [
+    {
+      id: "tv-docket",
+      templateId: "tp-filing",
+      key: "filingDocket",
+      label: "Docket number",
+      type: "Text",
+      required: true
+    },
+    {
+      id: "tv-party",
+      templateId: "tp-filing",
+      key: "filingParty",
+      label: "Filing party",
+      type: "Text",
+      required: true,
+      defaultValue: "Northwind Power"
+    },
+    {
+      id: "tv-outages",
+      templateId: "tp-filing",
+      key: "outageTable",
+      label: "Outage record",
+      type: "Table",
+      required: true
+    },
+    {
+      id: "tv-exec",
+      templateId: "tp-filing",
+      key: "execSummary",
+      label: "Executive summary",
+      type: "Generated",
+      required: false,
+      becomes: "A prompt block in the result"
+    },
+    {
+      id: "tv-storm-name",
+      templateId: "tp-storm",
+      key: "stormName",
+      label: "Storm name",
+      type: "Text",
+      required: true
+    },
+    {
+      id: "tv-storm-window",
+      templateId: "tp-storm",
+      key: "stormWindow",
+      label: "Dates affected",
+      type: "Text",
+      required: true
+    },
+    {
+      id: "tv-storm-takeaways",
+      templateId: "tp-storm",
+      key: "keyTakeaways",
+      label: "Key takeaways",
+      type: "Generated",
+      required: false,
+      becomes: "A prompt block in the result"
+    },
+    {
+      id: "tv-quarter",
+      templateId: "tp-board",
+      key: "quarter",
+      label: "Quarter",
+      type: "Text",
+      required: true,
+      defaultValue: "Q4 2026"
+    },
+    {
+      id: "tv-chart",
+      templateId: "tp-board",
+      key: "headlineChart",
+      label: "Headline chart",
+      type: "Image",
+      required: false
+    },
+    {
+      id: "tv-deck-title",
+      templateId: "tp-title",
+      key: "deckTitle",
+      label: "Deck title",
+      type: "Text",
+      required: true
+    },
+    {
+      id: "tv-section",
+      templateId: "tp-divider",
+      key: "sectionName",
+      label: "Section name",
+      type: "Text",
+      required: true
+    }
+  ];
+
+  const template = (templateId: string): Read<LibraryTemplate> =>
+    read(TEMPLATES.find((row: LibraryTemplate) => row.id === templateId) ?? TEMPLATES[0]);
+
+  const variablesIn = (templateId: string): Read<readonly TemplateVariable[]> =>
+    read(
+      TEMPLATE_VARIABLES.filter((variable: TemplateVariable) => variable.templateId === templateId)
+    );
+
+  const previewOf = (templateId: string): Read<readonly PreviewLine[]> => {
+    void templateId;
+    return read([
+      { id: "pl-1", text: "Filing to the Commission", style: "heading", variable: false },
+      { id: "pl-2", text: "Docket {filingDocket}", style: "body", variable: true },
+      {
+        id: "pl-3",
+        text: "{filingParty} submits this application under §16-108.",
+        style: "body",
+        variable: true
+      },
+      { id: "pl-4", text: "Outage record", style: "heading", variable: false },
+      { id: "pl-5", text: "{outageTable}", style: "body", variable: true },
+      { id: "pl-6", text: "Statutory basis", style: "heading", variable: false }
+    ]);
+  };
+
+  const outlineIn = (templateId: string): Read<readonly OutlineHeading[]> => {
+    void templateId;
+    return read([
+      { id: "oh-1", text: "Filing to the Commission", level: 1, page: 1 },
+      { id: "oh-2", text: "Outage record", level: 1, page: 1 },
+      { id: "oh-3", text: "Statutory basis", level: 1, page: 2 },
+      { id: "oh-4", text: "Relief requested", level: 1, page: 3 },
+      { id: "oh-5", text: "Cost recovery", level: 2, page: 3 },
+      { id: "oh-6", text: "Exhibits", level: 1, page: 4 }
+    ]);
+  };
+
+  const pageSetupFor = (templateId: string): Read<PageSetup> => {
+    void templateId;
+    return read({ paper: "Letter", orientation: "Portrait", gutters: "1 in all round" });
+  };
+
+  const project = (): Read<{ readonly name: string }> =>
+    read({ name: "Northwind Grid Resilience" });
 
   /**
    * Templates — one template, authored on the surface it will become.

@@ -1,66 +1,41 @@
 <script lang="ts">
-  import ArrowDownWideNarrow from "@lucide/svelte/icons/arrow-down-wide-narrow";
+  import ArrowDownNarrowWide from "@lucide/svelte/icons/arrow-down-narrow-wide";
   import ArrowUpNarrowWide from "@lucide/svelte/icons/arrow-up-narrow-wide";
-  import ChevronLeft from "@lucide/svelte/icons/chevron-left";
-  import Folder from "@lucide/svelte/icons/folder";
+  import ChevronDown from "@lucide/svelte/icons/chevron-down";
+  import FileText from "@lucide/svelte/icons/file-text";
+  import Presentation from "@lucide/svelte/icons/presentation";
+  import Sheet from "@lucide/svelte/icons/sheet";
 
   import {
     ScreenCard,
-    ScreenCards,
+    ScreenCell,
     ScreenEmpty,
     ScreenFilters,
     ScreenGroup,
     ScreenHeader,
-    ScreenNote,
+    ScreenRow,
+    ScreenShelf,
+    ScreenShelfItem,
     ScreenSurface,
+    ScreenTable,
     ScreenThumb
   } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
+  import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import {
-    templateKinds,
-    templates,
+    recentTemplatesIn,
+    templatesIn,
     type LibraryTemplate,
     type TemplateScope,
     type TemplateTarget
-  } from "$capabilities/library";
+  } from "$app-views/categories/templates/procedures/library.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
-
-  /**
-   * Templates — the library: a place rather than a list.
-   *
-   * The one category that keeps a library-and-editor pair, and this half is why:
-   * the library has folders and holds templates that were never made here, so it
-   * is somewhere you navigate rather than a table you read down.
-   *
-   * **Whose a template is, is a folder and not a filter.** Project, Personal and
-   * Shared decide who may edit one, which is the first thing that changes what
-   * you can do about it — and a chip row would put that on the same footing as
-   * "makes a deck". Searching flattens the folders, exactly as the Agents library
-   * does: a search is a question about all of them, and making someone open three
-   * folders to answer it is the folder winning over the question.
-   *
-   * **Scope is then said again on the card, in colour.** A card lifted out of its
-   * folder by a search has lost the one thing the folder was telling it, so the
-   * subtext leads with the scope and the type comes second.
-   *
-   * **Every card is the same height.** A grid you scan for a shape is unreadable
-   * when the shapes set the heights — the eye reads the ragged bottom edge before
-   * it reads any of them — so the thumb gets a fixed band and keeps its aspect
-   * ratio inside it.
-   */
-  const all = $derived(templates().current);
-  const kinds = $derived(templateKinds().current);
+  const templates = $derived(templatesIn(view.project));
+  const recent = $derived(recentTemplatesIn(view.project, 10));
 
   const SCOPES: readonly TemplateScope[] = ["Project", "Shared", "Personal"];
-
-  /** The folder that is open, or none. Searching ignores it entirely. */
-  let folder = $state<TemplateScope | undefined>(undefined);
-  let search = $state("");
-  let makes = $state("all");
-  let sortBy = $state("updated");
-  let ascending = $state(true);
 
   const SORTS = [
     { value: "updated", label: "Updated" },
@@ -69,320 +44,396 @@
     { value: "variables", label: "Variables" }
   ] as const;
 
-  /** The kinds are the four things a template can make, from the door that names them. */
-  const kindOptions = $derived([
-    { value: "all", label: "All kinds" },
-    ...kinds.map((kind) => ({ value: kind.makes, label: kind.makes }))
-  ]);
+  const TARGETS: readonly TemplateTarget[] = ["Document", "Slide deck", "Spreadsheet"];
 
-  /** A page, a slide and a grid are different shapes, and the preview is the shape. */
-  const RATIO: Record<TemplateTarget, string> = {
+  const TARGET_ICON = {
+    Document: FileText,
+    "Slide deck": Presentation,
+    Spreadsheet: Sheet
+  } as const;
+
+  const TARGET_RATIO: Record<TemplateTarget, string> = {
     Document: "4 / 3",
     "Slide deck": "16 / 9",
-    Slide: "16 / 9",
     Spreadsheet: "1 / 1"
   };
 
-  /**
-   * The three scopes, in three hues that mean nothing else.
-   *
-   * accent-1 and accent-2 exist for exactly this — categorical work claimed by no
-   * meaning role — and the project's own templates take `primary`, because the
-   * project is the ground everything else on this centre is measured against. No
-   * meaning role is borrowed: whose a template is, is not a success or a warning.
-   */
-  const SCOPE_TONE: Record<TemplateScope, string> = {
-    Project: "text-primary-text",
-    Shared: "text-accent-2-text",
-    Personal: "text-accent-1-text"
+  /** One sorted union: the menu never invents a tag that no template carries. */
+  const TAGS = $derived(
+    [...new Set(templates.flatMap((row) => row.tags))].sort((a, b) => a.localeCompare(b))
+  );
+
+  let search = $state("");
+  let scope = $state("all");
+  let makes = $state("all");
+  let selectedTags = $state<string[]>([]);
+  let tagMode = $state<"all" | "some" | "none">("all");
+  let sortBy = $state("updated");
+  let direction = $state<"asc" | "desc">("asc");
+
+  const allTagsSelected = $derived(tagMode === "all");
+  const someTagsSelected = $derived(tagMode === "some");
+  const tagFilterLabel = $derived(
+    allTagsSelected
+      ? "All tags"
+      : tagMode === "none"
+        ? "No tags"
+        : selectedTags.length === 1
+          ? selectedTags[0]
+          : `${selectedTags.length} tags`
+  );
+
+  const setTag = (tag: string, checked: boolean) => {
+    const chosen = new Set(tagMode === "all" ? TAGS : selectedTags);
+    if (checked) chosen.add(tag);
+    else chosen.delete(tag);
+    selectedTags = TAGS.filter((candidate) => chosen.has(candidate));
+    tagMode =
+      selectedTags.length === 0
+        ? "none"
+        : selectedTags.length === TAGS.length
+          ? "all"
+          : "some";
   };
 
-  const searching = $derived(search.trim() !== "");
+  const setAllTags = (checked: boolean) => {
+    tagMode = checked ? "all" : "none";
+    selectedTags = [];
+  };
 
-  const matching = $derived(
-    all
-      .filter((row: LibraryTemplate) => makes === "all" || row.makes === makes)
-      .filter((row: LibraryTemplate) =>
-        row.name.toLowerCase().includes(search.trim().toLowerCase())
+  const compare = (a: LibraryTemplate, b: LibraryTemplate): number => {
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    if (sortBy === "makes") return a.makes.localeCompare(b.makes) || a.name.localeCompare(b.name);
+    if (sortBy === "variables") {
+      return a.variables.length - b.variables.length || a.name.localeCompare(b.name);
+    }
+    return a.updatedAge - b.updatedAge || a.name.localeCompare(b.name);
+  };
+
+  const query = $derived(search.trim().toLocaleLowerCase());
+  const searching = $derived(query !== "");
+  const filtered = $derived(
+    templates
+      .filter((row) => scope === "all" || row.scope === scope)
+      .filter((row) => makes === "all" || row.makes === makes)
+      .filter(
+        (row) =>
+          tagMode === "all" ||
+          (tagMode === "some" && row.tags.some((tag) => selectedTags.includes(tag)))
+      )
+      .filter(
+        (row) =>
+          query === "" ||
+          row.name.toLocaleLowerCase().includes(query) ||
+          row.description.toLocaleLowerCase().includes(query) ||
+          row.tags.some((candidate) => candidate.toLocaleLowerCase().includes(query))
       )
   );
 
-  /**
-   * `updated` is prose — "2 weeks ago", "6 months ago" — so ordering by it means
-   * reading it, exactly as the project overview does. The door's own order is not
-   * recency, so trusting the array would put a five-week-old template above a
-   * three-week-old one and call the result *Updated*.
-   */
-  const AGO: Record<string, number> = {
-    minute: 1,
-    minutes: 1,
-    hour: 60,
-    hours: 60,
-    day: 1440,
-    days: 1440,
-    week: 10080,
-    weeks: 10080,
-    month: 43800,
-    months: 43800
-  };
-
-  /** Anything unreadable sorts to the far end, never to the top where it would look freshest. */
-  const ago = (updated: string): number => {
-    if (updated === "Today") return 0;
-    if (updated === "Yesterday") return AGO.day;
-    const match = /^(\d+) (\w+) ago$/.exec(updated);
-    const unit = match ? AGO[match[2]] : undefined;
-    return match && unit !== undefined ? Number(match[1]) * unit : Number.MAX_SAFE_INTEGER;
-  };
-
-  /**
-   * Ordered, and the direction is a control rather than a property of the order.
-   *
-   * Newest-first is what anybody wants of *Updated* and A–Z is what anybody wants
-   * of a name, and ascending is both of those at once: the smallest age is the
-   * newest, so the arrow starts pointed the way either order is usually read.
-   */
-  const compare = (a: LibraryTemplate, b: LibraryTemplate): number => {
-    if (sortBy === "name") return a.name.localeCompare(b.name);
-    if (sortBy === "makes") return a.makes.localeCompare(b.makes);
-    if (sortBy === "variables") return a.variables - b.variables;
-    return ago(a.updated) - ago(b.updated);
-  };
-
-  const shown = $derived(
-    [...(searching ? matching : matching.filter((row: LibraryTemplate) => row.scope === folder))]
-      .sort((a, b) => (ascending ? compare(a, b) : -compare(a, b)))
+  const ordered = $derived(
+    [...filtered].sort((a, b) => (direction === "asc" ? compare(a, b) : -compare(a, b)))
   );
 
-  /** Counted against what the filter leaves, so a folder never promises more than it holds. */
-  const countIn = (scope: TemplateScope): number =>
-    matching.filter((row: LibraryTemplate) => row.scope === scope).length;
+  const filtersActive = $derived(
+    searching || scope !== "all" || makes !== "all" || tagMode !== "all"
+  );
 
-  const onFolders = $derived(!searching && folder === undefined);
+  const DIRECTION: Record<string, { asc: string; desc: string }> = {
+    updated: { asc: "Newest first", desc: "Oldest first" },
+    name: { asc: "A to Z", desc: "Z to A" },
+    makes: { asc: "A to Z", desc: "Z to A" },
+    variables: { asc: "Fewest variables first", desc: "Most variables first" }
+  };
 
-  /**
-   * One figure, said in three places, and it counts what is on screen.
-   *
-   * Inside a folder, counting every match in the library would have the filter
-   * row report one number while the grid under it shows one folder's worth — the
-   * row, the band and the note each claiming a different figure for one view.
-   */
-  const counted = $derived(onFolders ? matching.length : shown.length);
+  const variableCount = (row: LibraryTemplate): string =>
+    `${row.variables.length} ${row.variables.length === 1 ? "variable" : "variables"}`;
+
+  const clear = () => {
+    search = "";
+    scope = "all";
+    makes = "all";
+    selectedTags = [];
+    tagMode = "all";
+  };
 
   const isSelected = (id: string): boolean =>
     view.selection?.kind === "template" && view.selection.id === id;
 
-  const clear = () => {
-    search = "";
-    makes = "all";
-  };
+  const inspect = (row: LibraryTemplate) =>
+    view.inspect("templates.template", { kind: "template", id: row.id });
+
+  const open = (row: LibraryTemplate) => alert(`Opening “${row.name}” is not wired up yet.`);
 </script>
 
+{#snippet recentCard(row: LibraryTemplate & { readonly lastUsed: string })}
+  <div
+    class="recent-card"
+    class:chosen={isSelected(row.id)}
+    ondblclick={() => open(row)}
+    role="presentation"
+  >
+    <ScreenCard
+      title={row.name}
+      sub={`${row.makes} · ${row.scope}`}
+      icon={TARGET_ICON[row.makes]}
+      selected={isSelected(row.id)}
+      onselect={() => inspect(row)}
+    >
+      {#snippet thumb()}
+        <span class="shape">
+          <ScreenThumb
+            ratio={TARGET_RATIO[row.makes]}
+            lines={4}
+            variables={Math.min(row.variables.length, 4)}
+          />
+        </span>
+      {/snippet}
+      <span class="text-caption text-ink-muted truncate">
+        Used {row.lastUsed} · {variableCount(row)}
+      </span>
+    </ScreenCard>
+  </div>
+{/snippet}
+
 <ScreenSurface>
-  <div class="board">
-    <div class="area-header">
-      <!-- No New template here: making one is an act of the rail, not of the title. -->
-      <ScreenHeader
-        title="Templates"
-        about="A real body with variables left open. Using one makes an independent copy — later edits to the template never reach it."
-      />
-    </div>
+  <div class="library-stack">
+    <ScreenHeader title="Templates">
+      {#snippet actions()}
+        <p class="text-caption text-ink-muted m-0 max-w-xs text-end">
+          Reusable starting points for documents, slide decks, and spreadsheets.
+        </p>
+      {/snippet}
+    </ScreenHeader>
 
-    <div class="area-filters">
-      <ScreenFilters
-        placeholder="Search every template"
-        matched={counted}
-        total={all.length}
-        sorts={SORTS}
-        bind:sort={sortBy}
-        bind:value={search}
-      >
-        {#if folder !== undefined && !searching}
-          <Button variant="outline" size="sm" onclick={() => (folder = undefined)}>
-            <ChevronLeft size={14} aria-hidden="true" />
-            All templates
-          </Button>
-        {/if}
-
-        <select
-          class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
-          bind:value={makes}
-          aria-label="Makes"
-        >
-          {#each kindOptions as option (option.value)}
-            <option value={option.value}>{option.label}</option>
+    {#if recent.length > 0}
+      <ScreenGroup label="Recently used">
+        <ScreenShelf>
+          {#each recent as row (row.id)}
+            <ScreenShelfItem width="11rem">
+              {@render recentCard(row)}
+            </ScreenShelfItem>
           {/each}
-        </select>
-
-        <!--
-          Inside the order's own frame: which way a sort runs is half of that one
-          decision, and two separately bordered controls beside each other read
-          as two.
-        -->
-        {#snippet order()}
-          <Button
-            variant="ghost"
-            size="sm"
-            onclick={() => (ascending = !ascending)}
-            title={ascending ? "Sorted ascending" : "Sorted descending"}
-          >
-            {#if ascending}
-              <ArrowUpNarrowWide size={14} aria-hidden="true" />
-            {:else}
-              <ArrowDownWideNarrow size={14} aria-hidden="true" />
-            {/if}
-            {ascending ? "Ascending" : "Descending"}
-          </Button>
-        {/snippet}
-      </ScreenFilters>
-    </div>
-
-    <div class="area-templates min-h-0">
-      <ScreenGroup
-        label={searching ? "Matching templates" : (folder ?? "Folders")}
-        count="{counted} of {all.length}"
-      >
-        {#if onFolders && matching.length === 0}
-          <ScreenEmpty kind="no-matches" title="No template matches" onclear={clear}>
-            Nothing in any folder is named that, or makes that.
-          </ScreenEmpty>
-        {:else if onFolders}
-          <!--
-            Folders, one per scope. Who may edit a template is the question the
-            library is organised by, so it is the division you walk through rather
-            than one more chip above the grid.
-          -->
-          <ScreenCards min="14rem">
-            {#each SCOPES as scope (scope)}
-              <ScreenCard
-                title={scope}
-                sub="{countIn(scope)} {countIn(scope) === 1 ? 'template' : 'templates'}"
-                icon={Folder}
-                onselect={() => (folder = scope)}
-              />
-            {/each}
-          </ScreenCards>
-        {:else if shown.length === 0}
-          <ScreenEmpty
-            kind={searching ? "no-matches" : "nothing-yet"}
-            title={searching ? "No template matches" : "Nothing in this folder"}
-            onclear={searching ? clear : undefined}
-          >
-            {searching
-              ? "Nothing here is named that, or makes that."
-              : "Templates you keep here will show up in this folder."}
-          </ScreenEmpty>
-        {:else}
-          <ScreenCards min="14rem">
-            {#each shown as row (row.id)}
-              <!--
-                Double-click opens the editor; a single click selects and inspects.
-                Two acts, and conflating them would mean you could not look at a
-                template without leaving the grid you were comparing it against.
-              -->
-              <div ondblclick={() => view.showContent("templates.editor", row.id)} role="presentation">
-                <ScreenCard
-                  title={row.name}
-                  selected={isSelected(row.id)}
-                  onselect={() =>
-                    view.inspect("templates.template", { kind: "template", id: row.id })}
-                >
-                  {#snippet thumb()}
-                    <!--
-                      The bars stand for the body and the tinted ones for its
-                      openings. How many, not where: nothing in a body records
-                      which variable it stands for, so a preview can count the
-                      openings and cannot place them.
-                    -->
-                    <span class="shape">
-                      <ScreenThumb
-                        ratio={RATIO[row.makes]}
-                        lines={6}
-                        variables={Math.min(row.variables, 6)}
-                      />
-                    </span>
-                  {/snippet}
-                  <span class="text-caption truncate">
-                    <span class={SCOPE_TONE[row.scope]}>{row.scope}</span>
-                    <span class="text-ink-muted">· {row.makes}</span>
-                  </span>
-                </ScreenCard>
-              </div>
-            {/each}
-          </ScreenCards>
-        {/if}
+        </ScreenShelf>
       </ScreenGroup>
-    </div>
+    {/if}
 
-    <div class="area-note">
-      <ScreenNote meta="{counted} of {all.length}">
-        Previews are rendered from the real body. The model has no thumbnail, tag, category,
-        favourite or usage count, so the library does not pretend those exist.
-      </ScreenNote>
-    </div>
+    <ScreenGroup label="All templates">
+      <div class="table-stack">
+        <ScreenFilters
+          placeholder="Search templates or tags"
+          sorts={SORTS}
+          bind:sort={sortBy}
+          bind:value={search}
+        >
+          <select
+            class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
+            bind:value={scope}
+            aria-label="Scope"
+          >
+            <option value="all">All scopes</option>
+            {#each SCOPES as option (option)}
+              <option value={option}>{option}</option>
+            {/each}
+          </select>
+
+          <select
+            class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
+            bind:value={makes}
+            aria-label="Makes"
+          >
+            <option value="all">All kinds</option>
+            {#each TARGETS as option (option)}
+              <option value={option}>{option}</option>
+            {/each}
+          </select>
+
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
+              {#snippet child({ props })}
+                <Button
+                  {...props}
+                  variant="outline"
+                  size="sm"
+                  class="border-border-subtle bg-surface-panel hover:bg-surface-panel-hover aria-expanded:bg-surface-panel text-caption rounded-control min-w-24 justify-between dark:bg-surface-panel dark:hover:bg-surface-panel-hover dark:aria-expanded:bg-surface-panel"
+                  aria-label="Filter by tags: {tagFilterLabel}"
+                  title={tagMode === "all"
+                    ? TAGS.join(", ")
+                    : selectedTags.length > 0
+                      ? selectedTags.join(", ")
+                      : "No tags selected"}
+                >
+                  <span class="max-w-24 truncate">{tagFilterLabel}</span>
+                  <ChevronDown aria-hidden="true" />
+                </Button>
+              {/snippet}
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end" class="max-h-56 w-56">
+              <DropdownMenu.CheckboxItem
+                class="tag-option"
+                checked={allTagsSelected}
+                indeterminate={someTagsSelected}
+                closeOnSelect={false}
+                onCheckedChange={setAllTags}
+              >
+                All
+              </DropdownMenu.CheckboxItem>
+              <DropdownMenu.Separator />
+              {#each TAGS as option (option)}
+                <DropdownMenu.CheckboxItem
+                  class="tag-option"
+                  checked={allTagsSelected || selectedTags.includes(option)}
+                  closeOnSelect={false}
+                  onCheckedChange={(checked: boolean) => setTag(option, checked)}
+                >
+                  {option}
+                </DropdownMenu.CheckboxItem>
+              {/each}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+
+          {#snippet order()}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={DIRECTION[sortBy][direction]}
+              title={DIRECTION[sortBy][direction]}
+              onclick={() => (direction = direction === "asc" ? "desc" : "asc")}
+            >
+              {#if direction === "asc"}
+                <ArrowUpNarrowWide aria-hidden="true" />
+              {:else}
+                <ArrowDownNarrowWide aria-hidden="true" />
+              {/if}
+            </Button>
+          {/snippet}
+        </ScreenFilters>
+
+        <div class="min-h-0">
+          {#if ordered.length === 0}
+            <ScreenEmpty
+              kind={filtersActive ? "no-matches" : "nothing-yet"}
+              title={filtersActive ? "No template matches" : "No templates yet"}
+              onclear={filtersActive ? clear : undefined}
+            >
+              {filtersActive
+                ? "Try another name, tag, scope or kind."
+                : "Templates will appear here when one is created."}
+            </ScreenEmpty>
+          {:else}
+            <ScreenTable columns={["Name", "Makes", "Scope", "Variables", "Tags", "Updated"]}>
+              {#each ordered as row (row.id)}
+                {@const Icon = TARGET_ICON[row.makes]}
+                <ScreenRow
+                  selected={isSelected(row.id)}
+                  onselect={() => inspect(row)}
+                  onopen={() => open(row)}
+                >
+                  <ScreenCell>
+                    <button
+                      type="button"
+                      class="text-body-sm text-ink-primary flex min-h-9 items-center gap-2 text-start hover:underline"
+                      onclick={() => inspect(row)}
+                      ondblclick={() => open(row)}
+                    >
+                      <span class="text-ink-muted flex shrink-0">
+                        <Icon size={14} aria-hidden="true" />
+                      </span>
+                      <span>{row.name}</span>
+                    </button>
+                  </ScreenCell>
+                  <ScreenCell>{row.makes}</ScreenCell>
+                  <ScreenCell>{row.scope}</ScreenCell>
+                  <ScreenCell num>{row.variables.length}</ScreenCell>
+                  <ScreenCell>{row.tags.join(", ") || "—"}</ScreenCell>
+                  <ScreenCell num>{row.updated}</ScreenCell>
+                </ScreenRow>
+              {/each}
+            </ScreenTable>
+          {/if}
+        </div>
+      </div>
+    </ScreenGroup>
   </div>
 </ScreenSurface>
 
 <style>
-  /**
-   * One track: a card grid already wraps to the width it is given, so there is
-   * nothing for a second column to hold. `templates` is written twice because
-   * that is how the grid takes its height off the bands around it.
-   */
-  .board {
-    display: grid;
-    gap: calc(var(--token-spacing-unit) * 4);
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "header"
-      "filters"
-      "templates"
-      "templates"
-      "note";
-    align-content: start;
+  .library-stack {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 8);
   }
 
-  .area-header {
-    grid-area: header;
+  .table-stack {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 3);
   }
-  .area-filters {
-    grid-area: filters;
+
+  .recent-card {
+    height: 100%;
   }
-  .area-templates {
-    grid-area: templates;
+
+  .recent-card > :global(button) {
+    width: 100%;
+    height: 100%;
+    box-shadow: var(--token-shadow-raised);
   }
-  .area-note {
-    grid-area: note;
+
+  .recent-card.chosen > :global(button) {
+    border-color: var(--token-color-active-border);
+    background: var(--token-color-active-surface);
+    box-shadow:
+      var(--token-shadow-raised),
+      0 0 0 1px var(--token-color-active-border);
+  }
+
+  .recent-card.chosen > :global(button:hover) {
+    background: var(--token-color-active-surface-hover);
   }
 
   /**
-   * The standard card size, imposed here rather than by the thumb.
-   *
-   * A thumb left to size itself off its line count and its aspect ratio makes a
-   * 16:9 deck and a 1:1 sheet two different heights, and every card under them
-   * with them. The band fixes the height and the ratio then decides the width,
-   * which keeps the one thing the shape is there to say.
+   * The preview keeps the target's shape inside a shorter, consistent card
+   * band. Cards remain recognisable without making recent history dominate the
+   * library beneath it.
    */
   .shape {
     display: flex;
-    height: calc(var(--token-spacing-unit) * 22);
+    height: calc(var(--token-spacing-unit) * 16);
     align-items: center;
     justify-content: center;
   }
 
   .shape > :global(*) {
-    height: 100%;
     width: auto;
+    height: 100%;
     flex: none;
   }
 
-  /*
-    Already one column, so the narrow case only closes the gaps: the cards drop
-    to a single column on their own, which is `ScreenCards`' decision to make.
-  */
+  :global(.tag-option) {
+    padding-right: calc(var(--token-spacing-unit) * 2);
+    padding-left: calc(var(--token-spacing-unit) * 8);
+  }
+
+  :global(.tag-option > [data-slot="dropdown-menu-checkbox-item-indicator"]) {
+    right: auto;
+    left: calc(var(--token-spacing-unit) * 2);
+    width: calc(var(--token-spacing-unit) * 4);
+    height: calc(var(--token-spacing-unit) * 4);
+    border: 1px solid var(--token-border-strong);
+    border-radius: calc(var(--token-radius-control) / 2);
+    background: var(--token-surface-canvas);
+  }
+
+  :global(.tag-option > [data-slot="dropdown-menu-checkbox-item-indicator"] > svg) {
+    width: calc(var(--token-spacing-unit) * 3);
+    height: calc(var(--token-spacing-unit) * 3);
+  }
+
   @media (max-width: 60rem) {
-    .board {
-      gap: calc(var(--token-spacing-unit) * 3);
+    .library-stack {
+      gap: calc(var(--token-spacing-unit) * 6);
     }
   }
 </style>

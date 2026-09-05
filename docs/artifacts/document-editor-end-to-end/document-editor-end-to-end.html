@@ -1,0 +1,1402 @@
+<title>The Document Editor, End to End</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --ground: #f2efe9;
+    --panel: #fbf9f5;
+    --sunk: #e9e5dc;
+    --ink: #1d2329;
+    --ink-2: #3a424d;
+    --ink-3: #6b7580;
+    --rule: #d8d3c4;
+    --rule-soft: #e4dfd2;
+
+    --live: #bc386f;
+    --live-soft: #fdeff5;
+    --store: #187d74;
+    --store-soft: #e6f4f2;
+    --editor: #3f52c4;
+    --editor-soft: #eceffb;
+    --warn: #9a6a12;
+    --warn-soft: #fbf3e0;
+    --stop: #b3382e;
+
+    --ui-panel: #f2efe6;
+    --ui-panel-hover: #e9e5d9;
+    --ui-paper: #ffffff;
+    --ui-board: #d9d3c6;
+    --ui-line: #ddd7c8;
+    --ui-line-soft: #e9e4d7;
+    --ui-ink: #2b2721;
+    --ui-ink-2: #5d564a;
+    --ui-ink-3: #928b7b;
+    --ui-active: #dcebf6;
+    --ui-active-ink: #1d5f8a;
+    --ui-select: #cfe4f2;
+    --ui-note: #fdf3e0;
+    --ui-note-ink: #8a6212;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --measure: 70ch;
+    --gap: 1.15rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #14181c; --panel: #1c2127; --sunk: #101418;
+      --ink: #e7e3da; --ink-2: #b6bcc6; --ink-3: #8d97a3;
+      --rule: #2e353d; --rule-soft: #262c33;
+      --live: #ee7fae; --live-soft: #351924;
+      --store: #3fcfc0; --store-soft: #102b28;
+      --editor: #93a3ff; --editor-soft: #1b2140;
+      --warn: #d9a441; --warn-soft: #2f2611; --stop: #f08a80;
+      --ui-panel: #221e18; --ui-panel-hover: #2c271f; --ui-paper: #2a251d; --ui-board: #17140f;
+      --ui-line: #423b2e; --ui-line-soft: #322c23;
+      --ui-ink: #f0eadd; --ui-ink-2: #bdb4a1; --ui-ink-3: #8a8272;
+      --ui-active: #17324a; --ui-active-ink: #86c3ec; --ui-select: #1d3f5c;
+      --ui-note: #3a2c10; --ui-note-ink: #e0b45e;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #14181c; --panel: #1c2127; --sunk: #101418;
+    --ink: #e7e3da; --ink-2: #b6bcc6; --ink-3: #8d97a3;
+    --rule: #2e353d; --rule-soft: #262c33;
+    --live: #ee7fae; --live-soft: #351924;
+    --store: #3fcfc0; --store-soft: #102b28;
+    --editor: #93a3ff; --editor-soft: #1b2140;
+    --warn: #d9a441; --warn-soft: #2f2611; --stop: #f08a80;
+    --ui-panel: #221e18; --ui-panel-hover: #2c271f; --ui-paper: #2a251d; --ui-board: #17140f;
+    --ui-line: #423b2e; --ui-line-soft: #322c23;
+    --ui-ink: #f0eadd; --ui-ink-2: #bdb4a1; --ui-ink-3: #8a8272;
+    --ui-active: #17324a; --ui-active-ink: #86c3ec; --ui-select: #1d3f5c;
+    --ui-note: #3a2c10; --ui-note-ink: #e0b45e;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- chrome ---- */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.7rem 1.5rem;
+    border-bottom: 1px solid var(--rule-soft);
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter: blur(8px);
+  }
+
+  .nav .mark { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); }
+  .nav .mark span { color: var(--ink-3); }
+  .nav ul { display: flex; flex-wrap: wrap; gap: 0.2rem 1.2rem; margin: 0 0 0 auto; padding: 0; list-style: none; font-size: 0.86rem; }
+  .nav a { color: var(--ink-2); text-decoration: none; }
+  .nav a:hover { color: var(--ink); }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+
+  .col { max-width: var(--measure); }
+
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2.1rem, 4.6vw, 3.1rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.06; }
+  h2 { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.018em; padding-bottom: 0.5rem; border-bottom: 2px solid var(--ink); }
+  h3 { font-size: 1.02rem; font-weight: 600; letter-spacing: -0.008em; }
+
+  p { margin: 0; }
+  .col > p + p, .stack > p + p { margin-top: 0.85rem; }
+
+  .eyebrow { font-family: var(--mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+  .lede { font-size: 1.08rem; color: var(--ink-2); }
+
+  code, .m { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--sunk); border-radius: 3px; padding: 0.1em 0.34em; }
+  .m.live { color: var(--live); font-weight: 500; }
+  .m.store { color: var(--store); font-weight: 500; }
+  .m.editor { color: var(--editor); font-weight: 500; }
+  strong { font-weight: 600; }
+  a { color: var(--editor); }
+
+  section { display: flex; flex-direction: column; gap: var(--gap); scroll-margin-top: 4rem; }
+  .stack { display: flex; flex-direction: column; gap: var(--gap); }
+
+  /* ---- hero ---- */
+  .hero { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(19rem, 0.8fr); gap: 3rem; align-items: end; }
+  .hero .stack { gap: 1rem; }
+  .status { display: flex; align-items: center; gap: 0.5rem; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--editor); }
+  .status i { width: 7px; height: 7px; border-radius: 50%; background: var(--editor); }
+
+  .readout { border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); overflow: hidden; }
+  .readout header { display: flex; justify-content: space-between; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule-soft); font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  .readout dl { display: grid; grid-template-columns: 1fr 1fr; margin: 0; }
+  .readout div { padding: 0.9rem 1rem; border-bottom: 1px solid var(--rule-soft); }
+  .readout div:nth-child(odd) { border-right: 1px solid var(--rule-soft); }
+  .readout dt { font-size: 0.78rem; color: var(--ink-3); }
+  .readout dd { margin: 0.2rem 0 0; font-family: var(--mono); font-size: 1.4rem; }
+  .readout dd small { font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-left: 0.3rem; }
+  .readout p { padding: 0.8rem 1rem; font-size: 0.8rem; color: var(--ink-2); }
+
+  .keys { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .keys span { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.35rem 0.75rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--panel); font-size: 0.82rem; }
+  .keys i { width: 9px; height: 9px; border-radius: 2px; }
+
+  /* ---- section head ---- */
+  .head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.55fr); gap: 2rem; align-items: end; }
+  .head > p { font-size: 0.86rem; color: var(--ink-3); text-align: right; margin: 0 0 0.6rem; }
+  .head .stack { gap: 0.5rem; }
+
+  /* ---- tables ---- */
+  .sheet { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.6rem 0.9rem 0.6rem 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  td.p { font-family: var(--mono); font-size: 0.8rem; }
+
+  .tag { display: inline-block; padding: 0.12rem 0.42rem; border: 1px solid currentColor; border-radius: 999px; font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; vertical-align: middle; }
+  .tag.proposed { color: var(--warn); }
+  .tag.exists { color: var(--store); }
+  .tag.later { color: var(--ink-3); }
+
+  /* ---- tree ---- */
+  .tree { font-family: var(--mono); font-size: 0.8rem; line-height: 1.85; background: var(--panel); border: 1px solid var(--rule-soft); border-radius: 4px; padding: 1.1rem 1.25rem; overflow-x: auto; white-space: pre; }
+  .tree .note { color: var(--ink-3); }
+  .tree .k { color: var(--store); font-weight: 500; }
+  .tree .opt { color: var(--ink-3); }
+  .tree .id { color: var(--live); }
+
+  /* ---- figures ---- */
+  figure { margin: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+  figure svg { width: 100%; height: auto; display: block; background: var(--panel); border: 1px solid var(--rule-soft); border-radius: 4px; }
+  figcaption { font-size: 0.85rem; color: var(--ink-3); max-width: var(--measure); }
+  .legend { display: flex; flex-wrap: wrap; gap: 1.1rem; font-size: 0.78rem; color: var(--ink-2); font-family: var(--mono); }
+  .key { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .swatch { width: 0.75rem; height: 0.75rem; border-radius: 2px; }
+
+  /* ---- cards ---- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1rem; }
+  .card { border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); overflow: hidden; display: flex; flex-direction: column; }
+  .card header { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule-soft); font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.09em; text-transform: uppercase; }
+  .card header .tag { margin-left: auto; }
+  .card > pre, .card > .body { padding: 1rem; margin: 0; }
+  .card > pre { font-family: var(--mono); font-size: 0.78rem; line-height: 1.6; white-space: pre; overflow-x: auto; color: var(--ink); background: transparent; }
+  .card .body { font-size: 0.9rem; color: var(--ink-2); display: flex; flex-direction: column; gap: 0.6rem; }
+  .card .foot { padding: 0.7rem 1rem; border-top: 1px solid var(--rule-soft); font-size: 0.8rem; color: var(--ink-3); }
+  .card.live header { color: var(--live); }
+  .card.store header { color: var(--store); }
+  .card.editor header { color: var(--editor); }
+  .card.warn header { color: var(--warn); }
+  pre .c { color: var(--ink-3); }
+  pre .x { color: var(--stop); text-decoration: line-through; }
+  pre .k { color: var(--store); }
+
+  /* ---- atoms strip ---- */
+  .strip { border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); display: grid; grid-template-columns: 7rem 1fr; }
+  .strip > div { padding: 0.8rem 1rem; border-bottom: 1px solid var(--rule-soft); }
+  .strip > div:nth-last-child(-n+2) { border-bottom: 0; }
+  .strip .lbl { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); padding-top: 1rem; border-right: 1px solid var(--rule-soft); }
+  .atoms { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .atom { padding: 0.45rem 0.65rem; border: 1px solid var(--rule); border-radius: 4px; background: var(--ground); font-family: var(--mono); font-size: 0.78rem; color: var(--ink-2); }
+  .atom .id { display: block; color: var(--store); font-weight: 600; }
+  .atom .sub { display: block; color: var(--ink-3); font-size: 0.7rem; }
+  .atom.formula { border-color: var(--editor); background: var(--editor-soft); }
+  .atom.formula .id { color: var(--editor); }
+  .display { font-family: var(--mono); font-size: 0.8rem; line-height: 1.75; color: var(--ink-2); overflow-wrap: anywhere; }
+  .display .f { background: var(--editor-soft); color: var(--editor); padding: 0 2px; border-radius: 2px; }
+  .display .b { font-weight: 600; color: var(--ink); text-decoration: underline; text-decoration-color: var(--live); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .markline { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; }
+  .markline .id { color: var(--live); font-weight: 600; }
+  .markline .bad { color: var(--stop); text-decoration: line-through; }
+
+  /* ---- steps / traces ---- */
+  .flow { border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); overflow: hidden; }
+  .flow header { display: flex; justify-content: space-between; gap: 1rem; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule-soft); font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  .flow header b { color: var(--ink); font-weight: 600; }
+  .flow ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); margin: 0; padding: 0; list-style: none; counter-reset: s; }
+  .flow li { counter-increment: s; position: relative; padding: 0.9rem 1rem 1rem; border-right: 1px solid var(--rule-soft); border-top: 3px solid var(--rule); font-size: 0.86rem; line-height: 1.5; color: var(--ink-2); }
+  .flow li:last-child { border-right: 0; }
+  .flow li::before { content: counter(s); display: block; font-family: var(--mono); font-size: 0.64rem; color: var(--ink-3); margin-bottom: 0.25rem; }
+  .flow li b { display: block; font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.09em; text-transform: uppercase; margin-bottom: 0.3rem; }
+  .flow li.live { border-top-color: var(--live); } .flow li.live b { color: var(--live); }
+  .flow li.store { border-top-color: var(--store); } .flow li.store b { color: var(--store); }
+  .flow li.editor { border-top-color: var(--editor); } .flow li.editor b { color: var(--editor); }
+  .flow li.panel b { color: var(--ink-3); }
+
+  ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 1.9rem 1fr; gap: 0.85rem; align-items: start; }
+  ol.steps li::before { content: counter(s, decimal-leading-zero); font-family: var(--mono); font-size: 0.75rem; font-weight: 600; color: var(--live); padding-top: 0.22rem; font-variant-numeric: tabular-nums; }
+  ol.steps li p { font-size: 0.94rem; }
+
+  .note-block { border-left: 3px solid var(--warn); padding: 0.1rem 0 0.1rem 1rem; font-size: 0.94rem; color: var(--ink-2); max-width: var(--measure); }
+  .rule-block { border-left-color: var(--live); }
+  .rule-block b { color: var(--ink); }
+
+  ul.plain { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.94rem; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 0 2rem; font-family: var(--mono); font-size: 0.76rem; color: var(--ink-3); padding-top: 1rem; border-top: 1px solid var(--rule-soft); }
+
+  /* ---- panel specimens ---- */
+  .specs { columns: 16rem; column-gap: 1rem; }
+  .specs > .spec { break-inside: avoid; margin-bottom: 1.4rem; }
+  .spec { display: flex; flex-direction: column; gap: 0.45rem; }
+  .spec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.6rem; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+  .spec-head .name { color: var(--ink); font-weight: 600; }
+  .spec-head .key { letter-spacing: 0; text-transform: none; }
+  .spec-note { font-size: 0.8rem; color: var(--ink-3); line-height: 1.5; }
+
+  .ui { overflow: hidden; border: 1px solid var(--ui-line); border-radius: 4px; background: var(--ui-panel); color: var(--ui-ink); font-family: var(--sans); font-size: 12px; line-height: 1.45; }
+  .ui svg { display: block; }
+  .with-rail { display: flex; align-items: stretch; }
+  .with-rail > .flank { min-width: 0; flex: 1; }
+  .rail { display: flex; width: 34px; flex: none; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; border-right: 1px solid var(--ui-line); }
+  .rail i { display: flex; width: 24px; height: 24px; align-items: center; justify-content: center; border-radius: 4px; color: var(--ui-ink-3); }
+  .rail i.on { background: var(--ui-active); color: var(--ui-active-ink); }
+  .p-title { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--ui-line); font-size: 12px; font-weight: 600; }
+  .p-crumbs { padding: 0.4rem 0.65rem 0; color: var(--ui-ink-3); font-size: 10px; }
+  .p-sec-h { display: flex; align-items: center; gap: 0.3rem; padding: 0.5rem 0.65rem 0.25rem; color: var(--ui-ink-3); font-size: 9.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; }
+  .p-sec-h .cv { margin-left: auto; }
+  .p-sec-h.ruled { border-top: 1px solid var(--ui-line-soft); margin-top: 0.35rem; }
+  .p-body { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.15rem 0.65rem 0.6rem; }
+  .c-row { display: flex; align-items: center; gap: 0.35rem; }
+  .c-select, .c-input { display: flex; min-width: 0; flex: 1; align-items: center; gap: 0.3rem; padding: 0.24rem 0.4rem; border: 1px solid var(--ui-line); border-radius: 3px; background: var(--ui-paper); font-size: 11px; }
+  .c-select .v { min-width: 0; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .c-select svg { flex: none; color: var(--ui-ink-3); }
+  .c-input.num { width: 3rem; flex: none; justify-content: center; font-variant-numeric: tabular-nums; }
+  .c-input.ph { color: var(--ui-ink-3); }
+  .mixed { color: var(--ui-ink-3); font-style: italic; }
+  .c-seg { display: flex; gap: 3px; }
+  .c-seg span { min-width: 0; flex: 1; padding: 0.22rem 0; border: 1px solid var(--ui-line); border-radius: 3px; background: var(--ui-paper); color: var(--ui-ink-2); font-size: 11px; text-align: center; }
+  .c-seg .on { border-color: var(--ui-active-ink); background: var(--ui-active); color: var(--ui-active-ink); }
+  .c-seg .mix { border-style: dashed; color: var(--ui-ink-3); text-decoration: line-through; }
+  .c-seg.icons span { display: flex; align-items: center; justify-content: center; padding: 0.24rem 0; }
+  .sw { width: 12px; height: 12px; flex: none; border: 1px solid var(--ui-line); border-radius: 50%; }
+  .f { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+  .f .k { color: var(--ui-ink-3); font-size: 10px; }
+  .f .v { font-family: var(--mono); font-size: 10px; }
+  .q { padding: 0.4rem 0.5rem; border-radius: 3px; background: var(--ui-panel-hover); }
+  .q .t { font-size: 11px; }
+  .q .s { margin-top: 0.25rem; color: var(--ui-ink-3); font-size: 9.5px; }
+  .q.on { outline: 1px solid var(--ui-active-ink); background: var(--ui-active); }
+  .note { padding: 0.38rem 0.5rem; border-radius: 3px; background: var(--ui-note); color: var(--ui-note-ink); font-size: 10px; line-height: 1.4; }
+  .r { display: flex; align-items: baseline; gap: 0.4rem; padding: 0.28rem 0.65rem; }
+  .r .lbl { min-width: 0; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; }
+  .r .meta { flex: none; color: var(--ui-ink-3); font-family: var(--mono); font-size: 9.5px; padding: 0; border: 0; }
+  .r.on { background: var(--ui-active); }
+  .r.on .lbl { color: var(--ui-active-ink); font-weight: 600; }
+  .r.l2 { padding-left: 1.5rem; }
+  .r.l3 { padding-left: 2.35rem; }
+  .r.two { align-items: center; }
+  .r.two .txt { min-width: 0; flex: 1; }
+  .r.two .txt .lbl { display: block; }
+  .r.two .sub { color: var(--ui-ink-3); font-size: 9.5px; }
+  .r .act { flex: none; padding: 0.1rem 0.36rem; border: 1px solid var(--ui-line); border-radius: 3px; background: var(--ui-paper); color: var(--ui-ink-2); font-size: 9.5px; }
+  .r.on .act { border-color: var(--ui-active-ink); color: var(--ui-active-ink); }
+  .trio { display: flex; gap: 0.3rem; }
+  .trio > div { min-width: 0; flex: 1; }
+  .trio .k { display: block; margin-bottom: 0.1rem; color: var(--ui-ink-3); font-size: 9px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .trio .c-input { width: 100%; flex: none; justify-content: center; font-variant-numeric: tabular-nums; }
+  .p-foot { display: flex; gap: 0.35rem; padding: 0.5rem 0.65rem; border-top: 1px solid var(--ui-line-soft); }
+  .btn { padding: 0.24rem 0.55rem; border: 1px solid var(--ui-line); border-radius: 3px; background: var(--ui-paper); color: var(--ui-ink-2); font-size: 11px; }
+  .btn.primary { border-color: var(--ui-active-ink); background: var(--ui-active); color: var(--ui-active-ink); }
+  .toggle { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 10.5px; color: var(--ui-ink-2); }
+  .toggle i { width: 22px; height: 12px; border-radius: 999px; background: var(--ui-line); position: relative; }
+  .toggle i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--ui-paper); }
+  .toggle i.on { background: var(--ui-active-ink); }
+  .toggle i.on::after { left: 12px; }
+
+  .surface { border: 1px solid var(--ui-line); border-radius: 4px; overflow: hidden; }
+  .surface .bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.8rem; border-bottom: 1px solid var(--ui-line); background: var(--ui-panel); color: var(--ui-ink); font-family: var(--sans); font-size: 12px; font-weight: 500; }
+  .surface .bar .st { margin-left: auto; color: var(--ui-ink-3); font-size: 10px; font-weight: 400; }
+  .board { overflow-x: auto; padding: 1.6rem 3.6rem 1.9rem 1.2rem; background: var(--ui-board); }
+  .sheet-page { position: relative; width: min(600px, 100%); margin: 0 auto; padding: 30px 42px 34px; border: 1px solid var(--ui-line); background: var(--ui-paper); box-shadow: 0 1px 3px rgb(0 0 0 / 0.14); color: var(--ui-ink); font-family: var(--sans); }
+  .sheet-page .furn { margin: 0 0 14px; color: var(--ui-ink-3); font-size: 9.5px; display: flex; justify-content: space-between; }
+  .sheet-page .furn.foot { margin: 16px 0 0; }
+  .pg { position: relative; margin: 0 0 9px; font-size: 11.5px; line-height: 1.6; color: var(--ui-ink-2); }
+  .pg.h1 { margin: 0 0 8px; font-size: 18px; line-height: 1.2; font-weight: 600; color: var(--ui-ink); letter-spacing: -0.01em; }
+  .pg.h2 { margin: 15px 0 6px; font-size: 14px; line-height: 1.25; font-weight: 600; color: var(--ui-ink); }
+  .pg.meta { color: var(--ui-ink-3); font-size: 10.5px; padding: 0; border: 0; }
+  .pg b { font-weight: 700; color: var(--ui-ink); }
+  .pg em { font-style: italic; }
+  .pg .lnk { color: var(--ui-active-ink); text-decoration: underline; text-underline-offset: 2px; }
+  .pg .fa { background: var(--ui-active); color: var(--ui-active-ink); border-radius: 2px; padding: 0 2px; }
+  .cm { background: color-mix(in srgb, var(--ui-note) 70%, transparent); box-shadow: 0 1px 0 var(--ui-note-ink); }
+  .cm.hot { background: var(--ui-note); }
+  .sel { background: var(--ui-select); }
+  .mk { position: absolute; top: 0; right: -72px; display: flex; width: 21px; height: 21px; align-items: center; justify-content: center; border-radius: 3px; color: var(--ui-ink-3); }
+  .mk.dim { opacity: 0.2; }
+  .mk.lit { background: var(--ui-panel-hover); color: var(--ui-ink-2); }
+  .mk.on { background: var(--ui-active-ink); color: var(--ui-panel); }
+  .mk.two { top: 24px; }
+
+  @media (max-width: 56rem) {
+    .hero, .head { grid-template-columns: 1fr; }
+    .head > p { text-align: left; }
+    .strip { grid-template-columns: 1fr; }
+    .strip .lbl { border-right: 0; padding-top: 0.8rem; padding-bottom: 0; }
+  }
+</style>
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-chevd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></symbol>
+  <symbol id="i-chevr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></symbol>
+  <symbol id="i-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"></path></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v6h6M16 13H8M16 17H8"></path></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path></symbol>
+  <symbol id="i-tmpl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3H3v7h18V3zM21 14h-9v7h9v-7zM7 14H3v7h4v-7z"></path></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"></path><path d="M18 16.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></symbol>
+  <symbol id="i-hash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"></path></symbol>
+  <symbol id="i-al" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h11M3 18h15"></path></symbol>
+  <symbol id="i-ac" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M7 12h10M5 18h14"></path></symbol>
+  <symbol id="i-ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M10 12h11M6 18h15"></path></symbol>
+  <symbol id="i-aj" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"></path></symbol>
+  <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path></marker>
+</svg>
+
+<nav class="nav">
+  <span class="mark">◇ Icarus <span>/ document editor</span></span>
+  <ul>
+    <li><a href="#copies">Copies</a></li>
+    <li><a href="#model">Model</a></li>
+    <li><a href="#runtime">Runtime</a></li>
+    <li><a href="#ops">Ops</a></li>
+    <li><a href="#render">Rendering</a></li>
+    <li><a href="#traces">Traces</a></li>
+    <li><a href="#panels">Panels</a></li>
+    <li><a href="#comments">Comments</a></li>
+    <li><a href="#changes">Changes</a></li>
+  </ul>
+</nav>
+
+<div class="page">
+
+  <header class="hero">
+    <div class="stack">
+      <p class="status"><i></i> Goal state · agreed 2026-09-04</p>
+      <h1>The document editor, end to end</h1>
+      <p class="lede">
+        One document, three copies. The store holds the canonical one. The client
+        runtime holds a live one and every change is an operation on it. The editor
+        is a picture of the live one and a way to ask for changes — nothing more.
+        This is how the whole thing works when it is finished.
+      </p>
+      <div class="keys">
+        <span><i style="background: var(--store)"></i> store · the canonical body, and the model it is typed as</span>
+        <span><i style="background: var(--live)"></i> runtime · the live body on the client, moved by ops</span>
+        <span><i style="background: var(--editor)"></i> editor · ProseMirror, a projection of the live body</span>
+      </div>
+    </div>
+    <aside class="readout">
+      <header><span>Shape of the work</span><span>from the code</span></header>
+      <dl>
+        <div><dt>Copies of a document</dt><dd>3</dd></div>
+        <div><dt>Op targets</dt><dd>6 <small>1 new</small></dd></div>
+        <div><dt>Model changes</dt><dd>6 <small>proposed</small></dd></div>
+        <div><dt>Panels drawn</dt><dd>13</dd></div>
+      </dl>
+      <p>Companion: <em>Document Editor Buildout</em> — the delta between this and today, in order.</p>
+    </aside>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="copies">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">01 · Copies</p>
+        <h2>Three copies of one document</h2>
+      </div>
+      <p>Everything else on this page is a consequence of this diagram.</p>
+    </div>
+
+    <p class="col">
+      The canonical document is a row in <code>documentSnapshots</code> with
+      <code>role: "leader"</code>. The client runtime holds a copy, and every change the
+      user makes — from a panel, from the editor, from undo — is stated as
+      operations applied to that copy first and sent to the store afterwards. The
+      editor draws whatever the live copy currently is, and tells the panels where
+      the selection is. That is its only edge that is not to the runtime.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 1100 330" role="img" aria-label="The store, the runtime and the editor, and what flows between them">
+        <g font-family="IBM Plex Mono, monospace" font-size="11">
+          <rect x="20" y="60" width="250" height="130" rx="4" fill="var(--store-soft)" stroke="var(--store)" stroke-width="1.2"></rect>
+          <text x="145" y="86" fill="var(--store)" text-anchor="middle" font-weight="600" font-size="12">STORE</text>
+          <text x="145" y="106" fill="var(--ink-2)" text-anchor="middle">documentSnapshots · leader</text>
+          <text x="145" y="122" fill="var(--ink-2)" text-anchor="middle">documentChangeSets</text>
+          <text x="145" y="146" fill="var(--ink-3)" text-anchor="middle">canonical body · revision n</text>
+          <text x="145" y="162" fill="var(--ink-3)" text-anchor="middle">runs applyOps to accept</text>
+
+          <rect x="425" y="60" width="250" height="130" rx="4" fill="var(--live-soft)" stroke="var(--live)" stroke-width="1.2"></rect>
+          <text x="550" y="86" fill="var(--live)" text-anchor="middle" font-weight="600" font-size="12">RUNTIME</text>
+          <text x="550" y="106" fill="var(--ink-2)" text-anchor="middle">DocumentRuntime</text>
+          <text x="550" y="122" fill="var(--ink-2)" text-anchor="middle">body · buffer · undo stack</text>
+          <text x="550" y="146" fill="var(--ink-3)" text-anchor="middle">live body · revision n + pending</text>
+          <text x="550" y="162" fill="var(--ink-3)" text-anchor="middle">runs the same applyOps first</text>
+
+          <rect x="830" y="60" width="250" height="130" rx="4" fill="var(--editor-soft)" stroke="var(--editor)" stroke-width="1.2"></rect>
+          <text x="955" y="86" fill="var(--editor)" text-anchor="middle" font-weight="600" font-size="12">EDITOR</text>
+          <text x="955" y="106" fill="var(--ink-2)" text-anchor="middle">ProseMirror EditorView</text>
+          <text x="955" y="122" fill="var(--ink-2)" text-anchor="middle">doc = project(body)</text>
+          <text x="955" y="146" fill="var(--ink-3)" text-anchor="middle">a picture and an input device</text>
+          <text x="955" y="162" fill="var(--ink-3)" text-anchor="middle">holds nothing the body does not</text>
+
+          <g color="var(--live)"><path d="M 425 88 L 276 88" stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#ar)"></path></g>
+          <text x="348" y="80" fill="var(--live)" text-anchor="middle">change set</text>
+          <text x="348" y="104" fill="var(--ink-3)" text-anchor="middle" font-size="10">ops · baseRevision · touched</text>
+
+          <g color="var(--store)"><path d="M 270 152 L 419 152" stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#ar)"></path></g>
+          <text x="348" y="144" fill="var(--store)" text-anchor="middle">accepted · stale</text>
+          <text x="348" y="168" fill="var(--ink-3)" text-anchor="middle" font-size="10">revision · catch-up · re-read on sync</text>
+
+          <g color="var(--live)"><path d="M 675 88 L 824 88" stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#ar)"></path></g>
+          <text x="750" y="80" fill="var(--live)" text-anchor="middle">re-project</text>
+          <text x="750" y="104" fill="var(--ink-3)" text-anchor="middle" font-size="10">body → doc · selection kept</text>
+
+          <g color="var(--editor)"><path d="M 830 152 L 681 152" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 3" fill="none" marker-end="url(#ar)"></path></g>
+          <text x="750" y="144" fill="var(--editor)" text-anchor="middle">typing · selection</text>
+          <text x="750" y="168" fill="var(--ink-3)" text-anchor="middle" font-size="10">editor first, then ops</text>
+
+          <rect x="425" y="236" width="250" height="64" rx="4" fill="var(--ground)" stroke="var(--rule)" stroke-width="1"></rect>
+          <text x="550" y="260" fill="var(--ink-2)" text-anchor="middle" font-weight="600" font-size="12">PANELS</text>
+          <text x="550" y="278" fill="var(--ink-3)" text-anchor="middle">context · inspector</text>
+          <text x="550" y="292" fill="var(--ink-3)" text-anchor="middle" font-size="10">read the live body, emit ops</text>
+
+          <g color="var(--ink-3)"><path d="M 550 236 L 550 196" stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#ar)"></path></g>
+          <text x="562" y="220" fill="var(--ink-3)" font-size="10">runtime.apply(ops)</text>
+
+          <g color="var(--ink-3)"><path d="M 955 190 L 955 268 L 681 268" stroke="currentColor" stroke-width="1" stroke-dasharray="2 3" fill="none" marker-end="url(#ar)"></path></g>
+          <text x="818" y="260" fill="var(--ink-3)" text-anchor="middle" font-size="10">selection, as an address — the one editor edge not to the runtime</text>
+        </g>
+      </svg>
+      <figcaption>
+        Solid arrows are data moving. The dashed arrow is the one exception: a
+        keystroke lands in the editor first so the letter appears without waiting,
+        and is translated into an op immediately afterwards.
+      </figcaption>
+    </figure>
+
+    <div class="note-block rule-block">
+      <b>The editor is an interface to the document, not a place the document lives.</b>
+      A panel that makes text bold applies a mark op to the live body; the runtime
+      moves; the editor is re-projected from the body and the text is bold because the
+      body says so. Undo is the same path with the op inverted. Sync is the same path
+      with the store's body in place of the live one.
+    </div>
+
+    <div class="cards">
+      <div class="card live"><header>Consequence 1</header><div class="body"><p><strong>The live copy advances the moment an op is applied</strong>, before the store answers. Otherwise a panel edit vanishes for two seconds and reappears.</p></div></div>
+      <div class="card editor"><header>Consequence 2</header><div class="body"><p><strong>Re-projection leaves the selection where it was.</strong> Every button press would otherwise lose the caret.</p></div></div>
+      <div class="card store"><header>Consequence 3</header><div class="body"><p><strong>Every address is structural, not positional.</strong> Where a mark starts, what is selected, where a comment is anchored — all survive the document changing around them.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="model">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">02 · Model</p>
+        <h2>The shape of a document</h2>
+      </div>
+      <p>Every id below is from the seeded <em>Winter readiness brief</em>.</p>
+    </div>
+
+    <p class="col">
+      <code>DocumentBody</code> is the whole thing. Rows in order; each row is blocks
+      side by side, a divider, or a page break; each block is one of five content
+      types. Above the rows sit the things that apply to every page.
+    </p>
+
+    <div class="tree"><span class="k">DocumentBody</span>
+├── pageSetup<span class="opt">?</span>          <span class="k">PageSetup</span>
+│   ├── paper            "letter" | "legal" | "tabloid" | "a3" | "a4" | "a5" | { width, height }   <span class="note">inches; the object form is custom paper</span>
+│   ├── orientation      "portrait" | "landscape"
+│   └── margins          { top, right, bottom, left }
+├── styles<span class="opt">?</span>             <span class="k">StyleSet</span>
+│   ├── styles           Record&lt;key, TextStyle&gt;   <span class="note">named formatting; a block points at a key</span>
+│   └── defaultKey       "body"
+├── header<span class="opt">?</span> · footer<span class="opt">?</span>   <span class="k">PageFurniture</span>            <span class="note">rows again, in a second root; drawn on every page</span>
+│   ├── rows[]
+│   ├── firstPageRows<span class="opt">?</span>[]
+│   ├── distanceFromEdge
+│   └── pageNumber<span class="opt">?</span>      <span class="k">PageNumbering</span>            <span class="note">generated from this, never typed</span>
+│       ├── position     "start" | "center" | "end"
+│       ├── format<span class="opt">?</span>
+│       ├── startAt<span class="opt">?</span>
+│       └── hideOnFirstPage<span class="opt">?</span>
+└── rows[]
+    ├── <span class="id">#rtitle</span>   kind "blocks"   blocks[] · proportions<span class="opt">?</span>[]
+    │   └── <span class="id">#btitle</span>   <span class="k">TextBlock</span>  variant "heading" · level 1 · style "heading-1" · format<span class="opt">?</span> · atoms[] · display · marks[]
+    ├── <span class="id">#rbody1</span>   kind "blocks"   blocks: [ <span class="id">#bbody1</span> TextBlock ]
+    ├── <span class="id">#r…</span>       kind "divider"  color<span class="opt">?</span> · width<span class="opt">?</span> · style<span class="opt">?</span>
+    └── <span class="id">#r…</span>       kind "pageBreak"                          <span class="note">the one page boundary that is stored</span></div>
+
+    <div class="sheet">
+      <table>
+        <thead><tr><th>Content type</th><th>What it is</th><th>What the editor does with it</th><th>Lens</th></tr></thead>
+        <tbody>
+          <tr><td class="p">text</td><td>Prose. Atoms, a display string, marks; a variant, a level, a style key, a format.</td><td>Draws and edits it. The whole of the editing surface.</td><td class="p">text-selection · next-letter · empty-line</td></tr>
+          <tr><td class="p">formula</td><td>A block that is entirely one computation, with a typed <code>value</code> and a <code>state</code>. Mostly, a formula is an <em>atom</em> inside prose; the block form exists for a value other formulas depend on.</td><td>Draws its display, read-only.</td><td class="p">formula</td></tr>
+          <tr><td class="p">image</td><td>A picture by file, storage id or URL; <code>alt</code> required; optional caption and crop.</td><td>Draws it as an atom node.</td><td class="p">image <span class="tag proposed">new key</span></td></tr>
+          <tr><td class="p">table</td><td>A handful of rows of cells, each cell holding blocks. Many rows are a spreadsheet's job.</td><td>Draws it.</td><td class="p">table</td></tr>
+          <tr><td class="p">prompt</td><td>A text block with a derived output behind it; the text is the user's and editable in place.</td><td>Draws and edits the text.</td><td class="p">prompt-block <span class="tag later">placeholder</span></td></tr>
+          <tr><td class="p">chart</td><td>Not a content type today. Wanted where blocks are, later.</td><td>—</td><td class="p"><span class="tag later">placeholder</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="col">
+      Rows and blocks carry ids and nothing else identifies them. Nothing in a
+      document is addressed by its position — not a row by its index, not a block by
+      its row, not a character by its offset into the page. The next section extends
+      that property down into the text.
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="text">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">03 · Model</p>
+        <h2>A text block, opened up</h2>
+      </div>
+      <p>Atoms, display, marks — and where a mark points.</p>
+    </div>
+
+    <p class="col">
+      A text block holds <strong>atoms</strong>, the smallest authored units. A literal
+      atom is typed characters. A formula atom is a <code>{{ }}</code> span that
+      resolves to a string. <strong>Display</strong> is every atom's rendered text
+      concatenated. <strong>Marks</strong> are ranges over that text carrying
+      formatting, a link, or a colour.
+    </p>
+
+    <div class="strip">
+      <div class="lbl">atoms</div>
+      <div class="atoms">
+        <div class="atom"><span class="id">#a1 · literal</span>"Peak demand … record by "<span class="sub">57 characters</span></div>
+        <div class="atom formula"><span class="id">#a2 · formula</span>{{ forecast.delta }}<span class="sub">resolves to "four percent" · fresh</span></div>
+        <div class="atom"><span class="id">#a3 · literal</span>", and two of the three substations …"<span class="sub">212 characters</span></div>
+      </div>
+      <div class="lbl">display</div>
+      <div class="display">Peak demand on the western interconnect is forecast to exceed last winter's record by <span class="f b">four percent</span>, and two of the three substations that carried that peak have since been derated …</div>
+      <div class="lbl">marks</div>
+      <div class="markline"><span><span class="id">#m1</span> bold</span><span>from <span class="id">(#a2, 0)</span></span><span>to <span class="id">(#a2, 12)</span></span></div>
+    </div>
+
+    <div class="cards">
+      <div class="card store">
+        <header>Where a mark points</header>
+        <div class="body">
+          <p>Each end names <strong>an atom and an offset into that atom's rendered text</strong>. The bold above is on characters 0–12 of <code>#a2</code>'s display, "four percent".</p>
+          <p>Display-space where it matters: twelve characters of what was seen, not nineteen of <code>forecast.delta</code> behind them. Structural where it matters: the address is the atom, and only editing that atom moves it.</p>
+        </div>
+      </div>
+      <div class="card editor">
+        <header>After the formula re-resolves</header>
+        <div class="body">
+          <p><code>#a2</code> now resolves to "4.1 percent". <code>#m1</code> stays <code>(#a2, 0)–(#a2, 11)</code>, clamped to the atom's new length, still on the formula.</p>
+          <p class="markline"><span class="bad">from 57 to 69</span> — with offsets into the whole display, the mark would now cover "4.1 percent," and the comma, and every mark after it would have moved too.</p>
+        </div>
+      </div>
+      <div class="card warn">
+        <header>Model change <span class="tag proposed">proposed</span></header>
+        <div class="body">
+          <p><code>Mark.from</code> and <code>Mark.to</code> become <code>{ atom, offset }</code> in place of two numbers. The comment anchor <code>AnchorWithin.text</code> takes the same two endpoints.</p>
+          <p>The selection already works this way — <code>signalOf</code> hands the inspector <code>blockId/atoms/atomId@offset</code> today — so this brings marks and comments to the address the editor already uses.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="col">
+      Marks are a list, and each has an id. Overlapping marks are legal: a word that
+      is bold and italic can be one mark with two styles or two marks, and nothing
+      consolidates them. The id is what lets two people format one paragraph
+      without colliding — a change addresses <code>#m1</code> rather than replacing
+      the array.
+    </p>
+
+    <div class="sheet">
+      <table>
+        <thead><tr><th>Field</th><th>Says</th><th>Values</th></tr></thead>
+        <tbody>
+          <tr><td class="p">variant</td><td>What kind of block this <em>is</em>. A paragraph becoming a heading is a variant change. The Sections outline reads this.</td><td class="p">paragraph · heading · list · quote · code</td></tr>
+          <tr><td class="p">level</td><td>Heading depth.</td><td class="p">1 · 2 · 3 …</td></tr>
+          <tr><td class="p">listStyle</td><td>Which kind of list, when the variant is <code>list</code>. Ordered lives here already.</td><td class="p">bullet · ordered · todo</td></tr>
+          <tr><td class="p">style</td><td>Which named style this block draws with — a key into the body's style set. <em>Heading 1</em> is a style; <em>heading</em> is the variant it pairs with.</td><td class="p">a key</td></tr>
+          <tr><td class="p">format</td><td>This block's own overrides laid over the style. Alignment lives here; spacing joins it.</td><td class="p">BlockFormat</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="styles">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">04 · Model</p>
+        <h2>Styles, and what a block adds on top</h2>
+      </div>
+      <p>A style is a named set of formatting. Nothing more special than that.</p>
+    </div>
+
+    <p class="col">
+      The body holds named styles in a <code>StyleSet</code>; a block names one by
+      key. Applying a style fast-tracks the formatting it holds. What is drawn is the
+      style first, then the block's own <code>format</code> laid over it, field by
+      field — a block with no format draws exactly as its style.
+    </p>
+
+    <div class="cards">
+      <div class="card store">
+        <header>styles["body"] · TextStyle</header>
+        <pre>fontFamily      IBM Plex Sans
+fontSize        15
+lineHeight      26    <span class="c">between lines</span>
+spaceBefore     0     <span class="c">above</span>
+spaceAfter      8     <span class="c">below</span>
+indent          0
+horizontalAlignment   start
+<span class="c">color · background · bold · italic …</span></pre>
+        <div class="foot">Applied to 41 blocks. Editing changes all of them.</div>
+      </div>
+      <div class="card live">
+        <header>block #bbody1 · format</header>
+        <pre>align         center
+spaceAfter    16
+<span class="c">
+only what this block overrides;
+everything else is absent</span></pre>
+        <div class="foot">Set from the selection lens. Only this block moves.</div>
+      </div>
+      <div class="card editor">
+        <header>drawn</header>
+        <pre>IBM Plex Sans 15 / 26
+centred
+0 above · 16 below
+<span class="c">
+style ← format, per field</span></pre>
+        <div class="foot">The order of operations, and the whole of the rule.</div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <header>Two places to change spacing, on purpose</header>
+        <div class="body">
+          <p>Select text and change <em>After</em> in the inspector: that writes the block's format, and only that block moves. Select the <em>Body</em> style in the Styles panel and change <em>After</em> in the named-style lens: that writes the style, and every Body block moves.</p>
+          <p><strong>Space before / after</strong> is the gap around a paragraph. <strong>Line height</strong> is the gap between lines inside it — single, 1.5, double. <strong>Indent</strong> is the first-line inset. There is no letter-spacing anywhere in the model.</p>
+        </div>
+      </div>
+      <div class="card warn">
+        <header>Model change <span class="tag proposed">proposed</span></header>
+        <div class="body">
+          <p><code>BlockFormat</code> gains <code>spaceBefore</code>, <code>spaceAfter</code>, <code>lineHeight</code> and <code>indent</code>, optional, in the same units as <code>TextStyle</code>. Today those four exist only on the style. Alignment is already on both.</p>
+        </div>
+      </div>
+      <div class="card">
+        <header>The default set</header>
+        <div class="body">
+          <p>Body, Heading 1, Heading 2, Heading 3, Quote, Caption, Code; <code>defaultKey: "body"</code>. Written by the runtime the first time anything is styled — never on open, because opening a document must not dirty it.</p>
+          <p>Picking <em>Heading 1</em> writes <code>style: "heading-1"</code> and <code>variant: "heading", level: 1</code> together.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="pages">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">05 · Model</p>
+        <h2>Pages: setup and furniture</h2>
+      </div>
+      <p>Everything page-related is derived from the setup. Nothing is drawn on the page.</p>
+    </div>
+
+    <div class="cards">
+      <div class="card store">
+        <header>Page setup</header>
+        <div class="body">
+          <p>Paper, orientation and four margins, in inches, one for the document. Paper is a named size or a <code>{ width, height }</code> of its own.</p>
+          <p>A margin is a number in the Layout panel and an area of blank paper, and that is the whole of its presence. No guide, no ruler.</p>
+        </div>
+      </div>
+      <div class="card store">
+        <header>Header and footer</header>
+        <div class="body">
+          <p>Each a <code>PageFurniture</code>: its own rows, an optional first-page set, a distance from the edge, an optional page-number setting. Ordinary document rows in a second root.</p>
+          <p><strong>One definition, drawn on every page.</strong> Each root has one canonical editor; repeated appearances are read-only projections that focus it. Every furniture op names its root — <code>header/rows</code>, <code>footer/firstPageRows</code>.</p>
+        </div>
+      </div>
+      <div class="card store">
+        <header>Page numbers</header>
+        <div class="body">
+          <p>Generated from <code>pageNumber</code> — position, format, start, first-page visibility — and never typed as footer content. A page number typed into a footer is wrong on every page but one.</p>
+        </div>
+      </div>
+      <div class="card editor">
+        <header>Pagination is derived</header>
+        <div class="body">
+          <p>Where page 1 ends is a function of the paper, the margins, the rows in order, and the size each block draws at. Computed on the client whenever any of those changes; never written. The only stored boundary is an explicit page break row.</p>
+          <p>The estimate is per block, from its resolved style — a bigger heading gets a smaller character budget and more height — which is why no characters-per-line figure belongs in a panel.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="runtime">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">06 · Runtime</p>
+        <h2>The live document</h2>
+      </div>
+      <p>One <code>DocumentRuntime</code> per open document.</p>
+    </div>
+
+    <div class="sheet">
+      <table>
+        <thead><tr><th>Holds</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td class="p">body</td><td>The live <code>DocumentBody</code>. Every panel reads it; the editor is projected from it.</td></tr>
+          <tr><td class="p">revision</td><td>The store revision the body was last known to match.</td></tr>
+          <tr><td class="p">buffer</td><td>Ops applied to the body and not yet flushed. Coalesced before sending — adjacent text splices on one atom become one splice.</td></tr>
+          <tr><td class="p">undoStack · redoStack</td><td>Groups of ops, in order. Every op is invertible, so undo needs nothing but the ops themselves.</td></tr>
+          <tr><td class="p">sync</td><td><code>loading</code> · <code>saved</code> · <code>saving</code> · <code>rebasing</code> · <code>needs-review</code> · <code>offline</code> · <code>error</code></td></tr>
+          <tr><td class="p">editor</td><td>The mounted ProseMirror view while the surface is on screen — what re-projection targets. Nothing else touches it.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cards">
+      <div class="card live">
+        <header>Apply: the body moves first</header>
+        <div class="body">
+          <p><code>apply(ops)</code> runs the applier over the live body, then records the ops for undo and adds them to the buffer. The body has already changed by the time the store hears about it. If the applier refuses — an op naming a block that is not there — nothing was applied and nothing is buffered.</p>
+        </div>
+      </div>
+      <div class="card store">
+        <header>One applier, both sides</header>
+        <div class="body">
+          <p>It lives in <code>representation/data/behavior/documents/</code>; the client runtime calls it to advance the live body and <code>submit-document-changes</code> calls it to advance the leader. The slide deck already works this way. An op the client accepted and the server refused is impossible by construction, short of a stale base.</p>
+        </div>
+      </div>
+    </div>
+
+    <figure>
+      <svg viewBox="0 0 1100 290" role="img" aria-label="Flush, accept with catch-up, stale and rebase">
+        <g font-family="IBM Plex Mono, monospace" font-size="11">
+          <text x="70" y="28" fill="var(--live)" text-anchor="middle" font-weight="600">RUNTIME</text>
+          <text x="1030" y="28" fill="var(--store)" text-anchor="middle" font-weight="600">STORE</text>
+          <line x1="70" y1="38" x2="70" y2="276" stroke="var(--live)" stroke-width="1.2"></line>
+          <line x1="1030" y1="38" x2="1030" y2="276" stroke="var(--store)" stroke-width="1.2"></line>
+
+          <g color="var(--live)"><path d="M 76 62 L 1022 62" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ar)"></path></g>
+          <text x="550" y="54" fill="var(--ink-2)" text-anchor="middle">change set { baseRevision: 12, ops: coalesce(buffer), touched }</text>
+
+          <g color="var(--store)"><path d="M 1024 104 L 78 104" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ar)"></path></g>
+          <text x="550" y="96" fill="var(--ink-2)" text-anchor="middle">accepted · revision 13</text>
+          <text x="550" y="120" fill="var(--ink-3)" text-anchor="middle" font-size="10">and, when others landed between 12 and 13 without touching the same paths, their ops come back too — applied to the live body as catch-up</text>
+
+          <g color="var(--store)"><path d="M 1024 164 L 78 164" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3" fill="none" marker-end="url(#ar)"></path></g>
+          <text x="550" y="156" fill="var(--ink-2)" text-anchor="middle">stale · revision 14 — someone else got there first, on paths this change set touches</text>
+          <text x="550" y="180" fill="var(--ink-3)" text-anchor="middle" font-size="10">rebase: revision = 14, refused ops back to the head of the buffer, sync "rebasing"</text>
+
+          <g color="var(--live)"><path d="M 76 214 L 1022 214" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ar)"></path></g>
+          <text x="550" y="206" fill="var(--ink-2)" text-anchor="middle">the same ops, restated against 14 · accepted → 15, or refused → needs-review</text>
+
+          <text x="550" y="256" fill="var(--ink-3)" text-anchor="middle" font-size="10">unresolved — an op names something the leader does not hold — is never retried; the body is re-read and the user is told</text>
+        </g>
+      </svg>
+      <figcaption>
+        A flush is one round trip. Accepted may carry catch-up: changes from others
+        that landed underneath this one and conflict with nothing in it. Stale gets
+        one retry against the newer revision. A settled runtime — empty buffer,
+        nothing in flight — is a reader, and only a reader takes the store's word for
+        the body.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="ops">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">07 · Runtime</p>
+        <h2>Every change is an op</h2>
+      </div>
+      <p>Five shapes, six targets. A path is <code>&lt;id&gt;/&lt;field&gt;</code>; the document has no id, so its paths are plain.</p>
+    </div>
+
+    <div class="sheet">
+      <table>
+        <thead><tr><th>Target · op</th><th>Path</th><th>Means</th></tr></thead>
+        <tbody>
+          <tr><td class="p">row · insert · remove</td><td class="p">rows · header/rows · footer/firstPageRows …</td><td>Whole rows by id, placed after an id or at the head. The root is in the path.</td></tr>
+          <tr><td class="p">row · move</td><td class="p">rows …</td><td>One row to after another. Carries where it was, so it inverts.</td></tr>
+          <tr><td class="p">row · set</td><td class="p">&lt;rowId&gt;/proportions</td><td>How a blocks row divides its width.</td></tr>
+          <tr><td class="p">block · insert · remove</td><td class="p">&lt;rowId&gt;/blocks</td><td>Whole blocks by id within a row. Turning a text block into a table is a remove and an insert.</td></tr>
+          <tr><td class="p">block · set</td><td class="p">&lt;blockId&gt;/variant · /level · /listStyle · /style · /format</td><td>What a block is and how it draws. Format is set whole; it is small and already per-field in meaning.</td></tr>
+          <tr><td class="p">atom · text</td><td class="p">&lt;blockId&gt;/atoms/&lt;atomId&gt;</td><td>A splice: <code>at</code>, <code>insert</code>, <code>remove</code>. The applier also shifts every mark endpoint on that atom past <code>at</code>.</td></tr>
+          <tr><td class="p">atom · insert · remove</td><td class="p">&lt;blockId&gt;/atoms</td><td>A formula atom placed in prose, or taken out.</td></tr>
+          <tr><td class="p">mark · insert · remove</td><td class="p">&lt;blockId&gt;/marks</td><td>A whole mark by id.</td></tr>
+          <tr><td class="p">mark · set</td><td class="p">&lt;markId&gt;/style · /link · /color · /from · /to</td><td>One field of one mark. <code>from</code>/<code>to</code> are <code>{ atom, offset }</code>.</td></tr>
+          <tr><td class="p">document · set <span class="tag proposed">new</span></td><td class="p">pageSetup · pageSetup/margins/top · header/distanceFromEdge · footer/pageNumber · styles/defaultKey · styles/&lt;key&gt;/fontSize …</td><td>Anything above the rows.</td></tr>
+          <tr><td class="p">document · insert · remove</td><td class="p">styles</td><td>A named style by key. <code>after</code> is carried and ignored; a record has no order.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cards">
+      <div class="card"><header>A panel</header><div class="body"><p>Reads the selection and the live body, builds its ops, calls <code class="m live">apply</code>. Bold on a selection is one <code>insert mark</code>; a margin is one <code>set document</code>.</p></div></div>
+      <div class="card"><header>The editor</header><div class="body"><p>A ProseMirror transaction changes the projected doc; the doc is read back into a body; the body is diffed against the last one; the diff is the ops. The only path where ops are <em>derived</em>, and the path only typing takes.</p></div></div>
+      <div class="card"><header>Undo</header><div class="body"><p>The last group on the stack, inverted in reverse, applied. Every op carries enough to invert without a lookup — <code>was</code>, the values, <code>wasAfter</code>, what a splice removed.</p></div></div>
+      <div class="card"><header>The store</header><div class="body"><p>Never sends ops to the client. It sends bodies — a settled runtime re-reads the leader — and, on an accept, catch-up ops that conflict with nothing.</p></div></div>
+    </div>
+
+    <div class="note-block rule-block">
+      <b>Undo.</b> ⌘Z pops the last group, inverts each op in reverse order, applies
+      the inversion to the live body, pushes the original onto redo, buffers the
+      inversion so it flushes like any change, and re-projects. There is no
+      ProseMirror history. A typing burst is one group, on the coalescer's rule.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="render">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">08 · Editor</p>
+        <h2>Rendering: from body to page</h2>
+      </div>
+      <p>The map from the model to ProseMirror. Every node carries the id of what it draws.</p>
+    </div>
+
+    <div class="sheet">
+      <table>
+        <thead><tr><th>Model</th><th>ProseMirror node · attrs</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="p">DocumentBody.rows</td><td class="p">doc › page* › row*</td><td><code>page</code> is computed by the packer and carries no id. It exists to draw paper.</td></tr>
+          <tr><td class="p">blocks row</td><td class="p">blocks_row { rowId, proportions }</td><td>Flex row; each child's share from proportions.</td></tr>
+          <tr><td class="p">divider row</td><td class="p">divider { rowId }</td><td>An atom node: selectable, not editable.</td></tr>
+          <tr><td class="p">page break row</td><td class="p">page_break { rowId }</td><td>An atom node at the end of a page; the packer closes the page after it.</td></tr>
+          <tr><td class="p">TextBlock</td><td class="p">text_block { blockId, variant, level, listStyle, styleKey, format, share }</td><td><code>toDOM</code> picks <code>h1…h4 · p · blockquote · pre</code> and stamps <code>data-style</code>.</td></tr>
+          <tr><td class="p">literal atom</td><td class="p">text nodes</td><td>Runs of characters. Which atom a position is in is found by walking the block's atoms and their display lengths in order — no attribute needed.</td></tr>
+          <tr><td class="p">formula atom</td><td class="p">formula_atom { atomId, expression, resolved, state }</td><td>An inline atom node drawn as its resolved string; the caret steps over it as one unit.</td></tr>
+          <tr><td class="p">Mark</td><td class="p">bold · italic · underline · strike · code · link · colour { markId }</td><td>One ProseMirror mark type per style, each carrying the model mark's id, so runs sharing an id read back as one <code>Mark</code>.</td></tr>
+          <tr><td class="p">image · table · formula block</td><td class="p">image_block · table_block · formula_block { blockId }</td><td>Atom nodes drawn from their fields; selectable, inspected, not edited in place.</td></tr>
+          <tr><td class="p">header · footer</td><td class="p">a second and third doc</td><td>Separate roots, separate views; drawn onto every projected page, editable in one place.</td></tr>
+          <tr><td class="p">StyleSet</td><td class="p">one generated &lt;style&gt;</td><td>Keyed on <code>data-style</code>. Restyling a key repaints every block using it without touching a node.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cards">
+      <div class="card live">
+        <header>Re-projection keeps the selection</header>
+        <div class="body"><p>When the body changes for any reason other than typing, the editor is rebuilt from it. The selection is read <em>before</em> as structural addresses and restored <em>after</em> by resolving the same addresses in the new projection. A block that no longer exists collapses to the nearest surviving position.</p></div>
+      </div>
+      <div class="card editor">
+        <header>Typing is the exception, and it is contained</header>
+        <div class="body"><p>A keystroke goes into ProseMirror first so the letter appears at once. The transaction is applied, the doc is read back into a body, diffed against the last body the runtime was given, and the diff — one text splice — is applied to the runtime. The bodies now match; no re-projection follows. Enter and Backspace at a block boundary become a row insert and a row remove by the same diff.</p></div>
+      </div>
+      <div class="card">
+        <header>The pasteboard</header>
+        <div class="body"><p>Pages sit centred with a gutter either side. Zoom is view state — per tab, never on the document. The trailing gutter reserves a fixed lane for comment icons and only the leading gutter gives way as the surface narrows. The page draws the document and nothing else.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="selection">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">09 · Editor</p>
+        <h2>Selection</h2>
+      </div>
+      <p>One or more ranges, each end an address the whole system shares.</p>
+    </div>
+
+    <p class="col">
+      Each end of a range is <code>blockId/atoms/atomId@offset</code>. The editor
+      reports it; the workspace stores it on the tab beside which lens is open; the
+      lens reads it and the live body together. It is the same address a mark or a
+      comment uses, so "make this bold" and "comment on this" are the selection's
+      endpoints copied into a mark or an anchor.
+    </p>
+
+    <div class="sheet">
+      <table>
+        <thead><tr><th>The caret is</th><th>Lens</th><th>The lens shows</th></tr></thead>
+        <tbody>
+          <tr><td>a range, or several</td><td class="p">document-editor.text-selection</td><td>The text, quoted. Style, marks, alignment, colour, spacing; comments and links on the range. Any control the ranges disagree on draws itself mixed.</td></tr>
+          <tr><td>in a block with characters either side</td><td class="p">document-editor.next-letter</td><td>The same controls, reading what the next typed character will carry.</td></tr>
+          <tr><td>in a block with no characters</td><td class="p">document-editor.empty-line <span class="tag proposed">renamed</span></td><td>Block — <em>Text · Table · Image · Page break</em> — then everything the text lens has when the block is Text. Choosing another type replaces the block, or the row.</td></tr>
+          <tr><td>on a table, an image, a formula block</td><td class="p">document-editor.table · image · formula</td><td>The block's own fields. Image is a new key; prompt and chart stay placeholders.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cards">
+      <div class="card editor">
+        <header>Several ranges at once</header>
+        <div class="body"><p>Multi-selection is non-contiguous: this word and that word, in two paragraphs, together. ProseMirror has one selection at a time, so the editor carries a custom <code>Selection</code> subclass holding a primary range and any number of others, and a plugin decorates the others. The lens receives them all and applies each op once per range. A range that merely spans several blocks is not this — it is one range.</p></div>
+      </div>
+      <div class="card warn">
+        <header>Model change <span class="tag proposed">proposed</span></header>
+        <div class="body"><p><code>Selection</code> in <code>workspace/tab.ts</code> is <code>{ kind, id, at? }</code> — one range. It gains <code>ranges?: readonly { id: string; at: string }[]</code> for the others, so the primary keeps its shape and no other category changes. The key <code>document-editor.empty-block</code> becomes <code>document-editor.empty-line</code>; <code>document-editor.image</code> is added.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="traces">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">10 · Traces</p>
+        <h2>Four changes, traced</h2>
+      </div>
+      <p>Each step coloured by which copy of the document it touches.</p>
+    </div>
+
+    <div class="flow">
+      <header><b>Press B</b> with "Substation 14 is the binding constraint" selected<span>panel → runtime → editor → store</span></header>
+      <ol>
+        <li class="panel"><b>inspector</b>Reads the selection: <code>#bbody1/atoms/#abody1@0</code> to <code>@39</code>. Builds one op.</li>
+        <li class="live"><b>runtime</b><code>apply([insert mark #m7 { from: (#abody1, 0), to: (#abody1, 39), style: ["bold"] }])</code>. Body moves. Undo group pushed. Buffered.</li>
+        <li class="editor"><b>editor</b>Re-projects block <code>#bbody1</code>: the run 0–39 now carries <code>bold { markId: "#m7" }</code>. Selection restored to the same addresses.</li>
+        <li class="store"><b>store</b>Two seconds later, or fifty ops later: one change set. Accepted, revision 13.</li>
+      </ol>
+    </div>
+
+    <div class="flow">
+      <header><b>Type "s"</b> at the end of "derated"<span>the exception</span></header>
+      <ol>
+        <li class="editor"><b>editor</b>ProseMirror inserts the character. The letter is on screen.</li>
+        <li class="editor"><b>editor</b>Reads its doc back into a body; diffs against the last body: one <code>text</code> op on <code>#bbody1/atoms/#abody1</code>, <code>at: 86, insert: "s"</code>.</li>
+        <li class="live"><b>runtime</b><code>apply</code>. The applier splices the atom and shifts any mark endpoint on <code>#abody1</code> past 86 by one. Body now equals the editor's; no re-projection.</li>
+        <li class="store"><b>store</b>Coalesced with the keystrokes around it into one splice; flushed as one change.</li>
+      </ol>
+    </div>
+
+    <div class="flow">
+      <header><b>Change the top margin</b> to 1.00 in<span>panel → runtime → editor → store</span></header>
+      <ol>
+        <li class="panel"><b>layout panel</b>One op: <code>set document pageSetup/margins/top · value 1 · was 0.75</code>.</li>
+        <li class="live"><b>runtime</b><code>apply</code>. Body moves. Undo group pushed.</li>
+        <li class="editor"><b>editor</b>Layout metrics recomputed; pages repacked; doc re-projected. The caret stays in its word even though the word is now on page 2.</li>
+        <li class="store"><b>store</b>Flushed. Every other collaborator's next sync sees the new margin.</li>
+      </ol>
+    </div>
+
+    <div class="flow">
+      <header><b>Comment</b> on a selection<span>the body is never touched</span></header>
+      <ol>
+        <li class="panel"><b>inspector</b>Composes. On send: <code>create commentThreads { target: document, within: { kind: "text", blockId, from, to }, quote }</code> then <code>create comments { threadId, blocks, author }</code>, through the store.</li>
+        <li class="store"><b>store</b>Two rows written. Nothing on the document body changes — a comment is about the document, not in it.</li>
+        <li class="editor"><b>editor</b>Anchors re-read; a decoration tints the range; an icon appears in the gutter lane at the anchor's line.</li>
+        <li class="panel"><b>inspector</b>Opens <code>general.comment</code> on the new thread.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="panels">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">11 · Panels</p>
+        <h2>The panels</h2>
+      </div>
+      <p>Drawings, not screenshots. Every name and figure is from the seeded document and the real vocabulary keys.</p>
+    </div>
+
+    <p class="col">
+      The rail: Sections, Find, Styles, Layout, Comments, and three placeholders —
+      Variables, Templates, Prompts. A document opens on Sections. Nothing selected
+      draws nothing in the inspector; the shell's own empty state stands.
+    </p>
+
+    <div class="spec">
+      <div class="spec-head"><span class="name">Content surface</span> <span class="key">document-editor.document</span></div>
+      <div class="surface">
+        <div class="bar"><span>Winter readiness brief</span><span class="st">Saved · Page 1 of 3 · 1,204 words · 100%</span></div>
+        <div class="board">
+          <div class="sheet-page">
+            <div class="furn"><span>Grid Resilience 2027 · Winter readiness brief</span><span></span></div>
+            <p class="pg h1">Winter readiness brief</p>
+            <p class="pg meta">Revised 4 February</p>
+            <p class="pg">Peak demand on the western interconnect is forecast to exceed last winter's record by <b><span class="fa">four percent</span></b>, and two of the three substations that carried that peak have since been derated. This brief sets out where the exposure sits, what it would cost to close, and which of those costs are already committed.</p>
+            <p class="pg h2">Where the exposure sits</p>
+            <p class="pg"><span class="cm hot">Substation 14 is the binding constraint</span>. Its transformer bank was derated in September after the <span class="lnk">oil analysis</span> came back, and the two feeders that would otherwise pick up its load both run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only.<span class="mk lit"><svg width="12" height="12"><use href="#i-msg"></use></svg></span><span class="mk two dim"><svg width="12" height="12"><use href="#i-msg"></use></svg></span></p>
+            <p class="pg">The second concentration is behind the coastal tie. Nothing there has been derated, but <span class="sel">the tie has carried an unplanned outage in each of the last three winters</span> and the spares position for its breakers is one deep.<span class="mk dim"><svg width="12" height="12"><use href="#i-msg"></use></svg></span></p>
+            <p class="pg h2">Recommendation</p>
+            <p class="pg">Bring the corridor reconductoring forward by one season and hold the derating until it lands. <em>Everything else in this brief is contingent on that decision.</em><span class="mk on"><svg width="12" height="12"><use href="#i-msg"></use></svg></span></p>
+            <div class="furn foot"><span></span><span>1</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="key"><i class="swatch" style="background: var(--ui-select)"></i> live selection</span>
+        <span class="key"><i class="swatch" style="background: var(--ui-note)"></i> commented text, pointer over it</span>
+        <span class="key"><i class="swatch" style="background: var(--ui-active)"></i> formula atom</span>
+        <span class="key"><i class="swatch" style="background: var(--ui-active-ink)"></i> thread open in the inspector</span>
+      </div>
+      <p class="spec-note">Header and footer from their furniture, the page number generated. Comment icons in the gutter lane outside the paper: dim at rest, lit when the pointer is in their anchor, filled when their thread is open. Nothing on the page that is not in the document.</p>
+    </div>
+
+    <h3>Context</h3>
+
+    <div class="specs">
+      <div class="spec">
+        <div class="spec-head"><span class="name">Sections</span> <span class="key">navigator</span></div>
+        <div class="ui with-rail">
+          <div class="rail">
+            <i class="on"><svg width="14" height="14"><use href="#i-panel"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-search"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-type"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-file"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-msg"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-hash"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-tmpl"></use></svg></i>
+            <i><svg width="14" height="14"><use href="#i-spark"></use></svg></i>
+          </div>
+          <div class="flank">
+            <div class="p-title">Sections</div>
+            <div class="p-body"><div class="c-input ph">Filter headings…</div></div>
+            <div class="r"><span class="lbl">Winter readiness brief</span><span class="meta">l.1 · p.1</span></div>
+            <div class="r l2 on"><span class="lbl">Where the exposure sits</span><span class="meta">l.14 · p.1</span></div>
+            <div class="r l3"><span class="lbl">Substation 14</span><span class="meta">l.17 · p.1</span></div>
+            <div class="r l3"><span class="lbl">The coastal tie</span><span class="meta">l.6 · p.2</span></div>
+            <div class="r l2"><span class="lbl">What it would cost</span><span class="meta">l.21 · p.2</span></div>
+            <div class="r l2"><span class="lbl">Recommendation</span><span class="meta">l.3 · p.3</span></div>
+          </div>
+        </div>
+        <p class="spec-note">Heading variants nested by level. Line and page are computed, line first.</p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Find</span> <span class="key">find</span></div>
+        <div class="ui">
+          <div class="p-title">Find</div>
+          <div class="p-body">
+            <div class="c-row"><div class="c-select" style="flex: none; width: 5.2rem"><span class="v">Replace</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div><div class="c-input">storm</div></div>
+            <div class="c-row"><div class="c-input ph">Replace with…</div><span class="btn">Replace</span><span class="btn">All</span></div>
+          </div>
+          <div class="p-sec-h ruled">3 hits</div>
+          <div class="r two"><div class="txt"><span class="lbl">…lost across the three <b>storm</b> events…</span><div class="sub">l.9 · p.2 · Body</div></div></div>
+          <div class="r two on"><div class="txt"><span class="lbl">…overhead segments under <b>storm</b> icing…</span><div class="sub">l.22 · p.2 · Body</div></div></div>
+          <div class="r two"><div class="txt"><span class="lbl">…the 2024 <b>storm</b> precedent docket…</span><div class="sub">l.4 · p.5 · Body</div></div></div>
+        </div>
+        <p class="spec-note">Find or Replace from one control. A replacement is text ops, one undo group.</p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Styles</span> <span class="key">styles</span></div>
+        <div class="ui">
+          <div class="p-title">Styles</div>
+          <div class="p-foot" style="border-top: 0; border-bottom: 1px solid var(--ui-line-soft)"><span class="btn primary">New style</span><span class="btn">Duplicate</span><span class="btn">Rename</span></div>
+          <div class="p-body"><div class="c-input ph">Search styles…</div></div>
+          <div class="r two on"><div class="txt"><span class="lbl">Body</span><div class="sub">IBM Plex Sans 15/26 · 400</div></div><span class="act">Apply</span></div>
+          <div class="r two"><div class="txt"><span class="lbl">Heading 1</span><div class="sub">IBM Plex Sans 24/32 · 600</div></div><span class="act">Apply</span></div>
+          <div class="r two"><div class="txt"><span class="lbl">Heading 2</span><div class="sub">IBM Plex Sans 18/28 · 600</div></div><span class="act">Apply</span></div>
+          <div class="r two"><div class="txt"><span class="lbl">Heading 3</span><div class="sub">IBM Plex Sans 15/24 · 600</div></div><span class="act">Apply</span></div>
+          <div class="r two"><div class="txt"><span class="lbl">Quote</span><div class="sub">IBM Plex Sans 15/28 · italic</div></div><span class="act">Apply</span></div>
+          <div class="r two"><div class="txt"><span class="lbl">Caption</span><div class="sub">IBM Plex Mono 12/16 · 400</div></div><span class="act">Apply</span></div>
+        </div>
+        <p class="spec-note">Actions above the search. Selecting a row opens the named-style lens; Apply writes the key onto the selection's blocks.</p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Layout</span> <span class="key">layout</span></div>
+        <div class="ui">
+          <div class="p-title">Layout</div>
+          <div class="p-sec-h">Paper</div>
+          <div class="p-body">
+            <div class="c-row"><div class="c-select"><span class="v">Custom</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div></div>
+            <div class="trio"><div><span class="k">Width</span><div class="c-input">8.50</div></div><div><span class="k">Height</span><div class="c-input">11.00</div></div></div>
+            <div class="c-row"><div class="c-select"><span class="v">Portrait</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div></div>
+          </div>
+          <div class="p-sec-h ruled">Margins <span style="margin-left: auto; letter-spacing: 0; text-transform: none">inches</span></div>
+          <div class="p-body">
+            <div class="trio"><div><span class="k">Top</span><div class="c-input">0.75</div></div><div><span class="k">Bottom</span><div class="c-input">0.75</div></div></div>
+            <div class="trio"><div><span class="k">Left</span><div class="c-input">0.75</div></div><div><span class="k">Right</span><div class="c-input">0.75</div></div></div>
+          </div>
+          <div class="p-sec-h ruled">Header</div>
+          <div class="p-body">
+            <div class="trio"><div><span class="k">From edge</span><div class="c-input">0.50</div></div><div><span class="k">First page</span><div class="c-input" style="justify-content: flex-start"><span class="toggle"><i class="on"></i> differs</span></div></div></div>
+            <div class="c-row"><span class="btn">Edit header</span><span class="btn">Edit first-page header</span></div>
+          </div>
+          <div class="p-sec-h ruled">Footer</div>
+          <div class="p-body">
+            <div class="trio"><div><span class="k">From edge</span><div class="c-input">0.50</div></div><div><span class="k">First page</span><div class="c-input" style="justify-content: flex-start"><span class="toggle"><i></i> same</span></div></div></div>
+            <div class="c-row"><span class="btn">Edit footer</span></div>
+          </div>
+          <div class="p-sec-h ruled">Page numbers</div>
+          <div class="p-body">
+            <div class="c-row"><div class="c-select"><span class="v">Footer · centre</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div></div>
+            <div class="trio"><div><span class="k">Start at</span><div class="c-input">1</div></div><div><span class="k">First page</span><div class="c-input" style="justify-content: flex-start"><span class="toggle"><i class="on"></i> hidden</span></div></div></div>
+          </div>
+          <div class="p-sec-h ruled">Dimensions · derived</div>
+          <div class="p-body"><div class="f"><span class="k">Page</span><span class="v">8.50 × 11.00 in</span></div><div class="f"><span class="k">Text area</span><span class="v">7.00 × 9.50 in</span></div></div>
+        </div>
+        <p class="spec-note">Everything editable writes a document op. Edit header focuses the one header editor.</p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Comments</span> <span class="key">comments</span></div>
+        <div class="ui">
+          <div class="p-title">Comments · 3</div>
+          <div class="p-body" style="gap: 0.5rem; padding-top: 0.5rem">
+            <div class="q on"><div class="t">Is 41 minutes the restore or the dispatch? The log reads differently.</div><div class="s">Mira Jain · 2h</div></div>
+            <div class="q"><div class="t">This sentence is doing too much at once. Substation 14 being the binding constraint is the finding; the corridor scheduling is the consequence.</div><div class="s">Ana Reyes · 1d</div></div>
+            <div class="q"><div class="t">Checked against the September oil analysis; the derating date is right.</div><div class="s">Tom Okafor · Monday</div></div>
+          </div>
+        </div>
+        <p class="spec-note">The panel's own quote block, attribution beneath. Selecting one scrolls the page to its anchor and lights it.</p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Variables · Templates · Prompts</span> <span class="key">placeholders</span></div>
+        <div class="ui">
+          <div class="p-title">Variables</div>
+          <div class="p-body" style="padding-top: 0.6rem; padding-bottom: 0.9rem">
+            <div style="color: var(--ui-ink-3); font-size: 11px">Not built yet</div>
+            <div style="font-family: var(--mono); font-size: 10.5px; color: var(--ui-ink-2)">document-editor.variables</div>
+            <div class="f"><span class="k">category</span><span class="v">document-editor</span></div>
+            <div class="f"><span class="k">content</span><span class="v">document-editor.document</span></div>
+          </div>
+        </div>
+        <p class="spec-note">The shell's own placeholder for a key with no file. Keys, labels and icons; no components.</p>
+      </div>
+    </div>
+
+    <h3>Inspector</h3>
+
+    <div class="specs">
+      <div class="spec">
+        <div class="spec-head"><span class="name">Text selection</span> <span class="key">text-selection</span></div>
+        <div class="ui">
+          <div class="p-crumbs">Document › Text block › Selection</div>
+          <div class="p-title" style="border-bottom: 0; padding-top: 0.2rem">Text selection</div>
+          <div class="p-body"><div class="q"><div class="t">Substation 14 is the binding constraint</div><div class="s">39 characters · Body</div></div></div>
+          <div class="p-sec-h ruled">Style</div>
+          <div class="p-body">
+            <div class="c-select"><span class="v">Body</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+            <div class="c-row"><div class="c-select"><span class="v">IBM Plex Sans</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div><div class="c-input num">15</div></div>
+            <div class="c-seg"><span class="on">B</span><span>I</span><span>U</span><span>S</span><span>&lt;/&gt;</span></div>
+            <div class="c-seg icons"><span class="on"><svg width="13" height="13"><use href="#i-al"></use></svg></span><span><svg width="13" height="13"><use href="#i-ac"></use></svg></span><span><svg width="13" height="13"><use href="#i-ar"></use></svg></span><span><svg width="13" height="13"><use href="#i-aj"></use></svg></span></div>
+            <div class="c-row">
+              <div class="c-row" style="flex: 1"><span style="color: var(--ui-ink-3); font-size: 9.5px">FG</span><div class="c-select"><span class="sw" style="background: var(--ui-ink)"></span><svg width="10" height="10" style="margin-left: auto"><use href="#i-chevd"></use></svg></div></div>
+              <div class="c-row" style="flex: 1"><span style="color: var(--ui-ink-3); font-size: 9.5px">BG</span><div class="c-select"><span class="sw" style="background: transparent"></span><svg width="10" height="10" style="margin-left: auto"><use href="#i-chevd"></use></svg></div></div>
+            </div>
+          </div>
+          <div class="p-sec-h ruled">Spacing · pt</div>
+          <div class="p-body"><div class="trio"><div><span class="k">Before</span><div class="c-input">0</div></div><div><span class="k">After</span><div class="c-input">8</div></div><div><span class="k">Line height</span><div class="c-input">26</div></div><div><span class="k">Indent</span><div class="c-input">0</div></div></div></div>
+          <div class="p-sec-h ruled">Comments · 2 <svg class="cv" width="10" height="10"><use href="#i-chevr"></use></svg></div>
+          <div class="p-sec-h">Links · 1 <svg class="cv" width="10" height="10"><use href="#i-chevr"></use></svg></div>
+        </div>
+        <p class="spec-note">Marks, colours and links are mark ops. Style key, alignment and spacing are block ops. Several ranges: every control that disagrees draws mixed; pressing it sets all of them.</p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Empty line</span> <span class="key">empty-line</span></div>
+        <div class="ui">
+          <div class="p-crumbs">Document › Empty line</div>
+          <div class="p-title" style="border-bottom: 0; padding-top: 0.2rem">Empty line</div>
+          <div class="p-sec-h ruled">Block</div>
+          <div class="p-body"><div class="c-select"><span class="v">Text</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div></div>
+          <div class="p-sec-h ruled">Style</div>
+          <div class="p-body">
+            <div class="c-select"><span class="v">Body</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+            <div class="c-row"><div class="c-select"><span class="v">IBM Plex Sans</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div><div class="c-input num">15</div></div>
+            <div class="c-seg"><span>B</span><span>I</span><span>U</span><span>S</span><span>&lt;/&gt;</span></div>
+            <div class="c-seg icons"><span class="on"><svg width="13" height="13"><use href="#i-al"></use></svg></span><span><svg width="13" height="13"><use href="#i-ac"></use></svg></span><span><svg width="13" height="13"><use href="#i-ar"></use></svg></span><span><svg width="13" height="13"><use href="#i-aj"></use></svg></span></div>
+            <div class="c-row">
+              <div class="c-row" style="flex: 1"><span style="color: var(--ui-ink-3); font-size: 9.5px">FG</span><div class="c-select"><span class="sw" style="background: var(--ui-ink)"></span><svg width="10" height="10" style="margin-left: auto"><use href="#i-chevd"></use></svg></div></div>
+              <div class="c-row" style="flex: 1"><span style="color: var(--ui-ink-3); font-size: 9.5px">BG</span><div class="c-select"><span class="sw" style="background: transparent"></span><svg width="10" height="10" style="margin-left: auto"><use href="#i-chevd"></use></svg></div></div>
+            </div>
+          </div>
+          <div class="p-sec-h ruled">Spacing · pt</div>
+          <div class="p-body"><div class="trio"><div><span class="k">Before</span><div class="c-input">0</div></div><div><span class="k">After</span><div class="c-input">8</div></div><div><span class="k">Line height</span><div class="c-input">26</div></div><div><span class="k">Indent</span><div class="c-input">0</div></div></div></div>
+        </div>
+        <p class="spec-note">Block offers Text, Table, Image, Page break. As Text, everything the selection lens has. Next letter is this panel with a quote and the stored marks for the next keystroke.</p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Named style</span> <span class="key">named-style</span></div>
+        <div class="ui">
+          <div class="p-crumbs">Document › Styles › Heading 2</div>
+          <div class="p-title" style="border-bottom: 0; padding-top: 0.2rem">Heading 2</div>
+          <div class="p-body"><div class="note">Applied to 6 blocks. Editing changes all of them.</div></div>
+          <div class="p-sec-h ruled">Identity</div>
+          <div class="p-body">
+            <div class="c-input">Heading 2</div>
+            <div class="c-row"><span class="btn">Duplicate</span><span class="btn">Delete</span></div>
+          </div>
+          <div class="p-sec-h ruled">Typography</div>
+          <div class="p-body">
+            <div class="c-select"><span class="v">IBM Plex Sans</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div>
+            <div class="trio"><div><span class="k">Size</span><div class="c-input">18</div></div><div><span class="k">Weight</span><div class="c-input">600</div></div></div>
+            <div class="c-seg"><span>B</span><span>I</span><span>U</span></div>
+            <div class="c-seg icons"><span class="on"><svg width="13" height="13"><use href="#i-al"></use></svg></span><span><svg width="13" height="13"><use href="#i-ac"></use></svg></span><span><svg width="13" height="13"><use href="#i-ar"></use></svg></span><span><svg width="13" height="13"><use href="#i-aj"></use></svg></span></div>
+            <div class="c-row"><span style="width: 3.4rem; color: var(--ui-ink-3); font-size: 10px">Colour</span><div class="c-select"><span class="sw" style="background: var(--ui-ink)"></span><span class="v">Ink</span><svg width="10" height="10"><use href="#i-chevd"></use></svg></div></div>
+          </div>
+          <div class="p-sec-h ruled">Spacing · pt · every block</div>
+          <div class="p-body"><div class="trio"><div><span class="k">Before</span><div class="c-input">18</div></div><div><span class="k">After</span><div class="c-input">6</div></div><div><span class="k">Line height</span><div class="c-input">28</div></div><div><span class="k">Indent</span><div class="c-input">0</div></div></div></div>
+        </div>
+        <p class="spec-note">Every field one <code>set document styles/heading-2/…</code> op. The count at the top is read before the edit.</p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Comment thread</span> <span class="key">general.comment</span></div>
+        <div class="ui">
+          <div class="p-crumbs">Document › Selection › Thread</div>
+          <div class="p-title" style="border-bottom: 0; padding-top: 0.2rem">Comment</div>
+          <div class="p-body"><div class="q"><div class="t">Substation 14 is the binding constraint</div><div class="s">Ana Reyes · 2h · p.1</div></div></div>
+          <div class="p-body" style="padding-top: 0.2rem">
+            <div class="c-input ph" style="min-height: 2.4rem; align-items: flex-start">Reply…</div>
+            <div class="c-row"><span class="btn primary">Reply</span><span class="btn">Resolve</span></div>
+          </div>
+          <div class="p-sec-h ruled">Thread · 3</div>
+          <div class="p-body">
+            <div class="q"><div class="t">This sentence is doing too much at once. Substation 14 being the binding constraint is the finding; the corridor scheduling is the consequence.</div><div class="s">Ana Reyes · 2h</div></div>
+            <div class="q"><div class="t">Agreed on the split. I'd also drop “binding” — it reads as jargon outside the planning team.</div><div class="s">Priya Raman · yesterday</div></div>
+            <div class="q"><div class="t">Checked against the September oil analysis; the derating date is right.</div><div class="s">Tom Okafor · Monday</div></div>
+          </div>
+        </div>
+        <p class="spec-note">Quote blocks, attribution beneath. Reply and Resolve above the conversation. Reply is a <code>create comments</code>; resolve is an <code>update commentThreads</code>.</p>
+      </div>
+
+      <div class="spec">
+        <div class="spec-head"><span class="name">Table · Image</span> <span class="key">table · image</span></div>
+        <div class="ui">
+          <div class="p-crumbs">Document › Table</div>
+          <div class="p-title" style="border-bottom: 0; padding-top: 0.2rem">Table</div>
+          <div class="p-sec-h ruled">Shape</div>
+          <div class="p-body">
+            <div class="trio"><div><span class="k">Rows</span><div class="c-input">4</div></div><div><span class="k">Columns</span><div class="c-input">3</div></div><div><span class="k">Header rows</span><div class="c-input">1</div></div></div>
+          </div>
+          <div class="p-sec-h ruled">Columns · widths</div>
+          <div class="p-body"><div class="trio"><div><span class="k">1</span><div class="c-input">40%</div></div><div><span class="k">2</span><div class="c-input">30%</div></div><div><span class="k">3</span><div class="c-input">30%</div></div></div></div>
+          <div class="p-sec-h ruled">Placement</div>
+          <div class="p-body"><div class="f"><span class="k">Row</span><span class="v">1 block of 1</span></div><div class="f"><span class="k">Page</span><span class="v">2 · computed</span></div></div>
+        </div>
+        <p class="spec-note">The block's own fields, as block ops. Image: source, alt, caption, crop. Prompt and chart are placeholders.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="comments">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">12 · Collaboration</p>
+        <h2>Comments</h2>
+      </div>
+      <p>About the document, not in it. Create, read, update — through the store.</p>
+    </div>
+
+    <p class="col">
+      Threads and comments are rows in <code>commentThreads</code> and
+      <code>comments</code>. The document body is never touched by a comment, and a
+      comment is never lost by an edit: its anchor is
+      <code>{ kind: "text", blockId, from: { atom, offset }, to: { atom, offset } }</code>,
+      the same address a mark uses, and it drifts only when its own atom is edited.
+    </p>
+
+    <div class="sheet">
+      <table>
+        <thead><tr><th>State</th><th>The icon in the lane</th><th>The text</th></tr></thead>
+        <tbody>
+          <tr><td>At rest</td><td>Transparent, still occupying its row</td><td>No highlight</td></tr>
+          <tr><td>Pointer over anchored text</td><td>Opaque, for every thread that text belongs to</td><td>Faint tint</td></tr>
+          <tr><td>Caret inside, or selection overlapping</td><td>Opaque, same set</td><td>Faint tint</td></tr>
+          <tr><td>Pointer over the icon</td><td>Opaque</td><td>Its own anchor tints</td></tr>
+          <tr><td>Thread open in the inspector, or chosen in the panel</td><td>Filled</td><td>Strong tint, and the page scrolls to it</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cards">
+      <div class="card"><header>The lane</header><div class="body"><p>The trailing gutter, outside the paper, reserved: a margin can be set to nothing and text can fill it, where nothing ever runs into the gutter. Icons sit at their anchor's first line, recomputed on relayout; two on one line stack downward.</p></div></div>
+      <div class="card"><header>The tints</header><div class="body"><p>A ProseMirror decoration set built from the anchors, so they compose with the selection rather than fighting it.</p></div></div>
+      <div class="card"><header>Writing</header><div class="body"><p>Composing on a selection creates the thread and its first comment together, <code>quote</code> frozen from the selected text and <code>within</code> from the anchor. Resolving sets <code>resolution</code> and keeps the row; resolved threads leave the panel and the lane. A thread whose block was deleted shows in the panel as detached, with its quote.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <section id="changes">
+    <div class="head">
+      <div class="stack">
+        <p class="eyebrow">13 · Model</p>
+        <h2>What this asks of the model</h2>
+      </div>
+      <p>Everything above fits the representation as it stands, except these.</p>
+    </div>
+
+    <div class="sheet">
+      <table>
+        <thead><tr><th>Change</th><th>Where</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>Mark.from</code>, <code>Mark.to</code> become <code>{ atom, offset }</code></td><td class="p">representation/data/types/content/content-block.ts</td><td>Structural addresses. A mark moves only when its own atom is edited. §03</td></tr>
+          <tr><td><code>AnchorWithin.text</code> takes the same endpoints</td><td class="p">comment anchor type</td><td>One address for selection, marks and comments. §12</td></tr>
+          <tr><td><code>BlockFormat</code> gains <code>spaceBefore · spaceAfter · lineHeight · indent</code></td><td class="p">representation/data/types/content/block-format.ts</td><td>A block can override its style's spacing. §04</td></tr>
+          <tr><td><code>DocumentOp</code> gains the <code>document</code> target</td><td class="p">representation/data/types/documents/op.ts</td><td>Page setup, furniture settings and the style set are addressable. §07</td></tr>
+          <tr><td><code>Selection</code> gains <code>ranges?</code></td><td class="p">representation/data/types/workspace/tab.ts</td><td>Non-contiguous selection. §09</td></tr>
+          <tr><td><code>empty-block</code> → <code>empty-line</code>; <code>image</code> lens key; <code>templates</code>, <code>prompts</code> context keys</td><td class="p">workspace/views.ts · behavior/workspace/views.ts · opening.ts · rail-entries.ts</td><td>The vocabulary the panels need. §09 · §11</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="col">
+      Already there and merely unused: custom paper as <code>{ width, height }</code>;
+      <code>listStyle</code> for ordered, bullet and todo; <code>PageFurniture</code> and
+      <code>PageNumbering</code>; the comment tables and their anchor; the runtime's
+      undo stack and <code>invertAll</code>.
+    </p>
+  </section>
+
+  <div class="meta">
+    <span>Icarus · document editor · goal state</span>
+    <span>companion: Document Editor Buildout — the delta, in order</span>
+    <span>app-views/categories/document-editor · model/client/document-runtimes · representation/data/types/documents</span>
+  </div>
+
+</div>

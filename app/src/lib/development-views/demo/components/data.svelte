@@ -152,9 +152,8 @@
   <h3 class="text-h4 mt-2 font-semibold">Carousel shelf</h3>
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">
     The same set, recessed. The well takes the darker plane and the cards take the raised one, so
-    they read as sitting <em>in</em> the page rather than on it. The frame overhangs the cards on
-    every side: a card passes under the edge instead of stopping at it. The track loops, so the
-    buttons never dead-end — drag it, arrow through it, or use the controls on the frame.
+    they read as sitting <em>in</em> the page rather than on it. The track is the browser's own
+    horizontal scrollport, and a discreet scrollbar at the bottom is the persistent affordance.
   </p>
 
   <Shelf.Root>

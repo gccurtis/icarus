@@ -1,0 +1,16 @@
+[
+  {
+    "_id": "connectors:1",
+    "_creationTime": 1783324800000,
+    "projectId": "default",
+    "name": "Google Drive — SCADA outage log",
+    "configuration": {
+      "kind": "provider",
+      "provider": "googleDrive",
+      "selection": "1aBcD-outage-log"
+    },
+    "refreshIntervalMs": 3600000,
+    "createdBy": { "kind": "user", "userId": "users:3" },
+    "updatedAt": 1788292800000
+  }
+]

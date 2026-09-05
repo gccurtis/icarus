@@ -1,0 +1,428 @@
+<title>Document Editor Buildout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --ground: #f2efe9; --panel: #fbf9f5; --sunk: #e9e5dc;
+    --ink: #1d2329; --ink-2: #3a424d; --ink-3: #6b7580;
+    --rule: #d8d3c4; --rule-soft: #e4dfd2;
+    --live: #bc386f; --live-soft: #fdeff5;
+    --store: #187d74; --store-soft: #e6f4f2;
+    --editor: #3f52c4; --editor-soft: #eceffb;
+    --warn: #9a6a12; --warn-soft: #fbf3e0;
+    --stop: #b3382e; --stop-soft: #fbebe9;
+    --done: #2f7a3a;
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --measure: 70ch; --gap: 1.15rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #14181c; --panel: #1c2127; --sunk: #101418;
+      --ink: #e7e3da; --ink-2: #b6bcc6; --ink-3: #8d97a3;
+      --rule: #2e353d; --rule-soft: #262c33;
+      --live: #ee7fae; --live-soft: #351924; --store: #3fcfc0; --store-soft: #102b28;
+      --editor: #93a3ff; --editor-soft: #1b2140; --warn: #d9a441; --warn-soft: #2f2611;
+      --stop: #f08a80; --stop-soft: #3a1c19; --done: #74c980;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #14181c; --panel: #1c2127; --sunk: #101418;
+    --ink: #e7e3da; --ink-2: #b6bcc6; --ink-3: #8d97a3;
+    --rule: #2e353d; --rule-soft: #262c33;
+    --live: #ee7fae; --live-soft: #351924; --store: #3fcfc0; --store-soft: #102b28;
+    --editor: #93a3ff; --editor-soft: #1b2140; --warn: #d9a441; --warn-soft: #2f2611;
+    --stop: #f08a80; --stop-soft: #3a1c19; --done: #74c980;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+  .nav { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 1.5rem; padding: 0.7rem 1.5rem; border-bottom: 1px solid var(--rule-soft); background: color-mix(in srgb, var(--ground) 88%, transparent); backdrop-filter: blur(8px); }
+  .nav .mark { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); }
+  .nav .mark span { color: var(--ink-3); }
+  .nav ul { display: flex; flex-wrap: wrap; gap: 0.2rem 1.2rem; margin: 0 0 0 auto; padding: 0; list-style: none; font-size: 0.86rem; }
+  .nav a { color: var(--ink-2); text-decoration: none; }
+  .nav a:hover { color: var(--ink); }
+
+  .page { max-width: 1180px; margin: 0 auto; padding: 3rem 1.5rem 6rem; display: flex; flex-direction: column; gap: 3.5rem; }
+  .col { max-width: var(--measure); }
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2.1rem, 4.6vw, 3.1rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.06; }
+  h2 { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.018em; padding-bottom: 0.5rem; border-bottom: 2px solid var(--ink); }
+  h3 { font-size: 1.02rem; font-weight: 600; letter-spacing: -0.008em; }
+  p { margin: 0; }
+  .col > p + p, .stack > p + p { margin-top: 0.85rem; }
+  .eyebrow { font-family: var(--mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+  .lede { font-size: 1.08rem; color: var(--ink-2); }
+  code { font-family: var(--mono); font-size: 0.86em; background: var(--sunk); border-radius: 3px; padding: 0.1em 0.34em; }
+  strong { font-weight: 600; }
+  a { color: var(--editor); }
+  section { display: flex; flex-direction: column; gap: var(--gap); scroll-margin-top: 4rem; }
+  .stack { display: flex; flex-direction: column; gap: var(--gap); }
+
+  .hero { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(19rem, 0.8fr); gap: 3rem; align-items: end; }
+  .hero .stack { gap: 1rem; }
+  .status { display: flex; align-items: center; gap: 0.5rem; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--live); }
+  .status i { width: 7px; height: 7px; border-radius: 50%; background: var(--live); }
+  .readout { border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); overflow: hidden; }
+  .readout header { display: flex; justify-content: space-between; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule-soft); font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  .readout dl { display: grid; grid-template-columns: 1fr 1fr; margin: 0; }
+  .readout div { padding: 0.9rem 1rem; border-bottom: 1px solid var(--rule-soft); }
+  .readout div:nth-child(odd) { border-right: 1px solid var(--rule-soft); }
+  .readout dt { font-size: 0.78rem; color: var(--ink-3); }
+  .readout dd { margin: 0.2rem 0 0; font-family: var(--mono); font-size: 1.4rem; }
+  .readout dd small { font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-left: 0.3rem; }
+  .readout p { padding: 0.8rem 1rem; font-size: 0.8rem; color: var(--ink-2); }
+
+  .head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.55fr); gap: 2rem; align-items: end; }
+  .head > p { font-size: 0.86rem; color: var(--ink-3); text-align: right; margin: 0 0 0.6rem; }
+  .head .stack { gap: 0.5rem; }
+
+  .sheet { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.6rem 0.9rem 0.6rem 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  td.p { font-family: var(--mono); font-size: 0.8rem; }
+
+  .tag { display: inline-block; padding: 0.12rem 0.42rem; border: 1px solid currentColor; border-radius: 999px; font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; vertical-align: middle; }
+  .tag.real { color: var(--done); }
+  .tag.mock { color: var(--warn); }
+  .tag.none { color: var(--stop); }
+  .tag.part { color: var(--editor); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1rem; }
+  .card { border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); overflow: hidden; display: flex; flex-direction: column; }
+  .card header { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule-soft); font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.09em; text-transform: uppercase; }
+  .card header .tag { margin-left: auto; }
+  .card > pre, .card > .body { padding: 1rem; margin: 0; }
+  .card > pre { font-family: var(--mono); font-size: 0.78rem; line-height: 1.75; white-space: pre; overflow-x: auto; color: var(--ink); background: transparent; }
+  .card .body { font-size: 0.9rem; color: var(--ink-2); display: flex; flex-direction: column; gap: 0.6rem; }
+  .card .foot { padding: 0.7rem 1rem; border-top: 1px solid var(--rule-soft); font-size: 0.8rem; color: var(--ink-3); font-family: var(--mono); }
+  .card.store header { color: var(--store); }
+  .card.editor header { color: var(--editor); }
+  .card.live header { color: var(--live); }
+  pre .c { color: var(--ink-3); }
+  pre .gone { color: var(--stop); }
+  pre .gone::after { content: "   ← missing"; }
+
+  .note-block { border-left: 3px solid var(--warn); padding: 0.1rem 0 0.1rem 1rem; font-size: 0.94rem; color: var(--ink-2); max-width: var(--measure); }
+  .rule-block { border-left-color: var(--live); }
+  .rule-block b { color: var(--ink); }
+
+  .phases { display: flex; flex-direction: column; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); overflow: hidden; }
+  .phase { display: grid; grid-template-columns: 7rem minmax(0, 1.4fr) minmax(16rem, 1fr); gap: 1.25rem; padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--rule-soft); align-items: start; }
+  .phase:last-child { border-bottom: 0; }
+  .phase .p { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--live); padding-top: 0.25rem; }
+  .phase .p small { display: block; color: var(--ink-3); letter-spacing: 0.06em; margin-top: 0.2rem; }
+  .phase h3 { margin-bottom: 0.4rem; }
+  .phase ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.9rem; color: var(--ink-2); }
+  .phase .files { font-family: var(--mono); font-size: 0.72rem; line-height: 1.7; color: var(--ink-3); overflow-wrap: anywhere; padding-top: 0.2rem; }
+  .phase .files b { display: block; color: var(--ink-2); font-weight: 500; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 0 2rem; font-family: var(--mono); font-size: 0.76rem; color: var(--ink-3); padding-top: 1rem; border-top: 1px solid var(--rule-soft); }
+
+  @media (max-width: 56rem) {
+    .hero, .head, .phase { grid-template-columns: 1fr; }
+    .head > p { text-align: left; }
+  }
+</style>
+
+<nav class="nav">
+  <span class="mark">◇ Icarus <span>/ document editor · delta</span></span>
+  <ul>
+    <li><a href="#stands">Today</a></li>
+    <li><a href="#gap">The gap</a></li>
+    <li><a href="#model">Model changes</a></li>
+    <li><a href="#order">Build order</a></li>
+    <li><a href="#out">Out of round</a></li>
+  </ul>
+</nav>
+
+<div class="page">
+
+  <header class="hero">
+    <div class="stack">
+      <p class="status"><i></i> The delta · branch work/document-editor</p>
+      <h1>Document editor buildout</h1>
+      <p class="lede">
+        What stands between the editor as it runs today and
+        <em>The Document Editor, End to End</em>, and the order to close it in. The
+        companion page says how it works; this one says what is missing.
+      </p>
+    </div>
+    <aside class="readout">
+      <header><span>Read against</span><span>work/semantic-overlay-cutover</span></header>
+      <dl>
+        <div><dt>Panels built</dt><dd>2 <small>of 13</small></dd></div>
+        <div><dt>Model changes made</dt><dd>0 <small>of 6</small></dd></div>
+        <div><dt>Op targets applied</dt><dd>2 <small>of 6</small></dd></div>
+        <div><dt>Runtime optimistic</dt><dd>no</dd></div>
+      </dl>
+      <p>The runtime body advances only when the store answers; every formatting control is a mock; eleven panel keys route to placeholders.</p>
+    </aside>
+  </header>
+
+  <section id="stands">
+    <div class="head">
+      <div class="stack"><p class="eyebrow">01 · Today</p><h2>Where it stands</h2></div>
+      <p>I ran it. This is what is true, not what the docs say.</p>
+    </div>
+
+    <div class="sheet">
+      <table>
+        <thead><tr><th>Piece</th><th>State</th><th>What is true</th></tr></thead>
+        <tbody>
+          <tr><td>Page surface</td><td><span class="tag real">real</span></td><td>Pasteboard, paper, margins as percentages, zoom 50–200 with ⌘-wheel, gutter that collapses before the page does.</td></tr>
+          <tr><td>Text editing</td><td><span class="tag real">real</span></td><td>Typing, split, merge, id stamping, repagination, caret preserved across relayout. Undo is ProseMirror's.</td></tr>
+          <tr><td>Persistence</td><td><span class="tag real">real</span></td><td><code>bodyOf</code> → <code>translate</code> → change set → store, with coalescing, rebase and undrawn-row preservation.</td></tr>
+          <tr><td>Selection signalling</td><td><span class="tag real">real</span></td><td><code>signalOf</code> routes to three lens keys with a <code>blockId/atoms/atomId@offset</code> address — already structural.</td></tr>
+          <tr><td>Marks, style, font, size, colour</td><td><span class="tag mock">mock</span></td><td>Local state in the lens. Nothing to write to: the editor's schema has no marks and the block node has no attributes.</td></tr>
+          <tr><td>Comments and links</td><td><span class="tag mock">mock</span></td><td>Invented rows inside the lens file. Real threads sit in the store, unread.</td></tr>
+          <tr><td>Layout panel</td><td><span class="tag part">read-only</span></td><td>Reads <code>DEFAULT_PAGE_SETUP</code>, not the document. Nothing is editable.</td></tr>
+          <tr><td>Runtime body</td><td><span class="tag part">not live</span></td><td>Advances only when the store answers. Invisible today because ProseMirror holds the optimistic text; fatal the moment a panel edits anything.</td></tr>
+          <tr><td>Sections · Find · Styles · Comments · Variables · Templates · Prompts</td><td><span class="tag none">absent</span></td><td>Keys route; files do not exist; the shell draws its placeholder.</td></tr>
+          <tr><td>Empty line · Next letter · Named style · Table · Image · Comment thread</td><td><span class="tag none">absent</span></td><td>Same. The empty-block key fires on every empty paragraph and lands on a placeholder.</td></tr>
+          <tr><td>Header · footer · page numbers</td><td><span class="tag none">absent</span></td><td>Typed; drawn nowhere.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="gap">
+    <div class="head">
+      <div class="stack"><p class="eyebrow">02 · The gap</p><h2>Two schemas, and what stands between them</h2></div>
+      <p>The word <em>schema</em> names two different things here, and that is the whole first problem.</p>
+    </div>
+
+    <div class="cards">
+      <div class="card store">
+        <header>TextBlock · the model</header>
+        <pre>id · type "text"
+variant · level · listStyle · checked · language
+style          <span class="c">key into the body's StyleSet</span>
+atoms[]        <span class="c">literal | formula</span>
+display
+marks[]        <span class="c">{ id, from, to, style?, link?, color? }</span>
+format?        <span class="c">BlockFormat</span></pre>
+        <div class="foot">representation/data/types/content/content-block.ts</div>
+      </div>
+      <div class="card editor">
+        <header>text_block · the editor's node</header>
+        <pre>blockId · atomId · share
+<span class="gone">variant · level · listStyle</span>
+<span class="gone">style</span>
+<span class="c">one literal atom only; a formula atom makes the block undrawable</span>
+text content = display
+<span class="gone">marks: {} — no mark types at all</span>
+<span class="gone">format</span></pre>
+        <div class="foot">app-views/categories/document-editor/procedures/schema.ts</div>
+      </div>
+    </div>
+
+    <p class="col">
+      Because the editor's node carries none of it, nothing can be drawn bold and
+      nothing can be read back bold: <code>bodyOf</code> rebuilds a block from the node
+      and has to copy the old marks through blind. The projection is lossy in both
+      directions, and the lens has nothing to write to. Four more follow from it.
+    </p>
+
+    <div class="sheet">
+      <table>
+        <thead><tr><th>Where</th><th>Today</th><th>Has to become</th></tr></thead>
+        <tbody>
+          <tr><td class="p">procedures/translate.ts</td><td>Diffs two bodies and emits text splices, block and row insert/remove/move, and a set on row proportions. Nothing else.</td><td>Emits mark, block-field, atom and document ops. Or, for panel edits, is not involved at all — a panel states its ops directly.</td></tr>
+          <tr><td class="p">capabilities/document/…/apply-ops.ts</td><td>Accepts exactly the shapes translate emits. <code>set</code> handles one path and refuses the rest.</td><td>One applier in <code>representation/data/behavior/documents/</code> handling every target, wrapped by the capability and called by the runtime.</td></tr>
+          <tr><td class="p">model/client/document-runtimes/methods/apply.ts</td><td><code>buffer()</code> appends ops. The body waits for the store.</td><td>The body moves first — exactly what <code>slide-deck-runtimes/methods/apply.ts</code> already does.</td></tr>
+          <tr><td class="p">representation/data/types/documents/op.ts</td><td>Targets <code>row · block · atom · mark</code>. Nothing above the rows is addressable.</td><td>A <code>document</code> target with plain field paths: page setup, furniture settings, the style set.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note-block rule-block">
+      <b>All changes start at the runtime. Typing is the one exception.</b> The path
+      that exists today — editor transaction → body → diff → ops → runtime — is the
+      right path for keystrokes and only for keystrokes. Every panel builds its ops
+      itself and applies them; the editor is re-projected from the result. That is the
+      inverse of where the code is pointed now, and most of what follows is turning
+      it around.
+    </div>
+  </section>
+
+  <section id="model">
+    <div class="head">
+      <div class="stack"><p class="eyebrow">03 · Model changes</p><h2>Six changes to the representation</h2></div>
+      <p>Everything in the goal state fits the representation as it stands, except these.</p>
+    </div>
+
+    <div class="sheet">
+      <table>
+        <thead><tr><th>Change</th><th>File</th><th>Companion §</th></tr></thead>
+        <tbody>
+          <tr><td><code>Mark.from</code>, <code>Mark.to</code> → <code>{ atom, offset }</code></td><td class="p">representation/data/types/content/content-block.ts</td><td>03</td></tr>
+          <tr><td><code>AnchorWithin.text</code> takes the same endpoints</td><td class="p">representation/store/tables.ts (comment anchor)</td><td>12</td></tr>
+          <tr><td><code>BlockFormat</code> + <code>spaceBefore · spaceAfter · lineHeight · indent</code></td><td class="p">representation/data/types/content/block-format.ts</td><td>04</td></tr>
+          <tr><td><code>DocumentOp</code> + target <code>document</code></td><td class="p">representation/data/types/documents/op.ts</td><td>07</td></tr>
+          <tr><td><code>Selection</code> + <code>ranges?</code></td><td class="p">representation/data/types/workspace/tab.ts</td><td>09</td></tr>
+          <tr><td><code>empty-block</code> → <code>empty-line</code>; + <code>image</code> lens; + <code>templates</code>, <code>prompts</code> context keys</td><td class="p">workspace/views.ts · behavior/workspace/views.ts · opening.ts · surfaces/context/procedures/rail-entries.ts</td><td>09 · 11</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="col">
+      Every seeded mark array is empty and every seeded comment thread anchors by
+      <code>quote</code> alone, so the endpoint change breaks no stored row. The three
+      seeded documents keep working untouched.
+    </p>
+  </section>
+
+  <section id="order">
+    <div class="head">
+      <div class="stack"><p class="eyebrow">04 · Build order</p><h2>Eight phases, each leaving the editor working</h2></div>
+      <p>A depends on nothing; B on A; everything after on B and only on what it names.</p>
+    </div>
+
+    <div class="phases">
+
+      <div class="phase">
+        <div class="p">A<small>model</small></div>
+        <div>
+          <h3>The representation, and one applier</h3>
+          <ul>
+            <li>The six changes above.</li>
+            <li>The applier moves to <code>representation/data/behavior/documents/apply-ops.ts</code> and grows every target: block fields, atoms, marks by id, furniture roots, the document. A text splice shifts mark endpoints on its own atom.</li>
+            <li>The capability wraps it; the validator learns the new shapes.</li>
+            <li>Unit tests: every op applies and its inverse restores.</li>
+          </ul>
+        </div>
+        <div class="files"><b>touches</b>representation/data/types/{content,documents,workspace}/ · representation/data/behavior/documents/ · representation/data/behavior/workspace/ · capabilities/document/api/submit-document-changes/ · surfaces/context/procedures/rail-entries.ts</div>
+      </div>
+
+      <div class="phase">
+        <div class="p">B<small>runtime</small></div>
+        <div>
+          <h3>The runtime becomes the live document</h3>
+          <ul>
+            <li><code>buffer()</code> applies to <code>runtime.body</code> before appending. Refusal fails the call and buffers nothing.</li>
+            <li>The runtime holds the mounted editor while the surface is on screen; a body change that did not come from the editor re-projects it.</li>
+            <li>Re-projection reads the selection as addresses before and restores it after, both ends, all ranges.</li>
+            <li>⌘Z and ⇧⌘Z bind to <code>runtime.undo</code> / <code>redo</code>; <code>prosemirror-history</code> is removed.</li>
+            <li>An accept that carries catch-up ops applies them to the live body.</li>
+          </ul>
+        </div>
+        <div class="files"><b>touches</b>model/client/document-runtimes/{definition.svelte.ts, methods/apply.ts, methods/flush/flush.ts, methods/history/} · app-views/…/document-editor/content/document.svelte</div>
+      </div>
+
+      <div class="phase">
+        <div class="p">C<small>projection</small></div>
+        <div>
+          <h3>The editor draws the whole model</h3>
+          <ul>
+            <li>Schema: seven mark types with <code>markId</code>; <code>text_block</code> attributes for variant, level, listStyle, styleKey, format; <code>formula_atom</code>, <code>divider</code>, <code>page_break</code>, <code>image_block</code>, <code>table_block</code>, <code>formula_block</code> nodes.</li>
+            <li><code>docOf</code> splits an atom's text into runs by mark; <code>bodyOf</code> groups runs back by id and resolves positions to atoms by walking the block's atoms in order.</li>
+            <li><code>translate</code> emits mark, block-field and atom ops for the typing path.</li>
+            <li>Per-block pagination metrics from the resolved style; the style set as generated CSS on <code>data-style</code>; <code>toDOM</code> picks the element from the variant.</li>
+          </ul>
+        </div>
+        <div class="files"><b>touches</b>app-views/…/document-editor/procedures/{schema,projection,translate,paginate,page-setup}.ts · procedures/styles.ts (new)</div>
+      </div>
+
+      <div class="phase">
+        <div class="p">D<small>lenses</small></div>
+        <div>
+          <h3>Inspector, real</h3>
+          <ul>
+            <li><code>text-selection</code>: every control an op. Marks, colour, link → mark ops; style key, alignment, spacing → block ops. Mixed state across ranges.</li>
+            <li><code>empty-line</code>: Block with Text, Table, Image, Page break; then the whole text lens as Text.</li>
+            <li><code>next-letter</code>: the selection lens reading stored marks.</li>
+            <li><code>named-style</code>: identity with Duplicate and Delete; every field a document op; usage count read first.</li>
+            <li><code>table</code>, <code>image</code>: the block's own fields. <code>prompt-block</code> stays a placeholder.</li>
+            <li><code>general.comment</code>: anchor, reply, resolve, thread.</li>
+          </ul>
+        </div>
+        <div class="files"><b>touches</b>app-views/…/document-editor/inspector/{text-selection,empty-line,next-letter,named-style,table,image}.svelte · app-views/general/comment/comment.svelte · procedures/inspecting.ts</div>
+      </div>
+
+      <div class="phase">
+        <div class="p">E<small>panels</small></div>
+        <div>
+          <h3>Context, and the rail settles</h3>
+          <ul>
+            <li>Sections from heading variants, line and page computed per row.</li>
+            <li>Find and Replace through text ops, one undo group.</li>
+            <li>Styles: actions, search, rows with Apply; select opens the lens; the default set written on first styling.</li>
+            <li>Layout: reads the runtime; paper with Custom, orientation, margins, header, footer, page numbers all write document ops.</li>
+            <li>Comments: open threads as quote blocks; select scrolls to and lights the anchor.</li>
+            <li>Rail: Sections, Find, Styles, Layout, Comments, Variables, Templates, Prompts. Landing on Sections.</li>
+          </ul>
+        </div>
+        <div class="files"><b>touches</b>app-views/…/document-editor/context/{navigator,find,styles,layout,comments}.svelte · procedures/{outline,find}.ts · behavior/workspace/opening.ts</div>
+      </div>
+
+      <div class="phase">
+        <div class="p">F<small>furniture</small></div>
+        <div>
+          <h3>Header, footer, page numbers</h3>
+          <ul>
+            <li>Header and footer roots projected as their own editor views; drawn on every page; one canonical editor each, entered from Layout's buttons.</li>
+            <li>Furniture row ops carry their root in the path.</li>
+            <li>Page numbers generated from <code>pageNumber</code>, drawn into the furniture band.</li>
+          </ul>
+        </div>
+        <div class="files"><b>touches</b>content/document.svelte · procedures/projection.ts · procedures/furniture.ts (new)</div>
+      </div>
+
+      <div class="phase">
+        <div class="p">G<small>comments</small></div>
+        <div>
+          <h3>Anchors, the lane, and writing</h3>
+          <ul>
+            <li>Threads and comments read through the store; anchors resolved to positions by address.</li>
+            <li><code>gutterOf</code> returns a leading and a trailing number; the trailing gutter reserves the lane.</li>
+            <li>A decoration set for the tints; the lane and its five states; stacking on collision.</li>
+            <li>Create thread + first comment on a selection; reply; resolve. All through the store.</li>
+          </ul>
+        </div>
+        <div class="files"><b>touches</b>procedures/{comments,highlight,page-setup}.ts · content/document.svelte</div>
+      </div>
+
+      <div class="phase">
+        <div class="p">H<small>ranges</small></div>
+        <div>
+          <h3>Non-contiguous selection</h3>
+          <ul>
+            <li>A ProseMirror <code>Selection</code> subclass holding a primary range and others; a plugin drawing the others; ⌘-drag adds a range.</li>
+            <li><code>signalOf</code> emits all ranges; lenses apply each op once per range.</li>
+          </ul>
+        </div>
+        <div class="files"><b>touches</b>procedures/{selection,inspecting}.ts · content/document.svelte · inspector/text-selection.svelte</div>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="out">
+    <div class="head">
+      <div class="stack"><p class="eyebrow">05 · Out of this round</p><h2>Named so they are not assumed</h2></div>
+      <p>Each has a place in the model already; none is touched here.</p>
+    </div>
+    <p class="col">
+      Editing inside tables and images, inserting formula atoms and prompt blocks
+      (both draw), a chart content type, list rendering, rulers, margin guides, block
+      drag handles, presence, resolved threads in the panel, mentions and activity
+      rows for comments, and the Pages view of the Sections panel.
+    </p>
+  </section>
+
+  <div class="meta">
+    <span>Icarus · document editor · the delta</span>
+    <span>companion: The Document Editor, End to End</span>
+    <span>source of truth: app/src/lib/app-views/categories/document-editor and the trees it reaches</span>
+  </div>
+
+</div>

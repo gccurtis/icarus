@@ -55,7 +55,7 @@ becoming a bar that never ends. Sending starts at sample 4.
 The question was asked as "a feed is just a selection, really — I guess there's no
 difference". Mostly right, and the residue is worth naming precisely.
 
-**Read what is already specified.** `screen-panel-views/context/project/activity.md`
+**Read what is already specified.** The project activity panel
 is every event in the project, newest first, as actor-verb-target rows grouped by
 day with three filters. `.../mentions.md` is the subset a person addressed to you,
 as rows naming the person, where the comment is, and enough of it to decide
@@ -97,7 +97,7 @@ Activity, by turn for Research. It is not a second component.
 
 ## A disagreement this page surfaced
 
-`screen-panel-views/screens/research/workspace-one-question.md` says the Research
+The one-question specification says the Research
 workspace is "anchored to one turn, not scrolled through all of them", and
 `.../research/context/history.md` exists precisely because of that decision — the
 earlier turns had to live somewhere. This page is the other shape: one scrolling

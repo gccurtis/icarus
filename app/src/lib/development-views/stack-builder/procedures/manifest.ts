@@ -1,4 +1,21 @@
-import type { ComponentSource, StackNode } from "$development-views/stack-builder/types";
+import type {
+  ComponentSource,
+  StackNode,
+  SubstackNode
+} from "$development-views/stack-builder/types";
+
+export const substacksIn = (nodes: StackNode[]): SubstackNode[] => {
+  const found: SubstackNode[] = [];
+  const walk = (held: StackNode[]): void => {
+    for (const node of held) {
+      if (node.kind !== "substack") continue;
+      found.push(node);
+      walk(node.children);
+    }
+  };
+  walk(nodes);
+  return found;
+};
 
 export const insertAt = (nodes: StackNode[], node: StackNode, at: number): StackNode[] => {
   const index = Math.max(0, Math.min(at, nodes.length));

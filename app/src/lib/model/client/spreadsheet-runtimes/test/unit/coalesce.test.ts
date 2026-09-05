@@ -102,14 +102,14 @@ test("refuses to fold across an op on ground above it", () => {
 
 test("compares path segments, not string prefixes", () => {
   const ops = [
-    rule("formatRules/#f1", 2, 1),
-    insert("formatRules/#f10", "f11"),
-    rule("formatRules/#f1", 3, 2)
+    rule("formatRules/#r1", 2, 1),
+    insert("formatRules/#r10", "r11"),
+    rule("formatRules/#r1", 3, 2)
   ];
   const folded = coalesce(ops);
 
   assert.equal(folded.length, 2);
-  assert.deepEqual(folded[0], rule("formatRules/#f1", 3, 1));
+  assert.deepEqual(folded[0], rule("formatRules/#r1", 3, 1));
 });
 
 test("never folds moves, even two on one path", () => {

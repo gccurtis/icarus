@@ -19,21 +19,742 @@
   import { Button } from "$vendored-components/button";
   import * as Select from "$vendored-components/select";
   import { Textarea } from "$vendored-components/textarea";
-  import { AGENTS, actorName } from "$capabilities/cast";
-  import {
-    acceptedIn,
-    currentTurn,
-    proposedIn,
-    searchScope,
-    sourcesForTurn,
-    thread,
-    threadsIn,
-    traceIn,
-    type ResearchThread
-  } from "$capabilities/research";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+
+  type AgentId = "grid-analyst" | "filing-editor" | "source-checker";
+
+  type Agent = {
+    readonly id: AgentId;
+    readonly name: string;
+    readonly purpose: string;
+    readonly scope: "Personal" | "Shared" | "Project";
+  };
+
+  type ThreadMode = "Discover" | "Question" | "Hypothesis";
+
+  type ResearchThread = {
+    readonly id: string;
+    readonly title: string;
+    readonly mode: ThreadMode;
+    readonly job: "Look around" | "Answer one question" | "Test an idea";
+    readonly anchor?: { readonly ref: string; readonly text: string };
+    readonly turns: number;
+    readonly accepted: number;
+    readonly proposed: number;
+    readonly sources: number;
+    readonly lastAsked: string;
+    readonly agent: AgentId;
+    readonly toolsAllowed: number;
+    readonly createdBy: string;
+    readonly revision: number;
+    readonly updated: string;
+  };
+
+  type Turn = {
+    readonly id: string;
+    readonly prompt: string;
+    readonly answer: string;
+    readonly at: string;
+    readonly ago: string;
+    readonly produced: string;
+    readonly proposed: number;
+    readonly accepted: number;
+  };
+
+  type Source = {
+    readonly id: string;
+    readonly title: string;
+    readonly kind: "Resource" | "External file" | "Web";
+    readonly locator: string;
+    readonly excerpt: string;
+    readonly capturedAt?: string;
+    readonly scores?: { readonly relevance: number; readonly density: number };
+    readonly uses: number;
+    readonly usedBy: readonly string[];
+  };
+
+  type ToolCall = {
+    readonly id: string;
+    readonly turnId: string;
+    readonly name: string;
+    readonly outcome: "Success" | "Nothing found" | "Failed";
+    readonly duration: string;
+    readonly result: string;
+    readonly input: string;
+    readonly resolvedScope: string;
+  };
+
+  type TurnTrace = {
+    readonly turnId: string;
+    readonly heading: string;
+    readonly calls: readonly ToolCall[];
+  };
+
+  type Bearing = {
+    readonly id: string;
+    readonly kind: "question" | "hypothesis" | "finding";
+    readonly ref: string;
+    readonly title: string;
+    readonly bearing: "Supports" | "Contradicts" | "Neutral";
+  };
+
+  type FindingSource = {
+    readonly sourceId: string;
+    readonly title: string;
+    readonly locator: string;
+    readonly capture: "excerpt" | "locator";
+    readonly excerpt?: string;
+  };
+
+  type Finding = {
+    readonly id: string;
+    readonly state: "proposed" | "accepted";
+    readonly title: string;
+    readonly body: string;
+    readonly threadId: string;
+    readonly turnId: string;
+    readonly derivation: "From this turn" | "Inference";
+    readonly acceptedBy?: string;
+    readonly acceptedAt?: string;
+    readonly inLattice: boolean;
+    readonly standingOn: readonly FindingSource[];
+    readonly bearsOn: readonly Bearing[];
+  };
+
+  type ThreadScope = {
+    readonly name: string;
+    readonly resources: number;
+    readonly web: boolean;
+    readonly resolvedAt: string;
+    readonly indexed: number;
+    readonly withoutMaterial: number;
+    readonly unbounded: boolean;
+  };
+
+  type Read<T> = {
+    readonly current: T;
+    readonly error: undefined;
+    readonly loading: false;
+    refresh: () => Promise<void>;
+  };
+
+  const read = <T,>(current: T): Read<T> => ({
+    current,
+    error: undefined,
+    loading: false,
+    refresh: async () => {}
+  });
+
+  const AGENTS: readonly Agent[] = [
+    {
+      id: "grid-analyst",
+      name: "Grid Analyst",
+      purpose: "Reads field data and relay logs; refuses to speculate past the record.",
+      scope: "Project"
+    },
+    {
+      id: "filing-editor",
+      name: "Filing Editor",
+      purpose: "Turns findings into filing prose in the commission's register.",
+      scope: "Shared"
+    },
+    {
+      id: "source-checker",
+      name: "Source Checker",
+      purpose: "Verifies that a claim is carried by the source it cites.",
+      scope: "Personal"
+    }
+  ];
+
+  const actorName = (id: string): string =>
+    AGENTS.find((agent) => agent.id === id)?.name ?? id;
+
+  const THREADS: readonly ResearchThread[] = [
+    {
+      id: "th-feeder",
+      title: "Why did Feeder 12 fail twice?",
+      mode: "Question",
+      job: "Answer one question",
+      anchor: { ref: "Q-14", text: "Why did Feeder 12 fail twice?" },
+      turns: 3,
+      accepted: 3,
+      proposed: 2,
+      sources: 6,
+      lastAsked: "just now",
+      agent: "grid-analyst",
+      toolsAllowed: 4,
+      createdBy: "Ana Reyes",
+      revision: 7,
+      updated: "yesterday"
+    },
+    {
+      id: "th-under",
+      title: "Undergrounding beats vegetation management",
+      mode: "Hypothesis",
+      job: "Test an idea",
+      anchor: {
+        ref: "H-7",
+        text: "Undergrounding outperforms vegetation management per pound spent"
+      },
+      turns: 22,
+      accepted: 9,
+      proposed: 1,
+      sources: 31,
+      lastAsked: "2 days ago",
+      agent: "grid-analyst",
+      toolsAllowed: 4,
+      createdBy: "Mira Jain",
+      revision: 44,
+      updated: "2 days ago"
+    },
+    {
+      id: "th-precedents",
+      title: "Winter storm precedents",
+      mode: "Discover",
+      job: "Look around",
+      turns: 9,
+      accepted: 4,
+      proposed: 0,
+      sources: 18,
+      lastAsked: "1 week ago",
+      agent: "source-checker",
+      toolsAllowed: 3,
+      createdBy: "Tomas Kaur",
+      revision: 12,
+      updated: "1 week ago"
+    },
+    {
+      id: "th-eastbrook",
+      title: "Is Eastbrook exposed the same way?",
+      mode: "Question",
+      job: "Answer one question",
+      anchor: { ref: "Q-16", text: "Is Eastbrook exposed the same way?" },
+      turns: 4,
+      accepted: 2,
+      proposed: 0,
+      sources: 11,
+      lastAsked: "3 weeks ago",
+      agent: "grid-analyst",
+      toolsAllowed: 4,
+      createdBy: "Ana Reyes",
+      revision: 6,
+      updated: "3 weeks ago"
+    },
+    {
+      id: "th-2024",
+      title: "What did the 2024 study assume?",
+      mode: "Question",
+      job: "Answer one question",
+      anchor: { ref: "Q-11", text: "What did the 2024 coordination study assume?" },
+      turns: 6,
+      accepted: 2,
+      proposed: 0,
+      sources: 9,
+      lastAsked: "2 weeks ago",
+      agent: "source-checker",
+      toolsAllowed: 3,
+      createdBy: "Mira Jain",
+      revision: 9,
+      updated: "2 weeks ago"
+    },
+    {
+      id: "th-2019",
+      title: "Did the 2019 hardening program hit its targets?",
+      mode: "Hypothesis",
+      job: "Test an idea",
+      anchor: { ref: "H-3", text: "The 2019 hardening program met its stated targets" },
+      turns: 9,
+      accepted: 3,
+      proposed: 0,
+      sources: 22,
+      lastAsked: "3 weeks ago",
+      agent: "grid-analyst",
+      toolsAllowed: 4,
+      createdBy: "Tomas Kaur",
+      revision: 15,
+      updated: "3 weeks ago"
+    }
+  ];
+
+  const TURNS: readonly Turn[] = [
+    {
+      id: "tn-3",
+      prompt: "Was the coordination study ever redone after the 2024 reconductoring?",
+      answer:
+        "Neither the filings index nor the Commission's public docket lists a coordination study for the Feeder 12 tie dated after the 2024 reconductoring. The 2019 study is the most recent on file, and it assumes 6.2 kA of available fault current at the tie against the 7.3 kA measured in the January event — roughly 18% higher. On that record the settings in service on 14 January and 3 March 2026 were derived from a fault duty that no longer holds.",
+      at: "10:21",
+      ago: "now",
+      produced: "2 findings proposed",
+      proposed: 2,
+      accepted: 0
+    },
+    {
+      id: "tn-2",
+      prompt: "Why did Feeder 12 fail twice?",
+      answer:
+        "Both failures cleared upstream of the intended device. The recloser operated at 0.42 s against a 0.61 s fuse clearing time on 14 January, and again at 0.44 s on 3 March, so the fuse never saw either fault. The two events share the sequence, not the weather.",
+      at: "10:14",
+      ago: "7m",
+      produced: "1 finding accepted",
+      proposed: 0,
+      accepted: 1
+    },
+    {
+      id: "tn-1",
+      prompt: "What does the event log show for January?",
+      answer:
+        "The storm window holds 4,182 logged operations, of which 311 name Feeder 12. Nothing in them separates a relay cause from a vegetation cause: the log records operations, not causes.",
+      at: "10:02",
+      ago: "19m",
+      produced: "no findings",
+      proposed: 0,
+      accepted: 0
+    }
+  ];
+
+  const SOURCES: readonly Source[] = [
+    {
+      id: "s-relay",
+      title: "feeder-12-relay.pdf",
+      kind: "External file",
+      locator: "p.7",
+      excerpt:
+        "…the recloser operated at 0.42 s, ahead of the 0.61 s fuse clearing time, so the fault was cleared upstream of the intended device…",
+      scores: { relevance: 0.86, density: 0.41 },
+      uses: 2,
+      usedBy: ["This answer", "1 accepted finding"]
+    },
+    {
+      id: "s-docket",
+      title: "nerc.gov/docket/2024-882",
+      kind: "Web",
+      locator: "Filing index, 2024",
+      excerpt:
+        "…no protection coordination study was submitted for the Northwind tie in the 2024 filing year…",
+      capturedAt: "10:21",
+      uses: 1,
+      usedBy: ["This answer"]
+    },
+    {
+      id: "s-study",
+      title: "2019 coordination study.pdf",
+      kind: "External file",
+      locator: "§4.2, p.19",
+      excerpt:
+        "…settings are derived for 6.2 kA of available fault current at the Feeder 12 tie, the value measured at commissioning…",
+      scores: { relevance: 0.79, density: 0.33 },
+      uses: 1,
+      usedBy: ["This answer", "1 proposed finding"]
+    },
+    {
+      id: "s-stormlog",
+      title: "storm-log-2026-01.csv",
+      kind: "Resource",
+      locator: "rows 1,204–1,318",
+      excerpt: "…14 Jan 2026 03:12:07 · FDR-12 · recloser operation · 0.42 s · lockout after 2…",
+      scores: { relevance: 0.74, density: 0.62 },
+      uses: 2,
+      usedBy: ["2 accepted findings"]
+    },
+    {
+      id: "s-nerc",
+      title: "NERC-2025-winter-review.pdf",
+      kind: "External file",
+      locator: "p.44",
+      excerpt:
+        "…repeat operations on the same feeder within one season were the strongest single predictor of a mis-coordinated pair…",
+      scores: { relevance: 0.68, density: 0.29 },
+      uses: 1,
+      usedBy: ["1 accepted finding"]
+    },
+    {
+      id: "s-inventory",
+      title: "Substation Inventory",
+      kind: "Resource",
+      locator: "Eastbrook · row 27",
+      excerpt: "…Eastbrook · 1998 · reconductored 2024 · protection last reviewed 2019…",
+      scores: { relevance: 0.61, density: 0.18 },
+      uses: 1,
+      usedBy: ["1 earlier answer"]
+    }
+  ];
+
+  const SOURCES_BY_TURN: Record<string, readonly string[]> = {
+    "tn-3": ["s-relay", "s-docket", "s-study"],
+    "tn-2": ["s-relay", "s-stormlog", "s-nerc"],
+    "tn-1": ["s-stormlog", "s-inventory"]
+  };
+
+  const CALLS: readonly ToolCall[] = [
+    {
+      id: "tc-31",
+      turnId: "tn-3",
+      name: "lattice.retrieve",
+      outcome: "Success",
+      duration: "1.2 s",
+      result: "4 regions across 3 sources.",
+      input:
+        '{ "query": "coordination study after reconductoring", "scope": "rs_field_reports_2024_25" }',
+      resolvedScope: "rs_field_reports_2024_25 · 96 resources · 88 indexed · resolved 10:21:04"
+    },
+    {
+      id: "tc-32",
+      turnId: "tn-3",
+      name: "web.search",
+      outcome: "Success",
+      duration: "2.8 s",
+      result: "2 results, 1 captured.",
+      input: '{ "query": "Northwind protection coordination study 2024 docket", "results": 5 }',
+      resolvedScope: "Web · unscoped · captured 10:21:44"
+    },
+    {
+      id: "tc-21",
+      turnId: "tn-2",
+      name: "lattice.retrieve",
+      outcome: "Success",
+      duration: "1.4 s",
+      result: "6 regions across 2 sources.",
+      input:
+        '{ "query": "Feeder 12 recloser operation January March", "scope": "rs_field_reports_2024_25" }',
+      resolvedScope: "rs_field_reports_2024_25 · 96 resources · 88 indexed · resolved 10:14:11"
+    },
+    {
+      id: "tc-22",
+      turnId: "tn-2",
+      name: "resource.read",
+      outcome: "Success",
+      duration: "0.3 s",
+      result: "storm-log-2026-01.csv · rows 1,204–1,318.",
+      input: '{ "resource": "storm-log-2026-01.csv", "rows": "1204:1318" }',
+      resolvedScope: "Direct read · no scope resolved"
+    },
+    {
+      id: "tc-11",
+      turnId: "tn-1",
+      name: "lattice.retrieve",
+      outcome: "Nothing found",
+      duration: "0.9 s",
+      result: "No sufficiently relevant material.",
+      input: '{ "query": "January event log cause", "scope": "rs_field_reports_2024_25" }',
+      resolvedScope: "rs_field_reports_2024_25 · 96 resources · 88 indexed · resolved 10:02:38"
+    },
+    {
+      id: "tc-12",
+      turnId: "tn-1",
+      name: "resource.read",
+      outcome: "Success",
+      duration: "0.4 s",
+      result: "storm-log-2026-01.csv · 4,182 rows, 311 naming FDR-12.",
+      input: '{ "resource": "storm-log-2026-01.csv", "filter": "feeder = FDR-12" }',
+      resolvedScope: "Direct read · no scope resolved"
+    }
+  ];
+
+  const FINDINGS: readonly Finding[] = [
+    {
+      id: "f-nostudy",
+      state: "proposed",
+      title: "No coordination study exists after the 2024 reconductoring",
+      body: "Neither the filings index nor the Commission's public docket lists a coordination study dated after the 2024 reconductoring, which raised available fault current on the tie by roughly 18%.",
+      threadId: "th-feeder",
+      turnId: "tn-3",
+      derivation: "From this turn",
+      inLattice: false,
+      standingOn: [
+        { sourceId: "s-relay", title: "feeder-12-relay.pdf", locator: "p.7", capture: "locator" },
+        {
+          sourceId: "s-docket",
+          title: "nerc.gov/docket/2024-882",
+          locator: "Filing index, 2024",
+          capture: "locator"
+        }
+      ],
+      bearsOn: [
+        {
+          id: "bl-1",
+          kind: "question",
+          ref: "Q-14",
+          title: "Why did Feeder 12 fail twice?",
+          bearing: "Neutral"
+        },
+        {
+          id: "bl-2",
+          kind: "hypothesis",
+          ref: "H-3",
+          title: "Coordination never redone",
+          bearing: "Supports"
+        }
+      ]
+    },
+    {
+      id: "f-settings",
+      state: "proposed",
+      title: "2019 settings are invalid at current fault levels",
+      body: "The settings in service on Feeder 12 were derived in 2019 against 6.2 kA of available fault current. The January event measured 7.3 kA at the same tie, so the coordination margin those settings assume no longer exists.",
+      threadId: "th-feeder",
+      turnId: "tn-3",
+      derivation: "Inference",
+      inLattice: false,
+      standingOn: [
+        {
+          sourceId: "s-study",
+          title: "2019 coordination study.pdf",
+          locator: "§4.2, p.19",
+          capture: "locator"
+        },
+        {
+          sourceId: "s-stormlog",
+          title: "storm-log-2026-01.csv",
+          locator: "rows 1,204–1,318",
+          capture: "locator"
+        }
+      ],
+      bearsOn: [
+        {
+          id: "bl-3",
+          kind: "hypothesis",
+          ref: "H-3",
+          title: "Coordination never redone",
+          bearing: "Supports"
+        }
+      ]
+    },
+    {
+      id: "f-relay",
+      state: "accepted",
+      title: "Feeder 12 relay mis-coordinated",
+      body: "Both January and March failures cleared upstream of the intended device, at 0.42 s against a 0.61 s fuse.",
+      threadId: "th-feeder",
+      turnId: "tn-2",
+      derivation: "From this turn",
+      acceptedBy: "Ana Reyes",
+      acceptedAt: "7 minutes ago",
+      inLattice: true,
+      standingOn: [
+        {
+          sourceId: "s-relay",
+          title: "feeder-12-relay.pdf",
+          locator: "p.7",
+          capture: "excerpt",
+          excerpt:
+            "…the recloser operated at 0.42 s, ahead of the 0.61 s fuse clearing time, so the fault was cleared upstream of the intended device…"
+        },
+        {
+          sourceId: "s-stormlog",
+          title: "storm-log-2026-01.csv",
+          locator: "rows 1,204–1,318",
+          capture: "locator"
+        }
+      ],
+      bearsOn: [
+        {
+          id: "bl-4",
+          kind: "hypothesis",
+          ref: "H-3",
+          title: "Coordination never redone",
+          bearing: "Supports"
+        },
+        {
+          id: "bl-5",
+          kind: "question",
+          ref: "Q-14",
+          title: "Why did Feeder 12 fail twice?",
+          bearing: "Neutral"
+        }
+      ]
+    },
+    {
+      id: "f-sequence",
+      state: "accepted",
+      title: "January and March share a sequence",
+      body: "The 14 January and 3 March operations follow the same order — recloser, lockout, no fuse operation — within 0.02 s of each other. Weather differed; the sequence did not.",
+      threadId: "th-feeder",
+      turnId: "tn-2",
+      derivation: "Inference",
+      acceptedBy: "Mira Jain",
+      acceptedAt: "yesterday",
+      inLattice: true,
+      standingOn: [
+        {
+          sourceId: "s-stormlog",
+          title: "storm-log-2026-01.csv",
+          locator: "rows 1,204–1,318",
+          capture: "excerpt",
+          excerpt: "…14 Jan 2026 03:12:07 · FDR-12 · recloser operation · 0.42 s · lockout after 2…"
+        }
+      ],
+      bearsOn: [
+        {
+          id: "bl-6",
+          kind: "hypothesis",
+          ref: "H-9",
+          title: "One shared upstream device",
+          bearing: "Supports"
+        }
+      ]
+    },
+    {
+      id: "f-revision",
+      state: "accepted",
+      title: "2024 study index lists a revision",
+      body: 'The 2024 filings index carries an entry reading "Protection coordination — Feeder 12, rev. C", dated 8 November 2024, with no document attached to it.',
+      threadId: "th-feeder",
+      turnId: "tn-2",
+      derivation: "From this turn",
+      acceptedBy: "Tomas Kaur",
+      acceptedAt: "yesterday",
+      inLattice: true,
+      standingOn: [
+        {
+          sourceId: "s-nerc",
+          title: "NERC-2025-winter-review.pdf",
+          locator: "p.44",
+          capture: "excerpt",
+          excerpt:
+            "…the register lists a rev. C for the Feeder 12 pair; the corresponding study was not filed…"
+        }
+      ],
+      bearsOn: [
+        {
+          id: "bl-7",
+          kind: "hypothesis",
+          ref: "H-3",
+          title: "Coordination never redone",
+          bearing: "Contradicts"
+        }
+      ]
+    },
+    {
+      id: "f-saidi",
+      state: "accepted",
+      title: "Undergrounding cut SAIDI 38%",
+      body: "The 4.1 km undergrounded in Ward 3 in 2023 cut SAIDI by 38% across the two following winters, against 6% on comparable overhead feeders.",
+      threadId: "th-under",
+      turnId: "tn-u12",
+      derivation: "Inference",
+      acceptedBy: "Mira Jain",
+      acceptedAt: "6 days ago",
+      inLattice: true,
+      standingOn: [
+        {
+          sourceId: "s-nerc",
+          title: "NERC-2025-winter-review.pdf",
+          locator: "p.12",
+          capture: "excerpt",
+          excerpt: "…Ward 3 reported 38% fewer customer-minutes across the 2024 and 2025 winters…"
+        }
+      ],
+      bearsOn: [
+        {
+          id: "bl-8",
+          kind: "hypothesis",
+          ref: "H-7",
+          title: "Undergrounding beats vegetation management",
+          bearing: "Supports"
+        }
+      ]
+    },
+    {
+      id: "f-vegetation",
+      state: "accepted",
+      title: "Vegetation contact explains 61% of Eastbrook outages",
+      body: "Of 1,847 Eastbrook outage events between 2023 and 2025, 1,127 were coded as vegetation contact — 61%, against 34% system-wide.",
+      threadId: "th-eastbrook",
+      turnId: "tn-e3",
+      derivation: "From this turn",
+      acceptedBy: "Ana Reyes",
+      acceptedAt: "3 weeks ago",
+      inLattice: true,
+      standingOn: [
+        {
+          sourceId: "s-inventory",
+          title: "Substation Inventory",
+          locator: "Eastbrook · row 27",
+          capture: "locator"
+        }
+      ],
+      bearsOn: [
+        {
+          id: "bl-9",
+          kind: "hypothesis",
+          ref: "H-7",
+          title: "Undergrounding beats vegetation management",
+          bearing: "Contradicts"
+        }
+      ]
+    },
+    {
+      id: "f-mutualaid",
+      state: "accepted",
+      title: "Mutual aid arrived 14 hours after the January peak",
+      body: "The first out-of-territory crews logged in at 17:40 on 14 January, 14 hours after peak customer-minutes lost. Every comparable filing since 2021 reports under 9 hours.",
+      threadId: "th-precedents",
+      turnId: "tn-p7",
+      derivation: "From this turn",
+      acceptedBy: "Tomas Kaur",
+      acceptedAt: "1 week ago",
+      inLattice: true,
+      standingOn: [
+        {
+          sourceId: "s-nerc",
+          title: "NERC-2025-winter-review.pdf",
+          locator: "p.61",
+          capture: "locator"
+        }
+      ],
+      bearsOn: []
+    }
+  ];
+
+  const thread = (threadId: string): Read<ResearchThread> =>
+    read(THREADS.find((candidate) => candidate.id === threadId) ?? THREADS[0]);
+
+  const threadsIn = (projectId: string): Read<readonly ResearchThread[]> => {
+    void projectId;
+    return read(THREADS);
+  };
+
+  const currentTurn = (threadId: string): Read<Turn> => {
+    void threadId;
+    return read(TURNS[0]);
+  };
+
+  const proposedIn = (turnId: string): Read<readonly Finding[]> =>
+    read(FINDINGS.filter((found) => found.state === "proposed" && found.turnId === turnId));
+
+  const acceptedIn = (threadId: string): Read<readonly Finding[]> =>
+    read(FINDINGS.filter((found) => found.state === "accepted" && found.threadId === threadId));
+
+  const sourcesForTurn = (turnId: string): Read<readonly Source[]> => {
+    const ids = SOURCES_BY_TURN[turnId] ?? [];
+    return read(SOURCES.filter((source) => ids.includes(source.id)));
+  };
+
+  const traceIn = (threadId: string): Read<readonly TurnTrace[]> => {
+    void threadId;
+    return read(
+      TURNS.map((turn: Turn, index: number) => ({
+        turnId: turn.id,
+        heading: index === 0 ? `This turn · ${turn.at}` : turn.at,
+        calls: CALLS.filter((call: ToolCall) => call.turnId === turn.id)
+      }))
+    );
+  };
+
+  const searchScope = (threadId: string): Read<ThreadScope> => {
+    void threadId;
+    return read({
+      name: "Field reports 2024–25",
+      resources: 96,
+      web: true,
+      resolvedAt: "10:21:04",
+      indexed: 88,
+      withoutMaterial: 8,
+      unbounded: false
+    });
+  };
 
   /**
    * One line of enquiry: the turn you are on, and what it produced.

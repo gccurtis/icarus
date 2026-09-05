@@ -47,6 +47,8 @@ export const templates = defineTable({
   kind: templateKindValidator,
   name: v.string(),
   description: v.optional(v.string()),
+  /** Flat library labels. An empty array means untagged. */
+  tags: v.array(v.string()),
   body: templateBodyValidator,
   variables: v.array(templateVariableValidator),
   createdBy: actorValidator,
@@ -287,6 +289,7 @@ export const templateVersions = defineTable({
   revision: v.number(),
   name: v.string(),
   description: v.optional(v.string()),
+  tags: v.array(v.string()),
   body: templateBodyValidator,
   variables: v.array(templateVariableValidator),
   at: v.number()

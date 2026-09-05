@@ -16,17 +16,10 @@ import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { BackReferenceTargetKind } from "$representation/data/types/data/back-reference";
 import type { FormulaUse } from "$representation/data/types/data/formula-use";
 import type {
-  ConnectionStatus,
+  ConnectorConfiguration,
   ConnectorCredential,
-  ConnectorProvider,
-  ConnectorStatus
 } from "$representation/data/types/external/connector";
-import type {
-  Dimensions,
-  FileOrigin,
-  FileSubkind,
-  Readability
-} from "$representation/data/types/external/file";
+import type { ExternalFileOrigin } from "$representation/data/types/external/file";
 import type { FindingSource } from "$representation/data/types/investigation/finding";
 import type {
   HypothesisAssessment,
@@ -65,7 +58,6 @@ import type {
 } from "$representation/data/types/spreadsheets/snapshot";
 import type {
   TemplateBody,
-  TemplateKind,
   TemplateVariable
 } from "$representation/data/types/templates/template";
 import type { WorkspaceOp } from "$representation/data/types/workspace/op";
@@ -346,9 +338,10 @@ export type AgentTask = Row<"agentTasks"> & AgentTaskFields;
 
 export type TemplateFields = {
   userId: Id<"users">;
-  kind: TemplateKind;
   name: string;
   description?: string;
+  /** Flat library labels. An empty array means the template is untagged. */
+  tags: string[];
   body: TemplateBody;
   variables: TemplateVariable[];
   createdBy: Actor;
@@ -362,6 +355,7 @@ export type TemplateVersionFields = {
   revision: number;
   name: string;
   description?: string;
+  tags: string[];
   body: TemplateBody;
   variables: TemplateVariable[];
   at: number;
@@ -381,46 +375,22 @@ export type NamedResourceSet = Row<"resourceSets"> & NamedResourceSetFields;
 
 export type ConnectorFields = {
   projectId: Id<"projects">;
-  provider: ConnectorProvider;
-  account: string;
   name: string;
-  selection: string;
-  cursor?: string;
-  status: ConnectorStatus;
-  lastSyncedAt?: number;
-  error?: string;
+  configuration: ConnectorConfiguration;
   credential?: ConnectorCredential;
+  refreshIntervalMs?: number;
   createdBy: Actor;
   updatedAt: number;
 };
 export type Connector = Row<"connectors"> & ConnectorFields;
 
-export type ConnectionFields = {
-  projectId: Id<"projects">;
-  connectorId: Id<"connectors">;
-  externalId: string;
-  externalUrl?: string;
-  name: string;
-  subkind: FileSubkind;
-  size?: number;
-  revision: string;
-  status: ConnectionStatus;
-  error?: string;
-  updatedAt: number;
-};
-export type Connection = Row<"connections"> & ConnectionFields;
-
 export type ExternalFileFields = {
   projectId: Id<"projects">;
-  storageId: Id<"_storage">;
   name: string;
-  size: number;
-  subkind: FileSubkind;
-  origin: FileOrigin;
-  supersedes?: Id<"externalFiles">;
-  pageCount?: number;
-  dimensions?: Dimensions;
-  readable: Readability;
+  mediaType: string;
+  storageId: Id<"_storage">;
+  hash: string;
+  origin: ExternalFileOrigin;
   createdBy: Actor;
   updatedAt: number;
 };
@@ -568,7 +538,6 @@ export const TABLE_NAMES = [
   "agentTasks",
   "comments",
   "commentThreads",
-  "connections",
   "connectors",
   "dataBackReferences",
   "derivedOutputs",
@@ -616,7 +585,6 @@ export type TableFields = {
   agentTasks: AgentTaskFields;
   comments: CommentFields;
   commentThreads: CommentThreadFields;
-  connections: ConnectionFields;
   connectors: ConnectorFields;
   dataBackReferences: DataBackReferenceFields;
   derivedOutputs: DerivedOutputFields;

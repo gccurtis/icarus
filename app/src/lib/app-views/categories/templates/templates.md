@@ -6,12 +6,13 @@ The templates a project can start from, and the authoring of them. A singleton.
 
 | Content | Shows |
 | --- | --- |
-| [`library.svelte`](content/library.svelte) | A place rather than a list: folders, and templates made elsewhere |
+| [`library.svelte`](content/library.svelte) | A recently used shelf over a searchable, tag-filterable table |
 | [`editor.svelte`](content/editor.svelte) | One template being authored |
 
-The only category that keeps a library-and-editor pair. The library has folders
-and holds templates that were never made here, so it is somewhere you navigate
-rather than a table you read down — and the editor is entered by choosing one.
+The library currently stands on its own. Tags are flat labels rather than a
+navigation hierarchy, and double-click remains an alert until entry into the
+editor is designed again. Its context rail offers only
+`overview-library`; the authoring context views below stay off the rail for now.
 
 ## Context
 
@@ -105,37 +106,14 @@ Routes to `general.person`.
 
 ### overview-library
 
-What a template is, what this project has, and what is selected. The panel opens
-on the sentence that explains the whole authoring category: **a template is an
-ordinary body with some of it left open**, so authoring one is authoring a
-document, a deck, a slide or a spreadsheet, and there is no separate template
-editor. Everything on the authoring centre follows from that.
+The compact map of the template library. New template offers Document, Slide
+deck and Spreadsheet; each creates a session-local Project row and routes to
+`templates.template` without claiming persistence.
 
-In this project is a total and then one count per kind — Documents, Slide decks,
-Single slides, Spreadsheets. **The counts are by kind rather than one total**,
-because the fastest way to notice this project has no deck template is a zero
-beside Slide decks; and the plural has to say which kind it means, since a single
-slide is not a deck.
-
-From outside this project is a separate count, kept apart from the project's own
-on purpose. A shared or personal template can be used here, and who may edit one
-is a deployment rule the model does not carry — the same thing the Personas list
-says about a global persona — so the panel counts them and claims nothing about
-them.
-
-Selected is the chosen template's name, what it makes, and what it asks for, read
-as so many required of so many. Open opens the template lens. Use is primary and
-disabled, and the reason on it is the one the instantiation form itself gives
-rather than a guess made here: nothing in a body records which variable it stands
-for, so a supplied value would have nowhere to go.
-
-New template sits in the actions row, because making a template is an act of the
-map rather than of any one title — what you can add belongs beside the counts
-that say how much there already is. There is no kind picker yet, so it lands on a
-blank document rather than asking what to make first; the library's own
-template-kinds panel is where a target is chosen deliberately.
-
-Routes to `templates.template` from Open and `templates.use-template` from Use.
+Library reports the total, then Project, Shared and Personal availability counts
+and Document, Slide deck and Spreadsheet kind counts in one record. It repeats
+neither recent use nor the selected template because the centre shelf and the
+inspector already own those. Neither section collapses.
 
 ### recent
 
@@ -253,32 +231,20 @@ Routes to `templates.template` from the owner.
 
 ### template
 
-A template in the library: what it makes, what it looks like, what it asks for,
-and what you can do to it. The counterpart to `start-from-template`, and the
-editable one of the two.
+A lens for one template. Identity is compact: scope, kind and update time on one
+line; creator on the next; then the description without an About heading. The
+description becomes a textarea on double click. Duplicate and Delete sit under
+it. All three actions update only the shared session-local mock.
 
-Bands in order: this template — name, what it makes, who it is available to;
-preview; what it will ask for; actions; then attribution, which arrives shut
-because it is context rather than the reason the panel opened.
+Variables come before Tags and the two are separated from Identity and each
+other by dividers. The Variables heading owns its count. Every variable is a
+disclosure whose open state shows its description, stored key, type and whether
+it is required. A template with no variables says so explicitly. Tags finish
+with an expanding input and plus button for adding a unique label.
 
-The model has no thumbnail, tag, category, favourite or usage count, and this
-lens does not pretend otherwise. The preview is the only visual identity a
-template has, and it is drawn from the real body. A variable region in it is
-coloured rather than boxed, because at that size a border around three words is
-a smudge.
-
-What it makes is fixed at creation and reads as a fact with that said on the
-face of it, not as a control.
-
-What it deliberately does not do: **Use** is disabled and stays disabled —
-nothing in a body records which variable it stands for, so a supplied value
-would have nowhere to go, and the preview cannot distinguish the variable
-regions for the same reason. **Duplicate** is disabled for a duller reason:
-nothing writes a template, so a copy would not survive the next read.
-
-Routes to `templates.template-variable` from a variable row and
-`general.person` from the creator. **Edit** opens the authoring centre
-on this template.
+There is no preview, revision field or template-id field. Field keys and values
+share the caption type step; hierarchy comes from weight and colour rather than
+an accidental size mismatch.
 
 ### template-variable
 
@@ -332,10 +298,11 @@ Create is disabled, carrying the same reason on the button and under it.
 
 ## What is not here
 
-**Nothing writes.** Ten panels, twelve editable values between them, and every
-one is held where it was typed. The two controls that do anything at all are Run
-again, which evaluates and stores nothing, and the deck's re-frame, which is
-staged, confirmed, and then held like everything else.
+**Nothing writes durably.** The library description, tag, create, duplicate and
+delete controls update one shared session-local mock, so the centre, context and
+inspector agree until reload. They do not touch representation or invoke a
+capability. The other editable panel values are likewise held where they were
+typed.
 
 **Attribution is thin, and thin differently on each panel.** The project records
 neither a creator nor an updater and says its dates are dates only. A document
@@ -354,13 +321,10 @@ sit, the Insert variable rows are inert, and a variable row cannot point into
 the document beside it. Every panel that touches it says so in its own words
 rather than quietly omitting the control.
 
-**Nothing writes a template back.** Renaming and re-scoping are held locally and
-lost on reload; a duplicate would exist only until the next read.
-
-**Almost nothing here creates.** Nothing counts template uses, starts a thread,
-creates an analysis, or mints a template. Where a New button exists it opens a
-lens, lands the centre on a blank id, or reaches for an existing row it has not
-already opened — it does not make a record this panel would then fail to list.
+**Library changes are explicitly temporary.** A new or duplicated template does
+appear in every library view, and delete removes it from all three, but the mock
+resets on reload. Durable creation still waits for a representation-backed write
+path.
 
 **Slide templates have no launcher route**, because there is no editor that
 opens one slide.
@@ -371,10 +335,6 @@ records which variable it stands for. That single absence disables Use in
 anything, keeps both previews from marking their variable regions, and is the
 whole of what `template-variable` has to say about where a variable appears.
 Every lens states it in its own words rather than quietly dropping the control.
-
-**Nothing writes a template.** Names and scopes edited in `template` are held
-locally, and Duplicate is disabled because a copy would not outlive the next
-read.
 
 **Only text can be supplied.** Image and table variables are read-only wherever
 a value is asked for, waiting on a picker, an upload, or both.
