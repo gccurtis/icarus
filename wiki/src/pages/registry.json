@@ -1,0 +1,1028 @@
+[
+  {
+    "route": "/",
+    "title": "Overview",
+    "group": "Start",
+    "file": "pages/Overview.tsx",
+    "summary": "What Icarus is, the nine trees at a glance, and where to start reading.",
+    "keywords": "home start reading order counts",
+    "headings": [
+      {
+        "id": "what-this-is",
+        "text": "What this is"
+      },
+      {
+        "id": "the-nine-trees",
+        "text": "The nine trees"
+      },
+      {
+        "id": "reading-order",
+        "text": "Reading order"
+      },
+      {
+        "id": "how-this-wiki-is-built",
+        "text": "How this wiki is built"
+      }
+    ]
+  },
+  {
+    "route": "/architecture",
+    "title": "Architecture",
+    "group": "Start",
+    "file": "pages/Architecture.tsx",
+    "summary": "The dependency direction between trees, the client/server split, the one crossing, and the two composition roots.",
+    "keywords": "dependency direction layering client server crossing composition root aliases homes",
+    "headings": [
+      {
+        "id": "the-direction-of-dependency",
+        "text": "The direction of dependency"
+      },
+      {
+        "id": "two-processes-one-home-per-module",
+        "text": "Two processes, one home per module"
+      },
+      {
+        "id": "the-one-crossing",
+        "text": "The one crossing"
+      },
+      {
+        "id": "two-composition-roots",
+        "text": "Two composition roots"
+      },
+      {
+        "id": "routes",
+        "text": "Routes"
+      },
+      {
+        "id": "aliases",
+        "text": "Aliases"
+      },
+      {
+        "id": "third-party-packages",
+        "text": "Third-party packages"
+      }
+    ]
+  },
+  {
+    "route": "/trees/representation",
+    "title": "Representation",
+    "group": "Trees",
+    "file": "pages/Tree.tsx",
+    "summary": "The vocabulary every other tree speaks: types that emit nothing, pure behaviour, and the store's table declarations.",
+    "keywords": "types behavior store tables domains vocabulary",
+    "headings": [
+      {
+        "id": "what-it-is",
+        "text": "What it is"
+      },
+      {
+        "id": "what-it-owns",
+        "text": "What it owns"
+      },
+      {
+        "id": "what-it-may-and-may-not-import",
+        "text": "What it may and may not import"
+      },
+      {
+        "id": "shape-on-disk",
+        "text": "Shape on disk"
+      },
+      {
+        "id": "invariants",
+        "text": "Invariants"
+      },
+      {
+        "id": "what-to-open-first",
+        "text": "What to open first"
+      },
+      {
+        "id": "units",
+        "text": "Units"
+      }
+    ]
+  },
+  {
+    "route": "/trees/capabilities",
+    "title": "Capabilities",
+    "group": "Trees",
+    "file": "pages/Tree.tsx",
+    "summary": "The server's procedures and the only client→server crossing: index.remote.ts, requireScope, validate, act.",
+    "keywords": "remote query command procedure requireScope validate",
+    "headings": [
+      {
+        "id": "what-it-is",
+        "text": "What it is"
+      },
+      {
+        "id": "what-it-owns",
+        "text": "What it owns"
+      },
+      {
+        "id": "what-it-may-and-may-not-import",
+        "text": "What it may and may not import"
+      },
+      {
+        "id": "shape-on-disk",
+        "text": "Shape on disk"
+      },
+      {
+        "id": "invariants",
+        "text": "Invariants"
+      },
+      {
+        "id": "what-to-open-first",
+        "text": "What to open first"
+      },
+      {
+        "id": "units",
+        "text": "Units"
+      }
+    ]
+  },
+  {
+    "route": "/trees/model",
+    "title": "Model",
+    "group": "Trees",
+    "file": "pages/Tree.tsx",
+    "summary": "Objects with a lifetime: client runtimes and workspace state, server store and configuration. One instance each, built by the runtime.",
+    "keywords": "object definition constructor methods runes workspace-state runtimes store",
+    "headings": [
+      {
+        "id": "what-it-is",
+        "text": "What it is"
+      },
+      {
+        "id": "what-it-owns",
+        "text": "What it owns"
+      },
+      {
+        "id": "what-it-may-and-may-not-import",
+        "text": "What it may and may not import"
+      },
+      {
+        "id": "shape-on-disk",
+        "text": "Shape on disk"
+      },
+      {
+        "id": "invariants",
+        "text": "Invariants"
+      },
+      {
+        "id": "what-to-open-first",
+        "text": "What to open first"
+      },
+      {
+        "id": "units",
+        "text": "Units"
+      }
+    ]
+  },
+  {
+    "route": "/trees/runtime",
+    "title": "Runtime",
+    "group": "Trees",
+    "file": "pages/Tree.tsx",
+    "summary": "Two composition roots that build the object graph once, in dependency order, and hold the only instance.",
+    "keywords": "start.ts start.server.ts buildClientModel initServerModel accessor scope",
+    "headings": [
+      {
+        "id": "what-it-is",
+        "text": "What it is"
+      },
+      {
+        "id": "what-it-owns",
+        "text": "What it owns"
+      },
+      {
+        "id": "what-it-may-and-may-not-import",
+        "text": "What it may and may not import"
+      },
+      {
+        "id": "shape-on-disk",
+        "text": "Shape on disk"
+      },
+      {
+        "id": "invariants",
+        "text": "Invariants"
+      },
+      {
+        "id": "what-to-open-first",
+        "text": "What to open first"
+      },
+      {
+        "id": "units",
+        "text": "Units"
+      }
+    ]
+  },
+  {
+    "route": "/trees/components",
+    "title": "Components",
+    "group": "Trees",
+    "file": "pages/Tree.tsx",
+    "summary": "Authored vocabularies, vendored shadcn parts, and one development tracer. Props in, events out, no model.",
+    "keywords": "authored vendored shadcn vocabulary panel chart screen",
+    "headings": [
+      {
+        "id": "what-it-is",
+        "text": "What it is"
+      },
+      {
+        "id": "what-it-owns",
+        "text": "What it owns"
+      },
+      {
+        "id": "what-it-may-and-may-not-import",
+        "text": "What it may and may not import"
+      },
+      {
+        "id": "shape-on-disk",
+        "text": "Shape on disk"
+      },
+      {
+        "id": "invariants",
+        "text": "Invariants"
+      },
+      {
+        "id": "what-to-open-first",
+        "text": "What to open first"
+      },
+      {
+        "id": "units",
+        "text": "Units"
+      }
+    ]
+  },
+  {
+    "route": "/trees/styles",
+    "title": "Styles",
+    "group": "Trees",
+    "file": "pages/Tree.tsx",
+    "summary": "The four-stage cascade: chromatic themes, the slot table, semantic tokens, integrations. One entry file, one direction of reference.",
+    "keywords": "app.css themes slots tokens tailwind shadcn cascade",
+    "headings": [
+      {
+        "id": "what-it-is",
+        "text": "What it is"
+      },
+      {
+        "id": "what-it-owns",
+        "text": "What it owns"
+      },
+      {
+        "id": "what-it-may-and-may-not-import",
+        "text": "What it may and may not import"
+      },
+      {
+        "id": "shape-on-disk",
+        "text": "Shape on disk"
+      },
+      {
+        "id": "invariants",
+        "text": "Invariants"
+      },
+      {
+        "id": "what-to-open-first",
+        "text": "What to open first"
+      },
+      {
+        "id": "units",
+        "text": "Units"
+      }
+    ]
+  },
+  {
+    "route": "/trees/surfaces",
+    "title": "Surfaces",
+    "group": "Trees",
+    "file": "pages/Tree.tsx",
+    "summary": "The eight shipped frames of the screen, each a root component and five concerns.",
+    "keywords": "app top-bar tab-bar content context inspector status-bar command-bar concerns effects procedures",
+    "headings": [
+      {
+        "id": "what-it-is",
+        "text": "What it is"
+      },
+      {
+        "id": "what-it-owns",
+        "text": "What it owns"
+      },
+      {
+        "id": "what-it-may-and-may-not-import",
+        "text": "What it may and may not import"
+      },
+      {
+        "id": "shape-on-disk",
+        "text": "Shape on disk"
+      },
+      {
+        "id": "invariants",
+        "text": "Invariants"
+      },
+      {
+        "id": "what-to-open-first",
+        "text": "What to open first"
+      },
+      {
+        "id": "units",
+        "text": "Units"
+      }
+    ]
+  },
+  {
+    "route": "/trees/app-views",
+    "title": "App views",
+    "group": "Trees",
+    "file": "pages/Tree.tsx",
+    "summary": "The category views the surfaces render by key: content, context and inspector leaves whose paths are their names.",
+    "keywords": "categories content context inspector general view keys editors",
+    "headings": [
+      {
+        "id": "what-it-is",
+        "text": "What it is"
+      },
+      {
+        "id": "what-it-owns",
+        "text": "What it owns"
+      },
+      {
+        "id": "what-it-may-and-may-not-import",
+        "text": "What it may and may not import"
+      },
+      {
+        "id": "shape-on-disk",
+        "text": "Shape on disk"
+      },
+      {
+        "id": "invariants",
+        "text": "Invariants"
+      },
+      {
+        "id": "what-to-open-first",
+        "text": "What to open first"
+      },
+      {
+        "id": "units",
+        "text": "Units"
+      }
+    ]
+  },
+  {
+    "route": "/trees/development-views",
+    "title": "Development views",
+    "group": "Trees",
+    "file": "pages/Tree.tsx",
+    "summary": "Demo and review surfaces under /demo that ship nowhere: the catalogue, the stack builder, the overlay demo.",
+    "keywords": "demo review vocabulary stack-builder semantic-overlay plot blocks analysis thread",
+    "headings": [
+      {
+        "id": "what-it-is",
+        "text": "What it is"
+      },
+      {
+        "id": "what-it-owns",
+        "text": "What it owns"
+      },
+      {
+        "id": "what-it-may-and-may-not-import",
+        "text": "What it may and may not import"
+      },
+      {
+        "id": "shape-on-disk",
+        "text": "Shape on disk"
+      },
+      {
+        "id": "invariants",
+        "text": "Invariants"
+      },
+      {
+        "id": "what-to-open-first",
+        "text": "What to open first"
+      },
+      {
+        "id": "units",
+        "text": "Units"
+      }
+    ]
+  },
+  {
+    "route": "/browse/representation",
+    "title": "Browse representation",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "Every file under src/lib/representation.",
+    "headings": []
+  },
+  {
+    "route": "/browse/capabilities",
+    "title": "Browse capabilities",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "Every file under src/lib/capabilities.",
+    "headings": []
+  },
+  {
+    "route": "/browse/model",
+    "title": "Browse model",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "Every file under src/lib/model.",
+    "headings": []
+  },
+  {
+    "route": "/browse/runtime",
+    "title": "Browse runtime",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "Every file under src/lib/runtime.",
+    "headings": []
+  },
+  {
+    "route": "/browse/components",
+    "title": "Browse components",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "Every file under src/lib/components.",
+    "headings": []
+  },
+  {
+    "route": "/browse/styles",
+    "title": "Browse styles",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "Every file under src/lib/styles.",
+    "headings": []
+  },
+  {
+    "route": "/browse/surfaces",
+    "title": "Browse surfaces",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "Every file under src/lib/surfaces.",
+    "headings": []
+  },
+  {
+    "route": "/browse/app-views",
+    "title": "Browse app views",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "Every file under src/lib/app-views.",
+    "headings": []
+  },
+  {
+    "route": "/browse/development-views",
+    "title": "Browse development views",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "Every file under src/lib/development-views.",
+    "headings": []
+  },
+  {
+    "route": "/browse/routes",
+    "title": "Browse routes",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "Every file under src/routes.",
+    "headings": []
+  },
+  {
+    "route": "/browse/root",
+    "title": "Browse root files",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "app.html, app.d.ts and hooks.server.ts.",
+    "headings": []
+  },
+  {
+    "route": "/browse/test",
+    "title": "Browse route-wide tests",
+    "group": "Browse",
+    "file": "pages/Browse.tsx",
+    "summary": "Tests under src/test that span the routes.",
+    "headings": []
+  },
+  {
+    "route": "/checks",
+    "title": "Lint checks",
+    "group": "Law",
+    "file": "pages/Checks.tsx",
+    "summary": "The 63 checks as documented law: what each says, in its own words, and what breaks when it fails.",
+    "keywords": "lint law invariant mutation says subjects",
+    "headings": [
+      {
+        "id": "how-a-check-works",
+        "text": "How a check works"
+      },
+      {
+        "id": "capabilities",
+        "text": "capabilities"
+      },
+      {
+        "id": "components",
+        "text": "components"
+      },
+      {
+        "id": "model",
+        "text": "model"
+      },
+      {
+        "id": "representation",
+        "text": "representation"
+      },
+      {
+        "id": "runtime",
+        "text": "runtime"
+      },
+      {
+        "id": "styles",
+        "text": "styles"
+      },
+      {
+        "id": "surfaces",
+        "text": "surfaces"
+      },
+      {
+        "id": "views",
+        "text": "views"
+      },
+      {
+        "id": "across",
+        "text": "across"
+      },
+      {
+        "id": "the-shared-helpers",
+        "text": "The shared helpers"
+      }
+    ]
+  },
+  {
+    "route": "/generators",
+    "title": "Generators",
+    "group": "Law",
+    "file": "pages/Generators.tsx",
+    "summary": "Every pnpm new-* command, the Plan they share, and the two rewriters that keep aliases and imports canonical.",
+    "keywords": "pnpm new-capability new-view scaffold plan dry-run category-keys aliases imports seed",
+    "headings": [
+      {
+        "id": "how-a-generator-works",
+        "text": "How a generator works"
+      },
+      {
+        "id": "the-commands",
+        "text": "The commands"
+      },
+      {
+        "id": "the-rewriters",
+        "text": "The rewriters"
+      },
+      {
+        "id": "what-proves-them",
+        "text": "What proves them"
+      }
+    ]
+  },
+  {
+    "route": "/tests",
+    "title": "Tests",
+    "group": "Law",
+    "file": "pages/Tests.tsx",
+    "summary": "The two suites, every test file mapped to what it exercises, and the gaps by tree.",
+    "keywords": "vitest pnpm test test:scripts coverage unit regression non-functional gaps",
+    "headings": [
+      {
+        "id": "two-suites",
+        "text": "Two suites"
+      },
+      {
+        "id": "coverage-by-tree",
+        "text": "Coverage by tree"
+      },
+      {
+        "id": "gaps",
+        "text": "Gaps"
+      }
+    ]
+  },
+  {
+    "route": "/design-system",
+    "title": "Design system",
+    "group": "Design system",
+    "file": "pages/design/Overview.tsx",
+    "summary": "The layered contract from palette to component, and how one colour travels through it.",
+    "keywords": "palette theme slot token integration cascade colour path light-dark",
+    "headings": [
+      {
+        "id": "four-stages-one-direction",
+        "text": "Four stages, one direction"
+      },
+      {
+        "id": "how-a-colour-reaches-a-component",
+        "text": "How a colour reaches a component"
+      },
+      {
+        "id": "roles-and-hues",
+        "text": "Roles and hues"
+      },
+      {
+        "id": "the-entry-file",
+        "text": "The entry file"
+      }
+    ]
+  },
+  {
+    "route": "/design-system/themes",
+    "title": "Chromatic themes",
+    "group": "Design system",
+    "file": "pages/design/Themes.tsx",
+    "summary": "Celestial and cyberpunk: thirteen palette ramps of seven steps and thirteen theme tokens each.",
+    "keywords": "celestial cyberpunk palette ramp steps faded light muted normal emphasized strong deep",
+    "headings": [
+      {
+        "id": "what-a-theme-declares",
+        "text": "What a theme declares"
+      },
+      {
+        "id": "celestial",
+        "text": "celestial"
+      },
+      {
+        "id": "cyberpunk",
+        "text": "cyberpunk"
+      }
+    ]
+  },
+  {
+    "route": "/design-system/slots",
+    "title": "Slot table",
+    "group": "Design system",
+    "file": "pages/design/Slots.tsx",
+    "summary": "slots.css: every chromatic hue folded into surface, border, fill and text slots with light-dark().",
+    "keywords": "slots.css chromatic light-dark surface border fill text",
+    "headings": [
+      {
+        "id": "what-a-slot-is",
+        "text": "What a slot is"
+      },
+      {
+        "id": "the-table",
+        "text": "The table"
+      }
+    ]
+  },
+  {
+    "route": "/design-system/tokens",
+    "title": "Semantic tokens",
+    "group": "Design system",
+    "file": "pages/design/Tokens.tsx",
+    "summary": "The public boundary: every --token-* a component may name, by domain, with its live value.",
+    "keywords": "token color typography spacing shape motion public boundary",
+    "headings": [
+      {
+        "id": "the-public-boundary",
+        "text": "The public boundary"
+      },
+      {
+        "id": "color",
+        "text": "color"
+      },
+      {
+        "id": "typography",
+        "text": "typography"
+      },
+      {
+        "id": "spacing",
+        "text": "spacing"
+      },
+      {
+        "id": "shape",
+        "text": "shape"
+      },
+      {
+        "id": "motion",
+        "text": "motion"
+      }
+    ]
+  },
+  {
+    "route": "/design-system/integrations",
+    "title": "Integrations",
+    "group": "Design system",
+    "file": "pages/design/Integrations.tsx",
+    "summary": "How Tailwind and shadcn see the tokens without seeing behind them.",
+    "keywords": "tailwind @theme static shadcn bridge variants generated.css quarantine",
+    "headings": [
+      {
+        "id": "tailwind",
+        "text": "tailwind"
+      },
+      {
+        "id": "shadcn",
+        "text": "shadcn"
+      }
+    ]
+  },
+  {
+    "route": "/data-model",
+    "title": "Data model",
+    "group": "Data",
+    "file": "pages/DataModel.tsx",
+    "summary": "The 42 tables from tables.ts, the domain graph from representation.yaml, and the path algebra the store speaks.",
+    "keywords": "tables rows fields Id domain graph store path admission ops",
+    "headings": [
+      {
+        "id": "where-the-model-lives",
+        "text": "Where the model lives"
+      },
+      {
+        "id": "the-domain-graph",
+        "text": "The domain graph"
+      },
+      {
+        "id": "the-tables",
+        "text": "The tables"
+      },
+      {
+        "id": "the-store",
+        "text": "The store"
+      }
+    ]
+  },
+  {
+    "route": "/views",
+    "title": "View vocabulary",
+    "group": "Data",
+    "file": "pages/Views.tsx",
+    "summary": "Every category, content view, context view and inspector lens the workspace can name, and which of them exist on disk.",
+    "keywords": "categories keys opening rail singletons commands bindings",
+    "headings": [
+      {
+        "id": "keys-are-paths",
+        "text": "Keys are paths"
+      },
+      {
+        "id": "categories",
+        "text": "Categories"
+      },
+      {
+        "id": "content-views",
+        "text": "Content views"
+      },
+      {
+        "id": "context-views",
+        "text": "Context views"
+      },
+      {
+        "id": "inspector-lenses",
+        "text": "Inspector lenses"
+      },
+      {
+        "id": "commands",
+        "text": "Commands"
+      }
+    ]
+  },
+  {
+    "route": "/configuration",
+    "title": "Configuration",
+    "group": "Data",
+    "file": "pages/Configuration.tsx",
+    "summary": "The seven YAML files under app/configuration, what reads them, and the keys published to the browser.",
+    "keywords": "yaml revisions workspace slide-deck semantic-overlay observability dev representation published keys",
+    "headings": [
+      {
+        "id": "the-files",
+        "text": "The files"
+      },
+      {
+        "id": "what-the-browser-sees",
+        "text": "What the browser sees"
+      }
+    ]
+  },
+  {
+    "route": "/algorithms/document-editor",
+    "title": "Document editor",
+    "group": "Algorithms",
+    "file": "pages/algorithms/DocumentEditor.tsx",
+    "summary": "Document-first editing: the runtime body is truth, ProseMirror is a projection and an input device, and every keystroke becomes ops.",
+    "keywords": "prosemirror projection translate paginate schema ops rows blocks",
+    "headings": [
+      {
+        "id": "the-claim",
+        "text": "The claim"
+      },
+      {
+        "id": "the-loop",
+        "text": "The loop"
+      },
+      {
+        "id": "the-projected-schema",
+        "text": "The projected schema"
+      },
+      {
+        "id": "translation",
+        "text": "Translation"
+      },
+      {
+        "id": "pagination",
+        "text": "Pagination"
+      },
+      {
+        "id": "split-merge-inspect-highlight",
+        "text": "Split, merge, inspect, highlight"
+      }
+    ]
+  },
+  {
+    "route": "/algorithms/semantic-overlay",
+    "title": "Semantic overlay",
+    "group": "Algorithms",
+    "file": "pages/algorithms/SemanticOverlay.tsx",
+    "summary": "How a body becomes segments: encoding, token alignment, distance-discounted attraction, and basin detection.",
+    "keywords": "semantic overlay segmentation attraction basin tokens alignment translation configuration",
+    "headings": [
+      {
+        "id": "what-it-does",
+        "text": "What it does"
+      },
+      {
+        "id": "encoding-and-alignment",
+        "text": "Encoding and alignment"
+      },
+      {
+        "id": "distance-discounted-attraction",
+        "text": "Distance-discounted attraction"
+      },
+      {
+        "id": "basins-and-boundaries",
+        "text": "Basins and boundaries"
+      },
+      {
+        "id": "configuration",
+        "text": "Configuration"
+      }
+    ]
+  },
+  {
+    "route": "/algorithms/slide-deck",
+    "title": "Slide deck editor",
+    "group": "Algorithms",
+    "file": "pages/algorithms/SlideDeck.tsx",
+    "summary": "Konva as a projection: stage metrics in rem, procedures that return the next deck, and the runtime that buffers ops.",
+    "keywords": "konva stage slide element frame zoom gutter deck procedures",
+    "headings": [
+      {
+        "id": "the-stage",
+        "text": "The stage"
+      },
+      {
+        "id": "procedures-over-a-deck",
+        "text": "Procedures over a deck"
+      },
+      {
+        "id": "from-procedure-to-op",
+        "text": "From procedure to op"
+      }
+    ]
+  },
+  {
+    "route": "/algorithms/charts",
+    "title": "Charts",
+    "group": "Algorithms",
+    "file": "pages/algorithms/Charts.tsx",
+    "summary": "The chart vocabulary: a spec, a layout that places marks, layerchart for the axes, and role tokens for the series.",
+    "keywords": "layerchart chart spec plot layout marks series palette selection copy png",
+    "headings": [
+      {
+        "id": "the-vocabulary",
+        "text": "The vocabulary"
+      },
+      {
+        "id": "from-spec-to-marks",
+        "text": "From spec to marks"
+      },
+      {
+        "id": "series-colour",
+        "text": "Series colour"
+      }
+    ]
+  },
+  {
+    "route": "/algorithms/workspace",
+    "title": "Workspace ledger",
+    "group": "Algorithms",
+    "file": "pages/algorithms/Workspace.tsx",
+    "summary": "Workspace state as a ledger of invertible ops: tabs, views, frames, undo and redo, and what is flushed to the server.",
+    "keywords": "workspace-state ledger WorkspaceOp invert undo redo tab-list tab-views flush",
+    "headings": [
+      {
+        "id": "the-ledger",
+        "text": "The ledger"
+      },
+      {
+        "id": "opening-a-category",
+        "text": "Opening a category"
+      },
+      {
+        "id": "collaborators",
+        "text": "Collaborators"
+      },
+      {
+        "id": "persistence",
+        "text": "Persistence"
+      }
+    ]
+  },
+  {
+    "route": "/algorithms/revisions",
+    "title": "Revisions",
+    "group": "Algorithms",
+    "file": "pages/algorithms/Revisions.tsx",
+    "summary": "Buffer, coalesce, flush, rebase: how a resource runtime keeps an edit buffer honest against the server's change sets.",
+    "keywords": "runtime buffer coalesce flush rebase stale needs-review history snapshot change set",
+    "headings": [
+      {
+        "id": "the-shape-of-a-runtime",
+        "text": "The shape of a runtime"
+      },
+      {
+        "id": "thresholds",
+        "text": "Thresholds"
+      },
+      {
+        "id": "the-server-side",
+        "text": "The server side"
+      }
+    ]
+  },
+  {
+    "route": "/traces/capability",
+    "title": "Trace: a capability",
+    "group": "Traces",
+    "file": "pages/traces/Capability.tsx",
+    "summary": "submitDocumentChanges followed end to end, from a keystroke to a change set on disk.",
+    "keywords": "trace submitDocumentChanges keystroke flush requireScope validate leader apply-ops store",
+    "headings": [
+      {
+        "id": "the-path",
+        "text": "The path"
+      },
+      {
+        "id": "step-by-step",
+        "text": "Step by step"
+      },
+      {
+        "id": "adding-a-procedure",
+        "text": "Adding a procedure"
+      }
+    ]
+  },
+  {
+    "route": "/traces/view",
+    "title": "Trace: a view",
+    "group": "Traces",
+    "file": "pages/traces/View.tsx",
+    "summary": "A context view followed from its key in the vocabulary to the rail entry that opens it.",
+    "keywords": "trace view key rail opening context surface category workspace",
+    "headings": [
+      {
+        "id": "the-path",
+        "text": "The path"
+      },
+      {
+        "id": "step-by-step",
+        "text": "Step by step"
+      },
+      {
+        "id": "adding-a-view",
+        "text": "Adding a view"
+      }
+    ]
+  },
+  {
+    "route": "/gaps",
+    "title": "Gaps",
+    "group": "Gaps",
+    "file": "pages/Gaps.tsx",
+    "summary": "Everything this wiki could not verify, every place the code and its own documents disagree, and what extraction does not see.",
+    "keywords": "gaps stale unverified disagreement",
+    "headings": [
+      {
+        "id": "where-documents-and-code-disagree",
+        "text": "Where documents and code disagree"
+      },
+      {
+        "id": "what-is-not-verified",
+        "text": "What is not verified"
+      },
+      {
+        "id": "what-extraction-does-not-see",
+        "text": "What extraction does not see"
+      },
+      {
+        "id": "test-gaps",
+        "text": "Test gaps"
+      }
+    ]
+  }
+]

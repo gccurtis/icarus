@@ -1,0 +1,7 @@
+## tailwind
+
+[[file:app/src/lib/styles/x-integrations/tailwind/tailwind.css]] is one `@theme static` block that maps every token into Tailwind's namespace — `--color-surface-panel: var(--token-surface-panel)` and so on, 129 declarations — so a class like `bg-surface-panel` or `text-ink-muted` resolves to a token. `static` is what makes every utility exist whether or not a template uses it, which is what lets Svelte components use them freely. The integration names public tokens and nothing behind them ([[check:references-point-backward]], subject `integration-reads-public-only`), and declares none of the four stage prefixes ([[check:stage-owns-its-namespace]]).
+
+## shadcn
+
+Three files. [[file:app/src/lib/styles/x-integrations/shadcn/bridge.css]] gives shadcn's own vocabulary — `--background`, `--foreground`, `--primary`, `--muted`, `--border`, `--ring` and the rest, 42 declarations — a value from a token, so a vendored part painted in `bg-background` follows the theme without being edited ([[check:vendor-is-unedited]]). [[file:app/src/lib/styles/x-integrations/shadcn/variants.css]] holds the variant classes the parts expect. [[file:app/src/lib/styles/x-integrations/shadcn/generated.css]] is what the CLI wrote: it carries a quarantine header, sits exactly where `components.json` points, and is imported by nothing ([[check:generated-css-is-inert]]) — it exists so the CLI has a file to overwrite, and for no other reason.

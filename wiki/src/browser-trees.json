@@ -1,0 +1,3 @@
+{
+  "trees": ["representation", "capabilities", "model", "runtime", "components", "styles", "surfaces", "app-views", "development-views", "routes", "root", "test"]
+}

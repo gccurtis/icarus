@@ -1,0 +1,31 @@
+{
+  "name": "@icarus/wiki",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "extract": "node extract/extract.mjs",
+    "check": "node extract/check.mjs && node extract/render.mjs",
+    "predev": "node extract/extract.mjs",
+    "dev": "vite --port 3100",
+    "prebuild": "node extract/extract.mjs",
+    "build": "vite build",
+    "preview": "vite preview --port 3100"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "latest",
+    "@fontsource/ibm-plex-sans": "latest",
+    "marked": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-router-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "yaml": "latest"
+  }
+}

@@ -1,0 +1,19 @@
+## The path
+
+One keystroke in a document, followed until it is a row on disk. Nine files, three trees, one crossing. Every hop below is a real import or call; nothing is described that the code does not do.
+
+## Step by step
+
+1. **A key is pressed.** ProseMirror applies the transaction; [[file:app/src/lib/app-views/categories/document-editor/content/document.svelte]] lays it out and calls `emit`, which diffs the body the editor last sent against the body it now shows with `translate` and gets one `text` op: `{ op: "text", target: "atom", path: "<block>/atoms/<atom>", at, insert, remove }`.
+2. **`runtime.apply(ops)`.** The runtime came from `view.documentRuntime(id)` on workspace state ([[check:runtime-through-workspace-state]]). [[file:app/src/lib/model/client/document-runtimes/methods/apply.ts]] pushes the ops on the undo stack and into the buffer; `schedule` arms a 2000 ms timer or flushes now if 50 ops are waiting.
+3. **Flush.** [[file:app/src/lib/model/client/document-runtimes/methods/flush/flush.ts]] coalesces the buffer and builds a change set: `{ resourceId, baseRevision: runtime.revision, ops, touched }`. It calls `submitDocumentChanges({ changeSet })`.
+4. **The crossing.** `submitDocumentChanges` is imported from [[file:app/src/lib/capabilities/document/index.remote.ts]], where it is `command("unchecked", submitDocumentChangesProcedure)`. In the browser that is a fetch to `/_app/remote/…`; this is the only kind of client→server edge in the repository ([[check:one-crossing]]).
+5. **The gate.** On the server the same name is the procedure in [[file:app/src/lib/capabilities/document/api/submit-document-changes/submit-document-changes.ts]]. Its first line is `await requireScope()` ([[check:no-procedure-acts-outside-a-scope]]): [[file:app/src/lib/runtime/server/scope.server.ts]] takes the session `hooks.server.ts` resolved from the cookie and the project token from the pathname the call was made from, and looks the pair up. No handle, no scope — a 404, not a 403.
+6. **The validator.** The second line is `validateSubmitDocumentChanges(input)` ([[check:procedure-validates-first]]); `withoutSharedReferences` then strips what a change set may not carry.
+7. **The leader.** `serverModel().store` is the one store ([[check:storage-through-a-model]]); [[file:app/src/lib/capabilities/document/api/shared/leader.ts]] reads `documentSnapshots` and finds the row with `role: "leader"` for this project and resource. If `changeSet.baseRevision` is not the leader's revision, the answer is `{ accepted: false, reason: "stale", revision }` and step 3's caller rebases and retries once.
+8. **Apply.** [[file:app/src/lib/capabilities/document/api/submit-document-changes/apply-ops.ts]] folds the ops over the leader body; the `text` op checks that the atom still holds exactly `remove` at `at` before splicing. A failure is `reason: "unresolved"`.
+9. **Write.** Three store calls in [[file:app/src/lib/model/server/store/definition.ts]]: `create("documentChangeSets", …)` at `revision + 1`, `update("documentSnapshots.<leaderId>", …)` with the new body, and two `update("documents.<id>.updatedAt|updatedBy", …)`. Each `commit` rewrites that table's JSON file whole ([[file:app/src/lib/model/server/store/methods/shared/persist.server.ts]]). The answer is `{ accepted: true, revision }`; the runtime takes the revision and marks itself `saved`.
+
+## Adding a procedure
+
+`pnpm new-procedure -- document <name>` writes `api/<name>/<name>.ts` already opening with `requireScope()` and a validator call, a `validate-<name>.ts`, the declaration in `index.remote.ts`, and a failing test under `test/unit/`. Two checks read exactly those two statements, which is why the generator writes them rather than leaving a comment. The type for the input and result goes in `types/<name>.ts` and is re-exported from the index so the browser can name it without reaching inside.

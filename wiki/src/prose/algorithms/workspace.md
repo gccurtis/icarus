@@ -1,0 +1,15 @@
+## The ledger
+
+Workspace state is a log of `WorkspaceOp`s, each invertible, over two collaborators that hold the current shape. [[file:app/src/lib/representation/data/types/workspace/op.ts]] names eight ops — `open`, `close`, `activate`, `land`, `context`, `inspect`, `resize`, `zoom` — and every one carries both `was` and `now` (or the whole tab and view, for open/close), so [[file:app/src/lib/representation/data/behavior/workspace/invert.ts]] can turn any of them around without looking anything up. Every public method on [[file:app/src/lib/model/client/workspace-state/definition.svelte.ts]] ends in `perform(state, op)`: apply the op to the collaborators, push it on `log`, clear `undone`, and — when persistence is on — buffer it for the server. `undo` pops the log, applies the inverse and pushes the op onto `undone`; `redo` does the reverse.
+
+## Opening a category
+
+`open(target)` ([[file:app/src/lib/model/client/workspace-state/methods/open.ts]]) first looks for a tab already holding the same target (`targetKey`): if there is one it activates it and lands on the requested content; otherwise it mints a record from the tab list, performs `open` with a view minted from `OPENING` ([[file:app/src/lib/representation/data/behavior/workspace/opening.ts]]) — the category's first content view, its default context, the starting frame — and then `activate`. Three categories are singletons whose tab id is the category itself ([[file:app/src/lib/representation/data/behavior/workspace/starting.ts]]), so every workspace starts with `project-overview`, `agents` and `templates` open and the first active. `railFor(category)` and `defaultContext(category)` come from the same `OPENING` table, which is what the context surface draws.
+
+## Collaborators
+
+`tab-list` holds the ordered `TabRecord`s and the active id; `tab-views` holds one `TabView` per tab — its landing (content and focus), context, inspected key and selection, frame and zoom. Neither reacts to the other; workspace state composes a `Tab` from the two on read. Resource runtimes are reached through the workspace too: `documentRuntime(id)` and `slideDeckRuntime(id)` attach through the runtimes objects the workspace was constructed with, which is how [[check:runtime-through-workspace-state]] keeps one edit buffer per resource.
+
+## Persistence
+
+Two things persist, differently. Panel geometry and open tabs go to localStorage through `storage` (version 3; a mismatched version is discarded rather than migrated). The ledger goes to the server: `perform` buffers ops and [[file:app/src/lib/model/client/workspace-state/methods/shared/submit.ts]] sends them as a change set through `submitWorkspaceChanges` after `workspace.changeSets.flushAfterOps` (8) or `flushAfterMs` (750). A refusal is handled by `adopt` ([[file:app/src/lib/model/client/workspace-state/methods/shared/adopt.ts]]): re-read the server's state, replace what is open, retry once, and settle on `needs-review` if refused again — the read is the rebase, because a workspace does not lag. `restore()` runs once from the `/app/[project]` layout and adopts the server's state only if nothing has happened locally yet.
