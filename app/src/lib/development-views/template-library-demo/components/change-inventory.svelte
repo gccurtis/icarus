@@ -89,21 +89,21 @@
       area: "views",
       path: "app-views/categories/templates/context/overview-library.svelte",
       title: "Library context",
-      detail: "Named create entry points and compact availability totals; Project and Shared remain zero until their schema authority is approved.",
+      detail: "A light New template section uses a colored type toggle and required generated working names; Library carries its total and compact availability counts. Project and Shared remain zero until their schema authority is approved.",
       icon: PanelsTopLeft
     },
     {
       area: "views",
       path: "app-views/categories/templates/inspector/template.svelte",
       title: "Template inspector",
-      detail: "Rename, editable description, guarded actions, variable disclosures, tag management and stale-revision recovery. Spreadsheet Use is visibly paused while its editor remains mock-backed.",
+      detail: "Name, fixed-height description, and variable help text autosave in place; stable keys and explicit default selections remain readable. Use, Duplicate, and Delete form one compact action group, and tag creation stays above the tags it changes.",
       icon: PanelsTopLeft
     },
     {
       area: "views",
       path: "components/authored/{carousel-shelf,panel/panel-button,screen/{screen-card,screen-row,screen-shelf}}/…",
       title: "Shared shelf, selection and focus semantics",
-      detail: "Native horizontal scrolling stays inside its recessed shelf, edge shadows reveal overflow, card and row selection expose pressed/selected state, shelves have specific accessible names, and inline editors return focus through the shared panel button.",
+      detail: "Wheel, Shift-wheel, trackpad, touch, keyboard, scrollbar, and pointer dragging all move the recessed shelf. Edge shadows reveal overflow, hover changes only the border, and selected cards retain their active surface.",
       icon: PanelsTopLeft
     },
     {

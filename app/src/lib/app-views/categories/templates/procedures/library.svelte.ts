@@ -200,6 +200,18 @@ const defaultName = (target: TemplateTarget): string =>
     Spreadsheet: "Untitled spreadsheet template"
   })[target];
 
+/** Give a no-name creation control a required, visibly editable unique name. */
+export const nextTemplateName = (
+  target: TemplateTarget,
+  rows: readonly LibraryTemplate[]
+): string => {
+  const base = defaultName(target);
+  const taken = new Set(rows.map((row) => row.name.toLocaleLowerCase()));
+  let suffix = 1;
+  while (taken.has(`${base} ${suffix}`.toLocaleLowerCase())) suffix += 1;
+  return `${base} ${suffix}`;
+};
+
 /** Keep a singleton Template tab's durable focus and transient inspector selection aligned. */
 export const inspectTemplate = (view: WorkspaceStateModel, templateId: string): void => {
   view.open({ category: "templates", focus: templateId });
@@ -210,10 +222,10 @@ export const inspectTemplate = (view: WorkspaceStateModel, templateId: string): 
 export const createTemplate = (
   view: WorkspaceStateModel,
   target: TemplateTarget,
-  name?: string
+  name: string
 ) => {
   const storedTarget = TARGET_VALUE[target];
-  const storedName = name?.trim() || defaultName(target);
+  const storedName = name.trim();
   return view.singleFlight(
     ["template", view.project, "create", storedTarget, storedName],
     () =>
@@ -261,6 +273,36 @@ export const updateTemplateDescription = (
         templateId: row.id,
         baseRevision: row.revision,
         patch: { description: storedDescription }
+      }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
+  );
+};
+
+/** Update variable help text while preserving its stable key, label, and default selection. */
+export const updateTemplateVariableDescription = (
+  view: WorkspaceStateModel,
+  row: LibraryTemplateDetail,
+  variableName: string,
+  description: string
+) => {
+  const storedDescription = description.trim() || null;
+  return view.singleFlight(
+    [
+      "template",
+      view.project,
+      row.id,
+      "update",
+      row.revision,
+      "variable-description",
+      variableName,
+      storedDescription
+    ],
+    () =>
+      updateTemplateRemote({
+        templateId: row.id,
+        baseRevision: row.revision,
+        patch: {
+          variableDescription: { name: variableName, description: storedDescription }
+        }
       }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
   );
 };

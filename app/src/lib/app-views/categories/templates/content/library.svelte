@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount, tick } from "svelte";
+  import { onMount } from "svelte";
   import ArrowDownNarrowWide from "@lucide/svelte/icons/arrow-down-narrow-wide";
   import ArrowUpNarrowWide from "@lucide/svelte/icons/arrow-up-narrow-wide";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
@@ -25,7 +25,6 @@
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import {
-    instantiateTemplate,
     inspectTemplate,
     recentTemplatesIn,
     templateLibrary,
@@ -38,10 +37,6 @@
 
   const view = workspaceState();
   const library = templateLibrary();
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
   let now = $state(Date.now());
   onMount(() => {
     const timer = setInterval(() => (now = Date.now()), 60_000);
@@ -184,23 +179,8 @@
   const isSelected = (id: string): boolean =>
     view.selection?.kind === "template" && view.selection.id === id;
 
-  let opening = $state<string>();
-  let actionError = $state<string>();
-  let actionErrorFor = $state<string>();
-  let actionErrorNode = $state<HTMLDivElement | null>(null);
-
   const inspect = (row: LibraryTemplate) => {
-    actionError = undefined;
-    actionErrorFor = undefined;
     inspectTemplate(view, row.id);
-  };
-
-  const reportError = async (row: LibraryTemplate, detail: string) => {
-    actionErrorFor = row.id;
-    actionError = detail;
-    await tick();
-    actionErrorNode?.scrollIntoView({ block: "nearest" });
-    actionErrorNode?.focus();
   };
 
   /** A launcher can land the singleton on one template without opening the obsolete mock editor. */
@@ -213,50 +193,10 @@
     if (row !== undefined) inspect(row);
   });
 
-  const SPREADSHEET_HANDOFF =
-    "Spreadsheet templates are represented and can be materialized, but Use is paused until the spreadsheet editor consumes the created resource id.";
-
-  /** Double-click materializes a normal project resource, then opens its ordinary editor. */
-  const open = async (row: LibraryTemplate) => {
-    if (opening !== undefined) return;
-
-    if (row.makes === "Spreadsheet") {
-      void reportError(row, SPREADSHEET_HANDOFF);
-      return;
-    }
-
-    const originTabId = view.activeId;
-    opening = row.id;
-    actionError = undefined;
-    try {
-      const result = await instantiateTemplate(view, row);
-      if (
-        !live ||
-        view.activeId !== originTabId ||
-        view.selection?.kind !== "template" ||
-        view.selection.id !== row.id
-      ) {
-        return;
-      }
-      if (!result.accepted) {
-        void reportError(row, result.detail);
-        return;
-      }
-
-      const category = {
-        document: "document-editor",
-        slides: "slide-deck-editor"
-      } as const;
-      if (result.target === "spreadsheet") {
-        void reportError(row, SPREADSHEET_HANDOFF);
-        return;
-      }
-      view.open({ category: category[result.target], resourceId: result.resourceId });
-    } catch (error) {
-      void reportError(row, error instanceof Error ? error.message : String(error));
-    } finally {
-      opening = undefined;
-    }
+  /** Authoring stays inside the singleton Template category; Use is a separate explicit action. */
+  const edit = (row: LibraryTemplate) => {
+    inspect(row);
+    view.showContent("templates.editor", row.id);
   };
 </script>
 
@@ -264,7 +204,7 @@
   <div
     class="recent-card"
     class:chosen={isSelected(row.id)}
-    ondblclick={() => open(row)}
+    ondblclick={() => edit(row)}
     role="presentation"
   >
     <ScreenCard
@@ -314,11 +254,6 @@
         Reading the scoped library from the representation store.
       </ScreenEmpty>
     {:else}
-      {#if actionError && actionErrorFor === view.selection?.id}
-        <div bind:this={actionErrorNode} class="action-error" role="alert" tabindex="-1">
-          <ScreenNote tone="gap">{actionError}</ScreenNote>
-        </div>
-      {/if}
       {#if unavailable.length > 0}
         <ScreenNote tone="gap">
           {unavailable.length} stored {unavailable.length === 1 ? "template is" : "templates are"}
@@ -348,7 +283,7 @@
           bind:value={search}
         >
           <select
-            class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
+            class="filter-control native-filter"
             bind:value={scope}
             aria-label="Scope"
           >
@@ -359,7 +294,7 @@
           </select>
 
           <select
-            class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
+            class="filter-control native-filter"
             bind:value={makes}
             aria-label="Makes"
           >
@@ -372,11 +307,10 @@
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               {#snippet child({ props })}
-                <Button
+                <button
                   {...props}
-                  variant="outline"
-                  size="sm"
-                  class="border-border-subtle bg-surface-panel hover:bg-surface-panel-hover aria-expanded:bg-surface-panel text-caption rounded-control min-w-24 justify-between dark:bg-surface-panel dark:hover:bg-surface-panel-hover dark:aria-expanded:bg-surface-panel"
+                  type="button"
+                  class="filter-control tag-filter"
                   aria-label="Filter by tags: {tagFilterLabel}"
                   title={tagMode === "all"
                     ? TAGS.join(", ")
@@ -385,8 +319,8 @@
                       : "No tags selected"}
                 >
                   <span class="max-w-24 truncate">{tagFilterLabel}</span>
-                  <ChevronDown aria-hidden="true" />
-                </Button>
+                  <ChevronDown size={13} aria-hidden="true" />
+                </button>
               {/snippet}
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end" class="max-h-56 w-56">
@@ -448,14 +382,14 @@
                 <ScreenRow
                   selected={isSelected(row.id)}
                   onselect={() => inspect(row)}
-                  onopen={() => open(row)}
+                  onopen={() => edit(row)}
                 >
                   <ScreenCell>
                     <button
                       type="button"
                       class="text-body-sm text-ink-primary flex min-h-9 items-center gap-2 text-start hover:underline"
                       onclick={() => inspect(row)}
-                      ondblclick={() => open(row)}
+                      ondblclick={() => edit(row)}
                     >
                       <span class="text-ink-muted flex shrink-0">
                         <Icon size={14} aria-hidden="true" />
@@ -501,12 +435,6 @@
     gap: calc(var(--token-spacing-unit) * 2);
   }
 
-  .action-error {
-    position: sticky;
-    z-index: 10;
-    top: 0;
-  }
-
   .recent-card {
     height: 100%;
   }
@@ -515,6 +443,11 @@
     width: 100%;
     height: 100%;
     box-shadow: var(--token-shadow-raised);
+  }
+
+  .recent-card > :global(button:hover) {
+    border-color: var(--token-color-interactive-border);
+    background: var(--token-surface-panel);
   }
 
   .recent-card.chosen > :global(button) {
@@ -526,7 +459,42 @@
   }
 
   .recent-card.chosen > :global(button:hover) {
-    background: var(--token-color-active-surface-hover);
+    background: var(--token-color-active-surface);
+  }
+
+  .filter-control {
+    display: inline-flex;
+    height: calc(var(--token-spacing-unit) * 7);
+    align-items: center;
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-panel);
+    color: var(--token-ink-secondary);
+    font-size: var(--token-text-caption);
+    line-height: var(--token-text-caption-leading);
+  }
+
+  .tag-filter {
+    min-width: calc(var(--token-spacing-unit) * 24);
+    justify-content: space-between;
+    gap: calc(var(--token-spacing-unit) * 1.5);
+    padding: 0 calc(var(--token-spacing-unit) * 2);
+    cursor: pointer;
+  }
+
+  .native-filter {
+    padding: 0 calc(var(--token-spacing-unit) * 2);
+  }
+
+  .tag-filter:hover,
+  .tag-filter[aria-expanded="true"] {
+    border-color: var(--token-border-strong);
+  }
+
+  .tag-filter:focus-visible {
+    border-color: var(--token-color-interactive-border);
+    outline: 2px solid var(--token-color-interactive-surface);
+    outline-offset: 1px;
   }
 
   /**

@@ -21,22 +21,23 @@
 </script>
 
 <ScreenSurface>
-  <ScreenHeader title="Template authoring">
+  <ScreenHeader title="Template workspace">
     {#snippet actions()}
       <Button variant="outline" size="sm" onclick={back}>
         <ArrowLeft aria-hidden="true" />
-        Back to library
+        Back to Template Library
       </Button>
     {/snippet}
   </ScreenHeader>
 
-  <ScreenEmpty title="Templates use the regular editors" icon={FilePenLine}>
-    Document and slide-deck templates will be staged into their ordinary editors rather than
-    maintained in a separate authoring surface.
+  <ScreenEmpty title="The editor shell is intentionally deferred" icon={FilePenLine}>
+    This remains inside the Template category. A later pass can mount the ordinary document or
+    slide-deck runtime beneath this Template header without creating another workspace tab.
   </ScreenEmpty>
 
   <ScreenNote tone="gap">
-    Safe authoring still needs a represented edit-session identity so a staged resource can resume
-    after reload and be cleaned up without breaking workspace undo or racing an unfinished save.
+    Name, description, variable help text, and tags autosave in the Inspector today. Body authoring
+    still needs a collaborative edit-session identity, Template blocks for variable-bearing Prompt
+    positions, and deterministic scratch cleanup after the editor flushes.
   </ScreenNote>
 </ScreenSurface>

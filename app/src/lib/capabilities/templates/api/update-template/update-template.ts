@@ -71,6 +71,29 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
     asked.patch.description === null
       ? undefined
       : (asked.patch.description ?? template.description);
+  let variables = [...template.variables];
+  if (asked.patch.variableDescription !== undefined) {
+    const variable = asked.patch.variableDescription;
+    if (!variables.some((candidate) => candidate.name === variable.name)) {
+      return {
+        accepted: false,
+        templateId: asked.templateId,
+        reason: "unsupported-body",
+        revision: template.revision,
+        detail: `the template no longer declares variable ${variable.name}`
+      };
+    }
+    variables = variables.map((candidate) =>
+      candidate.name !== variable.name
+        ? candidate
+        : {
+            name: candidate.name,
+            label: candidate.label,
+            ...(variable.description === null ? {} : { description: variable.description }),
+            ...(candidate.default === undefined ? {} : { default: candidate.default })
+          }
+    );
+  }
   const at = Date.now();
   const fields: RowFields<"templates"> = {
     userId: template.userId,
@@ -78,7 +101,7 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
     ...(description === undefined ? {} : { description }),
     tags: [...(asked.patch.tags ?? template.tags)],
     body: template.body,
-    variables: [...template.variables],
+    variables,
     createdBy: template.createdBy,
     revision: template.revision + 1,
     updatedAt: at

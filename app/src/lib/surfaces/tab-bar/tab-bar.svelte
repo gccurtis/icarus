@@ -176,9 +176,11 @@
 
   /* The permanent set is not a list you edit; the divider says so. */
   .divider {
+    flex: none;
     align-self: center;
     width: 1px;
-    height: calc(var(--token-spacing-unit) * 4);
-    background-color: var(--token-border-subtle);
+    height: calc(var(--token-spacing-unit) * 5);
+    margin-inline: var(--token-spacing-unit);
+    background-color: var(--token-border-strong);
   }
 </style>

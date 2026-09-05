@@ -209,7 +209,7 @@
       </div>
       <div class="live-warning">
         <CircleAlert size={16} aria-hidden="true" />
-        <p><strong>Live means writable.</strong> Create, edit, duplicate, delete, and Use change this isolated worktree's development project data. Run <code>pnpm seed -- --force</code> from <code>app/</code> to overwrite every seeded development table with its baseline.</p>
+        <p><strong>Live means writable.</strong> Create, edit, duplicate, delete, and Use change this isolated worktree's development project data. Stop the dev server first, then run <code>pnpm seed -- --force</code> from <code>app/</code> so in-memory state cannot overwrite the reset.</p>
       </div>
       <LibraryStage />
     </section>

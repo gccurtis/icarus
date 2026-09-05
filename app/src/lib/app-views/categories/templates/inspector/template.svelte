@@ -4,7 +4,6 @@
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import Copy from "@lucide/svelte/icons/copy";
   import ExternalLink from "@lucide/svelte/icons/external-link";
-  import PencilLine from "@lucide/svelte/icons/pencil-line";
   import Plus from "@lucide/svelte/icons/plus";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import X from "@lucide/svelte/icons/x";
@@ -12,7 +11,6 @@
   import {
     Panel,
     PanelBanner,
-    PanelButton,
     PanelChip,
     PanelEmpty,
     PanelSkeleton
@@ -31,6 +29,7 @@
     updateTemplateDescription,
     updateTemplateName,
     updateTemplateTags,
+    updateTemplateVariableDescription,
     type LibraryTemplateDetail,
     type TemplateVariable
   } from "$app-views/categories/templates/procedures/library.svelte";
@@ -59,12 +58,18 @@
   let nameBase = $state<LibraryTemplateDetail>();
   let nameEditor = $state<HTMLInputElement | null>(null);
   let descriptionEditor = $state<HTMLTextAreaElement | null>(null);
-  let renameTrigger = $state<HTMLButtonElement | null>(null);
+  let nameTrigger = $state<HTMLButtonElement | null>(null);
   let descriptionTrigger = $state<HTMLButtonElement | null>(null);
+  let editingVariable = $state<string>();
+  let variableDescriptionDraft = $state("");
+  let variableBase = $state<LibraryTemplateDetail>();
+  let variableEditor = $state<HTMLTextAreaElement | null>(null);
   let tagEditor = $state<HTMLInputElement | null>(null);
   let tagDraft = $state("");
   let activeTemplateId = $state<string>();
-  let pending = $state<"name" | "description" | "tag" | "duplicate" | "delete" | "use">();
+  let pending = $state<
+    "name" | "description" | "variable" | "tag" | "duplicate" | "delete" | "use"
+  >();
   let actionError = $state<string>();
   let live = true;
   onDestroy(() => {
@@ -84,6 +89,9 @@
     descriptionBase = undefined;
     tagDraft = "";
     editingDescription = false;
+    editingVariable = undefined;
+    variableDescriptionDraft = "";
+    variableBase = undefined;
     actionError = undefined;
   });
 
@@ -103,6 +111,8 @@
     if (template === undefined || !template.canEdit || pending !== undefined) return;
     editingName = false;
     nameBase = undefined;
+    editingVariable = undefined;
+    variableBase = undefined;
     descriptionBase = template;
     descriptionDraft = template.description;
     editingDescription = true;
@@ -115,6 +125,8 @@
     if (template === undefined || !template.canEdit || pending !== undefined) return;
     editingDescription = false;
     descriptionBase = undefined;
+    editingVariable = undefined;
+    variableBase = undefined;
     nameBase = template;
     nameDraft = template.name;
     editingName = true;
@@ -123,9 +135,9 @@
     nameEditor?.select();
   };
 
-  const focusRenameTrigger = async () => {
+  const focusNameTrigger = async () => {
     await tick();
-    renameTrigger?.focus();
+    nameTrigger?.focus();
   };
 
   const focusDescriptionTrigger = async () => {
@@ -133,7 +145,7 @@
     descriptionTrigger?.focus();
   };
 
-  const commitName = async () => {
+  const commitName = async (returnFocus = false) => {
     const subject = nameBase;
     const originTabId = view.activeId;
     const name = nameDraft.trim();
@@ -141,15 +153,22 @@
       subject === undefined ||
       template?.id !== subject.id ||
       !subject.canEdit ||
-      pending !== undefined ||
-      name === ""
+      pending !== undefined
     ) {
+      return;
+    }
+    if (name === "") {
+      actionError = "A template name is required.";
+      nameDraft = subject.name;
+      editingName = false;
+      nameBase = undefined;
+      if (returnFocus) await focusNameTrigger();
       return;
     }
     if (name === subject.name) {
       editingName = false;
       nameBase = undefined;
-      await focusRenameTrigger();
+      if (returnFocus) await focusNameTrigger();
       return;
     }
 
@@ -175,7 +194,7 @@
       fail(error, originTabId, subject.id);
     } finally {
       pending = undefined;
-      if (restoreFocus) await focusRenameTrigger();
+      if (restoreFocus && returnFocus) await focusNameTrigger();
     }
   };
 
@@ -183,7 +202,7 @@
     nameDraft = template?.name ?? "";
     nameBase = undefined;
     editingName = false;
-    await focusRenameTrigger();
+    await focusNameTrigger();
   };
 
   const nameKeydown = (event: KeyboardEvent) => {
@@ -194,11 +213,11 @@
     }
     if (event.key === "Enter") {
       event.preventDefault();
-      void commitName();
+      void commitName(true);
     }
   };
 
-  const commitDescription = async () => {
+  const commitDescription = async (returnFocus = false) => {
     const subject = descriptionBase;
     const originTabId = view.activeId;
     if (
@@ -212,7 +231,7 @@
     if (descriptionDraft.trim() === subject.description.trim()) {
       editingDescription = false;
       descriptionBase = undefined;
-      await focusDescriptionTrigger();
+      if (returnFocus) await focusDescriptionTrigger();
       return;
     }
 
@@ -238,7 +257,7 @@
       fail(error, originTabId, subject.id);
     } finally {
       pending = undefined;
-      if (restoreFocus) await focusDescriptionTrigger();
+      if (restoreFocus && returnFocus) await focusDescriptionTrigger();
     }
   };
 
@@ -257,8 +276,70 @@
     }
     if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
-      void commitDescription();
+      void commitDescription(true);
     }
+  };
+
+  const startVariableDescription = async (variable: TemplateVariable) => {
+    if (template === undefined || !template.canEdit || pending !== undefined) return;
+    editingName = false;
+    nameBase = undefined;
+    editingDescription = false;
+    descriptionBase = undefined;
+    variableBase = template;
+    editingVariable = variable.name;
+    variableDescriptionDraft = variable.description ?? "";
+    await tick();
+    variableEditor?.focus();
+    variableEditor?.select();
+  };
+
+  const cancelVariableDescription = () => {
+    editingVariable = undefined;
+    variableDescriptionDraft = "";
+    variableBase = undefined;
+  };
+
+  const commitVariableDescription = async (variable: TemplateVariable) => {
+    const subject = variableBase;
+    const originTabId = view.activeId;
+    if (
+      subject === undefined ||
+      template?.id !== subject.id ||
+      editingVariable !== variable.name ||
+      !subject.canEdit ||
+      pending !== undefined
+    ) {
+      return;
+    }
+    if (variableDescriptionDraft.trim() === (variable.description ?? "").trim()) {
+      cancelVariableDescription();
+      return;
+    }
+
+    pending = "variable";
+    actionError = undefined;
+    try {
+      const result = await updateTemplateVariableDescription(
+        view,
+        subject,
+        variable.name,
+        variableDescriptionDraft
+      );
+      if (!stillInspecting(originTabId, subject.id)) return;
+      if (!result.accepted) actionError = result.detail;
+      else cancelVariableDescription();
+    } catch (error) {
+      fail(error, originTabId, subject.id);
+    } finally {
+      pending = undefined;
+    }
+  };
+
+  const variableKeydown = (event: KeyboardEvent) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    cancelVariableDescription();
   };
 
   const addTag = async () => {
@@ -391,16 +472,60 @@
     }
   };
 
+  const KIND_LABEL: Record<string, string> = {
+    document: "documents",
+    slides: "slide decks",
+    spreadsheet: "spreadsheets",
+    finding: "findings",
+    analysis: "analyses",
+    research: "research"
+  };
+
+  const termSummary = (term: NonNullable<TemplateVariable["default"]>["include"][number]) => {
+    if (term.select === "project") return "the entire project";
+    if (term.select === "variable") return `the ${term.name} variable`;
+    return term.kinds.map((kind) => KIND_LABEL[kind] ?? kind).join(", ");
+  };
+
   const defaultSummary = (variable: TemplateVariable): string => {
-    if (variable.default === undefined) return "None";
-    const included = variable.default.include.length;
-    const excluded = variable.default.exclude.length;
-    if (excluded === 0) return `${included} selection${included === 1 ? "" : "s"}`;
-    return `${included} included · ${excluded} excluded`;
+    if (variable.default === undefined || variable.default.include.length === 0) return "None";
+    const included = variable.default.include.map(termSummary).join("; ");
+    if (variable.default.exclude.length === 0) return included;
+    return `${included}, excluding ${variable.default.exclude.map(termSummary).join("; ")}`;
   };
 </script>
 
-<Panel title={template?.name ?? "Template"}>
+{#snippet inspectorHeading()}
+  <h2 class="inspector-heading">
+    {#if editingName}
+      <Input
+        bind:ref={nameEditor}
+        class="name-editor"
+        bind:value={nameDraft}
+        aria-label="Template name"
+        maxlength={160}
+        onkeydown={nameKeydown}
+        onblur={() => commitName()}
+      />
+    {:else if template?.canEdit}
+      <button
+        bind:this={nameTrigger}
+        type="button"
+        class="name-trigger"
+        title="Double-click to edit the template name"
+        aria-label={`Edit template name: ${template.name}`}
+        ondblclick={startName}
+        onkeydown={(event) => {
+          if (event.key === "Enter" || event.key === " ") startName();
+        }}
+      >{template.name}</button>
+    {:else}
+      <span>{template?.name ?? "Template"}</span>
+    {/if}
+  </h2>
+{/snippet}
+
+<Panel title={template?.name ?? "Template"} heading={inspectorHeading}>
   {#if detail.error}
     <PanelBanner title="Template unavailable" tone="danger">
       {detail.error instanceof Error ? detail.error.message : String(detail.error)}
@@ -431,58 +556,22 @@
         </p>
         <p class="byline">Created by {template.createdBy}</p>
 
-        {#if editingName}
-          <div class="name-edit">
-            <Input
-              bind:ref={nameEditor}
-              class="name-editor"
-              bind:value={nameDraft}
-              aria-label="Template name"
-              maxlength={160}
-              onkeydown={nameKeydown}
-            />
-            <div class="name-actions">
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={pending !== undefined}
-                onclick={cancelName}
-              >Cancel</Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pending !== undefined || nameDraft.trim() === ""}
-                onclick={commitName}
-              >{pending === "name" ? "Saving…" : "Save name"}</Button>
-            </div>
-          </div>
-        {/if}
+      </div>
 
+      <div class="divider" aria-hidden="true"></div>
+
+      <section aria-labelledby="description-heading">
+        <h3 id="description-heading" class="section-heading compact">Description</h3>
         {#if editingDescription}
-          <div class="description-edit">
           <Textarea
             bind:ref={descriptionEditor}
             class="description-editor"
-              bind:value={descriptionDraft}
-              aria-label="Template description"
-              rows={3}
-              onkeydown={descriptionKeydown}
-            />
-            <div class="description-actions">
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={pending !== undefined}
-                onclick={cancelDescription}
-              >Cancel</Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pending !== undefined}
-                onclick={commitDescription}
-              >{pending === "description" ? "Saving…" : "Save"}</Button>
-            </div>
-          </div>
+            bind:value={descriptionDraft}
+            aria-label="Template description"
+            rows={3}
+            onkeydown={descriptionKeydown}
+            onblur={() => commitDescription()}
+          />
         {:else if template.canEdit}
           <button
             bind:this={descriptionTrigger}
@@ -494,60 +583,50 @@
             onkeydown={(event) => {
               if (event.key === "Enter" || event.key === " ") startDescription();
             }}
-          >
-            {template.description || "Add a description"}
-          </button>
+          >{template.description || "Add a description"}</button>
         {:else}
           <p class="description readonly">{template.description || "No description"}</p>
         {/if}
+      </section>
 
-        <div class="template-actions" aria-label="Template actions">
-          <PanelButton
-            label={template.makes === "Spreadsheet"
-              ? "Editor handoff pending"
-              : pending === "use"
-                ? "Creating…"
-                : "Use template"}
-            icon={ExternalLink}
-            tone="primary"
-            disabled={pending !== undefined || template.makes === "Spreadsheet"}
-            title={template.makes === "Spreadsheet"
-              ? SPREADSHEET_HANDOFF
-              : "Create an independent project resource using represented variable defaults"}
-            onclick={use}
-          />
-          <PanelButton
-            label={pending === "duplicate" ? "Duplicating…" : "Duplicate"}
-            icon={Copy}
-            disabled={pending !== undefined}
-            onclick={duplicate}
-          />
-          {#if template.canEdit}
-            <PanelButton
-              bind:ref={renameTrigger}
-              label="Rename"
-              icon={PencilLine}
-              disabled={pending !== undefined || editingName}
-              onclick={startName}
-            />
-          {/if}
-          <PanelButton
-            label={pending === "delete" ? "Deleting…" : "Delete"}
-            icon={Trash2}
-            tone="danger"
-            disabled={!template.canDelete || pending !== undefined}
-            title={template.canDelete ? "Delete this template" : "Duplicate it to make an editable copy"}
-            onclick={remove}
-          />
-        </div>
-
-        {#if !template.canEdit}
-          <p class="permission-note">Duplicate this shared template to edit its description or tags.</p>
-        {/if}
-        {#if template.makes === "Spreadsheet"}
-          <p class="permission-note">{SPREADSHEET_HANDOFF}</p>
-        {/if}
+      <div class="template-actions" role="toolbar" aria-label="Template actions">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="template-action use-action"
+          aria-label={pending === "use" ? "Creating from template" : "Use template"}
+          disabled={pending !== undefined || template.makes === "Spreadsheet"}
+          title={template.makes === "Spreadsheet"
+            ? SPREADSHEET_HANDOFF
+            : "Use template — create an independent project resource"}
+          onclick={use}
+        ><ExternalLink aria-hidden="true" /></Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="template-action"
+          aria-label={pending === "duplicate" ? "Duplicating template" : "Duplicate template"}
+          title="Duplicate template"
+          disabled={pending !== undefined}
+          onclick={duplicate}
+        ><Copy aria-hidden="true" /></Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="template-action delete-action"
+          aria-label={pending === "delete" ? "Deleting template" : "Delete template"}
+          disabled={!template.canDelete || pending !== undefined}
+          title={template.canDelete ? "Delete template" : "Duplicate it to make an editable copy"}
+          onclick={remove}
+        ><Trash2 aria-hidden="true" /></Button>
       </div>
+
+      {#if !template.canEdit}
+        <p class="permission-note">Duplicate this shared template to edit its name, description, variables, or tags.</p>
+      {/if}
+      {#if template.makes === "Spreadsheet"}
+        <p class="permission-note">{SPREADSHEET_HANDOFF}</p>
+      {/if}
 
       <div class="divider" aria-hidden="true"></div>
 
@@ -570,7 +649,32 @@
                   <ChevronDown class="disclosure-icon" size={13} aria-hidden="true" />
                 </summary>
                 <div class="variable-body">
-                  <p>{variable.description ?? "No description supplied."}</p>
+                  {#if editingVariable === variable.name}
+                    <Textarea
+                      bind:ref={variableEditor}
+                      class="variable-description-editor"
+                      bind:value={variableDescriptionDraft}
+                      aria-label={`Description for ${variable.label}`}
+                      rows={3}
+                      onkeydown={variableKeydown}
+                      onblur={() => commitVariableDescription(variable)}
+                    />
+                  {:else if template.canEdit}
+                    <button
+                      type="button"
+                      class="variable-description"
+                      title="Double-click to edit this description"
+                      aria-label={`Edit description for ${variable.label}`}
+                      ondblclick={() => startVariableDescription(variable)}
+                      onkeydown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          startVariableDescription(variable);
+                        }
+                      }}
+                    >{variable.description ?? "Add a description"}</button>
+                  {:else}
+                    <p>{variable.description ?? "No description supplied."}</p>
+                  {/if}
                   <dl>
                     <dt>Key</dt>
                     <dd class="mono">{variable.name}</dd>
@@ -590,30 +694,6 @@
         <h3 id="tags-heading" class="section-heading">
           Tags <span>{template.tags.length}</span>
         </h3>
-
-        {#if template.tags.length > 0}
-          <div class="tag-list">
-            {#each template.tags as tag (tag)}
-              {#if template.canEdit}
-                <span class="tag-token">
-                  <PanelChip>{tag}</PanelChip>
-                  <button
-                    type="button"
-                    class="remove-tag"
-                    aria-label={`Remove tag ${tag}`}
-                    title={`Remove ${tag}`}
-                    disabled={pending !== undefined}
-                    onclick={() => removeTag(tag)}
-                  >
-                    <X size={11} aria-hidden="true" />
-                  </button>
-                </span>
-              {:else}
-                <PanelChip>{tag}</PanelChip>
-              {/if}
-            {/each}
-          </div>
-        {/if}
 
         {#if template.canEdit}
           <form
@@ -644,6 +724,31 @@
             </Button>
           </form>
         {/if}
+
+        {#if template.tags.length > 0}
+          <div class="tag-list">
+            {#each template.tags as tag (tag)}
+              {#if template.canEdit}
+                <span class="tag-token">
+                  <PanelChip>{tag}</PanelChip>
+                  <button
+                    type="button"
+                    class="remove-tag"
+                    aria-label={`Remove tag ${tag}`}
+                    title={`Remove ${tag}`}
+                    disabled={pending !== undefined}
+                    onclick={() => removeTag(tag)}
+                  >
+                    <X size={11} aria-hidden="true" />
+                  </button>
+                </span>
+              {:else}
+                <PanelChip>{tag}</PanelChip>
+              {/if}
+            {/each}
+          </div>
+        {/if}
+
       </section>
     </div>
   {:else}
@@ -687,26 +792,75 @@
     display: block;
   }
 
-  .description {
+  .inspector-heading {
+    min-width: 0;
+    margin: 0;
+    color: var(--token-ink-secondary);
+    font-size: var(--token-text-body-sm);
+    line-height: var(--token-text-body-sm-leading);
+    font-weight: 600;
+  }
+
+  .name-trigger {
+    display: block;
+    overflow: hidden;
     width: 100%;
-    margin: calc(var(--token-spacing-unit) * 1) 0 0;
-    padding: calc(var(--token-spacing-unit) * 2);
-    border: 1px solid transparent;
-    border-radius: var(--token-radius-control);
+    padding: 0;
+    border: 0;
     background: transparent;
+    color: inherit;
+    cursor: text;
+    font: inherit;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .name-trigger:hover {
+    color: var(--token-ink-primary);
+  }
+
+  .name-trigger:focus-visible {
+    border-radius: var(--token-radius-control);
+    outline: 2px solid var(--token-color-interactive-border);
+    outline-offset: 2px;
+  }
+
+  .description {
+    position: relative;
+    display: block;
+    overflow-y: auto;
+    width: 100%;
+    height: calc(var(--token-spacing-unit) * 20);
+    margin: 0;
+    padding: calc(var(--token-spacing-unit) * 2);
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-panel);
+    background-image: linear-gradient(
+      135deg,
+      transparent 0 55%,
+      var(--token-border-strong) 56% 66%,
+      transparent 67% 76%,
+      var(--token-border-strong) 77% 87%,
+      transparent 88%
+    );
+    background-repeat: no-repeat;
+    background-position: right calc(var(--token-spacing-unit) * 1) bottom calc(var(--token-spacing-unit) * 1);
+    background-size: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 2);
     color: var(--token-ink-secondary);
     cursor: text;
     text-align: left;
+    scrollbar-width: thin;
   }
 
   .description:hover {
-    border-color: var(--token-border-subtle);
-    background: var(--token-surface-panel-hover);
+    border-color: var(--token-border-strong);
   }
 
   .description.readonly {
-    border-color: transparent;
-    background: transparent;
+    border-color: var(--token-border-subtle);
+    background: var(--token-surface-panel);
     cursor: default;
   }
 
@@ -717,39 +871,61 @@
   }
 
   :global(.description-editor) {
+    height: calc(var(--token-spacing-unit) * 20);
     min-height: calc(var(--token-spacing-unit) * 20);
-    resize: vertical;
+    max-height: calc(var(--token-spacing-unit) * 20);
+    resize: none;
+    overflow-y: auto;
     border-color: var(--token-border-subtle);
-    background: var(--token-surface-panel);
+    background: var(--token-surface-canvas);
+    background-image: linear-gradient(
+      135deg,
+      transparent 0 55%,
+      var(--token-border-strong) 56% 66%,
+      transparent 67% 76%,
+      var(--token-border-strong) 77% 87%,
+      transparent 88%
+    );
+    background-repeat: no-repeat;
+    background-position: right calc(var(--token-spacing-unit) * 1) bottom calc(var(--token-spacing-unit) * 1);
+    background-size: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 2);
     color: var(--token-ink-secondary);
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
   }
 
   :global(.name-editor) {
+    width: 100%;
+    height: calc(var(--token-spacing-unit) * 7);
     border-color: var(--token-border-subtle);
-    background: var(--token-surface-panel);
+    background: var(--token-surface-canvas);
     font-size: var(--token-text-body-sm);
   }
 
-  .name-edit,
-  .description-edit {
-    display: grid;
-    gap: calc(var(--token-spacing-unit) * 1.5);
-  }
-
-  .name-actions,
-  .description-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: calc(var(--token-spacing-unit) * 1);
-  }
-
   .template-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: calc(var(--token-spacing-unit) * 1);
-    margin-top: calc(var(--token-spacing-unit) * 1);
+    display: inline-flex;
+    align-self: flex-start;
+    overflow: hidden;
+    width: fit-content;
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-panel);
+  }
+
+  :global(.template-action) {
+    border-radius: 0;
+  }
+
+  :global(.template-action + .template-action) {
+    border-left: 1px solid var(--token-border-subtle);
+  }
+
+  :global(.template-action.use-action) {
+    color: var(--token-color-interactive-text);
+  }
+
+  :global(.template-action.delete-action) {
+    color: var(--token-color-danger-text);
   }
 
   .permission-note {
@@ -779,6 +955,14 @@
     font-size: var(--token-text-caption);
     font-variant-numeric: tabular-nums;
     font-weight: 400;
+  }
+
+  .section-heading.compact {
+    margin-bottom: calc(var(--token-spacing-unit) * 1.5);
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+    line-height: var(--token-text-caption-leading);
+    font-weight: 500;
   }
 
   .variable-list {
@@ -813,6 +997,11 @@
     background: var(--token-surface-panel-hover);
   }
 
+  .variable[open] > summary {
+    background: var(--token-surface-panel-hover);
+    color: var(--token-ink-primary);
+  }
+
   .variable summary:focus-visible {
     outline: 2px solid var(--token-color-interactive-border);
     outline-offset: -2px;
@@ -823,6 +1012,7 @@
     min-width: 0;
     align-items: center;
     gap: calc(var(--token-spacing-unit) * 1.5);
+    font-weight: 600;
   }
 
   .variable-name :global(svg) {
@@ -847,6 +1037,44 @@
 
   .variable-body p {
     margin: 0 0 calc(var(--token-spacing-unit) * 2);
+  }
+
+  .variable-description {
+    display: block;
+    width: 100%;
+    margin: 0 0 calc(var(--token-spacing-unit) * 2);
+    padding: calc(var(--token-spacing-unit) * 1.5);
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-panel);
+    color: var(--token-ink-muted);
+    cursor: text;
+    font: inherit;
+    text-align: left;
+  }
+
+  .variable-description:hover {
+    border-color: var(--token-border-strong);
+  }
+
+  .variable-description:focus-visible {
+    border-color: var(--token-color-interactive-border);
+    outline: 2px solid var(--token-color-interactive-surface);
+    outline-offset: 1px;
+  }
+
+  :global(.variable-description-editor) {
+    height: calc(var(--token-spacing-unit) * 18);
+    min-height: calc(var(--token-spacing-unit) * 18);
+    max-height: calc(var(--token-spacing-unit) * 18);
+    margin-bottom: calc(var(--token-spacing-unit) * 2);
+    resize: none;
+    overflow-y: auto;
+    border-color: var(--token-border-subtle);
+    background: var(--token-surface-canvas);
+    color: var(--token-ink-secondary);
+    font-size: var(--token-text-caption);
+    line-height: var(--token-text-caption-leading);
   }
 
   .variable-body dl {
@@ -883,13 +1111,14 @@
     display: flex;
     flex-wrap: wrap;
     gap: calc(var(--token-spacing-unit) * 1);
-    margin-bottom: calc(var(--token-spacing-unit) * 2);
+    margin: calc(var(--token-spacing-unit) * 2) 0 0;
   }
 
   .tag-form {
     display: flex;
     align-items: center;
     gap: calc(var(--token-spacing-unit) * 1);
+    margin-bottom: 0;
   }
 
   .tag-token {

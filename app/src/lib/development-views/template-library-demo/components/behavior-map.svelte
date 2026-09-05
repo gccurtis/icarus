@@ -19,14 +19,14 @@
       number: "02",
       title: "Inspect",
       icon: MousePointer2,
-      gesture: "Select a shelf card or table row",
-      result: "Both selections share one active state and open the same Template inspector."
+      gesture: "Select to inspect; double-click to enter the Template shell",
+      result: "Both selections share one active state. Authoring remains in the singleton Template category and never creates a second tab or project resource."
     },
     {
       number: "03",
       title: "Organize",
       icon: Tags,
-      gesture: "Edit an owned description or add and remove flat tags",
+      gesture: "Autosave name, description, variable help text, and flat tags",
       result: "Every currently visible row is viewer-owned; the mutation flows back into search and filtering, and an identical pending edit is shared across remounts."
     },
     {
@@ -54,7 +54,7 @@
       number: "07",
       title: "Use",
       icon: ExternalLink,
-      gesture: "Double-click a template or press Use template",
+      gesture: "Press the explicit Use action",
       result: "Documents and decks prevalidate defaults, materialize one independent resource per pending workspace intent, and open their ordinary editor. Spreadsheet materialization is implemented and tested, but the UI handoff is deliberately disabled until its editor consumes resource ids. Cross-client retries still need durable request ids."
     }
   ];

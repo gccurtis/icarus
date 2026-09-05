@@ -8,7 +8,7 @@ turns a template into an ordinary editable resource.
 | `readTemplateLibrary` | Every valid template visible from the scoped project, projected as library metadata with creator name, permissions, and last use, plus quarantined invalid row notices |
 | `readTemplate` | The full body and variables for one valid visible template, `unavailable` for a corrupt visible row, or `null` |
 | `createTemplate` | A viewer-owned template with a server-built valid empty body and revision-one history |
-| `updateTemplate` | An owner-only, compare-and-swap metadata update plus an immutable version snapshot |
+| `updateTemplate` | An owner-only, compare-and-swap name, description, tag, or variable-help update plus an immutable version snapshot |
 | `duplicateTemplate` | A visible template copied into the viewer's ownership at revision one |
 | `removeTemplate` | An owner-only, compare-and-swap delete after current-project provenance and all version rows are removed; cross-project references refuse deletion |
 | `instantiateTemplate` | A regular document, deck, or spreadsheet with template provenance and a revision-zero leader snapshot |
@@ -47,9 +47,10 @@ resource do not make the template appear newly used.
 Updates and deletes require `baseRevision`. Stale, forbidden, and missing
 requests are ordinary `accepted: false` answers, not transport errors. Invalid
 payloads throw before the store is read. Every created or updated template
-writes the corresponding `templateVersions` row. The current update door is
-metadata-only; body and variable authoring wait for the durable editor-session
-contract rather than exposing a weakly validated generic object write.
+writes the corresponding `templateVersions` row. The current update door handles
+metadata plus one variable description at a time; stable variable keys/defaults
+and body authoring wait for the durable editor-session contract rather than
+exposing a weakly validated generic object write.
 
 Every stored row is re-admitted before projection or mutation. A malformed
 legacy row is quarantined from the list, reported as unavailable on direct read,

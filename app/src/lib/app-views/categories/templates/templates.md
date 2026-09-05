@@ -12,11 +12,13 @@ The singleton library for reusable document, slide-deck, and spreadsheet bodies.
 The centre has one vertical stack: header, recently used shelf, then the complete
 table. Search reaches names, descriptions, and tags. Availability, target, and a
 bounded multi-select tag menu compose, and every sort has an explicit direction.
-A click selects the template for inspection; a double-click instantiates an
-independent project resource and opens its ordinary editor for documents and
-slide decks. Spreadsheet materialization exists at the capability boundary, but
-its library handoff is visibly disabled until the mock-backed spreadsheet editor
-consumes the created resource id. Represented variable
+A click selects the template for inspection; a double-click moves the singleton
+Template category into its authoring shell without creating a resource or a
+second workspace tab. `Use` is the only gesture that instantiates an independent
+project resource and opens its ordinary editor for documents and slide decks.
+Spreadsheet materialization exists at the capability boundary, but its library
+handoff is visibly disabled until the mock-backed spreadsheet editor consumes
+the created resource id. Represented variable
 defaults are resolved before the write; an unbound, cyclic, or excessively
 expanding variable refuses before any resource write.
 
@@ -28,16 +30,19 @@ not make an old template use look recent again.
 
 ## Context: overview-library
 
-The context panel creates a represented empty template of any supported target.
-It also reports one compact breakdown by availability and target. Create waits
-for the Templates capability, refreshes every mounted library query, and selects
-the returned id.
+The Overview context panel creates a represented empty template of any supported
+target. A colored icon toggle chooses Document, Slide deck, or Spreadsheet; the
+view supplies a required unique working name, then moves inspection to the
+returned id. The Library section shows the total beside its heading and one
+compact breakdown by availability and target.
 
 ## Inspector: template
 
 The inspector performs a body-bearing read only for the selected template. It
 shows target, availability, update time, creator, description, variables, and
-tags. Description and tags are editable for the owner. Duplicate always creates
+tags. Name and fixed-height description fields autosave on blur; variable help
+text autosaves while stable keys and defaults remain read-only; tag creation is
+kept above the tags it adds. Duplicate always creates
 an independent viewer-owned copy. Delete is owner-only, revision-checked, removes
 version rows, and clears provenance from existing resources rather than deleting
 those resources. Batched removals avoid repeated whole-table rewrites. Use
@@ -82,10 +87,13 @@ membership and tags are never used to manufacture access.
 
 ## Authoring boundary
 
-There is no separate template editor in this future state. The intended flow is
-to stage the template body under a real resource id, use the ordinary document
-or slide-deck runtime, flush it, compare-and-set the body back into the template,
-then clean up the stage.
+There is no separate template editor implementation in this future state. The
+singleton Template category owns a specialized header and Back to Template
+Library action. The intended authoring body stages the template under a real
+resource id and borrows the ordinary document or slide-deck runtime below that
+header. Variable-bearing Prompt positions render as Template blocks while
+authoring; Done flushes the runtime, compare-and-sets the body back into the
+template, and then cleans up the stage.
 
 That stage needs durable identity before it is safe. Workspace close and reopen
 are persisted and undoable, and runtime release begins an asynchronous flush;

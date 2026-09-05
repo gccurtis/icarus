@@ -68,8 +68,14 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
   const resourceTables = ["documents", "slideDecks", "spreadsheets"] as const;
   const detach = new Map<(typeof resourceTables)[number], readonly string[]>();
   for (const table of resourceTables) {
+    const resources = recordsIn(store, table);
+    const claimants = new Map<string, number>();
+    for (const resource of resources) {
+      const id = canonicalRowId(resource._id, table);
+      if (id !== undefined) claimants.set(id, (claimants.get(id) ?? 0) + 1);
+    }
     const ids: string[] = [];
-    for (const resource of recordsIn(store, table)) {
+    for (const resource of resources) {
       if (resource.templateId !== template._id) continue;
       const id = canonicalRowId(resource._id, table);
       if (
@@ -87,6 +93,15 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
           detail: `a ${table} provenance row is corrupt`
         };
       }
+      if (claimants.get(id) !== 1) {
+        return {
+          accepted: false,
+          templateId: template._id,
+          reason: "unsupported-body",
+          revision: template.revision,
+          detail: `a ${table} provenance id is ambiguous`
+        };
+      }
       if (resource.projectId !== scope.projectId) {
         return {
           accepted: false,
@@ -101,8 +116,14 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
     detach.set(table, ids);
   }
 
+  const versions = recordsIn(store, "templateVersions");
+  const versionClaimants = new Map<string, number>();
+  for (const version of versions) {
+    const id = canonicalRowId(version._id, "templateVersions");
+    if (id !== undefined) versionClaimants.set(id, (versionClaimants.get(id) ?? 0) + 1);
+  }
   const versionIds: string[] = [];
-  for (const version of recordsIn(store, "templateVersions")) {
+  for (const version of versions) {
     if (version.templateId !== template._id) continue;
     const id = canonicalRowId(version._id, "templateVersions");
     if (id === undefined) {
@@ -112,6 +133,15 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
         reason: "unsupported-body",
         revision: template.revision,
         detail: "a template version row is corrupt"
+      };
+    }
+    if (versionClaimants.get(id) !== 1) {
+      return {
+        accepted: false,
+        templateId: template._id,
+        reason: "unsupported-body",
+        revision: template.revision,
+        detail: "a template version id is ambiguous"
       };
     }
     versionIds.push(id);

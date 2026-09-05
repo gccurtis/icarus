@@ -36,6 +36,7 @@
    */
   let {
     title,
+    heading,
     crumbs,
     actions,
     children,
@@ -43,6 +44,8 @@
   }: {
     /** Names the view. Rendered as the panel's heading, so it is never empty. */
     title: string;
+    /** Optional interactive rendering of the heading; it must still contain an h2. */
+    heading?: Snippet;
     /**
      * Where the inspected thing sits, above the title. Inspector lenses carry
      * one; context views do not, because a context view is not inside anything.
@@ -66,7 +69,11 @@
   {/if}
 
   <header class="flex flex-col gap-2 px-3 pt-3 pb-2" class:pb-1={actions !== undefined}>
-    <h2 class="text-label text-ink-secondary m-0 font-semibold">{title}</h2>
+    {#if heading}
+      {@render heading()}
+    {:else}
+      <h2 class="text-body-sm text-ink-secondary m-0 font-semibold">{title}</h2>
+    {/if}
     {#if actions}
       <div class="flex flex-wrap items-center gap-1">{@render actions()}</div>
     {/if}

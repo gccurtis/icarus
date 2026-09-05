@@ -403,6 +403,40 @@ describe("template mutations", () => {
     assert.equal(model.tables.templateVersions[0].revision, 3);
   });
 
+  test("updates variable prose without exposing its stable key or default to editing", async () => {
+    model.tables.templates.push(
+      template("1", "u", documentBody, {
+        variables: [
+          {
+            name: "evidence",
+            label: "Evidence",
+            description: "Old help",
+            default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
+          }
+        ]
+      })
+    );
+
+    const answer = await updateTemplate({
+      templateId: "templates:1",
+      baseRevision: 2,
+      patch: {
+        variableDescription: { name: "evidence", description: "  Choose the evidence set.  " }
+      }
+    });
+
+    assert.deepEqual(answer, { accepted: true, templateId: "templates:1", revision: 3 });
+    assert.deepEqual(model.tables.templates[0].variables, [
+      {
+        name: "evidence",
+        label: "Evidence",
+        description: "Choose the evidence set.",
+        default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
+      }
+    ]);
+    assert.equal(model.tables.templateVersions.length, 1);
+  });
+
   test("duplicates a visible template into a new viewer-owned template", async () => {
     model.tables.templates.push(template("1", "u", slidesBody, { description: "Source" }));
 
@@ -526,6 +560,44 @@ describe("template mutations", () => {
     assert.equal(model.tables.templates.length, 1);
     assert.equal(model.tables.documents[0].templateId, "templates:1");
     assert.equal(model.tables.templateVersions.length, 1);
+    assert.equal(model.calls.some((call) => call.startsWith("remove")), false);
+  });
+
+  test("refuses ambiguous ancillary ids before a batch can touch another claimant", async () => {
+    model.tables.templates.push(template("1", "u"));
+    model.tables.documents.push(
+      row("documents", "1", { projectId: "p", templateId: "templates:1", updatedAt: 1 }),
+      row("documents", "1", { projectId: "other", templateId: "templates:other", updatedAt: 1 })
+    );
+    model.tables.templateVersions.push(
+      row("templateVersions", "1", { templateId: "templates:1", revision: 2 })
+    );
+
+    const answer = await removeTemplate({ templateId: "templates:1", baseRevision: 2 });
+
+    assert.equal(answer.accepted, false);
+    assert.equal(answer.accepted ? "" : answer.reason, "unsupported-body");
+    assert.match(answer.accepted ? "" : answer.detail, /provenance id is ambiguous/);
+    assert.equal(model.tables.templates.length, 1);
+    assert.equal(model.tables.documents[0].templateId, "templates:1");
+    assert.equal(model.tables.documents[1].templateId, "templates:other");
+    assert.equal(model.calls.some((call) => call.startsWith("remove")), false);
+  });
+
+  test("refuses an ambiguous version id before deleting another template's history", async () => {
+    model.tables.templates.push(template("1", "u"));
+    model.tables.templateVersions.push(
+      row("templateVersions", "1", { templateId: "templates:1", revision: 2 }),
+      row("templateVersions", "1", { templateId: "templates:other", revision: 1 })
+    );
+
+    const answer = await removeTemplate({ templateId: "templates:1", baseRevision: 2 });
+
+    assert.equal(answer.accepted, false);
+    assert.equal(answer.accepted ? "" : answer.reason, "unsupported-body");
+    assert.match(answer.accepted ? "" : answer.detail, /version id is ambiguous/);
+    assert.equal(model.tables.templates.length, 1);
+    assert.equal(model.tables.templateVersions.length, 2);
     assert.equal(model.calls.some((call) => call.startsWith("remove")), false);
   });
 

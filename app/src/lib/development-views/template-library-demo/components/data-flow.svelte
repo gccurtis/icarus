@@ -51,7 +51,7 @@
   </section>
 
   <section class="instantiate">
-    <header><span>02 / PROPOSED AUTHORING</span><h3>No template-only editor.</h3></header>
+    <header><span>02 / PROPOSED AUTHORING</span><h3>One Template shell, borrowed editor runtimes.</h3></header>
     {@render flow(EDITING)}
     <p>
       This lifecycle is deferred. Done would await editor flush, compare-and-swap a new template

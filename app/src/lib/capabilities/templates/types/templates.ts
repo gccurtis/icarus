@@ -66,6 +66,11 @@ export type UpdateTemplatePatch = {
   /** `null` removes an existing description. */
   readonly description?: string | null;
   readonly tags?: readonly string[];
+  /** Changes one variable's prose without making its stable key client-editable. */
+  readonly variableDescription?: {
+    readonly name: string;
+    readonly description: string | null;
+  };
 };
 
 export type UpdateTemplateInput = {
