@@ -1,3 +1,4 @@
+import type { IntelligenceModel } from "$model/server/intelligence/index.server";
 import type { EmbeddingModel } from "$model/server/embedding/index.server";
 import type { Configuration } from "$model/server/configuration/index.server";
 import type { Observability } from "$model/server/observability/index.server";
@@ -20,6 +21,7 @@ import type { StoreModel } from "$model/server/store/index.server";
  * access.
  */
 export interface ServerModel {
+  readonly intelligence: IntelligenceModel;
   readonly embedding: EmbeddingModel;
   readonly configuration: Configuration;
   readonly observability: Observability;

@@ -28,7 +28,10 @@ import type {
 } from "$representation/data/types/investigation/hypothesis";
 import type { QuestionStatus, RelatedItem } from "$representation/data/types/investigation/question";
 import type { ResearchMode } from "$representation/data/types/investigation/research-thread";
-import type { DerivedState, SemanticCitation } from "$representation/data/types/semantic/derived-output";
+import type {
+  DerivedOutput as SemanticDerivedOutput,
+  DerivedOutputFields as SemanticDerivedOutputFields
+} from "$representation/data/types/semantic/derived-output";
 import type {
   RecursiveIndexConfiguration,
   SemanticIndexChildren
@@ -257,22 +260,8 @@ export type SemanticIndexNodeFields = {
 };
 export type SemanticIndexNode = Row<"semanticIndexNodes"> & SemanticIndexNodeFields;
 
-export type DerivedOutputFields = {
-  projectId: Id<"projects">;
-  prompt: string;
-  scope?: ResourceSet;
-  queries: string[];
-  evidence: SemanticCitation[];
-  lastResponse?: ContentBlock;
-  lastRevision?: number;
-  lastGeneration?: number;
-  state: DerivedState;
-  error?: string;
-  refreshedAt?: number;
-  createdBy: Actor;
-  updatedAt: number;
-};
-export type DerivedOutput = Row<"derivedOutputs"> & DerivedOutputFields;
+export type DerivedOutputFields = SemanticDerivedOutputFields;
+export type DerivedOutput = SemanticDerivedOutput;
 
 export type ThreadFields = {
   projectId: Id<"projects">;

@@ -3,6 +3,7 @@ import { createObservability } from "$model/server/observability/index.server";
 import { createStore } from "$model/server/store/index.server";
 import type { ServerModel } from "$runtime/server/types";
 import { createEmbedding } from "$model/server/embedding/index.server";
+import { createIntelligence } from "$model/server/intelligence/index.server";
 
 export type { ServerModel } from "$runtime/server/types";
 export type { Scope, Session } from "$runtime/server/scope.server";
@@ -44,6 +45,7 @@ export type { Logger } from "$model/server/observability/index.server";
  */
 const buildServerModel = async (): Promise<ServerModel> => {
   const configuration = await createConfiguration();
+  const intelligence = createIntelligence(configuration);
   const embedding = createEmbedding(configuration);
   const observability = createObservability(configuration);
   // Browser suites may point the process at a disposable represented store.
@@ -53,6 +55,7 @@ const buildServerModel = async (): Promise<ServerModel> => {
   observability.logger.info("model.started");
 
   return {
+    intelligence,
     embedding,
     configuration,
     observability,

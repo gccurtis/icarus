@@ -1,0 +1,15 @@
+# Grounded synthesis. The OpenRouter credential remains in git-ignored local.yaml.
+intelligence:
+  api: openrouter
+  providers:
+    openrouter:
+      endpoint: https://openrouter.ai/api/v1/chat/completions
+      model: ~openai/gpt-latest
+      timeoutMs: 180000
+      maxOutputTokens: 4096
+      reasoningEffort: medium
+
+  agent:
+    maxToolRounds: 8
+    maxSourceRetries: 2
+    defaultTopK: 8

@@ -133,7 +133,7 @@ that a future command reading something eagerly fails in the file that caused it
 ## Bindings
 
 Defaults only. `bind`, `unbind`, persistence, and the editor that drives them
-are designed and not built.
+are designed and not built; this object currently exposes no editing surface.
 
 Three chords ship bound. `tab.close` deliberately ships unbound: `$mod+w` is its
 obvious chord and browsers refuse to release that keystroke, so binding it by

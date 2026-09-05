@@ -37,6 +37,10 @@ vi.mock("$model/server/embedding/index.server", () => ({
   })
 }));
 
+vi.mock("$model/server/intelligence/index.server", () => ({
+  createIntelligence: () => ({ completeWithTools: async () => ({ text: "", toolCalls: [] }) })
+}));
+
 vi.mock("$model/server/observability/index.server", () => ({
   createObservability: () => ({
     logger: { info: () => {} },
@@ -81,6 +85,7 @@ test("the initializer's graph is what the accessor returns", async () => {
 
   assert.equal(serverModel(), built);
   // Repeated access is the same aggregate and the same leaves.
+  assert.equal(serverModel().intelligence, built.intelligence);
   assert.equal(serverModel().observability, built.observability);
   assert.equal(serverModel().configuration, built.configuration);
   assert.equal(build.calls, 1);

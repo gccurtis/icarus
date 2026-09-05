@@ -23,7 +23,7 @@ representation:
     external: [core]
     formulas: [content, core]
     investigation: [core]
-    semantic: [core]
+    semantic: [content, core]
     slide-decks: [content, core]
     spreadsheets: [content, core, formulas]
     templates: [content, core, documents, slide-decks, spreadsheets]

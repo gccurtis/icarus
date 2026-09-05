@@ -31,6 +31,10 @@ vi.mock("$model/server/embedding/index.server", () => ({
   })
 }));
 
+vi.mock("$model/server/intelligence/index.server", () => ({
+  createIntelligence: () => ({ completeWithTools: async () => ({ text: "", toolCalls: [] }) })
+}));
+
 vi.mock("$model/server/observability/index.server", () => ({
   createObservability: () => ({
     logger: {
@@ -63,6 +67,7 @@ beforeEach(() => {
 test("the graph names every object it built", async () => {
   const model = await initServerModel();
 
+  assert.ok(model.intelligence);
   assert.ok(model.embedding);
   assert.ok(model.configuration);
   assert.ok(model.observability);
