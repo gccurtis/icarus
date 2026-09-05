@@ -55,7 +55,7 @@ It does not own:
   `unique-components/screen/` and are consumed unmodified;
 - the tokens they resolve through, which belong to the styles directory;
 - the per-panel `Needs` lines the last section gathers, which belong to
-  [`docs/screen-panel-views`](../../../../docs/screen-panel-views/README.md).
+  [`docs/archive/screen-panel-views`](../../../../docs/archive/screen-panel-views/README.md).
 
 ## Public Contract
 
