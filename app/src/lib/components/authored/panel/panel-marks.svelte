@@ -29,7 +29,7 @@
    */
   let {
     label,
-    value = $bindable<string[]>([]),
+    value = [],
     options,
     mixed = [],
     disabled = false,
@@ -40,7 +40,7 @@
     label: string;
     /** The marks that are on. */
     value?: string[];
-    options: readonly { value: string; label: string }[];
+    options: readonly { value: string; label: string; short?: string }[];
     /** Marks that some of the selection carries and some does not. */
     mixed?: readonly string[];
     disabled?: boolean;
@@ -49,6 +49,14 @@
     onchange?: (next: string[]) => void;
   } = $props();
 
+  // Keep the vendored bindable primitive behind a local value. Consumers use
+  // the ordinary controlled-component contract (`value` + `onchange`) rather
+  // than being forced to bind their own state through two component layers.
+  let selected = $state<string[]>([]);
+  $effect(() => {
+    selected = value;
+  });
+
   // The marker is forwarded through `ToggleGroup.Root` onto the element it renders.
   const trace = traceNode("PanelMarks", () => ({ label, value, options, mixed, disabled, flush }));
 </script>
@@ -56,11 +64,11 @@
 <ToggleGroup.Root
   {...trace}
   type="multiple"
-  bind:value
+  bind:value={selected}
   {disabled}
   aria-label={label}
   onValueChange={(next: string[]) => onchange?.(next)}
-  class={cn("flex flex-wrap justify-start gap-1", flush ? "px-0" : "px-3")}
+  class={cn("panel-marks flex w-full flex-nowrap gap-1", flush ? "px-0" : "px-3")}
 >
   {#each options as option (option.value)}
     <ToggleGroup.Item
@@ -69,12 +77,42 @@
       class={cn(
         "text-caption border-border-subtle bg-surface-panel text-ink-secondary rounded-control",
         "data-[state=on]:border-active-border data-[state=on]:bg-active-surface data-[state=on]:text-active-text",
-        "h-auto min-w-0 border px-1.5 py-0.5 font-normal",
+        "min-h-6 min-w-0 flex-1 border px-1 py-0.5 font-normal",
         /* Neither on nor off: the dashes are what say "some of it does". */
         mixed.includes(option.value) && "border-dashed opacity-70"
       )}
     >
-      {option.label}
+      <span
+        class:font-bold={option.value === "bold"}
+        class:italic={option.value === "italic"}
+        class:underline={option.value === "underline"}
+        class:line-through={option.value === "strikethrough"}
+      >
+        <span class="short-label">{option.short ?? option.label.slice(0, 1)}</span>
+        <span class="full-label">{option.label}</span>
+      </span>
     </ToggleGroup.Item>
   {/each}
 </ToggleGroup.Root>
+
+<style>
+  :global(.panel-marks) {
+    container-type: inline-size;
+  }
+
+  .full-label {
+    display: none;
+  }
+
+  @container (min-width: 23rem) {
+    .short-label {
+      display: none;
+    }
+
+    .full-label {
+      display: inline;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+</style>

@@ -4,7 +4,7 @@
   import { traceNode } from "$development-components/trace.svelte";
 
   /**
-   * A number, with its unit and a way to step it.
+   * A compact direct number field, with an optional unit.
    *
    * A margin, a weight, a limit, a row count, a font size.
    *
@@ -20,15 +20,12 @@
    * into the field's accessible name instead — "Margin in pt" — so a reader who
    * cannot see the addon still gets it.
    *
-   * **Steppers are an addition to typing, never a replacement.** Someone
-   * entering 137 must not press anything 137 times, so the field is typed into
-   * directly and the arrow keys step it as well. The two buttons are for the
-   * nudge — one point smaller, one row more — and they go dead at the bounds
-   * with a title saying which bound was reached.
+   * Native ArrowUp/ArrowDown stepping remains available, while visual plus and
+   * minus controls stay out of dense inspector rows. Someone entering 137 types
+   * 137 once rather than navigating around two redundant buttons.
    *
-   * `simple-components/input-group` underneath, so the field, the unit and the
-   * two controls are one bordered object with one focus ring, rather than three
-   * things that have to be kept in line by hand.
+   * `simple-components/input-group` underneath, so the field and unit are one
+   * bordered object with one focus ring.
    */
   let {
     label,
@@ -88,9 +85,11 @@
    */
   // svelte-ignore state_referenced_locally
   let draft = $state(String(value));
+  let error = $state<string | undefined>(undefined);
 
   $effect(() => {
     draft = String(value);
+    error = undefined;
   });
 
   /**
@@ -102,17 +101,17 @@
   const commit = (raw: string) => {
     const parsed = Number(raw);
     if (raw.trim() === "" || !Number.isFinite(parsed)) {
-      draft = String(value);
+      error = `${label} must be a number.`;
       return;
     }
     const next = clamp(quantize(parsed));
     draft = String(next);
+    error = undefined;
     if (next !== value) onchange?.(next);
   };
-
 </script>
 
-<div {...trace} class={cn("flex", flush ? "px-0" : "px-3")}>
+<div {...trace} class={cn("flex flex-col gap-1", flush ? "px-0" : "px-3")}>
   <InputGroup.Root class="h-7">
     <!--
       No steppers, drawn or native. A pair of buttons on every numeric field is
@@ -129,6 +128,7 @@
       {step}
       inputmode="decimal"
       disabled={inert}
+      aria-invalid={error ? "true" : undefined}
       aria-label={unit ? `${label} in ${unit}` : label}
       class="text-body-sm [appearance:textfield] tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       oninput={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
@@ -145,4 +145,7 @@
       </InputGroup.Addon>
     {/if}
   </InputGroup.Root>
+  {#if error}
+    <span class="text-caption text-danger-text" role="alert">{error}</span>
+  {/if}
 </div>

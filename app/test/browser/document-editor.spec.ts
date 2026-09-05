@@ -74,3 +74,30 @@ test("the fixture can be reached with the keyboard", async ({ page }) => {
 
   await expect(page.locator(".ProseMirror")).toBeVisible();
 });
+
+test("shared editor controls keep one behavior across the width matrix", async ({ page }) => {
+  await page.setViewportSize({ width: 1500, height: 900 });
+  await page.goto("/demo/document-editor-controls", { waitUntil: "networkidle" });
+
+  const panels = page.locator("main.controls-demo section");
+  await expect(panels).toHaveCount(3);
+
+  for (const panel of await panels.all()) {
+    await expect(panel.getByTitle("Bold")).toHaveCount(1);
+    await expect(panel.getByTitle("Italic")).toHaveCount(1);
+    await expect(panel.getByTitle("Underline")).toHaveCount(1);
+    await expect(panel.getByTitle("Strikethrough")).toHaveCount(1);
+    await expect(panel.getByRole("button", { name: "Foreground" })).toHaveCount(1);
+    await expect(panel.getByRole("button", { name: "Background" })).toHaveCount(1);
+    await expect(panel.getByRole("button", { name: /Increase|Decrease/ })).toHaveCount(0);
+  }
+
+  await expect(panels.nth(0).locator(".short-label").first()).toBeVisible();
+  await expect(panels.nth(0).locator(".full-label").first()).toBeHidden();
+  await expect(panels.nth(2).locator(".short-label").first()).toBeHidden();
+  await expect(panels.nth(2).locator(".full-label").first()).toBeVisible();
+
+  await panels.nth(1).getByRole("button", { name: "Foreground" }).click();
+  await page.getByRole("button", { name: "More colours…" }).click();
+  await expect(page.getByRole("status").first()).toContainText("custom-colour detail screen");
+});

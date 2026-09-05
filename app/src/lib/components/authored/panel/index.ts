@@ -86,6 +86,9 @@ export { default as PanelPair } from "$authored-components/panel/panel-pair.svel
 export { default as PanelInput } from "$authored-components/panel/panel-input.svelte";
 export { default as PanelMarks } from "$authored-components/panel/panel-marks.svelte";
 export { default as PanelColor } from "$authored-components/panel/panel-color.svelte";
+export { default as PanelColorPicker } from "$authored-components/panel/panel-color-picker.svelte";
+export { default as PanelControlGroup } from "$authored-components/panel/panel-control-group.svelte";
+export { default as PanelControlRow } from "$authored-components/panel/panel-control-row.svelte";
 
 /**
  * What a panel says while it is finding out, and what it says about work that
