@@ -528,7 +528,10 @@
         {/each}
       </section>
       <section class="merge-gate">
-        <div><span class="section-kicker">Final evidence</span><h2>Ready means quiet.</h2></div>
+        <div>
+          <span class="section-kicker">Final evidence</span><h2>Ready means quiet.</h2>
+          <a class="plan-link" href="/demo/document-editor-implementation-plan">Open the full implementation plan →</a>
+        </div>
         <ul>
           <li><span>✓</span> Typecheck, unit tests, lint, and production build</li>
           <li><span>✓</span> Narrow, default, and expanded inspector/browser runs</li>
@@ -775,6 +778,8 @@
   .phase-list aside span { display: block; margin-bottom: .25rem; color: var(--ink-3); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
   .phase-list aside b { font-size: 11px; line-height: 1.35; }
   .merge-gate { display: grid; grid-template-columns: minmax(16rem, .7fr) minmax(22rem, 1fr); gap: 3rem; margin-top: 4rem; padding: 2rem; border-radius: 12px; background: var(--ink); color: var(--ground); }
+  .plan-link { display: inline-block; margin-top: 1.2rem; color: var(--token-color-interactive-on-fill); font-size: 12px; font-weight: 650; text-decoration: none; }
+  .plan-link:hover { text-decoration: underline; }
   .merge-gate ul { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
   .merge-gate li { display: grid; grid-template-columns: 1.3rem 1fr; color: var(--token-ink-on-fill); font-size: 13px; }
   .merge-gate li span { color: var(--token-color-success-on-fill); font-weight: 700; }
