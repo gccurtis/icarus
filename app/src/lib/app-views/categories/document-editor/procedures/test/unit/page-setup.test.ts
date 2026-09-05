@@ -1,18 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 import {
+  LANE,
   MAXIMUM_GUTTER,
   MAXIMUM_ZOOM,
   MINIMUM_GUTTER,
   fitZoom,
-  gutterOf
+  gutterOf,
+  guttersOf
 } from "$app-views/categories/document-editor/procedures/page-setup";
 
 const PAGE = 52;
 
-const spans = (zoom: number): number => (PAGE * zoom) / 100 + MINIMUM_GUTTER * 2;
+const spans = (zoom: number): number => (PAGE * zoom) / 100 + MINIMUM_GUTTER + LANE;
 
-test("fitting takes the whole width the surface has, less the least gutter", () => {
+test("fitting takes the whole width the surface has, less the least gutter and the lane", () => {
   const available = 60;
   const zoom = fitZoom(available, PAGE);
 
@@ -39,4 +41,16 @@ test("the gutter collapses rather than push the page off the surface", () => {
 
 test("a page wider than the surface keeps the least gutter either side", () => {
   assert.equal(gutterOf(40, PAGE), MINIMUM_GUTTER);
+});
+
+test("the trailing gutter never gives up the lane, and the leading one gives way first", () => {
+  assert.deepEqual(guttersOf(100, PAGE), { leading: MAXIMUM_GUTTER, trailing: MAXIMUM_GUTTER });
+
+  const tight = guttersOf(PAGE + MINIMUM_GUTTER + LANE, PAGE);
+  assert.equal(tight.trailing, LANE);
+  assert.equal(tight.leading, MINIMUM_GUTTER);
+
+  const tighter = guttersOf(PAGE, PAGE);
+  assert.equal(tighter.trailing, LANE, "the lane is reserved even when nothing else fits");
+  assert.equal(tighter.leading, MINIMUM_GUTTER);
 });

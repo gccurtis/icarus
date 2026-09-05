@@ -125,13 +125,16 @@ test("a changed proportion is a set on the row", () => {
   ]);
 });
 
-test("a variant is not this editor's to change, so it emits nothing", () => {
+test("a changed variant is a set on the block", () => {
   const ops = translate(
     body([blocks("#r1", [text("#b1", "Title")])]),
-    body([blocks("#r1", [text("#b1", "Title", { variant: "heading" })])])
+    body([blocks("#r1", [text("#b1", "Title", { variant: "heading", level: 1 })])])
   );
 
-  assert.deepEqual(ops, []);
+  assert.deepEqual(ops, [
+    { op: "set", target: "block", path: "#b1/variant", value: "heading", was: "paragraph" },
+    { op: "set", target: "block", path: "#b1/level", value: 1, was: null }
+  ]);
 });
 
 test("a reorder is a move against the id it now follows", () => {
@@ -146,26 +149,58 @@ test("a reorder is a move against the id it now follows", () => {
   ]);
 });
 
-test("a mark-only difference is not this translator's business", () => {
+test("a new mark is an insert against the block's mark list", () => {
+  const mark = {
+    id: "#m1",
+    from: { atom: "#b1-atom", offset: 0 },
+    to: { atom: "#b1-atom", offset: 3 },
+    style: ["bold" as const]
+  };
   const ops = translate(
     body([blocks("#r1", [text("#b1", "One")])]),
-    body([
-      blocks("#r1", [
-        text("#b1", "One", {
-          marks: [
-            {
-              id: "#m1",
-              from: { atom: "#b1-atom", offset: 0 },
-              to: { atom: "#b1-atom", offset: 3 },
-              style: ["bold"]
-            }
-          ]
-        })
-      ])
-    ])
+    body([blocks("#r1", [text("#b1", "One", { marks: [mark] })])])
   );
 
-  assert.deepEqual(ops, []);
+  assert.deepEqual(ops, [
+    { op: "insert", target: "mark", path: "#b1/marks", ids: ["#m1"], after: null, values: [mark] }
+  ]);
+});
+
+test("typing inside a mark is one text op; the mark's shift is the applier's, not the translator's", () => {
+  const mark = {
+    id: "#m1",
+    from: { atom: "#b1-atom", offset: 0 },
+    to: { atom: "#b1-atom", offset: 3 },
+    style: ["bold" as const]
+  };
+  const grown = { ...mark, to: { atom: "#b1-atom", offset: 4 } };
+  const ops = translate(
+    body([blocks("#r1", [text("#b1", "One", { marks: [mark] })])]),
+    body([blocks("#r1", [text("#b1", "Ones", { marks: [grown] })])])
+  );
+
+  assert.deepEqual(ops, [
+    { op: "text", target: "atom", path: "#b1/atoms/#b1-atom", at: 3, insert: "s", remove: "" },
+    { op: "set", target: "mark", path: "#m1/to", value: { atom: "#b1-atom", offset: 4 }, was: { atom: "#b1-atom", offset: 3 } }
+  ]);
+});
+
+test("a mark whose text is edited in the middle emits only the text op", () => {
+  const mark = {
+    id: "#m1",
+    from: { atom: "#b1-atom", offset: 0 },
+    to: { atom: "#b1-atom", offset: 5 },
+    style: ["bold" as const]
+  };
+  const wider = { ...mark, to: { atom: "#b1-atom", offset: 6 } };
+  const ops = translate(
+    body([blocks("#r1", [text("#b1", "Bolds", { marks: [mark] })])]),
+    body([blocks("#r1", [text("#b1", "Bo lds", { marks: [wider] })])])
+  );
+
+  assert.deepEqual(ops, [
+    { op: "text", target: "atom", path: "#b1/atoms/#b1-atom", at: 2, insert: " ", remove: "" }
+  ]);
 });
 
 test("a held non-text block emits nothing", () => {

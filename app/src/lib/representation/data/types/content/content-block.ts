@@ -116,6 +116,7 @@ export type PromptBlock = {
   id: string;
   type: "prompt";
   derivedOutputId?: Id<"derivedOutputs">;
+  style?: string;
   atoms: Atom[];
   display: string;
   marks: Mark[];

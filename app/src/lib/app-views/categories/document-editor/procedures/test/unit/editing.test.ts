@@ -102,12 +102,43 @@ test("a split keeps the head's block id and mints the tail's", () => {
 });
 
 test("a split makes a paragraph, whatever the row it came from was", () => {
-  const before = body([blocks("#r1", [text("#b1", "TitleRest", { variant: "heading" })])]);
+  const before = body([
+    blocks("#r1", [
+      text("#b1", "TitleRest", {
+        variant: "heading",
+        level: 2,
+        style: "heading-2",
+        format: { indent: 18 }
+      })
+    ])
+  ]);
   const after = bodyOf(run(splitRow, stateAt(before, "#b1", 5)).doc, before);
 
-  assert.equal(after.rows[1].kind === "blocks" && after.rows[1].blocks[0].type === "text"
-    ? after.rows[1].blocks[0].variant
-    : undefined, "paragraph");
+  const next = after.rows[1].kind === "blocks" ? after.rows[1].blocks[0] : undefined;
+  assert.equal(next?.type === "text" ? next.variant : undefined, "paragraph");
+  assert.equal(next?.type === "text" ? next.style : undefined, undefined);
+  assert.equal(next?.type === "text" ? next.level : undefined, undefined);
+  assert.equal(next?.type === "text" ? next.format : undefined, undefined);
+});
+
+test("Enter continues a list with an unchecked new item", () => {
+  const before = body([
+    blocks("#r1", [
+      text("#b1", "DoneNext", {
+        variant: "list",
+        listStyle: "todo",
+        checked: true,
+        style: "tasks"
+      })
+    ])
+  ]);
+  const after = bodyOf(run(splitRow, stateAt(before, "#b1", 4)).doc, before);
+  const next = after.rows[1].kind === "blocks" ? after.rows[1].blocks[0] : undefined;
+
+  assert.equal(next?.type === "text" ? next.variant : undefined, "list");
+  assert.equal(next?.type === "text" ? next.listStyle : undefined, "todo");
+  assert.equal(next?.type === "text" ? next.checked : undefined, false);
+  assert.equal(next?.type === "text" ? next.style : undefined, "tasks");
 });
 
 test("splitting inside a proportioned row leaves the sibling where it is", () => {
@@ -175,20 +206,21 @@ test("Backspace in a row's second block is not a merge", () => {
   assert.equal(run(mergeRow, stateAt(before, "#b2", 0)).handled, false);
 });
 
-test("a merge joins the rows either side of a row the editor cannot draw", () => {
+test("Backspace at the row after a divider removes the divider and keeps the text", () => {
   const before = body([
     blocks("#r1", [text("#b1", "One")]),
     { id: "#r2", kind: "divider" },
     blocks("#r3", [text("#b3", "Two")])
   ]);
-  const after = bodyOf(run(mergeRow, stateAt(before, "#b3", 0)).doc, before);
+  const { handled, doc } = run(mergeRow, stateAt(before, "#b3", 0));
+  const after = bodyOf(doc, before);
 
+  assert.equal(handled, true);
   assert.deepEqual(
     after.rows.map((row) => row.id),
-    ["#r1", "#r2"],
-    "the divider is untouched, and the row that merged away is gone"
+    ["#r1", "#r3"]
   );
-  assert.deepEqual(displays(after), [["OneTwo"], []]);
+  assert.deepEqual(displays(after), [["One"], ["Two"]]);
 });
 
 test("a merge reaches across a computed page boundary", () => {

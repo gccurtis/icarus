@@ -10,7 +10,7 @@ import type { WorkspaceStateModel } from "$model/client/workspace-state/types";
 
 export { createWorkspaceState } from "$model/client/workspace-state/constructor";
 
-export type { DocumentRuntime, SyncState } from "$model/client/document-runtimes";
+export type { DocumentRuntime, PendingMarks, SyncState } from "$model/client/document-runtimes";
 export type { SlideDeckRuntime } from "$model/client/slide-deck-runtimes";
 
 export type { Category, ContentView } from "$representation/data/types/workspace/categories";

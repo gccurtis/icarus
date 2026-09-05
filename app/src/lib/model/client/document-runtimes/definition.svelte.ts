@@ -14,6 +14,7 @@ import type {
   Thresholds,
   HistoryEntry,
   RuntimeFailure,
+  PendingMarks,
   SyncState
 } from "$model/client/document-runtimes/types";
 
@@ -28,6 +29,9 @@ export class Runtime implements DocumentRuntime {
   undoStack = $state.raw<readonly HistoryEntry[]>([]);
   redoStack = $state.raw<readonly HistoryEntry[]>([]);
   failure = $state.raw<RuntimeFailure | undefined>(undefined);
+
+  pendingMarks = $state.raw<PendingMarks | undefined>(undefined);
+  scrollTo = $state<string | undefined>(undefined);
 
   inFlight = $state(false);
 

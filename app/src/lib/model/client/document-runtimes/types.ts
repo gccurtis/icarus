@@ -1,3 +1,4 @@
+import type { MarkStyle } from "$representation/data/types/content/content-block";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 
@@ -16,12 +17,21 @@ export type RuntimeFailure = {
   readonly ops: readonly DocumentOp[];
 };
 
+export type PendingMarks = {
+  readonly style?: readonly MarkStyle[];
+  readonly color?: string;
+  readonly background?: string;
+};
+
 export interface DocumentRuntime {
   readonly body: DocumentBody | undefined;
   readonly revision: number;
   readonly sync: SyncState;
   readonly pending: number;
   readonly failure: RuntimeFailure | undefined;
+
+  pendingMarks: PendingMarks | undefined;
+  scrollTo: string | undefined;
 
   apply(ops: readonly DocumentOp[]): void;
   flush(): Promise<void>;
@@ -46,7 +56,6 @@ export interface DocumentRuntimesModel {
 export type Thresholds = {
   readonly afterOps: number;
   readonly afterMs: number;
-  /** How often a settled runtime re-reads the leader. Zero switches it off. */
   readonly syncEveryMs: number;
 };
 

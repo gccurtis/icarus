@@ -17,12 +17,14 @@ export const heldSelection = (): Plugin<boolean> =>
       decorations: (state) => {
         if (HELD.getState(state) !== true) return DecorationSet.empty;
 
-        const { from, to, empty } = state.selection;
-        if (empty) return DecorationSet.empty;
+        if (state.selection.empty) return DecorationSet.empty;
 
-        return DecorationSet.create(state.doc, [
-          Decoration.inline(from, to, { class: "held-selection" })
-        ]);
+        return DecorationSet.create(
+          state.doc,
+          state.selection.ranges.map((range) =>
+            Decoration.inline(range.$from.pos, range.$to.pos, { class: "held-selection" })
+          )
+        );
       },
       handleDOMEvents: {
         blur: (view) => {

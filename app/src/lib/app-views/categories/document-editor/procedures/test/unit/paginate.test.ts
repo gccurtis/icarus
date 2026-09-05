@@ -3,6 +3,7 @@ import { test } from "vitest";
 import type { TextBlock } from "$representation/data/types/content/content-block";
 import {
   budgets,
+  linesOfBlock,
   linesOfRow,
   linesOfText,
   paginate,
@@ -63,7 +64,22 @@ test("a word longer than the measure breaks inside itself", () => {
 test("the tallest block sets the row's height", () => {
   const band = row("#r1", [words(40), "short"], [1, 1]);
 
-  assert.equal(linesOfRow(band, 90), linesOfText(words(40), 45));
+  assert.equal(linesOfRow(band, 90), linesOfBlock(band.blocks[0], 45));
+  assert.ok(linesOfRow(band, 90) >= linesOfText(words(40), 45), "at least the lines of text");
+});
+
+test("a bigger style takes more lines for the same text", () => {
+  const styles = {
+    defaultKey: "body",
+    styles: {
+      body: { name: "Body", fontSize: 16, lineHeight: 26, spaceAfter: 0 },
+      big: { name: "Big", fontSize: 32, lineHeight: 40, spaceAfter: 0 }
+    }
+  };
+  const plain = { ...text("#b1", words(20)), style: "body" };
+  const big = { ...text("#b2", words(20)), style: "big" };
+
+  assert.ok(linesOfBlock(big, 90, styles) > linesOfBlock(plain, 90, styles));
 });
 
 test("a narrower block wraps sooner than a wider one", () => {

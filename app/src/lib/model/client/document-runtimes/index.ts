@@ -2,5 +2,6 @@ export { createDocumentRuntimes } from "$model/client/document-runtimes/construc
 export type {
   DocumentRuntime,
   DocumentRuntimesModel,
+  PendingMarks,
   SyncState
 } from "$model/client/document-runtimes/types";

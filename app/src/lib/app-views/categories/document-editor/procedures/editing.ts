@@ -3,7 +3,12 @@ import type { Command } from "prosemirror-state";
 import { TextSelection } from "prosemirror-state";
 
 import { mint } from "$app-views/categories/document-editor/procedures/ids";
+import { withFreshMarkIds } from "$app-views/categories/document-editor/procedures/projection";
 import { schema } from "$app-views/categories/document-editor/procedures/schema";
+import {
+  DEFAULT_STYLES,
+  inlineStyleOf
+} from "$app-views/categories/document-editor/procedures/styles";
 
 const spanOf = (doc: ProseMirrorNode, at: number): readonly [number, number] => {
   const row = doc.nodeAt(at);
@@ -32,6 +37,47 @@ const previousRowAt = (doc: ProseMirrorNode, rowStart: number): number | undefin
   return pageStart - last.nodeSize - 1;
 };
 
+const BODY_ATTRS = {
+  kind: "text",
+  variant: "paragraph",
+  level: null,
+  listStyle: null,
+  checked: null,
+  language: null,
+  styleKey: null,
+  format: null
+};
+
+const bodyPresentation = () => {
+  const body = DEFAULT_STYLES.styles[DEFAULT_STYLES.defaultKey];
+  return {
+    ...BODY_ATTRS,
+    presentation: inlineStyleOf(body),
+    fontSize: body.fontSize ?? 16,
+    lineHeight: body.lineHeight ?? 26,
+    spaceBefore: body.spaceBefore ?? 0,
+    spaceAfter: body.spaceAfter ?? 0
+  };
+};
+
+const continuation = (block: ProseMirrorNode) => {
+  if (block.attrs.variant !== "list") return bodyPresentation();
+
+  return {
+    ...BODY_ATTRS,
+    variant: "list",
+    listStyle: block.attrs.listStyle,
+    checked: block.attrs.listStyle === "todo" ? false : block.attrs.checked,
+    styleKey: block.attrs.styleKey,
+    format: block.attrs.format,
+    presentation: block.attrs.presentation,
+    fontSize: block.attrs.fontSize,
+    lineHeight: block.attrs.lineHeight,
+    spaceBefore: block.attrs.spaceBefore,
+    spaceAfter: block.attrs.spaceAfter
+  };
+};
+
 export const splitRow: Command = (state, dispatch) => {
   const tr = state.tr;
   if (!state.selection.empty) tr.deleteSelection();
@@ -44,7 +90,8 @@ export const splitRow: Command = (state, dispatch) => {
   if (dispatch === undefined) return true;
 
   const offset = $from.parentOffset;
-  const tail = block.textContent.slice(offset);
+  const tail: ProseMirrorNode[] = [];
+  block.content.cut(offset).forEach((node) => tail.push(node));
   const rowEnd = $from.after(-1);
 
   if (offset < block.content.size) tr.delete($from.pos, $from.end());
@@ -55,8 +102,13 @@ export const splitRow: Command = (state, dispatch) => {
     schema.node("blocks_row", { rowId: mint("row"), proportions: null }, [
       schema.node(
         "text_block",
-        { blockId: mint("block"), atomId: mint("atom"), share: 1 },
-        tail.length === 0 ? undefined : schema.text(tail)
+        {
+          ...continuation(block),
+          blockId: mint("block"),
+          atomIds: [mint("atom")],
+          share: 1
+        },
+        withFreshMarkIds(tail)
       )
     ])
   );
@@ -84,17 +136,27 @@ export const mergeRow: Command = (state, dispatch) => {
   const previous = doc.nodeAt(previousStart);
   if (previous === null) return false;
 
+  if (previous.type.name !== "blocks_row") {
+    if (dispatch === undefined) return true;
+
+    const [gone, until] = spanOf(doc, previousStart);
+    const tr = state.tr.delete(gone, until);
+    tr.setSelection(TextSelection.create(tr.doc, tr.mapping.map($from.pos)));
+    dispatch(tr.scrollIntoView());
+    return true;
+  }
+
   const target = previous.lastChild;
   if (target === null || target.type.name !== "text_block") return false;
 
   if (dispatch === undefined) return true;
 
   const joinAt = previousStart + previous.nodeSize - 2;
-  const text = $from.parent.textContent;
+  const content = $from.parent.content;
   const [from, to] = spanOf(doc, rowStart);
 
   const tr = state.tr.delete(from, to);
-  if (text.length > 0) tr.insertText(text, joinAt);
+  if (content.size > 0) tr.insert(joinAt, content);
   tr.setSelection(TextSelection.create(tr.doc, joinAt));
 
   dispatch(tr.scrollIntoView());

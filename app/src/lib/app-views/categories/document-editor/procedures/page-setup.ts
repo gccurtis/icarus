@@ -1,13 +1,20 @@
 import type { PageSetup } from "$representation/data/types/documents/page-setup";
+import {
+  BODY_FONT_SIZE,
+  BODY_LINE_HEIGHT
+} from "$app-views/categories/document-editor/procedures/styles";
 
-/** The layout a new document uses until document bodies persist their own setup. */
 export const DEFAULT_PAGE_SETUP: PageSetup = {
   paper: "letter",
   orientation: "portrait",
   margins: { top: 0.75, right: 0.75, bottom: 0.75, left: 0.75 }
 };
 
-const PAPER_LABEL: Record<Exclude<PageSetup["paper"], object>, string> = {
+export type NamedPaper = Exclude<PageSetup["paper"], object>;
+
+export const PAPERS: readonly NamedPaper[] = ["letter", "legal", "tabloid", "a3", "a4", "a5"];
+
+const PAPER_LABEL: Record<NamedPaper, string> = {
   letter: "Letter",
   legal: "Legal",
   tabloid: "Tabloid",
@@ -16,7 +23,7 @@ const PAPER_LABEL: Record<Exclude<PageSetup["paper"], object>, string> = {
   a5: "A5"
 };
 
-const PAPER_DIMENSIONS: Record<Exclude<PageSetup["paper"], object>, { width: number; height: number }> = {
+const PAPER_DIMENSIONS: Record<NamedPaper, { width: number; height: number }> = {
   letter: { width: 8.5, height: 11 },
   legal: { width: 8.5, height: 14 },
   tabloid: { width: 11, height: 17 },
@@ -27,6 +34,11 @@ const PAPER_DIMENSIONS: Record<Exclude<PageSetup["paper"], object>, { width: num
 
 export const paperLabel = (paper: PageSetup["paper"]): string =>
   typeof paper === "object" ? `${paper.width} x ${paper.height} in` : PAPER_LABEL[paper];
+
+export const paperOptions = (): readonly { value: string; label: string }[] => [
+  ...PAPERS.map((paper) => ({ value: paper, label: PAPER_LABEL[paper] })),
+  { value: "custom", label: "Custom" }
+];
 
 export const paperDimensions = (
   paper: PageSetup["paper"]
@@ -46,39 +58,36 @@ export const figures = (held: Size): string =>
 export const size = (held: Size, unit: string): string => `${figures(held)} ${unit}`;
 
 const PAGE_WIDTH_REM = 52;
-const BODY_FONT_SIZE_REM = 1;
-const BODY_LINE_HEIGHT_REM = 1.625;
+const REM = 16;
 const AVERAGE_GLYPH_WIDTH_EM = 0.52;
 
-/**
- * What the page can be drawn at, as a percentage of its true size. 100 is the
- * page at the dimensions it would print at; nothing below 50 leaves a readable
- * measure, and nothing above 200 fits a page on a screen.
- */
 export const MINIMUM_ZOOM = 50;
 export const MAXIMUM_ZOOM = 200;
 
-/** What one press of the picker moves, and the precision a zoom is held to. */
 export const ZOOM_STEP = 5;
 
 export const clampZoom = (zoom: number): number =>
   Math.min(Math.max(Math.round(zoom), MINIMUM_ZOOM), MAXIMUM_ZOOM);
 
-/**
- * What is left either side of the page, in rem. The gutter is scenery, so it
- * gives way before the page does: it collapses from the maximum to the minimum
- * as the surface narrows, and only once the page will not fit inside the
- * minimum does the surface scroll sideways.
- */
 export const MAXIMUM_GUTTER = 2.5;
 export const MINIMUM_GUTTER = 0.75;
+export const LANE = 2.25;
 
-/** The largest a page can be drawn on a surface this wide without it scrolling sideways. */
 export const fitZoom = (available: number, pageWidth: number): number =>
-  clampZoom(Math.floor(((available - MINIMUM_GUTTER * 2) / pageWidth) * 100));
+  clampZoom(Math.floor(((available - MINIMUM_GUTTER - LANE) / pageWidth) * 100));
 
 export const gutterOf = (available: number, drawnWidth: number): number =>
   Math.min(MAXIMUM_GUTTER, Math.max(MINIMUM_GUTTER, (available - drawnWidth) / 2));
+
+export type Gutters = { readonly leading: number; readonly trailing: number };
+
+export const guttersOf = (available: number, drawnWidth: number): Gutters => {
+  const spare = Math.max(0, available - drawnWidth);
+  const trailing = Math.min(MAXIMUM_GUTTER, Math.max(LANE, spare / 2));
+  const leading = Math.min(MAXIMUM_GUTTER, Math.max(MINIMUM_GUTTER, spare - trailing));
+
+  return { leading, trailing };
+};
 
 export const layoutMetrics = (setup: PageSetup, zoom = 100) => {
   const dimensions = paperDimensions(setup.paper);
@@ -95,9 +104,9 @@ export const layoutMetrics = (setup: PageSetup, zoom = 100) => {
   const at = clampZoom(zoom) / 100;
 
   const charactersPerLine = Math.floor(
-    (content.width * scale) / (BODY_FONT_SIZE_REM * AVERAGE_GLYPH_WIDTH_EM)
+    (content.width * scale * REM) / (BODY_FONT_SIZE * AVERAGE_GLYPH_WIDTH_EM)
   );
-  const linesPerPage = Math.floor((content.height * scale) / BODY_LINE_HEIGHT_REM);
+  const linesPerPage = Math.floor((content.height * scale * REM) / BODY_LINE_HEIGHT);
 
   return {
     pageWidth: page.width,
@@ -115,7 +124,7 @@ export const layoutMetrics = (setup: PageSetup, zoom = 100) => {
     charactersPerLine,
     linesPerPage,
     pageTextCapacity: charactersPerLine * linesPerPage,
-    bodyFontSize: "16px",
-    bodyLineHeight: "26px"
+    bodyFontSize: `${BODY_FONT_SIZE}px`,
+    bodyLineHeight: `${BODY_LINE_HEIGHT}px`
   };
 };

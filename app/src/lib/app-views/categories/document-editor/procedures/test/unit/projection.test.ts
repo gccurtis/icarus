@@ -49,20 +49,26 @@ test("a proportioned row keeps its proportions", () => {
   assert.deepEqual(bodyOf(docOf(before, METRICS), before), before);
 });
 
-test("a divider and an explicit break are not drawn, and survive anyway", () => {
+test("a divider and an explicit break are drawn as their own rows, and survive the round trip", () => {
   const before = body([
     blocks("#r1", [text("#b1", "One")]),
     { id: "#r2", kind: "divider", style: "dashed", width: 2, color: "var(--token-border-strong)" },
     { id: "#r3", kind: "pageBreak" },
     blocks("#r4", [text("#b4", "Two")])
   ]);
+  const doc = docOf(before, METRICS);
 
   assert.deepEqual(
-    rowNodesOf(docOf(before, METRICS)).map((row) => row.attrs.rowId),
-    ["#r1", "#r4"],
-    "only the rows that are display text are drawn"
+    rowNodesOf(doc).map((row) => [row.type.name, row.attrs.rowId]),
+    [
+      ["blocks_row", "#r1"],
+      ["divider", "#r2"],
+      ["page_break", "#r3"],
+      ["blocks_row", "#r4"]
+    ]
   );
-  assert.deepEqual(bodyOf(docOf(before, METRICS), before), before);
+  assert.equal(doc.childCount, 2, "the explicit break closes the first page");
+  assert.deepEqual(bodyOf(doc, before), before);
 });
 
 test("a mark survives an untouched round trip byte for byte", () => {
@@ -92,17 +98,19 @@ test("page setup, styles and furniture are carried, never rebuilt", () => {
   assert.deepEqual(bodyOf(docOf(before, METRICS), before), before);
 });
 
-test("a non-text block is not drawn, and comes back in its place", () => {
+test("a non-text block is drawn as an atom beside its text, and comes back whole", () => {
   const image: ContentBlock = { id: "#b2", type: "image", alt: "A substation" };
   const before = body([blocks("#r1", [text("#b1", "One"), image], [3, 1])]);
 
   const doc = docOf(before, METRICS);
+  const row = rowNodesOf(doc)[0];
 
-  assert.equal(rowNodesOf(doc)[0].childCount, 1, "the row draws its text block alone");
+  assert.equal(row.childCount, 2);
+  assert.equal(row.child(1).type.name, "image_block");
   assert.deepEqual(bodyOf(doc, before), before);
 });
 
-test("a text block with a formula atom is not drawn, and comes back unchanged", () => {
+test("a text block with a formula atom draws the formula as one unit, and comes back unchanged", () => {
   const mixed: TextBlock = {
     id: "#b1",
     type: "text",
@@ -123,14 +131,44 @@ test("a text block with a formula atom is not drawn, and comes back unchanged", 
   };
   const before = body([blocks("#r1", [mixed]), blocks("#r2", [text("#b2", "Two")])]);
   const doc = docOf(before, METRICS);
+  const block = rowNodesOf(doc)[0].child(0);
 
   assert.equal(soleLiteral(mixed), undefined);
   assert.deepEqual(
     rowNodesOf(doc).map((row) => row.attrs.rowId),
-    ["#r2"],
-    "a row with nothing drawable in it is not drawn"
+    ["#r1", "#r2"]
   );
+  assert.equal(block.childCount, 2, "a text run and a formula atom");
+  assert.equal(block.child(1).type.name, "formula_atom");
+  assert.equal(block.child(1).attrs.resolved, "4");
   assert.deepEqual(bodyOf(doc, before), before);
+});
+
+test("a mark spanning a formula atom round-trips with its ends on the atoms they name", () => {
+  const mixed: TextBlock = {
+    id: "#b1",
+    type: "text",
+    variant: "paragraph",
+    atoms: [
+      { id: "#a1", kind: "literal", text: "Total " },
+      {
+        id: "#a2",
+        kind: "formula",
+        expression: "SUM(x)",
+        lastResolvedValue: { kind: "number", value: 4 },
+        lastResolvedDisplay: "four",
+        state: "fresh"
+      },
+      { id: "#a3", kind: "literal", text: " units" }
+    ],
+    display: "Total four units",
+    marks: [
+      { id: "#m1", from: { atom: "#a1", offset: 2 }, to: { atom: "#a3", offset: 3 }, style: ["bold", "italic"] }
+    ]
+  };
+  const before = body([blocks("#r1", [mixed])]);
+
+  assert.deepEqual(bodyOf(docOf(before, METRICS), before), before);
 });
 
 test("a body with nothing drawable in it still gets a row to type into", () => {
@@ -212,7 +250,7 @@ test("edited text lands on the display and on the sole atom", () => {
         [
           doc.type.schema.node(
             "text_block",
-            { blockId: "#b1", atomId: "#b1-atom", variant: "paragraph", share: 1 },
+            { blockId: "#b1", atomIds: ["#b1-atom"], variant: "paragraph", share: 1 },
             doc.type.schema.text("One more")
           )
         ]

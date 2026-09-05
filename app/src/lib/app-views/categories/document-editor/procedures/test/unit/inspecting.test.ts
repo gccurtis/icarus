@@ -144,8 +144,8 @@ test("a selection that says what the inspector already says is not sent again", 
   );
 });
 
-test("an address is the block it names and the offset after the at sign", () => {
-  assert.deepEqual(addressOf("#b1/atoms/#a1@12"), { blockId: "#b1", offset: 12 });
+test("an address is the block, the atom, and the offset into that atom", () => {
+  assert.deepEqual(addressOf("#b1/atoms/#a1@12"), { blockId: "#b1", atomId: "#a1", offset: 12 });
   assert.equal(addressOf("#b1/atoms/#a1"), undefined, "an address with no offset is not one");
   assert.equal(addressOf("#b1/atoms/#a1@half"), undefined);
 });

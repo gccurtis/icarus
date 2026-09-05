@@ -2,8 +2,12 @@ import type { ResolvedPos } from "prosemirror-model";
 import type { EditorState } from "prosemirror-state";
 
 import type { DocumentBody } from "$representation/data/types/documents/body";
-import type { Inspected, Selection } from "$representation/data/types/workspace/tab";
+import type { Inspected, Selection, SelectionRange } from "$representation/data/types/workspace/tab";
 import type { InspectorView } from "$representation/data/types/workspace/views";
+import {
+  addressAt,
+  linearOf
+} from "$app-views/categories/document-editor/procedures/projection";
 
 export type Signal = {
   readonly key: InspectorView;
@@ -12,32 +16,58 @@ export type Signal = {
 
 export type Address = {
   readonly blockId: string;
+  readonly atomId: string;
   readonly offset: number;
 };
 
-const atomAt = ($at: ResolvedPos): string | undefined => {
-  const block = $at.parent;
-  if (block.type.name !== "text_block") return undefined;
+export const atomAt = ($at: ResolvedPos): string | undefined => {
+  const found = addressAt($at);
+  if (found === undefined) return undefined;
 
-  const { blockId, atomId } = block.attrs;
-  if (typeof blockId !== "string" || typeof atomId !== "string") return undefined;
-
-  return `${blockId}/atoms/${atomId}@${$at.parentOffset}`;
+  return `${found.blockId}/atoms/${found.atomId}@${found.offset}`;
 };
 
-export const signalOf = (state: EditorState): Signal | undefined => {
+const nodeSignal = (state: EditorState): Signal | undefined => {
+  const node = "node" in state.selection ? (state.selection as { node: { type: { name: string }; attrs: Record<string, unknown> } }).node : undefined;
+  if (node === undefined) return undefined;
+
+  const blockId = node.attrs.blockId;
+  if (typeof blockId !== "string") return undefined;
+
+  if (node.type.name === "image_block") {
+    return { key: "document-editor.image", selection: { kind: "image", id: blockId } };
+  }
+  if (node.type.name === "table_block") {
+    return { key: "document-editor.table", selection: { kind: "table", id: blockId } };
+  }
+  if (node.type.name === "formula_block") {
+    return { key: "document-editor.formula", selection: { kind: "formula", id: blockId } };
+  }
+
+  return undefined;
+};
+
+export const signalOf = (
+  state: EditorState,
+  ranges: readonly SelectionRange[] = []
+): Signal | undefined => {
+  const fromNode = nodeSignal(state);
+  if (fromNode !== undefined) return fromNode;
+
   const { $from, $to, empty } = state.selection;
 
   const from = atomAt($from);
   if (from === undefined) return undefined;
 
-  if (!empty) {
+  const extra = ranges.length === 0 ? {} : { ranges };
+
+  if (!empty || ranges.length > 0) {
     const to = atomAt($to);
     if (to === undefined) return undefined;
 
     return {
       key: "document-editor.text-selection",
-      selection: { kind: "text-selection", id: from, at: to }
+      selection: { kind: "text-selection", id: from, at: to, ...extra }
     };
   }
 
@@ -50,24 +80,31 @@ export const addressOf = (held: string): Address | undefined => {
   const [path, at] = held.split("@");
   if (path === undefined || at === undefined) return undefined;
 
-  const blockId = path.split("/")[0];
+  const [blockId, , atomId] = path.split("/");
   const offset = Number(at);
-  if (blockId.length === 0 || !Number.isInteger(offset)) return undefined;
+  if (blockId === undefined || blockId.length === 0 || !Number.isInteger(offset)) return undefined;
 
-  return { blockId, offset };
+  return { blockId, atomId: atomId ?? "", offset };
 };
 
-const displayOf = (body: DocumentBody, blockId: string): string | undefined => {
+const blockAt = (body: DocumentBody, blockId: string) => {
   for (const row of body.rows) {
     if (row.kind !== "blocks") continue;
 
     for (const block of row.blocks) {
       if (block.id !== blockId) continue;
-      return block.type === "text" ? block.display : undefined;
+      return block.type === "text" || block.type === "prompt" ? block : undefined;
     }
   }
 
   return undefined;
+};
+
+const linearAddress = (body: DocumentBody, address: Address): number | undefined => {
+  const block = blockAt(body, address.blockId);
+  if (block === undefined) return undefined;
+
+  return linearOf(block.atoms, { atom: address.atomId, offset: address.offset });
 };
 
 export const selectedText = (
@@ -79,18 +116,26 @@ export const selectedText = (
   const from = addressOf(selection.id);
   if (from === undefined) return undefined;
 
-  const head = displayOf(body, from.blockId);
+  const head = blockAt(body, from.blockId);
   if (head === undefined) return undefined;
+  const start = linearAddress(body, from) ?? 0;
 
   const to = selection.at === undefined ? undefined : addressOf(selection.at);
   if (to === undefined) return "";
-  if (to.blockId === from.blockId) return head.slice(from.offset, to.offset);
 
-  const tail = displayOf(body, to.blockId);
-  if (tail === undefined) return head.slice(from.offset);
+  if (to.blockId === from.blockId) {
+    const end = linearAddress(body, to) ?? start;
+    return head.display.slice(Math.min(start, end), Math.max(start, end));
+  }
 
-  return `${head.slice(from.offset)} … ${tail.slice(0, to.offset)}`;
+  const tail = blockAt(body, to.blockId);
+  if (tail === undefined) return head.display.slice(start);
+
+  return `${head.display.slice(start)} … ${tail.display.slice(0, linearAddress(body, to) ?? 0)}`;
 };
+
+const sameRanges = (a: readonly SelectionRange[] | undefined, b: readonly SelectionRange[] | undefined): boolean =>
+  JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
 
 export const worthSending = (
   signal: Signal,
@@ -103,6 +148,7 @@ export const worthSending = (
   return (
     held?.kind !== signal.selection.kind ||
     held.id !== signal.selection.id ||
-    held.at !== signal.selection.at
+    held.at !== signal.selection.at ||
+    !sameRanges(held.ranges, signal.selection.ranges)
   );
 };

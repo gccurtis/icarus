@@ -1,5 +1,12 @@
 import type { ContentBlock, TableBlock } from "$representation/data/types/content/content-block";
 import type { DocumentRow } from "$representation/data/types/documents/body";
+import type { StyleSet } from "$representation/data/types/documents/style-set";
+import {
+  BODY_FONT_SIZE,
+  BODY_LINE_HEIGHT,
+  DEFAULT_STYLES,
+  resolve
+} from "$app-views/categories/document-editor/procedures/styles";
 
 export type BlocksRow = Extract<DocumentRow, { kind: "blocks" }>;
 
@@ -52,39 +59,86 @@ export const linesOfText = (display: string, budget: number): number => {
   return lines;
 };
 
-const linesOfTable = (block: TableBlock, budget: number): number =>
+export type Typeset = {
+  readonly fontSize: number;
+  readonly lineHeight: number;
+  readonly spaceBefore: number;
+  readonly spaceAfter: number;
+};
+
+export const BODY_TYPESET: Typeset = {
+  fontSize: BODY_FONT_SIZE,
+  lineHeight: BODY_LINE_HEIGHT,
+  spaceBefore: 0,
+  spaceAfter: 0
+};
+
+export const heightOfText = (display: string, budget: number, typeset: Typeset): number => {
+  const scale = BODY_FONT_SIZE / Math.max(typeset.fontSize, 1);
+  const lines = linesOfText(display, Math.max(1, Math.floor(budget * scale)));
+  const leading = typeset.lineHeight / BODY_LINE_HEIGHT;
+  const around = (typeset.spaceBefore + typeset.spaceAfter) / BODY_LINE_HEIGHT;
+
+  return lines * leading + around;
+};
+
+const typesetOf = (block: ContentBlock, styles: StyleSet): Typeset => {
+  if (block.type !== "text" && block.type !== "prompt") return BODY_TYPESET;
+
+  const style = resolve(styles, block.style, block.format);
+  return {
+    fontSize: style.fontSize ?? BODY_FONT_SIZE,
+    lineHeight: style.lineHeight ?? BODY_LINE_HEIGHT,
+    spaceBefore: style.spaceBefore ?? 0,
+    spaceAfter: style.spaceAfter ?? 0
+  };
+};
+
+const linesOfTable = (block: TableBlock, budget: number, styles: StyleSet): number =>
   block.rows.reduce(
     (total, row) =>
       total +
       Math.max(
         1,
         ...row.cells.map((cell) =>
-          cell.blocks.reduce((tallest, held) => Math.max(tallest, linesOfBlock(held, budget)), 1)
+          cell.blocks.reduce(
+            (tallest, held) => Math.max(tallest, linesOfBlock(held, budget, styles)),
+            1
+          )
         )
       ),
     0
   );
 
-export const linesOfBlock = (block: ContentBlock, budget: number): number => {
+export const linesOfBlock = (
+  block: ContentBlock,
+  budget: number,
+  styles: StyleSet = DEFAULT_STYLES
+): number => {
   switch (block.type) {
     case "text":
-    case "formula":
     case "prompt":
+      return heightOfText(block.display, budget, typesetOf(block, styles));
+    case "formula":
       return linesOfText(block.display, budget);
     case "image":
       return IMAGE_LINES;
     case "table":
-      return linesOfTable(block, budget);
+      return linesOfTable(block, budget, styles);
   }
 };
 
-export const linesOfRow = (row: DocumentRow, charactersPerLine: number): number => {
+export const linesOfRow = (
+  row: DocumentRow,
+  charactersPerLine: number,
+  styles: StyleSet = DEFAULT_STYLES
+): number => {
   if (row.kind === "divider") return DIVIDER_LINES;
   if (row.kind === "pageBreak") return 0;
 
   const budget = budgets(row, charactersPerLine);
   return row.blocks.reduce(
-    (tallest, block, index) => Math.max(tallest, linesOfBlock(block, budget[index])),
+    (tallest, block, index) => Math.max(tallest, linesOfBlock(block, budget[index], styles)),
     1
   );
 };
@@ -127,11 +181,12 @@ export const pack = <T>(
 export const paginate = (
   rows: readonly DocumentRow[],
   charactersPerLine: number,
-  linesPerPage: number
+  linesPerPage: number,
+  styles: StyleSet = DEFAULT_STYLES
 ): readonly (readonly DocumentRow[])[] =>
   pack(
     rows,
-    (row) => linesOfRow(row, charactersPerLine),
+    (row) => linesOfRow(row, charactersPerLine, styles),
     (row) => row.kind === "pageBreak",
     linesPerPage
   );

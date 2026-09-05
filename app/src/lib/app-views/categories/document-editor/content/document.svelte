@@ -1,14 +1,24 @@
 <script lang="ts">
   import { baseKeymap } from "prosemirror-commands";
-  import { history, redo, undo } from "prosemirror-history";
   import { keymap } from "prosemirror-keymap";
-  import { EditorState, TextSelection, type Transaction } from "prosemirror-state";
+  import { EditorState, type Transaction } from "prosemirror-state";
   import { EditorView } from "prosemirror-view";
 
   import { read } from "$capabilities/store/index.remote";
   import { mergeRow, splitRow } from "$app-views/categories/document-editor/procedures/editing";
   import { heldSelection } from "$app-views/categories/document-editor/procedures/highlight";
+  import { mint } from "$app-views/categories/document-editor/procedures/ids";
+  import { editorPointerGestures } from "$app-views/categories/document-editor/procedures/links";
   import {
+    multiSelection,
+    secondarySpans
+  } from "$app-views/categories/document-editor/procedures/multi-selection";
+  import {
+    restoreSelection,
+    selectionBookmark
+  } from "$app-views/categories/document-editor/procedures/selection-bookmark";
+  import {
+    atomAt,
     signalOf,
     worthSending
   } from "$app-views/categories/document-editor/procedures/inspecting";
@@ -16,22 +26,21 @@
     DEFAULT_PAGE_SETUP,
     clampZoom,
     fitZoom,
-    gutterOf,
+    guttersOf,
     layoutMetrics
   } from "$app-views/categories/document-editor/procedures/page-setup";
   import {
-    anchorAt,
     bodyOf,
     docOf,
-    positionOf,
     repaginate,
     stampIds,
     type DocumentBody,
     type Metrics
   } from "$app-views/categories/document-editor/procedures/projection";
+  import { schema } from "$app-views/categories/document-editor/procedures/schema";
   import { translate } from "$app-views/categories/document-editor/procedures/translate";
   import { workspaceState } from "$model/client/workspace-state";
-  import type { DocumentRuntime, SyncState } from "$model/client/workspace-state";
+  import type { DocumentRuntime, PendingMarks, SyncState } from "$model/client/workspace-state";
 
   const LAYOUT = "document-editor.layout";
 
@@ -43,6 +52,14 @@
     "needs-review": "Needs review",
     offline: "Offline",
     error: "Not saved"
+  };
+
+  const STYLE_MARK: Record<string, string> = {
+    bold: "bold",
+    italic: "italic",
+    underline: "underline",
+    strikethrough: "strike",
+    code: "code"
   };
 
   const view = workspaceState();
@@ -68,11 +85,23 @@
   let sent: DocumentBody | undefined;
   let painted: DocumentBody | undefined;
   let metrics: Metrics = layoutMetrics(DEFAULT_PAGE_SETUP);
+  let editorError = $state<string | undefined>(undefined);
+
+  const undo = () => {
+    runtime?.undo();
+    return true;
+  };
+
+  const redo = () => {
+    runtime?.redo();
+    return true;
+  };
 
   const plugins = [
     heldSelection(),
+    multiSelection(),
+    editorPointerGestures(),
     keymap({ Enter: splitRow, Backspace: mergeRow }),
-    history(),
     keymap({ "Mod-z": undo, "Shift-Mod-z": redo, "Mod-y": redo }),
     keymap(baseKeymap)
   ];
@@ -81,16 +110,13 @@
     const next = repaginate(stampIds(state.doc), metrics);
     if (next.eq(state.doc)) return state;
 
-    const anchor = anchorAt(state.selection.$from);
+    const bookmark = selectionBookmark(state);
     const transform = state.tr
       .setMeta("addToHistory", false)
       .setMeta(LAYOUT, true)
       .replaceWith(0, state.doc.content.size, next.content);
 
-    const at = anchor === undefined ? undefined : positionOf(transform.doc, anchor);
-    if (at !== undefined) transform.setSelection(TextSelection.create(transform.doc, at));
-
-    return state.apply(transform);
+    return restoreSelection(state.apply(transform), bookmark);
   };
 
   const emit = (state: EditorState): void => {
@@ -100,11 +126,25 @@
     const ops = translate(sent, body);
     sent = body;
 
-    if (ops.length > 0) runtime.apply(ops);
+    if (ops.length === 0) return;
+
+    try {
+      runtime.apply(ops);
+      editorError = undefined;
+    } catch (error) {
+      editorError = error instanceof Error ? error.message : String(error);
+    }
   };
 
+  const extraRanges = (state: EditorState) =>
+    secondarySpans(state.selection).flatMap(([from, to]) => {
+      const id = atomAt(state.doc.resolve(from));
+      const at = atomAt(state.doc.resolve(to));
+      return id === undefined || at === undefined ? [] : [{ id, at }];
+    });
+
   const signal = (state: EditorState): void => {
-    const found = signalOf(state);
+    const found = signalOf(state, extraRanges(state));
     if (found === undefined) return;
     if (!worthSending(found, view.inspected, view.selection)) return;
 
@@ -130,7 +170,11 @@
 
     metrics = layoutMetrics(body.pageSetup ?? DEFAULT_PAGE_SETUP);
 
-    const state = EditorState.create({ doc: docOf(body, metrics), plugins });
+    const bookmark = editor === undefined ? undefined : selectionBookmark(editor.state);
+    const state = restoreSelection(
+      EditorState.create({ doc: docOf(body, metrics), plugins }),
+      bookmark
+    );
     sent = bodyOf(state.doc, body);
 
     if (editor === undefined) {
@@ -139,6 +183,26 @@
     }
 
     editor.updateState(state);
+  };
+
+  const storedMarksOf = (pending: PendingMarks) => {
+    const marks = [];
+    const id = mint("mark");
+
+    for (const style of pending.style ?? []) {
+      marks.push(schema.marks[STYLE_MARK[style]].create({ markId: id }));
+    }
+    if (pending.color !== undefined || pending.background !== undefined) {
+      marks.push(
+        schema.marks.colour.create({
+          markId: mint("mark"),
+          color: pending.color ?? null,
+          background: pending.background ?? null
+        })
+      );
+    }
+
+    return marks;
   };
 
   $effect(() => {
@@ -157,6 +221,26 @@
     }
 
     paint(body);
+  });
+
+  $effect(() => {
+    const pending = runtime?.pendingMarks;
+    if (pending === undefined || editor === undefined || runtime === undefined) return;
+
+    editor.dispatch(
+      editor.state.tr.setStoredMarks(storedMarksOf(pending)).setMeta("addToHistory", false)
+    );
+    editor.focus();
+    runtime.pendingMarks = undefined;
+  });
+
+  $effect(() => {
+    const target = runtime?.scrollTo;
+    if (target === undefined || host === undefined || runtime === undefined) return;
+
+    const element = host.querySelector(`[data-block="${target}"]`);
+    element?.scrollIntoView({ block: "center", behavior: "smooth" });
+    runtime.scrollTo = undefined;
   });
 
   $effect(() => () => {
@@ -190,7 +274,7 @@
   );
 
   const layout = $derived(layoutMetrics(setup, view.zoom ?? fit));
-  const gutter = $derived(gutterOf(available, layout.drawn.width));
+  const gutters = $derived(guttersOf(available, layout.drawn.width));
 
   $effect(() => {
     const element = surface;
@@ -233,9 +317,19 @@
     {/if}
   </header>
 
+  {#if editorError}
+    <div class="editor-error" role="alert">
+      <span>{editorError}</span>
+      <button type="button" onclick={() => (editorError = undefined)}>Dismiss</button>
+    </div>
+  {/if}
+
   <div class="well">
     <div bind:this={surface} class="canvas bg-surface-pasteboard" onwheel={pinch}>
-      <div class="pasteboard" style="--gutter: {gutter}rem">
+      <div
+        class="pasteboard"
+        style="--gutter-leading: {gutters.leading}rem; --gutter-trailing: {gutters.trailing}rem"
+      >
         <div bind:this={host} class="editor" aria-label="Document editor" style={pageStyle}></div>
       </div>
     </div>
@@ -313,7 +407,8 @@
     box-sizing: border-box;
     flex-direction: column;
     align-items: center;
-    padding: calc(var(--token-spacing-unit) * 10) var(--gutter);
+    padding: calc(var(--token-spacing-unit) * 10) var(--gutter-trailing)
+      calc(var(--token-spacing-unit) * 10) var(--gutter-leading);
   }
 
   .editor {
@@ -349,7 +444,7 @@
     min-width: 0;
     flex-grow: 0;
     flex-shrink: 1;
-    margin: 0 0 calc(var(--token-spacing-unit) * 4);
+    margin: 0;
     overflow-wrap: break-word;
     color: var(--token-ink-secondary);
     font-size: var(--token-text-body);
@@ -358,11 +453,136 @@
     word-break: break-word;
   }
 
-  .editor :global(.ProseMirror-selectednode) {
+  .editor :global(.document-heading) {
+    color: var(--token-ink-primary);
+  }
+
+  .editor :global(.document-code) {
+    border-radius: var(--token-radius-control);
+    background-color: var(--token-surface-panel);
+    padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
+  }
+
+  .editor :global(.document-list) {
+    display: list-item;
+    margin-left: calc(var(--token-spacing-unit) * 5);
+  }
+
+  .editor :global(.document-list[data-list="ordered"]) {
+    list-style-type: decimal;
+  }
+
+  .editor :global(.document-list[data-list="bullet"]) {
+    list-style-type: disc;
+  }
+
+  .editor :global(.document-list[data-list="todo"]) {
+    list-style-type: square;
+  }
+
+  .editor :global(.document-image),
+  .editor :global(.document-table),
+  .editor :global(.document-formula-block) {
+    display: flex;
+    min-height: calc(var(--token-spacing-unit) * 16);
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 calc(var(--token-spacing-unit) * 4);
+    border: 1px dashed var(--token-border-strong);
+    border-radius: var(--token-radius-control);
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+  }
+
+  .editor :global(.document-divider) {
+    width: 100%;
+    margin: calc(var(--token-spacing-unit) * 4) 0;
+    border: 0;
+    border-top: 1px solid var(--token-border-strong);
+  }
+
+  .editor :global(.document-page-break) {
+    display: flex;
+    justify-content: center;
+    margin: calc(var(--token-spacing-unit) * 2) 0;
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .editor :global(.document-page-break::before),
+  .editor :global(.document-page-break::after) {
+    flex: 1;
+    align-self: center;
+    border-top: 1px dashed var(--token-border-subtle);
+    content: "";
+    margin: 0 calc(var(--token-spacing-unit) * 3);
+  }
+
+  .editor :global(.document-formula) {
+    border-radius: 2px;
+    background-color: var(--token-color-active-surface);
+    color: var(--token-color-active-text);
+    padding: 0 2px;
+  }
+
+  .editor :global(.document-formula-stale),
+  .editor :global(.document-formula-computing) {
+    opacity: 0.7;
+  }
+
+  .editor :global(.document-formula-error) {
+    background-color: var(--token-color-danger-surface);
+    color: var(--token-color-danger-text);
+  }
+
+  .editor :global(.document-underline) {
+    text-decoration: underline;
+    text-underline-offset: 0.12em;
+  }
+
+  .editor :global(.document-strike) {
+    text-decoration: line-through;
+  }
+
+  .editor :global(.document-code) {
+    font-family: var(--token-font-mono);
+  }
+
+  .editor :global(code.document-mark) {
+    border-radius: 2px;
+    background-color: var(--token-surface-panel);
+    font-family: var(--token-font-mono);
+    font-size: 0.92em;
+    padding: 0 0.2em;
+  }
+
+  .editor :global(.document-image.ProseMirror-selectednode),
+  .editor :global(.document-table.ProseMirror-selectednode),
+  .editor :global(.document-formula-block.ProseMirror-selectednode) {
     outline: 2px solid var(--token-color-active-border);
   }
 
-  .editor :global(.held-selection) {
+  .editor :global(.held-selection),
+  .editor :global(.multi-range) {
     background-color: var(--token-surface-selection);
+  }
+
+  .editor-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(var(--token-spacing-unit) * 3);
+    padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 4);
+    border-bottom: 1px solid var(--token-color-danger-border);
+    background: var(--token-color-danger-surface);
+    color: var(--token-color-danger-text);
+    font-size: var(--token-text-caption);
+  }
+
+  .editor-error button {
+    min-height: 24px;
+    text-decoration: underline;
   }
 </style>
