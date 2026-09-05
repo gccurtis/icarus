@@ -11,6 +11,12 @@ import type { TableName } from "$representation/store/tables";
  */
 export interface StoreModel {
   create<T extends TableName>(table: T, fields: unknown): Id<T>;
+  /** Creates one table's rows in one in-memory change and one persistence write. */
+  createMany<T extends TableName>(table: T, fields: readonly unknown[]): readonly Id<T>[];
+  /** Removes complete rows in one admitted table change. */
+  removeRows<T extends TableName>(table: T, ids: readonly Id<T>[]): void;
+  /** Removes one top-level field from several rows in one admitted table change. */
+  removeFieldFromRows<T extends TableName>(table: T, ids: readonly Id<T>[], field: string): void;
   read(path: string): Found | undefined;
   update(path: string, value: unknown): void;
   remove(path: string): void;

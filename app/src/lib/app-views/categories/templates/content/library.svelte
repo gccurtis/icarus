@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy, onMount, tick } from "svelte";
   import ArrowDownNarrowWide from "@lucide/svelte/icons/arrow-down-narrow-wide";
   import ArrowUpNarrowWide from "@lucide/svelte/icons/arrow-up-narrow-wide";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
@@ -13,6 +14,7 @@
     ScreenFilters,
     ScreenGroup,
     ScreenHeader,
+    ScreenNote,
     ScreenRow,
     ScreenShelf,
     ScreenShelfItem,
@@ -23,7 +25,10 @@
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import {
+    instantiateTemplate,
+    inspectTemplate,
     recentTemplatesIn,
+    templateLibrary,
     templatesIn,
     type LibraryTemplate,
     type TemplateScope,
@@ -32,8 +37,19 @@
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
-  const templates = $derived(templatesIn(view.project));
-  const recent = $derived(recentTemplatesIn(view.project, 10));
+  const library = templateLibrary();
+  let live = true;
+  onDestroy(() => {
+    live = false;
+  });
+  let now = $state(Date.now());
+  onMount(() => {
+    const timer = setInterval(() => (now = Date.now()), 60_000);
+    return () => clearInterval(timer);
+  });
+  const templates = $derived(templatesIn(library.ready ? library.current : undefined, now));
+  const unavailable = $derived(library.ready ? library.current.unavailable : []);
+  const recent = $derived(recentTemplatesIn(templates, 10));
 
   const SCOPES: readonly TemplateScope[] = ["Project", "Shared", "Personal"];
 
@@ -101,13 +117,22 @@
     selectedTags = [];
   };
 
+  /** A removed/retagged last template must not leave an invisible stale filter behind. */
+  $effect(() => {
+    if (tagMode !== "some") return;
+    const next = selectedTags.filter((tag) => TAGS.includes(tag));
+    if (next.length === selectedTags.length) return;
+    selectedTags = next;
+    tagMode = next.length === 0 ? "none" : next.length === TAGS.length ? "all" : "some";
+  });
+
   const compare = (a: LibraryTemplate, b: LibraryTemplate): number => {
     if (sortBy === "name") return a.name.localeCompare(b.name);
     if (sortBy === "makes") return a.makes.localeCompare(b.makes) || a.name.localeCompare(b.name);
     if (sortBy === "variables") {
-      return a.variables.length - b.variables.length || a.name.localeCompare(b.name);
+      return a.variableCount - b.variableCount || a.name.localeCompare(b.name);
     }
-    return a.updatedAge - b.updatedAge || a.name.localeCompare(b.name);
+    return b.updatedAt - a.updatedAt || a.name.localeCompare(b.name);
   };
 
   const query = $derived(search.trim().toLocaleLowerCase());
@@ -146,7 +171,7 @@
   };
 
   const variableCount = (row: LibraryTemplate): string =>
-    `${row.variables.length} ${row.variables.length === 1 ? "variable" : "variables"}`;
+    `${row.variableCount} ${row.variableCount === 1 ? "variable" : "variables"}`;
 
   const clear = () => {
     search = "";
@@ -159,10 +184,80 @@
   const isSelected = (id: string): boolean =>
     view.selection?.kind === "template" && view.selection.id === id;
 
-  const inspect = (row: LibraryTemplate) =>
-    view.inspect("templates.template", { kind: "template", id: row.id });
+  let opening = $state<string>();
+  let actionError = $state<string>();
+  let actionErrorFor = $state<string>();
+  let actionErrorNode = $state<HTMLDivElement | null>(null);
 
-  const open = (row: LibraryTemplate) => alert(`Opening “${row.name}” is not wired up yet.`);
+  const inspect = (row: LibraryTemplate) => {
+    actionError = undefined;
+    actionErrorFor = undefined;
+    inspectTemplate(view, row.id);
+  };
+
+  const reportError = async (row: LibraryTemplate, detail: string) => {
+    actionErrorFor = row.id;
+    actionError = detail;
+    await tick();
+    actionErrorNode?.scrollIntoView({ block: "nearest" });
+    actionErrorNode?.focus();
+  };
+
+  /** A launcher can land the singleton on one template without opening the obsolete mock editor. */
+  $effect(() => {
+    const focus = view.active.focus;
+    if (!library.ready || focus === undefined) return;
+    if (view.selection?.kind === "template" && view.selection.id === focus) return;
+
+    const row = templates.find((candidate) => candidate.id === focus);
+    if (row !== undefined) inspect(row);
+  });
+
+  const SPREADSHEET_HANDOFF =
+    "Spreadsheet templates are represented and can be materialized, but Use is paused until the spreadsheet editor consumes the created resource id.";
+
+  /** Double-click materializes a normal project resource, then opens its ordinary editor. */
+  const open = async (row: LibraryTemplate) => {
+    if (opening !== undefined) return;
+
+    if (row.makes === "Spreadsheet") {
+      void reportError(row, SPREADSHEET_HANDOFF);
+      return;
+    }
+
+    const originTabId = view.activeId;
+    opening = row.id;
+    actionError = undefined;
+    try {
+      const result = await instantiateTemplate(view, row);
+      if (
+        !live ||
+        view.activeId !== originTabId ||
+        view.selection?.kind !== "template" ||
+        view.selection.id !== row.id
+      ) {
+        return;
+      }
+      if (!result.accepted) {
+        void reportError(row, result.detail);
+        return;
+      }
+
+      const category = {
+        document: "document-editor",
+        slides: "slide-deck-editor"
+      } as const;
+      if (result.target === "spreadsheet") {
+        void reportError(row, SPREADSHEET_HANDOFF);
+        return;
+      }
+      view.open({ category: category[result.target], resourceId: result.resourceId });
+    } catch (error) {
+      void reportError(row, error instanceof Error ? error.message : String(error));
+    } finally {
+      opening = undefined;
+    }
+  };
 </script>
 
 {#snippet recentCard(row: LibraryTemplate & { readonly lastUsed: string })}
@@ -184,7 +279,7 @@
           <ScreenThumb
             ratio={TARGET_RATIO[row.makes]}
             lines={4}
-            variables={Math.min(row.variables.length, 4)}
+            variables={Math.min(row.variableCount, 4)}
           />
         </span>
       {/snippet}
@@ -205,20 +300,47 @@
       {/snippet}
     </ScreenHeader>
 
-    {#if recent.length > 0}
-      <ScreenGroup label="Recently used">
-        <ScreenShelf>
-          {#each recent as row (row.id)}
-            <ScreenShelfItem width="11rem">
-              {@render recentCard(row)}
-            </ScreenShelfItem>
-          {/each}
-        </ScreenShelf>
-      </ScreenGroup>
-    {/if}
+    {#if library.error}
+      <div class="remote-state">
+        <ScreenEmpty title="The template library could not be loaded">
+          {library.error instanceof Error ? library.error.message : String(library.error)}
+        </ScreenEmpty>
+        <Button variant="outline" size="sm" onclick={() => library.refresh()}>
+          Retry template library
+        </Button>
+      </div>
+    {:else if !library.ready}
+      <ScreenEmpty title="Loading templates">
+        Reading the scoped library from the representation store.
+      </ScreenEmpty>
+    {:else}
+      {#if actionError && actionErrorFor === view.selection?.id}
+        <div bind:this={actionErrorNode} class="action-error" role="alert" tabindex="-1">
+          <ScreenNote tone="gap">{actionError}</ScreenNote>
+        </div>
+      {/if}
+      {#if unavailable.length > 0}
+        <ScreenNote tone="gap">
+          {unavailable.length} stored {unavailable.length === 1 ? "template is" : "templates are"}
+          hidden because {unavailable.length === 1 ? "its data is" : "their data is"} invalid.
+          Repair the represented source before using or editing {unavailable.length === 1 ? "it" : "them"}.
+        </ScreenNote>
+      {/if}
 
-    <ScreenGroup label="All templates">
-      <div class="table-stack">
+      {#if recent.length > 0}
+        <ScreenGroup label="Recently used">
+          <ScreenShelf label="Recently used templates">
+            {#each recent as row (row.id)}
+              <ScreenShelfItem width="11rem">
+                {@render recentCard(row)}
+              </ScreenShelfItem>
+            {/each}
+          </ScreenShelf>
+        </ScreenGroup>
+      {/if}
+
+      <ScreenGroup label="All templates">
+        <div class="table-stack">
         <ScreenFilters
           placeholder="Search templates or tags"
           sorts={SORTS}
@@ -343,7 +465,7 @@
                   </ScreenCell>
                   <ScreenCell>{row.makes}</ScreenCell>
                   <ScreenCell>{row.scope}</ScreenCell>
-                  <ScreenCell num>{row.variables.length}</ScreenCell>
+                  <ScreenCell num>{row.variableCount}</ScreenCell>
                   <ScreenCell>{row.tags.join(", ") || "—"}</ScreenCell>
                   <ScreenCell num>{row.updated}</ScreenCell>
                 </ScreenRow>
@@ -351,8 +473,9 @@
             </ScreenTable>
           {/if}
         </div>
-      </div>
-    </ScreenGroup>
+        </div>
+      </ScreenGroup>
+    {/if}
   </div>
 </ScreenSurface>
 
@@ -369,6 +492,19 @@
     min-width: 0;
     flex-direction: column;
     gap: calc(var(--token-spacing-unit) * 3);
+  }
+
+  .remote-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(var(--token-spacing-unit) * 2);
+  }
+
+  .action-error {
+    position: sticky;
+    z-index: 10;
+    top: 0;
   }
 
   .recent-card {

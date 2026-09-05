@@ -2,8 +2,8 @@
 
 Lives at `methods/methods.md`.
 
-`methods/` holds the execution behind the public surface. Twelve methods and nine
-shared modules, and every method is a free function taking `WorkspaceStateData` first.
+`methods/` holds the execution behind the public surface. Every method is a free
+function taking `WorkspaceStateData` first.
 
 ## Methods
 
@@ -19,6 +19,7 @@ shared modules, and every method is a free function taking `WorkspaceStateData` 
 | `clear` | file | [`clear.ts`](clear.ts) | mutator | Nothing selected — the lens and the selection together |
 | `resize` | file | [`resize.ts`](resize.ts) | mutator | Replace the active tab's frame with a patched copy |
 | `showing` | file | [`showing.ts`](showing.ts) | accessor | Whether the active tab is on a given centre right now |
+| `singleFlight` | file | [`single-flight.ts`](single-flight.ts) | coordinator | Share one pending durable command across remounts and sibling surfaces |
 | `slideDeckRuntime` | file | [`slide-deck-runtime.ts`](slide-deck-runtime.ts) | accessor | The runtime a deck already has, from the register this object borrows |
 | `undo` | file | [`undo.ts`](undo.ts) | mutator | Apply the inverse of the last op, and remember it for `redo` |
 | `redo` | file | [`redo.ts`](redo.ts) | mutator | Apply the last undone op again |
@@ -77,7 +78,7 @@ long enough to split.
 definition's import of these files from being a runtime cycle. Nothing here reads
 module scope, so two instances cannot interfere.
 
-**No method here writes state directly.** Each one computes a `WorkspaceOp` and hands
+**No tab-state method here writes state directly.** Each one computes a `WorkspaceOp` and hands
 it to [`perform`](shared/perform.ts), which applies it and appends it to the log.
 That is what makes the log complete: a method that wrote through to `tab-list` or
 `tab-views` would be a gesture with no record, and undo would step over it.
@@ -85,6 +86,10 @@ That is what makes the log complete: a method that wrote through to `tab-list` o
 `undo` and `redo` are the two exceptions, and deliberately so — they call
 [`apply`](shared/apply.ts) rather than `perform`, because replaying history is
 not making history.
+
+`singleFlight` is outside the tab-state log entirely. Its map holds pending
+promises, not workspace state: registering or settling a network command is not
+an undoable tab gesture, and no capability is imported into the model.
 
 Six methods write one tab and reach for it as `state.tabs.activeId`, never by an
 id they were given, which is what makes "no method edits a tab the person is not
@@ -171,6 +176,8 @@ two answers to what the person is looking at.
 
 ## Concurrency
 
-Nothing here is asynchronous and nothing awaits, so no two methods can interleave
-and each is indivisible. **The model never calls a capability**, which keeps it
-testable without a network and puts an error where it can be seen.
+Tab-state methods are synchronous and indivisible. `singleFlight` is the one
+asynchronous coordinator: it registers a promise before the supplied work begins,
+returns that promise to every caller of the same key, and removes it on either
+outcome. **The model never calls a capability**, which keeps it testable without
+a network and puts an error where it can be seen.

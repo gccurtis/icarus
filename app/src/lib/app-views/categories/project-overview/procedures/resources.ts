@@ -1,6 +1,11 @@
-import type { Actor } from "$representation/data/types/core/actor";
-import { actorName } from "$app-views/categories/project-overview/procedures/actor-name";
-import { rowsIn, since } from "$app-views/categories/project-overview/procedures/rows";
+import {
+  createProjectResource as createProjectResourceRemote,
+  readProjectResourceIndex,
+  type CreateProjectResourceInput,
+  type ProjectResourceIndex
+} from "$capabilities/project-resources/index.remote";
+import { since } from "$app-views/categories/project-overview/procedures/rows";
+import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
 /**
  * What a project holds, as the board draws it.
@@ -40,41 +45,38 @@ export type Resource = {
   readonly updatedBy: string;
 };
 
-const by = (actor: Actor | undefined): string =>
-  actor === undefined ? "—" : actorName(actor);
+/** Create once even when another project surface makes the same pending request. */
+export const createProjectResource = (
+  view: WorkspaceStateModel,
+  input: CreateProjectResourceInput
+) =>
+  view.singleFlight(
+    [
+      "project-resource",
+      view.project,
+      "create",
+      input.target,
+      input.title?.trim() ?? null
+    ],
+    () => createProjectResourceRemote(input).updates(readProjectResourceIndex)
+  );
+
+export const resourcesIn = (
+  indexed: ProjectResourceIndex | undefined,
+  now: number
+): readonly Resource[] =>
+  (indexed?.resources ?? []).map((row) => ({
+    ...row,
+    updated: since(row.updatedAt, now),
+    updatedBy: row.updatedByName
+  }));
 
 export const resources = (projectId: string, now: number): readonly Resource[] => {
-  const mine = <T extends { projectId: string }>(rows: readonly T[]): readonly T[] =>
-    rows.filter((row) => row.projectId === projectId);
-
-  const made = (
-    id: string,
-    kind: ResourceKind,
-    name: string,
-    updatedAt: number,
-    actor: Actor | undefined
-  ): Resource => ({ id, kind, name, updated: since(updatedAt, now), updatedAt, updatedBy: by(actor) });
-
-  return [
-    ...mine(rowsIn("documents")).map((row) =>
-      made(row._id, "document", row.title, row.updatedAt, row.updatedBy)
-    ),
-    ...mine(rowsIn("slideDecks")).map((row) =>
-      made(row._id, "slides", row.title, row.updatedAt, row.updatedBy)
-    ),
-    ...mine(rowsIn("spreadsheets")).map((row) =>
-      made(row._id, "spreadsheet", row.title, row.updatedAt, row.updatedBy)
-    ),
-    ...mine(rowsIn("researchThreads")).map((row) =>
-      made(row._id, "research", row.title, row.updatedAt, row.createdBy)
-    ),
-    ...mine(rowsIn("externalFiles")).map((row) =>
-      made(row._id, "file", row.name, row.updatedAt, row.createdBy)
-    ),
-    ...mine(rowsIn("findings")).map((row) =>
-      made(row._id, "finding", row.title, row.updatedAt, row.updatedBy)
-    )
-  ];
+  const indexed = readProjectResourceIndex();
+  // Other board projections still take the represented project id. This
+  // resource query has already enforced it at the server boundary.
+  void projectId;
+  return resourcesIn(indexed.ready ? indexed.current : undefined, now);
 };
 
 /** What a row is called, for the places that hold an id and want a name. */

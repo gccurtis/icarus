@@ -1,6 +1,5 @@
 import type { Target } from "$model/client/workspace-state";
 import type { ResourceKind } from "$app-views/categories/new-tab/procedures/cast";
-import { analysisFor, threadFor } from "$app-views/categories/new-tab/procedures/joins";
 
 /**
  * Where a thing of a given kind is opened.
@@ -16,21 +15,14 @@ import { analysisFor, threadFor } from "$app-views/categories/new-tab/procedures
  */
 const EDITOR: Partial<Record<ResourceKind, Target["category"]>> = {
   document: "document-editor",
-  slides: "slide-deck-editor",
-  spreadsheet: "spreadsheet-editor"
+  slides: "slide-deck-editor"
 };
 
-export const openingFor = (
-  kind: ResourceKind,
-  id: string,
-  name: string = id
-): Target | undefined => {
+export const openingFor = (kind: ResourceKind, id: string): Target | undefined => {
   const editor = EDITOR[kind];
   if (editor) return { category: editor, resourceId: id };
 
-  if (kind === "research") return { category: "research", resourceId: threadFor(name) ?? id };
-  if (kind === "analysis") return { category: "analysis", resourceId: analysisFor(name) ?? id };
-  if (kind === "template") return { category: "templates", content: "templates.editor", focus: id };
+  if (kind === "template") return { category: "templates", content: "templates.library", focus: id };
 
   return undefined;
 };

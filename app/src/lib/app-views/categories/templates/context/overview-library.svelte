@@ -1,40 +1,112 @@
 <script lang="ts">
+  import { onDestroy, onMount } from "svelte";
   import FileText from "@lucide/svelte/icons/file-text";
   import Presentation from "@lucide/svelte/icons/presentation";
   import Sheet from "@lucide/svelte/icons/sheet";
 
-  import { Panel, PanelButton } from "$authored-components/panel";
+  import { Panel, PanelBanner, PanelButton, PanelSkeleton } from "$authored-components/panel";
+  import { Button } from "$vendored-components/button";
+  import { Input } from "$vendored-components/input";
   import {
     createTemplate,
+    inspectTemplate,
+    templateLibrary,
     templateLibrarySummaryIn,
-    type LibraryTemplate,
+    templatesIn,
     type TemplateTarget
   } from "$app-views/categories/templates/procedures/library.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
-  const summary = $derived(templateLibrarySummaryIn(view.project));
+  const library = templateLibrary();
+  let live = true;
+  onDestroy(() => {
+    live = false;
+  });
+  let now = $state(Date.now());
+  onMount(() => {
+    const timer = setInterval(() => (now = Date.now()), 60_000);
+    return () => clearInterval(timer);
+  });
+  const templates = $derived(templatesIn(library.ready ? library.current : undefined, now));
+  const summary = $derived(templateLibrarySummaryIn(templates));
 
-  const inspect = (template: LibraryTemplate) =>
-    view.inspect("templates.template", { kind: "template", id: template.id });
+  let creating = $state<TemplateTarget>();
+  let nameDraft = $state("");
+  let actionError = $state<string>();
 
-  const create = (makes: TemplateTarget) => inspect(createTemplate(view.project, makes));
+  const create = async (target: TemplateTarget) => {
+    if (creating !== undefined) return;
+
+    const originTabId = view.activeId;
+    const originSelectionId = view.selection?.id;
+    creating = target;
+    actionError = undefined;
+    try {
+      const result = await createTemplate(view, target, nameDraft);
+      nameDraft = "";
+      if (
+        live &&
+        view.activeId === originTabId &&
+        view.selection?.id === originSelectionId
+      ) {
+        inspectTemplate(view, result.templateId);
+      }
+    } catch (error) {
+      actionError = error instanceof Error ? error.message : String(error);
+    } finally {
+      creating = undefined;
+    }
+  };
 </script>
 
 <Panel title="Template library">
-  <div class="context-stack">
+  {#if library.error}
+    <div class="load-error">
+      <PanelBanner title="Library unavailable" tone="danger">
+        {library.error instanceof Error ? library.error.message : String(library.error)}
+      </PanelBanner>
+      <Button variant="outline" size="sm" onclick={() => library.refresh()}>
+        Retry library
+      </Button>
+    </div>
+  {:else if !library.ready}
+    <PanelSkeleton shape="fields" count={7} />
+  {:else}
+    <div class="context-stack">
+      {#if actionError}
+        <PanelBanner title="Template was not created" tone="attention">
+          {actionError}
+        </PanelBanner>
+      {/if}
+
     <section aria-labelledby="new-template-heading">
       <h3 id="new-template-heading" class="section-title">New template</h3>
+      <Input
+        class="template-name"
+        bind:value={nameDraft}
+        aria-label="New template name"
+        placeholder="Name (optional)"
+        maxlength={160}
+        disabled={creating !== undefined}
+      />
       <div class="create-actions">
-        <PanelButton label="Document" icon={FileText} onclick={() => create("Document")} />
+        <PanelButton
+          label="Document"
+          icon={FileText}
+          disabled={creating !== undefined}
+          onclick={() => create("Document")}
+        />
         <PanelButton
           label="Slide deck"
           icon={Presentation}
+          disabled={creating !== undefined}
           onclick={() => create("Slide deck")}
         />
         <PanelButton
           label="Spreadsheet"
           icon={Sheet}
+          disabled={creating !== undefined}
           onclick={() => create("Spreadsheet")}
         />
       </div>
@@ -70,10 +142,19 @@
         <dd>{summary.spreadsheets}</dd>
       </dl>
     </section>
-  </div>
+    </div>
+  {/if}
 </Panel>
 
 <style>
+  .load-error {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(var(--token-spacing-unit) * 2);
+    padding: 0 calc(var(--token-spacing-unit) * 3);
+  }
+
   .context-stack {
     display: flex;
     flex-direction: column;
@@ -96,6 +177,12 @@
     display: grid;
     gap: calc(var(--token-spacing-unit) * 1);
     margin-top: calc(var(--token-spacing-unit) * 2);
+  }
+
+  :global(.template-name) {
+    margin-top: calc(var(--token-spacing-unit) * 2);
+    border-color: var(--token-border-subtle);
+    background: var(--token-surface-panel);
   }
 
   .create-actions :global(button) {

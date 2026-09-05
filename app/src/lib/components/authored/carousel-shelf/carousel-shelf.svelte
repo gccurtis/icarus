@@ -7,11 +7,12 @@
     ref = $bindable(null),
     class: className,
     gap = 16,
+    label = "Scrollable shelf",
     children,
     ...restProps
-  }: WithElementRef<HTMLAttributes<HTMLDivElement>> & { gap?: number } = $props();
+  }: WithElementRef<HTMLAttributes<HTMLDivElement>> & { gap?: number; label?: string } = $props();
 
-  const trace = traceNode("CarouselShelf", () => ({ gap }));
+  const trace = traceNode("CarouselShelf", () => ({ gap, label }));
 </script>
 
 <!--
@@ -47,7 +48,7 @@
     class="shelf-track"
     style:--shelf-gap={`${gap}px`}
     role="region"
-    aria-label="Scrollable shelf"
+    aria-label={label}
     tabindex="0"
   >
     {@render children?.()}

@@ -3,10 +3,7 @@ import type { Resource, ResourceKind } from "$app-views/categories/project-overv
 
 const CATEGORY: Partial<Record<ResourceKind, Category>> = {
   document: "document-editor",
-  slides: "slide-deck-editor",
-  spreadsheet: "spreadsheet-editor",
-  research: "research",
-  analysis: "analysis"
+  slides: "slide-deck-editor"
 };
 
 export const openingFor = ({ kind, id }: Resource): Target | undefined => {

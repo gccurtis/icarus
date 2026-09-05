@@ -209,6 +209,7 @@ supporting flow. Every one is still a file.
 | `resize` | file | mutator | Record a drag |
 | `setZoom` | file | mutator | What the active tab's centre is drawn at. Beside the frame rather than in it, because the frame is the panels' geometry and this is the centre's |
 | `showing` | file | accessor | Whether the active tab is on a given centre right now |
+| `singleFlight` | file | coordinator | Share one pending durable command by its exact intent key across every mounted view in this workspace |
 | `documentRuntime` | file | accessor | The runtime a document already has. Attaching is the register's, so two tabs on one document share a buffer |
 | `slideDeckRuntime` | file | accessor | The same for a deck |
 | `undo` | file | mutator | Apply the inverse of the last op, and keep it for `redo` |
@@ -217,9 +218,9 @@ supporting flow. Every one is still a file.
 A simple method has no document of its own.
 [`methods/methods.md`](methods/methods.md) lists them.
 
-`showing` is the only accessor among the twelve, and it has a file like the rest
-of them: the definition being one call per method is what keeps that class readable,
-so a body doing its own work there would be the one place a reader has to stop.
+The definition remains one call per method. `singleFlight` coordinates work but
+does not perform it: callers supply the capability command, and the model only
+owns the per-workspace pending-promise registry.
 
 ## Exposed State
 
@@ -300,7 +301,10 @@ different object with a different lifetime.
 
 ## Concurrency and SSR
 
-- Every method is synchronous and nothing awaits, so no two can interleave.
+- Tab-state methods are synchronous and nothing awaits, so no two can interleave.
+- `singleFlight` is the deliberate async exception. It registers before starting
+  supplied work, shares the promise for one exact key, and releases it after
+  success or failure so a later retry remains possible.
 - **The model never calls a capability.** It is testable without a network.
 - **It touches no browser API** — no storage, no timers, no `window`. The root's
   `browser` guard is therefore not load-bearing for this object's own behaviour;
@@ -323,6 +327,9 @@ different object with a different lifetime.
   `--check` fails when the two disagree.
 - **An inspection key never carries a payload.** The selection lives once, beside
   it.
+- **One pending durable intent runs once per workspace.** Its structured key
+  includes the project and every input that distinguishes the command; a second
+  caller receives the same promise rather than issuing another write.
 - **Permanence is derived, not stored:** `SINGLETONS.includes(tab.category)`.
 - **`resourceId` is fixed at mint and `focus` is writable.** What a tab is *for*
   cannot change; what its centre is *about* changes all day.
@@ -385,7 +392,7 @@ workspace-state/
 │   ├── methods.md
 │   ├── open.ts · activate.ts · close.ts · reopen-closed.ts
 │   ├── show-content.ts · select-context.ts · showing.ts
-│   ├── inspect.ts · clear.ts · resize.ts · zoom.ts
+│   ├── inspect.ts · clear.ts · resize.ts · zoom.ts · single-flight.ts
 │   ├── undo.ts · redo.ts
 │   └── shared/
 │       ├── shared.md
@@ -395,6 +402,7 @@ workspace-state/
 └── test/unit/
     ├── workspace-state.test.ts
     ├── persistence.test.ts
+    ├── single-flight.test.ts
     └── invert.test.ts
 ```
 

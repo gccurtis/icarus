@@ -31,6 +31,9 @@ export type WorkspaceSync =
   | "needs-review"
   | "error";
 
+/** Primitive pieces keep one durable command key unambiguous and serializable. */
+export type SingleFlightKeyPart = string | number | boolean | null;
+
 export interface WorkspaceStateModel {
   readonly project: string;
 
@@ -61,6 +64,12 @@ export interface WorkspaceStateModel {
   setZoom(zoom: number): void;
 
   showing(category: Category, content?: ContentView): boolean;
+
+  /** Share one pending durable command across every surface in this workspace. */
+  singleFlight<Result>(
+    key: readonly SingleFlightKeyPart[],
+    run: () => PromiseLike<Result>
+  ): Promise<Result>;
 
   documentRuntime(resourceId: string): DocumentRuntime;
   slideDeckRuntime(resourceId: string): SlideDeckRuntime;

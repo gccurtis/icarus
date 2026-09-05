@@ -1,5 +1,6 @@
 import type { TableName } from "$representation/store/tables";
 import { read } from "$capabilities/store/index.remote";
+import { readTemplate } from "$capabilities/templates/index.remote";
 
 /**
  * The field for each table this surface may be asked to name.
@@ -16,7 +17,6 @@ const NAMED_FIELD: Partial<Record<TableName, string | null>> = {
   documentChangeSets: null,
   documents: "title",
   documentSnapshots: null,
-  externalFiles: "name",
   findings: "title",
   formulas: null,
   hypotheses: "statement",
@@ -35,7 +35,7 @@ const NAMED_FIELD: Partial<Record<TableName, string | null>> = {
   spreadsheets: "title",
   spreadsheetSnapshots: null,
   templates: "name",
-  templateVersions: "name",
+  templateVersions: null,
   threadParts: null,
   threads: null,
   users: "displayName",
@@ -55,7 +55,6 @@ const KIND_WORD: Partial<Record<TableName, string>> = {
   agentTasks: "Task",
   connectors: "Connector",
   documents: "Document",
-  externalFiles: "File",
   findings: "Finding",
   hypotheses: "Hypothesis",
   personas: "Persona",
@@ -77,6 +76,14 @@ const tableOf = (id: string): TableName | undefined => {
 /** What a row is called. `…` while the read is out, `Disconnected` when it answers empty. */
 export const nameOf = (id: string): string => {
   const table = tableOf(id);
+  if (table === "templates") {
+    const answer = readTemplate({ templateId: id });
+    if (!answer.ready) return "…";
+
+    const found = answer.current;
+    if (found === null) return "Disconnected";
+    return "unavailable" in found ? "Unavailable template" : found.name;
+  }
   const field = table === undefined ? undefined : NAMED_FIELD[table];
   if (table === undefined || field == null) return "Disconnected";
 

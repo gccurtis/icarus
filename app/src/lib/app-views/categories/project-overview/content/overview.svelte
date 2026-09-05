@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy, onMount } from "svelte";
   import ArrowDownNarrowWide from "@lucide/svelte/icons/arrow-down-narrow-wide";
   import ArrowUpNarrowWide from "@lucide/svelte/icons/arrow-up-narrow-wide";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
@@ -16,6 +17,7 @@
     ScreenHeader,
     ScreenItem,
     ScreenList,
+    ScreenNote,
     ScreenRow,
     ScreenSurface,
     ScreenTable
@@ -23,7 +25,7 @@
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
-  import { create } from "$capabilities/store/index.remote";
+  import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
   import { actorName } from "$app-views/categories/project-overview/procedures/actor-name";
   import { activity } from "$app-views/categories/project-overview/procedures/activity";
   import { inspectionFor } from "$app-views/categories/project-overview/procedures/inspecting";
@@ -33,15 +35,18 @@
   import { project } from "$app-views/categories/project-overview/procedures/project";
   import { projectId, viewerId } from "$app-views/categories/project-overview/procedures/scope";
   import {
-    analyses,
-    resources,
-    threads,
+    createProjectResource,
+    resourcesIn,
     type Resource,
     type ResourceKind
   } from "$app-views/categories/project-overview/procedures/resources";
-  import { workspaceState, type Category } from "$model/client/workspace-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  let live = true;
+  onDestroy(() => {
+    live = false;
+  });
 
   /**
    * Project Overview — the grounding zone. Reset, re-align, launch.
@@ -78,18 +83,23 @@
    * what scopes a row is the id it resolves to. Both come from `scope`, which
    * says there why it has to work them out.
    */
-  const now = Date.now();
+  let now = $state(Date.now());
+  onMount(() => {
+    const timer = setInterval(() => (now = Date.now()), 60_000);
+    return () => clearInterval(timer);
+  });
 
   const id = $derived(projectId());
   const viewer = $derived(viewerId());
+  const resourceIndex = readProjectResourceIndex();
 
   const it = $derived(project(id));
   const everyone = $derived(people(id));
   const mentions = $derived(mentionsForViewer(id, viewer, now));
   const events = $derived(activity(id, now));
-  const work = $derived(resources(id, now));
-  const everyThread = $derived(threads(id, now));
-  const everyAnalysis = $derived(analyses(id, now));
+  const work = $derived(
+    resourcesIn(resourceIndex.ready ? resourceIndex.current : undefined, now)
+  );
 
   /** The feed holds either mentions or activity; the toggle switches between them. */
   let feed = $state<"mentions" | "activity">("mentions");
@@ -196,127 +206,75 @@
     }
   ] as const;
 
-  /** Which editor an unavailable action would open, and what the alert calls it. */
-  const BLANK = {
-    slides: { category: "slide-deck-editor", noun: "deck" },
-    spreadsheet: { category: "spreadsheet-editor", noun: "spreadsheet" }
-  } as const satisfies Record<string, { category: Category; noun: string }>;
-
   /**
-   * A title belongs to the document record, not to the tab. It steps past every
-   * document already in this project, so a closed document still keeps its name
-   * and a new document cannot accidentally reuse it.
+   * A default title belongs to represented project state, not this cached view.
+   * Omitting it asks Project Resources to allocate the first free suffix on the
+   * server immediately before the row is created.
    */
-  const untitled = (kind: ResourceKind): string => {
-    const taken = new Set(work.filter((row) => row.kind === kind).map((row) => row.name));
-    let count = 1;
-    while (taken.has(`untitled-${count}`)) count += 1;
-    return `untitled-${count}`;
-  };
-
-  let creatingDocument = $state(false);
-  let creatingDeck = $state(false);
-
-  /**
-   * A thread and a chart are each a tab keyed by the thing, and nothing here
-   * creates either — so both land on the first one the strip is not already
-   * holding, and on the first one there is when it is holding all of them.
-   *
-   * Inventing an id would put a tab in the strip that no door can answer for;
-   * doing nothing would be a control that appears broken.
-   */
-  const landOnFree = (category: Category, rows: readonly { id: string }[]) => {
-    const held = new Set(
-      view.tabs.filter((tab) => tab.category === category).map((tab) => tab.resourceId)
-    );
-    const landing = rows.find((row) => !held.has(row.id)) ?? rows[0];
-    if (landing) view.open({ category, resourceId: landing.id });
-  };
+  let creating = $state<"document" | "slides">();
+  let creationError = $state<string>();
 
   const make = async (key: (typeof CREATE)[number]["key"]) => {
-    if (key === "document") {
-      if (creatingDocument) return;
+    if (key === "document" || key === "slides") {
+      if (creating !== undefined) return;
 
-      creatingDocument = true;
+      const originTabId = view.activeId;
+      const originSelection = view.selection;
+      creating = key;
+      creationError = undefined;
       try {
-        const title = untitled("document");
-        const { id: resourceId } = await create({
-          table: "documents",
-          fields: {
-            projectId: id,
-            title,
-            createdBy: { kind: "user", userId: viewer },
-            updatedBy: { kind: "user", userId: viewer },
-            updatedAt: Date.now()
-          }
-        });
-        view.open({ category: "document-editor", resourceId });
+        const { resourceId } = await createProjectResource(view, { target: key });
+        const selectionUnchanged =
+          view.selection?.kind === originSelection?.kind &&
+          view.selection?.id === originSelection?.id &&
+          view.selection?.at === originSelection?.at;
+        if (live && view.activeId === originTabId && selectionUnchanged) {
+          view.open({
+            category: key === "document" ? "document-editor" : "slide-deck-editor",
+            resourceId
+          });
+        }
+      } catch (error) {
+        creationError = error instanceof Error ? error.message : String(error);
       } finally {
-        creatingDocument = false;
-      }
-      return;
-    }
-
-    if (key === "slides") {
-      if (creatingDeck) return;
-
-      creatingDeck = true;
-      try {
-        const title = untitled("slides");
-        const { id: resourceId } = await create({
-          table: "slideDecks",
-          fields: {
-            projectId: id,
-            title,
-            createdBy: { kind: "user", userId: viewer },
-            updatedBy: { kind: "user", userId: viewer },
-            updatedAt: Date.now()
-          }
-        });
-        view.open({ category: "slide-deck-editor", resourceId });
-      } finally {
-        creatingDeck = false;
+        creating = undefined;
       }
       return;
     }
 
     if (key === "spreadsheet") {
       // ── FORWARD DECLARATION ──────────────────────────────────────────────
-      // Replace with `create` from $capabilities/store, then open on the id it
-      // returns. Minting the row has to come first: a tab keyed by an id the
-      // store has never heard of is a tab no door can answer for, which is the
-      // bug this alert is standing in front of rather than hiding.
-      const { noun } = BLANK[key];
-      alert(`Creating a ${noun} is not wired up yet.`);
+      // Project Resources can mint a safe row once Spreadsheet consumes a
+      // resource id. Opening one today would display its canned model and imply
+      // the represented resource had loaded, so this stays honestly unavailable.
+      alert("Creating a spreadsheet is not wired up yet.");
       return;
     }
 
     if (key === "research") {
-      landOnFree("research", everyThread);
+      alert("Starting a represented research chat is not wired up yet.");
       return;
     }
 
-    landOnFree("analysis", everyAnalysis);
+    alert("Creating a represented analysis graph is not wired up yet.");
   };
 
   /**
    * What a row opens, by what it is.
    *
-   * A body and a thread each earn a tab of their own, keyed by the thing rather
-   * than by the category. An analysis is a place you return to, so
-   * that moves the permanent tab onto the row instead of minting one. A file and a
-   * finding have no category at all — they are things you look at rather than
-   * places you go — so opening one means opening its lens, which is the same
-   * thing a single click already did.
+   * Documents and decks have ordinary editors that consume represented ids.
+   * Other represented kinds remain inspectable here until their current
+   * surfaces accept those ids; opening a mock-backed surface would imply data
+   * loaded when it did not.
    */
   const launch = (row: Resource) => {
     const target = openingFor(row);
-    if ((row.kind === "document" || row.kind === "slides") && target) {
+    if (target) {
       view.open(target);
       return;
     }
 
-    if (target) {
+    if (["spreadsheet", "research", "analysis"].includes(row.kind)) {
       alert(`Opening "${row.name}" is not wired up yet.`);
       return;
     }
@@ -466,12 +424,24 @@
     -->
     <div class="area-create">
       <ScreenGroup label="Create">
+        {#if resourceIndex.error}
+          <ScreenNote tone="gap">
+            The resource list could not be loaded. Blank titles are still allocated from represented
+            rows on the server.
+          </ScreenNote>
+        {:else if !resourceIndex.ready}
+          <ScreenNote>Loading the resource list; server-side blank creation remains available.</ScreenNote>
+        {/if}
+        {#if creationError}
+          <ScreenNote tone="gap">Could not create the resource: {creationError}</ScreenNote>
+        {/if}
         <div class="create" role="group" aria-label="What you can make">
           {#each CREATE as pill (pill.key)}
             {@const Icon = pill.icon}
             <button
               type="button"
-              disabled={pill.key === "document" && creatingDocument}
+              disabled={(pill.key === "document" || pill.key === "slides") &&
+                creating !== undefined}
               onclick={() => make(pill.key)}
               class="rounded-control text-body-sm flex w-full cursor-pointer items-center gap-2 border px-3 text-start {pill.tint}"
             >
@@ -646,9 +616,30 @@
           {/snippet}
         </ScreenFilters>
 
-        {#if listed.length === 0}
+        {#if resourceIndex.ready && resourceIndex.current.unavailable.length > 0}
+          <ScreenNote tone="gap">
+            {resourceIndex.current.unavailable.length} represented
+            {resourceIndex.current.unavailable.length === 1 ? "resource is" : "resources are"}
+            hidden because stored metadata is invalid.
+          </ScreenNote>
+        {/if}
+
+        {#if resourceIndex.error}
+          <div class="resource-state">
+            <ScreenEmpty title="Project resources could not be loaded">
+              The represented resource index returned an error. Retry without treating the project as empty.
+            </ScreenEmpty>
+            <Button variant="outline" size="sm" onclick={() => resourceIndex.refresh()}>
+              Retry resource index
+            </Button>
+          </div>
+        {:else if !resourceIndex.ready}
+          <ScreenEmpty title="Loading project resources">
+            Reading the project-scoped resource index.
+          </ScreenEmpty>
+        {:else if listed.length === 0}
           <ScreenEmpty kind="no-matches" title="Nothing in this project matches" onclear={clear}>
-            The search reaches every kind — documents, decks, grids, threads and external files alike.
+            Search covers represented documents, decks, spreadsheets, research, and findings.
           </ScreenEmpty>
         {:else}
           <ScreenTable scroll columns={["Name", "Kind", "Updated", "Updated by"]}>
@@ -689,6 +680,13 @@
 </ScreenSurface>
 
 <style>
+  .resource-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(var(--token-spacing-unit) * 2);
+  }
+
   /**
    * Two tracks in the middle band, 2fr and 3fr, and full width above and below.
    *

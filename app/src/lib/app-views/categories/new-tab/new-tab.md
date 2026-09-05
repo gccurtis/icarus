@@ -76,21 +76,16 @@ the project.
 
 Headed *Templates*: starting from something rather than from nothing.
 
-Grouped by what the template makes — document, slide deck, spreadsheet — in the
-same order as the pills in the centre. Scope and variable count ride on the row,
-because both change what pressing one will do.
+The cards are the same scoped, capability-backed rows as the Templates library:
+document, slide-deck, and spreadsheet bodies with their represented scope and
+variable count. They are not a second `tp-*` sample universe. Project search
+merges these live rows with the launcher's other resources, so a template hit
+and a shelf card name the same id.
 
-Slide templates are not here. A slide template makes one slide, which is not an
-editor this tab can open, so it would be a row that cannot answer the only
-question this tab asks.
-
-**Open Templates** is in the action row rather than at the foot of the list. A
-panel has no footer — a control pinned below a list of unbounded length is a
-control nobody scrolls to — and reaching another category is the parent's to
-perform, not this panel's, so the button is dead when the parent offers nothing
-to perform it with.
-
-Routes to `new-tab.start-from-template`.
+Selecting either opens the singleton Templates category with that id focused.
+The library then owns inspection and Use, including revision checks, represented
+defaults, and explicit refusals. New Tab does not carry a second preview,
+variable-answer contract, or start-from-template inspector.
 
 ## Inspector
 
@@ -195,32 +190,13 @@ already-open tabs, transferring the draft, and closing the launcher — is one
 atomic step in the tab model and it is not there. The sentence under the button
 is what carries that promise.
 
-### start-from-template
+### Template hand-off
 
-A template seen from a launcher tab: what it makes, whose it is, what its first
-page looks like, and what it will ask you for. Enough to decide whether this is
-the template you want without going to the Templates category.
-
-Bands in order: identity, preview, the variables it asks for, create.
-
-Nothing here is editable, and that is the point. Editing a template happens
-where a template is owned; a launcher that quietly renamed one would change
-every future use of it from a tab that looks like it is making a document.
-
-The preview is drawn from the real body rather than from a stored picture — the
-model has no thumbnail field and this lens must not imply one. A variable row
-is listed with its type and whether it is required; a generated variable is
-listed too, marked optional, because it is still something the result will carry
-even though you are never asked for it.
-
-What it deliberately does not do: it cannot mark the variable regions in the
-preview, because marking them requires knowing where they are — the same gap
-that blocks using the template at all. **Use template** is disabled and says why
-on hover: nothing in a body records which variable it stands for, so a supplied
-value has nowhere to go. Every template with variables is unusable until a body
-entity can carry a variable key.
-
-Routes to `templates.template-variable` from a variable row.
+There is deliberately no New Tab Template inspector. A Template card or search
+result hands its represented id to `templates.library`; the library's own
+inspector reads the full body and variable metadata. The legacy
+`new-tab.start-from-template` vocabulary key remains unused until a separate
+representation change is approved.
 
 ### upload
 
@@ -241,24 +217,20 @@ to fail visibly rather than appear to still be running.
 
 ## What is not here
 
-**Almost nothing here creates.** Nothing counts template uses, starts a thread,
-creates an analysis, or mints a template. Where a New button exists it opens a
-lens, lands the centre on a blank id, or reaches for an existing row it has not
-already opened — it does not make a record this panel would then fail to list.
+**The centre's Document and Slide deck pills really create.** They call the
+scoped Project Resources boundary, receive an opaque resource id, create a
+revision-zero leader snapshot, refresh the project index, and open the ordinary
+editor. Spreadsheet stays disabled until its editor consumes represented ids.
+Nothing here starts a thread, creates an analysis, or mints a template.
 
-**Slide templates have no launcher route**, because there is no editor that
-opens one slide.
+**New Tab does not instantiate templates.** It hands a represented id to the
+Templates library. That boundary resolves represented resource-set defaults and
+refuses unbound answers rather than maintaining a competing launcher-only
+variable model.
 
-**The variable key gap runs through the whole subject.** Nothing in a body
-records which variable it stands for. That single absence disables Use in
-`template` and in `start-from-template`, blocks `use-template` from creating
-anything, keeps both previews from marking their variable regions, and is the
-whole of what `template-variable` has to say about where a variable appears.
-Every lens states it in its own words rather than quietly dropping the control.
-
-**Create mints nothing.** In all three launchers, Create opens an editor category
-keyed by the title — it does not bring a resource into existence and rebind the
-tab to it, which is one step none of them has.
+**The three Context-panel authoring forms are still forward declarations.** Their
+Create actions open an editor category keyed by the title; they have not yet
+been moved onto the same Project Resources command as the centre pills.
 
 **Nothing leaves the application.** Reconnect cannot start a provider handshake,
 and the callback that would come back has no defined landing if the tab has

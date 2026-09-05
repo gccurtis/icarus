@@ -1,0 +1,158 @@
+[
+  {
+    "_id": "spreadsheetSnapshots:1",
+    "_creationTime": 1785916800000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788298200000,
+    "body": {
+      "rows": [
+        { "id": "outage-row-1", "order": 0, "height": 38 },
+        { "id": "outage-row-2", "order": 1 },
+        { "id": "outage-row-3", "order": 2, "height": 30 },
+        { "id": "outage-row-4", "order": 3 },
+        { "id": "outage-row-5", "order": 4 },
+        { "id": "outage-row-6", "order": 5 },
+        { "id": "outage-row-7", "order": 6 },
+        { "id": "outage-row-8", "order": 7 },
+        { "id": "outage-row-9", "order": 8 },
+        { "id": "outage-row-10", "order": 9 },
+        { "id": "outage-row-11", "order": 10 },
+        { "id": "outage-row-12", "order": 11 },
+        { "id": "outage-row-13", "order": 12 },
+        { "id": "outage-row-14", "order": 13 },
+        { "id": "outage-row-15", "order": 14 },
+        { "id": "outage-row-16", "order": 15 },
+        { "id": "outage-row-17", "order": 16 },
+        { "id": "outage-row-18", "order": 17 },
+        { "id": "outage-row-19", "order": 18 },
+        { "id": "outage-row-20", "order": 19 }
+      ],
+      "columns": [
+        { "id": "outage-column-A", "order": 0, "width": 180 },
+        { "id": "outage-column-B", "order": 1, "width": 100 },
+        { "id": "outage-column-C", "order": 2, "width": 100 },
+        { "id": "outage-column-D", "order": 3, "width": 100 },
+        { "id": "outage-column-E", "order": 4, "width": 120 },
+        { "id": "outage-column-F", "order": 5, "width": 150 },
+        { "id": "outage-column-G", "order": 6 },
+        { "id": "outage-column-H", "order": 7 }
+      ],
+      "rowPartCounts": [20],
+      "formatRules": [
+        {
+          "from": { "rowId": "outage-row-3", "columnId": "outage-column-A" },
+          "to": { "rowId": "outage-row-3", "columnId": "outage-column-F" },
+          "style": "header",
+          "format": { "background": "--token-surface-secondary", "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } }
+        },
+        {
+          "from": { "rowId": "outage-row-4", "columnId": "outage-column-F" },
+          "to": { "rowId": "outage-row-20", "columnId": "outage-column-F" },
+          "format": { "background": "--token-color-intelligence-surface" }
+        }
+      ],
+      "frozenRows": 3,
+      "frozenColumns": 1,
+      "print": {
+        "page": { "paper": "letter", "orientation": "landscape", "margins": { "top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5 } },
+        "area": {
+          "from": { "rowId": "outage-row-1", "columnId": "outage-column-A" },
+          "to": { "rowId": "outage-row-20", "columnId": "outage-column-F" }
+        },
+        "repeatRows": ["outage-row-1", "outage-row-2", "outage-row-3"],
+        "scale": "fit-width",
+        "gridlines": false,
+        "headings": false
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 12, "color": "--token-ink-primary" },
+          "header": { "name": "Header", "fontFamily": "IBM Plex Sans", "fontSize": 11, "fontWeight": 650, "color": "--token-ink-primary" }
+        }
+      }
+    }
+  },
+  {
+    "_id": "spreadsheetSnapshots:2",
+    "_creationTime": 1784102400000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788127200000,
+    "body": {
+      "rows": [
+        { "id": "cost-row-1", "order": 0, "height": 38 },
+        { "id": "cost-row-2", "order": 1 },
+        { "id": "cost-row-3", "order": 2, "height": 30 },
+        { "id": "cost-row-4", "order": 3 },
+        { "id": "cost-row-5", "order": 4 },
+        { "id": "cost-row-6", "order": 5 },
+        { "id": "cost-row-7", "order": 6 },
+        { "id": "cost-row-8", "order": 7 },
+        { "id": "cost-row-9", "order": 8 },
+        { "id": "cost-row-10", "order": 9 },
+        { "id": "cost-row-11", "order": 10 },
+        { "id": "cost-row-12", "order": 11 },
+        { "id": "cost-row-13", "order": 12 },
+        { "id": "cost-row-14", "order": 13 },
+        { "id": "cost-row-15", "order": 14 },
+        { "id": "cost-row-16", "order": 15 },
+        { "id": "cost-row-17", "order": 16 },
+        { "id": "cost-row-18", "order": 17 },
+        { "id": "cost-row-19", "order": 18 },
+        { "id": "cost-row-20", "order": 19 }
+      ],
+      "columns": [
+        { "id": "cost-column-A", "order": 0, "width": 210 },
+        { "id": "cost-column-B", "order": 1, "width": 90 },
+        { "id": "cost-column-C", "order": 2, "width": 120 },
+        { "id": "cost-column-D", "order": 3, "width": 110 },
+        { "id": "cost-column-E", "order": 4, "width": 150 },
+        { "id": "cost-column-F", "order": 5 },
+        { "id": "cost-column-G", "order": 6 },
+        { "id": "cost-column-H", "order": 7 }
+      ],
+      "rowPartCounts": [20],
+      "formatRules": [
+        {
+          "from": { "rowId": "cost-row-3", "columnId": "cost-column-A" },
+          "to": { "rowId": "cost-row-3", "columnId": "cost-column-E" },
+          "style": "header",
+          "format": { "background": "--token-surface-secondary", "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } }
+        },
+        {
+          "from": { "rowId": "cost-row-4", "columnId": "cost-column-E" },
+          "to": { "rowId": "cost-row-20", "columnId": "cost-column-E" },
+          "format": { "background": "--token-color-accent-2-surface" }
+        }
+      ],
+      "frozenRows": 3,
+      "frozenColumns": 1,
+      "print": {
+        "page": { "paper": "letter", "orientation": "landscape", "margins": { "top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5 } },
+        "area": {
+          "from": { "rowId": "cost-row-1", "columnId": "cost-column-A" },
+          "to": { "rowId": "cost-row-20", "columnId": "cost-column-E" }
+        },
+        "repeatRows": ["cost-row-1", "cost-row-2", "cost-row-3"],
+        "scale": "fit-width",
+        "gridlines": false,
+        "headings": false
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 12, "color": "--token-ink-primary" },
+          "header": { "name": "Header", "fontFamily": "IBM Plex Sans", "fontSize": 11, "fontWeight": 650, "color": "--token-ink-primary" }
+        }
+      }
+    }
+  }
+]

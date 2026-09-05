@@ -1,6 +1,7 @@
 <script lang="ts">
   import Blocks from "@lucide/svelte/icons/layout-template";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
+  import Library from "@lucide/svelte/icons/library";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import Shapes from "@lucide/svelte/icons/shapes";
 
@@ -14,7 +15,7 @@
    * a reference nobody reads.
    *
    * **Each card says what the page is FOR rather than what is on it**, because
-   * these four answer different questions and picking the wrong one wastes the
+   * these pages answer different questions and picking the wrong one wastes the
    * trip: one is a catalogue of shapes, one is a working screen, one is an
    * argument about a data model, one is a conversation.
    */
@@ -50,6 +51,14 @@
       icon: MessagesSquare,
       about:
         "A message thread with canned replies, each demonstrating something a real thread needs: a citation, a tool call, work in flight, a finding."
+    },
+    {
+      href: "/demo/templates",
+      title: "Template library",
+      sub: "The live future state and every boundary behind it",
+      icon: Library,
+      about:
+        "A live owner-only library in a project-scoped call, beside its data flow, code inventory, access decisions and clearly deferred authoring-session proposal."
     }
   ];
 </script>
@@ -58,7 +67,7 @@
   <div class="flex flex-col gap-1">
     <h2 class="text-h3 font-semibold">The other demos</h2>
     <p class="text-body-sm text-ink-secondary m-0 max-w-[70ch]">
-      This page is the design system — colours, type, the registry. These four are
+      This page is the design system — colours, type, the registry. These demos are
       about what gets built out of it.
     </p>
   </div>

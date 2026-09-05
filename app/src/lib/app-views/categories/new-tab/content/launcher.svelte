@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy, onMount } from "svelte";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
   import File from "@lucide/svelte/icons/file";
   import FileText from "@lucide/svelte/icons/file-text";
@@ -23,21 +24,28 @@
   } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
   import * as InputGroup from "$vendored-components/input-group";
+  import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
   import type { ResourceKind } from "$app-views/categories/new-tab/procedures/cast";
   import {
     editorKinds,
     kindLabel,
-    recents,
-    templates,
-    threads,
-    type EditorKind,
-    type LibraryTemplate
+    type EditorKind
   } from "$app-views/categories/new-tab/procedures/library";
   import { openingFor } from "$app-views/categories/new-tab/procedures/opening";
-  import { project, resources } from "$app-views/categories/new-tab/procedures/project";
+  import { createProjectResource } from "$app-views/categories/new-tab/procedures/resources";
+  import {
+    relativeTime,
+    templateLibrary,
+    templatesIn,
+    type NewTabTemplate
+  } from "$app-views/categories/new-tab/procedures/templates.svelte";
   import { workspaceState, type Category } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  let live = true;
+  onDestroy(() => {
+    live = false;
+  });
 
   /**
    * New Tab — the only state this category has.
@@ -59,35 +67,70 @@
    * whose whole job is one question, and a mode change nobody asked for is worse
    * than a list that pushes the shelves down.
    *
-   * **Every entry here opens something.** This is a launcher, and a launcher
-   * whose rows only moved the inspector would ask its one question and then
-   * stop: a pill opens a blank editor, and a recent row or a search hit opens
-   * whatever it names. Templates are the exception, because taking one asks for
-   * values before it can make anything.
+   * **Only represented ids an editor consumes are launched.** Documents and
+   * decks open their ordinary editors; unsupported kinds stay searchable and
+   * explain the missing hand-off instead of opening a convincing mock. A
+   * Template card opens the real library focused on that row, where inspection
+   * and Use share the capability-backed boundary.
    */
   const kinds = $derived(editorKinds().current);
-  const recent = $derived(recents().current);
-  const everything = $derived(resources().current);
-  const all = $derived(templates().current);
-  const everyThread = $derived(threads().current);
-  /** The name is data, so it comes from the project door rather than from view state. */
-  const projectName = $derived(project().current.name);
-
-  /** Which template last handed the inspector its variables. */
-  let chosen = $state<string | undefined>(undefined);
-
+  const representedTemplates = templateLibrary();
+  const representedResources = readProjectResourceIndex();
+  let now = $state(Date.now());
+  onMount(() => {
+    const timer = setInterval(() => (now = Date.now()), 60_000);
+    return () => clearInterval(timer);
+  });
+  const everything = $derived(
+    (representedResources.ready ? representedResources.current.resources : []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      kind: row.kind,
+      updated: relativeTime(row.updatedAt, now),
+      updatedBy: row.updatedByName
+    }))
+  );
+  const recent = $derived(
+    (representedResources.ready ? representedResources.current.resources : [])
+      .filter((row) => row.kind === "document" || row.kind === "slides")
+      .toSorted((left, right) => right.updatedAt - left.updatedAt)
+      .slice(0, 10)
+      .map((row) => ({
+        id: row.id,
+        name: row.name,
+        kind: row.kind,
+        age: relativeTime(row.updatedAt, now),
+        updatedBy: row.updatedByName
+      }))
+  );
+  const all = $derived(
+    templatesIn(representedTemplates.ready ? representedTemplates.current : undefined, now)
+  );
   let query = $state("");
   const needle = $derived(query.trim().toLowerCase());
+  const searchable = $derived([
+    ...everything,
+    ...all.map((row) => ({
+      id: row.id,
+      name: row.name,
+      kind: "template" as const,
+      updated: row.updated,
+      updatedBy: row.createdBy
+    }))
+  ]);
   const results = $derived(
-    needle === "" ? [] : everything.filter((row) => row.name.toLowerCase().includes(needle))
+    needle === "" ? [] : searchable.filter((row) => row.name.toLowerCase().includes(needle))
   );
 
   /** Which editor a pill opens, and what the strip calls the blank thing there. */
   const BLANK = {
-    Document: { category: "document-editor", noun: "document" },
-    "Slide deck": { category: "slide-deck-editor", noun: "deck" },
-    Spreadsheet: { category: "spreadsheet-editor", noun: "spreadsheet" }
-  } as const satisfies Record<EditorKind["name"], { category: Category; noun: string }>;
+    Document: { category: "document-editor", target: "document" },
+    "Slide deck": { category: "slide-deck-editor", target: "slides" },
+    Spreadsheet: { category: "spreadsheet-editor" }
+  } as const satisfies Record<
+    EditorKind["name"],
+    { category: Category; target?: "document" | "slides" }
+  >;
 
   const EDITOR_ICON: Record<EditorKind["name"], typeof FileText> = {
     Document: FileText,
@@ -123,53 +166,56 @@
     template: "4 / 3"
   };
 
-  const MAKES_RATIO: Record<LibraryTemplate["makes"], string> = {
+  const MAKES_RATIO: Record<NewTabTemplate["makes"], string> = {
     Document: "4 / 3",
     "Slide deck": "16 / 9",
-    Slide: "16 / 9",
     Spreadsheet: "1 / 1"
   };
 
-  const MAKES_ICON: Record<LibraryTemplate["makes"], typeof FileText> = {
+  const MAKES_ICON: Record<NewTabTemplate["makes"], typeof FileText> = {
     Document: FileText,
     "Slide deck": Presentation,
-    Slide: Presentation,
     Spreadsheet: TableIcon
   };
 
-  /**
-   * Slide templates are left out. One makes a single slide, which is not an
-   * editor this tab can open, so it would be a card that cannot answer the only
-   * question the category asks.
-   */
-  const startable = $derived(all.filter((row) => row.makes !== "Slide"));
-
-  /** What decides whether a template can be taken, on the card rather than behind it. */
-  const asks = (row: LibraryTemplate) =>
-    row.variables === 0
+  /** The represented variable count is metadata; answers/defaults stay at the capability boundary. */
+  const asks = (row: NewTabTemplate) =>
+    row.variableCount === 0
       ? row.makes
-      : `${row.makes} · ${row.variables} ${row.variables === 1 ? "variable" : "variables"}`;
+      : `${row.makes} · ${row.variableCount} ${row.variableCount === 1 ? "variable" : "variables"}`;
 
-  const blocked = $derived(startable.filter((row) => row.variables > 0).length);
-
-  /**
-   * The tab strip labels an editor tab by its `resourceId`, so a minted id has
-   * to read as a name rather than as a key. The number steps past whatever that
-   * category already holds, because `open` is keyed by the id: two blank documents
-   * are two things, and two that share a name are one tab.
-   */
-  const untitled = (category: Category, noun: string): string => {
-    const taken = new Set(
-      view.tabs.filter((tab) => tab.category === category).map((tab) => tab.resourceId)
-    );
-    let count = 1;
-    while (taken.has(`Untitled ${noun} ${count}`)) count += 1;
-    return `Untitled ${noun} ${count}`;
+  const withVariables = $derived(all.filter((row) => row.variableCount > 0).length);
+  const SPREADSHEET_CREATION =
+    "Spreadsheet creation is paused until its editor consumes represented resource ids.";
+  const retryData = () => {
+    void representedResources.refresh();
+    void representedTemplates.refresh();
   };
 
-  const create = (kind: EditorKind) => {
-    const { category, noun } = BLANK[kind.name];
-    view.open({ category, resourceId: untitled(category, noun) });
+  let creating = $state<EditorKind["name"]>();
+  let creationError = $state<string>();
+  let launchError = $state<string>();
+
+  const create = async (kind: EditorKind) => {
+    if (creating !== undefined) return;
+    const blank = BLANK[kind.name];
+    if (!("target" in blank)) {
+      creationError = SPREADSHEET_CREATION;
+      return;
+    }
+    const originTabId = view.activeId;
+    creating = kind.name;
+    creationError = undefined;
+    try {
+      const { resourceId } = await createProjectResource(view, { target: blank.target });
+      if (live && view.activeId === originTabId) {
+        view.open({ category: blank.category, resourceId });
+      }
+    } catch (error) {
+      creationError = error instanceof Error ? error.message : String(error);
+    } finally {
+      creating = undefined;
+    }
   };
 
   /**
@@ -188,14 +234,17 @@
    * where a click that appears to do nothing is not.
    */
   const launch = (row: Entry) => {
-    const target = openingFor(row.kind, row.id, row.name);
-    if (target) view.open(target);
-    else console.log(`No category opens a ${kindLabel(row.kind).toLowerCase()}`);
+    const target = openingFor(row.kind, row.id);
+    if (target) {
+      launchError = undefined;
+      view.open(target);
+      return;
+    }
+    launchError = `${kindLabel(row.kind)} resources become launchable when their surface consumes represented resource ids.`;
   };
 
   const start = (id: string) => {
-    chosen = id;
-    view.inspect("new-tab.start-from-template", { kind: "template", id });
+    view.open({ category: "templates", content: "templates.library", focus: id });
   };
 </script>
 
@@ -218,21 +267,46 @@
         <InputGroup.Input
           type="search"
           bind:value={query}
-          placeholder="Search {projectName}"
+          placeholder="Search this project"
           aria-label="Search this project"
           class="text-body [&::-webkit-search-cancel-button]:hidden"
         />
       </InputGroup.Root>
+
+      {#if representedResources.error || representedTemplates.error}
+        <div class="remote-state">
+          <ScreenNote tone="gap">
+            Some represented project data could not be loaded. Search will not pretend the missing
+            rows are an empty project; blank titles are still allocated from represented rows on the server.
+          </ScreenNote>
+          <Button variant="outline" size="sm" onclick={retryData}>Retry project data</Button>
+        </div>
+      {:else if representedResources.ready && representedResources.current.unavailable.length > 0}
+        <ScreenNote tone="gap">
+          {representedResources.current.unavailable.length} represented
+          {representedResources.current.unavailable.length === 1 ? "resource is" : "resources are"}
+          hidden from search because stored metadata is invalid.
+        </ScreenNote>
+      {/if}
+      {#if launchError}
+        <ScreenNote tone="gap">{launchError}</ScreenNote>
+      {/if}
 
       <!--
         Results drop under the field. Replacing the bands below would be a mode
         change inside a tab whose whole job is one question, and the shelves being
         pushed down is the cheaper of the two costs.
       -->
-      {#if needle !== "" && results.length === 0}
+      {#if needle !== "" &&
+        (!representedResources.ready || !representedTemplates.ready) &&
+        !representedResources.error &&
+        !representedTemplates.error}
+        <ScreenEmpty title="Loading project search">
+          Reading represented resources and templates.
+        </ScreenEmpty>
+      {:else if needle !== "" && results.length === 0}
         <ScreenEmpty kind="no-matches" title="Nothing in the project matches" onclear={() => (query = "")}>
-          The search reaches every kind — documents, decks, grids, threads, findings and connector
-          files alike.
+          Search covers represented documents, decks, spreadsheets, research, findings, and templates.
         </ScreenEmpty>
       {:else if needle !== ""}
         <div class="border-border-subtle rounded-panel flex flex-col overflow-hidden border">
@@ -265,7 +339,8 @@
         <Button
           variant="outline"
           size="lg"
-          title={kind.detail}
+          title={kind.name === "Spreadsheet" ? SPREADSHEET_CREATION : kind.detail}
+          disabled={creating !== undefined || kind.name === "Spreadsheet"}
           onclick={() => create(kind)}
           class="rounded-control text-body-sm px-4"
         >
@@ -273,17 +348,23 @@
           {kind.name}
         </Button>
       {/each}
+      {#if creationError}
+        <div class="basis-full">
+          <ScreenNote tone="gap">{creationError}</ScreenNote>
+        </div>
+      {/if}
     </div>
 
     <!--
       A shelf rather than a grid: a grid of twelve cards pushes the search field
       off the top of the screen, and this is a row you browse rather than search.
-      Every row says which of the two lists put it here — what you opened, and
-      what changed — because a document you have never opened can appear in it.
+      Workspace open-history is not represented yet, so this is honestly up to
+      ten of the most recently updated resources whose ordinary editor consumes
+      the represented id today.
     -->
     <div class="area-recent">
       <ScreenGroup label="Recent" count={String(recent.length)}>
-        <ScreenShelf>
+        <ScreenShelf label="Recent project resources">
           {#each recent as row (row.id)}
             {@const Icon = KIND_ICON[row.kind]}
             <ScreenShelfItem>
@@ -297,7 +378,7 @@
                   <ScreenThumb ratio={KIND_RATIO[row.kind]} lines={4} />
                 {/snippet}
                 <span class="text-caption text-ink-muted truncate">
-                  {row.why === "You opened it" ? row.why : `${row.why} — ${row.updatedBy}`}
+                  Updated {row.age} — {row.updatedBy}
                 </span>
               </ScreenCard>
             </ScreenShelfItem>
@@ -312,41 +393,51 @@
       The thumbnail's tinted bars are the openings the body leaves.
     -->
     <div class="area-templates">
-      <ScreenGroup label="Templates" count="{startable.length} of {all.length}">
-        <ScreenShelf>
-          {#each startable as row (row.id)}
-            {@const Icon = MAKES_ICON[row.makes]}
-            <ScreenShelfItem>
-              <ScreenCard
-                title={row.name}
-                sub={asks(row)}
-                icon={Icon}
-                selected={chosen === row.id}
-                onselect={() => start(row.id)}
-              >
-                {#snippet thumb()}
-                  <ScreenThumb
-                    ratio={MAKES_RATIO[row.makes]}
-                    lines={5}
-                    variables={Math.min(row.variables, 5)}
-                  />
-                {/snippet}
-                <span class="text-caption text-ink-muted truncate">
-                  {row.scope} · {row.updated}
-                </span>
-              </ScreenCard>
-            </ScreenShelfItem>
-          {/each}
-        </ScreenShelf>
+      <ScreenGroup label="Templates" count={String(all.length)}>
+        {#if representedTemplates.error}
+          <div class="remote-state">
+            <ScreenEmpty title="Templates could not be loaded">
+              The Template capability returned an error; no mock cards are substituted.
+            </ScreenEmpty>
+            <Button variant="outline" size="sm" onclick={() => representedTemplates.refresh()}>
+              Retry templates
+            </Button>
+          </div>
+        {:else if !representedTemplates.ready}
+          <ScreenEmpty title="Loading templates">
+            Reading the owner-visible Template library.
+          </ScreenEmpty>
+        {:else}
+          <ScreenShelf label="Project templates">
+            {#each all as row (row.id)}
+              {@const Icon = MAKES_ICON[row.makes]}
+              <ScreenShelfItem>
+                <ScreenCard
+                  title={row.name}
+                  sub={asks(row)}
+                  icon={Icon}
+                  onselect={() => start(row.id)}
+                >
+                  {#snippet thumb()}
+                    <ScreenThumb
+                      ratio={MAKES_RATIO[row.makes]}
+                      lines={5}
+                      variables={Math.min(row.variableCount, 5)}
+                    />
+                  {/snippet}
+                  <span class="text-caption text-ink-muted truncate">
+                    {row.scope} · {row.updated}
+                  </span>
+                </ScreenCard>
+              </ScreenShelfItem>
+            {/each}
+          </ScreenShelf>
 
-        <!--
-          The shelf offers things that cannot be taken, and says so rather than
-          letting a reader discover it at the Create button.
-        -->
-        <ScreenNote tone="gap" meta="{blocked} of {startable.length} ask for one">
-          No body entity can carry a variable key yet, so a supplied value has nowhere to go and
-          every template with variables is unusable until one can.
-        </ScreenNote>
+          <ScreenNote meta="{withVariables} of {all.length} declare variables">
+            These are the same represented rows as the Template library. A card opens that library
+            for inspection and Use; represented defaults resolve there, while unbound answers refuse safely.
+          </ScreenNote>
+        {/if}
       </ScreenGroup>
     </div>
   </div>
@@ -397,5 +488,12 @@
   .area-templates {
     grid-area: templates;
     min-width: 0;
+  }
+
+  .remote-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(var(--token-spacing-unit) * 2);
   }
 </style>

@@ -90,6 +90,42 @@ test("reaching the op count submits every buffered op as one change set", async 
   assert.equal(model.sync, "saved");
 });
 
+test("resource-less open and close ops omit the optional resource id", async () => {
+  const model = workspaceState(1000, 60_000);
+
+  const opened = model.open({ category: "new-tab" });
+  await model.flush();
+
+  const opening = wire.sent[0].ops.find(
+    (op) => typeof op === "object" && op !== null && "op" in op && op.op === "open"
+  ) as { target: Record<string, unknown> };
+  assert.equal(Object.hasOwn(opening.target, "resourceId"), false);
+
+  model.close(opened.id);
+  await model.flush();
+
+  const closing = wire.sent[1].ops.find(
+    (op) => typeof op === "object" && op !== null && "op" in op && op.op === "close"
+  ) as { target: Record<string, unknown> };
+  assert.equal(Object.hasOwn(closing.target, "resourceId"), false);
+});
+
+test("inspection ops omit an absent optional selection location", async () => {
+  const model = workspaceState(1000, 60_000);
+
+  model.inspect("templates.template", {
+    kind: "template",
+    id: "templates:1",
+    at: undefined
+  });
+  await model.flush();
+
+  const inspection = wire.sent[0].ops.find(
+    (op) => typeof op === "object" && op !== null && "op" in op && op.op === "inspect"
+  ) as { selection: Record<string, unknown> };
+  assert.equal(Object.hasOwn(inspection.selection, "at"), false);
+});
+
 test("the debounce submits what the count never reached", async () => {
   const model = workspaceState(1000, 5);
 
