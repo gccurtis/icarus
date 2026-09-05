@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "svelte-kit sync && vitest run",
+    "test:browser": "playwright test",
     "test:scripts": "node --test --test-concurrency=1 \"scripts/test/*.test.mjs\" \"scripts/generation/*/test/*.test.mjs\"",
     "lint": "node scripts/lint.mjs",
     "lint:capabilities": "node scripts/lint.mjs capabilities",
@@ -60,6 +61,7 @@
   "devDependencies": {
     "@internationalized/date": "^3.12.3",
     "@lucide/svelte": "latest",
+    "@playwright/test": "latest",
     "@sveltejs/adapter-node": "latest",
     "@sveltejs/kit": "latest",
     "@sveltejs/vite-plugin-svelte": "latest",

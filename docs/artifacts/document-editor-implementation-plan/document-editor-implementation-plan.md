@@ -1,7 +1,7 @@
 # Document editor implementation plan
 
-**Status:** Draft for alignment
-**Planning branch:** `work/document-editor-review`, based directly on `main`
+**Status:** Approved · implementation in progress
+**Implementation branch:** `work/document-editor-integration`, based directly on `main`
 **Reference implementation:** `work/document-editor` at `55a7b22`
 **Target base:** current `main`
 **Companion:** [Document editor review](../document-editor-review/document-editor-review.md)
@@ -31,10 +31,10 @@ main
 work/document-editor @ 55a7b22  ── donor/reference only; never merged as ancestry
 ```
 
-## Decisions to confirm
+## Approved decisions
 
-The plan uses the recommended choice until changed. These choices should be settled before Phase 1
-because three of them change representation shapes or editing semantics.
+The recommended choices were approved on 5 September 2026. They are fixed inputs to the
+implementation because three of them change representation shapes or editing semantics.
 
 | Decision | Recommended default | Alternative | Why it matters |
 | --- | --- | --- | --- |

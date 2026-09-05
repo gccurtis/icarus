@@ -46,3 +46,6 @@ app/src/convex/_generated/
 docs/screen-deck/src/fonts.html
 docs/screen-deck/src/_preview.html
 docs/screen-deck/icarus-screen-deck.html
+
+# Playwright output is evidence from a run, not source.
+test-results/document-editor/

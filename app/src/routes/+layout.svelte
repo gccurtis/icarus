@@ -12,6 +12,7 @@
 
 <svelte:head>
   <title>Icarus</title>
+  <link rel="icon" href="/favicon.svg" />
 </svelte:head>
 
 {@render children()}

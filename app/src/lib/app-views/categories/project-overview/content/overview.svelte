@@ -663,6 +663,11 @@
                     class="text-body-sm text-ink-primary min-h-9 text-start hover:underline"
                     onclick={() => view.inspect(entry.key, entry.selection)}
                     ondblclick={() => launch(entry.row)}
+                    onkeydown={(event) => {
+                      if (event.key !== "Enter") return;
+                      event.preventDefault();
+                      launch(entry.row);
+                    }}
                   >
                     {entry.row.name}
                   </button>
