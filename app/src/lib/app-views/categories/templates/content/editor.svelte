@@ -2,7 +2,7 @@
   import ArrowLeft from "@lucide/svelte/icons/arrow-left";
   import FilePenLine from "@lucide/svelte/icons/file-pen-line";
 
-  import { ScreenEmpty, ScreenHeader, ScreenNote, ScreenSurface } from "$authored-components/screen";
+  import { ScreenEmpty, ScreenNote, ScreenSurface } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -21,18 +21,16 @@
 </script>
 
 <ScreenSurface>
-  <ScreenHeader title="Template workspace">
-    {#snippet actions()}
-      <Button variant="outline" size="sm" onclick={back}>
-        <ArrowLeft aria-hidden="true" />
-        Back to Template Library
-      </Button>
-    {/snippet}
-  </ScreenHeader>
+  <header class="editor-bar">
+    <Button variant="ghost" size="sm" onclick={back}>
+      <ArrowLeft aria-hidden="true" />
+      Library
+    </Button>
+  </header>
 
   <ScreenEmpty title="The editor shell is intentionally deferred" icon={FilePenLine}>
     This remains inside the Template category. A later pass can mount the ordinary document or
-    slide-deck runtime beneath this Template header without creating another workspace tab.
+    slide-deck runtime beneath this quiet return bar without creating another workspace tab.
   </ScreenEmpty>
 
   <ScreenNote tone="gap">
@@ -41,3 +39,12 @@
     positions, and deterministic scratch cleanup after the editor flushes.
   </ScreenNote>
 </ScreenSurface>
+
+<style>
+  .editor-bar {
+    display: flex;
+    min-height: calc(var(--token-spacing-unit) * 8);
+    align-items: center;
+    border-bottom: 1px solid var(--token-border-subtle);
+  }
+</style>

@@ -34,10 +34,11 @@ This table is the only place a hue is chosen.
 | Brand | `secondary` | cyan |
 | Brand | `accent-1` | pink |
 | Brand | `accent-2` | teal |
+| Brand | `slide` | orange |
 
 Meaning roles are fixed. Identity and brand roles may share a hue with one
-another but never with a meaning hue. `orange` and `yellow` are declared by the
-chromatic stage and reserved.
+another but never with a meaning hue. `yellow` is declared by the chromatic
+stage and reserved; orange gives slide-deck identity a stable public role.
 
 ## Shadow color
 

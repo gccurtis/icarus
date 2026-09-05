@@ -33,8 +33,8 @@
       number: "04",
       title: "Create",
       icon: FilePlus2,
-      gesture: "Choose Document, Slide deck or Spreadsheet",
-      result: "Kind is fixed at creation; the new owned template becomes the inspected subject."
+      gesture: "Optionally name it, then press the Document, Slide deck or Spreadsheet icon",
+      result: "Each icon is the create action; kind is fixed immediately and the new owned template becomes the inspected subject."
     },
     {
       number: "05",

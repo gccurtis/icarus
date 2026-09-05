@@ -31,27 +31,30 @@ not make an old template use look recent again.
 ## Context: overview-library
 
 The Overview context panel creates a represented empty template of any supported
-target. A colored icon toggle chooses Document, Slide deck, or Spreadsheet; the
-view supplies a required unique working name, then moves inspection to the
-returned id. The Library section shows the total beside its heading and one
-compact breakdown by availability and target.
+target. An optional name sits above three colored icon actions for Document,
+Slide deck, and Spreadsheet. Pressing an icon creates that kind immediately;
+the view supplies a unique working name only when the field is blank, then moves
+inspection to the returned id. A compact Total section breaks the library down
+by scope and target.
 
 ## Inspector: template
 
 The inspector performs a body-bearing read only for the selected template. It
 shows target, availability, update time, creator, description, variables, and
 tags. Name and fixed-height description fields autosave on blur; variable help
-text autosaves while stable keys and defaults remain read-only; tag creation is
-kept above the tags it adds. Duplicate always creates
+text autosaves, while clicking a variable name marks the future default-settings
+modal boundary without exposing keys or defaults in the disclosure. Tag creation
+is kept above the tags it adds. Duplicate always creates
 an independent viewer-owned copy. Delete is owner-only, revision-checked, removes
 version rows, and clears provenance from existing resources rather than deleting
 those resources. Batched removals avoid repeated whole-table rewrites. Use
 creates a new resource and leader snapshot through the Templates capability;
 spreadsheet cells are admitted in one store batch.
 
-Variables display exactly the represented contract: `name`, `label`, optional
-`description`, and optional templated resource-set `default`. The library does
-not invent type or requiredness fields that representation does not carry.
+The inspector displays the represented variable label and optional description.
+Stable keys and templated resource-set defaults remain in the capability model,
+but their future settings modal is not implemented. The library does not invent
+type or requiredness fields that representation does not carry.
 Instantiation resolves represented defaults, including nested defaults. It does
 not invent caller-supplied answers before representation defines that payload.
 
@@ -88,8 +91,8 @@ membership and tags are never used to manufacture access.
 ## Authoring boundary
 
 There is no separate template editor implementation in this future state. The
-singleton Template category owns a specialized header and Back to Template
-Library action. The intended authoring body stages the template under a real
+singleton Template category owns a quiet, left-aligned Library return bar. The
+intended authoring body stages the template under a real
 resource id and borrows the ordinary document or slide-deck runtime below that
 header. Variable-bearing Prompt positions render as Template blocks while
 authoring; Done flushes the runtime, compare-and-sets the body back into the

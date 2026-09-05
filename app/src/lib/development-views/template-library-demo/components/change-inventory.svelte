@@ -89,14 +89,14 @@
       area: "views",
       path: "app-views/categories/templates/context/overview-library.svelte",
       title: "Library context",
-      detail: "A light New template section uses a colored type toggle and required generated working names; Library carries its total and compact availability counts. Project and Shared remain zero until their schema authority is approved.",
+      detail: "A light New template section puts an optional name above three direct colored icon actions; a blank name receives a unique working title. Total carries compact scope and kind counts. Project and Shared remain zero until their schema authority is approved.",
       icon: PanelsTopLeft
     },
     {
       area: "views",
       path: "app-views/categories/templates/inspector/template.svelte",
       title: "Template inspector",
-      detail: "Name, fixed-height description, and variable help text autosave in place; stable keys and explicit default selections remain readable. Use, Duplicate, and Delete form one compact action group, and tag creation stays above the tags it changes.",
+      detail: "Name, fixed-height description, and variable help text autosave in place; variable names mark the future settings-modal boundary. Use, Duplicate, and Delete fill one color-coded action row, and tag creation stays above the tags it changes.",
       icon: PanelsTopLeft
     },
     {

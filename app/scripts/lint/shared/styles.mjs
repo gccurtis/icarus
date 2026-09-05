@@ -21,7 +21,13 @@ export const TOKEN_FILES = ["color.css", "typography.css", "spacing.css", "shape
  */
 export const MEANING_ROLES = { success: "green", danger: "red", attention: "amber", inactive: "grey" };
 export const IDENTITY_ROLES = { interactive: "blue", active: "cyan", intelligence: "violet" };
-export const BRAND_ROLES = { primary: "blue", secondary: "cyan", "accent-1": "pink", "accent-2": "teal" };
+export const BRAND_ROLES = {
+  primary: "blue",
+  secondary: "cyan",
+  "accent-1": "pink",
+  "accent-2": "teal",
+  slide: "orange"
+};
 export const ROLES = { ...MEANING_ROLES, ...IDENTITY_ROLES, ...BRAND_ROLES };
 export const SLOTS = ["surface", "surface-hover", "border", "fill", "fill-hover", "text", "on-fill"];
 

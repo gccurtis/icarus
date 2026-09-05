@@ -472,26 +472,9 @@
     }
   };
 
-  const KIND_LABEL: Record<string, string> = {
-    document: "documents",
-    slides: "slide decks",
-    spreadsheet: "spreadsheets",
-    finding: "findings",
-    analysis: "analyses",
-    research: "research"
-  };
-
-  const termSummary = (term: NonNullable<TemplateVariable["default"]>["include"][number]) => {
-    if (term.select === "project") return "the entire project";
-    if (term.select === "variable") return `the ${term.name} variable`;
-    return term.kinds.map((kind) => KIND_LABEL[kind] ?? kind).join(", ");
-  };
-
-  const defaultSummary = (variable: TemplateVariable): string => {
-    if (variable.default === undefined || variable.default.include.length === 0) return "None";
-    const included = variable.default.include.map(termSummary).join("; ");
-    if (variable.default.exclude.length === 0) return included;
-    return `${included}, excluding ${variable.default.exclude.map(termSummary).join("; ")}`;
+  /** Placeholder for the variable settings modal; defaults stay unchanged until that contract exists. */
+  const showVariableSettings = (variable: TemplateVariable) => {
+    alert(`Variable settings for “${variable.label}” will open here.`);
   };
 </script>
 
@@ -642,10 +625,20 @@
             {#each template.variables as variable (variable.id)}
               <details class="variable">
                 <summary>
-                  <span class="variable-name">
+                  <button
+                    type="button"
+                    class="variable-name"
+                    title="Open variable settings"
+                    aria-label={`Open settings for ${variable.label}`}
+                    onclick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      showVariableSettings(variable);
+                    }}
+                  >
                     <Braces size={13} aria-hidden="true" />
                     {variable.label}
-                  </span>
+                  </button>
                   <ChevronDown class="disclosure-icon" size={13} aria-hidden="true" />
                 </summary>
                 <div class="variable-body">
@@ -675,12 +668,6 @@
                   {:else}
                     <p>{variable.description ?? "No description supplied."}</p>
                   {/if}
-                  <dl>
-                    <dt>Key</dt>
-                    <dd class="mono">{variable.name}</dd>
-                    <dt>Default</dt>
-                    <dd>{defaultSummary(variable)}</dd>
-                  </dl>
                 </div>
               </details>
             {/each}
@@ -773,8 +760,7 @@
   .meta-line,
   .byline,
   .description,
-  .variable-body,
-  .variable-body dl {
+  .variable-body {
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
   }
@@ -903,17 +889,22 @@
   }
 
   .template-actions {
-    display: inline-flex;
-    align-self: flex-start;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-self: stretch;
     overflow: hidden;
-    width: fit-content;
+    width: 100%;
     border: 1px solid var(--token-border-subtle);
     border-radius: var(--token-radius-control);
     background: var(--token-surface-panel);
   }
 
   :global(.template-action) {
+    width: 100%;
+    height: calc(var(--token-spacing-unit) * 8);
     border-radius: 0;
+    background: transparent;
+    color: var(--token-ink-secondary);
   }
 
   :global(.template-action + .template-action) {
@@ -921,11 +912,26 @@
   }
 
   :global(.template-action.use-action) {
-    color: var(--token-color-interactive-text);
+    background: var(--token-color-primary-fill);
+    color: var(--token-color-primary-on-fill);
+  }
+
+  :global(.template-action.use-action:hover:not(:disabled)) {
+    background: var(--token-color-primary-fill-hover);
   }
 
   :global(.template-action.delete-action) {
+    background: var(--token-color-danger-surface);
     color: var(--token-color-danger-text);
+  }
+
+  :global(.template-action.delete-action:hover:not(:disabled)) {
+    background: var(--token-color-danger-surface-hover);
+  }
+
+  :global(.template-action:not(.use-action, .delete-action):hover:not(:disabled)) {
+    background: var(--token-surface-panel-hover);
+    color: var(--token-ink-primary);
   }
 
   .permission-note {
@@ -1012,7 +1018,25 @@
     min-width: 0;
     align-items: center;
     gap: calc(var(--token-spacing-unit) * 1.5);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
     font-weight: 600;
+    text-align: left;
+  }
+
+  .variable-name:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .variable-name:focus-visible {
+    border-radius: var(--token-radius-control);
+    outline: 2px solid var(--token-color-interactive-border);
+    outline-offset: 2px;
   }
 
   .variable-name :global(svg) {
@@ -1036,13 +1060,13 @@
   }
 
   .variable-body p {
-    margin: 0 0 calc(var(--token-spacing-unit) * 2);
+    margin: 0;
   }
 
   .variable-description {
     display: block;
     width: 100%;
-    margin: 0 0 calc(var(--token-spacing-unit) * 2);
+    margin: 0;
     padding: calc(var(--token-spacing-unit) * 1.5);
     border: 1px solid var(--token-border-subtle);
     border-radius: var(--token-radius-control);
@@ -1067,7 +1091,7 @@
     height: calc(var(--token-spacing-unit) * 18);
     min-height: calc(var(--token-spacing-unit) * 18);
     max-height: calc(var(--token-spacing-unit) * 18);
-    margin-bottom: calc(var(--token-spacing-unit) * 2);
+    margin-bottom: 0;
     resize: none;
     overflow-y: auto;
     border-color: var(--token-border-subtle);
@@ -1075,36 +1099,6 @@
     color: var(--token-ink-secondary);
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
-  }
-
-  .variable-body dl {
-    display: grid;
-    grid-template-columns: minmax(0, 5rem) minmax(0, 1fr);
-    gap: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 2);
-    margin: 0;
-  }
-
-  .variable-body dt,
-  .variable-body dd {
-    min-width: 0;
-    margin: 0;
-    font-size: inherit;
-  }
-
-  .variable-body dt {
-    color: var(--token-ink-secondary);
-    font-weight: 600;
-  }
-
-  .variable-body dd {
-    color: var(--token-ink-muted);
-  }
-
-  .variable-body .mono {
-    overflow: hidden;
-    font-family: var(--token-font-mono);
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .tag-list {
