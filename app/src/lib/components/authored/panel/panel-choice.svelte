@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import * as ToggleGroup from "$vendored-components/toggle-group";
   import { cn } from "$vendored-components/utils";
   import { traceNode } from "$development-components/trace.svelte";
@@ -63,6 +64,21 @@
     onchange?: (next: string) => void;
   } = $props();
 
+  let selected = $state("");
+  let current = "";
+  let active = false;
+  onMount(() => {
+    active = true;
+    return () => {
+      active = false;
+    };
+  });
+  $effect(() => {
+    const next = mixed ? "" : value;
+    selected = next;
+    current = next;
+  });
+
   // The marker is forwarded through `ToggleGroup.Root` onto the element it renders.
   const trace = traceNode("PanelChoice", () => ({ label, value, options, mixed, flush }));
 </script>
@@ -70,13 +86,15 @@
 <ToggleGroup.Root
   {...trace}
   type="single"
-  value={mixed ? "" : value}
+  bind:value={selected}
   aria-label={label}
   onValueChange={(next: string) => {
     // The primitive allows deselection; a scope has no "none". Ignoring the
     // empty value is what makes pressing the chosen chip a no-op rather than a
     // way to reach a state no panel here can render.
-    if (next) onchange?.(next);
+    if (!active || !next || next === current) return;
+    current = next;
+    onchange?.(next);
   }}
   class={cn("flex flex-wrap justify-start gap-1", flush ? "px-0" : "px-3")}
 >

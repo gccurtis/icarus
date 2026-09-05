@@ -92,7 +92,14 @@
     {/if}
   </Collapsible.Trigger>
 
-  <Collapsible.Content class={cn("flex flex-col gap-1.5 pb-2", flush ? "px-0" : "px-3")}>
-    {@render children()}
-  </Collapsible.Content>
+  {#if expanded}
+    <!--
+      Do not mount a closed presence layer just to have the primitive remove it
+      in the same tick. Besides doing needless work for every inspector, that
+      teardown leaves Bits UI's measurement callback holding an inert derived.
+    -->
+    <Collapsible.Content class={cn("flex flex-col gap-1.5 pb-2", flush ? "px-0" : "px-3")}>
+      {@render children()}
+    </Collapsible.Content>
+  {/if}
 </Collapsible.Root>

@@ -227,3 +227,90 @@ export const keyFrom = (name: string, taken: readonly string[]): string => {
 
   return key;
 };
+
+export const WEIGHTS: readonly { value: string; label: string }[] = [
+  { value: "400", label: "Regular" },
+  { value: "500", label: "Medium" },
+  { value: "600", label: "Semibold" },
+  { value: "700", label: "Bold" }
+];
+
+export const familyOptions = (): readonly { value: string; label: string }[] =>
+  FAMILIES.map((family) => ({ value: family, label: family }));
+
+const document = (path: string, value: unknown, was: unknown): DocumentOp => ({
+  op: "set",
+  target: "document",
+  path,
+  value: value ?? null,
+  was: was ?? null
+});
+
+export const styleFieldOps = <K extends keyof TextStyle>(
+  body: DocumentBody,
+  key: string,
+  field: K,
+  value: TextStyle[K] | undefined
+): DocumentOp[] => {
+  const held = styleSetOf(body).styles[key];
+  if (held === undefined) return [];
+  if (JSON.stringify(held[field] ?? null) === JSON.stringify(value ?? null)) return [];
+
+  return [...ensureStylesOps(body), document(`styles/${key}/${field}`, value, held[field])];
+};
+
+export const defaultStyleOps = (body: DocumentBody, key: string): DocumentOp[] => {
+  const set = styleSetOf(body);
+  if (set.defaultKey === key || set.styles[key] === undefined) return [];
+
+  return [...ensureStylesOps(body), document("styles/defaultKey", key, set.defaultKey)];
+};
+
+export const duplicateStyleOps = (
+  body: DocumentBody,
+  key: string
+): { readonly ops: DocumentOp[]; readonly key: string | undefined } => {
+  const set = styleSetOf(body);
+  const held = set.styles[key];
+  if (held === undefined) return { ops: [], key: undefined };
+
+  const keys = Object.keys(set.styles);
+  const name = `${held.name} copy`;
+  const minted = keyFrom(name, keys);
+
+  return {
+    key: minted,
+    ops: [
+      ...ensureStylesOps(body),
+      {
+        op: "insert",
+        target: "document",
+        path: "styles",
+        ids: [minted],
+        after: keys.at(-1) ?? null,
+        values: [{ ...held, name }]
+      }
+    ]
+  };
+};
+
+export const deleteStyleOps = (body: DocumentBody, key: string): DocumentOp[] => {
+  const set = styleSetOf(body);
+  const held = set.styles[key];
+  if (held === undefined || set.defaultKey === key) return [];
+
+  const keys = Object.keys(set.styles);
+  const index = keys.indexOf(key);
+
+  return [
+    ...ensureStylesOps(body),
+    {
+      op: "remove",
+      target: "document",
+      path: "styles",
+      ids: [key],
+      after: index <= 0 ? null : keys[index - 1],
+      values: [held]
+    }
+  ];
+};

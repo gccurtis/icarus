@@ -25,8 +25,7 @@ export const STYLES: readonly { value: MarkStyle; label: string }[] = [
   { value: "bold", label: "Bold" },
   { value: "italic", label: "Italic" },
   { value: "underline", label: "Underline" },
-  { value: "strikethrough", label: "Strikethrough" },
-  { value: "code", label: "Code" }
+  { value: "strikethrough", label: "Strikethrough" }
 ];
 
 export const blocksOf = (body: DocumentBody): Styled[] => {
@@ -420,12 +419,23 @@ export const linkOps = (
         id: mint("mark"),
         from: endAt(block.atoms, range.from, "from"),
         to: endAt(block.atoms, range.to, "to"),
-        link
+        link,
+        // These are ordinary, editable mark fields—not presentation baked
+        // into the link node. Removing or restyling either works exactly like
+        // it does for any other selected text.
+        style: ["underline"],
+        color: "var(--token-color-interactive-text)"
       })
     );
   }
 
   return reanchor(body, ops);
+};
+
+/** Edit the metadata of one link occurrence without rebuilding its styling. */
+export const updateLinkOps = (placed: PlacedLink, link: MarkLink): DocumentOp[] => {
+  if (JSON.stringify(placed.mark.link) === JSON.stringify(link)) return [];
+  return [setMark(placed.mark, "link", link)];
 };
 
 export const colourOn = (
@@ -453,8 +463,15 @@ export const colourOn = (
   };
 };
 
-export const linksOn = (body: DocumentBody, ranges: readonly Range[]): Mark[] => {
-  const links: Mark[] = [];
+export type PlacedLink = {
+  readonly blockId: string;
+  readonly mark: Mark;
+  readonly from: number;
+  readonly to: number;
+};
+
+export const linksOn = (body: DocumentBody, ranges: readonly Range[]): PlacedLink[] => {
+  const links: PlacedLink[] = [];
 
   for (const range of ranges) {
     const block = blockOf(body, range.blockId);
@@ -463,9 +480,41 @@ export const linksOn = (body: DocumentBody, ranges: readonly Range[]): Mark[] =>
     for (const held of placed(block)) {
       if (held.mark.link === undefined) continue;
       if (held.to <= range.from || held.from >= range.to) continue;
-      links.push(held.mark);
+      if (links.some((known) => known.mark.id === held.mark.id)) continue;
+      links.push({ blockId: block.id, mark: held.mark, from: held.from, to: held.to });
     }
   }
 
   return links;
+};
+
+export const stylesAt = (body: DocumentBody, blockId: string, at: number): MarkStyle[] => {
+  const block = blockOf(body, blockId);
+  if (block === undefined) return [];
+
+  const held = new Set<MarkStyle>();
+  for (const span of placed(block)) {
+    if (span.from >= at || span.to < at) continue;
+    for (const style of span.mark.style ?? []) held.add(style);
+  }
+
+  return sortedStyles([...held]);
+};
+
+export const colourAt = (
+  body: DocumentBody,
+  blockId: string,
+  at: number
+): { color?: string; background?: string } => {
+  const block = blockOf(body, blockId);
+  if (block === undefined) return {};
+
+  const found: { color?: string; background?: string } = {};
+  for (const span of placed(block)) {
+    if (span.from >= at || span.to < at) continue;
+    if (span.mark.color !== undefined) found.color = span.mark.color;
+    if (span.mark.background !== undefined) found.background = span.mark.background;
+  }
+
+  return found;
 };

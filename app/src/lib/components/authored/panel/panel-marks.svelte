@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import * as ToggleGroup from "$vendored-components/toggle-group";
   import { cn } from "$vendored-components/utils";
   import { traceNode } from "$development-components/trace.svelte";
@@ -53,8 +54,17 @@
   // the ordinary controlled-component contract (`value` + `onchange`) rather
   // than being forced to bind their own state through two component layers.
   let selected = $state<string[]>([]);
+  let current: string[] = [];
+  let active = false;
+  onMount(() => {
+    active = true;
+    return () => {
+      active = false;
+    };
+  });
   $effect(() => {
     selected = value;
+    current = [...value];
   });
 
   // The marker is forwarded through `ToggleGroup.Root` onto the element it renders.
@@ -67,7 +77,11 @@
   bind:value={selected}
   {disabled}
   aria-label={label}
-  onValueChange={(next: string[]) => onchange?.(next)}
+  onValueChange={(next: string[]) => {
+    if (!active || JSON.stringify(next) === JSON.stringify(current)) return;
+    current = [...next];
+    onchange?.(next);
+  }}
   class={cn("panel-marks flex w-full flex-nowrap gap-1", flush ? "px-0" : "px-3")}
 >
   {#each options as option (option.value)}

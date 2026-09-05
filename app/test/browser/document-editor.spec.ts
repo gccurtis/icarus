@@ -75,6 +75,41 @@ test("the fixture can be reached with the keyboard", async ({ page }) => {
   await expect(page.locator(".ProseMirror")).toBeVisible();
 });
 
+test("a text selection opens the functional responsive inspector", async ({ page }) => {
+  await page.setViewportSize(viewports.default);
+  await openFixture(page);
+
+  await page
+    .locator(".document-block")
+    .filter({ hasText: "Winter readiness brief" })
+    .first()
+    .click({ position: { x: 35, y: 12 }, clickCount: 2 });
+
+  const inspector = page.locator('aside[aria-label="Inspector"][data-inspected="document-editor.text-selection"]');
+  await expect(inspector).toBeVisible();
+  await expect(inspector.getByTitle("Bold")).toHaveCount(1);
+  await expect(inspector.getByTitle("Italic")).toHaveCount(1);
+  await expect(inspector.getByTitle("Underline")).toHaveCount(1);
+  await expect(inspector.getByTitle("Strikethrough")).toHaveCount(1);
+  await expect(inspector.getByTitle("Code")).toHaveCount(0);
+
+  const foreground = inspector.getByRole("button", { name: "Foreground" });
+  const background = inspector.getByRole("button", { name: "Background" });
+  await expect(foreground).toBeVisible();
+  await expect(background).toBeVisible();
+  const [fg, bg] = await Promise.all([foreground.boundingBox(), background.boundingBox()]);
+  expect(Math.abs((fg?.y ?? 0) - (bg?.y ?? 0))).toBeLessThan(2);
+
+  await inspector.getByRole("button", { name: /^Body style/ }).click();
+  await expect(page.locator(".held-selection").first()).toBeVisible();
+  await expect(inspector.getByText("Space above", { exact: true })).toBeVisible();
+  await expect(inspector.getByText("Space below", { exact: true })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: /Increase|Decrease/ })).toHaveCount(0);
+
+  await inspector.getByRole("button", { name: /^Links/ }).click();
+  await expect(inspector.getByRole("textbox", { name: "Link notes" })).toBeVisible();
+});
+
 test("shared editor controls keep one behavior across the width matrix", async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 900 });
   await page.goto("/demo/document-editor-controls", { waitUntil: "networkidle" });
