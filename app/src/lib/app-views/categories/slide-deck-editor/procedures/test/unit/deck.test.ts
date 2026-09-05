@@ -18,7 +18,9 @@ const text = (id: string, display: string) => ({
   variant: "paragraph" as const,
   atoms: [{ id: `${id}-a`, kind: "literal" as const, text: display }],
   display,
-  marks: [{ id: `${id}-m`, from: 0, to: 3 }]
+  marks: [
+    { id: `${id}-m`, from: { atom: `${id}-a`, offset: 0 }, to: { atom: `${id}-a`, offset: 3 } }
+  ]
 });
 
 const deck = (over: Partial<SlideDeckBody> = {}): SlideDeckBody => ({

@@ -10,14 +10,23 @@ export type SyncState =
   | "offline"
   | "error";
 
+export type RuntimeFailure = {
+  readonly reason: "stale" | "unresolved";
+  readonly detail: string;
+  readonly ops: readonly DocumentOp[];
+};
+
 export interface DocumentRuntime {
   readonly body: DocumentBody | undefined;
   readonly revision: number;
   readonly sync: SyncState;
   readonly pending: number;
+  readonly failure: RuntimeFailure | undefined;
 
   apply(ops: readonly DocumentOp[]): void;
   flush(): Promise<void>;
+  retryFailedChanges(): void;
+  discardFailedChanges(): Promise<void>;
 
   undo(): void;
   redo(): void;

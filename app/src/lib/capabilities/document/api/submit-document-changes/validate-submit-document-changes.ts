@@ -2,26 +2,65 @@ import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { DocumentChangeSetInput } from "$capabilities/document/types/submit-document-changes";
 
 const OPS = ["set", "insert", "remove", "move", "text"];
-const TARGETS = ["row", "block", "atom", "mark"];
+const TARGETS = ["row", "block", "atom", "mark", "document"];
+
+type Fields = Record<string, unknown>;
+
+const has = (value: Fields, field: string): boolean => Object.hasOwn(value, field);
+const id = (value: unknown): value is string => typeof value === "string" && value.length > 0;
+const nullableId = (value: unknown): value is string | null => value === null || id(value);
+const ids = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.length > 0 && value.every(id) && new Set(value).size === value.length;
 
 const isOp = (value: unknown): value is DocumentOp => {
   if (typeof value !== "object" || value === null) return false;
 
-  const { op, target, path } = value as { op?: unknown; target?: unknown; path?: unknown };
-  return (
+  const fields = value as Fields;
+  const { op, target, path } = fields;
+  if (!(
     typeof op === "string" &&
     OPS.includes(op) &&
     typeof target === "string" &&
     TARGETS.includes(target) &&
-    typeof path === "string" &&
-    path.length > 0
+    id(path)
+  )) return false;
+
+  if (op === "set") {
+    return target !== "atom" && has(fields, "value") && has(fields, "was");
+  }
+
+  if (op === "insert" || op === "remove") {
+    return (
+      ids(fields.ids) &&
+      Array.isArray(fields.values) &&
+      fields.values.length === fields.ids.length &&
+      nullableId(fields.after)
+    );
+  }
+
+  if (op === "move") {
+    return (
+      (target === "row" || target === "block") &&
+      id(fields.id) &&
+      nullableId(fields.after) &&
+      nullableId(fields.wasAfter) &&
+      fields.after !== fields.id
+    );
+  }
+
+  return (
+    target === "atom" &&
+    Number.isInteger(fields.at) &&
+    Number(fields.at) >= 0 &&
+    typeof fields.insert === "string" &&
+    typeof fields.remove === "string" &&
+    (fields.insert.length > 0 || fields.remove.length > 0)
   );
 };
 
 const same = (left: readonly string[], right: readonly string[]): boolean =>
   left.length === right.length && left.every((value, index) => value === right[index]);
 
-/** Refuses anything the procedure could not act on. Throws; it never returns a partial. */
 export const validateSubmitDocumentChanges = (input: unknown): DocumentChangeSetInput => {
   if (typeof input !== "object" || input === null) {
     throw new Error("document/submit-document-changes: an object is required");

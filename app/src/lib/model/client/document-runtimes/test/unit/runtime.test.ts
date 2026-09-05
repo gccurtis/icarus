@@ -7,6 +7,7 @@ import type { DocumentRuntime } from "$model/client/document-runtimes";
 
 const wire = vi.hoisted(() => ({
   refusals: 0,
+  refusalReason: "stale" as "stale" | "unresolved",
   fault: false,
   readLands: false,
   sent: [] as { baseRevision: number; ops: unknown[]; touched: string[] }[]
@@ -33,7 +34,7 @@ vi.mock("$capabilities/document/index.remote", () => ({
     wire.refusals -= 1;
     return Promise.resolve({
       accepted: false,
-      reason: "stale",
+      reason: wire.refusalReason,
       revision: changeSet.baseRevision + 4,
       detail: "moved on"
     });
@@ -60,6 +61,7 @@ const set = (row: string, value: number): DocumentOp => ({
 
 beforeEach(() => {
   wire.refusals = 0;
+  wire.refusalReason = "stale";
   wire.fault = false;
   wire.readLands = false;
   wire.sent.length = 0;
@@ -257,7 +259,7 @@ test("a stale refusal is rebased once and resubmitted", async () => {
   assert.equal(runtime.pending, 0);
 });
 
-test("a refusal the rebase cannot resolve drops the ops and reads the body back", async () => {
+test("a refusal the rebase cannot resolve preserves the ops for explicit recovery", async () => {
   wire.refusals = 2;
   wire.readLands = true;
   const runtime = runtimeFor();
@@ -266,8 +268,8 @@ test("a refusal the rebase cannot resolve drops the ops and reads the body back"
   await runtime.flush();
 
   assert.equal(runtime.sync, "needs-review");
-  assert.equal(runtime.pending, 0);
-  assert.notEqual(runtime.body, undefined);
+  assert.equal(runtime.pending, 1);
+  assert.equal(runtime.failure?.ops.length, 1);
 });
 
 test("a refusal that arrives is not a fault that throws", async () => {
@@ -277,6 +279,41 @@ test("a refusal that arrives is not a fault that throws", async () => {
   runtime.apply([set("r1", 1)]);
 
   await assert.doesNotReject(() => runtime.flush());
+});
+
+test("an unresolved refusal can be retried without applying its optimistic ops twice", async () => {
+  wire.refusals = 1;
+  wire.refusalReason = "unresolved";
+  const runtime = runtimeFor(50, 2000);
+  runtime.apply([set("r1", 1)]);
+
+  await runtime.flush();
+  assert.equal(runtime.failure?.reason, "unresolved");
+  assert.equal(runtime.pending, 1);
+
+  runtime.retryFailedChanges();
+  await runtime.flush();
+
+  assert.equal(wire.sent.length, 2);
+  assert.equal(runtime.failure, undefined);
+  assert.equal(runtime.pending, 0);
+  assert.equal(runtime.sync, "saved");
+});
+
+test("discarding failed changes is explicit and reloads the leader", async () => {
+  wire.refusals = 1;
+  wire.refusalReason = "unresolved";
+  wire.readLands = true;
+  const runtime = runtimeFor(50, 2000);
+  runtime.apply([set("r1", 1)]);
+
+  await runtime.flush();
+  await runtime.discardFailedChanges();
+
+  assert.equal(runtime.failure, undefined);
+  assert.equal(runtime.pending, 0);
+  assert.equal(runtime.canUndo, false);
+  assert.equal(runtime.sync, "saved");
 });
 
 test("a fault puts the ops back and reports an error", async () => {

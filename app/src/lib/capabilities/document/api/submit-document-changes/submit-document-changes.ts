@@ -1,12 +1,62 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
+import type { StoreModel } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
+import type { DocumentOp } from "$representation/data/types/documents/op";
 
 import { leaderOf } from "$capabilities/document/api/shared/leader";
 import { withoutSharedReferences } from "$capabilities/document/api/shared/without-shared-references";
 import { applyOps } from "$capabilities/document/api/submit-document-changes/apply-ops";
 import { validateSubmitDocumentChanges } from "$capabilities/document/api/submit-document-changes/validate-submit-document-changes";
 import type { SubmitDocumentChangesResult } from "$capabilities/document/types/submit-document-changes";
+
+type Landed = { readonly revision: number; readonly ops: readonly DocumentOp[]; readonly touched: readonly string[] };
+
+const related = (a: string, b: string): boolean =>
+  a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
+
+const landedBetween = (
+  store: StoreModel,
+  projectId: Id<"projects">,
+  resourceId: Id<"documents">,
+  base: number,
+  head: number
+): readonly Landed[] | undefined => {
+  const found = store.read("documentChangeSets");
+  if (found?.table !== "documentChangeSets" || found.kind !== "table") return undefined;
+
+  const landed = found.rows
+    .filter(
+      (row) =>
+        row.projectId === projectId &&
+        row.resourceId === resourceId &&
+        row.revision > base &&
+        row.revision <= head
+    )
+    .sort((a, b) => a.revision - b.revision);
+
+  return landed.length === head - base ? landed : undefined;
+};
+
+const catchUpFor = (
+  store: StoreModel,
+  projectId: Id<"projects">,
+  resourceId: Id<"documents">,
+  base: number,
+  head: number,
+  touched: readonly string[]
+): readonly DocumentOp[] | undefined => {
+  if (base === head) return [];
+  if (base > head) return undefined;
+
+  const landed = landedBetween(store, projectId, resourceId, base, head);
+  if (landed === undefined) return undefined;
+
+  const clashes = landed.some((held) =>
+    held.touched.some((theirs) => touched.some((mine) => related(mine, theirs)))
+  );
+  return clashes ? undefined : landed.flatMap((held) => held.ops);
+};
 
 export const submitDocumentChanges = async (
   input: unknown
@@ -23,7 +73,15 @@ export const submitDocumentChanges = async (
   const leader = leaderOf(store, projectId, resourceId);
   const revision = leader?.revision ?? 0;
 
-  if (changeSet.baseRevision !== revision) {
+  const catchUp = catchUpFor(
+    store,
+    projectId,
+    resourceId,
+    changeSet.baseRevision,
+    revision,
+    changeSet.touched
+  );
+  if (catchUp === undefined) {
     return {
       accepted: false,
       reason: "stale",
@@ -75,5 +133,7 @@ export const submitDocumentChanges = async (
   store.update(`documents.${resourceId}.updatedAt`, at);
   store.update(`documents.${resourceId}.updatedBy`, actor);
 
-  return { accepted: true, revision: next };
+  return catchUp.length === 0
+    ? { accepted: true, revision: next }
+    : { accepted: true, revision: next, catchUp };
 };

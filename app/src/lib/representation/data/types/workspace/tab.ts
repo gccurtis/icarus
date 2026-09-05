@@ -5,10 +5,16 @@ export type TabId = string;
 
 export type Inspected = InspectorView | "empty";
 
+export type SelectionRange = {
+  readonly id: string;
+  readonly at: string;
+};
+
 export type Selection = {
   readonly kind: string;
   readonly id: string;
   readonly at?: string;
+  readonly ranges?: readonly SelectionRange[];
 };
 
 export type Frame = {
@@ -31,16 +37,6 @@ export type TabView = {
   inspected: Inspected;
   selection: Selection | null;
   frame: Frame;
-  /**
-   * Per cent. What this tab's centre is drawn at, never what it is.
-   *
-   * Beside `frame` rather than in it: the frame is the shell's geometry, which
-   * the panels own between them, and zoom is the centre's alone.
-   *
-   * `null` is nothing decided, which each centre answers for itself: a document
-   * fills the width it is given and goes on filling it as that width changes,
-   * until someone zooms and a number takes over for good.
-   */
   zoom: number | null;
 };
 

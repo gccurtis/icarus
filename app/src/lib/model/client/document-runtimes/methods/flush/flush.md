@@ -85,18 +85,16 @@ transform to write: rebasing re-states the ops at the new revision and resubmits
 The refused ops go to the **front** of the buffer, ahead of anything typed while
 the submit was in flight, because they happened first.
 
-A refusal the ladder cannot resolve is not retryable, and the ops are **not**
-kept. The buffer is dropped, the stored body is read back, and `body` becomes it
-— so the editor repaints onto what the server actually holds and `needs-review`
-says why.
+A refusal the ladder cannot resolve is not retried automatically. Its batch is
+kept outside the active buffer, the optimistic body remains visible, and
+`needs-review` exposes two deliberate recovery paths: retry the exact batch, or
+discard it and reload the leader. Later local edits wait behind the failed batch;
+they are never submitted out of order.
 
-**Keeping them would be worse than losing them.** A refused change set was stated
-against a revision that has moved; resubmitting it at the new one asks the server
-to apply ops to a body they were never authored against. The precondition checks
-would catch most of that — a `text` op names the string it expects to remove —
-but the ones they miss are silent corruption, and a buffer that can never be
-accepted is not work in progress, it is a document that has quietly stopped
-saving.
+Retry is safe because the server still enforces every operation precondition. A
+failed batch that no longer resolves returns to `needs-review`; it cannot become
+silent corruption. Discard is the only path that removes it, and that action also
+removes later local edits that were authored on top of the failed body.
 
 One rebase is attempted, and only for `stale`. `unresolved` means an op named
 something the body does not hold, which re-stating cannot fix.

@@ -95,10 +95,10 @@ test("a caret in a block with text is where the next letter goes, and carries no
   assert.equal(found?.selection.at, undefined);
 });
 
-test("a caret in a block with nothing in it is an empty block", () => {
+test("a caret in a block with nothing in it is an empty line", () => {
   assert.deepEqual(signalOf(stateOver(EMPTY, ["#b1", 0])), {
-    key: "document-editor.empty-block",
-    selection: { kind: "empty-block", id: "#b1/atoms/#b1-atom@0" }
+    key: "document-editor.empty-line",
+    selection: { kind: "empty-line", id: "#b1/atoms/#b1-atom@0" }
   });
 });
 

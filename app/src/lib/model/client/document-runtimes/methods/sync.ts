@@ -9,7 +9,7 @@ import { emptyBody } from "$model/client/document-runtimes/methods/shared/empty-
  * it lands.
  */
 const settled = (runtime: Runtime): boolean =>
-  runtime.buffer.length === 0 && !runtime.inFlight;
+  runtime.buffer.length === 0 && runtime.failure === undefined && !runtime.inFlight;
 
 /**
  * Re-read the leader body.

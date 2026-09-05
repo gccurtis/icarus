@@ -1,4 +1,5 @@
 import { submitDocumentChanges } from "$capabilities/document/index.remote";
+import { applyOps } from "$representation/data/behavior/documents/apply-ops";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { Runtime } from "$model/client/document-runtimes/definition.svelte";
 import { coalesce } from "$model/client/document-runtimes/methods/flush/coalesce";
@@ -6,6 +7,8 @@ import { rebase } from "$model/client/document-runtimes/methods/flush/rebase";
 import { sync } from "$model/client/document-runtimes/methods/sync";
 
 export const flush = (runtime: Runtime): Promise<void> => {
+  if (runtime.failure !== undefined) return Promise.resolve();
+
   runtime.pendingFlush ??= submit(runtime).finally(() => {
     runtime.pendingFlush = undefined;
     runtime.inFlight = false;
@@ -21,16 +24,36 @@ const changeSet = (runtime: Runtime, ops: readonly DocumentOp[]) => ({
   touched: [...new Set(ops.map((op) => op.path))]
 });
 
-/** The flight is over the moment an answer arrives, and `sync` only reads a settled runtime. */
 const landed = (runtime: Runtime): void => {
   runtime.inFlight = false;
 };
 
-const revert = async (runtime: Runtime): Promise<void> => {
-  landed(runtime);
-  runtime.buffer = [];
+const caughtUp = (runtime: Runtime, ops: readonly DocumentOp[] | undefined): void => {
+  const held = runtime.body;
+  if (ops === undefined || ops.length === 0 || held === undefined) return;
 
-  await sync(runtime);
+  try {
+    runtime.body = applyOps(held, ops);
+  } catch {
+    runtime.body = undefined;
+  }
+};
+
+const accepted = (runtime: Runtime, revision: number, catchUp?: readonly DocumentOp[]): void => {
+  landed(runtime);
+  runtime.revision = revision;
+  caughtUp(runtime, catchUp);
+  runtime.sync = runtime.buffer.length === 0 ? "saved" : "saving";
+  void sync(runtime);
+};
+
+const preserveFailure = (
+  runtime: Runtime,
+  ops: readonly DocumentOp[],
+  refusal: { readonly reason: "stale" | "unresolved"; readonly detail: string }
+): void => {
+  landed(runtime);
+  runtime.failure = { ...refusal, ops };
   runtime.sync = "needs-review";
 };
 
@@ -53,15 +76,12 @@ const submit = async (runtime: Runtime): Promise<void> => {
     const answer = await submitDocumentChanges({ changeSet: changeSet(runtime, ops) });
 
     if (answer.accepted) {
-      landed(runtime);
-      runtime.revision = answer.revision;
-      runtime.sync = runtime.buffer.length === 0 ? "saved" : "saving";
-      void sync(runtime);
+      accepted(runtime, answer.revision, answer.catchUp);
       return;
     }
 
     if (answer.reason !== "stale") {
-      await revert(runtime);
+      preserveFailure(runtime, ops, answer);
       return;
     }
 
@@ -72,14 +92,11 @@ const submit = async (runtime: Runtime): Promise<void> => {
     const retried = await submitDocumentChanges({ changeSet: changeSet(runtime, restated) });
 
     if (!retried.accepted) {
-      await revert(runtime);
+      preserveFailure(runtime, restated, retried);
       return;
     }
 
-    landed(runtime);
-    runtime.revision = retried.revision;
-    runtime.sync = runtime.buffer.length === 0 ? "saved" : "saving";
-    void sync(runtime);
+    accepted(runtime, retried.revision, retried.catchUp);
   } catch (error) {
     runtime.buffer = [...ops, ...runtime.buffer];
     runtime.sync = "error";

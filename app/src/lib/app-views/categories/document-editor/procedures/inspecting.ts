@@ -42,7 +42,7 @@ export const signalOf = (state: EditorState): Signal | undefined => {
   }
 
   return $from.parent.content.size === 0
-    ? { key: "document-editor.empty-block", selection: { kind: "empty-block", id: from } }
+    ? { key: "document-editor.empty-line", selection: { kind: "empty-line", id: from } }
     : { key: "document-editor.next-letter", selection: { kind: "next-letter", id: from } };
 };
 

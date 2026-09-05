@@ -3,7 +3,10 @@ import type { Message } from "$representation/data/types/agents/message";
 import type { Cast, PersonaAvatar, PersonaDefinition } from "$representation/data/types/agents/persona";
 import type { BranchPoint, ThreadKind } from "$representation/data/types/agents/thread";
 import type { ActivityTarget } from "$representation/data/types/collaboration/activity";
-import type { AnchorWithin, Resolution } from "$representation/data/types/collaboration/anchor";
+import type {
+  Resolution,
+  StoredAnchorWithin
+} from "$representation/data/types/collaboration/anchor";
 import type { BlockFormat } from "$representation/data/types/content/block-format";
 import type { ContentBlock, Mark, MarkLink } from "$representation/data/types/content/content-block";
 import type { CellRef } from "$representation/data/types/content/formula-value";
@@ -483,7 +486,7 @@ export type ResearchThread = Row<"researchThreads"> & ResearchThreadFields;
 export type CommentThreadFields = {
   projectId: Id<"projects">;
   target: ResourceRef;
-  within?: AnchorWithin;
+  within?: StoredAnchorWithin;
   quote?: string;
   resolution?: Resolution;
   createdBy: Actor;

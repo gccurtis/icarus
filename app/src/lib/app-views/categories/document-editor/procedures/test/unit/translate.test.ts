@@ -150,7 +150,18 @@ test("a mark-only difference is not this translator's business", () => {
   const ops = translate(
     body([blocks("#r1", [text("#b1", "One")])]),
     body([
-      blocks("#r1", [text("#b1", "One", { marks: [{ id: "#m1", from: 0, to: 3, style: ["bold"] }] })])
+      blocks("#r1", [
+        text("#b1", "One", {
+          marks: [
+            {
+              id: "#m1",
+              from: { atom: "#b1-atom", offset: 0 },
+              to: { atom: "#b1-atom", offset: 3 },
+              style: ["bold"]
+            }
+          ]
+        })
+      ])
     ])
   );
 

@@ -2,23 +2,7 @@ import type { Category, ContentView } from "$representation/data/types/workspace
 import type { ContextView } from "$representation/data/types/workspace/views";
 import type { TabView } from "$representation/data/types/workspace/tab";
 
-/**
- * What a tab of each category is, before anything has happened to it: the centre
- * it opens on, the context view it lands on, and the rail it offers.
- *
- * **`context` is stated, not the rail's head.** A rail is an ordered menu and
- * the landing is a separate decision; deriving one from the other means
- * reordering the menu silently moves where every tab of that category opens.
- * They coincide today for every category, and coinciding is not the same as
- * being the same fact.
- *
- * Vocabulary rather than client policy, because two parties read it: a client
- * mints a tab from it, and the server builds the workspace a first change set is
- * stated against. A change set carries ops and nothing else, so the state behind
- * them has to be constructible from here alone.
- */
 export type Opening = {
-  /** Absent where a category has no centre to default to, which `mintView` refuses. */
   readonly content?: ContentView;
   readonly context: ContextView | null;
   readonly rail: readonly ContextView[];
@@ -83,17 +67,16 @@ export const OPENING: Record<Category, Opening> = {
 
   "document-editor": {
     content: "document-editor.document",
-    context: "document-editor.overview",
+    context: "document-editor.navigator",
     rail: [
-      "document-editor.overview",
       "document-editor.navigator",
       "document-editor.find",
-      "document-editor.insert",
       "document-editor.styles",
       "document-editor.layout",
-      "document-editor.variables",
       "document-editor.comments",
-      "document-editor.context"
+      "document-editor.variables",
+      "document-editor.templates",
+      "document-editor.prompts"
     ]
   },
 
@@ -154,14 +137,6 @@ export const defaultContext = (category: Category): ContextView | null =>
 export const offersContext = (category: Category, id: ContextView): boolean =>
   railFor(category).includes(id);
 
-/**
- * Both flanks open at the narrowest a drag may leave them, so a tab starts with
- * as much of the width under the work as it can have and every pixel either
- * panel takes after that was asked for.
- *
- * The inspector's number is its whole width; the context panel's is its content
- * alone, because the rail beside it is structural and the panel adds it back.
- */
 export const STARTING_FRAME = Object.freeze({
   contextWidth: 180,
   contextCollapsed: false,
@@ -169,7 +144,6 @@ export const STARTING_FRAME = Object.freeze({
   inspectorCollapsed: false
 });
 
-/** A tab opens with its zoom undecided, which its centre reads as it sees fit. */
 export const STARTING_ZOOM: number | null = null;
 
 export type Overrides = {
@@ -177,10 +151,6 @@ export type Overrides = {
   readonly focus?: string;
 };
 
-/**
- * The one place a `TabView` is built. A caller that knows better than the
- * category says so through `overrides`; everything else comes from `OPENING`.
- */
 export const openingView = (category: Category, overrides: Overrides = {}): TabView => {
   const content = overrides.content ?? defaultContent(category);
   if (content === undefined) throw new Error(`'${category}' has no content view to open on`);

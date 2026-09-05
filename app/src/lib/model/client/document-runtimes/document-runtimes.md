@@ -115,9 +115,11 @@ than importing it, so two tabs on one document cannot end up with two buffers.
 to `settling` and is deleted when its submit finishes, which is why `flushing`
 can name an id that `open` no longer does.
 
-**A rejected or never-settling submit stays.** It keeps its buffer and reports
-`error` or `needs-review`. A runtime that could not send the user's last edits is
-work disappearing, and dropping it quietly is the one outcome with no recovery.
+**A rejected or never-settling submit stays.** A fault returns its ops to the
+buffer. A refusal keeps the failed batch separately, leaves its optimistic body
+visible, and reports `needs-review` until the user retries or explicitly
+discards it. A runtime that could not send the user's last edits is work
+disappearing, and dropping it quietly is the one outcome with no recovery.
 
 **Exactly-once falls out of the data.** `release` looks in `open` and moves the
 entry out first, so a second release finds nothing.
@@ -156,7 +158,7 @@ Two calls, both through [`$capabilities/document`](../../../capabilities/documen
 | Where | Call | On failure |
 | --- | --- | --- |
 | `methods/sync.ts` | `readDocumentBody` — one document's body and revision | Silence, unless nothing has ever been read: a failed re-read leaves the body that is showing alone rather than emptying the editor. A document with no stored body is not a failure either — it opens on an empty one, so there is always somewhere to put the caret |
-| `methods/flush/flush.ts` | `submitDocumentChanges` — one coalesced change set | A refusal keeps the buffer and reports `needs-review`; a fault keeps it and reports `error` |
+| `methods/flush/flush.ts` | `submitDocumentChanges` — one coalesced change set | A refusal preserves the failed batch for retry/discard and reports `needs-review`; a fault returns it to the buffer and reports `error` |
 
 **A refusal is not a throw.** The capability answers `accepted: false` with the
 revision the leader is actually at, and only a genuine fault rejects. The two
@@ -168,7 +170,7 @@ network comes back — so they cannot arrive the same way.
 
 **No live subscription yet, but the body does not stand still.** Four things read
 the leader again: opening a tab on the document, a change set the server accepts,
-a refusal that reverts, and an interval while the runtime is settled. There is
+an explicit discard after refusal, and an interval while the runtime is settled. There is
 still no push, so another client's change waits for the next of those — but a
 body no longer stays at what the page was loaded with, which is what it used to
 do for as long as the tab stayed open.

@@ -5,6 +5,7 @@ import { apply, buffer } from "$model/client/document-runtimes/methods/apply";
 import { attach } from "$model/client/document-runtimes/methods/attach";
 import { flush } from "$model/client/document-runtimes/methods/flush/flush";
 import { redo, undo } from "$model/client/document-runtimes/methods/history/history";
+import { discardFailedChanges } from "$model/client/document-runtimes/methods/failure";
 import { release } from "$model/client/document-runtimes/methods/release";
 import { releaseAll } from "$model/client/document-runtimes/methods/release-all";
 import type {
@@ -12,6 +13,7 @@ import type {
   DocumentRuntimesModel,
   Thresholds,
   HistoryEntry,
+  RuntimeFailure,
   SyncState
 } from "$model/client/document-runtimes/types";
 
@@ -25,6 +27,7 @@ export class Runtime implements DocumentRuntime {
   buffer = $state.raw<readonly DocumentOp[]>([]);
   undoStack = $state.raw<readonly HistoryEntry[]>([]);
   redoStack = $state.raw<readonly HistoryEntry[]>([]);
+  failure = $state.raw<RuntimeFailure | undefined>(undefined);
 
   inFlight = $state(false);
 
@@ -40,15 +43,15 @@ export class Runtime implements DocumentRuntime {
   }
 
   get pending(): number {
-    return this.buffer.length;
+    return this.buffer.length + (this.failure?.ops.length ?? 0);
   }
 
   get canUndo(): boolean {
-    return this.undoStack.length > 0;
+    return this.failure === undefined && this.undoStack.length > 0;
   }
 
   get canRedo(): boolean {
-    return this.redoStack.length > 0;
+    return this.failure === undefined && this.redoStack.length > 0;
   }
 
   apply(ops: readonly DocumentOp[]): void {
@@ -62,7 +65,22 @@ export class Runtime implements DocumentRuntime {
     await flush(this);
   }
 
+  retryFailedChanges(): void {
+    const failed = this.failure;
+    if (failed === undefined) return;
+
+    this.failure = undefined;
+    this.buffer = [...failed.ops, ...this.buffer];
+    this.sync = "saving";
+    this.schedule();
+  }
+
+  async discardFailedChanges(): Promise<void> {
+    await discardFailedChanges(this);
+  }
+
   undo(): void {
+    if (this.failure !== undefined) return;
     const ops = undo(this);
     if (ops.length === 0) return;
 
@@ -71,6 +89,7 @@ export class Runtime implements DocumentRuntime {
   }
 
   redo(): void {
+    if (this.failure !== undefined) return;
     const ops = redo(this);
     if (ops.length === 0) return;
 
@@ -79,6 +98,7 @@ export class Runtime implements DocumentRuntime {
   }
 
   schedule(): void {
+    if (this.failure !== undefined) return;
     if (this.buffer.length >= this.thresholds.afterOps) {
       this.flushInBackground();
       return;

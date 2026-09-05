@@ -67,7 +67,14 @@ test("a divider and an explicit break are not drawn, and survive anyway", () => 
 
 test("a mark survives an untouched round trip byte for byte", () => {
   const marked = text("#b1", "Bold words here", {
-    marks: [{ id: "#m1", from: 0, to: 4, style: ["bold"] }]
+    marks: [
+      {
+        id: "#m1",
+        from: { atom: "#b1-atom", offset: 0 },
+        to: { atom: "#b1-atom", offset: 4 },
+        style: ["bold"]
+      }
+    ]
   });
   const before = body([blocks("#r1", [marked])]);
 

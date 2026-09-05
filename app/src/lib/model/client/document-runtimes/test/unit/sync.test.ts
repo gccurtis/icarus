@@ -64,12 +64,17 @@ const shows = (runtime: DocumentRuntime): string => {
   return block !== undefined && block.type === "text" ? block.display : "nothing";
 };
 
+/**
+ * A real op the applier resolves against the fixture, and one that leaves the
+ * display alone — `shows` has to keep reading the leader's text while the
+ * runtime holds work of its own.
+ */
 const set = (row: string, value: number): DocumentOp => ({
   op: "set",
   target: "row",
-  path: `rows/#${row}`,
-  value,
-  was: value - 1
+  path: `#${row}/proportions`,
+  value: [value],
+  was: null
 });
 
 beforeEach(() => {

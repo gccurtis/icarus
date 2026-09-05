@@ -46,39 +46,9 @@ import Zap from "@lucide/svelte/icons/zap";
 
 import type { ContextView } from "$model/client/workspace-state";
 
-/**
- * What each context view looks like in the rail: a name and an icon.
- *
- * The rail is a vertical strip of icons down the left of the context panel, and
- * collapsed it is all that is left of the panel — so the icon is the whole
- * affordance, and an entry that does not say what it opens is a dead end. Which
- * views a category offers, and in what order, is not here: that is `RAILS`.
- *
- * **`Record<ContextView, …>` rather than a partial map**, so a context view with
- * no rail entry fails to compile rather than failing to draw. Every key in the
- * vocabulary has an entry here whether or not its panel is built yet — the rail
- * is how an unbuilt view is reached, and a key with no way to reach it cannot be
- * proved to route at all.
- *
- * **The labels are written, not derived.** Never inferred from the id or the
- * file name; the subject document beside the panels is where the wording is
- * argued. Where two ids carry the same label that is intended: every category has
- * an "Overview" and no two show the same thing, so the label names the job and
- * the id names the content.
- *
- * **The icons follow the subject, not the word.** The same subject looks the same
- * on every category that carries it — Variables is always a hash, Context always a
- * target, Overview always the same mark — while two entries in one rail never
- * share one, which is the only collision that matters when the panel is closed.
- */
 export type RailEntry = { readonly label: string; readonly icon: Component };
 
 export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
-  /**
-   * Agents: how a persona is defined and what an automation does. `Health` takes
-   * the heartbeat rather than a warning triangle — the view is the state of every
-   * rule, not an error report.
-   */
   "agents.automations": { label: "Automations", icon: Workflow },
   "agents.behaviour": { label: "Behaviour", icon: ScrollText },
   "agents.context-persona": { label: "Context", icon: Target },
@@ -90,13 +60,11 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "agents.when": { label: "When", icon: Zap },
   "agents.work": { label: "Work", icon: Activity },
 
-  /** Analysis: building one chart. `Fields` is the axes, because that is where a field goes. */
   "analysis.chart": { label: "Chart", icon: ChartColumn },
   "analysis.fields": { label: "Fields", icon: Axis3d },
   "analysis.formula": { label: "Formula", icon: SquareFunction },
   "analysis.chartable-variables": { label: "Variables", icon: Hash },
 
-  /** Library: browsing what a project already has, and starting something new. */
   "analysis.analyses": { label: "Analyses", icon: ChartColumn },
   "new-tab.bring-in": { label: "Bring in", icon: Upload },
   "project-overview.contexts-library": { label: "Contexts", icon: Target },
@@ -107,12 +75,6 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "new-tab.templates": { label: "Templates", icon: LayoutTemplate },
   "research.threads": { label: "Threads", icon: MessagesSquare },
 
-  /**
-   * Overview: eleven different views doing one job — what is this and where am I.
-   * One icon for all of them, and it is `Info` rather than a dashboard mark
-   * because the rails that lead with an Overview also carry Templates and
-   * Layouts, and those three panel glyphs are not tellable apart at rail size.
-   */
   "agents.overview": { label: "Overview", icon: Info },
   "analysis.overview": { label: "Overview", icon: Info },
   "context-editor.overview": { label: "Overview", icon: Info },
@@ -123,12 +85,6 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "spreadsheet-editor.overview": { label: "Overview", icon: Info },
   "templates.overview-library": { label: "Overview", icon: Info },
 
-  /**
-   * Project: the whole project rather than one resource. `Mentions` is a person
-   * addressing you and `Health` is what cannot proceed, so the two never share a
-   * mark. `variables-create` is the Variables panel becoming a form and is on no
-   * rail; it is named here because the table is total.
-   */
   "project-overview.activity": { label: "Activity", icon: Activity },
   "project-overview.contexts": { label: "Context", icon: Target },
   "project-overview.history": { label: "History", icon: Clock },
@@ -144,11 +100,6 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "spreadsheet-editor.variables": { label: "Variables", icon: Hash },
   "project-overview.variables-create": { label: "Create variable", icon: Plus },
 
-  /**
-   * Research: one line of enquiry. `Trace` is footprints — the steps the agent
-   * took — and `History` is a clock turned back, so a record and a reasoning
-   * path never read as the same thing.
-   */
   "research.context": { label: "Context", icon: Target },
   "research.findings": { label: "Findings", icon: Lightbulb },
   "research.history": { label: "History", icon: ClockArrowLeft },
@@ -156,11 +107,6 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "research.sources": { label: "Sources", icon: BookOpen },
   "research.trace": { label: "Trace", icon: Footprints },
 
-  /**
-   * Resource: the document, deck and spreadsheet editors. The same job in three
-   * editors is one icon — Find, Insert, Comments, Context and Styles are each a
-   * single mark wherever they appear.
-   */
   "slide-deck-editor.comments": { label: "Comments", icon: MessageSquare },
   "document-editor.comments": { label: "Comments", icon: MessageSquare },
   "spreadsheet-editor.comments": { label: "Comments", icon: MessageSquare },
@@ -184,6 +130,8 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "slide-deck-editor.notes": { label: "Notes", icon: StickyNote },
   "spreadsheet-editor.objects": { label: "Objects", icon: Group },
   "document-editor.layout": { label: "Layout", icon: FileText },
+  "document-editor.prompts": { label: "Prompts", icon: Sparkles },
+  "document-editor.templates": { label: "Templates", icon: LayoutTemplate },
   "spreadsheet-editor.print": { label: "Print", icon: Printer },
   "slide-deck-editor.slides": { label: "Slides", icon: Presentation },
   "slide-deck-editor.stage": { label: "Stage", icon: Proportions },
@@ -191,11 +139,6 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "spreadsheet-editor.styles": { label: "Styles", icon: Type },
   "slide-deck-editor.theme": { label: "Theme", icon: Palette },
 
-  /**
-   * Scope: one Context — what it names, what that resolves to, and what leans on
-   * it. `Used by` takes the same graph mark as a spreadsheet's Dependencies,
-   * because both answer what would break.
-   */
   "context-editor.add": { label: "Add to this Context", icon: Plus },
   "context-editor.contents": { label: "Contents", icon: List },
   "context-editor.contexts": { label: "Contexts", icon: Target },

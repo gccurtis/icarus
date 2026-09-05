@@ -1,8 +1,10 @@
+export type DocumentTarget = "row" | "block" | "atom" | "mark" | "document";
+
 export type DocumentOp =
-  | { op: "set"; target: "row" | "block" | "atom" | "mark"; path: string; value: unknown; was: unknown }
+  | { op: "set"; target: DocumentTarget; path: string; value: unknown; was: unknown }
   | {
       op: "insert";
-      target: "row" | "block" | "atom" | "mark";
+      target: DocumentTarget;
       path: string;
       ids: string[];
       after: string | null;
@@ -10,7 +12,7 @@ export type DocumentOp =
     }
   | {
       op: "remove";
-      target: "row" | "block" | "atom" | "mark";
+      target: DocumentTarget;
       path: string;
       ids: string[];
       after: string | null;

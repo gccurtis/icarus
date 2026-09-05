@@ -17,7 +17,9 @@ const model = vi.hoisted(() => ({
     },
     read: (path: string) => {
       model.calls.push(`read ${path}`);
-      return { table: "documentSnapshots", kind: "table", rows: model.snapshots };
+      return path === "documentChangeSets"
+        ? { table: "documentChangeSets", kind: "table", rows: model.changeSets }
+        : { table: "documentSnapshots", kind: "table", rows: model.snapshots };
     },
     update: (path: string, value: unknown) => {
       model.calls.push(`update ${path}`);
@@ -57,6 +59,18 @@ const row = {
   ]
 };
 
+const leaderAt = (revision: number, body: unknown = { rows: [row] }) =>
+  model.snapshots.push({
+    _id: "documentSnapshots:1",
+    projectId: "p",
+    resourceId: "documents:1",
+    role: "leader",
+    revision,
+    part: 0,
+    body,
+    at: 1
+  });
+
 const sending = (baseRevision: number, ops: unknown[]) => ({
   changeSet: {
     resourceId: "documents:1",
@@ -69,6 +83,11 @@ const sending = (baseRevision: number, ops: unknown[]) => ({
 const typing = (baseRevision: number, at: number, insert: string) =>
   sending(baseRevision, [
     { op: "text", target: "atom", path: "#b1/atoms/#a1", at, insert, remove: "" }
+  ]);
+
+const margin = (baseRevision: number, top: number) =>
+  sending(baseRevision, [
+    { op: "set", target: "document", path: "pageSetup/margins/top", value: top, was: 0.75 }
   ]);
 
 beforeEach(() => {
@@ -86,16 +105,7 @@ test("a read without a resourceId is refused", async () => {
 });
 
 test("the first change set mints the leader snapshot at revision one", async () => {
-  model.snapshots.push({
-    _id: "documentSnapshots:1",
-    projectId: "p",
-    resourceId: "documents:1",
-    role: "leader",
-    revision: 0,
-    part: 0,
-    body: { rows: [row] },
-    at: 1
-  });
+  leaderAt(0);
 
   const accepted = await submitDocumentChanges(typing(0, 3, " more"));
 
@@ -120,16 +130,7 @@ test("the first change set mints the leader snapshot at revision one", async () 
 });
 
 test("every accepted change set is written, and the revisions ascend", async () => {
-  model.snapshots.push({
-    _id: "documentSnapshots:1",
-    projectId: "p",
-    resourceId: "documents:1",
-    role: "leader",
-    revision: 0,
-    part: 0,
-    body: { rows: [row] },
-    at: 1
-  });
+  leaderAt(0);
 
   await submitDocumentChanges(typing(0, 3, "a"));
   await submitDocumentChanges(typing(1, 4, "b"));
@@ -145,17 +146,8 @@ test("every accepted change set is written, and the revisions ascend", async () 
   assert.equal(model.snapshots.length, 1);
 });
 
-test("a change set authored against an older revision is refused", async () => {
-  model.snapshots.push({
-    _id: "documentSnapshots:1",
-    projectId: "p",
-    resourceId: "documents:1",
-    role: "leader",
-    revision: 4,
-    part: 0,
-    body: { rows: [row] },
-    at: 1
-  });
+test("a change set authored against an older revision is refused when the changes since cannot be read", async () => {
+  leaderAt(4);
 
   assert.deepEqual(await submitDocumentChanges(typing(2, 3, "x")), {
     accepted: false,
@@ -166,17 +158,41 @@ test("a change set authored against an older revision is refused", async () => {
   assert.equal(model.changeSets.length, 0);
 });
 
-test("a change set whose ops do not resolve writes nothing", async () => {
-  model.snapshots.push({
-    _id: "documentSnapshots:1",
-    projectId: "p",
-    resourceId: "documents:1",
-    role: "leader",
-    revision: 0,
-    part: 0,
-    body: { rows: [row] },
-    at: 1
+test("a change set authored against an older revision is refused when a change since touched the same path", async () => {
+  leaderAt(0);
+  await submitDocumentChanges(typing(0, 3, "a"));
+
+  const refused = await submitDocumentChanges(typing(0, 3, "b"));
+
+  assert.equal(refused.accepted, false);
+  assert.equal(refused.accepted === false && refused.reason, "stale");
+  assert.equal(model.changeSets.length, 1);
+});
+
+test("a change set authored against an older revision is accepted with catch-up when nothing since touches its paths", async () => {
+  leaderAt(0, { rows: [row], pageSetup: { paper: "letter", orientation: "portrait", margins: { top: 0.75, right: 0.75, bottom: 0.75, left: 0.75 } } });
+  await submitDocumentChanges(margin(0, 1));
+
+  const accepted = await submitDocumentChanges(typing(0, 3, "!"));
+
+  assert.deepEqual(accepted, {
+    accepted: true,
+    revision: 2,
+    catchUp: [{ op: "set", target: "document", path: "pageSetup/margins/top", value: 1, was: 0.75 }]
   });
+
+  const read = await readDocumentBody({ resourceId: "documents:1" });
+  assert.equal(read?.body.pageSetup?.margins.top, 1);
+  assert.equal(
+    read?.body.rows[0].kind === "blocks" && read.body.rows[0].blocks[0].type === "text"
+      ? read.body.rows[0].blocks[0].display
+      : undefined,
+    "One!"
+  );
+});
+
+test("a change set whose ops do not resolve writes nothing", async () => {
+  leaderAt(0);
 
   const refused = await submitDocumentChanges(
     sending(0, [
@@ -194,6 +210,26 @@ test("a change set whose ops do not resolve writes nothing", async () => {
 
 test("an empty change set is refused before anything is read", async () => {
   await assert.rejects(() => submitDocumentChanges(sending(0, [])), /at least one op/);
+});
+
+test("malformed operations are refused before anything is read or written", async () => {
+  const malformed = [
+    { op: "text", target: "atom", path: "#b1/atoms/#a1", at: -1, insert: "x", remove: "" },
+    { op: "text", target: "block", path: "#b1/atoms/#a1", at: 0, insert: "x", remove: "" },
+    { op: "insert", target: "row", path: "rows", ids: ["#r1"], after: null, values: [] },
+    { op: "remove", target: "row", path: "rows", ids: ["#r1", "#r1"], after: null, values: [row, row] },
+    { op: "move", target: "atom", path: "#b1/atoms", id: "#a1", after: null, wasAfter: null },
+    { op: "set", target: "atom", path: "#a1/text", value: "x", was: "" }
+  ];
+
+  for (const op of malformed) {
+    await assert.rejects(
+      () => submitDocumentChanges(sending(0, [op])),
+      /every op names an operation, a target and a path/
+    );
+  }
+
+  assert.equal(model.calls.length, 0);
 });
 
 test("a change set whose touched disagrees with its ops is refused", async () => {
