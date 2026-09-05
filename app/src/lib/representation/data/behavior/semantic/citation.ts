@@ -25,6 +25,31 @@ const assertCitation = (citation: SemanticCitation): void => {
   if (!Number.isInteger(citation.overlayGeneration) || citation.overlayGeneration < 0) {
     throw new Error("semantic citation has an invalid overlay generation");
   }
+  if (
+    !Array.isArray(citation.selections) ||
+    citation.selections.length === 0 ||
+    citation.selections.some(
+      (selection) => !selection.evidenceId.trim() || !selection.use.trim()
+    )
+  ) {
+    throw new Error("semantic citation requires selected evidence and its use");
+  }
+};
+
+const mergedSelections = (
+  citations: readonly SemanticCitation[]
+): SemanticCitation["selections"] => {
+  const selections = new Map<string, string>();
+  for (const citation of citations) {
+    for (const selection of citation.selections) {
+      const existing = selections.get(selection.evidenceId);
+      if (existing !== undefined && existing !== selection.use) {
+        throw new Error("one evidence id has conflicting use annotations");
+      }
+      selections.set(selection.evidenceId, selection.use);
+    }
+  }
+  return [...selections].map(([evidenceId, use]) => ({ evidenceId, use }));
 };
 
 const merge = (citations: readonly SemanticCitation[]): SemanticCitation => {
@@ -61,10 +86,15 @@ const merge = (citations: readonly SemanticCitation[]): SemanticCitation => {
     }
   }
 
-  return { source: first.source, span: { from, to, text }, overlayGeneration: first.overlayGeneration };
+  return {
+    selections: mergedSelections(ordered),
+    source: first.source,
+    span: { from, to, text },
+    overlayGeneration: first.overlayGeneration
+  };
 };
 
-/** Unions overlapping reads from the same source snapshot and observed generation. */
+/** Unions overlapping selected evidence from one source snapshot and generation. */
 export const coalesceSemanticCitations = (
   citations: readonly SemanticCitation[]
 ): SemanticCitation[] => {

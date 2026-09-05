@@ -94,7 +94,7 @@ describe("OpenRouter intelligence", () => {
       tool_call_id: "call-1",
       content: '{"ok":true,"value":{"hits":[{"hitId":"hit-1"}]}}'
     });
-    assert.equal(result.text, "Grounded answer.");
+    assert.equal(result.value, "Grounded answer.");
     assert.equal(result.rounds, 2);
     assert.deepEqual(result.usage, {
       requestCount: 2,
@@ -107,6 +107,78 @@ describe("OpenRouter intelligence", () => {
     assert.deepEqual(result.toolCalls, [
       { id: "call-1", name: "retrieve", input: { query: "launch" }, ok: true }
     ]);
+  });
+
+  it("requests strict structured output and parses the final JSON through application code", async () => {
+    const payloads: Record<string, unknown>[] = [];
+    const intelligence = defineIntelligence(
+      input(async (_url, init) => {
+        payloads.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+        return response(turn({ content: '{"answer":"Tuesday"}', tool_calls: [] }));
+      })
+    );
+    const schema = {
+      type: "object",
+      properties: { answer: { type: "string" } },
+      required: ["answer"],
+      additionalProperties: false
+    };
+
+    const result = await intelligence.completeWithTools({
+      system: "Return a decision.",
+      user: "When?",
+      tools: [],
+      output: {
+        name: "grounded_answer",
+        description: "One test decision",
+        schema,
+        parse: (value) => {
+          if (
+            value === null ||
+            typeof value !== "object" ||
+            Array.isArray(value) ||
+            typeof (value as Record<string, unknown>).answer !== "string"
+          ) {
+            throw new Error("answer is required");
+          }
+          return { answer: (value as Record<string, string>).answer };
+        }
+      }
+    });
+
+    assert.deepEqual(result.value, { answer: "Tuesday" });
+    assert.deepEqual(payloads[0].response_format, {
+      type: "json_schema",
+      json_schema: {
+        name: "grounded_answer",
+        description: "One test decision",
+        strict: true,
+        schema
+      }
+    });
+  });
+
+  it("rejects final JSON that fails the application structured-output parser", async () => {
+    const intelligence = defineIntelligence(
+      input(async () => response(turn({ content: '{"answer":7}', tool_calls: [] })))
+    );
+
+    await assert.rejects(
+      () =>
+        intelligence.completeWithTools({
+          system: "Return a decision.",
+          user: "When?",
+          tools: [],
+          output: {
+            name: "grounded_answer",
+            schema: { type: "object" },
+            parse: () => {
+              throw new Error("answer is invalid");
+            }
+          }
+        }),
+      /invalid structured output/
+    );
   });
 
   it("returns bad arguments to the model without executing the handler", async () => {

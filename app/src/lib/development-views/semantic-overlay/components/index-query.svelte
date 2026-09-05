@@ -72,23 +72,25 @@
       id: "partition",
       number: "02",
       label: "Recursive build",
-      title: "Deterministic spherical k-means creates the forest.",
+      title: "Broad neighborhoods split into local neighborhoods.",
       summary:
-        "Each oversized group is split by farthest-first seeds and bounded spherical k-means. Stable ID ordering removes random initialization, making the same corpus and configuration produce the same draft tree.",
+        "Top-level spherical k-means chooses broad neighborhoods. Only the original object vectors inside an oversized neighborhood are partitioned again, so ancestry narrows suburb → block → house rather than moving inward toward one global center.",
       equations: [
         { symbol: "c₁ = argminₓ x̂ · μ̂", meaning: "First seed: farthest from corpus centroid μ." },
         { symbol: "cₜ = argminₓ maxⱼ<t(x̂ · cⱼ)", meaning: "Next seed: least similar to its nearest chosen seed." },
         { symbol: "a(x) = argmaxⱼ x̂ · cⱼ", meaning: "Assign each member to its most similar centroid." },
+        { symbol: "Gparent = ⨆ Gchild", meaning: "Children are disjoint local partitions whose union is exactly the parent neighborhood." },
         { symbol: "Δ = maxⱼ(1 − cⱼ(old) · cⱼ(new))", meaning: "Largest centroid cosine displacement." }
       ],
       steps: [
-        "Sort objects lexically by semantic object ID and choose up to branchFactor clusters.",
+        "Normalize and sort all objects, then partition the corpus into up to branchFactor broad root neighborhoods.",
         "Assign by maximum cosine. Exact ties remain with the lower cluster index.",
         "Repair an empty cluster with the least-similar member of the largest viable donor, breaking ties by ID.",
         "Recompute spherical centroids; stop on stable membership, Δ ≤ ε, or maxIterations.",
-        "Recurse until each leaf contains at most leafSize object IDs; paths such as 2.0.3 are stable draft keys."
+        "For each group larger than leafSize, rerun k-means only over that group's original descendant vectors; sibling neighborhoods never get mixed again.",
+        "Stop each branch independently when it fits in a leaf; paths such as 2.0.3 are stable suburb/block/house-style draft keys."
       ],
-      invariants: ["no random seed", "no empty cluster", "bounded iterations", "each object appears once"],
+      invariants: ["nested neighborhood membership", "parent = union of children", "no random seed", "no empty cluster", "each object appears once"],
       complexity: "Build ≈ O(depth·I·(n·b·d + n log n)); cosine work usually dominates, and stored nodes/references are O(n)."
     },
     {
@@ -97,7 +99,7 @@
       label: "Best-first query",
       title: "A max-heap follows the most promising centroid first.",
       summary:
-        "The query starts at every root and expands nodes by query-to-centroid cosine. Objects are not scored until a visited leaf admits them into the candidate set.",
+        "The query starts at every broad neighborhood and opens the most promising one next by query-to-centroid cosine. Other roots and branches remain queued; objects are scored only after a reached leaf admits them.",
       equations: [
         { symbol: "p(node) = q̂ · ĉnode", meaning: "Max-heap priority for every frontier node." },
         { symbol: "C = min(|E|, max(k, k·m))", meaning: "Candidate budget for eligible set E, top-k k, multiplier m." },
@@ -106,11 +108,11 @@
       steps: [
         "Apply project and ResourceSet eligibility before the provider call; an empty scope returns without using Jina.",
         "Embed the query with Jina's retrieval.query task in the overlay's configured vector space.",
-        "Push all roots into a binary max-heap; pop and expand the highest-centroid-similarity node.",
+        "Push all roots into one binary max-heap; pop the highest-centroid-similarity neighborhood and enqueue every child beside all unvisited branches.",
         "At leaves, add only eligible object IDs. Check at C candidates; if overlap leaves fewer than k hits, double the checkpoint up to |E|.",
-        "Exact-score candidates, coalesce overlaps, order deterministically, then slice to k."
+        "Exact-score candidates, coalesce overlaps, order deterministically, then slice to k. The current frontier is intentionally unbounded; a future cap must report evictions and preserve measured recall."
       ],
-      invariants: ["scope before retrieval", "exact candidate scores", "cycle/revisit rejection", "observable diagnostics"],
+      invariants: ["all roots compete", "lower branches remain queued", "exact candidate scores", "cycle/revisit rejection", "observable diagnostics"],
       complexity: "Vector math is O(V·d + C·d), heap work O(V log V), geometric overlap checks O(C log C); the oracle is O(N·d)."
     },
     {
@@ -151,9 +153,9 @@
       group: "embedding",
       action: "add",
       path: "app/src/lib/model/server/embedding/types.ts",
-      lines: "L7–43",
+      lines: "L7–46",
       symbols: "EmbeddingModel · EmbeddingResult · EmbeddingState · EmbeddingServiceError",
-      change: "Defines the server boundary for token-field, passage, and asymmetric query embedding operations.",
+      change: "Defines four explicit server operations: token field, source-local windowed passages, one complete passage, and asymmetric query embedding.",
       reason: "Representation remains provider-free; the runtime owns HTTP, credentials, and usage metadata."
     },
     {
@@ -169,9 +171,9 @@
       group: "embedding",
       action: "add",
       path: "app/src/lib/model/server/embedding/definition.ts",
-      lines: "L16–43",
+      lines: "L16–48",
       symbols: "JinaEmbedding · defineEmbedding",
-      change: "Binds immutable embedding state to the three adapter methods and exposes the configured EmbeddingSpace.",
+      change: "Binds immutable embedding state to all four adapter methods and exposes the configured EmbeddingSpace.",
       reason: "Capabilities depend on a narrow model object instead of configuration or fetch directly."
     },
     {
@@ -187,9 +189,9 @@
       group: "embedding",
       action: "add",
       path: "app/src/lib/model/server/embedding/methods/embed.ts",
-      lines: "L18–151",
-      symbols: "embedTokenField · embedPassages · embedQuery",
-      change: "Validates ordered finite response rows and sends distinct payloads for token, passage, and query embedding.",
+      lines: "L18–160; operations L101–160",
+      symbols: "embedTokenField · embedWindowedPassages · embedPassage · embedQuery",
+      change: "Validates ordered finite response rows; late-chunks source-local spans, embeds complete text without late chunking, and keeps passage/query tasks asymmetric.",
       reason: "Translation needs multivectors while stored objects and queries need compatible dense vectors with asymmetric tasks."
     },
     {
@@ -205,7 +207,7 @@
       group: "embedding",
       action: "add",
       path: "app/src/lib/model/server/embedding/embedding.md",
-      lines: "L1–13",
+      lines: "L1–21",
       symbols: "model object contract",
       change: "Documents ownership, operation semantics, and the local-secret boundary.",
       reason: "Keeps the generated model folder compliant with repository structure checks."
@@ -225,7 +227,7 @@
       path: "app/src/lib/representation/data/types/semantic/translation.ts",
       lines: "L48",
       symbols: "ProviderUsage.operation",
-      change: "Adds queryVector to the closed usage-operation union.",
+      change: "Names windowedPassageVectors, passageVector, and queryVector separately in the closed usage-operation union.",
       reason: "Query cost and provider request IDs remain inspectable beside translation usage."
     },
     {
@@ -271,7 +273,7 @@
       lines: "L1–15",
       symbols: "querySemanticOverlay · rebuildSemanticIndex",
       change: "Publishes one scoped query and one scoped rebuild procedure.",
-      reason: "Creates the remote seam the future Derived Output agent will call."
+      reason: "Creates the remote seam now consumed by the Derived Output agent."
     },
     {
       group: "capability",
@@ -358,27 +360,27 @@
       group: "tests",
       action: "add",
       path: "app/src/lib/model/server/embedding/test/unit/embedding.test.ts",
-      lines: "L1–158",
-      symbols: "6 adapter tests",
-      change: "Asserts configuration failures, all three exact request payloads, usage parsing, response order/shape, timeout, and sanitized errors.",
+      lines: "L1–182",
+      symbols: "7 adapter tests",
+      change: "Asserts configuration failures, all four operation payloads—including complete passage with no late_chunking—usage parsing, response shape/order, and safe errors.",
       reason: "Provider integration behavior is proven without spending tokens or depending on the network."
     },
     {
       group: "tests",
       action: "add",
-      path: "app/src/lib/model/server/embedding/test/integration/jina.test.ts",
-      lines: "L1–79",
+      path: "app/src/lib/model/server/embedding/test/non-functional/jina.test.ts",
+      lines: "L1–84",
       symbols: "opt-in live Jina suite",
-      change: "Calls all three real modes and retrieves the expected passage through a built recursive index.",
+      change: "Calls all four real modes and retrieves the expected passage through a built recursive index.",
       reason: "Confirms the configured key, current provider schema, shared vector space, and end-to-end retrieval seam."
     },
     {
       group: "tests",
       action: "add",
       path: "…/behavior/semantic/test/unit/index.test.ts",
-      lines: "L1–353",
-      symbols: "8 index/query tests",
-      change: "Covers determinism, degenerate vectors, tree-vs-oracle recall, reduced scoring, scope semantics, and transitive overlap merging.",
+      lines: "L1–388",
+      symbols: "9 index/query tests",
+      change: "Covers determinism, explicit suburb→block→house ancestry, degenerate vectors, tree-vs-oracle recall, reduced scoring, scope, and overlap merging.",
       reason: "The approximation is judged against exact cosine rather than only testing implementation details."
     },
     {
@@ -421,7 +423,7 @@
       group: "artifact",
       action: "add",
       path: "…/development-views/semantic-overlay/components/index-query.svelte",
-      lines: "L1–1145",
+      lines: "entire component",
       symbols: "algorithms · exact ledger · evidence · limitations",
       change: "Adds the visual implementation review you are reading.",
       reason: "The review surface stays executable alongside the branch it describes."
@@ -449,8 +451,8 @@
   ];
 
   const EVIDENCE = [
-    { value: "608", label: "normal tests", detail: "608 pass · 1 live suite skipped" },
-    { value: "1", label: "live Jina proof", detail: "all modes + relevant passage" },
+    { value: "634", label: "normal tests", detail: "634 pass · 2 live suites skipped" },
+    { value: "4", label: "live Jina modes", detail: "all four passed · 3.80s" },
     { value: "10/10", label: "capability lint", detail: "zero findings" },
     { value: "6/6", label: "representation lint", detail: "zero findings" }
   ];
@@ -494,7 +496,7 @@
         <div class="eyebrow"><CircleDot size={13} aria-hidden="true" /> IMPLEMENTATION / REVIEW BRANCH</div>
         <h1>Index the meaning.<br /><em>Retrieve the evidence.</em></h1>
         <p class="lede">
-          Pass two is implemented in an isolated worktree: a server-owned Jina v4 adapter, a
+          Pass two is implemented in the stacked review worktree: a server-owned Jina v4 adapter, a
           deterministic recursive spherical index, scoped best-first retrieval, and citation-ready
           overlap coalescing. It is tested, live-provider verified, and intentionally not merged.
         </p>
@@ -506,8 +508,8 @@
 
       <aside class="branch-card">
         <header><GitBranch size={17} aria-hidden="true" /> REVIEW STATE</header>
-        <div class="branch-name"><span>branch</span><code>work/semantic-overlay-index-query</code></div>
-        <div class="branch-state"><span class="pulse"></span><strong>Implemented in worktree</strong><small>Not folded into main</small></div>
+        <div class="branch-name"><span>branch</span><code>work/semantic-overlay-derived-output</code></div>
+        <div class="branch-state"><span class="pulse"></span><strong>Integrated review candidate</strong><small>Passes two + three · not folded into main</small></div>
         <dl>
           {#each EVIDENCE as item}
             <div><dt>{item.label}</dt><dd>{item.value}</dd><small>{item.detail}</small></div>
@@ -534,7 +536,7 @@
           <div class="node-icon"><Sparkles size={19} aria-hidden="true" /></div>
           <span>PROVIDER EDGE</span>
           <h3>Jina embeddings v4</h3>
-          <p>token multivectors · passage vectors · query vectors</p>
+          <p>token fields · windowed passages · complete passages · queries</p>
           <code>model/server/embedding</code>
         </article>
         <div class="flow-arrow"><ArrowRight size={20} aria-hidden="true" /><small>plain values</small></div>
@@ -558,32 +560,33 @@
       <div class="contract-grid">
         <article>
           <header><ServerCog size={16} aria-hidden="true" /><span>SERVER MODEL</span></header>
-          <pre><code>interface EmbeddingModel &#123;
+          <pre><code>{`interface EmbeddingModel {
   space: EmbeddingSpace;
   tokenField(text): TokenEmbeddingField;
-  passages(texts): number[][];
+  windowedPassages(sourceSpans): number[][];
+  passage(text): number[];
   query(text): number[];
-&#125;</code></pre>
+}`}</code></pre>
           <p>Owns API key, fetch, timeout, provider response validation, and usage capture.</p>
         </article>
         <article>
           <header><Network size={16} aria-hidden="true" /><span>INDEX STATE</span></header>
-          <pre><code>SemanticIndexNode &#123;
+          <pre><code>{`SemanticIndexNode {
   centroidVector: number[];
   children:
-    | &#123; kind: "nodes"; ids: Id[] &#125;
-    | &#123; kind: "objects"; ids: Id[] &#125;;
-&#125;</code></pre>
+    | { kind: "nodes"; ids: Id[] }
+    | { kind: "objects"; ids: Id[] };
+}`}</code></pre>
           <p>A discriminated child union prevents a node from simultaneously being a branch and a leaf.</p>
         </article>
         <article>
           <header><Search size={16} aria-hidden="true" /><span>QUERY VALUE</span></header>
-          <pre><code>SemanticHit &#123;
+          <pre><code>{`SemanticHit {
   semanticObjectIds: Id[];
   source: SemanticSourceSnapshot;
-  span: &#123; from; to; text &#125;;
+  span: { from; to; text };
   score; overlayGeneration;
-&#125;</code></pre>
+}`}</code></pre>
           <p>The result copies evidence values and provenance; several IDs record an overlap union.</p>
         </article>
       </div>
@@ -635,8 +638,8 @@
 
     <section class="section traversal-section" aria-labelledby="traversal-title">
       <div class="section-heading compact">
-        <div><span class="kicker">QUERY WALKTHROUGH</span><h2 id="traversal-title">The heap de-clusters on demand.</h2></div>
-        <p>Illustrative order, not a fixed tree: centroid score determines the next branch; only reached leaf objects enter exact ranking.</p>
+        <div><span class="kicker">QUERY WALKTHROUGH</span><h2 id="traversal-title">The heap opens neighborhoods on demand.</h2></div>
+        <p>Illustrative suburb → block → house ancestry: centroid score chooses the next neighborhood, while every other root and opened sibling remains in the same frontier.</p>
       </div>
 
       <div class="tree-card">
@@ -666,16 +669,16 @@
 
     <section class="section jina-section" aria-labelledby="jina-title">
       <div class="section-heading">
-        <div><span class="kicker">CURRENT JINA CONTRACT</span><h2 id="jina-title">Three calls, two vector shapes.</h2></div>
-        <p>The adapter uses the same model but deliberately different tasks and output modes. Authorization is redacted here and lives only in ignored local configuration.</p>
+        <div><span class="kicker">CURRENT JINA CONTRACT</span><h2 id="jina-title">Four explicit operations, one vector space.</h2></div>
+        <p>The adapter names contextual windowing and complete-passage embedding separately. Every late-chunking request contains spans from one source only; authorization stays in ignored local configuration.</p>
       </div>
 
       <div class="payload-grid">
         <article>
           <header><span>TRANSLATION / PASS 1</span><strong>contextual token field</strong></header>
-          <pre><code>POST /v1/embeddings
+          <pre><code>{`POST /v1/embeddings
 Authorization: Bearer ••••••••
-&#123;
+{
   "model": "jina-embeddings-v4",
   "input": [sourceText],
   "task": "retrieval.passage",
@@ -683,13 +686,13 @@ Authorization: Bearer ••••••••
   "return_tokenized_input": true,
   "embedding_type": "float",
   "truncate": false
-&#125;</code></pre>
+}`}</code></pre>
           <p>No <code>dimensions</code> field: multivector output retains its provider token-vector width.</p>
         </article>
         <article>
-          <header><span>TRANSLATION / PASS 2</span><strong>stored object vectors</strong></header>
-          <pre><code>POST /v1/embeddings
-&#123;
+          <header><span>WINDOWED TRANSLATION / PASS 2</span><strong>source-local object vectors</strong></header>
+          <pre><code>{`POST /v1/embeddings
+{
   "model": "jina-embeddings-v4",
   "input": segmentTexts,
   "task": "retrieval.passage",
@@ -697,20 +700,33 @@ Authorization: Bearer ••••••••
   "late_chunking": true,
   "embedding_type": "float",
   "truncate": false
-&#125;</code></pre>
-          <p>Every finalized semantic segment receives one dense vector in the overlay embedding space.</p>
+}`}</code></pre>
+          <p>Every finalized semantic segment receives one dense vector. One request never combines segments from different sources.</p>
+        </article>
+        <article>
+          <header><span>COMPLETE PASSAGE</span><strong>one text → one vector</strong></header>
+          <pre><code>{`POST /v1/embeddings
+{
+  "model": "jina-embeddings-v4",
+  "input": [completeText],
+  "task": "retrieval.passage",
+  "dimensions": 512,
+  "embedding_type": "float",
+  "truncate": false
+}`}</code></pre>
+          <p>No <code>late_chunking</code>: this fast path returns exactly one non-contextual passage vector.</p>
         </article>
         <article>
           <header><span>RETRIEVAL</span><strong>asymmetric query vector</strong></header>
-          <pre><code>POST /v1/embeddings
-&#123;
+          <pre><code>{`POST /v1/embeddings
+{
   "model": "jina-embeddings-v4",
   "input": [queryText],
   "task": "retrieval.query",
   "dimensions": 512,
   "embedding_type": "float",
   "truncate": false
-&#125;</code></pre>
+}`}</code></pre>
           <p>The query side shares dimensions/model with objects but uses the query-specific retrieval task.</p>
         </article>
       </div>
@@ -799,7 +815,7 @@ Authorization: Bearer ••••••••
           <header><Sparkles size={17} aria-hidden="true" /><div><span>LIVE PROVIDER PROOF</span><strong>Real configured Jina key</strong></div></header>
           <ul>
             <li><Check size={13} aria-hidden="true" /> token labels and multivectors align in shape</li>
-            <li><Check size={13} aria-hidden="true" /> passage and query vectors are 512-dimensional</li>
+            <li><Check size={13} aria-hidden="true" /> windowed, complete-passage, and query vectors are 512-dimensional</li>
             <li><Check size={13} aria-hidden="true" /> recursive query returns the relevant passage</li>
             <li><Check size={13} aria-hidden="true" /> usage metadata carries provider/model/request information</li>
           </ul>
@@ -807,10 +823,11 @@ Authorization: Bearer ••••••••
       </div>
 
       <div class="command-evidence">
-        <code>pnpm test</code><span>58 files passed · 1 live file skipped · 608 tests passed · 1 skipped</span>
+        <code>pnpm test</code><span>61 files passed · 2 live files skipped · 634 tests passed · 2 skipped</span>
         <code>pnpm lint:capabilities</code><span>10 / 10 checks · no findings</span>
         <code>pnpm lint:representation</code><span>6 / 6 checks · no findings</span>
-        <code>ICARUS_LIVE_JINA=1 …/jina.test.ts</code><span>1 / 1 live integration suite passed</span>
+        <code>ICARUS_LIVE_JINA=1 …/jina.test.ts</code><span>1 / 1 live four-mode suite passed · 3.80s</span>
+        <code>playwright test …review.spec.js</code><span>desktop interactions + two mobile overflow checks · 4 / 4 passed</span>
       </div>
     </section>
 
@@ -822,28 +839,29 @@ Authorization: Bearer ••••••••
         <p>
           The recursive algorithm avoids scoring every high-dimensional object: query work is proportional to visited nodes and admitted candidates.
           But the current JSON Store exposes whole in-memory tables, so the capability presently reads and joins O(N) source/object/node rows before calling that algorithm.
-          This pass proves index quality, provider integration, publication safety, and the capability contract—not million-object end-to-end latency.
+          The max-heap frontier is also not memory-bounded yet. This pass proves index quality, provider integration, publication safety, and the capability contract—not million-object end-to-end latency.
         </p>
       </div>
       <div class="caveat-comparison">
         <article><span>PROVEN NOW</span><strong>O(V·d + C·d)</strong><p>high-dimensional similarity work</p></article>
         <article><span>FOLLOW-UP STORAGE WORK</span><strong>ID maps / cached hydration</strong><p>avoid O(N) table scans per query</p></article>
+        <article><span>FOLLOW-UP FRONTIER WORK</span><strong>bounded heap + eviction diagnostics</strong><p>cap memory without hiding recall loss</p></article>
         <article><span>INTENTIONALLY DEFERRED</span><strong>PCA / alternate indexes</strong><p>recursive clustering is the first swappable method</p></article>
       </div>
     </section>
 
     <section class="next-pass">
-      <div><span class="kicker">NEXT / PASS 03</span><h2>Bridge Derived Output to retrieval.</h2><p>Give synthesis an overlay query/read seam, persist copied SemanticCitation values, remember last generation/revisions, and validate cited source revisions immediately before publishing a refreshed response.</p></div>
+      <div><span class="kicker">PASS 03 / NOW BUILT</span><h2>Continue to the Derived Output bridge.</h2><p>The stacked branch now returns retrieval text with issued evidence IDs, requires structured evidence selection, preserves editable continuity, and validates selected source revisions immediately before publication.</p></div>
       <div class="next-steps">
-        <span><Search size={14} aria-hidden="true" /> retrieve</span><ArrowRight size={14} aria-hidden="true" />
-        <span><Database size={14} aria-hidden="true" /> cite values</span><ArrowRight size={14} aria-hidden="true" />
+        <span><Search size={14} aria-hidden="true" /> retrieve text + IDs</span><ArrowRight size={14} aria-hidden="true" />
+        <span><Database size={14} aria-hidden="true" /> select + cite values</span><ArrowRight size={14} aria-hidden="true" />
         <span><RefreshCw size={14} aria-hidden="true" /> revision guard</span>
       </div>
-      <a href="/demo/semantic-overlay/implementation"><ChevronLeft size={15} aria-hidden="true" /> Pass-one implementation</a>
+      <a href="/demo/semantic-overlay/derived-output">Open final-phase review <ArrowRight size={15} aria-hidden="true" /></a>
     </section>
   </main>
 
-  <footer><span>SEMANTIC OVERLAY / INDEX + QUERY / REVIEW 03</span><span>work/semantic-overlay-index-query · not merged</span></footer>
+  <footer><span>SEMANTIC OVERLAY / INDEX + QUERY / REVIEW 03</span><span>work/semantic-overlay-derived-output · stacked · not merged</span></footer>
 </div>
 
 <style>
@@ -989,7 +1007,7 @@ Authorization: Bearer ••••••••
   .heap-note { display: grid; grid-template-columns: auto auto 1fr; gap: .65rem; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--token-border-subtle); color: var(--token-color-active-text); }
   .heap-note strong { font-size: .62rem; font-weight: 500; }
   .heap-note code { color: var(--token-ink-muted); font-family: var(--token-font-mono); font-size: .6rem; text-align: right; overflow-wrap: anywhere; }
-  .payload-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
+  .payload-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem; }
   .payload-grid article { overflow: hidden; border: 1px solid var(--token-color-intelligence-border); border-radius: var(--token-radius-panel); background: var(--token-surface-panel); }
   .payload-grid header { padding: .8rem .9rem; border-bottom: 1px solid var(--token-border-subtle); background: var(--token-color-intelligence-surface); }
   .payload-grid header span, .payload-grid header strong { display: block; }

@@ -1,4 +1,5 @@
 import type { StoreModel, TableName, TableRow } from "$model/server/store/index.server";
+import type { TextBlock } from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutputFields } from "$representation/data/types/semantic/derived-output";
 
@@ -41,6 +42,21 @@ export const writeOutput = (
   if (written === undefined) throw new Error("derived output disappeared during a synchronous write");
   return written;
 };
+
+export const responseBlock = (
+  output: TableRow<"derivedOutputs">,
+  revision: number,
+  text: string,
+  at: number
+): TextBlock => ({
+  id: `${output._id}:response:${revision}`,
+  type: "text",
+  variant: "paragraph",
+  atoms: [{ id: `${output._id}:response:${revision}:text`, kind: "literal", text }],
+  display: text,
+  marks: [],
+  resolvedAt: at
+});
 
 export const activeSources = (
   store: StoreModel,

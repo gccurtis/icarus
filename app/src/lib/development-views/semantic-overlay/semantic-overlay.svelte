@@ -351,7 +351,7 @@ type EmbeddingSpace = {
   scope?: ResourceSet;
   topK: number;
 };`,
-          note: "Project scope is implicit. In current representation, omitted scope means all; ResourceSet with empty include means none."
+          note: "Project scope is implicit. Omitted scope and a ResourceSet with an empty include both mean the whole project; exclusions still win."
         },
         {
           label: "query result",
@@ -376,15 +376,15 @@ type EmbeddingSpace = {
       owner: "Derived Output capability",
       tone: "output",
       icon: FileText,
-      summary: "A synthesis agent retrieves and reads; publication saves citation values, not generation-bound object IDs.",
+      summary: "A synthesis agent retrieves exact evidence and selects issued IDs; publication saves citation values, not generation-bound object IDs.",
       detail: [
-        "Drop the planner for the first pass. Give one synthesis agent retrieve and read tools.",
-        "SemanticHit IDs are useful during the run; the citation copies source revision, encoding, span text, and observed generation.",
+        "Drop the planner for the first pass. Give one synthesis agent a retrieve tool that returns exact text plus attempt-local evidence IDs.",
+        "The strict final response selects issued IDs and explains their use; citations copy source revision, encoding, span text, and observed generation.",
         "Before publishing, recheck only cited source revisions; a newer unrelated overlay generation does not invalidate the answer."
       ],
       procedure: [
         { number: "1", title: "Pull", contract: "derivedOutputId → stored definition" },
-        { number: "2", title: "Synthesize", contract: "agent + retrieve/read tools" },
+        { number: "2", title: "Synthesize", contract: "agent + direct evidence retrieval" },
         { number: "3", title: "Capture", contract: "SemanticHit → SemanticCitation value" },
         { number: "4", title: "Validate", contract: "citation revisions ↔ current sources" },
         { number: "5", title: "Publish", contract: "last response · revision · generation" }
@@ -475,13 +475,13 @@ type SemanticSourceSnapshot = {
       number: "2",
       title: "Provision Jina + index/query",
       state: "next",
-      body: "Next: add Jina's own embedding API configuration, wire the two translation calls and query mode, then build recursive clustering with exhaustive cosine as the recall oracle."
+      body: "Built: Jina exposes token-field, source-local windowed-passage, complete-passage, and query operations; nested-neighborhood clustering is measured against exhaustive cosine."
     },
     {
       number: "3",
       title: "Bridge derived output",
       state: "last",
-      body: "Give synthesis retrieve/read tools, persist citation value snapshots, and guard publication by rechecking only cited source revisions."
+      body: "Built: retrieval returns text plus issued evidence IDs, strict final output selects citations, and publication rechecks only selected source revisions."
     }
   ] as const;
 
@@ -929,7 +929,7 @@ type SemanticSourceSnapshot = {
             <li>
               <span class="flow-number">03</span>
               <div class="flow-icon query-flow"><Search size={16} aria-hidden="true" /></div>
-              <div><strong>Retrieve + read</strong><small>Hits carry temporary object IDs and coalesced span values</small></div>
+              <div><strong>Retrieve evidence</strong><small>Hits carry exact text and attempt-local evidence IDs</small></div>
             </li>
             <li>
               <span class="flow-number">04</span>

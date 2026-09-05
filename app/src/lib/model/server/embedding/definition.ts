@@ -1,9 +1,10 @@
 import type { EmbeddingSpace } from "$representation/data/types/semantic/overlay";
 import type { TokenEmbeddingField } from "$representation/data/types/semantic/translation";
 import {
-  embedPassages,
+  embedPassage,
   embedQuery,
-  embedTokenField
+  embedTokenField,
+  embedWindowedPassages
 } from "$model/server/embedding/methods/embed";
 import type {
   EmbeddingInput,
@@ -30,8 +31,12 @@ export class JinaEmbedding implements EmbeddingModel {
     return embedTokenField(this.#state, text);
   }
 
-  passages(texts: readonly string[]): Promise<EmbeddingResult<number[][]>> {
-    return embedPassages(this.#state, texts);
+  windowedPassages(texts: readonly string[]): Promise<EmbeddingResult<number[][]>> {
+    return embedWindowedPassages(this.#state, texts);
+  }
+
+  passage(text: string): Promise<EmbeddingResult<number[]>> {
+    return embedPassage(this.#state, text);
   }
 
   query(text: string): Promise<EmbeddingResult<number[]>> {

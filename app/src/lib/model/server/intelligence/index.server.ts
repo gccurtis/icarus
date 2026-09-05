@@ -8,6 +8,7 @@ export type {
   IntelligenceInput,
   IntelligenceModel,
   IntelligenceResult,
+  IntelligenceStructuredOutput,
   IntelligenceTool,
   IntelligenceToolCall,
   IntelligenceUsage

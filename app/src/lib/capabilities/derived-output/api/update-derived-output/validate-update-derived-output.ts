@@ -11,6 +11,14 @@ export const validateUpdateDerivedOutput = (input: unknown): UpdateDerivedOutput
   return {
     derivedOutputId: derivedOutputId(candidate.derivedOutputId),
     prompt: nonblank(candidate.prompt, "derived output prompt must not be blank"),
-    ...(candidate.scope === undefined ? {} : { scope: resourceSet(candidate.scope) })
+    ...(candidate.scope === undefined ? {} : { scope: resourceSet(candidate.scope) }),
+    ...(candidate.lastResponse === undefined
+      ? {}
+      : {
+          lastResponse: nonblank(
+            candidate.lastResponse,
+            "derived output last response must not be blank"
+          ).replace(/\s+/g, " ")
+        })
   };
 };

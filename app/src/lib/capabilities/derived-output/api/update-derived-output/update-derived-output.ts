@@ -6,6 +6,7 @@ import type { UpdateDerivedOutputResult } from "$capabilities/derived-output/typ
 import { validateUpdateDerivedOutput } from "$capabilities/derived-output/api/update-derived-output/validate-update-derived-output";
 import {
   outputOf,
+  responseBlock,
   writeOutput
 } from "$capabilities/derived-output/api/shared/rows";
 
@@ -31,13 +32,34 @@ export const updateDerivedOutput = async (input: unknown): Promise<UpdateDerived
   const sameDefinition =
     output.prompt === asked.prompt &&
     JSON.stringify(output.scope) === JSON.stringify(asked.scope);
-  if (sameDefinition) return output;
+  const responseChanged =
+    asked.lastResponse !== undefined &&
+    (output.lastResponse?.type !== "text" ||
+      output.lastResponse.display !== asked.lastResponse);
+  if (sameDefinition && !responseChanged) return output;
+
+  const at = Date.now();
+  const editedRevision = (output.lastRevision ?? 0) + 1;
+  const editedResponse =
+    asked.lastResponse === undefined || !responseChanged
+      ? undefined
+      : responseBlock(output, editedRevision, asked.lastResponse, at);
 
   return writeOutput(model.store, output, {
     prompt: asked.prompt,
     scope: asked.scope,
-    state: output.lastResponse === undefined ? "idle" : "stale",
+    ...(editedResponse === undefined
+      ? {}
+      : {
+          queries: [],
+          evidence: [],
+          lastResponse: editedResponse,
+          lastRevision: editedRevision,
+          lastGeneration: undefined,
+          refreshedAt: undefined
+        }),
+    state: output.lastResponse === undefined && !responseChanged ? "idle" : "stale",
     error: undefined,
-    updatedAt: Date.now()
+    updatedAt: at
   });
 };

@@ -18,7 +18,7 @@ const input = (request: typeof fetch) => ({
   request
 });
 
-test("passage vectors use late chunking and restore response order", async () => {
+test("source-local windowed passage vectors use late chunking and restore response order", async () => {
   let payload: Record<string, unknown> | undefined;
   let authorization: string | null = null;
   const embedding = defineEmbedding(
@@ -35,7 +35,7 @@ test("passage vectors use late chunking and restore response order", async () =>
     })
   );
 
-  const result = await embedding.passages(["first", "second"]);
+  const result = await embedding.windowedPassages(["first", "second"]);
 
   assert.deepEqual(result.value, [[1, 0, 0], [0, 1, 0]]);
   assert.deepEqual(payload, {
@@ -49,7 +49,7 @@ test("passage vectors use late chunking and restore response order", async () =>
   });
   assert.equal(authorization, "Bearer secret-for-tests");
   assert.deepEqual(result.usage, {
-    operation: "denseVectors",
+    operation: "windowedPassageVectors",
     api: "jina",
     model: "jina-embeddings-v4",
     requestCount: 1,
@@ -57,6 +57,30 @@ test("passage vectors use late chunking and restore response order", async () =>
     inputTokens: 7,
     requestId: "request-1"
   });
+});
+
+test("a complete passage produces one retrieval vector without late chunking", async () => {
+  let payload: Record<string, unknown> | undefined;
+  const embedding = defineEmbedding(
+    input(async (_url, init) => {
+      payload = JSON.parse(String(init?.body));
+      return response({ data: [{ index: 0, embedding: [1, 0, 0] }], usage: { total_tokens: 4 } });
+    })
+  );
+
+  const result = await embedding.passage("one complete passage");
+
+  assert.deepEqual(result.value, [1, 0, 0]);
+  assert.deepEqual(payload, {
+    model: "jina-embeddings-v4",
+    input: ["one complete passage"],
+    task: "retrieval.passage",
+    dimensions: 3,
+    embedding_type: "float",
+    truncate: false
+  });
+  assert.equal(result.usage.operation, "passageVector");
+  await assert.rejects(() => embedding.passage(""), /must not be empty/);
 });
 
 test("query vectors use retrieval.query without late chunking", async () => {

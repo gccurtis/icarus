@@ -20,7 +20,7 @@ test.runIf(live)("real Jina retrieval grounds a real OpenRouter tool loop", asyn
     "Project Birch keeps its customer interviews in the research archive.",
     "Project Aster's rollback rehearsal happens Friday and is led by Tomas Reed."
   ];
-  const passages = await embedding.passages(texts);
+  const passages = await embedding.windowedPassages(texts);
   const objects = passages.value.map((vector, index) => ({
     id: `semanticObjects:${index + 1}` as Id<"semanticObjects">,
     vector,
@@ -90,8 +90,10 @@ test.runIf(live)("real Jina retrieval grounds a real OpenRouter tool loop", asyn
   });
 
   expect(result.queries.length).toBeGreaterThan(0);
-  expect(result.toolCalls).toBeGreaterThanOrEqual(2);
+  expect(result.status).toBe("answered");
+  expect(result.toolCalls).toBeGreaterThanOrEqual(1);
   expect(result.evidence.some((citation) => citation.span.text.includes("Mira Chen"))).toBe(true);
+  expect(result.evidence.every((citation) => citation.selections.length > 0)).toBe(true);
   expect(result.text).toMatch(/Tuesday/i);
   expect(result.text).toMatch(/14:00 UTC/i);
   expect(result.text).toMatch(/Mira Chen/i);

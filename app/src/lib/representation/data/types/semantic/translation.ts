@@ -45,7 +45,7 @@ export type AttractionPoint = {
 
 /** Provider accounting passed through the translation boundary for telemetry. */
 export type ProviderUsage = {
-  operation: "tokenField" | "denseVectors" | "queryVector";
+  operation: "tokenField" | "windowedPassageVectors" | "passageVector" | "queryVector";
   api: string;
   model: string;
   requestCount: number;

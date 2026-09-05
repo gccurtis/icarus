@@ -102,6 +102,45 @@ test("recursive spherical clustering is deterministic and covers every object on
   }
 });
 
+test("recursive ancestry narrows broad neighborhoods into local sub-neighborhoods", () => {
+  const build = buildRecursiveIndex(
+    [
+      indexObject(1, [1, 0.16]),
+      indexObject(2, [1, 0.08]),
+      indexObject(3, [1, -0.08]),
+      indexObject(4, [1, -0.16]),
+      indexObject(5, [-1, 0.16]),
+      indexObject(6, [-1, 0.08]),
+      indexObject(7, [-1, -0.08]),
+      indexObject(8, [-1, -0.16])
+    ],
+    configuration({ branchFactor: 2, leafSize: 1 })
+  );
+  const byKey = new Map(build.nodes.map((node) => [node.key, node]));
+  const descendants = (key: string): Id<"semanticObjects">[] => {
+    const node = byKey.get(key);
+    if (node === undefined) throw new Error(`missing test node '${key}'`);
+    return node.children.kind === "objects"
+      ? [...node.children.ids]
+      : node.children.keys.flatMap(descendants);
+  };
+
+  const rootNeighborhoods = build.rootKeys
+    .map(descendants)
+    .map((ids) => ids.sort())
+    .sort((left, right) => left[0].localeCompare(right[0]));
+  expect(rootNeighborhoods).toEqual([
+    [id(1), id(2), id(3), id(4)],
+    [id(5), id(6), id(7), id(8)]
+  ]);
+  for (const rootKey of build.rootKeys) {
+    const root = byKey.get(rootKey);
+    expect(root?.children.kind).toBe("nodes");
+    if (root?.children.kind !== "nodes") throw new Error("expected a neighborhood node");
+    expect(root.children.keys.map(descendants).map((ids) => ids.length)).toEqual([2, 2]);
+  }
+});
+
 test("empty-cluster repair makes identical vectors terminate at the leaf bound", () => {
   const build = buildRecursiveIndex(
     Array.from({ length: 7 }, (_, index) => indexObject(index + 1, [1, 0])),

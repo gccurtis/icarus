@@ -5,8 +5,15 @@ import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { SemanticSpan } from "$representation/data/types/semantic/overlay";
 import type { SemanticSourceSnapshot } from "$representation/data/types/semantic/source";
 
+/** One attempt-local evidence identifier the model selected, plus its stated role. */
+export type SemanticEvidenceSelection = {
+  evidenceId: string;
+  use: string;
+};
+
 /** Stored by value so an answer remains grounded after active rows are replaced. */
 export type SemanticCitation = {
+  selections: SemanticEvidenceSelection[];
   source: SemanticSourceSnapshot;
   span: SemanticSpan;
   overlayGeneration: number;

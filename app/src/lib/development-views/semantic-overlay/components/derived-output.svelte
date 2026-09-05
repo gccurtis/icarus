@@ -19,7 +19,7 @@
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
   type AlgorithmId = "agent" | "citation" | "publication" | "freshness";
-  type ScenarioId = "stable" | "cited-change" | "unrelated" | "no-evidence" | "failure";
+  type ScenarioId = "stable" | "cited-change" | "unrelated" | "no-evidence" | "user-edit" | "failure";
   type FileGroup = "configuration" | "model" | "representation" | "capability" | "runtime" | "tests" | "artifact";
 
   type Algorithm = {
@@ -61,47 +61,48 @@
       label: "Tool agent",
       title: "A bounded OpenRouter loop, without a planner.",
       summary:
-        "The intelligence model owns one OpenAI-compatible conversation loop. Derived Output supplies only the grounding prompt and two local tools. The first turn is forced to retrieve; subsequent turns may retrieve again, read, or finish.",
+        "The intelligence model owns one OpenAI-compatible conversation loop. Derived Output supplies the grounding prompt, one retrieval tool, and a strict final-output schema. The first turn is forced to retrieve; subsequent turns may retrieve again or finish.",
       equations: [
         { expression: "M₀ = [system, user]", meaning: "Start with two messages and no hidden plan artifact." },
         { expression: "choice₁ = force(retrieve)", meaning: "The model cannot answer before initiating retrieval." },
         { expression: "Mₜ₊₁ = Mₜ + assistant(calls) + tool(results)", meaning: "Every call/result pair is replayed exactly." },
-        { expression: "provider requests ≤ R + 1", meaning: "R tool rounds plus at most one final-text turn." }
+        { expression: "provider requests ≤ R + 1", meaning: "R tool rounds plus at most one structured final turn." }
       ],
       steps: [
         "Validate unique non-blank tool names and the requested first tool before any network call.",
-        "POST system/user messages, JSON Schemas, forced retrieve choice, disabled parallel calls, reasoning effort, and the output limit.",
+        "POST system/user messages, the retrieval schema, strict response JSON Schema, forced retrieve choice, disabled parallel calls, reasoning effort, and the output limit.",
         "Parse exactly one provider choice; reject malformed content, call IDs, names, arguments, or usage shapes.",
         "Execute requested handlers sequentially. Invalid JSON, unknown tools, and handler failures return bounded tool errors so the model can recover.",
         "Append the assistant tool-call message and each tool result, then invoke the provider again with automatic tool choice.",
-        "Return trimmed final text, an application-side call trace, total requests/tokens/reasoning/cost, or a stable bounded error."
+        "Parse final JSON through application code and return the trusted value, call trace, request/token/reasoning/cost totals, or a stable bounded error."
       ],
-      invariants: ["no planner row", "forced first retrieval", "bounded rounds", "serial tools", "timeouts abort", "secrets stay server-side"],
+      invariants: ["no planner row", "one retrieval tool", "forced first retrieval", "strict final JSON", "bounded rounds", "secrets stay server-side"],
       complexity: "Local orchestration is O(R + C); wall time is dominated by at most R + 1 model requests plus the retrieval calls the model chooses."
     },
     {
       id: "citation",
       number: "02",
-      label: "Citation gate",
-      title: "The model can request evidence. It cannot author evidence.",
+      label: "Evidence selection",
+      title: "Retrieval returns the evidence; the model selects what it used.",
       summary:
-        "Each synthesis attempt owns an ephemeral handle registry. Retrieve returns source identity, coordinates, score, and generation—but deliberately omits span text. Only read resolves text, and application code copies that hit into the citation set before returning it to the model.",
+        "Each synthesis attempt owns an ephemeral evidence registry. Retrieve immediately returns exact span text and an application-issued ID. The final structured decision can select those IDs, but cannot invent source coordinates or provenance.",
       equations: [
-        { expression: "H[hit-i] = SemanticHit", meaning: "Opaque handles map to trusted query results only for one attempt." },
-        { expression: "retrieve(q) → metadata(H)", meaning: "No span.text crosses the retrieve response." },
-        { expression: "read(ids) → text; E ← E ∪ citation(H[id])", meaning: "Reading and citing are one indivisible application action." },
+        { expression: "R[evidence-i] = SemanticHit", meaning: "Issued IDs map only to trusted query results from this attempt." },
+        { expression: "retrieve(q) → { evidenceId, source, span, score, generation }[]", meaning: "Similarity and exact text arrive in one tool result." },
+        { expression: "E = citation(R[id]) for id ∈ decision.evidence", meaning: "Only selected, issued IDs become citations." },
         { expression: "overlap ⇔ a.from < b.to ∧ b.from < a.to", meaning: "Strict half-open overlap creates citation unions." }
       ],
       steps: [
         "Validate a focused query and top-k; configuration supplies top-k when the model omits it.",
         "Call the existing Semantic Overlay capability with the Derived Output's ResourceSet.",
-        "Assign stable attempt-local handles by source snapshot, range, and observed generation.",
-        "Reject reads of unknown handles; successful reads append source, exact span text, and overlay generation by value.",
-        "Coalesce connected overlaps only inside the same source revision, encoding, and observed generation; reject disagreeing overlap text.",
-        "If nothing was successfully read, discard model prose and publish a deterministic insufficiency response."
+        "Assign stable attempt-local evidence IDs by source snapshot, range, and observed generation; repeated hits reuse the same ID.",
+        "Return each issued ID with exact source/span text, similarity score, and observed generation in the retrieval result.",
+        "Require a structured answered/insufficient decision. Reject blank, duplicate, or unissued selected IDs before trusting response prose.",
+        "Coalesce selected overlaps only inside the same source revision, encoding, and observed generation; retain every ID and use annotation.",
+        "If no valid evidence is selected, discard model prose and publish the application's deterministic insufficiency response."
       ],
-      invariants: ["retrieve has no text", "read mints citation", "unknown handles fail", "citation by value", "exact coordinate text", "no model evidence IDs"],
-      complexity: "Handle lookup is O(1) average. Citation grouping and interval ordering are O(E log E), with a linear merge over E reads."
+      invariants: ["retrieve includes exact text", "IDs are application-issued", "selection is structured", "citation by value", "exact coordinate text", "unsupported prose is discarded"],
+      complexity: "Evidence lookup is O(1) average. Citation grouping and interval ordering are O(E log E), with a linear merge over E selections."
     },
     {
       id: "publication",
@@ -114,12 +115,12 @@
         { expression: "lock: state ≠ generating → generating", meaning: "A synchronous full-row write precedes the first provider await." },
         { expression: "valid(E,S) = ∀e∈E, ∃s∈S: ref(s)=ref(e) ∧ rev(s)=rev(e) ∧ enc(s)=enc(e)", meaning: "Every cited snapshot must still be active." },
         { expression: "attempts ≤ 1 + maxSourceRetries", meaning: "Revision churn cannot create an unbounded loop." },
-        { expression: "lastRevision′ = (lastRevision ?? 0) + 1", meaning: "Only a successful publication advances output revision." }
+        { expression: "lastRevision′ = (lastRevision ?? 0) + 1", meaning: "A publication or explicit user response edit advances output revision." }
       ],
       steps: [
         "Resolve project authority and validate configuration before acquiring the row lock.",
         "Snapshot the prompt, scope, previous response, and lock timestamp; previous text is continuity context, never evidence.",
-        "Run one isolated retrieve/read attempt and aggregate provider plus embedding accounting.",
+        "Run one isolated retrieve/select attempt and aggregate provider plus embedding accounting.",
         "Re-read the row. If its definition or state changed, return superseded without writing over the newer value.",
         "Compare captured citations with active semantic sources. Retry from a fresh registry if any used source changed or disappeared.",
         "Publish queries, coalesced citations, a one-paragraph TextBlock, output revision, current overlay generation, fresh state, and refresh time atomically."
@@ -138,17 +139,18 @@
         { expression: "stale(D) ⇔ ∃e∈D.evidence: current(ref(e)) ≠ (revision(e), encoding(e))", meaning: "Only evidence actually used can stale the response." },
         { expression: "generation ∉ stale(D)", meaning: "A project-wide generation bump is not itself invalidation." },
         { expression: "read(D) → { output, effectiveState, changedSources }", meaning: "The check is observable and does not mutate stored state." },
-        { expression: "update(prompt, scope): fresh → stale", meaning: "Definition edits preserve the last good response for continuity." }
+        { expression: "edit(lastResponse): evidence → ∅; fresh → stale", meaning: "User prose becomes continuity context, not falsely grounded output." }
       ],
       steps: [
         "Load one project-owned Derived Output or return null without disclosing another project.",
         "Build the current source snapshot map by resource kind and ID.",
         "Mark a cited snapshot changed if its source is absent, its revision differs, or its encoding differs.",
         "Return stored state unchanged unless stored fresh has changed citations; then report effective stale.",
+        "A user response edit advances its revision, clears grounding metadata, and is supplied to the next refresh as continuity-only context.",
         "Do not scan or rewrite derivedOutputs during source additions, updates, deletions, or unrelated generation changes.",
         "A caller explicitly refreshes a stale output, entering the independent publication lifecycle."
       ],
-      invariants: ["pull-based", "generation-independent", "project-scoped", "no fan-out writes", "last response retained", "changed refs visible"],
+      invariants: ["pull-based", "generation-independent", "project-scoped", "no fan-out writes", "editable continuity", "changed refs visible"],
       complexity: "Current JSON storage makes a read O(S + E). A keyed source lookup later reduces it to O(E) without changing this contract."
     }
   ];
@@ -163,8 +165,8 @@
       tone: "success",
       steps: [
         { label: "Acquire", detail: "idle or stale → generating", state: "done" },
-        { label: "Retrieve", detail: "query returns handles at generation 11", state: "done" },
-        { label: "Read", detail: "span text copied as source revision 7", state: "done" },
+        { label: "Retrieve", detail: "query returns text + evidence-1 at generation 11", state: "done" },
+        { label: "Select", detail: "structured answer selects evidence-1 and explains its use", state: "done" },
         { label: "Validate", detail: "active source is still revision 7", state: "done" },
         { label: "Publish", detail: "lastRevision increments; lastGeneration = 11", state: "done" }
       ]
@@ -177,10 +179,10 @@
       result: "attempt 2 publishes only if revision 8 remains current",
       tone: "active",
       steps: [
-        { label: "Attempt 1", detail: "read captures source revision 7", state: "done" },
+        { label: "Attempt 1", detail: "selected evidence captures source revision 7", state: "done" },
         { label: "Source update", detail: "active source advances to revision 8", state: "retry" },
         { label: "Preflight", detail: "revision mismatch rejects all attempt-1 prose", state: "retry" },
-        { label: "Attempt 2", detail: "new query/read captures revision 8", state: "done" },
+        { label: "Attempt 2", detail: "new retrieval/selection captures revision 8", state: "done" },
         { label: "Publish", detail: "only the stable attempt becomes lastResponse", state: "done" }
       ]
     },
@@ -201,17 +203,32 @@
     },
     {
       id: "no-evidence",
-      label: "Nothing read",
+      label: "No valid selection",
       headline: "Uncited model prose never becomes the response.",
-      note: "Search may return nothing, or the agent may finish without a successful read.",
+      note: "Search may return nothing, status may be insufficient, or an answered decision may select a blank, duplicate, or invented ID.",
       result: "fresh deterministic insufficiency response · evidence = []",
       tone: "warning",
       steps: [
         { label: "Retrieve", detail: "first tool call still occurs", state: "done" },
-        { label: "No read", detail: "no trusted citation enters attempt state", state: "retry" },
+        { label: "Select", detail: "no valid issued evidence ID supports the response", state: "retry" },
         { label: "Discard prose", detail: "any model-authored answer is ignored", state: "kept" },
         { label: "Replace", detail: "application supplies a fixed insufficiency sentence", state: "done" },
         { label: "Publish", detail: "queries/accounting remain inspectable", state: "done" }
+      ]
+    },
+    {
+      id: "user-edit",
+      label: "User edits response",
+      headline: "The edit guides the next answer without masquerading as evidence.",
+      note: "An edited response can preserve the user's preferred wording and organization, but its old citations cannot automatically ground new prose.",
+      result: "stale continuity draft · revision advances · evidence cleared",
+      tone: "active",
+      steps: [
+        { label: "Edit", detail: "update receives a nonblank lastResponse string", state: "done" },
+        { label: "Version", detail: "lastRevision advances and a new TextBlock is stored", state: "done" },
+        { label: "Unground", detail: "queries, evidence, lastGeneration, refreshedAt are cleared", state: "kept" },
+        { label: "Refresh", detail: "edited text is sent as continuity only, never factual evidence", state: "done" },
+        { label: "Republish", detail: "new selected citations ground the regenerated response", state: "done" }
       ]
     },
     {
@@ -234,40 +251,39 @@
   const LEDGER: LedgerEntry[] = [
     { group: "configuration", action: "add", path: "app/configuration/intelligence.yaml", lines: "L1–15", symbols: "intelligence.api · providers.openrouter · agent limits", change: "Adds tracked endpoint/model/timeout/output/reasoning settings plus tool-round, source-retry, and default-top-k limits.", reason: "Real credentials continue to merge from ignored local.yaml; behavior is explicit and startup-validated." },
     { group: "configuration", action: "change", path: "app/configuration/representation.yaml", lines: "L25", symbols: "representation.domains.semantic", change: "Declares semantic → content/core because DerivedOutput now owns its ContentBlock response contract in the semantic domain.", reason: "The domain graph matches real type imports instead of hiding the dependency in store tables." },
-    { group: "model", action: "add", path: "app/src/lib/model/server/intelligence/types.ts", lines: "L1–70", symbols: "IntelligenceTool · IntelligenceInput · IntelligenceUsage · IntelligenceModel · IntelligenceConfiguration", change: "Defines the provider-neutral tool-agent port, injected request transport, accounting, limits, and stable service error.", reason: "Capabilities never handle credentials, HTTP, or OpenRouter response shapes." },
+    { group: "model", action: "add", path: "app/src/lib/model/server/intelligence/types.ts", lines: "L1–81", symbols: "IntelligenceTool · IntelligenceStructuredOutput · IntelligenceInput<Value> · IntelligenceResult<Value> · IntelligenceModel", change: "Defines the generic provider-neutral tool-agent port, strict output schema/parser contract, injected transport, accounting, limits, and stable service error.", reason: "Capabilities declare trusted output values without handling credentials, HTTP, or OpenRouter wire shapes." },
     { group: "model", action: "add", path: "…/intelligence/constructor.ts", lines: "L8–67", symbols: "createIntelligence", change: "Validates provider selection, nested OpenRouter credential/URL/model, positive time/output/round limits, and reasoning effort.", reason: "A bad provision fails server startup, not the first Derived Output refresh." },
-    { group: "model", action: "add", path: "…/intelligence/definition.ts · index.server.ts · intelligence.md", lines: "definition L1–25 · index L1–14 · doc L1–11", symbols: "OpenRouterIntelligence · defineIntelligence · public server index", change: "Binds immutable provider state to the agent method, exports the narrow server seam, and records ownership/security rules.", reason: "The runtime holds one provider object for the process lifetime." },
+    { group: "model", action: "add", path: "…/intelligence/definition.ts · index.server.ts · intelligence.md", lines: "definition L1–27 · index L1–15 · doc L1–16", symbols: "OpenRouterIntelligence · defineIntelligence · IntelligenceStructuredOutput export", change: "Binds immutable provider state to the generic agent method, exports the strict-output seam, and records parser/security rules.", reason: "The runtime holds one provider object while callers own their final-value contracts." },
     { group: "model", action: "add", path: "…/intelligence/methods/run-agent/run-agent.ts", lines: "L1–139", symbols: "wire messages · parseTurn · parseUsage · safeError · serialize", change: "Defines exact OpenAI-compatible messages/calls, defensive provider parsing, usage accumulation inputs, and bounded tool-error redaction.", reason: "Malformed or secret-bearing provider/tool failures cannot leak through loosely typed JSON." },
-    { group: "model", action: "add", path: "…/intelligence/methods/run-agent/run-agent.ts", lines: "L141–193", symbols: "invoke", change: "Posts bearer-authenticated JSON with forced/automatic tool choice, serial tool policy, output/reasoning settings, and abort timeout.", reason: "There is one auditable OpenRouter edge; response bodies are intentionally absent from surfaced HTTP errors." },
-    { group: "model", action: "add", path: "…/intelligence/methods/run-agent/run-agent.ts", lines: "L201–275", symbols: "runAgent", change: "Executes a bounded propose → validate → local tool → tool-result loop and returns final text, call trace, rounds, and accumulated usage.", reason: "Derived Output needs an agent with retrieval, not a persisted planner lifecycle." },
-    { group: "representation", action: "change", path: "…/types/semantic/derived-output.ts", lines: "L1–34", symbols: "SemanticCitation · DerivedState · DerivedOutputFields · DerivedOutput", change: "Moves the complete stored Derived Output shape into the semantic domain while retaining citation-by-value and singular lastResponse.", reason: "Capabilities can depend on domain vocabulary without importing the representation store." },
-    { group: "representation", action: "add", path: "…/behavior/semantic/citation.ts", lines: "L1–105", symbols: "coalesceSemanticCitations", change: "Validates coordinate/text agreement and unions connected overlapping reads within identical source revision, encoding, and generation.", reason: "Several agent reads become minimal trustworthy evidence without crossing provenance boundaries." },
-    { group: "representation", action: "add", path: "…/behavior/semantic/citation.ts", lines: "L108–135", symbols: "changedSemanticSources", change: "Joins cited source refs to active snapshots and reports missing, revised, or re-encoded sources.", reason: "The same pure predicate drives pre-publication validation and pull-time freshness." },
+    { group: "model", action: "add", path: "…/intelligence/methods/run-agent/run-agent.ts", lines: "L141–204", symbols: "invoke", change: "Posts bearer-authenticated JSON with forced/automatic tool choice, serial tool policy, strict response_format JSON Schema, reasoning settings, and abort timeout.", reason: "There is one auditable OpenRouter edge; response bodies are intentionally absent from surfaced HTTP errors." },
+    { group: "model", action: "add", path: "…/intelligence/methods/run-agent/run-agent.ts", lines: "L207–307", symbols: "parsedInput · runAgent<Value>", change: "Executes the bounded tool loop, parses final JSON through the caller's validator, and returns a trusted generic value plus call trace, rounds, and usage.", reason: "Derived Output gets structured evidence selection without a persisted planner or provider-shaped values." },
+    { group: "representation", action: "change", path: "…/types/semantic/derived-output.ts", lines: "L1–41", symbols: "SemanticEvidenceSelection · SemanticCitation · DerivedOutputFields", change: "Stores each selected attempt-local evidence ID and its use annotation beside citation-by-value and the singular lastResponse.", reason: "The durable answer explains which retrieved evidence supported it without persisting generation-local semantic object IDs." },
+    { group: "representation", action: "add", path: "…/behavior/semantic/citation.ts", lines: "L1–134", symbols: "assertCitation · mergedSelections · coalesceSemanticCitations", change: "Validates coordinate/text and selected-evidence fields, unions overlapping selected spans, and preserves every ID/use annotation within one source snapshot and generation.", reason: "Several selected hits become minimal trustworthy evidence without losing the model's declared use of each item." },
+    { group: "representation", action: "add", path: "…/behavior/semantic/citation.ts", lines: "L138–165", symbols: "changedSemanticSources", change: "Joins selected citation refs to active snapshots and reports missing, revised, or re-encoded sources.", reason: "The same pure predicate drives pre-publication validation and pull-time freshness." },
     { group: "representation", action: "change", path: "app/src/lib/representation/store/tables.ts", lines: "L37–40 · L275–276", symbols: "SemanticDerivedOutput aliases", change: "Reuses semantic-domain fields/row types instead of maintaining a second Derived Output schema in the storage catalog.", reason: "One stored contract eliminates schema drift and keeps table identity intact." },
     { group: "capability", action: "add", path: "app/src/lib/capabilities/derived-output/index.remote.ts", lines: "L1–21", symbols: "create · read · update · refresh", change: "Exposes three mutating commands and one read query through the only client/server crossing.", reason: "Remote semantics now match mutation semantics; no project ID is accepted from the client." },
-    { group: "capability", action: "add", path: "app/src/lib/capabilities/derived-output/derived-output.md", lines: "L1–24", symbols: "capability contract · procedures · dependencies · tests", change: "Documents the implemented ownership boundary, four remote operations, representation dependencies, and focused verification commands.", reason: "The new capability has one concise, code-aligned contract instead of relying on the stale repository narrative." },
-    { group: "capability", action: "add", path: "…/derived-output/types/{create,read,update,refresh}-derived-output.ts", lines: "create L1–9 · read L1–15 · update L1–11 · refresh L1–25", symbols: "public input/result contracts", change: "Defines prompt/scope creation, ID-based read/update/refresh, effective freshness, outcome union, and complete provider accounting.", reason: "Callers see stored output plus lifecycle diagnostics without reaching into procedures." },
-    { group: "capability", action: "add", path: "…/derived-output/api/shared/input.ts + four validate-* files", lines: "shared L1–57 · create L1–14 · read L1–10 · update L1–16 · refresh L1–10", symbols: "resourceSet · derivedOutputId · procedure validators", change: "Checks unknown remote values, every ResourceSet term/ref, non-blank prompts/IDs, and reconstructs accepted values.", reason: "TypeScript types are claims; project authority resolves first and runtime validation follows immediately." },
-    { group: "capability", action: "add", path: "…/derived-output/api/shared/rows.ts", lines: "L1–66", symbols: "rowsOf · outputOf · writeOutput · activeSources · currentGeneration", change: "Adds project-filtered row access, undefined-free atomic row replacement, active source snapshots, and current overlay generation lookup.", reason: "All storage remains behind the server model and every output lookup enforces project scope." },
-    { group: "capability", action: "add", path: "…/derived-output/api/shared/synthesis.ts", lines: "L15–96", symbols: "SynthesisAttempt · tool input guards · grounding prompts", change: "Defines transient attempt output, model-tool validation, hit identity, prior-response continuity context, and the grounded one-paragraph policy.", reason: "Attempt messages are distinct from stored state; prior output can stabilize style but never count as evidence." },
-    { group: "capability", action: "add", path: "…/derived-output/api/shared/synthesis.ts", lines: "L99–139", symbols: "synthesize.retrieve", change: "Calls Semantic Overlay query with persisted ResourceSet and returns only attempt-local handle, source metadata, coordinates, score, generation, and diagnostics.", reason: "The model cannot consume span text without crossing the citation-producing read boundary." },
-    { group: "capability", action: "add", path: "…/derived-output/api/shared/synthesis.ts", lines: "L139–153", symbols: "synthesize.read", change: "Resolves only issued handles, copies exact hits into citation state, and returns their text/source/span to the model.", reason: "A successful read and its citation are the same trusted operation." },
-    { group: "capability", action: "add", path: "…/derived-output/api/shared/synthesis.ts", lines: "L155–209", symbols: "tool schemas · citation coalescence · insufficiency guard", change: "Forces retrieve first, registers retrieve/read tools, coalesces captured citations, suppresses uncited prose, and returns accounting.", reason: "The final answer has application-captured grounding or a deterministic no-evidence result." },
+    { group: "capability", action: "add", path: "app/src/lib/capabilities/derived-output/derived-output.md", lines: "L1–29", symbols: "capability contract", change: "Documents direct retrieval evidence, strict selection, user-edited continuity, source preflight, and failure preservation.", reason: "The capability contract stays aligned to executable behavior instead of the retired handle/read design." },
+    { group: "capability", action: "add", path: "…/derived-output/types/{create,read,update,refresh}-derived-output.ts", lines: "create L1–9 · read L1–15 · update L1–13 · refresh L1–25", symbols: "public input/result contracts", change: "Defines prompt/scope creation, ID-based read/update/refresh, optional lastResponse edit, effective freshness, outcomes, and provider accounting.", reason: "Callers can supply an explicit continuity edit without reaching into stored rows." },
+    { group: "capability", action: "add", path: "…/derived-output/api/shared/input.ts + four validate-* files", lines: "shared L1–57 · create L1–14 · read L1–10 · update L1–24 · refresh L1–10", symbols: "resourceSet · derivedOutputId · procedure validators", change: "Checks unknown remote values, every ResourceSet term/ref, prompts/IDs, and normalizes an optional nonblank response edit to one paragraph.", reason: "Remote values are reconstructed before mutation; the stored TextBlock invariant excludes newlines." },
+    { group: "capability", action: "add", path: "…/derived-output/api/shared/rows.ts", lines: "L1–82", symbols: "rowsOf · outputOf · writeOutput · responseBlock · activeSources · currentGeneration", change: "Adds project-filtered access, undefined-free row replacement, shared TextBlock construction, source snapshots, and current generation lookup.", reason: "Refresh and user editing construct the same valid response block while all storage remains project-scoped." },
+    { group: "capability", action: "add", path: "…/derived-output/api/shared/synthesis.ts", lines: "L15–143", symbols: "SynthesisAttempt · SynthesisDecision parser/schema · prompts", change: "Defines answered/insufficient attempt output, strict final schema, evidence-selection validation, hit identity, continuity context, and fixed insufficiency prose.", reason: "Prior output can stabilize style but only selected retrieved text can ground facts." },
+    { group: "capability", action: "add", path: "…/derived-output/api/shared/synthesis.ts", lines: "L145–180", symbols: "synthesize.retrieve", change: "Calls scoped Semantic Overlay query, assigns/reuses attempt-local evidence IDs, and returns each ID with exact source/span text, score, generation, and diagnostics.", reason: "The model receives the similar text immediately without a redundant read call." },
+    { group: "capability", action: "add", path: "…/derived-output/api/shared/synthesis.ts", lines: "L183–242", symbols: "structured agent call · selected citation resolution", change: "Forces the sole retrieve tool first, requires strict final JSON, rejects duplicate/unissued selections, coalesces selected citations, and suppresses unsupported prose.", reason: "The application—not the model—resolves citation provenance while the model declares which issued evidence it used." },
     { group: "capability", action: "add", path: "…/api/create-derived-output/create-derived-output.ts", lines: "L1–38", symbols: "createDerivedOutput", change: "Creates a project-owned idle row with empty queries/evidence and the scoped user actor.", reason: "Definition and lifecycle begin in representation without synthesizing eagerly." },
     { group: "capability", action: "add", path: "…/api/read-derived-output/read-derived-output.ts", lines: "L1–39", symbols: "readDerivedOutput", change: "Returns one owned row, effective state, and exact changed source snapshots using a read-only freshness check.", reason: "Source updates never fan out writes through all Derived Outputs." },
-    { group: "capability", action: "add", path: "…/api/update-derived-output/update-derived-output.ts", lines: "L1–43", symbols: "updateDerivedOutput", change: "Replaces prompt/scope, rejects edits during generation, clears errors, and marks a prior response stale while retaining it.", reason: "Definition changes are explicit and previous text remains available for continuity." },
-    { group: "capability", action: "add", path: "…/api/refresh-derived-output/refresh-derived-output.ts", lines: "L29–120", symbols: "configuration guard · usage fold · definition comparison · responseBlock · lock", change: "Validates limits, sanitizes failures, creates a valid TextBlock, rejects concurrent generation, and acquires a timestamped full-row lock before network awaits.", reason: "Invalid config cannot strand a row and the JSON store's single-process exclusion is explicit." },
-    { group: "capability", action: "add", path: "…/api/refresh-derived-output/refresh-derived-output.ts", lines: "L125–190", symbols: "attempt loop · source preflight · atomic publication", change: "Retries changed citations, respects superseding definitions, increments only successful response revisions, records current generation, and emits metadata-only logs.", reason: "No response can publish against a source revision that changed while it was being written." },
-    { group: "capability", action: "add", path: "…/api/refresh-derived-output/refresh-derived-output.ts", lines: "L191–217", symbols: "failure/superseded path", change: "Converges thrown provider/tool errors on sanitized error state while leaving lastResponse, lastRevision, queries, and evidence untouched.", reason: "A failed refresh does not destroy the last usable answer." },
+    { group: "capability", action: "add", path: "…/api/update-derived-output/update-derived-output.ts", lines: "L1–65", symbols: "updateDerivedOutput", change: "Updates prompt/scope or versions a user-edited response; an edit clears queries/evidence/generation/refresh time, becomes stale continuity, and cannot run during generation.", reason: "User-authored prose must guide the next refresh without inheriting citations that may not support it." },
+    { group: "capability", action: "add", path: "…/api/refresh-derived-output/refresh-derived-output.ts", lines: "L29–109", symbols: "configuration guard · usage fold · definition comparison · lock", change: "Validates limits, sanitizes failures, rejects concurrent generation, and acquires a timestamped full-row lock before network awaits.", reason: "Invalid config cannot strand a row and the JSON store's single-process exclusion is explicit." },
+    { group: "capability", action: "add", path: "…/api/refresh-derived-output/refresh-derived-output.ts", lines: "L110–175", symbols: "attempt loop · selected-source preflight · atomic publication", change: "Retries changed selected citations, respects superseding definitions, versions stable response/evidence together, records current generation, and emits metadata-only logs.", reason: "No response can publish against a selected source revision that changed during synthesis." },
+    { group: "capability", action: "add", path: "…/api/refresh-derived-output/refresh-derived-output.ts", lines: "L176–202", symbols: "failure/superseded path", change: "Converges provider/tool/schema errors on sanitized error state while leaving the previous response revision and evidence untouched.", reason: "A failed refresh does not destroy the last usable answer or continuity draft." },
     { group: "runtime", action: "change", path: "app/src/lib/runtime/server/{types,start.server}.ts", lines: "types L1,L24 · start L6,L48,L56", symbols: "ServerModel.intelligence · createIntelligence", change: "Constructs the OpenRouter model immediately after configuration and returns it in the process graph.", reason: "One immutable provider object exists before requests; capabilities borrow it from the runtime." },
     { group: "runtime", action: "change", path: "…/runtime/server/test/{construction,lifetime}.test.ts", lines: "construction L34–37,L70 · lifetime L40–43,L88", symbols: "intelligence runtime fake/assertions", change: "Extends composition and process-lifetime proofs to include the new model object.", reason: "Adding infrastructure changes the graph contract and its tests together." },
-    { group: "tests", action: "add", path: "…/intelligence/test/unit/intelligence.test.ts", lines: "L1–244", symbols: "6 provider-loop tests", change: "Proves exact forced/auto payloads, tool replay, accounting, bad-argument recovery, round bound, secret-safe HTTP error, timeout abort, and constructor validation.", reason: "Network behavior is deterministic without spending provider calls." },
-    { group: "tests", action: "add", path: "…/derived-output/test/unit/derived-output.test.ts", lines: "L1–468", symbols: "11 lifecycle tests", change: "Covers create/read/update, auto-citation, scope propagation, revision retry/exhaustion, no-evidence suppression, failure preservation, lock, supersession, and pre-lock config validation.", reason: "Every lifecycle branch is exercised against a mutable in-memory store and controlled agent." },
-    { group: "tests", action: "add", path: "…/derived-output/test/non-functional/live-derived-output.test.ts", lines: "L1–98", symbols: "real Jina + recursive index + OpenRouter", change: "Embeds three passages, builds/searches the index, runs the real retrieve/read agent, and asserts answer plus captured evidence.", reason: "The two separately mocked provider seams are proven together with configured credentials." },
-    { group: "tests", action: "add", path: "…/semantic/test/unit/citation.test.ts", lines: "L1–51", symbols: "coalescence/freshness tests", change: "Proves overlap unions, generation separation, cited-only invalidation, and coordinate/text rejection.", reason: "Citation mathematics remains pure and provider/store independent." },
+    { group: "tests", action: "add", path: "…/intelligence/test/unit/intelligence.test.ts", lines: "L1–316", symbols: "8 provider-loop tests", change: "Proves forced/auto payloads, exact replay, strict response_format shape and local parsing, malformed-output rejection, accounting, bounds, timeout, secret safety, and construction.", reason: "Both tool and structured-output behavior are deterministic without provider spend." },
+    { group: "tests", action: "add", path: "…/derived-output/test/unit/derived-output.test.ts", lines: "L1–543", symbols: "13 lifecycle tests", change: "Covers direct text retrieval, selected citation capture, unknown-ID suppression, response editing/continuity, scope, source retry/exhaustion, failure preservation, lock, supersession, and config validation.", reason: "Every grounding and lifecycle branch runs against a mutable in-memory store and controlled structured agent." },
+    { group: "tests", action: "add", path: "…/derived-output/test/non-functional/live-derived-output.test.ts", lines: "L1–100", symbols: "real Jina + recursive index + OpenRouter", change: "Embeds three passages, builds/searches the index, runs the real one-tool structured agent, and asserts answer plus selected evidence.", reason: "The mocked provider seams are proven together with configured credentials." },
+    { group: "tests", action: "add", path: "…/semantic/test/unit/citation.test.ts", lines: "L1–64", symbols: "3 coalescence/freshness tests", change: "Proves overlap unions retain ID/use selections, generation separation, cited-only invalidation, and coordinate/text rejection.", reason: "Citation mathematics remains pure and provider/store independent." },
     { group: "tests", action: "move", path: "…/embedding/test/integration/jina.test.ts → test/non-functional/jina.test.ts", lines: "unchanged 79 lines", symbols: "configured Jina live suite", change: "Moves the opt-in provider test into one of the repository's three permitted test categories.", reason: "The model architecture linter now passes all 9 checks without changing Jina behavior." },
     { group: "model", action: "change", path: "…/model/client/{commands/commands.md,storage/storage.md}", lines: "commands L136 · storage L22", symbols: "two stale links", change: "Removes two inherited links to files that do not exist; no executable behavior changes.", reason: "Those stale paths were the remaining model-lint failures once the test category was corrected." },
-    { group: "artifact", action: "add", path: "…/semantic-overlay/components/derived-output.svelte + route", lines: "component L1–886 · route L1–5", symbols: "this visual implementation review", change: "Adds interactive algorithm, scenario, wire-contract, state, file-ledger, verification, and scaling-boundary views.", reason: "The final phase is reviewable visually and independently from the frozen phase-two server." }
+    { group: "artifact", action: "add", path: "…/semantic-overlay/components/derived-output.svelte + route", lines: "entire component · route L1–5", symbols: "this visual implementation review", change: "Adds interactive algorithm, scenario, wire-contract, state, file-ledger, verification, and scaling-boundary views aligned to the final contract.", reason: "The final phase is reviewable visually beside the updated index/query page." }
   ];
 
   const GROUPS: { id: FileGroup | "all"; label: string }[] = [
@@ -286,10 +302,18 @@ Authorization: Bearer ••••••••
 {
   "model": "~openai/gpt-latest",
   "messages": [system, user],
-  "tools": [retrieve, read],
+  "tools": [retrieve],
   "tool_choice": {
     "type": "function",
     "function": { "name": "retrieve" }
+  },
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "semantic_derived_output",
+      "strict": true,
+      "schema": SynthesisDecision
+    }
   },
   "parallel_tool_calls": false,
   "max_tokens": 4096,
@@ -300,8 +324,8 @@ Authorization: Bearer ••••••••
   tool_calls: [{
     id: "call-1",
     function: {
-      name: "read",
-      arguments: "{...}"
+      name: "retrieve",
+      arguments: "{ query, topK }"
     }
   }]
 
@@ -309,11 +333,27 @@ tool
   tool_call_id: "call-1"
   content: {
     ok: true,
-    value: { passages: [...] }
+    value: {
+      hits: [{
+        evidenceId: "evidence-1",
+        source, span: { from, to, text },
+        score, overlayGeneration
+      }]
+    }
   }
 
 next request
-  tool_choice: "auto"`;
+  tool_choice: "auto"
+
+final assistant JSON
+  {
+    status: "answered",
+    response: "…",
+    evidence: [{
+      evidenceId: "evidence-1",
+      use: "Establishes the launch date"
+    }]
+  }`;
 
   let activeAlgorithm = $state<AlgorithmId>("agent");
   let activeScenario = $state<ScenarioId>("stable");
@@ -349,14 +389,14 @@ next request
     <section class="hero">
       <div class="hero-copy">
         <span class="eyebrow"><Sparkles size={14} aria-hidden="true" /> FINAL PHASE · IMPLEMENTED</span>
-        <h1>Evidence crosses<br />a <em>controlled door.</em></h1>
+        <h1>Evidence arrives<br /><em>ready to use.</em></h1>
         <p class="lede">
           Derived Output now pulls from the indexed Semantic Overlay through one bounded agent.
-          Search exposes handles. Read exposes text and creates citations. Source revisions are checked again at the publication boundary.
+          Retrieval returns exact text with application-issued IDs. A strict final decision selects what was used, and source revisions are checked again at publication.
         </p>
         <div class="hero-actions">
           <a class="primary-action" href="#boundary"><BookOpen size={14} aria-hidden="true" /> Review execution</a>
-          <a href="http://127.0.0.1:3115/demo/semantic-overlay/index-query"><ChevronLeft size={14} aria-hidden="true" /> Frozen phase two</a>
+          <a href="/demo/semantic-overlay/index-query"><ChevronLeft size={14} aria-hidden="true" /> Index + query review</a>
         </div>
       </div>
 
@@ -366,24 +406,24 @@ next request
         <div class="branch-state"><span class="pulse"></span><strong>Final bridge is executable</strong><small>stacked on phase-two commit c63dda4 · not merged</small></div>
         <dl>
           <div><dt>remote operations</dt><dd>4</dd><small>create · read · update · refresh</small></div>
-          <div><dt>agent tools</dt><dd>2</dd><small>retrieve · read</small></div>
-          <div><dt>automated tests</dt><dd>630</dd><small>628 pass · 2 opt-in live</small></div>
-          <div><dt>scoped checks</dt><dd>33</dd><small>capability · model · representation · runtime</small></div>
+          <div><dt>agent tools</dt><dd>1</dd><small>retrieve returns evidence text</small></div>
+          <div><dt>automated tests</dt><dd>636</dd><small>634 pass · 2 opt-in live</small></div>
+          <div><dt>scoped checks</dt><dd>39</dd><small>four owners + across boundaries</small></div>
         </dl>
-        <p><Check size={14} aria-hidden="true" /><span>Real Jina + recursive index + OpenRouter tool loop: <strong>passed in 7.44s</strong></span></p>
+        <p><Check size={14} aria-hidden="true" /><span>Real Jina + recursive index + one-tool OpenRouter loop: <strong>passed in 5.71s</strong></span></p>
       </aside>
     </section>
 
     <section class="result-strip" aria-label="Implemented result">
       <ShieldCheck size={18} aria-hidden="true" />
-      <p><strong>Working seam:</strong> prompt → forced retrieve → opaque handles → trusted read/citation → cited-source preflight → atomic response revision</p>
+      <p><strong>Working seam:</strong> prompt → forced retrieve with text + IDs → strict evidence selection → cited-source preflight → atomic response revision</p>
       <span>PHASE 03 / BUILT</span>
     </section>
 
     <section id="boundary" class="section">
       <div class="section-heading">
-        <div><span class="kicker">TRUST BOUNDARY</span><h2>Text is withheld until citation is automatic.</h2></div>
-        <p>The agent never receives a semantic object ID it can persist as evidence. Attempt-local handles expire when synthesis returns; stored citations contain source and span values.</p>
+        <div><span class="kicker">TRUST BOUNDARY</span><h2>Text and its evidence identity arrive together.</h2></div>
+        <p>The agent never receives generation-local semantic object IDs to persist. Retrieval text carries an attempt-local evidence ID; only issued IDs selected in strict output resolve to stored source/span values.</p>
       </div>
 
       <div class="boundary-flow">
@@ -392,17 +432,17 @@ next request
           <small>SEMANTIC OVERLAY QUERY</small><h3>Recursive retrieval</h3>
           <code>SemanticHit[]</code><p>Full trusted hits exist inside application memory.</p>
         </article>
-        <div class="flow-edge"><ArrowRight size={19} aria-hidden="true" /><small>strip text</small></div>
+        <div class="flow-edge"><ArrowRight size={19} aria-hidden="true" /><small>issue ID</small></div>
         <article class="flow-node registry">
           <span class="node-number">02</span><KeyRound size={19} aria-hidden="true" />
-          <small>ATTEMPT-LOCAL REGISTRY</small><h3>Opaque handles</h3>
-          <code>hit-1 → trusted hit</code><p>The model sees ref, range, score, and generation—not span text.</p>
+          <small>RETRIEVAL RESULT</small><h3>Text + evidence ID</h3>
+          <code>evidence-1 → trusted hit</code><p>The model immediately receives ref, exact span text, score, and generation.</p>
         </article>
-        <div class="flow-edge guarded"><ArrowRight size={19} aria-hidden="true" /><small>read only</small></div>
+        <div class="flow-edge guarded"><ArrowRight size={19} aria-hidden="true" /><small>select IDs</small></div>
         <article class="flow-node citation">
-          <span class="node-number">03</span><BookOpen size={19} aria-hidden="true" />
-          <small>READ TOOL</small><h3>Text + citation</h3>
-          <code>E ← citation(hit)</code><p>Application code records provenance before returning exact text.</p>
+          <span class="node-number">03</span><Braces size={19} aria-hidden="true" />
+          <small>STRICT FINAL JSON</small><h3>Answer + selections</h3>
+          <code>E ← citation(R[id])</code><p>Application code accepts only unique IDs it issued, then copies provenance by value.</p>
         </article>
         <div class="flow-edge"><ArrowRight size={19} aria-hidden="true" /><small>validate</small></div>
         <article class="flow-node stored">
@@ -416,21 +456,22 @@ next request
         <article>
           <header><Search size={15} aria-hidden="true" /><span>RETRIEVE RETURNS</span></header>
           <pre><code>{`{
-  hitId: "hit-1",
+  evidenceId: "evidence-1",
   source: { ref, revision, encoding },
-  from, to, score,
+  span: { from, to, text },
+  score,
   overlayGeneration
-  // deliberately no text
 }`}</code></pre>
         </article>
         <article class="gate-card">
-          <header><LockKeyhole size={15} aria-hidden="true" /><span>THE CONTROLLED DOOR</span></header>
-          <div><strong>read(["hit-1"])</strong><ArrowRight size={17} aria-hidden="true" /><strong>capture + reveal</strong></div>
-          <p>Unknown, cross-attempt, invented, and expired handles are rejected. The model has no parameter for source, span, revision, or generation.</p>
+          <header><LockKeyhole size={15} aria-hidden="true" /><span>APPLICATION VALIDATION</span></header>
+          <div><strong>decision.evidence</strong><ArrowRight size={17} aria-hidden="true" /><strong>resolve issued IDs</strong></div>
+          <p>Blank, duplicate, invented, cross-attempt, and expired IDs cannot publish model prose. No model field can rewrite source, span, revision, encoding, or generation.</p>
         </article>
         <article>
           <header><History size={15} aria-hidden="true" /><span>STORED BY VALUE</span></header>
           <pre><code>{`SemanticCitation {
+  selections: [{ evidenceId, use }];
   source: SemanticSourceSnapshot;
   span: { from, to, text };
   overlayGeneration: number;
@@ -519,7 +560,7 @@ next request
     <section class="section wire-section" aria-labelledby="wire-title">
       <div class="section-heading">
         <div><span class="kicker">OPENROUTER WIRE CONTRACT</span><h2 id="wire-title">One provider object, exact replay.</h2></div>
-        <p>The provider uses the existing ignored credential namespace. Optional tool inputs remain application-validated rather than claiming OpenAI strict-schema compatibility.</p>
+        <p>The provider uses the existing ignored credential namespace. Tool inputs remain application-validated, while the final turn is provider-constrained by a strict JSON Schema and parsed again locally.</p>
       </div>
       <div class="wire-grid">
         <article><header><KeyRound size={15} aria-hidden="true" /><span>FIRST REQUEST</span></header><pre><code>{FIRST_REQUEST}</code></pre></article>
@@ -562,9 +603,9 @@ next request
         <p>The default suite is deterministic and free of provider spend. The opt-in combined proof crosses both configured APIs and exercises the actual recursive query plus tool agent.</p>
       </div>
       <div class="proof-stats">
-        <article><Check size={17} aria-hidden="true" /><div><strong>628</strong><span>default tests passed</span><p>61 files · 2 opt-in files skipped</p></div></article>
-        <article><Check size={17} aria-hidden="true" /><div><strong>33 / 33</strong><span>scoped architecture checks</span><p>capability · model · representation · runtime</p></div></article>
-        <article><Check size={17} aria-hidden="true" /><div><strong>1 / 1</strong><span>combined live pipeline</span><p>real Jina + OpenRouter · 7.44s</p></div></article>
+        <article><Check size={17} aria-hidden="true" /><div><strong>634</strong><span>default tests passed</span><p>61 files · 2 opt-in files skipped</p></div></article>
+        <article><Check size={17} aria-hidden="true" /><div><strong>39 / 39</strong><span>scoped architecture checks</span><p>four owners · across boundaries</p></div></article>
+        <article><Check size={17} aria-hidden="true" /><div><strong>1 / 1</strong><span>combined live pipeline</span><p>real Jina + OpenRouter · 5.71s</p></div></article>
         <article><Check size={17} aria-hidden="true" /><div><strong>0</strong><span>credential values tracked</span><p>local.yaml remains ignored</p></div></article>
       </div>
 
@@ -574,6 +615,7 @@ next request
           <ul>
             <li><Check size={13} /> forced retrieve first; automatic later turns</li>
             <li><Check size={13} /> assistant call + tool result replayed byte-for-shape</li>
+            <li><Check size={13} /> strict response schema is sent and application-parsed</li>
             <li><Check size={13} /> invalid JSON recovers without handler execution</li>
             <li><Check size={13} /> tool-round limit, abort timeout, status-only HTTP failure</li>
             <li><Check size={13} /> request/token/reasoning/cost totals accumulated</li>
@@ -584,7 +626,8 @@ next request
           <ul>
             <li><Check size={13} /> create, pull read, definition update</li>
             <li><Check size={13} /> scope reaches Semantic Overlay query</li>
-            <li><Check size={13} /> read auto-cites; retrieve contains no text</li>
+            <li><Check size={13} /> retrieve returns text + issued IDs; structured selection cites</li>
+            <li><Check size={13} /> unknown IDs suppress prose; user edits become ungrounded continuity</li>
             <li><Check size={13} /> cited revision retry and bounded churn failure</li>
             <li><Check size={13} /> concurrent lock, superseding definition, old-response preservation</li>
           </ul>
@@ -595,20 +638,22 @@ next request
             <li><span>01</span>Jina embeds three deliberately distinct passages.</li>
             <li><span>02</span>Deterministic spherical clustering builds the recursive tree.</li>
             <li><span>03</span>OpenRouter is forced to retrieve against that tree.</li>
-            <li><span>04</span>The model reads the chosen handles; citations are captured.</li>
-            <li><span>05</span>The answer and evidence both resolve Tuesday, 14:00 UTC, Mira Chen.</li>
+            <li><span>04</span>The model selects issued evidence IDs in strict final JSON.</li>
+            <li><span>05</span>The application resolves selected citations; answer and evidence both name Tuesday, 14:00 UTC, Mira Chen.</li>
           </ol>
         </article>
       </div>
 
       <div class="command-evidence">
-        <code>pnpm test</code><span>61 files passed · 2 skipped · 628 tests passed · 2 skipped</span>
+        <code>pnpm test</code><span>61 files passed · 2 skipped · 634 tests passed · 2 skipped</span>
         <code>pnpm lint:capabilities</code><span>10 / 10 checks · no findings</span>
         <code>pnpm lint:model</code><span>9 / 9 checks · no findings</span>
         <code>pnpm lint:representation</code><span>6 / 6 checks · no findings</span>
         <code>pnpm lint:runtime</code><span>8 / 8 checks · no findings</span>
+        <code>pnpm lint:across</code><span>6 / 6 checks · no findings</span>
         <code>pnpm typecheck</code><span>0 branch-owned diagnostics · 32 inherited prototype-view errors</span>
-        <code>ICARUS_LIVE_DERIVED_OUTPUT=1 …live-derived-output.test.ts</code><span>1 / 1 passed · 7.44s</span>
+        <code>ICARUS_LIVE_DERIVED_OUTPUT=1 …live-derived-output.test.ts</code><span>1 / 1 passed · 5.71s</span>
+        <code>playwright test …review.spec.js</code><span>desktop interaction + two mobile overflow checks · 4 / 4 passed</span>
       </div>
     </section>
 

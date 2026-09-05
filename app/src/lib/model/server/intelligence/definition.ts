@@ -15,7 +15,9 @@ export class OpenRouterIntelligence implements IntelligenceModel {
     this.#state = { ...input, request: input.request ?? globalThis.fetch };
   }
 
-  completeWithTools(input: IntelligenceInput): Promise<IntelligenceResult> {
+  completeWithTools<Value = string>(
+    input: IntelligenceInput<Value>
+  ): Promise<IntelligenceResult<Value>> {
     return runAgent(this.#state, input);
   }
 }

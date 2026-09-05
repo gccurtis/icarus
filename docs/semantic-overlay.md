@@ -1,6 +1,6 @@
 # Semantic Overlay working notes
 
-Status: architectural review decisions and follow-up work, 2026-09-04.
+Status: implemented contracts and explicit follow-up work, 2026-09-04.
 
 The executable code remains authoritative. This document distinguishes current
 behavior from accepted target behavior so that an unfinished item is not read as
@@ -61,11 +61,11 @@ late_chunking = false
 result = one dense vector
 ```
 
-The current private dense request can perform this operation, but the public
-embedding port has no explicit whole-passage method. Add a method such as
-`passage(text)` and make the existing contextual operation explicit, for
-example `windowedPassages(spans)`. A complete source produces one semantic
-object whose span covers that source.
+The public embedding port now exposes `passage(text)`, which returns one vector,
+and names the contextual operation `windowedPassages(spans)`. A complete-source
+translation caller can use the former to produce one semantic object whose span
+covers that source. That translation/persistence orchestration is still future
+work.
 
 ### Query embedding
 
@@ -117,11 +117,14 @@ The index is divisive hierarchical spherical k-means:
 4. Re-run spherical k-means only inside a partition that exceeds `leafSize`.
 5. Stop each partition independently once it fits in a leaf.
 
-Every object belongs to exactly one child at a partition. A small outlier group
-can remain a leaf while a larger nearby group continues to split. The hierarchy
-therefore records successive cosine-space partitions, but it is not a metric
-tree: centroid similarity is not an upper bound on every descendant and depth
-does not encode a formal linkage distance.
+Every object belongs to exactly one child at a partition. This is a neighborhood
+hierarchy, not an onion around one center: roots choose the broad neighborhood
+(the suburb), child nodes repartition only that neighborhood (the block), and
+leaves hold its local objects (the houses). A small outlier neighborhood can
+remain a leaf while a larger neighborhood continues to split. Every node's
+normalized centroid summarizes all original descendant vectors; its ancestry
+records nested membership, while centroid similarity remains a routing score
+rather than a formal upper bound on every descendant.
 
 ### Current query
 
@@ -144,7 +147,7 @@ because discarding a low-scoring centroid can discard a high-scoring descendant.
 
 ## Derived Output evidence contract
 
-### Accepted target
+### Implemented contract
 
 Remove the separate opaque-handle `read` step. Retrieval should return the
 similar source content immediately, while application code assigns every
@@ -161,23 +164,18 @@ type RetrievedEvidence = {
 ```
 
 The registry behind each ID remains application-owned. The model may issue
-several retrievals and then returns a structured decision that selects only
-evidence IDs it actually used:
+several retrievals and then returns a strict structured decision that selects
+only evidence IDs it actually used:
 
 ```ts
-type SynthesisDecision =
-  | {
-      status: "answered";
-      response: string;
-      evidence: { evidenceId: string; use?: string }[];
-    }
-  | {
-      status: "insufficient";
-      reason?: string;
-    };
+type SynthesisDecision = {
+  status: "answered" | "insufficient";
+  response: string;
+  evidence: { evidenceId: string; use: string }[];
+};
 ```
 
-The optional `use` value explains the evidence's role; it is model-authored
+The `use` value explains the evidence's role; it is model-authored
 annotation, not provenance. The application should not require the model to
 invent exact quote offsets inside a retrieved span.
 
@@ -191,17 +189,10 @@ Before publication, application code must verify that:
 
 Only selected evidence needs source-revision preflight. If selected evidence
 changed during synthesis, discard the attempt and retry within the configured
-bound. An insufficient result, an answered result without valid evidence, or a
-model response that fails the structured contract must not publish unsupported
-prose; expose an explicit cannot-answer result instead.
-
-### Current implementation to replace
-
-The current implementation makes `retrieve` return metadata-only opaque handles,
-requires `read` to reveal text and capture citations, and accepts a plain-text
-final response. That controlled-door design is safe but unnecessarily indirect
-for this product. Replace it with retrieval-returned evidence plus structured
-evidence selection as described above.
+bound. An insufficient result or an answered result with blank, duplicate, or
+unissued evidence must not publish unsupported prose. The application instead
+publishes its fixed, explicit insufficient-evidence response. Malformed provider
+JSON is a bounded synthesis failure and also never publishes provider prose.
 
 ## Derived Output lifecycle
 
@@ -215,21 +206,17 @@ Keep the Semantic Overlay and Derived Output lifecycles independent:
 - a scheduled interval may perform the same pull-based freshness read later;
   source updates should not fan out writes over all Derived Outputs.
 
-The user must be able to edit `lastResponse`. A user-edited response becomes the
-continuity example supplied on the next refresh so the agent preserves format
-and structure. It remains context, never factual evidence. The public update
-operation does not currently accept such an edit and must be extended. Before
-implementation, decide whether a user edit advances `lastRevision` or receives
-separate edit/version metadata.
+The public update operation accepts a user edit to `lastResponse`. The edit is
+normalized to the current single-paragraph content shape, advances
+`lastRevision`, clears evidence and generation metadata that cannot safely be
+claimed for edited prose, and marks the row stale. On refresh it becomes the
+continuity example supplied to the agent so wording and organization can remain
+stable. It is context, never factual evidence.
 
 ## Follow-up sequence
 
 1. Wire source translation and persistence around the existing token-field,
-   segmentation, and windowed-passage primitives.
-2. Add explicit complete-passage embedding.
-3. Replace retrieve/read with retrieval-returned evidence and structured final
-   evidence selection.
-4. Add user editing of `lastResponse` and its revision semantics.
-5. Add source-local large-text and reader window planning.
-6. Add an optional bounded query frontier with truncation diagnostics and recall
+   segmentation, complete-passage, and windowed-passage primitives.
+2. Add source-local large-text and reader window planning.
+3. Add an optional bounded query frontier with truncation diagnostics and recall
    tests.

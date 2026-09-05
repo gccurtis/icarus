@@ -8,12 +8,21 @@ export type IntelligenceTool = {
   execute(input: unknown): Promise<unknown>;
 };
 
-export type IntelligenceInput = {
+/** A provider-enforced JSON shape plus the application parser that makes it trusted. */
+export type IntelligenceStructuredOutput<Value> = {
+  readonly name: string;
+  readonly description?: string;
+  readonly schema: JsonSchema;
+  parse(value: unknown): Value;
+};
+
+export type IntelligenceInput<Value = string> = {
   readonly system: string;
   readonly user: string;
   readonly tools: readonly IntelligenceTool[];
   /** Forces one named tool on the first provider turn; later turns remain automatic. */
   readonly firstTool?: string;
+  readonly output?: IntelligenceStructuredOutput<Value>;
 };
 
 export type IntelligenceUsage = {
@@ -32,8 +41,8 @@ export type IntelligenceToolCall = {
   readonly ok: boolean;
 };
 
-export type IntelligenceResult = {
-  readonly text: string;
+export type IntelligenceResult<Value = string> = {
+  readonly value: Value;
   readonly usage: IntelligenceUsage;
   readonly toolCalls: readonly IntelligenceToolCall[];
   readonly rounds: number;
@@ -41,7 +50,9 @@ export type IntelligenceResult = {
 
 /** The process-wide text intelligence port. Credentials never cross this boundary. */
 export interface IntelligenceModel {
-  completeWithTools(input: IntelligenceInput): Promise<IntelligenceResult>;
+  completeWithTools<Value = string>(
+    input: IntelligenceInput<Value>
+  ): Promise<IntelligenceResult<Value>>;
 }
 
 export type IntelligenceRequest = (

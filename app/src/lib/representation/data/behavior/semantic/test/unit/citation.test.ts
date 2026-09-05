@@ -6,7 +6,14 @@ import {
 } from "$representation/data/behavior/semantic/citation";
 import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
 
-const citation = (from: number, to: number, text: string, generation = 4): SemanticCitation => ({
+const citation = (
+  from: number,
+  to: number,
+  text: string,
+  generation = 4,
+  evidenceId = `evidence-${from}-${to}-${generation}`
+): SemanticCitation => ({
+  selections: [{ evidenceId, use: `Supports ${text}` }],
   source: { ref: { kind: "document", id: "brief" }, revision: 7, encoding: "utf-16" },
   span: { from, to, text },
   overlayGeneration: generation
@@ -21,7 +28,13 @@ describe("semantic citations", () => {
         citation(0, 5, "alpha", 5)
       ])
     ).toEqual([
-      citation(0, 10, "alpha beta"),
+      {
+        ...citation(0, 10, "alpha beta", 4, "evidence-0-5-4"),
+        selections: [
+          { evidenceId: "evidence-0-5-4", use: "Supports alpha" },
+          { evidenceId: "evidence-3-10-4", use: "Supports ha beta" }
+        ]
+      },
       citation(0, 5, "alpha", 5)
     ]);
   });

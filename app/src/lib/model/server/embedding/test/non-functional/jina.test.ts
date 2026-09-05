@@ -9,25 +9,30 @@ const live = process.env.ICARUS_LIVE_JINA === "1";
 const dot = (left: readonly number[], right: readonly number[]): number =>
   left.reduce((sum, value, index) => sum + value * right[index], 0);
 
-test.runIf(live)("configured Jina key serves all three Semantic Overlay embedding modes", async () => {
+test.runIf(live)("configured Jina key serves all four Semantic Overlay embedding modes", async () => {
   const configuration = await createConfiguration();
   const embedding = createEmbedding(configuration);
 
-  const passages = await embedding.passages([
+  const passages = await embedding.windowedPassages([
     "A coupon is subtracted before sales tax is calculated.",
     "A heron stands beside a quiet lake at sunrise."
   ]);
+  const passage = await embedding.passage(
+    "A coupon is subtracted before sales tax is calculated."
+  );
   const query = await embedding.query("Where is a discount applied before tax?");
   const tokens = await embedding.tokenField("Cats climb. Dogs fetch.");
 
   expect(passages.value).toHaveLength(2);
   expect(passages.value.every((vector) => vector.length === embedding.space.dimensions)).toBe(true);
   expect(query.value).toHaveLength(embedding.space.dimensions);
+  expect(passage.value).toHaveLength(embedding.space.dimensions);
   expect(dot(query.value, passages.value[0])).toBeGreaterThan(dot(query.value, passages.value[1]));
   expect(tokens.value.labels.length).toBeGreaterThan(0);
   expect(tokens.value.vectors).toHaveLength(tokens.value.labels.length);
   expect(tokens.value.vectors.every((vector) => vector.length === 128)).toBe(true);
   expect(passages.usage.inputTokens).toBeGreaterThan(0);
+  expect(passage.usage.inputTokens).toBeGreaterThan(0);
   expect(query.usage.inputTokens).toBeGreaterThan(0);
   expect(tokens.usage.inputTokens).toBeGreaterThan(0);
 

@@ -1,7 +1,6 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { changedSemanticSources } from "$representation/data/behavior/semantic/citation";
-import type { TextBlock } from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutput } from "$representation/data/types/semantic/derived-output";
 import { querySemanticOverlay } from "$capabilities/semantic-overlay/index.remote";
@@ -15,6 +14,7 @@ import {
   activeSources,
   currentGeneration,
   outputOf,
+  responseBlock,
   writeOutput
 } from "$capabilities/derived-output/api/shared/rows";
 import { synthesize } from "$capabilities/derived-output/api/shared/synthesis";
@@ -77,21 +77,6 @@ const safeFailure = (error: unknown): string =>
     .replace(/Bearer\s+\S+/gi, "Bearer [redacted]")
     .replace(/(?:api[-_ ]?key)\s*[:=]\s*\S+/gi, "apiKey=[redacted]")
     .slice(0, 400);
-
-const responseBlock = (
-  output: DerivedOutput,
-  revision: number,
-  text: string,
-  at: number
-): TextBlock => ({
-  id: `${output._id}:response:${revision}`,
-  type: "text",
-  variant: "paragraph",
-  atoms: [{ id: `${output._id}:response:${revision}:text`, kind: "literal", text }],
-  display: text,
-  marks: [],
-  resolvedAt: at
-});
 
 export const refreshDerivedOutput = async (input: unknown): Promise<RefreshDerivedOutputResult> => {
   const scope = await requireScope();

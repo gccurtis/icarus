@@ -258,19 +258,19 @@
       icon: Braces
     },
     {
-      state: "next",
+      state: "done",
       number: "02",
       title: "Provision Jina + index/query",
       summary: "Add the server-owned Jina adapter, publish recursive cluster nodes, and compare tree retrieval against exhaustive cosine.",
-      deliverable: "Two embedding modes + recursive tree + scoped hits",
+      deliverable: "Four embedding operations + recursive tree + scoped hits",
       icon: Network
     },
     {
-      state: "later",
+      state: "done",
       number: "03",
       title: "Bridge Derived Output",
-      summary: "Give synthesis retrieve/read tools, capture citation values, and validate cited revisions immediately before publication.",
-      deliverable: "Pull refresh + retry guard + last response",
+      summary: "Return retrieved text with issued evidence IDs, select citations through strict JSON, and validate their revisions before publication.",
+      deliverable: "Direct evidence + structured selection + editable continuity",
       icon: Bot
     }
   ] as const;

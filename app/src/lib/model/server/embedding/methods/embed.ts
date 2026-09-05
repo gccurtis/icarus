@@ -133,12 +133,21 @@ export const embedTokenField = async (
   };
 };
 
-/** Final segment vectors are contextualized together through late chunking. */
-export const embedPassages = (
+/** Final spans from one source are contextualized together through late chunking. */
+export const embedWindowedPassages = (
   state: EmbeddingState,
   texts: readonly string[]
 ): Promise<EmbeddingResult<number[][]>> =>
-  dense(state, texts, "retrieval.passage", "denseVectors", true);
+  dense(state, texts, "retrieval.passage", "windowedPassageVectors", true);
+
+/** One complete passage receives one vector without contextual late chunking. */
+export const embedPassage = async (
+  state: EmbeddingState,
+  text: string
+): Promise<EmbeddingResult<number[]>> => {
+  const result = await dense(state, [text], "retrieval.passage", "passageVector", false);
+  return { value: result.value[0], usage: result.usage };
+};
 
 /** A query is embedded on the asymmetric query side of the same vector space. */
 export const embedQuery = async (

@@ -32,7 +32,7 @@ vi.mock("$model/server/embedding/index.server", () => ({
 }));
 
 vi.mock("$model/server/intelligence/index.server", () => ({
-  createIntelligence: () => ({ completeWithTools: async () => ({ text: "", toolCalls: [] }) })
+  createIntelligence: () => ({ completeWithTools: async () => ({ value: "", toolCalls: [] }) })
 }));
 
 vi.mock("$model/server/observability/index.server", () => ({

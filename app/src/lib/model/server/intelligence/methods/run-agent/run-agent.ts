@@ -141,7 +141,7 @@ const addUsage = (
 const invoke = async (
   state: IntelligenceState,
   messages: readonly WireMessage[],
-  input: IntelligenceInput,
+  input: IntelligenceInput<unknown>,
   firstTool: string | undefined
 ): Promise<ProviderTurn> => {
   const controller = new AbortController();
@@ -170,7 +170,22 @@ const invoke = async (
             : { type: "function", function: { name: firstTool } },
         parallel_tool_calls: false,
         max_tokens: state.maxOutputTokens,
-        reasoning: { effort: state.reasoningEffort }
+        reasoning: { effort: state.reasoningEffort },
+        ...(input.output === undefined
+          ? {}
+          : {
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: input.output.name,
+                  ...(input.output.description === undefined
+                    ? {}
+                    : { description: input.output.description }),
+                  strict: true,
+                  schema: input.output.schema
+                }
+              }
+            })
       }),
       signal: controller.signal
     });
@@ -198,10 +213,10 @@ const parsedInput = (call: WireToolCall): { ok: true; value: unknown } | { ok: f
 };
 
 /** OpenAI-compatible tool loop: propose, execute locally, return result, repeat. */
-export const runAgent = async (
+export const runAgent = async <Value = string>(
   state: IntelligenceState,
-  input: IntelligenceInput
-): Promise<IntelligenceResult> => {
+  input: IntelligenceInput<Value>
+): Promise<IntelligenceResult<Value>> => {
   if (!input.system.trim() || !input.user.trim()) {
     throw new IntelligenceServiceError("Intelligence prompts must not be blank");
   }
@@ -211,6 +226,9 @@ export const runAgent = async (
   }
   if (input.firstTool !== undefined && !tools.has(input.firstTool)) {
     throw new IntelligenceServiceError("The forced first tool is not available");
+  }
+  if (input.output !== undefined && !input.output.name.trim()) {
+    throw new IntelligenceServiceError("Structured output names must not be blank");
   }
 
   const messages: WireMessage[] = [
@@ -237,7 +255,21 @@ export const runAgent = async (
     if (turn.toolCalls.length === 0) {
       const text = turn.content?.trim();
       if (!text) throw new IntelligenceServiceError("OpenRouter returned no final text");
-      return { text, usage, toolCalls: calls, rounds: round };
+      if (input.output === undefined) {
+        return { value: text as Value, usage, toolCalls: calls, rounds: round };
+      }
+      try {
+        return {
+          value: input.output.parse(JSON.parse(text) as unknown),
+          usage,
+          toolCalls: calls,
+          rounds: round
+        };
+      } catch (error) {
+        throw new IntelligenceServiceError("OpenRouter returned invalid structured output", {
+          cause: error
+        });
+      }
     }
     if (round > state.maxToolRounds) {
       throw new IntelligenceServiceError("Agent exceeded the configured tool-round limit");

@@ -4,7 +4,12 @@
 the architecture contract in the surface root.
 
 `index-query.svelte` is the pass-two implementation review. It visualizes the
-worktree's Jina boundary, recursive clustering and query algorithms, safe index
-publication sequence, exact line-level change ledger, verification evidence,
-and the remaining storage-scaling boundary. Both files report observed branch
-state and keep future Derived Output work explicitly separate.
+worktree's four-operation Jina boundary, nested-neighborhood clustering, query
+algorithm, safe publication sequence, exact line-level ledger, verification,
+and the remaining hydration/frontier scaling boundaries.
+
+`derived-output.svelte` is the final bridge review. It shows direct
+retrieval-returned evidence, strict structured selection, citation resolution,
+editable continuity, publication/freshness lifecycles, exact file changes, and
+mocked plus live verification. All review pages point at the stacked,
+unmerged integration branch.

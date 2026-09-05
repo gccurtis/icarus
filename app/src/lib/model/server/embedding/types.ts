@@ -13,7 +13,10 @@ export type EmbeddingResult<Value> = {
 export interface EmbeddingModel {
   readonly space: EmbeddingSpace;
   tokenField(text: string): Promise<EmbeddingResult<TokenEmbeddingField>>;
-  passages(texts: readonly string[]): Promise<EmbeddingResult<number[][]>>;
+  /** Contextual vectors for spans from exactly one source document. */
+  windowedPassages(texts: readonly string[]): Promise<EmbeddingResult<number[][]>>;
+  /** One non-contextual vector for one complete passage. */
+  passage(text: string): Promise<EmbeddingResult<number[]>>;
   query(text: string): Promise<EmbeddingResult<number[]>>;
 }
 

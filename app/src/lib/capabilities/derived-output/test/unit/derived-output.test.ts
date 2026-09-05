@@ -9,14 +9,20 @@ const state = vi.hoisted(() => {
   const counters = new Map<string, number>();
   const rows = (table: string): Row[] => tables.get(table) ?? [];
   const controls = {
-    mode: "normal" as "normal" | "no-read" | "drift" | "failure" | "gate",
+    mode: "normal" as
+      | "normal"
+      | "no-evidence"
+      | "unknown-evidence"
+      | "drift"
+      | "failure"
+      | "gate",
     maxRetries: 2,
     defaultTopK: 8,
     intelligenceCalls: 0,
     queryInputs: [] as Record<string, unknown>[],
     retrieveResults: [] as unknown[],
-    readResults: [] as unknown[],
     firstTools: [] as (string | undefined)[],
+    userPrompts: [] as string[],
     release: undefined as (() => void) | undefined
   };
   const store = {
@@ -60,30 +66,21 @@ const state = vi.hoisted(() => {
   const intelligence = {
     completeWithTools: async (input: {
       firstTool?: string;
+      user: string;
       tools: readonly Tool[];
     }) => {
       controls.intelligenceCalls += 1;
       controls.firstTools.push(input.firstTool);
+      controls.userPrompts.push(input.user);
       if (controls.mode === "failure") throw new Error("apiKey=private-value provider failed");
 
       const retrieve = input.tools.find((tool) => tool.name === "retrieve");
-      const read = input.tools.find((tool) => tool.name === "read");
-      if (retrieve === undefined || read === undefined) throw new Error("tools missing");
+      if (retrieve === undefined || input.tools.length !== 1) throw new Error("tools missing");
       const found = await retrieve.execute({ query: "launch schedule", topK: 3 });
       controls.retrieveResults.push(found);
-
-      let calls = [{ id: "retrieve-call", name: "retrieve", input: {}, ok: true }];
-      if (controls.mode !== "no-read") {
-        const hitIds = ((found as { hits: { hitId: string }[] }).hits ?? []).map(
-          (hit) => hit.hitId
-        );
-        const passages = await read.execute({ hitIds });
-        controls.readResults.push(passages);
-        calls = [
-          ...calls,
-          { id: "read-call", name: "read", input: {}, ok: true }
-        ];
-      }
+      const evidenceIds = ((found as { hits: { evidenceId: string }[] }).hits ?? []).map(
+        (hit) => hit.evidenceId
+      );
 
       if (controls.mode === "drift") {
         source().revision = Number(source().revision) + 1;
@@ -94,17 +91,32 @@ const state = vi.hoisted(() => {
         });
       }
       return {
-        text: " Launch\nis Tuesday. ",
+        value:
+          controls.mode === "no-evidence"
+            ? { status: "insufficient", response: "I cannot answer.", evidence: [] }
+            : {
+                status: "answered",
+                response: " Launch\nis Tuesday. ",
+                evidence: [
+                  {
+                    evidenceId:
+                      controls.mode === "unknown-evidence"
+                        ? "evidence-never-issued"
+                        : evidenceIds[0],
+                    use: "Establishes the launch day"
+                  }
+                ]
+              },
         usage: {
-          requestCount: 3,
+          requestCount: 2,
           promptTokens: 20,
           completionTokens: 5,
           totalTokens: 25,
           reasoningTokens: 2,
           costUsd: 0.01
         },
-        toolCalls: calls,
-        rounds: 3
+        toolCalls: [{ id: "retrieve-call", name: "retrieve", input: {}, ok: true }],
+        rounds: 2
       };
     }
   };
@@ -244,8 +256,8 @@ beforeEach(() => {
   state.controls.intelligenceCalls = 0;
   state.controls.queryInputs.length = 0;
   state.controls.retrieveResults.length = 0;
-  state.controls.readResults.length = 0;
   state.controls.firstTools.length = 0;
+  state.controls.userPrompts.length = 0;
   state.controls.release = undefined;
   baseRows();
 });
@@ -268,6 +280,7 @@ describe("Derived Output lifecycle", () => {
 
   it("computes pull-time staleness from cited revisions and ignores unrelated changes", async () => {
     const citation = {
+      selections: [{ evidenceId: "evidence-1", use: "Names the launch" }],
       source: {
         ref: { kind: "document", id: "launch-brief" },
         revision: 1,
@@ -317,13 +330,56 @@ describe("Derived Output lifecycle", () => {
     );
   });
 
-  it("retrieves, reads, auto-cites, and atomically publishes one revision", async () => {
+  it("stores a user-edited response as ungrounded continuity for the next refresh", async () => {
+    const previous = textBlock("Old grounded response");
+    const id = seedOutput({
+      state: "fresh",
+      lastResponse: previous,
+      lastRevision: 2,
+      lastGeneration: 4,
+      evidence: [
+        {
+          selections: [{ evidenceId: "old-evidence", use: "Old support" }],
+          source: {
+            ref: { kind: "document", id: "launch-brief" },
+            revision: 1,
+            encoding: "utf-16"
+          },
+          span: { from: 0, to: 6, text: "Launch" },
+          overlayGeneration: 4
+        }
+      ]
+    });
+
+    const edited = await updateDerivedOutput({
+      derivedOutputId: id,
+      prompt: "Summarize the launch schedule",
+      scope: {
+        include: [{ select: "resources", refs: [{ kind: "document", id: "launch-brief" }] }],
+        exclude: []
+      },
+      lastResponse: "  Keep this\nshape  "
+    });
+
+    assert.equal(edited?.lastResponse?.type, "text");
+    assert.equal(edited?.lastResponse?.display, "Keep this shape");
+    assert.equal(edited?.lastRevision, 3);
+    assert.equal(edited?.state, "stale");
+    assert.deepEqual(edited?.evidence, []);
+    assert.equal(edited?.lastGeneration, undefined);
+
+    await refreshDerivedOutput({ derivedOutputId: id });
+    assert.match(state.controls.userPrompts[0], /Keep this shape/);
+    assert.match(state.controls.userPrompts[0], /continuity only/);
+  });
+
+  it("retrieves text, selects issued evidence, and atomically publishes one revision", async () => {
     const id = seedOutput();
     const result = await refreshDerivedOutput({ derivedOutputId: id });
 
     assert.equal(result?.outcome, "published");
     assert.equal(result?.attempts, 1);
-    assert.equal(result?.toolCalls, 2);
+    assert.equal(result?.toolCalls, 1);
     assert.equal(result?.output.state, "fresh");
     assert.equal(result?.output.lastRevision, 1);
     assert.equal(result?.output.lastGeneration, 4);
@@ -332,9 +388,11 @@ describe("Derived Output lifecycle", () => {
     assert.deepEqual(result?.output.queries, ["launch schedule"]);
     assert.equal(result?.output.evidence[0].source.revision, 1);
     assert.equal(result?.output.evidence[0].span.text, "Launch is Tuesday.");
+    assert.deepEqual(result?.output.evidence[0].selections, [
+      { evidenceId: "evidence-1", use: "Establishes the launch day" }
+    ]);
     assert.deepEqual(state.controls.firstTools, ["retrieve"]);
-    assert.equal(JSON.stringify(state.controls.retrieveResults).includes("Launch is Tuesday"), false);
-    assert.equal(JSON.stringify(state.controls.readResults).includes("Launch is Tuesday"), true);
+    assert.equal(JSON.stringify(state.controls.retrieveResults).includes("Launch is Tuesday"), true);
     assert.deepEqual(state.controls.queryInputs[0].scope, {
       include: [{ select: "resources", refs: [{ kind: "document", id: "launch-brief" }] }],
       exclude: []
@@ -346,7 +404,7 @@ describe("Derived Output lifecycle", () => {
     state.controls.maxRetries = 2;
     const id = seedOutput();
 
-    // Drift only after the first read; the retry observes revision 2 and then stabilizes.
+    // Drift only after the first retrieval; the retry observes revision 2 and then stabilizes.
     const originalComplete = state.model.intelligence.completeWithTools;
     let calls = 0;
     state.model.intelligence.completeWithTools = async (input) => {
@@ -360,7 +418,7 @@ describe("Derived Output lifecycle", () => {
     assert.equal(result?.outcome, "published");
     assert.equal(result?.attempts, 2);
     assert.equal(result?.output.evidence[0].source.revision, 2);
-    assert.equal(result?.usage.providerRequests, 6);
+    assert.equal(result?.usage.providerRequests, 4);
     assert.equal(result?.usage.embeddings.length, 2);
   });
 
@@ -370,6 +428,7 @@ describe("Derived Output lifecycle", () => {
     const previous = textBlock("Previously published");
     const previousEvidence = [
       {
+        selections: [{ evidenceId: "evidence-1", use: "Names the launch" }],
         source: {
           ref: { kind: "document", id: "launch-brief" },
           revision: 1,
@@ -397,8 +456,24 @@ describe("Derived Output lifecycle", () => {
     assert.match(result?.output.error ?? "", /kept changing/);
   });
 
-  it("publishes a deterministic insufficiency response when nothing was read", async () => {
-    state.controls.mode = "no-read";
+  it("publishes a deterministic insufficiency response when no evidence is selected", async () => {
+    state.controls.mode = "no-evidence";
+    const id = seedOutput();
+    const result = await refreshDerivedOutput({ derivedOutputId: id });
+
+    assert.equal(result?.outcome, "published");
+    assert.deepEqual(result?.output.evidence, []);
+    const response = result?.output.lastResponse;
+    assert.equal(response?.type, "text");
+    if (response?.type !== "text") assert.fail("expected a text response");
+    assert.equal(
+      response.display,
+      "The Semantic Overlay did not return enough evidence to answer this request."
+    );
+  });
+
+  it("does not publish model prose that selects an evidence id the application never issued", async () => {
+    state.controls.mode = "unknown-evidence";
     const id = seedOutput();
     const result = await refreshDerivedOutput({ derivedOutputId: id });
 
