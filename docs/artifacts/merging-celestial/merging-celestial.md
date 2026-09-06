@@ -1,82 +1,47 @@
 # Merging Celestial
 
 **Written:** 2026-09-05 · https://claude.ai/code/artifact/0591b243-92f2-4a60-8e45-bac060de3758
-**From:** `work/styling` (branch ref still at `98d9cd0`) · **Into:** `main` at `239d028`
+**From:** `work/styling` · **Into:** `main` at `88470b3`
 
-Nothing in this document has been run. It is the plan, not a record.
+**Steps 01–06 have been run.** `work/styling` is two commits rebased directly onto `main` with the
+gate green. Main moved once more mid-run — `88470b3 fix(templates)`, three files, no overlap — and
+the branch was rebased again, clean. **Step 07 has not** — main is untouched, and
+`git merge-base --is-ancestor main work/styling` answers yes, so the fast-forward will succeed
+whenever that is decided. Branch SHAs are not cited here because they change on every rebase.
 
-## Where things stand
+## Where things stood
 
-- **`work/styling` has no commits.** The branch ref is still at the branch point; all 107 changes
-  are uncommitted in the worktree — 57 modified, 34 deleted, 16 added. A rebase or merge operates
-  on commits, so `git merge work/styling` today is a no-op that looks like success.
-- **`main` is two commits ahead:** `d371c6f feat(templates): replay library onto current main` and
+- `work/styling` had no commits; all 107 changes were uncommitted in the worktree — 57 modified,
+  34 deleted, 16 added.
+- `main` was two commits ahead: `d371c6f feat(templates): replay library onto current main` and
   `239d028 docs: refresh editor handoff and wiki assets`.
-- Main changed 101 files. **Five are files this branch also touches.**
+- Main changed 101 files. Five were files this branch also touched.
 
 ## The five files
 
-Four are modify/delete — the branch moved the file main edited. One is a real content conflict.
-
-| File | Main did | Branch did | Resolve |
+| File | Main did | Branch did | Resolved |
 | --- | --- | --- | --- |
-| `styles/semantic-tokens/color.css` | added 7 `--token-color-slide-*` aliases onto orange | deleted → `styles/tokens/color.css` | keep the delete, port the seven lines |
-| `styles/semantic-tokens/semantic-tokens.md` | added the `slide \| orange` row, rewrote the reserved-hue sentence | deleted → `styles/tokens/tokens.md` | keep the delete, port the row |
-| `styles/x-integrations/tailwind/tailwind.css` | added 7 `--color-slide-*` registrations | deleted → `styles/integrations/tailwind/tailwind.css` | keep the delete, port the seven lines |
-| `scripts/lint/shared/styles.mjs` | added `slide: "orange"` to `BRAND_ROLES` | deleted | **keep the delete, port nothing** — every check that read it is gone |
-| `development-views/demo/components/roles.svelte` | added a `slide` row | rewritten as a `.data-table` with a `kind` column | take the branch version, add the row with its `kind` |
+| `styles/semantic-tokens/color.css` | added 7 `--token-color-slide-*` aliases onto orange | moved → `styles/tokens/color.css` | git detected the rename; main's lines arrived inside the new file as a content conflict. Kept, minus the comment and minus main's stale `--theme-surface-pasteboard` line |
+| `styles/semantic-tokens/semantic-tokens.md` | added the `slide \| orange` row, rewrote the reserved-hue sentence | rewritten → `styles/tokens/tokens.md` | modify/delete; deletion kept, row and sentence ported by hand |
+| `styles/x-integrations/tailwind/tailwind.css` | added 7 `--color-slide-*` registrations | moved → `styles/integrations/tailwind/tailwind.css` | rename detected; both sides kept, alphabetical: `shadow`, `slide`, `success` |
+| `scripts/lint/shared/styles.mjs` | added `slide: "orange"` to `BRAND_ROLES` | deleted | deletion kept, nothing ported — every check that read it is gone |
+| `development-views/demo/components/roles.svelte` | added a `slide` row | rewritten as a `.data-table` with a `kind` column | branch version kept, row added with `kind: "Brand"` |
 
-### The three ports
-
-`styles/tokens/color.css`, after the `accent-2` block — no comment, the stylesheets on this branch
-carry values only:
-
-```css
-  --token-color-slide-surface: var(--chromatic-orange-surface);
-  --token-color-slide-surface-hover: var(--chromatic-orange-surface-hover);
-  --token-color-slide-border: var(--chromatic-orange-border);
-  --token-color-slide-fill: var(--chromatic-orange-fill);
-  --token-color-slide-fill-hover: var(--chromatic-orange-fill-hover);
-  --token-color-slide-text: var(--chromatic-orange-text);
-  --token-color-slide-on-fill: var(--chromatic-orange-on-fill);
-```
-
-`styles/integrations/tailwind/tailwind.css`, alphabetically after `--color-secondary-text`:
-
-```css
-  --color-slide-border: var(--token-color-slide-border);
-  --color-slide-fill-hover: var(--token-color-slide-fill-hover);
-  --color-slide-fill: var(--token-color-slide-fill);
-  --color-slide-on-fill: var(--token-color-slide-on-fill);
-  --color-slide-surface-hover: var(--token-color-slide-surface-hover);
-  --color-slide-surface: var(--token-color-slide-surface);
-  --color-slide-text: var(--token-color-slide-text);
-```
-
-`development-views/demo/components/roles.svelte`:
-
-```js
-    { kind: "Brand", role: "slide", hue: "orange", means: "Slide-deck identity" }
-```
-
-Nothing needs adding to the scale list in `components/vendored/utils.ts` — colours are not in it,
-because `tailwind-merge` already recognises the `--color-*` namespace. A new *size* or *radius*
-would need an entry there; a new role does not.
+Less porting than planned; the same five files. Nothing needed adding to the scale list in
+`components/vendored/utils.ts` — colours are not in it.
 
 ## The orange problem
 
-The conflict git will not report, because it lives in prose git sees as unchanged.
+Orange stopped being reserved. The branch's prose was the side that gave — a role in the product
+beats a hue held in reserve.
 
-**Orange stops being reserved.** Three claims on this branch say otherwise, and this branch is the
-side that gives — a role in the product beats a hue held in reserve.
+| File | Was | Now |
+| --- | --- | --- |
+| `styles/tokens/tokens.md` | "`orange` and `yellow` are declared by the material and reserved" | only `yellow` is reserved; `slide \| orange` added to the role table |
+| `styles/material/helios/helios.md` | "`orange` and `yellow` are claimed by no role" | yellow alone; orange carries slide-deck identity |
+| `development-views/demo/components/roles.svelte` | the rail note under the Roles table, on the demo page itself: "`orange` and `yellow` are declared and claimed by no role…" | yellow alone; orange carries slide-deck identity. Found by looking at the rendered page — the search that produced the two rows above covered only `.md` files |
 
-| File | Line | Says | Should say |
-| --- | --- | --- | --- |
-| `styles/tokens/tokens.md` | 43 | "`orange` and `yellow` are declared by the material and reserved" | only `yellow`; add the `slide \| orange` row to the role table above |
-| `styles/material/helios/helios.md` | 28 | "`orange` and `yellow` are claimed by no role" | yellow alone; orange carries slide-deck identity |
-| `styles/material/selene/selene.md` | — | makes no claim about orange | nothing to change |
-
-### Orange is safe as a role, measured, in both materials
+Orange measured as a role, in both materials:
 
 | Material | wash | hover wash | border ≥3 | fill + on-fill ≥4.5 | text ≥7 |
 | --- | --- | --- | --- | --- | --- |
@@ -84,72 +49,57 @@ side that gives — a role in the product beats a hue held in reserve.
 | Celestial Selene | 1.27 | 2.02 | 6.05 | 7.04 | 12.65 |
 
 **Helios' orange border is the tightest number in the system at 3.08**, and it only clears because
-this branch darkened `orange-normal` from `#DD6F1A` to `#D06816`. On main's palette that step
-measures **2.75** against the panel plane — so `slide` shipped with a boundary below the 3:1 floor.
-The merge fixes that as a side effect. Worth knowing it was ever broken, and worth not nudging that
-value later without re-measuring.
+this branch darkened `orange-normal` from `#DD6F1A` to `#D06816`. On main's own palette that step
+measured **2.75** against the panel plane, so `slide` had shipped with a boundary below the 3:1
+floor. The merge fixes that. Do not nudge that value later without re-measuring.
 
-## Integration — not conflicts, but the merge is not done without them
+## Integration
 
-- **Templates is missing from the demo shell.** Main added `template-library-demo` and a card for
-  it; the branch's shell lists eleven pages. Add `{ href: "/demo/templates", label: "Templates" }`
-  to the first group in `demo-shell.svelte`.
-- **`/demo/templates` has no page component.** Main ships `routes/demo/templates/+page.server.ts`
-  and nothing else — no `+page.svelte` — while `demo-index` links to it. Open the route after
-  merging; if it errors it needs one.
-- **Three new screen components.** Check whether any needs an entry in `vocabulary-nav.svelte` and
-  the catalogue, both of which are hand-written lists.
-- **The review pages pick up new views for free** — the branch's globs walk
-  `app-views/categories/*/<surface>/`. Confirm the three pages list the new template views.
-- **The wiki describes the old tree.** `wiki/src/prose/trees/styles.md` documents four stages, two
-  themes and eight checks. All three numbers are wrong after this lands. Out of scope for the
-  merge, but it will read as false immediately.
+- **Templates added to the demo shell**, first group. It redirects into the application's own route
+  — the one entry that leaves the demo frame, on purpose, because the demo *is* the live page.
+- **`/demo/templates` is not broken.** Main ships only `+page.server.ts` and it is a deliberate
+  `307 → /app/<token>/reference/templates`. The first draft of this plan read it as an incomplete
+  commit; verified otherwise.
+- **The three screen components and five app-views main touched are modifications**, not new
+  shapes. The catalogue rail and the review globs needed nothing; the review pages now enumerate
+  `templates/overview-library`, `templates/template`, `templates/editor` and `templates/library`.
+- **The wiki still describes the old tree** — four stages, two themes, eight checks. All three
+  numbers are now false. Out of scope for the merge.
 
-## Order of operations
+## What was run
 
-Rebase rather than merge: main is two commits ahead and the branch is one logical change.
+1. Committed the worktree as `feat(styles): Celestial, with Helios and Selene`.
+2. `git rebase main`. Five conflicts, as above.
+3. `git rm` the two modify/deletes.
+4. Resolved the three content conflicts; ported the two prose fixes.
+5. `git rebase --continue`. Clean.
+6. Added Templates to the shell. Ran the gate. Looked at it — and found a third place the orange
+   prose lived, in the Roles table's own note on `/demo`. Fixed.
+7. Main had moved by one commit during the above (`88470b3`, templates only). Rebased again, no
+   conflicts, gate re-run on the final base.
 
-1. **Commit the worktree.** `git add -A && git commit -m "feat(styles): Celestial, with Helios and Selene"`
-2. **Rebase.** `git rebase main` — the worktree shares the repository, so no fetch. Expect conflicts
-   in exactly the five files above; four report as *deleted by us*.
-3. **Confirm the four deletions.** `git rm` each of the four moved/removed files.
-4. **Take the branch's `roles.svelte`.** `git checkout --theirs <path>` — **`--theirs`, not
-   `--ours`.** During a rebase the flags invert: you are replaying your commits *onto* main, so
-   `--ours` is main. Getting it backwards silently discards the rewritten file and still
-   typechecks. Open it afterwards and confirm it is the `.data-table` version.
-5. **Port the slide role**, plus the two prose fixes. This is the part no merge tool can do.
-   `git add` them and `git rebase --continue`.
-6. **Add Templates to the shell**, then run the gate.
-7. **Fast-forward.** From the main checkout: `git merge --ff-only work/styling`. `--ff-only` on
-   purpose — after a clean rebase it must fast-forward, and if it cannot, something moved
-   underneath and you want to know before it becomes a merge commit.
-
-## The gate
+## The gate, after the rebase
 
 ```
 cd app
-nix develop ../infra/devshell --command pnpm lint
-nix develop ../infra/devshell --command pnpm typecheck
-nix develop ../infra/devshell --command pnpm test
-nix develop ../infra/devshell --command pnpm test:scripts
-nix develop ../infra/devshell --command pnpm build
+nix develop ../infra/devshell --command pnpm lint          # 56 checks · 56 clean
+nix develop ../infra/devshell --command pnpm typecheck     # 0 errors across 2,241 files
+nix develop ../infra/devshell --command pnpm test          # 659 tests, 59 files
+nix develop ../infra/devshell --command pnpm test:scripts  # 99 pass
+nix develop ../infra/devshell --command pnpm build         # ✔ done
 ```
 
-On the branch today: **56 lint checks clean** (was 63 — seven style checks removed deliberately),
-**0 typecheck errors** across 2,189 files, **591 unit tests**, **99 script tests**, production build
-succeeds.
+The check count did not rise — main's two commits added tests, not checks. The seven style checks
+stayed gone. The served stylesheet carries all seven `--token-color-slide-*` tokens and no
+"orange … reserved" prose; the Roles table on `/demo` shows the `slide` row with seven filled
+swatches in both materials.
 
-The check count will rise after the merge, because main added capabilities and model methods with
-checks of their own. What matters is that none *fails*, and that the seven style checks stay gone —
-if `lint` reports `themes-agree-with-each-other` or `literal-colours-in-themes-only`, a deleted file
-came back during the rebase.
+## Step 07, when decided
 
-### Then look at it
+```
+cd /home/jakul/cyberia/icarus
+git merge --ff-only work/styling
+```
 
-The gate does not catch a colour that resolves to nothing. Open `/demo` in both materials and check
-the Roles table has a `slide` row with seven filled swatches. **An unregistered token paints
-transparent and fails silently** — that is the one failure mode this merge can actually produce.
-
-Unrelated to main, and worth knowing: the section rail on `/demo` and the catalogue rail on
-`/demo/vocabulary` both hard-code their section lists. They are correct today and nothing tells you
-when they stop being.
+`--ff-only` on purpose — after a clean rebase it must fast-forward, and if it cannot, something
+moved underneath and you want to know before it becomes a merge commit.

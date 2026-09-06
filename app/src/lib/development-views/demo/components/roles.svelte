@@ -65,9 +65,8 @@
     <p class="text-body-sm text-ink-secondary m-0">
       Meaning roles are fixed. Identity and brand roles may share a hue with one another but never
       with a meaning hue — someone who learnt that red means danger learnt it everywhere.
-      <code class="text-micro font-mono">orange</code> and
-      <code class="text-micro font-mono">yellow</code> are declared and claimed by no role; they are
-      the first to reach for when a categorical series needs more than four.
+      <code class="text-micro font-mono">yellow</code> is declared and claimed by no role.
+      <code class="text-micro font-mono">orange</code> carries slide-deck identity.
     </p>
   </div>
 </section>

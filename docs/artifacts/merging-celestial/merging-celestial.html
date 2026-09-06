@@ -153,9 +153,19 @@
   <h1>Five files conflict. One of them matters.</h1>
   <p class="lede">
     Main gained a <code>slide</code> brand role bound to orange while this branch was rebuilding
-    the styles tree around it. Everything else in the overlap is a file that moved. Nothing below
-    has been run — this is the plan, not a record.
+    the styles tree around it. Everything else in the overlap is a file that moved.
   </p>
+  <div class="rail" style="max-width:76ch">
+    <p>
+      <b>Steps 01–06 have been run.</b> <code>work/styling</code> is two commits rebased directly
+      onto <code>main</code> at <code>88470b3</code>, with the gate green. Main moved once more
+      mid-run — <code>88470b3 fix(templates)</code>, three files, no overlap — and the branch was
+      rebased again, clean. <b>Step 07 has not been run</b>: main is untouched, and
+      <code>git merge-base --is-ancestor main work/styling</code> now answers yes, so the
+      fast-forward will succeed whenever you say. Branch SHAs are not cited here because they
+      change on every rebase; the base is what matters.
+    </p>
+  </div>
 </div>
 
 <nav class="bar">
@@ -342,6 +352,12 @@
           <td class="l">yellow alone; orange now carries slide-deck identity</td>
         </tr>
         <tr>
+          <th class="mono">development-views/demo/components/roles.svelte</th>
+          <td class="mono">note</td>
+          <td class="l">“<code>orange</code> and <code>yellow</code> are declared and claimed by no role…” — in the rail note under the Roles table, <b>on the demo page itself</b></td>
+          <td class="l">yellow alone; orange carries slide-deck identity. <b>Found by looking, not by grep</b> — the search that produced the two rows above only covered <code>.md</code> files.</td>
+        </tr>
+        <tr>
           <th class="mono">styles/material/selene/selene.md</th>
           <td class="mono">—</td>
           <td class="l">no claim about orange</td>
@@ -396,9 +412,9 @@
           <td class="l">Add <code>{ href: "/demo/templates", label: "Templates" }</code> to the first group in <code>demo-shell.svelte</code>.</td>
         </tr>
         <tr>
-          <th class="l"><code>/demo/templates</code> has no page component</th>
-          <td class="l">Main ships <code>routes/demo/templates/+page.server.ts</code> and nothing else — no <code>+page.svelte</code> — while <code>demo-index</code> links to it.</td>
-          <td class="l">Open the route after merging. If it errors, it needs a <code>+page.svelte</code> rendering <code>template-library-demo.svelte</code>.</td>
+          <th class="l"><code>/demo/templates</code> has no page component — <span class="chip ok">not a problem</span></th>
+          <td class="l">Main ships only <code>+page.server.ts</code>, and it is a deliberate <code>307</code> into <code>/app/&lt;token&gt;/reference/templates</code> — the demo <em>is</em> the live page. The plan's first draft read this as an incomplete commit; it is not.</td>
+          <td class="l">Nothing. Verified: the route answers <code>307 → /app/dev-project/reference/templates</code>. It is the one shell entry that leaves the demo frame, on purpose.</td>
         </tr>
         <tr>
           <th class="l">Three new screen components</th>
@@ -446,7 +462,15 @@ git commit -m "feat(styles): Celestial, with Helios and Selene"</pre>
         <h4>Rebase onto main</h4>
         <p>The worktree shares the repository, so main is already there — no fetch needed.</p>
 <pre>git rebase main</pre>
-        <p>Expect conflicts in exactly the five files in section 02. Four report as <em>deleted by us</em>.</p>
+        <p>
+          Exactly the five files in section 02 conflicted — but not in the shape predicted. Git's
+          rename detection matched <code>color.css</code> and <code>tailwind.css</code> to their new
+          homes, so those two arrived as <em>content</em> conflicts inside
+          <code>tokens/color.css</code> and <code>integrations/tailwind/tailwind.css</code>, with
+          main's <code>slide</code> lines already sitting behind the markers. Only
+          <code>styles.mjs</code> and <code>semantic-tokens.md</code> came through as
+          modify/delete. Less porting than planned; the same five files.
+        </p>
       </div>
     </article>
 
@@ -529,19 +553,18 @@ nix develop ../infra/devshell --command pnpm test:scripts
 nix develop ../infra/devshell --command pnpm build</pre>
 
   <div class="seamgrid g4">
-    <div><strong>56</strong><span>lint checks, all clean. Was 63 — seven style checks were removed deliberately.</span></div>
-    <div><strong>0</strong><span>typecheck errors across 2,189 files.</span></div>
-    <div><strong>591</strong><span>unit tests, plus 99 script tests.</span></div>
+    <div><strong>56</strong><span>lint checks, all clean, after the rebase. Was 63 before the branch — seven style checks removed deliberately, and main added none.</span></div>
+    <div><strong>0</strong><span>typecheck errors across 2,241 files (2,189 before main's template library).</span></div>
+    <div><strong>659</strong><span>unit tests across 59 files (591 before main's), plus 99 script tests.</span></div>
     <div><strong>✓</strong><span>production build.</span></div>
   </div>
 
   <div class="rail quiet">
     <p>
-      <b>The check count will rise after the merge.</b> Main added capabilities and model methods
-      with checks of their own. What matters is that no check <em>fails</em> and that the seven
-      style checks stay gone — if <code>lint</code> reports
-      <code>themes-agree-with-each-other</code> or <code>literal-colours-in-themes-only</code>,
-      a deleted file came back during the rebase.
+      <b>The check count did not rise</b> — main's two commits added tests, not checks. What
+      mattered held: none fails, and the seven style checks stayed gone. If <code>lint</code> ever
+      reports <code>themes-agree-with-each-other</code> or
+      <code>literal-colours-in-themes-only</code> again, a deleted file has come back.
     </p>
   </div>
 
@@ -563,8 +586,8 @@ nix develop ../infra/devshell --command pnpm build</pre>
 </section>
 
 <footer class="end wrap">
-  Merging Celestial · <code>work/styling</code> at <code>98d9cd0</code> → <code>main</code> at
-  <code>239d028</code> · nothing in this document has been run
+  Merging Celestial · <code>work/styling</code> rebased onto <code>main</code> at
+  <code>88470b3</code> · steps 01–06 run, step 07 waiting
 </footer>
 
 <script>

@@ -32,8 +32,11 @@ surface's internals and a development view may not — see
 Four groups, separated by a rule rather than labelled, because the kinds are
 legible from the names once they are apart:
 
-1. **System** — the design system and the composition vocabulary. What things
-   are made of, and which shape holds what.
+1. **System** — the design system, the composition vocabulary, and the template
+   library. What things are made of, which shape holds what, and the one live
+   reference page. Templates redirects into the application's own route, so it
+   is the one entry that leaves this frame — deliberately, because the demo there
+   *is* the live page.
 2. **Objects** — blocks, analysis, plot, thread. A thing on a surface.
 3. **Panels** — context, inspector, workspace. The app's own views, one at a
    time, in the harness that renders them alone.

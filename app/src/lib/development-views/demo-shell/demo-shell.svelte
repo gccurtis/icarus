@@ -18,7 +18,8 @@
   const GROUPS = [
     [
       { href: "/demo", label: "Design system" },
-      { href: "/demo/vocabulary", label: "Composition" }
+      { href: "/demo/vocabulary", label: "Composition" },
+      { href: "/demo/templates", label: "Templates" }
     ],
     [
       { href: "/demo/blocks", label: "Blocks" },
