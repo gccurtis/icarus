@@ -13,7 +13,7 @@
       title: "Find",
       icon: Search,
       gesture: "Search, scope, kind, multi-tag and sort controls",
-      result: "One filtered table over owner-only Personal rows; Project and Shared options are reserved pending representation approval."
+      result: "One filtered table over owner-only Personal rows; Project remains a future ownership state and Shared is absent from the current contract."
     },
     {
       number: "02",

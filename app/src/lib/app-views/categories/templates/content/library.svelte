@@ -46,7 +46,7 @@
   const unavailable = $derived(library.ready ? library.current.unavailable : []);
   const recent = $derived(recentTemplatesIn(templates, 10));
 
-  const SCOPES: readonly TemplateScope[] = ["Project", "Shared", "Personal"];
+  const SCOPES: readonly TemplateScope[] = ["Project", "Personal"];
 
   const SORTS = [
     { value: "updated", label: "Updated" },

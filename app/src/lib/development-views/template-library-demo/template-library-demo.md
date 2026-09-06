@@ -15,10 +15,27 @@ representation relationships, code-change inventory, verification invariants,
 decisions that remain open, and a separately marked proposal for a durable
 scratch-resource authoring lifecycle.
 
-The current safe visibility boundary is narrower than the future-state filter
-vocabulary: the capability returns only the viewer's templates as `Personal`.
-`Project` and `Shared` remain deferred until an approved representation field
-can authorize those relationships.
+The current safe visibility boundary is narrower than the future Project model:
+the capability returns only the viewer's templates as `Personal`. `Project`
+remains deferred until ownership and transfer are represented. `Shared` is not a
+current availability state; future personal-template access should use an owner
+and explicit access list.
+
+## Implemented persistence
+
+The live stage is not backed by component-local mock values. Accepted create,
+rename, description, variable-description, tag, duplicate, and delete commands
+write through the Templates capability into the representation store. Refresh
+and server restart preserve them. Document and slide-deck `Use` also persists an
+independent project resource with template provenance. Spreadsheet
+materialization exists at the capability boundary, but its UI hand-off remains
+disabled until the spreadsheet editor consumes represented resource ids.
+
+The follow-on decision list is therefore not a list of missing CRUD behaviors.
+It separates future ownership, production authorization, network-retry safety,
+cross-table crash recovery, editor-session recovery, and remaining Use inputs.
+Each rendered item states its trigger, current behavior, worst credible result,
+and completion shape.
 
 ## Why the live route sits under `/app/[project]`
 
@@ -26,14 +43,17 @@ Capabilities resolve project scope from the calling page's pathname and admit
 only `/app/<token>`. A conventional `/demo/templates` component could look
 right but every remote read or mutation would be outside a project scope.
 
-The friendly demo route therefore redirects to
-`/app/[project]/reference/templates`. This inherits the application's client
-model and authorization boundary without changing either. The reference page
+All reference components and documents live under
+`src/lib/development-views/template-library-demo`. The friendly demo route
+redirects to `/app/[project]/reference/templates`, whose five-line page is only
+a project-scope adapter importing that development view. This inherits the
+application's client model and authorization boundary without copying product
+markup or moving the development implementation under app views. The reference
 then creates a fresh Workspace State coordinator for its three panes. It does
 not restore or flush that coordinator, so looking at the reference cannot move
-the reader's saved tabs, resize their panels or replace their selection.
-Project route scope authorizes the call and any resource created with Use; it
-does not make another member's template visible.
+the reader's saved tabs, resize their panels or replace their selection. Project
+route scope authorizes the call and any resource created with Use; it does not
+make another member's template visible.
 
 ## Boundary
 
@@ -133,8 +153,8 @@ component being reviewed.
   with their signatures or bypass their boundary.
 - The isolated workspace state is never restored or flushed.
 - `/demo/templates` never attempts a capability call; it redirects first.
-- Template visibility is owner-only and emits `Personal`; Project and Shared
-  are documented as deferred vocabulary, not implemented access states.
+- Template visibility is owner-only and emits `Personal`; Project is documented
+  as a future ownership state, and Shared is absent from the current contract.
 - Scope proves project membership but carries no membership role. The reference
   uses the development owner; production writes still need role-aware scope.
 - Batched collection writes and removals are atomic within one table file, but

@@ -45,7 +45,7 @@
     {@render flow(LIBRARY)}
     <p>
       Search, summaries and inspection are projections over the same returned rows. Today that set
-      is viewer-owned only and emits Personal; Project and Shared wait for represented access rules.
+      is viewer-owned only and emits Personal; Project waits for a represented ownership model.
       A mutation completes at the server boundary before the library refreshes; no pane owns a private copy.
     </p>
   </section>

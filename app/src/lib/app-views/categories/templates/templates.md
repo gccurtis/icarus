@@ -84,9 +84,11 @@ reference documents that recovery decision explicitly.
 
 Representation currently records a template owner but no project ownership or
 sharing policy. The capability therefore returns only viewer-owned **Personal**
-rows. **Shared** and **Project** remain in the visual vocabulary and report zero
-until a represented availability/project association is approved. Project
-membership and tags are never used to manufacture access.
+rows. **Project** remains a visible future scope and reports zero until its
+ownership/transfer model is represented. **Shared** is not a current scope;
+future personal-template access should name an owner and explicit access list
+instead of introducing an ambiguous bucket. Project membership and tags are
+never used to manufacture access.
 
 ## Authoring boundary
 

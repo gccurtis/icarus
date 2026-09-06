@@ -29,9 +29,10 @@ role-aware scope before project-resource creation can distinguish a viewer from
 an editor. Template metadata mutation remains additionally owner-checked against
 the represented template `userId`.
 
-`project` and `shared` remain in the public `TemplateAvailability` vocabulary so
-the view contract will not change when those access rules are represented, but
-this capability never invents either value.
+`project` remains in the public `TemplateAvailability` vocabulary as the one
+named future ownership state. The capability never invents it. There is no
+generic `shared` availability in the current contract; future access to a
+personal template needs an explicit owner-and-access-list design instead.
 
 A personal template has no represented project association. Deletion therefore
 refuses while any resource outside the request's project still references it;

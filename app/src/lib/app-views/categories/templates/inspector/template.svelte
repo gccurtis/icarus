@@ -605,7 +605,7 @@
       </div>
 
       {#if !template.canEdit}
-        <p class="permission-note">Duplicate this shared template to edit its name, description, variables, or tags.</p>
+        <p class="permission-note">Duplicate this template to edit its name, description, variables, or tags.</p>
       {/if}
       {#if template.makes === "Spreadsheet"}
         <p class="permission-note">{SPREADSHEET_HANDOFF}</p>
@@ -1067,10 +1067,10 @@
     display: block;
     width: 100%;
     margin: 0;
-    padding: calc(var(--token-spacing-unit) * 1.5);
-    border: 1px solid var(--token-border-subtle);
-    border-radius: var(--token-radius-control);
-    background: var(--token-surface-panel);
+    padding: calc(var(--token-spacing-unit) * 0.5) 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: var(--token-ink-muted);
     cursor: text;
     font: inherit;
@@ -1078,13 +1078,12 @@
   }
 
   .variable-description:hover {
-    border-color: var(--token-border-strong);
+    color: var(--token-ink-secondary);
   }
 
   .variable-description:focus-visible {
-    border-color: var(--token-color-interactive-border);
     outline: 2px solid var(--token-color-interactive-surface);
-    outline-offset: 1px;
+    outline-offset: 2px;
   }
 
   :global(.variable-description-editor) {
@@ -1094,8 +1093,10 @@
     margin-bottom: 0;
     resize: none;
     overflow-y: auto;
-    border-color: var(--token-border-subtle);
-    background: var(--token-surface-canvas);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
     color: var(--token-ink-secondary);
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);

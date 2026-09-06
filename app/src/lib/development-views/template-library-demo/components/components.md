@@ -24,7 +24,8 @@ around them. It imports no Template procedure and supplies no replacement data.
 The seven library gestures and their system-visible result. Static explanatory
 content; it has no product interaction state. The Find and Duplicate entries
 state the current owner-only visibility fallback rather than presenting the
-reserved Project/Shared vocabulary as working access control.
+future Project vocabulary as working access control. Shared is deliberately not
+part of the current library contract.
 
 ## `data-flow.svelte`
 

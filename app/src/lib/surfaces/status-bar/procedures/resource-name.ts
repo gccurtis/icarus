@@ -67,7 +67,7 @@ const KIND_WORD: Partial<Record<TableName, string>> = {
 
 const isTable = (value: string): value is TableName => Object.hasOwn(NAMED_FIELD, value);
 
-/** Ids are minted `<table>:<n>`. */
+/** Resource ids keep the table before one opaque suffix. */
 const tableOf = (id: string): TableName | undefined => {
   const [table] = id.split(":");
   return table !== undefined && isTable(table) ? table : undefined;

@@ -18,7 +18,7 @@ import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
 /** The target and availability words used by the library UI. */
 export type TemplateTarget = "Document" | "Slide deck" | "Spreadsheet";
-export type TemplateScope = "Project" | "Shared" | "Personal";
+export type TemplateScope = "Project" | "Personal";
 
 export type TemplateVariable = TemplateDetail["variables"][number] & {
   /** Stable inside one template; represented variables are named rather than identified. */
@@ -54,7 +54,6 @@ export type LibraryTemplateDetail = LibraryTemplate & {
 export type TemplateLibrarySummary = {
   readonly total: number;
   readonly project: number;
-  readonly shared: number;
   readonly personal: number;
   readonly documents: number;
   readonly slideDecks: number;
@@ -75,7 +74,6 @@ const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
 
 const SCOPE_LABEL = {
   project: "Project",
-  shared: "Shared",
   personal: "Personal"
 } as const satisfies Record<TemplateLibraryItem["availability"], TemplateScope>;
 
@@ -185,7 +183,6 @@ export const templateLibrarySummaryIn = (
   return {
     total: rows.length,
     project: count((row) => row.scope === "Project"),
-    shared: count((row) => row.scope === "Shared"),
     personal: count((row) => row.scope === "Personal"),
     documents: count((row) => row.makes === "Document"),
     slideDecks: count((row) => row.makes === "Slide deck"),

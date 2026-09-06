@@ -155,8 +155,6 @@
         <dl class="count-list">
           <dt>Project</dt>
           <dd>{summary.project}</dd>
-          <dt>Shared</dt>
-          <dd>{summary.shared}</dd>
           <dt>Personal</dt>
           <dd>{summary.personal}</dd>
         </dl>

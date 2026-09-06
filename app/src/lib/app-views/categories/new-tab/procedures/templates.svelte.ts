@@ -8,7 +8,7 @@ export type NewTabTemplate = {
   readonly id: string;
   readonly name: string;
   readonly makes: "Document" | "Slide deck" | "Spreadsheet";
-  readonly scope: "Project" | "Shared" | "Personal";
+  readonly scope: "Project" | "Personal";
   readonly variableCount: number;
   readonly updated: string;
   readonly createdBy: string;
@@ -22,7 +22,6 @@ const TARGET = {
 
 const SCOPE = {
   project: "Project",
-  shared: "Shared",
   personal: "Personal"
 } as const satisfies Record<TemplateLibraryItem["availability"], NewTabTemplate["scope"]>;
 

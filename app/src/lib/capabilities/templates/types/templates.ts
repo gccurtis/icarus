@@ -6,10 +6,11 @@ import type {
 export type TemplateTarget = TemplateBody["resource"];
 
 /**
- * `project` and `shared` are reserved for represented access states. Until
- * those exist, the capability returns only `personal` (the viewer owns it).
+ * `project` is reserved for a represented project-owned template set. Until
+ * that ownership model exists, the capability returns only `personal` (the
+ * viewer owns it). There is no generic Shared state in the current contract.
  */
-export type TemplateAvailability = "project" | "shared" | "personal";
+export type TemplateAvailability = "project" | "personal";
 
 export type TemplateLibraryItem = {
   readonly id: string;

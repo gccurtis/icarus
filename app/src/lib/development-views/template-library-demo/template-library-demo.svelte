@@ -66,8 +66,8 @@
     },
     {
       label: "Availability",
-      value: "Personal only · sharing deferred",
-      detail: "Project and Shared remain reserved UI vocabulary until an approved representation field can authorize them.",
+      value: "Personal now · Project model open",
+      detail: "Every current row is viewer-owned and emitted as Personal. Project templates wait for an explicit ownership and transfer model; Shared is not part of the current contract.",
       state: "deferred"
     },
     {
@@ -92,44 +92,46 @@
 
   const DECISIONS = [
     {
-      title: "Availability authority",
-      detail: "The capability safely returns only viewer-owned templates as Personal. Project and Shared are reserved until schema approval gives availability and project-sharing one represented authority."
+      title: "Personal and Project ownership",
+      priority: "Before Project scope · not a current-library blocker",
+      today: "Every stored template has a userId, the capability returns only that viewer's rows, and every row is labeled Personal. Shared has been removed from the current UI and public availability type.",
+      worst: "Calling a row Project without a represented project owner would make access, deletion, and responsibility ambiguous; deriving it from the route could expose one person's template to every project member.",
+      next: "Decide whether Personal and Project are separate tables or one explicit ownership union. Define personal-to-project and project-to-personal as copy, promotion, or attachment. A later personal access list can name an owner plus readers/users without reviving a vague Shared bucket."
     },
     {
-      title: "Membership-role write policy",
-      detail: "Request scope proves project membership but does not yet carry owner/editor/viewer role. The development session is the project owner; production mutation must add a role-aware scope before a viewer can be distinguished from an editor."
+      title: "Role-aware production writes",
+      priority: "Before non-owner production use · high",
+      today: "The route proves project membership, and template metadata writes separately require the represented owner. The development session is the project owner, but scope does not yet distinguish project owner, editor, and viewer.",
+      worst: "A read-only project member could reach a resource-creation command once this development boundary is exposed to real multi-role traffic.",
+      next: "Carry the admitted membership role in server scope and require a write-capable role in Project Resources and any future Project-template mutation. This is authorization work, not visual library work."
     },
     {
-      title: "Cross-project template retirement",
-      detail: "A personal template used in another project safely refuses deletion from every scoped project today. Retirement still needs an owner-authorized global detach or a represented soft-delete/tombstone so the owner is not left in a permanent dead end."
+      title: "Retry-safe server commands",
+      priority: "Before automatic retry/offline queues · medium",
+      today: "Workspace single-flight shares one identical pending promise inside one browser workspace. Revision checks protect update and delete, but create, duplicate, and Use intentionally mint a fresh UUID for every separately accepted request.",
+      worst: "If a transport retries after the server committed but before the browser received the answer—or two clients submit the same intent—the result can be two templates or two created resources. Existing rows are not overwritten or corrupted.",
+      next: "Add a caller-generated operation id and a persisted, user/project-scoped result ledger so a retry returns the first result. This is a moderate server contract and retention decision, not a reliable one-line debounce; it does not block this merge while the client has no automatic retry queue."
     },
     {
-      title: "Durable authoring session",
-      detail: "Define the lease, expiry and recovery owner before scratch resources exist. A generic tab close cannot safely own asynchronous cleanup."
+      title: "Cross-table failure recovery",
+      priority: "Before production-critical mutations · high, low-frequency",
+      today: "Admission and conflicts are resolved before writing, and each individual table file is replaced atomically. There is no transaction spanning template, version, resource, snapshot, provenance, and cell tables.",
+      worst: "An I/O or process failure between table commits can leave a new template without its history row, an updated template without the matching version, an instantiated resource without its snapshot, or a partially completed delete. Ordinary validation failures do not cause this; it requires a persistence failure after an earlier table committed.",
+      next: "Use a transactional backend or add a durable mutation journal with deterministic recovery. The current per-table hardening reduces the failure window but cannot honestly promise all-or-nothing behavior across files."
     },
     {
-      title: "Scratch identity marker",
-      detail: "Representation has no ephemeral or draft marker today. A lifecycle capability must keep scratch rows distinguishable without pretending they are project resources."
+      title: "Template authoring session and failed Done",
+      priority: "Before a real template editor · does not block library CRUD",
+      today: "The library editor surface is intentionally only a shell. No scratch resource is created, so the current library has no Done path and cannot lose editor changes it never accepts.",
+      worst: "A naive future Done could flush an editor, lose a revision race, and then delete the only scratch body—or a tab close could race an asynchronous flush and leave either lost edits or orphan scratch data.",
+      next: "Represent a session with user, template, scratch id, base revision, lease, and status. Done must retain the scratch and surface a retry/conflict state until flush and compare-and-swap both succeed; cleanup happens last. Cancel is explicit, while navigation merely suspends the session."
     },
     {
-      title: "Spreadsheet authoring readiness",
-      detail: "The spreadsheet surface remains mock-backed and Workspace State has no equivalent spreadsheet runtime hand-off yet."
-    },
-    {
-      title: "Variable overrides",
-      detail: "Represented defaults resolve today and unbound or cyclic variables refuse before any write. A caller answer shape is still needed for per-use overrides."
-    },
-    {
-      title: "Multi-table mutation transaction",
-      detail: "The representation store has no transaction across table files. Create, update, duplicate, remove and instantiate use safer per-table writes, but a later-table failure can still leave partial state until transaction or recovery semantics exist."
-    },
-    {
-      title: "Durable server idempotency",
-      detail: "Workspace-wide single-flight prevents duplicate UI execution and blank suffixes are allocated at the server boundary. A durable request-id ledger is still needed to make retries idempotent across separate clients or server restarts."
-    },
-    {
-      title: "Failed Done recovery",
-      detail: "Specify what remains open after flush or compare-and-swap refusal, and how the reader retries without losing the scratch body."
+      title: "Remaining Use inputs and hand-offs",
+      priority: "Before every template can be used from UI · medium",
+      today: "Document and deck Use persist independent resources using represented defaults. Spreadsheet materialization is implemented and tested, but its button stays disabled because the spreadsheet editor does not consume the created resource id. Missing or cyclic variable defaults refuse before any write.",
+      worst: "Enabling these paths prematurely would either open a mock disconnected from the resource just written or force callers to invent variable-answer data that representation cannot record.",
+      next: "Define the variable-answer command shape and connect the spreadsheet runtime to represented resource ids. Neither changes the current Personal library's create, edit, duplicate, or delete persistence."
     }
   ];
 </script>
@@ -184,6 +186,8 @@
         <p>
           This route is a review surface, not a parallel product. Its centre and flanks are the
           actual filesystem-registered Template views running against an isolated workspace view.
+          All reference implementation lives in <code>development-views</code>; the app route is only
+          the thin project-scope adapter those real views require.
         </p>
       </aside>
     </section>
@@ -203,8 +207,17 @@
         <p>
           Context, centre and inspector share one disposable workspace coordinator. Search, filters,
           shelf scrolling and selection are interactive; no UI is copied into this page. Visibility
-          is owner-only today: Project and Shared stay deferred until schema approval represents
-          their access rules.
+          is owner-only today: every returned template is Personal. Project ownership remains an
+          explicit design decision, and Shared is not a current library state.
+        </p>
+      </div>
+      <div class="persistence-fact">
+        <Database size={16} aria-hidden="true" />
+        <p>
+          <strong>Persisted now, not mocked:</strong> create, rename, description,
+          variable-description, tag, duplicate, and delete mutations write through the Templates
+          capability into the representation store. Refreshing the page or restarting the server
+          keeps accepted changes. Document and deck Use also persist the independent resource they create.
         </p>
       </div>
       <div class="live-warning">
@@ -276,7 +289,7 @@
         <p>
           A template owns portable content rather than live resource IDs. Versions preserve prior
           values; resources created with Use retain provenance but become independent. Ownership is
-          represented; Project and Shared availability are not yet represented or emitted.
+          represented for Personal templates; Project ownership is not yet represented or emitted.
         </p>
       </div>
 
@@ -349,10 +362,10 @@
 
     <section id="decisions" class="section">
       <div class="section-heading">
-        <div><span class="kicker">UNRESOLVED ON PURPOSE</span><h2>What this picture does not decide</h2></div>
+        <div><span class="kicker">FOLLOW-ON / PRIORITIZED</span><h2>Six decisions, with their actual stakes</h2></div>
         <p>
-          A reference is useful only if its guesses are visible. These choices need product or data
-          authority before the implementation should harden around them.
+          None of these means current library CRUD is a mock. Each row says what works today, the
+          worst credible failure, when it matters, and what completing it entails.
         </p>
       </div>
 
@@ -361,7 +374,15 @@
           <article>
             <span>{String(index + 1).padStart(2, "0")}</span>
             <CircleAlert size={16} aria-hidden="true" />
-            <div><h3>{decision.title}</h3><p>{decision.detail}</p></div>
+            <div>
+              <h3>{decision.title}</h3>
+              <strong class="decision-priority">{decision.priority}</strong>
+              <dl>
+                <div><dt>Today</dt><dd>{decision.today}</dd></div>
+                <div><dt>Worst case</dt><dd>{decision.worst}</dd></div>
+                <div><dt>Completion</dt><dd>{decision.next}</dd></div>
+              </dl>
+            </div>
           </article>
         {/each}
       </div>
@@ -639,23 +660,36 @@
     text-align: right;
   }
 
+  .persistence-fact,
   .live-warning {
     display: flex;
     align-items: flex-start;
     gap: calc(var(--token-spacing-unit) * 2);
-    margin: -0.75rem 0 calc(var(--token-spacing-unit) * 3);
     padding: calc(var(--token-spacing-unit) * 2.5) calc(var(--token-spacing-unit) * 3);
-    border: 1px solid var(--token-color-attention-border);
     border-radius: var(--token-radius-control);
+  }
+
+  .persistence-fact {
+    margin: -0.75rem 0 calc(var(--token-spacing-unit) * 2);
+    border: 1px solid var(--token-color-success-border);
+    background: var(--token-color-success-surface);
+    color: var(--token-color-success-text);
+  }
+
+  .live-warning {
+    margin: 0 0 calc(var(--token-spacing-unit) * 3);
+    border: 1px solid var(--token-color-attention-border);
     background: var(--token-color-attention-surface);
     color: var(--token-color-attention-text);
   }
 
+  .persistence-fact :global(svg),
   .live-warning :global(svg) {
     flex: none;
     margin-top: 0.1rem;
   }
 
+  .persistence-fact p,
   .live-warning p {
     margin: 0;
     color: var(--token-ink-secondary);
@@ -665,6 +699,10 @@
 
   .live-warning strong {
     color: var(--token-color-attention-text);
+  }
+
+  .persistence-fact strong {
+    color: var(--token-color-success-text);
   }
 
   .lifecycle {
@@ -944,8 +982,39 @@
     font-weight: 550;
   }
 
-  .decisions p {
+  .decision-priority {
+    display: block;
+    margin-top: calc(var(--token-spacing-unit) * 1);
+    color: var(--token-color-attention-text);
+    font-family: var(--token-font-mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .decisions dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: calc(var(--token-spacing-unit) * 3);
     margin-top: calc(var(--token-spacing-unit) * 1.5);
+  }
+
+  .decisions dt,
+  .decisions dd {
+    margin: 0;
+  }
+
+  .decisions dt {
+    color: var(--token-ink-secondary);
+    font-family: var(--token-font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .decisions dd {
+    margin-top: calc(var(--token-spacing-unit) * 1);
     color: var(--token-ink-muted);
     font-size: 0.75rem;
     line-height: 1.55;
@@ -1045,6 +1114,10 @@
     }
 
     .checks {
+      grid-template-columns: 1fr;
+    }
+
+    .decisions dl {
       grid-template-columns: 1fr;
     }
   }

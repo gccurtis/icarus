@@ -28,8 +28,7 @@
     tone = "default",
     disabled = false,
     title,
-    onclick,
-    ref = $bindable(null)
+    onclick
   }: {
     label: string;
     icon?: Component<{ size?: number | string; "aria-hidden"?: boolean | "true" | "false" }>;
@@ -39,8 +38,6 @@
     /** Why it is disabled, or what it does when that is not obvious. */
     title?: string;
     onclick?: () => void;
-    /** The concrete control, for deterministic focus return after inline editing. */
-    ref?: HTMLButtonElement | null;
   } = $props();
 
   // The marker is forwarded through `Button` onto the element it renders.
@@ -59,7 +56,7 @@
   `xs` is the 24px step: the pointer-target floor, and the only size that leaves
   room for three controls across a panel.
 -->
-<Button bind:ref {...trace} variant={VARIANT[tone]} size="xs" {disabled} {title} {onclick}>
+<Button {...trace} variant={VARIANT[tone]} size="xs" {disabled} {title} {onclick}>
   {#if Icon}
     <Icon aria-hidden="true" />
   {/if}

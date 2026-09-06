@@ -60,8 +60,8 @@
     {
       area: "server",
       path: "model/server/store/{definition,types,methods/shared/persist,test}/…",
-      title: "Stable identity and bounded table writes",
-      detail: "Opaque UUID row ids eliminate delete-and-reuse ABA targeting. Collection changes admit first and persist once; each table swaps through a sibling next-file before live memory changes. Cross-table transactions remain unresolved.",
+      title: "Stable identity and failure-safe table commits",
+      detail: "New rows use opaque UUID ids, so deleting the highest numbered row cannot cause a later row to reuse that identity and be mistaken for the old subject. Batch create/remove/field-remove validates every candidate before one table write. Persistence writes a sibling .next file, atomically renames it over the live file, and only then changes memory, so a failed table write cannot create phantom live state. This is deliberately per-table, not a cross-table transaction.",
       icon: Braces
     },
     {
@@ -89,7 +89,7 @@
       area: "views",
       path: "app-views/categories/templates/context/overview-library.svelte",
       title: "Library context",
-      detail: "A light New template section puts an optional name above three direct colored icon actions; a blank name receives a unique working title. Total carries compact scope and kind counts. Project and Shared remain zero until their schema authority is approved.",
+      detail: "A light New template section puts an optional name above three direct colored icon actions; a blank name receives a unique working title. Total carries compact scope and kind counts. Personal is the only emitted scope; Project remains zero until its ownership model is approved.",
       icon: PanelsTopLeft
     },
     {
@@ -102,7 +102,7 @@
     {
       area: "views",
       path: "components/authored/{carousel-shelf,panel/panel-button,screen/{screen-card,screen-row,screen-shelf}}/…",
-      title: "Shared shelf, selection and focus semantics",
+      title: "Shelf, selection and focus semantics",
       detail: "Wheel, Shift-wheel, trackpad, touch, keyboard, scrollbar, and pointer dragging all move the recessed shelf. Edge shadows reveal overflow, hover changes only the border, and selected cards retain their active surface.",
       icon: PanelsTopLeft
     },
