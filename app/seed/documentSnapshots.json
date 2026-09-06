@@ -168,5 +168,186 @@
         }
       ]
     }
+  },
+  {
+    "_id": "documentSnapshots:2",
+    "_creationTime": 1784707200000,
+    "projectId": "default",
+    "resourceId": "documents:2",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788213600000,
+    "body": {
+      "pageSetup": { "paper": "letter", "orientation": "portrait", "margins": { "top": 0.75, "right": 0.8, "bottom": 0.75, "left": 0.8 } },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontFamily": "IBM Plex Sans", "fontSize": 28, "fontWeight": 650, "color": "--token-ink-primary" },
+          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 1.5 }
+        }
+      },
+      "rows": [
+        {
+          "id": "#incident-live-title-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#incident-live-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [{ "id": "#incident-live-title-a", "kind": "literal", "text": "Substation 14 incident write-up" }],
+              "display": "Substation 14 incident write-up",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#incident-live-summary-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#incident-live-summary",
+              "type": "text",
+              "variant": "paragraph",
+              "style": "body",
+              "atoms": [{ "id": "#incident-live-summary-a", "kind": "literal", "text": "Protection isolated the transformer bank at 14:18 after dissolved-gas alarms crossed the operating threshold. Operators transferred critical load within eleven minutes; no safety event occurred." }],
+              "display": "Protection isolated the transformer bank at 14:18 after dissolved-gas alarms crossed the operating threshold. Operators transferred critical load within eleven minutes; no safety event occurred.",
+              "marks": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "_id": "documentSnapshots:3",
+    "_creationTime": 1783497600000,
+    "projectId": "default",
+    "resourceId": "documents:3",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1787954400000,
+    "body": {
+      "pageSetup": { "paper": "a4", "orientation": "portrait", "margins": { "top": 0.7, "right": 0.75, "bottom": 0.7, "left": 0.75 } },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontFamily": "IBM Plex Sans", "fontSize": 28, "fontWeight": 650, "color": "--token-ink-primary" },
+          "term": { "name": "Term", "fontFamily": "IBM Plex Sans", "fontSize": 13, "fontWeight": 650, "color": "--token-color-accent-1-text" },
+          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 1.45 }
+        }
+      },
+      "rows": [
+        {
+          "id": "#glossary-live-title-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#glossary-live-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [{ "id": "#glossary-live-title-a", "kind": "literal", "text": "Interconnect glossary" }],
+              "display": "Interconnect glossary",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#glossary-live-term-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#glossary-live-term",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "term",
+              "atoms": [{ "id": "#glossary-live-term-a", "kind": "literal", "text": "Available transfer capability" }],
+              "display": "Available transfer capability",
+              "marks": []
+            },
+            {
+              "id": "#glossary-live-definition",
+              "type": "text",
+              "variant": "paragraph",
+              "style": "body",
+              "atoms": [{ "id": "#glossary-live-definition-a", "kind": "literal", "text": "The remaining transfer capability of the transmission network after committed uses and reliability margins are accounted for." }],
+              "display": "The remaining transfer capability of the transmission network after committed uses and reliability margins are accounted for.",
+              "marks": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "_id": "documentSnapshots:4",
+    "_creationTime": 1788111000000,
+    "projectId": "default",
+    "resourceId": "documents:4",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788460800000,
+    "body": {
+      "pageSetup": { "paper": "letter", "orientation": "portrait", "margins": { "top": 0.7, "right": 0.8, "bottom": 0.7, "left": 0.8 } },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontFamily": "IBM Plex Sans", "fontSize": 28, "fontWeight": 650, "color": "--token-ink-primary" },
+          "heading": { "name": "Heading", "fontFamily": "IBM Plex Sans", "fontSize": 15, "fontWeight": 650, "color": "--token-ink-primary", "spaceBefore": 14 },
+          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 1.5 }
+        }
+      },
+      "rows": [
+        {
+          "id": "#decision-live-title-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#decision-live-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [{ "id": "#decision-live-title-a", "kind": "literal", "text": "Transformer bank replacement decision" }],
+              "display": "Transformer bank replacement decision",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#decision-live-recommendation-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#decision-live-recommendation-heading",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading",
+              "atoms": [{ "id": "#decision-live-recommendation-heading-a", "kind": "literal", "text": "Recommendation" }],
+              "display": "Recommendation",
+              "marks": []
+            },
+            {
+              "id": "#decision-live-recommendation",
+              "type": "text",
+              "variant": "paragraph",
+              "style": "body",
+              "atoms": [{ "id": "#decision-live-recommendation-a", "kind": "literal", "text": "Authorize the accelerated replacement window and reserve the mobile bank until commissioning tests close. The premium preserves winter contingency and avoids a second planned outage." }],
+              "display": "Authorize the accelerated replacement window and reserve the mobile bank until commissioning tests close. The premium preserves winter contingency and avoids a second planned outage.",
+              "marks": []
+            }
+          ]
+        }
+      ]
+    }
   }
 ]

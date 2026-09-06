@@ -36,7 +36,10 @@ export const close = (state: WorkspaceStateData, id: TabId): void => {
     op: "close",
     tab: id,
     at,
-    target: { category: record.category, resourceId: record.resourceId },
+    target: {
+      category: record.category,
+      ...(record.resourceId === undefined ? {} : { resourceId: record.resourceId })
+    },
     view: state.views.of(id)
   });
 };

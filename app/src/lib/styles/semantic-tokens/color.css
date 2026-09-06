@@ -12,9 +12,10 @@
  *   danger    red      active        cyan     secondary  cyan
  *   attention amber    intelligence  violet   accent-1   pink
  *   inactive  grey                            accent-2   teal
+ *                                             slide      orange
  *
- * `orange` and `yellow` are declared by the chromatic stage and assigned to no
- * role; they are reserved.
+ * `yellow` is declared by the chromatic stage and assigned to no role; it is
+ * reserved.
  *
  * A theme owns what its green IS. It does not own what green MEANS.
  *
@@ -130,6 +131,15 @@
   --token-color-accent-2-fill-hover: var(--chromatic-teal-fill-hover);
   --token-color-accent-2-text: var(--chromatic-teal-text);
   --token-color-accent-2-on-fill: var(--chromatic-teal-on-fill);
+
+  /* slide — slide-deck identity wherever a resource kind needs a hue */
+  --token-color-slide-surface: var(--chromatic-orange-surface);
+  --token-color-slide-surface-hover: var(--chromatic-orange-surface-hover);
+  --token-color-slide-border: var(--chromatic-orange-border);
+  --token-color-slide-fill: var(--chromatic-orange-fill);
+  --token-color-slide-fill-hover: var(--chromatic-orange-fill-hover);
+  --token-color-slide-text: var(--chromatic-orange-text);
+  --token-color-slide-on-fill: var(--chromatic-orange-on-fill);
   --token-surface-pasteboard: var(--theme-surface-pasteboard);
 }
 

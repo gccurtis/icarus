@@ -82,6 +82,13 @@
   --color-secondary-surface-hover: var(--token-color-secondary-surface-hover);
   --color-secondary-surface: var(--token-color-secondary-surface);
   --color-secondary-text: var(--token-color-secondary-text);
+  --color-slide-border: var(--token-color-slide-border);
+  --color-slide-fill-hover: var(--token-color-slide-fill-hover);
+  --color-slide-fill: var(--token-color-slide-fill);
+  --color-slide-on-fill: var(--token-color-slide-on-fill);
+  --color-slide-surface-hover: var(--token-color-slide-surface-hover);
+  --color-slide-surface: var(--token-color-slide-surface);
+  --color-slide-text: var(--token-color-slide-text);
   --color-success-border: var(--token-color-success-border);
   --color-success-fill-hover: var(--token-color-success-fill-hover);
   --color-success-fill: var(--token-color-success-fill);

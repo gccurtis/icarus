@@ -1,25 +1,34 @@
-/**
- * The reactive sample read model shared by the template library, context view
- * and inspector.
- *
- * These rows deliberately stay outside representation: scope, last-used
- * history, descriptions and tags are not all represented yet. The mutations
- * below are session-local procedures so the mock behaves like one coherent
- * library without pretending that an unsupported write has been persisted.
- */
+import {
+  createTemplate as createTemplateRemote,
+  duplicateTemplate as duplicateTemplateRemote,
+  instantiateTemplate as instantiateTemplateRemote,
+  readTemplate,
+  readTemplateLibrary,
+  removeTemplate as removeTemplateRemote,
+  updateTemplate as updateTemplateRemote,
+  type ReadTemplateLibraryResult,
+  type ReadTemplateResult,
+  type TemplateDetail,
+  type TemplateLibraryItem,
+  type TemplateUnavailable,
+  type TemplateTarget as StoredTemplateTarget
+} from "$capabilities/templates/index.remote";
+import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
+import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
+/** The target and availability words used by the library UI. */
 export type TemplateTarget = "Document" | "Slide deck" | "Spreadsheet";
-export type TemplateScope = "Project" | "Shared" | "Personal";
+export type TemplateScope = "Project" | "Personal";
 
-export type TemplateVariable = {
+export type TemplateVariable = TemplateDetail["variables"][number] & {
+  /** Stable inside one template; represented variables are named rather than identified. */
   readonly id: string;
-  readonly name: string;
-  readonly label: string;
-  readonly description: string;
-  readonly type: "Text" | "Table" | "Image" | "Generated text";
-  readonly required: boolean;
 };
 
+/**
+ * The compact read model shared by the content, context, and inspector surfaces.
+ * It is a projection of the Templates capability answer, never a second source of data.
+ */
 export type LibraryTemplate = {
   readonly id: string;
   readonly name: string;
@@ -27,384 +36,310 @@ export type LibraryTemplate = {
   readonly makes: TemplateTarget;
   readonly scope: TemplateScope;
   readonly tags: readonly string[];
-  readonly variables: readonly TemplateVariable[];
+  readonly variableCount: number;
   readonly createdBy: string;
   readonly revision: number;
+  readonly updatedAt: number;
   readonly updated: string;
-  readonly updatedAge: number;
+  readonly lastUsedAt: number | null;
   readonly lastUsed?: string;
-  readonly lastUsedAge?: number;
+  readonly canEdit: boolean;
+  readonly canDelete: boolean;
+};
+
+export type LibraryTemplateDetail = LibraryTemplate & {
+  readonly variables: readonly TemplateVariable[];
 };
 
 export type TemplateLibrarySummary = {
   readonly total: number;
   readonly project: number;
-  readonly shared: number;
   readonly personal: number;
   readonly documents: number;
   readonly slideDecks: number;
   readonly spreadsheets: number;
 };
 
-const variable = (
-  template: string,
-  name: string,
-  label: string,
-  type: TemplateVariable["type"],
-  required: boolean,
-  description = `${label} supplied when the template is used.`
-): TemplateVariable => ({
-  id: `${template}:${name}`,
-  name,
-  label,
-  description,
-  type,
-  required
+const TARGET_LABEL: Record<StoredTemplateTarget, TemplateTarget> = {
+  document: "Document",
+  slides: "Slide deck",
+  spreadsheet: "Spreadsheet"
+};
+
+const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
+  Document: "document",
+  "Slide deck": "slides",
+  Spreadsheet: "spreadsheet"
+};
+
+const SCOPE_LABEL = {
+  project: "Project",
+  personal: "Personal"
+} as const satisfies Record<TemplateLibraryItem["availability"], TemplateScope>;
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+/** One timestamp, said the same way in the shelf, table, and inspector. */
+export const relativeTime = (at: number, now: number): string => {
+  const gap = Math.max(0, now - at);
+  if (gap < MINUTE) return "just now";
+  if (gap < HOUR) {
+    const minutes = Math.max(1, Math.round(gap / MINUTE));
+    return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  }
+  if (gap < DAY) {
+    const hours = Math.max(1, Math.round(gap / HOUR));
+    return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  }
+  if (gap < 2 * DAY) return "yesterday";
+  if (gap < 30 * DAY) return `${Math.round(gap / DAY)} days ago`;
+  return new Date(at).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+};
+
+const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
+  id: row.id,
+  name: row.name,
+  description: row.description ?? "",
+  makes: TARGET_LABEL[row.target],
+  scope: SCOPE_LABEL[row.availability],
+  tags: row.tags,
+  variableCount: row.variableCount,
+  createdBy: row.createdByName,
+  revision: row.revision,
+  updatedAt: row.updatedAt,
+  updated: relativeTime(row.updatedAt, now),
+  lastUsedAt: row.lastUsedAt,
+  ...(row.lastUsedAt === null ? {} : { lastUsed: relativeTime(row.lastUsedAt, now) }),
+  canEdit: row.canEdit,
+  canDelete: row.canDelete
 });
 
-const INITIAL_TEMPLATES: LibraryTemplate[] = [
-  {
-    id: "tp-filing",
-    name: "Regulatory filing shell",
-    description: "A filing structure with docket, party and outage evidence placeholders.",
-    makes: "Document",
-    scope: "Project",
-    tags: ["Regulatory", "External reporting"],
-    variables: [
-      variable("tp-filing", "filingDocket", "Filing docket", "Text", true),
-      variable("tp-filing", "filingParty", "Filing party", "Text", true),
-      variable("tp-filing", "outageTable", "Outage table", "Table", true),
-      variable(
-        "tp-filing",
-        "executiveSummary",
-        "Executive summary",
-        "Generated text",
-        false,
-        "An optional generated synopsis of the filing evidence."
-      )
-    ],
-    createdBy: "Mira Okonkwo",
-    revision: 7,
-    updated: "2 weeks ago",
-    updatedAge: 20_160,
-    lastUsed: "3 days ago",
-    lastUsedAge: 4_320
-  },
-  {
-    id: "tp-storm",
-    name: "Storm brief",
-    description: "A concise response brief for an active weather event.",
-    makes: "Document",
-    scope: "Project",
-    tags: ["Incident response", "Briefing"],
-    variables: [
-      variable("tp-storm", "eventName", "Event name", "Text", true),
-      variable("tp-storm", "impactArea", "Impact area", "Text", true),
-      variable(
-        "tp-storm",
-        "statusSummary",
-        "Status summary",
-        "Generated text",
-        false,
-        "A generated summary of the latest response status."
-      )
-    ],
-    createdBy: "Ana Duarte",
-    revision: 3,
-    updated: "5 weeks ago",
-    updatedAge: 50_400,
-    lastUsed: "2 weeks ago",
-    lastUsedAge: 20_160
-  },
-  {
-    id: "tp-board",
-    name: "Board update",
-    description: "A board-ready narrative with a headline and one supporting chart.",
-    makes: "Slide deck",
-    scope: "Project",
-    tags: ["Leadership", "Briefing"],
-    variables: [
-      variable("tp-board", "reportingPeriod", "Reporting period", "Text", true),
-      variable(
-        "tp-board",
-        "headlineChart",
-        "Headline chart",
-        "Image",
-        false,
-        "An optional chart or graphic used on the opening slide."
-      )
-    ],
-    createdBy: "Tomás Lindqvist",
-    revision: 5,
-    updated: "3 weeks ago",
-    updatedAge: 30_240,
-    lastUsed: "1 week ago",
-    lastUsedAge: 10_080
-  },
-  {
-    id: "tp-ops",
-    name: "Weekly ops deck",
-    description: "The recurring project deck for operational status and decisions.",
-    makes: "Slide deck",
-    scope: "Project",
-    tags: ["Operations", "Leadership"],
-    variables: [],
-    createdBy: "Mira Okonkwo",
-    revision: 11,
-    updated: "8 weeks ago",
-    updatedAge: 80_640,
-    lastUsed: "Yesterday",
-    lastUsedAge: 1_440
-  },
-  {
-    id: "tp-executive-deck",
-    name: "Executive update deck",
-    description: "A concise branded deck for a project-level executive update.",
-    makes: "Slide deck",
-    scope: "Personal",
-    tags: ["Presentation", "Brand"],
-    variables: [variable("tp-executive-deck", "deckTitle", "Deck title", "Text", true)],
-    createdBy: "Priya Raghunathan",
-    revision: 2,
-    updated: "6 weeks ago",
-    updatedAge: 60_480,
-    lastUsed: "4 weeks ago",
-    lastUsedAge: 40_320
-  },
-  {
-    id: "tp-cost",
-    name: "Cost model skeleton",
-    description: "A clean workbook scaffold for comparing intervention costs.",
-    makes: "Spreadsheet",
-    scope: "Project",
-    tags: ["Finance", "Planning"],
-    variables: [],
-    createdBy: "Tomás Lindqvist",
-    revision: 6,
-    updated: "9 weeks ago",
-    updatedAge: 90_720,
-    lastUsed: "Today",
-    lastUsedAge: 0
-  },
-  {
-    id: "tp-incident",
-    name: "Incident review",
-    description: "A shared retrospective for cause, impact and corrective actions.",
-    makes: "Document",
-    scope: "Shared",
-    tags: ["Incident response", "Review"],
-    variables: [],
-    createdBy: "Arne Bakker",
-    revision: 9,
-    updated: "6 months ago",
-    updatedAge: 262_800,
-    lastUsed: "5 months ago",
-    lastUsedAge: 219_000
-  },
-  {
-    id: "tp-review-deck",
-    name: "Sectioned review deck",
-    description: "A personal review deck with branded section breaks.",
-    makes: "Slide deck",
-    scope: "Personal",
-    tags: ["Presentation", "Review"],
-    variables: [variable("tp-review-deck", "sectionName", "Section name", "Text", true)],
-    createdBy: "Ana Duarte",
-    revision: 1,
-    updated: "7 months ago",
-    updatedAge: 306_600,
-    lastUsed: "6 months ago",
-    lastUsedAge: 262_800
-  },
-  {
-    id: "tp-decision",
-    name: "Decision memo",
-    description: "A short decision record with alternatives, evidence and a recommendation.",
-    makes: "Document",
-    scope: "Project",
-    tags: ["Decision", "Leadership"],
-    variables: [
-      variable("tp-decision", "decisionOwner", "Decision owner", "Text", true),
-      variable("tp-decision", "alternatives", "Alternatives", "Table", true),
-      variable(
-        "tp-decision",
-        "recommendation",
-        "Recommendation",
-        "Generated text",
-        false,
-        "An optional recommendation generated from the listed alternatives."
-      )
-    ],
-    createdBy: "Priya Raghunathan",
-    revision: 4,
-    updated: "4 weeks ago",
-    updatedAge: 40_320,
-    lastUsed: "3 weeks ago",
-    lastUsedAge: 30_240
-  },
-  {
-    id: "tp-capacity",
-    name: "Capacity forecast",
-    description: "A shared workbook for monthly demand and staffing forecasts.",
-    makes: "Spreadsheet",
-    scope: "Shared",
-    tags: ["Operations", "Planning"],
-    variables: [
-      variable("tp-capacity", "forecastPeriod", "Forecast period", "Text", true),
-      variable("tp-capacity", "demandTable", "Demand table", "Table", true)
-    ],
-    createdBy: "Mira Okonkwo",
-    revision: 2,
-    updated: "7 weeks ago",
-    updatedAge: 70_560,
-    lastUsed: "6 weeks ago",
-    lastUsedAge: 60_480
-  }
-];
+/** Start the scoped, metadata-only library read. */
+export const templateLibrary = () => readTemplateLibrary();
 
-let templates = $state<LibraryTemplate[]>(INITIAL_TEMPLATES);
-let mockSerial = 0;
+/** Start the body-bearing read for exactly one selected template. */
+export const templateDetail = (templateId: string | undefined) =>
+  readTemplate({ templateId: templateId ?? "templates:none" });
 
-const nextMockId = (kind: string): string => {
-  mockSerial += 1;
-  return `tp-${kind}-${mockSerial}`;
+/** Every template visible to the current scoped capability call. */
+export const templatesIn = (
+  answer: ReadTemplateLibraryResult | undefined,
+  now: number
+): readonly LibraryTemplate[] => answer?.templates.map((row) => project(row, now)) ?? [];
+
+/** The full selected template, projected into the same display vocabulary as the table. */
+export const detailIn = (
+  answer: ReadTemplateResult | undefined,
+  now: number
+): LibraryTemplateDetail | undefined => {
+  if (answer === null || answer === undefined || "unavailable" in answer) return undefined;
+
+  const row = project({ ...answer, variableCount: answer.variables.length }, now);
+  return {
+    ...row,
+    variables: answer.variables.map((variable) => ({
+      ...variable,
+      id: `${answer.id}:${variable.name}`
+    }))
+  };
 };
 
-/** Every template visible to the current library scope. */
-export const templatesIn = (projectId: string): readonly LibraryTemplate[] => {
-  void projectId;
-  return templates;
-};
-
-/** One selected template, if that id belongs to this library. */
-export const templateIn = (
-  projectId: string,
-  templateId: string | undefined
-): LibraryTemplate | undefined =>
-  templateId === undefined
-    ? undefined
-    : templatesIn(projectId).find((template) => template.id === templateId);
+/** A selected legacy row can be unavailable without taking down the library. */
+export const unavailableTemplateIn = (
+  answer: ReadTemplateResult | undefined
+): TemplateUnavailable | undefined =>
+  answer !== null && answer !== undefined && "unavailable" in answer ? answer : undefined;
 
 /** The bounded usage shelf, newest use first. */
 export const recentTemplatesIn = (
-  projectId: string,
+  rows: readonly LibraryTemplate[],
   limit = 10
-): readonly (LibraryTemplate & { readonly lastUsed: string; readonly lastUsedAge: number })[] =>
-  templatesIn(projectId)
+): readonly (LibraryTemplate & { readonly lastUsed: string; readonly lastUsedAt: number })[] =>
+  rows
     .filter(
       (
-        template
-      ): template is LibraryTemplate & {
+        row
+      ): row is LibraryTemplate & {
         readonly lastUsed: string;
-        readonly lastUsedAge: number;
-      } => template.lastUsed !== undefined && template.lastUsedAge !== undefined
+        readonly lastUsedAt: number;
+      } => row.lastUsed !== undefined && row.lastUsedAt !== null
     )
-    .toSorted((a, b) => a.lastUsedAge - b.lastUsedAge)
+    .toSorted((a, b) => b.lastUsedAt - a.lastUsedAt)
     .slice(0, Math.max(0, limit));
 
-/** Counts used by the library overview context. */
-export const templateLibrarySummaryIn = (projectId: string): TemplateLibrarySummary => {
-  const rows = templatesIn(projectId);
-  const count = (predicate: (template: LibraryTemplate) => boolean): number =>
+/** Counts used by the compact library overview. */
+export const templateLibrarySummaryIn = (
+  rows: readonly LibraryTemplate[]
+): TemplateLibrarySummary => {
+  const count = (predicate: (row: LibraryTemplate) => boolean): number =>
     rows.filter(predicate).length;
 
   return {
     total: rows.length,
-    project: count((template) => template.scope === "Project"),
-    shared: count((template) => template.scope === "Shared"),
-    personal: count((template) => template.scope === "Personal"),
-    documents: count((template) => template.makes === "Document"),
-    slideDecks: count((template) => template.makes === "Slide deck"),
-    spreadsheets: count((template) => template.makes === "Spreadsheet")
+    project: count((row) => row.scope === "Project"),
+    personal: count((row) => row.scope === "Personal"),
+    documents: count((row) => row.makes === "Document"),
+    slideDecks: count((row) => row.makes === "Slide deck"),
+    spreadsheets: count((row) => row.makes === "Spreadsheet")
   };
 };
 
-/** Replace one template's description for this browser session. */
-export const updateTemplateDescription = (
-  projectId: string,
-  templateId: string,
-  description: string
-): boolean => {
-  const index = templatesIn(projectId).findIndex((template) => template.id === templateId);
-  if (index < 0) return false;
-  templates[index] = { ...templates[index], description: description.trim() };
-  return true;
-};
-
-/** Add one unique tag to a template for this browser session. */
-export const addTemplateTag = (projectId: string, templateId: string, tag: string): boolean => {
-  const value = tag.trim();
-  const index = templatesIn(projectId).findIndex((template) => template.id === templateId);
-  if (value === "" || index < 0) return false;
-
-  const row = templates[index];
-  if (row.tags.some((candidate) => candidate.toLocaleLowerCase() === value.toLocaleLowerCase())) {
-    return false;
-  }
-
-  templates[index] = { ...row, tags: [...row.tags, value] };
-  return true;
-};
-
-/** Duplicate one template as an independent session-local row. */
-export const duplicateTemplate = (
-  projectId: string,
-  templateId: string
-): LibraryTemplate | undefined => {
-  const source = templateIn(projectId, templateId);
-  if (source === undefined) return undefined;
-
-  const id = nextMockId("copy");
-  const copy: LibraryTemplate = {
-    ...source,
-    id,
-    name: `${source.name} copy`,
-    tags: [...source.tags],
-    variables: source.variables.map((entry) => ({ ...entry, id: `${id}:${entry.name}` })),
-    createdBy: "You",
-    revision: 1,
-    updated: "Today",
-    updatedAge: 0,
-    lastUsed: undefined,
-    lastUsedAge: undefined
-  };
-  templates.unshift(copy);
-  return copy;
-};
-
-/** Remove one template from the session-local library. */
-export const removeTemplate = (projectId: string, templateId: string): boolean => {
-  const index = templatesIn(projectId).findIndex((template) => template.id === templateId);
-  if (index < 0) return false;
-  templates.splice(index, 1);
-  return true;
-};
-
-/** Create an empty template of one supported kind for this browser session. */
-export const createTemplate = (
-  projectId: string,
-  makes: TemplateTarget
-): LibraryTemplate => {
-  void projectId;
-  const id = nextMockId("new");
-  const name = {
+const defaultName = (target: TemplateTarget): string =>
+  ({
     Document: "Untitled document template",
     "Slide deck": "Untitled slide deck template",
     Spreadsheet: "Untitled spreadsheet template"
-  }[makes];
-  const template: LibraryTemplate = {
-    id,
-    name,
-    description: `A new ${makes.toLocaleLowerCase()} template.`,
-    makes,
-    scope: "Project",
-    tags: [],
-    variables: [],
-    createdBy: "You",
-    revision: 1,
-    updated: "Today",
-    updatedAge: 0
-  };
-  templates.unshift(template);
-  return template;
+  })[target];
+
+/** Give a no-name creation control a required, visibly editable unique name. */
+export const nextTemplateName = (
+  target: TemplateTarget,
+  rows: readonly LibraryTemplate[]
+): string => {
+  const base = defaultName(target);
+  const taken = new Set(rows.map((row) => row.name.toLocaleLowerCase()));
+  let suffix = 1;
+  while (taken.has(`${base} ${suffix}`.toLocaleLowerCase())) suffix += 1;
+  return `${base} ${suffix}`;
 };
+
+/** Keep a singleton Template tab's durable focus and transient inspector selection aligned. */
+export const inspectTemplate = (view: WorkspaceStateModel, templateId: string): void => {
+  view.open({ category: "templates", focus: templateId });
+  view.inspect("templates.template", { kind: "template", id: templateId });
+};
+
+/** Create a represented template, then refresh every mounted library query. */
+export const createTemplate = (
+  view: WorkspaceStateModel,
+  target: TemplateTarget,
+  name: string
+) => {
+  const storedTarget = TARGET_VALUE[target];
+  const storedName = name.trim();
+  return view.singleFlight(
+    ["template", view.project, "create", storedTarget, storedName],
+    () =>
+      createTemplateRemote({ target: storedTarget, name: storedName }).updates(readTemplateLibrary)
+  );
+};
+
+/** Persist one name edit with the revision the inspector actually read. */
+export const updateTemplateName = (
+  view: WorkspaceStateModel,
+  row: LibraryTemplateDetail,
+  name: string
+) => {
+  const storedName = name.trim();
+  return view.singleFlight(
+    ["template", view.project, row.id, "update", row.revision, "name", storedName],
+    () =>
+      updateTemplateRemote({
+        templateId: row.id,
+        baseRevision: row.revision,
+        patch: { name: storedName }
+      }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
+  );
+};
+
+/** Persist one description edit with the revision the inspector actually read. */
+export const updateTemplateDescription = (
+  view: WorkspaceStateModel,
+  row: LibraryTemplateDetail,
+  description: string
+) => {
+  const storedDescription = description.trim() || null;
+  return view.singleFlight(
+    [
+      "template",
+      view.project,
+      row.id,
+      "update",
+      row.revision,
+      "description",
+      storedDescription
+    ],
+    () =>
+      updateTemplateRemote({
+        templateId: row.id,
+        baseRevision: row.revision,
+        patch: { description: storedDescription }
+      }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
+  );
+};
+
+/** Update variable help text while preserving its stable key, label, and default selection. */
+export const updateTemplateVariableDescription = (
+  view: WorkspaceStateModel,
+  row: LibraryTemplateDetail,
+  variableName: string,
+  description: string
+) => {
+  const storedDescription = description.trim() || null;
+  return view.singleFlight(
+    [
+      "template",
+      view.project,
+      row.id,
+      "update",
+      row.revision,
+      "variable-description",
+      variableName,
+      storedDescription
+    ],
+    () =>
+      updateTemplateRemote({
+        templateId: row.id,
+        baseRevision: row.revision,
+        patch: {
+          variableDescription: { name: variableName, description: storedDescription }
+        }
+      }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
+  );
+};
+
+/** Persist the complete flat tag set; the server normalizes and versions it. */
+export const updateTemplateTags = (
+  view: WorkspaceStateModel,
+  row: LibraryTemplateDetail,
+  tags: readonly string[]
+) =>
+  view.singleFlight(
+    ["template", view.project, row.id, "update", row.revision, "tags", ...tags],
+    () =>
+      updateTemplateRemote({
+        templateId: row.id,
+        baseRevision: row.revision,
+        patch: { tags }
+      }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
+  );
+
+/** Copy any visible template into the current viewer's ownership. */
+export const duplicateTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDetail) =>
+  view.singleFlight(["template", view.project, row.id, "duplicate"], () =>
+    duplicateTemplateRemote({ templateId: row.id }).updates(readTemplateLibrary)
+  );
+
+/** Remove an owned template at the revision currently shown. */
+export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDetail) =>
+  view.singleFlight(["template", view.project, row.id, "remove", row.revision], () =>
+    removeTemplateRemote({ templateId: row.id, baseRevision: row.revision }).updates(
+      readTemplateLibrary,
+      readTemplate({ templateId: row.id })
+    )
+  );
+
+/** Materialize an independent project resource and refresh recency provenance. */
+export const instantiateTemplate = (view: WorkspaceStateModel, row: LibraryTemplate) =>
+  view.singleFlight(["template", view.project, row.id, "instantiate"], () =>
+    instantiateTemplateRemote({ templateId: row.id }).updates(
+      readTemplateLibrary,
+      readProjectResourceIndex
+    )
+  );

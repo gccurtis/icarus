@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import ArrowDownNarrowWide from "@lucide/svelte/icons/arrow-down-narrow-wide";
   import ArrowUpNarrowWide from "@lucide/svelte/icons/arrow-up-narrow-wide";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
@@ -13,6 +14,7 @@
     ScreenFilters,
     ScreenGroup,
     ScreenHeader,
+    ScreenNote,
     ScreenRow,
     ScreenShelf,
     ScreenShelfItem,
@@ -23,7 +25,9 @@
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import {
+    inspectTemplate,
     recentTemplatesIn,
+    templateLibrary,
     templatesIn,
     type LibraryTemplate,
     type TemplateScope,
@@ -32,10 +36,17 @@
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
-  const templates = $derived(templatesIn(view.project));
-  const recent = $derived(recentTemplatesIn(view.project, 10));
+  const library = templateLibrary();
+  let now = $state(Date.now());
+  onMount(() => {
+    const timer = setInterval(() => (now = Date.now()), 60_000);
+    return () => clearInterval(timer);
+  });
+  const templates = $derived(templatesIn(library.ready ? library.current : undefined, now));
+  const unavailable = $derived(library.ready ? library.current.unavailable : []);
+  const recent = $derived(recentTemplatesIn(templates, 10));
 
-  const SCOPES: readonly TemplateScope[] = ["Project", "Shared", "Personal"];
+  const SCOPES: readonly TemplateScope[] = ["Project", "Personal"];
 
   const SORTS = [
     { value: "updated", label: "Updated" },
@@ -101,13 +112,22 @@
     selectedTags = [];
   };
 
+  /** A removed/retagged last template must not leave an invisible stale filter behind. */
+  $effect(() => {
+    if (tagMode !== "some") return;
+    const next = selectedTags.filter((tag) => TAGS.includes(tag));
+    if (next.length === selectedTags.length) return;
+    selectedTags = next;
+    tagMode = next.length === 0 ? "none" : next.length === TAGS.length ? "all" : "some";
+  });
+
   const compare = (a: LibraryTemplate, b: LibraryTemplate): number => {
     if (sortBy === "name") return a.name.localeCompare(b.name);
     if (sortBy === "makes") return a.makes.localeCompare(b.makes) || a.name.localeCompare(b.name);
     if (sortBy === "variables") {
-      return a.variables.length - b.variables.length || a.name.localeCompare(b.name);
+      return a.variableCount - b.variableCount || a.name.localeCompare(b.name);
     }
-    return a.updatedAge - b.updatedAge || a.name.localeCompare(b.name);
+    return b.updatedAt - a.updatedAt || a.name.localeCompare(b.name);
   };
 
   const query = $derived(search.trim().toLocaleLowerCase());
@@ -146,7 +166,7 @@
   };
 
   const variableCount = (row: LibraryTemplate): string =>
-    `${row.variables.length} ${row.variables.length === 1 ? "variable" : "variables"}`;
+    `${row.variableCount} ${row.variableCount === 1 ? "variable" : "variables"}`;
 
   const clear = () => {
     search = "";
@@ -159,17 +179,32 @@
   const isSelected = (id: string): boolean =>
     view.selection?.kind === "template" && view.selection.id === id;
 
-  const inspect = (row: LibraryTemplate) =>
-    view.inspect("templates.template", { kind: "template", id: row.id });
+  const inspect = (row: LibraryTemplate) => {
+    inspectTemplate(view, row.id);
+  };
 
-  const open = (row: LibraryTemplate) => alert(`Opening “${row.name}” is not wired up yet.`);
+  /** A launcher can land the singleton on one template without opening the obsolete mock editor. */
+  $effect(() => {
+    const focus = view.active.focus;
+    if (!library.ready || focus === undefined) return;
+    if (view.selection?.kind === "template" && view.selection.id === focus) return;
+
+    const row = templates.find((candidate) => candidate.id === focus);
+    if (row !== undefined) inspect(row);
+  });
+
+  /** Authoring stays inside the singleton Template category; Use is a separate explicit action. */
+  const edit = (row: LibraryTemplate) => {
+    inspect(row);
+    view.showContent("templates.editor", row.id);
+  };
 </script>
 
 {#snippet recentCard(row: LibraryTemplate & { readonly lastUsed: string })}
   <div
     class="recent-card"
     class:chosen={isSelected(row.id)}
-    ondblclick={() => open(row)}
+    ondblclick={() => edit(row)}
     role="presentation"
   >
     <ScreenCard
@@ -184,7 +219,7 @@
           <ScreenThumb
             ratio={TARGET_RATIO[row.makes]}
             lines={4}
-            variables={Math.min(row.variables.length, 4)}
+            variables={Math.min(row.variableCount, 4)}
           />
         </span>
       {/snippet}
@@ -205,20 +240,42 @@
       {/snippet}
     </ScreenHeader>
 
-    {#if recent.length > 0}
-      <ScreenGroup label="Recently used">
-        <ScreenShelf>
-          {#each recent as row (row.id)}
-            <ScreenShelfItem width="11rem">
-              {@render recentCard(row)}
-            </ScreenShelfItem>
-          {/each}
-        </ScreenShelf>
-      </ScreenGroup>
-    {/if}
+    {#if library.error}
+      <div class="remote-state">
+        <ScreenEmpty title="The template library could not be loaded">
+          {library.error instanceof Error ? library.error.message : String(library.error)}
+        </ScreenEmpty>
+        <Button variant="outline" size="sm" onclick={() => library.refresh()}>
+          Retry template library
+        </Button>
+      </div>
+    {:else if !library.ready}
+      <ScreenEmpty title="Loading templates">
+        Reading the scoped library from the representation store.
+      </ScreenEmpty>
+    {:else}
+      {#if unavailable.length > 0}
+        <ScreenNote tone="gap">
+          {unavailable.length} stored {unavailable.length === 1 ? "template is" : "templates are"}
+          hidden because {unavailable.length === 1 ? "its data is" : "their data is"} invalid.
+          Repair the represented source before using or editing {unavailable.length === 1 ? "it" : "them"}.
+        </ScreenNote>
+      {/if}
 
-    <ScreenGroup label="All templates">
-      <div class="table-stack">
+      {#if recent.length > 0}
+        <ScreenGroup label="Recently used">
+          <ScreenShelf label="Recently used templates">
+            {#each recent as row (row.id)}
+              <ScreenShelfItem width="11rem">
+                {@render recentCard(row)}
+              </ScreenShelfItem>
+            {/each}
+          </ScreenShelf>
+        </ScreenGroup>
+      {/if}
+
+      <ScreenGroup label="All templates">
+        <div class="table-stack">
         <ScreenFilters
           placeholder="Search templates or tags"
           sorts={SORTS}
@@ -226,7 +283,7 @@
           bind:value={search}
         >
           <select
-            class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
+            class="filter-control native-filter"
             bind:value={scope}
             aria-label="Scope"
           >
@@ -237,7 +294,7 @@
           </select>
 
           <select
-            class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
+            class="filter-control native-filter"
             bind:value={makes}
             aria-label="Makes"
           >
@@ -250,11 +307,10 @@
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               {#snippet child({ props })}
-                <Button
+                <button
                   {...props}
-                  variant="outline"
-                  size="sm"
-                  class="border-border-subtle bg-surface-panel hover:bg-surface-panel-hover aria-expanded:bg-surface-panel text-caption rounded-control min-w-24 justify-between dark:bg-surface-panel dark:hover:bg-surface-panel-hover dark:aria-expanded:bg-surface-panel"
+                  type="button"
+                  class="filter-control tag-filter"
                   aria-label="Filter by tags: {tagFilterLabel}"
                   title={tagMode === "all"
                     ? TAGS.join(", ")
@@ -263,8 +319,8 @@
                       : "No tags selected"}
                 >
                   <span class="max-w-24 truncate">{tagFilterLabel}</span>
-                  <ChevronDown aria-hidden="true" />
-                </Button>
+                  <ChevronDown size={13} aria-hidden="true" />
+                </button>
               {/snippet}
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end" class="max-h-56 w-56">
@@ -326,14 +382,14 @@
                 <ScreenRow
                   selected={isSelected(row.id)}
                   onselect={() => inspect(row)}
-                  onopen={() => open(row)}
+                  onopen={() => edit(row)}
                 >
                   <ScreenCell>
                     <button
                       type="button"
                       class="text-body-sm text-ink-primary flex min-h-9 items-center gap-2 text-start hover:underline"
                       onclick={() => inspect(row)}
-                      ondblclick={() => open(row)}
+                      ondblclick={() => edit(row)}
                     >
                       <span class="text-ink-muted flex shrink-0">
                         <Icon size={14} aria-hidden="true" />
@@ -343,7 +399,7 @@
                   </ScreenCell>
                   <ScreenCell>{row.makes}</ScreenCell>
                   <ScreenCell>{row.scope}</ScreenCell>
-                  <ScreenCell num>{row.variables.length}</ScreenCell>
+                  <ScreenCell num>{row.variableCount}</ScreenCell>
                   <ScreenCell>{row.tags.join(", ") || "—"}</ScreenCell>
                   <ScreenCell num>{row.updated}</ScreenCell>
                 </ScreenRow>
@@ -351,8 +407,9 @@
             </ScreenTable>
           {/if}
         </div>
-      </div>
-    </ScreenGroup>
+        </div>
+      </ScreenGroup>
+    {/if}
   </div>
 </ScreenSurface>
 
@@ -371,6 +428,13 @@
     gap: calc(var(--token-spacing-unit) * 3);
   }
 
+  .remote-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(var(--token-spacing-unit) * 2);
+  }
+
   .recent-card {
     height: 100%;
   }
@@ -379,6 +443,11 @@
     width: 100%;
     height: 100%;
     box-shadow: var(--token-shadow-raised);
+  }
+
+  .recent-card > :global(button:hover) {
+    border-color: var(--token-color-interactive-border);
+    background: var(--token-surface-panel);
   }
 
   .recent-card.chosen > :global(button) {
@@ -390,7 +459,42 @@
   }
 
   .recent-card.chosen > :global(button:hover) {
-    background: var(--token-color-active-surface-hover);
+    background: var(--token-color-active-surface);
+  }
+
+  .filter-control {
+    display: inline-flex;
+    height: calc(var(--token-spacing-unit) * 7);
+    align-items: center;
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-panel);
+    color: var(--token-ink-secondary);
+    font-size: var(--token-text-caption);
+    line-height: var(--token-text-caption-leading);
+  }
+
+  .tag-filter {
+    min-width: calc(var(--token-spacing-unit) * 24);
+    justify-content: space-between;
+    gap: calc(var(--token-spacing-unit) * 1.5);
+    padding: 0 calc(var(--token-spacing-unit) * 2);
+    cursor: pointer;
+  }
+
+  .native-filter {
+    padding: 0 calc(var(--token-spacing-unit) * 2);
+  }
+
+  .tag-filter:hover,
+  .tag-filter[aria-expanded="true"] {
+    border-color: var(--token-border-strong);
+  }
+
+  .tag-filter:focus-visible {
+    border-color: var(--token-color-interactive-border);
+    outline: 2px solid var(--token-color-interactive-surface);
+    outline-offset: 1px;
   }
 
   /**

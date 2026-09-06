@@ -1,0 +1,2199 @@
+[
+  {
+    "_id": "templateVersions:1",
+    "_creationTime": 1788351300000,
+    "templateId": "templates:1",
+    "revision": 6,
+    "name": "Incident write-up",
+    "description": "A calm, evidence-led retrospective for cause, impact, response, and corrective action.",
+    "tags": [
+      "Incident response",
+      "Operations",
+      "Review"
+    ],
+    "body": {
+      "resource": "document",
+      "pageSetup": {
+        "paper": "letter",
+        "orientation": "portrait",
+        "margins": {
+          "top": 0.8,
+          "right": 0.85,
+          "bottom": 0.8,
+          "left": 0.85
+        }
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": {
+            "name": "Title",
+            "fontSize": 30,
+            "bold": true,
+            "color": "--token-ink-primary",
+            "spaceAfter": 14
+          },
+          "heading": {
+            "name": "Heading",
+            "fontSize": 16,
+            "bold": true,
+            "color": "--token-ink-primary",
+            "spaceBefore": 16,
+            "spaceAfter": 6
+          },
+          "body": {
+            "name": "Body",
+            "fontSize": 11,
+            "color": "--token-ink-secondary",
+            "lineHeight": 1.5
+          }
+        }
+      },
+      "rows": [
+        {
+          "id": "#tiw-row-title",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#tiw-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [
+                {
+                  "id": "#tiw-title-a",
+                  "kind": "literal",
+                  "text": "Incident write-up"
+                }
+              ],
+              "display": "Incident write-up",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#tiw-row-summary",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#tiw-summary-heading",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading",
+              "atoms": [
+                {
+                  "id": "#tiw-summary-heading-a",
+                  "kind": "literal",
+                  "text": "Executive summary"
+                }
+              ],
+              "display": "Executive summary",
+              "marks": []
+            },
+            {
+              "id": "#tiw-summary",
+              "type": "prompt",
+              "atoms": [
+                {
+                  "id": "#tiw-summary-a",
+                  "kind": "literal",
+                  "text": "Summarize what happened, the customer impact, and the current operating state."
+                }
+              ],
+              "display": "Summarize what happened, the customer impact, and the current operating state.",
+              "marks": [],
+              "scope": {
+                "include": [
+                  {
+                    "select": "variable",
+                    "name": "incident_evidence"
+                  }
+                ],
+                "exclude": []
+              },
+              "state": "idle"
+            }
+          ],
+          "proportions": [
+            0.3,
+            0.7
+          ]
+        },
+        {
+          "id": "#tiw-row-actions",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#tiw-actions-heading",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading",
+              "atoms": [
+                {
+                  "id": "#tiw-actions-heading-a",
+                  "kind": "literal",
+                  "text": "Corrective actions"
+                }
+              ],
+              "display": "Corrective actions",
+              "marks": []
+            },
+            {
+              "id": "#tiw-actions",
+              "type": "text",
+              "variant": "paragraph",
+              "style": "body",
+              "atoms": [
+                {
+                  "id": "#tiw-actions-a",
+                  "kind": "literal",
+                  "text": "Name the owner, due date, and verification evidence for each action."
+                }
+              ],
+              "display": "Name the owner, due date, and verification evidence for each action.",
+              "marks": []
+            }
+          ],
+          "proportions": [
+            0.3,
+            0.7
+          ]
+        }
+      ]
+    },
+    "variables": [
+      {
+        "name": "incident_evidence",
+        "label": "Incident evidence",
+        "description": "Findings, documents, and operating models that establish the incident timeline.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "finding",
+                "document",
+                "spreadsheet"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      }
+    ],
+    "at": 1788351300000
+  },
+  {
+    "_id": "templateVersions:2",
+    "_creationTime": 1788111000000,
+    "templateId": "templates:2",
+    "revision": 8,
+    "name": "Operational readiness brief",
+    "description": "A decision-ready brief for expected conditions, exposure, mitigations, and remaining operating gaps.",
+    "tags": [
+      "Operations",
+      "Planning",
+      "Project standard"
+    ],
+    "body": {
+      "resource": "document",
+      "pageSetup": {
+        "paper": "letter",
+        "orientation": "portrait",
+        "margins": {
+          "top": 1,
+          "right": 1,
+          "bottom": 1,
+          "left": 1
+        }
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": {
+            "name": "Brief title",
+            "fontSize": 24,
+            "bold": true,
+            "horizontalAlignment": "center",
+            "color": "--token-ink-primary",
+            "spaceAfter": 18
+          },
+          "heading": {
+            "name": "Section",
+            "fontSize": 14,
+            "bold": true,
+            "color": "--token-ink-primary",
+            "spaceBefore": 14,
+            "spaceAfter": 6
+          },
+          "body": {
+            "name": "Brief body",
+            "fontSize": 11,
+            "color": "--token-ink-secondary",
+            "lineHeight": 1.55,
+            "horizontalAlignment": "justify"
+          }
+        }
+      },
+      "rows": [
+        {
+          "id": "#trf-row-title",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#trf-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [
+                {
+                  "id": "#trf-title-a",
+                  "kind": "literal",
+                  "text": "Operational readiness brief"
+                }
+              ],
+              "display": "Operational readiness brief",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#trf-row-position",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#trf-position-heading",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading",
+              "atoms": [
+                {
+                  "id": "#trf-position-heading-a",
+                  "kind": "literal",
+                  "text": "Expected conditions and exposure"
+                }
+              ],
+              "display": "Expected conditions and exposure",
+              "marks": []
+            },
+            {
+              "id": "#trf-position",
+              "type": "prompt",
+              "atoms": [
+                {
+                  "id": "#trf-position-a",
+                  "kind": "literal",
+                  "text": "Summarize the expected operating conditions, binding constraints, and consequences if the forecast is exceeded."
+                }
+              ],
+              "display": "Summarize the expected operating conditions, binding constraints, and consequences if the forecast is exceeded.",
+              "marks": [],
+              "scope": {
+                "include": [
+                  {
+                    "select": "variable",
+                    "name": "readiness_record"
+                  }
+                ],
+                "exclude": []
+              },
+              "state": "idle"
+            }
+          ],
+          "proportions": [
+            0.32,
+            0.68
+          ]
+        },
+        {
+          "id": "#trf-row-support",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#trf-support-heading",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading",
+              "atoms": [
+                {
+                  "id": "#trf-support-heading-a",
+                  "kind": "literal",
+                  "text": "Mitigations, commitments, and gaps"
+                }
+              ],
+              "display": "Mitigations, commitments, and gaps",
+              "marks": []
+            },
+            {
+              "id": "#trf-support",
+              "type": "prompt",
+              "atoms": [
+                {
+                  "id": "#trf-support-a",
+                  "kind": "literal",
+                  "text": "Separate committed mitigations from residual gaps, then state the owner and decision date for each open action."
+                }
+              ],
+              "display": "Separate committed mitigations from residual gaps, then state the owner and decision date for each open action.",
+              "marks": [],
+              "scope": {
+                "include": [
+                  {
+                    "select": "variable",
+                    "name": "supporting_findings"
+                  }
+                ],
+                "exclude": []
+              },
+              "state": "idle"
+            }
+          ],
+          "proportions": [
+            0.32,
+            0.68
+          ]
+        }
+      ]
+    },
+    "variables": [
+      {
+        "name": "readiness_record",
+        "label": "Readiness record",
+        "description": "The forecasts, plans, and operating material that define the readiness posture.",
+        "default": {
+          "include": [
+            {
+              "select": "project"
+            }
+          ],
+          "exclude": []
+        }
+      },
+      {
+        "name": "supporting_findings",
+        "label": "Supporting findings",
+        "description": "Accepted findings that establish constraints, mitigations, and residual gaps.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "finding"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      }
+    ],
+    "at": 1788111000000
+  },
+  {
+    "_id": "templateVersions:3",
+    "_creationTime": 1787244300000,
+    "templateId": "templates:3",
+    "revision": 3,
+    "name": "Technical glossary",
+    "description": "A maintained glossary for project terminology, acronyms, definitions, and source notes.",
+    "tags": [
+      "Reference",
+      "Onboarding",
+      "Documentation"
+    ],
+    "body": {
+      "resource": "document",
+      "pageSetup": {
+        "paper": "a4",
+        "orientation": "portrait",
+        "margins": {
+          "top": 0.75,
+          "right": 0.75,
+          "bottom": 0.75,
+          "left": 0.75
+        }
+      },
+      "styles": {
+        "defaultKey": "definition",
+        "styles": {
+          "title": {
+            "name": "Title",
+            "fontSize": 28,
+            "bold": true,
+            "color": "--token-ink-primary",
+            "spaceAfter": 12
+          },
+          "term": {
+            "name": "Term",
+            "fontSize": 13,
+            "bold": true,
+            "color": "--token-color-accent-1-text",
+            "spaceBefore": 10
+          },
+          "definition": {
+            "name": "Definition",
+            "fontSize": 10.5,
+            "color": "--token-ink-secondary",
+            "lineHeight": 1.45
+          }
+        }
+      },
+      "rows": [
+        {
+          "id": "#ttg-row-title",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#ttg-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [
+                {
+                  "id": "#ttg-title-a",
+                  "kind": "literal",
+                  "text": "Technical glossary"
+                }
+              ],
+              "display": "Technical glossary",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#ttg-row-term",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#ttg-term",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "term",
+              "atoms": [
+                {
+                  "id": "#ttg-term-a",
+                  "kind": "literal",
+                  "text": "Term or acronym"
+                }
+              ],
+              "display": "Term or acronym",
+              "marks": []
+            },
+            {
+              "id": "#ttg-definition",
+              "type": "text",
+              "variant": "paragraph",
+              "style": "definition",
+              "atoms": [
+                {
+                  "id": "#ttg-definition-a",
+                  "kind": "literal",
+                  "text": "Plain-language definition, operational meaning, and source note."
+                }
+              ],
+              "display": "Plain-language definition, operational meaning, and source note.",
+              "marks": []
+            }
+          ],
+          "proportions": [
+            0.28,
+            0.72
+          ]
+        },
+        {
+          "id": "#ttg-row-review",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#ttg-review-heading",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "term",
+              "atoms": [
+                {
+                  "id": "#ttg-review-heading-a",
+                  "kind": "literal",
+                  "text": "Consistency review"
+                }
+              ],
+              "display": "Consistency review",
+              "marks": []
+            },
+            {
+              "id": "#ttg-review",
+              "type": "prompt",
+              "atoms": [
+                {
+                  "id": "#ttg-review-a",
+                  "kind": "literal",
+                  "text": "Identify terms used inconsistently across the selected source material."
+                }
+              ],
+              "display": "Identify terms used inconsistently across the selected source material.",
+              "marks": [],
+              "scope": {
+                "include": [
+                  {
+                    "select": "variable",
+                    "name": "source_material"
+                  }
+                ],
+                "exclude": []
+              },
+              "state": "idle"
+            }
+          ]
+        }
+      ]
+    },
+    "variables": [
+      {
+        "name": "source_material",
+        "label": "Source material",
+        "description": "Documents and findings whose terminology should be normalized.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "document",
+                "finding"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      }
+    ],
+    "at": 1787244300000
+  },
+  {
+    "_id": "templateVersions:4",
+    "_creationTime": 1788448800000,
+    "templateId": "templates:4",
+    "revision": 4,
+    "name": "Decision memo",
+    "description": "A concise decision record that compares alternatives, evidence, trade-offs, and the recommended path.",
+    "tags": [
+      "Decision",
+      "Leadership",
+      "Planning"
+    ],
+    "body": {
+      "resource": "document",
+      "pageSetup": {
+        "paper": "letter",
+        "orientation": "portrait",
+        "margins": {
+          "top": 0.7,
+          "right": 0.8,
+          "bottom": 0.7,
+          "left": 0.8
+        }
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": {
+            "name": "Title",
+            "fontSize": 29,
+            "bold": true,
+            "color": "--token-ink-primary",
+            "spaceAfter": 12
+          },
+          "heading": {
+            "name": "Heading",
+            "fontSize": 15,
+            "bold": true,
+            "color": "--token-ink-primary",
+            "spaceBefore": 14,
+            "spaceAfter": 5
+          },
+          "body": {
+            "name": "Body",
+            "fontSize": 11,
+            "color": "--token-ink-secondary",
+            "lineHeight": 1.5
+          },
+          "callout": {
+            "name": "Recommendation",
+            "fontSize": 12,
+            "bold": true,
+            "background": "--token-color-active-surface",
+            "color": "--token-color-active-text"
+          }
+        }
+      },
+      "rows": [
+        {
+          "id": "#tdm-row-title",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#tdm-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [
+                {
+                  "id": "#tdm-title-a",
+                  "kind": "literal",
+                  "text": "Decision memo"
+                }
+              ],
+              "display": "Decision memo",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#tdm-row-context",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#tdm-context-heading",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading",
+              "atoms": [
+                {
+                  "id": "#tdm-context-heading-a",
+                  "kind": "literal",
+                  "text": "Decision context"
+                }
+              ],
+              "display": "Decision context",
+              "marks": []
+            },
+            {
+              "id": "#tdm-context",
+              "type": "prompt",
+              "atoms": [
+                {
+                  "id": "#tdm-context-a",
+                  "kind": "literal",
+                  "text": "Explain the decision, its urgency, and the evidence that constrains it."
+                }
+              ],
+              "display": "Explain the decision, its urgency, and the evidence that constrains it.",
+              "marks": [],
+              "scope": {
+                "include": [
+                  {
+                    "select": "variable",
+                    "name": "decision_evidence"
+                  }
+                ],
+                "exclude": []
+              },
+              "state": "idle"
+            }
+          ],
+          "proportions": [
+            0.3,
+            0.7
+          ]
+        },
+        {
+          "id": "#tdm-row-options",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#tdm-options-heading",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading",
+              "atoms": [
+                {
+                  "id": "#tdm-options-heading-a",
+                  "kind": "literal",
+                  "text": "Alternatives and economics"
+                }
+              ],
+              "display": "Alternatives and economics",
+              "marks": []
+            },
+            {
+              "id": "#tdm-options",
+              "type": "prompt",
+              "atoms": [
+                {
+                  "id": "#tdm-options-a",
+                  "kind": "literal",
+                  "text": "Compare feasible alternatives, total cost, reversibility, and delivery risk."
+                }
+              ],
+              "display": "Compare feasible alternatives, total cost, reversibility, and delivery risk.",
+              "marks": [],
+              "scope": {
+                "include": [
+                  {
+                    "select": "variable",
+                    "name": "cost_models"
+                  }
+                ],
+                "exclude": []
+              },
+              "state": "idle"
+            }
+          ],
+          "proportions": [
+            0.3,
+            0.7
+          ]
+        },
+        {
+          "id": "#tdm-row-recommendation",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#tdm-recommendation",
+              "type": "text",
+              "variant": "paragraph",
+              "style": "callout",
+              "atoms": [
+                {
+                  "id": "#tdm-recommendation-a",
+                  "kind": "literal",
+                  "text": "Recommendation: state the path, owner, decision date, and next irreversible step."
+                }
+              ],
+              "display": "Recommendation: state the path, owner, decision date, and next irreversible step.",
+              "marks": [],
+              "format": {
+                "padding": {
+                  "x": 12,
+                  "y": 10
+                },
+                "border": {
+                  "color": "--token-color-active-border",
+                  "width": 1,
+                  "style": "solid"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "variables": [
+      {
+        "name": "decision_evidence",
+        "label": "Decision evidence",
+        "description": "The findings and documents that establish why a decision is required.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "finding",
+                "document"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      },
+      {
+        "name": "cost_models",
+        "label": "Cost models",
+        "description": "The spreadsheets used to compare alternatives and delivery economics.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "spreadsheet"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      }
+    ],
+    "at": 1788448800000
+  },
+  {
+    "_id": "templateVersions:5",
+    "_creationTime": 1787839200000,
+    "templateId": "templates:5",
+    "revision": 5,
+    "name": "Board review",
+    "description": "A disciplined board narrative for performance, risk, decisions, and the next horizon.",
+    "tags": [
+      "Leadership",
+      "Board",
+      "Project standard"
+    ],
+    "body": {
+      "resource": "slides",
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": {
+          "kind": "color",
+          "color": "--token-surface-primary"
+        },
+        "colors": {
+          "text": "--token-ink-primary",
+          "accent": "--token-color-accent-1-fill",
+          "muted": "--token-ink-muted"
+        },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "eyebrow": {
+            "name": "Eyebrow",
+            "fontSize": 13,
+            "fontWeight": 600,
+            "color": "--token-color-accent-1-fill",
+            "spaceAfter": 10
+          },
+          "title": {
+            "name": "Title",
+            "fontSize": 32,
+            "fontWeight": 600,
+            "color": "--token-ink-primary",
+            "lineHeight": 1.08
+          },
+          "body": {
+            "name": "Body",
+            "fontSize": 18,
+            "color": "--token-ink-secondary",
+            "lineHeight": 1.35
+          },
+          "metric": {
+            "name": "Metric",
+            "fontSize": 28,
+            "fontWeight": 600,
+            "color": "--token-ink-primary"
+          }
+        }
+      },
+      "layouts": [
+        {
+          "key": "board-brief",
+          "name": "Board brief",
+          "locked": [],
+          "placeholders": [
+            {
+              "role": "title",
+              "frame": {
+                "x": 0.07,
+                "y": 0.1,
+                "width": 0.86,
+                "height": 0.18
+              },
+              "styleKey": "title"
+            },
+            {
+              "role": "body",
+              "frame": {
+                "x": 0.07,
+                "y": 0.35,
+                "width": 0.86,
+                "height": 0.52
+              },
+              "styleKey": "body"
+            }
+          ]
+        }
+      ],
+      "slides": [
+        {
+          "id": "#tboard-opening",
+          "layoutKey": "board-brief",
+          "elements": [
+            {
+              "id": "#tboard-title-element",
+              "frame": {
+                "x": 0.07,
+                "y": 0.1,
+                "width": 0.86,
+                "height": 0.18
+              },
+              "blocks": [
+                {
+                  "id": "#tboard-title",
+                  "type": "text",
+                  "variant": "heading",
+                  "level": 1,
+                  "style": "title",
+                  "atoms": [
+                    {
+                      "id": "#tboard-title-a",
+                      "kind": "literal",
+                      "text": "Board review · operating performance"
+                    }
+                  ],
+                  "display": "Board review · operating performance",
+                  "marks": []
+                }
+              ],
+              "overflow": "shrink",
+              "fromPlaceholder": "title"
+            },
+            {
+              "id": "#tboard-body-element",
+              "frame": {
+                "x": 0.07,
+                "y": 0.35,
+                "width": 0.86,
+                "height": 0.52
+              },
+              "blocks": [
+                {
+                  "id": "#tboard-example",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "atoms": [
+                    {
+                      "id": "#tboard-example-a",
+                      "kind": "literal",
+                      "text": "Performance is stable, but winter resilience depends on approving the accelerated transformer replacement this quarter."
+                    }
+                  ],
+                  "display": "Performance is stable, but winter resilience depends on approving the accelerated transformer replacement this quarter.",
+                  "marks": []
+                },
+                {
+                  "id": "#tboard-prompt",
+                  "type": "prompt",
+                  "atoms": [
+                    {
+                      "id": "#tboard-prompt-a",
+                      "kind": "literal",
+                      "text": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board."
+                    }
+                  ],
+                  "display": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board.",
+                  "marks": [],
+                  "scope": {
+                    "include": [
+                      {
+                        "select": "variable",
+                        "name": "board_evidence"
+                      }
+                    ],
+                    "exclude": []
+                  },
+                  "state": "idle"
+                }
+              ],
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "format": {
+                "padding": {
+                  "x": 18,
+                  "y": 16
+                },
+                "border": {
+                  "color": "--token-color-active-border",
+                  "width": 1,
+                  "style": "solid"
+                }
+              }
+            }
+          ],
+          "notes": [
+            {
+              "id": "#tboard-notes",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "#tboard-notes-a",
+                  "kind": "literal",
+                  "text": "Lead with the decision, then use operating evidence to explain it."
+                }
+              ],
+              "display": "Lead with the decision, then use operating evidence to explain it.",
+              "marks": []
+            }
+          ]
+        }
+      ],
+      "sections": [
+        {
+          "id": "#tboard-section",
+          "name": "Board narrative",
+          "firstSlideId": "#tboard-opening"
+        }
+      ]
+    },
+    "variables": [
+      {
+        "name": "board_evidence",
+        "label": "Board evidence",
+        "description": "The findings, analyses, and project material that ground the board narrative.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "finding",
+                "analysis",
+                "document",
+                "spreadsheet"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      }
+    ],
+    "at": 1787839200000
+  },
+  {
+    "_id": "templateVersions:6",
+    "_creationTime": 1786541400000,
+    "templateId": "templates:6",
+    "revision": 3,
+    "name": "Field team briefing",
+    "description": "A shift-ready briefing for objectives, hazards, controls, and handoffs.",
+    "tags": [
+      "Operations",
+      "Safety",
+      "Briefing"
+    ],
+    "body": {
+      "resource": "slides",
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": {
+          "kind": "color",
+          "color": "--token-surface-primary"
+        },
+        "colors": {
+          "text": "--token-ink-primary",
+          "accent": "--token-color-attention-fill",
+          "muted": "--token-ink-muted"
+        },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": {
+            "name": "Title",
+            "fontSize": 34,
+            "fontWeight": 650,
+            "color": "--token-ink-primary",
+            "lineHeight": 1.05
+          },
+          "body": {
+            "name": "Body",
+            "fontSize": 19,
+            "color": "--token-ink-secondary",
+            "lineHeight": 1.35
+          },
+          "warning": {
+            "name": "Warning",
+            "fontSize": 19,
+            "fontWeight": 600,
+            "color": "--token-color-attention-text"
+          }
+        }
+      },
+      "layouts": [
+        {
+          "key": "field-plan",
+          "name": "Field plan",
+          "locked": [],
+          "placeholders": [
+            {
+              "role": "title",
+              "frame": {
+                "x": 0.06,
+                "y": 0.08,
+                "width": 0.88,
+                "height": 0.18
+              },
+              "styleKey": "title"
+            },
+            {
+              "role": "body",
+              "frame": {
+                "x": 0.06,
+                "y": 0.31,
+                "width": 0.88,
+                "height": 0.59
+              },
+              "styleKey": "body"
+            }
+          ]
+        }
+      ],
+      "slides": [
+        {
+          "id": "#tfield-plan",
+          "layoutKey": "field-plan",
+          "elements": [
+            {
+              "id": "#tfield-title-element",
+              "frame": {
+                "x": 0.06,
+                "y": 0.08,
+                "width": 0.88,
+                "height": 0.18
+              },
+              "blocks": [
+                {
+                  "id": "#tfield-title",
+                  "type": "text",
+                  "variant": "heading",
+                  "level": 1,
+                  "style": "title",
+                  "atoms": [
+                    {
+                      "id": "#tfield-title-a",
+                      "kind": "literal",
+                      "text": "Today’s objective, controls, and stop conditions"
+                    }
+                  ],
+                  "display": "Today’s objective, controls, and stop conditions",
+                  "marks": []
+                }
+              ],
+              "overflow": "shrink",
+              "fromPlaceholder": "title"
+            },
+            {
+              "id": "#tfield-body-element",
+              "frame": {
+                "x": 0.06,
+                "y": 0.31,
+                "width": 0.88,
+                "height": 0.59
+              },
+              "blocks": [
+                {
+                  "id": "#tfield-example",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "warning",
+                  "atoms": [
+                    {
+                      "id": "#tfield-example-a",
+                      "kind": "literal",
+                      "text": "Objective: isolate and inspect Transformer Bank 2. Stop work on unexpected pressure, gas, or protection indications."
+                    }
+                  ],
+                  "display": "Objective: isolate and inspect Transformer Bank 2. Stop work on unexpected pressure, gas, or protection indications.",
+                  "marks": []
+                },
+                {
+                  "id": "#tfield-prompt",
+                  "type": "prompt",
+                  "atoms": [
+                    {
+                      "id": "#tfield-prompt-a",
+                      "kind": "literal",
+                      "text": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria."
+                    }
+                  ],
+                  "display": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria.",
+                  "marks": [],
+                  "scope": {
+                    "include": [
+                      {
+                        "select": "variable",
+                        "name": "field_record"
+                      }
+                    ],
+                    "exclude": []
+                  },
+                  "state": "idle"
+                }
+              ],
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "format": {
+                "background": "--token-color-attention-surface",
+                "padding": {
+                  "x": 18,
+                  "y": 16
+                }
+              }
+            }
+          ],
+          "notes": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "#tfield-section",
+          "name": "Shift brief",
+          "firstSlideId": "#tfield-plan"
+        }
+      ]
+    },
+    "variables": [
+      {
+        "name": "field_record",
+        "label": "Field work record",
+        "description": "The documents and findings the crew needs for this shift.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "document",
+                "finding"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      }
+    ],
+    "at": 1786541400000
+  },
+  {
+    "_id": "templateVersions:7",
+    "_creationTime": 1788528000000,
+    "templateId": "templates:7",
+    "revision": 2,
+    "name": "Executive update",
+    "description": "A concise portfolio update that leads with trajectory, exceptions, and asks.",
+    "tags": [
+      "Leadership",
+      "Executive",
+      "Briefing"
+    ],
+    "body": {
+      "resource": "slides",
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": {
+          "kind": "color",
+          "color": "--token-surface-primary"
+        },
+        "colors": {
+          "text": "--token-ink-primary",
+          "accent": "--token-color-intelligence-fill",
+          "muted": "--token-ink-muted"
+        },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "kicker": {
+            "name": "Kicker",
+            "fontSize": 12,
+            "fontWeight": 650,
+            "color": "--token-color-intelligence-fill"
+          },
+          "title": {
+            "name": "Title",
+            "fontSize": 36,
+            "fontWeight": 600,
+            "color": "--token-ink-primary",
+            "lineHeight": 1.05
+          },
+          "body": {
+            "name": "Body",
+            "fontSize": 18,
+            "color": "--token-ink-secondary",
+            "lineHeight": 1.4
+          }
+        }
+      },
+      "layouts": [
+        {
+          "key": "executive-summary",
+          "name": "Executive summary",
+          "locked": [],
+          "placeholders": [
+            {
+              "role": "title",
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.2
+              },
+              "styleKey": "title"
+            },
+            {
+              "role": "body",
+              "frame": {
+                "x": 0.08,
+                "y": 0.38,
+                "width": 0.84,
+                "height": 0.48
+              },
+              "styleKey": "body"
+            }
+          ]
+        }
+      ],
+      "slides": [
+        {
+          "id": "#texec-summary",
+          "layoutKey": "executive-summary",
+          "elements": [
+            {
+              "id": "#texec-title-element",
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.2
+              },
+              "blocks": [
+                {
+                  "id": "#texec-title",
+                  "type": "text",
+                  "variant": "heading",
+                  "level": 1,
+                  "style": "title",
+                  "atoms": [
+                    {
+                      "id": "#texec-title-a",
+                      "kind": "literal",
+                      "text": "Portfolio trajectory · decisions this week"
+                    }
+                  ],
+                  "display": "Portfolio trajectory · decisions this week",
+                  "marks": []
+                }
+              ],
+              "overflow": "shrink",
+              "fromPlaceholder": "title"
+            },
+            {
+              "id": "#texec-body-element",
+              "frame": {
+                "x": 0.08,
+                "y": 0.38,
+                "width": 0.84,
+                "height": 0.48
+              },
+              "blocks": [
+                {
+                  "id": "#texec-example",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "atoms": [
+                    {
+                      "id": "#texec-example-a",
+                      "kind": "literal",
+                      "text": "On plan overall · Transformer procurement at risk · Replacement-window approval due Friday"
+                    }
+                  ],
+                  "display": "On plan overall · Transformer procurement at risk · Replacement-window approval due Friday",
+                  "marks": []
+                },
+                {
+                  "id": "#texec-prompt",
+                  "type": "prompt",
+                  "atoms": [
+                    {
+                      "id": "#texec-prompt-a",
+                      "kind": "literal",
+                      "text": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days."
+                    }
+                  ],
+                  "display": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days.",
+                  "marks": [],
+                  "scope": {
+                    "include": [
+                      {
+                        "select": "variable",
+                        "name": "portfolio_record"
+                      }
+                    ],
+                    "exclude": []
+                  },
+                  "state": "idle"
+                }
+              ],
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "format": {
+                "padding": {
+                  "x": 18,
+                  "y": 16
+                },
+                "border": {
+                  "color": "--token-color-intelligence-border",
+                  "width": 1,
+                  "style": "solid"
+                }
+              }
+            }
+          ],
+          "notes": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "#texec-section",
+          "name": "Executive summary",
+          "firstSlideId": "#texec-summary"
+        }
+      ]
+    },
+    "variables": [
+      {
+        "name": "portfolio_record",
+        "label": "Portfolio record",
+        "description": "The project findings, analyses, and status material that should shape this update.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "finding",
+                "analysis",
+                "document",
+                "spreadsheet"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      }
+    ],
+    "at": 1788528000000
+  },
+  {
+    "_id": "templateVersions:8",
+    "_creationTime": 1785585600000,
+    "templateId": "templates:8",
+    "revision": 4,
+    "name": "Options assessment",
+    "description": "A decision-oriented comparison of viable paths, economics, tradeoffs, and reversibility.",
+    "tags": [
+      "Planning",
+      "Options",
+      "Review"
+    ],
+    "body": {
+      "resource": "slides",
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": {
+          "kind": "color",
+          "color": "--token-surface-primary"
+        },
+        "colors": {
+          "text": "--token-ink-primary",
+          "accent": "--token-color-accent-2-fill",
+          "muted": "--token-ink-muted"
+        },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": {
+            "name": "Title",
+            "fontSize": 34,
+            "fontWeight": 600,
+            "color": "--token-ink-primary",
+            "lineHeight": 1.05
+          },
+          "body": {
+            "name": "Body",
+            "fontSize": 18,
+            "color": "--token-ink-secondary",
+            "lineHeight": 1.35
+          },
+          "label": {
+            "name": "Label",
+            "fontSize": 13,
+            "fontWeight": 650,
+            "color": "--token-color-accent-2-fill"
+          }
+        }
+      },
+      "layouts": [
+        {
+          "key": "option-frame",
+          "name": "Option frame",
+          "locked": [],
+          "placeholders": [
+            {
+              "role": "title",
+              "frame": {
+                "x": 0.07,
+                "y": 0.08,
+                "width": 0.86,
+                "height": 0.18
+              },
+              "styleKey": "title"
+            },
+            {
+              "role": "body",
+              "frame": {
+                "x": 0.07,
+                "y": 0.33,
+                "width": 0.86,
+                "height": 0.57
+              },
+              "styleKey": "body"
+            }
+          ]
+        }
+      ],
+      "slides": [
+        {
+          "id": "#toptions-frame",
+          "layoutKey": "option-frame",
+          "elements": [
+            {
+              "id": "#toptions-title-element",
+              "frame": {
+                "x": 0.07,
+                "y": 0.08,
+                "width": 0.86,
+                "height": 0.18
+              },
+              "blocks": [
+                {
+                  "id": "#toptions-title",
+                  "type": "text",
+                  "variant": "heading",
+                  "level": 1,
+                  "style": "title",
+                  "atoms": [
+                    {
+                      "id": "#toptions-title-a",
+                      "kind": "literal",
+                      "text": "Options assessment · choose a path"
+                    }
+                  ],
+                  "display": "Options assessment · choose a path",
+                  "marks": []
+                }
+              ],
+              "overflow": "shrink",
+              "fromPlaceholder": "title"
+            },
+            {
+              "id": "#toptions-body-element",
+              "frame": {
+                "x": 0.07,
+                "y": 0.33,
+                "width": 0.86,
+                "height": 0.57
+              },
+              "blocks": [
+                {
+                  "id": "#toptions-evidence-example",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "atoms": [
+                    {
+                      "id": "#toptions-evidence-example-a",
+                      "kind": "literal",
+                      "text": "Viable paths: covered conductor, selective undergrounding, and targeted rebuild."
+                    }
+                  ],
+                  "display": "Viable paths: covered conductor, selective undergrounding, and targeted rebuild.",
+                  "marks": []
+                },
+                {
+                  "id": "#toptions-evidence-prompt",
+                  "type": "prompt",
+                  "atoms": [
+                    {
+                      "id": "#toptions-evidence-a",
+                      "kind": "literal",
+                      "text": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility."
+                    }
+                  ],
+                  "display": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility.",
+                  "marks": [],
+                  "scope": {
+                    "include": [
+                      {
+                        "select": "variable",
+                        "name": "option_evidence"
+                      }
+                    ],
+                    "exclude": []
+                  },
+                  "state": "idle"
+                },
+                {
+                  "id": "#toptions-model-example",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "atoms": [
+                    {
+                      "id": "#toptions-model-example-a",
+                      "kind": "literal",
+                      "text": "Decision lens: lifecycle cost, delivery sensitivity, risk reduction, and reversibility."
+                    }
+                  ],
+                  "display": "Decision lens: lifecycle cost, delivery sensitivity, risk reduction, and reversibility.",
+                  "marks": []
+                },
+                {
+                  "id": "#toptions-model-prompt",
+                  "type": "prompt",
+                  "atoms": [
+                    {
+                      "id": "#toptions-model-a",
+                      "kind": "literal",
+                      "text": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation."
+                    }
+                  ],
+                  "display": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation.",
+                  "marks": [],
+                  "scope": {
+                    "include": [
+                      {
+                        "select": "variable",
+                        "name": "option_models"
+                      }
+                    ],
+                    "exclude": []
+                  },
+                  "state": "idle"
+                }
+              ],
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "format": {
+                "padding": {
+                  "x": 18,
+                  "y": 16
+                },
+                "border": {
+                  "color": "--token-color-active-border",
+                  "width": 1,
+                  "style": "solid"
+                }
+              }
+            }
+          ],
+          "notes": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "#toptions-section",
+          "name": "Assessment",
+          "firstSlideId": "#toptions-frame"
+        }
+      ]
+    },
+    "variables": [
+      {
+        "name": "option_evidence",
+        "label": "Option evidence",
+        "description": "The findings and documents that establish feasible choices and constraints.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "finding",
+                "document"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      },
+      {
+        "name": "option_models",
+        "label": "Option models",
+        "description": "The analyses and spreadsheets that quantify economics and sensitivity.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "analysis",
+                "spreadsheet"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      }
+    ],
+    "at": 1785585600000
+  },
+  {
+    "_id": "templateVersions:9",
+    "_creationTime": 1784385000000,
+    "templateId": "templates:9",
+    "revision": 3,
+    "name": "Outage analysis workbook",
+    "description": "A ready-to-calculate reliability workbook for outage duration, customers affected, and customer-minutes interrupted.",
+    "tags": [
+      "Operations",
+      "Analysis",
+      "Reliability"
+    ],
+    "body": {
+      "resource": "spreadsheet",
+      "cells": {
+        "A1": {
+          "value": {
+            "kind": "text",
+            "value": "Outage analysis"
+          },
+          "merge": "F1",
+          "format": {
+            "background": "--token-color-intelligence-surface",
+            "padding": {
+              "x": 10,
+              "y": 8
+            }
+          }
+        },
+        "A3": {
+          "value": {
+            "kind": "text",
+            "value": "Event"
+          },
+          "format": {
+            "background": "--token-surface-secondary"
+          }
+        },
+        "B3": {
+          "value": {
+            "kind": "text",
+            "value": "Start"
+          },
+          "format": {
+            "background": "--token-surface-secondary"
+          }
+        },
+        "C3": {
+          "value": {
+            "kind": "text",
+            "value": "End"
+          },
+          "format": {
+            "background": "--token-surface-secondary"
+          }
+        },
+        "D3": {
+          "value": {
+            "kind": "text",
+            "value": "Minutes"
+          },
+          "format": {
+            "background": "--token-surface-secondary"
+          }
+        },
+        "E3": {
+          "value": {
+            "kind": "text",
+            "value": "Customers"
+          },
+          "format": {
+            "background": "--token-surface-secondary"
+          }
+        },
+        "F3": {
+          "value": {
+            "kind": "text",
+            "value": "Customer-minutes"
+          },
+          "format": {
+            "background": "--token-surface-secondary"
+          }
+        },
+        "A4": {
+          "value": {
+            "kind": "text",
+            "value": "Feeder event 01"
+          }
+        },
+        "B4": {
+          "value": {
+            "kind": "text",
+            "value": "08:12"
+          }
+        },
+        "C4": {
+          "value": {
+            "kind": "text",
+            "value": "09:07"
+          }
+        },
+        "D4": {
+          "value": {
+            "kind": "number",
+            "value": 55
+          },
+          "format": {
+            "valueFormat": "0"
+          }
+        },
+        "E4": {
+          "value": {
+            "kind": "number",
+            "value": 1240
+          },
+          "format": {
+            "valueFormat": "#,##0"
+          }
+        },
+        "F4": {
+          "expression": "D4*E4",
+          "format": {
+            "valueFormat": "#,##0"
+          }
+        },
+        "A6": {
+          "value": {
+            "kind": "text",
+            "value": "Total customer-minutes"
+          }
+        },
+        "F6": {
+          "expression": "SUM(F4:F5)",
+          "format": {
+            "valueFormat": "#,##0"
+          }
+        }
+      },
+      "columnWidths": {
+        "A": 180,
+        "B": 100,
+        "C": 100,
+        "D": 100,
+        "E": 120,
+        "F": 150
+      },
+      "rowHeights": {
+        "1": 38,
+        "3": 30
+      },
+      "formatRules": [
+        {
+          "from": "A3",
+          "to": "F3",
+          "style": "header",
+          "format": {
+            "background": "--token-surface-secondary",
+            "border": {
+              "color": "--token-color-active-border",
+              "width": 1,
+              "style": "solid"
+            }
+          }
+        },
+        {
+          "from": "F4",
+          "to": "F20",
+          "format": {
+            "background": "--token-color-intelligence-surface"
+          }
+        }
+      ],
+      "frozenRows": 3,
+      "frozenColumns": 1,
+      "print": {
+        "page": {
+          "paper": "letter",
+          "orientation": "landscape",
+          "margins": {
+            "top": 0.5,
+            "right": 0.5,
+            "bottom": 0.5,
+            "left": 0.5
+          }
+        },
+        "area": {
+          "from": "A1",
+          "to": "F20"
+        },
+        "repeatRows": "1:3",
+        "scale": "fit-width",
+        "gridlines": false,
+        "headings": false
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "body": {
+            "name": "Body",
+            "fontFamily": "IBM Plex Sans",
+            "fontSize": 12,
+            "color": "--token-ink-primary"
+          },
+          "header": {
+            "name": "Header",
+            "fontFamily": "IBM Plex Sans",
+            "fontSize": 11,
+            "fontWeight": 650,
+            "color": "--token-ink-primary"
+          }
+        }
+      }
+    },
+    "variables": [],
+    "at": 1784385000000
+  },
+  {
+    "_id": "templateVersions:10",
+    "_creationTime": 1782306000000,
+    "templateId": "templates:10",
+    "revision": 5,
+    "name": "Hardening cost model",
+    "description": "A transparent option model for unit cost, contingency, total investment, and annualized benefit.",
+    "tags": [
+      "Finance",
+      "Planning",
+      "Model"
+    ],
+    "body": {
+      "resource": "spreadsheet",
+      "cells": {
+        "A1": {
+          "value": {
+            "kind": "text",
+            "value": "Hardening cost model"
+          },
+          "merge": "E1",
+          "format": {
+            "background": "--token-color-accent-2-surface",
+            "padding": {
+              "x": 10,
+              "y": 8
+            }
+          }
+        },
+        "A3": {
+          "value": {
+            "kind": "text",
+            "value": "Option"
+          },
+          "format": {
+            "background": "--token-surface-secondary"
+          }
+        },
+        "B3": {
+          "value": {
+            "kind": "text",
+            "value": "Units"
+          },
+          "format": {
+            "background": "--token-surface-secondary"
+          }
+        },
+        "C3": {
+          "value": {
+            "kind": "text",
+            "value": "Unit cost"
+          },
+          "format": {
+            "background": "--token-surface-secondary"
+          }
+        },
+        "D3": {
+          "value": {
+            "kind": "text",
+            "value": "Contingency"
+          },
+          "format": {
+            "background": "--token-surface-secondary"
+          }
+        },
+        "E3": {
+          "value": {
+            "kind": "text",
+            "value": "Total"
+          },
+          "format": {
+            "background": "--token-surface-secondary"
+          }
+        },
+        "A4": {
+          "value": {
+            "kind": "text",
+            "value": "Covered conductor"
+          }
+        },
+        "B4": {
+          "value": {
+            "kind": "number",
+            "value": 18
+          },
+          "format": {
+            "valueFormat": "0"
+          }
+        },
+        "C4": {
+          "value": {
+            "kind": "number",
+            "value": 142000
+          },
+          "format": {
+            "valueFormat": "$#,##0"
+          }
+        },
+        "D4": {
+          "value": {
+            "kind": "number",
+            "value": 0.15
+          },
+          "format": {
+            "valueFormat": "0%"
+          }
+        },
+        "E4": {
+          "expression": "B4*C4*(1+D4)",
+          "format": {
+            "valueFormat": "$#,##0"
+          }
+        },
+        "A5": {
+          "value": {
+            "kind": "text",
+            "value": "Underground segment"
+          }
+        },
+        "B5": {
+          "value": {
+            "kind": "number",
+            "value": 4
+          },
+          "format": {
+            "valueFormat": "0"
+          }
+        },
+        "C5": {
+          "value": {
+            "kind": "number",
+            "value": 890000
+          },
+          "format": {
+            "valueFormat": "$#,##0"
+          }
+        },
+        "D5": {
+          "value": {
+            "kind": "number",
+            "value": 0.2
+          },
+          "format": {
+            "valueFormat": "0%"
+          }
+        },
+        "E5": {
+          "expression": "B5*C5*(1+D5)",
+          "format": {
+            "valueFormat": "$#,##0"
+          }
+        },
+        "A7": {
+          "value": {
+            "kind": "text",
+            "value": "Portfolio total"
+          }
+        },
+        "E7": {
+          "expression": "SUM(E4:E6)",
+          "format": {
+            "valueFormat": "$#,##0",
+            "background": "--token-color-accent-2-surface"
+          }
+        }
+      },
+      "columnWidths": {
+        "A": 210,
+        "B": 90,
+        "C": 120,
+        "D": 110,
+        "E": 150
+      },
+      "rowHeights": {
+        "1": 38,
+        "3": 30
+      },
+      "formatRules": [
+        {
+          "from": "A3",
+          "to": "E3",
+          "style": "header",
+          "format": {
+            "background": "--token-surface-secondary",
+            "border": {
+              "color": "--token-color-active-border",
+              "width": 1,
+              "style": "solid"
+            }
+          }
+        },
+        {
+          "from": "E4",
+          "to": "E20",
+          "format": {
+            "background": "--token-color-accent-2-surface"
+          }
+        }
+      ],
+      "frozenRows": 3,
+      "frozenColumns": 1,
+      "print": {
+        "page": {
+          "paper": "letter",
+          "orientation": "landscape",
+          "margins": {
+            "top": 0.5,
+            "right": 0.5,
+            "bottom": 0.5,
+            "left": 0.5
+          }
+        },
+        "area": {
+          "from": "A1",
+          "to": "E20"
+        },
+        "repeatRows": "1:3",
+        "scale": "fit-width",
+        "gridlines": false,
+        "headings": false
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "body": {
+            "name": "Body",
+            "fontFamily": "IBM Plex Sans",
+            "fontSize": 12,
+            "color": "--token-ink-primary"
+          },
+          "header": {
+            "name": "Header",
+            "fontFamily": "IBM Plex Sans",
+            "fontSize": 11,
+            "fontWeight": 650,
+            "color": "--token-ink-primary"
+          }
+        }
+      }
+    },
+    "variables": [],
+    "at": 1782306000000
+  }
+]

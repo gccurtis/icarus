@@ -19,7 +19,7 @@
     "projectId": "default",
     "name": "Field evidence",
     "set": {
-      "include": [{ "select": "resources", "refs": [{ "kind": "externalFile", "id": "externalFiles:2" }] }],
+      "include": [{ "select": "resources", "refs": [{ "kind": "finding", "id": "findings:1" }] }],
       "exclude": []
     },
     "createdBy": { "kind": "user", "userId": "users:4" },

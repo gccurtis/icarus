@@ -25,6 +25,7 @@ import { reopenClosed } from "$model/client/workspace-state/methods/reopen-close
 import { resize } from "$model/client/workspace-state/methods/resize";
 import { restore } from "$model/client/workspace-state/methods/restore";
 import { selectContext } from "$model/client/workspace-state/methods/select-context";
+import { singleFlight } from "$model/client/workspace-state/methods/single-flight";
 import { compose } from "$model/client/workspace-state/methods/shared/compose";
 import { startingWorkspace } from "$model/client/workspace-state/methods/shared/defaults";
 import { defaultContext, offersContext } from "$model/client/workspace-state/methods/shared/rails";
@@ -32,7 +33,12 @@ import { showContent } from "$model/client/workspace-state/methods/show-content"
 import { showing } from "$model/client/workspace-state/methods/showing";
 import { undo } from "$model/client/workspace-state/methods/undo";
 import { zoom } from "$model/client/workspace-state/methods/zoom";
-import type { Tab, WorkspaceStateModel, WorkspaceSync } from "$model/client/workspace-state/types";
+import type {
+  SingleFlightKeyPart,
+  Tab,
+  WorkspaceStateModel,
+  WorkspaceSync
+} from "$model/client/workspace-state/types";
 
 export type Thresholds = { readonly afterOps: number; readonly afterMs: number };
 
@@ -45,6 +51,7 @@ export class WorkspaceStateData {
   sync = $state<WorkspaceSync>("loading");
 
   pendingFlush: Promise<void> | undefined;
+  readonly pendingFlights = new Map<string, Promise<unknown>>();
 
   #timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -212,6 +219,13 @@ export class WorkspaceState implements WorkspaceStateModel {
 
   showing(category: Category, content?: ContentView): boolean {
     return showing(this.#state, category, content);
+  }
+
+  singleFlight<Result>(
+    key: readonly SingleFlightKeyPart[],
+    run: () => PromiseLike<Result>
+  ): Promise<Result> {
+    return singleFlight(this.#state, key, run);
   }
 
   documentRuntime(resourceId: string): DocumentRuntime {

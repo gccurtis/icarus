@@ -21,6 +21,7 @@
     { role: "secondary", hue: "cyan", means: "Shares the active hue" },
     { role: "accent-1", hue: "pink", means: "Categorical work" },
     { role: "accent-2", hue: "teal", means: "Categorical work" },
+    { role: "slide", hue: "orange", means: "Slide-deck identity" },
   ];
 </script>
 

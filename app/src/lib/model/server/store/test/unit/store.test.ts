@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { asId } from "$representation/data/behavior/core/id";
 import { defineStore } from "$model/server/store/definition";
 
 const directories: string[] = [];
@@ -24,18 +25,21 @@ describe("create", () => {
     const store = inMemory();
     const id = store.create("projects", { name: "Q3" });
 
-    expect(id).toBe("projects:1");
-    const found = store.read("projects.projects:1");
+    expect(id).toMatch(/^projects:[0-9a-f-]{36}$/);
+    const found = store.read(`projects.${id}`);
     expect(found?.kind).toBe("row");
     expect(found?.kind === "row" && found.row._creationTime).toBe(1000);
   });
 
-  it("does not reuse an id a reloaded table already holds", () => {
+  it("does not reuse an id a reloaded table already holds or a deletion freed", () => {
     const { store, directory } = onDisk();
-    store.create("projects", { name: "one" });
+    const first = store.create("projects", { name: "one" });
+    store.remove(`projects.${first}`);
 
     const reopened = defineStore({ directory, now: () => 2000 });
-    expect(reopened.create("projects", { name: "two" })).toBe("projects:2");
+    const second = reopened.create("projects", { name: "two" });
+    expect(second).not.toBe(first);
+    expect(second).toMatch(/^projects:[0-9a-f-]{36}$/);
   });
 
   it("refuses what a JSON file cannot hold", () => {
@@ -43,23 +47,40 @@ describe("create", () => {
     expect(() => store.create("projects", { name: () => "no" })).toThrow(/not storable/);
     expect(() => store.create("projects", ["not", "an", "object"])).toThrow(/is an object/);
   });
+
+  it("creates a collection as one admitted table change", () => {
+    const store = inMemory();
+
+    const ids = store.createMany("projects", [{ name: "one" }, { name: "two" }]);
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids)).toHaveLength(2);
+    expect(ids.every((id) => /^projects:[0-9a-f-]{36}$/.test(id))).toBe(true);
+    const created = store.read("projects");
+    expect(created?.kind === "table" && created.rows).toHaveLength(2);
+
+    expect(() =>
+      store.createMany("projects", [{ name: "three" }, { name: () => "not storable" }])
+    ).toThrow(/not storable/);
+    const refused = store.read("projects");
+    expect(refused?.kind === "table" && refused.rows).toHaveLength(2);
+  });
 });
 
 describe("read", () => {
   it("returns the table, the row, or the field the path names", () => {
     const store = inMemory();
-    store.create("projects", { name: "Q3" });
+    const id = store.create("projects", { name: "Q3" });
 
     expect(store.read("projects")).toMatchObject({ kind: "table" });
-    expect(store.read("projects.projects:1")).toMatchObject({ kind: "row" });
-    expect(store.read("projects.projects:1.name")).toMatchObject({ kind: "field", value: "Q3" });
+    expect(store.read(`projects.${id}`)).toMatchObject({ kind: "row" });
+    expect(store.read(`projects.${id}.name`)).toMatchObject({ kind: "field", value: "Q3" });
   });
 
   it("names the table it found, so a caller can narrow", () => {
     const store = inMemory();
-    store.create("projects", { name: "Q3" });
+    const id = store.create("projects", { name: "Q3" });
 
-    const found = store.read("projects.projects:1");
+    const found = store.read(`projects.${id}`);
     expect(found?.table).toBe("projects");
   });
 
@@ -67,8 +88,8 @@ describe("read", () => {
     const store = inMemory();
     expect(store.read("projects.projects:9")).toBeUndefined();
 
-    store.create("projects", { name: "Q3" });
-    expect(store.read("projects.projects:1.missing")).toBeUndefined();
+    const id = store.create("projects", { name: "Q3" });
+    expect(store.read(`projects.${id}.missing`)).toBeUndefined();
   });
 
   it("refuses a table it does not have", () => {
@@ -79,21 +100,21 @@ describe("read", () => {
 describe("update", () => {
   it("replaces a field without touching the rest of the row", () => {
     const store = inMemory();
-    store.create("projects", { name: "Q3", archived: false });
-    store.update("projects.projects:1.name", "Q4");
+    const id = store.create("projects", { name: "Q3", archived: false });
+    store.update(`projects.${id}.name`, "Q4");
 
-    const found = store.read("projects.projects:1");
+    const found = store.read(`projects.${id}`);
     expect(found?.kind === "row" && found.row).toMatchObject({ name: "Q4", archived: false });
   });
 
   it("keeps _id and _creationTime when the whole row is written", () => {
     const store = inMemory();
-    store.create("projects", { name: "Q3" });
-    store.update("projects.projects:1", { name: "Q4", _id: "projects:9", _creationTime: 0 });
+    const id = store.create("projects", { name: "Q3" });
+    store.update(`projects.${id}`, { name: "Q4", _id: "projects:9", _creationTime: 0 });
 
-    const found = store.read("projects.projects:1");
+    const found = store.read(`projects.${id}`);
     expect(found?.kind === "row" && found.row).toMatchObject({
-      _id: "projects:1",
+      _id: id,
       _creationTime: 1000,
       name: "Q4"
     });
@@ -109,27 +130,50 @@ describe("update", () => {
 describe("remove", () => {
   it("drops the row, or the field", () => {
     const store = inMemory();
-    store.create("projects", { name: "Q3", archived: false });
+    const id = store.create("projects", { name: "Q3", archived: false });
 
-    store.remove("projects.projects:1.archived");
-    const found = store.read("projects.projects:1");
+    store.remove(`projects.${id}.archived`);
+    const found = store.read(`projects.${id}`);
     expect(found?.kind === "row" && "archived" in found.row).toBe(false);
 
-    store.remove("projects.projects:1");
-    expect(store.read("projects.projects:1")).toBeUndefined();
+    store.remove(`projects.${id}`);
+    expect(store.read(`projects.${id}`)).toBeUndefined();
+  });
+
+  it("batches row and top-level-field removals without accepting a partial request", () => {
+    const store = inMemory();
+    const ids = store.createMany("projects", [
+      { name: "one", archived: false },
+      { name: "two", archived: false },
+      { name: "three", archived: false }
+    ]);
+
+    store.removeFieldFromRows("projects", [ids[0], ids[2]], "archived");
+    expect(store.read(`projects.${ids[0]}.archived`)).toBeUndefined();
+    expect(store.read(`projects.${ids[1]}.archived`)).toMatchObject({ value: false });
+
+    expect(() =>
+      store.removeRows("projects", [ids[1], asId<"projects">("projects:99")])
+    ).toThrow(/no 'projects' row projects:99/);
+    const afterRefusal = store.read("projects");
+    expect(afterRefusal?.kind === "table" && afterRefusal.rows).toHaveLength(3);
+
+    store.removeRows("projects", [ids[0], ids[2]]);
+    const remaining = store.read("projects");
+    expect(remaining?.kind === "table" && remaining.rows.map((row) => row._id)).toEqual([ids[1]]);
   });
 });
 
 describe("on disk", () => {
   it("writes the whole table on every mutation, and reads it back", () => {
     const { store, directory } = onDisk();
-    store.create("projects", { name: "Q3" });
+    const id = store.create("projects", { name: "Q3" });
 
     const written = JSON.parse(readFileSync(join(directory, "projects.json"), "utf8"));
     expect(written).toHaveLength(1);
-    expect(written[0]).toMatchObject({ _id: "projects:1", name: "Q3" });
+    expect(written[0]).toMatchObject({ _id: id, name: "Q3" });
 
-    store.remove("projects.projects:1");
+    store.remove(`projects.${id}`);
     expect(JSON.parse(readFileSync(join(directory, "projects.json"), "utf8"))).toHaveLength(0);
   });
 });

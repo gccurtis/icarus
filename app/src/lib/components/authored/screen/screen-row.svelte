@@ -26,6 +26,7 @@
 
 <Table.Row
   {...trace}
+  aria-selected={selected}
   data-state={selected ? "selected" : undefined}
   onclick={onselect && ((event: MouseEvent) => {
     if (!onControl(event)) onselect();

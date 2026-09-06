@@ -88,7 +88,7 @@
     {...trace}
     type="button"
     onclick={onselect}
-    aria-current={selected ? "true" : undefined}
+    aria-pressed={selected}
     class={shell}
   >
     {@render body()}

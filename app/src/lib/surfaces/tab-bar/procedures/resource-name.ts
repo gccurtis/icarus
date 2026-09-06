@@ -16,7 +16,6 @@ const NAMED_FIELD: Partial<Record<TableName, string | null>> = {
   documentChangeSets: null,
   documents: "title",
   documentSnapshots: null,
-  externalFiles: "name",
   findings: "title",
   formulas: null,
   hypotheses: "statement",
@@ -34,8 +33,8 @@ const NAMED_FIELD: Partial<Record<TableName, string | null>> = {
   spreadsheetChangeSets: null,
   spreadsheets: "title",
   spreadsheetSnapshots: null,
-  templates: "name",
-  templateVersions: "name",
+  templates: null,
+  templateVersions: null,
   threadParts: null,
   threads: null,
   users: "displayName",
@@ -46,7 +45,7 @@ const NAMED_FIELD: Partial<Record<TableName, string | null>> = {
 
 const isTable = (value: string): value is TableName => Object.hasOwn(NAMED_FIELD, value);
 
-/** Ids are minted `<table>:<n>`. */
+/** Resource ids keep the table before one opaque suffix. */
 const tableOf = (id: string): TableName | undefined => {
   const [table] = id.split(":");
   return table !== undefined && isTable(table) ? table : undefined;

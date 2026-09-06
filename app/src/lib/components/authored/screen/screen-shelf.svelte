@@ -23,12 +23,15 @@
    * wrong for sixty templates: what is off-screen cannot be scanned, and no
    * amount of pushing makes a row searchable.
    */
-  let { children }: { children: Snippet } = $props();
+  let {
+    label = "Scrollable shelf",
+    children
+  }: { label?: string; children: Snippet } = $props();
 
   // `CarouselShelf` forwards its rest props, so the marker lands on the element it renders.
   const trace = traceNode("ScreenShelf");
 </script>
 
-<CarouselShelf {...trace}>
+<CarouselShelf {...trace} {label}>
   {@render children()}
 </CarouselShelf>

@@ -4,6 +4,7 @@
     "_creationTime": 1785312000000,
     "projectId": "default",
     "title": "Winter readiness brief",
+    "templateId": "templates:2",
     "createdBy": { "kind": "user", "userId": "users:1" },
     "updatedBy": { "kind": "user", "userId": "users:1" },
     "updatedAt": 1788299760000
@@ -13,6 +14,7 @@
     "_creationTime": 1784707200000,
     "projectId": "default",
     "title": "Substation 14 incident write-up",
+    "templateId": "templates:1",
     "createdBy": { "kind": "user", "userId": "users:2" },
     "updatedBy": { "kind": "user", "userId": "users:3" },
     "updatedAt": 1788213600000
@@ -22,8 +24,19 @@
     "_creationTime": 1783497600000,
     "projectId": "default",
     "title": "Interconnect glossary",
+    "templateId": "templates:3",
     "createdBy": { "kind": "user", "userId": "users:3" },
     "updatedBy": { "kind": "user", "userId": "users:3" },
     "updatedAt": 1787954400000
+  },
+  {
+    "_id": "documents:4",
+    "_creationTime": 1788111000000,
+    "projectId": "default",
+    "title": "Transformer bank replacement decision",
+    "templateId": "templates:4",
+    "createdBy": { "kind": "user", "userId": "default-user" },
+    "updatedBy": { "kind": "user", "userId": "users:1" },
+    "updatedAt": 1788460800000
   }
 ]

@@ -37,7 +37,11 @@ export type {
   Target
 } from "$representation/data/types/workspace/tab";
 
-export type { Tab, WorkspaceStateModel } from "$model/client/workspace-state/types";
+export type {
+  SingleFlightKeyPart,
+  Tab,
+  WorkspaceStateModel
+} from "$model/client/workspace-state/types";
 
 export type { Singleton } from "$model/client/workspace-state/methods/shared/defaults";
 export {
