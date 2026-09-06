@@ -89,6 +89,37 @@ const model = vi.hoisted(() => {
       },
       { _id: "variables:2", _creationTime: 1, projectId: "other", name: "Hidden variable" }
     ],
+    commentThreads: [
+      {
+        _id: "commentThreads:1",
+        _creationTime: 1,
+        projectId: "p",
+        target: { kind: "document", id: "documents:1" },
+        within: {
+          kind: "text",
+          spans: [
+            {
+              blockId: "#body",
+              from: { atom: "#atom", offset: 2 },
+              to: { atom: "#atom", offset: 8 }
+            }
+          ]
+        },
+        quote: "Visible quote",
+        resolution: { by: "u", at: 4 },
+        createdBy: { kind: "user", userId: "u" },
+        updatedAt: 5,
+        credential: "thread-secret"
+      },
+      {
+        _id: "commentThreads:2",
+        _creationTime: 1,
+        projectId: "other",
+        target: { kind: "document", id: "documents:2" },
+        createdBy: { kind: "user", userId: "stranger" },
+        updatedAt: 5
+      }
+    ],
     personas: [
       { _id: "personas:1", _creationTime: 1, projectId: "p", name: "Visible persona" },
       { _id: "personas:2", _creationTime: 1, name: "Unscoped persona" },
@@ -357,6 +388,61 @@ describe("scope-projected reads", () => {
         }
       ]
     });
+    expect(await read({ path: "commentThreads" })).toEqual({
+      table: "commentThreads",
+      kind: "table",
+      rows: [
+        {
+          _id: "commentThreads:1",
+          _creationTime: 1,
+          projectId: "p",
+          target: { kind: "document", id: "documents:1" },
+          within: {
+            kind: "text",
+            spans: [
+              {
+                blockId: "#body",
+                from: { atom: "#atom", offset: 2 },
+                to: { atom: "#atom", offset: 8 }
+              }
+            ]
+          },
+          quote: "Visible quote",
+          resolution: { by: "u", at: 4 },
+          createdBy: { kind: "user", userId: "u" },
+          updatedAt: 5
+        }
+      ]
+    });
+  });
+
+  it("rejects malformed collaboration geometry instead of forwarding nested extras", async () => {
+    const original = model.rows.commentThreads;
+    model.rows.commentThreads = [
+      {
+        ...original[0],
+        within: {
+          kind: "text",
+          spans: [
+            {
+              blockId: "#body",
+              from: { atom: "#atom", offset: 2, credential: "nested-secret" },
+              to: { atom: "#atom", offset: 8 }
+            }
+          ]
+        }
+      }
+    ];
+
+    try {
+      expect(await read({ path: "commentThreads" })).toEqual({
+        table: "commentThreads",
+        kind: "table",
+        rows: []
+      });
+    } finally {
+      model.rows.commentThreads = original;
+    }
   });
 
   it("allows approved fields on a scoped row and makes a foreign row look absent", async () => {

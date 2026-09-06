@@ -14,7 +14,16 @@ export type ProjectedRows = {
     "comments",
     "projectId" | "threadId" | "blocks" | "mentions" | "author"
   >;
-  commentThreads: Projection<"commentThreads", "projectId" | "target" | "quote">;
+  commentThreads: Projection<
+    "commentThreads",
+    | "projectId"
+    | "target"
+    | "within"
+    | "quote"
+    | "resolution"
+    | "createdBy"
+    | "updatedAt"
+  >;
   connectors: Projection<"connectors", "projectId" | "name">;
   documents: Projection<"documents", "projectId" | "title">;
   findings: Projection<"findings", "projectId" | "title">;

@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   normalizeLinkUrl,
-  safeLinkHref
+  safeLinkHref,
+  wordAt
 } from "$app-views/categories/document-editor/procedures/links";
 
 describe("document links", () => {
@@ -29,5 +30,13 @@ describe("document links", () => {
     expect(
       safeLinkHref({ kind: "url", url: "https://example.com/a", note: "Source rationale" })
     ).toBe("https://example.com/a");
+  });
+
+  it("selects deterministic word boundaries at either side of a browser hit", () => {
+    expect(wordAt("Winter readiness brief", 2)).toEqual({ from: 0, to: 6 });
+    expect(wordAt("Winter readiness brief", 6)).toEqual({ from: 0, to: 6 });
+    expect(wordAt("don't split", 3)).toEqual({ from: 0, to: 5 });
+    expect(wordAt("Winter readiness brief", 7)).toEqual({ from: 7, to: 16 });
+    expect(wordAt("Winter readiness brief", 22)).toEqual({ from: 17, to: 22 });
   });
 });

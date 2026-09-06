@@ -85,6 +85,82 @@ const activityTarget = (value: unknown): Fields | typeof INVALID => {
   return { kind: value.kind, id: value.id, label: value.label };
 };
 
+const nonNegativeNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0;
+
+const anchorEnd = (value: unknown): Fields | typeof INVALID => {
+  if (
+    !isRecord(value) ||
+    !exact(value, ["atom", "offset"]) ||
+    !identifier(value.atom) ||
+    !Number.isInteger(value.offset) ||
+    Number(value.offset) < 0
+  ) {
+    return INVALID;
+  }
+  return { atom: value.atom, offset: value.offset };
+};
+
+const textAnchorSpan = (value: unknown): Fields | typeof INVALID => {
+  if (!isRecord(value) || !exact(value, ["blockId", "from", "to"]) || !identifier(value.blockId)) {
+    return INVALID;
+  }
+  const from = anchorEnd(value.from);
+  const to = anchorEnd(value.to);
+  if (from === INVALID || to === INVALID) return INVALID;
+  return { blockId: value.blockId, from, to };
+};
+
+const anchorWithin = (value: unknown): Fields | typeof INVALID => {
+  if (!isRecord(value) || !text(value.kind)) return INVALID;
+
+  if (value.kind === "text" && "spans" in value) {
+    if (!exact(value, ["kind", "spans"]) || !Array.isArray(value.spans)) return INVALID;
+    const spans: Fields[] = [];
+    for (const entry of value.spans) {
+      const span = textAnchorSpan(entry);
+      if (span === INVALID) return INVALID;
+      spans.push(span);
+    }
+    return { kind: "text", spans };
+  }
+  if (value.kind === "text") {
+    if (!exact(value, ["kind", "blockId", "from", "to"])) return INVALID;
+    const span = textAnchorSpan({ blockId: value.blockId, from: value.from, to: value.to });
+    return span === INVALID ? INVALID : { kind: "text", ...span };
+  }
+  if (value.kind === "slide") {
+    return exact(value, ["kind", "slideId"]) && identifier(value.slideId)
+      ? { kind: "slide", slideId: value.slideId }
+      : INVALID;
+  }
+  if (value.kind === "element") {
+    return exact(value, ["kind", "elementId"]) && identifier(value.elementId)
+      ? { kind: "element", elementId: value.elementId }
+      : INVALID;
+  }
+  if (value.kind === "cell") {
+    return exact(value, ["kind", "rowId", "columnId"]) &&
+      identifier(value.rowId) &&
+      identifier(value.columnId)
+      ? { kind: "cell", rowId: value.rowId, columnId: value.columnId }
+      : INVALID;
+  }
+  return INVALID;
+};
+
+const resolution = (value: unknown): Fields | typeof INVALID => {
+  if (
+    !isRecord(value) ||
+    !exact(value, ["by", "at"]) ||
+    !identifier(value.by) ||
+    !nonNegativeNumber(value.at)
+  ) {
+    return INVALID;
+  }
+  return { by: value.by, at: value.at };
+};
+
 /**
  * Compatibility consumers still need represented content/value objects. Copy
  * those values rather than forwarding store-owned objects, and fail the whole
@@ -161,7 +237,15 @@ const READABLE_FIELDS = {
   activity: ["projectId", "actor", "actorLabel", "verb", "target"],
   agentTasks: ["projectId", "title", "personaId"],
   comments: ["projectId", "threadId", "blocks", "mentions", "author"],
-  commentThreads: ["projectId", "target", "quote"],
+  commentThreads: [
+    "projectId",
+    "target",
+    "within",
+    "quote",
+    "resolution",
+    "createdBy",
+    "updatedAt"
+  ],
   connectors: ["projectId", "name"],
   documents: ["projectId", "title"],
   findings: ["projectId", "title"],
@@ -186,7 +270,7 @@ const REQUIRED_FIELDS = {
   activity: ["projectId", "actor", "actorLabel", "verb", "target"],
   agentTasks: ["projectId", "title"],
   comments: ["projectId", "threadId", "blocks", "mentions", "author"],
-  commentThreads: ["projectId", "target"],
+  commentThreads: ["projectId", "target", "createdBy", "updatedAt"],
   connectors: ["projectId", "name"],
   documents: ["projectId", "title"],
   findings: ["projectId", "title"],
@@ -226,13 +310,16 @@ const projectedField = (
   if (field === "role") {
     return value === "owner" || value === "editor" || value === "viewer" ? value : INVALID;
   }
-  if (field === "actor" || field === "author") return actor(value);
+  if (field === "actor" || field === "author" || field === "createdBy") return actor(value);
   if (field === "target") {
     return table === "activity" ? activityTarget(value) : resourceRef(value);
   }
   if (field === "blocks" || field === "mentions") {
     return Array.isArray(value) ? composite(value) : INVALID;
   }
+  if (field === "within") return anchorWithin(value);
+  if (field === "resolution") return resolution(value);
+  if (field === "updatedAt") return nonNegativeNumber(value) ? value : INVALID;
   if (field === "value") return composite(value);
   return INVALID;
 };

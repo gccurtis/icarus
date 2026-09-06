@@ -1,9 +1,9 @@
 # Document editor implementation plan
 
-**Status:** Approved · implementation in progress
+**Status:** Complete · convergence gate green
 **Implementation branch:** `work/document-editor-integration`, based directly on `main`
 **Reference implementation:** `work/document-editor` at `55a7b22`
-**Target base:** current `main`
+**Validated base:** `main` at `239d028`
 **Companion:** [Document editor review](../document-editor-review/document-editor-review.md)
 
 ## Outcome
@@ -279,6 +279,25 @@ document root per furniture path.
 
 **Exit:** typecheck, unit/invariant tests, architecture/style lint, production build, browser suite,
 accessibility pass, and clean console/network evidence all pass from a clean checkout.
+
+### Recorded convergence evidence — 5 September 2026
+
+| Gate | Result |
+| --- | --- |
+| Branch boundary | `main` at `239d028` is an ancestor; `work/document-editor` at `55a7b22` is not an ancestor. |
+| Static analysis | Svelte/typecheck: 0 errors and 0 warnings. Architecture/style lint: 63/63 checks clean. |
+| Unit suite | 72 files and 742 assertions passed. |
+| Chromium | 13/13 editor scenarios passed from a reset fixture. |
+| Firefox | 13/13 editor scenarios passed from an independent reset fixture. |
+| Accessibility | Keyboard entry, visible focus, reduced motion, light/dark themes, and grayscale hierarchy passed in both browser engines. |
+| Runtime quality | The browser harness captured 0 console warnings/errors, page errors, failed requests, or HTTP failures. |
+| Production | The complete application production build passed on the validated branch. |
+
+The convergence run also caught and repaired two integration seams introduced by the moving base:
+the new scoped store projection had omitted comment anchor state, and Firefox exposed browser-native
+double-click selection as inconsistent. Comment collaboration fields now cross an exact, validated
+projection, and word selection is deterministic in the editor rather than delegated to browser
+selection heuristics.
 
 ## Workstream ownership map
 

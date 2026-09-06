@@ -197,7 +197,7 @@
       id: "07",
       title: "Convergence gate",
       kind: "Evidence",
-      status: "Validating",
+      status: "Complete",
       summary: "Prove the integrated editor from a clean checkout before any production merge is proposed.",
       donor: "No donor code",
       tasks: [
@@ -372,12 +372,36 @@
   ] as const;
 
   const gates = [
-    ["Static", "Typecheck · 63 architecture/style checks · production build"],
-    ["Model", "Apply/invert matrix · validation · legacy decoding · runtime refusal/rebase"],
-    ["Editor", "Projection round trip · selection origins · IME · Enter/Backspace · multi-range"],
-    ["Browser", "Narrow/default/wide · two engines · gestures · comments · links · furniture"],
-    ["Access", "Keyboard only · visible focus · reduced motion · grayscale hierarchy"],
-    ["Quiet", "Zero console warnings/errors · page errors · unexpected failed requests"]
+    [
+      "Static",
+      "Typecheck · architecture/style checks · production build",
+      "0 diagnostics · 63/63 checks · build passed"
+    ],
+    [
+      "Model",
+      "Apply/invert matrix · validation · legacy decoding · runtime refusal/rebase",
+      "72 files · 742 unit assertions passed"
+    ],
+    [
+      "Editor",
+      "Projection round trip · selection origins · IME · Enter/Backspace · multi-range",
+      "Every implemented editor regression passed"
+    ],
+    [
+      "Browser",
+      "Narrow/default/wide · gestures · comments · links · furniture",
+      "13 Chromium + 13 Firefox scenarios passed"
+    ],
+    [
+      "Access",
+      "Keyboard only · visible focus · reduced motion · grayscale hierarchy",
+      "Light/dark and non-color hierarchy verified"
+    ],
+    [
+      "Quiet",
+      "Console warnings/errors · page errors · unexpected failed requests",
+      "0 captured events across both browser runs"
+    ]
   ] as const;
 
   let view = $state<View>("strategy");
@@ -418,8 +442,8 @@
     </div>
     <aside class="plan-state">
       <span>Plan state</span>
-      <strong>Validation</strong>
-      <p>Seven slices complete · convergence gate running</p>
+      <strong>Complete</strong>
+      <p>Eight slices complete · every convergence gate green</p>
       <code>main → work/document-editor-integration</code>
       <a class="live-link" href="/app/dev-project">Open the live editor →</a>
     </aside>
@@ -630,12 +654,12 @@
     <main class="page">
       <section class="gate-hero">
         <div><span class="kicker">Definition of done</span><h2>Ready means reproducible, reviewable, and quiet.</h2></div>
-        <p>A clean Git merge is not evidence. Every layer below must agree from a clean checkout.</p>
+        <p>Recorded from the main-based integration branch after independent clean-fixture runs.</p>
       </section>
 
       <section class="gate-grid">
         {#each gates as gate, index}
-          <article><span>{String(index + 1).padStart(2, "0")}</span><div><h3>{gate[0]}</h3><p>{gate[1]}</p></div></article>
+          <article><span>{String(index + 1).padStart(2, "0")}</span><div><h3>{gate[0]}</h3><p>{gate[1]}</p><small>{gate[2]}</small></div></article>
         {/each}
       </section>
 
@@ -883,6 +907,7 @@
   .gate-grid article > span { color: var(--success); font-size: 10px; }
   .gate-grid h3 { margin: 0 0 .4rem; font-size: 1rem; }
   .gate-grid p { margin: 0; color: var(--ink-2); font-size: 11.5px; }
+  .gate-grid small { display: block; margin-top: .85rem; color: var(--success); font-size: 10px; font-weight: 650; }
   .acceptance { margin-top: 5rem; }
   .acceptance > header { padding-bottom: 1rem; border-bottom: 2px solid var(--ink); }
   .acceptance > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1.25rem; }
