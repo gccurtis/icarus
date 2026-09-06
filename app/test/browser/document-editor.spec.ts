@@ -252,7 +252,7 @@ test("the fixture can be reached with the keyboard", async ({ page }) => {
   await expect(page.locator(".ProseMirror")).toBeVisible();
 });
 
-test("theme, focus, reduced motion, and grayscale preserve the editor hierarchy", async ({
+test("appearance, focus, reduced motion, and grayscale preserve the editor hierarchy", async ({
   page
 }) => {
   await page.setViewportSize(viewports.default);
@@ -260,21 +260,21 @@ test("theme, focus, reduced motion, and grayscale preserve the editor hierarchy"
   await openFixture(page);
 
   const root = page.locator("html");
-  await expect(root).toHaveAttribute("data-theme", "celestial");
+  await expect(root).toHaveAttribute("data-appearance", "helios");
 
-  const theme = page.getByRole("button", { name: "Switch to the dark theme" });
+  const appearance = page.getByRole("button", { name: "Switch to Celestial Selene" });
   await page.keyboard.press("Tab");
-  await expect(theme).toBeFocused();
+  await expect(appearance).toBeFocused();
   expect(
-    await theme.evaluate((element) => {
+    await appearance.evaluate((element) => {
       const style = getComputedStyle(element);
       return Number.parseFloat(style.outlineWidth);
     })
   ).toBeGreaterThanOrEqual(2);
 
   await page.keyboard.press("Enter");
-  await expect(root).toHaveAttribute("data-theme", "cyberpunk");
-  await expect(page.getByRole("button", { name: "Switch to the light theme" })).toBeVisible();
+  await expect(root).toHaveAttribute("data-appearance", "selene");
+  await expect(page.getByRole("button", { name: "Switch to Celestial Helios" })).toBeVisible();
   expect(await root.evaluate((element) => getComputedStyle(element).colorScheme)).toContain("dark");
 
   const durations = await page.evaluate(() => {

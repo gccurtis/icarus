@@ -6,7 +6,7 @@ import type { FileRecord } from "$development-views/document-editor-reference/ty
  */
 export const FILES: FileRecord[] = [
   {"path":".gitignore","status":"M","area":"cross-cutting","kind":"configuration","current":51,"base":48,"added":3,"deleted":0,"binary":false},
-  {"path":"app/package.json","status":"M","area":"cross-cutting","kind":"configuration","current":83,"base":81,"added":2,"deleted":0,"binary":false},
+  {"path":"app/package.json","status":"M","area":"cross-cutting","kind":"configuration","current":82,"base":80,"added":2,"deleted":0,"binary":false},
   {"path":"app/playwright.config.ts","status":"A","area":"evidence","kind":"test","current":50,"base":0,"added":50,"deleted":0,"binary":false},
   {"path":"app/scripts/generate-document-editor-reference-inventory.mjs","status":"A","area":"evidence","kind":"configuration","current":123,"base":0,"added":123,"deleted":0,"binary":false},
   {"path":"app/seed/comments.json","status":"M","area":"evidence","kind":"fixture","current":200,"base":110,"added":90,"deleted":0,"binary":false},
@@ -92,7 +92,7 @@ export const FILES: FileRecord[] = [
   {"path":"app/src/lib/components/authored/panel/panel-control-row.svelte","status":"A","area":"inspector","kind":"production","current":24,"base":0,"added":24,"deleted":0,"binary":false},
   {"path":"app/src/lib/components/authored/panel/panel-inline-style.svelte","status":"A","area":"inspector","kind":"production","current":129,"base":0,"added":129,"deleted":0,"binary":false},
   {"path":"app/src/lib/components/authored/panel/panel-marks.svelte","status":"M","area":"inspector","kind":"production","current":132,"base":80,"added":59,"deleted":7,"binary":false},
-  {"path":"app/src/lib/components/authored/panel/panel-number.svelte","status":"M","area":"inspector","kind":"production","current":151,"base":175,"added":21,"deleted":45,"binary":false},
+  {"path":"app/src/lib/components/authored/panel/panel-number.svelte","status":"M","area":"inspector","kind":"production","current":152,"base":148,"added":17,"deleted":13,"binary":false},
   {"path":"app/src/lib/components/authored/panel/panel-section.svelte","status":"M","area":"inspector","kind":"production","current":114,"base":98,"added":22,"deleted":6,"binary":false},
   {"path":"app/src/lib/components/vendored/input-group/input-group.svelte","status":"M","area":"cross-cutting","kind":"production","current":24,"base":24,"added":1,"deleted":1,"binary":false},
   {"path":"app/src/lib/development-views/demo/components/demo-index.svelte","status":"M","area":"evidence","kind":"reference","current":91,"base":82,"added":9,"deleted":0,"binary":false},
@@ -149,7 +149,7 @@ export const FILES: FileRecord[] = [
   {"path":"app/src/lib/surfaces/status-bar/procedures/resource-name.ts","status":"M","area":"cross-cutting","kind":"production","current":105,"base":101,"added":7,"deleted":3,"binary":false},
   {"path":"app/src/lib/surfaces/status-bar/status-bar.svelte","status":"M","area":"cross-cutting","kind":"production","current":113,"base":114,"added":2,"deleted":3,"binary":false},
   {"path":"app/src/lib/surfaces/tab-bar/procedures/resource-name.ts","status":"M","area":"cross-cutting","kind":"production","current":69,"base":65,"added":7,"deleted":3,"binary":false},
-  {"path":"app/src/routes/+layout.svelte","status":"M","area":"cross-cutting","kind":"production","current":23,"base":22,"added":1,"deleted":0,"binary":false},
+  {"path":"app/src/routes/+layout.svelte","status":"M","area":"cross-cutting","kind":"production","current":18,"base":17,"added":1,"deleted":0,"binary":false},
   {"path":"app/src/routes/demo/document-editor-controls/+page.svelte","status":"A","area":"evidence","kind":"reference","current":5,"base":0,"added":5,"deleted":0,"binary":false},
   {"path":"app/src/routes/demo/document-editor-implementation-plan/+page.svelte","status":"A","area":"evidence","kind":"reference","current":5,"base":0,"added":5,"deleted":0,"binary":false},
   {"path":"app/src/routes/demo/document-editor-reference/+page.svelte","status":"A","area":"evidence","kind":"reference","current":5,"base":0,"added":5,"deleted":0,"binary":false},
@@ -164,6 +164,6 @@ export const FILES: FileRecord[] = [
   {"path":"app/static/favicon.svg","status":"A","area":"cross-cutting","kind":"production","current":5,"base":0,"added":5,"deleted":0,"binary":false},
   {"path":"app/test/browser/document-editor-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":83,"base":0,"added":83,"deleted":0,"binary":false},
   {"path":"app/test/browser/document-editor.spec.ts","status":"A","area":"evidence","kind":"test","current":443,"base":0,"added":443,"deleted":0,"binary":false},
-  {"path":"docs/artifacts/document-editor-implementation-plan/document-editor-implementation-plan.md","status":"A","area":"evidence","kind":"documentation","current":377,"base":0,"added":377,"deleted":0,"binary":false},
+  {"path":"docs/artifacts/document-editor-implementation-plan/document-editor-implementation-plan.md","status":"A","area":"evidence","kind":"documentation","current":384,"base":0,"added":384,"deleted":0,"binary":false},
   {"path":"docs/artifacts/document-editor-review/document-editor-review.md","status":"A","area":"evidence","kind":"documentation","current":266,"base":0,"added":266,"deleted":0,"binary":false}
 ];

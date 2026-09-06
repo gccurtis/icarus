@@ -375,12 +375,12 @@
     [
       "Static",
       "Typecheck · architecture/style checks · production build",
-      "0 diagnostics · 63/63 checks · build passed"
+      "0 diagnostics · 56/56 checks · build passed"
     ],
     [
       "Model",
       "Apply/invert matrix · validation · legacy decoding · runtime refusal/rebase",
-      "72 files · 742 unit assertions passed"
+      "73 files · 745 unit assertions passed"
     ],
     [
       "Editor",
@@ -390,17 +390,17 @@
     [
       "Browser",
       "Narrow/default/wide · gestures · comments · links · furniture",
-      "13 Chromium + 13 Firefox scenarios passed"
+      "16 Chromium current-main scenarios · 13 Firefox scenarios on the pre-rebase baseline"
     ],
     [
       "Access",
       "Keyboard only · visible focus · reduced motion · grayscale hierarchy",
-      "Light/dark and non-color hierarchy verified"
+      "Helios/Selene and non-color hierarchy verified in the current Chromium run"
     ],
     [
       "Quiet",
       "Console warnings/errors · page errors · unexpected failed requests",
-      "0 captured events across both browser runs"
+      "0 captured events across the current Chromium run"
     ]
   ] as const;
 
@@ -443,7 +443,7 @@
     <aside class="plan-state">
       <span>Plan state</span>
       <strong>Complete</strong>
-      <p>Eight slices complete · every convergence gate green</p>
+      <p>Eight slices complete · rebased to current main · current Chromium gates green</p>
       <code>main → work/document-editor-integration</code>
       <a class="live-link" href="/app/dev-project">Open the live editor →</a>
     </aside>
@@ -654,7 +654,7 @@
     <main class="page">
       <section class="gate-hero">
         <div><span class="kicker">Definition of done</span><h2>Ready means reproducible, reviewable, and quiet.</h2></div>
-        <p>Recorded from the main-based integration branch after independent clean-fixture runs.</p>
+        <p>Recorded from the main-based integration branch after clean-fixture runs. Chromium was rerun after the latest rebase; Firefox retains the prior green baseline and is labeled separately.</p>
       </section>
 
       <section class="gate-grid">

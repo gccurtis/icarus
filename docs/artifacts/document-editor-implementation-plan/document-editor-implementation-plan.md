@@ -1,9 +1,9 @@
 # Document editor implementation plan
 
-**Status:** Complete · convergence gate green
+**Status:** Complete · current-main Chromium convergence green; Firefox baseline retained
 **Implementation branch:** `work/document-editor-integration`, based directly on `main`
 **Reference implementation:** `work/document-editor` at `55a7b22`
-**Validated base:** `main` at `239d028`
+**Validated base:** local `main` at `b4894c7`
 **Companion:** [Document editor review](../document-editor-review/document-editor-review.md)
 
 ## Outcome
@@ -284,16 +284,23 @@ accessibility pass, and clean console/network evidence all pass from a clean che
 
 | Gate | Result |
 | --- | --- |
-| Branch boundary | `main` at `239d028` is an ancestor; `work/document-editor` at `55a7b22` is not an ancestor. |
-| Static analysis | Svelte/typecheck: 0 errors and 0 warnings. Architecture/style lint: 63/63 checks clean. |
-| Unit suite | 72 files and 742 assertions passed. |
-| Chromium | 13/13 editor scenarios passed from a reset fixture. |
-| Firefox | 13/13 editor scenarios passed from an independent reset fixture. |
-| Accessibility | Keyboard entry, visible focus, reduced motion, light/dark themes, and grayscale hierarchy passed in both browser engines. |
-| Runtime quality | The browser harness captured 0 console warnings/errors, page errors, failed requests, or HTTP failures. |
+| Branch boundary | local `main` at `b4894c7` is the merge base; `work/document-editor` at `55a7b22` is not an ancestor. |
+| Static analysis | Svelte/typecheck: 0 errors and 0 warnings. Architecture/style lint: 56/56 checks clean. |
+| Unit suite | 73 files and 745 assertions passed. |
+| Chromium | 16/16 editor and reference scenarios passed from a reset fixture on the current base. |
+| Firefox | 13/13 editor scenarios passed on the pre-rebase baseline. The current cached runner cannot launch locally because its host GTK runtime is unavailable, so this is not represented as a current-base rerun. |
+| Accessibility | Keyboard entry, visible focus, reduced motion, Helios/Selene appearance, and grayscale hierarchy passed in the current Chromium run. |
+| Runtime quality | The current Chromium harness captured 0 console warnings/errors, page errors, failed requests, or HTTP failures. |
 | Production | The complete application production build passed on the validated branch. |
 
-The convergence run also caught and repaired two integration seams introduced by the moving base:
+The current-main rebase surfaced two shared-control conflicts. The numeric control keeps main's
+validation feedback and the editor's stepper-free direct entry. The choice control keeps main's
+current sizing while retaining the editor's full-row, responsive full-label/initial behavior. The
+post-rebase browser pass also caught a stale test contract: main replaced
+`data-theme="celestial|cyberpunk"` with `data-appearance="helios|selene"`; the accessibility scenario
+now verifies the new contract.
+
+The earlier convergence run also caught and repaired two integration seams introduced by the moving base:
 the new scoped store projection had omitted comment anchor state, and Firefox exposed browser-native
 double-click selection as inconsistent. Comment collaboration fields now cross an exact, validated
 projection, and word selection is deterministic in the editor rather than delegated to browser
