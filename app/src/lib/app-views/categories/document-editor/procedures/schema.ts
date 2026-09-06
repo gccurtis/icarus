@@ -68,6 +68,22 @@ const atomBlockSpec = (name: string): NodeSpec => ({
   ]
 });
 
+const furnitureSpec = (which: "header" | "footer"): NodeSpec => ({
+  content: "row+",
+  isolating: true,
+  defining: true,
+  selectable: false,
+  toDOM: () => [
+    "div",
+    {
+      class: `document-furniture document-${which} document-furniture-editable`,
+      "data-furniture": which,
+      "aria-label": `Document ${which}`
+    },
+    0
+  ]
+});
+
 const labelOf = (name: string, block: unknown): string => {
   const held = (block ?? {}) as Record<string, unknown>;
   if (name === "image") return typeof held.alt === "string" && held.alt.length > 0 ? held.alt : "Image";
@@ -90,9 +106,12 @@ export const schema = new Schema({
     doc: { content: "page+" },
 
     page: {
-      content: "row+",
+      content: "furniture_header? row+ furniture_footer?",
       toDOM: () => ["article", { class: "document-page" }, 0]
     },
+
+    furniture_header: furnitureSpec("header"),
+    furniture_footer: furnitureSpec("footer"),
 
     blocks_row: {
       group: "row",

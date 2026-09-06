@@ -24,17 +24,21 @@ const spanOf = (doc: ProseMirrorNode, at: number): readonly [number, number] => 
 
 const previousRowAt = (doc: ProseMirrorNode, rowStart: number): number | undefined => {
   const $rowStart = doc.resolve(rowStart);
+  const container = $rowStart.parent;
+  const furniture = container.type.name.startsWith("furniture_") ? container : undefined;
+  let previous: number | undefined;
 
-  if ($rowStart.nodeBefore !== null) return rowStart - $rowStart.nodeBefore.nodeSize;
+  doc.descendants((node, at, parent) => {
+    if (at >= rowStart) return false;
+    if (node.type.spec.group?.split(" ").includes("row") !== true) return;
 
-  const pageStart = $rowStart.before();
-  const priorPage = doc.resolve(pageStart).nodeBefore;
-  if (priorPage === null) return undefined;
+    const sameScope = furniture === undefined
+      ? parent?.type.name === "page"
+      : parent === furniture;
+    if (sameScope) previous = at;
+  });
 
-  const last = priorPage.lastChild;
-  if (last === null) return undefined;
-
-  return pageStart - last.nodeSize - 1;
+  return previous;
 };
 
 const BODY_ATTRS = {

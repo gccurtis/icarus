@@ -7,6 +7,12 @@
 
   import { read } from "$capabilities/store/index.remote";
   import { mergeRow, splitRow } from "$app-views/categories/document-editor/procedures/editing";
+  import {
+    FURNITURE,
+    furnitureOf,
+    furniturePlugin,
+    sameFurniture
+  } from "$app-views/categories/document-editor/procedures/furniture";
   import { heldSelection } from "$app-views/categories/document-editor/procedures/highlight";
   import { mint } from "$app-views/categories/document-editor/procedures/ids";
   import { editorPointerGestures } from "$app-views/categories/document-editor/procedures/links";
@@ -103,6 +109,7 @@
     heldSelection(),
     multiSelection(),
     editorPointerGestures(),
+    furniturePlugin(() => furnitureOf(runtime?.body)),
     keymap({ Enter: splitRow, Backspace: mergeRow }),
     keymap({ "Mod-z": undo, "Shift-Mod-z": redo, "Mod-y": redo }),
     keymap(baseKeymap)
@@ -159,12 +166,11 @@
     const next = lay(editor.state.apply(transaction));
     editor.updateState(next);
 
-    signal(next);
-
-    if (!transaction.docChanged) return;
     if (transaction.getMeta(LAYOUT) === true) return;
 
-    emit(next);
+    signal(next);
+
+    if (transaction.docChanged) emit(next);
   };
 
   const paint = (body: DocumentBody): void => {
@@ -217,12 +223,27 @@
 
     painted = body;
 
-    if (sent !== undefined && translate(sent, body).length === 0) {
+    const projectionSettingsChanged =
+      sent !== undefined &&
+      (JSON.stringify(sent.pageSetup ?? null) !== JSON.stringify(body.pageSetup ?? null) ||
+        JSON.stringify(sent.styles ?? null) !== JSON.stringify(body.styles ?? null));
+
+    if (sent !== undefined && translate(sent, body).length === 0 && !projectionSettingsChanged) {
       sent = body;
       return;
     }
 
     paint(body);
+  });
+
+  $effect(() => {
+    const spec = furnitureOf(runtime?.body);
+    if (editor === undefined) return;
+    if (sameFurniture(FURNITURE.getState(editor.state), spec)) return;
+
+    editor.dispatch(
+      editor.state.tr.setMeta(FURNITURE, spec).setMeta("addToHistory", false).setMeta(LAYOUT, true)
+    );
   });
 
   $effect(() => {
@@ -331,8 +352,13 @@
     view.setZoom(clampZoom(layout.zoom - by));
   };
 
+  const furnitureEdge = (distance: number | undefined): string =>
+    `${((distance ?? 0.4) / layout.paper.width) * 100}%`;
+
   const pageStyle = $derived(
     `zoom: ${layout.zoom / 100}; ` +
+      `--furniture-top: ${furnitureEdge(runtime?.body?.header?.distanceFromEdge)}; ` +
+      `--furniture-bottom: ${furnitureEdge(runtime?.body?.footer?.distanceFromEdge)}; ` +
       `--page-width: ${layout.pageWidth}rem; --page-height: ${layout.pageHeight}rem; ` +
       `--margin-top: ${layout.marginPercent.top}%; --margin-right: ${layout.marginPercent.right}%; ` +
       `--margin-bottom: ${layout.marginPercent.bottom}%; --margin-left: ${layout.marginPercent.left}%`
@@ -452,6 +478,7 @@
     flex-direction: column;
     gap: calc(var(--token-spacing-unit) * 8);
     outline: none;
+    white-space: pre-wrap;
   }
 
   .editor :global(.document-page) {
@@ -464,6 +491,73 @@
     border: 1px solid var(--token-border-subtle);
     background-color: var(--token-surface-elevated);
     box-shadow: 0 1px 3px color-mix(in srgb, var(--token-ink-primary) 12%, transparent);
+  }
+
+  .editor :global(.document-furniture) {
+    position: absolute;
+    right: var(--margin-right);
+    left: var(--margin-left);
+    display: flex;
+    align-items: baseline;
+    gap: calc(var(--token-spacing-unit) * 3);
+    color: var(--token-ink-muted);
+    font-size: 12px;
+    line-height: 16px;
+    white-space: pre-wrap;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .editor :global(.document-furniture-editable) {
+    z-index: 2;
+    min-height: 1.25rem;
+    pointer-events: auto;
+    user-select: text;
+  }
+
+  .editor :global(.document-furniture-editable:focus-within) {
+    box-shadow: 0 1px 0 var(--token-color-active-border);
+  }
+
+  .editor :global(.document-furniture-editable .document-row) {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .editor :global(.document-furniture-editable .document-block) {
+    min-height: 1rem;
+    flex: 1;
+  }
+
+  .editor :global(.document-header) {
+    top: var(--furniture-top);
+  }
+
+  .editor :global(.document-footer) {
+    bottom: var(--furniture-bottom);
+  }
+
+  .editor :global(.document-furniture-text) {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .editor :global(.document-page-number) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .editor :global(.document-page-number[data-position="start"]) {
+    order: -1;
+  }
+
+  .editor :global(.document-page-number[data-position="center"]) {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .editor :global(.document-page-number[data-position="end"]) {
+    margin-inline-start: auto;
   }
 
   .editor :global(.document-row) {

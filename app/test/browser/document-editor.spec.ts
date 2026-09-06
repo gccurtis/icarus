@@ -143,6 +143,38 @@ test("document context panels are operational and compact", async ({ page }) => 
   }
 });
 
+test("headers and footers edit on the page through the shared editor", async ({ page }) => {
+  await page.setViewportSize(viewports.default);
+  await openFixture(page);
+
+  const context = page.locator('aside[aria-label="Context"]');
+  await context.getByRole("button", { name: "Layout", exact: true }).click();
+  const showHeader = context.getByRole("switch", { name: "Show header" });
+  if (!(await showHeader.isChecked())) await showHeader.click();
+
+  const canonical = page.locator('[data-furniture="header"]');
+  await expect(canonical).toBeVisible();
+  await expect(page.locator(".ProseMirror")).toHaveCount(1);
+  await context.getByRole("button", { name: "Edit header" }).click();
+  await page.keyboard.type("Operations brief");
+  await expect(canonical).toContainText("Operations brief");
+
+  await canonical.locator(".document-block").first().dblclick({ position: { x: 35, y: 8 } });
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.text-selection"]'
+  );
+  await expect(inspector).toBeVisible();
+  const bold = inspector.getByTitle("Bold");
+  if ((await bold.getAttribute("data-state")) !== "on") await bold.click();
+  await expect(canonical.locator("strong").first()).toBeVisible();
+
+  const pages = await page.locator(".document-page").count();
+  await expect(page.locator(".document-furniture-projection.document-header")).toHaveCount(
+    Math.max(0, pages - 1)
+  );
+  await expect(page.locator(".furniture-editor")).toHaveCount(0);
+});
+
 test("shared editor controls keep one behavior across the width matrix", async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 900 });
   await page.goto("/demo/document-editor-controls", { waitUntil: "networkidle" });

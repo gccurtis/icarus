@@ -13,7 +13,11 @@ import type {
   MarkStyle,
   TextAtom
 } from "$representation/data/types/content/content-block";
-import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
+import type {
+  DocumentBody,
+  DocumentRow,
+  PageFurniture
+} from "$representation/data/types/documents/body";
 import type { StyleSet } from "$representation/data/types/documents/style-set";
 import { mint } from "$app-views/categories/document-editor/procedures/ids";
 import {
@@ -278,19 +282,35 @@ const rowNode = (row: DocumentRow, styles: StyleSet): ProseMirrorNode => {
 const typeable = (row: DocumentRow): boolean =>
   isBlocks(row) && row.blocks.some((block) => block.type === "text");
 
+const furnitureNode = (
+  which: "header" | "footer",
+  furniture: PageFurniture | undefined,
+  styles: StyleSet
+): ProseMirrorNode | undefined => {
+  if (furniture === undefined) return undefined;
+  const rows = furniture.rows.some(typeable) ? furniture.rows : [...furniture.rows, emptyRow()];
+  return schema.node(`furniture_${which}`, null, rows.map((row) => rowNode(row, styles)));
+};
+
 export const docOf = (body: DocumentBody, metrics: Metrics): ProseMirrorNode => {
   const styles = styleSetOf(body);
   const rows = body.rows.some(typeable) ? body.rows : [...body.rows, emptyRow()];
   const pages = paginate(rows, metrics.charactersPerLine, metrics.linesPerPage, styles);
+  const header = furnitureNode("header", body.header, styles);
+  const footer = furnitureNode("footer", body.footer, styles);
 
   return schema.node(
     "doc",
     null,
-    pages.map((held) =>
+    pages.map((held, index) =>
       schema.node(
         "page",
         null,
-        held.map((row) => rowNode(row, styles))
+        [
+          ...(index === 0 && header !== undefined ? [header] : []),
+          ...held.map((row) => rowNode(row, styles)),
+          ...(index === 0 && footer !== undefined ? [footer] : [])
+        ]
       )
     )
   );
@@ -342,9 +362,35 @@ const linesOfRowNode = (row: ProseMirrorNode, charactersPerLine: number): number
 
 export const rowNodesOf = (doc: ProseMirrorNode): readonly ProseMirrorNode[] => {
   const rows: ProseMirrorNode[] = [];
-  doc.forEach((page) => page.forEach((row) => rows.push(row)));
+  doc.forEach((page) =>
+    page.forEach((row) => {
+      if (row.type.spec.group?.split(" ").includes("row") === true) rows.push(row);
+    })
+  );
   return rows;
 };
+
+const furnitureNodeOf = (
+  doc: ProseMirrorNode,
+  which: "header" | "footer"
+): ProseMirrorNode | undefined => {
+  for (const page of doc.children) {
+    const found = page.children.find((child) => child.type.name === `furniture_${which}`);
+    if (found !== undefined) return found;
+  }
+  return undefined;
+};
+
+export const furnitureRowNodesOf = (
+  doc: ProseMirrorNode,
+  which: "header" | "footer"
+): readonly ProseMirrorNode[] => furnitureNodeOf(doc, which)?.children ?? [];
+
+const allRowNodesOf = (doc: ProseMirrorNode): readonly ProseMirrorNode[] => [
+  ...furnitureRowNodesOf(doc, "header"),
+  ...rowNodesOf(doc),
+  ...furnitureRowNodesOf(doc, "footer")
+];
 
 const unnamed = (node: ProseMirrorNode): boolean =>
   node.type.name === "blocks_row"
@@ -371,15 +417,27 @@ const stampRow = (row: ProseMirrorNode): ProseMirrorNode => {
 };
 
 export const stampIds = (doc: ProseMirrorNode): ProseMirrorNode =>
-  rowNodesOf(doc).some(unnamed)
+  allRowNodesOf(doc).some(unnamed)
     ? schema.node(
         "doc",
         null,
-        doc.children.map((page) => schema.node("page", page.attrs, page.children.map(stampRow)))
+        doc.children.map((page) =>
+          schema.node(
+            "page",
+            page.attrs,
+            page.children.map((child) =>
+              child.type.name === "furniture_header" || child.type.name === "furniture_footer"
+                ? child.type.create(child.attrs, child.children.map(stampRow), child.marks)
+                : stampRow(child)
+            )
+          )
+        )
       )
     : doc;
 
 export const repaginate = (doc: ProseMirrorNode, metrics: Metrics): ProseMirrorNode => {
+  const header = furnitureNodeOf(doc, "header");
+  const footer = furnitureNodeOf(doc, "footer");
   const pages = pack(
     rowNodesOf(doc),
     (row) => linesOfRowNode(row, metrics.charactersPerLine),
@@ -390,7 +448,13 @@ export const repaginate = (doc: ProseMirrorNode, metrics: Metrics): ProseMirrorN
   return schema.node(
     "doc",
     null,
-    pages.map((held) => schema.node("page", null, [...held]))
+    pages.map((held, index) =>
+      schema.node("page", null, [
+        ...(index === 0 && header !== undefined ? [header] : []),
+        ...held,
+        ...(index === 0 && footer !== undefined ? [footer] : [])
+      ])
+    )
   );
 };
 
@@ -590,12 +654,31 @@ const rowOf = (
 
 export const bodyOf = (doc: ProseMirrorNode, previous: DocumentBody): DocumentBody => {
   const blocksBefore = new Map<string, ContentBlock>();
-  for (const row of previous.rows) {
+  const previousRows = [
+    ...(previous.header?.rows ?? []),
+    ...previous.rows,
+    ...(previous.footer?.rows ?? [])
+  ];
+  for (const row of previousRows) {
     if (!isBlocks(row)) continue;
     for (const block of row.blocks) blocksBefore.set(block.id, block);
   }
 
-  return { ...previous, rows: rowNodesOf(doc).map((row) => rowOf(row, blocksBefore)) };
+  const body: DocumentBody = {
+    ...previous,
+    rows: rowNodesOf(doc).map((row) => rowOf(row, blocksBefore))
+  };
+  const header = furnitureRowNodesOf(doc, "header");
+  const footer = furnitureRowNodesOf(doc, "footer");
+
+  if (body.header !== undefined && header.length > 0) {
+    body.header = { ...body.header, rows: header.map((row) => rowOf(row, blocksBefore)) };
+  }
+  if (body.footer !== undefined && footer.length > 0) {
+    body.footer = { ...body.footer, rows: footer.map((row) => rowOf(row, blocksBefore)) };
+  }
+
+  return body;
 };
 
 export const displayOffsetOf = (block: ProseMirrorNode, offset: number): number => {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     Panel,
+    PanelButton,
     PanelChoice,
     PanelControlGroup,
     PanelControlRow,
@@ -30,6 +31,7 @@
     paperDimensions,
     paperOptions
   } from "$app-views/categories/document-editor/procedures/page-setup";
+  import { focusOfFurniture } from "$app-views/categories/document-editor/procedures/furniture";
   import { workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
 
@@ -62,6 +64,16 @@
 
   const withBody = (make: (held: NonNullable<typeof body>) => Parameters<DocumentRuntime["apply"]>[0]) => {
     if (body !== undefined) commit(make(body));
+  };
+
+  const edit = (which: "header" | "footer") => {
+    const target = body?.[which] === undefined ? undefined : focusOfFurniture(body[which]);
+    if (target === undefined || runtime === undefined) return;
+    runtime.scrollTo = target.blockId;
+    view.inspect("document-editor.next-letter", {
+      kind: "next-letter",
+      id: target.address
+    });
   };
 </script>
 
@@ -106,8 +118,20 @@
     </PanelSection>
 
     <PanelSection title="Header and footer">
-      <PanelToggle label="Show header" checked={body.header !== undefined} onchange={(next) => withBody((held) => furnitureOps(held, "header", next))} />
-      <PanelToggle label="Show footer" checked={body.footer !== undefined} onchange={(next) => withBody((held) => furnitureOps(held, "footer", next))} />
+      <PanelControlGroup flush>
+        <PanelControlRow label="Header">
+          <PanelToggle label="Show header" checked={body.header !== undefined} onchange={(next) => withBody((held) => furnitureOps(held, "header", next))} />
+          {#if body.header !== undefined}
+            <PanelButton label="Edit header" onclick={() => edit("header")} />
+          {/if}
+        </PanelControlRow>
+        <PanelControlRow label="Footer">
+          <PanelToggle label="Show footer" checked={body.footer !== undefined} onchange={(next) => withBody((held) => furnitureOps(held, "footer", next))} />
+          {#if body.footer !== undefined}
+            <PanelButton label="Edit footer" onclick={() => edit("footer")} />
+          {/if}
+        </PanelControlRow>
+      </PanelControlGroup>
     </PanelSection>
 
     <PanelSection title="Page numbers">

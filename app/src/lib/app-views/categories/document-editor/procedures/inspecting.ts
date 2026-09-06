@@ -89,7 +89,14 @@ export const addressOf = (held: string): Address | undefined => {
 };
 
 const blockAt = (body: DocumentBody, blockId: string) => {
-  for (const row of body.rows) {
+  const rows = [
+    ...(body.header?.rows ?? []),
+    ...(body.header?.firstPageRows ?? []),
+    ...body.rows,
+    ...(body.footer?.rows ?? []),
+    ...(body.footer?.firstPageRows ?? [])
+  ];
+  for (const row of rows) {
     if (row.kind !== "blocks") continue;
 
     for (const block of row.blocks) {

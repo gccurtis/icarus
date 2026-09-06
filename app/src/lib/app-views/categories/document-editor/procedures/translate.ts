@@ -209,13 +209,20 @@ const proportionsOp = (was: DocumentRow, now: DocumentRow): DocumentOp | undefin
   return { op: "set", target: "row", path: `${now.id}/proportions`, value: later, was: earlier };
 };
 
-const styledBlocks = (body: DocumentBody): Map<string, Styled> => {
+const styledBlocks = (rows: readonly DocumentRow[]): Map<string, Styled> => {
   const held = new Map<string, Styled>();
-  for (const row of body.rows) {
+  for (const row of rows) {
     if (!isBlocks(row)) continue;
     for (const block of row.blocks) if (isStyled(block)) held.set(block.id, block);
   }
   return held;
+};
+
+type RowRoot = "rows" | "header/rows" | "footer/rows";
+
+const rowsAt = (body: DocumentBody, root: RowRoot): readonly DocumentRow[] => {
+  if (root === "rows") return body.rows;
+  return root === "header/rows" ? (body.header?.rows ?? []) : (body.footer?.rows ?? []);
 };
 
 const shiftedBy = (was: DocumentBody, edits: readonly DocumentOp[]): DocumentBody => {
@@ -227,9 +234,15 @@ const shiftedBy = (was: DocumentBody, edits: readonly DocumentOp[]): DocumentBod
   }
 };
 
-export const translate = (was: DocumentBody, now: DocumentBody): readonly DocumentOp[] => {
-  const held = new Map(was.rows.map((row) => [row.id, row]));
-  const kept = new Set(now.rows.map((row) => row.id));
+const translateRows = (
+  was: DocumentBody,
+  now: DocumentBody,
+  root: RowRoot
+): readonly DocumentOp[] => {
+  const wasRows = rowsAt(was, root);
+  const nowRows = rowsAt(now, root);
+  const held = new Map(wasRows.map((row) => [row.id, row]));
+  const kept = new Set(nowRows.map((row) => row.id));
 
   const edits: DocumentOp[] = [];
   const removals: DocumentOp[] = [];
@@ -237,23 +250,23 @@ export const translate = (was: DocumentBody, now: DocumentBody): readonly Docume
   const moves: DocumentOp[] = [];
 
   const surviving = {
-    was: was.rows.filter((row) => kept.has(row.id)),
-    now: now.rows.filter((row) => held.has(row.id))
+    was: wasRows.filter((row) => kept.has(row.id)),
+    now: nowRows.filter((row) => held.has(row.id))
   };
   const anchoredBefore = new Map(
     surviving.was.map((row, index) => [row.id, before(surviving.was, index)])
   );
 
-  for (const [index, row] of now.rows.entries()) {
+  for (const [index, row] of nowRows.entries()) {
     const earlier = held.get(row.id);
 
     if (earlier === undefined) {
       insertions.push({
         op: "insert",
         target: "row",
-        path: "rows",
+        path: root,
         ids: [row.id],
-        after: before(now.rows, index),
+        after: before(nowRows, index),
         values: [row]
       });
       continue;
@@ -263,17 +276,17 @@ export const translate = (was: DocumentBody, now: DocumentBody): readonly Docume
       removals.push({
         op: "remove",
         target: "row",
-        path: "rows",
+        path: root,
         ids: [row.id],
-        after: before(was.rows, was.rows.indexOf(earlier)),
+        after: before(wasRows, wasRows.indexOf(earlier)),
         values: [earlier]
       });
       insertions.push({
         op: "insert",
         target: "row",
-        path: "rows",
+        path: root,
         ids: [row.id],
-        after: before(now.rows, index),
+        after: before(nowRows, index),
         values: [row]
       });
       continue;
@@ -285,15 +298,15 @@ export const translate = (was: DocumentBody, now: DocumentBody): readonly Docume
     edits.push(...blockOps(row.id, earlier, row));
   }
 
-  for (const [index, row] of was.rows.entries()) {
+  for (const [index, row] of wasRows.entries()) {
     if (kept.has(row.id)) continue;
 
     removals.push({
       op: "remove",
       target: "row",
-      path: "rows",
+      path: root,
       ids: [row.id],
-      after: before(was.rows, index),
+      after: before(wasRows, index),
       values: [row]
     });
   }
@@ -304,16 +317,50 @@ export const translate = (was: DocumentBody, now: DocumentBody): readonly Docume
     if (anchor === wasAnchor) continue;
     if (held.get(row.id)?.kind !== row.kind) continue;
 
-    moves.push({ op: "move", target: "row", path: "rows", id: row.id, after: anchor, wasAfter: wasAnchor });
+    moves.push({ op: "move", target: "row", path: root, id: row.id, after: anchor, wasAfter: wasAnchor });
   }
 
-  const shifted = styledBlocks(shiftedBy(was, edits));
+  const shifted = styledBlocks(rowsAt(shiftedBy(was, edits), root));
   const marks: DocumentOp[] = [];
-  for (const [id, block] of styledBlocks(now)) {
+  for (const [id, block] of styledBlocks(nowRows)) {
     const earlier = shifted.get(id);
     if (earlier === undefined) continue;
     marks.push(...markOps(earlier, block));
   }
 
   return [...edits, ...marks, ...removals, ...insertions, ...moves];
+};
+
+const furniturePresenceOp = (
+  was: DocumentBody,
+  now: DocumentBody,
+  which: "header" | "footer"
+): DocumentOp | undefined => {
+  const earlier = was[which];
+  const later = now[which];
+  if ((earlier === undefined) === (later === undefined)) return undefined;
+  return {
+    op: "set",
+    target: "document",
+    path: which,
+    value: later ?? null,
+    was: earlier ?? null
+  };
+};
+
+export const translate = (was: DocumentBody, now: DocumentBody): readonly DocumentOp[] => {
+  const ops: DocumentOp[] = [...translateRows(was, now, "rows")];
+
+  for (const which of ["header", "footer"] as const) {
+    const presence = furniturePresenceOp(was, now, which);
+    if (presence !== undefined) {
+      ops.push(presence);
+      continue;
+    }
+    if (was[which] !== undefined && now[which] !== undefined) {
+      ops.push(...translateRows(was, now, `${which}/rows`));
+    }
+  }
+
+  return ops;
 };
