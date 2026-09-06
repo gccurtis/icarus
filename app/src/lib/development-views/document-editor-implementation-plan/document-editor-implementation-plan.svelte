@@ -709,6 +709,7 @@
   <footer class="artifact-footer">
     <div class="footer-links">
       <a href="/demo/document-editor-review">Review + target UI</a>
+      <a href="/demo/document-editor-reference">Implemented system reference</a>
       <a href="/demo/document-editor-controls">Control laboratory</a>
       <a href="/app/dev-project">Live editor</a>
     </div>

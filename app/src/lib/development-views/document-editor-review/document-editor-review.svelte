@@ -531,6 +531,7 @@
         <div>
           <span class="section-kicker">Final evidence</span><h2>Ready means quiet.</h2>
           <a class="plan-link" href="/demo/document-editor-implementation-plan">Open the full implementation plan →</a>
+          <a class="plan-link reference-link" href="/demo/document-editor-reference">Review the implemented system →</a>
         </div>
         <ul>
           <li><span>✓</span> Typecheck, unit tests, lint, and production build</li>
@@ -780,6 +781,7 @@
   .merge-gate { display: grid; grid-template-columns: minmax(16rem, .7fr) minmax(22rem, 1fr); gap: 3rem; margin-top: 4rem; padding: 2rem; border-radius: 12px; background: var(--ink); color: var(--ground); }
   .plan-link { display: inline-block; margin-top: 1.2rem; color: var(--token-color-interactive-on-fill); font-size: 12px; font-weight: 650; text-decoration: none; }
   .plan-link:hover { text-decoration: underline; }
+  .plan-link.reference-link { margin-left: 1.2rem; }
   .merge-gate ul { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
   .merge-gate li { display: grid; grid-template-columns: 1.3rem 1fr; color: var(--token-ink-on-fill); font-size: 13px; }
   .merge-gate li span { color: var(--token-color-success-on-fill); font-weight: 700; }
@@ -795,6 +797,7 @@
     .inspector-mock { width: min(100%, 500px) !important; justify-self: center; }
   }
   @media (max-width: 48rem) {
+    .plan-link.reference-link { display: block; margin-left: 0; }
     .mast, .page { padding-right: 1.1rem; padding-left: 1.1rem; }
     .mast { padding-top: 2.5rem; }
     .intro-card, .target-intro, .merge-gate { grid-template-columns: 1fr; gap: 1.5rem; }

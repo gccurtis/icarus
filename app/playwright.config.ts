@@ -9,6 +9,8 @@ export default defineConfig({
   testDir: "./test/browser",
   outputDir: "../test-results/document-editor",
   fullyParallel: false,
+  // Browser scenarios share one resettable document fixture and must not race writes across files.
+  workers: 1,
   forbidOnly: true,
   retries: 0,
   reporter: "line",

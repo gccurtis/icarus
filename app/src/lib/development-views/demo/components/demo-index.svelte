@@ -1,5 +1,6 @@
 <script lang="ts">
   import Blocks from "@lucide/svelte/icons/layout-template";
+  import BookOpen from "@lucide/svelte/icons/book-open";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
   import Library from "@lucide/svelte/icons/library";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
@@ -20,6 +21,14 @@
    * argument about a data model, one is a conversation.
    */
   const PAGES = [
+    {
+      href: "/demo/document-editor-reference",
+      title: "Document editor reference",
+      sub: "Architecture, behavior, flows, and measured change",
+      icon: BookOpen,
+      about:
+        "The implemented editor end to end: Context, Inspector, Content, Runtime, Backend, plus every changed file and its line count."
+    },
     {
       href: "/demo/vocabulary",
       title: "Composition vocabulary",
