@@ -1,6 +1,6 @@
 import type { TableName } from "$representation/store/tables";
-import { read } from "$capabilities/store/index.remote";
 import { readTemplate } from "$capabilities/templates/index.remote";
+import { readStore } from "$model/client/workspace-state";
 
 /**
  * The field for each table this surface may be asked to name.
@@ -87,11 +87,15 @@ export const nameOf = (id: string): string => {
   const field = table === undefined ? undefined : NAMED_FIELD[table];
   if (table === undefined || field == null) return "Disconnected";
 
-  const answer = read({ path: `${table}.${id}.${field}` });
+  const answer = readStore(table);
   if (!answer.ready) return "…";
 
   const found = answer.current;
-  return found?.kind === "field" && typeof found.value === "string" ? found.value : "Disconnected";
+  if (found?.kind !== "table" || found.table !== table) return "Disconnected";
+
+  const row = found.rows.find((candidate) => candidate._id === id);
+  const value = (row as unknown as Record<string, unknown> | undefined)?.[field];
+  return typeof value === "string" ? value : "Disconnected";
 };
 
 /** The word for what kind of thing an id names, where there is one. */

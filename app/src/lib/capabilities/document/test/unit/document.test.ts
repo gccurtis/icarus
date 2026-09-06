@@ -7,6 +7,7 @@ const model = vi.hoisted(() => ({
   calls: [] as string[],
   snapshots: [] as Row[],
   changeSets: [] as Row[],
+  threads: [] as Row[],
   store: {
     create: (table: string, fields: unknown) => {
       model.calls.push(`create ${table}`);
@@ -17,12 +18,23 @@ const model = vi.hoisted(() => ({
     },
     read: (path: string) => {
       model.calls.push(`read ${path}`);
-      return path === "documentChangeSets"
-        ? { table: "documentChangeSets", kind: "table", rows: model.changeSets }
-        : { table: "documentSnapshots", kind: "table", rows: model.snapshots };
+      if (path === "documentChangeSets") {
+        return { table: "documentChangeSets", kind: "table", rows: model.changeSets };
+      }
+      if (path === "commentThreads") {
+        return { table: "commentThreads", kind: "table", rows: model.threads };
+      }
+      return { table: "documentSnapshots", kind: "table", rows: model.snapshots };
     },
     update: (path: string, value: unknown) => {
       model.calls.push(`update ${path}`);
+      if (path.startsWith("commentThreads.")) {
+        const [, id, field] = path.split(".");
+        model.threads = model.threads.map((row) =>
+          row._id === id ? { ...row, [field]: value } : row
+        );
+        return;
+      }
       const id = path.split(".")[1];
       model.snapshots = model.snapshots.map((row) =>
         row._id === id ? { ...(value as Row), _id: id } : row
@@ -94,6 +106,7 @@ beforeEach(() => {
   model.calls.length = 0;
   model.snapshots.length = 0;
   model.changeSets.length = 0;
+  model.threads.length = 0;
 });
 
 test("a document with no body reads as nothing", async () => {
@@ -144,6 +157,38 @@ test("every accepted change set is written, and the revisions ascend", async () 
   );
   assert.deepEqual(model.changeSets[0].touched, ["#b1/atoms/#a1"]);
   assert.equal(model.snapshots.length, 1);
+});
+
+test("accepted text edits move structural comment anchors with their cited text", async () => {
+  leaderAt(0);
+  model.threads.push({
+    _id: "commentThreads:1",
+    projectId: "p",
+    target: { kind: "document", id: "documents:1" },
+    within: {
+      kind: "text",
+      spans: [
+        {
+          blockId: "#b1",
+          from: { atom: "#a1", offset: 0 },
+          to: { atom: "#a1", offset: 3 }
+        }
+      ]
+    }
+  });
+
+  await submitDocumentChanges(typing(0, 0, "A "));
+
+  assert.deepEqual(model.threads[0].within, {
+    kind: "text",
+    spans: [
+      {
+        blockId: "#b1",
+        from: { atom: "#a1", offset: 2 },
+        to: { atom: "#a1", offset: 5 }
+      }
+    ]
+  });
 });
 
 test("a change set authored against an older revision is refused when the changes since cannot be read", async () => {

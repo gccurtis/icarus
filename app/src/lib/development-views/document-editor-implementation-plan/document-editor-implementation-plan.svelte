@@ -74,6 +74,7 @@
       id: "00",
       title: "Alignment and harness",
       kind: "Foundation",
+      status: "Complete",
       summary: "Settle model-affecting decisions and establish a deterministic browser oracle before porting code.",
       donor: "No donor code",
       tasks: [
@@ -90,6 +91,7 @@
       id: "01",
       title: "Representation and runtime",
       kind: "Adopt + extend",
+      status: "Complete",
       summary: "Land the document language and live-body machinery before any editor or panel depends on it.",
       donor: "Rework 62be118",
       tasks: [
@@ -106,6 +108,7 @@
       id: "02",
       title: "Projection and selection",
       kind: "Adopt + repair",
+      status: "Complete",
       summary: "Connect the live model to a rich page surface while fixing the failures that made the donor unsafe.",
       donor: "Rework 967064e + 55a7b22",
       tasks: [
@@ -123,6 +126,7 @@
       id: "03",
       title: "Shared panel instruments",
       kind: "Build + recompose",
+      status: "Complete",
       summary: "Build the responsive controls once, with complete states, before wiring any real lens.",
       donor: "Main interaction concepts",
       tasks: [
@@ -139,6 +143,7 @@
       id: "04",
       title: "Inspectors and context",
       kind: "Adopt + recompose",
+      status: "Complete",
       summary: "Bring the real lenses and panels across through the shared controls and the established ownership model.",
       donor: "Rework c4a542e + 3d9b633",
       tasks: [
@@ -156,6 +161,7 @@
       id: "05",
       title: "Comments and links",
       kind: "Repair + build",
+      status: "Complete",
       summary: "Make annotations survive editing and make link meaning independent from link appearance.",
       donor: "Rework b70d0b8 + comment/link portions of c4a542e",
       tasks: [
@@ -173,6 +179,7 @@
       id: "06",
       title: "Furniture and layout",
       kind: "Rebuild interaction",
+      status: "Complete",
       summary: "Keep the stored model, replace the mini-editor, and make repeated furniture genuinely canonical.",
       donor: "Rework fae879e",
       tasks: [
@@ -190,6 +197,7 @@
       id: "07",
       title: "Convergence gate",
       kind: "Evidence",
+      status: "Validating",
       summary: "Prove the integrated editor from a clean checkout before any production merge is proposed.",
       donor: "No donor code",
       tasks: [
@@ -410,9 +418,10 @@
     </div>
     <aside class="plan-state">
       <span>Plan state</span>
-      <strong>Draft</strong>
-      <p>Eight phases · four decisions to confirm</p>
-      <code>main → clean integration branch</code>
+      <strong>Validation</strong>
+      <p>Seven slices complete · convergence gate running</p>
+      <code>main → work/document-editor-integration</code>
+      <a class="live-link" href="/app/dev-project">Open the live editor →</a>
     </aside>
   </header>
 
@@ -510,14 +519,14 @@
               class:active={selectedPhaseId === phase.id}
               onclick={() => (selectedPhaseId = phase.id)}
             >
-              <span>{phase.id}</span><div><b>{phase.title}</b><small>{phase.kind}</small></div>
+              <span>{phase.id}</span><div><b>{phase.title}</b><small>{phase.status} · {phase.kind}</small></div>
             </button>
           {/each}
         </nav>
 
         <article class="phase-detail">
           <header>
-            <div><span>Phase {selectedPhase.id} · {selectedPhase.kind}</span><h2>{selectedPhase.title}</h2></div>
+            <div><span>Phase {selectedPhase.id} · {selectedPhase.status} · {selectedPhase.kind}</span><h2>{selectedPhase.title}</h2></div>
             <code>{selectedPhase.donor}</code>
           </header>
           <p class="phase-summary">{selectedPhase.summary}</p>
@@ -578,10 +587,10 @@
   {:else if view === "decisions"}
     <main class="page">
       <section class="decision-intro">
-        <div><span class="kicker">Alignment gates</span><h2>Four choices before model work.</h2></div>
+        <div><span class="kicker">Aligned decisions</span><h2>Four choices now encoded in the editor.</h2></div>
         <p>
-          Recommended defaults are selected. Change them to compare the resulting plan; selections
-          are local to this page until we record your decision in the plan and implementation.
+          The approved choices are selected and implemented. Change them here to compare the
+          alternatives; this page is explanatory and does not change editor behavior.
         </p>
       </section>
 
@@ -609,7 +618,7 @@
       </section>
 
       <section class="decision-summary">
-        <div><span class="kicker">Current draft</span><h2>Assumptions carried into Phase 01</h2></div>
+        <div><span class="kicker">Implemented contract</span><h2>Decisions carried through the integration</h2></div>
         <ol>
           {#each decisions as decision}
             <li><span>{decision.label}</span><strong>{choiceLabel(decision.id)}</strong></li>
@@ -674,7 +683,11 @@
   {/if}
 
   <footer class="artifact-footer">
-    <a href="/demo/document-editor-review">Review + target UI</a>
+    <div class="footer-links">
+      <a href="/demo/document-editor-review">Review + target UI</a>
+      <a href="/demo/document-editor-controls">Control laboratory</a>
+      <a href="/app/dev-project">Live editor</a>
+    </div>
     <span>Planning source: <code>docs/artifacts/document-editor-implementation-plan</code></span>
   </footer>
 </div>
@@ -726,6 +739,8 @@
   .plan-state strong { display: block; margin: .2rem 0; font-size: 2rem; line-height: 1; }
   .plan-state p { margin: .55rem 0 .9rem; color: var(--ink-2); font-size: 12px; }
   .plan-state code { color: var(--ink-2); font-size: 9px; }
+  .live-link { display: block; margin-top: 1rem; color: var(--interactive); font-size: 11px; font-weight: 700; text-decoration: none; }
+  .live-link:hover { text-decoration: underline; }
 
   .tabs { position: sticky; top: 0; z-index: 30; display: grid; grid-template-columns: repeat(5, 1fr); border-block: 1px solid var(--rule); background: color-mix(in srgb, var(--ground) 92%, transparent); backdrop-filter: blur(12px); }
   .tabs button { min-height: 3.15rem; padding: .75rem 1rem; border: 0; border-right: 1px solid var(--rule); background: transparent; color: var(--ink-3); cursor: pointer; font-size: 12px; font-weight: 650; }
@@ -884,6 +899,7 @@
   .artifact-footer { display: flex; justify-content: space-between; gap: 1rem; max-width: 94rem; margin: 0 auto; padding: 1.5rem 3.5rem 2.5rem; border-top: 1px solid var(--rule); color: var(--ink-3); font-size: 10px; }
   .artifact-footer a { color: var(--interactive); font-weight: 650; text-decoration: none; }
   .artifact-footer a:hover { text-decoration: underline; }
+  .footer-links { display: flex; flex-wrap: wrap; gap: 1rem; }
 
   @media (max-width: 76rem) {
     .mast { grid-template-columns: 1fr; gap: 2rem; }

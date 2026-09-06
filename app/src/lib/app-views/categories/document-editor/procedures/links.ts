@@ -41,6 +41,16 @@ export const editorPointerGestures = (): Plugin =>
   new Plugin({
     props: {
       handleDOMEvents: {
+        mousedown: (_view, event) => {
+          if (!event.metaKey && !event.ctrlKey) return false;
+          if (linkElement(event.target) === undefined) return false;
+
+          // ProseMirror interprets a modified pointer-down as structural node
+          // selection before the later click can open the link. Keep navigation
+          // from changing the document selection at all.
+          event.preventDefault();
+          return true;
+        },
         click: (_view, event) => {
           if (!event.metaKey && !event.ctrlKey) return false;
           const link = linkElement(event.target);

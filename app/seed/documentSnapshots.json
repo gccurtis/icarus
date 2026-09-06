@@ -9,6 +9,62 @@
     "part": 0,
     "at": 1788299760000,
     "body": {
+      "pageSetup": {
+        "paper": "letter",
+        "orientation": "portrait",
+        "margins": { "top": 0.75, "right": 0.75, "bottom": 0.75, "left": 0.75 }
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "body": {
+            "name": "Body",
+            "fontFamily": "IBM Plex Sans",
+            "fontSize": 16,
+            "fontWeight": 400,
+            "lineHeight": 26,
+            "spaceBefore": 0,
+            "spaceAfter": 16
+          },
+          "heading-1": {
+            "name": "Heading 1",
+            "fontFamily": "IBM Plex Sans",
+            "fontSize": 28,
+            "fontWeight": 600,
+            "lineHeight": 34,
+            "spaceBefore": 0,
+            "spaceAfter": 12
+          },
+          "heading-2": {
+            "name": "Heading 2",
+            "fontFamily": "IBM Plex Sans",
+            "fontSize": 22,
+            "fontWeight": 600,
+            "lineHeight": 28,
+            "spaceBefore": 20,
+            "spaceAfter": 8
+          },
+          "quote": {
+            "name": "Quote",
+            "fontFamily": "Iowan Old Style",
+            "fontSize": 17,
+            "italic": true,
+            "lineHeight": 27,
+            "indent": 24,
+            "spaceBefore": 8,
+            "spaceAfter": 16
+          },
+          "caption": {
+            "name": "Caption",
+            "fontFamily": "IBM Plex Mono",
+            "fontSize": 12,
+            "fontWeight": 400,
+            "lineHeight": 16,
+            "spaceBefore": 0,
+            "spaceAfter": 12
+          }
+        }
+      },
       "rows": [
         {
           "id": "#rtitle",
@@ -17,7 +73,9 @@
             {
               "id": "#btitle",
               "type": "text",
-              "variant": "paragraph",
+              "variant": "heading",
+              "level": 1,
+              "style": "heading-1",
               "atoms": [{ "id": "#atitle", "kind": "literal", "text": "Winter readiness brief" }],
               "display": "Winter readiness brief",
               "marks": []
@@ -32,6 +90,7 @@
               "id": "#bdate",
               "type": "text",
               "variant": "paragraph",
+              "style": "caption",
               "atoms": [{ "id": "#adate", "kind": "literal", "text": "Revised 4 February" }],
               "display": "Revised 4 February",
               "marks": []
@@ -54,7 +113,15 @@
                 }
               ],
               "display": "Peak demand on the western interconnect is forecast to exceed last winter's record by four percent, and two of the three substations that carried that peak have since been derated. This brief sets out where the exposure sits, what it would cost to close, and which of those costs are already committed.",
-              "marks": []
+              "marks": [
+                {
+                  "id": "#mforecast",
+                  "from": { "atom": "#alead", "offset": 86 },
+                  "to": { "atom": "#alead", "offset": 98 },
+                  "color": "#92400E",
+                  "background": "#FEF3C7"
+                }
+              ]
             }
           ]
         },
@@ -65,7 +132,9 @@
             {
               "id": "#bexposure",
               "type": "text",
-              "variant": "paragraph",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading-2",
               "atoms": [{ "id": "#aexposure", "kind": "literal", "text": "Where the exposure sits" }],
               "display": "Where the exposure sits",
               "marks": []
@@ -113,13 +182,19 @@
           ]
         },
         {
+          "id": "#rbreak",
+          "kind": "pageBreak"
+        },
+        {
           "id": "#rcost",
           "kind": "blocks",
           "blocks": [
             {
               "id": "#bcost",
               "type": "text",
-              "variant": "paragraph",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading-2",
               "atoms": [{ "id": "#acost", "kind": "literal", "text": "What it would cost" }],
               "display": "What it would cost",
               "marks": []
@@ -142,7 +217,20 @@
                 }
               ],
               "display": "Bringing the reconductoring forward by a season is the single largest line and the only one that closes the first exposure outright. Everything else on the list buys time rather than headroom.",
-              "marks": []
+              "marks": [
+                {
+                  "id": "#mreconductoring",
+                  "from": { "atom": "#abody3", "offset": 13 },
+                  "to": { "atom": "#abody3", "offset": 27 },
+                  "style": ["underline"],
+                  "link": {
+                    "kind": "url",
+                    "url": "https://example.com/grid/reconductoring",
+                    "note": "Engineering scope and seasonal construction assumptions."
+                  },
+                  "color": "#1D4ED8"
+                }
+              ]
             }
           ]
         },
@@ -153,7 +241,8 @@
             {
               "id": "#bquote",
               "type": "text",
-              "variant": "paragraph",
+              "variant": "quote",
+              "style": "quote",
               "atoms": [
                 {
                   "id": "#aquote",
@@ -166,7 +255,52 @@
             }
           ]
         }
-      ]
+      ],
+      "header": {
+        "distanceFromEdge": 0.4,
+        "rows": [
+          {
+            "id": "#rheader",
+            "kind": "blocks",
+            "blocks": [
+              {
+                "id": "#bheader",
+                "type": "text",
+                "variant": "paragraph",
+                "style": "caption",
+                "atoms": [
+                  { "id": "#aheader", "kind": "literal", "text": "Operations / Winter readiness" }
+                ],
+                "display": "Operations / Winter readiness",
+                "marks": []
+              }
+            ]
+          }
+        ]
+      },
+      "footer": {
+        "distanceFromEdge": 0.4,
+        "pageNumber": { "position": "end", "hideOnFirstPage": true },
+        "rows": [
+          {
+            "id": "#rfooter",
+            "kind": "blocks",
+            "blocks": [
+              {
+                "id": "#bfooter",
+                "type": "text",
+                "variant": "paragraph",
+                "style": "caption",
+                "atoms": [
+                  { "id": "#afooter", "kind": "literal", "text": "Internal readiness review" }
+                ],
+                "display": "Internal readiness review",
+                "marks": []
+              }
+            ]
+          }
+        ]
+      }
     }
   },
   {

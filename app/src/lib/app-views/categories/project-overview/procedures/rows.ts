@@ -1,5 +1,5 @@
-import { read } from "$capabilities/store/index.remote";
 import type { TableName, TableRow } from "$representation/store/tables";
+import { readStore } from "$model/client/workspace-state";
 
 /**
  * Every row of a table, or none while the read is out.
@@ -10,7 +10,7 @@ import type { TableName, TableRow } from "$representation/store/tables";
  * look the same here for exactly one screen's worth of time.
  */
 export const rowsIn = <T extends TableName>(table: T): readonly TableRow<T>[] => {
-  const answer = read({ path: table });
+  const answer = readStore(table);
   if (!answer.ready) return [];
 
   const found = answer.current;

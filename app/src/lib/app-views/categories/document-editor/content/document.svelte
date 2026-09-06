@@ -5,7 +5,23 @@
   import { EditorState, TextSelection, type Transaction } from "prosemirror-state";
   import { EditorView } from "prosemirror-view";
 
-  import { read } from "$capabilities/store/index.remote";
+  import MessageSquare from "@lucide/svelte/icons/message-square";
+  import MessagesSquare from "@lucide/svelte/icons/messages-square";
+
+  import {
+    ANNOTATIONS,
+    annotationsPlugin,
+    sameAnnotations,
+    spansOf,
+    stacked,
+    type Annotations,
+    type Pin,
+    type PinState
+  } from "$app-views/categories/document-editor/procedures/annotations";
+  import {
+    anchoredOf,
+    threadsOf
+  } from "$app-views/categories/document-editor/procedures/comments";
   import { mergeRow, splitRow } from "$app-views/categories/document-editor/procedures/editing";
   import {
     FURNITURE,
@@ -47,6 +63,7 @@
   } from "$app-views/categories/document-editor/procedures/projection";
   import { schema } from "$app-views/categories/document-editor/procedures/schema";
   import { translate } from "$app-views/categories/document-editor/procedures/translate";
+  import { rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
   import { workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime, PendingMarks, SyncState } from "$model/client/workspace-state";
 
@@ -73,21 +90,36 @@
   const view = workspaceState();
 
   const documentId = $derived(view.active.resourceId);
+  const documentsQuery = tableQuery("documents");
 
   const documentTitle = $derived.by(() => {
     if (documentId === undefined) return undefined;
-
-    const answer = read({ path: `documents.${documentId}.title` });
-    if (!answer.ready) return undefined;
-
-    const found = answer.current;
-    return found?.kind === "field" && typeof found.value === "string" ? found.value : undefined;
+    return rowsOf(documentsQuery, "documents").find((document) => document._id === documentId)?.title;
   });
 
   let runtime = $state<DocumentRuntime | undefined>(undefined);
   let host = $state<HTMLDivElement>();
   let surface = $state<HTMLDivElement>();
+  let pasteboard = $state<HTMLDivElement>();
   let available = $state(0);
+  let pins = $state<Pin[]>([]);
+  let appliedThreadKey = "";
+
+  const threadsQuery = tableQuery("commentThreads");
+
+  const threads = $derived(
+    documentId === undefined ? [] : threadsOf(rowsOf(threadsQuery, "commentThreads"), documentId)
+  );
+  const current = $derived(view.inspected === "general.comment" ? view.selection?.id : undefined);
+  const threadKey = $derived(
+    JSON.stringify(
+      threads.map((thread) => [thread._id, thread.within ?? null, thread.resolution ?? null])
+    )
+  );
+  const annotations = $derived<Annotations>({
+    anchored: runtime?.body === undefined ? [] : anchoredOf(threads, runtime.body),
+    current
+  });
 
   let editor: EditorView | undefined;
   let sent: DocumentBody | undefined;
@@ -110,6 +142,7 @@
     multiSelection(),
     editorPointerGestures(),
     furniturePlugin(() => furnitureOf(runtime?.body)),
+    annotationsPlugin(() => untrack(() => annotations)),
     keymap({ Enter: splitRow, Backspace: mergeRow }),
     keymap({ "Mod-z": undo, "Shift-Mod-z": redo, "Mod-y": redo }),
     keymap(baseKeymap)
@@ -160,11 +193,31 @@
     view.inspect(found.key, found.selection);
   };
 
+  const place = (): void => {
+    const board = pasteboard;
+    if (editor === undefined || board === undefined) return;
+
+    const held = ANNOTATIONS.getState(editor.state);
+    if (held === undefined) {
+      pins = [];
+      return;
+    }
+
+    const origin = board.getBoundingClientRect();
+    const placed = spansOf(editor.state.doc, held).map((span) => {
+      const state: PinState = span.current ? "current" : "open";
+      return { id: span.id, top: editor!.coordsAtPos(span.from).top - origin.top, state };
+    });
+
+    pins = stacked(placed);
+  };
+
   const dispatch = (transaction: Transaction): void => {
     if (editor === undefined) return;
 
     const next = lay(editor.state.apply(transaction));
     editor.updateState(next);
+    place();
 
     if (transaction.getMeta(LAYOUT) === true) return;
 
@@ -187,10 +240,12 @@
 
     if (editor === undefined) {
       editor = new EditorView(host, { state, dispatchTransaction: dispatch });
+      appliedThreadKey = threadKey;
       return;
     }
 
     editor.updateState(state);
+    appliedThreadKey = threadKey;
   };
 
   const storedMarksOf = (pending: PendingMarks) => {
@@ -244,6 +299,32 @@
     editor.dispatch(
       editor.state.tr.setMeta(FURNITURE, spec).setMeta("addToHistory", false).setMeta(LAYOUT, true)
     );
+  });
+
+  $effect(() => {
+    const source = threadKey;
+    const selected = current;
+    const body = runtime?.body;
+    if (editor === undefined || body === undefined) return;
+
+    const held = ANNOTATIONS.getState(editor.state);
+    const next = source !== appliedThreadKey
+      ? { anchored: anchoredOf(threads, body), current: selected }
+      : { anchored: held?.anchored ?? [], current: selected };
+    appliedThreadKey = source;
+    if (sameAnnotations(ANNOTATIONS.getState(editor.state), next)) return;
+
+    editor.dispatch(
+      editor.state.tr.setMeta(ANNOTATIONS, next).setMeta("addToHistory", false).setMeta(LAYOUT, true)
+    );
+  });
+
+  $effect(() => {
+    void view.zoom;
+    void available;
+    void runtime?.body;
+    const frame = requestAnimationFrame(place);
+    return () => cancelAnimationFrame(frame);
   });
 
   $effect(() => {
@@ -355,6 +436,16 @@
   const furnitureEdge = (distance: number | undefined): string =>
     `${((distance ?? 0.4) / layout.paper.width) * 100}%`;
 
+  const openThread = (pin: Pin) => {
+    const id = pin.ids.includes(current ?? "") && pin.ids.length > 1
+      ? pin.ids[(pin.ids.indexOf(current ?? "") + 1) % pin.ids.length]
+      : pin.ids[0];
+    view.inspect("general.comment", { kind: "comment", id });
+  };
+
+  const pinTitle = (pin: Pin): string =>
+    pin.count > 1 ? `${pin.count} comment threads here` : pin.state === "current" ? "This thread is open in the inspector" : "Open the thread";
+
   const pageStyle = $derived(
     `zoom: ${layout.zoom / 100}; ` +
       `--furniture-top: ${furnitureEdge(runtime?.body?.header?.distanceFromEdge)}; ` +
@@ -385,10 +476,32 @@
   <div class="well">
     <div bind:this={surface} class="canvas bg-surface-pasteboard" onwheel={pinch}>
       <div
+        bind:this={pasteboard}
         class="pasteboard"
         style="--gutter-leading: {gutters.leading}rem; --gutter-trailing: {gutters.trailing}rem"
       >
         <div bind:this={host} class="editor" aria-label="Document editor" style={pageStyle}></div>
+        {#if pins.length > 0}
+          <div class="lane" style="--page-drawn: {layout.drawn.width}rem" aria-label="Comment threads">
+            {#each pins as pin, index (`${pin.ids.join("|")}@${pin.top}:${index}`)}
+              <button
+                type="button"
+                class="pin {pin.state}"
+                data-threads={pin.ids.join(" ")}
+                style="top: {pin.top}px"
+                title={pinTitle(pin)}
+                onclick={() => openThread(pin)}
+              >
+                {#if pin.count > 1}
+                  <MessagesSquare size={14} aria-hidden="true" />
+                  <span class="count">{pin.count}</span>
+                {:else}
+                  <MessageSquare size={14} aria-hidden="true" />
+                {/if}
+              </button>
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
     <div class="recess" aria-hidden="true"></div>
@@ -458,6 +571,7 @@
   }
 
   .pasteboard {
+    position: relative;
     display: flex;
     width: max-content;
     min-width: 100%;
@@ -491,6 +605,78 @@
     border: 1px solid var(--token-border-subtle);
     background-color: var(--token-surface-elevated);
     box-shadow: 0 1px 3px color-mix(in srgb, var(--token-ink-primary) 12%, transparent);
+  }
+
+  .lane {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--gutter-leading) + var(--page-drawn) + 0.375rem);
+    width: 1.5rem;
+    pointer-events: none;
+  }
+
+  .pin {
+    position: absolute;
+    left: 0;
+    display: flex;
+    width: 1.5rem;
+    height: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--token-border-subtle);
+    border-radius: 999px;
+    background: var(--token-surface-elevated);
+    color: var(--token-ink-muted);
+    cursor: pointer;
+    pointer-events: auto;
+    transform: translateY(-0.25rem);
+  }
+
+  .pin:hover {
+    color: var(--token-ink-primary);
+    border-color: var(--token-border-strong);
+  }
+
+  .pin.current {
+    border-color: var(--token-color-active-border);
+    background: var(--token-color-active-surface);
+    color: var(--token-color-active-text);
+  }
+
+  .pin.stack {
+    color: var(--token-ink-secondary);
+  }
+
+  .pin .count {
+    position: absolute;
+    right: -0.25rem;
+    bottom: -0.25rem;
+    min-width: 0.875rem;
+    padding: 0 0.2rem;
+    border-radius: 999px;
+    background: var(--token-ink-secondary);
+    color: var(--token-surface-elevated);
+    font-size: 9px;
+    line-height: 0.875rem;
+    text-align: center;
+  }
+
+  .editor :global(.comment-anchor) {
+    background: color-mix(in srgb, var(--token-color-attention-fill) 18%, transparent);
+    box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--token-color-attention-fill) 55%, transparent);
+  }
+
+  .editor :global(.comment-current) {
+    background: color-mix(in srgb, var(--token-color-attention-fill) 34%, transparent);
+  }
+
+  .editor :global(.comment-collapsed) {
+    display: inline-block;
+    width: 0;
+    height: 1em;
+    border-inline-start: 2px solid var(--token-color-attention-fill);
+    vertical-align: text-bottom;
   }
 
   .editor :global(.document-furniture) {

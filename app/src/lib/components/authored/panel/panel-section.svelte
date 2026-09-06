@@ -60,12 +60,21 @@
   const trace = traceNode("PanelSection", () => ({ title, count, open, flush }));
 
   /**
-   * `open` is the starting disclosure and nothing after that. Reading it once is
-   * the intent: a section the user has shut must not spring open because its
-   * caller re-rendered.
+   * `open` is the initial disclosure, and a later false-to-true request may
+   * reveal newly-arrived content. It does not continuously control the section:
+   * after opening, a user's explicit close remains closed while the request
+   * stays true.
    */
   // svelte-ignore state_referenced_locally
   let expanded = $state(open);
+  // svelte-ignore state_referenced_locally
+  let requested = $state(open);
+
+  $effect(() => {
+    const next = open;
+    if (next && !requested) expanded = true;
+    requested = next;
+  });
 </script>
 
 {#snippet mark()}

@@ -1,10 +1,9 @@
-import { username } from "$capabilities/development/index.remote";
-import { read } from "$capabilities/store/index.remote";
 import type { TableName, TableRow } from "$representation/store/tables";
+import { readStore, readUsername } from "$model/client/workspace-state";
 
-export type TableQuery = ReturnType<typeof read>;
+export type TableQuery = ReturnType<typeof readStore>;
 
-export const tableQuery = (table: TableName): TableQuery => read({ path: table });
+export const tableQuery = (table: TableName): TableQuery => readStore(table);
 
 export const rowsOf = <T extends TableName>(query: TableQuery, table: T): readonly TableRow<T>[] => {
   if (!query.ready) return [];
@@ -16,24 +15,15 @@ export const rowsOf = <T extends TableName>(query: TableQuery, table: T): readon
 };
 
 export const rowsIn = <T extends TableName>(table: T): readonly TableRow<T>[] =>
-  rowsOf(read({ path: table }), table);
-
-export const fieldIn = (path: string): unknown => {
-  const answer = read({ path });
-  if (!answer.ready) return undefined;
-
-  const found = answer.current;
-  return found?.kind === "field" ? found.value : undefined;
-};
+  rowsOf(readStore(table), table);
 
 export const projectIdOf = (documentId: string | undefined): string => {
   if (documentId === undefined) return "";
-  const found = fieldIn(`documents.${documentId}.projectId`);
-  return typeof found === "string" ? found : "";
+  return rowsIn("documents").find((document) => document._id === documentId)?.projectId ?? "";
 };
 
 export const viewerId = (): string => {
-  const answer = username();
+  const answer = readUsername();
   if (!answer.ready) return "";
 
   const name = answer.current;

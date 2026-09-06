@@ -1,7 +1,10 @@
+import type { read } from "$capabilities/store/index.remote";
+import type { username } from "$capabilities/development/index.remote";
 import type { DocumentRuntime } from "$model/client/document-runtimes";
 import type { SlideDeckRuntime } from "$model/client/slide-deck-runtimes";
 import type { ContextView } from "$representation/data/types/workspace/views";
 import type { Category, ContentView } from "$representation/data/types/workspace/categories";
+import type { TableName } from "$representation/store/tables";
 import type {
   Frame,
   Inspected,
@@ -33,6 +36,11 @@ export type WorkspaceSync =
 
 /** Primitive pieces keep one durable command key unambiguous and serializable. */
 export type SingleFlightKeyPart = string | number | boolean | null;
+
+export type StoreQuery = ReturnType<typeof read>;
+export type StoreReader = typeof read;
+export type UsernameQuery = ReturnType<typeof username>;
+export type UsernameReader = typeof username;
 
 export interface WorkspaceStateModel {
   readonly project: string;
@@ -74,6 +82,12 @@ export interface WorkspaceStateModel {
   documentRuntime(resourceId: string): DocumentRuntime;
   slideDeckRuntime(resourceId: string): SlideDeckRuntime;
 
+  /** A table read whose remote resource is owned by this client workspace. */
+  readStore(table: TableName): StoreQuery;
+
+  /** The session-name read, under the same workspace lifetime. */
+  readUsername(): UsernameQuery;
+
   undo(): void;
   redo(): void;
   readonly canUndo: boolean;
@@ -85,4 +99,5 @@ export interface WorkspaceStateModel {
 
   restore(): Promise<void>;
   flush(): Promise<void>;
+  release(): void;
 }

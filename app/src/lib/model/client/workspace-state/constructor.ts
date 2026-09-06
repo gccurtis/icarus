@@ -5,7 +5,11 @@ import type { SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
 import type { TabListModel } from "$model/client/tab-list";
 import type { TabViewsModel } from "$model/client/tab-views";
 import { WorkspaceState } from "$model/client/workspace-state/definition.svelte";
-import type { WorkspaceStateModel } from "$model/client/workspace-state/types";
+import type {
+  StoreReader,
+  UsernameReader,
+  WorkspaceStateModel
+} from "$model/client/workspace-state/types";
 
 const FLUSH_AFTER_OPS = "workspace.changeSets.flushAfterOps";
 const FLUSH_AFTER_MS = "workspace.changeSets.flushAfterMs";
@@ -16,7 +20,9 @@ export const createWorkspaceState = (
   views: TabViewsModel,
   configuration: ConfigurationModel,
   documents?: DocumentRuntimesModel,
-  decks?: SlideDeckRuntimesModel
+  decks?: SlideDeckRuntimesModel,
+  storeReader?: StoreReader,
+  usernameReader?: UsernameReader
 ): WorkspaceStateModel =>
   new WorkspaceState(
     project,
@@ -27,5 +33,7 @@ export const createWorkspaceState = (
       afterMs: requiredNumber(configuration, FLUSH_AFTER_MS)
     },
     documents,
-    decks
+    decks,
+    storeReader,
+    usernameReader
   );

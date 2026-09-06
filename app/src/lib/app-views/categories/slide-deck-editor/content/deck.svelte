@@ -2,7 +2,6 @@
   import { onMount, untrack } from "svelte";
   import Konva from "konva";
 
-  import { read } from "$capabilities/store/index.remote";
   import {
     styleOf,
     textOf,
@@ -20,7 +19,11 @@
     toPixels
   } from "$app-views/categories/slide-deck-editor/procedures/stage";
   import { palette, type Palette } from "$app-views/categories/slide-deck-editor/procedures/tokens";
-  import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
+  import {
+    readStore,
+    workspaceState,
+    type SlideDeckRuntime
+  } from "$model/client/workspace-state";
 
   const WHEEL_NOTCH = 120;
   const PERCENT_PER_NOTCH = 2;
@@ -28,15 +31,16 @@
   const view = workspaceState();
 
   const deckId = $derived(view.active.resourceId);
+  const decksQuery = readStore("slideDecks");
 
   const deckTitle = $derived.by(() => {
     if (deckId === undefined) return undefined;
 
-    const answer = read({ path: `slideDecks.${deckId}.title` });
-    if (!answer.ready) return undefined;
+    if (!decksQuery.ready) return undefined;
 
-    const found = answer.current;
-    return found?.kind === "field" && typeof found.value === "string" ? found.value : undefined;
+    const found = decksQuery.current;
+    if (found?.kind !== "table" || found.table !== "slideDecks") return undefined;
+    return found.rows.find((deck) => deck._id === deckId)?.title;
   });
 
   let runtime = $state<SlideDeckRuntime | undefined>(undefined);

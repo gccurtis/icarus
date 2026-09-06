@@ -106,5 +106,95 @@
       "kind": "user",
       "userId": "users:1"
     }
+  },
+  {
+    "_id": "comments:5",
+    "_creationTime": 1788291000000,
+    "projectId": "default",
+    "threadId": "commentThreads:4",
+    "blocks": [
+      {
+        "id": "#comment5",
+        "type": "text",
+        "variant": "paragraph",
+        "atoms": [{ "id": "#comment5atom", "kind": "literal", "text": "Can we make the dependency between these two exposures explicit?" }],
+        "display": "Can we make the dependency between these two exposures explicit?",
+        "marks": []
+      }
+    ],
+    "mentions": [],
+    "author": { "kind": "user", "userId": "default-user" }
+  },
+  {
+    "_id": "comments:6",
+    "_creationTime": 1788294600000,
+    "projectId": "default",
+    "threadId": "commentThreads:4",
+    "blocks": [
+      {
+        "id": "#comment6",
+        "type": "text",
+        "variant": "paragraph",
+        "atoms": [{ "id": "#comment6atom", "kind": "literal", "text": "Yes. I will connect them before the cost section." }],
+        "display": "Yes. I will connect them before the cost section.",
+        "marks": []
+      }
+    ],
+    "mentions": [],
+    "author": { "kind": "user", "userId": "users:1" }
+  },
+  {
+    "_id": "comments:7",
+    "_creationTime": 1788289200000,
+    "projectId": "default",
+    "threadId": "commentThreads:5",
+    "blocks": [
+      {
+        "id": "#comment7",
+        "type": "text",
+        "variant": "paragraph",
+        "atoms": [{ "id": "#comment7atom", "kind": "literal", "text": "Keep the season in the running header so printed pages remain identifiable." }],
+        "display": "Keep the season in the running header so printed pages remain identifiable.",
+        "marks": []
+      }
+    ],
+    "mentions": [],
+    "author": { "kind": "user", "userId": "users:2" }
+  },
+  {
+    "_id": "comments:8",
+    "_creationTime": 1788287400000,
+    "projectId": "default",
+    "threadId": "commentThreads:6",
+    "blocks": [
+      {
+        "id": "#comment8",
+        "type": "text",
+        "variant": "paragraph",
+        "atoms": [{ "id": "#comment8atom", "kind": "literal", "text": "This note should remain discoverable even though its source sentence was removed." }],
+        "display": "This note should remain discoverable even though its source sentence was removed.",
+        "marks": []
+      }
+    ],
+    "mentions": [],
+    "author": { "kind": "user", "userId": "users:3" }
+  },
+  {
+    "_id": "comments:9",
+    "_creationTime": 1788285600000,
+    "projectId": "default",
+    "threadId": "commentThreads:7",
+    "blocks": [
+      {
+        "id": "#comment9",
+        "type": "text",
+        "variant": "paragraph",
+        "atoms": [{ "id": "#comment9atom", "kind": "literal", "text": "The engineering scope link now carries the supporting note." }],
+        "display": "The engineering scope link now carries the supporting note.",
+        "marks": []
+      }
+    ],
+    "mentions": [],
+    "author": { "kind": "user", "userId": "users:4" }
   }
 ]

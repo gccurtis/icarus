@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { username } from "$capabilities/development/index.remote";
   import { kindOf, nameOf } from "$surfaces/status-bar/procedures/resource-name";
-  import { workspaceState } from "$model/client/workspace-state";
+  import { readUsername, workspaceState } from "$model/client/workspace-state";
 
   /**
    * The bar across the foot of the application. Two parts, at opposite ends.
@@ -39,7 +38,7 @@
   // ----------------------------------------------------------------- you ----
 
   /** From `configuration/dev.yaml` until authentication exists. */
-  const you = $derived(username().current);
+  const you = $derived(readUsername().current);
 </script>
 
 <footer class="status-bar">

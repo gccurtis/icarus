@@ -1,5 +1,5 @@
-import { username } from "$capabilities/development/index.remote";
 import { rowsIn } from "$app-views/categories/project-overview/procedures/rows";
+import { readUsername } from "$model/client/workspace-state";
 
 /**
  * Who is asking, and about what.
@@ -26,7 +26,7 @@ export const projectId = (): string => rowsIn("projects")[0]?._id ?? "";
  * name would break it, which is one more reason this is temporary.
  */
 export const viewerId = (): string => {
-  const answer = username();
+  const answer = readUsername();
   if (!answer.ready) return "";
 
   const name = answer.current;

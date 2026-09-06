@@ -102,7 +102,7 @@ test("a caret in a block with nothing in it is an empty line", () => {
   });
 });
 
-test("the next letter is not sent again while the inspector is already on it", () => {
+test("the next letter is only sent again after the caret crosses a block boundary", () => {
   const found = signalOf(stateOver(ONE, ["#b1", 6]));
   if (found === undefined) throw new Error("no signal");
 
@@ -114,6 +114,14 @@ test("the next letter is not sent again while the inspector is already on it", (
     }),
     false,
     "moving within the block leaves the inspector where it is"
+  );
+  assert.equal(
+    worthSending(found, "document-editor.next-letter", {
+      kind: "next-letter",
+      id: "#b2/atoms/#b2-atom@2"
+    }),
+    true,
+    "a different block can resolve to a different named style"
   );
 });
 

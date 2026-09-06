@@ -2,12 +2,14 @@ import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import type { StoreModel } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
+import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 
 import { leaderOf } from "$capabilities/document/api/shared/leader";
 import { withoutSharedReferences } from "$capabilities/document/api/shared/without-shared-references";
 import { applyOps } from "$capabilities/document/api/submit-document-changes/apply-ops";
 import { validateSubmitDocumentChanges } from "$capabilities/document/api/submit-document-changes/validate-submit-document-changes";
+import { transformCommentAnchor } from "$capabilities/document/api/submit-document-changes/transform-comment-anchor";
 import type { SubmitDocumentChangesResult } from "$capabilities/document/types/submit-document-changes";
 
 type Landed = { readonly revision: number; readonly ops: readonly DocumentOp[]; readonly touched: readonly string[] };
@@ -58,6 +60,27 @@ const catchUpFor = (
   return clashes ? undefined : landed.flatMap((held) => held.ops);
 };
 
+const updateCommentAnchors = (
+  store: StoreModel,
+  projectId: Id<"projects">,
+  resourceId: Id<"documents">,
+  ops: readonly DocumentOp[],
+  body: DocumentBody
+): void => {
+  const found = store.read("commentThreads");
+  if (found?.table !== "commentThreads" || found.kind !== "table") return;
+
+  for (const thread of found.rows) {
+    if (thread.projectId !== projectId) continue;
+    if (thread.target.kind !== "document" || thread.target.id !== resourceId) continue;
+    if (thread.within === undefined) continue;
+
+    const within = transformCommentAnchor(thread.within, ops, body);
+    if (JSON.stringify(within) === JSON.stringify(thread.within)) continue;
+    store.update(`commentThreads.${thread._id}.within`, within);
+  }
+};
+
 export const submitDocumentChanges = async (
   input: unknown
 ): Promise<SubmitDocumentChangesResult> => {
@@ -104,6 +127,8 @@ export const submitDocumentChanges = async (
 
   const next = revision + 1;
   const at = Date.now();
+
+  updateCommentAnchors(store, projectId, resourceId, changeSet.ops, body);
 
   store.create("documentChangeSets", {
     projectId,

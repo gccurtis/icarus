@@ -24,5 +24,87 @@
     "target": { "kind": "slides", "id": "slideDecks:1" },
     "createdBy": { "kind": "user", "userId": "users:4" },
     "updatedAt": 1787954400000
+  },
+  {
+    "_id": "commentThreads:4",
+    "_creationTime": 1788291000000,
+    "projectId": "default",
+    "target": { "kind": "document", "id": "documents:1" },
+    "within": {
+      "kind": "text",
+      "spans": [
+        {
+          "blockId": "#bbody1",
+          "from": { "atom": "#abody1", "offset": 295 },
+          "to": { "atom": "#abody1", "offset": 437 }
+        },
+        {
+          "blockId": "#bbody2",
+          "from": { "atom": "#abody2", "offset": 0 },
+          "to": { "atom": "#abody2", "offset": 51 }
+        }
+      ]
+    },
+    "quote": "The corridor itself is scheduled for reconductoring but not until the following summer, which puts the whole of this winter inside the window.\nThe second concentration is behind the coastal tie.",
+    "createdBy": { "kind": "user", "userId": "default-user" },
+    "updatedAt": 1788294600000
+  },
+  {
+    "_id": "commentThreads:5",
+    "_creationTime": 1788289200000,
+    "projectId": "default",
+    "target": { "kind": "document", "id": "documents:1" },
+    "within": {
+      "kind": "text",
+      "spans": [
+        {
+          "blockId": "#bheader",
+          "from": { "atom": "#aheader", "offset": 13 },
+          "to": { "atom": "#aheader", "offset": 29 }
+        }
+      ]
+    },
+    "quote": "Winter readiness",
+    "createdBy": { "kind": "user", "userId": "users:2" },
+    "updatedAt": 1788289200000
+  },
+  {
+    "_id": "commentThreads:6",
+    "_creationTime": 1788287400000,
+    "projectId": "default",
+    "target": { "kind": "document", "id": "documents:1" },
+    "within": {
+      "kind": "text",
+      "spans": [
+        {
+          "blockId": "#bremoved",
+          "from": { "atom": "#aremoved", "offset": 0 },
+          "to": { "atom": "#aremoved", "offset": 18 }
+        }
+      ]
+    },
+    "quote": "Earlier cost claim",
+    "createdBy": { "kind": "user", "userId": "users:3" },
+    "updatedAt": 1788287400000
+  },
+  {
+    "_id": "commentThreads:7",
+    "_creationTime": 1788285600000,
+    "projectId": "default",
+    "target": { "kind": "document", "id": "documents:1" },
+    "within": {
+      "kind": "text",
+      "spans": [
+        {
+          "blockId": "#bbody3",
+          "from": { "atom": "#abody3", "offset": 13 },
+          "to": { "atom": "#abody3", "offset": 27 }
+        }
+      ]
+    },
+    "quote": "reconductoring",
+    "resolution": { "by": "users:1", "at": 1788289200000 },
+    "createdBy": { "kind": "user", "userId": "users:4" },
+    "updatedAt": 1788289200000
   }
 ]

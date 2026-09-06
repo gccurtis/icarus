@@ -1,15 +1,14 @@
-import { username } from "$capabilities/development/index.remote";
-import { read } from "$capabilities/store/index.remote";
 import type { Actor } from "$representation/data/types/core/actor";
 import type { TextBlock } from "$representation/data/types/content/content-block";
 import type { Comment, CommentThread, TableName, TableRow, User } from "$representation/store/tables";
 import { textAnchorSpans } from "$representation/data/behavior/collaboration/anchors";
+import { readStore, readUsername } from "$model/client/workspace-state";
 
 export type { Comment, CommentThread, User } from "$representation/store/tables";
 
-export type TableQuery = ReturnType<typeof read>;
+export type TableQuery = ReturnType<typeof readStore>;
 
-export const tableQuery = (table: TableName): TableQuery => read({ path: table });
+export const tableQuery = (table: TableName): TableQuery => readStore(table);
 
 export const rowsOf = <T extends TableName>(query: TableQuery, table: T): readonly TableRow<T>[] => {
   if (!query.ready) return [];
@@ -21,13 +20,13 @@ export const rowsOf = <T extends TableName>(query: TableQuery, table: T): readon
 };
 
 export const rowsIn = <T extends TableName>(table: T): readonly TableRow<T>[] =>
-  rowsOf(read({ path: table }), table);
+  rowsOf(readStore(table), table);
 
 export const refreshAll = (...queries: readonly TableQuery[]): Promise<void> =>
   Promise.all(queries.map((query) => query.refresh())).then(() => undefined);
 
 export const viewerId = (): string => {
-  const answer = username();
+  const answer = readUsername();
   if (!answer.ready) return "";
 
   const name = answer.current;

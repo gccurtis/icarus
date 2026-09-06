@@ -151,7 +151,10 @@ export const worthSending = (
   held: Selection | undefined
 ): boolean => {
   if (inspected !== signal.key) return true;
-  if (signal.key === "document-editor.next-letter") return false;
+  if (signal.key === "document-editor.next-letter") {
+    if (held?.kind !== "next-letter") return true;
+    return addressOf(held.id)?.blockId !== addressOf(signal.selection.id)?.blockId;
+  }
 
   return (
     held?.kind !== signal.selection.kind ||

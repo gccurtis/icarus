@@ -1,5 +1,7 @@
 import { getContext, hasContext, setContext } from "svelte";
 
+import { username } from "$capabilities/development/index.remote";
+import { read } from "$capabilities/store/index.remote";
 import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
 import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
@@ -7,6 +9,7 @@ import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
 import { createWorkspaceState } from "$model/client/workspace-state/constructor";
 import type { WorkspaceStateModel } from "$model/client/workspace-state/types";
+import type { TableName } from "$representation/store/tables";
 
 export { createWorkspaceState } from "$model/client/workspace-state/constructor";
 
@@ -39,6 +42,7 @@ export type {
 
 export type {
   SingleFlightKeyPart,
+  StoreQuery,
   Tab,
   WorkspaceStateModel
 } from "$model/client/workspace-state/types";
@@ -84,9 +88,17 @@ const forDevelopment = (): WorkspaceStateModel => {
     createTabViews(),
     configuration,
     createDocumentRuntimes(configuration),
-    createSlideDeckRuntimes(configuration)
+    createSlideDeckRuntimes(configuration),
+    read,
+    username
   );
 };
 
 export const workspaceState = (): WorkspaceStateModel =>
   hasContext(KEY) ? getContext<WorkspaceStateModel>(KEY) : forDevelopment();
+
+/** A store read whose reactive lifetime is the browser workspace, not a transient view. */
+export const readStore = (table: TableName) => workspaceState().readStore(table);
+
+/** The session-name read, owned by the browser workspace rather than a view. */
+export const readUsername = () => workspaceState().readUsername();
