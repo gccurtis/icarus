@@ -35,7 +35,7 @@
     lede="Seven steps per family, ordered by lightness. The only literal colour in the repository. It generates no utilities — a component cannot reference it, which is the rule enforced by the build rather than by a check."
   />
 
-  <div class="table-frame table-scroll">
+  <div class="surface-table-frame surface-table-scroll">
     <div class="min-w-[42rem]">
       <div class="bg-surface-panel border-border-strong grid grid-cols-[7rem_repeat(7,1fr)] border-b">
         <span class="text-micro text-ink-secondary border-border-subtle border-r px-3 py-2 font-mono uppercase tracking-caps">Family</span>
@@ -75,7 +75,7 @@
     </div>
   </div>
 
-  <div class="seam-grid grid-cols-1 sm:grid-cols-3">
+  <div class="surface-seam-grid grid-cols-1 sm:grid-cols-3">
     {#each NAMED as { name, entry, role } (entry)}
       <div class="flex items-center gap-3 p-4">
         <span
@@ -91,7 +91,7 @@
     {/each}
   </div>
 
-  <div class="rail rail-quiet max-w-prose p-4">
+  <div class="surface-rail surface-rail-quiet max-w-prose p-4">
     <p class="text-body-sm text-ink-secondary m-0">
       Switch the appearance above and only three of these swatches move. Selene overrides
       <code class="text-micro font-mono">blue-deep</code>,

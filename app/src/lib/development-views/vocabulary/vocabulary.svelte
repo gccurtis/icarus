@@ -55,7 +55,7 @@
 
   <div class="flex w-full min-w-0 max-w-[86rem] flex-col gap-10 p-8">
   <div
-    class="veil border-border-subtle sticky top-11 z-10 -mx-8 -mt-8 flex flex-wrap items-center justify-between gap-3 border-b px-8 py-2"
+    class="surface-veil border-border-subtle sticky top-11 z-10 -mx-8 -mt-8 flex flex-wrap items-center justify-between gap-3 border-b px-8 py-2"
   >
     <span class="text-caption text-ink-muted">
       Notes go in the right-hand column. Enter saves; nothing is kept in the browser.
@@ -77,7 +77,7 @@
 
   <Commented scope="section" label="Composition vocabulary">
     <header class="flex flex-col gap-4">
-      <span class="eyebrow">Celestial · composition</span>
+      <span class="surface-eyebrow">Celestial · composition</span>
       <h1 class="text-display tracking-display max-w-title m-0 font-semibold text-balance">
         Which shape holds it.
       </h1>
@@ -86,7 +86,7 @@
         given something to put on a screen, which of these holds it, and why that one rather than
         its neighbour.
       </p>
-      <div class="rail rail-quiet max-w-prose p-3">
+      <div class="surface-rail surface-rail-quiet max-w-prose p-3">
         <p class="text-body-sm text-ink-secondary m-0">
           Two families, because a panel is not a workspace. A flank is narrow and vertical; a
           workspace is the generous plane. Panel examples below are shown at a flank's real width —

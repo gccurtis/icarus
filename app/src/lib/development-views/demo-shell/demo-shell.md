@@ -44,7 +44,7 @@ legible from the names once they are apart:
 
 ## Layout
 
-Sticky, wearing the `.veil` surface so a scrolling page reads through it rather
+Sticky, wearing the `.surface-veil` surface so a scrolling page reads through it rather
 than under a lid. The bar sits in flow rather than fixed, so the region below is
 exactly the viewport minus the bar and a page that wants full height gets one.
 

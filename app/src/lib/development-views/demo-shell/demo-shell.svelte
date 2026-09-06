@@ -46,7 +46,7 @@
 
 <div class="flex min-h-screen flex-col">
   <header
-    class="veil border-border-subtle sticky top-0 z-30 flex h-11 shrink-0 items-center gap-4 border-b px-4"
+    class="surface-veil border-border-subtle sticky top-0 z-30 flex h-11 shrink-0 items-center gap-4 border-b px-4"
   >
     <a href="/demo" class="text-micro text-ink-secondary tracking-caps shrink-0 font-mono uppercase">
       Icarus <span class="text-ink-muted">demos</span>

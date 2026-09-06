@@ -42,7 +42,7 @@
     lede="Eight commitments the rest of the system is downstream of. Every value below this section exists because one of them required it."
   />
 
-  <div class="seam-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="surface-seam-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
     {#each LAWS as law, index (law.title)}
       <article class="flex min-h-36 flex-col gap-2 p-4">
         <span class="text-micro text-ink-muted font-mono">{String(index + 1).padStart(2, "0")}</span>
@@ -52,7 +52,7 @@
     {/each}
   </div>
 
-  <div class="rail rail-intelligence max-w-prose p-4">
+  <div class="surface-rail surface-rail-intelligence max-w-prose p-4">
     <p class="text-body-sm text-ink-secondary m-0">
       <strong class="text-ink-primary">Provenance is part of the aesthetic.</strong> If the system
       cannot establish where something came from, it does not show the something — it says it could

@@ -13,7 +13,7 @@
 
 <aside class="border-border-subtle hidden w-56 shrink-0 border-e lg:block">
   <nav class="sticky top-11 flex flex-col gap-1 p-4" aria-label="Design system sections">
-    <span class="eyebrow mb-2">In reading order</span>
+    <span class="surface-eyebrow mb-2">In reading order</span>
     {#each SECTIONS as { id, n, label, source } (id)}
       <a
         href="#{id}"
@@ -30,7 +30,7 @@
 </aside>
 
 <nav
-  class="veil border-border-subtle sticky top-11 z-20 flex gap-1 overflow-x-auto border-b px-4 py-2 lg:hidden"
+  class="surface-veil border-border-subtle sticky top-11 z-20 flex gap-1 overflow-x-auto border-b px-4 py-2 lg:hidden"
   aria-label="Design system sections"
 >
   {#each SECTIONS as { id, n, label } (id)}

@@ -27,8 +27,8 @@
     lede="A role binds one family across seven jobs. This is the only place a hue is chosen, and a component picks a job — never an intensity, never a hue."
   />
 
-  <div class="table-frame table-scroll">
-    <table class="data-table min-w-[52rem]">
+  <div class="surface-table-frame surface-table-scroll">
+    <table class="surface-data-table min-w-[52rem]">
       <thead>
         <tr>
           <th scope="col">Role</th>
@@ -61,7 +61,7 @@
     </table>
   </div>
 
-  <div class="rail rail-quiet max-w-prose p-4">
+  <div class="surface-rail surface-rail-quiet max-w-prose p-4">
     <p class="text-body-sm text-ink-secondary m-0">
       Meaning roles are fixed. Identity and brand roles may share a hue with one another but never
       with a meaning hue — someone who learnt that red means danger learnt it everywhere.

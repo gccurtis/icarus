@@ -43,7 +43,7 @@
 
   <div class="grid gap-5 lg:grid-cols-2">
     <div class="flex flex-col gap-2">
-      <span class="eyebrow">Boxes</span>
+      <span class="surface-eyebrow">Boxes</span>
       <div class="grid grid-cols-3 gap-3">
         {#each CELLS as cell (cell)}
           <div class="border-border-subtle rounded-panel bg-surface-elevated border p-3">
@@ -58,8 +58,8 @@
     </div>
 
     <div class="flex flex-col gap-2">
-      <span class="eyebrow">Seams</span>
-      <div class="seam-grid grid-cols-3">
+      <span class="surface-eyebrow">Seams</span>
+      <div class="surface-seam-grid grid-cols-3">
         {#each CELLS as cell (cell)}
           <div class="p-3">
             <span class="text-body-sm">{cell}</span>
@@ -81,16 +81,16 @@
         <em>this is a separate object</em>. Getting that wrong is the most common reason an
         annotated document looks like a form.
       </p>
-      <div class="rail p-3">
+      <div class="surface-rail p-3">
         <p class="text-body-sm m-0">A decision, attached to the paragraph it decides about.</p>
       </div>
-      <div class="rail rail-attention p-3">
+      <div class="surface-rail surface-rail-attention p-3">
         <p class="text-body-sm m-0">Human judgment required — the system deferred to a person.</p>
       </div>
-      <div class="rail rail-intelligence p-3">
+      <div class="surface-rail surface-rail-intelligence p-3">
         <p class="text-body-sm m-0">Derived work, with its origin one step away.</p>
       </div>
-      <div class="rail rail-quiet p-3">
+      <div class="surface-rail surface-rail-quiet p-3">
         <p class="text-body-sm m-0">A quoted source, carrying no role of its own.</p>
       </div>
     </div>
@@ -160,8 +160,8 @@
       aligned, with one seam separating it from the rest. Everything after it is centred, and
       numbers use tabular figures so they compare down the column without being read.
     </p>
-    <div class="table-frame">
-      <table class="data-table">
+    <div class="surface-table-frame">
+      <table class="surface-data-table">
         <thead>
           <tr>
             <th scope="col">Value</th>

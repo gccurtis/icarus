@@ -31,16 +31,16 @@
     lede="The product has three kinds of thing to say and they should not sound alike. The serif is the one that changes how the product feels, and the one most easily skipped — a document set in the interface font tells the reader the page is part of the application."
   />
 
-  <div class="seam-grid grid-cols-1 lg:grid-cols-3">
+  <div class="surface-seam-grid grid-cols-1 lg:grid-cols-3">
     <div class="flex flex-col gap-2 p-4">
-      <span class="eyebrow">Instrument</span>
+      <span class="surface-eyebrow">Instrument</span>
       <p class="font-sans text-body-lg m-0">Bold, Italic, Underline</p>
       <p class="text-caption text-ink-muted m-0">
         Every control, label, panel, heading and table. IBM Plex Sans.
       </p>
     </div>
     <div class="flex flex-col gap-2 p-4">
-      <span class="eyebrow">Reading</span>
+      <span class="surface-eyebrow">Reading</span>
       <p class="font-reading text-body-lg leading-reading m-0">
         The citadel's curves channel light rather than emit it.
       </p>
@@ -49,7 +49,7 @@
       </p>
     </div>
     <div class="flex flex-col gap-2 p-4">
-      <span class="eyebrow">Identifier</span>
+      <span class="surface-eyebrow">Identifier</span>
       <p class="font-mono text-body m-0 tabular-nums">2026-09-05T18:41:07.284Z</p>
       <p class="text-caption text-ink-muted m-0">
         Ids, commits, addresses, keys, measured numbers. Never a paragraph.
@@ -101,7 +101,7 @@
         The dimension that was missing, and the reason hand-set pages looked designed while
         token-set pages did not.
       </p>
-      <div class="seam-grid grid-cols-1">
+      <div class="surface-seam-grid grid-cols-1">
         {#each TRACKING as { cls, token, why } (token)}
           <div class="flex flex-col gap-1 p-3">
             <span class="text-body {cls}">Aa — the solar will</span>
@@ -113,7 +113,7 @@
     </div>
   </div>
 
-  <div class="rail rail-attention max-w-prose p-4">
+  <div class="surface-rail surface-rail-attention max-w-prose p-4">
     <p class="text-body-sm text-ink-secondary m-0">
       <strong class="text-ink-primary">The fine steps are for chrome, not content.</strong> A field
       label, a unit suffix, a column header: those are

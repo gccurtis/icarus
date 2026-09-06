@@ -34,7 +34,7 @@
 
 <aside class="border-border-subtle hidden w-60 shrink-0 border-e lg:block">
   <div class="sticky top-11 flex max-h-[calc(100vh-2.75rem)] flex-col gap-2 p-4">
-    <span class="eyebrow">The catalogue</span>
+    <span class="surface-eyebrow">The catalogue</span>
 
     <input
       type="search"

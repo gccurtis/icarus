@@ -29,7 +29,7 @@
     <header class="flex flex-col gap-6 px-6 pt-14 pb-12 lg:px-10">
       <div class="grid gap-10 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
         <div class="flex flex-col gap-5">
-          <span class="eyebrow">Celestial · the design system</span>
+          <span class="surface-eyebrow">Celestial · the design system</span>
           <h1 class="text-display tracking-display max-w-title font-semibold text-balance">
             A formless citadel amongst the clouds.
           </h1>
@@ -40,8 +40,8 @@
           </p>
         </div>
 
-        <aside class="rail rail-intelligence flex flex-col gap-2 p-4">
-          <span class="eyebrow">Two materials</span>
+        <aside class="surface-rail surface-rail-intelligence flex flex-col gap-2 p-4">
+          <span class="surface-eyebrow">Two materials</span>
           <p class="text-body-sm text-ink-secondary m-0">
             <strong class="text-ink-primary">Helios</strong> is the will manifest directly — day,
             warm paper, the source. <strong class="text-ink-primary">Selene</strong> is the same

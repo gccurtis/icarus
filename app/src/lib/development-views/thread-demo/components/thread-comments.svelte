@@ -63,7 +63,7 @@
 
   <PanelSection title="Thread" count={REPLIES.length + 1} chevron="end">
     <div class="flex flex-col gap-2 px-3">
-      <article class="rail p-3">
+      <article class="surface-rail p-3">
         <div class="flex items-center gap-2">
           <PanelActor name="Mira Jain" kind="person" size="row" />
           <span class="text-micro text-ink-muted ms-auto">3h ago</span>

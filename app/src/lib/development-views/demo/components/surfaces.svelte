@@ -19,7 +19,7 @@
     lede="A plane is a claim about distance from the reader. Six of them, and no screen needs a seventh. They are separated by lightness, not by lines — a shell that needs a border to say this is a different region has not made the planes do their work."
   />
 
-  <div class="seam-grid grid-cols-2 lg:grid-cols-6">
+  <div class="surface-seam-grid grid-cols-2 lg:grid-cols-6">
     {#each PLANES as { token, cls, role } (token)}
       <div class="flex flex-col gap-2 p-3">
         <span class="border-border-subtle h-16 rounded-md border {cls}"></span>
@@ -69,7 +69,7 @@
       <h3 class="text-h4 mt-2 font-semibold">Glow carries state, and nothing else</h3>
       <div class="flex flex-wrap items-center gap-4">
         <span class="bg-surface-elevated border-border-subtle rounded-control shadow-glow flex items-center gap-2 border px-3 py-2">
-          <span class="live-dot"></span>
+          <span class="surface-live-dot"></span>
           <span class="text-body-sm">Resolving</span>
         </span>
         <span class="bg-surface-elevated border-border-subtle rounded-control flex items-center gap-2 border px-3 py-2">
@@ -87,7 +87,7 @@
           Content continuing underneath is what tells a person the region is still there. Solid
           chrome over moving content reads as a lid; a veil reads as glass.
         </p>
-        <div class="veil border-border-subtle absolute inset-x-0 bottom-0 border-t px-3 py-2">
+        <div class="surface-veil border-border-subtle absolute inset-x-0 bottom-0 border-t px-3 py-2">
           <span class="text-micro font-mono">surface-veil + blur-veil</span>
         </div>
       </div>
@@ -95,8 +95,8 @@
 
     <div class="flex flex-col gap-2">
       <h3 class="text-h4 font-semibold">Inversion</h3>
-      <div class="inverted flex h-32 flex-col justify-end p-4">
-        <span class="eyebrow">One per screen</span>
+      <div class="surface-inverted flex h-32 flex-col justify-end p-4">
+        <span class="surface-eyebrow">One per screen</span>
         <p class="text-body-sm m-0 mt-1 opacity-80">
           A statement rather than a region. Two inverted blocks on a screen is one too many; the
           second costs the first its meaning.

@@ -119,7 +119,7 @@
 <div class="flex min-h-0 flex-1">
   <ScreenSurface wide class="flex-1">
     <div class="flex flex-col gap-3">
-      <span class="eyebrow">Celestial · content blocks</span>
+      <span class="surface-eyebrow">Celestial · content blocks</span>
       <h1 class="text-h2 tracking-heading max-w-title m-0 font-semibold text-balance">
         One component, two surfaces
       </h1>
@@ -128,7 +128,7 @@
         on; the document does not. That one prop is the whole reason one reads as prose and the
         other as a composition.
       </p>
-      <div class="rail rail-attention max-w-prose p-3">
+      <div class="surface-rail surface-rail-attention max-w-prose p-3">
         <p class="text-body-sm text-ink-secondary m-0">
           <strong class="text-ink-primary">Demonstrative.</strong> This is not what the document or
           slide editors should look like — they own their own surfaces and will decide their own
@@ -137,7 +137,7 @@
         </p>
       </div>
 
-      <div class="rail rail-quiet max-w-prose p-3">
+      <div class="surface-rail surface-rail-quiet max-w-prose p-3">
         <p class="text-body-sm text-ink-secondary m-0">
           The document is set in the <strong class="text-ink-primary">reading voice</strong> and
           floats on the pasteboard; the slide is set in the instrument voice on the same plane. A

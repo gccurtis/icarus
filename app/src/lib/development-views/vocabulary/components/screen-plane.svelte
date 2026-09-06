@@ -360,7 +360,7 @@
     screen scale asks for a size rather than growing a copy.
   </SectionTitle>
 
-  <div class="rail rail-attention max-w-prose p-3">
+  <div class="surface-rail surface-rail-attention max-w-prose p-3">
     <p class="text-body-sm text-ink-secondary m-0">
       <strong class="text-ink-primary">The document, slide and grid surfaces below are
       illustrative and out of date.</strong> The editors own those surfaces and have moved on from

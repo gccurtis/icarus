@@ -21,9 +21,9 @@
     lede="Motion without intent is disruption. Every movement must have a reason it happened and must tell the person something they did not already know. A thinking space is a place you can put a thought down and find it again."
   />
 
-  <div class="seam-grid grid-cols-1 lg:grid-cols-2">
+  <div class="surface-seam-grid grid-cols-1 lg:grid-cols-2">
     <div class="flex flex-col gap-3 p-5">
-      <span class="eyebrow">You did that</span>
+      <span class="surface-eyebrow">You did that</span>
       <p class="text-body-sm text-ink-secondary max-w-note m-0">
         A person acted and the movement confirms the act landed. It should feel continuous with the
         gesture that caused it — <code class="text-micro font-mono">ease-standard</code> leaves
@@ -48,7 +48,7 @@
     </div>
 
     <div class="flex flex-col gap-3 p-5">
-      <span class="eyebrow">This happened</span>
+      <span class="surface-eyebrow">This happened</span>
       <p class="text-body-sm text-ink-secondary max-w-note m-0">
         Nobody asked for it in the moment it occurred, so the movement carries the information that
         it is new — and, often, an implicit question.
@@ -65,7 +65,7 @@
       <div class="border-border-subtle rounded-panel bg-surface-work h-24 overflow-hidden border p-2">
         {#key happened}
           <div class="bg-intelligence-surface border-intelligence-border rounded-control motion-arrived flex items-center gap-2 border p-2">
-            <span class="live-dot"></span>
+            <span class="surface-live-dot"></span>
             <span class="text-body-sm">A derived value arrived · does this need you?</span>
           </div>
         {/key}
@@ -74,8 +74,8 @@
   </div>
 
   <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-    <div class="table-frame">
-      <table class="data-table">
+    <div class="surface-table-frame">
+      <table class="surface-data-table">
         <thead>
           <tr>
             <th scope="col">Duration</th>
@@ -102,7 +102,7 @@
         8px is not animating, it is relocating — and relocation should be instant, so spatial memory
         stays true.
       </p>
-      <div class="seam-grid grid-cols-2">
+      <div class="surface-seam-grid grid-cols-2">
         <div class="flex flex-col gap-1 p-3">
           <span class="text-body-sm font-medium">rise — 4px</span>
           <span class="text-caption text-ink-muted">Menus, tooltips, chips settling onto a plane</span>
@@ -113,7 +113,7 @@
         </div>
       </div>
 
-      <div class="rail rail-quiet p-4">
+      <div class="surface-rail surface-rail-quiet p-4">
         <p class="text-body-sm text-ink-secondary m-0">
           Turn every transition off and this section is still correct — quieter, but correct. If a
           state is only legible because something moved, the state was never designed.

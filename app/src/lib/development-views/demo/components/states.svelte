@@ -74,7 +74,7 @@
     lede="A component is an instrument, and instruments are judged on whether they report their condition honestly. Remove colour from this section and every row is still readable — that is the requirement, not a nicety."
   />
 
-  <div class="seam-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+  <div class="surface-seam-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
     {#each STATES as { name, cue, cls }, index (name)}
       <div
         class="flex flex-col gap-1 p-4 {index === STATES.length - 1
@@ -90,7 +90,7 @@
   </div>
 
   <div class="grid gap-5 lg:grid-cols-2">
-    <div class="rail rail-quiet p-4">
+    <div class="surface-rail surface-rail-quiet p-4">
       <p class="text-body-sm text-ink-secondary m-0">
         <strong class="text-ink-primary">This is a floor, not a cage.</strong> A screen that
         genuinely needs a condition this list does not name should express it, well — and then the
@@ -98,7 +98,7 @@
         an icon, a boundary, or a position.
       </p>
     </div>
-    <div class="rail rail-attention p-4">
+    <div class="surface-rail surface-rail-attention p-4">
       <p class="text-body-sm text-ink-secondary m-0">
         <strong class="text-ink-primary">Untraceable is not low confidence.</strong> A derived value
         whose origin the system cannot establish is an answer the system does not have. It says so
