@@ -21,10 +21,13 @@
   import {
     detailIn,
     duplicateTemplate,
+    emptyTemplateInspectorTitle,
     inspectTemplate,
     instantiateTemplate,
     removeTemplate,
+    selectedTemplateIdIn,
     templateDetail,
+    templateLibrary,
     unavailableTemplateIn,
     updateTemplateDescription,
     updateTemplateName,
@@ -39,16 +42,27 @@
   const selectedId = $derived(
     view.selection?.kind === "template" ? view.selection.id : undefined
   );
-  const detail = $derived(templateDetail(selectedId));
+  const library = templateLibrary();
+  const availableTemplateIds = $derived(
+    library.ready ? library.current.templates.map((row) => row.id) : []
+  );
+  const readableTemplateId = $derived(
+    selectedTemplateIdIn(selectedId, availableTemplateIds)
+  );
+  const detail = $derived(templateDetail(readableTemplateId));
+  const detailAnswer = $derived(
+    detail !== undefined && detail.ready ? detail.current : undefined
+  );
+  const emptyTitle = $derived(
+    emptyTemplateInspectorTitle(library.ready ? library.current.templates.length : undefined)
+  );
   let now = $state(Date.now());
   onMount(() => {
     const timer = setInterval(() => (now = Date.now()), 60_000);
     return () => clearInterval(timer);
   });
-  const template = $derived(detailIn(detail.ready ? detail.current : undefined, now));
-  const unavailable = $derived(
-    unavailableTemplateIn(detail.ready ? detail.current : undefined)
-  );
+  const template = $derived(detailIn(detailAnswer, now));
+  const unavailable = $derived(unavailableTemplateIn(detailAnswer));
 
   let editingDescription = $state(false);
   let descriptionDraft = $state("");
@@ -509,12 +523,14 @@
 {/snippet}
 
 <Panel title={template?.name ?? "Template"} heading={inspectorHeading}>
-  {#if detail.error}
+  {#if readableTemplateId === undefined}
+    <PanelEmpty title={emptyTitle} />
+  {:else if detail === undefined}
+    <PanelEmpty title={emptyTitle} />
+  {:else if detail.error}
     <PanelBanner title="Template unavailable" tone="danger">
       {detail.error instanceof Error ? detail.error.message : String(detail.error)}
     </PanelBanner>
-  {:else if selectedId === undefined}
-    <PanelEmpty title="Select a template to inspect it." />
   {:else if !detail.ready}
     <PanelSkeleton shape="fields" count={6} />
   {:else if unavailable}

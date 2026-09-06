@@ -123,9 +123,20 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
 /** Start the scoped, metadata-only library read. */
 export const templateLibrary = () => readTemplateLibrary();
 
-/** Start the body-bearing read for exactly one selected template. */
+/** Start the body-bearing read only when a real template is selected. */
 export const templateDetail = (templateId: string | undefined) =>
-  readTemplate({ templateId: templateId ?? "templates:none" });
+  templateId === undefined ? undefined : readTemplate({ templateId });
+
+/** Keep restored legacy or deleted selections away from the strict server read boundary. */
+export const selectedTemplateIdIn = (
+  templateId: string | undefined,
+  availableIds: readonly string[]
+): string | undefined =>
+  templateId !== undefined && availableIds.includes(templateId) ? templateId : undefined;
+
+/** Explain an empty inspector without pretending that an absent selection is a row id. */
+export const emptyTemplateInspectorTitle = (templateCount: number | undefined): string =>
+  templateCount === 0 ? "No templates exist." : "Select a template to inspect it.";
 
 /** Every template visible to the current scoped capability call. */
 export const templatesIn = (
