@@ -163,7 +163,7 @@ export const FILES: FileRecord[] = [
   {"path":"app/static/favicon.ico","status":"A","area":"cross-cutting","kind":"production","current":5,"base":0,"added":5,"deleted":0,"binary":false},
   {"path":"app/static/favicon.svg","status":"A","area":"cross-cutting","kind":"production","current":5,"base":0,"added":5,"deleted":0,"binary":false},
   {"path":"app/test/browser/document-editor-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":83,"base":0,"added":83,"deleted":0,"binary":false},
-  {"path":"app/test/browser/document-editor.spec.ts","status":"A","area":"evidence","kind":"test","current":443,"base":0,"added":443,"deleted":0,"binary":false},
-  {"path":"docs/artifacts/document-editor-implementation-plan/document-editor-implementation-plan.md","status":"A","area":"evidence","kind":"documentation","current":384,"base":0,"added":384,"deleted":0,"binary":false},
+  {"path":"app/test/browser/document-editor.spec.ts","status":"A","area":"evidence","kind":"test","current":458,"base":0,"added":458,"deleted":0,"binary":false},
+  {"path":"docs/artifacts/document-editor-implementation-plan/document-editor-implementation-plan.md","status":"A","area":"evidence","kind":"documentation","current":388,"base":0,"added":388,"deleted":0,"binary":false},
   {"path":"docs/artifacts/document-editor-review/document-editor-review.md","status":"A","area":"evidence","kind":"documentation","current":266,"base":0,"added":266,"deleted":0,"binary":false}
 ];

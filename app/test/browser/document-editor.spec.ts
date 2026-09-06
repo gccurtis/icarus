@@ -355,8 +355,23 @@ test("document context panels are operational and compact", async ({ page }) => 
   await openFixture(page);
 
   const context = page.locator('aside[aria-label="Context"]');
+  const rail = context.getByRole("navigation", { name: "Context views" });
+  expect(await rail.evaluate((node) => getComputedStyle(node).borderInlineStartWidth)).toBe("0px");
+
   await context.getByRole("button", { name: "Sections", exact: true }).click();
   await expect(context.getByRole("heading", { name: "Sections" })).toBeVisible();
+
+  await context.getByRole("button", { name: "Find", exact: true }).click();
+  await expect(context.getByRole("heading", { name: "Find" })).toBeVisible();
+  const find = context.getByPlaceholder("Find in the document…");
+  await find.fill("Winter");
+  await expect(context.getByText("Winter", { exact: true }).first()).toBeVisible();
+
+  await context.getByRole("button", { name: "Styles", exact: true }).click();
+  await expect(context.getByRole("heading", { name: "Styles" })).toBeVisible();
+  const styles = context.getByPlaceholder("Filter styles…");
+  await styles.fill("Body");
+  await expect(context.getByText("Body", { exact: true }).first()).toBeVisible();
 
   await context.getByRole("button", { name: "Layout", exact: true }).click();
   await expect(context.getByRole("heading", { name: "Layout" })).toBeVisible();

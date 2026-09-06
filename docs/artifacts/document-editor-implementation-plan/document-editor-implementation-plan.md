@@ -3,7 +3,7 @@
 **Status:** Complete · current-main Chromium convergence green; Firefox baseline retained
 **Implementation branch:** `work/document-editor-integration`, based directly on `main`
 **Reference implementation:** `work/document-editor` at `55a7b22`
-**Validated base:** local `main` at `b4894c7`
+**Validated base:** local `main` at `a1dc5bf`
 **Companion:** [Document editor review](../document-editor-review/document-editor-review.md)
 
 ## Outcome
@@ -284,7 +284,7 @@ accessibility pass, and clean console/network evidence all pass from a clean che
 
 | Gate | Result |
 | --- | --- |
-| Branch boundary | local `main` at `b4894c7` is the merge base; `work/document-editor` at `55a7b22` is not an ancestor. |
+| Branch boundary | local `main` at `a1dc5bf` is the merge base; `work/document-editor` at `55a7b22` is not an ancestor. |
 | Static analysis | Svelte/typecheck: 0 errors and 0 warnings. Architecture/style lint: 56/56 checks clean. |
 | Unit suite | 73 files and 745 assertions passed. |
 | Chromium | 16/16 editor and reference scenarios passed from a reset fixture on the current base. |
@@ -299,6 +299,10 @@ current sizing while retaining the editor's full-row, responsive full-label/init
 post-rebase browser pass also caught a stale test contract: main replaced
 `data-theme="celestial|cyberpunk"` with `data-appearance="helios|selene"`; the accessibility scenario
 now verifies the new contract.
+
+The subsequent roll-up to `a1dc5bf` was textually conflict-free. It prefixes global surface recipes,
+which prevents the shared `.rail` recipe from accidentally painting the document editor's local
+context rail.
 
 The earlier convergence run also caught and repaired two integration seams introduced by the moving base:
 the new scoped store projection had omitted comment anchor state, and Firefox exposed browser-native
