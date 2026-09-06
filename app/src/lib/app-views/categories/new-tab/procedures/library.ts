@@ -10,7 +10,7 @@
  * back are the ones the editor will show once **Create** is pressed, and a panel
  * inventing them locally is how the two drift.
  */
-import { RESOURCES, byKind, type Resource, type ResourceKind } from "$app-views/categories/new-tab/procedures/cast";
+import { PROJECT, RESOURCES, byKind, type Resource, type ResourceKind } from "$app-views/categories/new-tab/procedures/cast";
 import { read, type Read } from "$app-views/categories/new-tab/procedures/read";
 
 /* ------------------------------------------------------------------ */
@@ -354,6 +354,507 @@ export const recents = (): Read<readonly RecentRow[]> =>
   ], "library.recents");
 
 /* ------------------------------------------------------------------ */
+/* Templates                                                           */
+/* ------------------------------------------------------------------ */
+
+/** Fixed at creation: what a template makes cannot be changed afterwards. */
+export type TemplateTarget = "Document" | "Slide deck" | "Slide" | "Spreadsheet";
+
+/**
+ * Who owns a template, and therefore who may edit it.
+ *
+ * The same three a persona has, and deliberately the same words. Not a single
+ * *Global* bucket: that is one word doing two jobs — a template you keep for
+ * yourself and one a team agreed on are not the same thing, and only the second
+ * is worth trusting.
+ */
+export type TemplateScope = "Project" | "Personal" | "Shared";
+
+export type LibraryTemplate = {
+  readonly id: string;
+  readonly name: string;
+  readonly makes: TemplateTarget;
+  readonly scope: TemplateScope;
+  /** Flat labels for filtering and organization; they never imply a hierarchy. */
+  readonly tags: readonly string[];
+  /** On the row so a list can say "4 variables" without loading the variable list. */
+  readonly variables: number;
+  readonly updated: string;
+  /** Absent until something has been made from it — see `recentlyUsedTemplates`. */
+  readonly lastUsed?: string;
+  readonly createdBy: string;
+  readonly revision: number;
+};
+
+export type VariableType = "Text" | "Image" | "Table" | "Generated";
+
+export type TemplateVariable = {
+  readonly id: string;
+  readonly templateId: string;
+  /** What the body references. Not what a person reads — both are needed. */
+  readonly key: string;
+  readonly label: string;
+  readonly type: VariableType;
+  readonly required: boolean;
+  /** A generated variable is not a question: it becomes this in the result. */
+  readonly becomes?: string;
+  readonly defaultValue?: string;
+};
+
+/**
+ * One line of a template preview, drawn from the body rather than a thumbnail —
+ * the model has no thumbnail field and the library must not imply one. `variable`
+ * is what lets a preview distinguish an opening from ordinary content.
+ */
+export type PreviewLine = {
+  readonly id: string;
+  readonly text: string;
+  readonly style: "heading" | "body";
+  readonly variable: boolean;
+};
+
+export type TemplateKind = {
+  readonly id: string;
+  readonly makes: TemplateTarget;
+  readonly blurb: string;
+};
+
+const TEMPLATES: readonly LibraryTemplate[] = [
+  {
+    id: "tp-filing",
+    name: "Regulatory filing shell",
+    makes: "Document",
+    scope: "Project",
+    tags: ["Regulatory", "External reporting"],
+    variables: 4,
+    updated: "2 weeks ago",
+    lastUsed: "3 days ago",
+    createdBy: "Mira Jain",
+    revision: 6
+  },
+  {
+    id: "tp-storm",
+    name: "Storm brief",
+    makes: "Document",
+    scope: "Project",
+    tags: ["Incident response", "Briefing"],
+    variables: 3,
+    updated: "5 weeks ago",
+    createdBy: "Ana Reyes",
+    revision: 2
+  },
+  {
+    id: "tp-board",
+    name: "Board update",
+    makes: "Slide deck",
+    scope: "Project",
+    tags: ["Leadership", "Briefing"],
+    variables: 2,
+    updated: "3 weeks ago",
+    lastUsed: "1 week ago",
+    createdBy: "Tomas Kaur",
+    revision: 4
+  },
+  {
+    id: "tp-ops",
+    name: "Weekly ops deck",
+    makes: "Slide deck",
+    scope: "Project",
+    tags: ["Operations", "Leadership"],
+    variables: 0,
+    updated: "8 weeks ago",
+    lastUsed: "Yesterday",
+    createdBy: "Tomas Kaur",
+    revision: 11
+  },
+  {
+    id: "tp-title",
+    name: "Title slide",
+    makes: "Slide",
+    scope: "Project",
+    tags: ["Presentation", "Brand"],
+    variables: 1,
+    updated: "6 weeks ago",
+    createdBy: "Tomas Kaur",
+    revision: 1
+  },
+  {
+    id: "tp-cost",
+    name: "Cost model skeleton",
+    makes: "Spreadsheet",
+    scope: "Project",
+    tags: ["Finance", "Planning"],
+    variables: 0,
+    updated: "9 weeks ago",
+    lastUsed: "Today",
+    createdBy: "Mira Jain",
+    revision: 3
+  },
+  {
+    id: "tp-incident",
+    name: "Incident review",
+    makes: "Document",
+    scope: "Shared",
+    tags: ["Incident response", "Review"],
+    variables: 0,
+    updated: "6 months ago",
+    createdBy: "Devi Okonkwo",
+    revision: 8
+  },
+  {
+    id: "tp-divider",
+    name: "Section divider",
+    makes: "Slide",
+    scope: "Personal",
+    tags: ["Presentation", "Brand"],
+    variables: 1,
+    updated: "7 months ago",
+    createdBy: "Devi Okonkwo",
+    revision: 2
+  }
+];
+
+const TEMPLATE_VARIABLES: readonly TemplateVariable[] = [
+  {
+    id: "tv-docket",
+    templateId: "tp-filing",
+    key: "filingDocket",
+    label: "Docket number",
+    type: "Text",
+    required: true
+  },
+  {
+    id: "tv-party",
+    templateId: "tp-filing",
+    key: "filingParty",
+    label: "Filing party",
+    type: "Text",
+    required: true,
+    defaultValue: "Northwind Power"
+  },
+  {
+    id: "tv-outages",
+    templateId: "tp-filing",
+    key: "outageTable",
+    label: "Outage record",
+    type: "Table",
+    required: true
+  },
+  {
+    id: "tv-exec",
+    templateId: "tp-filing",
+    key: "execSummary",
+    label: "Executive summary",
+    type: "Generated",
+    required: false,
+    becomes: "A prompt block in the result"
+  },
+  {
+    id: "tv-storm-name",
+    templateId: "tp-storm",
+    key: "stormName",
+    label: "Storm name",
+    type: "Text",
+    required: true
+  },
+  {
+    id: "tv-storm-window",
+    templateId: "tp-storm",
+    key: "stormWindow",
+    label: "Dates affected",
+    type: "Text",
+    required: true
+  },
+  {
+    id: "tv-storm-takeaways",
+    templateId: "tp-storm",
+    key: "keyTakeaways",
+    label: "Key takeaways",
+    type: "Generated",
+    required: false,
+    becomes: "A prompt block in the result"
+  },
+  {
+    id: "tv-quarter",
+    templateId: "tp-board",
+    key: "quarter",
+    label: "Quarter",
+    type: "Text",
+    required: true,
+    defaultValue: "Q4 2026"
+  },
+  {
+    id: "tv-chart",
+    templateId: "tp-board",
+    key: "headlineChart",
+    label: "Headline chart",
+    type: "Image",
+    required: false
+  },
+  {
+    id: "tv-deck-title",
+    templateId: "tp-title",
+    key: "deckTitle",
+    label: "Deck title",
+    type: "Text",
+    required: true
+  },
+  {
+    id: "tv-section",
+    templateId: "tp-divider",
+    key: "sectionName",
+    label: "Section name",
+    type: "Text",
+    required: true
+  }
+];
+
+export const templates = (): Read<readonly LibraryTemplate[]> =>
+  read(TEMPLATES, "library.templates");
+
+export const template = (templateId: string): Read<LibraryTemplate> =>
+  read(
+    TEMPLATES.find((row: LibraryTemplate) => row.id === templateId) ?? TEMPLATES[0],
+    "library.template"
+  );
+
+export const templateKinds = (): Read<readonly TemplateKind[]> =>
+  read([
+    {
+      id: "tk-document",
+      makes: "Document",
+      blurb: "A paginated body with variables left open."
+    },
+    { id: "tk-deck", makes: "Slide deck", blurb: "A whole deck: layouts, theme, sections." },
+    {
+      id: "tk-slide",
+      makes: "Slide",
+      // A slide template is inserted into an existing deck, never opened as one.
+      blurb: "One slide, reusable on its own. Inserted into any deck."
+    },
+    {
+      id: "tk-sheet",
+      makes: "Spreadsheet",
+      blurb: "One grid of cells holding text and formulas."
+    }
+  ], "library.templateKinds");
+
+export const variablesIn = (templateId: string): Read<readonly TemplateVariable[]> =>
+  read(
+    TEMPLATE_VARIABLES.filter((variable: TemplateVariable) => variable.templateId === templateId),
+    "library.variablesIn"
+  );
+
+export const templateVariable = (variableId: string): Read<TemplateVariable> =>
+  read(
+    TEMPLATE_VARIABLES.find((variable: TemplateVariable) => variable.id === variableId) ??
+      TEMPLATE_VARIABLES[0],
+    "library.templateVariable"
+  );
+
+export const previewOf = (templateId: string): Read<readonly PreviewLine[]> => {
+  void templateId;
+  return read([
+    { id: "pl-1", text: "Filing to the Commission", style: "heading", variable: false },
+    { id: "pl-2", text: "Docket {filingDocket}", style: "body", variable: true },
+    {
+      id: "pl-3",
+      text: "{filingParty} submits this application under §16-108.",
+      style: "body",
+      variable: true
+    },
+    { id: "pl-4", text: "Outage record", style: "heading", variable: false },
+    { id: "pl-5", text: "{outageTable}", style: "body", variable: true },
+    { id: "pl-6", text: "Statutory basis", style: "heading", variable: false }
+  ], "library.previewOf");
+};
+
+/** Changed lately. A different question from used lately, and a different list. */
+export const recentlyUpdatedTemplates = (): Read<readonly LibraryTemplate[]> =>
+  read(TEMPLATES.slice(0, 3), "library.recentlyUpdatedTemplates");
+
+/**
+ * Used lately. Nothing counts uses — the resource made from a template records
+ * its origin — so this is a reverse query over resources, and a template with no
+ * `lastUsed` simply never appears.
+ */
+export const recentlyUsedTemplates = (): Read<readonly LibraryTemplate[]> =>
+  read(
+    TEMPLATES.filter((row: LibraryTemplate) => row.lastUsed !== undefined),
+    "library.recentlyUsedTemplates"
+  );
+
+/* ------------------------------------------------------------------ */
+/* Template authoring                                                  */
+/* ------------------------------------------------------------------ */
+
+export type OutlineHeading = {
+  readonly id: string;
+  readonly text: string;
+  readonly level: 1 | 2;
+  readonly page: number;
+};
+
+export type StyleRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly detail: string;
+};
+
+export type PageSetup = {
+  readonly paper: "Letter" | "A4";
+  readonly orientation: "Portrait" | "Landscape";
+  readonly gutters: string;
+};
+
+export type InsertOption = {
+  readonly id: string;
+  readonly name: string;
+  readonly detail: string;
+};
+
+/** The three kinds of opening a template can leave in its body. */
+export type VariableKindOption = {
+  readonly id: string;
+  readonly name: string;
+  readonly makes: VariableType;
+  readonly detail: string;
+};
+
+/** Content selected while authoring: the document inspector, reused exactly. */
+export type BodyEntity = {
+  readonly id: string;
+  readonly text: string;
+  readonly variant: string;
+  readonly variants: readonly string[];
+  /** The crumb has to say *template*, or authoring looks like editing the result. */
+  readonly owner: { readonly kind: "Template"; readonly id: string; readonly name: string };
+};
+
+export const outlineIn = (templateId: string): Read<readonly OutlineHeading[]> => {
+  void templateId;
+  return read([
+    { id: "oh-1", text: "Filing to the Commission", level: 1, page: 1 },
+    { id: "oh-2", text: "Outage record", level: 1, page: 1 },
+    { id: "oh-3", text: "Statutory basis", level: 1, page: 2 },
+    { id: "oh-4", text: "Relief requested", level: 1, page: 3 },
+    { id: "oh-5", text: "Cost recovery", level: 2, page: 3 },
+    { id: "oh-6", text: "Exhibits", level: 1, page: 4 }
+  ], "library.outlineIn");
+};
+
+export const stylesIn = (templateId: string): Read<readonly StyleRow[]> => {
+  void templateId;
+  return read([
+    { id: "st-body", name: "Body", detail: "Source Serif · 11 pt · 1.4" },
+    { id: "st-h1", name: "Heading 1", detail: "Source Sans · 18 pt · bold" },
+    { id: "st-h2", name: "Heading 2", detail: "Source Sans · 14 pt · semibold" },
+    { id: "st-quote", name: "Quotation", detail: "Source Serif · 11 pt · indented" }
+  ], "library.stylesIn");
+};
+
+export const pageSetupFor = (templateId: string): Read<PageSetup> => {
+  void templateId;
+  return read(
+    { paper: "Letter", orientation: "Portrait", gutters: "1 in all round" },
+    "library.pageSetupFor"
+  );
+};
+
+export const insertBlocks = (): Read<readonly InsertOption[]> =>
+  read([
+    { id: "ib-text", name: "Text block", detail: "A paragraph in the body style" },
+    { id: "ib-heading", name: "Heading", detail: "Starts an outline entry" },
+    { id: "ib-table", name: "Table", detail: "Rows and columns, fixed at insert" }
+  ], "library.insertBlocks");
+
+export const variableKinds = (): Read<readonly VariableKindOption[]> =>
+  read([
+    {
+      id: "vk-text",
+      name: "Text variable",
+      makes: "Text",
+      detail: "Asked for on a line at instantiation"
+    },
+    {
+      id: "vk-table",
+      name: "Table variable",
+      makes: "Table",
+      detail: "Filled from a project variable or an upload"
+    },
+    {
+      id: "vk-generated",
+      name: "Generated variable",
+      makes: "Generated",
+      // Never a question at instantiation, which is why it is a variable kind
+      // rather than an Insert of a prompt block.
+      detail: "Becomes a prompt block in the result"
+    }
+  ], "library.variableKinds");
+
+export const bodyEntity = (entityId: string): Read<BodyEntity> => {
+  void entityId;
+  return read({
+    id: "be-1",
+    text: "Filing to the Commission",
+    variant: "Heading 1",
+    variants: ["Body", "Heading 1", "Heading 2"],
+    owner: { kind: "Template", id: "tp-filing", name: "Regulatory filing shell" }
+  }, "library.bodyEntity");
+};
+
+/* ------------------------------------------------------------------ */
+/* Using a template                                                    */
+/* ------------------------------------------------------------------ */
+
+export type InstantiationAsk = {
+  readonly key: string;
+  readonly label: string;
+  readonly type: VariableType;
+  /** What has been supplied so far. "Not set" is the state everything starts in. */
+  readonly state: string;
+};
+
+export type Instantiation = {
+  readonly makes: TemplateTarget;
+  readonly called: string;
+  readonly into: string;
+  readonly asks: readonly InstantiationAsk[];
+  /** Not questions. They become prompt blocks, and the section starts collapsed. */
+  readonly generated: readonly InstantiationAsk[];
+  /**
+   * Always false. No body entity carries a variable key, so a supplied value has
+   * nowhere to go — which is the one fact this whole form has to admit.
+   */
+  readonly canCreate: boolean;
+  readonly blockedBecause: string;
+};
+
+export const useTemplateDraft = (templateId: string): Read<Instantiation> => {
+  const chosen = TEMPLATES.find((row: LibraryTemplate) => row.id === templateId) ?? TEMPLATES[0];
+  const asked = TEMPLATE_VARIABLES.filter(
+    (variable: TemplateVariable) => variable.templateId === chosen.id
+  );
+  const toAsk = (variable: TemplateVariable): InstantiationAsk => ({
+    key: variable.key,
+    label: variable.label,
+    type: variable.type,
+    state: variable.defaultValue ?? "Not set"
+  });
+  return read({
+    makes: chosen.makes,
+    called: "Q4 Filing Draft",
+    into: PROJECT.name,
+    asks: asked.filter((variable: TemplateVariable) => variable.type !== "Generated").map(toAsk),
+    generated: asked
+      .filter((variable: TemplateVariable) => variable.type === "Generated")
+      .map(toAsk),
+    canCreate: false,
+    blockedBecause: "Nothing in a body records which variable it stands for."
+  }, "library.useTemplateDraft");
+};
+
+/* ------------------------------------------------------------------ */
 /* Bringing material in                                                */
 /* ------------------------------------------------------------------ */
 
@@ -443,7 +944,7 @@ export const providers = (): Read<readonly ProviderRow[]> =>
     {
       id: "pv-sharepoint",
       name: "SharePoint",
-      brings: "A document library, as project resources"
+      brings: "A document library, as external files"
     },
     { id: "pv-drive", name: "Google Drive", brings: "A shared drive or folder" },
     { id: "pv-confluence", name: "Confluence", brings: "A space, page by page" },
@@ -457,7 +958,7 @@ export const connector = (connectorId: string): Read<ConnectorDetail> => {
     id: row.id,
     name: row.name,
     provider: row.provider,
-    purpose: "Sync a document library into the project as represented resources",
+    purpose: "Sync a document library into the project as external files",
     scopes: [
       { name: "Sites.Read.All", required: true, granted: true },
       { name: "Files.Read.All", required: true, granted: true },

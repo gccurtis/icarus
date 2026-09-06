@@ -5,7 +5,7 @@ Lives at `src/lib/development-views/template-library-demo/components/components.
 <!-- generated:inventory:start -->
 
 - `behavior-map.svelte`
-- `change-inventory.svelte`
+- `branch-audit.svelte`
 - `data-flow.svelte`
 - `library-stage.svelte`
 
@@ -36,11 +36,11 @@ boundaries rather than runtime progress. The proposal requires explicit
 Done/Cancel, flush-before-commit, compare-and-swap and expiry semantics; it does
 not couple generic tab close to deletion.
 
-## `change-inventory.svelte`
+## `branch-audit.svelte`
 
-A filterable review index grouped by data, server, views and reference. The
-filter is local presentation state. Rows group every material artifact in this
-branch, including seeds/snapshots, capability procedures, store batching,
-shared interaction primitives, workspace coordination, product surfaces,
-routes and maintenance notes; they do not inspect Git or make a network request
-at runtime.
+A filterable, exact review index parsed from the checked-in
+`components/branch-audit.diff`. Every changed path is rendered in full with its addition
+and deletion counts, an exact-file change explanation, its area's justification,
+and a disclosure containing the exact unified diff. The snapshot excludes only
+its own generated diff file to avoid recursion. It performs no Git or network
+request at runtime.

@@ -14,7 +14,7 @@
   import Sparkles from "@lucide/svelte/icons/sparkles";
 
   import BehaviorMap from "$development-views/template-library-demo/components/behavior-map.svelte";
-  import ChangeInventory from "$development-views/template-library-demo/components/change-inventory.svelte";
+  import BranchAudit from "$development-views/template-library-demo/components/branch-audit.svelte";
   import DataFlow from "$development-views/template-library-demo/components/data-flow.svelte";
   import LibraryStage from "$development-views/template-library-demo/components/library-stage.svelte";
 
@@ -156,7 +156,7 @@
       <a href="#behaviors">Behaviors</a>
       <a href="#flow">Data flow</a>
       <a href="#model">Model</a>
-      <a href="#changes">Changes</a>
+      <a href="#justifications">Justifications</a>
       <a href="#decisions">Decisions</a>
     </nav>
   </header>
@@ -326,15 +326,15 @@
       </div>
     </section>
 
-    <section id="changes" class="section">
+    <section id="justifications" class="section">
       <div class="section-heading">
-        <div><span class="kicker">CODE CHANGE INVENTORY</span><h2>The complete review boundary</h2></div>
+        <div><span class="kicker">EXACT BRANCH AUDIT</span><h2>Every file, every changed line, and why</h2></div>
         <p>
-          Grouped by the layer that owns each concern. Filters make it possible to review the server
-          seam separately from view polish and from this reference route.
+          Full paths are never abbreviated. Every disclosure states what changed in that exact file,
+          why its area is in scope, and the exact unified diff captured against the feature baseline.
         </p>
       </div>
-      <ChangeInventory />
+      <BranchAudit />
     </section>
 
     <section id="verification" class="section">
@@ -364,8 +364,10 @@
       <div class="section-heading">
         <div><span class="kicker">FOLLOW-ON / PRIORITIZED</span><h2>Six decisions, with their actual stakes</h2></div>
         <p>
-          None of these means current library CRUD is a mock. Each row says what works today, the
-          worst credible failure, when it matters, and what completing it entails.
+          These six are the only product and architecture choices requested from the reviewer. The
+          branch audit above is evidence and merge-scope explanation, not a seventh decision. Each
+          row says what works today, the worst credible failure, when it matters, and what completing
+          it entails.
         </p>
       </div>
 

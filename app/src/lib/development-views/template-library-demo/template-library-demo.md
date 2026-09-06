@@ -11,7 +11,7 @@ project-scoped application route and reached from `/demo/templates`.
 The first section is the product: the real Context, Content and Inspector
 surface registries, on their real geometry, loading the real Template views.
 The rest is the argument behind it: implemented behavior and data flow,
-representation relationships, code-change inventory, verification invariants,
+representation relationships, an exact file-by-file change audit, verification invariants,
 decisions that remain open, and a separately marked proposal for a durable
 scratch-resource authoring lifecycle.
 
@@ -35,7 +35,9 @@ The follow-on decision list is therefore not a list of missing CRUD behaviors.
 It separates future ownership, production authorization, network-retry safety,
 cross-table crash recovery, editor-session recovery, and remaining Use inputs.
 Each rendered item states its trigger, current behavior, worst credible result,
-and completion shape.
+and completion shape. Those six rows are the only product and architecture
+decisions requested from the reviewer; the exact audit is evidence and scope
+explanation rather than an additional decision.
 
 ## Why the live route sits under `/app/[project]`
 
@@ -63,7 +65,8 @@ This view owns:
 - the isolated live-stage workspace coordinator;
 - explanatory copies of implemented behavior, relationships, unresolved
   choices and the explicitly deferred authoring-lifecycle proposal;
-- the visual inventory of implementation areas.
+- the exact changed-file inventory, per-file change explanations, area
+  justifications, and collapsible unified diffs.
 
 It does not own:
 
@@ -83,25 +86,25 @@ It does not own:
 
 ### Client models
 
-| Object | Usage |
-| --- | --- |
-| Client Model | Supplies the scoped project and existing editor runtime registers |
-| Configuration | Gives the reference coordinator explicit zero persistence thresholds |
-| Workspace State | A fresh, un-restored coordinator for the live stage only |
+| Object          | Usage                                                                |
+| --------------- | -------------------------------------------------------------------- |
+| Client Model    | Supplies the scoped project and existing editor runtime registers    |
+| Configuration   | Gives the reference coordinator explicit zero persistence thresholds |
+| Workspace State | A fresh, un-restored coordinator for the live stage only             |
 
 ### Capabilities
 
-| Capability | Usage |
-| --- | --- |
+| Capability    | Usage                                                |
+| ------------- | ---------------------------------------------------- |
 | None directly | The real Template views call their own browser doors |
 
 ### Composed views
 
-| View | Usage |
-| --- | --- |
-| `$surfaces/context` | Loads `templates.overview-library` through the filesystem registry |
-| `$surfaces/content` | Loads `templates.library` through the filesystem registry |
-| `$surfaces/inspector` | Loads `templates.template` after selection |
+| View                  | Usage                                                              |
+| --------------------- | ------------------------------------------------------------------ |
+| `$surfaces/context`   | Loads `templates.overview-library` through the filesystem registry |
+| `$surfaces/content`   | Loads `templates.library` through the filesystem registry          |
+| `$surfaces/inspector` | Loads `templates.template` after selection                         |
 
 ### Presentation
 
@@ -112,19 +115,19 @@ component being reviewed.
 
 ## Directory Documents
 
-| Concern | Document | What it owns |
-| --- | --- | --- |
+| Concern    | Document                                  | What it owns                                                     |
+| ---------- | ----------------------------------------- | ---------------------------------------------------------------- |
 | Components | [components.md](components/components.md) | Live stage, behavior map, data-flow diagram and change inventory |
 
 ## Rendered States
 
-| State | Trigger | Visible result | Recovery |
-| --- | --- | --- | --- |
-| Initial | Scoped route renders | Live library with Nothing selected in the inspector | Select a shelf card or row |
-| Selected | An owner-visible template is selected | Real Template inspector and active selection styling | Select another or delete |
-| Narrow viewport | Stage is narrower than application geometry | The product stage scrolls horizontally rather than lying about flank widths | Scroll the stage |
-| Missing view | A registry key has no component | The owning shell surface shows its ordinary placeholder | Fix the product registry/tree |
-| Remote failure | A Template browser door rejects | The Template view owns the failure presentation | Retry through that view |
+| State           | Trigger                                     | Visible result                                                              | Recovery                      |
+| --------------- | ------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------- |
+| Initial         | Scoped route renders                        | Live library with Nothing selected in the inspector                         | Select a shelf card or row    |
+| Selected        | An owner-visible template is selected       | Real Template inspector and active selection styling                        | Select another or delete      |
+| Narrow viewport | Stage is narrower than application geometry | The product stage scrolls horizontally rather than lying about flank widths | Scroll the stage              |
+| Missing view    | A registry key has no component             | The owning shell surface shows its ordinary placeholder                     | Fix the product registry/tree |
+| Remote failure  | A Template browser door rejects             | The Template view owns the failure presentation                             | Retry through that view       |
 
 ## Accessibility
 

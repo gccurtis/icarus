@@ -125,7 +125,7 @@
           {#each TARGETS as target (target.value)}
             {@const Icon = target.icon}
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               class="target-action {target.tint}"
               aria-label={`Create ${target.label.toLocaleLowerCase()} template`}
@@ -209,15 +209,22 @@
   .target-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: calc(var(--token-spacing-unit) * 1);
+    overflow: hidden;
     margin-top: calc(var(--token-spacing-unit) * 1.5);
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-panel);
   }
 
   :global(.target-action) {
     width: 100%;
     height: calc(var(--token-spacing-unit) * 9);
-    border-width: 1px;
-    border-radius: var(--token-radius-control);
+    border: 0;
+    border-radius: 0;
+  }
+
+  :global(.target-action + .target-action) {
+    border-left: 1px solid var(--token-border-subtle);
   }
 
   :global(.target-action svg) {
