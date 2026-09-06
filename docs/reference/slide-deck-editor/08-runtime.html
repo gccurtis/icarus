@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 · The runtime</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html"><b>01</b><span>How the system works</span></a>
+      <a href="02-model.html"><b>02</b><span>The deck model and the applier</span></a>
+      <a href="03-editing-loop.html"><b>03</b><span>From a gesture to the store</span></a>
+      <a href="04-changes.html"><b>04</b><span>What changed, and why</span></a>
+      <a href="05-context-panels.html"><b>05</b><span>The context panels</span></a>
+      <a href="06-inspector.html"><b>06</b><span>The inspector</span></a>
+      <a href="07-content-surface.html"><b>07</b><span>The content surface</span></a>
+      <a href="08-runtime.html" class="is-here"><b>08</b><span>The runtime</span></a>
+      <a href="09-backend.html"><b>09</b><span>The back end</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">08 · the client model</p>
+    <h1>The runtime</h1>
+    <p class="lede">
+      Two client-side models sit between the views and the server. The <em>deck runtime</em> holds the
+      live body and everything not yet saved. The <em>workspace state</em> holds what is open, focused,
+      selected and inspected. This branch changed one line of the first and nothing in the second, but
+      leans on rules of both that are worth writing down.
+    </p>
+    <div class="meta">
+      <span>Deck runtime <b>model/client/slide-deck-runtimes/</b></span>
+      <span>Workspace state <b>model/client/workspace-state/</b></span>
+      <span>Configuration <b>revisions.changeSets.* · revisions.sync.everyMs · slideDeck.stage.* · slideDeck.zoom.*</b></span>
+    </div>
+
+    <section id="register">
+      <div class="head"><span class="n">1</span><h2>The register, and one runtime per open deck</h2></div>
+      <p>
+        <code>createSlideDeckRuntimes(configuration)</code> is called once by the client runtime at start
+        and reads its thresholds and stage settings from configuration — it refuses to build without them.
+        It keeps two maps: <code>open</code> and <code>settling</code>. <code>attach(id)</code> returns the
+        open runtime if there is one (and pokes a sync), revives a settling one, or creates one and
+        subscribes it; <code>release(id)</code> moves it to settling, flushes what it holds, and forgets it
+        once the flush lands unless it ended in error or needs review. <code>releaseAll</code> runs when the
+        client instance closes.
+      </p>
+      <p>
+        The views never touch the register. <code>workspaceState().slideDeckRuntime(deckId)</code> calls
+        <code>attach</code>; it is idempotent, so every panel, lens and section attaching the same deck gets
+        the same object, and a second tab on one deck costs nothing.
+      </p>
+      <pre><code>class Runtime {
+  body: SlideDeckBody | undefined   // $state — what is shown
+  revision: number                  // the leader revision the body is at
+  sync: SyncState                   // loading · saved · saving · rebasing · needs-review · offline · error
+  buffer: SlideDeckOp[]             // applied here, not yet sent
+  undoStack / redoStack             // gestures, each a list of ops
+  inFlight: boolean
+  stage: StageSettings              // unitsHigh, zoom bounds and step, gutter bounds
+}</code></pre>
+    </section>
+
+    <section id="apply">
+      <div class="head"><span class="n">2</span><h2>apply, buffer, schedule</h2></div>
+      <p>
+        <code>runtime.apply(ops)</code> is the only way a view changes a deck. It applies the ops to the
+        live body <em>first</em> — an op the applier refuses throws here, at the gesture, and never reaches
+        the buffer — then appends them to the buffer, pushes them as one undo entry, clears redo, and
+        schedules a flush. One <code>apply</code> is one undoable gesture however many ops it carries,
+        which is why a drag of five objects or a merge of six cells is a single call.
+      </p>
+      <p>
+        Scheduling: if the buffer has reached <code>flushAfterOps</code> (50) it flushes now; otherwise a
+        timer of <code>flushAfterMs</code> (2 s) is reset from the last op. A heartbeat every
+        <code>syncEveryMs</code> wakes the runtime to <em>tick</em>: send what it holds, or read what it
+        does not.
+      </p>
+    </section>
+
+    <section id="flush">
+      <div class="head"><span class="n">3</span><h2>flush: coalesce, submit, rebase, revert</h2></div>
+      <ol>
+        <li><strong>Coalesce.</strong> A run of <code>set</code>s on one path folds into one with the last <code>value</code> and the <em>first</em> <code>was</code> — a 300-event drag becomes one op with a correct inverse — unless an op on the same or related ground (a prefix either way, compared by segment) sits between them. Inserts, removes, moves and text ops never fold.</li>
+        <li><strong>Submit</strong> <code>{ resourceId, baseRevision, ops, touched }</code> through <code>submitSlideDeckChanges</code>. Two concurrent flushes join the same promise.</li>
+        <li><strong>Accepted</strong> → record the revision, mark <em>saved</em> (or <em>saving</em> if more arrived meanwhile), and sync.</li>
+        <li><strong>Stale</strong> (someone else advanced the leader) → <code>rebase</code>: adopt the server's revision, put the refused ops back at the front of the buffer, mark <em>rebasing</em>, and resubmit once. A second refusal reverts.</li>
+        <li><strong>Unresolved</strong> (the server's applier threw) → <code>revert</code>: drop the buffer and re-read the leader, so the screen shows what the store holds.</li>
+        <li><strong>A thrown request</strong> (network) → the ops go back in front of the buffer and the state is <em>error</em>; the next tick tries again.</li>
+      </ol>
+      <p>
+        <code>sync</code> only runs when the runtime is <em>settled</em> — an empty buffer and nothing in
+        flight — because only a reader may take the leader's word. It calls <code>refresh()</code> on the
+        <code>readSlideDeckBody</code> query rather than awaiting it, since the query would otherwise answer
+        from the client cache with the body the page loaded with.
+      </p>
+    </section>
+
+    <section id="history">
+      <div class="head"><span class="n">4</span><h2>Undo and redo</h2></div>
+      <p>
+        History is not the buffer. <code>undo</code> pops the last gesture, pushes it to redo, inverts its
+        ops in reverse order (<code>set</code> swaps value and was; insert ↔ remove; move swaps after and
+        wasAfter; text swaps the two strings) and buffers the inverse like any edit. Undo survives a flush.
+        Every op the editor makes therefore has to carry an honest <code>was</code>, which is why
+        <code>withSet</code> reads the current value before writing and why a <code>remove</code> carries the
+        removed values.
+      </p>
+    </section>
+
+    <section id="changed">
+      <div class="head"><span class="n">5</span><h2>What changed on this branch</h2></div>
+      <p>
+        One line in <code>Runtime.apply</code>: the ops are deep-copied through JSON before being applied
+        and buffered.
+      </p>
+      <!-- diff:begin app/src/lib/model/client/slide-deck-runtimes/definition.svelte.ts -->
+<details class="change" id="file-app-src-lib-model-client-slide-deck-runtimes-definition-svelte-ts">
+  <summary><span class="badge changed">changed</span><code>src/lib/model/client/slide-deck-runtimes/definition.svelte.ts</code><span class="stat"><span class="plus">+1</span> <span class="minus">−1</span></span></summary>
+  <pre class="diff"><code class="rows"><span class="hunk">@@ -58,7 +58,7 @@ export class Runtime implements SlideDeckRuntime {</span><span class="ctx">   apply(ops: readonly SlideDeckOp[]): void {</span><span class="ctx">     if (ops.length === 0) return;</span><span class="ctx"> </span><span class="del">-    apply(this, ops);</span><span class="add">+    apply(this, JSON.parse(JSON.stringify(ops)) as SlideDeckOp[]);</span><span class="ctx">     this.schedule();</span><span class="ctx">   }</span><span class="ctx"> </span><span class="ctx"></span></code></pre>
+</details>
+<!-- diff:end -->
+      <p>
+        <strong>Why.</strong> The views build ops from values they read out of <code>runtime.body</code>,
+        which is a Svelte <code>$state</code> proxy. An op whose <code>value</code> or <code>values</code> was
+        such an object — a frame copied by spread, a whole element in an <code>insert</code>, a removed row
+        in a <code>remove</code> — carried a live proxy: it kept tracking the body after it was buffered,
+        and the request serialiser refused it. Copying at the boundary means the buffer owns plain data,
+        the change set that leaves is what was applied, and an undo entry is what it was when recorded.
+        Nothing else in the runtime, its methods or its tests changed.
+      </p>
+    </section>
+
+    <section id="workspace">
+      <div class="head"><span class="n">6</span><h2>The workspace state, as the editor uses it</h2></div>
+      <p>
+        <code>workspaceState()</code> is one <code>$state</code> object per client. Every change to it is a
+        <code>WorkspaceOp</code> performed through <code>perform</code>: applied, logged for undo, and
+        buffered for persistence with the same after-ops / after-ms shape the deck uses. The deck editor
+        calls five of its methods:
+      </p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Method</th><th>Op</th><th>Used for</th></tr></thead>
+          <tbody>
+            <tr><td><code>open({ category, resourceId, focus })</code></td><td><code>land</code> on the existing tab</td><td>Showing a slide: the Slides panel, Previous / Next, Find, a comment's anchor.</td></tr>
+            <tr><td><code>inspect(key, selection)</code></td><td><code>inspect</code></td><td>Every selection. Throws if the key is not a declared lens.</td></tr>
+            <tr><td><code>clear()</code></td><td><code>inspect → empty</code></td><td>Only when there is no slide to fall back to.</td></tr>
+            <tr><td><code>setZoom(n)</code></td><td><code>zoom</code></td><td>The strip and the pinch.</td></tr>
+            <tr><td><code>slideDeckRuntime(id)</code></td><td>—</td><td>Attaching the deck.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The one type this branch touched is <code>Selection</code>, which gained an optional
+        <code>ids</code> so a multi-selection and a cell selection can be carried, persisted and restored
+        like any other selection. The workspace does not interpret it; only the deck's
+        <code>selecting.ts</code> reads it.
+      </p>
+      <p>
+        Because the selection is workspace state, it is persisted and restored with the tab. A restored
+        tab can therefore open on a stale lens — a cell of a table that no longer exists — and every lens
+        guards for its subject being absent by showing its empty state instead of throwing.
+      </p>
+    </section>
+
+    <section id="queries">
+      <div class="head"><span class="n">7</span><h2>The query-lifetime rule</h2></div>
+      <p>
+        The store's <code>read({ path })</code> is a SvelteKit remote query. The object it returns is a
+        tracked handle: it subscribes while it is alive and is released when nothing references it. A
+        handle created inside a <code>$derived</code> is recreated on every re-evaluation, and the previous
+        one is released — which is how the comment badges and the Comments panel came to stop updating
+        after a post: the handle that had been refreshed was not the handle anyone was still reading.
+      </p>
+      <p>The rule every view on this branch follows:</p>
+      <pre><code>const threadRows = read({ path: "commentThreads" });   // once, at component init
+const threads = $derived(rowsOf(threadRows).filter(...)); // derive from the held handle
+await startThread(...);
+await Promise.all([threadRows.refresh(), commentRows.refresh()]); // refresh the same handle</code></pre>
+      <p>
+        A command does not invalidate queries on its own, so every procedure call in the editor is followed
+        by a <code>refresh()</code> of the handles it affected. Two queries are still created inside a
+        derived — the deck title in the content view and the resource title in the comment lens; both are
+        read-only and keyed on an id, so they are recreated only when that id changes and nothing ever
+        refreshes them.
+      </p>
+    </section>
+
+    <section id="files">
+      <div class="head"><span class="n">→</span><h2>Files on this page, and their diffs</h2></div>
+      <!-- files:begin runtime,workspace -->
+<div class="scroll"><table class="files"><thead><tr><th></th><th>File</th><th>+</th><th>−</th><th>Systematic change</th></tr></thead><tbody>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-model-client-slide-deck-runtimes-definition-svelte-ts"><code>src/lib/model/client/slide-deck-runtimes/definition.svelte.ts</code></a></td><td class="num">+1</td><td class="num">−1</td><td><a href="04-changes.html#group-runtime">The runtime</a></td></tr>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-model-client-workspace-state-methods-shared-shared-md"><code>src/lib/model/client/workspace-state/methods/shared/shared.md</code></a></td><td class="num">+1</td><td class="num">−13</td><td><a href="04-changes.html#group-workspace">The workspace knows the deck's views</a></td></tr>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-representation-data-behavior-workspace-opening-ts"><code>src/lib/representation/data/behavior/workspace/opening.ts</code></a></td><td class="num">+5</td><td class="num">−8</td><td><a href="04-changes.html#group-workspace">The workspace knows the deck's views</a></td></tr>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-representation-data-behavior-workspace-views-ts"><code>src/lib/representation/data/behavior/workspace/views.ts</code></a></td><td class="num">+13</td><td class="num">−16</td><td><a href="04-changes.html#group-workspace">The workspace knows the deck's views</a></td></tr>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-representation-data-types-workspace-tab-ts"><code>src/lib/representation/data/types/workspace/tab.ts</code></a></td><td class="num">+1</td><td class="num">−0</td><td><a href="04-changes.html#group-workspace">The workspace knows the deck's views</a></td></tr>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-representation-data-types-workspace-views-ts"><code>src/lib/representation/data/types/workspace/views.ts</code></a></td><td class="num">+13</td><td class="num">−16</td><td><a href="04-changes.html#group-workspace">The workspace knows the deck's views</a></td></tr>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-surfaces-context-procedures-rail-entries-ts"><code>src/lib/surfaces/context/procedures/rail-entries.ts</code></a></td><td class="num">+3</td><td class="num">−11</td><td><a href="04-changes.html#group-workspace">The workspace knows the deck's views</a></td></tr>
+</tbody></table></div>
+<!-- files:end -->
+    </section>
+
+    <footer>Next: <a href="09-backend.html">09 · The back end</a>.</footer>
+  </main>
+</div>
+</body>
+</html>

@@ -91,17 +91,14 @@ export const OPENING: Record<Category, Opening> = {
     context: "slide-deck-editor.slides",
     rail: [
       "slide-deck-editor.slides",
-      "slide-deck-editor.overview",
-      "slide-deck-editor.stage",
-      "slide-deck-editor.layers",
-      "slide-deck-editor.find",
-      "slide-deck-editor.layouts",
       "slide-deck-editor.insert",
+      "slide-deck-editor.layers",
       "slide-deck-editor.theme",
-      "slide-deck-editor.notes",
-      "slide-deck-editor.variables",
+      "slide-deck-editor.find",
       "slide-deck-editor.comments",
-      "slide-deck-editor.context"
+      "slide-deck-editor.templates",
+      "slide-deck-editor.variables",
+      "slide-deck-editor.prompts"
     ]
   },
 

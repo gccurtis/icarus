@@ -15,6 +15,7 @@ export type Selection = {
   readonly id: string;
   readonly at?: string;
   readonly ranges?: readonly SelectionRange[];
+  readonly ids?: readonly string[];
 };
 
 export type Frame = {

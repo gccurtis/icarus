@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · How the system works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html" class="is-here"><b>01</b><span>How the system works</span></a>
+      <a href="02-model.html"><b>02</b><span>The deck model and the applier</span></a>
+      <a href="03-editing-loop.html"><b>03</b><span>From a gesture to the store</span></a>
+      <a href="04-changes.html"><b>04</b><span>What changed, and why</span></a>
+      <a href="05-context-panels.html"><b>05</b><span>The context panels</span></a>
+      <a href="06-inspector.html"><b>06</b><span>The inspector</span></a>
+      <a href="07-content-surface.html"><b>07</b><span>The content surface</span></a>
+      <a href="08-runtime.html"><b>08</b><span>The runtime</span></a>
+      <a href="09-backend.html"><b>09</b><span>The back end</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">01 · the shape of the thing</p>
+    <h1>How the system works</h1>
+    <p class="lede">
+      A deck is a JSON body. The client holds one live copy of it per open deck and every edit is a small
+      operation on that copy; the same operation is sent to the server, which applies it to the canonical
+      copy. Everything the person sees — the slide, the panels, the inspector — is a projection of the live
+      body and of one piece of workspace state that says what is selected.
+    </p>
+    <div class="meta">
+      <span>Representation <b>app/src/lib/representation</b></span>
+      <span>Client runtime <b>app/src/lib/model/client/slide-deck-runtimes</b></span>
+      <span>Editor <b>app/src/lib/app-views/categories/slide-deck-editor</b></span>
+      <span>Renderer <b>app/src/lib/components/authored/slide-surface</b></span>
+    </div>
+
+    <section id="tiers">
+      <div class="head"><span class="n">1</span><h2>Three tiers, and who is allowed to know what</h2></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Tier</th><th>Answers</th><th>Where</th><th>May import</th></tr></thead>
+          <tbody>
+            <tr><td><b>Representation</b></td><td>What a deck <em>is</em>: the body types, the op vocabulary, and one pure <code>applyOps</code> that both the browser and the server run.</td><td><code>representation/data/types/slide-decks/</code><br><code>representation/data/behavior/slide-decks/</code></td><td>Nothing outside representation.</td></tr>
+            <tr><td><b>Client runtime</b></td><td>What is <em>unsaved</em>: the live body, its revision, the buffer of ops not yet sent, the undo and redo stacks, the sync state.</td><td><code>model/client/slide-deck-runtimes/</code></td><td>Representation and the <code>slide-deck</code> capability.</td></tr>
+            <tr><td><b>Editor</b></td><td>What is <em>seen</em>: the content view, the context panels, the inspector lenses, and the procedures that turn a gesture into ops.</td><td><code>app-views/categories/slide-deck-editor/</code></td><td>Its own procedures and components, the authored and vendored component libraries, the workspace-state model, capabilities. Never representation directly.</td></tr>
+            <tr><td><b>Back end</b></td><td>Capabilities that a view may call, each a procedure that gates on the request's scope, validates, and reads or writes the store.</td><td><code>capabilities/slide-deck</code>, <code>capabilities/store</code>, <code>capabilities/comments</code>, <code>capabilities/workspace</code></td><td>Representation, the server model at its index, the two runtime entries.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The one place a representation type is allowed to surface in the editor is
+        <code>procedures/deck.ts</code>, which re-exports the types the views need. That is a lint rule, not
+        a convention: a <code>.svelte</code> file under <code>app-views</code> that imports
+        <code>$representation</code> fails the build's structural lint, and so does one whose props are
+        anything other than ids, primitives and callbacks. A view is told <em>which</em> thing to show and
+        reads the thing itself from the runtime.
+      </p>
+    </section>
+
+    <section id="registry">
+      <div class="head"><span class="n">2</span><h2>The file system is the registry</h2></div>
+      <p>
+        There is no map from a panel's name to its component anywhere. A context view key
+        <code>slide-deck-editor.layers</code> <em>is</em> the file
+        <code>app-views/categories/slide-deck-editor/context/layers.svelte</code>; an inspector key
+        <code>slide-deck-editor.cell</code> is <code>inspector/cell.svelte</code>; a general lens
+        <code>general.comment</code> is <code>app-views/general/comment/comment.svelte</code>. The context
+        surface and the inspector surface each hold one <code>import.meta.glob</code> over those directories
+        and load the file the key names.
+      </p>
+      <p>Three lists say which keys exist and where they appear, and all three are checked at compile time:</p>
+      <ul>
+        <li><code>representation/data/types/workspace/views.ts</code> — the union of every context and inspector key. A key that is not here cannot be inspected: <code>view.inspect</code> throws.</li>
+        <li><code>representation/data/behavior/workspace/views.ts</code> — the same list as a runtime set, which <code>isInspectorView</code> reads.</li>
+        <li><code>representation/data/behavior/workspace/opening.ts</code> — per category, the rail: which context views are offered and in what order, and which one a fresh tab opens on. The deck's rail is Slides · Insert · Layers · Style · Find · Comments · Templates · Variables · Prompts.</li>
+      </ul>
+      <p>
+        The rail's labels and icons are the fourth list,
+        <code>surfaces/context/procedures/rail-entries.ts</code>, typed as a <code>Record</code> over every
+        context view so a key with no label does not compile.
+      </p>
+    </section>
+
+    <section id="surfaces">
+      <div class="head"><span class="n">3</span><h2>The five surfaces, and the one state they all read</h2></div>
+      <p>
+        The frame is a tab strip, a context panel with a rail, the centre, the inspector and a status strip.
+        None of them talks to another. Each reads <code>workspaceState()</code> — one <code>$state</code>
+        object per client — and writes back through its methods. For the deck editor the fields that matter
+        are:
+      </p>
+      <dl class="kv">
+        <dt>active.category / resourceId</dt><dd>Which category the tab is, and which deck.</dd>
+        <dt>active.focus</dt><dd>The slide being looked at. Set by <code>view.open({ focus })</code>; the Slides panel, Previous/Next and Find all set it.</dd>
+        <dt>context</dt><dd>The context view showing on the rail.</dd>
+        <dt>inspected</dt><dd>The lens key the inspector is showing, or <code>"empty"</code>.</dd>
+        <dt>selection</dt><dd><code>{ kind, id, at?, ids? }</code> — what the lens is <em>about</em>. Kinds the deck uses: <code>slide</code>, <code>elements</code> (with <code>ids</code>), <code>cells</code> (id is the table, <code>ids</code> the cells), <code>notes</code>, <code>threads</code>, <code>text-selection</code> and <code>next-letter</code> (<code>id</code> is <code>blockId@offset</code>, <code>at</code> the other end), <code>comment</code>.</dd>
+        <dt>zoom</dt><dd>Per cent of the fitted size; <code>null</code> means fit. 100 is fit.</dd>
+        <dt>frame</dt><dd>The two flank widths and whether each is collapsed.</dd>
+      </dl>
+      <p>
+        <strong>Selection lives in the workspace, not in the editor.</strong> Clicking a shape on the canvas
+        calls <code>view.inspect("slide-deck-editor.shape", { kind: "elements", id, ids: [id] })</code>; the
+        canvas then draws its outline by reading <code>view.selection</code> back, and the Layers panel
+        highlights the same row for the same reason. There is no local selected-ids state anywhere; the one
+        piece of local state the content view keeps is <code>editing</code>, the block whose text currently
+        has a caret, and even that is mirrored into the workspace as a text-selection so the inspector can
+        show the caret's lens.
+      </p>
+    </section>
+
+    <section id="loop">
+      <div class="head"><span class="n">4</span><h2>The loop, in one breath</h2></div>
+      <div class="flow">
+        <div class="step"><b>Gesture</b><span class="m">slide-surface.svelte</span>A pointer or key becomes a typed callback: <code>onframes</code>, <code>onedit</code>, <code>onselectcells</code>…</div>
+        <div class="step"><b>Procedure</b><span class="m">procedures/*.ts</span>A pure function turns the intent into ops against the current body: <code>withElementFrame</code>, <code>replaced</code>, <code>withMergedCells</code>…</div>
+        <div class="step"><b>Runtime</b><span class="m">runtime.apply(ops)</span>The live body advances at once; the ops are buffered and recorded for undo.</div>
+        <div class="step"><b>Flush</b><span class="m">flush.ts</span>After 50 ops or 2 s of quiet, the buffer is coalesced and sent as one change set.</div>
+        <div class="step"><b>Capability</b><span class="m">submitSlideDeckChanges</span>The server gates on scope, applies the same <code>applyOps</code>, stores a change-set row and the new leader body.</div>
+        <div class="step"><b>Body</b><span class="m">runtime.body</span>Reactive. Every panel, lens and thumbnail that read it re-renders.</div>
+      </div>
+      <p>Page <a href="03-editing-loop.html">03</a> walks this with real ops; page <a href="08-runtime.html">08</a> covers the runtime's own rules.</p>
+    </section>
+
+    <section id="layout">
+      <div class="head"><span class="n">5</span><h2>Where the editor's files are, and what each directory is for</h2></div>
+      <pre><code>app-views/categories/slide-deck-editor/
+├── content/deck.svelte          the centre: strip, pasteboard, canvas, context menu, keyboard
+├── context/                     one file per rail entry
+│   ├── slides.svelte  insert.svelte  layers.svelte  theme.svelte (the rail calls it Style)
+│   ├── find.svelte  comments.svelte
+│   └── templates.svelte  variables.svelte  prompts.svelte      placeholders
+├── inspector/                   one file per lens
+│   ├── slide  shape  text-box  line  image  table  cell  group  multi-selection
+│   ├── text-selection  next-letter  speaker-notes  threads  chart (placeholder)
+├── components/                  sections several lenses share; each takes an id and reads the runtime
+│   ├── text-style  element-geometry  element-paint  element-effects  element-order
+│   └── arrange-section  comment-action
+└── procedures/                  pure functions; the only files that see representation types
+    ├── deck.ts        the body's shape: placing, frames, slides, layouts, groups, restacking
+    ├── inserting.ts   the catalogue of things that can be added, and what a fresh one is
+    ├── placing.svelte.ts  the one shared $state: which kind is armed for click-to-place
+    ├── scene.ts       body → scene: what the renderer draws
+    ├── selecting.ts   selection signals: which lens, with which selection
+    ├── typing.ts      keystrokes and marks → text ops
+    ├── tables.ts      grid positions, spans, merge, split, rows and columns
+    ├── arrange.ts     align, distribute, match, restack
+    ├── snapping.ts    snap targets and guides
+    ├── stage.ts       units, ratios, fit, zoom
+    ├── palette.ts     swatches, shadows, font families
+    └── ids.ts         minting ids for slides, elements, blocks, atoms, layouts
+
+components/authored/slide-surface/
+├── slide-surface.svelte         the stage, the overlay, every gesture
+├── slide-surface-item.svelte    one element: shape, text, image, table, line, group
+├── slide-surface-text.svelte    the contenteditable text engine
+└── slide-surface-types.ts       the scene types the renderer accepts (structural; no representation import)</code></pre>
+      <p>
+        The renderer is an authored component rather than part of the editor because the Slides panel and
+        the Style panel draw thumbnails with the same component the centre uses. It takes a
+        <code>SurfaceScene</code> — plain data built by <code>procedures/scene.ts</code> — so it never sees a
+        body or an op.
+      </p>
+    </section>
+
+    <section id="constraints">
+      <div class="head"><span class="n">6</span><h2>Constraints that shaped every file</h2></div>
+      <ul>
+        <li><strong>Views take ids and callbacks.</strong> <code>view-takes-ids-and-callbacks</code> fails any <code>.svelte</code> prop under <code>app-views</code> that is not a primitive, an id or a function. So <code>ElementGeometry</code> takes <code>elementId</code>, not an element; <code>TextStyle</code> takes <code>blockId</code>.</li>
+        <li><strong>A capability is a directory with a shape.</strong> <code>index.remote.ts</code> declares only procedures; every <code>api/&lt;name&gt;/</code> holds <code>&lt;name&gt;.ts</code>; each entry calls <code>requireScope()</code> first and a validator second; nothing under <code>capabilities</code> imports a view or reaches into <code>$representation/store</code>.</li>
+        <li><strong>Authored components are named for their directory</strong> and imported at the library's index; the panel vocabulary lives in <code>components/authored/panel/</code> and a lens never draws its own button.</li>
+        <li><strong>Colour literals are not written in source.</strong> Everything is a <code>--token-*</code> custom property; a user's chosen colour is the one exception and is stored as data.</li>
+        <li><strong>The registry is the tree.</strong> Adding a lens is adding a file and a key; adding a rail entry is adding a key, a label and a line in <code>opening.ts</code>.</li>
+      </ul>
+    </section>
+
+    <footer>Next: <a href="02-model.html">02 · The deck model and the applier</a>.</footer>
+  </main>
+</div>
+</body>
+</html>

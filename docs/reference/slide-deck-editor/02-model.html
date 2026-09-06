@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · The deck model and the applier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html"><b>01</b><span>How the system works</span></a>
+      <a href="02-model.html" class="is-here"><b>02</b><span>The deck model and the applier</span></a>
+      <a href="03-editing-loop.html"><b>03</b><span>From a gesture to the store</span></a>
+      <a href="04-changes.html"><b>04</b><span>What changed, and why</span></a>
+      <a href="05-context-panels.html"><b>05</b><span>The context panels</span></a>
+      <a href="06-inspector.html"><b>06</b><span>The inspector</span></a>
+      <a href="07-content-surface.html"><b>07</b><span>The content surface</span></a>
+      <a href="08-runtime.html"><b>08</b><span>The runtime</span></a>
+      <a href="09-backend.html"><b>09</b><span>The back end</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">02 · representation</p>
+    <h1>The deck model and the applier</h1>
+    <p class="lede">
+      One body type, five op kinds, one pure function that applies them. The body is what the store holds
+      and what the runtime shows; the ops are what crosses the wire; the applier is the same code in the
+      browser and on the server, which is why an edit the browser accepted is one the server will accept
+      too.
+    </p>
+    <div class="meta">
+      <span>Types <b>representation/data/types/slide-decks/body.ts · op.ts · style-set.ts</b></span>
+      <span>Block format <b>representation/data/types/content/block-format.ts</b></span>
+      <span>Applier <b>representation/data/behavior/slide-decks/apply-ops.ts</b></span>
+    </div>
+
+    <section id="body">
+      <div class="head"><span class="n">1</span><h2>The body</h2></div>
+      <pre><code>SlideDeckBody = {
+  aspectRatio: `${number}:${number}`     // "16:9", "4:3", "21:9" — any two whole numbers
+  theme: { background?, colors: { text, accent, muted? }, fontFamily? }
+  styles: { defaultKey, styles: Record&lt;key, TextStyle&gt; }   // the named styles
+  layouts: SlideLayout[]
+  slides: Slide[]
+  sections: DeckSection[]                // read but never edited; the editor ignores them
+}
+
+Slide = { id, layoutKey?, elements: SlideElement[], notes: ContentBlock[], background?, hidden? }
+
+SlideLayout = { id, key, name, locked: SlideElement[], placeholders: SlidePlaceholder[], background? }</code></pre>
+      <p>
+        Frames are fractions of the slide — <code>{ x: 0.08, y: 0.34, width: 0.5, height: 0.4 }</code> — so a
+        deck whose ratio changes keeps every object where it was. The only place pixels exist is the
+        renderer, which multiplies by the stage's units (720 high, width from the ratio) and scales the whole
+        stage with one CSS transform.
+      </p>
+    </section>
+
+    <section id="element">
+      <div class="head"><span class="n">2</span><h2>The element: what it is, and what it has</h2></div>
+      <pre><code>SlideElement = {
+  id, frame, rotation?,
+  overflow?: "clip" | "shrink" | "grow",   // what a text box does when its text does not fit
+  paint?: ElementPaint,                     // how it is drawn — fill, border, opacity, corner, shadow
+  locked?, fromPlaceholder?,
+  content: ElementContent                   // what it is
+}
+
+ElementContent =
+  | { type: "text";  block: TextBlock }                                   // one block; newlines inside it
+  | { type: "shape"; shape: ShapeKind; block?: TextBlock }                // text is optional and centred
+  | { type: "line";  from: Point; to: Point; ends?: { start?, end? } }
+  | { type: "image"; block: ImageBlock }
+  | { type: "table"; block: TableBlock; rowHeights?: number[] }
+  | { type: "chart"; spec }                                               // reserved
+  | { type: "group"; children: SlideElement[] }                          // children in fractions of the group
+
+ElementPaint = {
+  fill?: string                                  // a --token or a hex
+  stroke?: { color, width, dash? }               // the panels call this the border
+  opacity?: number                               // 0–1; absent is 1
+  cornerRadius?: number
+  shadow?: { color, x, y, blur }                 // the panels show it as a direction and an intensity
+}</code></pre>
+      <p>
+        An element <em>says what it is</em> and <em>has</em> one content. The type discriminates everything
+        downstream: which lens opens, what the renderer draws, what the Layers panel calls it. Nothing on a
+        slide carries a name; a shape is “Shape” and a text box is its first line.
+      </p>
+      <p>
+        A <strong>group</strong> holds its children with frames relative to its own, so moving a group is
+        one <code>set</code> on one frame. Grouping is a <code>remove</code> of the members and an
+        <code>insert</code> of the group in one change set; the group lands where the topmost member was.
+        Ungrouping rewrites the children back to slide fractions.
+      </p>
+      <p>
+        A <strong>text box</strong> is one <code>TextBlock</code> and a line break is a <code>\n</code> in its
+        <code>display</code>. Its default <code>overflow</code> is <code>grow</code>: its frame's height
+        follows its text, in both directions.
+      </p>
+    </section>
+
+    <section id="text">
+      <div class="head"><span class="n">3</span><h2>Text: three layers of style</h2></div>
+      <p>Where a run of text gets its look from, innermost winning:</p>
+      <ol>
+        <li><strong>The named style</strong> — <code>body.styles.styles[block.style ?? defaultKey]</code>, a <code>TextStyle</code>: font family, size, weight, colour, line height, space before and after, horizontal and vertical alignment. Shared by every block that wears it; edited in the Style panel.</li>
+        <li><strong>The block's own format</strong> — <code>block.format</code>, a <code>BlockFormat</code>: the same fields as overrides, plus background, border and padding. Edited by the Text section of a lens; it is what makes one shape's text 40px while every other shape stays at 20.</li>
+        <li><strong>Marks</strong> on a range — <code>block.marks</code>: bold, italic, underline, strikethrough, code, and a colour. Edited from a text selection.</li>
+      </ol>
+      <pre><code>BlockFormat = {
+  horizontalAlignment?, verticalAlignment?,
+  fontFamily?, fontSize?, color?, lineHeight?, spaceBefore?, spaceAfter?,   // added on this branch
+  background?, border?: { color, width, style }, padding?, valueFormat?
+}</code></pre>
+      <p>
+        <code>procedures/scene.ts</code> is the one place the three are merged
+        (<code>textSceneOf</code>): it reads the block's field, then the style's, then a default, and hands the
+        renderer a flat <code>TextScene</code>. A shape's text is centred by default in both axes, a text
+        box's is top-left.
+      </p>
+    </section>
+
+    <section id="tables">
+      <div class="head"><span class="n">4</span><h2>Tables: a grid derived from rows</h2></div>
+      <p>
+        A <code>TableBlock</code> is rows of cells; a cell may span. The grid position of every cell is
+        <em>derived</em>, never stored: <code>procedures/tables.ts · gridOf</code> walks the rows, skips the
+        squares already covered by a span, and gives each cell its row, column and spans. Everything else —
+        the renderer's <code>grid-row / grid-column</code>, the rectangle test for merging, which cell a
+        column-insert lands after — reads that grid.
+      </p>
+      <ul>
+        <li><strong>Merge</strong> requires the picked cells to tile a rectangle exactly. The first-picked cell is kept — its blocks and format — and re-inserted at the rectangle's top-left with the rectangle's spans; the others are removed.</li>
+        <li><strong>Split</strong> clears the spans and inserts blank cells into each row the span covered, at the right column.</li>
+        <li><strong>Column widths</strong> are on the block (<code>columnWidths</code>, one number per column, used as <code>fr</code> units); <strong>row heights</strong> are on the element's content (<code>rowHeights</code>), because a document table flows and a slide table does not.</li>
+        <li><strong>Per-cell fill and border</strong> are the cell's <code>format.background</code> and <code>format.border</code>; a cell's text alignment is its text block's format.</li>
+        <li><code>headerRows</code> is still on the block and the renderer still shades those rows; no control edits it any more.</li>
+      </ul>
+    </section>
+
+    <section id="layouts">
+      <div class="head"><span class="n">5</span><h2>Layouts</h2></div>
+      <p>
+        A layout is a locked copy of a slide: <em>Save slide as layout</em> in the Style panel copies every
+        element on the slide (fresh ids) into <code>layout.locked</code>, with the slide's background. A slide
+        made from that layout (<em>New ▾</em> in the Slides panel) has <code>layoutKey</code> set and no
+        elements of its own; the renderer draws the layout's locked elements underneath the slide's, marked
+        <code>fixed</code> so they cannot be hovered, selected or moved. The seeded layouts still carry
+        <code>placeholders</code>, which a new slide turns into empty text boxes; nothing edits a layout in
+        place yet.
+      </p>
+    </section>
+
+    <section id="ops">
+      <div class="head"><span class="n">6</span><h2>The five ops</h2></div>
+      <pre><code>{ op: "set",    path, value, was, target? }                     // any field; null removes it
+{ op: "insert", path, ids, after, values, target }             // into any identified list
+{ op: "remove", path, ids, after, values, target }
+{ op: "move",   path, id, after, wasAfter, target }
+{ op: "text",   path, at, insert, remove, target: "atom" }      // splice a literal atom; marks shift</code></pre>
+      <p>
+        Every op carries what it undid — <code>was</code>, <code>values</code>, <code>wasAfter</code>,
+        <code>remove</code> — so every op inverts, which is what the runtime's history needs and why an
+        <code>insert</code> names its <code>ids</code>.
+      </p>
+      <h3>Paths</h3>
+      <p>
+        A path is segments joined by <code>/</code>. The first segment is either one of the body's root
+        fields (<code>aspectRatio theme styles slides sections layouts</code>) or <strong>any id found
+        anywhere in the deck</strong> — a slide, an element, a block, a cell, a row, a mark, a layout. The
+        applier finds the node by id and walks the rest of the path from there:
+      </p>
+      <pre><code>el-3/frame                      set the frame of element el-3, wherever it is (even inside a group)
+el-3/paint/stroke/color         set deep; missing intermediate objects are created
+blk-9/format/fontSize           a block's own font size
+styles/styles/body/color        the named style
+slide-2/elements                the list an insert / remove / move of an element acts on
+el-g1/content/children          the list inside a group
+blk-t/rows · row-1/cells        table rows, and one row's cells
+blk-9/marks · blk-9/atoms       a block's marks, and the atoms a text op splices</code></pre>
+      <h3>What the applier refuses</h3>
+      <ul>
+        <li>A <code>set</code> onto a list of identified things — <code>slide-2/elements</code>, <code>blk-t/rows</code> — because that list is what <code>insert</code>, <code>remove</code> and <code>move</code> own. A list of plain numbers such as <code>columnWidths</code> is fine to <code>set</code>.</li>
+        <li>A <code>set</code> that would walk through a primitive.</li>
+        <li>An <code>insert</code> or <code>move</code> whose <code>after</code> is not in the list, and a <code>remove</code> of an id that is not there.</li>
+        <li>A <code>text</code> op whose <code>remove</code> does not match what is at <code>at</code>.</li>
+      </ul>
+      <p>
+        A refusal throws inside <code>applyOps</code>. In the browser that means the gesture fails where it
+        was made and nothing reaches the buffer; on the server it means the change set is answered
+        <code>unresolved</code> and the runtime re-reads the leader body.
+      </p>
+    </section>
+
+    <section id="ids">
+      <div class="head"><span class="n">7</span><h2>Ids</h2></div>
+      <p>
+        The client mints ids — <code>procedures/ids.ts · mint("slide" | "element" | "block" | "atom" | "layout")</code>
+        — because a new slide has to be selected the moment it is asked for, before any round trip. The
+        suffix is random rather than sequential because two clients editing one deck mint against the same
+        base revision. The id space is flat: a slide, an element and a cell are all found by
+        <code>nodeIn(body, id)</code>.
+      </p>
+    </section>
+
+    <section id="seed">
+      <div class="head"><span class="n">8</span><h2>The seed</h2></div>
+      <p>
+        <code>app/seed/slideDeckSnapshots.json</code> holds two decks. <em>Board review — Q1 exposure</em>
+        has four slides that between them exercise every element kind — text boxes, shapes with and without
+        text, a line with an arrowhead, a three-by-three table, speaker notes on slide 2 — three layouts and
+        three named styles. Every text box on it says <code>overflow: "grow"</code>.
+        <code>commentThreads.json</code> anchors one thread to the pink shape on slide 2
+        (<code>within: { kind: "element", elementId: "el-5" }</code>) so the badge, the threads lens and the
+        comment lens have something to show on a fresh seed.
+      </p>
+    </section>
+
+    <footer>Next: <a href="03-editing-loop.html">03 · From a gesture to the store</a>.</footer>
+  </main>
+</div>
+</body>
+</html>

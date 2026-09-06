@@ -1,24 +1,56 @@
-import type { BlockFormat } from "$representation/data/types/content/block-format";
-import type { ContentBlock } from "$representation/data/types/content/content-block";
+import type {
+  ContentBlock,
+  ImageBlock,
+  TableBlock,
+  TextBlock
+} from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { StyleSet } from "$representation/data/types/slide-decks/style-set";
 
-export type AspectRatio = "16:9" | "4:3";
+export type AspectRatio = `${number}:${number}`;
 
 export type Frame = { x: number; y: number; width: number; height: number };
+
+export type Point = { x: number; y: number };
 
 export type SlideBackground =
   | { kind: "color"; color: string }
   | { kind: "image"; fileId: Id<"externalFiles">; fit: "cover" | "contain" };
 
+export type ShapeKind = "rectangle" | "ellipse" | "triangle" | "diamond" | "arrow" | "callout";
+
+export type LineEnd = "none" | "arrow" | "dot";
+
+export type Dash = "solid" | "dashed" | "dotted";
+
+export type ElementPaint = {
+  fill?: string;
+  stroke?: { color: string; width: number; dash?: Dash };
+  opacity?: number;
+  cornerRadius?: number;
+  shadow?: { color: string; x: number; y: number; blur: number };
+};
+
+export type ElementContent =
+  | { type: "text"; block: TextBlock }
+  | { type: "shape"; shape: ShapeKind; block?: TextBlock }
+  | { type: "line"; from: Point; to: Point; ends?: { start?: LineEnd; end?: LineEnd } }
+  | { type: "image"; block: ImageBlock }
+  | { type: "table"; block: TableBlock; rowHeights?: number[] }
+  | { type: "chart"; spec: Record<string, unknown> }
+  | { type: "group"; children: SlideElement[] };
+
+export type ElementType = ElementContent["type"];
+
 export type SlideElement = {
   id: string;
   frame: Frame;
   rotation?: number;
-  blocks: ContentBlock[];
-  overflow: "clip" | "shrink" | "grow";
+  overflow?: "clip" | "shrink" | "grow";
+  paint?: ElementPaint;
+  locked?: boolean;
   fromPlaceholder?: string;
-  format?: BlockFormat;
+  content: ElementContent;
 };
 
 export type Slide = {
@@ -38,6 +70,7 @@ export type SlidePlaceholder = {
 };
 
 export type SlideLayout = {
+  id: string;
   key: string;
   name: string;
   locked: SlideElement[];

@@ -1,7 +1,7 @@
-type DeckTarget = "slide" | "element" | "section" | "block" | "atom" | "mark";
+type DeckTarget = "slide" | "element" | "section" | "layout" | "block" | "atom" | "mark";
 
 export type SlideDeckOp =
-  | { op: "set"; target: DeckTarget; path: string; value: unknown; was: unknown }
+  | { op: "set"; target?: DeckTarget; path: string; value: unknown; was: unknown }
   | {
       op: "insert";
       target: DeckTarget;
@@ -20,7 +20,7 @@ export type SlideDeckOp =
     }
   | {
       op: "move";
-      target: "slide" | "element" | "section" | "block";
+      target: "slide" | "element" | "section" | "layout" | "block";
       path: string;
       id: string;
       after: string | null;

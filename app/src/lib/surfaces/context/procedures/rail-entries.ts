@@ -27,14 +27,12 @@ import Palette from "@lucide/svelte/icons/palette";
 import Play from "@lucide/svelte/icons/play";
 import Plus from "@lucide/svelte/icons/plus";
 import Presentation from "@lucide/svelte/icons/presentation";
-import Proportions from "@lucide/svelte/icons/proportions";
 import Printer from "@lucide/svelte/icons/printer";
 import ScrollText from "@lucide/svelte/icons/scroll-text";
 import Search from "@lucide/svelte/icons/search";
 import Sparkles from "@lucide/svelte/icons/sparkles";
 import SquareFunction from "@lucide/svelte/icons/square-function";
 import SquarePlus from "@lucide/svelte/icons/square-plus";
-import StickyNote from "@lucide/svelte/icons/sticky-note";
 import Tag from "@lucide/svelte/icons/tag";
 import Target from "@lucide/svelte/icons/target";
 import Type from "@lucide/svelte/icons/type";
@@ -78,7 +76,7 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "agents.overview": { label: "Overview", icon: Info },
   "analysis.overview": { label: "Overview", icon: Info },
   "context-editor.overview": { label: "Overview", icon: Info },
-  "slide-deck-editor.overview": { label: "Overview", icon: Info },
+  "slide-deck-editor.prompts": { label: "Prompts", icon: Sparkles },
   "document-editor.overview": { label: "Overview", icon: Info },
   "project-overview.overview": { label: "Overview", icon: Info },
   "research.overview": { label: "Overview", icon: Info },
@@ -110,7 +108,6 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "slide-deck-editor.comments": { label: "Comments", icon: MessageSquare },
   "document-editor.comments": { label: "Comments", icon: MessageSquare },
   "spreadsheet-editor.comments": { label: "Comments", icon: MessageSquare },
-  "slide-deck-editor.context": { label: "Context", icon: Target },
   "document-editor.context": { label: "Context", icon: Target },
   "spreadsheet-editor.context": { label: "Context", icon: Target },
   "spreadsheet-editor.dependencies": { label: "Dependencies", icon: Network },
@@ -121,23 +118,18 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "document-editor.insert": { label: "Insert", icon: SquarePlus },
   "spreadsheet-editor.insert": { label: "Insert", icon: SquarePlus },
   "slide-deck-editor.layers": { label: "Layers", icon: Layers },
-  "slide-deck-editor.layout-layouts": { label: "Layouts", icon: LayoutTemplate },
-  "slide-deck-editor.layout-objects": { label: "Objects", icon: Group },
-  "slide-deck-editor.layout-theme": { label: "Theme", icon: Palette },
-  "slide-deck-editor.layouts": { label: "Layouts", icon: LayoutTemplate },
   "spreadsheet-editor.named-ranges": { label: "Named ranges", icon: Tag },
   "document-editor.navigator": { label: "Sections", icon: LayoutPanelTop },
-  "slide-deck-editor.notes": { label: "Notes", icon: StickyNote },
   "spreadsheet-editor.objects": { label: "Objects", icon: Group },
   "document-editor.layout": { label: "Layout", icon: FileText },
   "document-editor.prompts": { label: "Prompts", icon: Sparkles },
   "document-editor.templates": { label: "Templates", icon: LayoutTemplate },
   "spreadsheet-editor.print": { label: "Print", icon: Printer },
   "slide-deck-editor.slides": { label: "Slides", icon: Presentation },
-  "slide-deck-editor.stage": { label: "Stage", icon: Proportions },
+  "slide-deck-editor.templates": { label: "Templates", icon: LayoutPanelTop },
   "document-editor.styles": { label: "Styles", icon: Type },
   "spreadsheet-editor.styles": { label: "Styles", icon: Type },
-  "slide-deck-editor.theme": { label: "Theme", icon: Palette },
+  "slide-deck-editor.theme": { label: "Style", icon: Palette },
 
   "context-editor.add": { label: "Add to this Context", icon: Plus },
   "context-editor.contents": { label: "Contents", icon: List },

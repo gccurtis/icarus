@@ -26,9 +26,11 @@
     textOf,
     threadOf,
     userIdOf,
-    viewerId
+    viewerId,
+    type CommentThread
   } from "$app-views/general/comment/threads";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
+  import type { SlideElement } from "$representation/data/types/slide-decks/body";
 
   const view = workspaceState();
 
@@ -98,15 +100,58 @@
       await refreshAll(threadsQuery);
     });
 
+  const elementIn = (elements: readonly SlideElement[], id: string): boolean =>
+    elements.some(
+      (element) =>
+        element.id === id ||
+        (element.content.type === "group" && elementIn(element.content.children, id))
+    );
+
+  const deckAnchorOf = (
+    held: CommentThread
+  ): { slideId?: string; elementId?: string } => {
+    if (held.target.kind !== "slides") return {};
+
+    const within = held.within;
+    if (within?.kind === "slide") return { slideId: within.slideId };
+    if (within?.kind !== "element") return {};
+
+    const slide = view
+      .slideDeckRuntime(held.target.id)
+      .body?.slides.find((candidate) => elementIn(candidate.elements, within.elementId));
+    return { ...(slide === undefined ? {} : { slideId: slide.id }), elementId: within.elementId };
+  };
+
+  const canLocate = $derived(
+    thread !== undefined &&
+      (blockIdOf(thread) !== undefined ||
+        (thread.target.kind === "slides" &&
+          (thread.within?.kind === "slide" || thread.within?.kind === "element")))
+  );
+
   const locate = () => {
     const held = thread;
-    if (held === undefined || held.target.kind !== "document") return;
+    if (held === undefined) return;
 
-    const blockId = blockIdOf(held);
-    if (blockId === undefined) return;
+    if (held.target.kind === "document") {
+      const blockId = blockIdOf(held);
+      if (blockId === undefined) return;
 
-    if (!inDocument) view.open({ category: "document-editor", resourceId: held.target.id });
-    view.documentRuntime(held.target.id).scrollTo = blockId;
+      if (!inDocument) view.open({ category: "document-editor", resourceId: held.target.id });
+      view.documentRuntime(held.target.id).scrollTo = blockId;
+      return;
+    }
+
+    if (held.target.kind !== "slides") return;
+    const anchor = deckAnchorOf(held);
+    view.open({
+      category: "slide-deck-editor",
+      resourceId: held.target.id,
+      ...(anchor.slideId === undefined ? {} : { focus: anchor.slideId })
+    });
+
+    const id = anchor.elementId ?? anchor.slideId;
+    if (id !== undefined) view.inspect("slide-deck-editor.threads", { kind: "threads", id });
   };
 
   const navigate = (key: string) => {
@@ -120,10 +165,14 @@
 
 <Panel title="Comment">
   {#snippet crumbs()}
-    <PanelCrumbs
-      trail={[{ label: "Document", key: "document-editor.document" }, { label: "Comment" }]}
-      onnavigate={navigate}
-    />
+    {#if thread?.target.kind === "slides"}
+      <PanelCrumbs trail={[{ label: "Deck" }, { label: "Comment" }]} onnavigate={navigate} />
+    {:else}
+      <PanelCrumbs
+        trail={[{ label: "Document", key: "document-editor.document" }, { label: "Comment" }]}
+        onnavigate={navigate}
+      />
+    {/if}
   {/snippet}
 
   {#snippet actions()}
@@ -133,8 +182,13 @@
     {:else}
       <PanelButton label="Reopen" icon={RotateCcw} disabled={busy} onclick={() => void reopen()} />
     {/if}
-    {#if thread !== undefined && blockIdOf(thread) !== undefined}
-      <PanelButton label="Show in document" icon={Locate} tone="ghost" onclick={locate} />
+    {#if canLocate}
+      <PanelButton
+        label={thread?.target.kind === "slides" ? "Show in deck" : "Show in document"}
+        icon={Locate}
+        tone="ghost"
+        onclick={locate}
+      />
     {/if}
   {/snippet}
 

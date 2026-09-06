@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slide Deck Editor — Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html" class="is-here"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html"><b>01</b><span>How the system works</span></a>
+      <a href="02-model.html"><b>02</b><span>The deck model and the applier</span></a>
+      <a href="03-editing-loop.html"><b>03</b><span>From a gesture to the store</span></a>
+      <a href="04-changes.html"><b>04</b><span>What changed, and why</span></a>
+      <a href="05-context-panels.html"><b>05</b><span>The context panels</span></a>
+      <a href="06-inspector.html"><b>06</b><span>The inspector</span></a>
+      <a href="07-content-surface.html"><b>07</b><span>The content surface</span></a>
+      <a href="08-runtime.html"><b>08</b><span>The runtime</span></a>
+      <a href="09-backend.html"><b>09</b><span>The back end</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">Icarus · slide-deck-editor · work/slide-deck-editor</p>
+    <h1>Slide Deck Editor — Reference</h1>
+    <p class="lede">
+      Everything the deck editor is now, and everything this worktree changed to get there, written so the
+      work can be audited file by file. Three pages say how the system works, one says what changed and why
+      with every diff behind a dropdown, and five go through the parts one at a time.
+    </p>
+    <div class="meta">
+      <span>Worktree <b>.claude/worktrees/slide-deck-editor</b></span>
+      <span>Branch <b>work/slide-deck-editor</b> at <b>ad1900f</b></span>
+      <span>Nothing committed; every change is in the working tree</span>
+      <span>Runs at <b>localhost:3001</b></span>
+    </div>
+
+    <section>
+      <div class="head"><span class="n">00</span><h2>How to read this</h2></div>
+      <p>
+        Pages 01–03 describe the editor as it runs today, without reference to what it used to be. Page 04
+        is the audit: ten systematic changes, each explained, each broken into the changes that make it up,
+        each of those with the diff of every file it touched. Pages 05–09 take one part each — the context
+        panels, the inspector, the content surface, the runtime, the back end — and say how that part works
+        end to end and which of the changes on 04 made it so.
+      </p>
+      <p>
+        The diffs are generated, not written. <code>build-diffs.mjs</code> beside this page runs
+        <code>git status</code> and <code>git diff HEAD</code> in the worktree and fills every dropdown; run
+        it again after any change and the pages are current. The prose is checked against the code and the
+        running app, not against older documents — the design record under <code>docs/archive</code>
+        describes intents that this branch has since made concrete or overturned.
+      </p>
+      <div class="note">
+        <h4>What "against main" means here</h4>
+        <p>
+          The branch was cut at <code>ad1900f</code>. Main has since taken three commits — the resource
+          alignment, the docs move to <code>docs/archive</code>, and the served wiki — none of which touch
+          the slide deck editor. So the differential that matters is the working tree against the branch
+          point, which is what every diff on these pages is. Merging onto main is a separate step, and
+          nothing here runs git on main.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <div class="head"><span class="n">→</span><h2>The pages</h2></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Page</th><th>Answers</th></tr></thead>
+          <tbody>
+            <tr><td><a href="01-system.html">01 · How the system works</a></td><td>The three tiers, the surfaces, the rule that the file system is the registry, what a selection is, and the constraints the lint enforces.</td></tr>
+            <tr><td><a href="02-model.html">02 · The deck model and the applier</a></td><td>What a deck body is — element, content, paint, block format, layout, table — the five ops, how a path is resolved, and what the applier refuses.</td></tr>
+            <tr><td><a href="03-editing-loop.html">03 · From a gesture to the store</a></td><td>The whole loop: pointer or key → surface event → procedure → ops → runtime → change set → capability → store → body, and how the inspector and the panels see it.</td></tr>
+            <tr><td><a href="04-changes.html">04 · What changed, and why</a></td><td>Ten systematic changes with their constituent changes and every file's diff; created and deleted files; what was tried and reversed.</td></tr>
+            <tr><td><a href="05-context-panels.html">05 · The context panels</a></td><td>Each panel on the rail: what it shows, what it writes, how it is wired.</td></tr>
+            <tr><td><a href="06-inspector.html">06 · The inspector</a></td><td>Each lens, the shared sections they are composed from, and the text-style model — named style, block, range.</td></tr>
+            <tr><td><a href="07-content-surface.html">07 · The content surface</a></td><td>The renderer, the gestures, the keyboard, placing, zoom, badges, and the text engine.</td></tr>
+            <tr><td><a href="08-runtime.html">08 · The runtime</a></td><td>What the client runtime does, the one change made to it, how the workspace state carries selection and lenses, and the query-lifetime rule.</td></tr>
+            <tr><td><a href="09-backend.html">09 · The back end</a></td><td>The capabilities used and the one added, the store semantics relied on, the seeds, and the lint rules everything had to satisfy.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="head"><span class="n">→</span><h2>Running it</h2></div>
+      <pre><code>cd .claude/worktrees/slide-deck-editor/app
+nix develop ../../../infra/devshell --command pnpm seed -- --force   # the seed changed: text boxes grow
+rm -f data/workspaceRevisions.json data/workspaceSnapshots.json      # forget the last session's tabs
+nix develop ../../../infra/devshell --command pnpm dev -- --port 3001</code></pre>
+      <p>
+        Open the project, double-click <em>Board review — Q1 exposure</em>. Checks, from <code>app/</code>:
+        <code>pnpm vitest run</code> (635 tests), <code>pnpm exec svelte-check</code> (clean for every file
+        on these pages; the remaining errors are categories whose capabilities are not built and are older
+        than this branch), <code>node scripts/lint.mjs</code> (34 findings, all older than this branch).
+      </p>
+      <p>
+        A new context panel or lens file is a new entry in an <code>import.meta.glob</code>, which the dev
+        server does not always notice — a panel showing “Not built yet” after you add a file means restart
+        <code>pnpm dev</code>.
+      </p>
+    </section>
+
+    <footer>Built 2026-09-05 from the working tree of <code>work/slide-deck-editor</code>.</footer>
+  </main>
+</div>
+</body>
+</html>

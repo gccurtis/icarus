@@ -21,8 +21,8 @@
    * cannot see the addon still gets it.
    *
    * Native ArrowUp/ArrowDown stepping remains available, while visual plus and
-   * minus controls stay out of dense inspector rows. Someone entering 137 types
-   * 137 once rather than navigating around two redundant buttons.
+   * minus controls stay out of dense inspector rows. Shift multiplies a keyboard
+   * step by ten.
    *
    * `simple-components/input-group` underneath, so the field and unit are one
    * bordered object with one focus ring.
@@ -110,6 +110,21 @@
     error = undefined;
     if (next !== value) onchange?.(next);
   };
+
+  const nudge = (direction: 1 | -1, by: number) => {
+    const parsed = draft.trim() === "" ? Number.NaN : Number(draft);
+    const origin = Number.isFinite(parsed) ? parsed : value;
+    const next = clamp(quantize(origin + direction * step * by));
+    draft = String(next);
+    error = undefined;
+    if (next !== value) onchange?.(next);
+  };
+
+  const keydown = (event: KeyboardEvent) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    nudge(event.key === "ArrowUp" ? 1 : -1, event.shiftKey ? 10 : 1);
+  };
 </script>
 
 <div {...trace} class={cn("flex flex-col gap-1", flush ? "px-0" : "px-3")}>
@@ -118,8 +133,8 @@
       No steppers, drawn or native. A pair of buttons on every numeric field is
       chrome on every row of an inspector to serve a gesture almost nobody makes,
       and a disabled decrement at zero dims the whole field so a legitimate value
-      reads as unavailable. Type `number` stays, for the arrow keys and for the
-      numeric keypad on a phone.
+      reads as unavailable. Type `number` stays for the numeric keypad on a phone;
+      keyboard stepping is handled above so Shift can multiply it by ten.
     -->
     <InputGroup.Input
       type="number"
@@ -138,6 +153,7 @@
       onchange={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
         commit(event.currentTarget.value);
       }}
+      onkeydown={keydown}
     />
 
     {#if unit}

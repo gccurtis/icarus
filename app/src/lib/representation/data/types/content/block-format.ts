@@ -5,12 +5,15 @@ export type BorderStyle = "solid" | "dashed" | "dotted";
 export type BlockFormat = {
   horizontalAlignment?: HorizontalAlignment;
   verticalAlignment?: VerticalAlignment;
+  fontFamily?: string;
+  fontSize?: number;
+  color?: string;
+  lineHeight?: number;
+  spaceBefore?: number;
+  spaceAfter?: number;
   background?: string;
   border?: { color: string; width: number; style: BorderStyle };
   padding?: { x?: number; y?: number };
-  spaceBefore?: number;
-  spaceAfter?: number;
-  lineHeight?: number;
   indent?: number;
   valueFormat?: string;
 };

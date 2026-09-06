@@ -1,0 +1,84 @@
+<script lang="ts">
+  import { PanelColor, PanelNumber, PanelSection, PanelSelect } from "$authored-components/panel";
+  import { elementIn, withSet, withSets } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
+
+  let { elementId, fill = true }: { elementId: string; fill?: boolean } = $props();
+
+  const DASHES = [
+    { value: "solid", label: "Solid" },
+    { value: "dashed", label: "Dashed" },
+    { value: "dotted", label: "Dotted" }
+  ];
+
+  const view = workspaceState();
+  const deckId = $derived(view.active.resourceId);
+  let runtime = $state<SlideDeckRuntime | undefined>(undefined);
+  $effect(() => {
+    runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
+  });
+
+  const body = $derived(runtime?.body);
+  const element = $derived(body === undefined ? undefined : elementIn(body, elementId));
+  const paint = $derived(element?.paint);
+
+  const setFill = (value: string) => {
+    if (body === undefined) return;
+    runtime?.apply(withSet(body, `${elementId}/paint/fill`, value === "" ? null : value).ops);
+  };
+
+  const setBorder = (value: string) => {
+    if (body === undefined) return;
+    if (value === "") {
+      runtime?.apply(withSet(body, `${elementId}/paint/stroke`, null).ops);
+      return;
+    }
+    runtime?.apply(
+      withSets(body, [
+        { path: `${elementId}/paint/stroke/color`, value },
+        { path: `${elementId}/paint/stroke/width`, value: paint?.stroke?.width ?? 1 },
+        { path: `${elementId}/paint/stroke/dash`, value: paint?.stroke?.dash ?? "solid" }
+      ]).ops
+    );
+  };
+
+  const setWidth = (width: number) => {
+    if (body === undefined) return;
+    if (width === 0) {
+      runtime?.apply(withSet(body, `${elementId}/paint/stroke`, null).ops);
+      return;
+    }
+    if (paint?.stroke === undefined) {
+      runtime?.apply(
+        withSets(body, [
+          { path: `${elementId}/paint/stroke/color`, value: body.theme.colors.text },
+          { path: `${elementId}/paint/stroke/width`, value: width },
+          { path: `${elementId}/paint/stroke/dash`, value: "solid" }
+        ]).ops
+      );
+      return;
+    }
+    runtime?.apply(withSet(body, `${elementId}/paint/stroke/width`, width).ops);
+  };
+
+  const setDash = (dash: string) => {
+    if (body === undefined || paint?.stroke === undefined) return;
+    runtime?.apply(withSet(body, `${elementId}/paint/stroke/dash`, dash).ops);
+  };
+</script>
+
+<PanelSection title={fill ? "Fill and border" : "Border"}>
+  <div class="grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-x-2 gap-y-2">
+    {#if fill}
+      <span class="text-caption text-ink-muted">Fill</span>
+      <PanelColor picker clearable label="Fill colour" value={paint?.fill ?? ""} flush onchange={setFill} />
+    {/if}
+    <span class="text-caption text-ink-muted">Border</span>
+    <div class="flex min-w-0 items-center gap-1.5">
+      <PanelColor picker clearable label="Border colour" value={paint?.stroke?.color ?? ""} flush onchange={setBorder} />
+      <div class="w-16 shrink-0"><PanelNumber label="Border width" value={paint?.stroke?.width ?? 0} unit="px" min={0} max={40} step={1} flush onchange={setWidth} /></div>
+    </div>
+    <span class="text-caption text-ink-muted">Dash</span>
+    <PanelSelect label="Border dash" value={paint?.stroke?.dash ?? "solid"} options={DASHES} disabled={paint?.stroke === undefined} onchange={setDash} />
+  </div>
+</PanelSection>

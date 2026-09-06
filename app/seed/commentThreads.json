@@ -22,6 +22,8 @@
     "_creationTime": 1787954400000,
     "projectId": "default",
     "target": { "kind": "slides", "id": "slideDecks:1" },
+    "within": { "kind": "element", "elementId": "el-5" },
+    "quote": "Feeder A",
     "createdBy": { "kind": "user", "userId": "users:4" },
     "updatedAt": 1787954400000
   },

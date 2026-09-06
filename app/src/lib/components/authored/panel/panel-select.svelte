@@ -61,11 +61,11 @@
   {disabled}
   onValueChange={(next: string) => onchange?.(next)}
 >
-  <Select.Trigger size="sm" aria-label={label} class="text-body-sm w-full">
+  <Select.Trigger size="sm" aria-label={label} class="text-body-sm w-full min-w-0">
     {#if mixed}
       <span class="text-ink-muted italic">Mixed</span>
     {:else}
-      {chosen?.label ?? placeholder}
+      <span class="min-w-0 truncate">{chosen?.label ?? placeholder}</span>
     {/if}
   </Select.Trigger>
   <Select.Content>

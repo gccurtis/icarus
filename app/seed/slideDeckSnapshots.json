@@ -11,7 +11,10 @@
     "body": {
       "aspectRatio": "16:9",
       "theme": {
-        "background": { "kind": "color", "color": "--token-surface-elevated" },
+        "background": {
+          "kind": "color",
+          "color": "--token-surface-elevated"
+        },
         "colors": {
           "text": "--token-ink-primary",
           "accent": "--token-color-accent-1-fill",
@@ -22,9 +25,23 @@
       "styles": {
         "defaultKey": "body",
         "styles": {
-          "title": { "name": "Title", "fontSize": 44, "bold": true, "color": "--token-ink-primary" },
-          "body": { "name": "Body", "fontSize": 20, "color": "--token-ink-secondary" },
-          "caption": { "name": "Caption", "fontSize": 14, "italic": true, "color": "--token-ink-muted" }
+          "title": {
+            "name": "Title",
+            "fontSize": 44,
+            "bold": true,
+            "color": "--token-ink-primary"
+          },
+          "body": {
+            "name": "Body",
+            "fontSize": 20,
+            "color": "--token-ink-secondary"
+          },
+          "caption": {
+            "name": "Caption",
+            "fontSize": 14,
+            "italic": true,
+            "color": "--token-ink-muted"
+          }
         }
       },
       "layouts": [
@@ -33,12 +50,62 @@
           "name": "Title and body",
           "locked": [],
           "placeholders": [
-            { "role": "title", "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.18 }, "styleKey": "title" },
-            { "role": "body", "frame": { "x": 0.08, "y": 0.34, "width": 0.84, "height": 0.5 }, "styleKey": "body" }
+            {
+              "role": "title",
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.18
+              },
+              "styleKey": "title"
+            },
+            {
+              "role": "body",
+              "frame": {
+                "x": 0.08,
+                "y": 0.34,
+                "width": 0.84,
+                "height": 0.5
+              },
+              "styleKey": "body"
+            }
+          ],
+          "id": "layout-title-and-body"
+        },
+        {
+          "id": "layout-title-only",
+          "key": "title-only",
+          "name": "Title only",
+          "locked": [],
+          "placeholders": [
+            {
+              "role": "title",
+              "frame": {
+                "x": 0.08,
+                "y": 0.38,
+                "width": 0.84,
+                "height": 0.24
+              },
+              "styleKey": "title"
+            }
           ]
+        },
+        {
+          "id": "layout-blank",
+          "key": "blank",
+          "name": "Blank",
+          "locked": [],
+          "placeholders": []
         }
       ],
-      "sections": [{ "id": "sec-1", "name": "Exposure", "firstSlideId": "slide-1" }],
+      "sections": [
+        {
+          "id": "sec-1",
+          "name": "Exposure",
+          "firstSlideId": "slide-1"
+        }
+      ],
       "slides": [
         {
           "id": "slide-1",
@@ -47,26 +114,44 @@
           "elements": [
             {
               "id": "el-1",
-              "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.18 },
-              "overflow": "shrink",
-              "blocks": [
-                {
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.18
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "el-1-b",
                   "type": "text",
                   "variant": "heading",
                   "style": "title",
-                  "atoms": [{ "id": "el-1-a", "kind": "literal", "text": "Q1 exposure" }],
+                  "atoms": [
+                    {
+                      "id": "el-1-a",
+                      "kind": "literal",
+                      "text": "Q1 exposure"
+                    }
+                  ],
                   "display": "Q1 exposure",
                   "marks": []
                 }
-              ]
+              }
             },
             {
               "id": "el-2",
-              "frame": { "x": 0.08, "y": 0.34, "width": 0.5, "height": 0.4 },
-              "overflow": "shrink",
-              "blocks": [
-                {
+              "frame": {
+                "x": 0.08,
+                "y": 0.34,
+                "width": 0.5,
+                "height": 0.4
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "el-2-b",
                   "type": "text",
                   "variant": "paragraph",
@@ -81,16 +166,28 @@
                   "display": "Three substations carry the winter peak. Two of them have no second feed.",
                   "marks": []
                 }
-              ]
+              }
             },
             {
               "id": "el-3",
-              "frame": { "x": 0.64, "y": 0.34, "width": 0.28, "height": 0.4 },
+              "frame": {
+                "x": 0.64,
+                "y": 0.34,
+                "width": 0.28,
+                "height": 0.4
+              },
               "overflow": "clip",
-              "blocks": [],
-              "format": {
-                "background": "--token-color-accent-1-surface",
-                "border": { "color": "--token-color-accent-1-border", "width": 2, "style": "solid" }
+              "paint": {
+                "fill": "--token-color-accent-1-surface",
+                "stroke": {
+                  "color": "--token-color-accent-1-border",
+                  "width": 2,
+                  "dash": "solid"
+                }
+              },
+              "content": {
+                "type": "shape",
+                "shape": "rectangle"
               }
             }
           ]
@@ -98,60 +195,159 @@
         {
           "id": "slide-2",
           "layoutKey": "title-and-body",
-          "notes": [],
+          "notes": [
+            {
+              "id": "el-notes-2",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "el-notes-2-a",
+                  "kind": "literal",
+                  "text": "Open on the three feeders. Say which one is derated before the chart, or the chart gets read as the point.\nPeak is 1,284 MW \u2014 the board saw 1,190 last quarter."
+                }
+              ],
+              "display": "Open on the three feeders. Say which one is derated before the chart, or the chart gets read as the point.\nPeak is 1,284 MW \u2014 the board saw 1,190 last quarter.",
+              "marks": []
+            }
+          ],
           "elements": [
             {
               "id": "el-4",
-              "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.18 },
-              "overflow": "shrink",
-              "blocks": [
-                {
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.18
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "el-4-b",
                   "type": "text",
                   "variant": "heading",
                   "style": "title",
-                  "atoms": [{ "id": "el-4-a", "kind": "literal", "text": "Where the load sits" }],
+                  "atoms": [
+                    {
+                      "id": "el-4-a",
+                      "kind": "literal",
+                      "text": "Where the load sits"
+                    }
+                  ],
                   "display": "Where the load sits",
                   "marks": []
                 }
-              ]
+              }
             },
             {
               "id": "el-5",
-              "frame": { "x": 0.08, "y": 0.38, "width": 0.24, "height": 0.44 },
+              "frame": {
+                "x": 0.08,
+                "y": 0.38,
+                "width": 0.24,
+                "height": 0.44
+              },
               "overflow": "clip",
-              "blocks": [],
-              "format": { "background": "--token-color-accent-1-fill" }
+              "paint": {
+                "fill": "--token-color-accent-1-fill"
+              },
+              "content": {
+                "type": "shape",
+                "shape": "rectangle"
+              }
             },
             {
               "id": "el-6",
-              "frame": { "x": 0.38, "y": 0.5, "width": 0.24, "height": 0.32 },
+              "frame": {
+                "x": 0.38,
+                "y": 0.5,
+                "width": 0.24,
+                "height": 0.32
+              },
               "overflow": "clip",
-              "blocks": [],
-              "format": { "background": "--token-color-accent-2-fill" }
+              "paint": {
+                "fill": "--token-color-accent-2-fill"
+              },
+              "content": {
+                "type": "shape",
+                "shape": "rectangle"
+              }
             },
             {
               "id": "el-7",
-              "frame": { "x": 0.68, "y": 0.58, "width": 0.24, "height": 0.24 },
+              "frame": {
+                "x": 0.68,
+                "y": 0.58,
+                "width": 0.24,
+                "height": 0.24
+              },
               "overflow": "clip",
-              "blocks": [],
-              "format": { "background": "--token-color-inactive-fill" }
+              "paint": {
+                "fill": "--token-color-inactive-fill"
+              },
+              "content": {
+                "type": "shape",
+                "shape": "rectangle"
+              }
             },
             {
               "id": "el-8",
-              "frame": { "x": 0.08, "y": 0.86, "width": 0.84, "height": 0.08 },
-              "overflow": "shrink",
-              "blocks": [
-                {
+              "frame": {
+                "x": 0.08,
+                "y": 0.86,
+                "width": 0.84,
+                "height": 0.08
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "el-8-b",
                   "type": "text",
                   "variant": "paragraph",
                   "style": "caption",
-                  "atoms": [{ "id": "el-8-a", "kind": "literal", "text": "Feeders A, B and C" }],
+                  "atoms": [
+                    {
+                      "id": "el-8-a",
+                      "kind": "literal",
+                      "text": "Feeders A, B and C"
+                    }
+                  ],
                   "display": "Feeders A, B and C",
                   "marks": []
                 }
-              ]
+              }
+            },
+            {
+              "id": "el-line-1",
+              "frame": {
+                "x": 0.3,
+                "y": 0.44,
+                "width": 0.1,
+                "height": 0.1
+              },
+              "paint": {
+                "stroke": {
+                  "color": "--token-ink-secondary",
+                  "width": 3,
+                  "dash": "solid"
+                }
+              },
+              "content": {
+                "type": "line",
+                "from": {
+                  "x": 0.32,
+                  "y": 0.6
+                },
+                "to": {
+                  "x": 0.38,
+                  "y": 0.52
+                },
+                "ends": {
+                  "end": "arrow"
+                }
+              }
             }
           ]
         },
@@ -162,26 +358,44 @@
           "elements": [
             {
               "id": "el-9",
-              "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.18 },
-              "overflow": "shrink",
-              "blocks": [
-                {
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.18
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "el-9-b",
                   "type": "text",
                   "variant": "heading",
                   "style": "title",
-                  "atoms": [{ "id": "el-9-a", "kind": "literal", "text": "What we are asking for" }],
+                  "atoms": [
+                    {
+                      "id": "el-9-a",
+                      "kind": "literal",
+                      "text": "What we are asking for"
+                    }
+                  ],
                   "display": "What we are asking for",
                   "marks": []
                 }
-              ]
+              }
             },
             {
               "id": "el-10",
-              "frame": { "x": 0.08, "y": 0.36, "width": 0.84, "height": 0.3 },
-              "overflow": "shrink",
-              "blocks": [
-                {
+              "frame": {
+                "x": 0.08,
+                "y": 0.36,
+                "width": 0.84,
+                "height": 0.3
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "el-10-b",
                   "type": "text",
                   "variant": "paragraph",
@@ -196,9 +410,330 @@
                   "display": "A second feed at Substation 14 before November, and a standing crew through the peak.",
                   "marks": []
                 }
-              ]
+              }
             }
           ]
+        },
+        {
+          "id": "slide-4",
+          "layoutKey": "title-and-body",
+          "elements": [
+            {
+              "id": "el-11",
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.18
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "el-11-b",
+                  "type": "text",
+                  "variant": "heading",
+                  "style": "title",
+                  "atoms": [
+                    {
+                      "id": "el-11-a",
+                      "kind": "literal",
+                      "text": "Feeders at the peak"
+                    }
+                  ],
+                  "display": "Feeders at the peak",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "el-tbl-1",
+              "frame": {
+                "x": 0.08,
+                "y": 0.34,
+                "width": 0.6,
+                "height": 0.4
+              },
+              "paint": {
+                "stroke": {
+                  "color": "--token-border-strong",
+                  "width": 1,
+                  "dash": "solid"
+                }
+              },
+              "content": {
+                "type": "table",
+                "block": {
+                  "id": "el-tbl-1-b",
+                  "type": "table",
+                  "headerRows": 1,
+                  "rows": [
+                    {
+                      "id": "el-tbl-r0",
+                      "cells": [
+                        {
+                          "id": "el-tbl-r0c0",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r0c0-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r0c0-a",
+                                  "kind": "literal",
+                                  "text": "Feeder"
+                                }
+                              ],
+                              "display": "Feeder",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r0c1",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r0c1-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r0c1-a",
+                                  "kind": "literal",
+                                  "text": "Load"
+                                }
+                              ],
+                              "display": "Load",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r0c2",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r0c2-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r0c2-a",
+                                  "kind": "literal",
+                                  "text": "Second feed"
+                                }
+                              ],
+                              "display": "Second feed",
+                              "marks": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "el-tbl-r1",
+                      "cells": [
+                        {
+                          "id": "el-tbl-r1c0",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r1c0-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r1c0-a",
+                                  "kind": "literal",
+                                  "text": "A"
+                                }
+                              ],
+                              "display": "A",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r1c1",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r1c1-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r1c1-a",
+                                  "kind": "literal",
+                                  "text": "412 MW"
+                                }
+                              ],
+                              "display": "412 MW",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r1c2",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r1c2-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r1c2-a",
+                                  "kind": "literal",
+                                  "text": "No"
+                                }
+                              ],
+                              "display": "No",
+                              "marks": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "el-tbl-r2",
+                      "cells": [
+                        {
+                          "id": "el-tbl-r2c0",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r2c0-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r2c0-a",
+                                  "kind": "literal",
+                                  "text": "B"
+                                }
+                              ],
+                              "display": "B",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r2c1",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r2c1-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r2c1-a",
+                                  "kind": "literal",
+                                  "text": "388 MW"
+                                }
+                              ],
+                              "display": "388 MW",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r2c2",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r2c2-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r2c2-a",
+                                  "kind": "literal",
+                                  "text": "Yes"
+                                }
+                              ],
+                              "display": "Yes",
+                              "marks": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "el-tbl-r3",
+                      "cells": [
+                        {
+                          "id": "el-tbl-r3c0",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r3c0-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r3c0-a",
+                                  "kind": "literal",
+                                  "text": "C"
+                                }
+                              ],
+                              "display": "C",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r3c1",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r3c1-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r3c1-a",
+                                  "kind": "literal",
+                                  "text": "484 MW"
+                                }
+                              ],
+                              "display": "484 MW",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r3c2",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r3c2-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r3c2-a",
+                                  "kind": "literal",
+                                  "text": "No"
+                                }
+                              ],
+                              "display": "No",
+                              "marks": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "notes": []
         }
       ]
     }
@@ -215,7 +750,10 @@
     "body": {
       "aspectRatio": "16:9",
       "theme": {
-        "background": { "kind": "color", "color": "--token-surface-elevated" },
+        "background": {
+          "kind": "color",
+          "color": "--token-surface-elevated"
+        },
         "colors": {
           "text": "--token-ink-primary",
           "accent": "--token-color-accent-2-fill",
@@ -226,8 +764,17 @@
       "styles": {
         "defaultKey": "body",
         "styles": {
-          "title": { "name": "Title", "fontSize": 40, "bold": true, "color": "--token-ink-primary" },
-          "body": { "name": "Body", "fontSize": 20, "color": "--token-ink-secondary" }
+          "title": {
+            "name": "Title",
+            "fontSize": 40,
+            "bold": true,
+            "color": "--token-ink-primary"
+          },
+          "body": {
+            "name": "Body",
+            "fontSize": 20,
+            "color": "--token-ink-secondary"
+          }
         }
       },
       "layouts": [
@@ -236,8 +783,18 @@
           "name": "Title only",
           "locked": [],
           "placeholders": [
-            { "role": "title", "frame": { "x": 0.08, "y": 0.12, "width": 0.84, "height": 0.2 }, "styleKey": "title" }
-          ]
+            {
+              "role": "title",
+              "frame": {
+                "x": 0.08,
+                "y": 0.12,
+                "width": 0.84,
+                "height": 0.2
+              },
+              "styleKey": "title"
+            }
+          ],
+          "id": "layout-title-only"
         }
       ],
       "sections": [],
@@ -249,26 +806,48 @@
           "elements": [
             {
               "id": "el-1",
-              "frame": { "x": 0.08, "y": 0.12, "width": 0.84, "height": 0.2 },
-              "overflow": "shrink",
-              "blocks": [
-                {
+              "frame": {
+                "x": 0.08,
+                "y": 0.12,
+                "width": 0.84,
+                "height": 0.2
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "el-1-b",
                   "type": "text",
                   "variant": "heading",
                   "style": "title",
-                  "atoms": [{ "id": "el-1-a", "kind": "literal", "text": "Field team briefing" }],
+                  "atoms": [
+                    {
+                      "id": "el-1-a",
+                      "kind": "literal",
+                      "text": "Field team briefing"
+                    }
+                  ],
                   "display": "Field team briefing",
                   "marks": []
                 }
-              ]
+              }
             },
             {
               "id": "el-2",
-              "frame": { "x": 0.08, "y": 0.42, "width": 0.4, "height": 0.36 },
+              "frame": {
+                "x": 0.08,
+                "y": 0.42,
+                "width": 0.4,
+                "height": 0.36
+              },
               "overflow": "clip",
-              "blocks": [],
-              "format": { "background": "--token-color-accent-2-surface" }
+              "paint": {
+                "fill": "--token-color-accent-2-surface"
+              },
+              "content": {
+                "type": "shape",
+                "shape": "rectangle"
+              }
             }
           ]
         }

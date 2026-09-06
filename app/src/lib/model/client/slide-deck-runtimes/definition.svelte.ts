@@ -58,7 +58,7 @@ export class Runtime implements SlideDeckRuntime {
   apply(ops: readonly SlideDeckOp[]): void {
     if (ops.length === 0) return;
 
-    apply(this, ops);
+    apply(this, JSON.parse(JSON.stringify(ops)) as SlideDeckOp[]);
     this.schedule();
   }
 

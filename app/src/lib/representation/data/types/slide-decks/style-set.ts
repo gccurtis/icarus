@@ -1,4 +1,4 @@
-import type { HorizontalAlignment } from "$representation/data/types/content/block-format";
+import type { HorizontalAlignment, VerticalAlignment } from "$representation/data/types/content/block-format";
 
 export type TextStyle = {
   name: string;
@@ -14,6 +14,7 @@ export type TextStyle = {
   spaceBefore?: number;
   spaceAfter?: number;
   horizontalAlignment?: HorizontalAlignment;
+  verticalAlignment?: VerticalAlignment;
   indent?: number;
 };
 

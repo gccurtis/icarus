@@ -120,7 +120,7 @@ map behaving correctly: a transcribed map cannot invent a home for a panel the
 specification gives none to, and quietly hanging an orphan off the nearest rail
 would turn a question for the specification into a wrong answer nobody could see.
 
-They fall into four groups, and only the last two are unresolved:
+They fall into three groups, and only the last is unresolved:
 
 **Views of a category the shell has not got.** `overview.context` and the five
 `scope.*` views are a Context category's rail, and there is no Context category.
@@ -137,18 +137,6 @@ the specification is where that is decided.
 
 **`project.variables-create`**, a push-in reached from inside the Variables panel
 rather than from the rail. That is probably correct as it stands.
-
-**`slide-deck-editor.layout-layouts`, `slide-deck-editor.layout-objects` and
-`slide-deck-editor.layout-theme`** are the deck's **layout rail**, and they are
-in the vocabulary with no row of their own. The deck has one centre and editing a
-layout is a state of it rather than a second centre, so there was never a key to
-hang a second rail on.
-
-The shape of `RAILS` is what settled this. It is keyed on the category alone, so
-there is one rail for the deck and these three are not on it. Reaching them is
-`selectContext`'s to answer, which it cannot do while the rail is also what
-`offersContext` tests against — so today they are named and unreachable, and this
-is where that is written down rather than discovered from a blank panel.
 
 ## `apply.ts` — one op, one effect
 

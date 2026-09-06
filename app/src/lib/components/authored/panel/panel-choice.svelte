@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, type Component } from "svelte";
   import * as ToggleGroup from "$vendored-components/toggle-group";
   import { cn } from "$vendored-components/utils";
   import { traceNode } from "$development-components/trace.svelte";
+
+  type Glyph = Component<{ size?: number | string; "aria-hidden"?: boolean | "true" | "false" }>;
 
   /**
    * A small set of alternatives with exactly one on.
@@ -50,7 +52,7 @@
      */
     label: string;
     value: string;
-    options: readonly { value: string; label: string; short?: string }[];
+    options: readonly { value: string; label: string; short?: string; icon?: Glyph }[];
     /**
      * Several things are selected and they do not agree.
      *
@@ -107,17 +109,24 @@
   style={fill ? "container-type: inline-size; width: 100%" : "container-type: inline-size"}
 >
   {#each options as option (option.value)}
+    {@const Icon = option.icon}
     <ToggleGroup.Item
       value={option.value}
+      title={Icon ? option.label : undefined}
       aria-label={option.label}
       class={cn(
         "text-body-sm border-border-subtle bg-surface-panel text-ink-secondary rounded-control data-[state=on]:border-active-border data-[state=on]:bg-active-surface data-[state=on]:text-active-text h-7 min-w-0 justify-center truncate border px-2 font-normal",
-        fill && "flex-1 basis-0"
+        fill && "flex-1 basis-0",
+        Icon && "px-1"
       )}
       style={fill ? "flex: 1 1 0%; width: 0; min-width: 0" : undefined}
     >
-      <span class="choice-short">{option.short ?? option.label.slice(0, 1)}</span>
-      <span class="choice-full">{option.label}</span>
+      {#if Icon}
+        <Icon size={14} aria-hidden="true" />
+      {:else}
+        <span class="choice-short">{option.short ?? option.label.slice(0, 1)}</span>
+        <span class="choice-full">{option.label}</span>
+      {/if}
     </ToggleGroup.Item>
   {/each}
 </ToggleGroup.Root>
