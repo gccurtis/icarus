@@ -42,13 +42,17 @@
 </script>
 
 <!--
-  The label carries its own text as a title. A five-rem column truncates
-  "Display name" and "Project work", and a truncated label with no way to
-  recover it is a field whose meaning is gone.
+  The label carries its own text as a title, because a truncated label with no
+  way to recover it is a field whose meaning is gone.
+
+  It is the same size as its value and differs only in colour. A label is the
+  question the value answers, and a reader scans labels to find the row they
+  want — a label set smaller AND fainter is two distinctions where one does the
+  work, and it is how a dense panel ends up unreadable.
 -->
 <dt {...trace}
   title={stacked ? undefined : label}
-  class={cn("text-caption text-ink-muted truncate", stacked && "col-span-2")}
+  class={cn("text-body-sm text-ink-secondary truncate", stacked && "col-span-2")}
 >
   {label}
 </dt>

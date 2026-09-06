@@ -1,45 +1,51 @@
-/**
- * The styling process, in execution order. Application code imports this file
- * once and consumes only the canonical `--token-*` API or integration classes.
- */
-
-/* Build engines and local assets; these define no design meaning. */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@fontsource/ibm-plex-sans/400.css";
 @import "@fontsource/ibm-plex-sans/500.css";
 @import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-serif/400.css";
+@import "@fontsource/ibm-plex-serif/400-italic.css";
 @import "@fontsource/ibm-plex-mono/400.css";
 @import "@fontsource/ibm-plex-mono/500.css";
 
-/* 1. Chromatic material: default, alternates, then shared slot resolution. */
-@import "./chromatic-themes/celestial/celestial.css";
-@import "./chromatic-themes/cyberpunk/cyberpunk.css";
-@import "./chromatic-themes/slots.css";
+@import "./material/ramps.css";
+@import "./material/helios/helios.css";
+@import "./material/selene/selene.css";
+@import "./material/slots.css";
 
-/* 2. Framework-independent public tokens. */
-@import "./semantic-tokens/color.css";
-@import "./semantic-tokens/typography.css";
-@import "./semantic-tokens/spacing.css";
-@import "./semantic-tokens/shape.css";
-@import "./semantic-tokens/motion.css";
+@import "./tokens/color.css";
+@import "./tokens/typography.css";
+@import "./tokens/space.css";
+@import "./tokens/shape.css";
+@import "./tokens/motion.css";
 
-/* x. External vocabulary adapters. */
-@import "./x-integrations/tailwind/tailwind.css";
-@import "./x-integrations/shadcn/variants.css";
-@import "./x-integrations/shadcn/bridge.css";
+@import "./surfaces/surfaces.css";
+
+@import "./integrations/tailwind/tailwind.css";
+@import "./integrations/shadcn/variants.css";
+@import "./integrations/shadcn/bridge.css";
 
 @layer base {
   html {
     font-family: var(--token-font-sans);
     font-size: var(--token-text-body);
     line-height: var(--token-text-body-leading);
+    letter-spacing: var(--token-tracking-body);
   }
 
   body {
     min-height: 100vh;
     background-color: var(--token-surface-canvas);
+    background-image: var(--token-atmosphere);
+    background-attachment: fixed;
     color: var(--token-ink-primary);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: var(--token-tracking-heading);
   }
 
   ::selection {
@@ -47,8 +53,8 @@
   }
 
   :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-    outline: 2px solid var(--token-color-interactive-border);
-    outline-offset: 2px;
+    outline: var(--token-focus-width) solid var(--token-color-interactive-border);
+    outline-offset: var(--token-focus-offset);
   }
 
   @media (prefers-reduced-motion: reduce) {

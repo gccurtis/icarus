@@ -12,11 +12,11 @@ import {
 
 import type { RequestHandler } from "./$types";
 
-const THEMES = ["celestial", "cyberpunk"];
+const APPEARANCES = ["helios", "selene"];
 
-const themeIn = (url: URL): string => {
-  const asked = url.searchParams.get("theme") ?? "celestial";
-  return THEMES.includes(asked) ? asked : "celestial";
+const appearanceIn = (url: URL): string => {
+  const asked = url.searchParams.get("appearance") ?? "helios";
+  return APPEARANCES.includes(asked) ? asked : "helios";
 };
 
 const EMPTY =
@@ -25,11 +25,11 @@ const EMPTY =
 export const GET: RequestHandler = async ({ url }) => {
   if (!dev) return new Response("not found", { status: 404 });
 
-  const theme = themeIn(url);
+  const appearance = appearanceIn(url);
   const held = await readMock();
-  const html = held ?? mockDocument(await stylesText(), theme, EMPTY);
+  const html = held ?? mockDocument(await stylesText(), appearance, EMPTY);
 
-  return new Response(html.replace(/data-theme="[a-z]+"/, `data-theme="${theme}"`), {
+  return new Response(html.replace(/data-appearance="[a-z]+"/, `data-appearance="${appearance}"`), {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }
   });
 };
@@ -37,7 +37,7 @@ export const GET: RequestHandler = async ({ url }) => {
 export const DELETE: RequestHandler = async ({ url }) => {
   if (!dev) return new Response("not found", { status: 404 });
 
-  await writeMock(mockDocument(await stylesText(), themeIn(url), EMPTY));
+  await writeMock(mockDocument(await stylesText(), appearanceIn(url), EMPTY));
 
   return json({ cleared: true });
 };

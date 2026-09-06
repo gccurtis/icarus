@@ -48,7 +48,11 @@
 </script>
 
 <section class="flex flex-col gap-4">
-  <SectionHeading title="Data" source="system/typography/component.md → tabular figures" />
+  <SectionHeading
+    eyebrow="08 · Registry"
+    title="Data"
+    source="styles/aesthetic/arrangement.md"
+  />
 
   <h3 class="text-h4 font-semibold">Table</h3>
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">

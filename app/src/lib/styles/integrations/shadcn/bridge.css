@@ -1,0 +1,47 @@
+@theme static {
+  --color-background: var(--token-surface-canvas);
+  --color-foreground: var(--token-ink-primary);
+  --color-card: var(--token-surface-panel);
+  --color-card-foreground: var(--token-ink-primary);
+  --color-popover: var(--token-surface-elevated);
+  --color-popover-foreground: var(--token-ink-primary);
+  --color-primary: var(--token-color-primary-fill);
+  --color-primary-foreground: var(--token-color-primary-on-fill);
+  --color-primary-hover: var(--token-color-primary-fill-hover);
+  --color-secondary: var(--token-color-secondary-fill);
+  --color-secondary-foreground: var(--token-color-secondary-on-fill);
+  --color-secondary-hover: var(--token-color-secondary-fill-hover);
+  --color-muted: var(--token-surface-panel);
+  --color-muted-foreground: var(--token-ink-muted);
+  --color-accent: var(--token-color-interactive-surface-hover);
+  --color-accent-foreground: var(--token-ink-primary);
+  --color-destructive: var(--token-color-danger-fill);
+  --color-destructive-foreground: var(--token-color-danger-on-fill);
+  --color-destructive-hover: var(--token-color-danger-fill-hover);
+  --color-border: var(--token-border-subtle);
+  --color-input: var(--token-border-subtle);
+  --color-ring: var(--token-color-interactive-border);
+  --color-sidebar: var(--token-surface-panel);
+  --color-sidebar-foreground: var(--token-ink-primary);
+  --color-sidebar-accent: var(--token-color-interactive-surface-hover);
+  --color-sidebar-accent-foreground: var(--token-ink-primary);
+  --color-sidebar-border: var(--token-border-subtle);
+  --color-sidebar-ring: var(--token-color-interactive-border);
+  --radius-sm: var(--token-radius-control);
+  --radius-md: var(--token-radius-control);
+  --radius-lg: var(--token-radius-panel);
+  --radius-xl: var(--token-radius-overlay);
+  --shadow-2xs: var(--token-shadow-panel);
+  --shadow-xs: var(--token-shadow-panel);
+  --shadow-sm: var(--token-shadow-panel);
+  --shadow-md: var(--token-shadow-raised);
+  --shadow-lg: var(--token-shadow-overlay);
+  --shadow-xl: var(--token-shadow-overlay);
+  --shadow-2xl: var(--token-shadow-overlay);
+}
+
+:root {
+  --radius: var(--token-radius-control);
+  --sidebar-accent: var(--token-color-interactive-surface);
+  --sidebar-border: var(--token-border-subtle);
+}

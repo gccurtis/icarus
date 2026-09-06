@@ -1,0 +1,47 @@
+:root {
+  --token-font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --token-font-reading: "IBM Plex Serif", ui-serif, Georgia, serif;
+  --token-font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", monospace;
+
+  --token-weight-regular: 400;
+  --token-weight-medium: 500;
+  --token-weight-strong: 600;
+}
+
+:root {
+  --token-text-display: clamp(2.5rem, 5vw, 4rem);
+  --token-text-h1: 2.125rem;
+  --token-text-h2: 1.75rem;
+  --token-text-h3: 1.5rem;
+  --token-text-h4: 1.25rem;
+  --token-text-body-lg: 1.125rem;
+  --token-text-body: 1rem;
+  --token-text-body-sm: 0.875rem;
+  --token-text-label: 0.8125rem;
+  --token-text-caption: 0.75rem;
+  --token-text-micro: 0.6875rem;
+  --token-text-mono: 0.8125rem;
+
+  --token-text-display-leading: 1.04;
+  --token-text-h1-leading: 2.625rem;
+  --token-text-h2-leading: 2.25rem;
+  --token-text-h3-leading: 2rem;
+  --token-text-h4-leading: 1.75rem;
+  --token-text-body-lg-leading: 1.875rem;
+  --token-text-body-leading: 1.625rem;
+  --token-text-body-sm-leading: 1.375rem;
+  --token-text-label-leading: 1.125rem;
+  --token-text-caption-leading: 1rem;
+  --token-text-micro-leading: 0.9375rem;
+  --token-text-mono-leading: 1.25rem;
+}
+
+:root {
+  --token-tracking-display: -0.03em;
+  --token-tracking-heading: -0.015em;
+  --token-tracking-body: 0em;
+  --token-tracking-label: 0.01em;
+  --token-tracking-caps: 0.12em;
+
+  --token-reading-leading: 1.7;
+}

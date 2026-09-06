@@ -113,8 +113,6 @@ const GENERATORS = [
     trees: ["representation", "across"]
   },
   { name: "new-table", script: "representation/new-table.mjs", args: ["probeThings"], trees: ["representation"] },
-  { name: "new-theme", script: "styles/new-theme.mjs", args: ["probe", "--dark"], trees: [] },
-  { name: "new-token", script: "styles/new-token.mjs", args: ["spacing", "probe-gap", "4px"], trees: ["styles"] },
   { name: "new-surface", script: "views/new-surface.mjs", args: ["probe-bar"], trees: ["surfaces", "across"] },
   {
     name: "new-concern-entry",

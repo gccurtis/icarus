@@ -1,0 +1,610 @@
+<title>Merging Celestial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;1,400&display=swap">
+
+<style>
+  :root {
+    --canvas: #f7f4ec; --work: #fffefa; --panel: #eeeae0; --panel-hover: #e4dfd2;
+    --elevated: #ffffff; --seam: #d8d3c4; --seam-strong: #b9b3a1;
+    --ink: #1d2329; --ink-2: #3a424d; --ink-3: #6b7280;
+    --inverted: #1d2329; --on-inverted: #fffefa;
+    --blue: #1e3179; --blue-mid: #3657c9; --blue-soft: #eef1fb;
+    --violet: #412b80; --violet-mid: #6f49d8; --violet-soft: #f3effc;
+    --cyan: #02597a; --cyan-mid: #0087b8; --cyan-soft: #eaf6fb;
+    --amber: #6b4510; --amber-soft: #fef6e8;
+    --red: #92251d; --red-soft: #fdf1ef;
+    --green: #145c34; --green-soft: #eff8f2;
+    --orange: #7e3e07; --orange-soft: #fef4ec; --orange-mid: #d06816;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --canvas: #131925; --work: #181f2e; --panel: #10141e; --panel-hover: #253047;
+      --elevated: #1d2639; --seam: #253047; --seam-strong: #3d4f75;
+      --ink: #f2f4f5; --ink-2: #d8dde2; --ink-3: #93a0b4;
+      --inverted: #d8dde2; --on-inverted: #131925;
+      --blue: #ccd6f2; --blue-mid: #6e8bff; --blue-soft: #1b2c6b;
+      --violet: #dacff7; --violet-mid: #a98bff; --violet-soft: #36246a;
+      --cyan: #bce2f2; --cyan-mid: #38bdf8; --cyan-soft: #013a50;
+      --amber: #fae3b8; --amber-soft: #452b09;
+      --red: #fad5d0; --red-soft: #5a1611;
+      --green: #c9e8d5; --green-soft: #0c3a20;
+      --orange: #fbdcc2; --orange-soft: #4e2705; --orange-mid: #f08a3c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --canvas: #131925; --work: #181f2e; --panel: #10141e; --panel-hover: #253047;
+    --elevated: #1d2639; --seam: #253047; --seam-strong: #3d4f75;
+    --ink: #f2f4f5; --ink-2: #d8dde2; --ink-3: #93a0b4;
+    --inverted: #d8dde2; --on-inverted: #131925;
+    --blue: #ccd6f2; --blue-mid: #6e8bff; --blue-soft: #1b2c6b;
+    --violet: #dacff7; --violet-mid: #a98bff; --violet-soft: #36246a;
+    --cyan: #bce2f2; --cyan-mid: #38bdf8; --cyan-soft: #013a50;
+    --amber: #fae3b8; --amber-soft: #452b09;
+    --red: #fad5d0; --red-soft: #5a1611;
+    --green: #c9e8d5; --green-soft: #0c3a20;
+    --orange: #fbdcc2; --orange-soft: #4e2705; --orange-mid: #f08a3c;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--canvas); color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px; line-height: 1.5;
+  }
+  button { font: inherit; color: inherit; }
+  :is(a, button, [tabindex]):focus-visible { outline: 2px solid var(--blue-mid); outline-offset: 2px; }
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  code { padding: 1px 5px; border: 1px solid var(--seam); border-radius: 4px; background: var(--panel); font-size: .85em; }
+  .wrap { max-width: 104rem; margin: 0 auto; padding-inline: clamp(1rem, 3vw, 3.5rem); }
+
+  .eyebrow { display: block; margin: 0 0 .8rem; color: var(--violet-mid); font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; }
+
+  .mast { padding-block: clamp(2.5rem, 5vw, 4rem) 2rem; }
+  h1 { max-width: 18ch; margin: 0; font-size: clamp(2.25rem, 5.4vw, 4rem); font-weight: 600; line-height: 1.03; letter-spacing: -.032em; text-wrap: balance; }
+  .lede { max-width: 62ch; margin: 1.5rem 0 0; color: var(--ink-2); font-family: "IBM Plex Serif", ui-serif, Georgia, serif; font-size: 1.06rem; line-height: 1.7; }
+
+  nav.bar { position: sticky; top: 0; z-index: 30; border-block: 1px solid var(--seam); background: color-mix(in srgb, var(--canvas) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .barin { display: flex; align-items: center; gap: 1rem; max-width: 104rem; margin: 0 auto; padding-inline: clamp(1rem, 3vw, 3.5rem); }
+  .barin ol { display: flex; flex: 1; min-width: 0; margin: 0; padding: 0; overflow-x: auto; list-style: none; }
+  .barin a { display: block; padding: .7rem .9rem; color: var(--ink-3); font-size: 12px; font-weight: 500; text-decoration: none; white-space: nowrap; }
+  .barin a:hover { color: var(--ink); }
+  .barin a b { margin-right: .45rem; color: var(--seam-strong); font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 400; }
+  .appearance { display: flex; flex: none; gap: 2px; padding: 3px; border: 1px solid var(--seam-strong); border-radius: 8px; }
+  .appearance button { padding: .3rem .7rem; border: 0; border-radius: 5px; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 11.5px; font-weight: 500; }
+  .appearance button[aria-pressed="true"] { background: var(--blue-mid); color: var(--work); }
+
+  section { padding-block: clamp(2.5rem, 4vw, 3.5rem); scroll-margin-top: 3.5rem; }
+  section + section { border-top: 1px solid var(--seam); }
+  .head { display: flex; align-items: baseline; justify-content: space-between; gap: 2rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  h2 { margin: 0; font-size: clamp(1.5rem, 2.6vw, 2.1rem); font-weight: 600; line-height: 1.12; letter-spacing: -.022em; }
+  .head p { max-width: 52ch; margin: 0; color: var(--ink-3); font-size: 13px; }
+  h3 { margin: 2rem 0 .7rem; font-size: 1.1rem; font-weight: 600; }
+  p { max-width: 76ch; }
+
+  .seamgrid { display: grid; gap: 1px; margin: 1.25rem 0; border: 1px solid var(--seam); border-radius: 10px; overflow: hidden; background: var(--seam); }
+  .seamgrid > div { padding: 1rem 1.1rem; background: var(--elevated); }
+  .seamgrid strong { display: block; font-size: 1.8rem; font-weight: 600; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .seamgrid span { display: block; margin-top: .5rem; color: var(--ink-3); font-size: 11.5px; }
+  .g3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .g4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+
+  .tablewrap { margin: 1.25rem 0; overflow-x: auto; border: 1px solid var(--seam); border-radius: 10px; background: var(--elevated); }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  thead th { padding: .65rem .9rem; border-bottom: 1px solid var(--seam-strong); background: var(--panel); color: var(--ink-2); font-size: 10.5px; font-weight: 600; letter-spacing: .11em; text-align: center; text-transform: uppercase; white-space: nowrap; }
+  thead th:first-child, tbody td:first-child, tbody th:first-child { border-inline-end: 1px solid var(--seam); text-align: left; }
+  tbody td { padding: .7rem .9rem; border-bottom: 1px solid var(--seam); color: var(--ink-2); font-size: 13px; text-align: center; vertical-align: top; }
+  tbody th { padding: .7rem .9rem; border-bottom: 1px solid var(--seam); color: var(--ink); font-size: 13px; font-weight: 500; text-align: left; vertical-align: top; }
+  tbody tr:last-child :is(td, th) { border-bottom: 0; }
+  td.l, th.l { text-align: left; }
+  .mono td, td.mono, th.mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+
+  pre { margin: 1rem 0; padding: 1rem 1.1rem; overflow-x: auto; border: 1px solid var(--seam); border-radius: 10px; background: var(--elevated); color: var(--ink-2); font-family: "IBM Plex Mono", monospace; font-size: 12.5px; line-height: 1.65; }
+  pre .c { color: var(--ink-3); }
+  pre .add { color: var(--green); }
+  pre .del { color: var(--red); }
+
+  .rail { margin: 1.25rem 0; padding: .9rem 1.1rem; border: 1px solid var(--seam); border-inline-start: 3px solid var(--blue-mid); border-radius: 0 10px 10px 0; background: var(--blue-soft); }
+  .rail.warn { border-inline-start-color: var(--amber); background: var(--amber-soft); }
+  .rail.stop { border-inline-start-color: var(--red); background: var(--red-soft); }
+  .rail.quiet { border-inline-start-color: var(--seam-strong); background: var(--panel); }
+  .rail p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+  .rail p + p { margin-top: .6rem; }
+  .rail b { color: var(--ink); }
+
+  .steps { display: grid; gap: 1px; margin: 1.25rem 0; border: 1px solid var(--seam); border-radius: 10px; overflow: hidden; background: var(--seam); }
+  .steps > article { display: grid; grid-template-columns: 3rem minmax(0,1fr); gap: 1rem; padding: 1.15rem 1.2rem; background: var(--elevated); }
+  .steps .n { color: var(--blue-mid); font-family: "IBM Plex Mono", monospace; font-size: 1.05rem; }
+  .steps h4 { margin: 0 0 .35rem; font-size: 1rem; font-weight: 600; }
+  .steps p { margin: 0; color: var(--ink-2); font-size: 13.5px; }
+  .steps pre { margin: .75rem 0 0; }
+
+  .inverted { display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,1fr); gap: 3rem; margin: 1.5rem 0; padding: 1.9rem 2.1rem; border-radius: 12px; background: var(--inverted); color: var(--on-inverted); }
+  .inverted h3 { margin: 0; color: var(--on-inverted); font-size: clamp(1.3rem, 2.2vw, 1.9rem); line-height: 1.14; letter-spacing: -.025em; }
+  .inverted p { margin: 0; color: color-mix(in srgb, var(--on-inverted) 80%, transparent); font-family: "IBM Plex Serif", ui-serif, Georgia, serif; line-height: 1.7; }
+  .inverted .eyebrow { color: color-mix(in srgb, var(--on-inverted) 62%, transparent); }
+  .inverted code { background: color-mix(in srgb, var(--on-inverted) 12%, transparent); border-color: color-mix(in srgb, var(--on-inverted) 22%, transparent); color: var(--on-inverted); }
+
+  .chip { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .chip.del { background: var(--red-soft); color: var(--red); }
+  .chip.mod { background: var(--amber-soft); color: var(--amber); }
+  .chip.ok { background: var(--green-soft); color: var(--green); }
+  .chip.orange { background: var(--orange-soft); color: var(--orange); }
+
+  footer.end { padding-block: 2.5rem 4rem; border-top: 1px solid var(--seam); color: var(--ink-3); font-size: 12px; }
+
+  @media (max-width: 68rem) {
+    .inverted { grid-template-columns: 1fr; gap: 1.25rem; }
+    .g4, .g3 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  }
+  @media (max-width: 44rem) {
+    .g4, .g3 { grid-template-columns: 1fr; }
+    .steps > article { grid-template-columns: 1fr; gap: .4rem; }
+    .barin { flex-wrap: wrap; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; } }
+</style>
+
+<div class="wrap mast">
+  <span class="eyebrow">work/styling → main</span>
+  <h1>Five files conflict. One of them matters.</h1>
+  <p class="lede">
+    Main gained a <code>slide</code> brand role bound to orange while this branch was rebuilding
+    the styles tree around it. Everything else in the overlap is a file that moved. Nothing below
+    has been run — this is the plan, not a record.
+  </p>
+</div>
+
+<nav class="bar">
+  <div class="barin">
+    <ol>
+      <li><a href="#state"><b>01</b>Where things stand</a></li>
+      <li><a href="#conflicts"><b>02</b>The five files</a></li>
+      <li><a href="#orange"><b>03</b>The orange problem</a></li>
+      <li><a href="#integration"><b>04</b>Integration</a></li>
+      <li><a href="#order"><b>05</b>Order of operations</a></li>
+      <li><a href="#gate"><b>06</b>The gate</a></li>
+    </ol>
+    <div class="appearance" role="group" aria-label="Appearance">
+      <button type="button" data-set="light">Helios</button>
+      <button type="button" data-set="dark">Selene</button>
+    </div>
+  </div>
+</nav>
+
+<!-- 01 -->
+<section id="state" class="wrap">
+  <div class="head">
+    <h2>Where things stand</h2>
+    <p>Three facts decide the shape of the merge, and the first one surprises people.</p>
+  </div>
+
+  <div class="seamgrid g3">
+    <div>
+      <strong>0</strong>
+      <span>commits on <code>work/styling</code>. The branch ref is still at <code>98d9cd0</code> — all of the work is uncommitted in the worktree.</span>
+    </div>
+    <div>
+      <strong>107</strong>
+      <span>uncommitted changes there: 57 modified, 34 deleted, 16 added.</span>
+    </div>
+    <div>
+      <strong>2</strong>
+      <span>commits main has moved ahead: <code>d371c6f</code> template library, <code>239d028</code> docs and wiki.</span>
+    </div>
+  </div>
+
+  <div class="rail stop">
+    <p>
+      <b>There is nothing to merge yet.</b> A rebase or a merge operates on commits, and this branch
+      has none. Step one is committing the worktree — until then, <code>git merge work/styling</code>
+      is a no-op that will look like success.
+    </p>
+  </div>
+
+  <h3>What main changed</h3>
+  <p>101 files, almost all of it the template library and its capability. Only five of those files are ones this branch also touches.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Area on main</th><th>Files</th><th>Touches this branch?</th></tr></thead>
+      <tbody>
+        <tr><th>capabilities/templates, seed, model/store</th><td class="mono">~60</td><td><span class="chip ok">No</span></td></tr>
+        <tr><th>development-views/template-library-demo</th><td class="mono">8</td><td><span class="chip ok">No — new directory</span></td></tr>
+        <tr><th>model/client/workspace-state</th><td class="mono">10</td><td><span class="chip ok">No</span></td></tr>
+        <tr><th>styles/ — the <code>slide</code> role</th><td class="mono">3</td><td><span class="chip mod">Yes</span></td></tr>
+        <tr><th>scripts/lint/shared/styles.mjs</th><td class="mono">1</td><td><span class="chip mod">Yes</span></td></tr>
+        <tr><th>development-views/demo/components</th><td class="mono">2</td><td><span class="chip mod">One of them</span></td></tr>
+        <tr><th>docs, wiki, surfaces/status-bar, tab-bar</th><td class="mono">~17</td><td><span class="chip ok">No</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 02 -->
+<section id="conflicts" class="wrap">
+  <div class="head">
+    <h2>The five files</h2>
+    <p>Four are modify/delete, because the branch moved the file main edited. One is a real content conflict.</p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>File</th><th>Main did</th><th>Branch did</th><th>Resolve</th></tr></thead>
+      <tbody>
+        <tr>
+          <th class="mono">styles/semantic-tokens/color.css</th>
+          <td class="l">added 7 <code>--token-color-slide-*</code> aliases onto orange</td>
+          <td class="l"><span class="chip del">deleted</span> → <code>styles/tokens/color.css</code></td>
+          <td class="l">Keep the delete. Port the seven lines into the new file.</td>
+        </tr>
+        <tr>
+          <th class="mono">styles/semantic-tokens/semantic-tokens.md</th>
+          <td class="l">added the <code>slide | orange</code> row, rewrote the reserved-hue sentence</td>
+          <td class="l"><span class="chip del">deleted</span> → <code>styles/tokens/tokens.md</code></td>
+          <td class="l">Keep the delete. Port the row and the sentence.</td>
+        </tr>
+        <tr>
+          <th class="mono">styles/x-integrations/tailwind/tailwind.css</th>
+          <td class="l">added 7 <code>--color-slide-*</code> registrations</td>
+          <td class="l"><span class="chip del">deleted</span> → <code>styles/integrations/tailwind/tailwind.css</code></td>
+          <td class="l">Keep the delete. Port the seven lines, alphabetically between <code>secondary</code> and <code>success</code>.</td>
+        </tr>
+        <tr>
+          <th class="mono">scripts/lint/shared/styles.mjs</th>
+          <td class="l">added <code>slide: "orange"</code> to <code>BRAND_ROLES</code></td>
+          <td class="l"><span class="chip del">deleted</span></td>
+          <td class="l"><b>Keep the delete, port nothing.</b> Every check that read this file is gone; the table has no reader.</td>
+        </tr>
+        <tr>
+          <th class="mono">development-views/demo/components/roles.svelte</th>
+          <td class="l">added a <code>slide</code> row to the role list</td>
+          <td class="l"><span class="chip mod">rewritten</span> as a <code>.data-table</code> with a <code>kind</code> column</td>
+          <td class="l">Take the branch version, then add the row with its <code>kind</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>The three ports, exactly</h3>
+
+  <p><code>styles/tokens/color.css</code> — after the <code>accent-2</code> block. <b>No comment</b>: the stylesheets on this branch carry values only, and the argument lives in <code>styles/aesthetic/</code>.</p>
+<pre><span class="add">  --token-color-slide-surface: var(--chromatic-orange-surface);
+  --token-color-slide-surface-hover: var(--chromatic-orange-surface-hover);
+  --token-color-slide-border: var(--chromatic-orange-border);
+  --token-color-slide-fill: var(--chromatic-orange-fill);
+  --token-color-slide-fill-hover: var(--chromatic-orange-fill-hover);
+  --token-color-slide-text: var(--chromatic-orange-text);
+  --token-color-slide-on-fill: var(--chromatic-orange-on-fill);</span></pre>
+
+  <p><code>styles/integrations/tailwind/tailwind.css</code> — the list is alphabetical, so these sit after <code>--color-secondary-text</code>.</p>
+<pre><span class="add">  --color-slide-border: var(--token-color-slide-border);
+  --color-slide-fill-hover: var(--token-color-slide-fill-hover);
+  --color-slide-fill: var(--token-color-slide-fill);
+  --color-slide-on-fill: var(--token-color-slide-on-fill);
+  --color-slide-surface-hover: var(--token-color-slide-surface-hover);
+  --color-slide-surface: var(--token-color-slide-surface);
+  --color-slide-text: var(--token-color-slide-text);</span></pre>
+
+  <p><code>development-views/demo/components/roles.svelte</code> — the branch's rows carry a <code>kind</code>.</p>
+<pre><span class="add">    { kind: "Brand", role: "slide", hue: "orange", means: "Slide-deck identity" }</span></pre>
+
+  <div class="rail">
+    <p>
+      <b>Nothing else needs registering.</b> The scale list in
+      <code>components/vendored/utils.ts</code> covers <code>text</code>, <code>tracking</code>,
+      <code>radius</code>, <code>shadow</code>, <code>ease</code> and the rest — colours are not in
+      it, because <code>tailwind-merge</code> already recognises the <code>--color-*</code>
+      namespace. A new role needs no entry there. A new <em>size</em> or <em>radius</em> would.
+    </p>
+  </div>
+</section>
+
+<!-- 03 -->
+<section id="orange" class="wrap">
+  <div class="head">
+    <h2>The orange problem</h2>
+    <p>The conflict git will not report, because it is in prose that git sees as unchanged.</p>
+  </div>
+
+  <div class="inverted">
+    <div>
+      <span class="eyebrow">The real merge</span>
+      <h3>Orange stops being reserved.</h3>
+    </div>
+    <div>
+      <p>
+        Three documents on this branch state that orange is claimed by no role and is the first
+        colour to reach for when a categorical series needs a fifth. Main has now claimed it for
+        slide-deck identity. Both statements cannot stand, and the one that has to give is this
+        branch's — a role in the product beats a hue held in reserve.
+      </p>
+    </div>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>File</th><th>Line</th><th>Says</th><th>Should say</th></tr></thead>
+      <tbody>
+        <tr>
+          <th class="mono">styles/tokens/tokens.md</th>
+          <td class="mono">43</td>
+          <td class="l">“<code>orange</code> and <code>yellow</code> are declared by the material and reserved”</td>
+          <td class="l">only <code>yellow</code> is reserved; add the <code>slide | orange</code> row to the role table above it</td>
+        </tr>
+        <tr>
+          <th class="mono">styles/material/helios/helios.md</th>
+          <td class="mono">28</td>
+          <td class="l">“<code>orange</code> and <code>yellow</code> are claimed by no role. They are the first colors to reach for…”</td>
+          <td class="l">yellow alone; orange now carries slide-deck identity</td>
+        </tr>
+        <tr>
+          <th class="mono">styles/material/selene/selene.md</th>
+          <td class="mono">—</td>
+          <td class="l">no claim about orange</td>
+          <td class="l">nothing to change</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Is orange safe as a role? Yes — measured, in both materials.</h3>
+  <p>
+    A hue held in reserve never had to clear a contrast floor. A role does. These are the branch's
+    own measured figures for orange, against the plane each slot actually sits on.
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Material</th><th>wash</th><th>hover wash</th><th>border ≥3</th><th>fill + on-fill ≥4.5</th><th>text ≥7</th></tr></thead>
+      <tbody>
+        <tr><th>Celestial Helios</th><td>1.07</td><td>1.29</td><td>3.08</td><td>5.33</td><td>8.07</td></tr>
+        <tr><th>Celestial Selene</th><td>1.27</td><td>2.02</td><td>6.05</td><td>7.04</td><td>12.65</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="rail warn">
+    <p>
+      <b>Helios' orange border is the tightest number in the system at 3.08.</b> It clears, but with
+      3% of headroom — and it only clears because this branch darkened
+      <code>orange-normal</code> from <code>#DD6F1A</code> to <code>#D06816</code>. On main's
+      palette that step measures 2.75 against the panel plane, so <code>slide</code> shipped with a
+      boundary below the 3:1 floor. The merge fixes that as a side effect; it is worth knowing it
+      was ever broken, and worth not nudging that value later without re-measuring.
+    </p>
+  </div>
+</section>
+
+<!-- 04 -->
+<section id="integration" class="wrap">
+  <div class="head">
+    <h2>Integration</h2>
+    <p>Not conflicts. The merge is not finished without them.</p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>What</th><th>Why</th><th>Do</th></tr></thead>
+      <tbody>
+        <tr>
+          <th class="l">Templates is missing from the demo shell</th>
+          <td class="l">Main added <code>template-library-demo</code> and a card for it. The branch's shell lists eleven pages and does not know about a twelfth.</td>
+          <td class="l">Add <code>{ href: "/demo/templates", label: "Templates" }</code> to the first group in <code>demo-shell.svelte</code>.</td>
+        </tr>
+        <tr>
+          <th class="l"><code>/demo/templates</code> has no page component</th>
+          <td class="l">Main ships <code>routes/demo/templates/+page.server.ts</code> and nothing else — no <code>+page.svelte</code> — while <code>demo-index</code> links to it.</td>
+          <td class="l">Open the route after merging. If it errors, it needs a <code>+page.svelte</code> rendering <code>template-library-demo.svelte</code>.</td>
+        </tr>
+        <tr>
+          <th class="l">Three new screen components</th>
+          <td class="l">Main touched <code>components/authored/screen</code>. The composition catalogue's rail is a hand-written list.</td>
+          <td class="l">Check whether any new shape needs an entry in <code>vocabulary-nav.svelte</code> and the catalogue.</td>
+        </tr>
+        <tr>
+          <th class="l">The review pages pick up new views for free</th>
+          <td class="l">The branch rewrote the globs to walk <code>app-views/categories/*/&lt;surface&gt;/</code>, so anything main added is enumerated automatically.</td>
+          <td class="l">Confirm <code>/demo/context</code>, <code>/demo/inspector</code>, <code>/demo/workspace</code> list the new template views.</td>
+        </tr>
+        <tr>
+          <th class="l">The wiki describes the old tree</th>
+          <td class="l"><code>wiki/src/prose/trees/styles.md</code> documents four stages, two themes and eight checks. All three numbers are now wrong.</td>
+          <td class="l">Out of scope for the merge, but it will read as false the moment this lands.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 05 -->
+<section id="order" class="wrap">
+  <div class="head">
+    <h2>Order of operations</h2>
+    <p>Rebase rather than merge: main is two commits ahead and the branch is one logical change.</p>
+  </div>
+
+  <div class="steps">
+    <article>
+      <span class="n">01</span>
+      <div>
+        <h4>Commit the worktree</h4>
+        <p>All 107 changes are uncommitted. Nothing can be merged until they are a commit.</p>
+<pre><span class="c"># in the styling worktree</span>
+cd .claude/worktrees/styling
+git add -A
+git commit -m "feat(styles): Celestial, with Helios and Selene"</pre>
+      </div>
+    </article>
+
+    <article>
+      <span class="n">02</span>
+      <div>
+        <h4>Rebase onto main</h4>
+        <p>The worktree shares the repository, so main is already there — no fetch needed.</p>
+<pre>git rebase main</pre>
+        <p>Expect conflicts in exactly the five files in section 02. Four report as <em>deleted by us</em>.</p>
+      </div>
+    </article>
+
+    <article>
+      <span class="n">03</span>
+      <div>
+        <h4>Resolve the four modify/deletes</h4>
+        <p>Confirm the deletion in each case — the file moved, it did not disappear.</p>
+<pre>git rm app/src/lib/styles/semantic-tokens/color.css
+git rm app/src/lib/styles/semantic-tokens/semantic-tokens.md
+git rm app/src/lib/styles/x-integrations/tailwind/tailwind.css
+git rm app/scripts/lint/shared/styles.mjs</pre>
+      </div>
+    </article>
+
+    <article>
+      <span class="n">04</span>
+      <div>
+        <h4>Take the branch's roles.svelte, then add the row</h4>
+<pre>git checkout --theirs app/src/lib/development-views/demo/components/roles.svelte
+<span class="c"># then add the slide row by hand — see section 02</span>
+git add app/src/lib/development-views/demo/components/roles.svelte</pre>
+        <p>
+          <b><code>--theirs</code>, not <code>--ours</code>.</b> During a rebase the flags are
+          inverted from the intuition: you are replaying your commits <em>onto</em> main, so
+          <code>--ours</code> is main and <code>--theirs</code> is your branch. Getting this
+          backwards here silently discards the whole rewritten file and leaves a page that still
+          typechecks. Open the file after resolving and confirm it is the
+          <code>.data-table</code> version.
+        </p>
+      </div>
+    </article>
+
+    <article>
+      <span class="n">05</span>
+      <div>
+        <h4>Port the slide role into its new homes</h4>
+        <p>Three edits from section 02, plus the two prose fixes from section 03. This is the part a merge tool cannot do for you.</p>
+<pre>git add app/src/lib/styles/tokens/color.css \
+        app/src/lib/styles/tokens/tokens.md \
+        app/src/lib/styles/integrations/tailwind/tailwind.css \
+        app/src/lib/styles/material/helios/helios.md
+git rebase --continue</pre>
+      </div>
+    </article>
+
+    <article>
+      <span class="n">06</span>
+      <div>
+        <h4>Add Templates to the shell, then run the gate</h4>
+        <p>Section 04, then section 06. Do not fast-forward main until the gate is green.</p>
+      </div>
+    </article>
+
+    <article>
+      <span class="n">07</span>
+      <div>
+        <h4>Fast-forward main</h4>
+<pre><span class="c"># from the main checkout</span>
+cd /home/jakul/cyberia/icarus
+git merge --ff-only work/styling</pre>
+        <p><code>--ff-only</code> on purpose: after a clean rebase it must fast-forward, and if it cannot, something moved underneath and you want to know before it becomes a merge commit.</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- 06 -->
+<section id="gate" class="wrap">
+  <div class="head">
+    <h2>The gate</h2>
+    <p>What must pass, and the numbers as they stand on the branch today.</p>
+  </div>
+
+<pre>cd app
+nix develop ../infra/devshell --command pnpm lint
+nix develop ../infra/devshell --command pnpm typecheck
+nix develop ../infra/devshell --command pnpm test
+nix develop ../infra/devshell --command pnpm test:scripts
+nix develop ../infra/devshell --command pnpm build</pre>
+
+  <div class="seamgrid g4">
+    <div><strong>56</strong><span>lint checks, all clean. Was 63 — seven style checks were removed deliberately.</span></div>
+    <div><strong>0</strong><span>typecheck errors across 2,189 files.</span></div>
+    <div><strong>591</strong><span>unit tests, plus 99 script tests.</span></div>
+    <div><strong>✓</strong><span>production build.</span></div>
+  </div>
+
+  <div class="rail quiet">
+    <p>
+      <b>The check count will rise after the merge.</b> Main added capabilities and model methods
+      with checks of their own. What matters is that no check <em>fails</em> and that the seven
+      style checks stay gone — if <code>lint</code> reports
+      <code>themes-agree-with-each-other</code> or <code>literal-colours-in-themes-only</code>,
+      a deleted file came back during the rebase.
+    </p>
+  </div>
+
+  <h3>Then look at it</h3>
+  <p>
+    The gate does not catch a colour that resolves to nothing. Open <code>/demo</code> in both
+    materials and check the Roles table has a <code>slide</code> row with seven filled swatches. An
+    unregistered token paints transparent and fails silently — that is the one failure mode this
+    merge can actually produce.
+  </p>
+
+  <div class="rail">
+    <p>
+      <b>The branch's own risk, unrelated to main:</b> the section rail on <code>/demo</code> and
+      the catalogue rail on <code>/demo/vocabulary</code> both hard-code their section lists. They
+      are correct today and nothing tells you when they stop being.
+    </p>
+  </div>
+</section>
+
+<footer class="end wrap">
+  Merging Celestial · <code>work/styling</code> at <code>98d9cd0</code> → <code>main</code> at
+  <code>239d028</code> · nothing in this document has been run
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var KEY = "celestial.appearance";
+    var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-set]"));
+
+    function effective() {
+      var stamped = root.getAttribute("data-theme");
+      if (stamped === "light" || stamped === "dark") return stamped;
+      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    }
+
+    function paint(value) {
+      root.setAttribute("data-theme", value);
+      buttons.forEach(function (button) {
+        button.setAttribute("aria-pressed", String(button.dataset.set === value));
+      });
+    }
+
+    var held = null;
+    try {
+      held = localStorage.getItem(KEY);
+    } catch (error) {
+      held = null;
+    }
+    paint(held === "light" || held === "dark" ? held : effective());
+
+    buttons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        paint(button.dataset.set);
+        try {
+          localStorage.setItem(KEY, button.dataset.set);
+        } catch (error) {
+          // A blocked store costs persistence, not the choice.
+        }
+      });
+    });
+  })();
+</script>

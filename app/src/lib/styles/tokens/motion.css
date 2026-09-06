@@ -1,0 +1,17 @@
+:root {
+  --token-motion-micro: 100ms;
+  --token-motion-small: 150ms;
+  --token-motion-panel: 220ms;
+  --token-motion-overlay: 260ms;
+  --token-motion-arrival: 420ms;
+}
+
+:root {
+  --token-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --token-ease-arrival: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  --token-motion-rise: 4px;
+  --token-motion-drift: 8px;
+}

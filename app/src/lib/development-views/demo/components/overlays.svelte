@@ -8,7 +8,11 @@
 </script>
 
 <section class="flex flex-col gap-4">
-  <SectionHeading title="Overlays" source="system/interaction/theory.md → disclosure ladder" />
+  <SectionHeading
+    eyebrow="08 · Registry"
+    title="Overlays"
+    source="styles/aesthetic/arrangement.md"
+  />
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">
     Rungs three and four of the disclosure ladder. A dropdown groups named secondary actions; a
     sheet is a place to work beside what you were doing; a modal interrupts, so it has to earn the

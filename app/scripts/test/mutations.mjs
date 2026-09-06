@@ -360,68 +360,11 @@ export const MUTATIONS = [
 
   // ------------------------------------------------------------------ styles ----
   {
-    check: "literal-colours-in-themes-only",
-    says: "a colour is written outside a theme",
-    names: "semantic-tokens/color.css",
-    changes: [{ path: "src/lib/styles/semantic-tokens/color.css", ...appended(`:root {\n  --token-probe: #ff0000;\n}`) }]
-  },
-  {
-    check: "stage-owns-its-namespace",
-    says: "a stage declares another stage's prefix",
-    names: "semantic-tokens/color.css",
-    changes: [{ path: "src/lib/styles/semantic-tokens/color.css", ...appended(`:root {\n  --palette-probe: 1;\n}`) }]
-  },
-  {
-    check: "references-point-backward",
-    subject: "stage-reads-behind-it",
-    says: "a stage reads forward",
-    names: "chromatic-themes/slots.css",
-    changes: [
-      { path: "src/lib/styles/chromatic-themes/slots.css", ...appended(`:root {\n  --chromatic-probe: var(--token-ink-primary);\n}`) }
-    ]
-  },
-  {
     check: "one-stylesheet-entry",
     subject: "single-entry",
     says: "something other than the layout imports a stylesheet",
     names: "imports-a-stylesheet.ts",
-    changes: [view("imports-a-stylesheet", `import "$lib/styles/semantic-tokens/color.css";\n`)]
-  },
-  {
-    check: "consumers-see-public-tokens-only",
-    subject: "authored-consumer",
-    says: "a consumer names a private stage variable",
-    names: "reads-a-palette.ts",
-    changes: [view("reads-a-palette", `export const swatch = "var(--palette-blue-500)";\n`)]
-  },
-  {
-    check: "themes-agree-with-each-other",
-    subject: "same-token-set",
-    says: "one theme declares a token another does not",
-    names: "cyberpunk/cyberpunk.css",
-    changes: [
-      {
-        path: "src/lib/styles/chromatic-themes/celestial/celestial.css",
-        ...appended(`[data-theme="celestial"] {\n  --theme-probe: #123456;\n}`)
-      }
-    ]
-  },
-  {
-    check: "generated-css-is-inert",
-    says: "the quarantine header is gone",
-    names: "shadcn/generated.css",
-    changes: [
-      {
-        path: "src/lib/styles/x-integrations/shadcn/generated.css",
-        edit: (text) => text.replace("Quarantine file", "Generated file")
-      }
-    ]
-  },
-  {
-    check: "styles-layout",
-    says: "the styles root holds something other than app.css",
-    names: "styles/loose.css",
-    changes: [{ path: "src/lib/styles/loose.css", write: `:root {\n  --token-loose: 1px;\n}\n` }]
+    changes: [view("imports-a-stylesheet", `import "$lib/styles/tokens/color.css";\n`)]
   },
 
   // ------------------------------------------------------------------- views ----
@@ -464,7 +407,7 @@ export const MUTATIONS = [
     changes: [
       {
         path: "src/lib/surfaces/tab-bar/reaches-inside.ts",
-        write: `import { applyTheme } from "$surfaces/top-bar/effects/apply-theme.svelte";\nexport const run = applyTheme;\n`
+        write: `import { applyAppearance } from "$surfaces/top-bar/effects/apply-appearance.svelte";\nexport const run = applyAppearance;\n`
       }
     ]
   },

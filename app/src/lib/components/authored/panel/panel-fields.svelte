@@ -21,6 +21,6 @@
   const trace = traceNode("PanelFields", () => ({}));
 </script>
 
-<dl {...trace} class="m-0 grid grid-cols-[minmax(0,5rem)_minmax(0,1fr)] items-baseline gap-x-2 gap-y-1.5 px-3">
+<dl {...trace} class="m-0 grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)] items-baseline gap-x-2 gap-y-1.5 px-3">
   {@render children()}
 </dl>

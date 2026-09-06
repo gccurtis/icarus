@@ -10,7 +10,11 @@
 </script>
 
 <section class="flex flex-col gap-4">
-  <SectionHeading title="Components" source="shadcn-svelte, bridged to our tokens" />
+  <SectionHeading
+    eyebrow="08 · Registry"
+    title="Vendored components"
+    source="styles/integrations/shadcn/shadcn.md"
+  />
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">
     Unmodified registry components. They reference shadcn's own vocabulary — <code
       class="font-mono">bg-primary</code

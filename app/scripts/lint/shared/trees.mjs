@@ -82,18 +82,6 @@ export const viewLeaves = (tree) => {
   return found;
 };
 
-/** `styles/chromatic-themes/<theme>/<theme>.css`. */
-export const themes = (tree) =>
-  named(tree, tree.path("styles", "chromatic-themes")).map(({ name, path }) => ({
-    name,
-    path,
-    css: join(path, `${name}.css`)
-  }));
-
-/** `styles/x-integrations/<target>/`. */
-export const integrations = (tree) => named(tree, tree.path("styles", "x-integrations"));
-
-/** The unit a path belongs to, or null. Used wherever "outside this unit" is the question. */
 /** Every `api/<procedure>/…/<entry>.ts`. A directory's entry is named for it. */
 export const procedureEntries = (tree) => {
   const found = [];

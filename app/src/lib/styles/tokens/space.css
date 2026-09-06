@@ -1,0 +1,16 @@
+:root {
+  --token-spacing-unit: 0.25rem;
+}
+
+:root {
+  --token-control-height-compact: 1.75rem;
+  --token-control-height: 2rem;
+  --token-control-height-roomy: 2.5rem;
+}
+
+:root {
+  --token-measure-title: 24ch;
+  --token-measure-lede: 62ch;
+  --token-measure-prose: 70ch;
+  --token-measure-note: 52ch;
+}

@@ -1,0 +1,35 @@
+:root,
+[data-appearance="helios"] {
+  color-scheme: light;
+
+  --material-surface-canvas: var(--palette-white-muted);
+  --material-surface-work: var(--palette-white-light);
+  --material-surface-panel: var(--palette-white-normal);
+  --material-surface-elevated: var(--palette-white-faded);
+  --material-surface-panel-hover: var(--palette-white-emphasized);
+  --material-surface-pasteboard: var(--palette-white-strong);
+  --material-surface-inverted: var(--palette-grey-strong);
+
+  --material-border-subtle: var(--palette-white-strong);
+  --material-border-strong: var(--palette-white-deep);
+
+  --material-ink-primary: var(--palette-grey-strong);
+  --material-ink-secondary: var(--palette-grey-emphasized);
+  --material-ink-muted: var(--palette-grey-normal);
+  --material-ink-on-fill: var(--palette-white-light);
+  --material-ink-on-inverted: var(--palette-white-light);
+
+  --material-shadow-tint: var(--palette-grey-strong);
+
+  --material-atmosphere:
+    radial-gradient(
+      ellipse 68rem 40rem at 78% -8%,
+      color-mix(in srgb, var(--palette-violet-muted) 9%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 54rem 34rem at 8% 4%,
+      color-mix(in srgb, var(--palette-cyan-muted) 7%, transparent),
+      transparent 66%
+    );
+}

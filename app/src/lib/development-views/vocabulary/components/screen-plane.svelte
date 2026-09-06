@@ -360,6 +360,20 @@
     screen scale asks for a size rather than growing a copy.
   </SectionTitle>
 
+  <div class="rail rail-attention max-w-prose p-3">
+    <p class="text-body-sm text-ink-secondary m-0">
+      <strong class="text-ink-primary">The document, slide and grid surfaces below are
+      illustrative and out of date.</strong> The editors own those surfaces and have moved on from
+      the approach drawn here; treat <code class="text-mono font-mono">ScreenCanvas</code>,
+      <code class="text-mono font-mono">ScreenPage</code>,
+      <code class="text-mono font-mono">ScreenSlide</code>,
+      <code class="text-mono font-mono">ScreenGrid</code> and
+      <code class="text-mono font-mono">ScreenSplit</code> as general-purpose containers whose
+      current examples show shape, not intent. Do not copy them into an editor — ask the editor
+      what it needs. Everything above this note is current.
+    </p>
+  </div>
+
   <Entry
     name="ScreenList"
     use="A stack of entries on the plane, read top to bottom: a mentions feed, an activity feed, a thread of research turns, the tools a persona is allowed. The seams between entries belong to the list, so nothing inside it has to know whether it is last."

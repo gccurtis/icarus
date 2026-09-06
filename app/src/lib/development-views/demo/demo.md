@@ -14,14 +14,15 @@ This view owns:
 
 - the section order, page width, padding, and gaps between sections;
 - the local state each section uses to drive its own examples;
-- the active chromatic theme, selected in `components/appearance-bar.svelte` and
-  applied to the document root;
+- the reading order, listed as a rail in `components/section-nav.svelte`;
 - the single permitted read of private `--palette-*` properties, in
   `components/palette.svelte`.
 
 It does not own:
 
-- the tokens or themes themselves — those belong to `$styles`;
+- the appearance, or which demo you are on — the demo shell frames every page
+  under `/demo` and carries both;
+- the tokens or the materials themselves — those belong to `$styles`;
 - the primitive components it demonstrates, which belong to
   `simple-components/` and are consumed unmodified;
 - the default appearance at first paint, which `app.html` declares.
@@ -69,11 +70,13 @@ Views reached through their root component only.
 
 | Concern | Document | What it owns |
 | --- | --- | --- |
-| Components | [components.md](components/components.md) | The thirteen sections, the appearance bar, the shared heading, and which components hold local state |
-| Effects | [effects.md](effects/effects.md) | Applying the selected theme and set to the document root, and persisting them |
+| Components | [components.md](components/components.md) | The sections in document order, the section rail, the shared heading, and which components hold local state |
 
-`interactions/`, `shared/`, and `procedures/` are absent. The view coordinates no
-model or capability work, and no state is shared between sections.
+`effects/`, `interactions/`, `shared/`, and `procedures/` are absent. The view
+coordinates no model or capability work, and no state is shared between
+sections. It had an `effects/` directory holding a second copy of the appearance
+applier; the appearance is a property of the document, so the root layout
+applies it and this view only sets it.
 
 ## Rendered States
 

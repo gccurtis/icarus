@@ -1,0 +1,38 @@
+[data-appearance="selene"] {
+  color-scheme: dark;
+
+  --palette-blue-deep: #1b2c6b;
+  --palette-violet-deep: #36246a;
+  --palette-grey-strong: #414b58;
+
+  --material-surface-canvas: var(--palette-black-emphasized);
+  --material-surface-work: var(--palette-black-normal);
+  --material-surface-panel: var(--palette-black-strong);
+  --material-surface-elevated: var(--palette-black-muted);
+  --material-surface-panel-hover: var(--palette-black-light);
+  --material-surface-pasteboard: var(--palette-black-deep);
+  --material-surface-inverted: var(--palette-grey-light);
+
+  --material-border-subtle: var(--palette-black-light);
+  --material-border-strong: var(--palette-black-faded);
+
+  --material-ink-primary: var(--palette-grey-faded);
+  --material-ink-secondary: var(--palette-grey-light);
+  --material-ink-muted: var(--palette-grey-muted);
+  --material-ink-on-fill: var(--palette-black-emphasized);
+  --material-ink-on-inverted: var(--palette-black-emphasized);
+
+  --material-shadow-tint: var(--palette-black-deep);
+
+  --material-atmosphere:
+    radial-gradient(
+      ellipse 68rem 40rem at 78% -8%,
+      color-mix(in srgb, var(--palette-violet-muted) 13%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 54rem 34rem at 8% 4%,
+      color-mix(in srgb, var(--palette-cyan-muted) 9%, transparent),
+      transparent 66%
+    );
+}

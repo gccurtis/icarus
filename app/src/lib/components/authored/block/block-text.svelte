@@ -22,6 +22,7 @@
     value = "",
     oninput,
     align = "start",
+    vertical = "top",
     size = "body",
     weight = "normal",
     placeholder = "",
@@ -37,7 +38,12 @@
      * somewhere else.
      */
     oninput?: (next: string) => void;
-    align?: "start" | "center" | "end";
+    align?: "start" | "center" | "end" | "justify";
+    /**
+     * Where the text sits in a box taller than it. Only a box with a height has
+     * a vertical axis to place anything on, so this does nothing without `fill`.
+     */
+    vertical?: "top" | "middle" | "bottom";
     size?: "caption" | "body-sm" | "body" | "body-lg" | "h4" | "h3";
     weight?: "normal" | "medium" | "semibold";
     placeholder?: string;
@@ -50,6 +56,7 @@
   const trace = traceNode("BlockText", () => ({
     value,
     align,
+    vertical,
     size,
     weight,
     placeholder,
@@ -66,7 +73,13 @@
     h3: "text-h3 leading-h3"
   };
   const WEIGHT = { normal: "font-normal", medium: "font-medium", semibold: "font-semibold" };
-  const ALIGN = { start: "text-start", center: "text-center", end: "text-end" };
+  const ALIGN = {
+    start: "text-start",
+    center: "text-center",
+    end: "text-end",
+    justify: "text-justify"
+  };
+  const VERTICAL = { top: "content-start", middle: "content-center", bottom: "content-end" };
 </script>
 
 <textarea
@@ -81,6 +94,6 @@
     SIZE[size],
     WEIGHT[weight],
     ALIGN[align],
-    fill && "h-full [field-sizing:fixed]"
+    fill && ["h-full [field-sizing:fixed]", VERTICAL[vertical]]
   )}
 ></textarea>

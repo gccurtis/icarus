@@ -9,14 +9,16 @@ const LOGS = join(root, "logs", "stack-builder");
 const MOCKS = join(LOGS, "mocks");
 
 const STYLES = [
-  "chromatic-themes/celestial/celestial.css",
-  "chromatic-themes/cyberpunk/cyberpunk.css",
-  "chromatic-themes/slots.css",
-  "semantic-tokens/color.css",
-  "semantic-tokens/typography.css",
-  "semantic-tokens/spacing.css",
-  "semantic-tokens/shape.css",
-  "semantic-tokens/motion.css"
+  "material/ramps.css",
+  "material/helios/helios.css",
+  "material/selene/selene.css",
+  "material/slots.css",
+  "tokens/color.css",
+  "tokens/typography.css",
+  "tokens/space.css",
+  "tokens/shape.css",
+  "tokens/motion.css",
+  "surfaces/surfaces.css"
 ];
 
 export const logPath = (slug: string): string => join(LOGS, `${slug}.jsonl`);
@@ -69,5 +71,5 @@ export const stylesText = async (): Promise<string> => {
   return parts.join("\n");
 };
 
-export const mockDocument = (css: string, theme: string, body: string): string =>
-  `<!doctype html>\n<html lang="en" data-theme="${theme}">\n<head><meta charset="utf-8"><style>${css}</style></head>\n<body>${body}</body>\n</html>\n`;
+export const mockDocument = (css: string, appearance: string, body: string): string =>
+  `<!doctype html>\n<html lang="en" data-appearance="${appearance}">\n<head><meta charset="utf-8"><style>${css}</style></head>\n<body>${body}</body>\n</html>\n`;

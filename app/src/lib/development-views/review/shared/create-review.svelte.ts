@@ -20,6 +20,8 @@ export type Entry = {
   readonly subject: string;
   /** `variables` — the file name. */
   readonly name: string;
+  /** Where it actually is, taken from the glob key rather than reconstructed. */
+  readonly path: string;
   readonly load: () => Promise<{ default: Component }>;
 };
 
@@ -34,15 +36,27 @@ export type RecordedRead = {
   readonly overridden: boolean;
 };
 
+/**
+ * `app-views/categories/<category>/<surface>/<name>.svelte`, and
+ * `app-views/general/<name>/<name>.svelte` for a lens belonging to no category.
+ *
+ * The subject is the category, because that is what the picker groups by and
+ * what a reader looking for a panel actually knows about it. A path shape that
+ * no longer exists is why all three pages read "Loading…" and nothing else: the
+ * glob matched no files, so there was never an entry to select.
+ */
 const entriesFrom = (modules: Record<string, () => Promise<unknown>>): Entry[] =>
   Object.entries(modules)
     .map(([path, load]) => {
-      const parts = path.split("/lib/")[1].replace(/\.svelte$/, "").split("/");
-      const rest = parts.slice(1);
+      const parts = path.split("/app-views/")[1].replace(/\.svelte$/, "").split("/");
+      const [tree, ...rest] = parts;
+      const name = rest[rest.length - 1];
+      const subject = tree === "categories" ? rest[0] : "general";
       return {
-        id: rest.join("/"),
-        subject: rest.length > 1 ? rest[0] : "—",
-        name: rest[rest.length - 1],
+        id: `${subject}/${name}`,
+        subject,
+        name,
+        path: `src/lib/app-views/${parts.join("/")}.svelte`,
         load: load as Entry["load"]
       };
     })

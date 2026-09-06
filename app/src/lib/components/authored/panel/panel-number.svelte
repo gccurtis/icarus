@@ -1,7 +1,4 @@
 <script lang="ts">
-  import Minus from "@lucide/svelte/icons/minus";
-  import Plus from "@lucide/svelte/icons/plus";
-
   import * as InputGroup from "$vendored-components/input-group";
   import { cn } from "$vendored-components/utils";
   import { traceNode } from "$development-components/trace.svelte";
@@ -113,22 +110,16 @@
     if (next !== value) onchange?.(next);
   };
 
-  const nudge = (direction: 1 | -1) => {
-    const next = clamp(quantize(value + direction * step));
-    if (next !== value) onchange?.(next);
-  };
-
-  const atMin = $derived(min !== undefined && value <= min);
-  const atMax = $derived(max !== undefined && value >= max);
 </script>
 
 <div {...trace} class={cn("flex", flush ? "px-0" : "px-3")}>
   <InputGroup.Root class="h-7">
     <!--
-      The native spinners are suppressed because this draws its own: two sets of
-      steppers on one field is two answers to the same question, and the browser's
-      pair is four pixels tall. Type `number` stays, for the arrow keys and for
-      the numeric keypad on a phone.
+      No steppers, drawn or native. A pair of buttons on every numeric field is
+      chrome on every row of an inspector to serve a gesture almost nobody makes,
+      and a disabled decrement at zero dims the whole field so a legitimate value
+      reads as unavailable. Type `number` stays, for the arrow keys and for the
+      numeric keypad on a phone.
     -->
     <InputGroup.Input
       type="number"
@@ -148,28 +139,10 @@
       }}
     />
 
-    <InputGroup.Addon align="inline-end" class="gap-1">
-      {#if unit}
+    {#if unit}
+      <InputGroup.Addon align="inline-end">
         <InputGroup.Text class="text-caption text-ink-muted">{unit}</InputGroup.Text>
-      {/if}
-      <InputGroup.Button
-        size="icon-xs"
-        aria-label="Decrease {label}"
-        title={atMin ? `${label} is at its minimum` : undefined}
-        disabled={inert || atMin}
-        onclick={() => nudge(-1)}
-      >
-        <Minus aria-hidden="true" />
-      </InputGroup.Button>
-      <InputGroup.Button
-        size="icon-xs"
-        aria-label="Increase {label}"
-        title={atMax ? `${label} is at its maximum` : undefined}
-        disabled={inert || atMax}
-        onclick={() => nudge(1)}
-      >
-        <Plus aria-hidden="true" />
-      </InputGroup.Button>
-    </InputGroup.Addon>
+      </InputGroup.Addon>
+    {/if}
   </InputGroup.Root>
 </div>

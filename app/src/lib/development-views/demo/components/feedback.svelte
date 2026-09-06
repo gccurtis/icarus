@@ -9,7 +9,11 @@
 </script>
 
 <section class="flex flex-col gap-4">
-  <SectionHeading title="Feedback and state" source="system/interaction/component.md" />
+  <SectionHeading
+    eyebrow="08 · Registry"
+    title="Feedback"
+    source="styles/aesthetic/states.md"
+  />
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">
     Every state names itself in copy. Colour never carries a state alone, and a failure without a
     recovery path is an accusation rather than a state.

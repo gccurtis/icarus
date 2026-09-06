@@ -18,7 +18,8 @@
       id: string;
       sizing: "flow" | "grow" | "fixed";
       text: string;
-      align: "start" | "center" | "end";
+      align: "start" | "center" | "end" | "justify";
+      vertical: "top" | "middle" | "bottom";
       size: "caption" | "body-sm" | "body" | "body-lg" | "h4" | "h3";
       weight: "normal" | "medium" | "semibold";
       width?: string;
@@ -30,10 +31,11 @@
   } = $props();
 </script>
 
-<div
-  class="border-border-subtle bg-surface-panel rounded-panel mx-auto flex w-full max-w-3xl flex-col items-start gap-4 border p-8"
-  style="aspect-ratio: 16 / 9"
->
+<div class="bg-surface-pasteboard rounded-panel flex justify-center p-6">
+  <div
+    class="bg-surface-work shadow-raised flex w-full max-w-3xl flex-col items-start gap-4 p-8"
+    style="aspect-ratio: 16 / 9"
+  >
   {#each blocks as block (block.id)}
     <ContentBlock
       sizing={block.sizing}
@@ -48,11 +50,13 @@
         value={block.text}
         label={`Text of ${block.id}`}
         align={block.align}
+        vertical={block.vertical}
         size={block.size}
         weight={block.weight}
         fill={block.sizing === "fixed"}
         oninput={(next: string) => onedit(block.id, next)}
       />
     </ContentBlock>
-  {/each}
+    {/each}
+  </div>
 </div>

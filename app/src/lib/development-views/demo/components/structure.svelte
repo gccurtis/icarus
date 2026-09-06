@@ -9,7 +9,11 @@
 </script>
 
 <section class="flex flex-col gap-4">
-  <SectionHeading title="Structure" source="shadcn-svelte, bridged to our tokens" />
+  <SectionHeading
+    eyebrow="08 · Registry"
+    title="Structure"
+    source="shadcn-svelte, bridged to our tokens"
+  />
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">
     The primitives the application frame will be built from. None of these are wired into
     <code class="font-mono">/app</code> yet — its zones are authored components rather than registry

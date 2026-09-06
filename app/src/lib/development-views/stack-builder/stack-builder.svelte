@@ -23,7 +23,7 @@
   provideStack(stack);
 
   let slug = $state("untitled");
-  let theme = $state<"celestial" | "cyberpunk">("celestial");
+  let appearance = $state<"helios" | "selene">("helios");
   let revision = $state(0);
   let notice = $state("");
 
@@ -79,17 +79,17 @@
   <section class="detail"><EntryDetail /></section>
 
   <aside class="ai">
-    <GeneratePanel {slug} {theme} ongenerated={() => (revision += 1)} />
+    <GeneratePanel {slug} {appearance} ongenerated={() => (revision += 1)} />
     <div class="frame">
-      <MockFrame {theme} {revision} />
+      <MockFrame {appearance} {revision} />
     </div>
     <div class="border-border-subtle flex items-center gap-2 border-t p-2">
       <Button
         variant="ghost"
         size="sm"
-        onclick={() => (theme = theme === "celestial" ? "cyberpunk" : "celestial")}
+        onclick={() => (appearance = appearance === "helios" ? "selene" : "helios")}
       >
-        {theme}
+        {appearance}
       </Button>
       <span class="text-caption text-ink-muted">the mock renders in the system font</span>
     </div>

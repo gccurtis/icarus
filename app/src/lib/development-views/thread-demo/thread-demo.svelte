@@ -2,11 +2,20 @@
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
 
   import ThreadAbout from "$development-views/thread-demo/components/thread-about.svelte";
+  import ThreadComments from "$development-views/thread-demo/components/thread-comments.svelte";
+  import ThreadFeed from "$development-views/thread-demo/components/thread-feed.svelte";
   import ThreadComposer from "$development-views/thread-demo/components/thread-composer.svelte";
   import ThreadTurn from "$development-views/thread-demo/components/thread-turn.svelte";
   import TurnFinding from "$development-views/thread-demo/components/turn-finding.svelte";
   import TurnTools from "$development-views/thread-demo/components/turn-tools.svelte";
   import { PanelProgress, PanelQuote } from "$authored-components/panel";
+  import { ResizeHandle } from "$authored-components/resize-handle";
+  import {
+    COLLAPSE_BELOW,
+    COLLAPSED_WIDTH,
+    MAX_WIDTH,
+    MIN_WIDTH
+  } from "$surfaces/inspector/types";
   import {
     ScreenEmpty,
     ScreenGroup,
@@ -276,6 +285,17 @@
 
   let title = $state("Why did Feeder 12 fail twice?");
 
+  const LENSES = [
+    { id: "about" as const, label: "About" },
+    { id: "feed" as const, label: "Feed" },
+    { id: "comments" as const, label: "Comments" }
+  ];
+
+  let lens = $state<"about" | "feed" | "comments">("about");
+  let panelWidth = $state(340);
+  let panelCollapsed = $state(false);
+  const visible = $derived(panelCollapsed ? COLLAPSED_WIDTH : panelWidth);
+
   const newest = $derived([...messages].reverse().find((message) => message.actor === "agent"));
   const turnSources = $derived(newest?.sources ?? []);
   const findings = $derived(
@@ -309,9 +329,6 @@
 <div class="flex h-full min-h-0">
   <div class="flex min-w-0 flex-1 flex-col">
     <ScreenSurface class="flex-1">
-      <a href="/demo/vocabulary" class="text-caption text-interactive-text w-fit hover:underline">
-        ← Composition vocabulary
-      </a>
 
       <ScreenHeader
         title="A thread"
@@ -574,18 +591,68 @@
     />
   </div>
 
-  <div class="border-border-subtle bg-surface-panel w-45 shrink-0 border-s">
-    <ThreadAbout
-      {title}
-      turns={messages.length}
-      {accepted}
-      {proposed}
-      {sourcesUsed}
-      sources={turnSources}
-      {pending}
-      onrename={(next) => (title = next)}
-      onclear={clear}
-      onopen={(what) => (opened = what)}
+  <aside
+    class="border-border-subtle bg-surface-panel relative flex shrink-0 flex-col border-s"
+    style="width: {visible}px"
+  >
+    {#if panelCollapsed}
+      <div class="flex h-full items-start justify-center pt-3">
+        <span class="text-micro text-ink-muted tracking-caps font-mono [writing-mode:vertical-rl]">
+          {LENSES.find((entry) => entry.id === lens)?.label}
+        </span>
+      </div>
+    {:else}
+      <div class="border-border-subtle flex shrink-0 border-b" role="tablist" aria-label="Lens">
+        {#each LENSES as entry (entry.id)}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={lens === entry.id}
+            class="text-label duration-micro ease-standard flex-1 px-2 py-2
+              {lens === entry.id
+              ? 'text-interactive-text bg-interactive-surface font-medium shadow-[inset_0_-2px_0_var(--token-color-interactive-border)]'
+              : 'text-ink-muted hover:text-ink-primary'}"
+            onclick={() => (lens = entry.id)}
+          >
+            {entry.label}
+          </button>
+        {/each}
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto">
+        {#if lens === "about"}
+          <ThreadAbout
+            {title}
+            turns={messages.length}
+            {accepted}
+            {proposed}
+            {sourcesUsed}
+            sources={turnSources}
+            {pending}
+            onrename={(next) => (title = next)}
+            onclear={clear}
+            onopen={(what) => (opened = what)}
+          />
+        {:else if lens === "feed"}
+          <ThreadFeed onopen={(what) => (opened = what)} />
+        {:else}
+          <ThreadComments onopen={(what) => (opened = what)} />
+        {/if}
+      </div>
+    {/if}
+
+    <ResizeHandle
+      side="end"
+      width={panelWidth}
+      collapsed={panelCollapsed}
+      min={MIN_WIDTH}
+      max={MAX_WIDTH}
+      collapseBelow={COLLAPSE_BELOW}
+      label="the thread panel"
+      onchange={({ width, collapsed }) => {
+        panelWidth = width;
+        panelCollapsed = collapsed;
+      }}
     />
-  </div>
+  </aside>
 </div>

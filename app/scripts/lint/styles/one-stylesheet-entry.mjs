@@ -1,64 +1,46 @@
 import { dirname, join, resolve } from "node:path";
 
 import { check } from "../shared/check.mjs";
-import { declarationsIn, importsIn } from "../shared/css.mjs";
-import {
-  TOKEN_FILES,
-  TOKEN_STAGE,
-  appCss,
-  bindsRoot,
-  selectorParts,
-  generatedCss,
-  slotsCss,
-  stylesRoot,
-  stylesheets
-} from "../shared/styles.mjs";
+import { importsIn } from "../shared/css.mjs";
 
 const LAYOUT = "src/routes/+layout.svelte";
 const LAYOUT_IMPORT = '"$styles/app.css"';
 
-/** A theme binds `:root` when it is the default; the alternates bind their attribute only. */
-const isDefault = (tree, path) =>
-  declarationsIn(tree.read(path), path).some(({ selectors }) => bindsRoot(selectorParts(selectors)));
+const ORDER = [
+  ["material", "ramps.css"],
+  ["material", "helios", "helios.css"],
+  ["material", "selene", "selene.css"],
+  ["material", "slots.css"],
+  ["tokens", "color.css"],
+  ["tokens", "typography.css"],
+  ["tokens", "space.css"],
+  ["tokens", "shape.css"],
+  ["tokens", "motion.css"],
+  ["surfaces", "surfaces.css"],
+  ["integrations", "tailwind", "tailwind.css"],
+  ["integrations", "shadcn", "variants.css"],
+  ["integrations", "shadcn", "bridge.css"]
+];
 
-/**
- * The order the stages have to execute in: the default theme, then the
- * alternates, then slot resolution, then tokens, then the adapters. A stage that
- * reads a value declared after it resolves to nothing.
- */
-const expectedOrder = (tree) => {
-  const root = stylesRoot(tree);
-  const themes = tree
-    .dirsIn(join(root, "chromatic-themes"))
-    .map((name) => join(root, "chromatic-themes", name, `${name}.css`))
-    .filter((path) => tree.isFile(path));
-  const defaults = themes.filter((path) => isDefault(tree, path));
-  const alternates = themes.filter((path) => !defaults.includes(path)).sort();
+const stylesRoot = (tree) => tree.path("styles");
+const appCss = (tree) => join(stylesRoot(tree), "app.css");
+const generatedCss = (tree) => join(stylesRoot(tree), "integrations", "shadcn", "generated.css");
+const expectedOrder = (tree) => ORDER.map((parts) => join(stylesRoot(tree), ...parts));
 
-  const named = [
-    ...defaults,
-    ...alternates,
-    slotsCss(tree),
-    ...TOKEN_FILES.map((name) => join(root, TOKEN_STAGE, name)),
-    join(root, "x-integrations", "tailwind", "tailwind.css"),
-    join(root, "x-integrations", "shadcn", "variants.css"),
-    join(root, "x-integrations", "shadcn", "bridge.css")
-  ];
-  const known = new Set(named);
-  const rest = tree
-    .under(join(root, "x-integrations"))
-    .filter((path) => path.endsWith(".css") && path !== generatedCss(tree) && !known.has(path))
-    .sort();
-  return [...named, ...rest].filter((path) => tree.isFile(path));
-};
+const authored = (tree) =>
+  tree
+    .under(stylesRoot(tree))
+    .filter((path) => path.endsWith(".css"))
+    .filter((path) => path !== appCss(tree) && path !== generatedCss(tree));
 
 export default check({
   name: "one-stylesheet-entry",
   says: "Two entry points is two cascade orders, and which one wins depends on load order.",
   subjects: {
     "single-entry": "the root layout imports app.css once, and nothing else imports a stylesheet",
-    "every-file-reachable": "every authored stage file is imported by app.css exactly once",
-    "import-order": "imports are contiguous and in stage order, default theme first, slots after every theme"
+    "every-file-reachable": "every authored stylesheet is imported by app.css exactly once",
+    "import-order":
+      "imports are contiguous and in cascade order: material, slots, tokens, surfaces, adapters"
   },
   run(tree) {
     const found = [];
@@ -73,12 +55,16 @@ export default check({
     const expected = expectedOrder(tree);
 
     if (taken.length !== expected.length || taken.some((path, index) => path !== expected[index])) {
-      found.push({ subject: "import-order", path: app, message: "the imports are not the stages in order" });
+      found.push({
+        subject: "import-order",
+        path: app,
+        message: "the imports are not the cascade in order"
+      });
     }
 
     const counts = new Map();
     for (const path of taken) counts.set(path, (counts.get(path) ?? 0) + 1);
-    for (const path of expected) {
+    for (const path of new Set([...expected, ...authored(tree)])) {
       const count = counts.get(path) ?? 0;
       if (count === 1) continue;
       found.push({
@@ -88,10 +74,7 @@ export default check({
       });
     }
 
-    // A stage stylesheet that pulls in another is a second cascade order hidden
-    // one level down, where app.css's list does not show it.
-    for (const path of stylesheets(tree)) {
-      if (path === app) continue;
+    for (const path of authored(tree)) {
       for (const { target, relative, line } of importsIn(tree.read(path), path)) {
         if (!relative) continue;
         found.push({ subject: "single-entry", path, line, message: `hides an import of ${target}` });

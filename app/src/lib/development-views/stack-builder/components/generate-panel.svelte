@@ -7,9 +7,9 @@
 
   let {
     slug,
-    theme,
+    appearance,
     ongenerated
-  }: { slug: string; theme: string; ongenerated: () => void } = $props();
+  }: { slug: string; appearance: string; ongenerated: () => void } = $props();
 
   const stack = stackOf();
 
@@ -32,7 +32,7 @@
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           slug,
-          theme,
+          appearance,
           model,
           feedback,
           title: stack.title,
@@ -57,7 +57,7 @@
 
   const clear = async () => {
     failure = "";
-    await fetch(`/demo/stack-builder/mock?theme=${theme}`, { method: "DELETE" });
+    await fetch(`/demo/stack-builder/mock?appearance=${appearance}`, { method: "DELETE" });
     ongenerated();
   };
 

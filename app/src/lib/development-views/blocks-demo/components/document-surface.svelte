@@ -17,7 +17,8 @@
     blocks: readonly {
       id: string;
       text: string;
-      align: "start" | "center" | "end";
+      align: "start" | "center" | "end" | "justify";
+      vertical: "top" | "middle" | "bottom";
       size: "caption" | "body-sm" | "body" | "body-lg" | "h4" | "h3";
       weight: "normal" | "medium" | "semibold";
     }[];
@@ -27,9 +28,10 @@
   } = $props();
 </script>
 
-<div
-  class="border-border-subtle bg-surface-panel rounded-panel mx-auto flex w-full max-w-3xl flex-col gap-4 border px-12 py-10"
->
+<div class="bg-surface-pasteboard rounded-panel flex justify-center p-6">
+  <div
+    class="bg-surface-work shadow-raised font-reading leading-reading flex w-full max-w-3xl flex-col gap-4 px-12 py-10"
+  >
   {#each blocks as block (block.id)}
     <ContentBlock
       sizing="flow"
@@ -41,10 +43,12 @@
         value={block.text}
         label={`Text of ${block.id}`}
         align={block.align}
+        vertical={block.vertical}
         size={block.size}
         weight={block.weight}
         oninput={(next: string) => onedit(block.id, next)}
       />
     </ContentBlock>
-  {/each}
+    {/each}
+  </div>
 </div>

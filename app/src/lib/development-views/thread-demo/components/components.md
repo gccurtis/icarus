@@ -23,13 +23,48 @@ where the content begins.
 
 <!-- generated:inventory:start -->
 - [`thread-about.svelte`](thread-about.svelte)
+- [`thread-comments.svelte`](thread-comments.svelte)
 - [`thread-composer.svelte`](thread-composer.svelte)
+- [`thread-feed.svelte`](thread-feed.svelte)
 - [`thread-turn.svelte`](thread-turn.svelte)
 - [`turn-finding.svelte`](turn-finding.svelte)
 - [`turn-tools.svelte`](turn-tools.svelte)
 <!-- generated:inventory:end -->
 
 ## Subtree Contracts
+
+### `thread-feed`
+
+- **Root:** [`thread-feed.svelte`](thread-feed.svelte)
+- **Purpose:** Activity and Mentions, rendered, so the page's argument about
+  feeds can be checked rather than only read.
+- **Inputs:** `onopen: (what: string) => void`
+- **Outputs:** the row that was opened.
+- **Owned children:** `Panel`, `PanelSection`, `PanelRow`, `PanelNote`
+
+Every row is `PanelRow` inside `PanelSection`, which *is* the claim: a feed is a
+query plus a row, and the row already exists. What makes these a feed rather than
+a thread is on the record — each row carries an origin, each is finished the
+moment it is written, and there is no composer, because there is no *here* for a
+new row to belong to.
+
+### `thread-comments`
+
+- **Root:** [`thread-comments.svelte`](thread-comments.svelte)
+- **Purpose:** What a comment thread should look like in a flank, at the width a
+  flank actually is.
+- **Inputs:** `onopen: (what: string) => void`
+- **Outputs:** the action that was taken.
+- **Owned children:** `Panel`, `PanelSection`, `PanelQuote`, `PanelActor`,
+  `PanelInput`, `PanelButton`, `PanelActions`, `PanelNote`
+
+**A proposal, not a component that exists.** Its cards are tokens and named
+surfaces rather than panel vocabulary, because the vocabulary has no word for a
+comment yet, and the point of drawing it is to settle the shape before writing
+one: an anchored source block in the reading voice, a rule, one primary comment,
+indented replies. A detached thread is a row here with a relink action, never a
+pin floating on the page beside content it is not attached to.
+
 
 ### `thread-turn`
 

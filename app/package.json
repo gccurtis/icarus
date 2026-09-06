@@ -28,8 +28,6 @@
     "new-method": "node scripts/generation/model/new-method.mjs",
     "new-domain": "node scripts/generation/representation/new-domain.mjs",
     "new-table": "node scripts/generation/representation/new-table.mjs",
-    "new-theme": "node scripts/generation/styles/new-theme.mjs",
-    "new-token": "node scripts/generation/styles/new-token.mjs",
     "new-surface": "node scripts/generation/views/new-surface.mjs",
     "new-concern-entry": "node scripts/generation/views/new-concern-entry.mjs",
     "new-view": "node scripts/generation/views/new-view.mjs",
@@ -42,6 +40,7 @@
   "dependencies": {
     "@fontsource/ibm-plex-mono": "latest",
     "@fontsource/ibm-plex-sans": "latest",
+    "@fontsource/ibm-plex-serif": "latest",
     "bits-ui": "^2.19.0",
     "clsx": "latest",
     "konva": "^10.3.2",

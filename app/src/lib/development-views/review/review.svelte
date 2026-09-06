@@ -138,7 +138,7 @@
       />
       {#if review.selected}
         <span class="text-caption text-ink-muted font-mono">
-          src/lib/{kind === "workspace" ? "workspaces" : kind}/{review.selected.id}.svelte
+          {review.selected.path}
         </span>
       {/if}
     </div>

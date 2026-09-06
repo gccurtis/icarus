@@ -1,0 +1,1699 @@
+<title>Celestial Style System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+
+<style>
+  :root {
+    --canvas: #f7f4ec;
+    --work: #fffefa;
+    --panel: #eeeae0;
+    --panel-hover: #e4dfd2;
+    --elevated: #ffffff;
+    --pasteboard: #d8d3c4;
+    --seam: #d8d3c4;
+    --seam-strong: #b9b3a1;
+    --ink: #1d2329;
+    --ink-2: #3a424d;
+    --ink-3: #6b7280;
+    --inverted: #1d2329;
+    --on-inverted: #fffefa;
+    --blue: #1e3179;
+    --blue-mid: #3657c9;
+    --blue-soft: #eef1fb;
+    --violet: #412b80;
+    --violet-mid: #6f49d8;
+    --violet-soft: #f3effc;
+    --cyan: #02597a;
+    --cyan-mid: #0087b8;
+    --cyan-soft: #eaf6fb;
+    --amber: #6b4510;
+    --amber-soft: #fef6e8;
+    --red: #92251d;
+    --red-soft: #fdf1ef;
+    --green: #145c34;
+    --green-soft: #eff8f2;
+    --shadow-raised: 0 4px 10px -3px rgb(29 35 41 / 18%);
+    --shadow-overlay: 0 12px 32px -8px rgb(29 35 41 / 18%);
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --canvas: #131925;
+      --work: #181f2e;
+      --panel: #10141e;
+      --panel-hover: #253047;
+      --elevated: #1d2639;
+      --pasteboard: #0a0c12;
+      --seam: #253047;
+      --seam-strong: #3d4f75;
+      --ink: #f2f4f5;
+      --ink-2: #d8dde2;
+      --ink-3: #93a0b4;
+      --inverted: #d8dde2;
+      --on-inverted: #131925;
+      --blue: #ccd6f2;
+      --blue-mid: #6e8bff;
+      --blue-soft: #131f4b;
+      --violet: #dacff7;
+      --violet-mid: #a98bff;
+      --violet-soft: #291b50;
+      --cyan: #bce2f2;
+      --cyan-mid: #38bdf8;
+      --cyan-soft: #013a50;
+      --amber: #fae3b8;
+      --amber-soft: #452b09;
+      --red: #fad5d0;
+      --red-soft: #5a1611;
+      --green: #c9e8d5;
+      --green-soft: #0c3a20;
+      --shadow-raised: 0 4px 10px -3px rgb(10 12 18 / 55%);
+      --shadow-overlay: 0 12px 32px -8px rgb(10 12 18 / 60%);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --canvas: #131925;
+    --work: #181f2e;
+    --panel: #10141e;
+    --panel-hover: #253047;
+    --elevated: #1d2639;
+    --pasteboard: #0a0c12;
+    --seam: #253047;
+    --seam-strong: #3d4f75;
+    --ink: #f2f4f5;
+    --ink-2: #d8dde2;
+    --ink-3: #93a0b4;
+    --inverted: #d8dde2;
+    --on-inverted: #131925;
+    --blue: #ccd6f2;
+    --blue-mid: #6e8bff;
+    --blue-soft: #131f4b;
+    --violet: #dacff7;
+    --violet-mid: #a98bff;
+    --violet-soft: #291b50;
+    --cyan: #bce2f2;
+    --cyan-mid: #38bdf8;
+    --cyan-soft: #013a50;
+    --amber: #fae3b8;
+    --amber-soft: #452b09;
+    --red: #fad5d0;
+    --red-soft: #5a1611;
+    --green: #c9e8d5;
+    --green-soft: #0c3a20;
+    --shadow-raised: 0 4px 10px -3px rgb(10 12 18 / 55%);
+    --shadow-overlay: 0 12px 32px -8px rgb(10 12 18 / 60%);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: 0;
+  }
+
+  button, input, textarea, select { font: inherit; color: inherit; }
+
+  :is(a, button, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--blue-mid);
+    outline-offset: 2px;
+  }
+
+  code, .mono, .hex, .tok { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  .wrap { max-width: 108rem; margin: 0 auto; padding-inline: clamp(1rem, 3vw, 3.5rem); }
+
+  /* ---------- masthead ---------- */
+
+  .mast { padding-block: clamp(3rem, 6vw, 5rem) 2.5rem; }
+
+  .eyebrow {
+    display: block;
+    margin: 0 0 1rem;
+    color: var(--violet-mid);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    max-width: 16ch;
+    margin: 0;
+    font-size: clamp(2.5rem, 6.2vw, 4.75rem);
+    font-weight: 600;
+    line-height: 1.02;
+    letter-spacing: -0.032em;
+    text-wrap: balance;
+  }
+
+  .lede {
+    max-width: 62ch;
+    margin: 1.75rem 0 0;
+    color: var(--ink-2);
+    font-family: "IBM Plex Serif", ui-serif, Georgia, serif;
+    font-size: 1.1rem;
+    line-height: 1.7;
+  }
+
+  .mast-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    gap: 4rem;
+    align-items: end;
+  }
+
+  .verdict {
+    padding: 1.1rem 1.25rem;
+    border: 1px solid var(--seam);
+    border-left: 3px solid var(--cyan-mid);
+    border-radius: 0 10px 10px 0;
+    background: var(--cyan-soft);
+  }
+  .verdict .eyebrow { color: var(--cyan); margin-bottom: 0.35rem; }
+  .verdict strong { display: block; font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.02em; }
+  .verdict p { margin: 0.5rem 0 0; color: var(--ink-2); font-size: 13px; }
+
+  /* ---------- nav ---------- */
+
+  nav.sections {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    border-block: 1px solid var(--seam);
+    background: color-mix(in srgb, var(--canvas) 88%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  nav.sections ol {
+    display: flex;
+    margin: 0 auto;
+    padding: 0;
+    max-width: 108rem;
+    padding-inline: clamp(1rem, 3vw, 3.5rem);
+    list-style: none;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  nav.sections a {
+    display: block;
+    padding: 0.7rem 1rem;
+    border-right: 1px solid var(--seam);
+    color: var(--ink-3);
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  nav.sections li:first-child a { padding-left: 0; }
+  nav.sections li:last-child a { border-right: 0; }
+  nav.sections a:hover { color: var(--ink); }
+  nav.sections a b { color: var(--seam-strong); font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 400; margin-right: 0.45rem; }
+
+  .navbar { display: flex; align-items: center; gap: 1rem; max-width: 108rem; margin: 0 auto; padding-inline: clamp(1rem, 3vw, 3.5rem); }
+  .navbar ol { flex: 1; min-width: 0; padding-inline: 0; }
+  .appearance { display: flex; flex: none; gap: 2px; padding: 3px; border: 1px solid var(--seam-strong); border-radius: 8px; }
+  .appearance button {
+    padding: 0.3rem 0.7rem;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--ink-3);
+    cursor: pointer;
+    font-size: 11.5px;
+    font-weight: 500;
+    transition: background-color 100ms cubic-bezier(0.2, 0.8, 0.2, 1), color 100ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .appearance button:hover { color: var(--ink); }
+  .appearance button[aria-pressed="true"] { background: var(--blue-mid); color: var(--work); }
+  @media (max-width: 60rem) {
+    .navbar { flex-wrap: wrap; padding-block: 0.4rem; }
+    .navbar ol { order: 2; width: 100%; }
+    .appearance { order: 1; margin-left: auto; }
+  }
+
+  /* ---------- sections ---------- */
+
+  section { padding-block: clamp(3rem, 5vw, 4.5rem); scroll-margin-top: 3.5rem; }
+  section + section { border-top: 1px solid var(--seam); }
+
+  .head { display: flex; align-items: baseline; justify-content: space-between; gap: 2rem; flex-wrap: wrap; margin-bottom: 1.75rem; }
+  h2 { margin: 0; font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 600; line-height: 1.1; letter-spacing: -0.022em; }
+  .head p { max-width: 52ch; margin: 0; color: var(--ink-3); font-size: 13px; }
+
+  .body { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; gap: 3rem; align-items: start; }
+
+  h3 { margin: 2.5rem 0 0.75rem; font-size: 1.15rem; font-weight: 600; letter-spacing: -0.012em; }
+  h3:first-child { margin-top: 0; }
+  h4 { margin: 1.75rem 0 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--ink-2); }
+
+  p { max-width: 70ch; }
+  .prose p, .prose li { font-family: "IBM Plex Serif", ui-serif, Georgia, serif; font-size: 1rem; line-height: 1.7; color: var(--ink-2); max-width: 70ch; }
+  .prose blockquote {
+    margin: 0 0 1.5rem;
+    padding: 0.85rem 1.1rem;
+    border-left: 3px solid var(--seam-strong);
+    border-radius: 0 8px 8px 0;
+    background: var(--panel);
+  }
+  .prose blockquote p { margin: 0; font-size: 0.94rem; color: var(--ink-2); }
+  .prose strong { color: var(--ink); font-weight: 600; }
+  .prose ul { padding-left: 1.1rem; }
+  .prose li { margin-bottom: 0.4rem; }
+
+  code {
+    padding: 1px 5px;
+    border: 1px solid var(--seam);
+    border-radius: 4px;
+    background: var(--panel);
+    font-size: 0.85em;
+  }
+  .prose code { background: var(--panel); }
+
+  /* ---------- tables ---------- */
+
+  .tablewrap { margin: 1.25rem 0; overflow-x: auto; border: 1px solid var(--seam); border-radius: 10px; background: var(--elevated); }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--seam-strong);
+    color: var(--ink-3);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  td { padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--seam); color: var(--ink-2); font-size: 13px; vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; text-align: right; }
+  td:first-child { color: var(--ink); font-weight: 500; }
+  td.tok, th.tok { font-family: "IBM Plex Mono", monospace; }
+  .fail { color: var(--red); font-weight: 600; }
+
+  /* ---------- seam grids ---------- */
+
+  .seamgrid { display: grid; gap: 1px; margin: 1.25rem 0; border: 1px solid var(--seam); border-radius: 10px; overflow: hidden; background: var(--seam); }
+  .seamgrid > div { padding: 1rem 1.1rem; background: var(--elevated); }
+  .seamgrid strong { display: block; font-size: 1.9rem; font-weight: 600; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .seamgrid span { display: block; margin-top: 0.5rem; color: var(--ink-3); font-size: 11px; }
+  .g5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .cardgrid { display: grid; gap: 1px; margin: 1.25rem 0; border: 1px solid var(--seam); border-radius: 10px; overflow: hidden; background: var(--seam); }
+  .cardgrid > article { padding: 1.1rem 1.15rem; background: var(--elevated); }
+  .cardgrid h4 { margin: 0 0 0.4rem; font-size: 0.95rem; color: var(--ink); }
+  .cardgrid p { margin: 0; font-size: 12.5px; color: var(--ink-3); max-width: 46ch; }
+  .cardgrid .tag { display: block; margin-bottom: 0.55rem; color: var(--violet-mid); font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* ---------- trees ---------- */
+
+  .trees { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 1.25rem 0; border: 1px solid var(--seam); border-radius: 10px; overflow: hidden; background: var(--seam); }
+  .trees > div { padding: 1.1rem 1.2rem; background: var(--elevated); overflow-x: auto; }
+  .trees h4 { margin: 0 0 0.75rem; }
+  .trees pre { margin: 0; font-family: "IBM Plex Mono", monospace; font-size: 11.5px; line-height: 1.65; color: var(--ink-2); }
+  .trees .gone { color: var(--red); }
+  .trees .new { color: var(--green); font-weight: 500; }
+  .trees .kept { color: var(--ink-3); }
+
+  /* ---------- swatches ---------- */
+
+  .ramp { display: grid; grid-template-columns: 5.5rem repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--seam); }
+  .ramps { margin: 1.25rem 0; border: 1px solid var(--seam); border-radius: 10px; overflow: hidden; }
+  .ramp > * { background: var(--elevated); }
+  .ramp .name { display: flex; align-items: center; padding-left: 0.85rem; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink); }
+  .ramp .step { height: 2.6rem; position: relative; }
+  .ramp .step i { position: absolute; inset: 0; }
+  .ramphead { display: grid; grid-template-columns: 5.5rem repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--seam); }
+  .ramphead > * { background: var(--elevated); padding: 0.5rem 0.4rem; color: var(--ink-3); font-size: 9.5px; letter-spacing: 0.09em; text-transform: uppercase; text-align: center; }
+  .ramphead > *:first-child { text-align: left; padding-left: 0.85rem; }
+
+  .planes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; margin: 1rem 0 1.5rem; border: 1px solid var(--seam); border-radius: 10px; overflow: hidden; background: var(--seam); }
+  .planes > div { background: var(--elevated); padding: 0.8rem; }
+  .planes .chip { height: 3.2rem; border: 1px solid var(--seam); border-radius: 6px; margin-bottom: 0.55rem; }
+  .planes b { display: block; font-size: 11px; font-weight: 500; }
+  .planes span { display: block; margin-top: 0.15rem; color: var(--ink-3); font-family: "IBM Plex Mono", monospace; font-size: 10px; }
+
+  .diff { display: grid; gap: 1px; margin: 1.25rem 0; border: 1px solid var(--seam); border-radius: 10px; overflow: hidden; background: var(--seam); }
+  .diff > div { display: grid; grid-template-columns: 9rem 3rem 1.5rem 3rem 5rem minmax(0, 1fr); gap: 0.75rem; align-items: center; padding: 0.7rem 0.9rem; background: var(--elevated); }
+  .diff .label { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink); }
+  .diff .sw { height: 1.75rem; border: 1px solid var(--seam); border-radius: 5px; }
+  .diff .arrow { color: var(--ink-3); text-align: center; font-size: 12px; }
+  .diff .hex { font-size: 10.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .diff .why { font-size: 12px; color: var(--ink-2); }
+  .diff .heads { background: var(--panel); color: var(--ink-3); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* ---------- inverted ---------- */
+
+  .inverted {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
+    gap: 3rem;
+    margin: 1.5rem 0;
+    padding: 2rem 2.2rem;
+    border-radius: 12px;
+    background: var(--inverted);
+    color: var(--on-inverted);
+  }
+  .inverted h3 { margin: 0; color: var(--on-inverted); font-size: clamp(1.4rem, 2.4vw, 2rem); line-height: 1.12; letter-spacing: -0.025em; }
+  .inverted p { margin: 0; color: color-mix(in srgb, var(--on-inverted) 80%, transparent); font-family: "IBM Plex Serif", ui-serif, Georgia, serif; line-height: 1.7; max-width: 62ch; }
+  .inverted p + p { margin-top: 1rem; }
+  .inverted .eyebrow { color: color-mix(in srgb, var(--on-inverted) 62%, transparent); }
+  .inverted code { background: color-mix(in srgb, var(--on-inverted) 12%, transparent); border-color: color-mix(in srgb, var(--on-inverted) 22%, transparent); color: var(--on-inverted); }
+
+  /* ---------- note gutter ---------- */
+
+  .gutter { position: sticky; top: 4rem; }
+  .note { border: 1px solid var(--seam); border-radius: 10px; background: var(--elevated); overflow: hidden; }
+  .note header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--seam); background: var(--panel); }
+  .note header b { color: var(--ink-2); font-size: 10px; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; }
+  .note .state { color: var(--ink-3); font-size: 10px; }
+  .note .state.saved { color: var(--green); }
+  .note .state.failed { color: var(--red); }
+  .note textarea {
+    display: block;
+    width: 100%;
+    min-height: 7.5rem;
+    padding: 0.65rem 0.7rem;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-size: 12.5px;
+    line-height: 1.55;
+    resize: vertical;
+  }
+  .note textarea:focus { outline: none; box-shadow: inset 0 0 0 2px var(--blue-mid); }
+  .note footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0.7rem; border-top: 1px solid var(--seam); }
+  .note button {
+    height: 1.75rem;
+    padding: 0 0.7rem;
+    border: 1px solid var(--blue-mid);
+    border-radius: 6px;
+    background: var(--blue-mid);
+    color: var(--work);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: background-color 100ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .note button:hover:not(:disabled) { background: var(--blue); border-color: var(--blue); }
+  .note button:disabled { opacity: 0.45; cursor: default; }
+  .note small { color: var(--ink-3); font-size: 10px; }
+
+  .gutter-off { padding: 0.7rem; border: 1px dashed var(--seam-strong); border-radius: 10px; color: var(--ink-3); font-size: 11px; }
+
+  /* ---------- misc ---------- */
+
+  .callout {
+    margin: 1.5rem 0;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--seam);
+    border-left: 3px solid var(--amber);
+    border-radius: 0 10px 10px 0;
+    background: var(--amber-soft);
+  }
+  .callout p { margin: 0; font-size: 13px; color: var(--ink-2); max-width: 76ch; }
+  .callout b { color: var(--ink); }
+
+  .fork { margin: 1.25rem 0; border: 1px solid var(--seam); border-left: 3px solid var(--violet-mid); border-radius: 0 10px 10px 0; background: var(--violet-soft); padding: 0.9rem 1.1rem; }
+  .fork b { display: block; margin-bottom: 0.3rem; font-size: 13px; }
+  .fork p { margin: 0; font-size: 12.5px; color: var(--ink-2); max-width: 76ch; }
+
+  .pass { color: var(--green); font-weight: 600; }
+
+  .docnav { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1.25rem 0 2rem; }
+  .docnav a {
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--seam-strong);
+    border-radius: 6px;
+    background: var(--elevated);
+    color: var(--ink-2);
+    font-size: 11.5px;
+    text-decoration: none;
+  }
+  .docnav a:hover { border-color: var(--blue-mid); color: var(--blue); }
+
+  .doc { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--seam); scroll-margin-top: 4rem; }
+  .doc:first-of-type { margin-top: 1rem; padding-top: 0; border-top: 0; }
+  .docpath { display: block; margin-bottom: 0.35rem; color: var(--ink-3); font-family: "IBM Plex Mono", monospace; font-size: 10.5px; }
+
+  footer.end { padding-block: 3rem 4rem; border-top: 1px solid var(--seam); color: var(--ink-3); font-size: 12px; }
+
+  @media (max-width: 68rem) {
+    .mast-grid { grid-template-columns: 1fr; gap: 2rem; }
+    .verdict { max-width: 26rem; }
+    .body { grid-template-columns: 1fr; gap: 1.75rem; }
+    .gutter { position: static; }
+    .trees { grid-template-columns: 1fr; }
+    .inverted { grid-template-columns: 1fr; gap: 1.25rem; }
+    .g5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .planes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .diff > div { grid-template-columns: 7rem 2.5rem 1rem 2.5rem; row-gap: 0.35rem; }
+    .diff .hex, .diff .why { grid-column: 1 / -1; }
+  }
+  @media (max-width: 44rem) {
+    .g5, .g4, .g3, .g2, .cardgrid { grid-template-columns: 1fr; }
+    .planes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ramp, .ramphead { grid-template-columns: 4.5rem repeat(7, minmax(0, 1fr)); }
+    .ramp .name { font-size: 10px; padding-left: 0.5rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  }
+</style>
+
+<div class="wrap mast">
+  <div class="mast-grid">
+    <div>
+      <span class="eyebrow">work/styling &middot; second pass, your notes integrated</span>
+      <h1>A formless citadel amongst the clouds.</h1>
+      <p class="lede">
+        Whose curves channel the manifestation of the solar will. That sentence is now the top of
+        the tree, and everything under <code>styles/</code> is downstream of it &mdash;
+        <strong>Celestial Helios</strong> for the day reading, <strong>Celestial Selene</strong> for
+        the night one.
+      </p>
+    </div>
+    <aside class="verdict">
+      <span class="eyebrow">Status</span>
+      <strong>Both demos rebuilt</strong>
+      <p>
+        Your four notes are integrated, <code>/demo</code> and <code>/demo/blocks</code> are
+        rebuilt, and both readings are now verified by eye rather than only by measurement.
+      </p>
+    </aside>
+  </div>
+</div>
+
+<nav class="sections" aria-label="Sections">
+  <div class="navbar">
+  <ol>
+    <li><a href="#notes"><b>01</b>Your notes</a></li>
+    <li><a href="#diagnosis"><b>02</b>Diagnosis</a></li>
+    <li><a href="#tree"><b>03</b>The tree</a></li>
+    <li><a href="#documents"><b>04</b>The documents</a></li>
+    <li><a href="#material"><b>05</b>The material</a></li>
+    <li><a href="#diff"><b>06</b>Palette diff</a></li>
+    <li><a href="#tokens"><b>07</b>New tokens</a></li>
+    <li><a href="#verification"><b>08</b>What ran</a></li>
+    <li><a href="#next"><b>09</b>What's next</a></li>
+  </ol>
+  <div class="appearance" role="group" aria-label="Appearance">
+    <button type="button" data-set="light" title="Celestial Helios &mdash; the light reading">Helios</button>
+    <button type="button" data-set="dark" title="Celestial Selene &mdash; the dark reading">Selene</button>
+  </div>
+  </div>
+</nav>
+
+<!-- ============================================ 01 -->
+<section id="notes" class="wrap">
+  <div class="head">
+    <h2>What your notes changed</h2>
+    <p>
+      Every note, and what it did to the system. Three of them changed the architecture, not just
+      the wording.
+    </p>
+  </div>
+
+  <div class="body">
+    <div>
+      <div class="inverted">
+        <div>
+          <span class="eyebrow">The line that moved everything</span>
+          <h3>A formless citadel amongst the clouds, whose curves channel the manifestation of the solar will.</h3>
+        </div>
+        <div>
+          <p>
+            This replaced "an angelic citadel operated through astro-tech" at the top of
+            <code>aesthetic.md</code>, and it is a better brief because it says what the *shape* is
+            for. The citadel is not fortified and not ornamental &mdash; its intricacy is in its
+            smoothness, and a surface you can fall into is a surface you can work in.
+          </p>
+          <p>
+            It also gave the two materials their names: Helios channels the will directly, Selene
+            returns it.
+          </p>
+        </div>
+      </div>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Your note</th><th>What changed</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>"celestial is the aesthetic, so material dir should probably be called material"</td>
+              <td><code>celestial/</code> &rarr; <code>material/</code>. Celestial is now the name of the aesthetic at the top of the tree, not a directory of colours.</td>
+            </tr>
+            <tr>
+              <td>"a surfaces dir could be very helpful"</td>
+              <td>New <code>styles/surfaces/</code> &mdash; the named arrangements a screen is built out of. It is the layer that was actually missing: tokens are values, surfaces are the compositions those values were bought for.</td>
+            </tr>
+            <tr>
+              <td>"the right things visible in the right place &mdash; placement is just so important"</td>
+              <td>Law 2 rewritten, and <code>arrangement.md</code> now opens on it: <em>placement is not a delivery detail for a decision made elsewhere, it is half the decision.</em> Where, in what order, and in what grouping.</td>
+            </tr>
+            <tr>
+              <td>"I wouldn't anchor on symmetry as much as rhythm and restraint"</td>
+              <td>The symmetry section is gone. Rhythm replaced it, with your two promises as the test: what you see never looks like clutter, and what you see always seems related to what you want. Grouping is now a claim you must be able to defend out loud.</td>
+            </tr>
+            <tr>
+              <td>"I don't know what you mean by uncertainty as part of the aesthetic &mdash; provenance is what we're after"</td>
+              <td>You were right and the old framing was weak. <strong>If the system cannot establish where something came from, it does not show the something</strong> &mdash; it says it could not find it. Not a low-confidence value with a caveat. A new <code>Untraceable</code> state carries it.</td>
+            </tr>
+            <tr>
+              <td>"motion without intent is disruption &hellip; it should be caused, and it should always be meaningful"</td>
+              <td>That is now the law, verbatim in substance. <code>motion.md</code> names the exact two things motion may say &mdash; <em>you did that</em>, and <em>this happened, and you may want to do something about it</em> &mdash; with your toast-and-pill examples.</td>
+            </tr>
+            <tr>
+              <td>"as many curves as is necessary &mdash; don't intentionally limit"</td>
+              <td>The ceiling is gone. Two are declared because two kinds of cause are established; a third arrives the day a third kind of cause does.</td>
+            </tr>
+            <tr>
+              <td>"header rows for tables should be a different background colour &hellip; first column left, the rest centred"</td>
+              <td>Fixed as a system convention, not a per-site choice. <code>.data-table</code> gives the header its own plane, left-aligns the key column with one vertical seam after it, centres everything else, and uses tabular figures.</td>
+            </tr>
+            <tr>
+              <td>"clear delineations &hellip; distinction as being a form of communication"</td>
+              <td>Promoted to a law of its own. A change of ground, a rule, a divider, a plane &mdash; each is a sentence saying <em>this is a different kind of thing</em>, and the usual failure is under-spending them.</td>
+            </tr>
+            <tr>
+              <td>"light and dark don't have to be mirrors &hellip; the whole chromatic set could be unique for dark"</td>
+              <td>The structure now allows exactly that, and Selene uses it for three entries. See the <a href="#diff">palette diff</a>.</td>
+            </tr>
+            <tr>
+              <td>"the general font size maybe could be a little larger &hellip; legibility is one of our laws"</td>
+              <td><code>type.md</code> gained a rule: the fine steps are for chrome, not content. Anything a person actually reads starts at <code>body-sm</code>. The most common way to break "beauty is legibility" is to keep shrinking type until a dense panel fits.</td>
+            </tr>
+            <tr>
+              <td>"I don't think we should overdo the semantics &hellip; free to explore as we need"</td>
+              <td><code>states.md</code> now opens by saying the matrix is a floor, not a cage &mdash; and <code>aesthetic.md</code> closes with it: a system that prevents its own best work has failed at the only thing it was for.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <p>
+          <b>One thing I did not do.</b> You said the note box could be bigger and might lose its
+          border. I left this artifact's gutter as it is for now, because changing it mid-review
+          would move the thing you are reviewing with. It is a two-line change whenever you want it.
+        </p>
+      </div>
+    </div>
+    <div class="gutter"><div data-note="notes"></div></div>
+  </div>
+</section>
+
+<!-- ============================================ 02 -->
+<section id="diagnosis" class="wrap">
+  <div class="head">
+    <h2>Why the panels look wrong</h2>
+    <p>
+      The evidence is the page you liked. It resolves every colour through the existing
+      tokens &mdash; it needed nothing new from the colour system.
+    </p>
+  </div>
+
+  <div class="body">
+    <div>
+      <div class="seamgrid g5">
+        <div><strong>11&times;7&times;2</strong><span>roles &times; slots &times; polarities the colour layer already handles</span></div>
+        <div><strong>8</strong><span>checks guarding that layer</span></div>
+        <div><strong>0</strong><span>tokens for tracking, measure, or density</span></div>
+        <div><strong>4</strong><span>motion tokens declared</span></div>
+        <div><strong>0</strong><span>of them spent anywhere in the app</span></div>
+      </div>
+
+      <p>
+        <code>document-editor-review.svelte</code> is 805 lines and every colour in it is a
+        <code>--token-*</code> reference. What it invented locally is the entire layer above colour:
+      </p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>It hand-built</th><th>The system offered</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="tok">clamp(3rem,6vw,5.6rem) at &minus;.055em</td><td><code>--token-text-h1</code> = 34px, and <b>no tracking tokens at all</b></td></tr>
+            <tr><td class="tok">11px / .14em uppercase eyebrows</td><td>no such step</td></tr>
+            <tr><td class="tok">gap: 1px seams over a ground</td><td>no seam or hairline token</td></tr>
+            <tr><td class="tok">background: ink; color: ground</td><td>no inverted plane</td></tr>
+            <tr><td class="tok">border-left: 4px + 0 10px 10px 0</td><td>three symmetric radii</td></tr>
+            <tr><td class="tok">92% canvas + blur(12px)</td><td>no veil or scrim</td></tr>
+            <tr><td class="tok">a soft focus halo</td><td>a hard 2px outline, globally &mdash; two focus languages</td></tr>
+            <tr><td class="tok">Georgia for document prose</td><td>Plex Sans and Plex Mono only</td></tr>
+            <tr><td class="tok">63ch / 54ch / 42rem / 28ch</td><td>measure named nowhere</td></tr>
+            <tr><td class="tok">height: 1.85rem on every control</td><td>a 4px unit, and nothing else</td></tr>
+            <tr><td class="tok">9 / 9.5 / 10 / 10.5 / 11px chrome</td><td>smallest step is 12px</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <p>
+          <b>The tokens were never the problem.</b> The checks guarded the one layer that was
+          already finished. <code>themes-agree-with-each-other</code> exists solely to keep a
+          second palette honest &mdash; and there is no longer a second palette.
+        </p>
+      </div>
+
+      <h3>The dark-mode worry, resolved</h3>
+      <p class="prose" style="max-width:70ch">
+        Cyberpunk was a <strong>different material</strong>, which is why inversion looked hard.
+        Celestial's ramps already carry <code>muted</code> and <code>deep</code> &mdash; the theory
+        document says outright they are &ldquo;held for the direction Celestial does not read
+        from&rdquo; &mdash; and the slot table already writes both directions through
+        <code>light-dark()</code>.
+      </p>
+      <p class="prose" style="max-width:70ch">
+        The real obstacle was narrower and measurable: the <code>black</code> family was stepped
+        like a chromatic ramp &mdash; coarse at the top, crushed at the bottom. Its L* gaps ran
+        12.4&thinsp;/&thinsp;9.2&thinsp;/&thinsp;4.0&thinsp;/&thinsp;4.1&thinsp;/&thinsp;2.3&thinsp;/&thinsp;1.9,
+        while <code>white</code>, whose planes live at <em>its</em> end of the range, runs an even
+        3.4&thinsp;/&thinsp;3.5&thinsp;/&thinsp;3.9&thinsp;/&thinsp;4.3. The dark planes had
+        nowhere to separate. That is one ramp, rebuilt.
+      </p>
+    </div>
+    <div class="gutter"><div data-note="diagnosis"></div></div>
+  </div>
+</section>
+
+<!-- ============================================ 02 -->
+<section id="tree" class="wrap">
+  <div class="head">
+    <h2>The tree</h2>
+    <p>Four layers, each reading only the one behind it. The layer that was missing is added at the front.</p>
+  </div>
+
+  <div class="body">
+    <div>
+      <div class="trees">
+        <div>
+          <h4>Before</h4>
+<pre>styles/
+  app.css
+  <span class="gone">chromatic-themes/</span>
+    chromatic-themes.md
+    slots.css
+    celestial/{celestial.css, celestial.md}
+    <span class="gone">cyberpunk/{cyberpunk.css, cyberpunk.md}</span>
+  <span class="gone">semantic-tokens/</span>
+    semantic-tokens.md
+    color typography spacing shape motion
+  <span class="gone">x-integrations/</span>
+    tailwind/  shadcn/
+
+scripts/lint/styles/          <span class="gone">8 checks</span>
+scripts/lint/shared/styles.mjs
+scripts/generation/styles/    <span class="gone">2 generators</span></pre>
+        </div>
+        <div>
+          <h4>After</h4>
+<pre>styles/
+  app.css
+  <span class="new">aesthetic/</span>            <span class="kept">Celestial. the feeling. no CSS.</span>
+    aesthetic.md
+    light.md  type.md  motion.md
+    arrangement.md  states.md
+  <span class="new">material/</span>             <span class="kept">what it is made of</span>
+    material.md  ramps.css  slots.css
+    <span class="new">helios/</span>{helios.css, helios.md}
+    <span class="new">selene/</span>{selene.css, selene.md}
+  <span class="new">surfaces/</span>             <span class="kept">what it is built out of</span>
+    surfaces.md  surfaces.css
+  <span class="new">tokens/</span>               <span class="kept">the public API</span>
+    tokens.md
+    color typography space shape motion
+  <span class="new">integrations/</span>
+    tailwind/  shadcn/
+
+scripts/lint/styles/          <span class="new">1 check</span>
+scripts/generation/styles/    <span class="gone">gone</span></pre>
+        </div>
+      </div>
+
+      <div class="cardgrid g4">
+        <article>
+          <span class="tag">Layer 1</span>
+          <h4>aesthetic/</h4>
+          <p>Six documents, no CSS. The argument for every value below. A token with no argument here is a value nobody decided.</p>
+        </article>
+        <article>
+          <span class="tag">Layer 2</span>
+          <h4>material/</h4>
+          <p>Shared ladders, plus Helios and Selene. Each material declares its own planes, and its own values wherever the shared ladder does not serve it.</p>
+        </article>
+        <article>
+          <span class="tag">Layer 3</span>
+          <h4>tokens/ &rarr; surfaces/</h4>
+          <p>The public <code>--token-*</code> API, then the named arrangements it was bought for &mdash; seam grid, rail, veil, inverted, table.</p>
+        </article>
+        <article>
+          <span class="tag">Layer 4</span>
+          <h4>integrations/</h4>
+          <p>Removable adapters for Tailwind and shadcn. Deleting them removes utilities, not the system.</p>
+        </article>
+      </div>
+
+      <div class="callout">
+        <p>
+          <b>surfaces/ is the layer that was actually missing.</b> A token says a seam is one pixel
+          and names the subtle border colour. It does not say that a group of cells laid on that
+          colour with one-pixel gaps reads as <em>one object with internal structure</em>, while the
+          same cells with individual borders read as a pile. That second thing is the design
+          decision, and until it had a name every screen re-derived it &mdash; usually differently.
+        </p>
+      </div>
+
+      <h3>What was removed</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Removed</th><th>What it held</th><th>Why it goes</th></tr></thead>
+          <tbody>
+            <tr><td class="tok">themes-agree-with-each-other</td><td>two themes declare the same token set</td><td>there is one style</td></tr>
+            <tr><td class="tok">literal-colours-in-themes-only</td><td>no hex outside a theme file</td><td>guarded the finished layer</td></tr>
+            <tr><td class="tok">stage-owns-its-namespace</td><td>each stage declares its own prefix</td><td>two of four stages are gone</td></tr>
+            <tr><td class="tok">references-point-backward</td><td>a stage reads only behind it</td><td>&mdash;</td></tr>
+            <tr><td class="tok">styles-layout</td><td>the shape of the directory</td><td>the shape changed</td></tr>
+            <tr><td class="tok">generated-css-is-inert</td><td>the shadcn quarantine header</td><td>documented instead</td></tr>
+            <tr><td class="tok">consumers-see-public-tokens-only</td><td>no component reaches behind <code>--token-*</code></td><td>your call &mdash; removed</td></tr>
+            <tr><td class="tok">new-theme.mjs, new-token.mjs</td><td>scaffolding for themes and tokens</td><td>a token is now an argument, not a template</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <p>
+          <b>One check survives:</b> <code>one-stylesheet-entry</code>. Rewritten and now
+          self-contained &mdash; it holds that the root layout imports <code>app.css</code> once,
+          that every authored stylesheet is imported exactly once in cascade order, and that
+          nothing else in <code>src/</code> imports a stylesheet. It constrains how the cascade is
+          assembled, never how a component looks.
+        </p>
+      </div>
+
+      <h3>Comments moved to the documents</h3>
+      <p class="prose" style="max-width:70ch">
+        The CSS files were carrying long prose explanations that then got argued from as law. Every
+        one of those arguments now lives in <code>aesthetic/</code>, where it can be read, disagreed
+        with, and revised. The stylesheets carry values.
+      </p>
+    </div>
+    <div class="gutter"><div data-note="tree"></div></div>
+  </div>
+</section>
+
+<!-- ============================================ 03 -->
+<section id="documents" class="wrap">
+  <div class="head">
+    <h2>The documents</h2>
+    <p>All six, in full. Each starts from the feeling and ends in the tokens it justifies.</p>
+  </div>
+
+  <div class="body">
+    <div>
+      <div class="docnav">
+        <a href="#d-aesthetic">aesthetic.md</a>
+        <a href="#d-light">light.md</a>
+        <a href="#d-type">type.md</a>
+        <a href="#d-motion">motion.md</a>
+        <a href="#d-arrangement">arrangement.md</a>
+        <a href="#d-states">states.md</a>
+      </div>
+
+      <!-- aesthetic.md -->
+      <article class="doc prose" id="d-aesthetic">
+        <span class="docpath">styles/aesthetic/aesthetic.md</span>
+        <h3>Aesthetic</h3>
+        <blockquote><p>The feeling the product is for. Everything under <code>styles/</code> is downstream of this document: <code>celestial/</code> is the material that expresses it, <code>tokens/</code> is the vocabulary a component may use, <code>integrations/</code> are adapters. Read in that order.</p></blockquote>
+
+        <p><em>Excerpts. The full documents are in the repository at the paths shown.</em></p>
+
+        <h4>An application is a place in the mind</h4>
+        <p>The interface is not the product. The product is a mental object &mdash; a document being thought about, a table being reasoned over, a decision being made &mdash; and the screen is the channel through which a person holds that object. Pixels are how the thought is delivered, not what it is.</p>
+        <p>That reframes every visual question. The test of a screen is not whether it looks good in a screenshot. It is whether the thing it represents is <strong>easy to hold in your head</strong>: whether you can put it down, come back, and find your thought where you left it.</p>
+        <p>An interface fails this test long before it looks bad. It fails when it makes you re-derive where you are, when a panel rearranges itself under you, when something moves that you did not move, when two controls that do the same kind of work look unrelated. Each of those is a small eviction from your own thought.</p>
+
+        <h4>Formless</h4>
+        <p>The citadel is not fortified and it is not ornamental. <strong>Its intricacy is in its smoothness.</strong> Think of something enormous that unfolds &mdash; a body more like a jellyfish than a building, natural rather than engineered, whose complexity you register as continuous curvature rather than as detail you could count.</p>
+        <p>It reads as almost fractal without showing you a fractal. There is no repeating motif to find; the sense of depth comes from the fact that every scale is made the same way, so wherever you look you are looking at the same logic. You feel it as a fractal of the universe rather than seeing one.</p>
+        <p>That is the quality worth chasing, because of what it does: <strong>a surface you can fall into is a surface you can work in.</strong> Ornament asks to be looked at. Smoothness lets you look past it, at your own work, which is the entire point.</p>
+        <p>Practically, this means curvature and continuity beat articulation. Fewer edges, fewer boxes, fewer separate objects; more one thing with internal structure. And it means restraint is not austerity &mdash; it is what smoothness costs.</p>
+
+        <h4>The solar will, channelled</h4>
+        <p>Light is not decoration here; it is the thing being transmitted. The citadel's curves do not generate light, they <em>channel</em> it &mdash; they give a direction to something that came from elsewhere, and the shape of the channel is the whole design.</p>
+        <p>That is the relationship the interface has to a person's intent. The work is theirs. The application gives it somewhere to go. It is also, literally, how the two materials work: <strong>Helios</strong> is the will manifest directly, <strong>Selene</strong> the same will returned by another body.</p>
+
+        <h4>The five qualities</h4>
+        <ul>
+          <li><strong>Luminous order</strong> &mdash; low-glare depth and restrained light, whichever end of the range the room is lit from.</li>
+          <li><strong>Architectural clarity</strong> &mdash; strong spatial zones, calm boundaries, predictable panels, hierarchy that repeats.</li>
+          <li><strong>Instrument precision</strong> &mdash; crisp controls, exact focus, readable data, complete interaction states.</li>
+          <li><strong>Invisible intelligence</strong> &mdash; derived work appears as resolved output, explanation, and reviewable change; never as decoration.</li>
+          <li><strong>Reversibility and trust</strong> &mdash; material action is attributable, inspectable, recoverable, and honest about uncertainty.</li>
+        </ul>
+
+        <h4>What it must not feel like</h4>
+        <p>A generic SaaS dashboard. An Apple white-and-blue clone. Saturated cyberpunk. A command line wearing a GUI. An expert-only editor built around secret shortcuts. A chat product that makes the work surface secondary.</p>
+
+        <h4>The laws</h4>
+        <ul>
+          <li><strong>Center first.</strong> Reduce chrome intensity before reducing work-surface clarity. When something has to give, it is never the work.</li>
+          <li><strong>The right things visible, in the right place.</strong> What you show matters, and <em>where</em> you show it matters exactly as much. So does the order you show it in. A correct set of controls in an arbitrary arrangement is not a correct screen.</li>
+          <li><strong>No secret essentials.</strong> Shortcuts and context menus accelerate visible paths. They never replace them.</li>
+          <li><strong>Panels are cognitive instruments.</strong> Context is a map, the inspector is a lens, the drawer is a workbench for one object.</li>
+          <li><strong>Intelligence is quiet until directed.</strong></li>
+          <li><strong>Beauty is legibility.</strong> A person knows what they see, what is selected, what changed, where it came from, and what comes next.</li>
+          <li><strong>Distinction is communication.</strong> A change of ground, a rule, a divider, a plane &mdash; each one is a sentence saying <em>this is a different kind of thing</em>. Spend them deliberately and a dense screen explains itself; withhold them and it becomes a wall.</li>
+          <li><strong>Nothing moves without intent.</strong> Motion without intent is disruption.</li>
+        </ul>
+
+        <h4>Rhythm, not symmetry</h4>
+        <p>Symmetry is the wrong thing to anchor on. Most real screens are not symmetrical and should not be; a rail is not the width of an inspector, a table is not the shape of a form.</p>
+        <p>What actually holds a screen together is <strong>rhythm</strong>: the same interval, the same height, the same tracking, recurring. Two panels share a rhythm even at different widths. Where the rhythm holds, a person stops reading the chrome and reads only the work.</p>
+        <p>Grouping is a claim, and it should be one you could defend out loud. When things are placed together, there is a narrative reason &mdash; steps in one sequence, facets of one object, alternatives to one decision. A group assembled because the items happened to be adjacent in the data is a group the reader has to disassemble.</p>
+        <p>Two promises follow, and they are the ones to test a screen against: <strong>what you see never looks like clutter</strong>, and <strong>what you see always seems related to what you want.</strong></p>
+
+        <h4>Provenance is part of the aesthetic</h4>
+        <p>A system that derives content has to be able to say where the content came from. Origin, confidence, review state, and staleness are first-class visual material, not fine print.</p>
+        <p>The rule is stronger than showing uncertainty well. <strong>If the system cannot establish where something came from, it does not show the something.</strong> It says it could not find it. A derived value with no traceable origin is not a low-confidence result to be rendered with a caveat; it is an answer the system does not have, and rendering it anyway is the one dishonesty this aesthetic cannot absorb.</p>
+
+        <h4>On rules</h4>
+        <p>The documents in this directory are a floor, not a cage. They exist so that a screen built without much thought still comes out coherent.</p>
+        <p>They are not a licence to stop looking. When there is visibly a better way to communicate something than the vocabulary here provides, take it, and then come back and widen the vocabulary. <strong>A system that prevents its own best work has failed at the only thing it was for.</strong></p>
+
+        <h4>The review test</h4>
+        <p>A screen succeeds when a first-time person can identify the work surface, the current object, the selection, and the likely next action within seconds. It must remain understandable when colour is removed, and grow calmer &mdash; not more cluttered &mdash; as its logic becomes familiar.</p>
+      </article>
+
+      <!-- light.md -->
+      <article class="doc prose" id="d-light">
+        <span class="docpath">styles/aesthetic/light.md</span>
+        <h3>Light</h3>
+        <blockquote><p>How the room is lit, what a plane is, and when depth is earned.</p></blockquote>
+
+        <h4>Two bodies, one aesthetic</h4>
+        <p><strong>Celestial Helios</strong> reads from the light end; <strong>Celestial Selene</strong> reads from the dark. One aesthetic, two materials &mdash; Helios the direct manifestation, Selene the same will returned by another body.</p>
+        <p>This is why the switch is an <strong>appearance</strong> and not a theme. Nobody is choosing a different aesthetic. They are choosing which body is doing the lighting.</p>
+        <p><strong>The two are not required to mirror each other.</strong> Selene is not Helios inverted; a photographic negative of a warm paper room is a sickly room. What carries across is the <em>relationship</em> &mdash; the work surface is nearest the light, the pasteboard is furthest from the page, a boundary is one step from its ground. How each material satisfies those relationships is its own business, and where Selene is better served by its own value, it declares one.</p>
+
+        <h4>Atmosphere</h4>
+        <p>The canvas is not flat. It carries a very low-amplitude wash &mdash; two wide radial gradients, violet and cyan, at a few percent &mdash; so that the ground reads as air rather than as paint.</p>
+        <p>This is the cloud in the sentence doing literal work, and it is the one place the formlessness of the citadel is expressed by the system itself rather than by a component. It has to stay under the threshold where a person could point at it. <strong>The moment someone notices a gradient, it is too strong.</strong></p>
+
+        <h4>Planes</h4>
+        <p>A plane is a claim about distance from the reader. Six of them, and no screen needs a seventh.</p>
+        <ul>
+          <li><code>canvas</code> &mdash; the ground everything else rests on</li>
+          <li><code>work</code> &mdash; the surface the actual work happens on; always the nearest to the light</li>
+          <li><code>panel</code> &mdash; chrome that flanks the work: context, inspector, bars</li>
+          <li><code>panel-hover</code> &mdash; the neutral hover plane, one step nearer than <code>panel</code></li>
+          <li><code>elevated</code> &mdash; something floating clear: popover, menu, dialog</li>
+          <li><code>pasteboard</code> &mdash; the void a document floats in; furthest from the page</li>
+        </ul>
+        <p><strong>The work surface is brighter than the panels around it in the light reading, and lighter than them in the dark reading.</strong> Both sentences say the same thing: the eye should land in the centre without being told to. Chrome recedes by being further from the light, never by being greyer.</p>
+        <p>Planes are separated by lightness, not by lines. A shell that needs a border to say <em>this is a different region</em> has not made the planes do their work. Lines are for seams inside a region, not for the boundary between regions.</p>
+
+        <h4>Depth is a claim, not a decoration</h4>
+        <p>Three elevations, because three are used: something resting slightly above its plane, something floating clear of it, something passing beneath something else.</p>
+        <p>Shadow is the only geometry family made of colour, so it is split by domain: the material owns the tint, the tokens own the strength, and shape owns the offsets and blur. A shadow therefore follows the appearance without any component knowing the polarity changed.</p>
+        <p>A shadow that does not correspond to a real difference in distance is noise. Two panels on the same plane do not get different shadows to look &ldquo;hierarchical&rdquo;; they are the same distance away, and saying otherwise is a lie the eye can detect.</p>
+
+        <h4>Glow</h4>
+        <p>Glow is the one place the citadel is allowed to look like astro-tech, and it is rationed to a single job: <strong>glow carries state and nothing else.</strong> Something live, resolving, or engaged may glow. A resting control may not, a heading may not, and a panel may not glow to look important.</p>
+
+        <h4>The veil</h4>
+        <p>Chrome that floats over scrolling content &mdash; a sticky bar, a rail header &mdash; takes the canvas at partial opacity with a blur behind it, rather than a solid fill. Solid chrome over moving content reads as a lid; a veil reads as glass, and the content continuing underneath is what tells a person the region is still there.</p>
+        <p>This is the cloud in the metaphor doing real work: air at the background level, precision at the control level.</p>
+
+        <h4>Inversion</h4>
+        <p>One plane is the deliberate opposite of the page: a block that takes the ink colour as its ground and the ground colour as its ink. It is for the one or two places on a screen that must read as a statement rather than as a region &mdash; a summary that concludes something, a gate that must be acknowledged.</p>
+        <p>It is a strong move and it does not survive repetition. Two inverted blocks on a screen is one too many; the second one costs the first its meaning.</p>
+      </article>
+
+      <!-- type.md -->
+      <article class="doc prose" id="d-type">
+        <span class="docpath">styles/aesthetic/type.md</span>
+        <h3>Type</h3>
+        <blockquote><p>What the room sounds like. Type does not change with the appearance, so nothing here is ever restated by the material.</p></blockquote>
+
+        <h4>Three voices, one family</h4>
+        <p>IBM Plex, in three cuts, because the product has three kinds of thing to say and they should not sound alike. <strong>Plex Sans</strong> is the instrument &mdash; every control, label, panel, heading, and table. <strong>Plex Serif</strong> is the reading voice &mdash; document prose, quoted source text, long-form reading. <strong>Plex Mono</strong> is the identifier &mdash; ids, commits, addresses, keys, measured numbers.</p>
+        <p>The serif is the one that changes how the product feels, and it is the one most easily skipped. <strong>A document set in the interface font tells the reader the page is part of the application.</strong> It is not &mdash; it is the thing the application is for, and it should look like it came from somewhere else. This is the same claim light makes with planes, made with letterforms.</p>
+        <p>Mono is not for code. It is for anything a person might need to read character by character, or compare down a column. A provenance string, a run id, and a numeric column all qualify; a paragraph never does.</p>
+
+        <h4>Measure</h4>
+        <p>Line length is the most reliable difference between a page that has been set and a page that has been dumped. It is composed at every call site and named nowhere, which is exactly how it goes wrong. Four measures: <code>title</code> at 24ch, <code>lede</code> at 62ch, <code>prose</code> at 70ch, <code>note</code> at 52ch. <strong>A block of text with no measure is a defect, not a default.</strong></p>
+
+        <h4>The scale</h4>
+        <p>Eleven steps, each a size paired with a leading. <strong>Setting one without the other is a defect, because the rhythm is the point.</strong></p>
+        <p><code>display</code> is fluid at 40&ndash;64px and the rest are fixed, because a display line is the only type on the page whose job depends on how much room it has. <code>micro</code> at 11px exists because dense inspector chrome was being written at 9, 9.5, 10 and 10.5 pixels by hand. Three fine steps &mdash; 13, 12, 11 &mdash; are enough for any panel, and a fourth is a sign the panel is doing too much.</p>
+
+        <h4>Tracking</h4>
+        <p>The dimension that was missing, and the reason hand-set pages looked designed while token-set pages did not. Large type at default tracking reads as unset; uppercase without tracking is unreadable, not stylish.</p>
+        <p>Uppercase is legitimate for one thing: a short eyebrow above a section, at <code>micro</code>, with <code>caps</code> tracking and a role colour. Uppercase for anything a person has to actually read is a mistake.</p>
+
+        <h4>Weight</h4>
+        <p>Three weights are loaded: 400, 500, 600. A component asking for 700 gets a face the browser invented, which is why eyebrows and emphasis stop at <code>strong</code>. If a heading is not loud enough at 600, the problem is its size or its tracking, not its weight.</p>
+
+        <h4>Copy voice</h4>
+        <p>One word per state, everywhere, so it is learned once: <strong>Resolved, Resolving, Stale, Failed, Needs review, Accepted, Reverted.</strong> A state named two ways is two states to a reader. Every error answers three questions: what happened, what can be done next, and whether the person's work was preserved.</p>
+      </article>
+
+      <!-- motion.md -->
+      <article class="doc prose" id="d-motion">
+        <span class="docpath">styles/aesthetic/motion.md</span>
+        <h3>Motion</h3>
+        <blockquote><p>How the room moves. The document with the least code behind it and the largest effect on whether the product feels like a thinking space.</p></blockquote>
+
+        <h4>The law</h4>
+        <p><strong>Motion without intent is disruption.</strong> Every movement must be both <em>caused</em> and <em>meaningful</em> &mdash; it must have a reason it happened, and it must tell the person something they did not already know.</p>
+        <p>A thinking space is a place you can put a thought down and find it again. An uncaused movement is a small interruption of that: attention is pulled, the mental model is re-checked, and the thought has to be picked back up. A product that animates because animation is available is a product that repeatedly evicts its user from their own reasoning.</p>
+        <p>This is not an argument for a static interface. It is an argument that motion is a <em>statement</em>, and that spending it on anything but a statement wastes the one thing it is good for.</p>
+
+        <h4>The two things motion is allowed to say</h4>
+        <p><strong>One: you did that.</strong> A person acted, and the movement confirms the act landed. A panel opening under the click that opened it, a row settling into a new sort order, a control taking a press. The movement is an acknowledgement, and it should feel continuous with the gesture that caused it.</p>
+        <p><strong>Two: this happened, and you may want to do something about it.</strong> A toast saying the change was applied. A pill appearing to say a comment mentions you. A derived value arriving because a run finished. Nobody asked for these in the moment they occurred, so the movement carries the information that they are new &mdash; and, often, an implicit question: <em>does this need me?</em></p>
+        <p>The second kind must not impersonate the first. If it enters the way a click enters, a person reads it as their own action and stops trusting the distinction.</p>
+
+        <h4>Curves</h4>
+        <p>A curve is how a movement's cause feels, so there are as many curves as there are distinct causes &mdash; no more, and <strong>no artificial ceiling either</strong>. Two are declared because two kinds of cause are established; a third arrives the day a third kind of cause does, not before and not never.</p>
+
+        <h4>Duration names what moves</h4>
+        <p><code>micro</code> 100ms for press, hover, toggle. <code>small</code> 150ms for tooltips. <code>panel</code> 220ms for collapse, drawer, tab change. <code>overlay</code> 260ms for modals and popovers. <code>arrival</code> 420ms for something the system brought in &mdash; long on purpose, because a thing that appears without being asked for should take long enough to be noticed and not so long that it becomes an event.</p>
+
+        <h4>Distance</h4>
+        <p>Things <strong>rise</strong>; they do not fly. <code>rise</code> is 4px, a thing settling onto its plane. <code>drift</code> is 8px, a thing arriving from off-plane. Anything that needs to move more than 8px is not animating, it is relocating, and relocation should be instant so the person's spatial memory stays true.</p>
+
+        <h4>What motion may and may not say</h4>
+        <p>It may say <strong>causation</strong> (this happened because of that), <strong>continuity</strong> (this is the same object in a new place), and <strong>arrival</strong> (something is here now that was not here before).</p>
+        <p>It may not say <strong>emphasis</strong> &mdash; if a thing needs attention it takes a role colour and copy; movement as a highlighter is the visual equivalent of shouting. It may not say <strong>personality</strong> &mdash; bounce, overshoot, and spring are the interface talking about itself. And it may not claim <strong>progress it does not have</strong>: a looping animation is legitimate for a genuinely indeterminate wait and for nothing else.</p>
+
+        <h4>Reduced motion is not a downgrade</h4>
+        <p>Every state must remain fully readable with animation off. That is a design constraint before it is an accessibility one: <strong>if a state is only legible because something moved, the state was never designed.</strong> Motion is always the second carrier of meaning, never the first. The corollary is that reduced motion needs no separate design &mdash; turn every transition off and the screen should be correct: quieter, but correct.</p>
+      </article>
+
+      <!-- arrangement.md -->
+      <article class="doc prose" id="d-arrangement">
+        <span class="docpath">styles/aesthetic/arrangement.md</span>
+        <h3>Arrangement</h3>
+        <blockquote><p>How things are placed, divided, and revealed. Placement is not a delivery detail for a decision made elsewhere; <strong>it is half the decision.</strong></p></blockquote>
+
+        <h4>The right things, in the right place</h4>
+        <p>"Few things visible, the right things visible" is only half a law. A correct set of controls in an arbitrary arrangement is not a correct screen &mdash; the person still has to work out what goes with what, which is the labour the screen was supposed to remove.</p>
+        <p>Three things carry as much weight as the selection itself. <strong>Where</strong>: a control acting on the selection belongs beside the selection; putting a document-level control next to it teaches a relationship that is not true. <strong>In what order</strong>: sequence is an argument, and a reader takes it as a claim about precedence, dependency, or time &mdash; an order chosen by when the code was written makes a claim nobody meant. <strong>In what grouping</strong>: every group asserts its members belong together, and it should be an assertion you could defend out loud.</p>
+
+        <h4>Distinction is communication</h4>
+        <p>A change of ground, a rule, a divider, a plane &mdash; each is a sentence saying <em>this is a different kind of thing</em>. They are not neutral texture, and treating them as texture is why dense screens go flat.</p>
+        <p>Spend them deliberately and a dense screen explains itself before it is read. The failure is usually under-spending, not over: one continuous surface holding six kinds of content tells a person nothing, and the fix is almost never more space. The corollary is that a distinction should never be drawn where there is no difference &mdash; a rule between two things of the same kind reads as a claim that they differ, and the reader will spend real effort looking for how.</p>
+
+        <h4>Seams, not boxes</h4>
+        <p>The default instinct is to draw a box around anything that belongs together. A screen built that way accumulates borders: every card has four, every neighbour pair has two where one would do, and every corner radius has to negotiate with the one beside it.</p>
+        <p>The alternative is a <strong>seam</strong>. Lay a set of cells on one ground, give the container the seam colour, and let a one-pixel gap between cells be the line. Neighbours share a single hairline, the outer edge is one border and one radius, and the whole group reads as one object with internal structure rather than a pile of separate objects.</p>
+        <p>This is what makes a dense screen look composed rather than assembled. It is also cheaper to hold in the head: a person parses one region with parts, not nine regions in a row. Boxes are still right for things that genuinely float &mdash; a popover, a dialog, a block lifted off its plane. On-plane structure takes seams.</p>
+
+        <h4>One grid, nothing hidden</h4>
+        <p>Regions that sit side by side share one track template and one row height. A folder or a group opens <strong>in place</strong>, on the same grid, rather than replacing the view or opening somewhere else. Controls that appear on more than one region are extracted and shared rather than re-implemented at each site.</p>
+        <p>The reason is spatial memory. If a person learned where something is, it should still be there after they expand something else. Layouts that reflow on disclosure teach people not to trust what they have learned.</p>
+
+        <h4>The accent rail</h4>
+        <p>A block that is <em>about</em> something else &mdash; a callout, a quoted source, a decision, an annotation &mdash; takes a rail on its leading edge and squares the corners on that side: 3px of role colour, radius on the other three corners only.</p>
+        <p>The asymmetry is the point. A rail says <em>this is attached to the flow beside it</em>; a symmetric bordered card says <em>this is a separate object</em>. Getting that wrong is the most common reason an annotated document looks like a form.</p>
+
+        <h4>Tables</h4>
+        <p>The densest distinction problem in the product, so its conventions are fixed rather than left to each site. <strong>The header row takes its own ground</strong> &mdash; not a heavier rule, not just caps, a different plane. <strong>The first column is the key, left-aligned</strong>: it is what the row <em>is</em>; everything after it is what the row <em>has</em>. <strong>A rule separates the key column from the rest</strong> &mdash; one vertical seam, at the one place in a table where the kind of content actually changes. <strong>Everything after the first column is centred</strong>, and numeric columns use tabular figures.</p>
+        <p>That is the default. A table with one long free-text column is the obvious exception, and taking it is fine &mdash; the point of writing the default down is that departing from it becomes a decision instead of an accident.</p>
+
+        <h4>Density</h4>
+        <p>Three control heights, all on the four-pixel grid, because a screen has three kinds of room: <code>compact</code> at 28px for inspector rows and dense grids, base at 32px for forms and toolbars, <code>roomy</code> at 40px for primary actions and empty states. Every interactive target still clears 24&times;24 CSS pixels.</p>
+        <p><strong>Within one region, one height.</strong> Mixed heights in a row is the fastest way to make a considered panel look unfinished, and it is almost always an accident of two components being written on different days.</p>
+
+        <h4>Alignment</h4>
+        <p>Left, and one axis per region. A centred column is for reading; a working surface is scanned down its left edge, and every element that starts somewhere else costs a saccade. Numbers are the exception: they align right and use tabular figures, so a column can be compared without being read.</p>
+
+        <h4>The disclosure ladder</h4>
+        <p>Five rungs. Common actions live within <strong>one hidden layer at most</strong>; rare actions never require a maze.</p>
+        <ul>
+          <li><strong>Always visible</strong> &mdash; primary task actions, current selection, critical state, create and open, the entry point for derived work.</li>
+          <li><strong>Context or inspector</strong> &mdash; what acts on the active resource or the selected object.</li>
+          <li><strong>Dropdown or popover</strong> &mdash; named secondary groups: Insert, Arrange, Share, Export, Review.</li>
+          <li><strong>Drawer, detail view, or modal</strong> &mdash; object detail, comparison, complex configuration, consequential confirmation.</li>
+          <li><strong>Advanced settings</strong> &mdash; rare, specialized, or dangerous.</li>
+        </ul>
+        <p>Rung four splits by intent: a <strong>drawer</strong> is a place to work beside what you were doing; a <strong>modal</strong> is an interruption that must earn itself.</p>
+
+        <h4>The grouping test</h4>
+        <p>Hide a set of controls only when all three hold: its parent label is predictable <em>before</em> opening it; it is not required for the primary path; and the controls share one coherent abstraction. &ldquo;Arrange&rdquo;, &ldquo;Review changes&rdquo; and &ldquo;Prompt settings&rdquo; pass. &ldquo;Misc&rdquo;, an unlabeled kebab covering common work, and an unpredictable icon drawer fail.</p>
+
+        <h4>Visible paths and progressive depth</h4>
+        <p>Every primary capability needs a discoverable route operable by mouse and keyboard. Accelerators accelerate those paths; <strong>a path that exists only as an accelerator does not exist for most people.</strong></p>
+        <p>Depth is the point of a system like this. The rule is not to hide it but to order it: the default view answers the common question; one step reaches the supporting material; full lineage is always reachable and never mandatory. Depth that cannot be skipped is not depth. It is friction.</p>
+      </article>
+
+      <!-- states.md -->
+      <article class="doc prose" id="d-states">
+        <span class="docpath">styles/aesthetic/states.md</span>
+        <h3>States</h3>
+        <blockquote><p>What every component must be able to report about itself. A component is an instrument, and instruments are judged on whether they report their condition honestly.</p></blockquote>
+
+        <h4>This is a floor</h4>
+        <p>The matrix below is the minimum a component must be able to say, not the maximum it is allowed to say. It exists so that a control built quickly is still honest, and so two components built on different days agree about what "stale" looks like.</p>
+        <p><strong>It is not a vocabulary limit.</strong> A screen that genuinely needs a condition this list does not name should express it, well, and then the list should grow. What is not negotiable is the laws below the matrix &mdash; those are about honesty, not about expressiveness.</p>
+
+        <h4>The matrix</h4>
+        <p>Every interactive element implements the first six. Anything representing work, derived content, or agentic output implements the rest as well. Every entry names a role slot, never an intensity.</p>
+      </article>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>State</th><th>Meaning</th><th>Required cues</th></tr></thead>
+          <tbody>
+            <tr><td>Idle</td><td>at rest, available</td><td>neutral boundary, no fill</td></tr>
+            <tr><td>Hover</td><td>the pointer is over it</td><td>a border or ground shift only. Never a change in size or position</td></tr>
+            <tr><td>Focus</td><td>keyboard focus</td><td>the focus ring, always visible, never suppressed</td></tr>
+            <tr><td>Selected</td><td>this is the current object</td><td><code>active-text</code> on the label, <code>active-border</code> on the control; persistent; distinguishable from hover with colour removed</td></tr>
+            <tr><td>Active</td><td>being pressed right now</td><td>momentary feedback at <code>micro</code></td></tr>
+            <tr><td>Disabled</td><td>unavailable</td><td><code>inactive-text</code> <b>plus a reason</b> on hover or focus. Never a silently dead control</td></tr>
+            <tr><td>Pending</td><td>queued, not started</td><td>copy naming the queue position or wait. No motion</td></tr>
+            <tr><td>Resolving</td><td>working now</td><td><code>active-text</code> + progress + copy naming the current stage</td></tr>
+            <tr><td>Applied</td><td>committed and in effect</td><td><code>success-text</code> + icon + copy</td></tr>
+            <tr><td>Failed</td><td>did not complete</td><td><code>danger-text</code> + icon + copy + a recovery action</td></tr>
+            <tr><td>Needs review</td><td>waiting on human judgment</td><td><code>attention-text</code> + icon + copy + an explicit review affordance</td></tr>
+            <tr><td>Stale</td><td>its source moved underneath it</td><td><code>attention-text</code> + copy naming what changed + a refresh path</td></tr>
+            <tr><td>Untraceable</td><td>the origin could not be established</td><td>the value is <b>not shown</b>. The system says it could not find where this came from</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <article class="doc prose" style="margin-top:1.5rem;padding-top:0;border-top:0">
+        <h4>The laws</h4>
+        <ul>
+          <li><strong>Colour never carries a state alone.</strong> Remove colour from any screen and every state must still be readable.</li>
+          <li><strong>Every state has a name a person could say out loud.</strong> If the only way to describe a condition is &ldquo;the greyed-out one with the dot&rdquo;, it is not a state yet &mdash; it is a visual accident.</li>
+          <li><strong>Disabled explains itself.</strong> A control that cannot be used says what would make it usable.</li>
+          <li><strong>Failure offers a way forward.</strong> A danger colour with no recovery action is an accusation, not a state.</li>
+          <li><strong>Needs review is not a warning.</strong> Amber means the system did its part and is now deferring to a person. The copy reads as a handoff, not an error.</li>
+          <li><strong>Stale is honest, not alarming.</strong> A live value whose source moved is out of date, and it says so while still showing its last known value and when that value was true.</li>
+          <li><strong>Applied is reversible, or it says why not.</strong></li>
+        </ul>
+
+        <h4>One focus language</h4>
+        <p>Focus is a two-pixel outline in the <code>interactive</code> boundary colour at a two-pixel offset, applied globally. There is exactly one. A component may <em>also</em> light its own border on focus, but it may never replace the ring with a border change, a shadow halo, or a background shift. An outline sits outside the box, survives <code>overflow: hidden</code>, and is the one focus treatment forced-colors mode renders correctly &mdash; a box-shadow ring is none of those things.</p>
+
+        <h4>Contrast by construction</h4>
+        <p>Contrast is carried by the slot table rather than by case-by-case judgment. <strong>A component that picks the right slot for the job is compliant.</strong> That is the whole reason a component picks a job rather than an intensity: an intensity can be chosen wrongly, a job cannot.</p>
+      </article>
+    </div>
+    <div class="gutter"><div data-note="documents"></div></div>
+  </div>
+</section>
+
+<!-- ============================================ 04 -->
+<section id="material" class="wrap">
+  <div class="head">
+    <h2>The material</h2>
+    <p>
+      This page is painted from it. Switch your theme and every swatch, plane and rule below
+      moves with you &mdash; that is the dark reading, rendering.
+    </p>
+  </div>
+
+  <div class="body">
+    <div>
+      <h3>Ramps</h3>
+      <div class="ramps">
+        <div class="ramphead"><div>Hue</div><div>faded</div><div>light</div><div>muted</div><div>normal</div><div>emph</div><div>strong</div><div>deep</div></div>
+        <div class="ramp"><div class="name">red</div><div class="step"><i style="background:#fdf1ef"></i></div><div class="step"><i style="background:#fad5d0"></i></div><div class="step"><i style="background:#f2645a"></i></div><div class="step"><i style="background:#d9483c"></i></div><div class="step"><i style="background:#c0362c"></i></div><div class="step"><i style="background:#92251d"></i></div><div class="step"><i style="background:#5a1611"></i></div></div>
+        <div class="ramp"><div class="name">orange</div><div class="step"><i style="background:#fef4ec"></i></div><div class="step"><i style="background:#fbdcc2"></i></div><div class="step"><i style="background:#f08a3c"></i></div><div class="step"><i style="background:#d06816"></i></div><div class="step"><i style="background:#a85309"></i></div><div class="step"><i style="background:#7e3e07"></i></div><div class="step"><i style="background:#4e2705"></i></div></div>
+        <div class="ramp"><div class="name">amber</div><div class="step"><i style="background:#fef6e8"></i></div><div class="step"><i style="background:#fae3b8"></i></div><div class="step"><i style="background:#e0a93b"></i></div><div class="step"><i style="background:#b07a15"></i></div><div class="step"><i style="background:#8a5a13"></i></div><div class="step"><i style="background:#6b4510"></i></div><div class="step"><i style="background:#452b09"></i></div></div>
+        <div class="ramp"><div class="name">yellow</div><div class="step"><i style="background:#fefae6"></i></div><div class="step"><i style="background:#faf0b4"></i></div><div class="step"><i style="background:#e8ce3e"></i></div><div class="step"><i style="background:#998512"></i></div><div class="step"><i style="background:#7d6c0f"></i></div><div class="step"><i style="background:#5f520b"></i></div><div class="step"><i style="background:#3b3307"></i></div></div>
+        <div class="ramp"><div class="name">green</div><div class="step"><i style="background:#eff8f2"></i></div><div class="step"><i style="background:#c9e8d5"></i></div><div class="step"><i style="background:#3dd68c"></i></div><div class="step"><i style="background:#2e9160"></i></div><div class="step"><i style="background:#1e7a46"></i></div><div class="step"><i style="background:#145c34"></i></div><div class="step"><i style="background:#0c3a20"></i></div></div>
+        <div class="ramp"><div class="name">teal</div><div class="step"><i style="background:#ecf8f7"></i></div><div class="step"><i style="background:#c0e6e2"></i></div><div class="step"><i style="background:#3fcfc0"></i></div><div class="step"><i style="background:#1d958a"></i></div><div class="step"><i style="background:#187d74"></i></div><div class="step"><i style="background:#115d57"></i></div><div class="step"><i style="background:#0b3b37"></i></div></div>
+        <div class="ramp"><div class="name">cyan</div><div class="step"><i style="background:#eaf6fb"></i></div><div class="step"><i style="background:#bce2f2"></i></div><div class="step"><i style="background:#38bdf8"></i></div><div class="step"><i style="background:#0087b8"></i></div><div class="step"><i style="background:#016e96"></i></div><div class="step"><i style="background:#02597a"></i></div><div class="step"><i style="background:#013a50"></i></div></div>
+        <div class="ramp"><div class="name">blue</div><div class="step"><i style="background:#eef1fb"></i></div><div class="step"><i style="background:#ccd6f2"></i></div><div class="step"><i style="background:#6e8bff"></i></div><div class="step"><i style="background:#3657c9"></i></div><div class="step"><i style="background:#2a45a6"></i></div><div class="step"><i style="background:#1e3179"></i></div><div class="step"><i style="background:#131f4b"></i></div></div>
+        <div class="ramp"><div class="name">violet</div><div class="step"><i style="background:#f3effc"></i></div><div class="step"><i style="background:#dacff7"></i></div><div class="step"><i style="background:#a98bff"></i></div><div class="step"><i style="background:#6f49d8"></i></div><div class="step"><i style="background:#593aaf"></i></div><div class="step"><i style="background:#412b80"></i></div><div class="step"><i style="background:#291b50"></i></div></div>
+        <div class="ramp"><div class="name">pink</div><div class="step"><i style="background:#fdeff5"></i></div><div class="step"><i style="background:#f9cfe1"></i></div><div class="step"><i style="background:#ee7fae"></i></div><div class="step"><i style="background:#db4a88"></i></div><div class="step"><i style="background:#bc386f"></i></div><div class="step"><i style="background:#8e2853"></i></div><div class="step"><i style="background:#591834"></i></div></div>
+        <div class="ramp"><div class="name">white</div><div class="step"><i style="background:#ffffff"></i></div><div class="step"><i style="background:#fffefa"></i></div><div class="step"><i style="background:#f7f4ec"></i></div><div class="step"><i style="background:#eeeae0"></i></div><div class="step"><i style="background:#e4dfd2"></i></div><div class="step"><i style="background:#d8d3c4"></i></div><div class="step"><i style="background:#b9b3a1"></i></div></div>
+        <div class="ramp"><div class="name">grey</div><div class="step"><i style="background:#f2f4f5"></i></div><div class="step"><i style="background:#d8dde2"></i></div><div class="step"><i style="background:#93a0b4"></i></div><div class="step"><i style="background:#6b7280"></i></div><div class="step"><i style="background:#3a424d"></i></div><div class="step"><i style="background:#1d2329"></i></div><div class="step"><i style="background:#05070a"></i></div></div>
+        <div class="ramp"><div class="name">black</div><div class="step"><i style="background:#3d4f75"></i></div><div class="step"><i style="background:#253047"></i></div><div class="step"><i style="background:#1d2639"></i></div><div class="step"><i style="background:#181f2e"></i></div><div class="step"><i style="background:#131925"></i></div><div class="step"><i style="background:#10141e"></i></div><div class="step"><i style="background:#0a0c12"></i></div></div>
+      </div>
+
+      <h3>Planes, both readings</h3>
+      <h4>Celestial Helios &mdash; from the warm paper family</h4>
+      <div class="planes">
+        <div><div class="chip" style="background:#f7f4ec"></div><b>canvas</b><span>#F7F4EC</span></div>
+        <div><div class="chip" style="background:#fffefa"></div><b>work</b><span>#FFFEFA</span></div>
+        <div><div class="chip" style="background:#eeeae0"></div><b>panel</b><span>#EEEAE0</span></div>
+        <div><div class="chip" style="background:#e4dfd2"></div><b>panel-hover</b><span>#E4DFD2</span></div>
+        <div><div class="chip" style="background:#ffffff"></div><b>elevated</b><span>#FFFFFF</span></div>
+        <div><div class="chip" style="background:#d8d3c4"></div><b>pasteboard</b><span>#D8D3C4</span></div>
+      </div>
+      <h4>Celestial Selene &mdash; from the cool void family</h4>
+      <div class="planes">
+        <div><div class="chip" style="background:#131925"></div><b>canvas</b><span>#131925</span></div>
+        <div><div class="chip" style="background:#181f2e"></div><b>work</b><span>#181F2E</span></div>
+        <div><div class="chip" style="background:#10141e"></div><b>panel</b><span>#10141E</span></div>
+        <div><div class="chip" style="background:#253047"></div><b>panel-hover</b><span>#253047</span></div>
+        <div><div class="chip" style="background:#1d2639"></div><b>elevated</b><span>#1D2639</span></div>
+        <div><div class="chip" style="background:#0a0c12"></div><b>pasteboard</b><span>#0A0C12</span></div>
+      </div>
+
+      <h3>Slots</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Slot</th><th>Light</th><th>Dark</th><th>Job</th></tr></thead>
+          <tbody>
+            <tr><td class="tok">surface</td><td class="tok">faded</td><td class="tok">deep*</td><td>the wash behind content</td></tr>
+            <tr><td class="tok">surface-hover</td><td class="tok">light</td><td class="tok">strong</td><td>hover wash, selected row</td></tr>
+            <tr><td class="tok">border</td><td class="tok">normal</td><td class="tok">muted</td><td>boundary &mdash; clears 3:1</td></tr>
+            <tr><td class="tok">fill</td><td class="tok">emphasized</td><td class="tok">muted</td><td>solid button, filled chip</td></tr>
+            <tr><td class="tok">fill-hover</td><td class="tok">strong</td><td class="tok">light</td><td>hover and pressed solid</td></tr>
+            <tr><td class="tok">text</td><td class="tok">strong</td><td class="tok">light</td><td>text and icons &mdash; clears 7:1</td></tr>
+            <tr><td class="tok">on-fill</td><td class="tok">material</td><td class="tok">material</td><td>text on that solid</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <p>
+          <b>One slot is not a mirror.</b> In dark, <code>border</code> reads <code>muted</code>
+          rather than <code>normal</code> &mdash; the same step as <code>fill</code>.
+          <code>normal</code> is defined as &ldquo;clears 3:1 against near-white&rdquo;, and blue
+          and violet are intrinsically dark at that step; neither can also clear 3:1 against a
+          near-black plane. Making <code>border</code> polarity-aware costs one line.
+          Lifting two named hues would have cost Aether Blue and Vesper Violet.
+        </p>
+      </div>
+
+      <h3>Measured</h3>
+      <p style="color:var(--ink-3);font-size:13px;max-width:70ch">
+        Every figure is a WCAG contrast ratio against the plane the slot actually sits on. Boundaries
+        are measured against the panel in light and the elevated plane in dark &mdash; the tightest
+        ground each has to hold, which is where the old &ldquo;3:1 against the work surface&rdquo;
+        claim was quietly failing.
+      </p>
+
+      <h4>Light &mdash; work #FFFEFA, panel #EEEAE0</h4>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Hue</th><th>wash</th><th>hover wash</th><th>border &ge;3</th><th>fill + on-fill &ge;4.5</th><th>text &ge;7</th></tr></thead>
+          <tbody>
+            <tr><td>red</td><td class="num">1.09</td><td class="num">1.34</td><td class="num">3.54</td><td class="num">5.47</td><td class="num">8.31</td></tr>
+            <tr><td>orange</td><td class="num">1.07</td><td class="num">1.29</td><td class="num">3.08</td><td class="num">5.33</td><td class="num">8.07</td></tr>
+            <tr><td>amber</td><td class="num">1.06</td><td class="num">1.24</td><td class="num">3.10</td><td class="num">5.86</td><td class="num">8.38</td></tr>
+            <tr><td>yellow</td><td class="num">1.04</td><td class="num">1.14</td><td class="num">3.06</td><td class="num">5.17</td><td class="num">7.71</td></tr>
+            <tr><td>green</td><td class="num">1.07</td><td class="num">1.30</td><td class="num">3.28</td><td class="num">5.30</td><td class="num">7.97</td></tr>
+            <tr><td>teal</td><td class="num">1.08</td><td class="num">1.33</td><td class="num">3.06</td><td class="num">4.93</td><td class="num">7.63</td></tr>
+            <tr><td>cyan</td><td class="num">1.09</td><td class="num">1.36</td><td class="num">3.39</td><td class="num">5.67</td><td class="num">7.67</td></tr>
+            <tr><td>blue</td><td class="num">1.12</td><td class="num">1.44</td><td class="num">5.20</td><td class="num">8.32</td><td class="num">11.75</td></tr>
+            <tr><td>violet</td><td class="num">1.12</td><td class="num">1.46</td><td class="num">4.83</td><td class="num">7.86</td><td class="num">11.06</td></tr>
+            <tr><td>pink</td><td class="num">1.10</td><td class="num">1.38</td><td class="num">3.27</td><td class="num">5.29</td><td class="num">8.07</td></tr>
+            <tr><td>grey</td><td class="num">1.09</td><td class="num">1.35</td><td class="num">4.02</td><td class="num">10.07</td><td class="num">15.71</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="color:var(--ink-3);font-size:12px">Ink on the work surface: primary 15.71, secondary 10.07, muted 4.79.</p>
+
+      <h4>Dark &mdash; work #181F2E, elevated #1D2639</h4>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Hue</th><th>wash</th><th>hover wash</th><th>border &ge;3</th><th>fill + on-fill &ge;4.5</th><th>text &ge;7</th></tr></thead>
+          <tbody>
+            <tr><td>red</td><td class="num">1.22</td><td class="num">1.97</td><td class="num">4.86</td><td class="num">5.65</td><td class="num">12.16</td></tr>
+            <tr><td>orange</td><td class="num">1.27</td><td class="num">2.02</td><td class="num">6.05</td><td class="num">7.04</td><td class="num">12.65</td></tr>
+            <tr><td>amber</td><td class="num">1.26</td><td class="num">1.95</td><td class="num">7.14</td><td class="num">8.30</td><td class="num">13.14</td></tr>
+            <tr><td>yellow</td><td class="num">1.30</td><td class="num">2.12</td><td class="num">9.60</td><td class="num">11.17</td><td class="num">14.27</td></tr>
+            <tr><td>green</td><td class="num">1.29</td><td class="num">2.05</td><td class="num">8.06</td><td class="num">9.38</td><td class="num">12.55</td></tr>
+            <tr><td>teal</td><td class="num">1.33</td><td class="num">2.14</td><td class="num">7.85</td><td class="num">9.13</td><td class="num">12.29</td></tr>
+            <tr><td>cyan</td><td class="num">1.35</td><td class="num">2.13</td><td class="num">7.06</td><td class="num">8.21</td><td class="num">12.01</td></tr>
+            <tr><td>blue</td><td class="num">1.27</td><td class="num">1.39</td><td class="num">4.90</td><td class="num">5.70</td><td class="num">11.35</td></tr>
+            <tr><td>violet</td><td class="num">1.27</td><td class="num">1.48</td><td class="num">5.63</td><td class="num">6.56</td><td class="num">11.18</td></tr>
+            <tr><td>pink</td><td class="num">1.26</td><td class="num">2.02</td><td class="num">5.96</td><td class="num">6.94</td><td class="num">11.80</td></tr>
+            <tr><td>grey</td><td class="num">1.22</td><td class="num">1.86</td><td class="num">5.71</td><td class="num">6.64</td><td class="num">12.05</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="color:var(--ink-3);font-size:12px">Ink on the work surface: primary 14.94, secondary 12.05, muted 6.22.</p>
+
+      <div class="callout">
+        <p>
+          <b>The two soft spots are gone, and your note is why.</b> Last round these were recorded
+          as costs of a shared ladder: blue's dark wash at 1.04, and <code>inactive</code>'s dark
+          hover wash <em>fainter</em> than the resting wash it is supposed to be stronger than.
+          Once Selene was allowed its own values, both became three-line fixes. Every wash now sits
+          between 1.22 and 1.35, and every hover wash is stronger than the wash it replaces.
+        </p>
+      </div>
+
+      <p style="color:var(--ink-3);font-size:12.5px;max-width:70ch">
+        * <code>deep</code> in Selene means Selene's <code>deep</code>. That is the point of the
+        asterisk: the slot table names a step, and which value that step holds is the material's
+        decision.
+      </p>
+    </div>
+    <div class="gutter"><div data-note="material"></div></div>
+  </div>
+</section>
+
+<!-- ============================================ 05 -->
+<section id="diff" class="wrap">
+  <div class="head">
+    <h2>Palette diff</h2>
+    <p>Eleven values changed. Every one is shown, with the reason it moved.</p>
+  </div>
+
+  <div class="body">
+    <div>
+      <div class="inverted">
+        <div>
+          <span class="eyebrow">The finding</span>
+          <h3>Aether Blue and Vesper Violet are untouched.</h3>
+        </div>
+        <div>
+          <p>
+            The retune permission was open, and it turned out almost none of it was needed. The
+            named hues survive exactly. What changed is one achromatic family that was stepped for
+            the wrong end of the range, one grey that was documented as tint-free and measurably
+            wasn't, and three boundary steps that had only ever been measured against the work
+            surface rather than the panel they actually sit on.
+          </p>
+        </div>
+      </div>
+
+      <div class="diff">
+        <div class="heads"><span>Entry</span><span>Was</span><span></span><span>Now</span><span>L*</span><span>Why</span></div>
+        <div><span class="label">black-faded</span><span class="sw" style="background:#42506a"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#3d4f75"></span><span class="hex">33.8&rarr;33.7</span><span class="why">The family was stepped like a chromatic ramp &mdash; coarse at the top, crushed at the bottom. Its dark planes had nowhere to separate. Rebuilt on one cool-navy direction with even ~3&nbsp;L* steps at the dark end, mirroring what <code>white</code> does at the light end.</span></div>
+        <div><span class="label">black-light</span><span class="sw" style="background:#2a3445"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#253047"></span><span class="hex">21.5&rarr;19.9</span><span class="why">&Prime;</span></div>
+        <div><span class="label">black-muted</span><span class="sw" style="background:#172033"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#1d2639"></span><span class="hex">12.3&rarr;15.2</span><span class="why">&Prime;</span></div>
+        <div><span class="label">black-normal</span><span class="sw" style="background:#111827"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#181f2e"></span><span class="hex">8.3&rarr;11.8</span><span class="why">&Prime;</span></div>
+        <div><span class="label">black-emphasized</span><span class="sw" style="background:#0b0f14"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#131925"></span><span class="hex">4.2&rarr;8.7</span><span class="why">&Prime;</span></div>
+        <div><span class="label">black-strong</span><span class="sw" style="background:#05070a"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#10141e"></span><span class="hex">1.9&rarr;6.4</span><span class="why">&Prime; &mdash; and it collided exactly with <code>grey-deep</code></span></div>
+        <div><span class="label">black-deep</span><span class="sw" style="background:#000000"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#0a0c12"></span><span class="hex">0&rarr;3.4</span><span class="why">Absolute black is a void, not a night sky. A citadel in the clouds at night is deep, not empty.</span></div>
+        <div><span class="label">grey-normal</span><span class="sw" style="background:#6c716c"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#6b7280"></span><span class="hex">47.1&rarr;47.9</span><span class="why">The ramp is documented as tint-free; <code>#6C716C</code> is measurably green. Ink muted moves 4.94&rarr;4.79, still clear of 4.5.</span></div>
+        <div><span class="label">orange-normal</span><span class="sw" style="background:#dd6f1a"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#d06816"></span><span class="hex">58.8&rarr;55.4</span><span class="why"><code>normal</code> is the boundary step, and the 3:1 claim had only ever been measured against the work surface. On the panel plane orange, yellow and teal sat at 2.75&ndash;2.89. All three now clear 3.06&ndash;3.10.</span></div>
+        <div><span class="label">yellow-normal</span><span class="sw" style="background:#9e8912"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#998512"></span><span class="hex">57.3&rarr;55.7</span><span class="why">&Prime;</span></div>
+        <div><span class="label">teal-normal</span><span class="sw" style="background:#1f9e92"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#1d958a"></span><span class="hex">58.8&rarr;55.7</span><span class="why">&Prime;</span></div>
+      </div>
+
+      <h3>What Selene declares for itself</h3>
+      <p style="max-width:70ch;color:var(--ink-2);font-size:13px">
+        Three entries, each fixing a place where the shared ladder does not serve the dark range.
+        The point is not that Selene is different &mdash; it is that nothing prevents Selene from
+        being different when being the same would be worse.
+      </p>
+
+      <div class="diff">
+        <div class="heads"><span>Entry</span><span>Shared</span><span></span><span>Selene</span><span>Wash</span><span>Why</span></div>
+        <div><span class="label">blue-deep</span><span class="sw" style="background:#131f4b"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#1b2c6b"></span><span class="hex">1.04&rarr;1.27</span><span class="why">As a wash behind content on Selene's work plane, the shared value is invisible. Now in line with every other hue.</span></div>
+        <div><span class="label">violet-deep</span><span class="sw" style="background:#291b50"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#36246a"></span><span class="hex">1.07&rarr;1.27</span><span class="why">Same problem, same fix.</span></div>
+        <div><span class="label">grey-strong</span><span class="sw" style="background:#1d2329"></span><span class="arrow">&rarr;</span><span class="sw" style="background:#414b58"></span><span class="hex">1.04&rarr;1.86</span><span class="why"><code>grey-strong</code> is Helios' primary ink, so it sits almost exactly on Selene's work plane. As <code>inactive</code>'s hover wash it was fainter than the resting wash it replaces.</span></div>
+      </div>
+
+      <h3>The black family, before and after</h3>
+      <div class="ramps">
+        <div class="ramphead"><div>&nbsp;</div><div>faded</div><div>light</div><div>muted</div><div>normal</div><div>emph</div><div>strong</div><div>deep</div></div>
+        <div class="ramp"><div class="name">was</div><div class="step"><i style="background:#42506a"></i></div><div class="step"><i style="background:#2a3445"></i></div><div class="step"><i style="background:#172033"></i></div><div class="step"><i style="background:#111827"></i></div><div class="step"><i style="background:#0b0f14"></i></div><div class="step"><i style="background:#05070a"></i></div><div class="step"><i style="background:#000000"></i></div></div>
+        <div class="ramp"><div class="name">now</div><div class="step"><i style="background:#3d4f75"></i></div><div class="step"><i style="background:#253047"></i></div><div class="step"><i style="background:#1d2639"></i></div><div class="step"><i style="background:#181f2e"></i></div><div class="step"><i style="background:#131925"></i></div><div class="step"><i style="background:#10141e"></i></div><div class="step"><i style="background:#0a0c12"></i></div></div>
+      </div>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Family</th><th colspan="6">Neighbour steps in L*, faded &rarr; deep</th></tr></thead>
+          <tbody>
+            <tr><td>white (light planes)</td><td class="num">0.4</td><td class="num">3.4</td><td class="num">3.5</td><td class="num">3.9</td><td class="num">4.3</td><td class="num">11.6</td></tr>
+            <tr><td>black, before</td><td class="num fail">12.4</td><td class="num fail">9.2</td><td class="num">4.0</td><td class="num">4.1</td><td class="num fail">2.3</td><td class="num fail">1.9</td></tr>
+            <tr><td>black, after</td><td class="num">13.8</td><td class="num">4.7</td><td class="num">3.4</td><td class="num">3.1</td><td class="num">2.4</td><td class="num">3.0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="color:var(--ink-3);font-size:12.5px;max-width:70ch">
+        White's fine resolution sits where its planes live &mdash; the light end. Black's fine
+        resolution used to sit in the middle and collapse at the bottom, which is exactly where its
+        planes have to live. That single mismatch is what made dark mode feel impossible.
+      </p>
+    </div>
+    <div class="gutter"><div data-note="diff"></div></div>
+  </div>
+</section>
+
+<!-- ============================================ 06 -->
+<section id="tokens" class="wrap">
+  <div class="head">
+    <h2>New tokens</h2>
+    <p>Every existing token kept, with its name. These are the jobs that had no name.</p>
+  </div>
+
+  <div class="body">
+    <div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Token</th><th>Argues from</th><th>The argument</th></tr></thead>
+          <tbody>
+            <tr><td class="tok">--token-tracking-*</td><td>type</td><td>Large type at default tracking reads as unset; uppercase without tracking is unreadable</td></tr>
+            <tr><td class="tok">--token-text-display</td><td>type</td><td>One statement per page; the only type whose job depends on how much room it has</td></tr>
+            <tr><td class="tok">--token-text-micro</td><td>type</td><td>Panel chrome was being hand-written at 9, 9.5, 10 and 10.5px</td></tr>
+            <tr><td class="tok">--token-font-reading</td><td>type</td><td>A document set in the interface font reads as part of the application</td></tr>
+            <tr><td class="tok">--token-reading-leading</td><td>type</td><td>Long-form leading for the serif</td></tr>
+            <tr><td class="tok">--token-weight-*</td><td>type</td><td>Three weights are loaded; a fourth is synthesized by the browser</td></tr>
+            <tr><td class="tok">--token-measure-*</td><td>type</td><td>Line length was composed everywhere and named nowhere</td></tr>
+            <tr><td class="tok">--token-control-height-*</td><td>arrangement</td><td>Three densities on the 4px grid; within one region, one height</td></tr>
+            <tr><td class="tok">--token-hairline</td><td>arrangement</td><td>Seams instead of boxes</td></tr>
+            <tr><td class="tok">--token-rail</td><td>arrangement</td><td>An attached block instead of a card</td></tr>
+            <tr><td class="tok">--token-surface-inverted</td><td>light</td><td>The deliberate opposite of the page</td></tr>
+            <tr><td class="tok">--token-ink-on-inverted</td><td>light</td><td>&Prime;</td></tr>
+            <tr><td class="tok">--token-surface-veil</td><td>light</td><td>Glass over moving content, not a lid</td></tr>
+            <tr><td class="tok">--token-blur-veil</td><td>light</td><td>&Prime;</td></tr>
+            <tr><td class="tok">--token-atmosphere</td><td>light</td><td>The ground reads as air rather than as paint. The moment someone notices a gradient, it is too strong</td></tr>
+            <tr><td class="tok">--token-shadow-glow</td><td>light</td><td>Glow carries state and nothing else</td></tr>
+            <tr><td class="tok">--token-focus-width</td><td>states</td><td>There is exactly one focus language</td></tr>
+            <tr><td class="tok">--token-focus-offset</td><td>states</td><td>&Prime;</td></tr>
+            <tr><td class="tok">--token-ease-arrival</td><td>motion</td><td>The system causing something is a second kind of causation</td></tr>
+            <tr><td class="tok">--token-motion-arrival</td><td>motion</td><td>&Prime;</td></tr>
+            <tr><td class="tok">--token-motion-rise</td><td>motion</td><td>Things rise, they do not fly</td></tr>
+            <tr><td class="tok">--token-motion-drift</td><td>motion</td><td>&Prime;</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Renamed, for one reason each</h3>
+      <div class="seamgrid g3">
+        <div><strong style="font-size:1.1rem;font-family:'IBM Plex Mono',monospace">--theme-*</strong><span>became <code>--material-*</code>. With one style there is no theme; the layer is the achromatic material doing jobs.</span></div>
+        <div><strong style="font-size:1.1rem;font-family:'IBM Plex Mono',monospace">data-theme</strong><span>became <code>data-appearance</code>, values <code>helios</code> and <code>selene</code>. Nobody chooses a style; they choose which body is doing the lighting.</span></div>
+        <div><strong style="font-size:1.1rem;font-family:'IBM Plex Mono',monospace">spacing.css</strong><span>became <code>space.css</code>. It now holds the unit, the densities and measure &mdash; &ldquo;spacing&rdquo; only covered the first.</span></div>
+      </div>
+    </div>
+    <div class="gutter"><div data-note="tokens"></div></div>
+  </div>
+</section>
+
+<!-- ============================================ 07 -->
+<section id="verification" class="wrap">
+  <div class="head">
+    <h2>What ran</h2>
+    <p>On <code>work/styling</code>, in a worktree at <code>.claude/worktrees/styling</code>.</p>
+  </div>
+
+  <div class="body">
+    <div>
+      <div class="seamgrid g5">
+        <div><strong class="pass">56</strong><span>lint checks, all clean</span></div>
+        <div><strong class="pass">0</strong><span>typecheck errors across 2181 files</span></div>
+        <div><strong class="pass">591</strong><span>unit tests passing</span></div>
+        <div><strong class="pass">99</strong><span>script tests passing</span></div>
+        <div><strong class="pass">&check;</strong><span>production build</span></div>
+      </div>
+
+      <p>
+        The served stylesheet was checked directly: <code>--material-*</code>,
+        <code>--token-tracking-caps</code>, <code>--token-font-reading</code>,
+        <code>--token-surface-inverted</code>, <code>--token-shadow-glow</code>,
+        <code>--token-control-height</code>, <code>--token-measure-prose</code> and
+        <code>--token-ease-arrival</code> all resolve; <code>cyberpunk</code>,
+        <code>--theme-*</code> and <code>data-theme</code> appear zero times.
+      </p>
+
+      <h3>And this time, by eye</h3>
+      <p>
+        Last round I flagged that there was no browser screenshot. There is now &mdash; the system
+        Chromium works headless, so both <code>/demo</code> and <code>/demo/blocks</code> were
+        rendered and read in both materials before this page was written. Three things it caught
+        that measurement could not:
+      </p>
+      <div class="cardgrid g3">
+        <article>
+          <span class="tag">Fixed</span>
+          <h4>An unreadable eyebrow</h4>
+          <p>The eyebrow inside an inverted block kept its role colour, which on the inverted ground is dark violet on near-black. <code>.inverted .eyebrow</code> now takes the on-inverted ink.</p>
+        </article>
+        <article>
+          <span class="tag">Fixed</span>
+          <h4>Dead space in the type section</h4>
+          <p>The scale column ended halfway up a two-column grid, leaving 400px of nothing. Measure moved under it.</p>
+        </article>
+        <article>
+          <span class="tag">Fixed</span>
+          <h4>Empty seam cells</h4>
+          <p>Thirteen states in a three-column seam grid left two cells showing bare seam ground. The last state now spans the row &mdash; the design's own rule about picking a column count the items fill.</p>
+        </article>
+      </div>
+      <p style="color:var(--ink-3);font-size:12.5px;max-width:70ch">
+        One honest note about how that verification worked: to render Selene without clicking, I had
+        to flip the default in <em>both</em> appearance effects and in <code>app.html</code> &mdash;
+        the root layout and the demo bar each seed from the same stored key, so flipping one leaves
+        the other to overwrite it. All three are reverted.
+      </p>
+    </div>
+    <div class="gutter"><div data-note="verification"></div></div>
+  </div>
+</section>
+
+<!-- ============================================ 08 -->
+<section id="next" class="wrap">
+  <div class="head">
+    <h2>What's next</h2>
+    <p>The demos are done. The panels are not, and that is where the real work is.</p>
+  </div>
+
+  <div class="body">
+    <div>
+      <div class="cardgrid g2">
+        <article>
+          <span class="tag">Done</span>
+          <h4>Both demo pages</h4>
+          <p><code>/demo</code> is rebuilt as a walk through the six documents in reading order, with the appearance switch in the nav. <code>/demo/blocks</code> now floats its document on the pasteboard in the reading voice, which is the type argument made visible.</p>
+        </article>
+        <article>
+          <span class="tag">Next</span>
+          <h4>The panels</h4>
+          <p>Inspector and context panels take the density scale, the seam grid, the micro tier, the table conventions, and one focus language. This is where the interaction design you liked gets to become the system's.</p>
+        </article>
+      </div>
+
+      <h3>Your three answers, and what they cost</h3>
+
+      <div class="fork">
+        <b>Serif &mdash; kept</b>
+        <p>
+          "If plex goes better with what we're trying to do here, then we should do that." It does:
+          Plex Serif is the same family as the sans and mono, so the three voices are one type
+          system rather than three fonts. <code>/demo/blocks</code> now sets its document page in it,
+          so you can judge it against a real column of prose rather than a specimen line.
+        </p>
+      </div>
+
+      <div class="fork">
+        <b>Curves &mdash; ceiling removed</b>
+        <p>
+          "As many curves as is necessary. I don't think we should intentionally limit."
+          <code>motion.md</code> now says a curve is how a cause feels, so there are as many as
+          there are distinct causes &mdash; no more, and no artificial ceiling either. Two are
+          declared; a third arrives the day a third kind of cause does.
+        </p>
+      </div>
+
+      <div class="fork">
+        <b>The check &mdash; stays gone</b>
+        <p>
+          "You never know when you need to pull from behind." Agreed, and it stays deleted. The
+          same instinct is now written into <code>aesthetic.md</code> and <code>states.md</code>: a
+          system that prevents its own best work has failed at the only thing it was for. Nothing
+          enforces the token boundary; the documents argue for it instead.
+        </p>
+      </div>
+
+      <h3>Two things I could not settle</h3>
+
+      <div class="fork">
+        <b>1 &middot; The semantic-overlay components</b>
+        <p>
+          I found the demo at <code>/demo/semantic-overlay</code> and read its treatment &mdash; mono
+          eyebrows, a live dot with a halo ring, a soft radial wash on the canvas. All three are now
+          in the system (<code>.eyebrow</code>, <code>.live-dot</code>,
+          <code>--token-atmosphere</code>). What I have not done is go through that page component by
+          component to see what else is worth taking. Worth a pass of its own if you think there is
+          more there.
+        </p>
+      </div>
+
+      <div class="fork">
+        <b>2 &middot; How far Selene should diverge</b>
+        <p>
+          It currently overrides three values, each fixing a measured defect. Your note went
+          further: <em>"the whole chromatic set could be completely unique for dark."</em> The
+          structure now allows that with no check standing in the way. I did not take it, because
+          three motivated changes are reviewable and seventy-seven are not &mdash; but if Selene
+          should have its own character rather than the same character in the dark, that is a
+          deliberate project and I would want you to say so.
+        </p>
+      </div>
+
+      <div class="inverted">
+        <div>
+          <span class="eyebrow">The thing to actually do</span>
+          <h3>Open /demo in both materials.</h3>
+        </div>
+        <div>
+          <p>
+            Everything on this page is a claim about what those two screens should feel like. The
+            screens exist now, so the claims are checkable. Switch between Helios and Selene in the
+            nav and see whether the room holds.
+          </p>
+          <p>
+            Notes in the margin of any section are saved and I read them back &mdash; you do not
+            need to summarise them for me.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="gutter"><div data-note="next"></div></div>
+  </div>
+</section>
+
+<footer class="end wrap">
+  Celestial &middot; Helios and Selene &middot; branch <code>work/styling</code> off
+  <code>98d9cd0</code> &middot; documents live at <code>app/src/lib/styles/aesthetic/</code>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var KEY = "celestial.appearance";
+    var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-set]"));
+
+    function effective() {
+      var stamped = root.getAttribute("data-theme");
+      if (stamped === "light" || stamped === "dark") return stamped;
+      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    }
+
+    function paint(value) {
+      root.setAttribute("data-theme", value);
+      buttons.forEach(function (button) {
+        button.setAttribute("aria-pressed", String(button.dataset.set === value));
+      });
+    }
+
+    var held = null;
+    try {
+      held = localStorage.getItem(KEY);
+    } catch (error) {
+      held = null;
+    }
+    paint(held === "light" || held === "dark" ? held : effective());
+
+    buttons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        paint(button.dataset.set);
+        try {
+          localStorage.setItem(KEY, button.dataset.set);
+        } catch (error) {
+          // A blocked store costs persistence, not the choice.
+        }
+      });
+    });
+  })();
+
+  (function () {
+    var SECTIONS = {
+      notes: "What your notes changed",
+      diagnosis: "Diagnosis",
+      tree: "The tree",
+      documents: "The documents",
+      material: "The material",
+      diff: "Palette diff",
+      tokens: "New tokens",
+      verification: "What ran",
+      next: "What's next"
+    };
+
+    var mounts = document.querySelectorAll("[data-note]");
+    var fields = {};
+
+    mounts.forEach(function (mount) {
+      var id = mount.getAttribute("data-note");
+      mount.innerHTML =
+        '<div class="note">' +
+        '<header><b>Notes</b><span class="state" data-state>local only</span></header>' +
+        '<textarea data-input aria-label="Notes on ' + SECTIONS[id] + '" placeholder="What is wrong with this section?"></textarea>' +
+        '<footer><small>' + SECTIONS[id] + '</small><button data-save disabled>Save</button></footer>' +
+        "</div>";
+      fields[id] = {
+        input: mount.querySelector("[data-input]"),
+        save: mount.querySelector("[data-save]"),
+        state: mount.querySelector("[data-state]")
+      };
+    });
+
+    function setState(id, text, cls) {
+      var el = fields[id].state;
+      el.textContent = text;
+      el.className = "state" + (cls ? " " + cls : "");
+    }
+
+    claude.use("db").then(function (db) {
+      if (!db) {
+        Object.keys(fields).forEach(function (id) {
+          setState(id, "not saved");
+          fields[id].input.disabled = true;
+          fields[id].save.remove();
+        });
+        return;
+      }
+
+      Object.keys(fields).forEach(function (id) {
+        var field = fields[id];
+        field.save.disabled = false;
+        setState(id, "empty");
+
+        db.doc("notes/" + id)
+          .get()
+          .then(function (held) {
+            if (held && typeof held.text === "string" && held.text.length) {
+              field.input.value = held.text;
+              setState(id, "saved", "saved");
+            }
+          })
+          .catch(function () {
+            setState(id, "could not load", "failed");
+          });
+
+        field.input.addEventListener("input", function () {
+          setState(id, "unsaved");
+        });
+
+        field.save.addEventListener("click", function () {
+          field.save.disabled = true;
+          setState(id, "saving");
+          db.doc("notes/" + id)
+            .set({ section: SECTIONS[id], text: field.input.value, at: new Date().toISOString() })
+            .then(function () {
+              setState(id, "saved", "saved");
+            })
+            .catch(function () {
+              setState(id, "not saved", "failed");
+            })
+            .then(function () {
+              field.save.disabled = false;
+            });
+        });
+      });
+    });
+  })();
+</script>

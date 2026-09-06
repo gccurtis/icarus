@@ -34,7 +34,11 @@
 <svelte:window {onkeydown} />
 
 <section class="flex flex-col gap-4">
-  <SectionHeading title="Disclosure" source="system/interaction/theory.md" />
+  <SectionHeading
+    eyebrow="08 · Registry"
+    title="Disclosure"
+    source="styles/aesthetic/arrangement.md"
+  />
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">
     Depth ordered rather than hidden. The default view answers the common question, one step reaches
     the supporting material, and full lineage stays reachable without being imposed.

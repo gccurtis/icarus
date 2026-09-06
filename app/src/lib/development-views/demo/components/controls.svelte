@@ -21,7 +21,11 @@
 </script>
 
 <section class="flex flex-col gap-4">
-  <SectionHeading title="Controls" source="shadcn-svelte, bridged to our tokens" />
+  <SectionHeading
+    eyebrow="08 · Registry"
+    title="Controls"
+    source="shadcn-svelte, bridged to our tokens"
+  />
   <p class="text-body-sm text-ink-secondary max-w-[70ch]">
     What the inspector is built from. These are the surfaces a user acts through when a session has
     something under inspection.

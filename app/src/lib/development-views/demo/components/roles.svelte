@@ -3,77 +3,71 @@
 
   const SLOTS = ["surface", "surface-hover", "border", "fill", "fill-hover", "text", "on-fill"];
 
-  /** Every role binds directly to one chromatic family in
-   *  semantic-tokens/color.css. Meaning roles are fixed there; identity and
-   *  brand roles may share a hue with each other but never with a meaning. */
-  const SEMANTIC = [
-    { role: "success", hue: "green", means: "Applied, accepted, valid, safe" },
-    { role: "danger", hue: "red", means: "Failed, rejected, destructive, denied" },
-    { role: "attention", hue: "amber", means: "Human judgment required; stale" },
-    { role: "inactive", hue: "grey", means: "Unavailable, disabled" },
-    { role: "interactive", hue: "blue", means: "Can be acted upon" },
-    { role: "active", hue: "cyan", means: "Currently engaged, live" },
-    { role: "intelligence", hue: "violet", means: "Derived work" },
-  ];
-
-  const BRAND = [
-    { role: "primary", hue: "blue", means: "Shares the interactive hue" },
-    { role: "secondary", hue: "cyan", means: "Shares the active hue" },
-    { role: "accent-1", hue: "pink", means: "Categorical work" },
-    { role: "accent-2", hue: "teal", means: "Categorical work" },
-    { role: "slide", hue: "orange", means: "Slide-deck identity" },
+  const ROLES = [
+    { kind: "Meaning", role: "success", hue: "green", means: "Applied, accepted, valid, safe" },
+    { kind: "Meaning", role: "danger", hue: "red", means: "Failed, rejected, destructive" },
+    { kind: "Meaning", role: "attention", hue: "amber", means: "Human judgment required; stale" },
+    { kind: "Meaning", role: "inactive", hue: "grey", means: "Unavailable, disabled, out of scope" },
+    { kind: "Identity", role: "interactive", hue: "blue", means: "Can be acted upon" },
+    { kind: "Identity", role: "active", hue: "cyan", means: "Engaged, selected, live, resolving" },
+    { kind: "Identity", role: "intelligence", hue: "violet", means: "Derived work" },
+    { kind: "Brand", role: "primary", hue: "blue", means: "What the product wears by default" },
+    { kind: "Brand", role: "secondary", hue: "cyan", means: "The quieter alternative" },
+    { kind: "Brand", role: "accent-1", hue: "pink", means: "Categorical work" },
+    { kind: "Brand", role: "accent-2", hue: "teal", means: "Categorical work" },
+    { kind: "Brand", role: "slide", hue: "orange", means: "Slide-deck identity" }
   ];
 </script>
 
-<section class="flex flex-col gap-4">
-  <SectionHeading title="Semantic roles" source="system/color/roles.md" />
-  <p class="text-body-sm text-ink-secondary max-w-[70ch]">
-    Seven purpose slots per role. A component picks a job — <code class="font-mono">text</code>,
-    <code class="font-mono">fill</code>, <code class="font-mono">border</code> — and the slot table
-    picks the intensity, so no call site chooses a step. Meaning roles are fixed here; identity roles
-    resolve through the active semantic set.
-  </p>
+<section class="flex flex-col gap-5">
+  <SectionHeading
+    eyebrow="02 · Material"
+    title="Roles and slots"
+    source="styles/tokens/tokens.md"
+    lede="A role binds one family across seven jobs. This is the only place a hue is chosen, and a component picks a job — never an intensity, never a hue."
+  />
 
-  <!-- These swatches are why the Tailwind adapter registers tokens as `static`: a var() inside a
-       style attribute is invisible to Tailwind's scanner, so without it most of
-       the 77 role tokens are tree-shaken out of the build. -->
-  <div class="flex flex-col gap-2">
-    <div class="grid grid-cols-[9rem_repeat(7,1fr)_14rem] items-center gap-2">
-      <span></span>
-      {#each SLOTS as slot (slot)}
-        <span class="text-caption text-ink-muted text-center">{slot}</span>
-      {/each}
-      <span></span>
-    </div>
-    {#each SEMANTIC as { role, hue, means } (role)}
-      <div class="grid grid-cols-[9rem_repeat(7,1fr)_14rem] items-center gap-2">
-        <span class="text-label font-mono">{role}</span>
-        {#each SLOTS as slot (slot)}
-          <div
-            class="border-border-subtle rounded-control h-8 border"
-            style="background-color: var(--token-color-{role}-{slot})"
-            title="--token-color-{role}-{slot}"
-          ></div>
+  <div class="table-frame table-scroll">
+    <table class="data-table min-w-[52rem]">
+      <thead>
+        <tr>
+          <th scope="col">Role</th>
+          {#each SLOTS as slot (slot)}
+            <th scope="col">{slot}</th>
+          {/each}
+          <th scope="col">Means</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each ROLES as { role, hue, means } (role)}
+          <tr>
+            <th scope="row" class="text-ink-primary text-body-sm border-border-subtle border-r px-3 py-2 text-left font-medium">
+              <span class="font-mono">{role}</span>
+              <span class="text-micro text-ink-muted block font-mono">{hue}</span>
+            </th>
+            {#each SLOTS as slot (slot)}
+              <td>
+                <span
+                  class="border-border-subtle mx-auto block h-6 w-full max-w-16 rounded-sm border"
+                  style="background-color: var(--token-color-{role}-{slot})"
+                  title="--token-color-{role}-{slot}"
+                ></span>
+              </td>
+            {/each}
+            <td class="text-ink-secondary text-left">{means}</td>
+          </tr>
         {/each}
-        <span class="text-caption text-ink-muted">{hue} — {means}</span>
-      </div>
-    {/each}
+      </tbody>
+    </table>
   </div>
 
-  <h3 class="text-h4 mt-2 font-semibold">Brand roles</h3>
-  <div class="flex flex-col gap-2">
-    {#each BRAND as { role, hue, means } (role)}
-      <div class="grid grid-cols-[9rem_repeat(7,1fr)_14rem] items-center gap-2">
-        <span class="text-label font-mono">{role}</span>
-        {#each SLOTS as slot (slot)}
-          <div
-            class="border-border-subtle rounded-control h-8 border"
-            style="background-color: var(--token-color-{role}-{slot})"
-            title="--token-color-{role}-{slot}"
-          ></div>
-        {/each}
-        <span class="text-caption text-ink-muted">{hue} — {means}</span>
-      </div>
-    {/each}
+  <div class="rail rail-quiet max-w-prose p-4">
+    <p class="text-body-sm text-ink-secondary m-0">
+      Meaning roles are fixed. Identity and brand roles may share a hue with one another but never
+      with a meaning hue — someone who learnt that red means danger learnt it everywhere.
+      <code class="text-micro font-mono">orange</code> and
+      <code class="text-micro font-mono">yellow</code> are declared and claimed by no role; they are
+      the first to reach for when a categorical series needs more than four.
+    </p>
   </div>
 </section>

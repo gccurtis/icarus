@@ -13,6 +13,7 @@
   import PanelValues from "$development-views/vocabulary/components/panel-values.svelte";
   import ScreenParts from "$development-views/vocabulary/components/screen-parts.svelte";
   import ScreenPlane from "$development-views/vocabulary/components/screen-plane.svelte";
+  import VocabularyNav from "$development-views/vocabulary/components/vocabulary-nav.svelte";
   import { createCommentLog, provideCommentLog } from "$development-views/vocabulary/shared/comment-log.svelte";
   import { Separator } from "$vendored-components/separator";
 
@@ -49,9 +50,12 @@
   <title>Composition vocabulary — Icarus</title>
 </svelte:head>
 
-<div class="mx-auto flex w-full max-w-[86rem] flex-col gap-10 p-8">
+<div class="flex min-h-0 flex-1">
+  <VocabularyNav />
+
+  <div class="flex w-full min-w-0 max-w-[86rem] flex-col gap-10 p-8">
   <div
-    class="border-border-subtle bg-surface-canvas sticky top-0 z-10 -mx-8 -mt-8 flex flex-wrap items-center justify-between gap-3 border-b px-8 py-2"
+    class="veil border-border-subtle sticky top-11 z-10 -mx-8 -mt-8 flex flex-wrap items-center justify-between gap-3 border-b px-8 py-2"
   >
     <span class="text-caption text-ink-muted">
       Notes go in the right-hand column. Enter saves; nothing is kept in the browser.
@@ -72,30 +76,32 @@
   </div>
 
   <Commented scope="section" label="Composition vocabulary">
-    <header class="flex flex-col gap-3">
-      <a href="/demo" class="text-caption text-interactive-text w-fit hover:underline">
-        ← Design system
-      </a>
-      <h1 class="text-h1 font-semibold">Composition vocabulary</h1>
-      <p class="text-body text-ink-secondary max-w-[70ch]">
-        The design system says what a colour and a size are. This says what a
-        <em>shape</em> is: given something to put on a screen, which of these holds
-        it, and why that one rather than its neighbour.
+    <header class="flex flex-col gap-4">
+      <span class="eyebrow">Celestial · composition</span>
+      <h1 class="text-display tracking-display max-w-title m-0 font-semibold text-balance">
+        Which shape holds it.
+      </h1>
+      <p class="font-reading text-body-lg leading-reading text-ink-secondary max-w-lede m-0">
+        The design system says what a colour and a size are. This says what a <em>shape</em> is:
+        given something to put on a screen, which of these holds it, and why that one rather than
+        its neighbour.
       </p>
-      <p class="text-body-sm text-ink-muted max-w-[70ch]">
-        Two families, because a panel is not a workspace. A flank is narrow and
-        vertical; a workspace is the generous plane. Panel examples below are shown
-        at a flank's real width — a shape that reads well across a plane and breaks
-        in a flank is exactly what this page exists to catch.
-      </p>
+      <div class="rail rail-quiet max-w-prose p-3">
+        <p class="text-body-sm text-ink-secondary m-0">
+          Two families, because a panel is not a workspace. A flank is narrow and vertical; a
+          workspace is the generous plane. Panel examples below are shown at a flank's real width —
+          a shape that reads well across a plane and breaks in a flank is exactly what this page
+          exists to catch.
+        </p>
+      </div>
     </header>
   </Commented>
 
-  <Choosing />
+  <div id="choosing" class="scroll-mt-16"><Choosing /></div>
   <Separator />
-  <PanelParts />
+  <div id="panel-parts" class="scroll-mt-16"><PanelParts /></div>
   <Separator />
-  <Editing />
+  <div id="editing" class="scroll-mt-16"><Editing /></div>
   <Separator />
 
   <!--
@@ -108,20 +114,21 @@
     in one stretch. The three sections after them are compositions and questions
     about data, which are a different kind of thing.
   -->
-  <PanelValues />
+  <div id="panel-values" class="scroll-mt-16"><PanelValues /></div>
   <Separator />
-  <PanelFacts />
+  <div id="panel-facts" class="scroll-mt-16"><PanelFacts /></div>
   <Separator />
-  <PanelShapes />
+  <div id="panel-shapes" class="scroll-mt-16"><PanelShapes /></div>
   <Separator />
-  <ScreenParts />
+  <div id="screen-parts" class="scroll-mt-16"><ScreenParts /></div>
   <Separator />
-  <ScreenPlane />
+  <div id="screen-plane" class="scroll-mt-16"><ScreenPlane /></div>
   <Separator />
 
-  <Dragging />
+  <div id="dragging" class="scroll-mt-16"><Dragging /></div>
   <Separator />
-  <Compositions />
+  <div id="compositions" class="scroll-mt-16"><Compositions /></div>
   <Separator />
-  <DataShapes />
+  <div id="data-shapes" class="scroll-mt-16"><DataShapes /></div>
+  </div>
 </div>

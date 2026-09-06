@@ -1050,7 +1050,7 @@ type SemanticSourceSnapshot = {
   .topbar {
     position: sticky;
     z-index: 20;
-    top: 0;
+    top: 2.75rem;
     display: grid;
     grid-template-columns: 1fr auto;
     grid-template-areas: "brand navigation";

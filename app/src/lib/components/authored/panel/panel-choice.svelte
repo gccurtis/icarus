@@ -83,7 +83,7 @@
   {#each options as option (option.value)}
     <ToggleGroup.Item
       value={option.value}
-      class="text-caption border-border-subtle bg-surface-panel text-ink-secondary rounded-control data-[state=on]:border-active-border data-[state=on]:bg-active-surface data-[state=on]:text-active-text h-auto min-w-0 border px-1.5 py-0.5 font-normal"
+      class="text-body-sm border-border-subtle bg-surface-panel text-ink-secondary rounded-control data-[state=on]:border-active-border data-[state=on]:bg-active-surface data-[state=on]:text-active-text h-7 min-w-0 flex-1 basis-0 justify-center truncate border px-2 font-normal"
     >
       {option.label}
     </ToggleGroup.Item>

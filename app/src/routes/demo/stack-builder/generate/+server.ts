@@ -40,7 +40,10 @@ export const POST: RequestHandler = async ({ request }) => {
   const body: unknown = await request.json().catch(() => null);
   if (!body || typeof body !== "object") error(400, "expected a JSON object");
 
-  const { slug, title, nodes, model, feedback, sources, theme } = body as Record<string, unknown>;
+  const { slug, title, nodes, model, feedback, sources, appearance } = body as Record<
+    string,
+    unknown
+  >;
   if (!isSafeName(slug)) error(400, "a file name is lower-case words joined by hyphens");
   if (typeof title !== "string" || !title.trim()) error(400, "a stack carries a title");
   if (!Array.isArray(nodes) || nodes.length === 0) error(400, "the stack is empty");
@@ -92,7 +95,7 @@ export const POST: RequestHandler = async ({ request }) => {
   const content = payload.choices?.[0]?.message?.content?.trim();
   if (!content) error(502, `${model} returned no content`);
 
-  const wanted = theme === "cyberpunk" ? "cyberpunk" : "celestial";
+  const wanted = appearance === "selene" ? "selene" : "helios";
   await writeMock(mockDocument(brief, wanted, fenceless(content)));
 
   const records = await readLog(slug);
