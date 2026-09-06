@@ -1,23 +1,19 @@
 <script lang="ts">
   import { startThread } from "$capabilities/comments/index.remote";
-  import { read } from "$capabilities/store/index.remote";
   import { Panel, PanelButton, PanelChoice, PanelEmpty, PanelNote, PanelQuote, PanelSection } from "$authored-components/panel";
   import { Textarea } from "$vendored-components/textarea";
+  import {
+    ago,
+    nameOf,
+    remarksOf,
+    rowsOf,
+    tableQuery,
+    textOf,
+    type CommentThread
+  } from "$app-views/categories/slide-deck-editor/procedures/comments";
   import { elementIn, labelOf, slideHolding, slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { selectedIds } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
-
-  type Thread = {
-    _id: string;
-    _creationTime: number;
-    target: { kind: string; id: string };
-    within?: { kind: string; elementId?: string; slideId?: string; blockId?: string };
-    quote?: string;
-    resolution?: unknown;
-    createdBy: { kind: string; userId?: string };
-  };
-  type Comment = { _id: string; _creationTime: number; threadId: string; blocks: { display?: string }[]; author: { userId?: string } };
-  type User = { _id: string; name?: string; displayName?: string };
 
   const view = workspaceState();
   const deckId = $derived(view.active.resourceId);
@@ -31,18 +27,18 @@
   const selected = $derived(selectedIds(view.selection)[0]);
   const element = $derived(body === undefined || selected === undefined ? undefined : elementIn(body, selected));
 
-  const threadRows = read({ path: "commentThreads" });
-  const commentRows = read({ path: "comments" });
-  const userRows = read({ path: "users" });
+  const threadRows = tableQuery("commentThreads");
+  const commentRows = tableQuery("comments");
+  const userRows = tableQuery("users");
 
-  const rowsOf = <T,>(answer: ReturnType<typeof read>): T[] => {
-    const found = answer.current;
-    return found?.kind === "table" ? (found.rows as unknown as T[]) : [];
-  };
-
-  const threads = $derived(rowsOf<Thread>(threadRows).filter((thread) => thread.target?.id === deckId));
-  const comments = $derived(rowsOf<Comment>(commentRows));
-  const users = $derived(new Map(rowsOf<User>(userRows).map((user) => [user._id, user.name ?? user.displayName ?? user._id])));
+  const threads = $derived(
+    rowsOf(threadRows, "commentThreads").filter(
+      (thread) => thread.target.kind === "slides" && thread.target.id === deckId
+    )
+  );
+  const comments = $derived(rowsOf(commentRows, "comments"));
+  const users = $derived(rowsOf(userRows, "users"));
+  const now = Date.now();
 
   let wanted = $state("deck");
   const chips = $derived([
@@ -52,19 +48,19 @@
   ]);
   const chip = $derived(chips.some((held) => held.value === wanted) ? wanted : "deck");
 
-  const slideOfThread = (thread: Thread): string | undefined => {
+  const slideOfThread = (thread: CommentThread): string | undefined => {
     if (thread.within?.kind === "slide") return thread.within.slideId;
     if (thread.within?.kind === "element" && body && thread.within.elementId) return slideHolding(body, thread.within.elementId)?.id;
     return undefined;
   };
 
-  const matches = (thread: Thread): boolean => {
+  const matches = (thread: CommentThread): boolean => {
     if (chip === "element") return thread.within?.kind === "element" && thread.within.elementId === selected;
     if (chip === "slide") return slideOfThread(thread) === slide?.id;
     return true;
   };
 
-  const anchorOf = (thread: Thread): string => {
+  const anchorOf = (thread: CommentThread): string => {
     const held = slideOfThread(thread);
     const position = held && body ? slideIndexOf(body, held) + 1 : undefined;
     if (thread.within?.kind === "element" && body && thread.within.elementId) {
@@ -74,16 +70,7 @@
     return position === undefined ? "Deck" : `Slide ${position}`;
   };
 
-  const firstComment = (thread: Thread) =>
-    comments.filter((comment) => comment.threadId === thread._id).sort((a, b) => a._creationTime - b._creationTime)[0];
-
-  const ago = (at: number): string => {
-    const minutes = Math.round((Date.now() - at) / 60000);
-    if (minutes < 60) return `${Math.max(1, minutes)} min ago`;
-    const hours = Math.round(minutes / 60);
-    if (hours < 48) return `${hours} h ago`;
-    return `${Math.round(hours / 24)} d ago`;
-  };
+  const firstComment = (thread: CommentThread) => remarksOf(comments, thread._id)[0];
 
   const shown = $derived(threads.filter(matches).sort((a, b) => b._creationTime - a._creationTime));
   const open = $derived(shown.filter((thread) => thread.resolution === undefined));
@@ -117,7 +104,7 @@
     }
   };
 
-  const openThread = (thread: Thread) => view.inspect("general.comment", { kind: "comment", id: thread._id });
+  const openThread = (thread: CommentThread) => view.inspect("general.comment", { kind: "comment", id: thread._id });
 </script>
 
 <Panel title="Comments">
@@ -146,12 +133,12 @@
         {@const first = firstComment(thread)}
         <div class="py-1">
           <PanelQuote
-            source={users.get(first?.author.userId ?? thread.createdBy.userId ?? "") ?? "Someone"}
-            when={`${anchorOf(thread)} · ${ago(thread._creationTime)}`}
+            source={nameOf(users, first?.author ?? thread.createdBy)}
+            when={`${anchorOf(thread)} · ${ago(thread._creationTime, now)}`}
             onopen={() => openThread(thread)}
           >
             <button type="button" class="m-0 w-full cursor-pointer border-0 bg-transparent p-0 text-start" onclick={() => openThread(thread)}>
-              {first?.blocks[0]?.display ?? thread.quote ?? "(no text)"}
+              {first === undefined ? (thread.quote ?? "(no text)") : textOf(first)}
             </button>
           </PanelQuote>
         </div>
@@ -165,9 +152,9 @@
       {#each resolved as thread (thread._id)}
         {@const first = firstComment(thread)}
         <div class="py-1 opacity-70">
-          <PanelQuote source={users.get(first?.author.userId ?? "") ?? "Someone"} when={anchorOf(thread)} onopen={() => openThread(thread)}>
+          <PanelQuote source={nameOf(users, first?.author ?? thread.createdBy)} when={anchorOf(thread)} onopen={() => openThread(thread)}>
             <button type="button" class="m-0 w-full cursor-pointer border-0 bg-transparent p-0 text-start" onclick={() => openThread(thread)}>
-              {first?.blocks[0]?.display ?? thread.quote ?? ""}
+              {first === undefined ? (thread.quote ?? "") : textOf(first)}
             </button>
           </PanelQuote>
         </div>

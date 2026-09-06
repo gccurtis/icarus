@@ -2,6 +2,7 @@ import type {
   TemplateBody,
   TemplateVariable
 } from "$representation/data/types/templates/template";
+import { normalizeSlideDeckBody } from "$representation/data/behavior/slide-decks/normalize";
 
 import type { TemplateTarget } from "$capabilities/templates/types/templates";
 import {
@@ -152,6 +153,13 @@ const validFormat = (value: unknown): boolean => {
     !hasOnlyKeys(value, [
       "horizontalAlignment",
       "verticalAlignment",
+      "fontFamily",
+      "fontSize",
+      "color",
+      "lineHeight",
+      "spaceBefore",
+      "spaceAfter",
+      "indent",
       "background",
       "border",
       "padding",
@@ -171,6 +179,29 @@ const validFormat = (value: unknown): boolean => {
     !["top", "middle", "bottom"].includes(value.verticalAlignment as string)
   ) {
     return false;
+  }
+  for (const key of ["fontFamily", "color"] as const) {
+    if (value[key] !== undefined && !validText(value[key], 1_000)) return false;
+  }
+  if (
+    value.fontSize !== undefined &&
+    (!isFiniteNumber(value.fontSize) || value.fontSize <= 0 || value.fontSize > 1_000)
+  ) {
+    return false;
+  }
+  if (
+    value.lineHeight !== undefined &&
+    (!isFiniteNumber(value.lineHeight) || value.lineHeight <= 0 || value.lineHeight > 100)
+  ) {
+    return false;
+  }
+  for (const key of ["spaceBefore", "spaceAfter", "indent"] as const) {
+    if (
+      value[key] !== undefined &&
+      (!isFiniteNumber(value[key]) || (value[key] as number) < -10_000 || (value[key] as number) > 10_000)
+    ) {
+      return false;
+    }
   }
   if (value.background !== undefined && !validText(value.background, 1_000)) return false;
   if (value.valueFormat !== undefined && !validText(value.valueFormat, 1_000, true)) return false;
@@ -218,6 +249,7 @@ const validTextStyle = (value: unknown): boolean => {
       "spaceBefore",
       "spaceAfter",
       "horizontalAlignment",
+      "verticalAlignment",
       "indent"
     ]) ||
     !validCanonicalText(value.name, 160)
@@ -257,8 +289,10 @@ const validTextStyle = (value: unknown): boolean => {
     }
   }
   return (
-    value.horizontalAlignment === undefined ||
-    ["start", "center", "end", "justify"].includes(value.horizontalAlignment as string)
+    (value.horizontalAlignment === undefined ||
+      ["start", "center", "end", "justify"].includes(value.horizontalAlignment as string)) &&
+    (value.verticalAlignment === undefined ||
+      ["top", "middle", "bottom"].includes(value.verticalAlignment as string))
   );
 };
 
@@ -496,18 +530,61 @@ const validMarkLink = (value: unknown): boolean => {
   );
 };
 
-const validMarks = (value: unknown, displayLength?: number): boolean =>
+const markEndOf = (value: unknown): { atom: string; offset: number } | undefined => {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["atom", "offset"]) ||
+    !validIdentifier(value.atom) ||
+    !validInteger(value.offset, 0, MAX_BLOCK_TEXT_LENGTH)
+  ) {
+    return undefined;
+  }
+  return { atom: value.atom, offset: value.offset };
+};
+
+const markPosition = (
+  atoms: readonly unknown[],
+  end: { atom: string; offset: number }
+): number | undefined => {
+  let position = 0;
+  for (const atom of atoms) {
+    if (!isRecord(atom) || !validIdentifier(atom.id)) return undefined;
+    const display =
+      atom.kind === "literal"
+        ? atom.text
+        : atom.kind === "formula"
+          ? atom.lastResolvedDisplay
+          : undefined;
+    if (!isText(display)) return undefined;
+    if (atom.id === end.atom) return end.offset <= display.length ? position + end.offset : undefined;
+    position += display.length;
+  }
+  return undefined;
+};
+
+const validMarks = (value: unknown, atoms?: readonly unknown[]): boolean =>
   Array.isArray(value) &&
   value.length <= MAX_MARKS &&
   value.every((mark) => {
+    const from = isRecord(mark) ? markEndOf(mark.from) : undefined;
+    const to = isRecord(mark) ? markEndOf(mark.to) : undefined;
     if (
       !isRecord(mark) ||
-      !hasOnlyKeys(mark, ["id", "from", "to", "style", "link", "color"]) ||
+      !hasOnlyKeys(mark, ["id", "from", "to", "style", "link", "color", "background"]) ||
       !validIdentifier(mark.id) ||
-      !validInteger(mark.from, 0, displayLength ?? MAX_BLOCK_TEXT_LENGTH) ||
-      !validInteger(mark.to, mark.from as number, displayLength ?? MAX_BLOCK_TEXT_LENGTH)
+      from === undefined ||
+      to === undefined
     ) {
       return false;
+    }
+    if (atoms === undefined) {
+      if (from.atom === to.atom && from.offset > to.offset) return false;
+    } else {
+      const fromPosition = markPosition(atoms, from);
+      const toPosition = markPosition(atoms, to);
+      if (fromPosition === undefined || toPosition === undefined || fromPosition > toPosition) {
+        return false;
+      }
     }
     if (
       mark.style !== undefined &&
@@ -522,7 +599,8 @@ const validMarks = (value: unknown, displayLength?: number): boolean =>
     }
     return (
       (mark.link === undefined || validMarkLink(mark.link)) &&
-      (mark.color === undefined || validText(mark.color, 1_000))
+      (mark.color === undefined || validText(mark.color, 1_000)) &&
+      (mark.background === undefined || validText(mark.background, 1_000))
     );
   });
 
@@ -591,7 +669,7 @@ const validBlock = (value: unknown, depth = 0): boolean => {
       !value.atoms.every(validAtom) ||
       !validText(value.display, MAX_BLOCK_TEXT_LENGTH, true) ||
       value.display !== displayOfAtoms(value.atoms) ||
-      !validMarks(value.marks, value.display.length)
+      !validMarks(value.marks, value.atoms)
     ) {
       return false;
     }
@@ -747,7 +825,7 @@ const validBlock = (value: unknown, depth = 0): boolean => {
       value.atoms.every(validAtom) &&
       validText(value.display, MAX_BLOCK_TEXT_LENGTH, true) &&
       value.display === displayOfAtoms(value.atoms) &&
-      validMarks(value.marks, value.display.length) &&
+      validMarks(value.marks, value.atoms) &&
       (value.scope === undefined || validTemplatedSet(value.scope)) &&
       ["idle", "fresh", "stale", "generating", "error"].includes(value.state as string) &&
       (value.error === undefined || validText(value.error, 10_000, true)) &&
@@ -911,40 +989,201 @@ const validSlideBackground = (value: unknown): boolean => {
   );
 };
 
-const validSlideElement = (value: unknown): boolean =>
+const validPoint = (value: unknown): boolean =>
   isRecord(value) &&
-  hasOnlyKeys(value, [
-    "id",
-    "frame",
-    "rotation",
-    "blocks",
-    "overflow",
-    "fromPlaceholder",
-    "format"
-  ]) &&
-  validIdentifier(value.id) &&
-  validFrame(value.frame) &&
-  (value.rotation === undefined ||
-    (isFiniteNumber(value.rotation) && value.rotation >= -36_000 && value.rotation <= 36_000)) &&
-  Array.isArray(value.blocks) &&
-  value.blocks.length <= MAX_BLOCKS_PER_CONTAINER &&
-  value.blocks.every((block) => validBlock(block)) &&
-  ["clip", "shrink", "grow"].includes(value.overflow as string) &&
-  (value.fromPlaceholder === undefined || validIdentifier(value.fromPlaceholder)) &&
-  (value.format === undefined || validFormat(value.format));
+  hasOnlyKeys(value, ["x", "y"]) &&
+  Object.keys(value).length === 2 &&
+  isFiniteNumber(value.x) &&
+  isFiniteNumber(value.y);
 
-const collectSlideElementIdentifiers = (
-  value: Fields,
-  elementIds: Set<string>,
-  contentIds: Set<string>
+const validElementPaint = (value: unknown): boolean => {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["fill", "stroke", "opacity", "cornerRadius", "shadow"])
+  ) {
+    return false;
+  }
+  if (value.fill !== undefined && !validText(value.fill, 1_000)) return false;
+  if (value.stroke !== undefined) {
+    if (
+      !isRecord(value.stroke) ||
+      !hasOnlyKeys(value.stroke, ["color", "width", "dash"]) ||
+      !validText(value.stroke.color, 1_000) ||
+      !isFiniteNumber(value.stroke.width) ||
+      value.stroke.width < 0 ||
+      value.stroke.width > 1_000 ||
+      (value.stroke.dash !== undefined &&
+        !["solid", "dashed", "dotted"].includes(value.stroke.dash as string))
+    ) {
+      return false;
+    }
+  }
+  if (
+    value.opacity !== undefined &&
+    (!isFiniteNumber(value.opacity) || value.opacity < 0 || value.opacity > 1)
+  ) {
+    return false;
+  }
+  if (
+    value.cornerRadius !== undefined &&
+    (!isFiniteNumber(value.cornerRadius) || value.cornerRadius < 0 || value.cornerRadius > 10_000)
+  ) {
+    return false;
+  }
+  if (value.shadow !== undefined) {
+    if (
+      !isRecord(value.shadow) ||
+      !hasOnlyKeys(value.shadow, ["color", "x", "y", "blur"]) ||
+      !validText(value.shadow.color, 1_000) ||
+      !isFiniteNumber(value.shadow.x) ||
+      Math.abs(value.shadow.x) > 10_000 ||
+      !isFiniteNumber(value.shadow.y) ||
+      Math.abs(value.shadow.y) > 10_000 ||
+      !isFiniteNumber(value.shadow.blur) ||
+      value.shadow.blur < 0 ||
+      value.shadow.blur > 10_000
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const validBlockOfType = (value: unknown, type: string): boolean =>
+  isRecord(value) && value.type === type && validBlock(value);
+
+const validLineEnds = (value: unknown): boolean =>
+  isRecord(value) &&
+  hasOnlyKeys(value, ["start", "end"]) &&
+  [value.start, value.end].every(
+    (end) => end === undefined || ["none", "arrow", "dot"].includes(end as string)
+  );
+
+function validElementContent(value: unknown, depth: number): boolean {
+  if (!isRecord(value) || depth > 12 || !isText(value.type)) return false;
+  if (
+    value.type === "text" ||
+    value.type === "formula" ||
+    value.type === "prompt" ||
+    value.type === "image"
+  ) {
+    return (
+      hasOnlyKeys(value, ["type", "block"]) &&
+      validBlockOfType(value.block, value.type)
+    );
+  }
+  if (value.type === "shape") {
+    return (
+      hasOnlyKeys(value, ["type", "shape", "block"]) &&
+      ["rectangle", "ellipse", "triangle", "diamond", "arrow", "callout"].includes(
+        value.shape as string
+      ) &&
+      (value.block === undefined || validBlockOfType(value.block, "text"))
+    );
+  }
+  if (value.type === "line") {
+    return (
+      hasOnlyKeys(value, ["type", "from", "to", "ends"]) &&
+      validPoint(value.from) &&
+      validPoint(value.to) &&
+      (value.ends === undefined || validLineEnds(value.ends))
+    );
+  }
+  if (value.type === "table") {
+    return (
+      hasOnlyKeys(value, ["type", "block", "rowHeights"]) &&
+      validBlockOfType(value.block, "table") &&
+      (value.rowHeights === undefined ||
+        (Array.isArray(value.rowHeights) &&
+          value.rowHeights.length <= 1_000 &&
+          value.rowHeights.every(
+            (height) => isFiniteNumber(height) && height > 0 && height <= 10_000
+          )))
+    );
+  }
+  if (value.type === "chart") {
+    return hasOnlyKeys(value, ["type", "spec"]) && isRecord(value.spec);
+  }
+  return (
+    value.type === "group" &&
+    hasOnlyKeys(value, ["type", "children"]) &&
+    Array.isArray(value.children) &&
+    value.children.length <= 2_000 &&
+    value.children.every((child) => validSlideElement(child, depth + 1))
+  );
+}
+
+function validSlideElement(value: unknown, depth = 0): boolean {
+  return (
+    depth <= 12 &&
+    isRecord(value) &&
+    hasOnlyKeys(value, [
+      "id",
+      "frame",
+      "rotation",
+      "overflow",
+      "paint",
+      "locked",
+      "fromPlaceholder",
+      "content"
+    ]) &&
+    validIdentifier(value.id) &&
+    validFrame(value.frame) &&
+    (value.rotation === undefined ||
+      (isFiniteNumber(value.rotation) && value.rotation >= -36_000 && value.rotation <= 36_000)) &&
+    (value.overflow === undefined || ["clip", "shrink", "grow"].includes(value.overflow as string)) &&
+    (value.paint === undefined || validElementPaint(value.paint)) &&
+    (value.locked === undefined || typeof value.locked === "boolean") &&
+    (value.fromPlaceholder === undefined || validIdentifier(value.fromPlaceholder)) &&
+    validElementContent(value.content, depth)
+  );
+}
+
+const collectSlideElementIdentifiers = (value: Fields, seen: Set<string>): boolean => {
+  if (!addUniqueIdentifier(seen, value.id) || !isRecord(value.content)) return false;
+  const content = value.content;
+  if (["text", "formula", "prompt", "image", "table"].includes(content.type as string)) {
+    return collectBlockIdentifiers(content.block as Fields, seen);
+  }
+  if (content.type === "shape" && isRecord(content.block)) {
+    return collectBlockIdentifiers(content.block, seen);
+  }
+  if (content.type === "group") {
+    return (content.children as Fields[]).every((child) =>
+      collectSlideElementIdentifiers(child, seen)
+    );
+  }
+  return true;
+};
+
+const slideElementsUseOnlyRoles = (
+  elements: unknown[],
+  roles: ReadonlySet<string>
 ): boolean =>
-  addUniqueIdentifier(elementIds, value.id) &&
-  collectBlocksIdentifiers(value.blocks as unknown[], contentIds);
+  elements.every((element) => {
+    if (!isRecord(element) || !isRecord(element.content)) return false;
+    if (
+      element.fromPlaceholder !== undefined &&
+      !roles.has(element.fromPlaceholder as string)
+    ) {
+      return false;
+    }
+    return (
+      element.content.type !== "group" ||
+      slideElementsUseOnlyRoles(element.content.children as unknown[], roles)
+    );
+  });
+
+const validAspectRatio = (value: unknown): boolean => {
+  if (!isText(value) || !/^\d+(?:\.\d+)?:\d+(?:\.\d+)?$/.test(value)) return false;
+  const [width, height] = value.split(":").map(Number);
+  return width > 0 && width <= 10_000 && height > 0 && height <= 10_000;
+};
 
 const validSlides = (body: Fields): boolean => {
   if (
     !hasOnlyKeys(body, ["resource", "aspectRatio", "theme", "styles", "layouts", "slides", "sections"]) ||
-    (body.aspectRatio !== "16:9" && body.aspectRatio !== "4:3") ||
+    !validAspectRatio(body.aspectRatio) ||
     !isRecord(body.theme) ||
     !hasOnlyKeys(body.theme, ["background", "colors", "fontFamily"]) ||
     !isRecord(body.theme.colors) ||
@@ -965,21 +1204,20 @@ const validSlides = (body: Fields): boolean => {
     return false;
   }
   const styles = (body.styles as Fields).styles as Fields;
-  const contentIds = new Set<string>();
-  const elementIds = new Set<string>();
+  const identifiers = new Set<string>();
   const layoutKeys = new Set<string>();
   const placeholdersByLayout = new Map<string, Set<string>>();
   for (const layout of body.layouts) {
     if (
       !isRecord(layout) ||
-      !hasOnlyKeys(layout, ["key", "name", "locked", "placeholders", "background"]) ||
+      !hasOnlyKeys(layout, ["id", "key", "name", "locked", "placeholders", "background"]) ||
+      !validIdentifier(layout.id) ||
       !validIdentifier(layout.key) ||
       layoutKeys.has(layout.key) ||
       !validCanonicalText(layout.name, 500) ||
       !Array.isArray(layout.locked) ||
       layout.locked.length > 2_000 ||
-      !layout.locked.every(validSlideElement) ||
-      new Set(layout.locked.map((element) => (element as Fields).id)).size !== layout.locked.length ||
+      !layout.locked.every((element) => validSlideElement(element)) ||
       !Array.isArray(layout.placeholders) ||
       layout.placeholders.length > 2_000 ||
       (layout.background !== undefined && !validSlideBackground(layout.background))
@@ -987,8 +1225,9 @@ const validSlides = (body: Fields): boolean => {
       return false;
     }
     if (
+      !addUniqueIdentifier(identifiers, layout.id) ||
       !layout.locked.every((element) =>
-        collectSlideElementIdentifiers(element as Fields, elementIds, contentIds)
+        collectSlideElementIdentifiers(element as Fields, identifiers)
       )
     ) {
       return false;
@@ -1011,12 +1250,7 @@ const validSlides = (body: Fields): boolean => {
       roles.add(placeholder.role);
     }
     if (
-      layout.locked.some(
-        (element) =>
-          isRecord(element) &&
-          element.fromPlaceholder !== undefined &&
-          !roles.has(element.fromPlaceholder as string)
-      )
+      !slideElementsUseOnlyRoles(layout.locked, roles)
     ) {
       return false;
     }
@@ -1038,17 +1272,17 @@ const validSlides = (body: Fields): boolean => {
       !slide.notes.every((block) => validBlock(block)) ||
       !Array.isArray(slide.elements) ||
       slide.elements.length > 2_000 ||
-      !slide.elements.every(validSlideElement) ||
-      new Set(slide.elements.map((element) => (element as Fields).id)).size !== slide.elements.length ||
+      !slide.elements.every((element) => validSlideElement(element)) ||
       (slide.background !== undefined && !validSlideBackground(slide.background)) ||
       (slide.hidden !== undefined && typeof slide.hidden !== "boolean")
     ) {
       return false;
     }
     if (
-      !collectBlocksIdentifiers(slide.notes, contentIds) ||
+      !addUniqueIdentifier(identifiers, slide.id) ||
+      !collectBlocksIdentifiers(slide.notes, identifiers) ||
       !slide.elements.every((element) =>
-        collectSlideElementIdentifiers(element as Fields, elementIds, contentIds)
+        collectSlideElementIdentifiers(element as Fields, identifiers)
       )
     ) {
       return false;
@@ -1056,12 +1290,9 @@ const validSlides = (body: Fields): boolean => {
     const roles =
       slide.layoutKey === undefined ? undefined : placeholdersByLayout.get(slide.layoutKey);
     if (
-      slide.elements.some(
-        (element) =>
-          isRecord(element) &&
-          element.fromPlaceholder !== undefined &&
-          (roles === undefined || !roles.has(element.fromPlaceholder as string))
-      )
+      (roles === undefined
+        ? !slideElementsUseOnlyRoles(slide.elements, new Set())
+        : !slideElementsUseOnlyRoles(slide.elements, roles))
     ) {
       return false;
     }
@@ -1081,6 +1312,7 @@ const validSlides = (body: Fields): boolean => {
     ) {
       return false;
     }
+    if (!addUniqueIdentifier(identifiers, section.id)) return false;
     sectionIds.add(section.id);
     return true;
   });
@@ -1321,8 +1553,13 @@ const assertPortableBody = (value: unknown, subject: string): void => {
 export const bodyOf = (value: unknown, subject: string): TemplateBody => {
   assertStoredValue(value, subject);
   assertPortableBody(value, subject);
-  const body = fieldsOf(value, subject);
-  const target = targetOf(body.resource, subject);
+  const raw = fieldsOf(value, subject);
+  const target = targetOf(raw.resource, subject);
+  const normalized =
+    target === "slides"
+      ? { ...normalizeSlideDeckBody(raw), resource: "slides" as const }
+      : value;
+  const body = fieldsOf(normalized, subject);
   const valid =
     target === "document"
       ? validDocument(body)
@@ -1330,7 +1567,7 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
         ? validSlides(body)
         : validSpreadsheet(body);
   if (!valid) throw new Error(`templates/${subject}: body is not a valid ${target} template body`);
-  return value as TemplateBody;
+  return normalized as TemplateBody;
 };
 
 const MAX_TEMPLATE_VARIABLES = 100;

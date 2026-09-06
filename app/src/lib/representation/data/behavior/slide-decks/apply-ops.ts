@@ -1,4 +1,8 @@
-import type { Atom, TextBlock } from "$representation/data/types/content/content-block";
+import type {
+  Atom,
+  MarkEnd,
+  TextBlock
+} from "$representation/data/types/content/content-block";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 
@@ -169,11 +173,41 @@ const mapList = (
   return mapNode(body, head, (node) => mapListDeep(node, fields, op, change));
 };
 
-const applyInsert = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "insert" }>) =>
-  mapList(body, op, (list) => insertAfter(list, op.after, op.values as Identified[]));
+const applyInsert = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "insert" }>) => {
+  const [id, field] = op.path.split("/");
+  if (op.target === "atom" && field === "atoms") {
+    return mapNode(body, id, (node) => {
+      const block = node as unknown as TextBlock;
+      if (block.type !== "text" || !Array.isArray(block.atoms)) {
+        throw new Error(`Block ${id} holds no atoms.`);
+      }
+      const atoms = insertAfter(block.atoms, op.after, op.values as Atom[]);
+      return { ...block, atoms, display: displayOf(atoms) } as unknown as Tree;
+    });
+  }
 
-const applyRemove = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "remove" }>) =>
-  mapList(body, op, (list) => withoutIds(list, op.ids));
+  return mapList(body, op, (list) => insertAfter(list, op.after, op.values as Identified[]));
+};
+
+const applyRemove = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "remove" }>) => {
+  const [id, field] = op.path.split("/");
+  if (op.target === "atom" && field === "atoms") {
+    return mapNode(body, id, (node) => {
+      const block = node as unknown as TextBlock;
+      if (block.type !== "text" || !Array.isArray(block.atoms)) {
+        throw new Error(`Block ${id} holds no atoms.`);
+      }
+      const atoms = withoutIds(block.atoms, op.ids);
+      const going = new Set(op.ids);
+      const marks = block.marks.filter(
+        (mark) => !going.has(mark.from.atom) && !going.has(mark.to.atom)
+      );
+      return { ...block, atoms, display: displayOf(atoms), marks } as unknown as Tree;
+    });
+  }
+
+  return mapList(body, op, (list) => withoutIds(list, op.ids));
+};
 
 const applyMove = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "move" }>) =>
   mapList(body, op, (list) => {
@@ -201,26 +235,47 @@ const spliced = (op: Extract<SlideDeckOp, { op: "text" }>, atom: Atom): Atom => 
   };
 };
 
-const shiftedFrom = (position: number, at: number, removed: number, inserted: number): number => {
-  if (position < at) return position;
-  if (position > at + removed) return position + inserted - removed;
-  return removed > 0 ? at : at + inserted;
+const shiftedFrom = (
+  end: MarkEnd,
+  atom: string,
+  at: number,
+  removed: number,
+  inserted: number
+): MarkEnd => {
+  if (end.atom !== atom || end.offset < at) return end;
+  if (end.offset >= at + removed) return { ...end, offset: end.offset + inserted - removed };
+  return { ...end, offset: at + inserted };
 };
 
-const shiftedTo = (position: number, at: number, removed: number, inserted: number): number => {
-  if (position < at) return position;
-  if (position > at + removed) return position + inserted - removed;
-  return position === at + removed ? at + inserted : at;
+const shiftedTo = (
+  end: MarkEnd,
+  atom: string,
+  at: number,
+  removed: number,
+  inserted: number
+): MarkEnd => {
+  if (end.atom !== atom || end.offset <= at) return end;
+  if (end.offset >= at + removed) return { ...end, offset: end.offset + inserted - removed };
+  return { ...end, offset: at };
 };
 
-const shiftedMarks = (block: TextBlock, at: number, removed: number, inserted: number) =>
+const emptyMark = (mark: TextBlock["marks"][number]): boolean =>
+  mark.from.atom === mark.to.atom && mark.from.offset >= mark.to.offset;
+
+const shiftedMarks = (
+  block: TextBlock,
+  atom: string,
+  at: number,
+  removed: number,
+  inserted: number
+) =>
   block.marks
     .map((mark) => ({
       ...mark,
-      from: shiftedFrom(mark.from, at, removed, inserted),
-      to: shiftedTo(mark.to, at, removed, inserted)
+      from: shiftedFrom(mark.from, atom, at, removed, inserted),
+      to: shiftedTo(mark.to, atom, at, removed, inserted)
     }))
-    .filter((mark) => mark.to > mark.from);
+    .filter((mark) => !emptyMark(mark));
 
 const applyText = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "text" }>): SlideDeckBody => {
   const [blockId, field, atomId] = op.path.split("/");
@@ -234,13 +289,12 @@ const applyText = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "text" }>
     const atomIndex = block.atoms.findIndex((atom) => atom.id === atomId);
     if (atomIndex === -1) throw new Error(`No atom ${atomId} in block ${blockId}.`);
 
-    const before = displayOf(block.atoms.slice(0, atomIndex)).length + op.at;
     const atoms = block.atoms.map((atom) => (atom.id === atomId ? spliced(op, atom) : atom));
     return {
       ...block,
       atoms,
       display: displayOf(atoms),
-      marks: shiftedMarks(block, before, op.remove.length, op.insert.length)
+      marks: shiftedMarks(block, atomId, op.at, op.remove.length, op.insert.length)
     } as unknown as Tree;
   });
 };

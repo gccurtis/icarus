@@ -1094,7 +1094,14 @@ describe("stored template validation", () => {
               variant: "paragraph",
               atoms: [{ id: "body-atom", kind: "literal", text: "Body" }],
               display: "Body",
-              marks: [{ id: "body-mark", from: 0, to: 4, style: ["bold"] }]
+              marks: [
+                {
+                  id: "body-mark",
+                  from: { atom: "body-atom", offset: 0 },
+                  to: { atom: "body-atom", offset: 4 },
+                  style: ["bold"]
+                }
+              ]
             }
           ],
           proportions: [1]
@@ -1151,6 +1158,10 @@ describe("stored template validation", () => {
       }),
       changed(body, (draft) => {
         fields(entries(fields(entries(draft.rows)[0]).blocks)[0]).display = "Not body";
+      }),
+      changed(body, (draft) => {
+        const block = fields(entries(fields(entries(draft.rows)[0]).blocks)[0]);
+        fields(fields(entries(block.marks)[0]).to).atom = "missing-atom";
       }),
       changed(body, (draft) => {
         const header = fields(draft.header);
@@ -1226,7 +1237,42 @@ describe("stored template validation", () => {
       ],
       sections: [{ id: "section-1", name: "Opening", firstSlideId: "slide-1" }]
     };
-    assert.equal(bodyOf(body, "test").resource, "slides");
+    const normalized = bodyOf(body, "test");
+    assert.equal(normalized.resource, "slides");
+    if (normalized.resource !== "slides") throw new Error("expected a slide template");
+    assert.equal(normalized.layouts[0].id, "layout-title");
+    assert.equal(normalized.slides[0].elements[0].content.type, "text");
+    assert.doesNotThrow(() => bodyOf(normalized, "normalized"));
+
+    const compound = bodyOf(
+      changed(body, (draft) => {
+        const slide = fields(entries(draft.slides)[0]);
+        const element = fields(entries(slide.elements)[0]);
+        entries(element.blocks).push({
+          id: "prompt-block",
+          type: "prompt",
+          atoms: [{ id: "prompt-atom", kind: "literal", text: "Summarize" }],
+          display: "Summarize",
+          marks: [],
+          scope: { include: [{ select: "project" }], exclude: [] },
+          state: "idle"
+        });
+        element.format = {
+          background: "paper",
+          border: { color: "rule", width: 1, style: "solid" },
+          padding: { x: 12, y: 8 }
+        };
+      }),
+      "compound"
+    );
+    if (compound.resource !== "slides") throw new Error("expected a slide template");
+    const compoundContent = compound.slides[0].elements[0].content;
+    assert.equal(compoundContent.type, "group");
+    if (compoundContent.type !== "group") throw new Error("expected grouped content");
+    assert.deepEqual(
+      compoundContent.children.map((child) => child.content.type),
+      ["shape", "text", "prompt"]
+    );
     assert.equal(
       bodyOf(
         changed(body, (draft) => {
@@ -1271,6 +1317,14 @@ describe("stored template validation", () => {
         const slide = fields(entries(draft.slides)[0]);
         const notes = fields(entries(slide.notes)[0]);
         notes.id = "slide-block";
+      }),
+      changed(normalized, (draft) => {
+        const slide = fields(entries(draft.slides)[0]);
+        const element = fields(entries(slide.elements)[0]);
+        fields(element.content).invented = true;
+      }),
+      changed(normalized, (draft) => {
+        fields(entries(draft.layouts)[0]).id = "";
       })
     ];
     for (const candidate of malformed) {

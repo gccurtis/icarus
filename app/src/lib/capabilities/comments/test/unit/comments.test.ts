@@ -64,6 +64,36 @@ describe("startThread", () => {
     assert.throws(() => validateStartThread({ target: { kind: "slides", id: "slideDecks:1" }, within: { kind: "page" }, text: "x" }));
     assert.throws(() => validateStartThread({ target: { kind: "photo", id: "x" }, text: "x" }));
   });
+
+  it("accepts the current multi-block text anchor representation", () => {
+    const within = {
+      kind: "text",
+      spans: [
+        {
+          blockId: "block-1",
+          from: { atom: "atom-1", offset: 2 },
+          to: { atom: "atom-1", offset: 5 }
+        },
+        {
+          blockId: "block-2",
+          from: { atom: "atom-2", offset: 0 },
+          to: { atom: "atom-2", offset: 3 }
+        }
+      ]
+    };
+
+    assert.deepEqual(
+      validateStartThread({ target: { kind: "document", id: "documents:1" }, within, text: "Review" }).within,
+      within
+    );
+    assert.throws(() =>
+      validateStartThread({
+        target: { kind: "document", id: "documents:1" },
+        within: { kind: "text", blockId: "block-1", from: 0, to: 3 },
+        text: "Review"
+      })
+    );
+  });
 });
 
 describe("reply and resolve", () => {

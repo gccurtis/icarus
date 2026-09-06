@@ -9,6 +9,8 @@
   import LockOpen from "@lucide/svelte/icons/lock-open";
   import Minus from "@lucide/svelte/icons/minus";
   import SendToBack from "@lucide/svelte/icons/send-to-back";
+  import Sparkles from "@lucide/svelte/icons/sparkles";
+  import SquareFunction from "@lucide/svelte/icons/square-function";
   import Square from "@lucide/svelte/icons/square";
   import Table from "@lucide/svelte/icons/table";
   import Type from "@lucide/svelte/icons/type";
@@ -31,7 +33,7 @@
 
   const CARRIED = "application/x-icarus-layer";
 
-  const ICON = { text: Type, shape: Square, line: Minus, image: Image, table: Table, chart: ChartColumn, group: Group } as const;
+  const ICON = { text: Type, formula: SquareFunction, prompt: Sparkles, shape: Square, line: Minus, image: Image, table: Table, chart: ChartColumn, group: Group } as const;
 
   const view = workspaceState();
   const deckId = $derived(view.active.resourceId);

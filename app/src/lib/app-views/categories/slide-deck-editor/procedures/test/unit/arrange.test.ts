@@ -92,7 +92,14 @@ const body = (): SlideDeckBody => ({
               variant: "paragraph",
               atoms: [{ id: "a1", kind: "literal", text: "Hello world" }],
               display: "Hello world",
-              marks: [{ id: "m1", from: 0, to: 5, style: ["bold"] }]
+              marks: [
+                {
+                  id: "m1",
+                  from: { atom: "a1", offset: 0 },
+                  to: { atom: "a1", offset: 5 },
+                  style: ["bold"]
+                }
+              ]
             }
           }
         }

@@ -28,6 +28,7 @@
   } from "$authored-components/slide-surface";
   import { Button } from "$vendored-components/button";
   import * as ContextMenu from "$vendored-components/context-menu";
+  import { rowsOf } from "$app-views/categories/slide-deck-editor/procedures/comments";
   import {
     blockIn,
     boundsOf,
@@ -187,14 +188,15 @@
 
   const cells = $derived(selectedCells(view.selection));
 
-  const threadRows = read({ path: "commentThreads" });
+  const threadRows = readStore("commentThreads");
 
   const threads = $derived.by(() => {
-    if (deckId === undefined) return [] as { within?: { kind: string; elementId?: string; slideId?: string }; resolution?: unknown }[];
-    const found = threadRows.current;
-    if (found?.kind !== "table") return [];
-    return (found.rows as unknown as { target: { id: string }; within?: { kind: string; elementId?: string; slideId?: string }; resolution?: unknown }[]).filter(
-      (row) => row.target?.id === deckId && row.resolution === undefined
+    if (deckId === undefined) return [];
+    return rowsOf(threadRows, "commentThreads").filter(
+      (row) =>
+        row.target.kind === "slides" &&
+        row.target.id === deckId &&
+        row.resolution === undefined
     );
   });
 

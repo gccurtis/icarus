@@ -1,4 +1,8 @@
-import type { AnchorWithin } from "$representation/data/types/collaboration/anchor";
+import type {
+  AnchorEnd,
+  AnchorWithin,
+  TextAnchorSpan
+} from "$representation/data/types/collaboration/anchor";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { StartThreadInput } from "$capabilities/comments/types/start-thread";
 
@@ -16,6 +20,28 @@ const asTarget = (value: unknown): ResourceRef => {
   return { kind, id } as ResourceRef;
 };
 
+const asEnd = (value: unknown, field: string): AnchorEnd => {
+  if (typeof value !== "object" || value === null) return refuse(`${field} is required`);
+  const { atom, offset } = value as { atom?: unknown; offset?: unknown };
+  if (typeof atom !== "string" || atom.length === 0 || !Number.isInteger(offset) || Number(offset) < 0) {
+    return refuse(`${field}.atom and ${field}.offset are required`);
+  }
+  return { atom, offset: Number(offset) };
+};
+
+const asSpan = (value: unknown, at: number): TextAnchorSpan => {
+  if (typeof value !== "object" || value === null) return refuse(`within.spans[${at}] is required`);
+  const held = value as Record<string, unknown>;
+  if (typeof held.blockId !== "string" || held.blockId.length === 0) {
+    return refuse(`within.spans[${at}].blockId is required`);
+  }
+  return {
+    blockId: held.blockId,
+    from: asEnd(held.from, `within.spans[${at}].from`),
+    to: asEnd(held.to, `within.spans[${at}].to`)
+  };
+};
+
 const asWithin = (value: unknown): AnchorWithin | undefined => {
   if (value === undefined || value === null) return undefined;
   if (typeof value !== "object") return refuse("within must be an anchor");
@@ -30,9 +56,9 @@ const asWithin = (value: unknown): AnchorWithin | undefined => {
         ? { kind: "cell", rowId: held.rowId, columnId: held.columnId }
         : refuse("within.rowId and within.columnId are required");
     case "text":
-      return typeof held.blockId === "string" && typeof held.from === "number" && typeof held.to === "number"
-        ? { kind: "text", blockId: held.blockId, from: held.from, to: held.to }
-        : refuse("within.blockId, within.from and within.to are required");
+      return Array.isArray(held.spans) && held.spans.length > 0
+        ? { kind: "text", spans: held.spans.map(asSpan) }
+        : refuse("within.spans is required");
     default:
       return refuse("within.kind is not an anchor kind");
   }

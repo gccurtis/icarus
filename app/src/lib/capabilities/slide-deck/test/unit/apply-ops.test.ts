@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
+import type { Mark, TextBlock } from "$representation/data/types/content/content-block";
 import type { SlideDeckBody, SlideElement } from "$representation/data/types/slide-decks/body";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import { applyOps } from "$capabilities/slide-deck/api/submit-slide-deck-changes/apply-ops";
 
 const frame = (x: number) => ({ x, y: 0.1, width: 0.4, height: 0.2 });
 
-const text = (id: string, display: string, marks: { id: string; from: number; to: number }[] = []) => ({
+const text = (id: string, display: string, marks: Mark[] = []): TextBlock => ({
   id,
   type: "text" as const,
   variant: "paragraph" as const,
@@ -31,7 +32,20 @@ const body = (): SlideDeckBody => ({
       id: "s1",
       notes: [text("n1", "Say hello")],
       elements: [
-        { id: "t1", frame: frame(0.1), content: { type: "text", block: text("b1", "Hello world", [{ id: "m1", from: 0, to: 5 }]) } },
+        {
+          id: "t1",
+          frame: frame(0.1),
+          content: {
+            type: "text",
+            block: text("b1", "Hello world", [
+              {
+                id: "m1",
+                from: { atom: "b1-a", offset: 0 },
+                to: { atom: "b1-a", offset: 5 }
+              }
+            ])
+          }
+        },
         shape("e1", 0.1)
       ]
     },
@@ -171,13 +185,19 @@ describe("text", () => {
   it("carries a mark past an insertion before it", () => {
     const next = applyOps(body(), [type(0, ">> ", "")]);
 
-    expect(blockOf(next).marks[0]).toMatchObject({ from: 3, to: 8 });
+    expect(blockOf(next).marks[0]).toMatchObject({
+      from: { atom: "b1-a", offset: 3 },
+      to: { atom: "b1-a", offset: 8 }
+    });
   });
 
   it("grows a mark that an insertion lands inside", () => {
     const next = applyOps(body(), [type(2, "LL", "")]);
 
-    expect(blockOf(next).marks[0]).toMatchObject({ from: 0, to: 7 });
+    expect(blockOf(next).marks[0]).toMatchObject({
+      from: { atom: "b1-a", offset: 0 },
+      to: { atom: "b1-a", offset: 7 }
+    });
   });
 
   it("drops a mark whose whole range is deleted", () => {
@@ -197,7 +217,21 @@ describe("text", () => {
 describe("marks", () => {
   it("adds, retunes and removes a mark by id", () => {
     const added = applyOps(body(), [
-      { op: "insert", target: "mark", path: "b1/marks", ids: ["m2"], after: "m1", values: [{ id: "m2", from: 6, to: 11, style: ["italic"] }] }
+      {
+        op: "insert",
+        target: "mark",
+        path: "b1/marks",
+        ids: ["m2"],
+        after: "m1",
+        values: [
+          {
+            id: "m2",
+            from: { atom: "b1-a", offset: 6 },
+            to: { atom: "b1-a", offset: 11 },
+            style: ["italic"]
+          }
+        ]
+      }
     ]);
     const tuned = applyOps(added, [set("m2/style", ["bold", "italic"])]);
     const content = tuned.slides[0].elements[0].content;

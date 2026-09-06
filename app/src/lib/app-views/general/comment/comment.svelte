@@ -30,7 +30,14 @@
     type CommentThread
   } from "$app-views/general/comment/threads";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
-  import type { SlideElement } from "$representation/data/types/slide-decks/body";
+
+  type ElementNode = {
+    readonly id: string;
+    readonly content: {
+      readonly type: string;
+      readonly children?: readonly ElementNode[];
+    };
+  };
 
   const view = workspaceState();
 
@@ -100,11 +107,11 @@
       await refreshAll(threadsQuery);
     });
 
-  const elementIn = (elements: readonly SlideElement[], id: string): boolean =>
+  const elementIn = (elements: readonly ElementNode[], id: string): boolean =>
     elements.some(
       (element) =>
         element.id === id ||
-        (element.content.type === "group" && elementIn(element.content.children, id))
+        (element.content.type === "group" && elementIn(element.content.children ?? [], id))
     );
 
   const deckAnchorOf = (
@@ -118,7 +125,9 @@
 
     const slide = view
       .slideDeckRuntime(held.target.id)
-      .body?.slides.find((candidate) => elementIn(candidate.elements, within.elementId));
+      .body?.slides.find((candidate) =>
+        elementIn(candidate.elements as unknown as readonly ElementNode[], within.elementId)
+      );
     return { ...(slide === undefined ? {} : { slideId: slide.id }), elementId: within.elementId };
   };
 

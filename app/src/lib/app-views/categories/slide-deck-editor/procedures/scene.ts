@@ -1,4 +1,10 @@
-import type { TableCell, TextBlock } from "$representation/data/types/content/content-block";
+import type {
+  FormulaBlock,
+  PromptBlock,
+  TableCell,
+  TextBlock
+} from "$representation/data/types/content/content-block";
+import { rangeOf } from "$representation/data/behavior/content/positions";
 import type {
   AspectRatio,
   Dash,
@@ -103,9 +109,23 @@ export const colorOf = (value: string | undefined, fallback: string): string => 
   return wanted.startsWith("--") ? `var(${wanted})` : wanted;
 };
 
-export const runsOf = (block: TextBlock): Run[] => {
+type TextSceneBlock = TextBlock | FormulaBlock | PromptBlock;
+
+export const runsOf = (block: TextSceneBlock): Run[] => {
+  if (block.type === "formula") {
+    return [{
+      text: block.display,
+      bold: false,
+      italic: false,
+      underline: false,
+      strike: false,
+      code: false,
+      formula: true
+    }];
+  }
   const cuts = new Set<number>([0, block.display.length]);
-  for (const mark of block.marks) {
+  const marks = block.marks.map((mark) => ({ mark, ...rangeOf(block.atoms, mark) }));
+  for (const mark of marks) {
     cuts.add(Math.max(0, mark.from));
     cuts.add(Math.min(block.display.length, mark.to));
   }
@@ -126,8 +146,8 @@ export const runsOf = (block: TextBlock): Run[] => {
     const from = edges[index];
     const to = edges[index + 1];
     if (to <= from) continue;
-    const marks = block.marks.filter((mark) => mark.from <= from && mark.to >= to);
-    const styles = new Set(marks.flatMap((mark) => mark.style ?? []));
+    const active = marks.filter((mark) => mark.from <= from && mark.to >= to);
+    const styles = new Set(active.flatMap(({ mark }) => mark.style ?? []));
     runs.push({
       text: block.display.slice(from, to),
       bold: styles.has("bold"),
@@ -135,7 +155,7 @@ export const runsOf = (block: TextBlock): Run[] => {
       underline: styles.has("underline"),
       strike: styles.has("strikethrough"),
       code: styles.has("code"),
-      color: marks.find((mark) => mark.color !== undefined)?.color,
+      color: active.find(({ mark }) => mark.color !== undefined)?.mark.color,
       formula: formulaRanges.some(([start, end]) => start <= from && end >= to)
     });
   }
@@ -146,7 +166,7 @@ export const runsOf = (block: TextBlock): Run[] => {
 };
 
 export const textSceneOf = (
-  block: TextBlock,
+  block: TextSceneBlock,
   style: TextStyle | undefined,
   theme: DeckTheme,
   centred = false
@@ -165,7 +185,7 @@ export const textSceneOf = (
   valign: block.format?.verticalAlignment ?? style?.verticalAlignment ?? (centred ? "middle" : "top"),
   spaceBefore: block.format?.spaceBefore ?? style?.spaceBefore ?? 0,
   spaceAfter: block.format?.spaceAfter ?? style?.spaceAfter ?? 0,
-  indent: style?.indent ?? 0,
+  indent: block.format?.indent ?? style?.indent ?? 0,
   padding: block.format?.padding?.x ?? 12
 });
 
@@ -218,6 +238,10 @@ const itemOf = (body: SlideDeckBody, element: SlideElement, frame: Frame, depth:
   switch (element.content.type) {
     case "text":
       return { ...base, text: textSceneOf(element.content.block, styleOf(body, element.content.block), body.theme) };
+    case "formula":
+      return { ...base, text: textSceneOf(element.content.block, undefined, body.theme) };
+    case "prompt":
+      return { ...base, text: textSceneOf(element.content.block, undefined, body.theme) };
     case "shape":
       return {
         ...base,

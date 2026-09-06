@@ -726,6 +726,36 @@ test("an inspection key carries no payload — the selection lives beside it", (
   assert.deepEqual(model.selection, selection);
 });
 
+test("an inspection preserves every member of a multi-selection", () => {
+  const model = workspaceState();
+  const multiple: Selection = {
+    kind: "elements",
+    id: "element-1",
+    ids: ["element-1", "element-2"]
+  };
+
+  model.inspect("slide-deck-editor.multi-selection", multiple);
+
+  assert.deepEqual(model.selection, multiple);
+});
+
+test("an inspection preserves every document selection range", () => {
+  const model = workspaceState();
+  const multiple: Selection = {
+    kind: "text-selection",
+    id: "block-1/atoms/atom-1@1",
+    at: "block-2/atoms/atom-2@4",
+    ranges: [
+      { id: "block-3/atoms/atom-3@2", at: "block-3/atoms/atom-3@7" },
+      { id: "block-4/atoms/atom-4@0", at: "block-5/atoms/atom-5@3" }
+    ]
+  };
+
+  model.inspect("document-editor.text-selection", multiple);
+
+  assert.deepEqual(model.selection, multiple);
+});
+
 test("inspecting without a selection leaves the selection alone", () => {
   // A breadcrumb changes the lens without changing what is selected, and so does
   // closing a lens back to "empty".

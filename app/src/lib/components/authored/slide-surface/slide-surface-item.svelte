@@ -214,7 +214,7 @@
           <rect x={inset} y={inset} width={Math.max(0, box.width - inset * 2)} height={Math.max(0, box.height - inset * 2)} rx={item.radius} fill={item.fill ?? "transparent"} stroke={item.stroke} stroke-width={item.strokeWidth} stroke-dasharray={dashArray} />
         {/if}
       </svg>
-    {:else if item.type === "text"}
+    {:else if item.type === "text" || item.type === "formula" || item.type === "prompt"}
       <div
         class="fill plate"
         style="background: {item.fill ?? 'transparent'}; border: {item.strokeWidth}px {item.dash} {item.stroke ?? 'transparent'}; border-radius: {item.radius}px;"

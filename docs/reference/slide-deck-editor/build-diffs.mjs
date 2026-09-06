@@ -5,11 +5,12 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../../..");
+const baseline = process.env.SLIDE_EDITOR_BASE ?? "main";
 
 const git = (args) => spawnSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
 
 const GROUPS = [
-  { key: "model", title: "The element model and the applier", match: (p) => p.startsWith("app/src/lib/representation/data/types/slide-decks/") || p.startsWith("app/src/lib/representation/data/behavior/slide-decks/") || p.startsWith("app/src/lib/representation/data/types/content/") || p.startsWith("app/src/lib/capabilities/slide-deck/") || p.startsWith("app/seed/") },
+  { key: "model", title: "The element model and the applier", match: (p) => p.startsWith("app/src/lib/representation/data/types/slide-decks/") || p.startsWith("app/src/lib/representation/data/behavior/slide-decks/") || p.startsWith("app/src/lib/representation/data/types/content/") || p.startsWith("app/src/lib/representation/data/behavior/content/") || p.startsWith("app/src/lib/capabilities/slide-deck/") || p.startsWith("app/src/lib/capabilities/templates/") || p.startsWith("app/seed/") },
   { key: "workspace", title: "The workspace knows the deck's views", match: (p) => p.startsWith("app/src/lib/representation/data/types/workspace/") || p.startsWith("app/src/lib/representation/data/behavior/workspace/") || p.startsWith("app/src/lib/surfaces/context/") },
   { key: "runtime", title: "The runtime", match: (p) => p.startsWith("app/src/lib/model/") },
   { key: "renderer", title: "The renderer: from Konva to a DOM surface", match: (p) => p.startsWith("app/src/lib/components/authored/slide-surface/") },
@@ -23,6 +24,8 @@ const GROUPS = [
 
 const OVERRIDES = {
   "app/src/lib/app-views/categories/slide-deck-editor/procedures/tokens.ts": "renderer",
+  "app/test/browser/slide-deck-editor.spec.ts": "content",
+  "app/scripts/test/mutations.mjs": "workspace",
   "app/package.json": "renderer",
   "app/pnpm-lock.yaml": "renderer",
   "app/src/lib/model/client/workspace-state/methods/shared/shared.md": "workspace"
@@ -34,16 +37,26 @@ const titleOf = (key) => GROUPS.find((group) => group.key === key)?.title ?? "Ot
 
 const STATUS = { M: "changed", D: "deleted", "??": "new", A: "new" };
 
-const files = git(["status", "--porcelain", "--untracked-files=all"])
+const changed = git(["diff", "--name-status", baseline, "--", "app/"])
   .stdout.split("\n")
   .filter((line) => line.trim() !== "")
-  .map((line) => ({ code: line.slice(0, 2).trim(), path: line.slice(3).trim() }))
-  .filter(({ path }) => path.startsWith("app/") && !path.startsWith("app/data/") && !path.endsWith(".log"))
+  .map((line) => {
+    const [code, path] = line.split("\t");
+    return { code, path };
+  });
+
+const untracked = git(["status", "--porcelain", "--untracked-files=all", "--", "app/"])
+  .stdout.split("\n")
+  .filter((line) => line.startsWith("?? "))
+  .map((line) => ({ code: "??", path: line.slice(3).trim() }));
+
+const files = [...new Map([...changed, ...untracked].map((file) => [file.path, file])).values()]
+  .filter(({ path }) => !path.startsWith("app/data/") && !path.endsWith(".log"))
   .sort((a, b) => a.path.localeCompare(b.path));
 
 const diffOf = ({ code, path }) => {
   if (code === "??") return git(["diff", "--no-index", "--", "/dev/null", path]).stdout;
-  return git(["diff", "HEAD", "--", path]).stdout;
+  return git(["diff", baseline, "--", path]).stdout;
 };
 
 const escape = (text) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -105,12 +118,12 @@ const filesTable = (argument, pageName) => {
 };
 
 const summary = () => {
-  const created = rendered.filter((file) => file.code === "??").length;
+  const created = rendered.filter((file) => file.code === "??" || file.code === "A").length;
   const deleted = rendered.filter((file) => file.code === "D").length;
   const changed = rendered.filter((file) => file.code === "M").length;
   const added = rendered.reduce((sum, file) => sum + file.added, 0);
   const removed = rendered.reduce((sum, file) => sum + file.removed, 0);
-  return `${rendered.length} files against the branch point — ${created} created, ${changed} changed, ${deleted} deleted — <span class="plus">+${added}</span> / <span class="minus">−${removed}</span> lines, measured by <code>git status</code> and <code>git diff HEAD</code> in the worktree when this page was built.`;
+  return `${rendered.length} files against <code>${escape(baseline)}</code> — ${created} created, ${changed} changed, ${deleted} deleted — <span class="plus">+${added}</span> / <span class="minus">−${removed}</span> lines, measured from committed and working-tree changes when this page was built.`;
 };
 
 const replaceBetween = (source, begin, end, make) => {

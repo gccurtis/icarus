@@ -9,7 +9,11 @@ const canonicalSelection = (selection: Selection | null): Selection | null =>
     : {
         kind: selection.kind,
         id: selection.id,
-        ...(selection.at === undefined ? {} : { at: selection.at })
+        ...(selection.at === undefined ? {} : { at: selection.at }),
+        ...(selection.ranges === undefined
+          ? {}
+          : { ranges: selection.ranges.map((range) => ({ ...range })) }),
+        ...(selection.ids === undefined ? {} : { ids: [...selection.ids] })
       };
 
 export const inspect = (state: WorkspaceStateData, key: Inspected, selection?: Selection): void => {

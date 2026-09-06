@@ -239,6 +239,10 @@ const freshContent = (content: ElementContent): ElementContent => {
   switch (content.type) {
     case "text":
       return { ...content, block: freshBlock(content.block) as TextBlock };
+    case "formula":
+      return { ...content, block: freshBlock(content.block) as typeof content.block };
+    case "prompt":
+      return { ...content, block: freshBlock(content.block) as typeof content.block };
     case "shape":
       return { ...content, block: content.block === undefined ? undefined : (freshBlock(content.block) as TextBlock) };
     case "image":
@@ -584,6 +588,10 @@ export const labelOf = (element: SlideElement): string => {
   switch (element.content.type) {
     case "text":
       return element.content.block.display.trim().split("\n")[0] || "Text";
+    case "formula":
+      return element.content.block.display.trim().split("\n")[0] || "Formula";
+    case "prompt":
+      return element.content.block.display.trim().split("\n")[0] || "Prompt";
     case "shape":
       return element.content.block?.display.trim() ? `Shape — ${element.content.block.display.trim().split("\n")[0]}` : "Shape";
     case "line":

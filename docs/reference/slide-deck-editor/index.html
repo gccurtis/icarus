@@ -24,6 +24,7 @@
       <a href="07-content-surface.html"><b>07</b><span>The content surface</span></a>
       <a href="08-runtime.html"><b>08</b><span>The runtime</span></a>
       <a href="09-backend.html"><b>09</b><span>The back end</span></a>
+      <a href="10-integration.html"><b>10</b><span>Integration into main</span></a>
     </nav>
   </aside>
 
@@ -33,13 +34,13 @@
     <p class="lede">
       Everything the deck editor is now, and everything this worktree changed to get there, written so the
       work can be audited file by file. Three pages say how the system works, one says what changed and why
-      with every diff behind a dropdown, and five go through the parts one at a time.
+      with every diff behind a dropdown, five go through the parts one at a time, and the last records the merge.
     </p>
     <div class="meta">
       <span>Worktree <b>.claude/worktrees/slide-deck-editor</b></span>
-      <span>Branch <b>work/slide-deck-editor</b> at <b>ad1900f</b></span>
-      <span>Nothing committed; every change is in the working tree</span>
-      <span>Runs at <b>localhost:3001</b></span>
+      <span>Branch <b>work/slide-deck-editor</b> atop <b>main 4ceb07a</b></span>
+      <span>Feature commit <b>ded90bb</b> plus integration reconciliation</span>
+      <span>Verified with <b>Nix + Chromium</b></span>
     </div>
 
     <section>
@@ -49,23 +50,25 @@
         is the audit: ten systematic changes, each explained, each broken into the changes that make it up,
         each of those with the diff of every file it touched. Pages 05–09 take one part each — the context
         panels, the inspector, the content surface, the runtime, the back end — and say how that part works
-        end to end and which of the changes on 04 made it so.
+        end to end and which of the changes on 04 made it so. Page 10 is the roll-forward and merge record.
       </p>
       <p>
         The diffs are generated, not written. <code>build-diffs.mjs</code> beside this page runs
-        <code>git status</code> and <code>git diff HEAD</code> in the worktree and fills every dropdown; run
-        it again after any change and the pages are current. The prose is checked against the code and the
+        committed and working-tree changes against <code>main</code> and fills every dropdown; run it again
+        after any change and the pages are current. The prose is checked against the code and the
         running app, not against older documents — the design record under <code>docs/archive</code>
         describes intents that this branch has since made concrete or overturned.
       </p>
       <div class="note">
         <h4>What "against main" means here</h4>
         <p>
-          The branch was cut at <code>ad1900f</code>. Main has since taken three commits — the resource
-          alignment, the docs move to <code>docs/archive</code>, and the served wiki — none of which touch
-          the slide deck editor. So the differential that matters is the working tree against the branch
-          point, which is what every diff on these pages is. Merging onto main is a separate step, and
-          nothing here runs git on main.
+          The branch was cut at <code>ad1900f</code>. Main then took 23 commits, including the complete
+          document editor and its current shared component and content contracts. The feature was
+          preserved and rebased onto <code>4ceb07a</code>; rebase stopped on both feature commits and eight
+          distinct paths required resolution. Git could not expose the atom-position, comment-anchor,
+          query-lifetime, template/snapshot, or multi-selection contract mismatches. Page
+          <a href="10-integration.html">10</a> records each resolution. The diffs compare the reconciled
+          result with that main baseline.
         </p>
       </div>
     </section>
@@ -85,6 +88,7 @@
             <tr><td><a href="07-content-surface.html">07 · The content surface</a></td><td>The renderer, the gestures, the keyboard, placing, zoom, badges, and the text engine.</td></tr>
             <tr><td><a href="08-runtime.html">08 · The runtime</a></td><td>What the client runtime does, the one change made to it, how the workspace state carries selection and lenses, and the query-lifetime rule.</td></tr>
             <tr><td><a href="09-backend.html">09 · The back end</a></td><td>The capabilities used and the one added, the store semantics relied on, the seeds, and the lint rules everything had to satisfy.</td></tr>
+            <tr><td><a href="10-integration.html">10 · Integration into main</a></td><td>The rebase, eight conflicted paths, hidden representation and selection conflicts, compatibility boundaries, non-editor changes, verification gate, and final fast-forward command.</td></tr>
           </tbody>
         </table>
       </div>
@@ -92,15 +96,14 @@
 
     <section>
       <div class="head"><span class="n">→</span><h2>Running it</h2></div>
-      <pre><code>cd .claude/worktrees/slide-deck-editor/app
-nix develop ../../../infra/devshell --command pnpm seed -- --force   # the seed changed: text boxes grow
-rm -f data/workspaceRevisions.json data/workspaceSnapshots.json      # forget the last session's tabs
-nix develop ../../../infra/devshell --command pnpm dev -- --port 3001</code></pre>
+      <pre><code>cd /home/jakul/cyberia/icarus
+nix develop ./infra/devshell --command bash -lc \
+  'cd app &amp;&amp; pnpm dev --host 127.0.0.1 --port 3111 --strictPort'</code></pre>
       <p>
-        Open the project, double-click <em>Board review — Q1 exposure</em>. Checks, from <code>app/</code>:
-        <code>pnpm vitest run</code> (635 tests), <code>pnpm exec svelte-check</code> (clean for every file
-        on these pages; the remaining errors are categories whose capabilities are not built and are older
-        than this branch), <code>node scripts/lint.mjs</code> (34 findings, all older than this branch).
+        Open the project, double-click <em>Board review — Q1 exposure</em>. The Nix verification gate is
+        clean: 799 unit tests, 99 script/generator tests, 19 Chromium tests, zero Svelte/TypeScript
+        diagnostics, and all 56 architecture/style checks passing. Page
+        <a href="10-integration.html#verification">10 § 5</a> has the exact commands.
       </p>
       <p>
         A new context panel or lens file is a new entry in an <code>import.meta.glob</code>, which the dev
@@ -109,7 +112,7 @@ nix develop ../../../infra/devshell --command pnpm dev -- --port 3001</code></pr
       </p>
     </section>
 
-    <footer>Built 2026-09-05 from the working tree of <code>work/slide-deck-editor</code>.</footer>
+    <footer>Updated 2026-09-06 from the integration tree of <code>work/slide-deck-editor</code>.</footer>
   </main>
 </div>
 </body>

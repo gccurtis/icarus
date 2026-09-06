@@ -1,6 +1,8 @@
 import type {
   ContentBlock,
+  FormulaBlock,
   ImageBlock,
+  PromptBlock,
   TableBlock,
   TextBlock
 } from "$representation/data/types/content/content-block";
@@ -33,6 +35,8 @@ export type ElementPaint = {
 
 export type ElementContent =
   | { type: "text"; block: TextBlock }
+  | { type: "formula"; block: FormulaBlock }
+  | { type: "prompt"; block: PromptBlock }
   | { type: "shape"; shape: ShapeKind; block?: TextBlock }
   | { type: "line"; from: Point; to: Point; ends?: { start?: LineEnd; end?: LineEnd } }
   | { type: "image"; block: ImageBlock }

@@ -26,6 +26,8 @@ export const cellsSignal = (tableId: string, cellIds: readonly string[]): Signal
 
 const LENS: Record<SlideElement["content"]["type"], InspectorView> = {
   text: "slide-deck-editor.text-box",
+  formula: "document-editor.formula",
+  prompt: "document-editor.prompt-block",
   shape: "slide-deck-editor.shape",
   line: "slide-deck-editor.line",
   image: "slide-deck-editor.image",

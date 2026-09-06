@@ -82,6 +82,43 @@ describe("readSlideDeckBody", () => {
 
     assert.equal(await readSlideDeckBody({ resourceId: "slideDecks:1" }), null);
   });
+
+  it("normalizes a stored pre-editor snapshot at the read boundary", async () => {
+    const row = snapshot("s1", "slideDecks:1", "p", "leader");
+    row.body = {
+      ...body("16:9"),
+      layouts: [{ key: "blank", name: "Blank", locked: [], placeholders: [] }],
+      slides: [
+        {
+          id: "slide-1",
+          elements: [
+            {
+              id: "element-1",
+              frame: { x: 0, y: 0, width: 1, height: 1 },
+              blocks: [
+                {
+                  id: "block-1",
+                  type: "text",
+                  variant: "paragraph",
+                  atoms: [{ id: "atom-1", kind: "literal", text: "Still readable" }],
+                  display: "Still readable",
+                  marks: []
+                }
+              ],
+              overflow: "shrink"
+            }
+          ],
+          notes: []
+        }
+      ]
+    };
+    model.rows = [row];
+
+    const found = await readSlideDeckBody({ resourceId: "slideDecks:1" });
+
+    assert.equal(found?.body.layouts[0].id, "layout-blank");
+    assert.equal(found?.body.slides[0].elements[0].content.type, "text");
+  });
 });
 
 describe("validateReadSlideDeckBody", () => {

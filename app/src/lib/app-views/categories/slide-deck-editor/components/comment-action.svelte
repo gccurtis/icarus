@@ -1,8 +1,8 @@
 <script lang="ts">
   import MessageSquare from "@lucide/svelte/icons/message-square";
 
-  import { read } from "$capabilities/store/index.remote";
   import { PanelButton } from "$authored-components/panel";
+  import { rowsOf, tableQuery } from "$app-views/categories/slide-deck-editor/procedures/comments";
   import { threadsSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -10,15 +10,13 @@
 
   const view = workspaceState();
 
-  const threadRows = read({ path: "commentThreads" });
+  const threadRows = tableQuery("commentThreads");
 
-  const count = $derived.by(() => {
-    const found = threadRows.current;
-    if (found?.kind !== "table") return 0;
-    return (found.rows as unknown as { within?: { kind: string; elementId?: string }; resolution?: unknown }[]).filter(
+  const count = $derived(
+    rowsOf(threadRows, "commentThreads").filter(
       (row) => row.within?.kind === "element" && row.within.elementId === elementId && row.resolution === undefined
-    ).length;
-  });
+    ).length
+  );
 
   const open = () => {
     const signal = threadsSignal(elementId);

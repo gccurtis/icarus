@@ -1,4 +1,5 @@
 import type { Atom, Mark, MarkStyle, TextBlock } from "$representation/data/types/content/content-block";
+import { endAt, rangeOf } from "$representation/data/behavior/content/positions";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
 
@@ -72,10 +73,13 @@ export const diffed = (block: TextBlock, next: string): SlideDeckOp[] => {
   return replaced(block, head, was.length - tail, next.slice(head, next.length - tail));
 };
 
-const covering = (marks: readonly Mark[], style: MarkStyle, from: number, to: number): boolean => {
-  const spans = marks
+const covering = (block: TextBlock, style: MarkStyle, from: number, to: number): boolean => {
+  const spans = block.marks
     .filter((mark) => mark.style?.includes(style))
-    .map((mark) => [mark.from, mark.to] as const)
+    .map((mark) => {
+      const range = rangeOf(block.atoms, mark);
+      return [range.from, range.to] as const;
+    })
     .sort((a, b) => a[0] - b[0]);
   let cursor = from;
   for (const [start, end] of spans) {
@@ -90,19 +94,30 @@ export const stylesAt = (block: TextBlock, from: number, to: number): MarkStyle[
   const styles: MarkStyle[] = ["bold", "italic", "underline", "strikethrough", "code"];
   if (from === to) {
     return styles.filter((style) =>
-      block.marks.some((mark) => mark.style?.includes(style) && mark.from < from && from <= mark.to)
+      block.marks.some((mark) => {
+        const range = rangeOf(block.atoms, mark);
+        return mark.style?.includes(style) && range.from < from && from <= range.to;
+      })
     );
   }
-  return styles.filter((style) => covering(block.marks, style, Math.min(from, to), Math.max(from, to)));
+  return styles.filter((style) => covering(block, style, Math.min(from, to), Math.max(from, to)));
 };
 
 export const colorAt = (block: TextBlock, from: number, to: number): string | undefined =>
-  block.marks.find((mark) => mark.color !== undefined && mark.from <= Math.min(from, to) && mark.to >= Math.max(from, to))?.color;
+  block.marks.find((mark) => {
+    const range = rangeOf(block.atoms, mark);
+    return mark.color !== undefined && range.from <= Math.min(from, to) && range.to >= Math.max(from, to);
+  })?.color;
 
-const pieces = (mark: Mark, from: number, to: number): Mark[] => {
+const pieces = (block: TextBlock, mark: Mark, from: number, to: number): Mark[] => {
+  const range = rangeOf(block.atoms, mark);
   const kept: Mark[] = [];
-  if (mark.from < from) kept.push({ ...mark, id: mint("atom"), to: from });
-  if (mark.to > to) kept.push({ ...mark, id: mint("atom"), from: to });
+  if (range.from < from) {
+    kept.push({ ...mark, id: mint("atom"), to: endAt(block.atoms, from, "to") });
+  }
+  if (range.to > to) {
+    kept.push({ ...mark, id: mint("atom"), from: endAt(block.atoms, to, "from") });
+  }
   return kept;
 };
 
@@ -112,20 +127,32 @@ export const toggledMark = (block: TextBlock, from: number, to: number, style: M
   if (start === end) return [];
   const path = `${block.id}/marks`;
 
-  if (!covering(block.marks, style, start, end)) {
-    const mark: Mark = { id: mint("atom"), from: start, to: end, style: [style] };
+  if (!covering(block, style, start, end)) {
+    const mark: Mark = {
+      id: mint("atom"),
+      from: endAt(block.atoms, start, "from"),
+      to: endAt(block.atoms, end, "to"),
+      style: [style]
+    };
     return [{ op: "insert", target: "mark", path, ids: [mark.id], after: block.marks.at(-1)?.id ?? null, values: [mark] }];
   }
 
   const ops: SlideDeckOp[] = [];
   for (const mark of block.marks) {
-    if (!mark.style?.includes(style) || mark.to <= start || mark.from >= end) continue;
+    const range = rangeOf(block.atoms, mark);
+    if (!mark.style?.includes(style) || range.to <= start || range.from >= end) continue;
     ops.push({ op: "remove", target: "mark", path, ids: [mark.id], after: null, values: [mark] });
     const others = mark.style.filter((held) => held !== style);
     const rest: Mark[] = [
-      ...pieces(mark, start, end),
-      ...(others.length > 0 || mark.color || mark.link
-        ? [{ ...mark, id: mint("atom"), from: Math.max(mark.from, start), to: Math.min(mark.to, end), style: others.length > 0 ? others : undefined }]
+      ...pieces(block, mark, start, end),
+      ...(others.length > 0 || mark.color || mark.background || mark.link
+        ? [{
+            ...mark,
+            id: mint("atom"),
+            from: endAt(block.atoms, Math.max(range.from, start), "from"),
+            to: endAt(block.atoms, Math.min(range.to, end), "to"),
+            style: others.length > 0 ? others : undefined
+          }]
         : [])
     ];
     if (rest.length > 0) {
@@ -142,13 +169,30 @@ export const colouredMark = (block: TextBlock, from: number, to: number, color: 
   const path = `${block.id}/marks`;
   const ops: SlideDeckOp[] = [];
   for (const mark of block.marks) {
-    if (mark.color === undefined || mark.to <= start || mark.from >= end) continue;
+    const range = rangeOf(block.atoms, mark);
+    if (mark.color === undefined || range.to <= start || range.from >= end) continue;
     ops.push({ op: "remove", target: "mark", path, ids: [mark.id], after: null, values: [mark] });
-    const rest = pieces(mark, start, end);
+    const { color: _color, ...withoutColor } = mark;
+    const rest: Mark[] = [
+      ...pieces(block, mark, start, end),
+      ...(mark.style || mark.link || mark.background
+        ? [{
+            ...withoutColor,
+            id: mint("atom"),
+            from: endAt(block.atoms, Math.max(range.from, start), "from"),
+            to: endAt(block.atoms, Math.min(range.to, end), "to")
+          }]
+        : [])
+    ];
     if (rest.length > 0) ops.push({ op: "insert", target: "mark", path, ids: rest.map((held) => held.id), after: null, values: rest });
   }
   if (color !== undefined) {
-    const mark: Mark = { id: mint("atom"), from: start, to: end, color };
+    const mark: Mark = {
+      id: mint("atom"),
+      from: endAt(block.atoms, start, "from"),
+      to: endAt(block.atoms, end, "to"),
+      color
+    };
     ops.push({ op: "insert", target: "mark", path, ids: [mark.id], after: null, values: [mark] });
   }
   return ops;

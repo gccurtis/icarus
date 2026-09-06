@@ -110,13 +110,15 @@ test("resource-less open and close ops omit the optional resource id", async () 
   assert.equal(Object.hasOwn(closing.target, "resourceId"), false);
 });
 
-test("inspection ops omit an absent optional selection location", async () => {
+test("inspection ops omit absent optional selection fields", async () => {
   const model = workspaceState(1000, 60_000);
 
   model.inspect("templates.template", {
     kind: "template",
     id: "templates:1",
-    at: undefined
+    at: undefined,
+    ranges: undefined,
+    ids: undefined
   });
   await model.flush();
 
@@ -124,6 +126,46 @@ test("inspection ops omit an absent optional selection location", async () => {
     (op) => typeof op === "object" && op !== null && "op" in op && op.op === "inspect"
   ) as { selection: Record<string, unknown> };
   assert.equal(Object.hasOwn(inspection.selection, "at"), false);
+  assert.equal(Object.hasOwn(inspection.selection, "ranges"), false);
+  assert.equal(Object.hasOwn(inspection.selection, "ids"), false);
+});
+
+test("inspection ops persist every document selection range", async () => {
+  const model = workspaceState(1000, 60_000);
+  const multiple = {
+    kind: "text-selection",
+    id: "block-1/atoms/atom-1@1",
+    at: "block-2/atoms/atom-2@4",
+    ranges: [
+      { id: "block-3/atoms/atom-3@2", at: "block-3/atoms/atom-3@7" },
+      { id: "block-4/atoms/atom-4@0", at: "block-5/atoms/atom-5@3" }
+    ]
+  };
+
+  model.inspect("document-editor.text-selection", multiple);
+  await model.flush();
+
+  const inspection = wire.sent[0].ops.find(
+    (op) => typeof op === "object" && op !== null && "op" in op && op.op === "inspect"
+  ) as { selection: Record<string, unknown> };
+  assert.deepEqual(inspection.selection, multiple);
+});
+
+test("inspection ops persist every member of a multi-selection", async () => {
+  const model = workspaceState(1000, 60_000);
+  const multiple = {
+    kind: "elements",
+    id: "element-1",
+    ids: ["element-1", "element-2"]
+  };
+
+  model.inspect("slide-deck-editor.multi-selection", multiple);
+  await model.flush();
+
+  const inspection = wire.sent[0].ops.find(
+    (op) => typeof op === "object" && op !== null && "op" in op && op.op === "inspect"
+  ) as { selection: Record<string, unknown> };
+  assert.deepEqual(inspection.selection, multiple);
 });
 
 test("the debounce submits what the count never reached", async () => {

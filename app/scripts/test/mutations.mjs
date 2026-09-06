@@ -326,7 +326,9 @@ export const MUTATIONS = [
             "    tabViews,\n" +
             "    settings,\n" +
             "    documentRuntimes,\n" +
-            "    slideDeckRuntimes\n" +
+            "    slideDeckRuntimes,\n" +
+            "    read,\n" +
+            "    username\n" +
             "  );";
           const again = call.replace("const workspaceState", "const probe");
           return text.replace(call, `${call}\n${again}\n  void probe;`);

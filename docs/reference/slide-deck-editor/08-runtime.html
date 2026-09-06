@@ -24,6 +24,7 @@
       <a href="07-content-surface.html"><b>07</b><span>The content surface</span></a>
       <a href="08-runtime.html" class="is-here"><b>08</b><span>The runtime</span></a>
       <a href="09-backend.html"><b>09</b><span>The back end</span></a>
+      <a href="10-integration.html"><b>10</b><span>Integration into main</span></a>
     </nav>
   </aside>
 
@@ -162,8 +163,11 @@
       <p>
         The one type this branch touched is <code>Selection</code>, which gained an optional
         <code>ids</code> so a multi-selection and a cell selection can be carried, persisted and restored
-        like any other selection. The workspace does not interpret it; only the deck's
-        <code>selecting.ts</code> reads it.
+        like any other selection. The shared <code>inspect()</code> canonicalizer must copy that optional
+        list along with <code>kind</code>, <code>id</code>, and <code>at</code>; dropping it collapses every
+        multi-selection to its primary id. Regression tests prove both immediate workspace state and the
+        submitted operation retain every member. The workspace does not interpret the ids; only the deck's
+        <code>selecting.ts</code> reads them.
       </p>
       <p>
         Because the selection is workspace state, it is persisted and restored with the tab. A restored
@@ -199,8 +203,12 @@ await Promise.all([threadRows.refresh(), commentRows.refresh()]); // refresh the
       <div class="head"><span class="n">→</span><h2>Files on this page, and their diffs</h2></div>
       <!-- files:begin runtime,workspace -->
 <div class="scroll"><table class="files"><thead><tr><th></th><th>File</th><th>+</th><th>−</th><th>Systematic change</th></tr></thead><tbody>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-scripts-test-mutations-mjs"><code>scripts/test/mutations.mjs</code></a></td><td class="num">+3</td><td class="num">−1</td><td><a href="04-changes.html#group-workspace">The workspace knows the deck's views</a></td></tr>
 <tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-model-client-slide-deck-runtimes-definition-svelte-ts"><code>src/lib/model/client/slide-deck-runtimes/definition.svelte.ts</code></a></td><td class="num">+1</td><td class="num">−1</td><td><a href="04-changes.html#group-runtime">The runtime</a></td></tr>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-model-client-workspace-state-methods-inspect-ts"><code>src/lib/model/client/workspace-state/methods/inspect.ts</code></a></td><td class="num">+5</td><td class="num">−1</td><td><a href="04-changes.html#group-runtime">The runtime</a></td></tr>
 <tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-model-client-workspace-state-methods-shared-shared-md"><code>src/lib/model/client/workspace-state/methods/shared/shared.md</code></a></td><td class="num">+1</td><td class="num">−13</td><td><a href="04-changes.html#group-workspace">The workspace knows the deck's views</a></td></tr>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-model-client-workspace-state-test-unit-persistence-test-ts"><code>src/lib/model/client/workspace-state/test/unit/persistence.test.ts</code></a></td><td class="num">+44</td><td class="num">−2</td><td><a href="04-changes.html#group-runtime">The runtime</a></td></tr>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-model-client-workspace-state-test-unit-workspace-state-test-ts"><code>src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts</code></a></td><td class="num">+30</td><td class="num">−0</td><td><a href="04-changes.html#group-runtime">The runtime</a></td></tr>
 <tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-representation-data-behavior-workspace-opening-ts"><code>src/lib/representation/data/behavior/workspace/opening.ts</code></a></td><td class="num">+5</td><td class="num">−8</td><td><a href="04-changes.html#group-workspace">The workspace knows the deck's views</a></td></tr>
 <tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-representation-data-behavior-workspace-views-ts"><code>src/lib/representation/data/behavior/workspace/views.ts</code></a></td><td class="num">+13</td><td class="num">−16</td><td><a href="04-changes.html#group-workspace">The workspace knows the deck's views</a></td></tr>
 <tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-representation-data-types-workspace-tab-ts"><code>src/lib/representation/data/types/workspace/tab.ts</code></a></td><td class="num">+1</td><td class="num">−0</td><td><a href="04-changes.html#group-workspace">The workspace knows the deck's views</a></td></tr>
