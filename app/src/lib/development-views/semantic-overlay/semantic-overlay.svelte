@@ -540,6 +540,7 @@ type SemanticSourceSnapshot = {
       <a href="#migration">Migration</a>
       <a href="#sequence">Sequence</a>
       <a href="#decisions">Decisions</a>
+      <a class="implementation-link" href="/demo/semantic-overlay/derived-output-flow">Derived flow ↗</a>
       <a class="implementation-link" href="/demo/semantic-overlay/implementation">Implementation ↗</a>
     </nav>
 

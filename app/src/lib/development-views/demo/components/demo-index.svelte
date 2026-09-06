@@ -6,6 +6,7 @@
   import Library from "@lucide/svelte/icons/library";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import Shapes from "@lucide/svelte/icons/shapes";
+  import Workflow from "@lucide/svelte/icons/workflow";
 
   import { ScreenCard, ScreenCards } from "$authored-components/screen";
 
@@ -29,6 +30,14 @@
       icon: ClipboardCheck,
       about:
         "The complete reported-issue ledger, source-traced root causes, target inspector layouts, creation repairs, priorities, acceptance tests, and evidence limits."
+    },
+    {
+      href: "/demo/semantic-overlay/derived-output-flow",
+      title: "Derived Output architecture",
+      sub: "Resource text in; grounded content out",
+      icon: Workflow,
+      about:
+        "Two purpose-built maps: the exact ingestion/generation/read procedure and the agent's prompt, tools, evidence protocol, and scaling seams."
     },
     {
       href: "/demo/document-editor-reference",

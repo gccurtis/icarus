@@ -48,6 +48,7 @@
     "layerchart": "^2.2.0",
     "lodash": "^4.18.1",
     "marked": "^4.3.0",
+    "mermaid": "latest",
     "pino": "latest",
     "prosemirror-commands": "^1.7.2",
     "prosemirror-history": "^1.5.0",
