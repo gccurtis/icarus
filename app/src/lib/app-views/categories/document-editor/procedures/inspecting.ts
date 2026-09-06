@@ -1,4 +1,4 @@
-import type { ResolvedPos } from "prosemirror-model";
+import type { Node as ProseMirrorNode, ResolvedPos } from "prosemirror-model";
 import type { EditorState } from "prosemirror-state";
 
 import type { DocumentBody } from "$representation/data/types/documents/body";
@@ -6,7 +6,8 @@ import type { Inspected, Selection, SelectionRange } from "$representation/data/
 import type { InspectorView } from "$representation/data/types/workspace/views";
 import {
   addressAt,
-  linearOf
+  linearOf,
+  positionOf
 } from "$app-views/categories/document-editor/procedures/projection";
 
 export type Signal = {
@@ -151,4 +152,18 @@ export const worthSending = (
     held.at !== signal.selection.at ||
     !sameRanges(held.ranges, signal.selection.ranges)
   );
+};
+
+export const positionOfAddress = (
+  doc: ProseMirrorNode,
+  body: DocumentBody,
+  held: string
+): number | undefined => {
+  const address = addressOf(held);
+  if (address === undefined) return undefined;
+
+  const offset = linearAddress(body, address);
+  if (offset === undefined) return undefined;
+
+  return positionOf(doc, { blockId: address.blockId, offset });
 };

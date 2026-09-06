@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { baseKeymap } from "prosemirror-commands";
   import { keymap } from "prosemirror-keymap";
-  import { EditorState, type Transaction } from "prosemirror-state";
+  import { EditorState, TextSelection, type Transaction } from "prosemirror-state";
   import { EditorView } from "prosemirror-view";
 
   import { read } from "$capabilities/store/index.remote";
@@ -19,6 +20,7 @@
   } from "$app-views/categories/document-editor/procedures/selection-bookmark";
   import {
     atomAt,
+    positionOfAddress,
     signalOf,
     worthSending
   } from "$app-views/categories/document-editor/procedures/inspecting";
@@ -232,6 +234,36 @@
     );
     editor.focus();
     runtime.pendingMarks = undefined;
+  });
+
+  $effect(() => {
+    const held = view.selection;
+    const key = view.inspected;
+    const body = untrack(() => runtime?.body);
+    if (editor === undefined || held === undefined || body === undefined) return;
+    if (typeof key !== "string" || !key.startsWith("document-editor.")) return;
+    if (held.kind !== "text-selection" && held.kind !== "next-letter" && held.kind !== "empty-line") return;
+
+    const mine = signalOf(editor.state);
+    if (
+      mine !== undefined &&
+      mine.selection.id === held.id &&
+      (mine.selection.at ?? mine.selection.id) === (held.at ?? held.id)
+    ) {
+      return;
+    }
+
+    const from = positionOfAddress(editor.state.doc, body, held.id);
+    const to = held.at === undefined ? from : positionOfAddress(editor.state.doc, body, held.at);
+    if (from === undefined) return;
+
+    editor.dispatch(
+      editor.state.tr
+        .setSelection(TextSelection.create(editor.state.doc, from, to ?? from))
+        .setMeta("addToHistory", false)
+        .scrollIntoView()
+    );
+    editor.focus();
   });
 
   $effect(() => {

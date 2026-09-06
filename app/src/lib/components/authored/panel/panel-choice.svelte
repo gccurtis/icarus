@@ -38,6 +38,7 @@
     options,
     mixed = false,
     flush = false,
+    fill = false,
     onchange
   }: {
     /**
@@ -49,7 +50,7 @@
      */
     label: string;
     value: string;
-    options: readonly { value: string; label: string }[];
+    options: readonly { value: string; label: string; short?: string }[];
     /**
      * Several things are selected and they do not agree.
      *
@@ -61,6 +62,8 @@
     mixed?: boolean;
     /** Drop the panel gutter, for a choice nested inside a padded region. */
     flush?: boolean;
+    /** Share the entire row evenly when the choices are field values. */
+    fill?: boolean;
     onchange?: (next: string) => void;
   } = $props();
 
@@ -80,7 +83,7 @@
   });
 
   // The marker is forwarded through `ToggleGroup.Root` onto the element it renders.
-  const trace = traceNode("PanelChoice", () => ({ label, value, options, mixed, flush }));
+  const trace = traceNode("PanelChoice", () => ({ label, value, options, mixed, flush, fill }));
 </script>
 
 <ToggleGroup.Root
@@ -96,14 +99,41 @@
     current = next;
     onchange?.(next);
   }}
-  class={cn("flex flex-wrap justify-start gap-1", flush ? "px-0" : "px-3")}
+  class={cn(
+    "flex justify-start gap-1",
+    fill ? "w-full flex-nowrap" : "flex-wrap",
+    flush ? "px-0" : "px-3"
+  )}
+  style={fill ? "container-type: inline-size; width: 100%" : "container-type: inline-size"}
 >
   {#each options as option (option.value)}
     <ToggleGroup.Item
       value={option.value}
-      class="text-body-sm border-border-subtle bg-surface-panel text-ink-secondary rounded-control data-[state=on]:border-active-border data-[state=on]:bg-active-surface data-[state=on]:text-active-text h-7 min-w-0 flex-1 basis-0 justify-center truncate border px-2 font-normal"
+      aria-label={option.label}
+      class={cn(
+        "text-body-sm border-border-subtle bg-surface-panel text-ink-secondary rounded-control data-[state=on]:border-active-border data-[state=on]:bg-active-surface data-[state=on]:text-active-text h-7 min-w-0 justify-center truncate border px-2 font-normal",
+        fill && "flex-1 basis-0"
+      )}
+      style={fill ? "flex: 1 1 0%; width: 0; min-width: 0" : undefined}
     >
-      {option.label}
+      <span class="choice-short">{option.short ?? option.label.slice(0, 1)}</span>
+      <span class="choice-full">{option.label}</span>
     </ToggleGroup.Item>
   {/each}
 </ToggleGroup.Root>
+
+<style>
+  .choice-full {
+    display: none;
+  }
+
+  @container (min-width: 8rem) {
+    .choice-short {
+      display: none;
+    }
+
+    .choice-full {
+      display: inline;
+    }
+  }
+</style>

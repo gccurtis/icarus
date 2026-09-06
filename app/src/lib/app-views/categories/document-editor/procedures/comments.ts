@@ -16,6 +16,9 @@ export type Person = User;
 
 export type { AnchorWithin } from "$representation/data/types/collaboration/anchor";
 
+export const firstAnchorBlockId = (thread: Thread): string | undefined =>
+  textAnchorSpans(thread.within)[0]?.blockId;
+
 export const threadsOf = (rows: readonly Thread[], documentId: string): Thread[] =>
   rows
     .filter(

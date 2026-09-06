@@ -314,3 +314,27 @@ export const deleteStyleOps = (body: DocumentBody, key: string): DocumentOp[] =>
     }
   ];
 };
+
+export const newStyleOps = (
+  body: DocumentBody
+): { readonly ops: DocumentOp[]; readonly key: string } => {
+  const set = styleSetOf(body);
+  const keys = Object.keys(set.styles);
+  const base = set.styles[set.defaultKey] ?? { name: "Body" };
+  const key = keyFrom("New style", keys);
+
+  return {
+    key,
+    ops: [
+      ...ensureStylesOps(body),
+      {
+        op: "insert",
+        target: "document",
+        path: "styles",
+        ids: [key],
+        after: keys.at(-1) ?? null,
+        values: [{ ...base, name: "New style" }]
+      }
+    ]
+  };
+};

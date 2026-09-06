@@ -68,6 +68,7 @@
   }));
 
   const inert = $derived(disabled || onchange === undefined);
+  const spokenUnit = $derived(unit === "in" ? "inches" : unit);
 
   /**
    * The step decides the precision. 0.1 + 0.2 is 0.30000000000000004, and a
@@ -129,7 +130,7 @@
       inputmode="decimal"
       disabled={inert}
       aria-invalid={error ? "true" : undefined}
-      aria-label={unit ? `${label} in ${unit}` : label}
+      aria-label={spokenUnit ? `${label} in ${spokenUnit}` : label}
       class="text-body-sm [appearance:textfield] tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       oninput={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
         draft = event.currentTarget.value;

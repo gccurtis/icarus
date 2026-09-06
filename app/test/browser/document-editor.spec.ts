@@ -110,6 +110,39 @@ test("a text selection opens the functional responsive inspector", async ({ page
   await expect(inspector.getByRole("textbox", { name: "Link notes" })).toBeVisible();
 });
 
+test("document context panels are operational and compact", async ({ page }) => {
+  await page.setViewportSize(viewports.default);
+  await openFixture(page);
+
+  const context = page.locator('aside[aria-label="Context"]');
+  await context.getByRole("button", { name: "Sections", exact: true }).click();
+  await expect(context.getByRole("heading", { name: "Sections" })).toBeVisible();
+
+  await context.getByRole("button", { name: "Layout", exact: true }).click();
+  await expect(context.getByRole("heading", { name: "Layout" })).toBeVisible();
+
+  const portrait = context.getByRole("radio", { name: "Portrait" });
+  const landscape = context.getByRole("radio", { name: "Landscape" });
+  await expect(portrait).toBeVisible();
+  await expect(landscape).toBeVisible();
+  const [portraitBox, landscapeBox] = await Promise.all([
+    portrait.boundingBox(),
+    landscape.boundingBox()
+  ]);
+  expect(Math.abs((portraitBox?.y ?? 0) - (landscapeBox?.y ?? 0))).toBeLessThan(2);
+
+  await expect(context.getByText("Margins (in)", { exact: true })).toBeVisible();
+  await expect(context.getByRole("spinbutton", { name: "Top margin in inches" })).toBeVisible();
+  await expect(context.getByRole("spinbutton", { name: "Left margin in inches" })).toBeVisible();
+  await expect(context.getByText(/from edge/i)).toHaveCount(0);
+  await expect(context.getByRole("button", { name: /Increase|Decrease/ })).toHaveCount(0);
+
+  for (const name of ["Variables", "Templates", "Prompts"] as const) {
+    await context.getByRole("button", { name, exact: true }).click();
+    await expect(context.getByText(`document-editor.${name.toLowerCase()}`, { exact: true })).toBeVisible();
+  }
+});
+
 test("shared editor controls keep one behavior across the width matrix", async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 900 });
   await page.goto("/demo/document-editor-controls", { waitUntil: "networkidle" });
