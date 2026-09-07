@@ -122,6 +122,7 @@
     anchored: runtime?.body === undefined ? [] : anchoredOf(threads, runtime.body),
     current
   });
+  const hasCommentLane = $derived(annotations.anchored.length > 0);
 
   let editor: EditorView | undefined;
   let sent: DocumentBody | undefined;
@@ -325,6 +326,7 @@
     void view.zoom;
     void available;
     void runtime?.body;
+    void hasCommentLane;
     const frame = requestAnimationFrame(place);
     return () => cancelAnimationFrame(frame);
   });
@@ -414,11 +416,13 @@
   const setup = $derived(runtime?.body?.pageSetup ?? DEFAULT_PAGE_SETUP);
 
   const fit = $derived(
-    available === 0 ? undefined : fitZoom(available, layoutMetrics(setup).pageWidth)
+    available === 0
+      ? undefined
+      : fitZoom(available, layoutMetrics(setup).pageWidth, hasCommentLane)
   );
 
   const layout = $derived(layoutMetrics(setup, view.zoom ?? fit));
-  const gutters = $derived(guttersOf(available, layout.drawn.width));
+  const gutters = $derived(guttersOf(available, layout.drawn.width, hasCommentLane));
 
   $effect(() => {
     const element = surface;

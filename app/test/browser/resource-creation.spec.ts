@@ -43,6 +43,36 @@ test("Project Overview creates a durable document and a usable one-slide deck", 
 
   const editor = page.locator(".ProseMirror");
   await expect(editor).toBeVisible();
+  await expect(page.locator('.lane[aria-label="Comment threads"]')).toHaveCount(0);
+
+  const pageGutters = () =>
+    page.locator(".canvas").evaluate((canvas) => {
+      const paper = canvas.querySelector<HTMLElement>(".document-page");
+      if (paper === null) return { leading: Number.POSITIVE_INFINITY, trailing: 0 };
+
+      const surface = canvas.getBoundingClientRect();
+      const page = paper.getBoundingClientRect();
+      return { leading: page.left - surface.left, trailing: surface.right - page.right };
+    });
+
+  await expect
+    .poll(
+      async () => {
+        const gutters = await pageGutters();
+        return Math.abs(gutters.leading - gutters.trailing);
+      },
+      { message: "a new uncommented document should be centered in its pasteboard" }
+    )
+    .toBeLessThanOrEqual(2);
+  await expect
+    .poll(
+      async () => {
+        const gutters = await pageGutters();
+        return Math.max(gutters.leading, gutters.trailing);
+      },
+      { message: "a new uncommented document should fit the available pasteboard width" }
+    )
+    .toBeLessThanOrEqual(20);
   const documentTitle = (await page.locator(".title-bar h1").textContent())?.trim();
   expect(documentTitle).toMatch(/^Untitled document \d+$/);
   await editor.click();

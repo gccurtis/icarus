@@ -73,15 +73,30 @@ export const MAXIMUM_GUTTER = 2.5;
 export const MINIMUM_GUTTER = 0.75;
 export const LANE = 2.25;
 
-export const fitZoom = (available: number, pageWidth: number): number =>
-  clampZoom(Math.floor(((available - MINIMUM_GUTTER - LANE) / pageWidth) * 100));
+export const fitZoom = (
+  available: number,
+  pageWidth: number,
+  reserveCommentLane: boolean
+): number => {
+  const trailing = reserveCommentLane ? LANE : MINIMUM_GUTTER;
+  return clampZoom(Math.floor(((available - MINIMUM_GUTTER - trailing) / pageWidth) * 100));
+};
 
 export const gutterOf = (available: number, drawnWidth: number): number =>
   Math.min(MAXIMUM_GUTTER, Math.max(MINIMUM_GUTTER, (available - drawnWidth) / 2));
 
 export type Gutters = { readonly leading: number; readonly trailing: number };
 
-export const guttersOf = (available: number, drawnWidth: number): Gutters => {
+export const guttersOf = (
+  available: number,
+  drawnWidth: number,
+  reserveCommentLane: boolean
+): Gutters => {
+  if (!reserveCommentLane) {
+    const gutter = gutterOf(available, drawnWidth);
+    return { leading: gutter, trailing: gutter };
+  }
+
   const spare = Math.max(0, available - drawnWidth);
   const trailing = Math.min(MAXIMUM_GUTTER, Math.max(LANE, spare / 2));
   const leading = Math.min(MAXIMUM_GUTTER, Math.max(MINIMUM_GUTTER, spare - trailing));
