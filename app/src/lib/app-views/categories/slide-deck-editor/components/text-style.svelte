@@ -1,4 +1,8 @@
 <script lang="ts">
+  import AlignVerticalJustifyCenter from "@lucide/svelte/icons/align-vertical-justify-center";
+  import AlignVerticalJustifyEnd from "@lucide/svelte/icons/align-vertical-justify-end";
+  import AlignVerticalJustifyStart from "@lucide/svelte/icons/align-vertical-justify-start";
+
   import { PanelAlignment, PanelChoice, PanelControlGroup, PanelControlRow, PanelInlineStyle, PanelNumber, PanelSection, PanelSelect } from "$authored-components/panel";
   import { blockIn, holderOf, withSet, type MarkStyle } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { FAMILIES, swatchesFor, withNone } from "$app-views/categories/slide-deck-editor/procedures/palette";
@@ -29,9 +33,9 @@
   ];
 
   const VALIGN = [
-    { value: "top", label: "Top" },
-    { value: "middle", label: "Middle" },
-    { value: "bottom", label: "Bottom" }
+    { value: "top", label: "Top", icon: AlignVerticalJustifyStart },
+    { value: "middle", label: "Middle", icon: AlignVerticalJustifyCenter },
+    { value: "bottom", label: "Bottom", icon: AlignVerticalJustifyEnd }
   ];
 
   const WRAPPING = [
@@ -134,16 +138,12 @@
     onbackground={setBackground}
   />
   {#if paragraph || (wrapping && holder !== undefined)}
-    <PanelControlGroup flush>
-      {#if paragraph}
-        <PanelControlRow label="Alignment">
-          <PanelAlignment value={format?.horizontalAlignment ?? style?.horizontalAlignment ?? "start"} onchange={(value) => onBlock("horizontalAlignment", value)} />
-        </PanelControlRow>
-        <PanelControlRow label="Vertical alignment">
-          <PanelChoice label="Vertical alignment" value={format?.verticalAlignment ?? style?.verticalAlignment ?? "top"} options={VALIGN} flush fill onchange={(value) => onBlock("verticalAlignment", value === "top" ? null : value)} />
-        </PanelControlRow>
-      {/if}
-      {#if wrapping && holder !== undefined}
+    {#if paragraph}
+      <PanelAlignment value={format?.horizontalAlignment ?? style?.horizontalAlignment ?? "start"} onchange={(value) => onBlock("horizontalAlignment", value)} />
+      <PanelChoice label="Vertical alignment" value={format?.verticalAlignment ?? style?.verticalAlignment ?? "top"} options={VALIGN} flush fill onchange={(value) => onBlock("verticalAlignment", value === "top" ? null : value)} />
+    {/if}
+    {#if wrapping && holder !== undefined}
+      <PanelControlGroup flush>
         <PanelControlRow label="Text wrap">
           <PanelChoice
             label="Text wrap"
@@ -154,7 +154,7 @@
             onchange={(value) => set(`${holder.id}/overflow`, value)}
           />
         </PanelControlRow>
-      {/if}
-    </PanelControlGroup>
+      </PanelControlGroup>
+    {/if}
   {/if}
 </PanelSection>

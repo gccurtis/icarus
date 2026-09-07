@@ -2,8 +2,6 @@
   import {
     Panel,
     PanelAlignment,
-    PanelControlGroup,
-    PanelControlRow,
     PanelCrumbs,
     PanelInlineStyle,
     PanelNote,
@@ -167,11 +165,7 @@
           onforeground={setInk}
           onbackground={setFill}
         />
-        <PanelControlGroup flush>
-          <PanelControlRow label="Alignment">
-            <PanelAlignment value={resolved.horizontalAlignment ?? "start"} onchange={setAlign} />
-          </PanelControlRow>
-        </PanelControlGroup>
+        <PanelAlignment value={resolved.horizontalAlignment ?? "start"} onchange={setAlign} />
       </div>
 
       <PanelSpacing

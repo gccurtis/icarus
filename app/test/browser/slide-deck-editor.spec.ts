@@ -131,6 +131,26 @@ test("Insert tiles immediately add centered objects with the unified text inspec
     "title",
     "Hide text that extends beyond the box"
   );
+  const alignment = inspector.getByRole("group", { name: "Alignment", exact: true });
+  const vertical = inspector.getByRole("group", { name: "Vertical alignment" });
+  await expect(alignment).toBeVisible();
+  await expect(vertical).toBeVisible();
+  for (const option of ["Top", "Middle", "Bottom"] as const) {
+    const button = vertical.getByRole("radio", { name: option });
+    await expect(button).toHaveAttribute("title", option);
+    await expect(button.locator("svg")).toHaveCount(1);
+    await expect(button).toHaveText("");
+  }
+  const [alignmentBox, verticalBox, wrappingBox] = await Promise.all([
+    alignment.boundingBox(),
+    vertical.boundingBox(),
+    wrapping.boundingBox()
+  ]);
+  expect(Math.abs((alignmentBox?.width ?? 0) - (verticalBox?.width ?? 0))).toBeLessThan(2);
+  expect(alignmentBox?.width ?? 0).toBeGreaterThan((wrappingBox?.width ?? 0) + 20);
+  await expect(inspector.getByText("Alignment", { exact: true })).toHaveCount(0);
+  await expect(inspector.getByText("Vertical alignment", { exact: true })).toHaveCount(0);
+  await expect(inspector.getByText("Text wrap", { exact: true })).toBeVisible();
   for (const field of ["Width", "Height", "X", "Y"] as const) {
     await expect(inspector.getByRole("spinbutton", { name: field, exact: true })).toBeVisible();
   }
@@ -289,7 +309,9 @@ test("deck named styles use a dedicated complete inspector and render their mark
   await expect(inspector.getByRole("button", { name: "Color for this style" })).toBeVisible();
   const background = inspector.getByRole("button", { name: "Background for this style" });
   await expect(background).toBeVisible();
-  await expect(inspector.getByRole("group", { name: "Vertical alignment" })).toBeVisible();
+  const vertical = inspector.getByRole("group", { name: "Vertical alignment" });
+  await expect(vertical).toBeVisible();
+  await expect(vertical.locator("svg")).toHaveCount(3);
   await expect(inspector.getByRole("button", { name: "Text style", exact: true })).toBeVisible();
   await expect(inspector.getByRole("button", { name: "Spacing", exact: true })).toHaveAttribute("aria-expanded", "false");
   await expect(inspector.getByText("Body style", { exact: true })).toHaveCount(0);

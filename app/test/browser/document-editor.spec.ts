@@ -645,7 +645,14 @@ test("a text selection opens the functional responsive inspector", async ({ page
   const [fg, bg] = await Promise.all([foreground.boundingBox(), background.boundingBox()]);
   expect(Math.abs((fg?.y ?? 0) - (bg?.y ?? 0))).toBeLessThan(2);
 
-  await expect(inspector.getByRole("group", { name: "Alignment" })).toBeVisible();
+  const alignment = inspector.getByRole("group", { name: "Alignment" });
+  await expect(alignment).toBeVisible();
+  const [alignmentBox, formattingBox] = await Promise.all([
+    alignment.boundingBox(),
+    inspector.getByRole("group", { name: "Formatting" }).boundingBox()
+  ]);
+  expect(Math.abs((alignmentBox?.width ?? 0) - (formattingBox?.width ?? 0))).toBeLessThan(2);
+  await expect(inspector.getByText("Alignment", { exact: true })).toHaveCount(0);
   await inspector.getByRole("button", { name: "Spacing", exact: true }).click();
   await expect(page.locator(".held-selection").first()).toBeVisible();
   await expect(inspector.getByText("Space above", { exact: true })).toBeVisible();
@@ -749,6 +756,7 @@ test("document named styles mirror the text formatting inspector without metadat
   await expect(inspector.getByRole("button", { name: "Spacing", exact: true })).toHaveAttribute("aria-expanded", "false");
   await expect(inspector.getByText("Body style", { exact: true })).toHaveCount(0);
   await expect(inspector.getByRole("group", { name: "Alignment" })).toBeVisible();
+  await expect(inspector.getByText("Alignment", { exact: true })).toHaveCount(0);
   await inspector.getByRole("button", { name: "Spacing", exact: true }).click();
   await expect(inspector.getByRole("spinbutton", { name: "Line height" })).toBeVisible();
   await expect(inspector.getByRole("spinbutton", { name: "Indent" })).toBeVisible();

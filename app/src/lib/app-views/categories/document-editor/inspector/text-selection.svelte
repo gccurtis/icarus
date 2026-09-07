@@ -3,8 +3,6 @@
     Panel,
     PanelAlignment,
     PanelButton,
-    PanelControlGroup,
-    PanelControlRow,
     PanelCrumbs,
     PanelNote,
     PanelQuote,
@@ -352,15 +350,11 @@
         onforeground={setInk}
         onbackground={setFill}
       />
-      <PanelControlGroup flush>
-        <PanelControlRow label="Alignment">
-          <PanelAlignment
-            value={align.value ?? "start"}
-            mixed={align.mixed}
-            onchange={setAlign}
-          />
-        </PanelControlRow>
-      </PanelControlGroup>
+      <PanelAlignment
+        value={align.value ?? "start"}
+        mixed={align.mixed}
+        onchange={setAlign}
+      />
     </div>
 
     <PanelSpacing

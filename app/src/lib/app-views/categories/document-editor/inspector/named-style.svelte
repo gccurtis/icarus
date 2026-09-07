@@ -6,8 +6,6 @@
     Panel,
     PanelAlignment,
     PanelButton,
-    PanelControlGroup,
-    PanelControlRow,
     PanelCrumbs,
     PanelEditableText,
     PanelInlineStyle,
@@ -199,14 +197,10 @@
           onforeground={(next) => setField("color", orClear(next))}
           onbackground={(next) => setField("background", orClear(next))}
         />
-        <PanelControlGroup flush>
-          <PanelControlRow label="Alignment">
-            <PanelAlignment
-              value={style.horizontalAlignment ?? "start"}
-              onchange={(next) => setField("horizontalAlignment", next)}
-            />
-          </PanelControlRow>
-        </PanelControlGroup>
+        <PanelAlignment
+          value={style.horizontalAlignment ?? "start"}
+          onchange={(next) => setField("horizontalAlignment", next)}
+        />
       </div>
 
       <PanelSpacing

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AlignVerticalJustifyCenter from "@lucide/svelte/icons/align-vertical-justify-center";
+  import AlignVerticalJustifyEnd from "@lucide/svelte/icons/align-vertical-justify-end";
+  import AlignVerticalJustifyStart from "@lucide/svelte/icons/align-vertical-justify-start";
   import Copy from "@lucide/svelte/icons/copy";
   import Trash2 from "@lucide/svelte/icons/trash-2";
 
@@ -37,9 +40,9 @@
   ];
 
   const VERTICAL = [
-    { value: "top", label: "Top" },
-    { value: "middle", label: "Middle" },
-    { value: "bottom", label: "Bottom" }
+    { value: "top", label: "Top", icon: AlignVerticalJustifyStart },
+    { value: "middle", label: "Middle", icon: AlignVerticalJustifyCenter },
+    { value: "bottom", label: "Bottom", icon: AlignVerticalJustifyEnd }
   ];
 
   const view = workspaceState();
@@ -160,14 +163,8 @@
         onforeground={(next) => setField("color", next === "" ? undefined : next)}
         onbackground={(next) => setField("background", next === "" ? undefined : next)}
       />
-      <PanelControlGroup flush>
-        <PanelControlRow label="Alignment">
-          <PanelAlignment value={style.horizontalAlignment ?? "start"} onchange={(next) => setField("horizontalAlignment", next)} />
-        </PanelControlRow>
-        <PanelControlRow label="Vertical alignment">
-          <PanelChoice label="Vertical alignment" value={style.verticalAlignment ?? "top"} options={VERTICAL} flush fill onchange={(next) => setField("verticalAlignment", next === "top" ? undefined : next as "middle" | "bottom")} />
-        </PanelControlRow>
-      </PanelControlGroup>
+      <PanelAlignment value={style.horizontalAlignment ?? "start"} onchange={(next) => setField("horizontalAlignment", next)} />
+      <PanelChoice label="Vertical alignment" value={style.verticalAlignment ?? "top"} options={VERTICAL} flush fill onchange={(next) => setField("verticalAlignment", next === "top" ? undefined : next as "middle" | "bottom")} />
     </PanelSection>
 
     <PanelSection title="Spacing" open={false} chevron="end">

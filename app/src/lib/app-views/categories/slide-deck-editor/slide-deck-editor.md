@@ -165,8 +165,8 @@ carets, speaker notes, and named styles:
 3. Bold, italic, underline, and strikethrough press buttons.
 4. Compact Color and Background controls; text color always resolves to a color,
    while an empty background is shown with an explicit X.
-5. Text style also owns horizontal alignment, vertical Top/Middle/Bottom, and a
-   text-wrap policy where the target supports them.
+5. Text style owns full-width icon rows for horizontal and vertical alignment.
+   Text wrap keeps its visible label where the target supports it.
 6. A collapsed Spacing section owns space above, space below, unitless line
    height, and indent.
 

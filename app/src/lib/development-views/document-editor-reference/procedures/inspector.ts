@@ -44,7 +44,7 @@ export const inspectorReference: AreaReference = {
     {
       title: "Alignment and spacing follow their visual roles",
       before: "Alignment and ambiguous Before/After spacing were separate; numeric controls were crowded with plus/minus buttons and zero looked disabled.",
-      now: "Alignment sits with Style; a collapsed Spacing section contains Space above, Space below, Line height, and Indent. Direct number inputs use native arrow keys, clear units, and normal zero styling.",
+      now: "A full-width icon row controls Alignment inside Style; a collapsed Spacing section contains Space above, Space below, Line height, and Indent. Direct number inputs use native arrow keys, clear units, and normal zero styling.",
       why: "Alignment changes how the text reads, while the lower-priority spacing controls remain available without dominating the inspector."
     },
     {
