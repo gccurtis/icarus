@@ -135,7 +135,8 @@ is popped next:
 - a leaf adds its eligible semantic objects to the candidate set;
 - lower-scoring branches remain in the frontier for possible later expansion;
 - after oversampling, candidate objects receive exact cosine scores;
-- overlapping spans coalesce before final top-k selection.
+- overlapping or exactly adjacent spans from the same source snapshot coalesce
+  before final top-k selection.
 
 `candidateMultiplier` is primarily an approximate-recall cushion. It also
 ensures coalescence is less likely to leave fewer than top-k distinct hits; if
@@ -181,6 +182,15 @@ annotation, not provenance. The application should not require the model to
 invent exact quote offsets inside a retrieved span. When the source projection
 has structural locators, retrieval carries the overlapping locator spans and
 the selected citation copies them by value for later editor highlighting.
+
+Span consolidation occurs at two boundaries. Each Semantic Overlay query
+unions overlapping or exactly adjacent candidate spans before applying final
+`topK`, so one retrieval does not expose chunk seams as duplicate evidence.
+After the model selects evidence, citation resolution applies the same union to
+the selected spans from every tool call. This second pass covers repeated
+retrievals while preserving every selected evidence ID and its use annotation.
+Spans never merge across a source, revision, encoding, or overlay-generation
+boundary.
 
 Before publication, application code must verify that:
 

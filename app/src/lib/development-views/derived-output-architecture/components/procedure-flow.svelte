@@ -218,7 +218,7 @@
       status: "existing",
       input: "query + ResourceSet + topK",
       output: "SemanticHit[] + diagnostics",
-      note: "The retrieve tool delegates here; exact spans and overlapping resource locators receive attempt-local evidence IDs."
+      note: "The retrieve tool delegates here; overlapping or adjacent spans consolidate before top K, then each exact hit receives an attempt-local evidence ID."
     },
     {
       order: "09",
@@ -236,7 +236,7 @@
       status: "new",
       input: "decision.evidence + run registry",
       output: "SemanticCitation[]",
-      note: "Only application-issued IDs resolve. The model never authors a source ID, revision, coordinate, or citation."
+      note: "Only application-issued IDs resolve. Touching citations across tool calls consolidate while retaining every evidence use; the model never authors provenance."
     },
     {
       order: "11",

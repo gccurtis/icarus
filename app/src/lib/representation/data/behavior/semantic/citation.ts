@@ -117,7 +117,7 @@ const merge = (citations: readonly SemanticCitation[]): SemanticCitation => {
   };
 };
 
-/** Unions overlapping selected evidence from one source snapshot and generation. */
+/** Unions overlapping or touching selected evidence from one source snapshot and generation. */
 export const coalesceSemanticCitations = (
   citations: readonly SemanticCitation[]
 ): SemanticCitation[] => {
@@ -136,7 +136,7 @@ export const coalesceSemanticCitations = (
     let connected: SemanticCitation[] = [];
     let to = -1;
     for (const citation of ordered) {
-      if (connected.length === 0 || citation.span.from < to) {
+      if (connected.length === 0 || citation.span.from <= to) {
         connected.push(citation);
         to = Math.max(to, citation.span.to);
       } else {

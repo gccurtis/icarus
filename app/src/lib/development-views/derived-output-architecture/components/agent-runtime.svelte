@@ -114,8 +114,9 @@
 }`,
       rules: [
         "Delegates to querySemanticOverlay and uses the Derived Output's stored scope.",
+        "Overlapping or exactly adjacent hits from one source snapshot consolidate before top K.",
         "Exact hit text is already citation-ready, so the normal path needs no redundant read.",
-        "Repeated hits reuse one attempt-local evidence ID by trusted source snapshot and range."
+        "After selection, touching citations from repeated tool calls consolidate again without losing their evidence uses."
       ]
     },
     {

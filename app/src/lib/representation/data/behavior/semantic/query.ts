@@ -45,9 +45,6 @@ const sourceKey = (object: SearchableSemanticObject): string =>
 const compareText = (left: string, right: string): number =>
   left < right ? -1 : left > right ? 1 : 0;
 
-const overlaps = (left: ScoredObject, right: ScoredObject): boolean =>
-  left.object.span.from < right.object.span.to && right.object.span.from < left.object.span.to;
-
 const mergedHit = (
   group: readonly ScoredObject[],
   overlayGeneration: number
@@ -94,7 +91,7 @@ const mergedHit = (
   };
 };
 
-/** Connected components of overlapping intervals, grouped by source revision. */
+/** Connected components of overlapping or touching intervals, grouped by source revision. */
 export const coalesceSemanticHits = (
   scored: readonly ScoredObject[],
   overlayGeneration: number
@@ -116,7 +113,7 @@ export const coalesceSemanticHits = (
     let group: ScoredObject[] = [];
     let groupTo = -1;
     for (const entry of ordered) {
-      if (group.length === 0 || entry.object.span.from < groupTo) {
+      if (group.length === 0 || entry.object.span.from <= groupTo) {
         group.push(entry);
         groupTo = Math.max(groupTo, entry.object.span.to);
       } else {

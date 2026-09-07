@@ -20,7 +20,10 @@ source changes.
 `generating` state before its first asynchronous provider call, then gives one
 bounded agent a single `retrieve` tool. Retrieval returns exact source spans and
 overlapping document/slide locator spans plus application-issued, attempt-local
-evidence IDs.
+evidence IDs. Each query consolidates overlapping or exactly adjacent spans
+from the same source snapshot before final `topK`. Citation resolution repeats
+that consolidation across the agent's selected evidence from all retrieval
+calls while preserving every evidence ID and use annotation.
 
 The executable instruction is application-owned in `api/shared/agent-instructions.ts` and
 shared with the development reference surface. The intended expanded tool set

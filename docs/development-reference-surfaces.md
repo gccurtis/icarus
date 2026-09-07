@@ -182,7 +182,7 @@ The target agent remains one bounded agent with four narrow tools:
 | --- | --- | --- | --- |
 | `read_selection` | current selected range in its authoritative project resource | no | application resolves the selection and issues an evidence ID |
 | `find_resources` | scoped resource metadata | no | navigation only; no factual evidence |
-| `retrieve` | semantically similar overlay spans | **yes** | every exact returned span receives an attempt-local evidence ID |
+| `retrieve` | semantically similar overlay spans | **yes** | touching/overlapping spans consolidate before each exact returned span receives an attempt-local evidence ID |
 | `read` | authoritative resource text, outline, or allowlisted structure | no | every returned ranged chunk receives an evidence ID |
 
 This distinction is non-negotiable: `retrieve` queries the Semantic Overlay;
@@ -211,6 +211,11 @@ attempt. For `insufficient`, application code ignores provider prose and uses a
 fixed coded response. The model selects evidence IDs and describes their use;
 the application resolves immutable source/revision/range values and stores
 citations by value.
+
+Consolidation runs again after evidence selection, across all tool calls in the
+attempt. Touching or overlapping citations from the same source snapshot and
+overlay generation become one durable citation; all selected IDs and use
+annotations remain attached to it.
 
 ### Instructions as an application-owned runtime skill
 

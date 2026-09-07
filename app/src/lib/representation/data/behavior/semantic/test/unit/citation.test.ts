@@ -39,6 +39,26 @@ describe("semantic citations", () => {
     ]);
   });
 
+  it("unions touching evidence selected across tool calls", () => {
+    expect(
+      coalesceSemanticCitations([
+        citation(0, 1, "G"),
+        citation(1, 18, "arry's age is 27.")
+      ])
+    ).toEqual([
+      {
+        ...citation(0, 18, "Garry's age is 27.", 4, "evidence-0-1-4"),
+        selections: [
+          { evidenceId: "evidence-0-1-4", use: "Supports G" },
+          {
+            evidenceId: "evidence-1-18-4",
+            use: "Supports arry's age is 27."
+          }
+        ]
+      }
+    ]);
+  });
+
   it("marks only cited source revisions as changed", () => {
     const used = citation(0, 5, "alpha");
     expect(

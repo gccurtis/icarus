@@ -61,7 +61,10 @@
       setStep(0, "running");
       const resource = await createProjectResource({
         target: "document",
-        title: `Derived Output proof · ${new Date().toLocaleTimeString()}`
+        title: `Derived Output proof · ${new Date().toLocaleTimeString([], {
+          hour: "numeric",
+          minute: "2-digit"
+        })}`
       });
       resourceId = resource.resourceId;
       const rowId = `row:${crypto.randomUUID()}`;

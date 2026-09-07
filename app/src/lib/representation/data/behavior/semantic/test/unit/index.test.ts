@@ -362,6 +362,44 @@ test("overlapping objects coalesce transitively before topK", () => {
   expect(found.diagnostics.exhausted).toBe(true);
 });
 
+test("touching objects coalesce before topK without splitting a word", () => {
+  const source = {
+    ref: { kind: "document", id: "documents:touching" },
+    revision: 1,
+    encoding: "utf-8" as const
+  };
+  const first: SearchableSemanticObject = {
+    id: id(11),
+    vector: [1, 0],
+    source,
+    span: { from: 0, to: 1, text: "G" }
+  };
+  const second: SearchableSemanticObject = {
+    id: id(12),
+    vector: [0.9, 0.1],
+    source,
+    span: { from: 1, to: 18, text: "arry's age is 27." }
+  };
+
+  expect(
+    coalesceSemanticHits(
+      [
+        { object: second, score: 0.9 },
+        { object: first, score: 1 }
+      ],
+      9
+    )
+  ).toEqual([
+    {
+      semanticObjectIds: [first.id, second.id],
+      source,
+      span: { from: 0, to: 18, text: "Garry's age is 27." },
+      score: 1,
+      overlayGeneration: 9
+    }
+  ]);
+});
+
 test("resource scope treats an empty include as project-wide and exclusion wins", () => {
   const ref = { kind: "externalFile::pdf", id: "externalFiles:1" };
   const all: ResourceSet = { include: [], exclude: [] };
