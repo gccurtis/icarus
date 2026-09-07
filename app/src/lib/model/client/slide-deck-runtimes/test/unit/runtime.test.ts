@@ -45,6 +45,7 @@ test("apply buffers without awaiting anything", () => {
   runtime.apply([set("a", 1)]);
 
   assert.equal(runtime.pending, 1);
+  assert.equal(runtime.sync, "saving");
 });
 
 test("applying nothing does nothing", () => {

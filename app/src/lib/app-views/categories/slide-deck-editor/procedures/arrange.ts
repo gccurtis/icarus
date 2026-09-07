@@ -17,12 +17,18 @@ export const bounds = (frames: readonly Frame[]): Frame => {
   return { x: left, y: top, width: right - left, height: bottom - top };
 };
 
+const EPSILON = 1e-9;
+
+const close = (left: number, right: number): boolean => Math.abs(left - right) <= EPSILON;
+
+const canonical = (value: number): number => Math.round(value / EPSILON) * EPSILON;
+
 const changed = (items: readonly Framed[], next: readonly Frame[]): Framed[] =>
   items
     .map((item, index) => ({ id: item.id, frame: next[index] }))
     .filter(({ id, frame }) => {
       const before = items.find((item) => item.id === id)?.frame;
-      return before === undefined || before.x !== frame.x || before.y !== frame.y || before.width !== frame.width || before.height !== frame.height;
+      return before === undefined || !close(before.x, frame.x) || !close(before.y, frame.y) || !close(before.width, frame.width) || !close(before.height, frame.height);
     });
 
 export const aligned = (items: readonly Framed[], edge: AlignEdge, to: Frame): Framed[] =>
@@ -49,19 +55,15 @@ export const aligned = (items: readonly Framed[], edge: AlignEdge, to: Frame): F
 export const distributed = (items: readonly Framed[], axis: Axis): Framed[] => {
   if (items.length < 3) return [];
   const size = axis === "x" ? "width" : "height";
-  const sorted = [...items].sort((a, b) => a.frame[axis] - b.frame[axis]);
-  const first = sorted[0].frame;
-  const last = sorted[sorted.length - 1].frame;
-  const span = last[axis] + last[size] - first[axis];
-  const occupied = sorted.reduce((sum, item) => sum + item.frame[size], 0);
-  const gap = (span - occupied) / (sorted.length - 1);
-
-  let cursor = first[axis];
-  const placed = sorted.map((item) => {
-    const frame = { ...item.frame, [axis]: cursor };
-    cursor += item.frame[size] + gap;
-    return { id: item.id, frame };
-  });
+  const centre = (item: Framed) => item.frame[axis] + item.frame[size] / 2;
+  const sorted = [...items].sort((left, right) => centre(left) - centre(right) || left.id.localeCompare(right.id));
+  const first = centre(sorted[0]);
+  const last = centre(sorted[sorted.length - 1]);
+  const step = (last - first) / (sorted.length - 1);
+  const placed = sorted.map((item, index) => ({
+    id: item.id,
+    frame: { ...item.frame, [axis]: canonical(first + step * index - item.frame[size] / 2) }
+  }));
 
   return changed(items, items.map((item) => placed.find((held) => held.id === item.id)?.frame ?? item.frame));
 };

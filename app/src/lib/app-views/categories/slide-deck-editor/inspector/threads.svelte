@@ -68,7 +68,8 @@
     }
   };
 
-  const openThread = (thread: CommentThread) => view.inspect("general.comment", { kind: "comment", id: thread._id });
+  const openThread = (thread: CommentThread) =>
+    view.inspect("slide-deck-editor.comment", { kind: "comment", id: thread._id });
 </script>
 
 <Panel title="Comments on {subject}">

@@ -1,15 +1,7 @@
 <script lang="ts">
-  import AlignCenter from "@lucide/svelte/icons/align-center";
-  import AlignJustify from "@lucide/svelte/icons/align-justify";
-  import AlignLeft from "@lucide/svelte/icons/align-left";
-  import AlignRight from "@lucide/svelte/icons/align-right";
-  import AlignVerticalJustifyCenter from "@lucide/svelte/icons/align-vertical-justify-center";
-  import AlignVerticalJustifyEnd from "@lucide/svelte/icons/align-vertical-justify-end";
-  import AlignVerticalJustifyStart from "@lucide/svelte/icons/align-vertical-justify-start";
-
-  import { PanelChoice, PanelColor, PanelMarks, PanelNumber, PanelSection, PanelSelect } from "$authored-components/panel";
+  import { PanelAlignment, PanelChoice, PanelControlGroup, PanelControlRow, PanelInlineStyle, PanelNumber, PanelSection, PanelSelect } from "$authored-components/panel";
   import { blockIn, holderOf, withSet, type MarkStyle } from "$app-views/categories/slide-deck-editor/procedures/deck";
-  import { FAMILIES } from "$app-views/categories/slide-deck-editor/procedures/palette";
+  import { FAMILIES, swatchesFor, withNone } from "$app-views/categories/slide-deck-editor/procedures/palette";
   import { colorAt, colouredMark, stylesAt, toggledMark } from "$app-views/categories/slide-deck-editor/procedures/typing";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 
@@ -30,23 +22,16 @@
   } = $props();
 
   const MARKS = [
-    { value: "bold", label: "B" },
-    { value: "italic", label: "I" },
-    { value: "underline", label: "U" },
-    { value: "strikethrough", label: "S" }
-  ];
-
-  const ALIGN = [
-    { value: "start", label: "Align left", icon: AlignLeft },
-    { value: "center", label: "Center", icon: AlignCenter },
-    { value: "end", label: "Align right", icon: AlignRight },
-    { value: "justify", label: "Justify", icon: AlignJustify }
+    { value: "bold", label: "Bold" },
+    { value: "italic", label: "Italic" },
+    { value: "underline", label: "Underline" },
+    { value: "strikethrough", label: "Strikethrough" }
   ];
 
   const VALIGN = [
-    { value: "top", label: "Top", icon: AlignVerticalJustifyStart },
-    { value: "middle", label: "Middle", icon: AlignVerticalJustifyCenter },
-    { value: "bottom", label: "Bottom", icon: AlignVerticalJustifyEnd }
+    { value: "top", label: "Top" },
+    { value: "middle", label: "Middle" },
+    { value: "bottom", label: "Bottom" }
   ];
 
   const view = workspaceState();
@@ -71,6 +56,7 @@
     Object.entries(body?.styles.styles ?? {}).map(([value, held]) => ({ value, label: held.name }))
   );
   const familyOptions = FAMILIES.map((family) => ({ value: family, label: family }));
+  const colours = $derived(body === undefined ? [] : withNone(swatchesFor(body.theme)));
   const marks = $derived(block === undefined ? [] : stylesAt(block, range.from, range.to));
   const canMark = $derived(block !== undefined && range.to > range.from);
 
@@ -117,6 +103,10 @@
     }
     onBlock("color", value === "" ? null : value);
   };
+
+  const setBackground = (value: string) => {
+    if (background !== undefined) set(background.path, value === "" ? null : value);
+  };
 </script>
 
 <PanelSection title="Style">
@@ -125,39 +115,45 @@
     <PanelSelect label="Font" value={format?.fontFamily ?? style?.fontFamily ?? body?.theme.fontFamily ?? "IBM Plex Sans"} options={familyOptions} onchange={(value) => onBlock("fontFamily", value)} />
     <PanelNumber label="Size" value={format?.fontSize ?? style?.fontSize ?? 20} min={6} max={200} step={1} flush onchange={(value) => onBlock("fontSize", value)} />
   </div>
-  <div class="flex items-center gap-1.5">
-    <span class="text-caption text-ink-muted">FG</span>
-    <PanelColor picker clearable label="Font colour" value={fontColor} flush onchange={setFontColor} />
-    {#if background}
-      <span class="text-caption text-ink-muted ms-2">BG</span>
-      <PanelColor picker clearable label="Background colour" value={background.value} flush onchange={(value) => set(background.path, value === "" ? null : value)} />
-    {/if}
-  </div>
-  <PanelMarks label="Marks" value={marks} options={MARKS} disabled={!canMark} flush onchange={toggle} />
+  <PanelInlineStyle
+    marks={[...marks]}
+    options={MARKS}
+    foreground={fontColor}
+    background={background?.value ?? ""}
+    foregroundOptions={colours}
+    backgroundOptions={colours}
+    marksDisabled={!canMark}
+    onmarks={toggle}
+    onforeground={setFontColor}
+    onbackground={setBackground}
+  />
 </PanelSection>
 
-{#if paragraph}
-  <PanelSection title="Paragraph">
-    <PanelChoice label="Alignment" value={format?.horizontalAlignment ?? style?.horizontalAlignment ?? "start"} options={ALIGN} flush fill onchange={(value) => onBlock("horizontalAlignment", value)} />
-    <PanelChoice label="Vertical alignment" value={format?.verticalAlignment ?? style?.verticalAlignment ?? "top"} options={VALIGN} flush fill onchange={(value) => onBlock("verticalAlignment", value === "top" ? null : value)} />
-  </PanelSection>
-{/if}
-
-{#if spacing}
-  <PanelSection title="Spacing">
-    <div class="grid grid-cols-2 gap-x-2 gap-y-1.5">
-      <div class="flex flex-col gap-0.5">
-        <span class="text-caption text-ink-muted">Line height</span>
-        <PanelNumber label="Line height" value={format?.lineHeight ?? style?.lineHeight ?? 1.3} min={0.8} max={3} step={0.05} flush onchange={(value) => onBlock("lineHeight", value)} />
-      </div>
-      <div class="flex flex-col gap-0.5">
-        <span class="text-caption text-ink-muted">Before</span>
-        <PanelNumber label="Space before" value={format?.spaceBefore ?? style?.spaceBefore ?? 0} unit="px" min={0} max={200} step={1} flush onchange={(value) => onBlock("spaceBefore", value)} />
-      </div>
-      <div class="flex flex-col gap-0.5">
-        <span class="text-caption text-ink-muted">After</span>
-        <PanelNumber label="Space after" value={format?.spaceAfter ?? style?.spaceAfter ?? 0} unit="px" min={0} max={200} step={1} flush onchange={(value) => onBlock("spaceAfter", value)} />
-      </div>
-    </div>
+{#if paragraph || spacing}
+  <PanelSection title="Body style">
+    <PanelControlGroup flush>
+      {#if paragraph}
+        <PanelControlRow label="Alignment">
+          <PanelAlignment value={format?.horizontalAlignment ?? style?.horizontalAlignment ?? "start"} onchange={(value) => onBlock("horizontalAlignment", value)} />
+        </PanelControlRow>
+        <PanelControlRow label="Vertical alignment">
+          <PanelChoice label="Vertical alignment" value={format?.verticalAlignment ?? style?.verticalAlignment ?? "top"} options={VALIGN} flush fill onchange={(value) => onBlock("verticalAlignment", value === "top" ? null : value)} />
+        </PanelControlRow>
+      {/if}
+      {#if spacing}
+        <PanelControlRow label="Space above">
+          <PanelNumber label="Space before" value={format?.spaceBefore ?? style?.spaceBefore ?? 0} unit="px" min={0} max={200} step={1} flush onchange={(value) => onBlock("spaceBefore", value)} />
+        </PanelControlRow>
+        <PanelControlRow label="Space below">
+          <PanelNumber label="Space after" value={format?.spaceAfter ?? style?.spaceAfter ?? 0} unit="px" min={0} max={200} step={1} flush onchange={(value) => onBlock("spaceAfter", value)} />
+        </PanelControlRow>
+        <PanelControlRow label="Line height" detail="Unitless multiplier">
+          <PanelNumber label="Line height" value={format?.lineHeight ?? style?.lineHeight ?? 1.3} min={0.8} max={3} step={0.05} flush onchange={(value) => onBlock("lineHeight", value)} />
+        </PanelControlRow>
+        <PanelControlRow label="Indent">
+          <PanelNumber label="Indent" value={format?.indent ?? style?.indent ?? 0} unit="px" min={0} max={200} step={1} flush onchange={(value) => onBlock("indent", value)} />
+        </PanelControlRow>
+      {/if}
+    </PanelControlGroup>
   </PanelSection>
 {/if}

@@ -1,4 +1,5 @@
 import type { Actor } from "$representation/data/types/core/actor";
+import type { TextBlock } from "$representation/data/types/content/content-block";
 import type {
   Comment,
   CommentThread,
@@ -6,9 +7,10 @@ import type {
   TableRow,
   User
 } from "$representation/store/tables";
-import { readStore } from "$model/client/workspace-state";
+import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
+import { readStore, readUsername } from "$model/client/workspace-state";
 
-export type { CommentThread } from "$representation/store/tables";
+export type { Comment, CommentThread, User } from "$representation/store/tables";
 
 export type TableQuery = ReturnType<typeof readStore>;
 
@@ -26,6 +28,25 @@ export const rowsOf = <T extends TableName>(
     : [];
 };
 
+export const rowsIn = <T extends TableName>(table: T): readonly TableRow<T>[] =>
+  rowsOf(readStore(table), table);
+
+export const refreshAll = (...queries: readonly TableQuery[]): Promise<void> =>
+  Promise.all(queries.map((query) => query.refresh())).then(() => undefined);
+
+export const viewerId = (): string => {
+  const answer = readUsername();
+  if (!answer.ready) return "";
+
+  const name = answer.current;
+  return rowsIn("users").find((user) => user.displayName === name)?._id ?? "";
+};
+
+export const threadOf = (
+  rows: readonly CommentThread[],
+  id: string
+): CommentThread | undefined => rows.find((thread) => thread._id === id);
+
 export const remarksOf = (
   rows: readonly Comment[],
   threadId: string
@@ -40,6 +61,9 @@ export const nameOf = (users: readonly User[], actor: Actor | undefined): string
 
   return users.find((user) => user._id === actor.userId)?.displayName ?? "Someone";
 };
+
+export const userIdOf = (actor: Actor | undefined): string | undefined =>
+  actor?.kind === "user" ? actor.userId : undefined;
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -65,6 +89,27 @@ export const textOf = (remark: Comment): string =>
     .map((block) => ("display" in block ? block.display : ""))
     .filter((text) => text.length > 0)
     .join("\n");
+
+export const remarkBlock = (text: string): TextBlock => ({
+  id: mint("block"),
+  type: "text",
+  variant: "paragraph",
+  atoms: [{ id: mint("atom"), kind: "literal", text }],
+  display: text,
+  marks: []
+});
+
+export const replyFields = (
+  thread: CommentThread,
+  text: string,
+  by: string
+): Omit<Comment, "_id" | "_creationTime"> => ({
+  projectId: thread.projectId,
+  threadId: thread._id,
+  blocks: [remarkBlock(text)],
+  mentions: [],
+  author: { kind: "user", userId: by as User["_id"] }
+});
 
 export const belongsToDeck = (
   thread: CommentThread,

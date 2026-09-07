@@ -362,6 +362,11 @@
 
     if (held.kind === "press") {
       if (held.cell !== undefined) onselectcells?.(held.id, [held.cell]);
+      else if (!held.additive && (selected.length !== 1 || selected[0] !== held.id)) {
+        // Keep the whole selection available while a drag starts, then collapse
+        // an unmodified click to the one object when the pointer never moved.
+        onselect?.([held.id], false);
+      }
       return;
     }
     if (held.kind === "move") {

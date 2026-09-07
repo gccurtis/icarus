@@ -25,8 +25,8 @@
 
   const style = $derived(
     `font-family: ${JSON.stringify(text.font)}; font-size: ${text.size * shrink}px; font-weight: ${text.weight}; ` +
-      `font-style: ${text.italic ? "italic" : "normal"}; text-decoration: ${text.underline ? "underline" : "none"}; ` +
-      `color: ${text.color}; line-height: ${text.lineHeight}; text-align: ${text.align}; ` +
+      `font-style: ${text.italic ? "italic" : "normal"}; text-decoration: ${text.underline && text.strike ? "underline line-through" : text.underline ? "underline" : text.strike ? "line-through" : "none"}; ` +
+      `color: ${text.color}; background: ${text.background ?? "transparent"}; line-height: ${text.lineHeight}; text-align: ${text.align}; ` +
       `padding: ${text.spaceBefore}px 0 ${text.spaceAfter}px; text-indent: ${text.indent}px;`
   );
 

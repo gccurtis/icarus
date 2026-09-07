@@ -53,7 +53,7 @@
       <div class="notes text-body-sm border-border-subtle rounded-control mx-3 mb-2 border" style="background: {backdrop}">
         <SlideSurfaceText text={scene} editing onedit={edited} oncaret={(from, to) => (range = { from, to })} />
       </div>
-      <TextStyle blockId={block.id} from={range.from} to={range.to} paragraph={false} spacing={false} />
+      <TextStyle blockId={block.id} from={range.from} to={range.to} />
     {:else}
       <PanelEmpty title="No notes on this slide yet." action="Start notes" onaction={start} />
     {/if}

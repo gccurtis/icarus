@@ -12,7 +12,7 @@
   import BringToFront from "@lucide/svelte/icons/bring-to-front";
   import SendToBack from "@lucide/svelte/icons/send-to-back";
 
-  import { PanelActions, PanelButton, PanelChoice, PanelSection } from "$authored-components/panel";
+  import { PanelButton, PanelChoice, PanelSection } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { aligned, bounds, distributed, matched, type AlignEdge, type Match } from "$app-views/categories/slide-deck-editor/procedures/arrange";
   import {
@@ -29,8 +29,8 @@
   let { groupId }: { groupId?: string } = $props();
 
   const RELATIVE = [
-    { value: "selection", label: "Selection" },
-    { value: "slide", label: "Slide" }
+    { value: "selection", label: "Selection", short: "Sel" },
+    { value: "slide", label: "Slide", short: "Slide" }
   ];
 
   const view = workspaceState();
@@ -87,32 +87,32 @@
 </script>
 
 <PanelSection title="Align">
-  <PanelActions>
-    <PanelButton label="Left" icon={AlignStartVertical} disabled={few && relative !== "slide"} onclick={() => align("left")} />
-    <PanelButton label="Center" icon={AlignCenterVertical} disabled={few && relative !== "slide"} onclick={() => align("center")} />
-    <PanelButton label="Right" icon={AlignEndVertical} disabled={few && relative !== "slide"} onclick={() => align("right")} />
-  </PanelActions>
-  <PanelActions>
-    <PanelButton label="Top" icon={AlignStartHorizontal} disabled={few && relative !== "slide"} onclick={() => align("top")} />
-    <PanelButton label="Middle" icon={AlignCenterHorizontal} disabled={few && relative !== "slide"} onclick={() => align("middle")} />
-    <PanelButton label="Bottom" icon={AlignEndHorizontal} disabled={few && relative !== "slide"} onclick={() => align("bottom")} />
-  </PanelActions>
-  <div class="flex items-center gap-2">
-    <span class="text-caption text-ink-muted shrink-0">Relative to</span>
-    <PanelChoice label="Relative to" value={relative} options={RELATIVE} flush onchange={(value) => (relative = value)} />
+  <div class="arrange-grid grid grid-cols-3 gap-1">
+    <Button variant="outline" size="xs" class="w-full min-w-0" aria-label="Left" title="Align left" disabled={few && relative !== "slide"} onclick={() => align("left")}><AlignStartVertical aria-hidden="true" /><span class="arrange-label">Left</span></Button>
+    <Button variant="outline" size="xs" class="w-full min-w-0" aria-label="Center" title="Align horizontal centers" disabled={few && relative !== "slide"} onclick={() => align("center")}><AlignCenterVertical aria-hidden="true" /><span class="arrange-label">Center</span></Button>
+    <Button variant="outline" size="xs" class="w-full min-w-0" aria-label="Right" title="Align right" disabled={few && relative !== "slide"} onclick={() => align("right")}><AlignEndVertical aria-hidden="true" /><span class="arrange-label">Right</span></Button>
   </div>
+  <div class="arrange-grid grid grid-cols-3 gap-1">
+    <Button variant="outline" size="xs" class="w-full min-w-0" aria-label="Top" title="Align top" disabled={few && relative !== "slide"} onclick={() => align("top")}><AlignStartHorizontal aria-hidden="true" /><span class="arrange-label">Top</span></Button>
+    <Button variant="outline" size="xs" class="w-full min-w-0" aria-label="Middle" title="Align vertical centers" disabled={few && relative !== "slide"} onclick={() => align("middle")}><AlignCenterHorizontal aria-hidden="true" /><span class="arrange-label">Middle</span></Button>
+    <Button variant="outline" size="xs" class="w-full min-w-0" aria-label="Bottom" title="Align bottom" disabled={few && relative !== "slide"} onclick={() => align("bottom")}><AlignEndHorizontal aria-hidden="true" /><span class="arrange-label">Bottom</span></Button>
+  </div>
+  <PanelChoice label="Align relative to" value={relative} options={RELATIVE} flush fill onchange={(value) => (relative = value)} />
 </PanelSection>
 
 <PanelSection title="Distribute">
-  <PanelActions>
-    <PanelButton label="Horizontally" icon={AlignHorizontalSpaceBetween} disabled={two} title={two ? "Nothing sits between two objects" : undefined} onclick={() => distribute("x")} />
-    <PanelButton label="Vertically" icon={AlignVerticalSpaceBetween} disabled={two} title={two ? "Nothing sits between two objects" : undefined} onclick={() => distribute("y")} />
-  </PanelActions>
-  <PanelActions>
-    <PanelButton label="Match width" disabled={few} onclick={() => match("width")} />
-    <PanelButton label="Match height" disabled={few} onclick={() => match("height")} />
-    <PanelButton label="Match size" disabled={few} onclick={() => match("size")} />
-  </PanelActions>
+  <div class="arrange-grid grid grid-cols-2 gap-1">
+    <Button variant="outline" size="xs" class="w-full min-w-0" aria-label="Horizontal" disabled={two} title={two ? "Select at least three objects" : "Distribute horizontally"} onclick={() => distribute("x")}><AlignHorizontalSpaceBetween aria-hidden="true" /><span class="arrange-label">Horizontal</span></Button>
+    <Button variant="outline" size="xs" class="w-full min-w-0" aria-label="Vertical" disabled={two} title={two ? "Select at least three objects" : "Distribute vertically"} onclick={() => distribute("y")}><AlignVerticalSpaceBetween aria-hidden="true" /><span class="arrange-label">Vertical</span></Button>
+  </div>
+</PanelSection>
+
+<PanelSection title="Match size">
+  <div class="grid grid-cols-3 gap-1">
+    <PanelButton label="Width" disabled={few} title={few ? "Select at least two objects" : "Match the first selected object's width"} onclick={() => match("width")} />
+    <PanelButton label="Height" disabled={few} title={few ? "Select at least two objects" : "Match the first selected object's height"} onclick={() => match("height")} />
+    <PanelButton label="Both" disabled={few} title={few ? "Select at least two objects" : "Match the first selected object's size"} onclick={() => match("size")} />
+  </div>
 </PanelSection>
 
 <PanelSection title="Order">
@@ -123,3 +123,16 @@
     <Button variant="outline" size="xs" title="Send to back" aria-label="Send to back" onclick={() => restack("back")}><SendToBack aria-hidden="true" /></Button>
   </div>
 </PanelSection>
+
+<style>
+  .arrange-grid {
+    container-name: arrange;
+    container-type: inline-size;
+  }
+
+  @container arrange (max-width: 16rem) {
+    .arrange-label {
+      display: none;
+    }
+  }
+</style>

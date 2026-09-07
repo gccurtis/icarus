@@ -1,35 +1,15 @@
 <script lang="ts">
-  import AlignCenter from "@lucide/svelte/icons/align-center";
-  import AlignJustify from "@lucide/svelte/icons/align-justify";
-  import AlignLeft from "@lucide/svelte/icons/align-left";
-  import AlignRight from "@lucide/svelte/icons/align-right";
-  import AlignVerticalJustifyCenter from "@lucide/svelte/icons/align-vertical-justify-center";
-  import AlignVerticalJustifyEnd from "@lucide/svelte/icons/align-vertical-justify-end";
-  import AlignVerticalJustifyStart from "@lucide/svelte/icons/align-vertical-justify-start";
   import Plus from "@lucide/svelte/icons/plus";
   import Trash2 from "@lucide/svelte/icons/trash-2";
 
-  import { Panel, PanelButton, PanelChoice, PanelColor, PanelEditableText, PanelEmpty, PanelInput, PanelNumber, PanelSection, PanelSelect } from "$authored-components/panel";
+  import { Panel, PanelButton, PanelColor, PanelEmpty, PanelInput, PanelNumber, PanelRow, PanelSection, PanelSelect } from "$authored-components/panel";
   import { SlideSurface } from "$authored-components/slide-surface";
   import { Button } from "$vendored-components/button";
-  import { slideIndexOf, withSavedLayout, withSet, withoutLayout, type TextStyle } from "$app-views/categories/slide-deck-editor/procedures/deck";
-  import { FAMILIES } from "$app-views/categories/slide-deck-editor/procedures/palette";
+  import { slideIndexOf, withSavedLayout, withSet, withoutLayout } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { newStyleEdit, styleOptions, styleSummary } from "$app-views/categories/slide-deck-editor/procedures/styles";
   import { sceneOf } from "$app-views/categories/slide-deck-editor/procedures/scene";
   import { asAspectRatio, ratioOf, ratioParts, slideUnits } from "$app-views/categories/slide-deck-editor/procedures/stage";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
-
-  const ALIGN = [
-    { value: "start", label: "Align left", icon: AlignLeft },
-    { value: "center", label: "Center", icon: AlignCenter },
-    { value: "end", label: "Align right", icon: AlignRight },
-    { value: "justify", label: "Justify", icon: AlignJustify }
-  ];
-
-  const VALIGN = [
-    { value: "top", label: "Top", icon: AlignVerticalJustifyStart },
-    { value: "middle", label: "Middle", icon: AlignVerticalJustifyCenter },
-    { value: "bottom", label: "Bottom", icon: AlignVerticalJustifyEnd }
-  ];
 
   const view = workspaceState();
   const deckId = $derived(view.active.resourceId);
@@ -44,19 +24,13 @@
   const units = $derived(
     runtime === undefined || body === undefined ? { width: 1280, height: 720 } : slideUnits(body.aspectRatio, runtime.stage)
   );
-  const families = FAMILIES.map((family) => ({ value: family, label: family }));
-  const styleOptions = $derived(Object.entries(body?.styles.styles ?? {}).map(([value, held]) => ({ value, label: held.name })));
-
-  let picked = $state<string | undefined>(undefined);
-  const styleKey = $derived(picked !== undefined && body?.styles.styles[picked] ? picked : (body?.styles.defaultKey ?? "body"));
-  const style = $derived<TextStyle | undefined>(body?.styles.styles[styleKey]);
+  const styles = $derived(styleOptions(body));
+  const inspectedStyle = $derived(view.inspected === "slide-deck-editor.named-style" ? view.selection?.id : undefined);
 
   const set = (path: string, value: unknown) => {
     if (body === undefined) return;
     runtime?.apply(withSet(body, path, value).ops);
   };
-
-  const onStyle = (field: string, value: unknown) => set(`styles/styles/${styleKey}/${field}`, value);
 
   const setRatio = (width: number, height: number) => set("aspectRatio", asAspectRatio(width, height));
 
@@ -91,14 +65,9 @@
 
   const newStyle = () => {
     if (body === undefined) return;
-    let index = Object.keys(body.styles.styles).length + 1;
-    let key = `style-${index}`;
-    while (body.styles.styles[key]) {
-      index += 1;
-      key = `style-${index}`;
-    }
-    set(`styles/styles/${key}`, { name: `Style ${index}`, fontSize: 20 });
-    picked = key;
+    const made = newStyleEdit(body);
+    if (made.edit.ops.length > 0) runtime?.apply(made.edit.ops);
+    view.inspect("slide-deck-editor.named-style", { kind: "named-style", id: made.key });
   };
 </script>
 
@@ -147,42 +116,18 @@
       </div>
     </PanelSection>
 
-    <PanelSection title="Named styles" count={styleOptions.length} open={false}>
-      <div class="flex items-end gap-1.5">
-        <div class="min-w-0 flex-1"><PanelSelect label="Style" value={styleKey} options={styleOptions} onchange={(value) => (picked = value)} /></div>
-        <PanelButton label="New" icon={Plus} onclick={newStyle} />
-      </div>
-      {#if style}
-        <div class="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2">
-          <span class="text-caption text-ink-muted">Name</span>
-          <PanelEditableText value={style.name} label="Style name" onchange={(value) => onStyle("name", value)} />
-        </div>
-        <div class="grid grid-cols-[minmax(0,1fr)_3.5rem] items-center gap-1.5">
-          <PanelSelect label="Font" value={style.fontFamily ?? body.theme.fontFamily ?? "IBM Plex Sans"} options={families} onchange={(value) => onStyle("fontFamily", value)} />
-          <PanelNumber label="Size" value={style.fontSize ?? 20} min={6} max={200} step={1} flush onchange={(value) => onStyle("fontSize", value)} />
-        </div>
-        <div class="grid grid-cols-[auto_1fr] items-center gap-x-3">
-          <span class="text-caption text-ink-muted">Font colour</span>
-          <PanelColor picker clearable label="Font colour" value={style.color ?? ""} flush onchange={(value) => onStyle("color", value === "" ? null : value)} />
-        </div>
-        <PanelChoice label="Alignment" value={style.horizontalAlignment ?? "start"} options={ALIGN} flush fill onchange={(value) => onStyle("horizontalAlignment", value)} />
-        <PanelChoice label="Vertical alignment" value={style.verticalAlignment ?? "top"} options={VALIGN} flush fill onchange={(value) => onStyle("verticalAlignment", value === "top" ? null : value)} />
-        <span class="text-caption text-ink-muted pt-1">Spacing</span>
-        <div class="grid grid-cols-2 gap-x-2 gap-y-1.5">
-          <div class="flex flex-col gap-0.5">
-            <span class="text-caption text-ink-muted">Line height</span>
-            <PanelNumber label="Line height" value={style.lineHeight ?? 1.3} min={0.8} max={3} step={0.05} flush onchange={(value) => onStyle("lineHeight", value)} />
-          </div>
-          <div class="flex flex-col gap-0.5">
-            <span class="text-caption text-ink-muted">Before</span>
-            <PanelNumber label="Space before" value={style.spaceBefore ?? 0} unit="px" min={0} max={200} step={1} flush onchange={(value) => onStyle("spaceBefore", value)} />
-          </div>
-          <div class="flex flex-col gap-0.5">
-            <span class="text-caption text-ink-muted">After</span>
-            <PanelNumber label="Space after" value={style.spaceAfter ?? 0} unit="px" min={0} max={200} step={1} flush onchange={(value) => onStyle("spaceAfter", value)} />
-          </div>
-        </div>
-      {/if}
+    <PanelSection title="Named styles" count={styles.length} flush>
+      <div class="px-3 pb-1"><PanelButton label="New style" icon={Plus} onclick={newStyle} /></div>
+      {#each styles as option (option.value)}
+        {@const held = body.styles.styles[option.value]}
+        <PanelRow
+          title={option.label}
+          sub={styleSummary(held)}
+          meta={body.styles.defaultKey === option.value ? "Default" : undefined}
+          selected={inspectedStyle === option.value}
+          onselect={() => view.inspect("slide-deck-editor.named-style", { kind: "named-style", id: option.value })}
+        />
+      {/each}
     </PanelSection>
   {:else}
     <PanelEmpty title="Open a deck to style it" />

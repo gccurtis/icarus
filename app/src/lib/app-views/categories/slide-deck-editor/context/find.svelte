@@ -129,7 +129,7 @@
 
 <Panel title="Find">
   {#snippet actions()}
-    <PanelChoice label="Mode" value={mode} options={MODES} flush onchange={(value) => (mode = value)} />
+    <PanelChoice label="Mode" value={mode} options={MODES} flush fill onchange={(value) => (mode = value)} />
   {/snippet}
 
   {#if body}
@@ -150,7 +150,7 @@
           </div>
         </div>
       {/if}
-      <div class="px-3 pb-1.5"><PanelChoice label="Scope" value={scope} options={SCOPES} flush onchange={(value) => (scope = value)} /></div>
+      <div class="px-3 pb-1.5"><PanelChoice label="Scope" value={scope} options={SCOPES} flush fill onchange={(value) => (scope = value)} /></div>
       {#each hits as hit, index (hit.key)}
         <PanelRow title="Slide {hit.position + 1} · {hit.source}" sub={snippet(hit)} selected={index === cursor && mode === "replace"} onselect={() => open(hit, index)} />
       {/each}

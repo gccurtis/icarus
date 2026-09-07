@@ -15,6 +15,7 @@ export const buffer = (runtime: Runtime, ops: readonly SlideDeckOp[]): void => {
   if (held !== undefined) runtime.body = applyOps(held, ops);
 
   runtime.buffer = [...runtime.buffer, ...ops];
+  runtime.sync = "saving";
 };
 
 export const apply = (runtime: Runtime, ops: readonly SlideDeckOp[]): void => {

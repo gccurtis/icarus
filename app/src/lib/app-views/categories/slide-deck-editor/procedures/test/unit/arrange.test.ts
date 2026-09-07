@@ -29,8 +29,21 @@ describe("align and distribute are geometry", () => {
   it("distributes with equal gaps between three or more", () => {
     const spread = distributed(items, "x");
     const b = spread.find((item) => item.id === "b");
-    expect(b?.frame.x).toBeCloseTo(0.5);
+    expect(b?.frame.x).toBeCloseTo(0.475);
     expect(distributed(items.slice(0, 2), "x")).toEqual([]);
+  });
+
+  it.each(["x", "y"] as const)("is idempotent for overlapping mixed-size objects on %s", (axis) => {
+    const overlapping = [
+      { id: "large", frame: { x: 0.1, y: 0.12, width: 0.5, height: 0.5 } },
+      { id: "small", frame: { x: 0.22, y: 0.2, width: 0.08, height: 0.08 } },
+      { id: "medium", frame: { x: 0.3, y: 0.28, width: 0.24, height: 0.18 } }
+    ];
+    const first = distributed(overlapping, axis);
+    const applied = overlapping.map((item) => first.find((move) => move.id === item.id) ?? item);
+
+    expect(first.length).toBeGreaterThan(0);
+    expect(distributed(applied, axis)).toEqual([]);
   });
 
   it("matches size to the first", () => {

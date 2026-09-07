@@ -22,7 +22,9 @@ export type SurfaceText = {
   readonly weight: number;
   readonly italic: boolean;
   readonly underline: boolean;
+  readonly strike: boolean;
   readonly color: string;
+  readonly background?: string;
   readonly lineHeight: number;
   readonly align: "start" | "center" | "end" | "justify";
   readonly valign: "top" | "middle" | "bottom";

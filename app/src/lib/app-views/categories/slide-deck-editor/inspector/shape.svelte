@@ -24,6 +24,9 @@
   const slide = $derived(body === undefined || id === undefined ? undefined : slideHolding(body, id));
   const position = $derived(body === undefined || slide === undefined ? 0 : slideIndexOf(body, slide.id) + 1);
   const content = $derived(element?.content.type === "shape" ? element.content : undefined);
+  const shapeTitle = $derived(content === undefined ? "Shape" : content.shape[0].toUpperCase() + content.shape.slice(1));
+  const fullText = $derived(content?.block?.display.trim().replace(/\s+/g, " ") ?? "");
+  const excerpt = $derived(fullText.length <= 64 ? fullText : `${fullText.slice(0, 63).trimEnd()}…`);
 
   const set = (path: string, value: unknown) => {
     if (body === undefined) return;
@@ -31,10 +34,18 @@
   };
 </script>
 
-<Panel title="Shape">
+<Panel title={shapeTitle}>
+  {#snippet heading()}
+    <div class="min-w-0">
+      <h2 class="text-body-sm text-ink-secondary m-0 font-semibold">{shapeTitle}</h2>
+      {#if excerpt.length > 0}
+        <p class="text-caption text-ink-muted m-0 truncate pt-0.5" title={fullText}>“{excerpt}”</p>
+      {/if}
+    </div>
+  {/snippet}
   {#snippet crumbs()}
     <PanelCrumbs
-      trail={[{ label: "Deck" }, { label: `Slide ${position}`, key: "slide-deck-editor.slide" }, { label: "Shape" }]}
+      trail={[{ label: "Deck" }, { label: `Slide ${position}`, key: "slide-deck-editor.slide" }, { label: shapeTitle }]}
       onnavigate={() => { if (slide) view.inspect("slide-deck-editor.slide", slideSignal(slide.id).selection); }}
     />
   {/snippet}

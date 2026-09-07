@@ -26,7 +26,8 @@ const watchDiagnostics = (page: Page) => {
 const openDeck = async (page: Page) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   const surface = page.locator(".area-canvas").getByRole("application", { name: "Slide" });
-  if (!(await surface.isVisible())) {
+  const title = page.locator(".area-title");
+  if (!(await surface.isVisible()) || !(await title.textContent())?.includes(DECK_TITLE)) {
     const tab = page
       .getByRole("toolbar", { name: "Open tabs" })
       .getByRole("button", { name: DECK_TITLE, exact: true });
@@ -42,7 +43,7 @@ const openDeck = async (page: Page) => {
   }
 
   await expect(surface).toBeVisible();
-  await expect(page.locator(".area-title")).toContainText(DECK_TITLE);
+  await expect(title).toContainText(DECK_TITLE);
   await expect(surface.locator('[data-item="el-1"]')).toBeVisible();
   return surface;
 };
@@ -74,19 +75,19 @@ test("shift-click adds objects and control-click removes one without losing sele
 
   await first.click({ position: { x: 8, y: 8 } });
   await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.text-box");
-  await expect(surface.locator(".outline")).toHaveCount(1);
+  await expect(surface.locator(".outline:not(.is-hover)")).toHaveCount(1);
 
   await second.click({ modifiers: ["Shift"], position: { x: 8, y: 8 } });
   await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.multi-selection");
   await expect(inspector.getByRole("heading", { name: "2 objects" })).toBeVisible();
-  await expect(surface.locator(".outline")).toHaveCount(2);
+  await expect(surface.locator(".outline:not(.is-hover)")).toHaveCount(2);
 
   await first.click({ modifiers: ["Control"], position: { x: 8, y: 8 } });
   await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.text-box");
-  await expect(surface.locator(".outline")).toHaveCount(1);
+  await expect(surface.locator(".outline:not(.is-hover)")).toHaveCount(1);
 });
 
-test("an anchored slide comment survives the shared comment-lens round trip", async ({ page }) => {
+test("an anchored slide comment survives the deck-owned comment-lens round trip", async ({ page }) => {
   let surface = await openDeck(page);
 
   await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -102,13 +103,128 @@ test("an anchored slide comment survives the shared comment-lens round trip", as
   await inspector
     .getByRole("button", { name: "Slide 6 still says Q4. Worth a pass before Thursday." })
     .click();
-  await expect(inspector).toHaveAttribute("data-inspected", "general.comment");
+  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.comment");
   await expect(inspector.getByRole("heading", { name: "Comment" })).toBeVisible();
   await expect(inspector.getByRole("button", { name: "Show in deck" })).toBeVisible();
   await expect(inspector).toContainText("Feeder A");
-  expect(unexpected, "opening the shared comment lens should be quiet").toEqual([]);
+  expect(unexpected, "opening the deck-owned comment lens should be quiet").toEqual([]);
 
   await inspector.getByRole("button", { name: "Show in deck" }).click();
   await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.threads");
   await expect(surface.locator('[data-item="el-5"]')).toBeVisible();
+});
+
+test("Arrange keeps axis controls on rows and repeated distribution is stable", async ({ page }) => {
+  const surface = await openDeck(page);
+  const items = surface.locator('[data-item="el-1"], [data-item="el-2"], [data-item="el-3"]');
+  await surface.locator('[data-item="el-1"]').click({ position: { x: 8, y: 8 } });
+  await surface.locator('[data-item="el-2"]').click({ modifiers: ["Shift"], position: { x: 8, y: 8 } });
+  await surface.locator('[data-item="el-3"]').click({ modifiers: ["Shift"], position: { x: 8, y: 8 } });
+
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="slide-deck-editor.multi-selection"]'
+  );
+  await expect(inspector).toBeVisible();
+
+  for (const labels of [["Left", "Center", "Right"], ["Top", "Middle", "Bottom"]]) {
+    const boxes = await Promise.all(
+      labels.map((label) => inspector.getByRole("button", { name: label, exact: true }).boundingBox())
+    );
+    expect(Math.max(...boxes.map((box) => box?.y ?? 0)) - Math.min(...boxes.map((box) => box?.y ?? 0))).toBeLessThan(2);
+  }
+
+  const relative = inspector.getByRole("group", { name: "Align relative to" });
+  await expect(relative.getByRole("radio", { name: "Selection" }).locator(".choice-full"))
+    .toHaveText("Selection");
+  await expect(relative.getByRole("radio", { name: "Slide" }).locator(".choice-full"))
+    .toHaveText("Slide");
+  await expect(inspector.getByRole("button", { name: "Match size", exact: true })).toBeVisible();
+
+  const frames = () => items.evaluateAll((nodes) =>
+    nodes.map((node) => ({ id: (node as HTMLElement).dataset.item, style: node.getAttribute("style") }))
+  );
+  const before = JSON.stringify(await frames());
+  await inspector.getByRole("button", { name: "Vertical", exact: true }).click();
+  await expect.poll(async () => JSON.stringify(await frames())).not.toBe(before);
+  const once = JSON.stringify(await frames());
+  await inspector.getByRole("button", { name: "Vertical", exact: true }).click();
+  await expect.poll(async () => JSON.stringify(await frames())).toBe(once);
+});
+
+test("Find keeps every responsive choice distinguishable", async ({ page }) => {
+  await openDeck(page);
+  const context = page.locator('aside[aria-label="Context"]');
+  await context.getByRole("button", { name: "Find", exact: true }).click();
+
+  const mode = context.getByRole("group", { name: "Mode" });
+  await expect(mode.getByRole("radio", { name: "Find", exact: true }).locator(".choice-full"))
+    .toHaveText("Find");
+  await expect(mode.getByRole("radio", { name: "Replace", exact: true }).locator(".choice-full"))
+    .toHaveText("Replace");
+
+  const scope = context.getByRole("group", { name: "Scope" });
+  await expect(scope.getByRole("radio", { name: "All", exact: true }).locator(".choice-full"))
+    .toHaveText("All");
+  await expect(scope.getByRole("radio", { name: "Slides", exact: true }).locator(".choice-full"))
+    .toHaveText("Slides");
+  await expect(scope.getByRole("radio", { name: "Notes", exact: true }).locator(".choice-full"))
+    .toHaveText("Notes");
+});
+
+test("deck named styles use a dedicated complete inspector and render their marks", async ({ page }) => {
+  const surface = await openDeck(page);
+  const context = page.locator('aside[aria-label="Context"]');
+  await context.getByRole("button", { name: "Style", exact: true }).click();
+  await context.getByRole("button", { name: /^Title\b/ }).click();
+
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="slide-deck-editor.named-style"]'
+  );
+  await expect(inspector).toBeVisible();
+  const styleName = inspector.getByRole("button", { name: "Title", exact: true }).first();
+  await styleName.click();
+  const nameInput = inspector.getByRole("textbox", { name: "Style name" });
+  await nameInput.fill("Deck headline");
+  await nameInput.press("Enter");
+  await expect(inspector.getByRole("button", { name: "Deck headline", exact: true })).toBeVisible();
+
+  for (const mark of ["Bold", "Italic", "Underline", "Strikethrough"] as const) {
+    await expect(inspector.getByTitle(mark)).toBeVisible();
+  }
+  await expect(inspector.getByRole("button", { name: "Foreground for this style" })).toBeVisible();
+  const background = inspector.getByRole("button", { name: "Background for this style" });
+  await expect(background).toBeVisible();
+  await expect(inspector.getByRole("group", { name: "Vertical alignment" })).toBeVisible();
+  await expect(inspector.getByRole("spinbutton", { name: "Indent" })).toBeVisible();
+
+  const strike = inspector.getByTitle("Strikethrough");
+  await strike.click();
+  await background.click();
+  await page
+    .getByRole("radiogroup", { name: "Background for this style" })
+    .getByRole("radio", { name: "Attention" })
+    .click();
+
+  const title = surface.locator('[data-item="el-1"] [data-block="el-1-b"]');
+  await expect.poll(() => title.evaluate((node) => getComputedStyle(node).textDecorationLine))
+    .toContain("line-through");
+  await expect.poll(() => title.evaluate((node) => getComputedStyle(node).backgroundColor))
+    .not.toBe("rgba(0, 0, 0, 0)");
+});
+
+test("shape identity and speaker notes follow the same inspector grammar", async ({ page }) => {
+  const surface = await openDeck(page);
+  await surface.locator('[data-item="el-3"]').click({ position: { x: 8, y: 8 } });
+  const inspector = page.locator('aside[aria-label="Inspector"]');
+  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.shape");
+  await expect(inspector.getByRole("heading", { name: "Rectangle" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("main").getByRole("button", { name: "Notes", exact: true }).click();
+  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.speaker-notes");
+  for (const mark of ["Bold", "Italic", "Underline", "Strikethrough"] as const) {
+    await expect(inspector.getByTitle(mark)).toBeVisible();
+  }
+  await expect(inspector.getByRole("group", { name: "Vertical alignment" })).toBeVisible();
+  await expect(inspector.getByRole("spinbutton", { name: "Indent" })).toBeVisible();
 });

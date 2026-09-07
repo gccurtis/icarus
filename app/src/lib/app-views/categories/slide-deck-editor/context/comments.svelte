@@ -104,12 +104,13 @@
     }
   };
 
-  const openThread = (thread: CommentThread) => view.inspect("general.comment", { kind: "comment", id: thread._id });
+  const openThread = (thread: CommentThread) =>
+    view.inspect("slide-deck-editor.comment", { kind: "comment", id: thread._id });
 </script>
 
 <Panel title="Comments">
   {#snippet actions()}
-    <PanelChoice label="Show" value={chip} options={chips} flush onchange={(value) => (wanted = value)} />
+    <PanelChoice label="Show" value={chip} options={chips} flush fill onchange={(value) => (wanted = value)} />
   {/snippet}
 
   {#if body}

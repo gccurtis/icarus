@@ -44,7 +44,9 @@ export type TextScene = {
   readonly weight: number;
   readonly italic: boolean;
   readonly underline: boolean;
+  readonly strike: boolean;
   readonly color: string;
+  readonly background?: string;
   readonly lineHeight: number;
   readonly align: "start" | "center" | "end" | "justify";
   readonly valign: "top" | "middle" | "bottom";
@@ -179,7 +181,12 @@ export const textSceneOf = (
   weight: style?.fontWeight ?? (style?.bold ? 700 : 400),
   italic: style?.italic ?? false,
   underline: style?.underline ?? false,
+  strike: style?.strikethrough ?? false,
   color: colorOf(block.format?.color ?? style?.color ?? theme.colors.text, "var(--token-ink-primary)"),
+  background:
+    block.format?.background === undefined && style?.background === undefined
+      ? undefined
+      : colorOf(block.format?.background ?? style?.background, "transparent"),
   lineHeight: block.format?.lineHeight ?? style?.lineHeight ?? 1.3,
   align: block.format?.horizontalAlignment ?? style?.horizontalAlignment ?? (centred ? "center" : "start"),
   valign: block.format?.verticalAlignment ?? style?.verticalAlignment ?? (centred ? "middle" : "top"),
