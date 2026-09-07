@@ -26,6 +26,21 @@ const assertCitation = (citation: SemanticCitation): void => {
     throw new Error("semantic citation has an invalid overlay generation");
   }
   if (
+    citation.locators !== undefined &&
+    (!Array.isArray(citation.locators) ||
+      citation.locators.some(
+        (entry) =>
+          !Number.isInteger(entry.from) ||
+          !Number.isInteger(entry.to) ||
+          entry.from < 0 ||
+          entry.to <= entry.from ||
+          entry.from >= to ||
+          from >= entry.to
+      ))
+  ) {
+    throw new Error("semantic citation has a locator outside its evidence span");
+  }
+  if (
     !Array.isArray(citation.selections) ||
     citation.selections.length === 0 ||
     citation.selections.some(
@@ -86,10 +101,18 @@ const merge = (citations: readonly SemanticCitation[]): SemanticCitation => {
     }
   }
 
+  const locators = new Map<string, NonNullable<SemanticCitation["locators"]>[number]>();
+  for (const citation of ordered) {
+    for (const locator of citation.locators ?? []) {
+      locators.set(JSON.stringify(locator), locator);
+    }
+  }
+
   return {
     selections: mergedSelections(ordered),
     source: first.source,
     span: { from, to, text },
+    ...(locators.size === 0 ? {} : { locators: [...locators.values()] }),
     overlayGeneration: first.overlayGeneration
   };
 };

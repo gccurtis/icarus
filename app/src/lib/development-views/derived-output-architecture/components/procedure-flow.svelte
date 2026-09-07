@@ -23,7 +23,7 @@
 
   import MermaidDiagram from "$development-views/derived-output-architecture/components/mermaid-diagram.svelte";
 
-  type FunctionStatus = "existing" | "extend" | "new";
+  type FunctionStatus = "existing" | "extend" | "new" | "deferred";
   type FunctionGroup = "ingestion" | "generation" | "reading";
 
   type FunctionStep = {
@@ -41,49 +41,58 @@
       order: "01",
       name: "submitDocumentChanges / submitSlideDeckChanges",
       owner: "resource capability",
-      status: "existing",
+      status: "extend",
       input: "authoritative change set",
       output: "accepted revision N",
       note: "The normal entry point. Only an accepted leader revision can schedule semantic work."
     },
     {
       order: "02",
-      name: "enqueueSemanticSync",
+      name: "enqueueSemanticSyncFor",
       owner: "semantic-overlay capability",
       status: "new",
       input: "{ ref, revision: N }",
       output: "coalesced sync job",
-      note: "Write through an outbox in the same commit boundary; newer revisions supersede older queued work."
+      note: "Writes a persisted coalescing job immediately after the leader. Cross-table atomicity awaits a transactional store."
     },
     {
       order: "03",
       name: "backfillSemanticOverlay",
       owner: "development / operations",
       status: "new",
-      input: "project or seed manifest",
-      output: "the same sync jobs",
-      note: "The development entry point enumerates seeded resources, then joins the production path here."
+      input: "{ force?, limit? }",
+      output: "discovery + bounded batch report",
+      note: "Enumerates document and deck leaders, coalesces jobs, then runs one bounded batch through the same worker path."
     },
     {
       order: "04",
-      name: "syncSemanticResource",
-      owner: "semantic worker",
+      name: "processSemanticSyncQueue",
+      owner: "semantic worker entry",
       status: "new",
-      input: "latest job for ResourceRef",
-      output: "published generation or no-op",
-      note: "The idempotent orchestration boundary. It rechecks the requested revision before every expensive stage."
+      input: "{ limit?, ref? }",
+      output: "processed jobs + remaining count",
+      note: "Claims one bounded project batch; an always-on deployment host will invoke this same procedure."
     },
     {
       order: "05",
-      name: "readSemanticResource",
-      owner: "resource projection",
+      name: "syncSemanticResource",
+      owner: "semantic worker",
       status: "new",
-      input: "{ ref, revision }",
-      output: "SemanticSourceInput + locator map",
-      note: "Documents, decks, and later resources flatten to canonical text here; the overlay stays resource-agnostic."
+      input: "{ ref, force? } over latest leader",
+      output: "published generation or no-op",
+      note: "The idempotent orchestration boundary. It rechecks authoritative text after provider work and refuses stale publication."
     },
     {
       order: "06",
+      name: "readSemanticResource",
+      owner: "resource projection",
+      status: "new",
+      input: "{ ref }",
+      output: "SemanticResourceProjection",
+      note: "Documents and decks flatten to canonical UTF-16 text plus locator spans; prompt blocks are excluded to prevent evidence loops."
+    },
+    {
+      order: "07",
       name: "EmbeddingModel.tokenField",
       owner: "embedding model",
       status: "existing",
@@ -92,7 +101,7 @@
       note: "Jina returns contextual token labels and vectors for the complete source."
     },
     {
-      order: "07",
+      order: "08",
       name: "prepareTranslation",
       owner: "semantic behavior",
       status: "existing",
@@ -101,7 +110,7 @@
       note: "Exact token alignment and distance-discounted segmentation produce source-coordinate spans."
     },
     {
-      order: "08",
+      order: "09",
       name: "EmbeddingModel.windowedPassages",
       owner: "embedding model",
       status: "existing",
@@ -110,7 +119,7 @@
       note: "The final span texts are embedded together so their vectors remain source-contextual."
     },
     {
-      order: "09",
+      order: "10",
       name: "completeTranslation",
       owner: "semantic behavior",
       status: "existing",
@@ -119,22 +128,22 @@
       note: "Attaches vectors to exact spans without performing any persistence."
     },
     {
-      order: "10",
+      order: "11",
       name: "publishSemanticTranslation",
       owner: "semantic-overlay capability",
       status: "new",
-      input: "TranslationResult + expected revision",
+      input: "TranslationResult + force?",
       output: "source, objects, history, generation N+1",
-      note: "One guarded write replaces only this source's active objects and snapshots the retired values."
+      note: "One guarded synchronous publication turn replaces this source's active objects and snapshots the retired values."
     },
     {
-      order: "11",
-      name: "updateSemanticIndex",
+      order: "12",
+      name: "stageSemanticIndex",
       owner: "semantic index",
-      status: "extend",
-      input: "changed object IDs + generation",
-      output: "queryable generation watermark",
-      note: "Start with rebuildSemanticIndex; move to a small delta index plus background tree compaction as volume grows."
+      status: "new",
+      input: "next active object set",
+      output: "complete replacement + commit / rollback",
+      note: "This pass stages a full recursive replacement before source publication. Delta indexing remains the scale-up seam."
     }
   ];
 
@@ -143,7 +152,7 @@
       order: "01",
       name: "createPromptBlock",
       owner: "shared prompt component",
-      status: "new",
+      status: "deferred",
       input: "target + placement + prompt + scope + focus",
       output: "PromptBlock with derivedOutputId",
       note: "The product entry point. The document and deck adapters only translate placement into their own edit operations."
@@ -153,21 +162,30 @@
       name: "createDerivedOutput",
       owner: "derived-output capability",
       status: "existing",
-      input: "prompt + scope + durable focus locator",
+      input: "prompt + scope?",
       output: "idle DerivedOutput row",
-      note: "The row is the durable definition and canonical generated value; the block holds its ID."
+      note: "The row is the durable definition and canonical generated value; the future block holds its ID and focus locator."
     },
     {
       order: "03",
-      name: "enqueueDerivedRefresh",
+      name: "createTemplatedDerivedOutput",
       owner: "derived-output capability",
       status: "new",
+      input: "named variable prompts + template + scope?",
+      output: "idle templated DerivedOutput row",
+      note: "The model resolves grounded values; application code owns exact placeholder substitution."
+    },
+    {
+      order: "04",
+      name: "enqueueDerivedRefresh",
+      owner: "derived-output capability",
+      status: "deferred",
       input: "derivedOutputId + definition revision",
       output: "idempotent refresh job",
       note: "Creation returns after persistence. Generation happens outside the editor request and may be retried safely."
     },
     {
-      order: "04",
+      order: "05",
       name: "refreshDerivedOutput",
       owner: "derived worker",
       status: "existing",
@@ -176,61 +194,61 @@
       note: "Claims the output, snapshots its definition, bounds retries, and preserves the last good response on failure."
     },
     {
-      order: "05",
+      order: "06",
       name: "buildDerivedRunContext",
       owner: "derived-output capability",
-      status: "new",
+      status: "deferred",
       input: "definition + focus + prior response",
       output: "system prompt + task envelope + budgets",
       note: "Per-run context stays outside the stable system prompt; focus text is treated as untrusted data."
     },
     {
-      order: "06",
+      order: "07",
       name: "synthesize",
       owner: "derived-output capability",
       status: "extend",
-      input: "run context + evidence tools",
+      input: "DerivedOutput + intelligence + retrieve",
       output: "SynthesisDecision + issued evidence",
       note: "Keep the bounded structured-output loop; add find_resources and read beside the existing retrieve tool."
     },
     {
-      order: "07",
+      order: "08",
       name: "querySemanticOverlay",
       owner: "semantic-overlay capability",
       status: "existing",
       input: "query + ResourceSet + topK",
       output: "SemanticHit[] + diagnostics",
-      note: "The retrieve tool delegates here; returned exact spans receive attempt-local evidence IDs."
+      note: "The retrieve tool delegates here; exact spans and overlapping resource locators receive attempt-local evidence IDs."
     },
     {
-      order: "08",
+      order: "09",
       name: "readResourceEvidence",
       owner: "resource projection",
-      status: "new",
+      status: "deferred",
       input: "ref + view + locator + cursor",
       output: "bounded chunks + evidence IDs",
       note: "Reads authoritative text, outline, or allowlisted structure when semantic snippets are not enough."
     },
     {
-      order: "09",
+      order: "10",
       name: "resolveEvidenceSelections",
       owner: "derived-output behavior",
-      status: "extend",
+      status: "new",
       input: "decision.evidence + run registry",
       output: "SemanticCitation[]",
       note: "Only application-issued IDs resolve. The model never authors a source ID, revision, coordinate, or citation."
     },
     {
-      order: "10",
+      order: "11",
       name: "changedSemanticSources",
       owner: "semantic behavior",
       status: "existing",
       input: "citations + active sources",
       output: "changed source snapshots",
-      note: "Recheck only evidence actually selected; unrelated overlay generation changes do not invalidate the answer."
+      note: "Grounded answers watch selected sources; citation-free negative results instead watch the searched overlay generation."
     },
     {
-      order: "11",
+      order: "12",
       name: "responseBlock + writeOutput",
       owner: "derived-output capability",
       status: "existing",
@@ -263,7 +281,7 @@
       order: "03",
       name: "resolvePromptBlock",
       owner: "shared prompt component",
-      status: "new",
+      status: "deferred",
       input: "PromptBlock.derivedOutputId",
       output: "canonical response + local presentation state",
       note: "One resolver serves both editor surfaces. Missing output, generating, stale, and error stay explicit."
@@ -272,7 +290,7 @@
       order: "04",
       name: "syncPromptOutput",
       owner: "document / deck adapter",
-      status: "extend",
+      status: "deferred",
       input: "resolved value + surface target",
       output: "one ordinary content edit",
       note: "Copy the canonical block into the editable presentation only when its revision changes."
@@ -280,8 +298,8 @@
   ];
 
   const GROUPS: { id: FunctionGroup; label: string; detail: string; icon: typeof Layers3 }[] = [
-    { id: "ingestion", label: "Resource → overlay", detail: "11 calls", icon: Layers3 },
-    { id: "generation", label: "Prompt → response", detail: "11 calls", icon: Sparkles },
+    { id: "ingestion", label: "Resource → overlay", detail: "12 calls", icon: Layers3 },
+    { id: "generation", label: "Prompt → response", detail: "12 calls", icon: Sparkles },
     { id: "reading", label: "ID → rendered value", detail: "4 calls", icon: KeyRound }
   ];
 
@@ -299,14 +317,15 @@
       direction LR
       edit["Document or deck edit"]:::surface --> commit["commit accepted<br/>revision N"]:::existing
       commit -. "respond now" .-> ui["UI is free"]:::quiet
-      commit --> enqueue["enqueueSemanticSync<br/>ref + revision N"]:::new
+      commit --> enqueue["enqueueSemanticSyncFor<br/>ref + revision N"]:::new
       seed["seed manifest /<br/>backfill command"]:::surface --> enumerate["backfillSemanticOverlay"]:::new
       enumerate --> enqueue
     end
 
     subgraph CLAIM["CLAIM + PROJECT AUTHORITATIVE TEXT"]
       direction LR
-      claim["syncSemanticResource<br/>claim latest revision"]:::new --> project["readSemanticResource<br/>text + locator map"]:::new
+      claim["processSemanticSyncQueue<br/>claim coalesced job"]:::new --> sync["syncSemanticResource<br/>latest authoritative revision"]:::new
+      sync --> project["readSemanticResource<br/>text + locator map"]:::new
       project --> token["EmbeddingModel<br/>.tokenField"]:::existing
     end
 
@@ -318,7 +337,7 @@
 
     subgraph SETTLE["GUARDED PUBLICATION"]
       direction LR
-      publish["publishSemanticTranslation<br/>source + objects + history"]:::new --> index["updateSemanticIndex<br/>delta now / compact later"]:::extend
+      publish["publishSemanticTranslation<br/>source + objects + history"]:::new --> index["stageSemanticIndex<br/>full replacement tree"]:::new
       index --> ready["queryable generation<br/>N + 1"]:::done
     end
 
@@ -381,20 +400,19 @@
     generating --> error: bounded failure
     generating --> stale: definition superseded
     fresh --> stale: cited source revision changes
+    fresh --> stale: no evidence + overlay advances
     fresh --> stale: prompt, scope, or presentation edit
     fresh --> fresh: unrelated source advances overlay
     error --> error: last good response remains readable`;
 
   const READ_CONTRACT = `type DerivedOutputValue = {
-  id: Id<"derivedOutputs">;
-  definitionRevision: number;
-  responseRevision?: number;
+  derivedOutputId: Id<"derivedOutputs">;
+  value: string | null;
+  block: ContentBlock | null;
   state: "idle" | "generating" | "fresh" | "stale" | "error";
-  response?: ContentBlock;
+  revision: number | null;
+  variables: DerivedVariableResolution[];
   evidence: SemanticCitation[];
-  changedSources: SemanticSourceSnapshot[];
-  error?: string;
-  refreshedAt?: number;
 };
 
 readDerivedOutputValue({ derivedOutputId })
@@ -404,7 +422,7 @@ readDerivedOutputValue({ derivedOutputId })
     {
       table: "semanticSources",
       key: "ResourceRef + current revision",
-      owns: "the provenance anchor and coordinate encoding",
+      owns: "the provenance anchor, coordinate encoding, and locator sidecar",
       never: "the full authoritative resource body"
     },
     {
@@ -416,7 +434,7 @@ readDerivedOutputValue({ derivedOutputId })
     {
       table: "derivedOutputs",
       key: "derivedOutputId",
-      owns: "prompt, scope, focus locator, state, current response and citations",
+      owns: "prompt/template, scope, state, response, named values, and locator-bearing citations",
       never: "model-authored provenance or generation-local object IDs"
     },
     {
@@ -424,6 +442,45 @@ readDerivedOutputValue({ derivedOutputId })
       key: "resourceId + leader revision",
       owns: "PromptBlock placement and its derivedOutputId",
       never: "the canonical generated evidence record"
+    }
+  ];
+
+  const FOOTPRINT = [
+    {
+      count: "03",
+      label: "Resource write triggers",
+      path: "document · slide-deck · project-resources",
+      change: "Accepted leader revisions now enqueue coalesced semantic work."
+    },
+    {
+      count: "28",
+      label: "Semantic capability",
+      path: "projection · queue · publication · index",
+      change: "The new orchestration spine owns text ingestion through queryable generation."
+    },
+    {
+      count: "12",
+      label: "Derived capability",
+      path: "synthesis · templates · value read",
+      change: "Named variables, strict evidence, freshness, and presentation reads land here."
+    },
+    {
+      count: "12",
+      label: "Representation + store",
+      path: "contracts · tables · deterministic behavior",
+      change: "Durable job, locator, template, and variable shapes remain model-independent."
+    },
+    {
+      count: "10",
+      label: "Demo surfaces + routes",
+      path: "flow · runtime · executable proof",
+      change: "Three purpose-built views explain, inspect, and execute the architecture."
+    },
+    {
+      count: "04",
+      label: "Cross-cutting proof + docs",
+      path: "browser · vertical integration · working notes",
+      change: "The resource-to-value path is tested as one system, not only as isolated units."
     }
   ];
 
@@ -435,8 +492,8 @@ readDerivedOutputValue({ derivedOutputId })
     },
     {
       number: "02",
-      title: "Two async queues, one rule",
-      body: "Semantic synchronization and derived generation are independently coalesced by identity and revision. Authoring never waits for embeddings or inference."
+      title: "One queue now, one next",
+      body: "Semantic synchronization now has a persisted, revision-coalesced queue. Derived refresh is still an explicit command; its durable queue is deferred with Prompt Block integration."
     },
     {
       number: "03",
@@ -446,7 +503,7 @@ readDerivedOutputValue({ derivedOutputId })
     {
       number: "04",
       title: "Freshness follows used evidence",
-      body: "A response goes stale when a cited source changes. A project-wide overlay generation bump from unrelated content is only observability metadata."
+      body: "A grounded response goes stale when a cited source changes. A negative result has no source to watch, so it goes stale on the next overlay generation."
     }
   ];
 </script>
@@ -455,7 +512,7 @@ readDerivedOutputValue({ derivedOutputId })
   <title>Derived Output procedure flow — Icarus</title>
   <meta
     name="description"
-    content="The exact resource-ingestion, generation, publication, and response-reading procedure proposed for Derived Output."
+    content="The implemented resource-ingestion and Derived Output path, with its explicit next integration seams."
   />
 </svelte:head>
 
@@ -472,7 +529,9 @@ readDerivedOutputValue({ derivedOutputId })
       <a href="#ingestion">ingestion</a>
       <a href="#generation">generation</a>
       <a href="#functions">functions</a>
+      <a href="#footprint">footprint</a>
       <a href="#read">read API</a>
+      <a href="/demo/semantic-overlay/derived-output-live">live proof</a>
       <a class="runtime-link" href="/demo/semantic-overlay/agent-runtime">agent runtime <ArrowRight size={13} aria-hidden="true" /></a>
     </nav>
   </header>
@@ -484,11 +543,12 @@ readDerivedOutputValue({ derivedOutputId })
         <h1>One text path in.<br /><em>One grounded block out.</em></h1>
         <p>
           This is the complete lifecycle: where normal authoring and seeded development enter,
-          which functions own every hand-off, how a Prompt Block starts generation, what gets
-          stored, and how any surface resolves the response by ID.
+          which functions own every hand-off, what is executable now, what remains for Prompt
+          Block integration, and how any surface resolves the response by ID.
         </p>
         <div class="hero-actions">
           <a href="#ingestion">Trace the first call <ArrowDown size={14} aria-hidden="true" /></a>
+          <a class="secondary" href="/demo/semantic-overlay/derived-output-live">Run the live proof</a>
           <a class="secondary" href="/demo/semantic-overlay/agent-runtime">Inspect the agent design</a>
         </div>
       </div>
@@ -503,7 +563,7 @@ readDerivedOutputValue({ derivedOutputId })
         </p>
         <div class="rule-path">
           <span>authoritative write</span><ArrowRight size={14} aria-hidden="true" />
-          <span>outbox</span><ArrowRight size={14} aria-hidden="true" />
+          <span>persisted job</span><ArrowRight size={14} aria-hidden="true" />
           <span>worker</span>
         </div>
       </aside>
@@ -512,9 +572,10 @@ readDerivedOutputValue({ derivedOutputId })
     <section class="legend" aria-label="Function status legend">
       <span class="legend-title">FUNCTION KEY</span>
       <span><i class="existing"></i> exists in the semantic work</span>
-      <span><i class="extend"></i> retain and extend</span>
-      <span><i class="new"></i> new orchestration boundary</span>
-      <small>Names marked new are the proposed implementation contract.</small>
+      <span><i class="extend"></i> extended here / more remains</span>
+      <span><i class="new"></i> implemented on this branch</span>
+      <span><i class="deferred"></i> explicit next slice</span>
+      <small>The status key now reflects the running implementation.</small>
     </section>
 
     <section id="entries" class="section entry-section">
@@ -536,7 +597,7 @@ readDerivedOutputValue({ derivedOutputId })
           <ol>
             <li><span>1</span><code>submitDocumentChanges</code> or <code>submitSlideDeckChanges</code></li>
             <li><span>2</span>persist leader revision <strong>N</strong></li>
-            <li><span>3</span><code>enqueueSemanticSync(ref, N)</code> in the commit outbox</li>
+            <li><span>3</span><code>enqueueSemanticSyncFor(ref, N)</code> in the persisted queue</li>
             <li><span>4</span>return success to the editor immediately</li>
           </ol>
           <footer>Also used by imports, connectors, templates, and any future text-bearing resource mutation.</footer>
@@ -554,18 +615,18 @@ readDerivedOutputValue({ derivedOutputId })
             <div><small>KICKED OFF BY</small><strong>a seed or project manifest</strong></div>
           </div>
           <ol>
-            <li><span>1</span><code>backfillSemanticOverlay(projectId)</code></li>
+            <li><span>1</span><code>{"backfillSemanticOverlay({ force?, limit? })"}</code></li>
             <li><span>2</span>enumerate authoritative resource refs and revisions</li>
-            <li><span>3</span><code>enqueueSemanticSync(ref, N)</code> for each item</li>
-            <li><span>4</span>report queued, skipped, completed, and failed counts</li>
+            <li><span>3</span><code>enqueueSemanticSyncFor(ref, N)</code> for each item</li>
+            <li><span>4</span>report discovered, queued, processed, and remaining work</li>
           </ol>
-          <footer>Idempotency makes repeated seed runs safe; content hashes make unchanged resources cheap no-ops.</footer>
+          <footer>Revision idempotency makes repeated seed runs safe; <code>force</code> intentionally rebuilds the same revision.</footer>
         </article>
       </div>
 
       <div class="convergence-strip">
         <span><Network size={17} aria-hidden="true" /> SHARED NEXT CALL</span>
-        <code>{"syncSemanticResource({ ref, targetRevision })"}</code>
+        <code>{"processSemanticSyncQueue({ ref?, limit? })"}</code>
         <p>claim latest → read authoritative snapshot → project text → translate → publish → index</p>
       </div>
     </section>
@@ -584,7 +645,7 @@ readDerivedOutputValue({ derivedOutputId })
         <MermaidDiagram
           source={INGEST_DIAGRAM}
           label="Normal and development resource ingestion paths converging on the Semantic Overlay worker"
-          caption="The editor receives success after enqueueSemanticSync. Provider work begins only in syncSemanticResource."
+          caption="The editor receives success after enqueueSemanticSyncFor. Provider work begins when a worker invokes processSemanticSyncQueue."
           minHeight="34rem"
         />
       </div>
@@ -600,35 +661,34 @@ readDerivedOutputValue({ derivedOutputId })
             string. Read tools and citations use the map when a human needs structural context.
           </p>
         </div>
-        <pre><code>{`type SemanticResourceProjection = {
-  source: SemanticSourceInput;
-  contentHash: string;
-  locations: SemanticLocation[];
+        <pre><code>{`type SemanticResourceProjection = SemanticSourceInput & {
+  encoding: "utf-16";
+  locators: SemanticLocatorSpan[];
 };`}</code></pre>
       </div>
     </section>
 
     <section id="generation" class="section sequence-section">
       <header class="section-heading">
-        <div><span class="section-number">03</span><h2>A Prompt Block creates<br />the work and the handle.</h2></div>
+        <div><span class="section-number">03</span><h2>The core works now.<br />The block is the next adapter.</h2></div>
         <p>
-          The component owns the product gesture. The Derived Output capability owns generation.
-          The Prompt Block receives an ID immediately, so the document or deck never needs to own an agent run.
+          The executable page creates and refreshes a Derived Output directly. The diagram below is
+          the intended Prompt Block handoff; it remains intentionally separate from this runtime slice.
         </p>
       </header>
 
       <div class="callout-band">
-        <div><Boxes size={19} aria-hidden="true" /><span>CREATE RETURNS</span></div>
-        <code>{`{ blockId, derivedOutputId, state: "generating" }`}</code>
-        <p>Provider latency continues behind the ID. A reactive read invalidates when publication lands.</p>
+        <div><Boxes size={19} aria-hidden="true" /><span>EXECUTABLE NOW</span></div>
+        <code>{`create → idle ID → refresh → readDerivedOutputValue`}</code>
+        <p><a href="/demo/semantic-overlay/derived-output-live">Run direct prompt or named-variable generation ↗</a></p>
       </div>
 
       <div class="diagram-frame paper-frame sequence-frame">
         <div class="diagram-label"><span>SEQUENCE / DO-CREATE-01</span><small>create → generate → publish</small></div>
         <MermaidDiagram
           source={DERIVED_SEQUENCE}
-          label="Prompt Block creation and asynchronous Derived Output generation sequence"
-          caption="Every evidence ID exists only inside one synthesis attempt. Publication copies trusted citation values before the registry is discarded."
+          label="Target Prompt Block creation and asynchronous Derived Output generation sequence"
+          caption="Target adapter flow: Prompt Block placement and the durable derived-refresh queue are deferred. The evidence registry and guarded publication shown here are implemented."
           minHeight="46rem"
         />
       </div>
@@ -694,9 +754,34 @@ readDerivedOutputValue({ derivedOutputId })
       </ol>
     </section>
 
+    <section id="footprint" class="section footprint-section">
+      <header class="section-heading compact-heading">
+        <div><span class="section-number">05</span><h2>The actual change<br />surface.</h2></div>
+        <p>
+          The implementation slice touches 69 files. The complete stacked branch—including the
+          semantic foundation and these visual reviews—differs from its main anchor in 127 files.
+        </p>
+      </header>
+
+      <div class="footprint-summary" aria-label="Implementation change totals">
+        <div><span>THIS IMPLEMENTATION SLICE</span><strong>69</strong><small>files</small></div>
+        <div><span>FULL STACK FROM MAIN</span><strong>127</strong><small>files</small></div>
+        <p>Counts are grouped by architectural ownership below; generated build and local provider data are excluded.</p>
+      </div>
+
+      <div class="footprint-grid">
+        {#each FOOTPRINT as item (item.label)}
+          <article>
+            <span class="footprint-count">{item.count}</span>
+            <div><small>FILES · {item.path}</small><h3>{item.label}</h3><p>{item.change}</p></div>
+          </article>
+        {/each}
+      </div>
+    </section>
+
     <section class="section storage-section">
       <header class="section-heading compact-heading">
-        <div><span class="section-number">05</span><h2>Four durable identities.</h2></div>
+        <div><span class="section-number">06</span><h2>Four durable identities.</h2></div>
         <p>The overlay, generated value, and surface placement remain separate so each can change at its own rate.</p>
       </header>
 
@@ -724,7 +809,7 @@ readDerivedOutputValue({ derivedOutputId })
 
     <section id="read" class="section read-section">
       <header class="section-heading">
-        <div><span class="section-number">06</span><h2>The ID is the API boundary.</h2></div>
+        <div><span class="section-number">07</span><h2>The ID is the API boundary.</h2></div>
         <p>
           Documents, decks, exports and automations should not read the storage row directly. They
           ask for one render-safe value and receive effective freshness with the current response.
@@ -733,7 +818,7 @@ readDerivedOutputValue({ derivedOutputId })
 
       <div class="read-grid">
         <article class="contract-card">
-          <header><KeyRound size={17} aria-hidden="true" /><span>PROPOSED PUBLIC PROJECTION</span></header>
+          <header><KeyRound size={17} aria-hidden="true" /><span>IMPLEMENTED PUBLIC PROJECTION</span></header>
           <pre><code>{READ_CONTRACT}</code></pre>
         </article>
 
@@ -761,7 +846,7 @@ readDerivedOutputValue({ derivedOutputId })
 
     <section class="section decisions-section">
       <header class="section-heading compact-heading">
-        <div><span class="section-number">07</span><h2>Decisions this flow locks.</h2></div>
+        <div><span class="section-number">08</span><h2>Decisions this flow locks.</h2></div>
         <p>These are implementation constraints, not diagram decoration.</p>
       </header>
       <div class="decision-list">
@@ -783,7 +868,7 @@ readDerivedOutputValue({ derivedOutputId })
 
   <footer class="page-footer">
     <span>DERIVED OUTPUT / PROCEDURE FLOW</span>
-    <span>target contract · semantic overlay + prompt content</span>
+    <span>implemented core · explicit prompt-content seams</span>
   </footer>
 </div>
 
@@ -918,6 +1003,9 @@ readDerivedOutputValue({ derivedOutputId })
   .callout-band span,
   .atomicity-grid span,
   .status,
+  .footprint-summary span,
+  .footprint-summary small,
+  .footprint-grid small,
   .storage-grid dt,
   .contract-card header,
   .next-page span,
@@ -1064,6 +1152,7 @@ readDerivedOutputValue({ derivedOutputId })
   .legend i.existing { background: #88c5b5; }
   .legend i.extend { background: #91a9c5; }
   .legend i.new { background: #ed9a66; }
+  .legend i.deferred { background: #a4a09a; }
   .legend small { margin-left: auto; }
 
   .section {
@@ -1399,6 +1488,7 @@ readDerivedOutputValue({ derivedOutputId })
   .status-existing { color: var(--teal); background: #e7f3ef; }
   .status-extend { color: #536f8e; background: #e8edf5; }
   .status-new { color: var(--orange); background: var(--pale-orange); }
+  .status-deferred { color: #716e69; background: #eceae6; }
   .function-identity > code { overflow-wrap: anywhere; color: var(--ink); font-size: 0.78rem; }
   .function-identity small { color: var(--muted); font-size: 0.65rem; }
 
@@ -1413,6 +1503,52 @@ readDerivedOutputValue({ derivedOutputId })
   .function-contract code { color: #3f4d5a; font-size: 0.68rem; line-height: 1.45; }
   .function-contract :global(.function-arrow) { color: var(--line); }
   .function-list li > p { display: flex; align-items: center; margin: 0; border-right: 0; color: var(--muted); font-size: 0.75rem; line-height: 1.5; }
+
+  .footprint-summary {
+    display: grid;
+    grid-template-columns: 0.7fr 0.7fr 1.6fr;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: #fff;
+  }
+
+  .footprint-summary > div {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.1rem 0.7rem;
+    align-items: baseline;
+    padding: 1.25rem 1.4rem;
+    border-right: 1px solid #4d5862;
+  }
+
+  .footprint-summary span { grid-column: 1 / -1; color: #9fd6c8; font-size: 0.57rem; }
+  .footprint-summary strong { font-family: var(--token-font-serif); font-size: 3rem; font-weight: 400; line-height: 1; }
+  .footprint-summary small { color: #aeb9c1; font-size: 0.57rem; }
+  .footprint-summary > p { align-self: center; margin: 0; padding: 1.4rem; color: #bdc6cc; font-size: 0.75rem; line-height: 1.55; }
+
+  .footprint-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    margin-top: 1px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+  }
+
+  .footprint-grid article {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    min-width: 0;
+    min-height: 11rem;
+    padding: 1.25rem;
+    background: var(--paper-raised);
+  }
+
+  .footprint-count { color: var(--orange); font-family: var(--token-font-serif); font-size: 2rem; line-height: 1; }
+  .footprint-grid small { color: var(--muted); font-size: 0.53rem; line-height: 1.5; }
+  .footprint-grid h3 { margin: 0.65rem 0 0.45rem; font-family: var(--token-font-serif); font-size: 1.25rem; font-weight: 400; }
+  .footprint-grid p { margin: 0; color: #5b6670; font-size: 0.73rem; line-height: 1.55; }
 
   .storage-grid {
     display: grid;
@@ -1527,6 +1663,7 @@ readDerivedOutputValue({ derivedOutputId })
     .hero-rule { max-width: 34rem; }
     .function-list li { grid-template-columns: 3rem minmax(13rem, 0.8fr) minmax(18rem, 1fr); }
     .function-list li > p { grid-column: 2 / -1; border-top: 1px solid var(--line); }
+    .footprint-grid { grid-template-columns: repeat(2, 1fr); }
     .storage-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
@@ -1544,7 +1681,8 @@ readDerivedOutputValue({ derivedOutputId })
     .merge-mark span { width: 100%; height: 1px; }
     .merge-mark strong { writing-mode: initial; }
     .convergence-strip, .projection-rule, .callout-band { grid-template-columns: 1fr; }
-    .atomicity-grid, .function-tabs, .storage-grid, .read-grid, .decision-list { grid-template-columns: minmax(0, 1fr); }
+    .atomicity-grid, .function-tabs, .footprint-summary, .footprint-grid, .storage-grid, .read-grid, .decision-list { grid-template-columns: minmax(0, 1fr); }
+    .footprint-summary > div { border-right: 0; border-bottom: 1px solid #4d5862; }
     .function-tabs button { border-right: 0; border-bottom: 1px solid var(--ink); }
     .function-tabs button:last-child { border-bottom: 0; }
     .function-list { overflow-x: auto; }

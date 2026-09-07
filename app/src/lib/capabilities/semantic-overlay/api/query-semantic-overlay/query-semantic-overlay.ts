@@ -17,6 +17,13 @@ const sameSpace = (
   left.model === right.model &&
   left.dimensions === right.dimensions;
 
+const sourceKey = (source: {
+  ref: { kind: string; id: string };
+  revision: number;
+  encoding: string;
+}): string =>
+  JSON.stringify([source.ref.kind, source.ref.id, source.revision, source.encoding]);
+
 /** Embeds one query, traverses the current tree, and returns citation-ready values. */
 export const querySemanticOverlay = async (
   input: unknown
@@ -112,17 +119,28 @@ export const querySemanticOverlay = async (
     configuration: index.configuration,
     overlayGeneration: overlay.generation
   });
+  const sourceBySnapshot = new Map(sourceRows.map((source) => [sourceKey(source), source]));
+  const hits = found.hits.map((hit) => {
+    const source = sourceBySnapshot.get(sourceKey(hit.source));
+    const locators = source?.locators?.filter(
+      (entry) => entry.from < hit.span.to && hit.span.from < entry.to
+    );
+    return {
+      ...hit,
+      ...(locators === undefined || locators.length === 0 ? {} : { locators })
+    };
+  });
 
   model.observability.logger.info("semanticOverlay.queried", {
     projectId,
     indexId: index._id,
     topK: asked.topK,
-    returnedHits: found.hits.length,
+    returnedHits: hits.length,
     ...found.diagnostics
   });
   return {
     overlayGeneration: overlay.generation,
-    hits: found.hits,
+    hits,
     usage: [embedded.usage],
     diagnostics: found.diagnostics
   };

@@ -1,7 +1,10 @@
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { SemanticSpan } from "$representation/data/types/semantic/overlay";
-import type { SemanticSourceSnapshot } from "$representation/data/types/semantic/source";
+import type {
+  SemanticLocatorSpan,
+  SemanticSourceSnapshot
+} from "$representation/data/types/semantic/source";
 
 export type RecursiveIndexConfiguration = {
   branchFactor: number;
@@ -27,6 +30,8 @@ export type SemanticHit = {
   semanticObjectIds: Id<"semanticObjects">[];
   source: SemanticSourceSnapshot;
   span: SemanticSpan;
+  /** Projected resource locations intersecting this exact text span, when available. */
+  locators?: SemanticLocatorSpan[];
   score: number;
   overlayGeneration: number;
 };

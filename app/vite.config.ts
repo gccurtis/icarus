@@ -24,7 +24,7 @@ export default defineConfig({
   // rather than `node --test`: `$model` and `$lib` resolve here and nowhere
   // else. Node resolves package.json "imports", whose keys must begin with `#`.
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "test/unit/**/*.test.ts"],
     environment: "node",
 
     // SvelteKit's server-only guard blocks any import of a `*.server.ts` file

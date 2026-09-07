@@ -13,3 +13,9 @@ retrieval-returned evidence, strict structured selection, citation resolution,
 editable continuity, publication/freshness lifecycles, exact file changes, and
 mocked plus live verification. All review pages point at the stacked,
 unmerged integration branch.
+
+The newer Derived Output architecture pages live beside these at
+`/demo/semantic-overlay/derived-output-flow`, `/agent-runtime`, and
+`/derived-output-live`. They supersede the earlier “source publication is not
+wired” assumption with the executable projection, queue, publication, template,
+and value-read slice.

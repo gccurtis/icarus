@@ -25,6 +25,9 @@ export const updateDerivedOutput = async (input: unknown): Promise<UpdateDerived
   const projectId = scope.projectId as Id<"projects">;
   const output = outputOf(model.store, projectId, asked.derivedOutputId);
   if (output === undefined) return null;
+  if (output.template !== undefined) {
+    throw new Error("A templated derived output cannot be edited through the prompt update path");
+  }
   if (output.state === "generating") {
     throw new Error("A generating derived output cannot be edited");
   }

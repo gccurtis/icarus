@@ -3,6 +3,7 @@
   import BookOpen from "@lucide/svelte/icons/book-open";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
   import ClipboardCheck from "@lucide/svelte/icons/clipboard-check";
+  import FlaskConical from "@lucide/svelte/icons/flask-conical";
   import Library from "@lucide/svelte/icons/library";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import Shapes from "@lucide/svelte/icons/shapes";
@@ -38,6 +39,14 @@
       icon: Workflow,
       about:
         "Two purpose-built maps: the exact ingestion/generation/read procedure and the agent's prompt, tools, evidence protocol, and scaling seams."
+    },
+    {
+      href: "/demo/semantic-overlay/derived-output-live",
+      title: "Executable Derived Output",
+      sub: "Type a fact; retrieve and render it",
+      icon: FlaskConical,
+      about:
+        "The real vertical slice: create a document, publish its Semantic Overlay, generate a grounded direct or named-variable output, and inspect copied evidence."
     },
     {
       href: "/demo/document-editor-reference",

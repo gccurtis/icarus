@@ -20,6 +20,8 @@ const state = vi.hoisted(() => {
       tables.set(table, [...rows(table), { ...(fields as Row), _id: id, _creationTime: next }]);
       return id;
     },
+    createMany: (table: string, fields: readonly unknown[]): readonly string[] =>
+      fields.map((entry) => store.create(table, entry)),
     read: (path: string) => {
       const [table] = path.split(".");
       return { table, kind: "table", rows: rows(table) };
@@ -38,6 +40,10 @@ const state = vi.hoisted(() => {
     remove: (path: string) => {
       const [table, id] = path.split(".");
       tables.set(table, rows(table).filter((row) => row._id !== id));
+    },
+    removeRows: (table: string, ids: readonly string[]) => {
+      const removed = new Set(ids);
+      tables.set(table, rows(table).filter((row) => !removed.has(row._id)));
     }
   };
   const configuration = {

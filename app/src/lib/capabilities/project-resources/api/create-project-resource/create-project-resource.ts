@@ -8,6 +8,7 @@ import type { SlideDeckBody } from "$representation/data/types/slide-decks/body"
 
 import { validateCreateProjectResource } from "$capabilities/project-resources/api/create-project-resource/validate-create-project-resource";
 import type { CreateProjectResourceResult } from "$capabilities/project-resources/types/project-resources";
+import { enqueueSemanticSync } from "$capabilities/semantic-overlay/index";
 
 /** A represented blank deck still needs somewhere to edit. */
 const emptyDeck = (): SlideDeckBody => ({
@@ -94,12 +95,13 @@ const defaultTitle = (
 export const createProjectResource = async (input: unknown): Promise<CreateProjectResourceResult> => {
   const scope = await requireScope();
   const asked = validateCreateProjectResource(input);
-  const store = serverModel().store;
+  const model = serverModel();
+  const store = model.store;
   const projectId = asId<"projects">(scope.projectId);
   const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
   const at = Date.now();
 
-  return store.transaction((unit) => {
+  const created = await store.transaction((unit) => {
     const title = asked.title ?? defaultTitle(unit, projectId, asked.target);
     const fields = {
       projectId,
@@ -149,4 +151,9 @@ export const createProjectResource = async (input: unknown): Promise<CreateProje
     });
     return { accepted: true, target: asked.target, resourceId, title, revision: 0 };
   });
+
+  if (created.target === "document" || created.target === "slides") {
+    await enqueueSemanticSync({ ref: { kind: created.target, id: created.resourceId } });
+  }
+  return created;
 };

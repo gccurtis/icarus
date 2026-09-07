@@ -1,4 +1,4 @@
-export { createStore } from "$model/server/store/constructor";
+export { createStore, defineStore } from "$model/server/store/constructor";
 export type {
   StoreFailpoint,
   StoreInput,

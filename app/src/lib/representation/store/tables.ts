@@ -41,7 +41,11 @@ import type {
   SemanticObjectSnapshot,
   SemanticSpan
 } from "$representation/data/types/semantic/overlay";
-import type { SemanticEncoding } from "$representation/data/types/semantic/source";
+import type {
+  SemanticEncoding,
+  SemanticLocatorSpan
+} from "$representation/data/types/semantic/source";
+import type { SemanticSyncJobState } from "$representation/data/types/semantic/sync";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type {
@@ -221,9 +225,24 @@ export type SemanticSourceFields = {
   ref: ResourceRef;
   revision: number;
   encoding: SemanticEncoding;
+  locators?: SemanticLocatorSpan[];
   updatedAt: number;
 };
 export type SemanticSource = Row<"semanticSources"> & SemanticSourceFields;
+
+export type SemanticSyncJobFields = {
+  projectId: Id<"projects">;
+  ref: ResourceRef;
+  requestedRevision: number;
+  force?: boolean;
+  state: SemanticSyncJobState;
+  attempts: number;
+  error?: string;
+  queuedAt: number;
+  startedAt?: number;
+  updatedAt: number;
+};
+export type SemanticSyncJob = Row<"semanticSyncJobs"> & SemanticSyncJobFields;
 
 export type SemanticObjectFields = {
   projectId: Id<"projects">;
@@ -549,6 +568,7 @@ export const TABLE_NAMES = [
   "semanticObjects",
   "semanticOverlays",
   "semanticSources",
+  "semanticSyncJobs",
   "sheetCells",
   "slideDeckChangeSets",
   "slideDecks",
@@ -596,6 +616,7 @@ export type TableFields = {
   semanticObjects: SemanticObjectFields;
   semanticOverlays: SemanticOverlayFields;
   semanticSources: SemanticSourceFields;
+  semanticSyncJobs: SemanticSyncJobFields;
   sheetCells: SheetCellFields;
   slideDeckChangeSets: SlideDeckChangeSetFields;
   slideDecks: SlideDeckFields;

@@ -6,6 +6,7 @@ import { leaderOf } from "$capabilities/slide-deck/api/shared/leader";
 import { applyOps } from "$capabilities/slide-deck/api/submit-slide-deck-changes/apply-ops";
 import { validateSubmitSlideDeckChanges } from "$capabilities/slide-deck/api/submit-slide-deck-changes/validate-submit-slide-deck-changes";
 import type { SubmitSlideDeckChangesResult } from "$capabilities/slide-deck/types/submit-slide-deck-changes";
+import { enqueueSemanticSync } from "$capabilities/semantic-overlay/index";
 
 export const submitSlideDeckChanges = async (
   input: unknown
@@ -13,7 +14,8 @@ export const submitSlideDeckChanges = async (
   const scope = await requireScope();
   const { changeSet } = validateSubmitSlideDeckChanges(input);
 
-  const store = serverModel().store;
+  const model = serverModel();
+  const store = model.store;
   const projectId = asId<"projects">(scope.projectId);
   const resourceId = asId<"slideDecks">(changeSet.resourceId);
   const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
@@ -78,6 +80,7 @@ export const submitSlideDeckChanges = async (
 
   store.update(`slideDecks.${resourceId}.updatedAt`, at);
   store.update(`slideDecks.${resourceId}.updatedBy`, actor);
+  await enqueueSemanticSync({ ref: { kind: "slides", id: resourceId } });
 
   return { accepted: true, revision: next };
 };

@@ -14,6 +14,7 @@ const state = vi.hoisted(() => {
       | "no-evidence"
       | "unknown-evidence"
       | "drift"
+      | "overlay-drift"
       | "failure"
       | "gate",
     maxRetries: 2,
@@ -85,6 +86,10 @@ const state = vi.hoisted(() => {
       if (controls.mode === "drift") {
         source().revision = Number(source().revision) + 1;
       }
+      if (controls.mode === "overlay-drift") {
+        rows("semanticOverlays")[0].generation =
+          Number(rows("semanticOverlays")[0].generation) + 1;
+      }
       if (controls.mode === "gate") {
         await new Promise<void>((resolve) => {
           controls.release = resolve;
@@ -92,7 +97,7 @@ const state = vi.hoisted(() => {
       }
       return {
         value:
-          controls.mode === "no-evidence"
+          controls.mode === "no-evidence" || controls.mode === "overlay-drift"
             ? { status: "insufficient", response: "I cannot answer.", evidence: [] }
             : {
                 status: "answered",
@@ -470,6 +475,31 @@ describe("Derived Output lifecycle", () => {
       response.display,
       "The Semantic Overlay did not return enough evidence to answer this request."
     );
+    assert.equal(result?.output.lastGeneration, 4);
+    assert.equal((await readDerivedOutput({ derivedOutputId: id }))?.effectiveState, "fresh");
+    state.rows("semanticOverlays")[0].generation = 5;
+    assert.equal((await readDerivedOutput({ derivedOutputId: id }))?.effectiveState, "stale");
+  });
+
+  it("retries a negative result when the searched overlay changes during synthesis", async () => {
+    state.controls.mode = "overlay-drift";
+    state.controls.maxRetries = 1;
+    const id = seedOutput();
+    const originalComplete = state.model.intelligence.completeWithTools;
+    let calls = 0;
+    state.model.intelligence.completeWithTools = async (input) => {
+      calls += 1;
+      if (calls === 2) state.controls.mode = "no-evidence";
+      return originalComplete(input);
+    };
+
+    const result = await refreshDerivedOutput({ derivedOutputId: id });
+    state.model.intelligence.completeWithTools = originalComplete;
+
+    assert.equal(result?.outcome, "published");
+    assert.equal(result?.attempts, 2);
+    assert.equal(result?.output.lastGeneration, 5);
+    assert.deepEqual(result?.output.evidence, []);
   });
 
   it("does not publish model prose that selects an evidence id the application never issued", async () => {

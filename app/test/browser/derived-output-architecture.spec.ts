@@ -69,6 +69,57 @@ test("the agent page renders its loop and exposes every tool contract", async ({
   await page.screenshot({ path: "/tmp/derived-output-agent-runtime.png", fullPage: true });
 });
 
+test("the live proof exposes direct and named-variable generation", async ({ page }) => {
+  await page.goto("/demo/semantic-overlay/derived-output-live", { waitUntil: "networkidle" });
+
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Put a fact in one resource");
+  await expect(page.getByLabel("Source document text")).toHaveValue(/fictional Atlas beacon/);
+  await expect(page.getByLabel("Derived Output prompt")).toHaveValue(/what frequency/i);
+
+  await page.getByRole("button", { name: /Named variables/ }).click();
+  await expect(page.getByLabel("Output template")).toHaveValue(
+    "{{beacon}} emits at {{frequency}} kilohertz."
+  );
+  await expect(page.locator(".variables")).toContainText("beacon");
+  await expect(page.locator(".variables")).toContainText("frequency");
+  await page.screenshot({ path: "/tmp/derived-output-live.png", fullPage: true });
+});
+
+test("the live proof completes against configured providers", async ({ page }) => {
+  test.skip(
+    process.env.ICARUS_LIVE_DERIVED_OUTPUT !== "1",
+    "Set ICARUS_LIVE_DERIVED_OUTPUT=1 to spend real embedding and intelligence calls"
+  );
+  test.setTimeout(300_000);
+
+  await page.goto("/demo/semantic-overlay/derived-output-live", { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: /Run grounded generation/ }).click();
+
+  await expect(page.locator(".result-card blockquote")).toContainText("37", { timeout: 240_000 });
+  await expect(page.locator(".evidence")).toContainText("Atlas beacon emits at 37");
+  await expect(page.locator(".evidence")).toContainText("documentBlock");
+  await expect(page.locator(".result-card footer")).toContainText("derivedOutputs:");
+});
+
+test("the live proof resolves named variables against configured providers", async ({ page }) => {
+  test.skip(
+    process.env.ICARUS_LIVE_DERIVED_OUTPUT !== "1",
+    "Set ICARUS_LIVE_DERIVED_OUTPUT=1 to spend real embedding and intelligence calls"
+  );
+  test.setTimeout(300_000);
+
+  await page.goto("/demo/semantic-overlay/derived-output-live", { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: /Named variables/ }).click();
+  await page.getByRole("button", { name: /Run grounded generation/ }).click();
+
+  await expect(page.locator(".result-card blockquote")).toContainText("37", { timeout: 240_000 });
+  await expect(page.locator(".resolved")).toContainText("{{beacon}}");
+  await expect(page.locator(".resolved")).toContainText("{{frequency}}");
+  await expect(page.locator(".resolved")).toContainText("37");
+  await expect(page.locator(".evidence")).toContainText("Atlas beacon emits at 37");
+  await expect(page.locator(".evidence")).toContainText("documentBlock");
+});
+
 test("both pages contain page-level overflow at narrow width only inside intentional diagrams", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const route of [

@@ -46,9 +46,9 @@ Late chunking applies only within the current source or source window. Segments
 from different sources must never share one late-chunking request.
 
 Current limitation: `truncate: false` deliberately fails when a source exceeds
-the provider context limit. The adapter and pure translation stages exist, but
-the source-update capability that orchestrates and persists the complete flow
-is not wired yet.
+the provider context limit. `syncSemanticResource` now orchestrates and persists
+the complete flow for document and slide-deck projections; source-local window
+planning remains required for inputs beyond the provider context.
 
 ### Complete passage embedding
 
@@ -158,6 +158,7 @@ type RetrievedEvidence = {
   evidenceId: string;
   source: SemanticSourceSnapshot;
   span: SemanticSpan;
+  locators?: SemanticLocatorSpan[];
   score: number;
   overlayGeneration: number;
 };
@@ -177,7 +178,9 @@ type SynthesisDecision = {
 
 The `use` value explains the evidence's role; it is model-authored
 annotation, not provenance. The application should not require the model to
-invent exact quote offsets inside a retrieved span.
+invent exact quote offsets inside a retrieved span. When the source projection
+has structural locators, retrieval carries the overlapping locator spans and
+the selected citation copies them by value for later editor highlighting.
 
 Before publication, application code must verify that:
 
@@ -201,6 +204,8 @@ Keep the Semantic Overlay and Derived Output lifecycles independent:
 - overlay source changes translate and advance overlay generation;
 - reading a Derived Output computes freshness from its cited source revisions;
 - an unrelated overlay generation change does not stale the response;
+- an insufficient-evidence response has no citations, so it becomes stale when
+  the overlay advances beyond the generation it searched;
 - refresh validates only selected cited sources before publication;
 - provider failure or repeated source churn preserves the last good response;
 - a scheduled interval may perform the same pull-based freshness read later;
@@ -213,10 +218,33 @@ claimed for edited prose, and marks the row stale. On refresh it becomes the
 continuity example supplied to the agent so wording and organization can remain
 stable. It is context, never factual evidence.
 
+Templated Derived Outputs are also implemented. A definition contains named
+variable prompts, an output template, and an optional style-only example. The
+provider returns a structured array of variable values and evidence selections;
+the application validates exact names and grounding, stores the resolutions,
+and renders the final text itself.
+
+## Resource publication
+
+Document and slide-deck leader snapshots now project through one canonical
+UTF-16 text seam. The projection stores locator spans back to titles, document
+blocks, slide elements, groups, tables, captions, and speaker notes. Hidden
+slides and prompt blocks are excluded.
+
+Accepted resource changes coalesce by resource and requested revision in
+`semanticSyncJobs`. The bounded worker embeds the latest projection, checks that
+the revision/text remain current after provider calls, stages a complete
+replacement recursive index, archives retired object values, and advances the
+overlay generation without an asynchronous publication gap.
+
+The current JSON store cannot transact a resource leader and queue row across
+files, and this repository has no always-on worker host. Those are deployment
+infrastructure gaps rather than missing procedure contracts.
+
 ## Follow-up sequence
 
-1. Wire source translation and persistence around the existing token-field,
-   segmentation, complete-passage, and windowed-passage primitives.
+1. Add a transactional resource-write/outbox boundary and always-on worker host.
 2. Add source-local large-text and reader window planning.
-3. Add an optional bounded query frontier with truncation diagnostics and recall
+3. Add bounded `find_resources` and authoritative `read` evidence tools.
+4. Add an optional bounded query frontier with truncation diagnostics and recall
    tests.

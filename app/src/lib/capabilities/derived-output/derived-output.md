@@ -3,6 +3,11 @@
 A project-scoped, pull-refreshed answer grounded in the Semantic Overlay.
 
 `createDerivedOutput` stores a prompt and optional `ResourceSet` in `idle`.
+`createTemplatedDerivedOutput` instead stores 1–32 named variable prompts, a
+text template containing `{{variable}}` placeholders, and an optional example
+response. The model returns each named value and its evidence selections;
+application code validates the exact variable set, fails closed if any value is
+ungrounded, and performs substitution with `renderDerivedTemplate`.
 `updateDerivedOutput` changes that definition and marks an existing answer
 `stale` without erasing it. It may also replace `lastResponse` with a user edit:
 the edit advances the response revision, clears citations that can no longer be
@@ -14,7 +19,8 @@ source changes.
 `refreshDerivedOutput` is the only synthesis path. It acquires the row's
 `generating` state before its first asynchronous provider call, then gives one
 bounded agent a single `retrieve` tool. Retrieval returns exact source spans and
-application-issued, attempt-local evidence IDs.
+overlapping document/slide locator spans plus application-issued, attempt-local
+evidence IDs.
 
 The final provider turn must match a strict structured-output schema containing
 an `answered`/`insufficient` status, response text, and selected evidence IDs
@@ -26,4 +32,14 @@ Selected hits are copied into stored-by-value citations, then their source
 revisions are compared with active source rows. A mismatch discards the entire
 attempt and retries from current retrieval; bounded repeated churn records an
 error while preserving the previous response. An unrelated overlay generation
-does not stale a response whose cited sources are unchanged.
+does not stale a response whose cited sources are unchanged. A negative,
+insufficient-evidence result is the exception: because it has no cited source,
+it becomes stale when the overlay advances beyond the generation it searched.
+
+`readDerivedOutputValue` is the presentation-facing API. It returns the current
+text value and content block, effective state, response revision, named variable
+resolutions, and stored citations without exposing consumers to row layout.
+
+Prompt Block placement and a durable Derived Output refresh queue are separate,
+deferred adapters. The executable development surface invokes create, refresh,
+and read directly against this same capability spine.

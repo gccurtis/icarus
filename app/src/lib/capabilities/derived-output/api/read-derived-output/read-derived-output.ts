@@ -7,6 +7,7 @@ import type { ReadDerivedOutputResult } from "$capabilities/derived-output/types
 import { validateReadDerivedOutput } from "$capabilities/derived-output/api/read-derived-output/validate-read-derived-output";
 import {
   activeSources,
+  currentGeneration,
   outputOf
 } from "$capabilities/derived-output/api/shared/rows";
 
@@ -30,10 +31,17 @@ export const readDerivedOutput = async (input: unknown): Promise<ReadDerivedOutp
     output.evidence,
     activeSources(model.store, projectId)
   );
+  const negativeResultChanged =
+    output.state === "fresh" &&
+    output.evidence.length === 0 &&
+    output.lastGeneration !== undefined &&
+    output.lastGeneration !== currentGeneration(model.store, projectId);
   return {
     output,
     effectiveState:
-      output.state === "fresh" && changedSources.length > 0 ? "stale" : output.state,
+      output.state === "fresh" && (changedSources.length > 0 || negativeResultChanged)
+        ? "stale"
+        : output.state,
     changedSources
   };
 };

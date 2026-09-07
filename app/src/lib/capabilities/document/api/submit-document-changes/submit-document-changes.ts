@@ -11,6 +11,7 @@ import { applyOps } from "$capabilities/document/api/submit-document-changes/app
 import { validateSubmitDocumentChanges } from "$capabilities/document/api/submit-document-changes/validate-submit-document-changes";
 import { transformCommentAnchor } from "$capabilities/document/api/submit-document-changes/transform-comment-anchor";
 import type { SubmitDocumentChangesResult } from "$capabilities/document/types/submit-document-changes";
+import { enqueueSemanticSync } from "$capabilities/semantic-overlay/index";
 
 type Landed = { readonly revision: number; readonly ops: readonly DocumentOp[]; readonly touched: readonly string[] };
 
@@ -88,7 +89,8 @@ export const submitDocumentChanges = async (
   const submitted = validateSubmitDocumentChanges(input);
 
   const changeSet = withoutSharedReferences(submitted);
-  const store = serverModel().store;
+  const model = serverModel();
+  const store = model.store;
   const projectId = scope.projectId as Id<"projects">;
   const resourceId = changeSet.resourceId as Id<"documents">;
   const actor = { kind: "user" as const, userId: scope.userId as Id<"users"> };
@@ -157,6 +159,7 @@ export const submitDocumentChanges = async (
 
   store.update(`documents.${resourceId}.updatedAt`, at);
   store.update(`documents.${resourceId}.updatedBy`, actor);
+  await enqueueSemanticSync({ ref: { kind: "document", id: resourceId } });
 
   return catchUp.length === 0
     ? { accepted: true, revision: next }

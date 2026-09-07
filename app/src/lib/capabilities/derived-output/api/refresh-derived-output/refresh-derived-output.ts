@@ -70,6 +70,7 @@ const addAttemptUsage = (
 const sameDefinition = (left: DerivedOutput, right: DerivedOutput): boolean =>
   left.updatedAt === right.updatedAt &&
   left.prompt === right.prompt &&
+  JSON.stringify(left.template) === JSON.stringify(right.template) &&
   JSON.stringify(left.scope) === JSON.stringify(right.scope);
 
 const safeFailure = (error: unknown): string =>
@@ -133,18 +134,25 @@ export const refreshDerivedOutput = async (input: unknown): Promise<RefreshDeriv
         attempt.evidence,
         activeSources(model.store, projectId)
       );
-      if (changed.length > 0) {
+      const generation = currentGeneration(model.store, projectId);
+      const unstableNegativeResult =
+        attempt.evidence.length === 0 &&
+        (attempt.overlayGenerations.length === 0 ||
+          attempt.overlayGenerations.some((observed) => observed !== generation));
+      if (changed.length > 0 || unstableNegativeResult) {
         if (attempts <= maxRetries) continue;
         const failed = writeOutput(model.store, current, {
           state: "error",
-          error: "Cited sources kept changing while the response was being generated",
+          error: unstableNegativeResult
+            ? "The Semantic Overlay kept changing while the response was being generated"
+            : "Cited sources kept changing while the response was being generated",
           updatedAt: Date.now()
         });
         model.observability.logger.warn("derivedOutput.refreshFailed", {
           projectId,
           derivedOutputId: original._id,
           attempts,
-          reason: "source-churn"
+          reason: unstableNegativeResult ? "overlay-churn" : "source-churn"
         });
         return { outcome: "failed", output: failed, attempts, toolCalls, usage };
       }
@@ -154,9 +162,10 @@ export const refreshDerivedOutput = async (input: unknown): Promise<RefreshDeriv
       const published = writeOutput(model.store, current, {
         queries: attempt.queries,
         evidence: attempt.evidence,
+        lastVariables: attempt.variables,
         lastResponse: responseBlock(original, revision, attempt.text, at),
         lastRevision: revision,
-        lastGeneration: currentGeneration(model.store, projectId),
+        lastGeneration: generation,
         state: "fresh",
         error: undefined,
         refreshedAt: at,
