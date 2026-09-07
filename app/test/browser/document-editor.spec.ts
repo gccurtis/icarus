@@ -273,6 +273,55 @@ test("the review fixture exposes page numbers and every visible comment state", 
   ).toBeVisible();
 });
 
+test("the comment lane remains attached to the centered page across zoom and resizing", async ({
+  page
+}) => {
+  await page.setViewportSize(viewports.default);
+  await openFixture(page);
+
+  const geometry = () =>
+    page.evaluate(() => {
+      const sheet = document.querySelector<HTMLElement>(".document-page");
+      const lane = document.querySelector<HTMLElement>(".lane");
+      const pin = document.querySelector<HTMLElement>(".lane button.pin");
+      const anchor = document.querySelector<HTMLElement>(".comment-anchor");
+      if (sheet === null || lane === null || pin === null || anchor === null) return undefined;
+
+      const pageBox = sheet.getBoundingClientRect();
+      const laneBox = lane.getBoundingClientRect();
+      const pinBox = pin.getBoundingClientRect();
+      const anchorBox = anchor.getBoundingClientRect();
+      return {
+        laneGap: laneBox.left - pageBox.right,
+        pinGap: pinBox.left - pageBox.right,
+        anchorOffset: anchorBox.top - (pinBox.top + 4)
+      };
+    });
+
+  const expectAttached = async () => {
+    await expect.poll(geometry).toEqual({
+      laneGap: 6,
+      pinGap: 6,
+      anchorOffset: 0
+    });
+  };
+
+  await expectAttached();
+
+  const current = await page
+    .locator(".editor")
+    .evaluate((node) => Number.parseFloat(getComputedStyle(node).zoom) * 100);
+  await page.locator(".canvas").evaluate((node, deltaY) => {
+    node.dispatchEvent(
+      new WheelEvent("wheel", { bubbles: true, cancelable: true, ctrlKey: true, deltaY })
+    );
+  }, (current - 50) * 60);
+
+  await expectAttached();
+  await page.setViewportSize(viewports.expanded);
+  await expectAttached();
+});
+
 test("links use ordinary marks, keep notes, and obey document pointer gestures", async ({ page }) => {
   await page.setViewportSize(viewports.default);
   await page.context().route("https://example.com/**", async (route) => {

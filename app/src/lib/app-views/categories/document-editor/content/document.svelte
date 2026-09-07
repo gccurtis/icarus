@@ -102,7 +102,7 @@
   let runtime = $state<DocumentRuntime | undefined>(undefined);
   let host = $state<HTMLDivElement>();
   let surface = $state<HTMLDivElement>();
-  let pasteboard = $state<HTMLDivElement>();
+  let pageFrame = $state<HTMLDivElement>();
   let available = $state(0);
   let pins = $state<Pin[]>([]);
   let appliedThreadKey = "";
@@ -197,8 +197,8 @@
   };
 
   const place = (): void => {
-    const board = pasteboard;
-    if (editor === undefined || board === undefined) return;
+    const frame = pageFrame;
+    if (editor === undefined || frame === undefined) return;
 
     const held = ANNOTATIONS.getState(editor.state);
     if (held === undefined) {
@@ -206,7 +206,7 @@
       return;
     }
 
-    const origin = board.getBoundingClientRect();
+    const origin = frame.getBoundingClientRect();
     const placed = spansOf(editor.state.doc, held).map((span) => {
       const state: PinState = span.current ? "current" : "open";
       return { id: span.id, top: editor!.coordsAtPos(span.from).top - origin.top, state };
@@ -491,32 +491,33 @@
   <div class="well">
     <div bind:this={surface} class="canvas bg-surface-pasteboard" onwheel={pinch}>
       <div
-        bind:this={pasteboard}
         class="pasteboard"
         style="--gutter-leading: {gutters.leading}rem; --gutter-trailing: {gutters.trailing}rem"
       >
-        <div bind:this={host} class="editor" aria-label="Document editor" style={pageStyle}></div>
-        {#if pins.length > 0}
-          <div class="lane" style="--page-drawn: {layout.drawn.width}rem" aria-label="Comment threads">
-            {#each pins as pin, index (`${pin.ids.join("|")}@${pin.top}:${index}`)}
-              <button
-                type="button"
-                class="pin {pin.state}"
-                data-threads={pin.ids.join(" ")}
-                style="top: {pin.top}px"
-                title={pinTitle(pin)}
-                onclick={() => openThread(pin)}
-              >
-                {#if pin.count > 1}
-                  <MessagesSquare size={14} aria-hidden="true" />
-                  <span class="count">{pin.count}</span>
-                {:else}
-                  <MessageSquare size={14} aria-hidden="true" />
-                {/if}
-              </button>
-            {/each}
-          </div>
-        {/if}
+        <div bind:this={pageFrame} class="page-frame" style="--page-drawn: {layout.drawn.width}rem">
+          <div bind:this={host} class="editor" aria-label="Document editor" style={pageStyle}></div>
+          {#if pins.length > 0}
+            <div class="lane" aria-label="Comment threads">
+              {#each pins as pin, index (`${pin.ids.join("|")}@${pin.top}:${index}`)}
+                <button
+                  type="button"
+                  class="pin {pin.state}"
+                  data-threads={pin.ids.join(" ")}
+                  style="top: {pin.top}px"
+                  title={pinTitle(pin)}
+                  onclick={() => openThread(pin)}
+                >
+                  {#if pin.count > 1}
+                    <MessagesSquare size={14} aria-hidden="true" />
+                    <span class="count">{pin.count}</span>
+                  {:else}
+                    <MessageSquare size={14} aria-hidden="true" />
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
       </div>
     </div>
     <div class="recess" aria-hidden="true"></div>
@@ -586,7 +587,6 @@
   }
 
   .pasteboard {
-    position: relative;
     display: flex;
     width: max-content;
     min-width: 100%;
@@ -596,6 +596,11 @@
     align-items: center;
     padding: calc(var(--token-spacing-unit) * 10) var(--gutter-trailing)
       calc(var(--token-spacing-unit) * 10) var(--gutter-leading);
+  }
+
+  .page-frame {
+    position: relative;
+    width: var(--page-drawn);
   }
 
   .editor {
@@ -626,7 +631,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    left: calc(var(--gutter-leading) + var(--page-drawn) + 0.375rem);
+    left: calc(100% + 0.375rem);
     width: 1.5rem;
     pointer-events: none;
   }
