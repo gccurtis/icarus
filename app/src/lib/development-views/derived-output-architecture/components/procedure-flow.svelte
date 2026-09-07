@@ -580,7 +580,7 @@ readDerivedOutputValue({ derivedOutputId })
     {
       number: "01",
       title: "One text projection boundary",
-      body: "Every resource adapter emits SemanticSourceInput plus a locator map. The overlay receives text, revision and provenance—not editor JSON."
+      body: "Every resource adapter emits SemanticSourceInput plus a locator map. The overlay receives authored text, revision and provenance—not editor JSON or the resource name. Names stay navigation metadata."
     },
     {
       number: "02",
@@ -595,7 +595,7 @@ readDerivedOutputValue({ derivedOutputId })
     {
       number: "04",
       title: "Freshness follows used evidence",
-      body: "A grounded response goes stale when a cited source changes. A negative result has no source to watch, so it goes stale on the next overlay generation."
+      body: "Refresh is always user-invokable and checks on pull. A grounded response regenerates when cited evidence changed; a negative result watches the overlay generation; unchanged evidence returns current without provider work."
     }
   ];
 </script>

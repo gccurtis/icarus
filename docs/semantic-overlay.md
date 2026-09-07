@@ -243,7 +243,7 @@ Freshness is computed on pull and immediately before write:
 Documents expose Derived Output through a normal editable Prompt Block:
 
 1. convert an empty line with the ordinary Block selector;
-2. configure prompt and Resource Set in the Prompt inspector;
+2. configure the prompt and its scope in the Prompt inspector;
 3. create/link the Derived Output;
 4. drain one bounded semantic batch and refresh;
 5. copy response text into the block while preserving editor-owned mark ranges;

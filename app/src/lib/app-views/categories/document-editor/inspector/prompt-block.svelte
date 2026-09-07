@@ -7,7 +7,8 @@
     PanelBanner,
     PanelCrumbs,
     PanelNote,
-    PanelProgress
+    PanelProgress,
+    PanelSelect
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Textarea } from "$vendored-components/textarea";
@@ -30,6 +31,8 @@
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
   type Phase = "creating" | "saving" | "indexing" | "generating";
+
+  const SCOPES = [{ value: "project", label: "Whole project" }] as const;
 
   const view = workspaceState();
   const documentId = $derived(view.active.resourceId);
@@ -185,8 +188,10 @@
         />
 
         <div class="scope">
-          <span>Resource Set</span>
-          <strong>Whole project</strong>
+          <span>Scope</span>
+          <div class="scope-control">
+            <PanelSelect label="Scope" value="project" options={SCOPES} />
+          </div>
         </div>
       </div>
 
@@ -237,14 +242,10 @@
     align-items: center;
     justify-content: space-between;
     gap: calc(var(--token-spacing-unit) * 2);
-    padding: calc(var(--token-spacing-unit) * 2);
-    border: 1px solid var(--token-border-subtle);
-    border-radius: var(--token-radius-control);
+    min-height: 2rem;
   }
 
-  .scope strong {
-    color: var(--token-ink-primary);
-    font-size: var(--token-text-caption);
-    font-weight: 500;
+  .scope-control {
+    width: 9.25rem;
   }
 </style>

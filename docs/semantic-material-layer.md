@@ -146,9 +146,10 @@ type ProjectSemanticProjection = {
 
 Resource adapters own traversal and locators. Shared content rules decide what
 is exact narrative and what becomes a material. Synthetic labels such as
-`Slide 1` are never inserted. Blank-line separators exist only between actual
-text units. Slide boundaries are coordinate metadata, so translation, direct
-reads, and citation consolidation cannot bridge slides.
+`Slide 1` and resource titles are never inserted. Names remain resource
+metadata, outside evidence spans. Blank-line separators exist only between
+actual text units. Slide boundaries are coordinate metadata, so translation,
+direct reads, and citation consolidation cannot bridge slides.
 
 Prompt Block output is excluded from both exact text and material context. It
 cannot recursively become evidence for a later generated answer.
@@ -157,8 +158,8 @@ cannot recursively become evidence for a later generated answer.
 
 | Source | Exact lane | Material lane |
 | --- | --- | --- |
-| document | title; text/formula blocks; image alt/caption; authored table header rows | every table and sourced image, including nested table/image blocks |
-| slide deck | title; visible text/formula/shape text; image alt/caption; authored table header rows; notes | visible slide tables, charts, images, nested materials, and direct image backgrounds |
+| document | text/formula blocks; image alt/caption; authored table header rows | every table and sourced image, including nested table/image blocks |
+| slide deck | visible text/formula/shape text; image alt/caption; authored table header rows; notes | visible slide tables, charts, images, nested materials, and direct image backgrounds |
 | spreadsheet | none yet | one native sheet/table material over ordered row/column IDs and `sheetCells` |
 | external plain UTF-8 text/Markdown | complete text, up to 5 MB, hash pinned | no material unless a recognized specialist applies |
 | external code | complete UTF-8 text, up to 5 MB, hash pinned | code structural profile and optional descriptor |

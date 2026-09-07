@@ -12,7 +12,8 @@ export const projectResource = (input: ProjectResourceInput): ProjectSemanticPro
     throw new Error("The resource reference kind must match the projected body kind");
   }
   const output = projectionWriter();
-  output.append(input.title, { kind: "resourceTitle" });
+  // Resource names are navigation metadata, not authored evidence. Keeping the
+  // title out also prevents demo timestamps from leaking into retrieved spans.
   const shared = {
     ref: input.ref,
     revision: input.revision,

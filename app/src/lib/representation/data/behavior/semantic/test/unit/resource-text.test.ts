@@ -40,13 +40,12 @@ describe("semantic resource text projection", () => {
       }
     });
 
-    expect(projection.text).toBe("People\n\nAvery is 37 years old.");
+    expect(projection.text).toBe("Avery is 37 years old.");
     expect(projection.encoding).toBe("utf-16");
     expect(projection.locators).toEqual([
-      { from: 0, to: 6, locator: { kind: "resourceTitle" } },
       {
-        from: 8,
-        to: 30,
+        from: 0,
+        to: 22,
         locator: {
           kind: "documentBlock",
           area: "body",
@@ -104,9 +103,8 @@ describe("semantic resource text projection", () => {
       body
     });
 
-    expect(projection.text).toBe("Brief\n\nFirst\n\nSecond\n\nRemember the age source");
+    expect(projection.text).toBe("First\n\nSecond\n\nRemember the age source");
     expect(projection.locators.map((span) => span.locator.kind)).toEqual([
-      "resourceTitle",
       "slideElement",
       "slideElement",
       "slideNote"

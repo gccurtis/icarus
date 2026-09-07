@@ -5,7 +5,8 @@
     PanelActions,
     PanelBanner,
     PanelProgress,
-    PanelSection
+    PanelSection,
+    PanelSelect
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Textarea } from "$vendored-components/textarea";
@@ -21,6 +22,10 @@
     observePromptOutput
   } from "$app-views/categories/document-editor/procedures/prompt-output-events";
   import {
+    compactEvidenceSourceTitle,
+    exactEvidenceText
+  } from "$app-views/categories/document-editor/procedures/evidence";
+  import {
     syncPromptBlockOps,
     type Id,
     type LinkedPromptBlock,
@@ -31,6 +36,8 @@
   import type { ResourceRef } from "$representation/data/types/core/resource";
   import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
   import { onMount } from "svelte";
+
+  const SCOPES = [{ value: "project", label: "Whole project" }] as const;
 
   let {
     blockId,
@@ -80,11 +87,6 @@
     detailQuery.error === undefined ? undefined : String(detailQuery.error)
   );
   const shownError = $derived(actionError ?? output?.error ?? queryError);
-  const effectiveState = $derived(detail?.effectiveState ?? output?.state ?? "idle");
-  const shownState = $derived(
-    definitionChanged || responseChanged ? "stale" : effectiveState
-  );
-  const refreshRequired = $derived(shownState !== "fresh");
   const sourceTitles = $derived.by(() => {
     const titles = new Map<string, string>();
     for (const document of rowsOf(documentsQuery, "documents")) {
@@ -200,8 +202,10 @@
   };
 
   const sourceTitle = (citation: SemanticCitation, ref: ResourceRef): string =>
-    sourceTitles.get(`${ref.kind}:${ref.id}`) ??
-    ("material" in citation ? citation.material.name : "Open source");
+    compactEvidenceSourceTitle(
+      sourceTitles.get(`${ref.kind}:${ref.id}`) ??
+      ("material" in citation ? citation.material.name : "Open source")
+    );
 
   const citationRef = (citation: SemanticCitation): ResourceRef =>
     "span" in citation
@@ -216,7 +220,7 @@
   };
 
   const citationLabel = (citation: SemanticCitation): string => {
-    if ("span" in citation) return citation.span.text;
+    if ("span" in citation) return exactEvidenceText(citation);
     if (citation.evidenceKind === "descriptor") return citation.text;
     if (citation.evidenceKind === "visual") return `Original image${citation.selection.kind === "image" && citation.selection.crop !== undefined ? " crop" : ""}`;
     if (citation.evidenceKind === "code") return String(citation.value);
@@ -261,16 +265,11 @@
     />
 
     <div class="scope">
-      <span>Resource Set</span>
-      <strong>Whole project</strong>
-      <small>Saved Resource Set selection is a later control.</small>
+      <span>Scope</span>
+      <div class="scope-control">
+        <PanelSelect label="Scope" value="project" options={SCOPES} />
+      </div>
     </div>
-
-    <div class="freshness" data-state={shownState}>
-      <span>Response</span>
-      <strong>{shownState}</strong>
-    </div>
-
   </div>
 
   {#if shownError !== undefined}
@@ -283,7 +282,7 @@
     <Button
       variant="outline"
       size="xs"
-      disabled={running || promptDraft.trim().length === 0 || !refreshRequired}
+      disabled={running || promptDraft.trim().length === 0}
       title="Refresh from project sources"
       onclick={generate}
     >
@@ -301,9 +300,10 @@
       <div class="evidence">
         {#each output.evidence as citation (citationKey(citation))}
           {@const ref = citationRef(citation)}
+          {@const label = citationLabel(citation)}
           <article>
             <small>{citationKind(citation)}</small>
-            <q>{citationLabel(citation)}</q>
+            {#if label}<q>{label}</q>{/if}
             <button
               type="button"
               class="source-link"
@@ -341,44 +341,15 @@
   }
 
   .scope {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.15rem calc(var(--token-spacing-unit) * 2);
-    padding: calc(var(--token-spacing-unit) * 2);
-    border: 1px solid var(--token-border-subtle);
-    border-radius: var(--token-radius-control);
-  }
-
-  .freshness {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: calc(var(--token-spacing-unit) * 2);
-    color: var(--token-ink-muted);
-    font-size: var(--token-text-caption);
+    min-height: 2rem;
   }
 
-  .freshness strong {
-    color: var(--token-color-attention-text);
-    font-size: inherit;
-    font-weight: 600;
-    text-transform: capitalize;
-  }
-
-  .freshness[data-state="fresh"] strong {
-    color: var(--token-color-success-text);
-  }
-
-  .scope strong {
-    color: var(--token-ink-primary);
-    font-size: var(--token-text-caption);
-    font-weight: 500;
-  }
-
-  .scope small {
-    grid-column: 1 / -1;
-    color: var(--token-ink-muted);
-    font-size: 0.6875rem;
+  .scope-control {
+    width: 9.25rem;
   }
 
   .evidence {

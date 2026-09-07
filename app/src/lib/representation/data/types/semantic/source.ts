@@ -8,6 +8,7 @@ export type SemanticEncoding = "utf-8" | "utf-16";
 
 /** Where one projected text segment came from in its authoritative resource. */
 export type SemanticLocator =
+  /** Read compatibility for citations produced before resource names became metadata-only. */
   | { kind: "resourceTitle" }
   | {
       kind: "documentBlock";

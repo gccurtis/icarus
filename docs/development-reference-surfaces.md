@@ -168,13 +168,18 @@ opened it again; that was the apparent jump to **Next letter** and the lost fiel
 state. Clicking the already-open block is also a no-op, avoiding redundant
 workspace operations.
 
-Linked settings intentionally contain only the prompt, Resource Set, Refresh,
-errors/progress when relevant, and evidence. Refresh remains available even when
-the stored answer has not been edited. There is no `Current`, placement, or
-internal details presentation. Each citation shows the retrieved span followed
-by the authoritative resource title; that title opens the resource in an app
-tab. Evidence IDs, source kinds, offsets, generations, and Derived Output IDs
-remain stored implementation data rather than routine inspector chrome.
+Linked settings intentionally contain only the prompt, a compact Scope selector,
+Refresh, errors/progress when relevant, and evidence. The first selector has one
+choice, `Whole project`, but keeps the control seam for saved Resource Sets.
+Refresh remains available whenever the prompt is non-empty; clicking it drains
+pending semantic work before asking the pull-based freshness gate to regenerate
+or return the current value. There is no `Current`, placement, response-status,
+or internal-details presentation. Each citation shows only retrieved authored
+content followed by the authoritative resource title; historical title locators
+are removed from the visible quote, and clock suffixes use minute precision. The
+title opens the resource in an app tab. Evidence IDs, source kinds, offsets,
+generations, and Derived Output IDs remain stored implementation data rather than
+routine inspector chrome.
 
 The Prompts context panel is an index of Prompt Blocks already in the current
 document. It can navigate and inspect; it does not create.

@@ -256,7 +256,7 @@ describe("resource text to readable Derived Output", () => {
     assert.equal(source.rows[0].revision, 1);
     assert.deepEqual(
       source.rows[0].locators.map((entry) => entry.locator.kind),
-      ["resourceTitle", "documentBlock"]
+      ["documentBlock"]
     );
 
     const output = await createDerivedOutput({
